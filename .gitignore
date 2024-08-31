@@ -1,0 +1,19 @@
+# general
+.DS_Store
+node_modules/
+
+# config
+.vscode
+.env
+lerna-debug.log
+
+# build
+dist/
+docs/
+tmp/
+typechain/
+
+# test
+coverage/
+test-results/
+coverage.json
