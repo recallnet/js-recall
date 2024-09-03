@@ -7,7 +7,7 @@
     "declaration": true,
     "declarationMap": true,
     "importHelpers": false,
-    "moduleResolution": "Node",
+    "moduleResolution": "node",
     "esModuleInterop": true,
     "strict": true,
     "allowJs": true

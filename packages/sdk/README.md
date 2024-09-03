@@ -1,11 +1,23 @@
-# `evm`
+# `@hokunet/sdk`
 
-> TODO: description
+> Official JavaScript/TypeScript SDK for the Hokunet Network.
 
 ## Usage
 
 ```
-const evm = require('evm');
+import { HokuClient } from '@hokunet/sdk';
 
-// TODO: DEMONSTRATE API
+const hoku = new HokuClient(); // defaults to testnet
+
+// Get the current gateway address for the subnet.
+const gateway = await hoku.getGateway();
+
+// Get the current supply for the subnet.
+const supply = await hoku.getSupply();
+
+// Get the current supply for the subnet.
+const supply = await hoku.getSupply();
+
+// Get the current supply for the subnet.
+const supply = await hoku.getSupply();
 ```
