@@ -49,12 +49,12 @@ import {
 export abstract class Address {
   /**
    *
-   * @param networkPrefix - indicates which network the address belongs.
    * @param protocol - indicates the address types.
+   * @param networkPrefix - indicates which network the address belongs.
    */
   protected constructor(
-    protected networkPrefix: NetworkPrefix,
-    protected protocol: ProtocolIndicator
+    protected protocol: ProtocolIndicator,
+    protected networkPrefix: NetworkPrefix
   ) {}
 
   /**
@@ -120,8 +120,8 @@ export abstract class Address {
         const addr = AddressDelegated.fromString(address);
         if (Address.isFilEthAddress(addr))
           return new FilEthAddress(
-            addr.getNetworkPrefix(),
-            addr.getSubAddress()
+            addr.getSubAddress(),
+            addr.getNetworkPrefix()
           );
 
         return addr;
@@ -133,31 +133,31 @@ export abstract class Address {
 
   /**
    * Allows to parse any address from bytes format to its corresponding type
-   * @param networkPrefix - indicates which network the address belongs, as the bytes format does not hold the network the address corresponds
    * @param address - address to parse in bytes format (buffer)
+   * @param networkPrefix - indicates which network the address belongs, as the bytes format does not hold the network the address corresponds
    * @returns a new instance of a particular address type.
    */
   static fromBytes = (
-    networkPrefix: NetworkPrefix,
-    address: Uint8Array
+    address: Uint8Array,
+    networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
   ): Address => {
     const type = address[0];
 
     switch (type) {
       case ProtocolIndicator.ID:
-        return AddressId.fromBytes(networkPrefix, address);
+        return AddressId.fromBytes(address, networkPrefix);
       case ProtocolIndicator.ACTOR:
-        return AddressActor.fromBytes(networkPrefix, address);
+        return AddressActor.fromBytes(address, networkPrefix);
       case ProtocolIndicator.SECP256K1:
-        return AddressSecp256k1.fromBytes(networkPrefix, address);
+        return AddressSecp256k1.fromBytes(address, networkPrefix);
       case ProtocolIndicator.BLS:
-        return AddressBls.fromBytes(networkPrefix, address);
+        return AddressBls.fromBytes(address, networkPrefix);
       case ProtocolIndicator.DELEGATED: {
-        const addr = AddressDelegated.fromBytes(networkPrefix, address);
+        const addr = AddressDelegated.fromBytes(address, networkPrefix);
         if (Address.isFilEthAddress(addr))
           return new FilEthAddress(
-            addr.getNetworkPrefix(),
-            addr.getSubAddress()
+            addr.getSubAddress(),
+            addr.getNetworkPrefix()
           );
 
         return addr;
@@ -170,13 +170,13 @@ export abstract class Address {
   /**
    * Allows to create a new instance of an Address from an ethereum address.
    * It is based on {@link https://github.com/filecoin-project/lotus/blob/80aa6d1d646c9984761c77dcb7cf63be094b9407/chain/types/ethtypes/eth_types.go#L370|this code}
-   * @param networkPrefix - indicates which network the address belongs, as the bytes format does not hold the network the address corresponds
    * @param ethAddr - ethereum address to parse (buffer or hex string, with or without prefix)
+   * @param networkPrefix - indicates which network the address belongs, as the bytes format does not hold the network the address corresponds
    * @returns a new instance of a particular address type.
    */
   static fromEthAddress = (
-    networkPrefix: NetworkPrefix,
-    ethAddr: Uint8Array | string
+    ethAddr: Uint8Array | string,
+    networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
   ): AddressId | FilEthAddress => {
     let addr: Uint8Array;
 
@@ -197,10 +197,10 @@ export abstract class Address {
       const payload = unsigned.encode(
         "0x" + u8aToString(addr.subarray(i), "hex")
       );
-      return new AddressId(networkPrefix, payload);
+      return new AddressId(payload, networkPrefix);
     }
 
-    return new FilEthAddress(networkPrefix, addr);
+    return new FilEthAddress(addr, networkPrefix);
   };
 
   /**
@@ -267,11 +267,14 @@ export class AddressBls extends Address {
 
   /**
    * Allows to create a new instance of bls address
-   * @param networkPrefix - indicates which network the address belongs.
    * @param payload - current address payload (buffer)
+   * @param networkPrefix - indicates which network the address belongs.
    */
-  constructor(networkPrefix: NetworkPrefix, payload: Uint8Array) {
-    super(networkPrefix, ProtocolIndicator.BLS);
+  constructor(
+    payload: Uint8Array,
+    networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
+  ) {
+    super(ProtocolIndicator.BLS, networkPrefix);
 
     if (payload.byteLength !== BLS_PAYLOAD_LEN)
       throw new InvalidPayloadLength(payload.byteLength);
@@ -318,7 +321,7 @@ export class AddressBls extends Address {
     const payload = decodedData.subarray(0, -4);
     const checksum = decodedData.subarray(-4);
 
-    const newAddress = new AddressBls(networkPrefix, payload);
+    const newAddress = new AddressBls(payload, networkPrefix);
     const addressChecksum = u8aToString(newAddress.getChecksum(), "hex");
     const originalChecksum = u8aToString(checksum, "hex");
     if (addressChecksum !== originalChecksum)
@@ -329,19 +332,19 @@ export class AddressBls extends Address {
 
   /**
    * Allows to create a new AddressBls instance from bytes (buffer)
-   * @param networkPrefix - indicates which network the address belongs, as the bytes format does not hold the network the address corresponds
    * @param bytes - address to parse in bytes format (buffer)
+   * @param networkPrefix - indicates which network the address belongs, as the bytes format does not hold the network the address corresponds
    * @returns a new instance of AddressBls
    */
   static fromBytes(
-    networkPrefix: NetworkPrefix,
-    bytes: Uint8Array
+    bytes: Uint8Array,
+    networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
   ): AddressBls {
     if (bytes[0] != ProtocolIndicator.BLS)
       throw new InvalidProtocolIndicator(bytes[0]);
 
     const payload = bytes.subarray(1);
-    return new AddressBls(networkPrefix, payload);
+    return new AddressBls(payload, networkPrefix);
   }
 }
 
@@ -363,11 +366,14 @@ export class AddressId extends Address {
 
   /**
    * Allows to create a new instance of id address
-   * @param networkPrefix - indicates which network the address belongs.
    * @param payload - current address payload. It can be string (id in decimal) or buffer (leb128 encoded id)
+   * @param networkPrefix - indicates which network the address belongs.
    */
-  constructor(networkPrefix: NetworkPrefix, payload: string | Uint8Array) {
-    super(networkPrefix, ProtocolIndicator.ID);
+  constructor(
+    payload: string | Uint8Array,
+    networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
+  ) {
+    super(ProtocolIndicator.ID, networkPrefix);
 
     let payloadBuff: Uint8Array;
     if (typeof payload === "string") {
@@ -423,21 +429,24 @@ export class AddressId extends Address {
       throw new InvalidProtocolIndicator(parseInt(protocolIndicator));
 
     const payload = unsigned.encode(address.substring(2));
-    return new AddressId(networkPrefix, payload);
+    return new AddressId(payload, networkPrefix);
   }
 
   /**
    * Allows to create a new AddressId instance from bytes (buffer)
-   * @param networkPrefix - indicates which network the address belongs, as the bytes format does not hold the network the address corresponds
    * @param bytes - address to parse in bytes format (buffer)
+   * @param networkPrefix - indicates which network the address belongs, as the bytes format does not hold the network the address corresponds
    * @returns a new instance of AddressId
    */
-  static fromBytes(networkPrefix: NetworkPrefix, bytes: Uint8Array): AddressId {
+  static fromBytes(
+    bytes: Uint8Array,
+    networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
+  ): AddressId {
     if (bytes[0] != ProtocolIndicator.ID)
       throw new InvalidProtocolIndicator(bytes[0]);
 
     const payload = bytes.subarray(1);
-    return new AddressId(networkPrefix, payload);
+    return new AddressId(payload, networkPrefix);
   }
 
   /**
@@ -469,11 +478,14 @@ export class AddressSecp256k1 extends Address {
 
   /**
    * Allows to create a new instance of secp256k1 address
-   * @param networkPrefix - indicates which network the address belongs.
    * @param payload - current address payload (buffer)
+   * @param networkPrefix - indicates which network the address belongs.
    */
-  constructor(networkPrefix: NetworkPrefix, payload: Uint8Array) {
-    super(networkPrefix, ProtocolIndicator.SECP256K1);
+  constructor(
+    payload: Uint8Array,
+    networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
+  ) {
+    super(ProtocolIndicator.SECP256K1, networkPrefix);
     if (payload.byteLength !== SECP256K1_PAYLOAD_LEN)
       throw new InvalidPayloadLength(payload.byteLength);
     this.payload = payload;
@@ -519,7 +531,7 @@ export class AddressSecp256k1 extends Address {
     const payload = decodedData.subarray(0, -4);
     const checksum = decodedData.subarray(-4);
 
-    const newAddress = new AddressSecp256k1(networkPrefix, payload);
+    const newAddress = new AddressSecp256k1(payload, networkPrefix);
     const addressChecksum = u8aToString(newAddress.getChecksum(), "hex");
     const originalChecksum = u8aToString(checksum, "hex");
     if (addressChecksum !== originalChecksum)
@@ -530,19 +542,19 @@ export class AddressSecp256k1 extends Address {
 
   /**
    * Allows to create a new AddressSecp256k1 instance from bytes (buffer)
-   * @param networkPrefix - indicates which network the address belongs, as the bytes format does not hold the network the address corresponds
    * @param bytes - address to parse in bytes format (buffer)
+   * @param networkPrefix - indicates which network the address belongs, as the bytes format does not hold the network the address corresponds
    * @returns a new instance of AddressSecp256k1
    */
   static fromBytes(
-    networkPrefix: NetworkPrefix,
-    bytes: Uint8Array
+    bytes: Uint8Array,
+    networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
   ): AddressSecp256k1 {
     if (bytes[0] != ProtocolIndicator.SECP256K1)
       throw new InvalidProtocolIndicator(bytes[0]);
 
     const payload = bytes.subarray(1);
-    return new AddressSecp256k1(networkPrefix, payload);
+    return new AddressSecp256k1(payload, networkPrefix);
   }
 }
 
@@ -559,11 +571,14 @@ export class AddressActor extends Address {
 
   /**
    * Allows to create a new instance of actor address
-   * @param networkPrefix - indicates which network the address belongs.
    * @param payload - current address payload (buffer)
+   * @param networkPrefix - indicates which network the address belongs.
    */
-  constructor(networkPrefix: NetworkPrefix, payload: Uint8Array) {
-    super(networkPrefix, ProtocolIndicator.ACTOR);
+  constructor(
+    payload: Uint8Array,
+    networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
+  ) {
+    super(ProtocolIndicator.ACTOR, networkPrefix);
     if (payload.byteLength !== ACTOR_PAYLOAD_LEN)
       throw new InvalidPayloadLength(payload.byteLength);
 
@@ -610,7 +625,7 @@ export class AddressActor extends Address {
     const payload = decodedData.subarray(0, -4);
     const checksum = decodedData.subarray(-4);
 
-    const newAddress = new AddressActor(networkPrefix, payload);
+    const newAddress = new AddressActor(payload, networkPrefix);
     const addressChecksum = u8aToString(newAddress.getChecksum(), "hex");
     const originalChecksum = u8aToString(checksum, "hex");
     if (addressChecksum !== originalChecksum)
@@ -621,19 +636,19 @@ export class AddressActor extends Address {
 
   /**
    * Allows to create a new AddressActor instance from bytes (buffer)
-   * @param networkPrefix - indicates which network the address belongs, as the bytes format does not hold the network the address corresponds
    * @param bytes - address to parse in bytes format (buffer)
+   * @param networkPrefix - indicates which network the address belongs, as the bytes format does not hold the network the address corresponds
    * @returns a new instance of AddressActor
    */
   static fromBytes(
-    networkPrefix: NetworkPrefix,
-    bytes: Uint8Array
+    bytes: Uint8Array,
+    networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
   ): AddressActor {
     if (bytes[0] != ProtocolIndicator.ACTOR)
       throw new InvalidProtocolIndicator(bytes[0]);
 
     const payload = bytes.subarray(1);
-    return new AddressActor(networkPrefix, payload);
+    return new AddressActor(payload, networkPrefix);
   }
 }
 
@@ -661,16 +676,16 @@ export class AddressDelegated extends Address {
 
   /**
    * Allows to create a new instance of delegated address
-   * @param networkPrefix - indicates which network the address belongs.
    * @param namespace - account manager actor id
    * @param subAddress - user-defined address the account manager will know and administrate (buffer)
+   * @param networkPrefix - indicates which network the address belongs.
    */
   constructor(
-    networkPrefix: NetworkPrefix,
     namespace: string,
-    subAddress: Uint8Array
+    subAddress: Uint8Array,
+    networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
   ) {
-    super(networkPrefix, ProtocolIndicator.DELEGATED);
+    super(ProtocolIndicator.DELEGATED, networkPrefix);
 
     if (BigInt(namespace) > ID_PAYLOAD_MAX_NUM)
       throw new InvalidNamespace(namespace);
@@ -748,9 +763,9 @@ export class AddressDelegated extends Address {
     const subAddress = dataDecoded.subarray(0, -4);
     const checksum = dataDecoded.subarray(-4);
     const newAddress = new AddressDelegated(
-      networkPrefix,
       namespace,
-      subAddress
+      subAddress,
+      networkPrefix
     );
 
     const addressChecksum = u8aToString(newAddress.getChecksum(), "hex");
@@ -763,13 +778,13 @@ export class AddressDelegated extends Address {
 
   /**
    * Allows to create a new AddressDelegated instance from bytes (buffer)
-   * @param networkPrefix - indicates which network the address belongs, as the bytes format does not hold the network the address corresponds
    * @param bytes - address to parse in bytes format (buffer)
+   * @param networkPrefix - indicates which network the address belongs, as the bytes format does not hold the network the address corresponds
    * @returns a new instance of AddressDelegated
    */
   static fromBytes(
-    networkPrefix: NetworkPrefix,
-    bytes: Uint8Array
+    bytes: Uint8Array,
+    networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
   ): AddressDelegated {
     if (bytes[0] != ProtocolIndicator.DELEGATED)
       throw new InvalidProtocolIndicator(bytes[0]);
@@ -778,7 +793,7 @@ export class AddressDelegated extends Address {
     const namespace = unsigned.decode(bytes.subarray(1, 1 + namespaceLength));
     const subAddress = bytes.subarray(namespaceLength + 1);
 
-    return new AddressDelegated(networkPrefix, namespace, subAddress);
+    return new AddressDelegated(namespace, subAddress, networkPrefix);
   }
 }
 
@@ -789,12 +804,15 @@ export class AddressDelegated extends Address {
 export class FilEthAddress extends AddressDelegated {
   /**
    * Allows to create a new instance of EthereumAddress
-   * @param networkPrefix - indicates which network the address belongs.
    * @param ethAddress - valid ethereum address to wrap (as buffer)
+   * @param networkPrefix - indicates which network the address belongs.
    */
 
-  constructor(networkPrefix: NetworkPrefix, ethAddress: Uint8Array) {
-    super(networkPrefix, DelegatedNamespace.ETH, ethAddress);
+  constructor(
+    ethAddress: Uint8Array,
+    networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
+  ) {
+    super(DelegatedNamespace.ETH, ethAddress, networkPrefix);
 
     if (ethAddress.length !== ETH_ADDRESS_LEN)
       throw new Error(
@@ -807,19 +825,19 @@ export class FilEthAddress extends AddressDelegated {
   /**
    * Allows to create a new EthereumAddress instance from filecoin address in bytes format (buffer)
    * @example networkPrefix: 'f' - bytesFilAddress: 040a23a7f3c5c663d71151f40c8610c01150c9660795
-   * @param networkPrefix - indicates which network the address belongs, as the bytes format does not hold the network the address corresponds
    * @param bytesFilAddress - address to parse in bytes format (buffer)
+   * @param networkPrefix - indicates which network the address belongs, as the bytes format does not hold the network the address corresponds
    * @returns a new instance of EthereumAddress
    */
   static fromBytes(
-    networkPrefix: NetworkPrefix,
-    bytesFilAddress: Uint8Array
+    bytesFilAddress: Uint8Array,
+    networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
   ): FilEthAddress {
-    const addr = AddressDelegated.fromBytes(networkPrefix, bytesFilAddress);
+    const addr = AddressDelegated.fromBytes(bytesFilAddress, networkPrefix);
     if (addr.getNamespace() !== DelegatedNamespace.ETH)
       throw new Error("invalid filecoin address for ethereum space");
 
-    return new FilEthAddress(addr.getNetworkPrefix(), addr.getSubAddress());
+    return new FilEthAddress(addr.getSubAddress(), addr.getNetworkPrefix());
   }
 
   /**
@@ -833,7 +851,7 @@ export class FilEthAddress extends AddressDelegated {
     if (addr.getNamespace() !== DelegatedNamespace.ETH)
       throw new Error("invalid filecoin address for ethereum space");
 
-    return new FilEthAddress(addr.getNetworkPrefix(), addr.getSubAddress());
+    return new FilEthAddress(addr.getSubAddress(), addr.getNetworkPrefix());
   }
 
   /**
