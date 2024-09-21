@@ -1,0 +1,42 @@
+{
+  "name": "@hokunet/fvm",
+  "version": "0.0.0",
+  "description": "FVM formats and utilities for Hoku",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hokunet/js-hoku.git",
+    "directory": "packages/fvm"
+  },
+  "homepage": "https://github.com/hokunet/js-hoku#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "license": "MIT AND Apache-2.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "directories": {
+    "dist": "./dist"
+  },
+  "files": [
+    "dist/**/*.js(.map)",
+    "dist/**/*.d.ts",
+    "dist/**/package.json",
+    "src/**/*.ts"
+  ],
+  "scripts": {
+    "prepublishOnly": "npm run build",
+    "test": "npm run test:mocha",
+    "test:mocha": "mocha --exit",
+    "test:ci": "npm run coverage",
+    "coverage": "c8 --exclude test --exclude dist mocha --exit",
+    "docs": "typedoc --entryPoints src/index.ts",
+    "clean": "rm -rf dist coverage docs",
+    "build:esm": "npx tsc",
+    "build": "npm run build:esm"
+  },
+  "dependencies": {
+    "blakejs": "^1.2.1",
+    "uint8arrays": "^5.1.0"
+  }
+}
