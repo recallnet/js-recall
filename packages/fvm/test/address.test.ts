@@ -73,8 +73,8 @@ describe.only("Address", function () {
         ({ string, payload, bytes, protocol, network }, index) => {
           it(`Test case ${index}: 0x${bytes}`, () => {
             const addr = Address.fromBytes(
-              network as NetworkPrefix,
-              u8a.fromString(bytes, "hex")
+              u8a.fromString(bytes, "hex"),
+              network as NetworkPrefix
             );
 
             expect(addr.toString()).to.equal(string);
@@ -102,7 +102,7 @@ describe.only("Address", function () {
 
       vectors.forEach(async ({ string, eth }) => {
         it(`Test case ${string}: 0x${eth}`, async () => {
-          const addrId1 = Address.fromEthAddress(NetworkPrefix.Mainnet, eth);
+          const addrId1 = Address.fromEthAddress(eth, NetworkPrefix.Mainnet);
           expect(addrId1.toString()).to.equal(string);
           expect(addrId1.toEthAddressHex(true)).to.equal(eth);
 
@@ -156,7 +156,7 @@ describe.only("Address", function () {
           }).to.throw(InvalidId);
 
           expect(() => {
-            new AddressId(NetworkPrefix.Mainnet, aboveMax.toString());
+            new AddressId(aboveMax.toString(), NetworkPrefix.Mainnet);
           }).to.throw(InvalidId);
         });
 
@@ -177,8 +177,8 @@ describe.only("Address", function () {
       describe("From bytes", () => {
         it("Testnet", async () => {
           const addr = Address.fromBytes(
-            NetworkPrefix.Testnet,
-            Buffer.from("00da43", "hex")
+            Buffer.from("00da43", "hex"),
+            NetworkPrefix.Testnet
           );
           expect(addr.toString()).to.equal("t08666");
           expect(u8a.toString(addr.toBytes(), "hex")).to.equal("00da43");
@@ -188,8 +188,8 @@ describe.only("Address", function () {
 
         it("Mainnet", async () => {
           const addr = Address.fromBytes(
-            NetworkPrefix.Mainnet,
-            Buffer.from("00da43", "hex")
+            Buffer.from("00da43", "hex"),
+            NetworkPrefix.Mainnet
           );
           expect(addr.toString()).to.equal("f08666");
           expect(u8a.toString(addr.toBytes(), "hex")).to.equal("00da43");
@@ -200,16 +200,16 @@ describe.only("Address", function () {
         it("Exceed max value", async () => {
           expect(() => {
             Address.fromBytes(
-              NetworkPrefix.Mainnet,
-              Buffer.from("0080808080808080808001", "hex")
+              Buffer.from("0080808080808080808001", "hex"),
+              NetworkPrefix.Mainnet
             );
           }).to.throw(InvalidId);
         });
 
         it("Max allowed value", async () => {
           const addr = Address.fromBytes(
-            NetworkPrefix.Mainnet,
-            Buffer.from("00ffffffffffffffff7f", "hex")
+            Buffer.from("00ffffffffffffffff7f", "hex"),
+            NetworkPrefix.Mainnet
           );
           expect(addr.toString()).to.equal("f09223372036854775807");
           expect(u8a.toString(addr.toBytes(), "hex")).to.equal(
@@ -261,9 +261,9 @@ describe.only("Address", function () {
       it("Masked-id eth address", async () => {
         expect(() => {
           new AddressDelegated(
-            NetworkPrefix.Mainnet,
             "10",
-            Buffer.from("ff00000000000000000000000000000000000001", "hex")
+            Buffer.from("ff00000000000000000000000000000000000001", "hex"),
+            NetworkPrefix.Mainnet
           );
         }).to.throw("masked-id eth addresses not allowed");
       });
@@ -279,9 +279,9 @@ describe.only("Address", function () {
       it("Wrong namespace", async () => {
         expect(() => {
           const addr = new AddressDelegated(
-            NetworkPrefix.Mainnet,
             "11",
-            Buffer.from("111111", "hex")
+            Buffer.from("111111", "hex"),
+            NetworkPrefix.Mainnet
           );
           FilEthAddress.fromString(addr.toString());
         }).to.throw();
@@ -290,9 +290,9 @@ describe.only("Address", function () {
       it("Wrong eth address", async () => {
         expect(() => {
           const addr = new AddressDelegated(
-            NetworkPrefix.Mainnet,
             "10",
-            Buffer.from("111111", "hex")
+            Buffer.from("111111", "hex"),
+            NetworkPrefix.Mainnet
           );
           FilEthAddress.fromString(addr.toString());
         }).to.throw();
@@ -301,8 +301,8 @@ describe.only("Address", function () {
       it("Masked-id eth address", async () => {
         expect(() => {
           new FilEthAddress(
-            NetworkPrefix.Mainnet,
-            Buffer.from("ff00000000000000000000000000000000000001", "hex")
+            Buffer.from("ff00000000000000000000000000000000000001", "hex"),
+            NetworkPrefix.Mainnet
           );
         }).to.throw("masked-id eth addresses not allowed");
       });
@@ -325,8 +325,8 @@ describe.only("Address", function () {
     describe("Ethereum conversion", () => {
       it("From ethereum address (ID)", async () => {
         const addr = Address.fromEthAddress(
-          NetworkPrefix.Testnet,
-          "0xff00000000000000000000000000000000000001"
+          "0xff00000000000000000000000000000000000001",
+          NetworkPrefix.Testnet
         );
 
         expect(addr.getProtocol()).to.equal(ProtocolIndicator.ID);
@@ -336,8 +336,8 @@ describe.only("Address", function () {
 
       it("From ethereum address (ID) 2", async () => {
         const addr = Address.fromEthAddress(
-          NetworkPrefix.Testnet,
-          "0xff00000000000000000000000000000000000065"
+          "0xff00000000000000000000000000000000000065",
+          NetworkPrefix.Testnet
         );
 
         expect(addr.getProtocol()).to.equal(ProtocolIndicator.ID);
@@ -347,8 +347,8 @@ describe.only("Address", function () {
 
       it("From ethereum address (ID) 3", async () => {
         const addr = Address.fromEthAddress(
-          NetworkPrefix.Testnet,
-          "0xff0000000000000000000000000000000000da43"
+          "0xff0000000000000000000000000000000000da43",
+          NetworkPrefix.Testnet
         );
 
         expect(addr.getProtocol()).to.equal(ProtocolIndicator.ID);
@@ -358,8 +358,8 @@ describe.only("Address", function () {
 
       it("From ethereum address (ID) 4", async () => {
         const addr = Address.fromEthAddress(
-          NetworkPrefix.Testnet,
-          "0xff00000000000000000000000000000000000a43"
+          "0xff00000000000000000000000000000000000a43",
+          NetworkPrefix.Testnet
         );
 
         expect(addr.getProtocol()).to.equal(ProtocolIndicator.ID);
@@ -369,8 +369,8 @@ describe.only("Address", function () {
 
       it("From ethereum address (ID) 5", async () => {
         const addr = Address.fromEthAddress(
-          NetworkPrefix.Testnet,
-          "0xff000000000000000000000000000000002ec8fa"
+          "0xff000000000000000000000000000000002ec8fa",
+          NetworkPrefix.Testnet
         );
 
         expect(addr.getProtocol()).to.equal(ProtocolIndicator.ID);
@@ -380,8 +380,8 @@ describe.only("Address", function () {
 
       it("From ethereum address (ID) 6", async () => {
         const addr = Address.fromEthAddress(
-          NetworkPrefix.Testnet,
-          "0xff00000000000000000000000000000000002694"
+          "0xff00000000000000000000000000000000002694",
+          NetworkPrefix.Testnet
         );
 
         expect(addr.getProtocol()).to.equal(ProtocolIndicator.ID);
@@ -392,8 +392,8 @@ describe.only("Address", function () {
       it("From ethereum address (ID) 7", async () => {
         expect(() => {
           Address.fromEthAddress(
-            NetworkPrefix.Testnet,
-            "0xff00000000000000000000007ffffffffffffff"
+            "0xff00000000000000000000007ffffffffffffff",
+            NetworkPrefix.Testnet
           );
         }).to.throw();
       });
@@ -401,8 +401,8 @@ describe.only("Address", function () {
       it("From ethereum address (ID) 8", async () => {
         expect(() => {
           Address.fromEthAddress(
-            NetworkPrefix.Testnet,
-            "0xff0000000000000000000000ffffffffffffffff11"
+            "0xff0000000000000000000000ffffffffffffffff11",
+            NetworkPrefix.Testnet
           );
         }).to.throw();
       });
@@ -410,8 +410,8 @@ describe.only("Address", function () {
       it("From ethereum address (ID) 9", async () => {
         expect(() => {
           Address.fromEthAddress(
-            NetworkPrefix.Testnet,
-            "0xff0000000000000000000000ffffffffffffffff1"
+            "0xff0000000000000000000000ffffffffffffffff1",
+            NetworkPrefix.Testnet
           );
         }).to.throw();
       });
@@ -419,16 +419,16 @@ describe.only("Address", function () {
       it("From ethereum address (ID) 10", async () => {
         expect(() => {
           Address.fromEthAddress(
-            NetworkPrefix.Testnet,
-            "0xff00000000000000000000008FFFFFFFFFFFFFFF"
+            "0xff00000000000000000000008FFFFFFFFFFFFFFF",
+            NetworkPrefix.Testnet
           );
         }).to.throw();
       });
 
       it("From ethereum address (ID) - max value", () => {
         const addr = Address.fromEthAddress(
-          NetworkPrefix.Testnet,
-          "0xff00000000000000000000007FFFFFFFFFFFFFFF"
+          "0xff00000000000000000000007FFFFFFFFFFFFFFF",
+          NetworkPrefix.Testnet
         );
 
         expect(addr.getProtocol()).to.equal(ProtocolIndicator.ID);
@@ -480,8 +480,8 @@ describe.only("Address", function () {
 
       it("From ethereum address (EthFilAddress)", async () => {
         const addr = Address.fromEthAddress(
-          NetworkPrefix.Mainnet,
-          "0xd4c5fb16488aa48081296299d54b0c648c9333da"
+          "0xd4c5fb16488aa48081296299d54b0c648c9333da",
+          NetworkPrefix.Mainnet
         );
 
         expect(addr.getProtocol()).to.equal(ProtocolIndicator.DELEGATED);
@@ -494,8 +494,8 @@ describe.only("Address", function () {
       it("From ethereum address (EthFilAddress) - 2", async () => {
         expect(() => {
           Address.fromEthAddress(
-            NetworkPrefix.Mainnet,
-            "0xd4c5fb16488aa48081296299d54b0c648c9333da00"
+            "0xd4c5fb16488aa48081296299d54b0c648c9333da00",
+            NetworkPrefix.Mainnet
           );
         }).to.throw("invalid ethereum address: length should be 20 bytes");
       });

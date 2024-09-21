@@ -36,7 +36,7 @@ export enum ProtocolIndicator {
  * Different Filecoin networks.
  * For more information, please refer to this {@link https://docs.filecoin.io/basics/what-is-filecoin/networks/|link}.
  */
-export enum FvmNetwork {
+export enum Network {
   Mainnet = "mainnet",
   Testnet = "testnet",
 }

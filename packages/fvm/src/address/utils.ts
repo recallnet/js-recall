@@ -6,7 +6,7 @@ import {
   ACTOR_ID_ETHEREUM_MASK,
   ACTOR_ID_ETHEREUM_MASK_LEN,
   ETH_ADDRESS_LEN,
-  FvmNetwork,
+  Network,
   NetworkPrefix,
 } from "../artifacts/address.js";
 
@@ -53,27 +53,30 @@ export const validateNetworkPrefix = (
  * @param network - input string to validate
  * @returns whether the input is a valid network or not
  */
-export const validateNetwork = (network: string): network is FvmNetwork =>
-  Object.values(FvmNetwork).includes(network as FvmNetwork);
+export const validateNetwork = (network: string): network is Network =>
+  Object.values(Network).includes(network as Network);
 
 /**
  * Get network prefix from a given network
  * @param network - input string to validate
  * @returns network prefix
  */
-export const getNetworkPrefix = (network: FvmNetwork): NetworkPrefix =>
-  network === FvmNetwork.Mainnet
-    ? NetworkPrefix.Mainnet
-    : NetworkPrefix.Testnet;
+export const getNetworkPrefix = (network: Network): NetworkPrefix =>
+  network === Network.Mainnet ? NetworkPrefix.Mainnet : NetworkPrefix.Testnet;
 
 /**
  * Check if a given network is testnet or not
  * @param network - input string to validate
  * @returns network prefix
  */
-export const isTestnet = (network: FvmNetwork): boolean =>
-  network !== FvmNetwork.Mainnet;
+export const isTestnet = (network: Network): boolean =>
+  network !== Network.Mainnet;
 
+/**
+ * Check if a given address is a masked id eth address
+ * @param ethAddr - input string to validate
+ * @returns network prefix
+ */
 export const isMaskedIdEthAddress = (ethAddr: Uint8Array) => {
   const idMask = new Uint8Array(ACTOR_ID_ETHEREUM_MASK_LEN);
   idMask[0] = ACTOR_ID_ETHEREUM_MASK;
