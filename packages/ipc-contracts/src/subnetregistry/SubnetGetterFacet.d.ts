@@ -1,0 +1,113 @@
+import type { BaseContract, BigNumberish, BytesLike, FunctionFragment, Result, Interface, AddressLike, ContractRunner, ContractMethod, Listener } from "ethers";
+import type { TypedContractEvent, TypedDeferredTopicFilter, TypedEventLog, TypedListener, TypedContractMethod } from "../../common";
+export interface SubnetGetterFacetInterface extends Interface {
+    getFunction(nameOrSignature: "getGateway" | "getSubnetActorCheckpointerFacet" | "getSubnetActorCheckpointerSelectors" | "getSubnetActorGetterFacet" | "getSubnetActorGetterSelectors" | "getSubnetActorManagerFacet" | "getSubnetActorManagerSelectors" | "getSubnetActorPauserFacet" | "getSubnetActorPauserSelectors" | "getSubnetActorRewarderFacet" | "getSubnetActorRewarderSelectors" | "getSubnetDeployedByNonce" | "getUserLastNonce" | "latestSubnetDeployed" | "updateReferenceSubnetContract"): FunctionFragment;
+    encodeFunctionData(functionFragment: "getGateway", values?: undefined): string;
+    encodeFunctionData(functionFragment: "getSubnetActorCheckpointerFacet", values?: undefined): string;
+    encodeFunctionData(functionFragment: "getSubnetActorCheckpointerSelectors", values?: undefined): string;
+    encodeFunctionData(functionFragment: "getSubnetActorGetterFacet", values?: undefined): string;
+    encodeFunctionData(functionFragment: "getSubnetActorGetterSelectors", values?: undefined): string;
+    encodeFunctionData(functionFragment: "getSubnetActorManagerFacet", values?: undefined): string;
+    encodeFunctionData(functionFragment: "getSubnetActorManagerSelectors", values?: undefined): string;
+    encodeFunctionData(functionFragment: "getSubnetActorPauserFacet", values?: undefined): string;
+    encodeFunctionData(functionFragment: "getSubnetActorPauserSelectors", values?: undefined): string;
+    encodeFunctionData(functionFragment: "getSubnetActorRewarderFacet", values?: undefined): string;
+    encodeFunctionData(functionFragment: "getSubnetActorRewarderSelectors", values?: undefined): string;
+    encodeFunctionData(functionFragment: "getSubnetDeployedByNonce", values: [AddressLike, BigNumberish]): string;
+    encodeFunctionData(functionFragment: "getUserLastNonce", values: [AddressLike]): string;
+    encodeFunctionData(functionFragment: "latestSubnetDeployed", values: [AddressLike]): string;
+    encodeFunctionData(functionFragment: "updateReferenceSubnetContract", values: [AddressLike, AddressLike, BytesLike[], BytesLike[]]): string;
+    decodeFunctionResult(functionFragment: "getGateway", data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: "getSubnetActorCheckpointerFacet", data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: "getSubnetActorCheckpointerSelectors", data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: "getSubnetActorGetterFacet", data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: "getSubnetActorGetterSelectors", data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: "getSubnetActorManagerFacet", data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: "getSubnetActorManagerSelectors", data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: "getSubnetActorPauserFacet", data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: "getSubnetActorPauserSelectors", data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: "getSubnetActorRewarderFacet", data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: "getSubnetActorRewarderSelectors", data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: "getSubnetDeployedByNonce", data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: "getUserLastNonce", data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: "latestSubnetDeployed", data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: "updateReferenceSubnetContract", data: BytesLike): Result;
+}
+export interface SubnetGetterFacet extends BaseContract {
+    connect(runner?: ContractRunner | null): SubnetGetterFacet;
+    waitForDeployment(): Promise<this>;
+    interface: SubnetGetterFacetInterface;
+    queryFilter<TCEvent extends TypedContractEvent>(event: TCEvent, fromBlockOrBlockhash?: string | number | undefined, toBlock?: string | number | undefined): Promise<Array<TypedEventLog<TCEvent>>>;
+    queryFilter<TCEvent extends TypedContractEvent>(filter: TypedDeferredTopicFilter<TCEvent>, fromBlockOrBlockhash?: string | number | undefined, toBlock?: string | number | undefined): Promise<Array<TypedEventLog<TCEvent>>>;
+    on<TCEvent extends TypedContractEvent>(event: TCEvent, listener: TypedListener<TCEvent>): Promise<this>;
+    on<TCEvent extends TypedContractEvent>(filter: TypedDeferredTopicFilter<TCEvent>, listener: TypedListener<TCEvent>): Promise<this>;
+    once<TCEvent extends TypedContractEvent>(event: TCEvent, listener: TypedListener<TCEvent>): Promise<this>;
+    once<TCEvent extends TypedContractEvent>(filter: TypedDeferredTopicFilter<TCEvent>, listener: TypedListener<TCEvent>): Promise<this>;
+    listeners<TCEvent extends TypedContractEvent>(event: TCEvent): Promise<Array<TypedListener<TCEvent>>>;
+    listeners(eventName?: string): Promise<Array<Listener>>;
+    removeAllListeners<TCEvent extends TypedContractEvent>(event?: TCEvent): Promise<this>;
+    getGateway: TypedContractMethod<[], [string], "view">;
+    getSubnetActorCheckpointerFacet: TypedContractMethod<[], [string], "view">;
+    getSubnetActorCheckpointerSelectors: TypedContractMethod<[
+    ], [
+        string[]
+    ], "view">;
+    getSubnetActorGetterFacet: TypedContractMethod<[], [string], "view">;
+    getSubnetActorGetterSelectors: TypedContractMethod<[], [string[]], "view">;
+    getSubnetActorManagerFacet: TypedContractMethod<[], [string], "view">;
+    getSubnetActorManagerSelectors: TypedContractMethod<[], [string[]], "view">;
+    getSubnetActorPauserFacet: TypedContractMethod<[], [string], "view">;
+    getSubnetActorPauserSelectors: TypedContractMethod<[], [string[]], "view">;
+    getSubnetActorRewarderFacet: TypedContractMethod<[], [string], "view">;
+    getSubnetActorRewarderSelectors: TypedContractMethod<[], [string[]], "view">;
+    getSubnetDeployedByNonce: TypedContractMethod<[
+        owner: AddressLike,
+        nonce: BigNumberish
+    ], [
+        string
+    ], "view">;
+    getUserLastNonce: TypedContractMethod<[user: AddressLike], [bigint], "view">;
+    latestSubnetDeployed: TypedContractMethod<[
+        owner: AddressLike
+    ], [
+        string
+    ], "view">;
+    updateReferenceSubnetContract: TypedContractMethod<[
+        newGetterFacet: AddressLike,
+        newManagerFacet: AddressLike,
+        newSubnetGetterSelectors: BytesLike[],
+        newSubnetManagerSelectors: BytesLike[]
+    ], [
+        void
+    ], "nonpayable">;
+    getFunction<T extends ContractMethod = ContractMethod>(key: string | FunctionFragment): T;
+    getFunction(nameOrSignature: "getGateway"): TypedContractMethod<[], [string], "view">;
+    getFunction(nameOrSignature: "getSubnetActorCheckpointerFacet"): TypedContractMethod<[], [string], "view">;
+    getFunction(nameOrSignature: "getSubnetActorCheckpointerSelectors"): TypedContractMethod<[], [string[]], "view">;
+    getFunction(nameOrSignature: "getSubnetActorGetterFacet"): TypedContractMethod<[], [string], "view">;
+    getFunction(nameOrSignature: "getSubnetActorGetterSelectors"): TypedContractMethod<[], [string[]], "view">;
+    getFunction(nameOrSignature: "getSubnetActorManagerFacet"): TypedContractMethod<[], [string], "view">;
+    getFunction(nameOrSignature: "getSubnetActorManagerSelectors"): TypedContractMethod<[], [string[]], "view">;
+    getFunction(nameOrSignature: "getSubnetActorPauserFacet"): TypedContractMethod<[], [string], "view">;
+    getFunction(nameOrSignature: "getSubnetActorPauserSelectors"): TypedContractMethod<[], [string[]], "view">;
+    getFunction(nameOrSignature: "getSubnetActorRewarderFacet"): TypedContractMethod<[], [string], "view">;
+    getFunction(nameOrSignature: "getSubnetActorRewarderSelectors"): TypedContractMethod<[], [string[]], "view">;
+    getFunction(nameOrSignature: "getSubnetDeployedByNonce"): TypedContractMethod<[
+        owner: AddressLike,
+        nonce: BigNumberish
+    ], [
+        string
+    ], "view">;
+    getFunction(nameOrSignature: "getUserLastNonce"): TypedContractMethod<[user: AddressLike], [bigint], "view">;
+    getFunction(nameOrSignature: "latestSubnetDeployed"): TypedContractMethod<[owner: AddressLike], [string], "view">;
+    getFunction(nameOrSignature: "updateReferenceSubnetContract"): TypedContractMethod<[
+        newGetterFacet: AddressLike,
+        newManagerFacet: AddressLike,
+        newSubnetGetterSelectors: BytesLike[],
+        newSubnetManagerSelectors: BytesLike[]
+    ], [
+        void
+    ], "nonpayable">;
+    filters: {};
+}
+//# sourceMappingURL=SubnetGetterFacet.d.ts.map

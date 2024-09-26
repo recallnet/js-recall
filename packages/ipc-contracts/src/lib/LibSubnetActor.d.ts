@@ -1,0 +1,51 @@
+import type { BaseContract, BigNumberish, BytesLike, FunctionFragment, Interface, EventFragment, AddressLike, ContractRunner, ContractMethod, Listener } from "ethers";
+import type { TypedContractEvent, TypedDeferredTopicFilter, TypedEventLog, TypedLogDescription, TypedListener } from "../../common";
+export type ValidatorStruct = {
+    weight: BigNumberish;
+    addr: AddressLike;
+    metadata: BytesLike;
+};
+export type ValidatorStructOutput = [
+    weight: bigint,
+    addr: string,
+    metadata: string
+] & {
+    weight: bigint;
+    addr: string;
+    metadata: string;
+};
+export interface LibSubnetActorInterface extends Interface {
+    getEvent(nameOrSignatureOrTopic: "SubnetBootstrapped"): EventFragment;
+}
+export declare namespace SubnetBootstrappedEvent {
+    type InputTuple = [arg0: ValidatorStruct[]];
+    type OutputTuple = [arg0: ValidatorStructOutput[]];
+    interface OutputObject {
+        arg0: ValidatorStructOutput[];
+    }
+    type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+    type Filter = TypedDeferredTopicFilter<Event>;
+    type Log = TypedEventLog<Event>;
+    type LogDescription = TypedLogDescription<Event>;
+}
+export interface LibSubnetActor extends BaseContract {
+    connect(runner?: ContractRunner | null): LibSubnetActor;
+    waitForDeployment(): Promise<this>;
+    interface: LibSubnetActorInterface;
+    queryFilter<TCEvent extends TypedContractEvent>(event: TCEvent, fromBlockOrBlockhash?: string | number | undefined, toBlock?: string | number | undefined): Promise<Array<TypedEventLog<TCEvent>>>;
+    queryFilter<TCEvent extends TypedContractEvent>(filter: TypedDeferredTopicFilter<TCEvent>, fromBlockOrBlockhash?: string | number | undefined, toBlock?: string | number | undefined): Promise<Array<TypedEventLog<TCEvent>>>;
+    on<TCEvent extends TypedContractEvent>(event: TCEvent, listener: TypedListener<TCEvent>): Promise<this>;
+    on<TCEvent extends TypedContractEvent>(filter: TypedDeferredTopicFilter<TCEvent>, listener: TypedListener<TCEvent>): Promise<this>;
+    once<TCEvent extends TypedContractEvent>(event: TCEvent, listener: TypedListener<TCEvent>): Promise<this>;
+    once<TCEvent extends TypedContractEvent>(filter: TypedDeferredTopicFilter<TCEvent>, listener: TypedListener<TCEvent>): Promise<this>;
+    listeners<TCEvent extends TypedContractEvent>(event: TCEvent): Promise<Array<TypedListener<TCEvent>>>;
+    listeners(eventName?: string): Promise<Array<Listener>>;
+    removeAllListeners<TCEvent extends TypedContractEvent>(event?: TCEvent): Promise<this>;
+    getFunction<T extends ContractMethod = ContractMethod>(key: string | FunctionFragment): T;
+    getEvent(key: "SubnetBootstrapped"): TypedContractEvent<SubnetBootstrappedEvent.InputTuple, SubnetBootstrappedEvent.OutputTuple, SubnetBootstrappedEvent.OutputObject>;
+    filters: {
+        "SubnetBootstrapped(tuple[])": TypedContractEvent<SubnetBootstrappedEvent.InputTuple, SubnetBootstrappedEvent.OutputTuple, SubnetBootstrappedEvent.OutputObject>;
+        SubnetBootstrapped: TypedContractEvent<SubnetBootstrappedEvent.InputTuple, SubnetBootstrappedEvent.OutputTuple, SubnetBootstrappedEvent.OutputObject>;
+    };
+}
+//# sourceMappingURL=LibSubnetActor.d.ts.map

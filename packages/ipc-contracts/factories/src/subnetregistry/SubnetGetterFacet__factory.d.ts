@@ -1,0 +1,213 @@
+import { ContractFactory, ContractTransactionResponse } from "ethers";
+import type { Signer, ContractDeployTransaction, ContractRunner } from "ethers";
+import type { NonPayableOverrides } from "../../../common";
+import type { SubnetGetterFacet, SubnetGetterFacetInterface } from "../../../src/subnetregistry/SubnetGetterFacet";
+type SubnetGetterFacetConstructorParams = [signer?: Signer] | ConstructorParameters<typeof ContractFactory>;
+export declare class SubnetGetterFacet__factory extends ContractFactory {
+    constructor(...args: SubnetGetterFacetConstructorParams);
+    getDeployTransaction(overrides?: NonPayableOverrides & {
+        from?: string;
+    }): Promise<ContractDeployTransaction>;
+    deploy(overrides?: NonPayableOverrides & {
+        from?: string;
+    }): Promise<SubnetGetterFacet & {
+        deploymentTransaction(): ContractTransactionResponse;
+    }>;
+    connect(runner: ContractRunner | null): SubnetGetterFacet__factory;
+    static readonly bytecode = "0x6080806040523461001657610f81908161001c8239f35b600080fdfe608060409080825260048036101561001657600080fd5b60009260e0928435841c908163030f605114610e09575080630be0611114610de05780630f5849d114610cc05780631163dca514610c475780631b0766c314610b2757806342bf3cc114610aff5780634d71151414610ad6578063540b5ad614610aad57806354a4eddb1461097b57806362c9d7fb1461095257806389bba29914610820578063967ba537146105ea5780639836b75f14610560578063a372bf30146105335763a46d044d146100cb57600080fd5b3461052f57608036600319011261052f576100e4610e64565b6001600160a01b0390602435828116919082900361052b5767ffffffffffffffff946044358681116105275761011d9036908301610ec5565b96606435818111610523576101359036908501610ec5565b969094817f806e0cbb9fce296bbc336a48f42bf1dbc69722d18d90d6fe705b7582c2bb4bd554163303610513571696871561050457851561050457506bffffffffffffffffffffffff60a01b94600197868954161788556002958654161785558088116104f15768010000000000000000918289116104de5760095489600955808a10610459575b5060098b528860031c8b5b81811061040a575060071999808b1690038061039f575b505050851161038c5784116103795750600a5483600a558084106102f4575b5090600a87528260031c94875b868110610292575083168084039303610222578680f35b9486939291939587915b83831061025457505050505050600080516020610f0c83398151915201553880808080808680f35b90919293602061028587996102698499610ef6565b851c9087871b60031b9163ffffffff809116831b921b19161790565b980195949301919061022c565b8590898a5b600881106102b8575081600080516020610f0c83398151915201550161020b565b959192906102e76020916102cb85610ef6565b8d1c9089891b60031b9163ffffffff809116831b921b19161790565b9201950190879291610297565b6007840160031c6007600080516020610f0c833981519152920160031c820191601c86861b168061033e575b508691015b8281106103335750506101fe565b898155018590610325565b7fc65a7bb8d6351c1cf70c95a316cc6a92839c986682d98bc35f958f4883f9d2a78301908154906000199060200360031b1c16905538610320565b634e487b7160e01b885260419052602487fd5b634e487b7160e01b895260418252602489fd5b8c9290838b8a8f5b8484106103cd57505050505050600080516020610f2c83398151915201553880806101df565b908597846103fd936103e3602096979899610ef6565b901c921b60031b9163ffffffff809116831b921b19161790565b95019291018b8a8f6103a7565b89908d808a8f5b600883106104345750505081600080516020610f2c8339815191520155016101c8565b90879495938361044a936103e36020969b610ef6565b92019401908b92918a8f610411565b60078a0160031c6007600080516020610f2c833981519152920160031c820191601c8c8a1b16806104a3575b508a91015b8281106104985750506101bd565b8d815501899061048a565b7f6e1540171b6c0c960b71a7020d9f60077f6af931a8bbf590da0223dacf75c7ae8301908154906000199060200360031b1c16905538610485565b634e487b7160e01b8b526041845260248bfd5b634e487b7160e01b8a526041835260248afd5b516307a0435160e51b81528390fd5b88516330cd747160e01b81528590fd5b8a80fd5b8880fd5b8680fd5b8380fd5b84823461055c578160031936011261055c5760025490516001600160a01b039091168152602090f35b5080fd5b5083346105e757816003193601126105e75761057a610e64565b9060243567ffffffffffffffff811680910361055c5790818492156105d7576001600160a01b03938416825260116020908152838320918352522054169081156105c8576020925051908152f35b5163276e74a760e11b81529050fd5b825163276e74a760e11b81528690fd5b80fd5b508284913461081c578260031936011261081c5780518092600c5490818352602080930191600c87527fdf6966c971051c3d54ec59162606531493a51404a002842f56009d7e5cf4a8c78488915b8360078401106107ae575493838310610791575b50828210610773575b828210610755575b828210610737575b828210610719575b8282106106fd575b8282106106e1575b50106106cd575b50839003601f01601f1916830193905067ffffffffffffffff8411838510176106ba57508291826106b6925282610e7f565b0390f35b634e487b7160e01b815260418552602490fd5b6001600160e01b0319168152018086610684565b83811b6001600160e01b0319168552909301926001018461067d565b83871b6001600160e01b03191685529093019260010184610675565b606084901b6001600160e01b0319168552909301926001018461066d565b608084901b6001600160e01b03191685529093019260010184610665565b60a084901b6001600160e01b0319168552909301926001018461065d565b60c084901b6001600160e01b03191685529093019260010184610655565b84901b6001600160e01b031916855290930192600101848a61064c565b9460089150610100600191875463ffffffff60e01b9081818a1b16835260c08282821b168c8501528c838360a0928282851b1681890152606083836080928282851b16818d01521b16908901521b169085015282828d1b169084015216878201520195019101908590610638565b8280fd5b508284913461081c578260031936011261081c5780518092600d5490818352602080930191600d87527fd7b6990105719101dabeb77144f2a3385c8033acd3af97e9423a695e81ad1eb58488915b8360078401106108e45754938383106107915750828210610773578282106107555782821061073757828210610719578282106106fd578282106106e15750106106cd5750839003601f01601f1916830193905067ffffffffffffffff8411838510176106ba57508291826106b6925282610e7f565b9460089150610100600191875463ffffffff60e01b9081818a1b16835260c08282821b168c8501528c838360a0928282851b1681890152606083836080928282851b16818d01521b16908901521b169085015282828d1b16908401521687820152019501910190859061086e565b5091503461081c578260031936011261081c575490516001600160a01b03909116815260209150f35b508284913461081c578260031936011261081c5780518092600b5490818352602080930191600b87527f0175b7a638427703f0dbe7bb9bbf987a2551717b34e79f33b5b1008d1fa01db98488915b836007840110610a3f5754938383106107915750828210610773578282106107555782821061073757828210610719578282106106fd578282106106e15750106106cd5750839003601f01601f1916830193905067ffffffffffffffff8411838510176106ba57508291826106b6925282610e7f565b9460089150610100600191875463ffffffff60e01b9081818a1b16835260c08282821b168c8501528c838360a0928282851b1681890152606083836080928282851b16818d01521b16908901521b169085015282828d1b1690840152168782015201950191019085906109c9565b84823461055c578160031936011261055c5760035490516001600160a01b039091168152602090f35b84823461055c578160031936011261055c5760055490516001600160a01b039091168152602090f35b84823461055c578160031936011261055c57905490516001600160a01b039091168152602090f35b508284913461081c578260031936011261081c57805180926009549081835260208093019160098752600080516020610f2c8339815191528488915b836007840110610bd95754938383106107915750828210610773578282106107555782821061073757828210610719578282106106fd578282106106e15750106106cd5750839003601f01601f1916830193905067ffffffffffffffff8411838510176106ba57508291826106b6925282610e7f565b9460089150610100600191875463ffffffff60e01b9081818a1b16835260c08282821b168c8501528c838360a0928282851b1681890152606083836080928282851b16818d01521b16908901521b169085015282828d1b169084015216878201520195019101908590610b63565b5083346105e75760203660031901126105e7576001600160a01b0390829082610c6e610e64565b16808252601260205267ffffffffffffffff8383205416908115610cb057825260116020528282209082526020522054169081156105c8576020925051908152f35b835163276e74a760e11b81528790fd5b508284913461081c578260031936011261081c5780518092600a5490818352602080930191600a8752600080516020610f0c8339815191528488915b836007840110610d725754938383106107915750828210610773578282106107555782821061073757828210610719578282106106fd578282106106e15750106106cd5750839003601f01601f1916830193905067ffffffffffffffff8411838510176106ba57508291826106b6925282610e7f565b9460089150610100600191875463ffffffff60e01b9081818a1b16835260c08282821b168c8501528c838360a0928282851b1681890152606083836080928282851b16818d01521b16908901521b169085015282828d1b169084015216878201520195019101908590610cfc565b84823461055c578160031936011261055c5760015490516001600160a01b039091168152602090f35b91905084346105e75760203660031901126105e75767ffffffffffffffff9082906001600160a01b03610e3a610e64565b1681526012602052205416918215610e56576020838351908152f35b63276e74a760e11b81528390fd5b600435906001600160a01b0382168203610e7a57565b600080fd5b602090602060408183019282815285518094520193019160005b828110610ea7575050505090565b83516001600160e01b03191685529381019392810192600101610e99565b9181601f84011215610e7a5782359167ffffffffffffffff8311610e7a576020808501948460051b010111610e7a57565b356001600160e01b031981168103610e7a579056fec65a7bb8d6351c1cf70c95a316cc6a92839c986682d98bc35f958f4883f9d2a86e1540171b6c0c960b71a7020d9f60077f6af931a8bbf590da0223dacf75c7afa264697066735822122055de317473598ad682d2eb7db78b186bb375b06f424362b4f320a19312d2de8164736f6c63430008170033";
+    static readonly abi: readonly [{
+        readonly inputs: readonly [];
+        readonly name: "CannotFindSubnet";
+        readonly type: "error";
+    }, {
+        readonly inputs: readonly [];
+        readonly name: "FacetCannotBeZero";
+        readonly type: "error";
+    }, {
+        readonly inputs: readonly [];
+        readonly name: "NotOwner";
+        readonly type: "error";
+    }, {
+        readonly inputs: readonly [];
+        readonly name: "getGateway";
+        readonly outputs: readonly [{
+            readonly internalType: "address";
+            readonly name: "";
+            readonly type: "address";
+        }];
+        readonly stateMutability: "view";
+        readonly type: "function";
+    }, {
+        readonly inputs: readonly [];
+        readonly name: "getSubnetActorCheckpointerFacet";
+        readonly outputs: readonly [{
+            readonly internalType: "address";
+            readonly name: "";
+            readonly type: "address";
+        }];
+        readonly stateMutability: "view";
+        readonly type: "function";
+    }, {
+        readonly inputs: readonly [];
+        readonly name: "getSubnetActorCheckpointerSelectors";
+        readonly outputs: readonly [{
+            readonly internalType: "bytes4[]";
+            readonly name: "";
+            readonly type: "bytes4[]";
+        }];
+        readonly stateMutability: "view";
+        readonly type: "function";
+    }, {
+        readonly inputs: readonly [];
+        readonly name: "getSubnetActorGetterFacet";
+        readonly outputs: readonly [{
+            readonly internalType: "address";
+            readonly name: "";
+            readonly type: "address";
+        }];
+        readonly stateMutability: "view";
+        readonly type: "function";
+    }, {
+        readonly inputs: readonly [];
+        readonly name: "getSubnetActorGetterSelectors";
+        readonly outputs: readonly [{
+            readonly internalType: "bytes4[]";
+            readonly name: "";
+            readonly type: "bytes4[]";
+        }];
+        readonly stateMutability: "view";
+        readonly type: "function";
+    }, {
+        readonly inputs: readonly [];
+        readonly name: "getSubnetActorManagerFacet";
+        readonly outputs: readonly [{
+            readonly internalType: "address";
+            readonly name: "";
+            readonly type: "address";
+        }];
+        readonly stateMutability: "view";
+        readonly type: "function";
+    }, {
+        readonly inputs: readonly [];
+        readonly name: "getSubnetActorManagerSelectors";
+        readonly outputs: readonly [{
+            readonly internalType: "bytes4[]";
+            readonly name: "";
+            readonly type: "bytes4[]";
+        }];
+        readonly stateMutability: "view";
+        readonly type: "function";
+    }, {
+        readonly inputs: readonly [];
+        readonly name: "getSubnetActorPauserFacet";
+        readonly outputs: readonly [{
+            readonly internalType: "address";
+            readonly name: "";
+            readonly type: "address";
+        }];
+        readonly stateMutability: "view";
+        readonly type: "function";
+    }, {
+        readonly inputs: readonly [];
+        readonly name: "getSubnetActorPauserSelectors";
+        readonly outputs: readonly [{
+            readonly internalType: "bytes4[]";
+            readonly name: "";
+            readonly type: "bytes4[]";
+        }];
+        readonly stateMutability: "view";
+        readonly type: "function";
+    }, {
+        readonly inputs: readonly [];
+        readonly name: "getSubnetActorRewarderFacet";
+        readonly outputs: readonly [{
+            readonly internalType: "address";
+            readonly name: "";
+            readonly type: "address";
+        }];
+        readonly stateMutability: "view";
+        readonly type: "function";
+    }, {
+        readonly inputs: readonly [];
+        readonly name: "getSubnetActorRewarderSelectors";
+        readonly outputs: readonly [{
+            readonly internalType: "bytes4[]";
+            readonly name: "";
+            readonly type: "bytes4[]";
+        }];
+        readonly stateMutability: "view";
+        readonly type: "function";
+    }, {
+        readonly inputs: readonly [{
+            readonly internalType: "address";
+            readonly name: "owner";
+            readonly type: "address";
+        }, {
+            readonly internalType: "uint64";
+            readonly name: "nonce";
+            readonly type: "uint64";
+        }];
+        readonly name: "getSubnetDeployedByNonce";
+        readonly outputs: readonly [{
+            readonly internalType: "address";
+            readonly name: "subnet";
+            readonly type: "address";
+        }];
+        readonly stateMutability: "view";
+        readonly type: "function";
+    }, {
+        readonly inputs: readonly [{
+            readonly internalType: "address";
+            readonly name: "user";
+            readonly type: "address";
+        }];
+        readonly name: "getUserLastNonce";
+        readonly outputs: readonly [{
+            readonly internalType: "uint64";
+            readonly name: "nonce";
+            readonly type: "uint64";
+        }];
+        readonly stateMutability: "view";
+        readonly type: "function";
+    }, {
+        readonly inputs: readonly [{
+            readonly internalType: "address";
+            readonly name: "owner";
+            readonly type: "address";
+        }];
+        readonly name: "latestSubnetDeployed";
+        readonly outputs: readonly [{
+            readonly internalType: "address";
+            readonly name: "subnet";
+            readonly type: "address";
+        }];
+        readonly stateMutability: "view";
+        readonly type: "function";
+    }, {
+        readonly inputs: readonly [{
+            readonly internalType: "address";
+            readonly name: "newGetterFacet";
+            readonly type: "address";
+        }, {
+            readonly internalType: "address";
+            readonly name: "newManagerFacet";
+            readonly type: "address";
+        }, {
+            readonly internalType: "bytes4[]";
+            readonly name: "newSubnetGetterSelectors";
+            readonly type: "bytes4[]";
+        }, {
+            readonly internalType: "bytes4[]";
+            readonly name: "newSubnetManagerSelectors";
+            readonly type: "bytes4[]";
+        }];
+        readonly name: "updateReferenceSubnetContract";
+        readonly outputs: readonly [];
+        readonly stateMutability: "nonpayable";
+        readonly type: "function";
+    }];
+    static createInterface(): SubnetGetterFacetInterface;
+    static connect(address: string, runner?: ContractRunner | null): SubnetGetterFacet;
+}
+export {};
+//# sourceMappingURL=SubnetGetterFacet__factory.d.ts.map
