@@ -43,33 +43,26 @@ export function readBigInt(stream: Stream): bigint {
  * @param number - number to write
  * @param stream - stream to write to
  */
-
 export function write(number: number | string | bigint, stream: Stream): void {
   let num = BigInt(number);
-  const isNeg = num < 0n;
-
-  if (isNeg) {
-    num = -num;
-  }
-
   let more = true;
+
   while (more) {
+    // Extract 7 bits to store
     let byte = Number(num & 0x7fn);
     num >>= 7n;
 
-    if (
+    // Determine if more bytes are needed
+    const isLastByte =
       (num === 0n && (byte & 0x40) === 0) ||
-      (num === -1n && (byte & 0x40) !== 0)
-    ) {
-      more = false;
+      (num === -1n && (byte & 0x40) !== 0);
+    if (isLastByte) {
+      more = false; // No more bytes needed
     } else {
-      byte |= 0x80;
+      byte |= 0x80; // Set the continuation bit
     }
 
-    if (isNeg) {
-      byte = ~byte & 0xff;
-    }
-
+    // Write byte to stream
     stream.write(new Uint8Array([byte]));
   }
 }

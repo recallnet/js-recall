@@ -108,3 +108,27 @@ export enum ActorsMainnetV10 {
   System = "bafk2bzacedakk5nofebyup4m7nvx6djksfwhnxzrfuq4oyemhpl4lllaikr64",
   VerifiedRegistry = "bafk2bzacedfel6edzqpe5oujno7fog4i526go4dtcs6vwrdtbpy2xq6htvcg6",
 }
+
+/**
+ * Actor content IDs for Hoku subnet actors
+ */
+export enum ActorsSubnet {
+  Account = "bafk2bzacecomydaym5xi2burqfxv3kz2xjr3vgpig67fm6gjvqzfxre3z4wku",
+  Cron = "bafk2bzaceagm5m56lzzue5bpjtxvotsnikjigsjyk2mmrhjna35vkbliaellg",
+  DataCap = "bafk2bzacebdwzssyouoz6mfydy72c26euw3upec6nxtwme23bjcbsms6fppei",
+  EAM = "bafk2bzaceadwtvjqlvrgz3pruas47offhoqtxk5oo3ptigp5ujw4szhepletq",
+  EthAccount = "bafk2bzacebrf6ijl3tdtqgrnv5zwmcnvm5lfwjgpr5lnt42lolt2gmvpuluas",
+  EVM = "bafk2bzaceckc2hwgiarq7rjmyefdsm7qbv4ybr2wmt52amihgbomzjg23qta6",
+  Init = "bafk2bzacebgrvihpo23xutjv3hgoxlq55z2gx5qjwqwmu2xytp7tun2wgvgsw",
+  Multisig = "bafk2bzacea7c2c2nf3a6ksfs7buxynugwjcc7r3fuirjf4wwsy5baqyfacqny",
+  PaymentChannel = "bafk2bzaceblv6iudi6dr42lihhf46gxedzfinrc5udktxxxjiwbdscazxkieg",
+  Placeholder = "bafk2bzacedfvut2myeleyq67fljcrw4kkmn5pb5dpyozovj7jpoez5irnc3ro",
+  Reward = "bafk2bzacechfthpzob7b7u27zhzpv3q6axtv27qkgtzgcokukl3hhmqpbqv56",
+  StorageMarket = "bafk2bzacebrc3arb6y2udwbxtambzbewl2fq3l5zguxeihisfkc4fyoghj44q",
+  StorageMiner = "bafk2bzacecdlrg32cpbbnnoselcx4y4ottxwdcm2vhs4eropvaxrulmvcrijw",
+  StoragePower = "bafk2bzaced3m5k5wnvnkq4wjhaalwspqa3jpn7ok4qv4jwxlfp7jjovvjk3he",
+  System = "bafk2bzaceb7an3qpibd2x3a4k2ng4xkgqcbsweaefjpbhxznokxmqij3kyrmy",
+  VerifiedRegistry = "bafk2bzacedvd4gp2v2qxcs6wohlur4hio2mxs2kvcyzysg66xmrddlmcnkavm",
+  // Hoku actors
+  ADM = "bafk2bzaceb3un4rdw24kbhokgs7vqulh4ptoaua6ynkpgjsbffy7qb5lkj65w",
+}

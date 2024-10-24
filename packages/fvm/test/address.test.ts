@@ -32,17 +32,17 @@ type AddressEthTestCase = {
   eth: string;
 };
 
-describe.only("Address", function () {
+describe("address", function () {
   this.timeout(60_000);
-  describe("Vectors", async () => {
-    describe("From string", async () => {
+  describe("vectors", async () => {
+    describe("from string", async () => {
       const vectors = JSON.parse(
         readFileSync(new URL(ADDRESSES_VECTOR, import.meta.url), "utf-8")
       ) as AddressTestCase[];
 
       vectors.forEach(
         async ({ string, payload, bytes, protocol, network, eth }, index) => {
-          it(`Test case ${index}: ${string}`, async () => {
+          it(`test case ${index}: ${string}`, async () => {
             const addr = Address.fromString(string);
 
             expect(addr.toString()).to.equal(string);
@@ -53,7 +53,7 @@ describe.only("Address", function () {
 
             if (Address.isAddressId(addr)) {
               expect(addr.getId()).to.equal(string.substring(2));
-              expect(addr.toEthAddressHex(true)).to.equal(eth);
+              expect(addr.toEthAddressHex()).to.equal(eth); // `toEthAddressHex` defaults to hex prefix
             }
             if (Address.isAddressDelegated(addr))
               expect(addr.getNamespace()).to.equal(
@@ -64,7 +64,7 @@ describe.only("Address", function () {
       );
     });
 
-    describe("From bytes", () => {
+    describe("from bytes", () => {
       const vectors = JSON.parse(
         readFileSync(new URL(ADDRESSES_VECTOR, import.meta.url), "utf-8")
       ) as AddressTestCase[];
@@ -95,13 +95,13 @@ describe.only("Address", function () {
       );
     });
 
-    describe("Eth <-> Id Address ", () => {
+    describe("eth <-> ID address ", () => {
       const vectors = JSON.parse(
         readFileSync(new URL(ADDRESSES_ETH_VECTOR, import.meta.url), "utf-8")
       ) as AddressEthTestCase[];
 
       vectors.forEach(async ({ string, eth }) => {
-        it(`Test case ${string}: 0x${eth}`, async () => {
+        it(`test case ${string}: ${eth}`, async () => {
           const addrId1 = Address.fromEthAddress(eth, NetworkPrefix.Mainnet);
           expect(addrId1.toString()).to.equal(string);
           expect(addrId1.toEthAddressHex(true)).to.equal(eth);
@@ -118,36 +118,57 @@ describe.only("Address", function () {
     });
   });
 
-  describe("Manual", () => {
-    describe("Type ID", () => {
-      describe("From string", () => {
-        it("Testnet", async () => {
+  describe("manual", () => {
+    describe("type ID", () => {
+      describe("from string", () => {
+        it("testnet ID", async () => {
           const addr = Address.fromString("t08666");
           expect(addr.toString()).to.equal("t08666");
           expect(u8a.toString(addr.toBytes(), "hex")).to.equal("00da43");
           expect(addr.getProtocol()).to.equal(ProtocolIndicator.ID);
           expect(addr.getNetworkPrefix()).to.equal(NetworkPrefix.Testnet);
-          expect(Address.isAddressId(addr) === true);
-          if (Address.isAddressId(addr)) expect(addr.getId()).to.equal("8666");
+          expect(Address.isAddressId(addr)).to.equal(true);
         });
 
-        it("Mainnet", async () => {
+        it("testnet actor", async () => {
+          const addr = Address.fromString(
+            "t2o4gsdesxam4qui3pnd4e54ouglffoqwecfnrdzq"
+          );
+          expect(addr.toString()).to.equal(
+            "t2o4gsdesxam4qui3pnd4e54ouglffoqwecfnrdzq"
+          );
+          expect(u8a.toString(addr.toBytes(), "hex")).to.equal(
+            "02770d21925703390a236f68f84ef1d432ca5742c4"
+          );
+          expect(addr.getProtocol()).to.equal(ProtocolIndicator.ACTOR);
+          expect(addr.getNetworkPrefix()).to.equal(NetworkPrefix.Testnet);
+          expect(Address.isAddressActor(addr)).to.equal(true);
+          const addrFromBytes = Address.fromBytes(
+            u8a.fromString("02770d21925703390a236f68f84ef1d432ca5742c4", "hex"),
+            NetworkPrefix.Testnet
+          );
+          expect(addrFromBytes.toString()).to.equal(
+            "t2o4gsdesxam4qui3pnd4e54ouglffoqwecfnrdzq"
+          );
+        });
+
+        it("mainnet", async () => {
           const addr = Address.fromString("f08666");
           expect(addr.toString()).to.equal("f08666");
           expect(u8a.toString(addr.toBytes(), "hex")).to.equal("00da43");
           expect(addr.getProtocol()).to.equal(ProtocolIndicator.ID);
           expect(addr.getNetworkPrefix()).to.equal(NetworkPrefix.Mainnet);
-          expect(Address.isAddressId(addr) === true);
+          expect(Address.isAddressId(addr)).to.equal(true);
           if (Address.isAddressId(addr)) expect(addr.getId()).to.equal("8666");
         });
 
-        it("Exceed max id (super big)", async () => {
+        it("exceed max id (super big)", async () => {
           expect(() => {
             Address.fromString("t0111111111111111111111111");
           }).to.throw();
         });
 
-        it("Exceed max value", async () => {
+        it("exceed max value", async () => {
           const aboveMax = BigInt(2) ** BigInt(63);
           const addrStr = "f0" + aboveMax.toString();
 
@@ -160,7 +181,7 @@ describe.only("Address", function () {
           }).to.throw(InvalidId);
         });
 
-        it("Max allowed value", async () => {
+        it("max allowed value", async () => {
           const max = BigInt(2) ** BigInt(63) - BigInt(1);
           const addrStr = "f0" + max.toString();
 
@@ -174,8 +195,8 @@ describe.only("Address", function () {
         });
       });
 
-      describe("From bytes", () => {
-        it("Testnet", async () => {
+      describe("from bytes", () => {
+        it("testnet", async () => {
           const addr = Address.fromBytes(
             Buffer.from("00da43", "hex"),
             NetworkPrefix.Testnet
@@ -186,7 +207,7 @@ describe.only("Address", function () {
           expect(addr.getNetworkPrefix()).to.equal(NetworkPrefix.Testnet);
         });
 
-        it("Mainnet", async () => {
+        it("mainnet", async () => {
           const addr = Address.fromBytes(
             Buffer.from("00da43", "hex"),
             NetworkPrefix.Mainnet
@@ -197,7 +218,7 @@ describe.only("Address", function () {
           expect(addr.getNetworkPrefix()).to.equal(NetworkPrefix.Mainnet);
         });
 
-        it("Exceed max value", async () => {
+        it("exceed max value", async () => {
           expect(() => {
             Address.fromBytes(
               Buffer.from("0080808080808080808001", "hex"),
@@ -206,7 +227,7 @@ describe.only("Address", function () {
           }).to.throw(InvalidId);
         });
 
-        it("Max allowed value", async () => {
+        it("max allowed value", async () => {
           const addr = Address.fromBytes(
             Buffer.from("00ffffffffffffffff7f", "hex"),
             NetworkPrefix.Mainnet
@@ -220,39 +241,39 @@ describe.only("Address", function () {
         });
       });
 
-      it("Wrong protocol", async () => {
+      it("wrong protocol", async () => {
         expect(() => {
           AddressId.fromString("f18666");
         }).to.throw(InvalidProtocolIndicator);
       });
     });
 
-    describe("Type BLS", () => {
-      it("Wrong protocol", async () => {
+    describe("type BLS", () => {
+      it("wrong protocol", async () => {
         expect(() => {
           AddressBls.fromString("f48666");
         }).to.throw(InvalidProtocolIndicator);
       });
     });
 
-    describe("Type SECP256K1", () => {
-      it("Wrong protocol", async () => {
+    describe("type SECP256K1", () => {
+      it("wrong protocol", async () => {
         expect(() => {
           AddressSecp256k1.fromString("f08666");
         }).to.throw(InvalidProtocolIndicator);
       });
     });
 
-    describe("Type Actor", () => {
-      it("Wrong protocol", async () => {
+    describe("type actor", () => {
+      it("wrong protocol", async () => {
         expect(() => {
           AddressActor.fromString("f08666");
         }).to.throw(InvalidProtocolIndicator);
       });
     });
 
-    describe("Type Delegated", () => {
-      it("Wrong protocol", async () => {
+    describe("type delegated", () => {
+      it("wrong protocol", async () => {
         expect(() => {
           AddressDelegated.fromString("f08666");
         }).to.throw(InvalidProtocolIndicator);
@@ -269,14 +290,14 @@ describe.only("Address", function () {
       });
     });
 
-    describe("Type Filecoin Ethereum", () => {
-      it("Wrong protocol", async () => {
+    describe("type filecoin ethereum", () => {
+      it("wrong protocol", async () => {
         expect(() => {
           FilEthAddress.fromString("f08666");
         }).to.throw(InvalidProtocolIndicator);
       });
 
-      it("Wrong namespace", async () => {
+      it("wrong namespace", async () => {
         expect(() => {
           const addr = new AddressDelegated(
             "11",
@@ -287,7 +308,7 @@ describe.only("Address", function () {
         }).to.throw();
       });
 
-      it("Wrong eth address", async () => {
+      it("wrong eth address", async () => {
         expect(() => {
           const addr = new AddressDelegated(
             "10",
@@ -298,7 +319,7 @@ describe.only("Address", function () {
         }).to.throw();
       });
 
-      it("Masked-id eth address", async () => {
+      it("masked-id eth address", async () => {
         expect(() => {
           new FilEthAddress(
             Buffer.from("ff00000000000000000000000000000000000001", "hex"),
@@ -307,7 +328,7 @@ describe.only("Address", function () {
         }).to.throw("masked-id eth addresses not allowed");
       });
 
-      it("Correct eth address", async () => {
+      it("correct eth address", async () => {
         const addr = Address.fromString(
           "f410feot7hrogmplrcupubsdbbqarkdewmb4vkwc5qqq"
         );
@@ -322,8 +343,8 @@ describe.only("Address", function () {
       });
     });
 
-    describe("Ethereum conversion", () => {
-      it("From ethereum address (ID)", async () => {
+    describe("ethereum conversion", () => {
+      it("from ethereum address (ID)", async () => {
         const addr = Address.fromEthAddress(
           "0xff00000000000000000000000000000000000001",
           NetworkPrefix.Testnet
@@ -334,7 +355,7 @@ describe.only("Address", function () {
         expect(addr.toString()).to.equal("t01");
       });
 
-      it("From ethereum address (ID) 2", async () => {
+      it("from ethereum address (ID) 2", async () => {
         const addr = Address.fromEthAddress(
           "0xff00000000000000000000000000000000000065",
           NetworkPrefix.Testnet
@@ -345,7 +366,7 @@ describe.only("Address", function () {
         expect(addr.toString()).to.equal("t0101");
       });
 
-      it("From ethereum address (ID) 3", async () => {
+      it("from ethereum address (ID) 3", async () => {
         const addr = Address.fromEthAddress(
           "0xff0000000000000000000000000000000000da43",
           NetworkPrefix.Testnet
@@ -356,7 +377,7 @@ describe.only("Address", function () {
         expect(addr.toString()).to.equal("t055875");
       });
 
-      it("From ethereum address (ID) 4", async () => {
+      it("from ethereum address (ID) 4", async () => {
         const addr = Address.fromEthAddress(
           "0xff00000000000000000000000000000000000a43",
           NetworkPrefix.Testnet
@@ -367,7 +388,7 @@ describe.only("Address", function () {
         expect(addr.toString()).to.equal("t02627");
       });
 
-      it("From ethereum address (ID) 5", async () => {
+      it("from ethereum address (ID) 5", async () => {
         const addr = Address.fromEthAddress(
           "0xff000000000000000000000000000000002ec8fa",
           NetworkPrefix.Testnet
@@ -378,7 +399,7 @@ describe.only("Address", function () {
         expect(addr.toString()).to.equal("t03066106");
       });
 
-      it("From ethereum address (ID) 6", async () => {
+      it("from ethereum address (ID) 6", async () => {
         const addr = Address.fromEthAddress(
           "0xff00000000000000000000000000000000002694",
           NetworkPrefix.Testnet
@@ -389,7 +410,7 @@ describe.only("Address", function () {
         expect(addr.toString()).to.equal("t09876");
       });
 
-      it("From ethereum address (ID) 7", async () => {
+      it("from ethereum address (ID) 7", async () => {
         expect(() => {
           Address.fromEthAddress(
             "0xff00000000000000000000007ffffffffffffff",
@@ -398,7 +419,7 @@ describe.only("Address", function () {
         }).to.throw();
       });
 
-      it("From ethereum address (ID) 8", async () => {
+      it("from ethereum address (ID) 8", async () => {
         expect(() => {
           Address.fromEthAddress(
             "0xff0000000000000000000000ffffffffffffffff11",
@@ -407,7 +428,7 @@ describe.only("Address", function () {
         }).to.throw();
       });
 
-      it("From ethereum address (ID) 9", async () => {
+      it("from ethereum address (ID) 9", async () => {
         expect(() => {
           Address.fromEthAddress(
             "0xff0000000000000000000000ffffffffffffffff1",
@@ -416,7 +437,7 @@ describe.only("Address", function () {
         }).to.throw();
       });
 
-      it("From ethereum address (ID) 10", async () => {
+      it("from ethereum address (ID) 10", async () => {
         expect(() => {
           Address.fromEthAddress(
             "0xff00000000000000000000008FFFFFFFFFFFFFFF",
@@ -425,7 +446,7 @@ describe.only("Address", function () {
         }).to.throw();
       });
 
-      it("From ethereum address (ID) - max value", () => {
+      it("from ethereum address (ID) - max value", () => {
         const addr = Address.fromEthAddress(
           "0xff00000000000000000000007FFFFFFFFFFFFFFF",
           NetworkPrefix.Testnet
@@ -436,10 +457,10 @@ describe.only("Address", function () {
         expect(addr.toString()).to.equal("t09223372036854775807");
       });
 
-      it("To ethereum address (ID)", async () => {
+      it("to ethereum address (ID)", async () => {
         const addr = Address.fromString("f0101");
 
-        expect(Address.isAddressId(addr) === true);
+        expect(Address.isAddressId(addr)).to.equal(true);
         if (Address.isAddressId(addr)) {
           expect(addr.toEthAddressHex(true)).to.equal(
             "0xff00000000000000000000000000000000000065"
@@ -450,10 +471,10 @@ describe.only("Address", function () {
         }
       });
 
-      it("To ethereum address (ID) - 2", async () => {
+      it("to ethereum address (ID) - 2", async () => {
         const addr = Address.fromString("f0101");
 
-        expect(Address.isAddressId(addr) === true);
+        expect(Address.isAddressId(addr)).to.equal(true);
         if (Address.isAddressId(addr)) {
           expect(addr.toEthAddressHex(true)).to.equal(
             "0xff00000000000000000000000000000000000065"
@@ -464,10 +485,10 @@ describe.only("Address", function () {
         }
       });
 
-      it("To ethereum address (ID) - 3", async () => {
+      it("to ethereum address (ID) - 3", async () => {
         const addr = Address.fromString("f0101");
 
-        expect(Address.isAddressId(addr) === true);
+        expect(Address.isAddressId(addr)).to.equal(true);
         if (Address.isAddressId(addr)) {
           expect(addr.toEthAddressHex(true)).to.equal(
             "0xff00000000000000000000000000000000000065"
@@ -478,7 +499,7 @@ describe.only("Address", function () {
         }
       });
 
-      it("From ethereum address (EthFilAddress)", async () => {
+      it("from ethereum address (EthFilAddress)", async () => {
         const addr = Address.fromEthAddress(
           "0xd4c5fb16488aa48081296299d54b0c648c9333da",
           NetworkPrefix.Mainnet
@@ -491,7 +512,7 @@ describe.only("Address", function () {
         );
       });
 
-      it("From ethereum address (EthFilAddress) - 2", async () => {
+      it("from ethereum address (EthFilAddress) - 2", async () => {
         expect(() => {
           Address.fromEthAddress(
             "0xd4c5fb16488aa48081296299d54b0c648c9333da00",
@@ -500,7 +521,7 @@ describe.only("Address", function () {
         }).to.throw("invalid ethereum address: length should be 20 bytes");
       });
 
-      it("To ethereum address (EthFilAddress)", async () => {
+      it("to ethereum address (EthFilAddress)", async () => {
         const addr = Address.fromString(
           "f410f2tc7wfsirksibajjmkm5ksymmsgjgm62hjnomwa"
         );
@@ -512,7 +533,7 @@ describe.only("Address", function () {
           expect(addr.toEthAddressHex(true)).to.equal(
             "0xd4c5fb16488aa48081296299d54b0c648c9333da"
           );
-          expect(addr.toEthAddressHex()).to.equal(
+          expect(addr.toEthAddressHex(false)).to.equal(
             "d4c5fb16488aa48081296299d54b0c648c9333da"
           );
         }
