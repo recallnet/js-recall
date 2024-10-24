@@ -1,7 +1,7 @@
 // Forked & converted to use `bigint` & `Uint8Array`
 // Source: https://github.com/Zondax/izari-filecoin/blob/master/src/address/utils.ts
 import blake from "blakejs";
-import * as u8a from "uint8arrays";
+import { compare } from "uint8arrays/compare";
 import {
   ACTOR_ID_ETHEREUM_MASK,
   ACTOR_ID_ETHEREUM_MASK_LEN,
@@ -83,30 +83,6 @@ export const isMaskedIdEthAddress = (ethAddr: Uint8Array) => {
 
   return (
     ethAddr.length === ETH_ADDRESS_LEN &&
-    u8a.compare(idMask, ethAddr.slice(0, ACTOR_ID_ETHEREUM_MASK_LEN)) === 0
+    compare(idMask, ethAddr.slice(0, ACTOR_ID_ETHEREUM_MASK_LEN)) === 0
   );
 };
-
-/**
- * Utility function to convert bigint to Uint8Array
- * @param num - input bigint to convert
- * @param pad - whether to pad the result to 2 bytes
- * @returns Uint8Array
- */
-export function b2u(num: bigint, pad?: boolean): Uint8Array {
-  if (!num) return new Uint8Array(0);
-  let hex = num.toString(16);
-  hex = (pad ? "00" : "") + (hex.length % 2 ? "0" + hex : hex);
-  return u8a.fromString(hex, "base16");
-}
-
-/**
- * Utility function to convert bigint to Uint8Array
- * @param v - input string | bigint | number to convert
- * @returns Uint8Array
- */
-export function bigintToArray(v: string | bigint | number): Uint8Array {
-  let tmp = BigInt(v).toString(16);
-  if (tmp.length % 2 === 1) tmp = `0${tmp}`;
-  return u8a.fromString(tmp, "base16");
-}

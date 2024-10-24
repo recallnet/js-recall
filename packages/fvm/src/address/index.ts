@@ -19,10 +19,17 @@ import {
   SUB_ADDRESS_MAX_LEN,
 } from "../artifacts/address.js";
 import {
+  getChecksum,
+  getLeb128Length,
+  isMaskedIdEthAddress,
+  validateNetworkPrefix,
+} from "../utils/address.js";
+import {
   decode as base32Decode,
   encode as base32Encode,
-} from "../encoding/base32.js";
-import { unsigned } from "../encoding/leb128/index.js";
+} from "../utils/base32.js";
+import { bigintToUint8Array } from "../utils/convert.js";
+import { unsigned } from "../utils/leb128/index.js";
 import {
   InvalidChecksumAddress,
   InvalidId,
@@ -33,13 +40,6 @@ import {
   InvalidSubAddress,
   UnknownProtocolIndicator,
 } from "./errors.js";
-import {
-  bigintToArray,
-  getChecksum,
-  getLeb128Length,
-  isMaskedIdEthAddress,
-  validateNetworkPrefix,
-} from "./utils.js";
 
 /**
  * Address is an abstract class that holds fundamental fields that a filecoin address is composed by.
@@ -454,11 +454,11 @@ export class AddressId extends Address {
    * @param hexPrefix - add the 0x prefix or not
    * @returns ethereum address
    */
-  toEthAddressHex = (hexPrefix = false): string => {
+  toEthAddressHex = (hexPrefix = true): string => {
     const buf = new Uint8Array(ETH_ADDRESS_LEN);
     buf[0] = ACTOR_ID_ETHEREUM_MASK;
 
-    const decodedPayload = bigintToArray(unsigned.decode(this.payload));
+    const decodedPayload = bigintToUint8Array(unsigned.decode(this.payload));
     buf.set(decodedPayload, ETH_ADDRESS_LEN - decodedPayload.byteLength);
 
     return `${hexPrefix ? "0x" : ""}${u8aToString(buf, "hex")}`;
@@ -618,7 +618,6 @@ export class AddressActor extends Address {
       throw new InvalidNetwork(networkPrefix);
     if (parseInt(protocolIndicator) != ProtocolIndicator.ACTOR)
       throw new InvalidProtocolIndicator(parseInt(protocolIndicator));
-
     const decodedData = new Uint8Array(
       base32Decode(address.substring(2).toUpperCase())
     );
@@ -856,9 +855,9 @@ export class FilEthAddress extends AddressDelegated {
 
   /**
    * Allows to get the ethereum address in hex format of this address
-   * @param hexPrefix - add the 0x prefix or not
+   * @param hexPrefix - add the 0x prefix or not. Defaults to true.
    * @returns ethereum address in hex string format
    */
-  toEthAddressHex = (hexPrefix = false): string =>
+  toEthAddressHex = (hexPrefix = true): string =>
     `${hexPrefix ? "0x" : ""}${u8aToString(this.subAddress, "hex")}`;
 }

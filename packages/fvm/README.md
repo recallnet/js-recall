@@ -1,23 +1,26 @@
-# `@hokunet/sdk`
+# `@hokunet/fvm`
 
-> Official JavaScript/TypeScript SDK for the Hokunet Network.
+> FVM/Wasm interactions for the Hokunet network
+
+## Table of Contents
+
+- [Background](#background)
+- [Usage](#usage)
+- [Development](#development)
+- [Contributing](#contributing)
+
+## Background
+
+TODO
 
 ## Usage
 
-```
-import { HokuClient } from '@hokunet/sdk';
+TODO
 
-const hoku = new HokuClient(); // defaults to testnet
+## Development
 
-// Get the current gateway address for the subnet.
-const gateway = await hoku.getGateway();
+TODO
 
-// Get the current supply for the subnet.
-const supply = await hoku.getSupply();
+## Contributing
 
-// Get the current supply for the subnet.
-const supply = await hoku.getSupply();
-
-// Get the current supply for the subnet.
-const supply = await hoku.getSupply();
-```
+TODO
