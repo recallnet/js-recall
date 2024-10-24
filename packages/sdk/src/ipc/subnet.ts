@@ -1,4 +1,4 @@
-import { ethAddressFromDelegated } from "@glif/filecoin-address";
+import { Address, FilEthAddress, toBigInt } from "@hokunet/fvm";
 import fnv1a from "@sindresorhus/fnv1a";
 import { BigNumberish } from "ethers";
 import {
@@ -10,21 +10,30 @@ import {
 } from "../network.js";
 import { SubnetIdStruct } from "./contracts.js";
 
+type AddressType = "evm" | "wasm";
+
 export class SubnetId {
   faux: string;
   real: SubnetIdStruct; // Uses FVM addresses
   evm: SubnetIdStruct; // Uses EVM addresses
 
-  constructor(root: BigNumberish, route: string[]) {
+  constructor(root: BigNumberish, route: string[], faux: string = "") {
+    const rootAsBigint = toBigInt(root);
     this.real = {
-      root: BigInt(root),
-      route: route,
+      root: rootAsBigint,
+      route,
     };
+    const evmRoute =
+      route.length > 0
+        ? route.map((a) =>
+            (Address.fromString(a) as FilEthAddress).toEthAddressHex()
+          )
+        : [];
     this.evm = {
-      root: BigInt(root),
-      route: route.map((a) => ethAddressFromDelegated(a)),
+      root: rootAsBigint,
+      route: evmRoute,
     };
-    this.faux = this.toString();
+    this.faux = faux;
   }
 
   static fromNetwork(network: Network): SubnetId {
@@ -41,35 +50,52 @@ export class SubnetId {
   }
 
   static fromString(subnetIdStr: string): SubnetId {
+    if (!subnetIdStr.toString().startsWith("/r")) {
+      return new SubnetId(0, [], subnetIdStr);
+    }
     const [, rootRaw, routeRaw] = subnetIdStr.split("/");
-    const root = BigInt(rootRaw.slice(1));
-    const route = routeRaw.split("/");
-    return new SubnetId(root, route);
+    const root = toBigInt(rootRaw.slice(1)); // Remove the "r" prefix
+    const route = routeRaw ? routeRaw.split("/") : [];
+    return new SubnetId(root, route, "");
+  }
+
+  isRoot(): boolean {
+    return this.real.route.length === 0;
+  }
+
+  rootId(): bigint {
+    return toBigInt(this.real.root);
   }
 
   toString(): string {
-    const route = this.real.route.join("/");
-    return route ? `/r${this.real.root}/${route}` : `/r${this.real.root}`;
-  }
-
-  chainId(): bigint {
-    // If the subnet is the root, then the chain ID is the root
-    if (this.real.route.length === 0) {
-      return BigInt(this.real.root);
+    if (this.isRoot()) {
+      return this.faux.length === 0 ? `/r${this.real.root}` : this.faux;
     }
-    // See here for how this is derived as per EIP-2294:
-    // https://github.com/consensus-shipyard/ipc/blob/13e5da5572b5c0de09f5481ef6c679efee0da14c/fendermint/vm/core/src/chainid.rs#L52
-    const maxChainId = 4503599627370476n;
-    const hash = fnv1a(this.toString(), { size: 64 });
-    return hash % maxChainId;
+    const route = this.real.route.join("/");
+    return `/r${this.real.root}/${route}`;
   }
 
-  parent(): SubnetId | null {
-    // If the subnet is the root (no children routes), it has no parent
-    if (this.real.route.length === 0) {
+  // See here for how this is derived as per EIP-2294:
+  // https://github.com/consensus-shipyard/ipc/blob/13e5da5572b5c0de09f5481ef6c679efee0da14c/fendermint/vm/core/src/chainid.rs#L52
+  chainId(): bigint {
+    const maxChainId = 4503599627370476n;
+    const hash = (value: string) => fnv1a(value, { size: 64 }) % maxChainId;
+    return hash(this.toString());
+  }
+
+  subnetActor(type: AddressType = "evm"): string | null {
+    if (this.isRoot()) {
       return null;
     }
+    return type === "evm" ? this.evm.route[-1] : this.real.route[-1];
+  }
+
+  parent(): SubnetId {
+    // If the subnet is the root (no children routes), it has no parent
+    if (this.real.route.length === 0) {
+      throw new Error("subnet has no parent");
+    }
     const parentRoute = this.real.route.slice(0, -1);
-    return new SubnetId(this.real.root, parentRoute);
+    return new SubnetId(this.real.root, parentRoute, "");
   }
 }

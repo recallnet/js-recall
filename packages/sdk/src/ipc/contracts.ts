@@ -1,16 +1,11 @@
+import { Address as FvmAddress } from "@hokunet/fvm";
 import {
   // GatewayGetterFacet__factory as GatewayGetterFacetFactory,
   GatewayManagerFacet,
   GatewayManagerFacet__factory as GatewayManagerFacetFactory,
   // SubnetActorGetterFacet__factory as SubnetActorGetterFacetFactory,
   // SubnetGetterFacet__factory as SubnetGetterFacetFactory,
-} from "@consensus-shipyard/ipc-contracts";
-import {
-  decode,
-  delegatedFromEthAddress,
-  EthAddress,
-  CoinType as FvmNetworkType,
-} from "@glif/filecoin-address";
+} from "@hokunet/ipc-contracts";
 import { AddressLike, BigNumberish, BytesLike, Result } from "ethers";
 
 export { GatewayManagerFacetFactory };
@@ -46,23 +41,23 @@ export function resultToType<T>(result: any): T {
   return transformObject(data);
 }
 
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function resultArrayToType<T>(results: any[]): T[] {
+  return results.map((result) => resultToType<T>(result));
+}
+
 /**
  * Converts a `SubnetId` class to a contract-compatible struct.
  *
  * TODO: test this wrt eth vs fvm addresses
  */
 export function ethAddressToFvmAddressStruct(
-  address: AddressLike,
-  fvmNetworkType: FvmNetworkType = FvmNetworkType.TEST
+  address: string
 ): FvmAddressStruct {
-  const fvmAddressString = delegatedFromEthAddress(
-    address as EthAddress,
-    fvmNetworkType
-  );
-  const fvmAddress = decode(fvmAddressString);
+  const fvmAddress = FvmAddress.fromEthAddress(address);
   return {
-    addrType: fvmAddress.protocol(),
-    payload: fvmAddress.payload(),
+    addrType: fvmAddress.getProtocol(),
+    payload: fvmAddress.getPayload(),
   };
 }
 
