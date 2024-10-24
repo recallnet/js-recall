@@ -1,24 +1,31 @@
 import { SubnetId } from "./ipc/subnet.js";
 
 export const TESTNET_SUBNET_ID =
-  "/r314159/t410f26ejh7sqkimbhw5ojbeyvvkqnequ7ktxy5gyxyq"; // 1717203960113192
+  "/r314159/t410f26ejh7sqkimbhw5ojbeyvvkqnequ7ktxy5gyxyq"; // chain ID: 1717203960113192
 export const LOCALNET_SUBNET_ID =
-  "/r314159/t410f726d2jv6uj4mpkcbgg5ndlpp3l7dd5rlcpgzkoi"; // 2022913529944675
+  "/r31337/t410f6dl55afbyjbpupdtrmedyqrnmxdmpk7rxuduafq"; // chain ID: 3620398568294336
 export const DEVNET_SUBNET_ID = "test";
 
 export const TESTNET_RPC_URL = "https://rpc-testnet-validator-0.3box.io";
 export const LOCALNET_RPC_URL = "http://127.0.0.1:26657";
-export const LOCALNET_EVM_URL = "http://127.0.0.1:8545";
 
 export const RPC_TIMEOUT = 60_000;
 
 export const TESTNET_EVM_RPC_URL = "https://evm-testnet-validator-0.3box.io";
+export const LOCALNET_EVM_RPC_URL = "http://127.0.0.1:8645";
+
 export const TESTNET_EVM_GATEWAY_ADDRESS =
   "0x77aa40b105843728088c0132e43fc44348881da8";
 export const TESTNET_EVM_REGISTRY_ADDRESS =
   "0x74539671a1d2f1c8f200826baba665179f53a1b7";
 export const TESTNET_EVM_SUPPLY_SOURCE_ADDRESS =
   "0xD4e09E3EeF4F5d177e130F22d5BAD25E5028F125";
+export const LOCALNET_EVM_GATEWAY_ADDRESS =
+  "0x77aa40b105843728088c0132e43fc44348881da8";
+export const LOCALNET_EVM_REGISTRY_ADDRESS =
+  "0x74539671a1d2f1c8f200826baba665179f53a1b7";
+export const LOCALNET_EVM_SUPPLY_SOURCE_ADDRESS =
+  "0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E";
 
 export const TESTNET_PARENT_EVM_RPC_URL =
   "https://api.calibration.node.glif.io/rpc/v1";
@@ -26,6 +33,11 @@ export const TESTNET_PARENT_EVM_GATEWAY_ADDRESS =
   "0x141Ef571Fd6C9e7f51FAf697f4796A557C6BB663";
 export const TESTNET_PARENT_EVM_REGISTRY_ADDRESS =
   "0x89D8029d5cF4bAEbd0b43E39B547c34eAa8c5C54";
+export const LOCALNET_PARENT_EVM_RPC_URL = "http://127.0.0.1:8545";
+export const LOCALNET_PARENT_EVM_GATEWAY_ADDRESS =
+  "0x9A676e781A523b5d0C0e43731313A708CB607508";
+export const LOCALNET_PARENT_EVM_REGISTRY_ADDRESS =
+  "0xc5a5C42992dECbae36851359345FE25997F5C42d";
 
 export const TESTNET_OBJECT_API_URL =
   "https://object-api-testnet-validator-0.3box.io";
@@ -46,7 +58,7 @@ export enum NetworkType {
 // EVM subnet config.
 export type EvmSubnet = {
   // The target subnet ID.
-  id: SubnetId | null;
+  id: SubnetId;
   // The EVM RPC provider endpoint.
   providerHttp: string;
   // The EVM RPC provider request timeout.
@@ -170,6 +182,7 @@ export class Network {
       case NetworkType.Testnet:
         return TESTNET_EVM_RPC_URL;
       case NetworkType.Localnet:
+        return LOCALNET_EVM_RPC_URL;
       case NetworkType.Devnet:
         throw new Error("network has no parent");
     }
@@ -183,6 +196,7 @@ export class Network {
       case NetworkType.Testnet:
         return TESTNET_EVM_GATEWAY_ADDRESS;
       case NetworkType.Localnet:
+        return LOCALNET_EVM_GATEWAY_ADDRESS;
       case NetworkType.Devnet:
         throw new Error("network has no parent");
     }
@@ -196,6 +210,7 @@ export class Network {
       case NetworkType.Testnet:
         return TESTNET_EVM_REGISTRY_ADDRESS;
       case NetworkType.Localnet:
+        return LOCALNET_EVM_REGISTRY_ADDRESS;
       case NetworkType.Devnet:
         throw new Error("network has no parent");
     }
@@ -222,6 +237,7 @@ export class Network {
       case NetworkType.Testnet:
         return TESTNET_PARENT_EVM_RPC_URL;
       case NetworkType.Localnet:
+        return LOCALNET_PARENT_EVM_RPC_URL;
       case NetworkType.Devnet:
         throw new Error("network has no parent");
     }
@@ -235,6 +251,7 @@ export class Network {
       case NetworkType.Testnet:
         return TESTNET_PARENT_EVM_GATEWAY_ADDRESS;
       case NetworkType.Localnet:
+        return LOCALNET_PARENT_EVM_GATEWAY_ADDRESS;
       case NetworkType.Devnet:
         throw new Error("network has no parent");
     }
@@ -248,6 +265,7 @@ export class Network {
       case NetworkType.Testnet:
         return TESTNET_PARENT_EVM_REGISTRY_ADDRESS;
       case NetworkType.Localnet:
+        return LOCALNET_PARENT_EVM_REGISTRY_ADDRESS;
       case NetworkType.Devnet:
         throw new Error("network has no parent");
     }
@@ -261,6 +279,7 @@ export class Network {
       case NetworkType.Testnet:
         return TESTNET_EVM_SUPPLY_SOURCE_ADDRESS;
       case NetworkType.Localnet:
+        return LOCALNET_EVM_SUPPLY_SOURCE_ADDRESS;
       case NetworkType.Devnet:
         throw new Error("network has no parent");
     }

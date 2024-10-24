@@ -36,10 +36,10 @@
     "build": "npm run build:esm"
   },
   "dependencies": {
-    "@consensus-shipyard/ipc-contracts": "1.0.0-alpha.0",
     "@cosmjs/encoding": "^0.32.4",
     "@cosmjs/tendermint-rpc": "^0.32.4",
-    "@glif/filecoin-address": "^3.0.12",
+    "@hokunet/fvm": "^0.0.0",
+    "@hokunet/ipc-contracts": "^0.0.0",
     "@sindresorhus/fnv1a": "^3.1.0",
     "ethers": "^6.13.2",
     "uint8arrays": "^5.1.0"

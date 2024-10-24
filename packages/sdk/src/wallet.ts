@@ -1,8 +1,11 @@
 import {
   BlockTag,
+  BrowserProvider,
+  type Eip1193Provider,
   Network as EthersNetwork,
   Wallet as EthersWallet,
   JsonRpcProvider,
+  JsonRpcSigner,
   Provider,
   type Signer,
   TransactionLike,
@@ -13,6 +16,36 @@ import {
 } from "ethers";
 import { SubnetId } from "./ipc/subnet.js";
 import { EvmSubnet } from "./network.js";
+
+/* eslint-disable-next-line @typescript-eslint/prefer-namespace-keyword, @typescript-eslint/no-namespace */
+declare namespace globalThis {
+  // eslint-disable-next-line no-var
+  var ethereum: Eip1193Provider | undefined;
+}
+
+/**
+ * Request a signer object from the global ethereum object.
+ * @param external A valid external provider. Defaults to `globalThis.ethereum` if not provided.
+ * @returns A promise that resolves to a valid web3 provider/signer
+ * @throws If no global ethereum object is available.
+ */
+export async function getBrowserSigner(
+  subnet: EvmSubnet,
+  external?: Eip1193Provider
+): Promise<JsonRpcSigner> {
+  const name = subnet.id?.parent() === null ? "rootnet" : "hoku";
+  const ethersNetwork = new EthersNetwork(name, subnet.id?.chainId());
+  const provider = external ?? globalThis.ethereum;
+  if (provider == null) {
+    throw new Error("provider error: missing global ethereum provider");
+  }
+  const browserProvider = new BrowserProvider(provider, ethersNetwork, {
+    staticNetwork: true,
+  });
+  await browserProvider._detectNetwork();
+  await browserProvider.send("eth_requestAccounts", []);
+  return await browserProvider.getSigner();
+}
 
 /**
  * Create a signer with a private key, a provider URL, and a chain. Optionally,

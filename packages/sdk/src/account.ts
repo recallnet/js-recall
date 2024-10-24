@@ -2,45 +2,65 @@ import {
   AddressLike,
   BigNumberish,
   ContractTransactionReceipt,
+  Signer,
   TransactionReceipt,
 } from "ethers";
 import { EvmManager } from "./ipc/manager.js";
-import { Wallet } from "./wallet.js";
+import { Network } from "./network.js";
 
 export class Account {
-  private readonly wallet: Wallet;
+  private signer: Signer;
+  private readonly network: Network;
 
-  constructor(wallet: Wallet) {
-    this.wallet = wallet;
+  constructor(network: Network, signer: Signer) {
+    this.signer = signer;
+    this.network = network;
+  }
+
+  async getSigner(): Promise<Signer> {
+    return this.signer;
   }
 
   async balance(): Promise<BigNumberish> {
     return EvmManager.balance(
-      await this.wallet.getAddress(),
-      this.wallet.subnet
+      await this.signer.getAddress(),
+      this.network.subnetConfig()
     );
   }
 
   async approveGateway(
     amount: BigNumberish
   ): Promise<ContractTransactionReceipt | null> {
-    return EvmManager.approveGateway(this.wallet, amount);
+    return EvmManager.approveGateway(
+      this.signer,
+      this.network.parentSubnetConfig(),
+      amount
+    );
   }
 
   async deposit(
     amount: BigNumberish
   ): Promise<ContractTransactionReceipt | null> {
-    return EvmManager.deposit(this.wallet, amount);
+    return EvmManager.deposit(
+      this.signer,
+      this.network.parentSubnetConfig(),
+      amount
+    );
   }
 
   async withdraw(): Promise<ContractTransactionReceipt | null> {
-    return EvmManager.withdraw(this.wallet);
+    return EvmManager.withdraw(this.signer, this.network.subnetConfig());
   }
 
   async transfer(
     to: AddressLike,
     amount: BigNumberish
   ): Promise<TransactionReceipt | null> {
-    return EvmManager.transfer(this.wallet, to, amount);
+    return EvmManager.transfer(
+      this.signer,
+      this.network.subnetConfig(),
+      to,
+      amount
+    );
   }
 }

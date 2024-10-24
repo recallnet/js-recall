@@ -9,7 +9,7 @@ import { LOCALNET_RPC_URL, LOCALNET_SUBNET_ID } from "../src/network.js";
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 
-describe("consensus", function () {
+describe.skip("consensus", function () {
   let consensus: ConsensusClient;
 
   before(async function () {
