@@ -65,7 +65,6 @@ export class InvalidChecksumAddress extends Error {
 export class InvalidPrivateKeyFormat extends Error {
   constructor() {
     super();
-    this.message =
-      "Private key need to be an instance of Buffer or a base64 string.";
+    this.message = "Private key need to be an instance of Buffer or a base64 string.";
   }
 }

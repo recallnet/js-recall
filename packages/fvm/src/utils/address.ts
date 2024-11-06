@@ -43,9 +43,7 @@ export function getLeb128Length(input: Uint8Array): number {
  * @param networkPrefix - input string to validate
  * @returns whether the input is a valid network prefix or not
  */
-export const validateNetworkPrefix = (
-  networkPrefix: string
-): networkPrefix is NetworkPrefix =>
+export const validateNetworkPrefix = (networkPrefix: string): networkPrefix is NetworkPrefix =>
   Object.values(NetworkPrefix).includes(networkPrefix as NetworkPrefix);
 
 /**
@@ -69,8 +67,7 @@ export const getNetworkPrefix = (network: Network): NetworkPrefix =>
  * @param network - input string to validate
  * @returns network prefix
  */
-export const isTestnet = (network: Network): boolean =>
-  network !== Network.Mainnet;
+export const isTestnet = (network: Network): boolean => network !== Network.Mainnet;
 
 /**
  * Check if a given address is a masked id eth address

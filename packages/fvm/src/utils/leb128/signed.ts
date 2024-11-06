@@ -53,9 +53,7 @@ export function write(number: number | string | bigint, stream: Stream): void {
     num >>= 7n;
 
     // Determine if more bytes are needed
-    const isLastByte =
-      (num === 0n && (byte & 0x40) === 0) ||
-      (num === -1n && (byte & 0x40) !== 0);
+    const isLastByte = (num === 0n && (byte & 0x40) === 0) || (num === -1n && (byte & 0x40) !== 0);
     if (isLastByte) {
       more = false; // No more bytes needed
     } else {
