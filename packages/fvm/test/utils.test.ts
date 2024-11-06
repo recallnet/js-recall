@@ -13,8 +13,7 @@ describe("utils", async () => {
       expect(u8a.toString(bytes, "hex")).to.equal(
         "770d21925703390a236f68f84ef1d432ca5742c4115b11e6"
       );
-      value =
-        "4wx2ocgzy2p42egwp5cwiyjhwzz6wt4elwwrrgoujx7ady5oxm7a".toUpperCase();
+      value = "4wx2ocgzy2p42egwp5cwiyjhwzz6wt4elwwrrgoujx7ady5oxm7a".toUpperCase();
       bytes = new Uint8Array(base32.decode(value));
       expect(u8a.toString(bytes, "hex")).to.equal(
         "e5afa708d9c69fcd10d67f45646127b673eb4f845dad1899d44dfe01e3aebb3e"
@@ -22,14 +21,9 @@ describe("utils", async () => {
     });
 
     it("should encode bytes to base32", async () => {
-      const value = u8a.fromString(
-        "770d21925703390a236f68f84ef1d432ca5742c4115b11e6",
-        "hex"
-      );
+      const value = u8a.fromString("770d21925703390a236f68f84ef1d432ca5742c4115b11e6", "hex");
       const encoded = base32.encode(value);
-      expect(encoded).to.equal(
-        "o4gsdesxam4qui3pnd4e54ouglffoqwecfnrdzq".toUpperCase()
-      );
+      expect(encoded).to.equal("o4gsdesxam4qui3pnd4e54ouglffoqwecfnrdzq".toUpperCase());
     });
   });
 
@@ -37,9 +31,7 @@ describe("utils", async () => {
     it("should encode and decode cbor", async () => {
       const data = ["hello", "world"];
       const encoded = cbor.encode(data);
-      expect(u8a.toString(encoded, "hex")).to.equal(
-        "826568656c6c6f65776f726c64"
-      );
+      expect(u8a.toString(encoded, "hex")).to.equal("826568656c6c6f65776f726c64");
       const decoded = cbor.decode(encoded);
       expect(decoded).to.deep.equal(data);
     });
@@ -65,9 +57,7 @@ describe("utils", async () => {
       expect(unsigned.read(stream)).to.equal("8");
 
       signed.write("-9223372036854775808", stream);
-      expect(u8a.toString(stream.buffer, "hex")).to.equal(
-        "8080808080808080807f"
-      );
+      expect(u8a.toString(stream.buffer, "hex")).to.equal("8080808080808080807f");
       expect(signed.read(stream)).to.equal("-9223372036854775808");
 
       signed.write("-100", stream);

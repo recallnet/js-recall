@@ -24,10 +24,7 @@ import {
   isMaskedIdEthAddress,
   validateNetworkPrefix,
 } from "../utils/address.js";
-import {
-  decode as base32Decode,
-  encode as base32Encode,
-} from "../utils/base32.js";
+import { decode as base32Decode, encode as base32Encode } from "../utils/base32.js";
 import { bigintToUint8Array } from "../utils/convert.js";
 import { unsigned } from "../utils/leb128/index.js";
 import {
@@ -119,10 +116,7 @@ export abstract class Address {
       case ProtocolIndicator.DELEGATED: {
         const addr = AddressDelegated.fromString(address);
         if (Address.isFilEthAddress(addr))
-          return new FilEthAddress(
-            addr.getSubAddress(),
-            addr.getNetworkPrefix()
-          );
+          return new FilEthAddress(addr.getSubAddress(), addr.getNetworkPrefix());
 
         return addr;
       }
@@ -155,10 +149,7 @@ export abstract class Address {
       case ProtocolIndicator.DELEGATED: {
         const addr = AddressDelegated.fromBytes(address, networkPrefix);
         if (Address.isFilEthAddress(addr))
-          return new FilEthAddress(
-            addr.getSubAddress(),
-            addr.getNetworkPrefix()
-          );
+          return new FilEthAddress(addr.getSubAddress(), addr.getNetworkPrefix());
 
         return addr;
       }
@@ -194,9 +185,7 @@ export abstract class Address {
       let i = ACTOR_ID_ETHEREUM_MASK_LEN;
       while (addr[i] == 0) i += 1;
 
-      const payload = unsigned.encode(
-        "0x" + u8aToString(addr.subarray(i), "hex")
-      );
+      const payload = unsigned.encode("0x" + u8aToString(addr.subarray(i), "hex"));
       return new AddressId(payload, networkPrefix);
     }
 
@@ -270,14 +259,10 @@ export class AddressBls extends Address {
    * @param payload - current address payload (buffer)
    * @param networkPrefix - indicates which network the address belongs.
    */
-  constructor(
-    payload: Uint8Array,
-    networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
-  ) {
+  constructor(payload: Uint8Array, networkPrefix: NetworkPrefix = NetworkPrefix.Testnet) {
     super(ProtocolIndicator.BLS, networkPrefix);
 
-    if (payload.byteLength !== BLS_PAYLOAD_LEN)
-      throw new InvalidPayloadLength(payload.byteLength);
+    if (payload.byteLength !== BLS_PAYLOAD_LEN) throw new InvalidPayloadLength(payload.byteLength);
     this.payload = payload;
   }
 
@@ -285,8 +270,7 @@ export class AddressBls extends Address {
    * Allows to get the bytes format of this address
    * @returns bls address in bytes format
    */
-  toBytes = (): Uint8Array =>
-    u8aConcat([new Uint8Array([this.protocol]), this.payload]);
+  toBytes = (): Uint8Array => u8aConcat([new Uint8Array([this.protocol]), this.payload]);
 
   /**
    * Allows to get the string format of this address
@@ -310,14 +294,11 @@ export class AddressBls extends Address {
     const networkPrefix = address[0];
     const protocolIndicator = address[1];
 
-    if (!validateNetworkPrefix(networkPrefix))
-      throw new InvalidNetwork(networkPrefix);
+    if (!validateNetworkPrefix(networkPrefix)) throw new InvalidNetwork(networkPrefix);
     if (parseInt(protocolIndicator) != ProtocolIndicator.BLS)
       throw new InvalidProtocolIndicator(parseInt(protocolIndicator));
 
-    const decodedData = new Uint8Array(
-      base32Decode(address.substring(2).toUpperCase())
-    );
+    const decodedData = new Uint8Array(base32Decode(address.substring(2).toUpperCase()));
     const payload = decodedData.subarray(0, -4);
     const checksum = decodedData.subarray(-4);
 
@@ -340,8 +321,7 @@ export class AddressBls extends Address {
     bytes: Uint8Array,
     networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
   ): AddressBls {
-    if (bytes[0] != ProtocolIndicator.BLS)
-      throw new InvalidProtocolIndicator(bytes[0]);
+    if (bytes[0] != ProtocolIndicator.BLS) throw new InvalidProtocolIndicator(bytes[0]);
 
     const payload = bytes.subarray(1);
     return new AddressBls(payload, networkPrefix);
@@ -369,10 +349,7 @@ export class AddressId extends Address {
    * @param payload - current address payload. It can be string (id in decimal) or buffer (leb128 encoded id)
    * @param networkPrefix - indicates which network the address belongs.
    */
-  constructor(
-    payload: string | Uint8Array,
-    networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
-  ) {
+  constructor(payload: string | Uint8Array, networkPrefix: NetworkPrefix = NetworkPrefix.Testnet) {
     super(ProtocolIndicator.ID, networkPrefix);
 
     let payloadBuff: Uint8Array;
@@ -405,9 +382,7 @@ export class AddressId extends Address {
    * @returns id address in string format
    */
   toString = (): string =>
-    this.networkPrefix +
-    this.protocol.toString() +
-    unsigned.decode(this.payload);
+    this.networkPrefix + this.protocol.toString() + unsigned.decode(this.payload);
 
   /**
    * Getter for actor id
@@ -423,8 +398,7 @@ export class AddressId extends Address {
     const networkPrefix = address[0];
     const protocolIndicator = address[1];
 
-    if (!validateNetworkPrefix(networkPrefix))
-      throw new InvalidNetwork(networkPrefix);
+    if (!validateNetworkPrefix(networkPrefix)) throw new InvalidNetwork(networkPrefix);
     if (parseInt(protocolIndicator) != ProtocolIndicator.ID)
       throw new InvalidProtocolIndicator(parseInt(protocolIndicator));
 
@@ -442,8 +416,7 @@ export class AddressId extends Address {
     bytes: Uint8Array,
     networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
   ): AddressId {
-    if (bytes[0] != ProtocolIndicator.ID)
-      throw new InvalidProtocolIndicator(bytes[0]);
+    if (bytes[0] != ProtocolIndicator.ID) throw new InvalidProtocolIndicator(bytes[0]);
 
     const payload = bytes.subarray(1);
     return new AddressId(payload, networkPrefix);
@@ -481,10 +454,7 @@ export class AddressSecp256k1 extends Address {
    * @param payload - current address payload (buffer)
    * @param networkPrefix - indicates which network the address belongs.
    */
-  constructor(
-    payload: Uint8Array,
-    networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
-  ) {
+  constructor(payload: Uint8Array, networkPrefix: NetworkPrefix = NetworkPrefix.Testnet) {
     super(ProtocolIndicator.SECP256K1, networkPrefix);
     if (payload.byteLength !== SECP256K1_PAYLOAD_LEN)
       throw new InvalidPayloadLength(payload.byteLength);
@@ -495,8 +465,7 @@ export class AddressSecp256k1 extends Address {
    * Allows to get the bytes format of this address
    * @returns secp256k1 address in bytes format
    */
-  toBytes = (): Uint8Array =>
-    u8aConcat([new Uint8Array([this.protocol]), this.payload]);
+  toBytes = (): Uint8Array => u8aConcat([new Uint8Array([this.protocol]), this.payload]);
 
   /**
    * Allows to get the string format of this address
@@ -520,14 +489,11 @@ export class AddressSecp256k1 extends Address {
     const networkPrefix = address[0];
     const protocolIndicator = address[1];
 
-    if (!validateNetworkPrefix(networkPrefix))
-      throw new InvalidNetwork(networkPrefix);
+    if (!validateNetworkPrefix(networkPrefix)) throw new InvalidNetwork(networkPrefix);
     if (parseInt(protocolIndicator) != ProtocolIndicator.SECP256K1)
       throw new InvalidProtocolIndicator(parseInt(protocolIndicator));
 
-    const decodedData = new Uint8Array(
-      base32Decode(address.substring(2).toUpperCase())
-    );
+    const decodedData = new Uint8Array(base32Decode(address.substring(2).toUpperCase()));
     const payload = decodedData.subarray(0, -4);
     const checksum = decodedData.subarray(-4);
 
@@ -550,8 +516,7 @@ export class AddressSecp256k1 extends Address {
     bytes: Uint8Array,
     networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
   ): AddressSecp256k1 {
-    if (bytes[0] != ProtocolIndicator.SECP256K1)
-      throw new InvalidProtocolIndicator(bytes[0]);
+    if (bytes[0] != ProtocolIndicator.SECP256K1) throw new InvalidProtocolIndicator(bytes[0]);
 
     const payload = bytes.subarray(1);
     return new AddressSecp256k1(payload, networkPrefix);
@@ -574,10 +539,7 @@ export class AddressActor extends Address {
    * @param payload - current address payload (buffer)
    * @param networkPrefix - indicates which network the address belongs.
    */
-  constructor(
-    payload: Uint8Array,
-    networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
-  ) {
+  constructor(payload: Uint8Array, networkPrefix: NetworkPrefix = NetworkPrefix.Testnet) {
     super(ProtocolIndicator.ACTOR, networkPrefix);
     if (payload.byteLength !== ACTOR_PAYLOAD_LEN)
       throw new InvalidPayloadLength(payload.byteLength);
@@ -589,8 +551,7 @@ export class AddressActor extends Address {
    * Allows to get the bytes format of this address
    * @returns actor address in bytes format
    */
-  toBytes = (): Uint8Array =>
-    u8aConcat([new Uint8Array([this.protocol]), this.payload]);
+  toBytes = (): Uint8Array => u8aConcat([new Uint8Array([this.protocol]), this.payload]);
 
   /**
    * Allows to get the string format of this address
@@ -614,13 +575,10 @@ export class AddressActor extends Address {
     const networkPrefix = address[0];
     const protocolIndicator = address[1];
 
-    if (!validateNetworkPrefix(networkPrefix))
-      throw new InvalidNetwork(networkPrefix);
+    if (!validateNetworkPrefix(networkPrefix)) throw new InvalidNetwork(networkPrefix);
     if (parseInt(protocolIndicator) != ProtocolIndicator.ACTOR)
       throw new InvalidProtocolIndicator(parseInt(protocolIndicator));
-    const decodedData = new Uint8Array(
-      base32Decode(address.substring(2).toUpperCase())
-    );
+    const decodedData = new Uint8Array(base32Decode(address.substring(2).toUpperCase()));
     const payload = decodedData.subarray(0, -4);
     const checksum = decodedData.subarray(-4);
 
@@ -643,8 +601,7 @@ export class AddressActor extends Address {
     bytes: Uint8Array,
     networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
   ): AddressActor {
-    if (bytes[0] != ProtocolIndicator.ACTOR)
-      throw new InvalidProtocolIndicator(bytes[0]);
+    if (bytes[0] != ProtocolIndicator.ACTOR) throw new InvalidProtocolIndicator(bytes[0]);
 
     const payload = bytes.subarray(1);
     return new AddressActor(payload, networkPrefix);
@@ -686,16 +643,12 @@ export class AddressDelegated extends Address {
   ) {
     super(ProtocolIndicator.DELEGATED, networkPrefix);
 
-    if (BigInt(namespace) > ID_PAYLOAD_MAX_NUM)
-      throw new InvalidNamespace(namespace);
+    if (BigInt(namespace) > ID_PAYLOAD_MAX_NUM) throw new InvalidNamespace(namespace);
     if (subAddress.length === 0 || subAddress.length > SUB_ADDRESS_MAX_LEN)
       throw new InvalidSubAddress();
 
     // Special check to prevent users from using DelegatedAddress with ETH namespace, and masked-id addresses
-    if (
-      namespace === DelegatedNamespace.ETH &&
-      isMaskedIdEthAddress(subAddress)
-    ) {
+    if (namespace === DelegatedNamespace.ETH && isMaskedIdEthAddress(subAddress)) {
       throw new Error("masked-id eth addresses not allowed");
     }
 
@@ -750,8 +703,7 @@ export class AddressDelegated extends Address {
     const networkPrefix = address[0];
     const protocolIndicator = address[1];
 
-    if (!validateNetworkPrefix(networkPrefix))
-      throw new InvalidNetwork(networkPrefix);
+    if (!validateNetworkPrefix(networkPrefix)) throw new InvalidNetwork(networkPrefix);
     if (parseInt(protocolIndicator) != ProtocolIndicator.DELEGATED)
       throw new InvalidProtocolIndicator(parseInt(protocolIndicator));
 
@@ -761,11 +713,7 @@ export class AddressDelegated extends Address {
 
     const subAddress = dataDecoded.subarray(0, -4);
     const checksum = dataDecoded.subarray(-4);
-    const newAddress = new AddressDelegated(
-      namespace,
-      subAddress,
-      networkPrefix
-    );
+    const newAddress = new AddressDelegated(namespace, subAddress, networkPrefix);
 
     const addressChecksum = u8aToString(newAddress.getChecksum(), "hex");
     const originalChecksum = u8aToString(checksum, "hex");
@@ -785,8 +733,7 @@ export class AddressDelegated extends Address {
     bytes: Uint8Array,
     networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
   ): AddressDelegated {
-    if (bytes[0] != ProtocolIndicator.DELEGATED)
-      throw new InvalidProtocolIndicator(bytes[0]);
+    if (bytes[0] != ProtocolIndicator.DELEGATED) throw new InvalidProtocolIndicator(bytes[0]);
 
     const namespaceLength = getLeb128Length(bytes.subarray(1));
     const namespace = unsigned.decode(bytes.subarray(1, 1 + namespaceLength));
@@ -807,18 +754,12 @@ export class FilEthAddress extends AddressDelegated {
    * @param networkPrefix - indicates which network the address belongs.
    */
 
-  constructor(
-    ethAddress: Uint8Array,
-    networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
-  ) {
+  constructor(ethAddress: Uint8Array, networkPrefix: NetworkPrefix = NetworkPrefix.Testnet) {
     super(DelegatedNamespace.ETH, ethAddress, networkPrefix);
 
     if (ethAddress.length !== ETH_ADDRESS_LEN)
-      throw new Error(
-        `invalid ethereum address: length should be ${ETH_ADDRESS_LEN} bytes`
-      );
-    if (isMaskedIdEthAddress(ethAddress))
-      throw new Error("masked-id eth addresses not allowed");
+      throw new Error(`invalid ethereum address: length should be ${ETH_ADDRESS_LEN} bytes`);
+    if (isMaskedIdEthAddress(ethAddress)) throw new Error("masked-id eth addresses not allowed");
   }
 
   /**
