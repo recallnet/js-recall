@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import * as u8a from "uint8arrays";
-import { decode, encode } from "../src/utils/base32.js";
+import * as base32 from "../src/utils/base32.js";
+import * as cbor from "../src/utils/cbor.js";
 import { Stream } from "../src/utils/leb128/common.js";
 import { signed, unsigned } from "../src/utils/leb128/index.js";
 
@@ -8,13 +9,13 @@ describe("utils", async () => {
   describe("base32", async () => {
     it("should decode base32 to bytes", async () => {
       let value = "o4gsdesxam4qui3pnd4e54ouglffoqwecfnrdzq".toUpperCase();
-      let bytes = new Uint8Array(decode(value));
+      let bytes = new Uint8Array(base32.decode(value));
       expect(u8a.toString(bytes, "hex")).to.equal(
         "770d21925703390a236f68f84ef1d432ca5742c4115b11e6"
       );
       value =
         "4wx2ocgzy2p42egwp5cwiyjhwzz6wt4elwwrrgoujx7ady5oxm7a".toUpperCase();
-      bytes = new Uint8Array(decode(value));
+      bytes = new Uint8Array(base32.decode(value));
       expect(u8a.toString(bytes, "hex")).to.equal(
         "e5afa708d9c69fcd10d67f45646127b673eb4f845dad1899d44dfe01e3aebb3e"
       );
@@ -25,10 +26,22 @@ describe("utils", async () => {
         "770d21925703390a236f68f84ef1d432ca5742c4115b11e6",
         "hex"
       );
-      const encoded = encode(value);
+      const encoded = base32.encode(value);
       expect(encoded).to.equal(
         "o4gsdesxam4qui3pnd4e54ouglffoqwecfnrdzq".toUpperCase()
       );
+    });
+  });
+
+  describe("cbor", async () => {
+    it("should encode and decode cbor", async () => {
+      const data = ["hello", "world"];
+      const encoded = cbor.encode(data);
+      expect(u8a.toString(encoded, "hex")).to.equal(
+        "826568656c6c6f65776f726c64"
+      );
+      const decoded = cbor.decode(encoded);
+      expect(decoded).to.deep.equal(data);
     });
   });
 
