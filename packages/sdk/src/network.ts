@@ -1,47 +1,43 @@
-import { SubnetId } from "./ipc/subnet.js";
+import { SubnetId, subnetIdStringToChainId } from "./ipc/subnet.js";
 
-export const TESTNET_SUBNET_ID =
-  "/r314159/t410f26ejh7sqkimbhw5ojbeyvvkqnequ7ktxy5gyxyq"; // chain ID: 1717203960113192
-export const LOCALNET_SUBNET_ID =
-  "/r31337/t410f6dl55afbyjbpupdtrmedyqrnmxdmpk7rxuduafq"; // chain ID: 3620398568294336
+export const TESTNET_SUBNET_ID = "/r314159/t410fvamrbjioufgzoyojg2x3nwdo26t6xucxoxl47yq";
+export const LOCALNET_SUBNET_ID = "/r31337/t410fkzrz3mlkyufisiuae3scumllgalzuu3wxlxa2ly";
 export const DEVNET_SUBNET_ID = "test";
 
-export const TESTNET_RPC_URL = "https://rpc-testnet-validator-0.3box.io";
+export const TESTNET_CHAIN_ID = subnetIdStringToChainId(TESTNET_SUBNET_ID);
+export const LOCALNET_CHAIN_ID = subnetIdStringToChainId(LOCALNET_SUBNET_ID);
+export const DEVNET_CHAIN_ID = subnetIdStringToChainId(DEVNET_SUBNET_ID);
+
+export const TESTNET_RPC_URL = "https://api.n1.hoku.sh";
 export const LOCALNET_RPC_URL = "http://127.0.0.1:26657";
+export const DEVNET_RPC_URL = LOCALNET_RPC_URL;
+
+export const TESTNET_EVM_RPC_URL = "https://evm-api.n1.hoku.sh";
+export const LOCALNET_EVM_RPC_URL = "http://127.0.0.1:8645";
+export const DEVNET_EVM_RPC_URL = LOCALNET_EVM_RPC_URL;
+export const TESTNET_EVM_WS_URL = "wss://evm-api.n1.hoku.sh";
+export const LOCALNET_EVM_WS_URL = "ws://127.0.0.1:8645";
+export const DEVNET_EVM_WS_URL = LOCALNET_EVM_WS_URL;
+
+export const TESTNET_OBJECT_API_URL = "https://object-api.n1.hoku.sh";
+export const LOCALNET_OBJECT_API_URL = "http://127.0.0.1:8001";
+export const DEVNET_OBJECT_API_URL = LOCALNET_OBJECT_API_URL;
 
 export const RPC_TIMEOUT = 60_000;
 
-export const TESTNET_EVM_RPC_URL = "https://evm-testnet-validator-0.3box.io";
-export const LOCALNET_EVM_RPC_URL = "http://127.0.0.1:8645";
+export const TESTNET_EVM_GATEWAY_ADDRESS = "0x77aa40b105843728088c0132e43fc44348881da8";
+export const TESTNET_EVM_REGISTRY_ADDRESS = "0x74539671a1d2f1c8f200826baba665179f53a1b7";
+export const TESTNET_EVM_SUPPLY_SOURCE_ADDRESS = "0x8e3Fd2b47e564E7D636Fa80082f286eD038BE54b";
+export const LOCALNET_EVM_GATEWAY_ADDRESS = "0x77aa40b105843728088c0132e43fc44348881da8";
+export const LOCALNET_EVM_REGISTRY_ADDRESS = "0x74539671a1d2f1c8f200826baba665179f53a1b7";
+export const LOCALNET_EVM_SUPPLY_SOURCE_ADDRESS = "0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E";
 
-export const TESTNET_EVM_GATEWAY_ADDRESS =
-  "0x77aa40b105843728088c0132e43fc44348881da8";
-export const TESTNET_EVM_REGISTRY_ADDRESS =
-  "0x74539671a1d2f1c8f200826baba665179f53a1b7";
-export const TESTNET_EVM_SUPPLY_SOURCE_ADDRESS =
-  "0xD4e09E3EeF4F5d177e130F22d5BAD25E5028F125";
-export const LOCALNET_EVM_GATEWAY_ADDRESS =
-  "0x77aa40b105843728088c0132e43fc44348881da8";
-export const LOCALNET_EVM_REGISTRY_ADDRESS =
-  "0x74539671a1d2f1c8f200826baba665179f53a1b7";
-export const LOCALNET_EVM_SUPPLY_SOURCE_ADDRESS =
-  "0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E";
-
-export const TESTNET_PARENT_EVM_RPC_URL =
-  "https://api.calibration.node.glif.io/rpc/v1";
-export const TESTNET_PARENT_EVM_GATEWAY_ADDRESS =
-  "0x141Ef571Fd6C9e7f51FAf697f4796A557C6BB663";
-export const TESTNET_PARENT_EVM_REGISTRY_ADDRESS =
-  "0x89D8029d5cF4bAEbd0b43E39B547c34eAa8c5C54";
+export const TESTNET_PARENT_EVM_RPC_URL = "https://api.calibration.node.glif.io/rpc/v1";
+export const TESTNET_PARENT_EVM_GATEWAY_ADDRESS = "0xe17B86E7BEFC691DAEfe2086e56B86D4253f3294";
+export const TESTNET_PARENT_EVM_REGISTRY_ADDRESS = "0xe87AFBEC26f0fdAC69e4256dC1935bEab1e0855E";
 export const LOCALNET_PARENT_EVM_RPC_URL = "http://127.0.0.1:8545";
-export const LOCALNET_PARENT_EVM_GATEWAY_ADDRESS =
-  "0x9A676e781A523b5d0C0e43731313A708CB607508";
-export const LOCALNET_PARENT_EVM_REGISTRY_ADDRESS =
-  "0xc5a5C42992dECbae36851359345FE25997F5C42d";
-
-export const TESTNET_OBJECT_API_URL =
-  "https://object-api-testnet-validator-0.3box.io";
-export const LOCALNET_OBJECT_API_URL = "http://127.0.0.1:8001";
+export const LOCALNET_PARENT_EVM_GATEWAY_ADDRESS = "0x9A676e781A523b5d0C0e43731313A708CB607508";
+export const LOCALNET_PARENT_EVM_REGISTRY_ADDRESS = "0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1";
 
 // Network presets.
 export enum NetworkType {
