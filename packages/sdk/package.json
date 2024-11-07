@@ -36,12 +36,15 @@
     "build": "npm run build:esm"
   },
   "dependencies": {
-    "@cosmjs/encoding": "^0.32.4",
-    "@cosmjs/tendermint-rpc": "^0.32.4",
     "@hokunet/fvm": "^0.0.0",
-    "@hokunet/ipc-contracts": "^0.0.0",
+    "@noble/hashes": "^1.5.0",
+    "@number0/iroh": "^0.28.1",
     "@sindresorhus/fnv1a": "^3.1.0",
-    "ethers": "^6.13.2",
-    "uint8arrays": "^5.1.0"
+    "file-type": "^19.6.0",
+    "uint8arrays": "^5.1.0",
+    "viem": "^2.21.37"
+  },
+  "devDependencies": {
+    "tempy": "^3.1.0"
   }
 }

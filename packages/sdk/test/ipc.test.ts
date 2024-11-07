@@ -1,15 +1,40 @@
 import { strictEqual } from "assert";
+import { expect } from "chai";
 import { describe, it } from "mocha";
 import { SubnetId } from "../src/ipc/subnet.js";
 import { Network, NetworkType } from "../src/network.js";
-import { LOCALNET_SUBNET_ID } from "../src/network.js";
+import {
+  DEVNET_CHAIN_ID,
+  DEVNET_SUBNET_ID,
+  LOCALNET_CHAIN_ID,
+  LOCALNET_SUBNET_ID,
+  TESTNET_CHAIN_ID,
+  TESTNET_SUBNET_ID,
+} from "../src/network.js";
 
-describe.only("subnet", function () {
+describe("subnet", function () {
   let subnetId: SubnetId;
-  const localnetChainId = 3620398568294336n;
 
   before(() => {
     subnetId = SubnetId.fromString(LOCALNET_SUBNET_ID);
+  });
+
+  it("should be constructed from subnet id", () => {
+    let sub = SubnetId.fromString(LOCALNET_SUBNET_ID);
+    strictEqual(sub.toString(), LOCALNET_SUBNET_ID);
+    sub = SubnetId.fromString(DEVNET_SUBNET_ID);
+    strictEqual(sub.toString(), DEVNET_SUBNET_ID);
+    sub = SubnetId.fromString(TESTNET_SUBNET_ID);
+    strictEqual(sub.toString(), TESTNET_SUBNET_ID);
+  });
+
+  it("should be able to get subnet chain id", () => {
+    let sub = SubnetId.fromString(LOCALNET_SUBNET_ID);
+    strictEqual(sub.chainId(), LOCALNET_CHAIN_ID);
+    sub = SubnetId.fromString(DEVNET_SUBNET_ID);
+    strictEqual(sub.chainId(), DEVNET_CHAIN_ID);
+    sub = SubnetId.fromString(TESTNET_SUBNET_ID);
+    strictEqual(sub.chainId(), TESTNET_CHAIN_ID);
   });
 
   it("should be able to be constructed from string", () => {
@@ -22,18 +47,14 @@ describe.only("subnet", function () {
     strictEqual(subnetId.toString(), LOCALNET_SUBNET_ID);
   });
 
-  it("should be able to get subnet chain id", () => {
-    strictEqual(subnetId.chainId(), localnetChainId);
-  });
-
   it("should be able to get eth and fvm addresses", () => {
     strictEqual(
       subnetId.real.route[0],
-      "t410f6dl55afbyjbpupdtrmedyqrnmxdmpk7rxuduafq"
+      "t410fkzrz3mlkyufisiuae3scumllgalzuu3wxlxa2ly"
     );
     strictEqual(
       subnetId.evm.route[0],
-      "0xf0d7de80a1c242fa3c738b083c422d65c6c7abf1"
+      "0x56639db16ac50a89228026e42a316b30179a5376"
     );
   });
 
@@ -43,9 +64,8 @@ describe.only("subnet", function () {
     strictEqual(parent?.chainId(), parentChainId);
   });
 
-  it("should get no parent for root subnet", () => {
+  it("should fail to get parent for root subnet", () => {
     const root = subnetId.parent();
-    const parentOfRoot = root?.parent();
-    strictEqual(parentOfRoot, null);
+    expect(() => root.parent()).to.throw(Error, "subnet has no parent");
   });
 });
