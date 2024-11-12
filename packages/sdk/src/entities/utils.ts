@@ -1,9 +1,17 @@
 import { Abi, Hash, parseEventLogs, PublicClient } from "viem";
 
-// Generic type for write operations, returns the transaction hash and the data
-export type WriteResult<T> = {
-  tx: Hash;
+/**
+ * Metadata for read or write operations (currently only `tx` is used, via write operations)
+ * @param tx Transaction hash, if the operation was a write
+ */
+export interface Metadata {
+  tx?: Hash;
+}
+
+// Generic type for read operations, returns the data
+export type Result<T = unknown> = {
   result: T;
+  meta?: Metadata;
 };
 
 // Remove `readonly` from all properties of an object (via viem contract types)

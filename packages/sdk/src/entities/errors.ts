@@ -47,6 +47,12 @@ export class UnhandledCreditError extends Error {
     this.name = "UnhandledCreditError";
   }
 }
+export class UnhandledBlobError extends Error {
+  constructor(message: string) {
+    super(`Blob error: ${message}`);
+    this.name = "UnhandledBlobError";
+  }
+}
 
 export class InsufficientFunds extends Error {
   constructor(amount: bigint) {

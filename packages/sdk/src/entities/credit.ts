@@ -8,67 +8,52 @@ import {
   GetContractReturnType,
   GetEventArgs,
 } from "viem";
-import { creditABI } from "../abis.js";
+import { creditManagerABI } from "../abis.js";
 import { HokuClient } from "../client.js";
 import { InsufficientFunds, InvalidValue, UnhandledCreditError } from "./errors.js";
-import { DeepMutable, parseEventFromTransaction, type WriteResult } from "./utils.js";
+import { DeepMutable, parseEventFromTransaction, type Result } from "./utils.js";
 
 // TODO: emulates `@wagmi/cli` generated constants
 export const creditManagerAddress = {
   2938118273996536: "0x8c2e3e8ba0d6084786d60A6600e832E8df84846C", // TODO: testnet; outdated contract deployment, but keeping here
-  4362550583360910: "0xa7B987f505366630109De019862c183E690a040B", // TODO: localnet; we need to make this deterministic
+  4362550583360910: "0xA540de8faAE57Ae43d8506CffA75B746820CbDE9", // TODO: localnet; we need to make this deterministic
 } as const;
 
 // Used for getBalance()
 export type CreditBalance = DeepMutable<
-  ContractFunctionReturnType<typeof creditABI, AbiStateMutability, "getCreditBalance">
+  ContractFunctionReturnType<typeof creditManagerABI, AbiStateMutability, "getCreditBalance">
 >;
 
 // Used for getAccount()
 export type CreditAccount = DeepMutable<
-  ContractFunctionReturnType<typeof creditABI, AbiStateMutability, "getAccount">
+  ContractFunctionReturnType<typeof creditManagerABI, AbiStateMutability, "getAccount">
 >;
 
 export type CreditApproval = Pick<CreditAccount, "approvals">;
 
 // Used for getCreditStats()
 export type CreditStats = DeepMutable<
-  ContractFunctionReturnType<typeof creditABI, AbiStateMutability, "getCreditStats">
->;
-
-// Used for getStorageStats()
-export type StorageStats = DeepMutable<
-  ContractFunctionReturnType<typeof creditABI, AbiStateMutability, "getStorageStats">
->;
-
-// Used for getStorageUsage()
-export type StorageUsage = DeepMutable<
-  ContractFunctionReturnType<typeof creditABI, AbiStateMutability, "getStorageUsage">
->;
-
-// Used for getSubnetStats()
-export type SubnetStats = DeepMutable<
-  ContractFunctionReturnType<typeof creditABI, AbiStateMutability, "getSubnetStats">
+  ContractFunctionReturnType<typeof creditManagerABI, AbiStateMutability, "getCreditStats">
 >;
 
 // Used for approve()
 export type ApproveResult = Required<
-  GetEventArgs<typeof creditABI, "ApproveCredit", { IndexedOnly: false }>
+  GetEventArgs<typeof creditManagerABI, "ApproveCredit", { IndexedOnly: false }>
 >;
 
 // Used for buyCredit()
 export type BuyResult = Required<
-  GetEventArgs<typeof creditABI, "BuyCredit", { IndexedOnly: false }>
+  GetEventArgs<typeof creditManagerABI, "BuyCredit", { IndexedOnly: false }>
 >;
 
 // Used for revokeCredit()
 export type RevokeResult = Required<
-  GetEventArgs<typeof creditABI, "RevokeCredit", { IndexedOnly: false }>
+  GetEventArgs<typeof creditManagerABI, "RevokeCredit", { IndexedOnly: false }>
 >;
 
 export class CreditManager {
   client: HokuClient;
-  contract: GetContractReturnType<typeof creditABI, Client, Address>;
+  contract: GetContractReturnType<typeof creditManagerABI, Client, Address>;
 
   constructor(client: HokuClient, contractAddress?: Address) {
     this.client = client;
@@ -76,7 +61,7 @@ export class CreditManager {
       client.publicClient?.chain?.id || 0
     ];
     this.contract = getContract({
-      abi: creditABI,
+      abi: creditManagerABI,
       address: contractAddress || deployedCreditManagerAddress,
       client: {
         public: client.publicClient,
@@ -85,12 +70,12 @@ export class CreditManager {
     });
   }
 
-  getContract(): GetContractReturnType<typeof creditABI, Client, Address> {
+  getContract(): GetContractReturnType<typeof creditManagerABI, Client, Address> {
     return this.contract;
   }
 
   // Buy credits
-  async buy(amount: bigint, recipient?: Address): Promise<WriteResult<BuyResult>> {
+  async buy(amount: bigint, recipient?: Address): Promise<Result<BuyResult>> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for buying credits");
     }
@@ -118,7 +103,7 @@ export class CreditManager {
         "BuyCredit",
         tx
       );
-      return { tx, result };
+      return { meta: { tx }, result };
     } catch (error) {
       if (error instanceof ContractFunctionExecutionError) {
         // Although we make this check above, it's possible multiple buy requests are sent in the same block
@@ -137,7 +122,7 @@ export class CreditManager {
     limit: bigint = 0n,
     ttl: bigint = 0n,
     from?: Address
-  ): Promise<WriteResult<ApproveResult>> {
+  ): Promise<Result<ApproveResult>> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for approving credits");
     }
@@ -158,7 +143,7 @@ export class CreditManager {
         "ApproveCredit",
         tx
       );
-      return { tx, result };
+      return { meta: { tx }, result };
     } catch (error) {
       if (error instanceof ContractFunctionExecutionError) {
         if (error.message.includes("does not match origin or caller")) {
@@ -176,7 +161,7 @@ export class CreditManager {
     receiver: Address,
     requiredCaller: Address = receiver,
     from?: Address
-  ): Promise<WriteResult<RevokeResult>> {
+  ): Promise<Result<RevokeResult>> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for revoking credits");
     }
@@ -197,7 +182,7 @@ export class CreditManager {
         "RevokeCredit",
         tx
       );
-      return { tx, result };
+      return { meta: { tx }, result };
     } catch (error) {
       if (error instanceof ContractFunctionExecutionError) {
         if (error.message.includes("does not match origin or caller")) {
@@ -211,23 +196,23 @@ export class CreditManager {
   }
 
   // Get credit balance
-  async getBalance(address: Address, blockNumber?: bigint): Promise<CreditBalance> {
+  async getBalance(address: Address, blockNumber?: bigint): Promise<Result<CreditBalance>> {
     try {
-      const balance = await this.client.publicClient.readContract({
+      const result = await this.client.publicClient.readContract({
         abi: this.contract.abi,
         address: this.contract.address,
         functionName: "getCreditBalance",
         args: [address],
         blockNumber,
       });
-      return balance;
+      return { result };
     } catch (error) {
       throw new UnhandledCreditError(`Failed to get credit balance: ${error}`);
     }
   }
 
   // Get account details including approvals
-  async getAccount(address: Address, blockNumber?: bigint): Promise<CreditAccount> {
+  async getAccount(address: Address, blockNumber?: bigint): Promise<Result<CreditAccount>> {
     try {
       const account = await this.client.publicClient.readContract({
         abi: this.contract.abi,
@@ -238,11 +223,13 @@ export class CreditManager {
       });
       // Since our `approvals` and `approval` are not read-only, we need to make them mutable
       return {
-        ...account,
-        approvals: account.approvals.map((approval) => ({
-          ...approval,
-          approval: approval.approval.map((approval) => ({ ...approval })),
-        })),
+        result: {
+          ...account,
+          approvals: account.approvals.map((approval) => ({
+            ...approval,
+            approval: approval.approval.map((approval) => ({ ...approval })),
+          })),
+        },
       };
     } catch (error) {
       throw new UnhandledCreditError(`Failed to get account details: ${error}`);
@@ -255,77 +242,33 @@ export class CreditManager {
     receiver?: Address,
     requiredCaller?: Address,
     blockNumber?: bigint
-  ): Promise<CreditApproval> {
-    const account = await this.getAccount(sponsor, blockNumber);
-    // Filter approvals by receiver and requiredCaller, if provided
-    const approvals = account.approvals
+  ): Promise<Result<CreditApproval>> {
+    const {
+      result: { approvals },
+    } = await this.getAccount(sponsor, blockNumber);
+    // Filter approvals by `receiver` and `requiredCaller`, if provided
+    const filteredApprovals = approvals
       .filter((approval) => !receiver || approval.receiver === receiver)
       .filter(
         (approval) =>
           !requiredCaller ||
           approval.approval.some(({ requiredCaller: rc }) => rc === requiredCaller)
       );
-    return { approvals };
-  }
-
-  // Get storage usage
-  async getStorageUsage(address?: Address, blockNumber?: bigint): Promise<StorageUsage> {
-    const addressArg = address || this.client.walletClient?.account?.address;
-    if (!addressArg) {
-      throw new Error("Address is required for getting storage usage");
-    }
-    try {
-      return await this.client.publicClient.readContract({
-        abi: this.contract.abi,
-        address: this.contract.address,
-        functionName: "getStorageUsage",
-        args: [addressArg],
-        blockNumber,
-      });
-    } catch (error) {
-      throw new UnhandledCreditError(`Failed to get storage usage: ${error}`);
-    }
+    return { result: { approvals: filteredApprovals } };
   }
 
   // Get credit stats
-  async getCreditStats(blockNumber?: bigint): Promise<CreditStats> {
+  async getCreditStats(blockNumber?: bigint): Promise<Result<CreditStats>> {
     try {
-      return await this.client.publicClient.readContract({
+      const result = await this.client.publicClient.readContract({
         abi: this.contract.abi,
         address: this.contract.address,
         functionName: "getCreditStats",
         blockNumber,
       });
+      return { result };
     } catch (error) {
       throw new UnhandledCreditError(`Failed to get credit stats: ${error}`);
-    }
-  }
-
-  // Get storage stats
-  async getStorageStats(blockNumber?: bigint): Promise<StorageStats> {
-    try {
-      return await this.client.publicClient.readContract({
-        abi: this.contract.abi,
-        address: this.contract.address,
-        functionName: "getStorageStats",
-        blockNumber,
-      });
-    } catch (error) {
-      throw new UnhandledCreditError(`Failed to get storage stats: ${error}`);
-    }
-  }
-
-  // Get subnet stats
-  async getSubnetStats(blockNumber?: bigint): Promise<SubnetStats> {
-    try {
-      return await this.client.publicClient.readContract({
-        abi: this.contract.abi,
-        address: this.contract.address,
-        functionName: "getSubnetStats",
-        blockNumber,
-      });
-    } catch (error) {
-      throw new UnhandledCreditError(`Failed to get subnet stats: ${error}`);
     }
   }
 }
