@@ -6,12 +6,13 @@ import { Account, Address, createWalletClient, getAddress, http, parseEther } fr
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { localnet } from "../src/chains.js";
 import { HokuClient } from "../src/client.js";
-import { BucketManager } from "../src/entities/buckets.js";
-import { CreditManager } from "../src/entities/credits.js";
+import { BlobManager } from "../src/entities/blob.js";
+import { BucketManager } from "../src/entities/bucket.js";
+import { CreditManager } from "../src/entities/credit.js";
 
 // TODO: these tests are somewhat dependent on one another, so we should refactor to be independent
 describe.only("contracts", function () {
-  this.timeout(30000);
+  this.timeout(40000);
   let client: HokuClient;
   let account: Account;
 
@@ -35,26 +36,26 @@ describe.only("contracts", function () {
     });
 
     it("should create a bucket", async () => {
-      const { tx, result } = await bucketManager.create(account.address);
-      expect(tx).to.be.a("string");
+      const { meta, result } = await bucketManager.create(account.address);
+      expect(meta?.tx).to.be.a("string");
       strictEqual(result.owner, account.address);
       strictEqual(result.bucket.slice(0, 2), "t2");
     });
 
     it("should list buckets", async () => {
-      let buckets = await bucketManager.list(account.address);
+      let { result: buckets } = await bucketManager.list(account.address);
       expect(buckets).to.be.an("array");
       strictEqual(buckets[0].kind, 0);
 
       // at a specific block number
       const latestBlock = await client.publicClient.getBlockNumber();
-      buckets = await bucketManager.list(account.address, latestBlock);
+      ({ result: buckets } = await bucketManager.list(account.address, latestBlock));
       expect(buckets).to.be.an("array");
       strictEqual(buckets[0].kind, 0);
 
       // "non-existent" account in FVM world, and it has not created any buckets
       const randomAccount = privateKeyToAccount(generatePrivateKey());
-      buckets = await bucketManager.list(randomAccount.address);
+      ({ result: buckets } = await bucketManager.list(randomAccount.address));
       expect(buckets).to.be.an("array");
       strictEqual(buckets.length, 0);
     });
@@ -62,7 +63,7 @@ describe.only("contracts", function () {
     it("should override default contract address", async () => {
       const bucketManagerAddr = client.bucketManager().getContract().address;
       const overrideBucketManager = client.bucketManager(bucketManagerAddr);
-      const buckets = await overrideBucketManager.list(account.address);
+      const { result: buckets } = await overrideBucketManager.list(account.address);
       expect(buckets).to.be.an("array");
       strictEqual(buckets[0].kind, 0);
     });
@@ -73,14 +74,15 @@ describe.only("contracts", function () {
       const blobHash = "rzghyg4z3p6vbz5jkgc75lk64fci7kieul65o6hk6xznx7lctkmq";
 
       before(async () => {
-        const { result } = await bucketManager.create();
-        bucket = result.bucket;
+        ({
+          result: { bucket },
+        } = await bucketManager.create());
       });
 
       it("should add object from file", async () => {
         const path = await temporaryWrite("hello\n");
-        const { tx, result } = await bucketManager.addFile(bucket, key, path);
-        expect(tx).to.be.a("string");
+        const { meta, result } = await bucketManager.addFile(bucket, key, path);
+        expect(meta?.tx).to.be.a("string");
         strictEqual(result.owner, account.address);
         strictEqual(result.bucket, bucket);
         strictEqual(result.key, key);
@@ -96,8 +98,8 @@ describe.only("contracts", function () {
         // this should be fixed elsewhere, but for now, we'll use a different key
         // and *not* overwrite. latency is still around 5-10 seconds, though, if
         // an object is added with the same data as another in the bucket...
-        const { tx, result } = await bucketManager.addFile(bucket, "hello/test", file);
-        expect(tx).to.be.a("string");
+        const { meta, result } = await bucketManager.addFile(bucket, "hello/test", file);
+        expect(meta?.tx).to.be.a("string");
         strictEqual(result.owner, account.address);
         strictEqual(result.bucket, bucket);
         strictEqual(result.key, "hello/test");
@@ -105,13 +107,13 @@ describe.only("contracts", function () {
       });
 
       it("should get object", async () => {
-        let object = await bucketManager.get(bucket, key);
+        let { result: object } = await bucketManager.get(bucket, key);
         strictEqual(object.blobHash, blobHash);
         strictEqual(object.size, 6n);
 
         // at a specific block number
         const latestBlock = await client.publicClient.getBlockNumber();
-        object = await bucketManager.get(bucket, key, latestBlock);
+        ({ result: object } = await bucketManager.get(bucket, key, latestBlock));
         strictEqual(object.blobHash, blobHash);
         strictEqual(object.size, 6n);
       });
@@ -220,7 +222,9 @@ describe.only("contracts", function () {
       });
 
       it("should query objects", async () => {
-        let { objects, commonPrefixes } = await bucketManager.query(bucket, "hello/");
+        let {
+          result: { objects, commonPrefixes },
+        } = await bucketManager.query(bucket, "hello/");
         expect(objects.length).to.be.greaterThan(0);
         strictEqual(objects[0].key, key);
         strictEqual(objects[0].value.size, 6n);
@@ -228,20 +232,17 @@ describe.only("contracts", function () {
         strictEqual(commonPrefixes.length, 0);
 
         // no objects with prefix
-        ({ objects, commonPrefixes } = await bucketManager.query(bucket, "foo/"));
+        ({
+          result: { objects, commonPrefixes },
+        } = await bucketManager.query(bucket, "foo/"));
         strictEqual(objects.length, 0);
         strictEqual(commonPrefixes.length, 0);
 
         // with all possible parameters
         const latestBlock = await client.publicClient.getBlockNumber();
-        ({ objects, commonPrefixes } = await bucketManager.query(
-          bucket,
-          "hello/",
-          "/",
-          0,
-          1,
-          latestBlock
-        ));
+        ({
+          result: { objects, commonPrefixes },
+        } = await bucketManager.query(bucket, "hello/", "/", 0, 1, latestBlock));
         strictEqual(objects.length, 1);
         strictEqual(objects[0].key, key);
         strictEqual(commonPrefixes.length, 0);
@@ -263,8 +264,8 @@ describe.only("contracts", function () {
         const path = await temporaryWrite("hello\n");
         await bucketManager.addFile(bucket, deletedKey, path);
         await new Promise((resolve) => setTimeout(resolve, 15000));
-        const { tx, result } = await bucketManager.delete(bucket, deletedKey);
-        expect(tx).to.be.a("string");
+        const { meta, result } = await bucketManager.delete(bucket, deletedKey);
+        expect(meta?.tx).to.be.a("string");
         strictEqual(result.owner, account.address);
         strictEqual(result.bucket, bucket);
         strictEqual(result.key, deletedKey);
@@ -284,8 +285,6 @@ describe.only("contracts", function () {
     });
   });
 
-  // TODO: some of these tests just check types because we don't have a great CI flow,
-  // but we can change that in the future and make them more explicit
   describe("credit manager", function () {
     let credits: CreditManager;
     let receiver: Address;
@@ -299,14 +298,14 @@ describe.only("contracts", function () {
 
     it("should buy credits", async () => {
       const amount = parseEther("1");
-      let { tx, result } = await credits.buy(amount);
-      expect(tx).to.be.a("string");
+      let { meta, result } = await credits.buy(amount);
+      expect(meta?.tx).to.be.a("string");
       strictEqual(result.addr, account.address);
       strictEqual(result.amount, amount);
 
       // buy for another account
-      ({ tx, result } = await credits.buy(amount, receiver));
-      expect(tx).to.be.a("string");
+      ({ meta, result } = await credits.buy(amount, receiver));
+      expect(meta?.tx).to.be.a("string");
       strictEqual(result.addr, receiver);
       strictEqual(result.amount, amount);
     });
@@ -343,7 +342,7 @@ describe.only("contracts", function () {
     it("should override default contract address", async () => {
       const creditManagerAddr = credits.getContract().address;
       const overrideCreditManager = client.creditManager(creditManagerAddr);
-      const result = await overrideCreditManager.getBalance(receiver);
+      const { result } = await overrideCreditManager.getBalance(receiver);
       expect(result.creditFree).to.not.equal(0n);
       expect(result.creditCommitted).to.be.a("bigint");
       expect(result.lastDebitEpoch).to.be.a("bigint");
@@ -351,29 +350,29 @@ describe.only("contracts", function () {
 
     it("should approve credit spending", async () => {
       // use only receiver
-      let { tx, result } = await credits.approve(receiver);
-      expect(tx).to.be.a("string");
+      let { meta, result } = await credits.approve(receiver);
+      expect(meta?.tx).to.be.a("string");
       strictEqual(result.from, account.address);
       strictEqual(result.receiver, receiver);
       strictEqual(result.requiredCaller, receiver);
 
       // also use a required caller
-      ({ tx, result } = await credits.approve(receiver, requiredCaller));
-      expect(tx).to.be.a("string");
+      ({ meta, result } = await credits.approve(receiver, requiredCaller));
+      expect(meta?.tx).to.be.a("string");
       strictEqual(result.from, account.address);
       strictEqual(result.receiver, receiver);
       strictEqual(result.requiredCaller, requiredCaller);
 
       // explicitly set all parameters
       const amount = parseEther("1");
-      ({ tx, result } = await credits.approve(
+      ({ meta, result } = await credits.approve(
         receiver,
         requiredCaller,
         amount,
         3600n,
         account.address
       ));
-      expect(tx).to.be.a("string");
+      expect(meta?.tx).to.be.a("string");
       strictEqual(result.from, account.address);
       strictEqual(result.receiver, receiver);
       strictEqual(result.requiredCaller, requiredCaller);
@@ -384,23 +383,23 @@ describe.only("contracts", function () {
     it("should revoke credit approval", async () => {
       // revoke with just receiver
       await credits.approve(receiver);
-      let { tx, result } = await credits.revoke(receiver);
-      expect(tx).to.be.a("string");
+      let { meta, result } = await credits.revoke(receiver);
+      expect(meta?.tx).to.be.a("string");
       strictEqual(result.from, account.address);
       strictEqual(result.receiver, receiver);
 
       // revoke receiver and required caller
       await credits.approve(receiver, requiredCaller);
-      ({ tx, result } = await credits.revoke(receiver, requiredCaller));
-      expect(tx).to.be.a("string");
+      ({ meta, result } = await credits.revoke(receiver, requiredCaller));
+      expect(meta?.tx).to.be.a("string");
       strictEqual(result.from, account.address);
       strictEqual(result.receiver, receiver);
       strictEqual(result.requiredCaller, requiredCaller);
 
       // revoke with explicit caller
       await credits.approve(receiver);
-      ({ tx, result } = await credits.revoke(receiver, undefined, account.address));
-      expect(tx).to.be.a("string");
+      ({ meta, result } = await credits.revoke(receiver, undefined, account.address));
+      expect(meta?.tx).to.be.a("string");
       strictEqual(result.from, account.address);
       strictEqual(result.receiver, receiver);
     });
@@ -416,41 +415,42 @@ describe.only("contracts", function () {
     });
 
     it("should get account details", async () => {
-      const accountDetails = await credits.getAccount(receiver);
-      expect(accountDetails.capacityUsed).to.be.a("bigint");
-      expect(accountDetails.creditFree).to.not.equal(0n);
-      expect(accountDetails.creditCommitted).to.be.a("bigint");
-      expect(accountDetails.lastDebitEpoch).to.not.equal(0n);
-      expect(accountDetails.approvals).to.be.an("array");
+      const { result } = await credits.getAccount(receiver);
+      expect(result.capacityUsed).to.be.a("bigint");
+      expect(result.creditFree).to.not.equal(0n);
+      expect(result.creditCommitted).to.be.a("bigint");
+      expect(result.lastDebitEpoch).to.not.equal(0n);
+      expect(result.approvals).to.be.an("array");
     });
 
     it("should get credit approvals", async () => {
       await credits.approve(receiver);
-      let { approvals } = await credits.getCreditApprovals(account.address);
+      let {
+        result: { approvals },
+      } = await credits.getCreditApprovals(account.address);
       expect(approvals).to.be.an("array");
       expect(approvals.length).to.be.greaterThan(0);
       expect(approvals[0].receiver).to.equal(receiver);
 
-      ({ approvals } = await credits.getCreditApprovals(account.address, receiver));
+      ({
+        result: { approvals },
+      } = await credits.getCreditApprovals(account.address, receiver));
       expect(approvals).to.be.an("array");
       expect(approvals.length).to.be.greaterThan(0);
       expect(approvals[0].receiver).to.equal(receiver);
 
       await credits.approve(receiver, requiredCaller);
-      ({ approvals } = await credits.getCreditApprovals(account.address, receiver, requiredCaller));
+      ({
+        result: { approvals },
+      } = await credits.getCreditApprovals(account.address, receiver, requiredCaller));
       expect(approvals).to.be.an("array");
       expect(approvals.length).to.be.greaterThan(0);
       expect(approvals[0].receiver).to.equal(receiver);
       expect(approvals[0].approval[0].requiredCaller).to.equal(requiredCaller);
     });
 
-    it("should get storage usage", async () => {
-      const usage = await credits.getStorageUsage(receiver);
-      expect(usage.capacityUsed).to.be.a("bigint");
-    });
-
     it("should get credit stats", async () => {
-      const stats = await credits.getCreditStats();
+      const { result: stats } = await credits.getCreditStats();
       expect(Number(stats.balance)).to.be.greaterThan(0);
       expect(Number(stats.creditCommitted)).to.be.greaterThan(0);
       expect(Number(stats.creditSold)).to.be.greaterThan(0);
@@ -458,19 +458,36 @@ describe.only("contracts", function () {
       strictEqual(stats.creditDebitRate, 1n);
       expect(Number(stats.numAccounts)).to.be.greaterThan(0);
     });
+  });
+
+  // TODO: some of these tests just check types because we don't have a great CI flow,
+  // but we can change that in the future and make them more explicit
+  describe("blob manager", function () {
+    let blobs: BlobManager;
+    let receiver: Address;
+
+    before(async () => {
+      blobs = client.blobManager();
+      receiver = getAddress("0x9965507d1a55bcc2695c58ba16fb37d819b0a4dc");
+    });
+
+    it("should get storage usage", async () => {
+      const { result } = await blobs.getStorageUsage(receiver);
+      expect(result).to.be.a("bigint");
+    });
 
     it("should get storage stats", async () => {
-      const stats = await credits.getStorageStats();
-      expect(Number(stats.capacityFree)).to.be.greaterThan(0);
+      const { result: stats } = await blobs.getStorageStats();
+      expect(Number(stats.capacityTotal)).to.be.greaterThan(0);
       expect(Number(stats.capacityUsed)).to.be.greaterThan(0);
       expect(stats.numBlobs).to.be.a("bigint");
       expect(stats.numResolving).to.be.a("bigint");
     });
 
     it("should get subnet stats", async () => {
-      const stats = await credits.getSubnetStats();
+      const { result: stats } = await blobs.getSubnetStats();
       expect(Number(stats.balance)).to.be.greaterThan(0);
-      expect(Number(stats.capacityFree)).to.be.greaterThan(0);
+      expect(Number(stats.capacityTotal)).to.be.greaterThan(0);
       expect(Number(stats.capacityUsed)).to.be.greaterThan(0);
       expect(Number(stats.creditSold)).to.be.greaterThan(0);
       expect(Number(stats.creditCommitted)).to.be.greaterThan(0);

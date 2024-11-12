@@ -1,6 +1,6 @@
 import { Address, Chain, createPublicClient, http, PublicClient, WalletClient } from "viem";
 import { type ChainName, getChain, localnet } from "./chains.js";
-import { BucketManager, CreditManager } from "./entities/index.js";
+import { BlobManager, BucketManager, CreditManager } from "./entities/index.js";
 
 // export const publicClient: PublicClient = createPublicClient({
 //   chain: localnet as Chain,
@@ -57,6 +57,10 @@ export class HokuClient {
         transport: http(),
       }),
     });
+  }
+
+  blobManager(contractAddress?: Address): BlobManager {
+    return new BlobManager(this, contractAddress);
   }
 
   bucketManager(contractAddress?: Address): BucketManager {

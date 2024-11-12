@@ -21,12 +21,12 @@ import {
   ObjectNotFound,
   UnhandledBucketError,
 } from "./errors.js";
-import { DeepMutable, parseEventFromTransaction, type WriteResult } from "./utils.js";
+import { DeepMutable, parseEventFromTransaction, type Result } from "./utils.js";
 
 // TODO: emulates `@wagmi/cli` generated constants
 export const bucketManagerAddress = {
   2938118273996536: "0x4c74c78B3698cA00473f12eF517D21C65461305F", // TODO: testnet; outdated contract deployment, but keeping here
-  4362550583360910: "0x05B4CB126885fb10464fdD12666FEb25E2563B76", // TODO: localnet; we need to make this deterministic
+  4362550583360910: "0xa8d0AdA96fb0A55Fc5040b95a6439Df7C2B34DC8", // TODO: localnet; we need to make this deterministic
 } as const;
 
 /// The minimum epoch duration a blob can be stored.
@@ -53,12 +53,12 @@ export type AddOptions = {
 
 // Used for get()
 export type ObjectValue = DeepMutable<
-  ContractFunctionReturnType<typeof bucketManagerABI, AbiStateMutability, "get">
+  ContractFunctionReturnType<typeof bucketManagerABI, AbiStateMutability, "getObject">
 >;
 
 // Used for list()
 export type ListResult = DeepMutable<
-  ContractFunctionReturnType<typeof bucketManagerABI, AbiStateMutability, "list">
+  ContractFunctionReturnType<typeof bucketManagerABI, AbiStateMutability, "listBuckets">
 >;
 
 // Used for list()
@@ -72,8 +72,8 @@ export type QueryResult = {
 };
 
 // Note: this emits raw cbor bytes, so we need to decode it to get the bucket address
-export type BucketCreatedEvent = Required<
-  GetEventArgs<typeof bucketManagerABI, "BucketCreated", { IndexedOnly: false }>
+export type CreateBucketEvent = Required<
+  GetEventArgs<typeof bucketManagerABI, "CreateBucket", { IndexedOnly: false }>
 >;
 
 // Used for create()
@@ -84,12 +84,12 @@ export type CreateBucketResult = {
 
 // Used for add()
 export type AddObjectResult = Required<
-  GetEventArgs<typeof bucketManagerABI, "ObjectAdded", { IndexedOnly: false }>
+  GetEventArgs<typeof bucketManagerABI, "AddObject", { IndexedOnly: false }>
 >;
 
 // Used for delete()
 export type DeleteObjectResult = Required<
-  GetEventArgs<typeof bucketManagerABI, "ObjectRemoved", { IndexedOnly: false }>
+  GetEventArgs<typeof bucketManagerABI, "DeleteObject", { IndexedOnly: false }>
 >;
 
 async function getObjectsSourceNodeId() {
@@ -215,7 +215,7 @@ export class BucketManager {
   }
 
   // Create a bucket
-  async create(owner?: Address): Promise<WriteResult<CreateBucketResult>> {
+  async create(owner?: Address): Promise<Result<CreateBucketResult>> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for creating a bucket");
     }
@@ -223,22 +223,22 @@ export class BucketManager {
       const { request } = await this.client.publicClient.simulateContract({
         address: this.contract.address,
         abi: this.contract.abi,
-        functionName: "create",
+        functionName: "createBucket",
         args: [owner ?? this.client.walletClient.account.address],
         account: this.client.walletClient.account,
       });
       const tx = await this.client.walletClient.writeContract(request);
-      const { owner: eventOwner, data } = await parseEventFromTransaction<BucketCreatedEvent>(
+      const { owner: eventOwner, data } = await parseEventFromTransaction<CreateBucketEvent>(
         this.client.publicClient,
         this.contract.abi,
-        "BucketCreated",
+        "CreateBucket",
         tx
       );
       // First value is the actor's ID, second is the robust t2 address payload
       const decoded = cbor.decode(data);
       const filAddressBytes = decoded[1];
       const bucket = AddressActor.fromBytes(filAddressBytes);
-      return { tx, result: { owner: eventOwner, bucket: bucket.toString() } };
+      return { meta: { tx }, result: { owner: eventOwner, bucket: bucket.toString() } };
     } catch (error) {
       if (error instanceof ContractFunctionExecutionError) {
         throw new CreateBucketError(error.message);
@@ -248,31 +248,32 @@ export class BucketManager {
   }
 
   // List buckets
-  async list(owner: Hex, blockNumber?: bigint): Promise<ListResult> {
+  async list(owner: Hex, blockNumber?: bigint): Promise<Result<ListResult>> {
     const data = await this.client.publicClient.readContract({
       abi: this.contract.abi,
       address: this.contract.address,
-      functionName: "list",
+      functionName: "listBuckets",
       args: [owner],
       blockNumber,
     });
     // Convert readonly `metadata` to mutable type
-    return data.map((item) => ({
+    const result = data.map((item) => ({
       ...item,
       metadata: [...item.metadata],
     }));
+    return { result };
   }
 
   // Add an object to a bucket
   // TODO: this should be private and used internally by addFile
-  async add(bucket: string, addParams: AddParams): Promise<WriteResult<AddObjectResult>> {
+  async add(bucket: string, addParams: AddParams): Promise<Result<AddObjectResult>> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for adding an object");
     }
     const { request } = await this.client.publicClient.simulateContract({
       address: this.contract.address,
       abi: this.contract.abi,
-      functionName: "add",
+      functionName: "addObject",
       args: [bucket, addParams],
       account: this.client.walletClient.account,
     });
@@ -284,10 +285,10 @@ export class BucketManager {
     } = await parseEventFromTransaction<AddObjectResult>(
       this.client.publicClient,
       this.contract.abi,
-      "ObjectAdded",
+      "AddObject",
       tx
     );
-    return { tx, result: { owner, bucket: eventBucket, key } };
+    return { meta: { tx }, result: { owner, bucket: eventBucket, key } };
   }
 
   async addFile(
@@ -295,7 +296,7 @@ export class BucketManager {
     key: string,
     file: string | File | Uint8Array,
     options?: AddOptions
-  ): Promise<WriteResult<AddObjectResult>> {
+  ): Promise<Result<AddObjectResult>> {
     const metadata = options?.metadata ?? [];
     const { data, contentType, size } = await this.fileHandler.readFile(file);
     if (contentType) {
@@ -322,8 +323,8 @@ export class BucketManager {
     return await this.add(bucket, addParams);
   }
 
-  // Remove an object from a bucket
-  async delete(bucket: string, key: string): Promise<WriteResult<DeleteObjectResult>> {
+  // Delete an object from a bucket
+  async delete(bucket: string, key: string): Promise<Result<DeleteObjectResult>> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for adding an object");
     }
@@ -331,7 +332,7 @@ export class BucketManager {
       const { request } = await this.client.publicClient.simulateContract({
         address: this.contract.address,
         abi: this.contract.abi,
-        functionName: "remove",
+        functionName: "deleteObject",
         args: [bucket, key],
         account: this.client.walletClient.account,
       });
@@ -343,10 +344,10 @@ export class BucketManager {
       } = await parseEventFromTransaction<DeleteObjectResult>(
         this.client.publicClient,
         this.contract.abi,
-        "ObjectRemoved",
+        "DeleteObject",
         tx
       );
-      return { tx, result: { owner, bucket: eventBucket, key: eventKey } };
+      return { meta: { tx }, result: { owner, bucket: eventBucket, key: eventKey } };
     } catch (error) {
       if (error instanceof ContractFunctionExecutionError) {
         // Check for specific error messages
@@ -359,20 +360,21 @@ export class BucketManager {
   }
 
   // Get an object from a bucket
-  async get(bucket: string, key: string, blockNumber?: bigint): Promise<ObjectValue> {
+  async get(bucket: string, key: string, blockNumber?: bigint): Promise<Result<ObjectValue>> {
     try {
       const { blobHash, recoveryHash, size, expiry, metadata } =
         await this.client.publicClient.readContract({
           abi: this.contract.abi,
           address: this.contract.address,
-          functionName: "get",
+          functionName: "getObject",
           args: [bucket, key],
           blockNumber,
         });
       if (!blobHash) {
         throw new ObjectNotFound(bucket, key);
       }
-      return { blobHash, recoveryHash, size, expiry, metadata: [...metadata] };
+      const result = { blobHash, recoveryHash, size, expiry, metadata: [...metadata] };
+      return { result };
     } catch (error) {
       if (error instanceof ObjectNotFound) {
         throw error;
@@ -393,7 +395,9 @@ export class BucketManager {
     blockNumber?: bigint
   ): Promise<Uint8Array> {
     try {
-      const { size } = await this.get(bucket, key, blockNumber);
+      const {
+        result: { size },
+      } = await this.get(bucket, key, blockNumber);
       if (range) {
         checkRange(range, size);
       }
@@ -409,13 +413,13 @@ export class BucketManager {
 
       // Combine all chunks into a single Uint8Array
       const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-      const result = new Uint8Array(totalLength);
+      const data = new Uint8Array(totalLength);
       let offset = 0;
       for (const chunk of chunks) {
-        result.set(chunk, offset);
+        data.set(chunk, offset);
         offset += chunk.length;
       }
-      return result;
+      return data;
     } catch (error) {
       if (error instanceof InvalidValue || error instanceof ObjectNotFound) {
         throw error;
@@ -431,7 +435,9 @@ export class BucketManager {
     blockNumber?: bigint
   ): Promise<ReadableStream<Uint8Array>> {
     try {
-      const { size } = await this.get(bucket, key, blockNumber);
+      const {
+        result: { size },
+      } = await this.get(bucket, key, blockNumber);
       if (range) {
         checkRange(range, size);
       }
@@ -452,16 +458,16 @@ export class BucketManager {
     offset: number = 0,
     limit: number = 100,
     blockNumber?: bigint
-  ): Promise<QueryResult> {
+  ): Promise<Result<QueryResult>> {
     try {
       const { objects, commonPrefixes } = await this.client.publicClient.readContract({
         abi: this.contract.abi,
         address: this.contract.address,
-        functionName: "query",
+        functionName: "queryObjects",
         args: [bucket, prefix, delimiter, BigInt(offset), BigInt(limit)],
         blockNumber,
       });
-      return {
+      const result = {
         objects: objects.map(({ key, value }) => ({
           key,
           value: {
@@ -474,6 +480,7 @@ export class BucketManager {
         })),
         commonPrefixes: [...commonPrefixes],
       };
+      return { result };
     } catch (error) {
       if (error instanceof ContractFunctionExecutionError) {
         // TODO: We're optimistically assuming an error means the bucket doesn't exist
