@@ -2,6 +2,7 @@ import {
   AbiStateMutability,
   Address,
   Client,
+  ContractFunctionArgs,
   ContractFunctionReturnType,
   getContract,
   GetContractReturnType,
@@ -55,6 +56,26 @@ export type SubnetStats = DeepMutable<
 >;
 
 // Used for addBlob()
+type AddBlobParams = ContractFunctionArgs<typeof blobManagerABI, AbiStateMutability, "addBlob">;
+
+// Used for getBlob()
+type GetBlobParams = ContractFunctionArgs<typeof blobManagerABI, AbiStateMutability, "getBlob">;
+
+// Used for getBlobStatus()
+type GetBlobStatusParams = ContractFunctionArgs<
+  typeof blobManagerABI,
+  AbiStateMutability,
+  "getBlobStatus"
+>;
+
+// Used for deleteBlob()
+type DeleteBlobParams = ContractFunctionArgs<
+  typeof blobManagerABI,
+  AbiStateMutability,
+  "deleteBlob"
+>;
+
+// Used for addBlob()
 export type AddBlobResult = Required<
   GetEventArgs<typeof blobManagerABI, "BlobAdded", { IndexedOnly: false }>
 >;
@@ -87,59 +108,15 @@ export class BlobManager {
     return this.contract;
   }
 
-  // Add a blob
-  async addBlob(
-    source: string,
-    blobHash: string,
-    metadataHash: string,
-    subscriptionId: string,
-    size: bigint,
-    ttl: bigint = 0n,
-    sponsor?: Address
-  ): Promise<Result<AddBlobResult>> {
-    if (!this.client.walletClient?.account) {
-      throw new Error("Wallet client is not initialized for adding blobs");
-    }
-    try {
-      const args = [
-        {
-          sponsor: sponsor || zeroAddress,
-          source,
-          blobHash,
-          metadataHash,
-          subscriptionId,
-          size,
-          ttl,
-        },
-      ] as const;
-      const { request } = await this.client.publicClient.simulateContract({
-        address: this.contract.address,
-        abi: this.contract.abi,
-        functionName: "addBlob",
-        args,
-        account: this.client.walletClient.account,
-      });
-      const tx = await this.client.walletClient.writeContract(request);
-      const result = await parseEventFromTransaction<AddBlobResult>(
-        this.client.publicClient,
-        this.contract.abi,
-        "BlobAdded",
-        tx
-      );
-      return { meta: { tx }, result: [result] };
-    } catch (error) {
-      throw new UnhandledBlobError(`Failed to add blob: ${error}`);
-    }
-  }
-
   // Get blob info
   async getBlob(blobHash: string, blockNumber?: bigint): Promise<Result<BlobInfo>> {
     try {
+      const args = [blobHash] satisfies GetBlobParams;
       const blob = await this.client.publicClient.readContract({
         abi: this.contract.abi,
         address: this.contract.address,
         functionName: "getBlob",
-        args: [blobHash],
+        args,
         blockNumber,
       });
       const result = {
@@ -208,7 +185,7 @@ export class BlobManager {
     blockNumber?: bigint
   ): Promise<Result<BlobStatus>> {
     try {
-      const args = [subscriber, blobHash, subscriptionId] as const;
+      const args = [subscriber, blobHash, subscriptionId] satisfies GetBlobStatusParams;
       const result = await this.client.publicClient.readContract({
         abi: this.contract.abi,
         address: this.contract.address,
@@ -257,6 +234,51 @@ export class BlobManager {
     }
   }
 
+  // Add a blob
+  async addBlob(
+    source: string,
+    blobHash: string,
+    metadataHash: string,
+    subscriptionId: string,
+    size: bigint,
+    ttl: bigint = 0n,
+    sponsor?: Address
+  ): Promise<Result<AddBlobResult>> {
+    if (!this.client.walletClient?.account) {
+      throw new Error("Wallet client is not initialized for adding blobs");
+    }
+    try {
+      const args = [
+        {
+          sponsor: sponsor || zeroAddress,
+          source,
+          blobHash,
+          metadataHash,
+          subscriptionId,
+          size,
+          ttl,
+        },
+      ] satisfies AddBlobParams;
+      const { request } = await this.client.publicClient.simulateContract({
+        address: this.contract.address,
+        abi: this.contract.abi,
+        functionName: "addBlob",
+        args,
+        account: this.client.walletClient.account,
+      });
+      const tx = await this.client.walletClient.writeContract(request);
+      const result = await parseEventFromTransaction<AddBlobResult>(
+        this.client.publicClient,
+        this.contract.abi,
+        "BlobAdded",
+        tx
+      );
+      return { meta: { tx }, result: [result] };
+    } catch (error) {
+      throw new UnhandledBlobError(`Failed to add blob: ${error}`);
+    }
+  }
+
   // Delete blob
   async deleteBlob(
     blobHash: string,
@@ -267,7 +289,7 @@ export class BlobManager {
       throw new Error("Wallet client is not initialized for deleting blobs");
     }
     try {
-      const args = [subscriber || zeroAddress, blobHash, subscriptionId] as const;
+      const args = [subscriber || zeroAddress, blobHash, subscriptionId] satisfies DeleteBlobParams;
       const { request } = await this.client.publicClient.simulateContract({
         address: this.contract.address,
         abi: this.contract.abi,
