@@ -1,7 +1,6 @@
 import { AddressActor, base32, cbor } from "@hokunet/fvm";
 import { blake3 } from "@noble/hashes/blake3";
-import { BlobAddOutcome, Iroh, NodeAddr } from "@number0/iroh";
-import * as u8a from "uint8arrays";
+import { BlobAddOutcome, Iroh } from "@number0/iroh";
 import {
   AbiStateMutability,
   Address,
@@ -9,14 +8,11 @@ import {
   ContractFunctionArgs,
   ContractFunctionExecutionError,
   ContractFunctionReturnType,
-  encodeAbiParameters,
   encodeFunctionData,
   getContract,
   GetContractReturnType,
   GetEventArgs,
   Hex,
-  parseAbiParameters,
-  toRlp,
 } from "viem";
 import { bucketManagerABI } from "../abis.js";
 import { HokuClient } from "../client.js";
@@ -52,11 +48,38 @@ type IrohNode = {
   };
 };
 
+type SnakeToCamel<S extends string> = S extends `${infer T}_${infer U}`
+  ? `${T}${Capitalize<SnakeToCamel<U>>}`
+  : S;
+
+// Utility type to transform all properties of an object
+type SnakeToCamelCase<T> = {
+  [K in keyof T as SnakeToCamel<string & K>]: T[K];
+};
+
+// Original API response type
+type RawObjectsApiResponse = {
+  hash: string;
+  metadata_hash: string;
+};
+
+function snakeToCamel<T>(obj: T extends Record<string, unknown> ? T : never): SnakeToCamelCase<T> {
+  return Object.fromEntries(
+    Object.entries(obj).map(([key, value]) => [
+      key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase()),
+      value,
+    ])
+  ) as SnakeToCamelCase<T>;
+}
+
+// Transformed type with camelCase
+type ObjectsApiResponse = SnakeToCamelCase<RawObjectsApiResponse>;
+
 // TODO: emulates `@wagmi/cli` generated constants
 export const bucketManagerAddress = {
   2938118273996536: "0x4c74c78B3698cA00473f12eF517D21C65461305F", // TODO: testnet; outdated contract deployment, but keeping here
-  4362550583360910: "0xa8d0AdA96fb0A55Fc5040b95a6439Df7C2B34DC8", // TODO: localnet; we need to make this deterministic
-  1942764459484029: "0x3CB5236440fb33F5916a59f7354754613e5919ae", // TODO: devnet; we need to make this deterministic
+  4362550583360910: "0x4d8eC2972eb0bC4210c64E651638D4a00ad3B400", // TODO: localnet; we need to make this deterministic
+  1942764459484029: "0x2Cff47A442d1E5B8beCbb104Cf8ca659d09BDB77", // TODO: devnet; we need to make this deterministic
 } as const;
 
 /// The minimum epoch duration a blob can be stored.
@@ -120,6 +143,12 @@ export type AddObjectResult = Required<
 // Used for delete()
 export type DeleteObjectResult = Required<
   GetEventArgs<typeof bucketManagerABI, "DeleteObject", { IndexedOnly: false }>
+>;
+
+// Used for create()
+type CreateBucketParams = Extract<
+  ContractFunctionArgs<typeof bucketManagerABI, AbiStateMutability, "createBucket">,
+  readonly [Address, readonly { key: string; value: string }[]]
 >;
 
 // Used for get()
@@ -197,8 +226,6 @@ async function irohNodeToExpectedFormat(node: Iroh): Promise<IrohNode> {
 }
 
 async function uploadToIroh(iroh: Iroh, data: Uint8Array): Promise<BlobAddOutcome> {
-  console.log("DATA");
-  console.log(data);
   const dataArray: number[] = Array.from(data);
   return await iroh.blobs.addBytes(dataArray);
 }
@@ -229,7 +256,7 @@ export async function callObjectsApiAddObject(
   bucket: string,
   params: AddObjectParams,
   irohNode: IrohNode
-) {
+): Promise<ObjectsApiResponse> {
   try {
     if (!bucketManager.client) {
       throw new Error("Client is not initialized for adding an object");
@@ -280,24 +307,11 @@ export async function callObjectsApiAddObject(
       account: bucketManager.client.walletClient.account!,
     });
     const signedTransaction = await bucketManager.client.walletClient.signTransaction(request);
-    console.log("SIGNED TRANSACTION");
-    console.log(signedTransaction);
     const byteArray = hexToBytes(signedTransaction);
     const base64MsgRaw = encodeToBase64(byteArray);
     const base64Msg = base64MsgRaw.replace(/\+/g, "-").replace(/\//g, "_");
 
-    console.log("BASE64 MSG");
-    console.log(base64Msg);
-    // const source = JSON.stringify(await getObjectsNodeInfo());
-    console.log("NODE ID");
-    console.log(irohNode.node_id);
-    console.log("NODE RELAY URL");
-    console.log(irohNode.info.relay_url);
-    console.log("NODE ADDRESSES");
-    console.log(irohNode.info.direct_addresses);
-    console.log("SOURCE");
     const source = JSON.stringify(irohNode);
-    console.log(source);
     const formData = new FormData();
     formData.append("chain_id", chainId.toString());
     formData.append("msg", base64Msg);
@@ -313,7 +327,7 @@ export async function callObjectsApiAddObject(
       throw new Error(`Objects API error: ${error.message}`);
     }
     const json = await response.json();
-    return json;
+    return snakeToCamel(json) as ObjectsApiResponse;
   } catch (error) {
     console.error("Error calling objects API add object", error);
     throw error;
@@ -437,16 +451,23 @@ export class BucketManager {
   }
 
   // Create a bucket
-  async create(owner?: Address): Promise<Result<CreateBucketResult>> {
+  async create(
+    owner?: Address,
+    metadata?: Record<string, string>
+  ): Promise<Result<CreateBucketResult>> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for creating a bucket");
     }
     try {
+      const args = [
+        owner ?? this.client.walletClient.account.address,
+        metadata ? convertMetadataToAbiParams(metadata) : [],
+      ] satisfies CreateBucketParams;
       const { request } = await this.client.publicClient.simulateContract({
         address: this.contract.address,
         abi: this.contract.abi,
         functionName: "createBucket",
-        args: [owner ?? this.client.walletClient.account.address],
+        args,
         account: this.client.walletClient.account,
       });
       const tx = await this.client.walletClient.writeContract(request);
@@ -539,16 +560,15 @@ export class BucketManager {
       source,
       key,
       blobHash: hash,
-      recoveryHash: "",
+      recoveryHash: "", // TODO: Once https://github.com/hokunet/ipc/issues/300 is merged, this'll need to change
       size,
       ttl,
       metadata,
       overwrite: options?.overwrite ?? false,
     };
     const irohNode = await irohNodeToExpectedFormat(iroh);
-    const res = await callObjectsApiAddObject(this, bucket, addParams, irohNode);
-    console.log("OBJECTS API DATA");
-    console.log(res);
+    const { metadataHash } = await callObjectsApiAddObject(this, bucket, addParams, irohNode);
+    addParams.recoveryHash = metadataHash;
     return await this.add(bucket, addParams);
   }
 
@@ -743,4 +763,10 @@ function checkRange(range: { start: number; end?: number }, size: bigint) {
       `Range start, end, or both are out of bounds: ${range.start}, ${range.end}`
     );
   }
+}
+
+function convertMetadataToAbiParams(
+  value: Record<string, string>
+): { key: string; value: string }[] {
+  return Object.entries(value).map(([key, value]) => ({ key, value }));
 }

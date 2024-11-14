@@ -4,10 +4,10 @@ import { describe, it } from "mocha";
 import { temporaryWrite } from "tempy";
 import { Account, Address, createWalletClient, getAddress, http, parseEther } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { devnet, localnet } from "../src/chains.js";
+import { localnet } from "../src/chains.js";
 import { HokuClient } from "../src/client.js";
 import { BlobManager } from "../src/entities/blob.js";
-import { BucketManager, callObjectsApiAddObject } from "../src/entities/bucket.js";
+import { BucketManager } from "../src/entities/bucket.js";
 import { CreditManager } from "../src/entities/credit.js";
 
 // TODO: these tests are somewhat dependent on one another, so we should refactor to be independent
@@ -19,9 +19,9 @@ describe.only("contracts", function () {
   before(async () => {
     const walletClient = createWalletClient({
       account: privateKeyToAccount(
-        "0x1c323d494d1d069fe4c891350a1ec691c4216c17418a0cb3c7533b143bd2b812"
+        "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
       ),
-      chain: devnet,
+      chain: localnet,
       transport: http(),
     });
     account = walletClient.account;
@@ -36,7 +36,7 @@ describe.only("contracts", function () {
     });
 
     it.only("should add object from file", async () => {
-      const bucket = "t2jhx2rem5tqli3gftzndbfajbbt5rinnmyp7wgyy";
+      const bucket = "t2fxignrp2pghbaof7nhvjjmpls2sdiic5j2fc77y";
       const random = Math.floor(Math.random() * 10000);
       // Generate values so that new hashes/blobs are created
       const key = "hello/world" + random;
