@@ -14,7 +14,7 @@ export const DEVNET_RPC_URL = LOCALNET_RPC_URL;
 
 export const TESTNET_EVM_RPC_URL = "https://evm-api.n1.hoku.sh";
 export const LOCALNET_EVM_RPC_URL = "http://127.0.0.1:8645";
-export const DEVNET_EVM_RPC_URL = LOCALNET_EVM_RPC_URL;
+export const DEVNET_EVM_RPC_URL = "http://127.0.0.1:8545";
 export const TESTNET_EVM_WS_URL = "wss://evm-api.n1.hoku.sh";
 export const LOCALNET_EVM_WS_URL = "ws://127.0.0.1:8645";
 export const DEVNET_EVM_WS_URL = LOCALNET_EVM_WS_URL;

@@ -1,15 +1,22 @@
 import { AddressActor, base32, cbor } from "@hokunet/fvm";
 import { blake3 } from "@noble/hashes/blake3";
+import { BlobAddOutcome, Iroh, NodeAddr } from "@number0/iroh";
+import * as u8a from "uint8arrays";
 import {
   AbiStateMutability,
   Address,
   Client,
+  ContractFunctionArgs,
   ContractFunctionExecutionError,
   ContractFunctionReturnType,
+  encodeAbiParameters,
+  encodeFunctionData,
   getContract,
   GetContractReturnType,
   GetEventArgs,
   Hex,
+  parseAbiParameters,
+  toRlp,
 } from "viem";
 import { bucketManagerABI } from "../abis.js";
 import { HokuClient } from "../client.js";
@@ -23,26 +30,49 @@ import {
 } from "./errors.js";
 import { DeepMutable, parseEventFromTransaction, type Result } from "./utils.js";
 
+// {
+//   "node_id": "r4md6oqwcbb2my4jkjqnah2yhvcvyjhefdmdruoiknawuedg2kja",
+//   "info": {
+//     "relay_url": "https://use1-1.relay.iroh.network./",
+//     "direct_addresses": [
+//       "74.66.17.39:11204",
+//       "192.168.1.137:11204",
+//       "[2603:7000:4c3b:3f4e::155b]:11205",
+//       "[2603:7000:4c3b:3f4e:84a:cef9:e7b2:cf5b]:11205",
+//       "[2603:7000:4c3b:3f4e:d32:a9a6:6f39:7814]:11205"
+//     ]
+//   }
+// }
+
+type IrohNode = {
+  node_id: string;
+  info: {
+    relay_url: string;
+    direct_addresses: string[];
+  };
+};
+
 // TODO: emulates `@wagmi/cli` generated constants
 export const bucketManagerAddress = {
   2938118273996536: "0x4c74c78B3698cA00473f12eF517D21C65461305F", // TODO: testnet; outdated contract deployment, but keeping here
   4362550583360910: "0xa8d0AdA96fb0A55Fc5040b95a6439Df7C2B34DC8", // TODO: localnet; we need to make this deterministic
+  1942764459484029: "0x3CB5236440fb33F5916a59f7354754613e5919ae", // TODO: devnet; we need to make this deterministic
 } as const;
 
 /// The minimum epoch duration a blob can be stored.
 export const MIN_TTL = 3600n; // one hour
 
 // Internally used for add()
-export type AddParams = {
-  source: string;
-  key: string;
-  blobHash: string;
-  recoveryHash: string;
-  size: bigint;
-  ttl: bigint;
-  metadata: { key: string; value: string }[];
-  overwrite: boolean;
-};
+// export type AddParams = {
+//   source: string;
+//   key: string;
+//   blobHash: string;
+//   recoveryHash: string;
+//   size: bigint;
+//   ttl: bigint;
+//   metadata: { key: string; value: string }[];
+//   overwrite: boolean;
+// };
 
 // Used for add()
 export type AddOptions = {
@@ -92,10 +122,202 @@ export type DeleteObjectResult = Required<
   GetEventArgs<typeof bucketManagerABI, "DeleteObject", { IndexedOnly: false }>
 >;
 
-async function getObjectsSourceNodeId() {
+// Used for get()
+type GetObjectParams = ContractFunctionArgs<
+  typeof bucketManagerABI,
+  AbiStateMutability,
+  "getObject"
+>;
+
+// Used for delete()
+type DeleteObjectParams = ContractFunctionArgs<
+  typeof bucketManagerABI,
+  AbiStateMutability,
+  "deleteObject"
+>;
+
+// Used for query()
+type QueryObjectsParams = ContractFunctionArgs<
+  typeof bucketManagerABI,
+  AbiStateMutability,
+  "queryObjects"
+>;
+
+// Used for add()
+type AddObjectFullParams = ContractFunctionArgs<
+  typeof bucketManagerABI,
+  AbiStateMutability,
+  "addObject"
+>;
+
+// Used for add()
+export type AddObjectParams = DeepMutable<
+  Extract<
+    AddObjectFullParams[1],
+    {
+      source: string;
+      key: string;
+      blobHash: string;
+      recoveryHash: string;
+      size: bigint;
+      ttl: bigint;
+      metadata: readonly {
+        key: string;
+        value: string;
+      }[];
+      overwrite: boolean;
+    }
+  >
+>;
+
+async function getObjectsNodeInfo(): Promise<IrohNode> {
   const response = await fetch("http://localhost:8001/v1/node");
   const json = await response.json();
-  return json.node_id;
+  return json;
+}
+
+async function createIrohNode(): Promise<Iroh> {
+  const iroh = await Iroh.memory();
+  return iroh;
+}
+
+async function irohNodeToExpectedFormat(node: Iroh): Promise<IrohNode> {
+  const irohNet = node.net;
+  const nodeId = await irohNet.nodeId();
+  const nodeAddr = await irohNet.nodeAddr();
+  const addresses = nodeAddr.addresses;
+  if (!addresses) {
+    throw new Error("No addresses found for node");
+  }
+  const relayUrl = nodeAddr.relayUrl;
+  if (!relayUrl) {
+    throw new Error("No relay URL found for node");
+  }
+  return { node_id: nodeId, info: { relay_url: relayUrl, direct_addresses: addresses } };
+}
+
+async function uploadToIroh(iroh: Iroh, data: Uint8Array): Promise<BlobAddOutcome> {
+  console.log("DATA");
+  console.log(data);
+  const dataArray: number[] = Array.from(data);
+  return await iroh.blobs.addBytes(dataArray);
+}
+
+// Function to convert hex string to byte array (Uint8Array)
+function hexToBytes(hex: string) {
+  if (hex.startsWith("0x")) {
+    hex = hex.slice(2);
+  }
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+  }
+  return bytes;
+}
+
+// Function to encode a Uint8Array to Base64
+function encodeToBase64(byteArray: Uint8Array) {
+  let binary = "";
+  for (let i = 0; i < byteArray.length; i++) {
+    binary += String.fromCharCode(byteArray[i]);
+  }
+  return btoa(binary);
+}
+
+export async function callObjectsApiAddObject(
+  bucketManager: BucketManager,
+  bucket: string,
+  params: AddObjectParams,
+  irohNode: IrohNode
+) {
+  try {
+    if (!bucketManager.client) {
+      throw new Error("Client is not initialized for adding an object");
+    }
+    // We need to pass multipart form data with the following fields:
+    // hash
+    // source
+    // size
+    // msg
+    // chain_id
+    if (!bucketManager.client.walletClient || !bucketManager.client.walletClient.chain) {
+      throw new Error("Wallet client is not initialized for adding an object");
+    }
+    const chainId = bucketManager.client.walletClient.chain.id;
+    const args = [bucket, params] satisfies AddObjectFullParams;
+    const encodedData = encodeFunctionData({
+      abi: bucketManager.contract.abi,
+      functionName: "addObject",
+      args,
+    });
+
+    // Create a signed evm transaction:
+    const from = bucketManager.client.walletClient.account?.address;
+    if (!from) {
+      throw new Error("Wallet client is not initialized for adding an object");
+    }
+    // METHOD_ADD_OBJECT = 3518119203
+    // (bool success, bytes memory data) = address(CALL_ACTOR_ADDRESS).delegatecall(
+    //   abi.encode(uint64(method_num), value, static_call ? READ_ONLY_FLAG : DEFAULT_FLAG, codec, raw_request, actor_address)
+    // );
+    // let calldata = ethers_core::abi::encode(&[
+    //     ethers_core::abi::Token::Uint(ethers_core::types::U256::from(
+    //         fendermint_actor_bucket::Method::AddObject as u64,
+    //     )), // method_num
+    //     ethers_core::abi::Token::Uint(0.into()), // value
+    //     ethers_core::abi::Token::Uint(0x00000000.into()), // static call
+    //     ethers_core::abi::Token::Uint(fvm_ipld_encoding::CBOR.into()), // cbor codec
+    //     ethers_core::abi::Token::Bytes(params.to_vec()), // params
+    //     ethers_core::abi::Token::Uint(store.id().unwrap().into()), // target contract ID address
+    // ]);
+    // CBOR_CODEC = 0x51
+    const request = await bucketManager.client.walletClient.prepareTransactionRequest({
+      from,
+      to: bucketManager.contract.address,
+      value: 0n,
+      data: encodedData,
+      chain: bucketManager.client.walletClient.chain,
+      account: bucketManager.client.walletClient.account!,
+    });
+    const signedTransaction = await bucketManager.client.walletClient.signTransaction(request);
+    console.log("SIGNED TRANSACTION");
+    console.log(signedTransaction);
+    const byteArray = hexToBytes(signedTransaction);
+    const base64MsgRaw = encodeToBase64(byteArray);
+    const base64Msg = base64MsgRaw.replace(/\+/g, "-").replace(/\//g, "_");
+
+    console.log("BASE64 MSG");
+    console.log(base64Msg);
+    // const source = JSON.stringify(await getObjectsNodeInfo());
+    console.log("NODE ID");
+    console.log(irohNode.node_id);
+    console.log("NODE RELAY URL");
+    console.log(irohNode.info.relay_url);
+    console.log("NODE ADDRESSES");
+    console.log(irohNode.info.direct_addresses);
+    console.log("SOURCE");
+    const source = JSON.stringify(irohNode);
+    console.log(source);
+    const formData = new FormData();
+    formData.append("chain_id", chainId.toString());
+    formData.append("msg", base64Msg);
+    formData.append("hash", params.blobHash);
+    formData.append("size", params.size.toString());
+    formData.append("source", source);
+    const response = await fetch("http://localhost:8001/v1/objects", {
+      method: "POST",
+      body: formData,
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(`Objects API error: ${error.message}`);
+    }
+    const json = await response.json();
+    return json;
+  } catch (error) {
+    console.error("Error calling objects API add object", error);
+    throw error;
+  }
 }
 
 // TODO: this assumes the blob/object content already exists on hoku.
@@ -266,15 +488,16 @@ export class BucketManager {
 
   // Add an object to a bucket
   // TODO: this should be private and used internally by addFile
-  async add(bucket: string, addParams: AddParams): Promise<Result<AddObjectResult>> {
+  async add(bucket: string, addParams: AddObjectParams): Promise<Result<AddObjectResult>> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for adding an object");
     }
+    const args = [bucket, addParams] satisfies AddObjectFullParams;
     const { request } = await this.client.publicClient.simulateContract({
       address: this.contract.address,
       abi: this.contract.abi,
       functionName: "addObject",
-      args: [bucket, addParams],
+      args,
       account: this.client.walletClient.account,
     });
     const tx = await this.client.walletClient.writeContract(request);
@@ -298,28 +521,34 @@ export class BucketManager {
     options?: AddOptions
   ): Promise<Result<AddObjectResult>> {
     const metadata = options?.metadata ?? [];
-    const { data, contentType, size } = await this.fileHandler.readFile(file);
+    const { data, contentType } = await this.fileHandler.readFile(file);
     if (contentType) {
       metadata.push({ key: "content-type", value: contentType });
     }
-    const source = await getObjectsSourceNodeId();
-    const blobHash = bytesToBlobHash(data);
+    const { node_id: source } = await getObjectsNodeInfo();
+    // const blobHash = bytesToBlobHash(data);
+    const iroh = await createIrohNode();
+    const { hash, size } = await uploadToIroh(iroh, data);
 
     // TTL of zero is interpreted by Solidity wrappers as null; auto-renewed
     const ttl = options?.ttl ?? 0n;
     if (ttl !== 0n && ttl < MIN_TTL) {
       throw new InvalidValue(`TTL must be at least ${MIN_TTL} seconds`);
     }
-    const addParams: AddParams = {
+    const addParams: AddObjectParams = {
       source,
       key,
-      blobHash,
+      blobHash: hash,
       recoveryHash: "",
       size,
       ttl,
       metadata,
       overwrite: options?.overwrite ?? false,
     };
+    const irohNode = await irohNodeToExpectedFormat(iroh);
+    const res = await callObjectsApiAddObject(this, bucket, addParams, irohNode);
+    console.log("OBJECTS API DATA");
+    console.log(res);
     return await this.add(bucket, addParams);
   }
 
@@ -329,11 +558,12 @@ export class BucketManager {
       throw new Error("Wallet client is not initialized for adding an object");
     }
     try {
+      const args = [bucket, key] satisfies DeleteObjectParams;
       const { request } = await this.client.publicClient.simulateContract({
         address: this.contract.address,
         abi: this.contract.abi,
         functionName: "deleteObject",
-        args: [bucket, key],
+        args,
         account: this.client.walletClient.account,
       });
       const tx = await this.client.walletClient.writeContract(request);
@@ -362,12 +592,13 @@ export class BucketManager {
   // Get an object from a bucket
   async get(bucket: string, key: string, blockNumber?: bigint): Promise<Result<ObjectValue>> {
     try {
+      const args = [bucket, key] satisfies GetObjectParams;
       const { blobHash, recoveryHash, size, expiry, metadata } =
         await this.client.publicClient.readContract({
           abi: this.contract.abi,
           address: this.contract.address,
           functionName: "getObject",
-          args: [bucket, key],
+          args,
           blockNumber,
         });
       if (!blobHash) {
@@ -460,11 +691,18 @@ export class BucketManager {
     blockNumber?: bigint
   ): Promise<Result<QueryResult>> {
     try {
+      const args = [
+        bucket,
+        prefix,
+        delimiter,
+        BigInt(offset),
+        BigInt(limit),
+      ] satisfies QueryObjectsParams;
       const { objects, commonPrefixes } = await this.client.publicClient.readContract({
         abi: this.contract.abi,
         address: this.contract.address,
         functionName: "queryObjects",
-        args: [bucket, prefix, delimiter, BigInt(offset), BigInt(limit)],
+        args,
         blockNumber,
       });
       const result = {

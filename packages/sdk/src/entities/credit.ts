@@ -2,6 +2,7 @@ import {
   AbiStateMutability,
   Address,
   Client,
+  ContractFunctionArgs,
   ContractFunctionExecutionError,
   ContractFunctionReturnType,
   getContract,
@@ -39,6 +40,40 @@ export type CreditStats = DeepMutable<
 // Used for approve()
 export type ApproveResult = Required<
   GetEventArgs<typeof creditManagerABI, "ApproveCredit", { IndexedOnly: false }>
+>;
+
+type ApproveCreditParams = ContractFunctionArgs<
+  typeof creditManagerABI,
+  AbiStateMutability,
+  "approveCredit"
+>;
+
+// Used for revoke()
+type RevokeCreditParams = ContractFunctionArgs<
+  typeof creditManagerABI,
+  AbiStateMutability,
+  "revokeCredit"
+>;
+
+// Used for buyCredit()
+type BuyCreditParams = ContractFunctionArgs<
+  typeof creditManagerABI,
+  AbiStateMutability,
+  "buyCredit"
+>;
+
+// Used for getCreditBalance()
+type GetCreditBalanceParams = ContractFunctionArgs<
+  typeof creditManagerABI,
+  AbiStateMutability,
+  "getCreditBalance"
+>;
+
+// Used for getAccount()
+type GetAccountParams = ContractFunctionArgs<
+  typeof creditManagerABI,
+  AbiStateMutability,
+  "getAccount"
 >;
 
 // Used for buyCredit()
@@ -87,7 +122,7 @@ export class CreditManager {
     }
     try {
       const recipientAddress = recipient || this.client.walletClient.account.address;
-      const args = [recipientAddress] as const;
+      const args = [recipientAddress] satisfies BuyCreditParams;
       const { request } = await this.client.publicClient.simulateContract({
         address: this.contract.address,
         abi: this.contract.abi,
@@ -128,7 +163,13 @@ export class CreditManager {
     }
     const fromAddress = from || this.client.walletClient.account.address;
     try {
-      const args = [fromAddress, receiver, requiredCaller, limit, ttl] as const;
+      const args = [
+        fromAddress,
+        receiver,
+        requiredCaller,
+        limit,
+        ttl,
+      ] satisfies ApproveCreditParams;
       const { request } = await this.client.publicClient.simulateContract({
         address: this.contract.address,
         abi: this.contract.abi,
@@ -167,7 +208,7 @@ export class CreditManager {
     }
     const fromAddress = from || this.client.walletClient.account.address;
     try {
-      const args = [fromAddress, receiver, requiredCaller] as const;
+      const args = [fromAddress, receiver, requiredCaller] satisfies RevokeCreditParams;
       const { request } = await this.client.publicClient.simulateContract({
         address: this.contract.address,
         abi: this.contract.abi,
@@ -196,29 +237,38 @@ export class CreditManager {
   }
 
   // Get credit balance
-  async getBalance(address: Address, blockNumber?: bigint): Promise<Result<CreditBalance>> {
+  async getBalance(address?: Address, blockNumber?: bigint): Promise<Result<CreditBalance>> {
     try {
+      const forAddress = address || this.client.walletClient?.account?.address;
+      if (!forAddress) throw new InvalidValue("Must provide an address or connect a wallet client");
+      const args = [forAddress] satisfies GetCreditBalanceParams;
       const result = await this.client.publicClient.readContract({
         abi: this.contract.abi,
         address: this.contract.address,
         functionName: "getCreditBalance",
-        args: [address],
+        args,
         blockNumber,
       });
       return { result };
     } catch (error) {
+      if (error instanceof InvalidValue) {
+        throw error;
+      }
       throw new UnhandledCreditError(`Failed to get credit balance: ${error}`);
     }
   }
 
   // Get account details including approvals
-  async getAccount(address: Address, blockNumber?: bigint): Promise<Result<CreditAccount>> {
+  async getAccount(address?: Address, blockNumber?: bigint): Promise<Result<CreditAccount>> {
     try {
+      const forAddress = address || this.client.walletClient?.account?.address;
+      if (!forAddress) throw new InvalidValue("Must provide an address or connect a wallet client");
+      const args = [forAddress] satisfies GetAccountParams;
       const account = await this.client.publicClient.readContract({
         abi: this.contract.abi,
         address: this.contract.address,
         functionName: "getAccount",
-        args: [address],
+        args,
         blockNumber,
       });
       // Since our `approvals` and `approval` are not read-only, we need to make them mutable
