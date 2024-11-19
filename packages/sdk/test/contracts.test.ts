@@ -2,10 +2,11 @@ import { rejects, strictEqual } from "assert";
 import { expect } from "chai";
 import { describe, it } from "mocha";
 import { temporaryWrite } from "tempy";
-import { Account, Address, createWalletClient, getAddress, http, parseEther } from "viem";
+import { Account, Address, getAddress, parseEther } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { localnet } from "../src/chains.js";
-import { HokuClient } from "../src/client.js";
+import { HokuClient, walletClientFromPrivateKey } from "../src/client.js";
+import { AccountManager } from "../src/entities/account.js";
 import { BlobManager } from "../src/entities/blob.js";
 import { BucketManager } from "../src/entities/bucket.js";
 import { CreditManager } from "../src/entities/credit.js";
@@ -17,40 +18,24 @@ describe.only("contracts", function () {
   let account: Account;
 
   before(async () => {
-    const walletClient = createWalletClient({
-      account: privateKeyToAccount(
-        "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
-      ),
-      chain: localnet,
-      transport: http(),
-    });
+    const walletClient = walletClientFromPrivateKey(
+      "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6",
+      localnet
+    );
     account = walletClient.account;
     client = new HokuClient({ walletClient });
   });
 
-  describe.only("bucket manager", function () {
+  describe("bucket manager", function () {
     let bucketManager: BucketManager;
 
     before(async () => {
       bucketManager = client.bucketManager();
     });
 
-    it.only("should add object from file", async () => {
-      const bucket = "t2fxignrp2pghbaof7nhvjjmpls2sdiic5j2fc77y";
-      const random = Math.floor(Math.random() * 10000);
-      // Generate values so that new hashes/blobs are created
-      const key = "hello/world" + random;
-      const path = await temporaryWrite(key);
-      const { meta, result } = await bucketManager.addFile(bucket, key, path);
-      expect(meta?.tx).to.be.a("string");
-      strictEqual(result.owner, account.address);
-      strictEqual(result.bucket, bucket);
-      strictEqual(result.key, key);
-    });
-
     it("should create a bucket", async () => {
       const { meta, result } = await bucketManager.create(account.address);
-      expect(meta?.tx).to.be.a("string");
+      expect(meta?.tx?.transactionHash).to.be.a("string");
       strictEqual(result.owner, account.address);
       strictEqual(result.bucket.slice(0, 2), "t2");
     });
@@ -95,7 +80,7 @@ describe.only("contracts", function () {
       it("should add object from file", async () => {
         const path = await temporaryWrite("hello\n");
         const { meta, result } = await bucketManager.addFile(bucket, key, path);
-        expect(meta?.tx).to.be.a("string");
+        expect(meta?.tx?.transactionHash).to.be.a("string");
         strictEqual(result.owner, account.address);
         strictEqual(result.bucket, bucket);
         strictEqual(result.key, key);
@@ -112,7 +97,7 @@ describe.only("contracts", function () {
         // and *not* overwrite. latency is still around 5-10 seconds, though, if
         // an object is added with the same data as another in the bucket...
         const { meta, result } = await bucketManager.addFile(bucket, "hello/test", file);
-        expect(meta?.tx).to.be.a("string");
+        expect(meta?.tx?.transactionHash).to.be.a("string");
         strictEqual(result.owner, account.address);
         strictEqual(result.bucket, bucket);
         strictEqual(result.key, "hello/test");
@@ -278,7 +263,7 @@ describe.only("contracts", function () {
         await bucketManager.addFile(bucket, deletedKey, path);
         await new Promise((resolve) => setTimeout(resolve, 15000));
         const { meta, result } = await bucketManager.delete(bucket, deletedKey);
-        expect(meta?.tx).to.be.a("string");
+        expect(meta?.tx?.transactionHash).to.be.a("string");
         strictEqual(result.owner, account.address);
         strictEqual(result.bucket, bucket);
         strictEqual(result.key, deletedKey);
@@ -312,13 +297,13 @@ describe.only("contracts", function () {
     it("should buy credits", async () => {
       const amount = parseEther("1");
       let { meta, result } = await credits.buy(amount);
-      expect(meta?.tx).to.be.a("string");
+      expect(meta?.tx?.transactionHash).to.be.a("string");
       strictEqual(result.addr, account.address);
       strictEqual(result.amount, amount);
 
       // buy for another account
       ({ meta, result } = await credits.buy(amount, receiver));
-      expect(meta?.tx).to.be.a("string");
+      expect(meta?.tx?.transactionHash).to.be.a("string");
       strictEqual(result.addr, receiver);
       strictEqual(result.amount, amount);
     });
@@ -364,14 +349,14 @@ describe.only("contracts", function () {
     it("should approve credit spending", async () => {
       // use only receiver
       let { meta, result } = await credits.approve(receiver);
-      expect(meta?.tx).to.be.a("string");
+      expect(meta?.tx?.transactionHash).to.be.a("string");
       strictEqual(result.from, account.address);
       strictEqual(result.receiver, receiver);
       strictEqual(result.requiredCaller, receiver);
 
       // also use a required caller
       ({ meta, result } = await credits.approve(receiver, requiredCaller));
-      expect(meta?.tx).to.be.a("string");
+      expect(meta?.tx?.transactionHash).to.be.a("string");
       strictEqual(result.from, account.address);
       strictEqual(result.receiver, receiver);
       strictEqual(result.requiredCaller, requiredCaller);
@@ -385,7 +370,7 @@ describe.only("contracts", function () {
         3600n,
         account.address
       ));
-      expect(meta?.tx).to.be.a("string");
+      expect(meta?.tx?.transactionHash).to.be.a("string");
       strictEqual(result.from, account.address);
       strictEqual(result.receiver, receiver);
       strictEqual(result.requiredCaller, requiredCaller);
@@ -397,14 +382,14 @@ describe.only("contracts", function () {
       // revoke with just receiver
       await credits.approve(receiver);
       let { meta, result } = await credits.revoke(receiver);
-      expect(meta?.tx).to.be.a("string");
+      expect(meta?.tx?.transactionHash).to.be.a("string");
       strictEqual(result.from, account.address);
       strictEqual(result.receiver, receiver);
 
       // revoke receiver and required caller
       await credits.approve(receiver, requiredCaller);
       ({ meta, result } = await credits.revoke(receiver, requiredCaller));
-      expect(meta?.tx).to.be.a("string");
+      expect(meta?.tx?.transactionHash).to.be.a("string");
       strictEqual(result.from, account.address);
       strictEqual(result.receiver, receiver);
       strictEqual(result.requiredCaller, requiredCaller);
@@ -412,7 +397,7 @@ describe.only("contracts", function () {
       // revoke with explicit caller
       await credits.approve(receiver);
       ({ meta, result } = await credits.revoke(receiver, undefined, account.address));
-      expect(meta?.tx).to.be.a("string");
+      expect(meta?.tx?.transactionHash).to.be.a("string");
       strictEqual(result.from, account.address);
       strictEqual(result.receiver, receiver);
     });
@@ -509,6 +494,52 @@ describe.only("contracts", function () {
       expect(Number(stats.numAccounts)).to.be.greaterThan(0);
       expect(stats.numBlobs).to.be.a("bigint");
       expect(stats.numResolving).to.be.a("bigint");
+    });
+  });
+
+  describe("account manager", function () {
+    let accountManager: AccountManager;
+
+    before(async () => {
+      accountManager = client.accountManager();
+    });
+
+    it("should get account balance", async () => {
+      const { result } = await accountManager.balance();
+      expect(Number(result)).to.be.greaterThan(0);
+    });
+
+    it("should get account info", async () => {
+      const { result } = await accountManager.info();
+      strictEqual(result.address, account.address);
+      expect(result.nonce).to.be.greaterThan(0);
+      expect(Number(result.balance)).to.be.greaterThan(0);
+      expect(Number(result.parentBalance)).to.be.greaterThan(0);
+    });
+
+    it("should deposit into subnet", async () => {
+      const amount = parseEther("1");
+      const { meta, result } = await accountManager.deposit(amount);
+      expect(meta?.tx?.transactionHash).to.be.a("string");
+      strictEqual(result, true);
+    });
+
+    it("should withdraw from subnet", async () => {
+      const amount = parseEther("1");
+      const { meta, result } = await accountManager.withdraw(amount);
+      expect(meta?.tx?.transactionHash).to.be.a("string");
+      strictEqual(result, true);
+    });
+
+    it("should transfer within subnet", async () => {
+      const amount = parseEther("1");
+      const receiver = getAddress("0x9965507d1a55bcc2695c58ba16fb37d819b0a4dc");
+      const { result: receiverBalanceBefore } = await accountManager.balance(receiver);
+      const { meta, result } = await accountManager.transfer(receiver, amount);
+      expect(meta?.tx?.transactionHash).to.be.a("string");
+      strictEqual(result, true);
+      const { result: receiverBalanceAfter } = await accountManager.balance(receiver);
+      strictEqual(receiverBalanceBefore + amount, receiverBalanceAfter);
     });
   });
 });

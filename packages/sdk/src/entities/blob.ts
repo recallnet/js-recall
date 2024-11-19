@@ -16,8 +16,8 @@ import { DeepMutable, parseEventFromTransaction, type Result } from "./utils.js"
 
 // TODO: emulates `@wagmi/cli` generated constants
 export const blobManagerAddress = {
-  2938118273996536: "0x8c2e3e8ba0d6084786d60A6600e832E8df84846C", // TODO: testnet; outdated contract deployment, but keeping here
-  4362550583360910: "0x1fA1618AE2F5b3EcC73692974a5E28926553c032", // TODO: localnet; we need to make this deterministic
+  3258443211374980: "0x8c2e3e8ba0d6084786d60A6600e832E8df84846C", // TODO: testnet; outdated contract deployment, but keeping here
+  4362550583360910: "0xCA39399c138acA479C69ABf261aD3B77d91Abee7", // TODO: localnet; we need to make this deterministic
 } as const;
 
 // Used for getBlob()
@@ -266,13 +266,14 @@ export class BlobManager {
         args,
         account: this.client.walletClient.account,
       });
-      const tx = await this.client.walletClient.writeContract(request);
+      const hash = await this.client.walletClient.writeContract(request);
       const result = await parseEventFromTransaction<AddBlobResult>(
         this.client.publicClient,
         this.contract.abi,
         "BlobAdded",
-        tx
+        hash
       );
+      const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
       return { meta: { tx }, result: [result] };
     } catch (error) {
       throw new UnhandledBlobError(`Failed to add blob: ${error}`);
@@ -297,12 +298,13 @@ export class BlobManager {
         args,
         account: this.client.walletClient.account,
       });
-      const tx = await this.client.walletClient.writeContract(request);
+      const hash = await this.client.walletClient.writeContract(request);
+      const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
       const result = await parseEventFromTransaction<DeleteBlobResult>(
         this.client.publicClient,
         this.contract.abi,
         "BlobDeleted",
-        tx
+        hash
       );
       return { meta: { tx }, result: [result] };
     } catch (error) {

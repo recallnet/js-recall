@@ -11,7 +11,7 @@ import {
   TESTNET_EVM_WS_URL,
 } from "./network.js";
 
-export type ChainName = "testnet" | "localnet" | "devnet";
+export type ChainName = "mainnet" | "testnet" | "localnet" | "devnet";
 
 export const testnet: Chain = defineChain({
   id: Number(TESTNET_CHAIN_ID),
@@ -73,12 +73,52 @@ export function supportedChains(isLocalDev = false): Chain[] {
   return chains;
 }
 
-export function getChain(chainName: ChainName): Chain {
+export function checkChainIsSupported(chain: Chain): boolean {
+  return supportedChains(true).some((c) => c.id === chain.id);
+}
+
+export function getChain(chainIdOrName: number | ChainName): Chain {
   const chains = supportedChains(true);
   // TODO: the `chain.name` is prettified like `Hoku Localnet`, but maybe we can add a custom parameter and filter by that
-  const name = chains.find((c) => c.name.toLowerCase().includes(chainName.toLowerCase()));
-  if (name) {
-    return name;
+  const chain = chains.find(
+    (c) =>
+      c.id === chainIdOrName ||
+      c.name.toLowerCase().includes(chainIdOrName.toString().toLowerCase())
+  );
+  if (chain) {
+    return chain;
   }
-  throw new Error(`Chain ${chainName} not found`);
+  throw new Error(`Chain ${chainIdOrName} not found`);
+}
+
+export function checkHasParentChain(chain: Chain): boolean {
+  if (!checkChainIsSupported(chain)) throw new Error(`Chain ${chain.name} not found`);
+
+  switch (chain.id) {
+    case testnet.id:
+    case localnet.id:
+      return true;
+    default:
+      return false;
+  }
+}
+
+export function getParentChain(chain: Chain): Chain | undefined {
+  switch (chain.id) {
+    case testnet.id:
+      return filecoinCalibration;
+    case localnet.id:
+      return anvil;
+    default:
+      return undefined;
+  }
+}
+
+export function checkChainName(chainName: ChainName): boolean {
+  try {
+    getChain(chainName);
+    return true;
+  } catch {
+    return false;
+  }
 }

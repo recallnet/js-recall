@@ -54,6 +54,13 @@ export class UnhandledBlobError extends Error {
   }
 }
 
+export class UnhandledGatewayError extends Error {
+  constructor(message: string) {
+    super(`Gateway error: ${message}`);
+    this.name = "UnhandledGatewayError";
+  }
+}
+
 export class InsufficientFunds extends Error {
   constructor(amount: bigint) {
     super(`Insufficient funds: balance less than amount '${amount}'`);

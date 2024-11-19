@@ -78,7 +78,7 @@ type ObjectsApiResponse = SnakeToCamelCase<RawObjectsApiResponse>;
 // TODO: emulates `@wagmi/cli` generated constants
 export const bucketManagerAddress = {
   2938118273996536: "0x4c74c78B3698cA00473f12eF517D21C65461305F", // TODO: testnet; outdated contract deployment, but keeping here
-  4362550583360910: "0x4d8eC2972eb0bC4210c64E651638D4a00ad3B400", // TODO: localnet; we need to make this deterministic
+  4362550583360910: "0xe4EB561155AFCe723bB1fF8606Fbfe9b28d5d38D", // TODO: localnet; we need to make this deterministic
   1942764459484029: "0x2Cff47A442d1E5B8beCbb104Cf8ca659d09BDB77", // TODO: devnet; we need to make this deterministic
 } as const;
 
@@ -470,12 +470,13 @@ export class BucketManager {
         args,
         account: this.client.walletClient.account,
       });
-      const tx = await this.client.walletClient.writeContract(request);
+      const hash = await this.client.walletClient.writeContract(request);
+      const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
       const { owner: eventOwner, data } = await parseEventFromTransaction<CreateBucketEvent>(
         this.client.publicClient,
         this.contract.abi,
         "CreateBucket",
-        tx
+        hash
       );
       // First value is the actor's ID, second is the robust t2 address payload
       const decoded = cbor.decode(data);
@@ -521,7 +522,8 @@ export class BucketManager {
       args,
       account: this.client.walletClient.account,
     });
-    const tx = await this.client.walletClient.writeContract(request);
+    const hash = await this.client.walletClient.writeContract(request);
+    const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
     const {
       owner,
       bucket: eventBucket,
@@ -530,7 +532,7 @@ export class BucketManager {
       this.client.publicClient,
       this.contract.abi,
       "AddObject",
-      tx
+      hash
     );
     return { meta: { tx }, result: { owner, bucket: eventBucket, key } };
   }
@@ -586,7 +588,8 @@ export class BucketManager {
         args,
         account: this.client.walletClient.account,
       });
-      const tx = await this.client.walletClient.writeContract(request);
+      const hash = await this.client.walletClient.writeContract(request);
+      const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
       const {
         owner,
         bucket: eventBucket,
@@ -595,7 +598,7 @@ export class BucketManager {
         this.client.publicClient,
         this.contract.abi,
         "DeleteObject",
-        tx
+        hash
       );
       return { meta: { tx }, result: { owner, bucket: eventBucket, key: eventKey } };
     } catch (error) {

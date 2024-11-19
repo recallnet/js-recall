@@ -1,11 +1,11 @@
-import { Abi, Hash, parseEventLogs, PublicClient } from "viem";
+import { Abi, Hash, parseEventLogs, PublicClient, TransactionReceipt } from "viem";
 
 /**
  * Metadata for read or write operations (currently only `tx` is used, via write operations)
- * @param tx Transaction hash, if the operation was a write
+ * @param hash Transaction hash, if the operation was a write
  */
 export interface Metadata {
-  tx?: Hash;
+  tx?: TransactionReceipt;
 }
 
 // Generic type for read operations, returns the data
