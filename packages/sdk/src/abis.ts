@@ -1337,7 +1337,7 @@ export const blobManagerABI = [
   },
 ] as const;
 
-export const gatewayManagerABI = [
+export const gatewayManagerFacetABI = [
   {
     type: "function",
     name: "addStake",
@@ -1398,22 +1398,12 @@ export const gatewayManagerABI = [
     outputs: [],
     stateMutability: "nonpayable",
   },
-  {
-    type: "function",
-    name: "kill",
-    inputs: [],
-    outputs: [],
-    stateMutability: "nonpayable",
-  },
+  { type: "function", name: "kill", inputs: [], outputs: [], stateMutability: "nonpayable" },
   {
     type: "function",
     name: "register",
     inputs: [
-      {
-        name: "genesisCircSupply",
-        type: "uint256",
-        internalType: "uint256",
-      },
+      { name: "genesisCircSupply", type: "uint256", internalType: "uint256" },
       { name: "collateral", type: "uint256", internalType: "uint256" },
     ],
     outputs: [],
@@ -1446,37 +1436,21 @@ export const gatewayManagerABI = [
   {
     type: "event",
     name: "NewBottomUpMsgBatch",
-    inputs: [
-      {
-        name: "epoch",
-        type: "uint256",
-        indexed: true,
-        internalType: "uint256",
-      },
-    ],
+    inputs: [{ name: "epoch", type: "uint256", indexed: true, internalType: "uint256" }],
     anonymous: false,
   },
   {
     type: "event",
     name: "NewTopDownMessage",
     inputs: [
-      {
-        name: "subnet",
-        type: "address",
-        indexed: true,
-        internalType: "address",
-      },
+      { name: "subnet", type: "address", indexed: true, internalType: "address" },
       {
         name: "message",
         type: "tuple",
         indexed: false,
         internalType: "struct IpcEnvelope",
         components: [
-          {
-            name: "kind",
-            type: "uint8",
-            internalType: "enum IpcMsgKind",
-          },
+          { name: "kind", type: "uint8", internalType: "enum IpcMsgKind" },
           {
             name: "to",
             type: "tuple",
@@ -1487,16 +1461,8 @@ export const gatewayManagerABI = [
                 type: "tuple",
                 internalType: "struct SubnetID",
                 components: [
-                  {
-                    name: "root",
-                    type: "uint64",
-                    internalType: "uint64",
-                  },
-                  {
-                    name: "route",
-                    type: "address[]",
-                    internalType: "address[]",
-                  },
+                  { name: "root", type: "uint64", internalType: "uint64" },
+                  { name: "route", type: "address[]", internalType: "address[]" },
                 ],
               },
               {
@@ -1504,16 +1470,8 @@ export const gatewayManagerABI = [
                 type: "tuple",
                 internalType: "struct FvmAddress",
                 components: [
-                  {
-                    name: "addrType",
-                    type: "uint8",
-                    internalType: "uint8",
-                  },
-                  {
-                    name: "payload",
-                    type: "bytes",
-                    internalType: "bytes",
-                  },
+                  { name: "addrType", type: "uint8", internalType: "uint8" },
+                  { name: "payload", type: "bytes", internalType: "bytes" },
                 ],
               },
             ],
@@ -1528,16 +1486,8 @@ export const gatewayManagerABI = [
                 type: "tuple",
                 internalType: "struct SubnetID",
                 components: [
-                  {
-                    name: "root",
-                    type: "uint64",
-                    internalType: "uint64",
-                  },
-                  {
-                    name: "route",
-                    type: "address[]",
-                    internalType: "address[]",
-                  },
+                  { name: "root", type: "uint64", internalType: "uint64" },
+                  { name: "route", type: "address[]", internalType: "address[]" },
                 ],
               },
               {
@@ -1545,16 +1495,8 @@ export const gatewayManagerABI = [
                 type: "tuple",
                 internalType: "struct FvmAddress",
                 components: [
-                  {
-                    name: "addrType",
-                    type: "uint8",
-                    internalType: "uint8",
-                  },
-                  {
-                    name: "payload",
-                    type: "bytes",
-                    internalType: "bytes",
-                  },
+                  { name: "addrType", type: "uint8", internalType: "uint8" },
+                  { name: "payload", type: "bytes", internalType: "bytes" },
                 ],
               },
             ],
@@ -1586,13 +1528,7 @@ export const gatewayManagerABI = [
   {
     type: "error",
     name: "InvalidXnetMessage",
-    inputs: [
-      {
-        name: "reason",
-        type: "uint8",
-        internalType: "enum InvalidXnetMessageReason",
-      },
-    ],
+    inputs: [{ name: "reason", type: "uint8", internalType: "enum InvalidXnetMessageReason" }],
   },
   {
     type: "error",
@@ -1609,5 +1545,113 @@ export const gatewayManagerABI = [
     type: "error",
     name: "SafeERC20FailedOperation",
     inputs: [{ name: "token", type: "address", internalType: "address" }],
+  },
+] as const;
+
+export const ierc20ABI = [
+  {
+    type: "function",
+    name: "allowance",
+    inputs: [
+      { name: "owner", type: "address", internalType: "address" },
+      { name: "spender", type: "address", internalType: "address" },
+    ],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "approve",
+    inputs: [
+      { name: "spender", type: "address", internalType: "address" },
+      { name: "value", type: "uint256", internalType: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool", internalType: "bool" }],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "balanceOf",
+    inputs: [{ name: "account", type: "address", internalType: "address" }],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "totalSupply",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "transfer",
+    inputs: [
+      { name: "to", type: "address", internalType: "address" },
+      { name: "value", type: "uint256", internalType: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool", internalType: "bool" }],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "transferFrom",
+    inputs: [
+      { name: "from", type: "address", internalType: "address" },
+      { name: "to", type: "address", internalType: "address" },
+      { name: "value", type: "uint256", internalType: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool", internalType: "bool" }],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "event",
+    name: "Approval",
+    inputs: [
+      {
+        name: "owner",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "spender",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "value",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "Transfer",
+    inputs: [
+      {
+        name: "from",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "to",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "value",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+    ],
+    anonymous: false,
   },
 ] as const;

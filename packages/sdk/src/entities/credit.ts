@@ -16,8 +16,8 @@ import { DeepMutable, parseEventFromTransaction, type Result } from "./utils.js"
 
 // TODO: emulates `@wagmi/cli` generated constants
 export const creditManagerAddress = {
-  2938118273996536: "0x8c2e3e8ba0d6084786d60A6600e832E8df84846C", // TODO: testnet; outdated contract deployment, but keeping here
-  4362550583360910: "0xA540de8faAE57Ae43d8506CffA75B746820CbDE9", // TODO: localnet; we need to make this deterministic
+  3258443211374980: "0x8c2e3e8ba0d6084786d60A6600e832E8df84846C", // TODO: testnet; outdated contract deployment, but keeping here
+  4362550583360910: "0xb297278a5581c99663e4f85a950A67064DC2317D", // TODO: localnet; we need to make this deterministic
 } as const;
 
 // Used for getBalance()
@@ -131,12 +131,13 @@ export class CreditManager {
         value: amount,
         account: this.client.walletClient.account,
       });
-      const tx = await this.client.walletClient.writeContract(request);
+      const hash = await this.client.walletClient.writeContract(request);
+      const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
       const result = await parseEventFromTransaction<BuyResult>(
         this.client.publicClient,
         this.contract.abi,
         "BuyCredit",
-        tx
+        hash
       );
       return { meta: { tx }, result };
     } catch (error) {
@@ -177,12 +178,13 @@ export class CreditManager {
         args,
         account: this.client.walletClient.account,
       });
-      const tx = await this.client.walletClient.writeContract(request);
+      const hash = await this.client.walletClient.writeContract(request);
+      const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
       const result = await parseEventFromTransaction<ApproveResult>(
         this.client.publicClient,
         this.contract.abi,
         "ApproveCredit",
-        tx
+        hash
       );
       return { meta: { tx }, result };
     } catch (error) {
@@ -216,12 +218,13 @@ export class CreditManager {
         args,
         account: this.client.walletClient.account,
       });
-      const tx = await this.client.walletClient.writeContract(request);
+      const hash = await this.client.walletClient.writeContract(request);
+      const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
       const result = await parseEventFromTransaction<RevokeResult>(
         this.client.publicClient,
         this.contract.abi,
         "RevokeCredit",
-        tx
+        hash
       );
       return { meta: { tx }, result };
     } catch (error) {

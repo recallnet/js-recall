@@ -1,10 +1,12 @@
+import { Chain } from "viem";
+import { ChainName, devnet, getChain, getParentChain, localnet, testnet } from "./chains.js";
 import { SubnetId, subnetIdStringToChainId } from "./ipc/subnet.js";
 
-export const TESTNET_SUBNET_ID = "/r314159/t410f2x3jiwcg6ju4bvy2lpdzc6xjo5okoktdm63mwni";
+export const TESTNET_SUBNET_ID = "/r314159/t410f3oewkcvacaaydfn4v6diulzise26cpfolfj7heq";
 export const LOCALNET_SUBNET_ID = "/r31337/t410fkzrz3mlkyufisiuae3scumllgalzuu3wxlxa2ly";
 export const DEVNET_SUBNET_ID = "test";
 
-export const TESTNET_CHAIN_ID = subnetIdStringToChainId(TESTNET_SUBNET_ID); // 2009180146406958
+export const TESTNET_CHAIN_ID = subnetIdStringToChainId(TESTNET_SUBNET_ID); // 3258443211374980
 export const LOCALNET_CHAIN_ID = subnetIdStringToChainId(LOCALNET_SUBNET_ID); // 4362550583360910
 export const DEVNET_CHAIN_ID = subnetIdStringToChainId(DEVNET_SUBNET_ID); // 1942764459484029
 
@@ -30,7 +32,7 @@ export const TESTNET_EVM_REGISTRY_ADDRESS = "0x74539671a1d2f1c8f200826baba665179
 export const TESTNET_EVM_SUPPLY_SOURCE_ADDRESS = "0x20d8a696091153c4d4816ba1fdefe113f71e0905";
 export const LOCALNET_EVM_GATEWAY_ADDRESS = "0x77aa40b105843728088c0132e43fc44348881da8";
 export const LOCALNET_EVM_REGISTRY_ADDRESS = "0x74539671a1d2f1c8f200826baba665179f53a1b7";
-export const LOCALNET_EVM_SUPPLY_SOURCE_ADDRESS = "0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E";
+export const LOCALNET_EVM_SUPPLY_SOURCE_ADDRESS = "0xa85233C63b9Ee964Add6F2cffe00Fd84eb32338f";
 export const DEVNET_EVM_GATEWAY_ADDRESS = "0x77aa40b105843728088c0132e43fc44348881da8";
 export const DEVNET_EVM_REGISTRY_ADDRESS = "0x74539671a1d2f1c8f200826baba665179f53a1b7";
 
@@ -53,8 +55,66 @@ export enum NetworkType {
   Devnet,
 }
 
+function chainNameToNetworkType(chainName: ChainName): NetworkType {
+  switch (chainName) {
+    case "mainnet":
+      return NetworkType.Mainnet;
+    case "testnet":
+      return NetworkType.Testnet;
+    case "localnet":
+      return NetworkType.Localnet;
+    case "devnet":
+      return NetworkType.Devnet;
+    default:
+      throw new Error("invalid chain name");
+  }
+}
+
+function networkTypeToChainName(networkType: NetworkType): ChainName {
+  switch (networkType) {
+    case NetworkType.Mainnet:
+      throw new Error("network is pre-mainnet");
+    case NetworkType.Testnet:
+      return "testnet";
+    case NetworkType.Localnet:
+      return "localnet";
+    case NetworkType.Devnet:
+      return "devnet";
+  }
+}
+
+export function networkTypeToChain(networkType: NetworkType): Chain {
+  switch (networkType) {
+    case NetworkType.Mainnet:
+      throw new Error("network is pre-mainnet");
+    case NetworkType.Testnet:
+      return testnet;
+    case NetworkType.Localnet:
+      return localnet;
+    case NetworkType.Devnet:
+      return devnet;
+  }
+}
+
+export function chainToNetworkType(chain: Chain): NetworkType {
+  switch (chain) {
+    case testnet:
+      return NetworkType.Testnet;
+    case localnet:
+      return NetworkType.Localnet;
+    case devnet:
+      return NetworkType.Devnet;
+    default:
+      throw new Error("invalid chain");
+  }
+}
+
+// function networkTypeToChain(networkType: NetworkType): Chain {
+//   return getChain(networkTypeToChainName(networkType));
+// }
+
 // EVM subnet config.
-export type EvmSubnet = {
+export type SubnetConfig = {
   // The target subnet ID.
   id: SubnetId;
   // The EVM RPC provider endpoint.
@@ -69,6 +129,8 @@ export type EvmSubnet = {
   gatewayAddr: string;
   // The EVM supply source contract address.
   supplySource?: string | undefined;
+  // Chain information
+  chain: Chain | undefined;
 };
 
 // EVM subnet config options.
@@ -92,6 +154,14 @@ export class Network {
       case NetworkType.Devnet:
         this.networkType = networkType;
     }
+  }
+
+  static fromChainName(chainName: ChainName): Network {
+    return new Network(chainNameToNetworkType(chainName));
+  }
+
+  static fromChain(chain: Chain): Network {
+    return new Network(chainToNetworkType(chain));
   }
 
   // Returns an instance of the `Network` for the given network type.
@@ -134,8 +204,8 @@ export class Network {
     return SubnetId.fromNetwork(this);
   }
 
-  // Returns an instance of the `EvmSubnet` config.
-  subnetConfig(options?: SubnetRpcOptions): EvmSubnet {
+  // Returns an instance of the `Subnet` config.
+  subnetConfig(options?: SubnetRpcOptions): SubnetConfig {
     return {
       id: this.subnetId(),
       providerHttp: this.evmRpcUrl(),
@@ -143,6 +213,7 @@ export class Network {
       registryAddr: this.evmRegistry(),
       gatewayAddr: this.evmGateway(),
       authToken: options?.evmRpcAuthToken,
+      chain: this.getChain(),
     };
   }
 
@@ -214,8 +285,8 @@ export class Network {
     }
   }
 
-  // Returns an instance of the `EvmSubnet` config for the parent network.
-  parentSubnetConfig(options?: SubnetRpcOptions): EvmSubnet {
+  // Returns an instance of the `Subnet` config for the parent network.
+  parentSubnetConfig(options?: SubnetRpcOptions): SubnetConfig {
     return {
       id: this.subnetId().parent(), // TODO: this differs from Rust SDK
       providerHttp: this.parentEvmRpcUrl(),
@@ -224,6 +295,7 @@ export class Network {
       gatewayAddr: this.parentEvmGateway(),
       authToken: options?.evmRpcAuthToken,
       supplySource: this.parentEvmSupplySource(),
+      chain: this.getParentChain(),
     };
   }
 
@@ -281,5 +353,13 @@ export class Network {
       case NetworkType.Devnet:
         throw new Error("network has no parent");
     }
+  }
+
+  getChain(): Chain {
+    return getChain(networkTypeToChainName(this.networkType));
+  }
+
+  getParentChain(): Chain | undefined {
+    return getParentChain(this.getChain());
   }
 }
