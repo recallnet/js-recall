@@ -1,0 +1,78 @@
+// Subnet IDs
+export const TESTNET_SUBNET_ID = "/r314159/t410fhg7rz2ozasqfpooeaegftp2tralvggdhztleoqi";
+export const LOCALNET_SUBNET_ID = "/r31337/t410f6gbdxrbehnaeeo4mrq7wc5hgq6smnefys4qanwi";
+export const DEVNET_SUBNET_ID = "test";
+
+// Chain IDs
+export const TESTNET_CHAIN_ID = 2481632;
+export const LOCALNET_CHAIN_ID = 248163216;
+export const DEVNET_CHAIN_ID = 1942764459484029;
+
+// CometBFT RPC URLs
+export const TESTNET_RPC_URL = "https://api-ignition-0.hoku.sh";
+export const LOCALNET_RPC_URL = "http://127.0.0.1:26657";
+export const DEVNET_RPC_URL = "http://127.0.0.1:26657";
+
+// EVM RPC URLs
+export const TESTNET_EVM_RPC_URL = "https://evm-ignition-0.hoku.sh";
+export const TESTNET_EVM_WS_URL = "wss://evm-ignition-0.hoku.sh";
+export const TESTNET_PARENT_EVM_RPC_URL = "https://api.calibration.node.glif.io/rpc/v1";
+export const LOCALNET_EVM_RPC_URL = "http://127.0.0.1:8645";
+export const LOCALNET_EVM_WS_URL = "ws://127.0.0.1:8645";
+export const LOCALNET_PARENT_EVM_RPC_URL = "http://127.0.0.1:8545";
+export const DEVNET_EVM_RPC_URL = "http://127.0.0.1:8545";
+export const DEVNET_EVM_WS_URL = "ws://127.0.0.1:8545";
+
+// Objects API URLs
+export const TESTNET_OBJECT_API_URL = "https://object-api-ignition-0.hoku.sh";
+export const LOCALNET_OBJECT_API_URL = "http://127.0.0.1:8001";
+export const DEVNET_OBJECT_API_URL = "http://127.0.0.1:8001";
+
+// EVM Gateway, Registry, and Supply Source addresses
+export const TESTNET_EVM_GATEWAY_ADDRESS = "0x77aa40b105843728088c0132e43fc44348881da8";
+export const TESTNET_EVM_REGISTRY_ADDRESS = "0x74539671a1d2f1c8f200826baba665179f53a1b7";
+export const TESTNET_EVM_SUPPLY_SOURCE_ADDRESS = "0x20d8a696091153c4d4816ba1fdefe113f71e0905";
+export const TESTNET_PARENT_EVM_GATEWAY_ADDRESS = "0xF8Abf46A1114d3B44d18F2A96D850e36FC6Ee94E";
+export const TESTNET_PARENT_EVM_REGISTRY_ADDRESS = "0x0bb143a180b61ae6b1872bbf99dBe261A2aDde40";
+export const LOCALNET_EVM_GATEWAY_ADDRESS = "0x77aa40b105843728088c0132e43fc44348881da8";
+export const LOCALNET_EVM_REGISTRY_ADDRESS = "0x74539671a1d2f1c8f200826baba665179f53a1b7";
+export const LOCALNET_EVM_SUPPLY_SOURCE_ADDRESS = "0xa85233C63b9Ee964Add6F2cffe00Fd84eb32338f";
+export const LOCALNET_PARENT_EVM_GATEWAY_ADDRESS = "0x9A676e781A523b5d0C0e43731313A708CB607508";
+export const LOCALNET_PARENT_EVM_REGISTRY_ADDRESS = "0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1";
+export const DEVNET_EVM_GATEWAY_ADDRESS = "0x77aa40b105843728088c0132e43fc44348881da8";
+export const DEVNET_EVM_REGISTRY_ADDRESS = "0x74539671a1d2f1c8f200826baba665179f53a1b7";
+
+// Wrapper contract addresses, and addresses above formatted in the same way
+// TODO: emulates `@wagmi/cli` generated constants
+export const blobManagerAddress = {
+  2481632: "0x8c2e3e8ba0d6084786d60A6600e832E8df84846C", // TODO: testnet; outdated contract deployment, but keeping here
+  248163216: "0xe1Aa25618fA0c7A1CFDab5d6B456af611873b629", // TODO: localnet; we need to make this deterministic
+} as const;
+
+export const bucketManagerAddress = {
+  2481632: "0x4c74c78B3698cA00473f12eF517D21C65461305F", // TODO: testnet; outdated contract deployment, but keeping here
+  248163216: "0xf7Cd8fa9b94DB2Aa972023b379c7f72c65E4De9D", // TODO: localnet; we need to make this deterministic
+} as const;
+
+export const creditManagerAddress = {
+  2481632: "0x8c2e3e8ba0d6084786d60A6600e832E8df84846C", // TODO: testnet; outdated contract deployment, but keeping here
+  // 248163216: "0x82C6D3ed4cD33d8EC1E51d0B5Cc1d822Eaa0c3dC", // TODO: localnet; we need to make this deterministic
+  248163216: "0x4325E8d969Cf9170C41fb2f34Cc86bC511e89664", // TODO: localnet; we need to make this deterministic
+} as const;
+
+export const gatewayManagerFacetAddress = {
+  314159: TESTNET_PARENT_EVM_GATEWAY_ADDRESS, // calibration
+  2481632: TESTNET_EVM_GATEWAY_ADDRESS, // testnet
+  31337: LOCALNET_PARENT_EVM_GATEWAY_ADDRESS, // anvil
+  248163216: LOCALNET_EVM_GATEWAY_ADDRESS, // localnet
+  1942764459484029: DEVNET_EVM_GATEWAY_ADDRESS, // devnet
+} as const;
+
+export const supplySourceAddress = {
+  314159: TESTNET_EVM_SUPPLY_SOURCE_ADDRESS, // testnet
+  31337: LOCALNET_EVM_SUPPLY_SOURCE_ADDRESS, // localnet
+} as const;
+
+// Miscellaneous
+export const RPC_TIMEOUT = 60_000;
+export const MIN_TTL = 3600n; // one hour

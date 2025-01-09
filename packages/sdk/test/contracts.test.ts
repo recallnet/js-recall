@@ -1,8 +1,8 @@
-import { match, rejects, strictEqual } from "assert";
+import { rejects, strictEqual } from "assert";
 import { expect } from "chai";
 import { describe, it } from "mocha";
 import { temporaryWrite } from "tempy";
-import { Account, Address, getAddress, parseEther } from "viem";
+import { Account, Address, getAddress, isAddress, isHash, parseEther } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { localnet } from "../src/chains.js";
 import { HokuClient, walletClientFromPrivateKey } from "../src/client.js";
@@ -35,9 +35,9 @@ describe.only("contracts", function () {
 
     it("should create a bucket", async () => {
       const { meta, result } = await bucketManager.create(account.address);
-      expect(meta?.tx?.transactionHash).to.be.a("string");
+      strictEqual(isHash(meta!.tx!.transactionHash), true);
       strictEqual(result.owner, account.address);
-      match(result.bucket, /0x[a-f0-9]{40}/);
+      strictEqual(isAddress(result.bucket), true);
     });
 
     it("should list buckets", async () => {
@@ -69,6 +69,7 @@ describe.only("contracts", function () {
     describe("objects", function () {
       let bucket: Address; // Note: FVM uses all lowercase, but viem returns the checksummed address (may include uppercase)
       const key = "hello/world";
+      const fileContents = "hello\n";
       const blobHash = "rzghyg4z3p6vbz5jkgc75lk64fci7kieul65o6hk6xznx7lctkmq";
 
       before(async () => {
@@ -78,16 +79,16 @@ describe.only("contracts", function () {
       });
 
       it("should add object from file", async () => {
-        const path = await temporaryWrite("hello\n");
+        const path = await temporaryWrite(fileContents);
         const { meta, result } = await bucketManager.addFile(bucket, key, path);
-        expect(meta?.tx?.transactionHash).to.be.a("string");
+        strictEqual(isHash(meta!.tx!.transactionHash), true);
         strictEqual(result.owner, account.address);
         strictEqual(result.bucket.toLowerCase(), bucket);
         strictEqual(result.key, key);
       });
 
       it("should add file from File object", async () => {
-        const content = new TextEncoder().encode("hello\n");
+        const content = new TextEncoder().encode(fileContents);
         const file = new File([content], "test.txt", {
           type: "text/plain",
         });
@@ -97,7 +98,7 @@ describe.only("contracts", function () {
         // and *not* overwrite. latency is still around 5-10 seconds, though, if
         // an object is added with the same data as another in the bucket...
         const { meta, result } = await bucketManager.addFile(bucket, "hello/test", file);
-        expect(meta?.tx?.transactionHash).to.be.a("string");
+        strictEqual(isHash(meta!.tx!.transactionHash), true);
         strictEqual(result.owner, account.address);
         strictEqual(result.bucket.toLowerCase(), bucket);
         strictEqual(result.key, "hello/test");
@@ -128,7 +129,7 @@ describe.only("contracts", function () {
       it("should download object", async () => {
         const object = await bucketManager.download(bucket, key);
         const contents = new TextDecoder().decode(object);
-        strictEqual(contents, "hello\n");
+        strictEqual(contents, fileContents);
       });
 
       it("should download object from stream", async () => {
@@ -143,7 +144,7 @@ describe.only("contracts", function () {
         const contents = chunks.reduce((acc, chunk) => {
           return acc + new TextDecoder().decode(chunk);
         }, "");
-        strictEqual(contents, "hello\n");
+        strictEqual(contents, fileContents);
       });
 
       it("should download object with range", async () => {
@@ -175,12 +176,12 @@ describe.only("contracts", function () {
         range = { start: undefined, end: 11 };
         object = await bucketManager.download(bucket, key, range);
         contents = new TextDecoder().decode(object);
-        strictEqual(contents, "hello\n");
+        strictEqual(contents, fileContents);
 
         range = { start: undefined, end: undefined };
         object = await bucketManager.download(bucket, key, range);
         contents = new TextDecoder().decode(object);
-        strictEqual(contents, "hello\n");
+        strictEqual(contents, fileContents);
       });
 
       it("should fail to download object with invalid range", async () => {
@@ -263,11 +264,11 @@ describe.only("contracts", function () {
       // availability on the network, causing later tests fail for get/download objects with the same contents
       it.skip("should delete object", async () => {
         const deletedKey = "hello/deleted";
-        const path = await temporaryWrite("hello\n");
+        const path = await temporaryWrite(fileContents);
         await bucketManager.addFile(bucket, deletedKey, path);
         await new Promise((resolve) => setTimeout(resolve, 15000));
         const { meta, result } = await bucketManager.delete(bucket, deletedKey);
-        expect(meta?.tx?.transactionHash).to.be.a("string");
+        strictEqual(isHash(meta!.tx!.transactionHash), true);
         strictEqual(result.owner, account.address);
         strictEqual(result.bucket.toLowerCase(), bucket);
         strictEqual(result.key, deletedKey);
@@ -301,13 +302,13 @@ describe.only("contracts", function () {
     it("should buy credits", async () => {
       const amount = parseEther("1");
       let { meta, result } = await credits.buy(amount);
-      expect(meta?.tx?.transactionHash).to.be.a("string");
+      strictEqual(isHash(meta!.tx!.transactionHash), true);
       strictEqual(result.addr, account.address);
       strictEqual(result.amount, amount);
 
       // buy for another account
       ({ meta, result } = await credits.buy(amount, to));
-      expect(meta?.tx?.transactionHash).to.be.a("string");
+      strictEqual(isHash(meta!.tx!.transactionHash), true);
       strictEqual(result.addr, to);
       strictEqual(result.amount, amount);
     });
@@ -339,7 +340,7 @@ describe.only("contracts", function () {
     it("should approve credit spending with 'to'", async () => {
       // use only to
       const { meta, result } = await credits.approve(to);
-      expect(meta?.tx?.transactionHash).to.be.a("string");
+      strictEqual(isHash(meta!.tx!.transactionHash), true);
       strictEqual(result.from, account.address);
       strictEqual(result.to, to);
       strictEqual(result.caller.length, 0);
@@ -348,7 +349,7 @@ describe.only("contracts", function () {
     it("should approve credit spending with 'to' and 'caller'", async () => {
       // also use a required caller
       const { meta, result } = await credits.approve(to, [caller]);
-      expect(meta?.tx?.transactionHash).to.be.a("string");
+      strictEqual(isHash(meta!.tx!.transactionHash), true);
       strictEqual(result.from, account.address);
       strictEqual(result.to, to);
       strictEqual(result.caller[0], caller);
@@ -365,7 +366,7 @@ describe.only("contracts", function () {
         3600n,
         account.address
       );
-      expect(meta?.tx?.transactionHash).to.be.a("string");
+      strictEqual(isHash(meta!.tx!.transactionHash), true);
       strictEqual(result.from, account.address);
       strictEqual(result.to, to);
       strictEqual(result.caller[0], caller);
@@ -378,14 +379,14 @@ describe.only("contracts", function () {
       // revoke with just to
       await credits.approve(to);
       let { meta, result } = await credits.revoke(to);
-      expect(meta?.tx?.transactionHash).to.be.a("string");
+      strictEqual(isHash(meta!.tx!.transactionHash), true);
       strictEqual(result.from, account.address);
       strictEqual(result.to, to);
 
       // revoke to and required caller
       await credits.approve(to, [caller]);
       ({ meta, result } = await credits.revoke(to, caller));
-      expect(meta?.tx?.transactionHash).to.be.a("string");
+      strictEqual(isHash(meta!.tx!.transactionHash), true);
       strictEqual(result.from, account.address);
       strictEqual(result.to, to);
       strictEqual(result.caller, caller);
@@ -393,7 +394,7 @@ describe.only("contracts", function () {
       // revoke with explicit caller
       await credits.approve(to);
       ({ meta, result } = await credits.revoke(to, undefined, account.address));
-      expect(meta?.tx?.transactionHash).to.be.a("string");
+      strictEqual(isHash(meta!.tx!.transactionHash), true);
       strictEqual(result.from, account.address);
       strictEqual(result.to, to);
     });
@@ -413,7 +414,7 @@ describe.only("contracts", function () {
       expect(result.capacityUsed).to.be.a("bigint");
       expect(result.creditFree).to.not.equal(0n);
       expect(result.creditCommitted).to.be.a("bigint");
-      match(result.creditSponsor, /0x[a-f0-9]{40}/);
+      strictEqual(isAddress(result.creditSponsor), true);
       expect(result.lastDebitEpoch).to.not.equal(0n);
       expect(result.approvals).to.be.an("array");
     });
@@ -425,7 +426,7 @@ describe.only("contracts", function () {
       } = await credits.getCreditApprovals(account.address);
       expect(approvals).to.be.an("array");
       expect(approvals.length).to.be.greaterThan(0);
-      match(approvals[0].to, /0x[a-f0-9]{40}/);
+      strictEqual(isAddress(approvals[0].to), true);
       await credits.revoke(to);
     });
 
@@ -440,7 +441,7 @@ describe.only("contracts", function () {
       } = await credits.getCreditApprovals(account.address, to);
       expect(approvals).to.be.an("array");
       expect(approvals.length).to.be.greaterThan(0);
-      match(approvals[0].to, /^f0/);
+      strictEqual(isAddress(approvals[0].to), true);
       await credits.revoke(to);
     });
 
@@ -457,17 +458,32 @@ describe.only("contracts", function () {
 
   // TODO: some of these tests just check types because we don't have a great CI flow,
   // but we can change that in the future and make them more explicit
-  describe("blob manager", function () {
+  describe.only("blob manager", function () {
     let blobs: BlobManager;
     let to: Address;
+    const subscriptionId = "foobar";
+    const fileContents = "hello\n";
+    const size = 6n;
+    const blobHash = "rzghyg4z3p6vbz5jkgc75lk64fci7kieul65o6hk6xznx7lctkmq";
 
     before(async () => {
       blobs = client.blobManager();
       to = getAddress("0x9965507d1a55bcc2695c58ba16fb37d819b0a4dc");
     });
 
-    it("should get storage usage", async () => {
-      const { result } = await blobs.getStorageUsage(to);
+    it("should get added blobs", async () => {
+      const { result } = await blobs.getAddedBlobs(10);
+      expect(result).to.be.an("array");
+      expect(result.length).to.be.greaterThanOrEqual(0);
+    });
+
+    it("should get pending blobs count", async () => {
+      const { result } = await blobs.getPendingBlobsCount();
+      expect(Number(result)).to.be.greaterThanOrEqual(0);
+    });
+
+    it("should get pending bytes count", async () => {
+      const { result } = await blobs.getPendingBytesCount();
       expect(result).to.be.a("bigint");
     });
 
@@ -475,8 +491,13 @@ describe.only("contracts", function () {
       const { result: stats } = await blobs.getStorageStats();
       expect(Number(stats.capacityFree)).to.be.greaterThan(0);
       expect(Number(stats.capacityUsed)).to.be.greaterThan(0);
-      expect(stats.numBlobs).to.be.a("bigint");
-      expect(stats.numResolving).to.be.a("bigint");
+      expect(Number(stats.numBlobs)).to.be.greaterThanOrEqual(0);
+      expect(Number(stats.numResolving)).to.be.greaterThanOrEqual(0);
+    });
+
+    it("should get storage usage", async () => {
+      const { result } = await blobs.getStorageUsage(to);
+      expect(result).to.be.a("bigint");
     });
 
     it("should get subnet stats", async () => {
@@ -491,6 +512,18 @@ describe.only("contracts", function () {
       expect(Number(stats.numAccounts)).to.be.greaterThan(0);
       expect(stats.numBlobs).to.be.a("bigint");
       expect(stats.numResolving).to.be.a("bigint");
+    });
+
+    it("should get blob", async () => {
+      const { result } = await blobs.getBlob(blobHash);
+      expect(result.size).to.be.equal(size);
+      expect(result.subscribers.length).to.be.greaterThan(0);
+      expect(result.status).to.be.equal(2); // resolved
+    });
+
+    it("should get blob status", async () => {
+      const { result } = await blobs.getBlobStatus(account.address, blobHash, subscriptionId);
+      expect(result).to.be.equal(2); // resolved
     });
   });
 
@@ -517,14 +550,14 @@ describe.only("contracts", function () {
     it("should deposit into subnet", async () => {
       const amount = parseEther("1");
       const { meta, result } = await accountManager.deposit(amount);
-      expect(meta?.tx?.transactionHash).to.be.a("string");
+      strictEqual(isHash(meta!.tx!.transactionHash), true);
       strictEqual(result, true);
     });
 
     it("should withdraw from subnet", async () => {
       const amount = parseEther("1");
       const { meta, result } = await accountManager.withdraw(amount);
-      expect(meta?.tx?.transactionHash).to.be.a("string");
+      strictEqual(isHash(meta!.tx!.transactionHash), true);
       strictEqual(result, true);
     });
 
@@ -533,7 +566,7 @@ describe.only("contracts", function () {
       const to = getAddress("0x9965507d1a55bcc2695c58ba16fb37d819b0a4dc");
       const { result: toBalanceBefore } = await accountManager.balance(to);
       const { meta, result } = await accountManager.transfer(to, amount);
-      expect(meta?.tx?.transactionHash).to.be.a("string");
+      strictEqual(isHash(meta!.tx!.transactionHash), true);
       strictEqual(result, true);
       const { result: toBalanceAfter } = await accountManager.balance(to);
       strictEqual(toBalanceBefore + amount, toBalanceAfter);

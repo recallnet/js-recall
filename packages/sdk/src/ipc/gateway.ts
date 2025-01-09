@@ -11,18 +11,10 @@ import {
 } from "viem";
 import { gatewayManagerFacetABI } from "../abis.js";
 import { HokuClient } from "../client.js";
+import { gatewayManagerFacetAddress } from "../constants.js";
 import { InsufficientFunds, UnhandledGatewayError } from "../entities/errors.js";
 import { DeepMutable, type Result } from "../entities/utils.js";
 import { SubnetId } from "./subnet.js";
-
-// TODO: emulates `@wagmi/cli` generated constants
-export const gatewayManagerFacetAddress = {
-  314159: "0xe17B86E7BEFC691DAEfe2086e56B86D4253f3294", // calibration
-  2481632: "0x77aa40b105843728088c0132e43fc44348881da8", // testnet
-  31337: "0x9A676e781A523b5d0C0e43731313A708CB607508", // anvil
-  248163216: "0x77aa40b105843728088c0132e43fc44348881da8", // localnet
-  1942764459484029: "0x77aa40b105843728088c0132e43fc44348881da8", // devnet
-} as const;
 
 type FundWithTokenParams = ContractFunctionArgs<
   typeof gatewayManagerFacetABI,
@@ -64,9 +56,16 @@ export class GatewayManager {
     client: HokuClient,
     contractAddress?: Address
   ): GetContractReturnType<typeof gatewayManagerFacetABI, Client, Address> {
+    const chainId = client.publicClient?.chain?.id;
+    if (!chainId) {
+      throw new Error("Client chain ID not found");
+    }
     const deployedGatewayManagerFacetAddress = (
       gatewayManagerFacetAddress as Record<number, Address>
-    )[client.publicClient?.chain?.id || 0];
+    )[chainId];
+    if (!deployedGatewayManagerFacetAddress) {
+      throw new Error(`No contract address found for chain ID ${chainId}}`);
+    }
     return getContract({
       abi: gatewayManagerFacetABI,
       address: contractAddress || deployedGatewayManagerFacetAddress,

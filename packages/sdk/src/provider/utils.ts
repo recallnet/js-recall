@@ -60,3 +60,55 @@ export function camelToSnake<T>(
     ])
   ) as SnakeToCamelCase<T>;
 }
+
+// TODO: figure out if this is the right pattern for file handling
+export interface FileHandler {
+  readFile: (input: string | File | Uint8Array) => Promise<{
+    data: Uint8Array;
+    contentType?: string;
+    size: bigint;
+  }>;
+}
+
+// TODO: figure out if this is the right pattern for file handling for web vs nodejs
+export const nodeFileHandler: FileHandler = {
+  async readFile(input) {
+    if (typeof input === "string") {
+      const fs = await import("node:fs/promises");
+      const { fileTypeFromBuffer } = await import("file-type");
+      const data = await fs.readFile(input);
+      const type = await fileTypeFromBuffer(data);
+      return {
+        data: new Uint8Array(data),
+        contentType: type?.mime,
+        size: BigInt(data.length),
+      };
+    }
+    const data = input instanceof Uint8Array ? input : new Uint8Array(await input.arrayBuffer());
+    return {
+      data,
+      size: BigInt(data.length),
+    };
+  },
+};
+
+// TODO: figure out if this is the right pattern for file handling for web vs nodejs
+export const webFileHandler: FileHandler = {
+  async readFile(input) {
+    if (input instanceof File) {
+      const data = new Uint8Array(await input.arrayBuffer());
+      return {
+        data,
+        contentType: input.type,
+        size: BigInt(input.size),
+      };
+    }
+    if (typeof input === "string") {
+      throw new Error("File paths are not supported in browser environment");
+    }
+    return {
+      data: input,
+      size: BigInt(input.length),
+    };
+  },
+};

@@ -1,47 +1,32 @@
 import { Chain } from "viem";
 import { ChainName, devnet, getChain, getParentChain, localnet, testnet } from "./chains.js";
+import {
+  DEVNET_EVM_GATEWAY_ADDRESS,
+  DEVNET_EVM_REGISTRY_ADDRESS,
+  DEVNET_EVM_RPC_URL,
+  DEVNET_OBJECT_API_URL,
+  DEVNET_RPC_URL,
+  LOCALNET_EVM_GATEWAY_ADDRESS,
+  LOCALNET_EVM_REGISTRY_ADDRESS,
+  LOCALNET_EVM_RPC_URL,
+  LOCALNET_EVM_SUPPLY_SOURCE_ADDRESS,
+  LOCALNET_OBJECT_API_URL,
+  LOCALNET_PARENT_EVM_GATEWAY_ADDRESS,
+  LOCALNET_PARENT_EVM_REGISTRY_ADDRESS,
+  LOCALNET_PARENT_EVM_RPC_URL,
+  LOCALNET_RPC_URL,
+  RPC_TIMEOUT,
+  TESTNET_EVM_GATEWAY_ADDRESS,
+  TESTNET_EVM_REGISTRY_ADDRESS,
+  TESTNET_EVM_RPC_URL,
+  TESTNET_EVM_SUPPLY_SOURCE_ADDRESS,
+  TESTNET_OBJECT_API_URL,
+  TESTNET_PARENT_EVM_GATEWAY_ADDRESS,
+  TESTNET_PARENT_EVM_REGISTRY_ADDRESS,
+  TESTNET_PARENT_EVM_RPC_URL,
+  TESTNET_RPC_URL,
+} from "./constants.js";
 import { SubnetId } from "./ipc/subnet.js";
-
-export const TESTNET_SUBNET_ID = "/r314159/t410fhg7rz2ozasqfpooeaegftp2tralvggdhztleoqi";
-export const LOCALNET_SUBNET_ID = "/r31337/t410f6gbdxrbehnaeeo4mrq7wc5hgq6smnefys4qanwi";
-export const DEVNET_SUBNET_ID = "test";
-
-export const TESTNET_CHAIN_ID = 2481632;
-export const LOCALNET_CHAIN_ID = 248163216;
-export const DEVNET_CHAIN_ID = 1942764459484029;
-
-export const TESTNET_RPC_URL = "https://api-ignition-0.hoku.sh";
-export const LOCALNET_RPC_URL = "http://127.0.0.1:26657";
-export const DEVNET_RPC_URL = LOCALNET_RPC_URL;
-
-export const TESTNET_EVM_RPC_URL = "https://evm-ignition-0.hoku.sh";
-export const LOCALNET_EVM_RPC_URL = "http://127.0.0.1:8645";
-export const DEVNET_EVM_RPC_URL = "http://127.0.0.1:8545";
-export const TESTNET_EVM_WS_URL = "wss://evm-ignition-0.hoku.sh";
-export const LOCALNET_EVM_WS_URL = "ws://127.0.0.1:8645";
-export const DEVNET_EVM_WS_URL = "ws://127.0.0.1:8545";
-
-export const TESTNET_OBJECT_API_URL = "https://object-api-ignition-0.hoku.sh";
-export const LOCALNET_OBJECT_API_URL = "http://127.0.0.1:8001";
-export const DEVNET_OBJECT_API_URL = LOCALNET_OBJECT_API_URL;
-
-export const RPC_TIMEOUT = 60_000;
-
-export const TESTNET_EVM_GATEWAY_ADDRESS = "0x77aa40b105843728088c0132e43fc44348881da8";
-export const TESTNET_EVM_REGISTRY_ADDRESS = "0x74539671a1d2f1c8f200826baba665179f53a1b7";
-export const TESTNET_EVM_SUPPLY_SOURCE_ADDRESS = "0x20d8a696091153c4d4816ba1fdefe113f71e0905";
-export const LOCALNET_EVM_GATEWAY_ADDRESS = "0x77aa40b105843728088c0132e43fc44348881da8";
-export const LOCALNET_EVM_REGISTRY_ADDRESS = "0x74539671a1d2f1c8f200826baba665179f53a1b7";
-export const LOCALNET_EVM_SUPPLY_SOURCE_ADDRESS = "0xa85233C63b9Ee964Add6F2cffe00Fd84eb32338f";
-export const DEVNET_EVM_GATEWAY_ADDRESS = "0x77aa40b105843728088c0132e43fc44348881da8";
-export const DEVNET_EVM_REGISTRY_ADDRESS = "0x74539671a1d2f1c8f200826baba665179f53a1b7";
-
-export const TESTNET_PARENT_EVM_RPC_URL = "https://api.calibration.node.glif.io/rpc/v1";
-export const TESTNET_PARENT_EVM_GATEWAY_ADDRESS = "0xF8Abf46A1114d3B44d18F2A96D850e36FC6Ee94E";
-export const TESTNET_PARENT_EVM_REGISTRY_ADDRESS = "0x0bb143a180b61ae6b1872bbf99dBe261A2aDde40";
-export const LOCALNET_PARENT_EVM_RPC_URL = "http://127.0.0.1:8545";
-export const LOCALNET_PARENT_EVM_GATEWAY_ADDRESS = "0x9A676e781A523b5d0C0e43731313A708CB607508";
-export const LOCALNET_PARENT_EVM_REGISTRY_ADDRESS = "0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1";
 
 // Network presets.
 export enum NetworkType {
@@ -225,8 +210,9 @@ export class Network {
       case NetworkType.Testnet:
         return TESTNET_RPC_URL;
       case NetworkType.Localnet:
-      case NetworkType.Devnet:
         return LOCALNET_RPC_URL;
+      case NetworkType.Devnet:
+        return DEVNET_RPC_URL;
     }
   }
 
@@ -238,8 +224,9 @@ export class Network {
       case NetworkType.Testnet:
         return TESTNET_OBJECT_API_URL;
       case NetworkType.Localnet:
-      case NetworkType.Devnet:
         return LOCALNET_OBJECT_API_URL;
+      case NetworkType.Devnet:
+        return DEVNET_OBJECT_API_URL;
     }
   }
 

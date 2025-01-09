@@ -1,8 +1,6 @@
 import { strictEqual } from "assert";
 import { expect } from "chai";
 import { describe, it } from "mocha";
-import { SubnetId } from "../src/ipc/subnet.js";
-import { Network, NetworkType } from "../src/network.js";
 import {
   DEVNET_CHAIN_ID,
   DEVNET_SUBNET_ID,
@@ -10,7 +8,9 @@ import {
   LOCALNET_SUBNET_ID,
   TESTNET_CHAIN_ID,
   TESTNET_SUBNET_ID,
-} from "../src/network.js";
+} from "../src/constants.js";
+import { SubnetId } from "../src/ipc/subnet.js";
+import { Network, NetworkType } from "../src/network.js";
 
 describe("subnet", function () {
   let subnetId: SubnetId;
@@ -48,14 +48,8 @@ describe("subnet", function () {
   });
 
   it("should be able to get eth and fvm addresses", () => {
-    strictEqual(
-      subnetId.real.route[0],
-      "t410fkzrz3mlkyufisiuae3scumllgalzuu3wxlxa2ly"
-    );
-    strictEqual(
-      subnetId.evm.route[0],
-      "0x56639db16ac50a89228026e42a316b30179a5376"
-    );
+    strictEqual(subnetId.real.route[0], "t410fkzrz3mlkyufisiuae3scumllgalzuu3wxlxa2ly");
+    strictEqual(subnetId.evm.route[0], "0x56639db16ac50a89228026e42a316b30179a5376");
   });
 
   it("should be able to get parent subnet", () => {

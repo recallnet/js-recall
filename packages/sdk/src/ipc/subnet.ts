@@ -1,12 +1,7 @@
 import { Address, FilEthAddress, toBigInt } from "@hokunet/fvm";
 import fnv1a from "@sindresorhus/fnv1a";
-import {
-  DEVNET_SUBNET_ID,
-  LOCALNET_SUBNET_ID,
-  Network,
-  NetworkType,
-  TESTNET_SUBNET_ID,
-} from "../network.js";
+import { DEVNET_SUBNET_ID, LOCALNET_SUBNET_ID, TESTNET_SUBNET_ID } from "../constants.js";
+import { Network, NetworkType } from "../network.js";
 
 export type SubnetIdStruct = {
   root: bigint;
