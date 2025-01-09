@@ -26,7 +26,7 @@ export const createPublicClientForChain: (chain: Chain) => PublicClient<Transpor
     transport: http(),
   });
 
-export const walletClientFromBrowser = (chain: Chain): WalletClient => {
+export const walletClientFromBrowser = (chain: Chain): WalletClient<Transport, Chain, Account> => {
   const noopProvider = { request: () => null } as unknown as EIP1193Provider;
   const provider = typeof window !== "undefined" ? window.ethereum! : noopProvider;
   return createWalletClient({

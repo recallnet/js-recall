@@ -1,5 +1,4 @@
-import { AddressActor, base32, cbor } from "@hokunet/fvm";
-import { blake3 } from "@noble/hashes/blake3";
+import { AddressId, cbor, leb128 } from "@hokunet/fvm";
 import { BlobAddOutcome, Iroh } from "@number0/iroh";
 import {
   AbiStateMutability,
@@ -13,6 +12,7 @@ import {
   GetContractReturnType,
   GetEventArgs,
   Hex,
+  hexToBytes,
 } from "viem";
 import { bucketManagerABI } from "../abis.js";
 import { HokuClient } from "../client.js";
@@ -24,23 +24,16 @@ import {
   ObjectNotFound,
   UnhandledBucketError,
 } from "./errors.js";
-import { DeepMutable, parseEventFromTransaction, type Result } from "./utils.js";
+import {
+  camelToSnake,
+  DeepMutable,
+  parseEventFromTransaction,
+  type Result,
+  snakeToCamel,
+  type SnakeToCamelCase,
+} from "./utils.js";
 
-// {
-//   "node_id": "r4md6oqwcbb2my4jkjqnah2yhvcvyjhefdmdruoiknawuedg2kja",
-//   "info": {
-//     "relay_url": "https://use1-1.relay.iroh.network./",
-//     "direct_addresses": [
-//       "74.66.17.39:11204",
-//       "192.168.1.137:11204",
-//       "[2603:7000:4c3b:3f4e::155b]:11205",
-//       "[2603:7000:4c3b:3f4e:84a:cef9:e7b2:cf5b]:11205",
-//       "[2603:7000:4c3b:3f4e:d32:a9a6:6f39:7814]:11205"
-//     ]
-//   }
-// }
-
-type IrohNode = {
+type ObjectsApiNodeInfoRaw = {
   node_id: string;
   info: {
     relay_url: string;
@@ -48,37 +41,44 @@ type IrohNode = {
   };
 };
 
-type SnakeToCamel<S extends string> = S extends `${infer T}_${infer U}`
-  ? `${T}${Capitalize<SnakeToCamel<U>>}`
-  : S;
-
-// Utility type to transform all properties of an object
-type SnakeToCamelCase<T> = {
-  [K in keyof T as SnakeToCamel<string & K>]: T[K];
-};
+export type ObjectsApiNodeInfo = SnakeToCamelCase<ObjectsApiNodeInfoRaw>;
 
 // Original API response type
-type RawObjectsApiResponse = {
+type ObjectsApiUploadResponseRaw = {
   hash: string;
   metadata_hash: string;
 };
 
-function snakeToCamel<T>(obj: T extends Record<string, unknown> ? T : never): SnakeToCamelCase<T> {
-  return Object.fromEntries(
-    Object.entries(obj).map(([key, value]) => [
-      key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase()),
-      value,
-    ])
-  ) as SnakeToCamelCase<T>;
-}
-
 // Transformed type with camelCase
-type ObjectsApiResponse = SnakeToCamelCase<RawObjectsApiResponse>;
+export type ObjectsApiUploadResponse = SnakeToCamelCase<ObjectsApiUploadResponseRaw>;
+
+type ObjectsApiFormData = {
+  chainId: number;
+  msg: string;
+  hash: string;
+  size: bigint;
+  source: ObjectsApiNodeInfo;
+};
+
+function createObjectsFormData({ chainId, msg, hash, size, source }: ObjectsApiFormData): FormData {
+  const formData = new FormData();
+  const formatted = {
+    chain_id: chainId.toString(),
+    msg,
+    hash,
+    size: size.toString(),
+    source: JSON.stringify(camelToSnake(source)),
+  };
+  Object.entries(formatted).forEach(([key, value]) => {
+    formData.append(key, value as string);
+  });
+  return formData;
+}
 
 // TODO: emulates `@wagmi/cli` generated constants
 export const bucketManagerAddress = {
-  2938118273996536: "0x4c74c78B3698cA00473f12eF517D21C65461305F", // TODO: testnet; outdated contract deployment, but keeping here
-  4362550583360910: "0xe4EB561155AFCe723bB1fF8606Fbfe9b28d5d38D", // TODO: localnet; we need to make this deterministic
+  2481632: "0x4c74c78B3698cA00473f12eF517D21C65461305F", // TODO: testnet; outdated contract deployment, but keeping here
+  248163216: "0xf7Cd8fa9b94DB2Aa972023b379c7f72c65E4De9D", // TODO: localnet; we need to make this deterministic
   1942764459484029: "0x2Cff47A442d1E5B8beCbb104Cf8ca659d09BDB77", // TODO: devnet; we need to make this deterministic
 } as const;
 
@@ -114,15 +114,10 @@ export type ListResult = DeepMutable<
   ContractFunctionReturnType<typeof bucketManagerABI, AbiStateMutability, "listBuckets">
 >;
 
-// Used for list()
-// TODO: type inference runs into issues with overloads
-export type QueryResult = {
-  objects: {
-    key: string;
-    value: ObjectValue;
-  }[];
-  commonPrefixes: string[];
-};
+// Used for query()
+export type QueryResult = DeepMutable<
+  ContractFunctionReturnType<typeof bucketManagerABI, AbiStateMutability, "queryObjects">
+>;
 
 // Note: this emits raw cbor bytes, so we need to decode it to get the bucket address
 export type CreateBucketEvent = Required<
@@ -132,7 +127,7 @@ export type CreateBucketEvent = Required<
 // Used for create()
 export type CreateBucketResult = {
   owner: Address;
-  bucket: string;
+  bucket: Address;
 };
 
 // Used for add()
@@ -199,10 +194,14 @@ export type AddObjectParams = DeepMutable<
   >
 >;
 
-async function getObjectsNodeInfo(): Promise<IrohNode> {
+async function getObjectsNodeInfo(): Promise<ObjectsApiNodeInfo> {
   const response = await fetch("http://localhost:8001/v1/node");
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(`Objects API error: ${error.message}`);
+  }
   const json = await response.json();
-  return json;
+  return snakeToCamel(json) as ObjectsApiNodeInfo;
 }
 
 async function createIrohNode(): Promise<Iroh> {
@@ -210,7 +209,7 @@ async function createIrohNode(): Promise<Iroh> {
   return iroh;
 }
 
-async function irohNodeToExpectedFormat(node: Iroh): Promise<IrohNode> {
+async function irohNodeTypeToObjectsApiNodeInfo(node: Iroh): Promise<ObjectsApiNodeInfo> {
   const irohNet = node.net;
   const nodeId = await irohNet.nodeId();
   const nodeAddr = await irohNet.nodeAddr();
@@ -222,7 +221,7 @@ async function irohNodeToExpectedFormat(node: Iroh): Promise<IrohNode> {
   if (!relayUrl) {
     throw new Error("No relay URL found for node");
   }
-  return { node_id: nodeId, info: { relay_url: relayUrl, direct_addresses: addresses } };
+  return { nodeId, info: { relayUrl, directAddresses: addresses } };
 }
 
 async function uploadToIroh(iroh: Iroh, data: Uint8Array): Promise<BlobAddOutcome> {
@@ -230,139 +229,117 @@ async function uploadToIroh(iroh: Iroh, data: Uint8Array): Promise<BlobAddOutcom
   return await iroh.blobs.addBytes(dataArray);
 }
 
-// Function to convert hex string to byte array (Uint8Array)
-function hexToBytes(hex: string) {
-  if (hex.startsWith("0x")) {
-    hex = hex.slice(2);
+// Function to encode a Uint8Array to Base64
+function bytesToBase64(bytes: Uint8Array, safeUrl: boolean = true): string {
+  const binary = String.fromCodePoint(...bytes);
+
+  // TODO: Hack to handle web vs nodejs environments
+  let base64: string;
+  if (typeof globalThis.btoa === "function") {
+    base64 = globalThis.btoa(binary);
+  } else if (typeof Buffer !== "undefined") {
+    base64 = Buffer.from(binary, "binary").toString("base64");
+  } else {
+    throw new Error("Environment not supported for Base64 encoding");
   }
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < hex.length; i += 2) {
-    bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
-  }
-  return bytes;
+  return safeUrl ? base64.replace(/\+/g, "-").replace(/\//g, "_") : base64;
 }
 
-// Function to encode a Uint8Array to Base64
-function encodeToBase64(byteArray: Uint8Array) {
-  let binary = "";
-  for (let i = 0; i < byteArray.length; i++) {
-    binary += String.fromCharCode(byteArray[i]);
-  }
-  return btoa(binary);
+function hexToBase64(hex: Hex, safeUrl: boolean = true): string {
+  const bytes = hexToBytes(hex);
+  return bytesToBase64(bytes, safeUrl);
 }
 
 export async function callObjectsApiAddObject(
   bucketManager: BucketManager,
-  bucket: string,
+  bucket: Address,
   params: AddObjectParams,
-  irohNode: IrohNode
-): Promise<ObjectsApiResponse> {
-  try {
-    if (!bucketManager.client) {
-      throw new Error("Client is not initialized for adding an object");
-    }
-    // We need to pass multipart form data with the following fields:
-    // hash
-    // source
-    // size
-    // msg
-    // chain_id
-    if (!bucketManager.client.walletClient || !bucketManager.client.walletClient.chain) {
-      throw new Error("Wallet client is not initialized for adding an object");
-    }
-    const chainId = bucketManager.client.walletClient.chain.id;
-    const args = [bucket, params] satisfies AddObjectFullParams;
-    const encodedData = encodeFunctionData({
-      abi: bucketManager.contract.abi,
-      functionName: "addObject",
-      args,
-    });
-
-    // Create a signed evm transaction:
-    const from = bucketManager.client.walletClient.account?.address;
-    if (!from) {
-      throw new Error("Wallet client is not initialized for adding an object");
-    }
-    // METHOD_ADD_OBJECT = 3518119203
-    // (bool success, bytes memory data) = address(CALL_ACTOR_ADDRESS).delegatecall(
-    //   abi.encode(uint64(method_num), value, static_call ? READ_ONLY_FLAG : DEFAULT_FLAG, codec, raw_request, actor_address)
-    // );
-    // let calldata = ethers_core::abi::encode(&[
-    //     ethers_core::abi::Token::Uint(ethers_core::types::U256::from(
-    //         fendermint_actor_bucket::Method::AddObject as u64,
-    //     )), // method_num
-    //     ethers_core::abi::Token::Uint(0.into()), // value
-    //     ethers_core::abi::Token::Uint(0x00000000.into()), // static call
-    //     ethers_core::abi::Token::Uint(fvm_ipld_encoding::CBOR.into()), // cbor codec
-    //     ethers_core::abi::Token::Bytes(params.to_vec()), // params
-    //     ethers_core::abi::Token::Uint(store.id().unwrap().into()), // target contract ID address
-    // ]);
-    // CBOR_CODEC = 0x51
-    const request = await bucketManager.client.walletClient.prepareTransactionRequest({
-      from,
-      to: bucketManager.contract.address,
-      value: 0n,
-      data: encodedData,
-      chain: bucketManager.client.walletClient.chain,
-      account: bucketManager.client.walletClient.account!,
-    });
-    const signedTransaction = await bucketManager.client.walletClient.signTransaction(request);
-    const byteArray = hexToBytes(signedTransaction);
-    const base64MsgRaw = encodeToBase64(byteArray);
-    const base64Msg = base64MsgRaw.replace(/\+/g, "-").replace(/\//g, "_");
-
-    const source = JSON.stringify(irohNode);
-    const formData = new FormData();
-    formData.append("chain_id", chainId.toString());
-    formData.append("msg", base64Msg);
-    formData.append("hash", params.blobHash);
-    formData.append("size", params.size.toString());
-    formData.append("source", source);
-    const response = await fetch("http://localhost:8001/v1/objects", {
-      method: "POST",
-      body: formData,
-    });
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`Objects API error: ${error.message}`);
-    }
-    const json = await response.json();
-    return snakeToCamel(json) as ObjectsApiResponse;
-  } catch (error) {
-    console.error("Error calling objects API add object", error);
-    throw error;
+  source: ObjectsApiNodeInfo
+): Promise<ObjectsApiUploadResponse> {
+  if (!bucketManager.client) {
+    throw new Error("Client is not initialized for adding an object");
   }
-}
+  // We need to pass multipart form data with the following fields:
+  // hash
+  // source
+  // size
+  // msg
+  // chain_id
+  if (!bucketManager.client.walletClient || !bucketManager.client.walletClient.chain) {
+    throw new Error("Wallet client is not initialized for adding an object");
+  }
+  const chainId = bucketManager.client.walletClient.chain.id;
+  const args = [bucket, params] satisfies AddObjectFullParams;
+  const encodedData = encodeFunctionData({
+    abi: bucketManager.contract.abi,
+    functionName: "addObject",
+    args,
+  });
 
-// TODO: this assumes the blob/object content already exists on hoku.
-// it *does not* solve for a net-new blob. this requires an FVM message
-// to be signed, along with the source, blobHash, size, and chain ID. these
-// are then passed to the `v1/objects/` form upload endpoint.
-// https://github.com/hokunet/ipc/blob/59ac0a3ccb59a8e9436acd73fc604f4a689da72e/fendermint/app/src/cmd/objects.rs#L88
-export function bytesToBlobHash(data: Uint8Array): string {
-  const hash = blake3(data);
-  const blobHash = base32.encode(hash).toLowerCase();
-  return blobHash;
+  // Create a signed evm transaction:
+  const from = bucketManager.client.walletClient.account?.address;
+  if (!from) {
+    throw new Error("Wallet client is not initialized for adding an object");
+  }
+  const request = await bucketManager.client.walletClient.prepareTransactionRequest({
+    from,
+    to: bucketManager.contract.address,
+    value: 0n,
+    data: encodedData,
+    chain: bucketManager.client.walletClient.chain,
+    account: bucketManager.client.walletClient.account!,
+  });
+  const signedTransaction = await bucketManager.client.walletClient.signTransaction(request);
+  const msg = hexToBase64(signedTransaction);
+
+  const formData = createObjectsFormData({
+    chainId,
+    msg,
+    hash: params.blobHash,
+    size: params.size,
+    source,
+  });
+  const response = await fetch("http://localhost:8001/v1/objects", {
+    method: "POST",
+    body: formData,
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(`Objects API error: ${error.message}`);
+  }
+  const json = await response.json();
+  return snakeToCamel(json) as ObjectsApiUploadResponse;
 }
 
 // Get a blob from the objects API
 async function downloadBlob(
-  bucket: string,
+  bucket: Address,
   key: string,
-  range?: { start: number; end?: number }
+  range?: { start?: number; end?: number },
+  blockNumber?: bigint
 ): Promise<ReadableStream<Uint8Array>> {
   const headers: HeadersInit = {};
   if (range) {
-    headers.Range = `bytes=${range.start}-${range.end ?? ""}`;
+    headers.Range = `bytes=${range.start ?? ""}-${range.end ?? ""}`;
   }
-  const response = await fetch(`http://localhost:8001/v1/objects/${bucket}/${key}`, { headers });
+  const bucketIdAddress = AddressId.fromEthAddress(bucket);
+  const url = new URL(`http://localhost:8001/v1/objects/${bucketIdAddress}/${key}`);
+  if (blockNumber !== undefined) {
+    url.searchParams.set("height", blockNumber.toString());
+  }
+  const response = await fetch(url, {
+    headers,
+  });
   if (!response.ok) {
     const error = await response.json();
     if (error.message.includes("is not available")) {
       const blobHash = error.message.match(/object\s+(.*)\s+is not available/)?.[1] ?? "";
       throw new ObjectNotAvailable(key, blobHash);
     }
-    throw new UnhandledBucketError(`Failed to download object: ${error}`);
+    if (error.message.includes("invalid range header")) {
+      throw new InvalidValue(`Invalid range: ${range?.start ?? ""}-${range?.end ?? ""}`);
+    }
+    throw new UnhandledBucketError(`Failed to download object: ${error.message}`);
   }
   if (!response.body) {
     throw new UnhandledBucketError("Failed to download object: no body");
@@ -380,7 +357,7 @@ interface FileHandler {
   }>;
 }
 
-// TODO: figure out if this is the right pattern for file handling
+// TODO: figure out if this is the right pattern for file handling for web vs nodejs
 export const nodeFileHandler: FileHandler = {
   async readFile(input) {
     if (typeof input === "string") {
@@ -402,7 +379,7 @@ export const nodeFileHandler: FileHandler = {
   },
 };
 
-// TODO: figure out if this is the right pattern for file handling
+// TODO: figure out if this is the right pattern for file handling for web vs nodejs
 export const webFileHandler: FileHandler = {
   async readFile(input) {
     if (input instanceof File) {
@@ -478,11 +455,16 @@ export class BucketManager {
         "CreateBucket",
         hash
       );
-      // First value is the actor's ID, second is the robust t2 address payload
+      // The first value is the actor's ID, the second is the robust t2 address payload; we don't use the robust address
+      // See `CreateExternalReturn`: https://github.com/hokunet/ipc/blob/35abe5f4be2d0dddc9d763ce69bdc4d39a148d0f/fendermint/vm/actor_interface/src/adm.rs#L66
+      // We need to decode the actor ID from the CBOR and then convert it to an Ethereum address
+      // The actor ID needs to be LEB128 encoded, and the FVM ID address is 1 byte of 0x00 followed by the actor ID
       const decoded = cbor.decode(data);
-      const filAddressBytes = decoded[1];
-      const bucket = AddressActor.fromBytes(filAddressBytes);
-      return { meta: { tx }, result: { owner: eventOwner, bucket: bucket.toString() } };
+      const actorId = decoded[0];
+      const actorIdBytes = new Uint8Array([0x00, ...leb128.unsigned.encode(actorId)]);
+      // Note: `fromBytes` assumes the network prefix is Testnet, but we'll need to handle Mainnet, too
+      const bucket = AddressId.fromBytes(actorIdBytes).toEthAddressHex() as Address;
+      return { meta: { tx }, result: { owner: eventOwner, bucket } };
     } catch (error) {
       if (error instanceof ContractFunctionExecutionError) {
         throw new CreateBucketError(error.message);
@@ -492,25 +474,31 @@ export class BucketManager {
   }
 
   // List buckets
-  async list(owner: Hex, blockNumber?: bigint): Promise<Result<ListResult>> {
-    const data = await this.client.publicClient.readContract({
-      abi: this.contract.abi,
-      address: this.contract.address,
-      functionName: "listBuckets",
-      args: [owner],
-      blockNumber,
-    });
-    // Convert readonly `metadata` to mutable type
-    const result = data.map((item) => ({
-      ...item,
-      metadata: [...item.metadata],
-    }));
-    return { result };
+  async list(owner: Address, blockNumber?: bigint): Promise<Result<ListResult>> {
+    try {
+      const result = (await this.client.publicClient.readContract({
+        abi: this.contract.abi,
+        address: this.contract.address,
+        functionName: "listBuckets",
+        args: [owner],
+        blockNumber,
+      })) as ListResult;
+      return { result };
+    } catch (error) {
+      if (error instanceof ContractFunctionExecutionError) {
+        // Check if includes: `failed to resolve actor for address`; this means the account doesn't exist
+        if (error.message.includes("failed to resolve actor for address")) {
+          return { result: [] };
+        }
+        throw new BucketNotFound(owner);
+      }
+      throw new UnhandledBucketError(`Failed to list buckets: ${error}`);
+    }
   }
 
   // Add an object to a bucket
   // TODO: this should be private and used internally by addFile
-  async add(bucket: string, addParams: AddObjectParams): Promise<Result<AddObjectResult>> {
+  async add(bucket: Address, addParams: AddObjectParams): Promise<Result<AddObjectResult>> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for adding an object");
     }
@@ -538,7 +526,7 @@ export class BucketManager {
   }
 
   async addFile(
-    bucket: string,
+    bucket: Address,
     key: string,
     file: string | File | Uint8Array,
     options?: AddOptions
@@ -548,12 +536,11 @@ export class BucketManager {
     if (contentType) {
       metadata.push({ key: "content-type", value: contentType });
     }
-    const { node_id: source } = await getObjectsNodeInfo();
-    // const blobHash = bytesToBlobHash(data);
+    const { nodeId: source } = await getObjectsNodeInfo();
     const iroh = await createIrohNode();
     const { hash, size } = await uploadToIroh(iroh, data);
 
-    // TTL of zero is interpreted by Solidity wrappers as null; auto-renewed
+    // TTL of zero is interpreted by Solidity wrappers as null
     const ttl = options?.ttl ?? 0n;
     if (ttl !== 0n && ttl < MIN_TTL) {
       throw new InvalidValue(`TTL must be at least ${MIN_TTL} seconds`);
@@ -568,14 +555,14 @@ export class BucketManager {
       metadata,
       overwrite: options?.overwrite ?? false,
     };
-    const irohNode = await irohNodeToExpectedFormat(iroh);
+    const irohNode = await irohNodeTypeToObjectsApiNodeInfo(iroh);
     const { metadataHash } = await callObjectsApiAddObject(this, bucket, addParams, irohNode);
     addParams.recoveryHash = metadataHash;
     return await this.add(bucket, addParams);
   }
 
   // Delete an object from a bucket
-  async delete(bucket: string, key: string): Promise<Result<DeleteObjectResult>> {
+  async delete(bucket: Address, key: string): Promise<Result<DeleteObjectResult>> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for adding an object");
     }
@@ -613,7 +600,7 @@ export class BucketManager {
   }
 
   // Get an object from a bucket
-  async get(bucket: string, key: string, blockNumber?: bigint): Promise<Result<ObjectValue>> {
+  async get(bucket: Address, key: string, blockNumber?: bigint): Promise<Result<ObjectValue>> {
     try {
       const args = [bucket, key] satisfies GetObjectParams;
       const { blobHash, recoveryHash, size, expiry, metadata } =
@@ -643,19 +630,13 @@ export class BucketManager {
   }
 
   async download(
-    bucket: string,
+    bucket: Address,
     key: string,
-    range?: { start: number; end?: number },
+    range?: { start?: number; end?: number },
     blockNumber?: bigint
   ): Promise<Uint8Array> {
     try {
-      const {
-        result: { size },
-      } = await this.get(bucket, key, blockNumber);
-      if (range) {
-        checkRange(range, size);
-      }
-      const stream = await downloadBlob(bucket, key, range);
+      const stream = await downloadBlob(bucket, key, range, blockNumber);
       const chunks: Uint8Array[] = [];
       const reader = stream.getReader();
 
@@ -683,19 +664,13 @@ export class BucketManager {
   }
 
   async downloadStream(
-    bucket: string,
+    bucket: Address,
     key: string,
     range?: { start: number; end?: number },
     blockNumber?: bigint
   ): Promise<ReadableStream<Uint8Array>> {
     try {
-      const {
-        result: { size },
-      } = await this.get(bucket, key, blockNumber);
-      if (range) {
-        checkRange(range, size);
-      }
-      return downloadBlob(bucket, key, range);
+      return downloadBlob(bucket, key, range, blockNumber);
     } catch (error) {
       if (error instanceof InvalidValue || error instanceof ObjectNotFound) {
         throw error;
@@ -706,10 +681,10 @@ export class BucketManager {
 
   // Query objects in a bucket
   async query(
-    bucket: string,
+    bucket: Address,
     prefix: string,
     delimiter: string = "/",
-    offset: number = 0,
+    startKey: string = "",
     limit: number = 100,
     blockNumber?: bigint
   ): Promise<Result<QueryResult>> {
@@ -718,10 +693,10 @@ export class BucketManager {
         bucket,
         prefix,
         delimiter,
-        BigInt(offset),
+        startKey,
         BigInt(limit),
       ] satisfies QueryObjectsParams;
-      const { objects, commonPrefixes } = await this.client.publicClient.readContract({
+      const { objects, commonPrefixes, nextKey } = await this.client.publicClient.readContract({
         abi: this.contract.abi,
         address: this.contract.address,
         functionName: "queryObjects",
@@ -729,17 +704,16 @@ export class BucketManager {
         blockNumber,
       });
       const result = {
-        objects: objects.map(({ key, value }) => ({
+        objects: objects.map(({ key, state }) => ({
           key,
-          value: {
-            blobHash: value.blobHash,
-            recoveryHash: value.recoveryHash,
-            size: value.size,
-            expiry: value.expiry,
-            metadata: [...value.metadata],
+          state: {
+            blobHash: state.blobHash,
+            size: state.size,
+            metadata: [...state.metadata],
           },
         })),
         commonPrefixes: [...commonPrefixes],
+        nextKey,
       };
       return { result };
     } catch (error) {
@@ -751,20 +725,6 @@ export class BucketManager {
       }
       throw new UnhandledBucketError(`Failed to query bucket: ${error}`);
     }
-  }
-}
-
-function checkRange(range: { start: number; end?: number }, size: bigint) {
-  const endPosition = range.end ?? size - 1n;
-  if (
-    range.start < 0 ||
-    range.start > size - 1n ||
-    (range.end && range.start > range.end) ||
-    (range.end !== undefined && (range.end < 0 || endPosition > size))
-  ) {
-    throw new InvalidValue(
-      `Range start, end, or both are out of bounds: ${range.start}, ${range.end}`
-    );
   }
 }
 

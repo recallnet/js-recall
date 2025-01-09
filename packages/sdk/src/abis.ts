@@ -2,12 +2,17 @@
 // This is done, in part, because `hokunet/ipc` and `hokunet/contracts` ABIs are both used,
 // so we'll eventually want to just publish those as independent packages and import them here.
 
+// TODO: we should probably remove all overloads. The viem type inference gets messy if there are too many.
+// The ABI below had to remove everything except the most advanced input params for the following:
+// - `queryObjects`
+// - `approveCredit`
+
 export const bucketManagerABI = [
   {
     type: "function",
     name: "addObject",
     inputs: [
-      { name: "bucket", type: "string", internalType: "string" },
+      { name: "bucket", type: "address", internalType: "address" },
       {
         name: "params",
         type: "tuple",
@@ -43,7 +48,7 @@ export const bucketManagerABI = [
     type: "function",
     name: "addObject",
     inputs: [
-      { name: "bucket", type: "string", internalType: "string" },
+      { name: "bucket", type: "address", internalType: "address" },
       { name: "source", type: "string", internalType: "string" },
       { name: "key", type: "string", internalType: "string" },
       { name: "blobHash", type: "string", internalType: "string" },
@@ -89,7 +94,7 @@ export const bucketManagerABI = [
     type: "function",
     name: "deleteObject",
     inputs: [
-      { name: "bucket", type: "string", internalType: "string" },
+      { name: "bucket", type: "address", internalType: "address" },
       { name: "key", type: "string", internalType: "string" },
     ],
     outputs: [],
@@ -99,14 +104,14 @@ export const bucketManagerABI = [
     type: "function",
     name: "getObject",
     inputs: [
-      { name: "bucket", type: "string", internalType: "string" },
+      { name: "bucket", type: "address", internalType: "address" },
       { name: "key", type: "string", internalType: "string" },
     ],
     outputs: [
       {
         name: "",
         type: "tuple",
-        internalType: "struct Value",
+        internalType: "struct ObjectValue",
         components: [
           { name: "blobHash", type: "string", internalType: "string" },
           {
@@ -141,7 +146,7 @@ export const bucketManagerABI = [
         internalType: "struct Machine[]",
         components: [
           { name: "kind", type: "uint8", internalType: "enum Kind" },
-          { name: "addr", type: "string", internalType: "string" },
+          { name: "addr", type: "address", internalType: "address" },
           {
             name: "metadata",
             type: "tuple[]",
@@ -167,7 +172,7 @@ export const bucketManagerABI = [
         internalType: "struct Machine[]",
         components: [
           { name: "kind", type: "uint8", internalType: "enum Kind" },
-          { name: "addr", type: "string", internalType: "string" },
+          { name: "addr", type: "address", internalType: "address" },
           {
             name: "metadata",
             type: "tuple[]",
@@ -186,163 +191,10 @@ export const bucketManagerABI = [
     type: "function",
     name: "queryObjects",
     inputs: [
-      { name: "bucket", type: "string", internalType: "string" },
+      { name: "bucket", type: "address", internalType: "address" },
       { name: "prefix", type: "string", internalType: "string" },
       { name: "delimiter", type: "string", internalType: "string" },
-      { name: "offset", type: "uint64", internalType: "uint64" },
-    ],
-    outputs: [
-      {
-        name: "",
-        type: "tuple",
-        internalType: "struct Query",
-        components: [
-          {
-            name: "objects",
-            type: "tuple[]",
-            internalType: "struct Object[]",
-            components: [
-              { name: "key", type: "string", internalType: "string" },
-              {
-                name: "value",
-                type: "tuple",
-                internalType: "struct Value",
-                components: [
-                  {
-                    name: "blobHash",
-                    type: "string",
-                    internalType: "string",
-                  },
-                  {
-                    name: "recoveryHash",
-                    type: "string",
-                    internalType: "string",
-                  },
-                  {
-                    name: "size",
-                    type: "uint64",
-                    internalType: "uint64",
-                  },
-                  {
-                    name: "expiry",
-                    type: "uint64",
-                    internalType: "uint64",
-                  },
-                  {
-                    name: "metadata",
-                    type: "tuple[]",
-                    internalType: "struct KeyValue[]",
-                    components: [
-                      {
-                        name: "key",
-                        type: "string",
-                        internalType: "string",
-                      },
-                      {
-                        name: "value",
-                        type: "string",
-                        internalType: "string",
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-          {
-            name: "commonPrefixes",
-            type: "string[]",
-            internalType: "string[]",
-          },
-        ],
-      },
-    ],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "queryObjects",
-    inputs: [
-      { name: "bucket", type: "string", internalType: "string" },
-      { name: "prefix", type: "string", internalType: "string" },
-      { name: "delimiter", type: "string", internalType: "string" },
-    ],
-    outputs: [
-      {
-        name: "",
-        type: "tuple",
-        internalType: "struct Query",
-        components: [
-          {
-            name: "objects",
-            type: "tuple[]",
-            internalType: "struct Object[]",
-            components: [
-              { name: "key", type: "string", internalType: "string" },
-              {
-                name: "value",
-                type: "tuple",
-                internalType: "struct Value",
-                components: [
-                  {
-                    name: "blobHash",
-                    type: "string",
-                    internalType: "string",
-                  },
-                  {
-                    name: "recoveryHash",
-                    type: "string",
-                    internalType: "string",
-                  },
-                  {
-                    name: "size",
-                    type: "uint64",
-                    internalType: "uint64",
-                  },
-                  {
-                    name: "expiry",
-                    type: "uint64",
-                    internalType: "uint64",
-                  },
-                  {
-                    name: "metadata",
-                    type: "tuple[]",
-                    internalType: "struct KeyValue[]",
-                    components: [
-                      {
-                        name: "key",
-                        type: "string",
-                        internalType: "string",
-                      },
-                      {
-                        name: "value",
-                        type: "string",
-                        internalType: "string",
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-          {
-            name: "commonPrefixes",
-            type: "string[]",
-            internalType: "string[]",
-          },
-        ],
-      },
-    ],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "queryObjects",
-    inputs: [
-      { name: "bucket", type: "string", internalType: "string" },
-      { name: "prefix", type: "string", internalType: "string" },
-      { name: "delimiter", type: "string", internalType: "string" },
-      { name: "offset", type: "uint64", internalType: "uint64" },
+      { name: "startKey", type: "string", internalType: "string" },
       { name: "limit", type: "uint64", internalType: "uint64" },
     ],
     outputs: [
@@ -358,9 +210,9 @@ export const bucketManagerABI = [
             components: [
               { name: "key", type: "string", internalType: "string" },
               {
-                name: "value",
+                name: "state",
                 type: "tuple",
-                internalType: "struct Value",
+                internalType: "struct ObjectState",
                 components: [
                   {
                     name: "blobHash",
@@ -368,17 +220,7 @@ export const bucketManagerABI = [
                     internalType: "string",
                   },
                   {
-                    name: "recoveryHash",
-                    type: "string",
-                    internalType: "string",
-                  },
-                  {
                     name: "size",
-                    type: "uint64",
-                    internalType: "uint64",
-                  },
-                  {
-                    name: "expiry",
                     type: "uint64",
                     internalType: "uint64",
                   },
@@ -408,153 +250,7 @@ export const bucketManagerABI = [
             type: "string[]",
             internalType: "string[]",
           },
-        ],
-      },
-    ],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "queryObjects",
-    inputs: [{ name: "bucket", type: "string", internalType: "string" }],
-    outputs: [
-      {
-        name: "",
-        type: "tuple",
-        internalType: "struct Query",
-        components: [
-          {
-            name: "objects",
-            type: "tuple[]",
-            internalType: "struct Object[]",
-            components: [
-              { name: "key", type: "string", internalType: "string" },
-              {
-                name: "value",
-                type: "tuple",
-                internalType: "struct Value",
-                components: [
-                  {
-                    name: "blobHash",
-                    type: "string",
-                    internalType: "string",
-                  },
-                  {
-                    name: "recoveryHash",
-                    type: "string",
-                    internalType: "string",
-                  },
-                  {
-                    name: "size",
-                    type: "uint64",
-                    internalType: "uint64",
-                  },
-                  {
-                    name: "expiry",
-                    type: "uint64",
-                    internalType: "uint64",
-                  },
-                  {
-                    name: "metadata",
-                    type: "tuple[]",
-                    internalType: "struct KeyValue[]",
-                    components: [
-                      {
-                        name: "key",
-                        type: "string",
-                        internalType: "string",
-                      },
-                      {
-                        name: "value",
-                        type: "string",
-                        internalType: "string",
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-          {
-            name: "commonPrefixes",
-            type: "string[]",
-            internalType: "string[]",
-          },
-        ],
-      },
-    ],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "queryObjects",
-    inputs: [
-      { name: "bucket", type: "string", internalType: "string" },
-      { name: "prefix", type: "string", internalType: "string" },
-    ],
-    outputs: [
-      {
-        name: "",
-        type: "tuple",
-        internalType: "struct Query",
-        components: [
-          {
-            name: "objects",
-            type: "tuple[]",
-            internalType: "struct Object[]",
-            components: [
-              { name: "key", type: "string", internalType: "string" },
-              {
-                name: "value",
-                type: "tuple",
-                internalType: "struct Value",
-                components: [
-                  {
-                    name: "blobHash",
-                    type: "string",
-                    internalType: "string",
-                  },
-                  {
-                    name: "recoveryHash",
-                    type: "string",
-                    internalType: "string",
-                  },
-                  {
-                    name: "size",
-                    type: "uint64",
-                    internalType: "uint64",
-                  },
-                  {
-                    name: "expiry",
-                    type: "uint64",
-                    internalType: "uint64",
-                  },
-                  {
-                    name: "metadata",
-                    type: "tuple[]",
-                    internalType: "struct KeyValue[]",
-                    components: [
-                      {
-                        name: "key",
-                        type: "string",
-                        internalType: "string",
-                      },
-                      {
-                        name: "value",
-                        type: "string",
-                        internalType: "string",
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-          {
-            name: "commonPrefixes",
-            type: "string[]",
-            internalType: "string[]",
-          },
+          { name: "nextKey", type: "string", internalType: "string" },
         ],
       },
     ],
@@ -572,9 +268,9 @@ export const bucketManagerABI = [
       },
       {
         name: "bucket",
-        type: "string",
-        indexed: false,
-        internalType: "string",
+        type: "address",
+        indexed: true,
+        internalType: "address",
       },
       {
         name: "key",
@@ -616,362 +312,15 @@ export const bucketManagerABI = [
       },
       {
         name: "bucket",
-        type: "string",
-        indexed: false,
-        internalType: "string",
+        type: "address",
+        indexed: true,
+        internalType: "address",
       },
       {
         name: "key",
         type: "string",
         indexed: false,
         internalType: "string",
-      },
-    ],
-    anonymous: false,
-  },
-] as const;
-
-export const creditManagerABI = [
-  {
-    type: "function",
-    name: "approveCredit",
-    inputs: [{ name: "receiver", type: "address", internalType: "address" }],
-    outputs: [],
-    stateMutability: "nonpayable",
-  },
-  {
-    type: "function",
-    name: "approveCredit",
-    inputs: [
-      { name: "from", type: "address", internalType: "address" },
-      { name: "receiver", type: "address", internalType: "address" },
-      {
-        name: "requiredCaller",
-        type: "address",
-        internalType: "address",
-      },
-    ],
-    outputs: [],
-    stateMutability: "nonpayable",
-  },
-  {
-    type: "function",
-    name: "approveCredit",
-    inputs: [
-      { name: "from", type: "address", internalType: "address" },
-      { name: "receiver", type: "address", internalType: "address" },
-      {
-        name: "requiredCaller",
-        type: "address",
-        internalType: "address",
-      },
-      { name: "limit", type: "uint256", internalType: "uint256" },
-      { name: "ttl", type: "uint64", internalType: "uint64" },
-    ],
-    outputs: [],
-    stateMutability: "nonpayable",
-  },
-  {
-    type: "function",
-    name: "approveCredit",
-    inputs: [
-      { name: "from", type: "address", internalType: "address" },
-      { name: "receiver", type: "address", internalType: "address" },
-      {
-        name: "requiredCaller",
-        type: "address",
-        internalType: "address",
-      },
-      { name: "limit", type: "uint256", internalType: "uint256" },
-    ],
-    outputs: [],
-    stateMutability: "nonpayable",
-  },
-  {
-    type: "function",
-    name: "approveCredit",
-    inputs: [
-      { name: "from", type: "address", internalType: "address" },
-      { name: "receiver", type: "address", internalType: "address" },
-    ],
-    outputs: [],
-    stateMutability: "nonpayable",
-  },
-  {
-    type: "function",
-    name: "buyCredit",
-    inputs: [],
-    outputs: [],
-    stateMutability: "payable",
-  },
-  {
-    type: "function",
-    name: "buyCredit",
-    inputs: [{ name: "recipient", type: "address", internalType: "address" }],
-    outputs: [],
-    stateMutability: "payable",
-  },
-  {
-    type: "function",
-    name: "getAccount",
-    inputs: [{ name: "addr", type: "address", internalType: "address" }],
-    outputs: [
-      {
-        name: "account",
-        type: "tuple",
-        internalType: "struct Account",
-        components: [
-          {
-            name: "capacityUsed",
-            type: "uint256",
-            internalType: "uint256",
-          },
-          {
-            name: "creditFree",
-            type: "uint256",
-            internalType: "uint256",
-          },
-          {
-            name: "creditCommitted",
-            type: "uint256",
-            internalType: "uint256",
-          },
-          {
-            name: "lastDebitEpoch",
-            type: "uint64",
-            internalType: "uint64",
-          },
-          {
-            name: "approvals",
-            type: "tuple[]",
-            internalType: "struct Approvals[]",
-            components: [
-              {
-                name: "receiver",
-                type: "address",
-                internalType: "address",
-              },
-              {
-                name: "approval",
-                type: "tuple[]",
-                internalType: "struct Approval[]",
-                components: [
-                  {
-                    name: "requiredCaller",
-                    type: "address",
-                    internalType: "address",
-                  },
-                  {
-                    name: "approval",
-                    type: "tuple",
-                    internalType: "struct CreditApproval",
-                    components: [
-                      {
-                        name: "limit",
-                        type: "uint256",
-                        internalType: "uint256",
-                      },
-                      {
-                        name: "expiry",
-                        type: "uint64",
-                        internalType: "uint64",
-                      },
-                      {
-                        name: "used",
-                        type: "uint256",
-                        internalType: "uint256",
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    ],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "getCreditBalance",
-    inputs: [{ name: "addr", type: "address", internalType: "address" }],
-    outputs: [
-      {
-        name: "balance",
-        type: "tuple",
-        internalType: "struct Balance",
-        components: [
-          {
-            name: "creditFree",
-            type: "uint256",
-            internalType: "uint256",
-          },
-          {
-            name: "creditCommitted",
-            type: "uint256",
-            internalType: "uint256",
-          },
-          {
-            name: "lastDebitEpoch",
-            type: "uint64",
-            internalType: "uint64",
-          },
-        ],
-      },
-    ],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "getCreditStats",
-    inputs: [],
-    outputs: [
-      {
-        name: "stats",
-        type: "tuple",
-        internalType: "struct CreditStats",
-        components: [
-          { name: "balance", type: "uint256", internalType: "uint256" },
-          {
-            name: "creditSold",
-            type: "uint256",
-            internalType: "uint256",
-          },
-          {
-            name: "creditCommitted",
-            type: "uint256",
-            internalType: "uint256",
-          },
-          {
-            name: "creditDebited",
-            type: "uint256",
-            internalType: "uint256",
-          },
-          {
-            name: "creditDebitRate",
-            type: "uint64",
-            internalType: "uint64",
-          },
-          {
-            name: "numAccounts",
-            type: "uint64",
-            internalType: "uint64",
-          },
-        ],
-      },
-    ],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "revokeCredit",
-    inputs: [
-      { name: "from", type: "address", internalType: "address" },
-      { name: "receiver", type: "address", internalType: "address" },
-    ],
-    outputs: [],
-    stateMutability: "nonpayable",
-  },
-  {
-    type: "function",
-    name: "revokeCredit",
-    inputs: [{ name: "receiver", type: "address", internalType: "address" }],
-    outputs: [],
-    stateMutability: "nonpayable",
-  },
-  {
-    type: "function",
-    name: "revokeCredit",
-    inputs: [
-      { name: "from", type: "address", internalType: "address" },
-      { name: "receiver", type: "address", internalType: "address" },
-      {
-        name: "requiredCaller",
-        type: "address",
-        internalType: "address",
-      },
-    ],
-    outputs: [],
-    stateMutability: "nonpayable",
-  },
-  {
-    type: "event",
-    name: "ApproveCredit",
-    inputs: [
-      {
-        name: "from",
-        type: "address",
-        indexed: true,
-        internalType: "address",
-      },
-      {
-        name: "receiver",
-        type: "address",
-        indexed: true,
-        internalType: "address",
-      },
-      {
-        name: "requiredCaller",
-        type: "address",
-        indexed: true,
-        internalType: "address",
-      },
-      {
-        name: "limit",
-        type: "uint256",
-        indexed: false,
-        internalType: "uint256",
-      },
-      {
-        name: "ttl",
-        type: "uint64",
-        indexed: false,
-        internalType: "uint64",
-      },
-    ],
-    anonymous: false,
-  },
-  {
-    type: "event",
-    name: "BuyCredit",
-    inputs: [
-      {
-        name: "addr",
-        type: "address",
-        indexed: true,
-        internalType: "address",
-      },
-      {
-        name: "amount",
-        type: "uint256",
-        indexed: false,
-        internalType: "uint256",
-      },
-    ],
-    anonymous: false,
-  },
-  {
-    type: "event",
-    name: "RevokeCredit",
-    inputs: [
-      {
-        name: "from",
-        type: "address",
-        indexed: true,
-        internalType: "address",
-      },
-      {
-        name: "receiver",
-        type: "address",
-        indexed: true,
-        internalType: "address",
-      },
-      {
-        name: "requiredCaller",
-        type: "address",
-        indexed: true,
-        internalType: "address",
       },
     ],
     anonymous: false,
@@ -1022,6 +371,40 @@ export const blobManagerABI = [
   },
   {
     type: "function",
+    name: "getAddedBlobs",
+    inputs: [{ name: "size", type: "uint32", internalType: "uint32" }],
+    outputs: [
+      {
+        name: "blobs",
+        type: "tuple[]",
+        internalType: "struct BlobTuple[]",
+        components: [
+          { name: "blobHash", type: "string", internalType: "string" },
+          {
+            name: "sourceInfo",
+            type: "tuple[]",
+            internalType: "struct BlobSourceInfo[]",
+            components: [
+              {
+                name: "subscriber",
+                type: "address",
+                internalType: "address",
+              },
+              {
+                name: "subscriptionId",
+                type: "string",
+                internalType: "string",
+              },
+              { name: "source", type: "string", internalType: "string" },
+            ],
+          },
+        ],
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
     name: "getBlob",
     inputs: [{ name: "blobHash", type: "string", internalType: "string" }],
     outputs: [
@@ -1043,8 +426,8 @@ export const blobManagerABI = [
             components: [
               {
                 name: "subscriber",
-                type: "address",
-                internalType: "address",
+                type: "string",
+                internalType: "string",
               },
               {
                 name: "subscriptionGroup",
@@ -1072,31 +455,14 @@ export const blobManagerABI = [
                         internalType: "uint64",
                       },
                       {
-                        name: "autoRenew",
-                        type: "bool",
-                        internalType: "bool",
-                      },
-                      {
                         name: "source",
                         type: "string",
                         internalType: "string",
                       },
                       {
                         name: "delegate",
-                        type: "tuple",
-                        internalType: "struct Delegate",
-                        components: [
-                          {
-                            name: "origin",
-                            type: "address",
-                            internalType: "address",
-                          },
-                          {
-                            name: "caller",
-                            type: "address",
-                            internalType: "address",
-                          },
-                        ],
+                        type: "address",
+                        internalType: "address",
                       },
                       {
                         name: "failed",
@@ -1143,8 +509,8 @@ export const blobManagerABI = [
           { name: "blobHash", type: "string", internalType: "string" },
           {
             name: "sourceInfo",
-            type: "tuple",
-            internalType: "struct BlobSourceInfo",
+            type: "tuple[]",
+            internalType: "struct BlobSourceInfo[]",
             components: [
               {
                 name: "subscriber",
@@ -1189,14 +555,14 @@ export const blobManagerABI = [
         internalType: "struct StorageStats",
         components: [
           {
-            name: "capacityTotal",
-            type: "uint256",
-            internalType: "uint256",
+            name: "capacityFree",
+            type: "uint64",
+            internalType: "uint64",
           },
           {
             name: "capacityUsed",
-            type: "uint256",
-            internalType: "uint256",
+            type: "uint64",
+            internalType: "uint64",
           },
           { name: "numBlobs", type: "uint64", internalType: "uint64" },
           {
@@ -1204,6 +570,18 @@ export const blobManagerABI = [
             type: "uint64",
             internalType: "uint64",
           },
+          {
+            name: "numAccounts",
+            type: "uint64",
+            internalType: "uint64",
+          },
+          {
+            name: "bytesResolving",
+            type: "uint64",
+            internalType: "uint64",
+          },
+          { name: "numAdded", type: "uint64", internalType: "uint64" },
+          { name: "bytesAdded", type: "uint64", internalType: "uint64" },
         ],
       },
     ],
@@ -1228,14 +606,14 @@ export const blobManagerABI = [
         components: [
           { name: "balance", type: "uint256", internalType: "uint256" },
           {
-            name: "capacityTotal",
-            type: "uint256",
-            internalType: "uint256",
+            name: "capacityFree",
+            type: "uint64",
+            internalType: "uint64",
           },
           {
             name: "capacityUsed",
-            type: "uint256",
-            internalType: "uint256",
+            type: "uint64",
+            internalType: "uint64",
           },
           {
             name: "creditSold",
@@ -1253,9 +631,9 @@ export const blobManagerABI = [
             internalType: "uint256",
           },
           {
-            name: "creditDebitRate",
-            type: "uint64",
-            internalType: "uint64",
+            name: "tokenCreditRate",
+            type: "uint256",
+            internalType: "uint256",
           },
           {
             name: "numAccounts",
@@ -1263,8 +641,19 @@ export const blobManagerABI = [
             internalType: "uint64",
           },
           { name: "numBlobs", type: "uint64", internalType: "uint64" },
+          { name: "numAdded", type: "uint64", internalType: "uint64" },
+          {
+            name: "bytesAdded",
+            type: "uint64",
+            internalType: "uint64",
+          },
           {
             name: "numResolving",
+            type: "uint64",
+            internalType: "uint64",
+          },
+          {
+            name: "bytesResolving",
             type: "uint64",
             internalType: "uint64",
           },
@@ -1272,6 +661,37 @@ export const blobManagerABI = [
       },
     ],
     stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "overwriteBlob",
+    inputs: [
+      { name: "oldHash", type: "string", internalType: "string" },
+      {
+        name: "params",
+        type: "tuple",
+        internalType: "struct AddBlobParams",
+        components: [
+          { name: "sponsor", type: "address", internalType: "address" },
+          { name: "source", type: "string", internalType: "string" },
+          { name: "blobHash", type: "string", internalType: "string" },
+          {
+            name: "metadataHash",
+            type: "string",
+            internalType: "string",
+          },
+          {
+            name: "subscriptionId",
+            type: "string",
+            internalType: "string",
+          },
+          { name: "size", type: "uint64", internalType: "uint64" },
+          { name: "ttl", type: "uint64", internalType: "uint64" },
+        ],
+      },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
   },
   {
     type: "event",
@@ -1331,6 +751,458 @@ export const blobManagerABI = [
         type: "string",
         indexed: false,
         internalType: "string",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "OverwriteBlob",
+    inputs: [
+      {
+        name: "caller",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "oldHash",
+        type: "string",
+        indexed: false,
+        internalType: "string",
+      },
+      {
+        name: "newHash",
+        type: "string",
+        indexed: false,
+        internalType: "string",
+      },
+      {
+        name: "subscriptionId",
+        type: "string",
+        indexed: false,
+        internalType: "string",
+      },
+    ],
+    anonymous: false,
+  },
+] as const;
+
+export const creditManagerABI = [
+  {
+    type: "function",
+    name: "approveCredit",
+    inputs: [
+      { name: "from", type: "address", internalType: "address" },
+      { name: "to", type: "address", internalType: "address" },
+      { name: "caller", type: "address[]", internalType: "address[]" },
+      { name: "creditLimit", type: "uint256", internalType: "uint256" },
+      { name: "gasFeeLimit", type: "uint256", internalType: "uint256" },
+      { name: "ttl", type: "uint64", internalType: "uint64" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "buyCredit",
+    inputs: [],
+    outputs: [],
+    stateMutability: "payable",
+  },
+  {
+    type: "function",
+    name: "buyCredit",
+    inputs: [{ name: "recipient", type: "address", internalType: "address" }],
+    outputs: [],
+    stateMutability: "payable",
+  },
+  {
+    type: "function",
+    name: "getAccount",
+    inputs: [{ name: "addr", type: "address", internalType: "address" }],
+    outputs: [
+      {
+        name: "account",
+        type: "tuple",
+        internalType: "struct Account",
+        components: [
+          {
+            name: "capacityUsed",
+            type: "uint64",
+            internalType: "uint64",
+          },
+          {
+            name: "creditFree",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          {
+            name: "creditCommitted",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          {
+            name: "creditSponsor",
+            type: "address",
+            internalType: "address",
+          },
+          {
+            name: "lastDebitEpoch",
+            type: "uint64",
+            internalType: "uint64",
+          },
+          {
+            name: "approvals",
+            type: "tuple[]",
+            internalType: "struct Approval[]",
+            components: [
+              { name: "to", type: "string", internalType: "string" },
+              {
+                name: "approval",
+                type: "tuple",
+                internalType: "struct CreditApproval",
+                components: [
+                  {
+                    name: "creditLimit",
+                    type: "uint256",
+                    internalType: "uint256",
+                  },
+                  {
+                    name: "gasFeeLimit",
+                    type: "uint256",
+                    internalType: "uint256",
+                  },
+                  {
+                    name: "expiry",
+                    type: "uint64",
+                    internalType: "uint64",
+                  },
+                  {
+                    name: "creditUsed",
+                    type: "uint256",
+                    internalType: "uint256",
+                  },
+                  {
+                    name: "gasFeeUsed",
+                    type: "uint256",
+                    internalType: "uint256",
+                  },
+                ],
+              },
+            ],
+          },
+          { name: "maxTtl", type: "uint64", internalType: "uint64" },
+          {
+            name: "gasAllowance",
+            type: "uint256",
+            internalType: "uint256",
+          },
+        ],
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getCreditApproval",
+    inputs: [
+      { name: "from", type: "address", internalType: "address" },
+      { name: "to", type: "address", internalType: "address" },
+    ],
+    outputs: [
+      {
+        name: "approval",
+        type: "tuple",
+        internalType: "struct CreditApproval",
+        components: [
+          {
+            name: "creditLimit",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          {
+            name: "gasFeeLimit",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          { name: "expiry", type: "uint64", internalType: "uint64" },
+          {
+            name: "creditUsed",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          {
+            name: "gasFeeUsed",
+            type: "uint256",
+            internalType: "uint256",
+          },
+        ],
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getCreditBalance",
+    inputs: [{ name: "addr", type: "address", internalType: "address" }],
+    outputs: [
+      {
+        name: "balance",
+        type: "tuple",
+        internalType: "struct Balance",
+        components: [
+          {
+            name: "creditFree",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          {
+            name: "creditCommitted",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          {
+            name: "creditSponsor",
+            type: "address",
+            internalType: "address",
+          },
+          {
+            name: "lastDebitEpoch",
+            type: "uint64",
+            internalType: "uint64",
+          },
+          {
+            name: "approvals",
+            type: "tuple[]",
+            internalType: "struct Approval[]",
+            components: [
+              { name: "to", type: "string", internalType: "string" },
+              {
+                name: "approval",
+                type: "tuple",
+                internalType: "struct CreditApproval",
+                components: [
+                  {
+                    name: "creditLimit",
+                    type: "uint256",
+                    internalType: "uint256",
+                  },
+                  {
+                    name: "gasFeeLimit",
+                    type: "uint256",
+                    internalType: "uint256",
+                  },
+                  {
+                    name: "expiry",
+                    type: "uint64",
+                    internalType: "uint64",
+                  },
+                  {
+                    name: "creditUsed",
+                    type: "uint256",
+                    internalType: "uint256",
+                  },
+                  {
+                    name: "gasFeeUsed",
+                    type: "uint256",
+                    internalType: "uint256",
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            name: "gasAllowance",
+            type: "uint256",
+            internalType: "uint256",
+          },
+        ],
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getCreditStats",
+    inputs: [],
+    outputs: [
+      {
+        name: "stats",
+        type: "tuple",
+        internalType: "struct CreditStats",
+        components: [
+          { name: "balance", type: "uint256", internalType: "uint256" },
+          {
+            name: "creditSold",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          {
+            name: "creditCommitted",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          {
+            name: "creditDebited",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          {
+            name: "tokenCreditRate",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          {
+            name: "numAccounts",
+            type: "uint64",
+            internalType: "uint64",
+          },
+        ],
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "revokeCredit",
+    inputs: [
+      { name: "from", type: "address", internalType: "address" },
+      { name: "to", type: "address", internalType: "address" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "revokeCredit",
+    inputs: [{ name: "to", type: "address", internalType: "address" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "revokeCredit",
+    inputs: [
+      { name: "from", type: "address", internalType: "address" },
+      { name: "to", type: "address", internalType: "address" },
+      { name: "caller", type: "address", internalType: "address" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "setAccountSponsor",
+    inputs: [
+      { name: "from", type: "address", internalType: "address" },
+      { name: "sponsor", type: "address", internalType: "address" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "event",
+    name: "ApproveCredit",
+    inputs: [
+      {
+        name: "from",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "to",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "caller",
+        type: "address[]",
+        indexed: false,
+        internalType: "address[]",
+      },
+      {
+        name: "creditLimit",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+      {
+        name: "gasFeeLimit",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+      {
+        name: "ttl",
+        type: "uint64",
+        indexed: false,
+        internalType: "uint64",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "BuyCredit",
+    inputs: [
+      {
+        name: "addr",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "amount",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "RevokeCredit",
+    inputs: [
+      {
+        name: "from",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "to",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "caller",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "SetAccountSponsor",
+    inputs: [
+      {
+        name: "from",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "sponsor",
+        type: "address",
+        indexed: true,
+        internalType: "address",
       },
     ],
     anonymous: false,
