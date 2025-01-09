@@ -1,5 +1,3 @@
-import { AddressId } from "@hokunet/fvm";
-import { leb128 } from "@hokunet/fvm";
 import {
   AbiStateMutability,
   Address,
@@ -15,7 +13,12 @@ import { creditManagerABI } from "../abis.js";
 import { HokuClient } from "../client.js";
 import { creditManagerAddress } from "../constants.js";
 import { InsufficientFunds, InvalidValue, UnhandledCreditError } from "./errors.js";
-import { DeepMutable, parseEventFromTransaction, type Result } from "./utils.js";
+import {
+  actorIdToMaskedEvmAddress,
+  DeepMutable,
+  parseEventFromTransaction,
+  type Result,
+} from "./utils.js";
 
 // Used for getBalance()
 export type CreditBalance = DeepMutable<
@@ -327,8 +330,7 @@ export class CreditManager {
       // We'd have to somehow get the delegated address from an ID, like this: https://github.com/hokunet/builtin-actors/blob/003960de8ba0075d5cd1fd74e087930db5d7de76/actors/eam/src/lib.rs#L175
       const approvals = account.approvals.map((approval) => {
         const actorId = approval.to.slice(2); // Remove the 'f0' prefix
-        const actorIdBytes = new Uint8Array([0x00, ...leb128.unsigned.encode(actorId)]);
-        const toAddress = AddressId.fromBytes(actorIdBytes).toEthAddressHex() as Address;
+        const toAddress = actorIdToMaskedEvmAddress(Number(actorId));
         return { ...approval, to: toAddress };
       });
       return { result: { ...account, approvals } };

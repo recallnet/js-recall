@@ -1,4 +1,4 @@
-import { AddressId, cbor, leb128 } from "@hokunet/fvm";
+import { cbor } from "@hokunet/fvm";
 import {
   AbiStateMutability,
   Address,
@@ -12,7 +12,7 @@ import {
 } from "viem";
 import { bucketManagerABI } from "../abis.js";
 import { HokuClient } from "../client.js";
-import { bucketManagerAddress, MIN_TTL } from "../constants.js";
+import { bucketManagerAddress, LOCALNET_OBJECT_API_URL, MIN_TTL } from "../constants.js";
 import {
   callObjectsApiAddObject,
   createIrohNode,
@@ -29,22 +29,13 @@ import {
   ObjectNotFound,
   UnhandledBucketError,
 } from "./errors.js";
-import { DeepMutable, parseEventFromTransaction, type Result } from "./utils.js";
-
-// TODO: temporary
-export const OBJECTS_PROVIDER_URL = "http://localhost:8001";
-
-// Internally used for add()
-// export type AddParams = {
-//   source: string;
-//   key: string;
-//   blobHash: string;
-//   recoveryHash: string;
-//   size: bigint;
-//   ttl: bigint;
-//   metadata: { key: string; value: string }[];
-//   overwrite: boolean;
-// };
+import {
+  actorIdToMaskedEvmAddress,
+  convertMetadataToAbiParams,
+  DeepMutable,
+  parseEventFromTransaction,
+  type Result,
+} from "./utils.js";
 
 // Used for add()
 export type AddOptions = {
@@ -208,10 +199,8 @@ export class BucketManager {
       // We need to decode the actor ID from the CBOR and then convert it to an Ethereum address
       // The actor ID needs to be LEB128 encoded, and the FVM ID address is 1 byte of 0x00 followed by the actor ID
       const decoded = cbor.decode(data);
-      const actorId = decoded[0];
-      const actorIdBytes = new Uint8Array([0x00, ...leb128.unsigned.encode(actorId)]);
-      // Note: `fromBytes` assumes the network prefix is Testnet, but we'll need to handle Mainnet, too
-      const bucket = AddressId.fromBytes(actorIdBytes).toEthAddressHex() as Address;
+      const actorId = decoded[0] as number;
+      const bucket = actorIdToMaskedEvmAddress(actorId);
       return { meta: { tx }, result: { owner: eventOwner, bucket } };
     } catch (error) {
       if (error instanceof ContractFunctionExecutionError) {
@@ -245,8 +234,8 @@ export class BucketManager {
   }
 
   // Add an object to a bucket
-  // TODO: this should be private and used internally by addFile
-  async add(bucket: Address, addParams: AddObjectParams): Promise<Result<AddObjectResult>> {
+  // TODO: should this be private and used internally by `add`
+  async addInner(bucket: Address, addParams: AddObjectParams): Promise<Result<AddObjectResult>> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for adding an object");
     }
@@ -273,7 +262,7 @@ export class BucketManager {
     return { meta: { tx }, result: { owner, bucket: eventBucket, key } };
   }
 
-  async addFile(
+  async add(
     bucket: Address,
     key: string,
     file: string | File | Uint8Array,
@@ -287,7 +276,7 @@ export class BucketManager {
     if (contentType) {
       metadata.push({ key: "content-type", value: contentType });
     }
-    const { nodeId: source } = await getObjectsNodeInfo(OBJECTS_PROVIDER_URL);
+    const { nodeId: source } = await getObjectsNodeInfo(LOCALNET_OBJECT_API_URL);
     const iroh = await createIrohNode();
     const { hash, size } = await stageDataToIroh(iroh, data);
 
@@ -300,7 +289,7 @@ export class BucketManager {
       source,
       key,
       blobHash: hash,
-      recoveryHash: "", // TODO: Once https://github.com/hokunet/ipc/issues/300 is merged, this'll need to change
+      recoveryHash: "",
       size,
       ttl,
       metadata,
@@ -308,7 +297,7 @@ export class BucketManager {
     };
     const irohNode = await irohNodeTypeToObjectsApiNodeInfo(iroh);
     const { metadataHash } = await callObjectsApiAddObject(
-      OBJECTS_PROVIDER_URL,
+      LOCALNET_OBJECT_API_URL,
       this.client,
       this.contract.address,
       bucket,
@@ -316,7 +305,7 @@ export class BucketManager {
       irohNode
     );
     addParams.recoveryHash = metadataHash;
-    return await this.add(bucket, addParams);
+    return await this.addInner(bucket, addParams);
   }
 
   // Delete an object from a bucket
@@ -357,8 +346,12 @@ export class BucketManager {
     }
   }
 
-  // Get an object from a bucket
-  async get(bucket: Address, key: string, blockNumber?: bigint): Promise<Result<ObjectValue>> {
+  // Get an object from a bucket, without downloading it
+  async getObjectValue(
+    bucket: Address,
+    key: string,
+    blockNumber?: bigint
+  ): Promise<Result<ObjectValue>> {
     try {
       const args = [bucket, key] satisfies GetObjectParams;
       const { blobHash, recoveryHash, size, expiry, metadata } =
@@ -387,14 +380,14 @@ export class BucketManager {
     }
   }
 
-  async download(
+  async get(
     bucket: Address,
     key: string,
     range?: { start?: number; end?: number },
     blockNumber?: bigint
   ): Promise<Uint8Array> {
     try {
-      const stream = await downloadBlob(OBJECTS_PROVIDER_URL, bucket, key, range, blockNumber);
+      const stream = await downloadBlob(LOCALNET_OBJECT_API_URL, bucket, key, range, blockNumber);
       const chunks: Uint8Array[] = [];
       const reader = stream.getReader();
 
@@ -421,14 +414,14 @@ export class BucketManager {
     }
   }
 
-  async downloadStream(
+  async getStream(
     bucket: Address,
     key: string,
     range?: { start: number; end?: number },
     blockNumber?: bigint
   ): Promise<ReadableStream<Uint8Array>> {
     try {
-      return downloadBlob(OBJECTS_PROVIDER_URL, bucket, key, range, blockNumber);
+      return downloadBlob(LOCALNET_OBJECT_API_URL, bucket, key, range, blockNumber);
     } catch (error) {
       if (error instanceof InvalidValue || error instanceof ObjectNotFound) {
         throw error;
@@ -484,10 +477,4 @@ export class BucketManager {
       throw new UnhandledBucketError(`Failed to query bucket: ${error}`);
     }
   }
-}
-
-function convertMetadataToAbiParams(
-  value: Record<string, string>
-): { key: string; value: string }[] {
-  return Object.entries(value).map(([key, value]) => ({ key, value }));
 }
