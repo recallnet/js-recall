@@ -16,8 +16,8 @@ import { DeepMutable, parseEventFromTransaction, type Result } from "./utils.js"
 
 // TODO: emulates `@wagmi/cli` generated constants
 export const blobManagerAddress = {
-  3258443211374980: "0x8c2e3e8ba0d6084786d60A6600e832E8df84846C", // TODO: testnet; outdated contract deployment, but keeping here
-  4362550583360910: "0xCA39399c138acA479C69ABf261aD3B77d91Abee7", // TODO: localnet; we need to make this deterministic
+  2481632: "0x8c2e3e8ba0d6084786d60A6600e832E8df84846C", // TODO: testnet; outdated contract deployment, but keeping here
+  248163216: "0xe1Aa25618fA0c7A1CFDab5d6B456af611873b629", // TODO: localnet; we need to make this deterministic
 } as const;
 
 // Used for getBlob()
@@ -112,20 +112,13 @@ export class BlobManager {
   async getBlob(blobHash: string, blockNumber?: bigint): Promise<Result<BlobInfo>> {
     try {
       const args = [blobHash] satisfies GetBlobParams;
-      const blob = await this.client.publicClient.readContract({
+      const result = (await this.client.publicClient.readContract({
         abi: this.contract.abi,
         address: this.contract.address,
         functionName: "getBlob",
         args,
         blockNumber,
-      });
-      const result = {
-        ...blob,
-        subscribers: blob.subscribers.map((subscriber) => ({
-          ...subscriber,
-          subscriptionGroup: [...subscriber.subscriptionGroup],
-        })),
-      };
+      })) as BlobInfo;
       return { result };
     } catch (error) {
       throw new UnhandledBlobError(`Failed to get blob info: ${error}`);
@@ -267,14 +260,14 @@ export class BlobManager {
         account: this.client.walletClient.account,
       });
       const hash = await this.client.walletClient.writeContract(request);
-      const result = await parseEventFromTransaction<AddBlobResult>(
+      const result = (await parseEventFromTransaction<AddBlobResult>(
         this.client.publicClient,
         this.contract.abi,
         "BlobAdded",
         hash
-      );
+      )) as AddBlobResult;
       const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
-      return { meta: { tx }, result: [result] };
+      return { meta: { tx }, result };
     } catch (error) {
       throw new UnhandledBlobError(`Failed to add blob: ${error}`);
     }
@@ -300,13 +293,13 @@ export class BlobManager {
       });
       const hash = await this.client.walletClient.writeContract(request);
       const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
-      const result = await parseEventFromTransaction<DeleteBlobResult>(
+      const result = (await parseEventFromTransaction<DeleteBlobResult>(
         this.client.publicClient,
         this.contract.abi,
         "BlobDeleted",
         hash
-      );
-      return { meta: { tx }, result: [result] };
+      )) as DeleteBlobResult;
+      return { meta: { tx }, result };
     } catch (error) {
       throw new UnhandledBlobError(`Failed to delete blob: ${error}`);
     }

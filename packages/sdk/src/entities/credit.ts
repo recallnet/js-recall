@@ -1,3 +1,5 @@
+import { AddressId } from "@hokunet/fvm";
+import { leb128 } from "@hokunet/fvm";
 import {
   AbiStateMutability,
   Address,
@@ -16,8 +18,8 @@ import { DeepMutable, parseEventFromTransaction, type Result } from "./utils.js"
 
 // TODO: emulates `@wagmi/cli` generated constants
 export const creditManagerAddress = {
-  3258443211374980: "0x8c2e3e8ba0d6084786d60A6600e832E8df84846C", // TODO: testnet; outdated contract deployment, but keeping here
-  4362550583360910: "0xb297278a5581c99663e4f85a950A67064DC2317D", // TODO: localnet; we need to make this deterministic
+  2481632: "0x8c2e3e8ba0d6084786d60A6600e832E8df84846C", // TODO: testnet; outdated contract deployment, but keeping here
+  248163216: "0x82C6D3ed4cD33d8EC1E51d0B5Cc1d822Eaa0c3dC", // TODO: localnet; we need to make this deterministic
 } as const;
 
 // Used for getBalance()
@@ -86,6 +88,18 @@ export type RevokeResult = Required<
   GetEventArgs<typeof creditManagerABI, "RevokeCredit", { IndexedOnly: false }>
 >;
 
+// Used for setAccountSponsor()
+export type SetAccountSponsorParams = ContractFunctionArgs<
+  typeof creditManagerABI,
+  AbiStateMutability,
+  "setAccountSponsor"
+>;
+
+// Used for setAccountSponsor()
+export type SetAccountSponsorResult = Required<
+  GetEventArgs<typeof creditManagerABI, "SetAccountSponsor", { IndexedOnly: false }>
+>;
+
 export class CreditManager {
   client: HokuClient;
   contract: GetContractReturnType<typeof creditManagerABI, Client, Address>;
@@ -110,7 +124,7 @@ export class CreditManager {
   }
 
   // Buy credits
-  async buy(amount: bigint, recipient?: Address): Promise<Result<BuyResult>> {
+  async buy(amount: bigint, to?: Address): Promise<Result<BuyResult>> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for buying credits");
     }
@@ -121,8 +135,8 @@ export class CreditManager {
       throw new InsufficientFunds(amount);
     }
     try {
-      const recipientAddress = recipient || this.client.walletClient.account.address;
-      const args = [recipientAddress] satisfies BuyCreditParams;
+      const toAddress = to || this.client.walletClient.account.address;
+      const args = [toAddress] satisfies BuyCreditParams;
       const { request } = await this.client.publicClient.simulateContract({
         address: this.contract.address,
         abi: this.contract.abi,
@@ -153,9 +167,10 @@ export class CreditManager {
 
   // Approve credit spending
   async approve(
-    receiver: Address,
-    requiredCaller: Address = receiver,
-    limit: bigint = 0n,
+    to: Address,
+    caller: Address[] = [],
+    creditLimit: bigint = 0n,
+    gasFeeLimit: bigint = 0n,
     ttl: bigint = 0n,
     from?: Address
   ): Promise<Result<ApproveResult>> {
@@ -166,9 +181,10 @@ export class CreditManager {
     try {
       const args = [
         fromAddress,
-        receiver,
-        requiredCaller,
-        limit,
+        to,
+        caller,
+        creditLimit,
+        gasFeeLimit,
         ttl,
       ] satisfies ApproveCreditParams;
       const { request } = await this.client.publicClient.simulateContract({
@@ -201,8 +217,8 @@ export class CreditManager {
 
   // Revoke credit approval
   async revoke(
-    receiver: Address,
-    requiredCaller: Address = receiver,
+    to: Address,
+    requiredCaller: Address = to,
     from?: Address
   ): Promise<Result<RevokeResult>> {
     if (!this.client.walletClient?.account) {
@@ -210,7 +226,7 @@ export class CreditManager {
     }
     const fromAddress = from || this.client.walletClient.account.address;
     try {
-      const args = [fromAddress, receiver, requiredCaller] satisfies RevokeCreditParams;
+      const args = [fromAddress, to, requiredCaller] satisfies RevokeCreditParams;
       const { request } = await this.client.publicClient.simulateContract({
         address: this.contract.address,
         abi: this.contract.abi,
@@ -239,19 +255,51 @@ export class CreditManager {
     }
   }
 
+  // Set account sponsor
+  async setAccountSponsor(
+    sponsor: Address,
+    from?: Address
+  ): Promise<Result<SetAccountSponsorResult>> {
+    if (!this.client.walletClient?.account) {
+      throw new Error("Wallet client is not initialized for setting account sponsor");
+    }
+    const fromAddress = from || this.client.walletClient.account.address;
+    try {
+      const args = [fromAddress, sponsor] satisfies SetAccountSponsorParams;
+      const { request } = await this.client.publicClient.simulateContract({
+        address: this.contract.address,
+        abi: this.contract.abi,
+        functionName: "setAccountSponsor",
+        args,
+        account: this.client.walletClient.account,
+      });
+      const hash = await this.client.walletClient.writeContract(request);
+      const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
+      const result = await parseEventFromTransaction<SetAccountSponsorResult>(
+        this.client.publicClient,
+        this.contract.abi,
+        "SetAccountSponsor",
+        hash
+      );
+      return { meta: { tx }, result };
+    } catch (error) {
+      throw new UnhandledCreditError(`Failed to set account sponsor: ${error}`);
+    }
+  }
+
   // Get credit balance
   async getBalance(address?: Address, blockNumber?: bigint): Promise<Result<CreditBalance>> {
     try {
       const forAddress = address || this.client.walletClient?.account?.address;
       if (!forAddress) throw new InvalidValue("Must provide an address or connect a wallet client");
       const args = [forAddress] satisfies GetCreditBalanceParams;
-      const result = await this.client.publicClient.readContract({
+      const result = (await this.client.publicClient.readContract({
         abi: this.contract.abi,
         address: this.contract.address,
         functionName: "getCreditBalance",
         args,
         blockNumber,
-      });
+      })) as CreditBalance;
       return { result };
     } catch (error) {
       if (error instanceof InvalidValue) {
@@ -267,23 +315,23 @@ export class CreditManager {
       const forAddress = address || this.client.walletClient?.account?.address;
       if (!forAddress) throw new InvalidValue("Must provide an address or connect a wallet client");
       const args = [forAddress] satisfies GetAccountParams;
-      const account = await this.client.publicClient.readContract({
+      const account = (await this.client.publicClient.readContract({
         abi: this.contract.abi,
         address: this.contract.address,
         functionName: "getAccount",
         args,
         blockNumber,
+      })) as CreditAccount;
+      // The approvals `to` field is the string address (like `f0123`), so we need to convert it to a hex address
+      // TODO: this converts approval addresses to the masked ID address, which can be different from the `to` field
+      // We'd have to somehow get the delegated address from an ID, like this: https://github.com/hokunet/builtin-actors/blob/003960de8ba0075d5cd1fd74e087930db5d7de76/actors/eam/src/lib.rs#L175
+      const approvals = account.approvals.map((approval) => {
+        const actorId = approval.to.slice(2); // Remove the 'f0' prefix
+        const actorIdBytes = new Uint8Array([0x00, ...leb128.unsigned.encode(actorId)]);
+        const toAddress = AddressId.fromBytes(actorIdBytes).toEthAddressHex() as Address;
+        return { ...approval, to: toAddress };
       });
-      // Since our `approvals` and `approval` are not read-only, we need to make them mutable
-      return {
-        result: {
-          ...account,
-          approvals: account.approvals.map((approval) => ({
-            ...approval,
-            approval: approval.approval.map((approval) => ({ ...approval })),
-          })),
-        },
-      };
+      return { result: { ...account, approvals } };
     } catch (error) {
       throw new UnhandledCreditError(`Failed to get account details: ${error}`);
     }
@@ -291,23 +339,16 @@ export class CreditManager {
 
   // Get credit approvals
   async getCreditApprovals(
-    sponsor: Address,
-    receiver?: Address,
-    requiredCaller?: Address,
+    from: Address,
+    to?: Address,
     blockNumber?: bigint
   ): Promise<Result<CreditApproval>> {
-    const {
+    let {
       result: { approvals },
-    } = await this.getAccount(sponsor, blockNumber);
-    // Filter approvals by `receiver` and `requiredCaller`, if provided
-    const filteredApprovals = approvals
-      .filter((approval) => !receiver || approval.receiver === receiver)
-      .filter(
-        (approval) =>
-          !requiredCaller ||
-          approval.approval.some(({ requiredCaller: rc }) => rc === requiredCaller)
-      );
-    return { result: { approvals: filteredApprovals } };
+    } = await this.getAccount(from, blockNumber);
+    // Filter approvals by `to`, if provided
+    approvals = to ? approvals.filter((approval) => approval.to === to) : approvals;
+    return { result: { approvals } };
   }
 
   // Get credit stats

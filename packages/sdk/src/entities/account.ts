@@ -29,8 +29,8 @@ type ApproveParams = ContractFunctionArgs<typeof ierc20ABI, AbiStateMutability, 
 
 // TODO: emulates `@wagmi/cli` generated constants
 export const supplySourceAddress = {
-  3258443211374980: "0x20d8a696091153c4d4816ba1fdefe113f71e0905",
-  4362550583360910: "0xa85233C63b9Ee964Add6F2cffe00Fd84eb32338f",
+  1813666457422629: "0x20d8a696091153c4d4816ba1fdefe113f71e0905", // testnet
+  534485604105794: "0x4A679253410272dd5232B3Ff7cF5dbB88f295319", // localnet
 } as const;
 
 export class AccountManager {

@@ -1,14 +1,14 @@
 import { Chain } from "viem";
 import { ChainName, devnet, getChain, getParentChain, localnet, testnet } from "./chains.js";
-import { SubnetId, subnetIdStringToChainId } from "./ipc/subnet.js";
+import { SubnetId } from "./ipc/subnet.js";
 
-export const TESTNET_SUBNET_ID = "/r314159/t410f3oewkcvacaaydfn4v6diulzise26cpfolfj7heq";
-export const LOCALNET_SUBNET_ID = "/r31337/t410fkzrz3mlkyufisiuae3scumllgalzuu3wxlxa2ly";
+export const TESTNET_SUBNET_ID = "/r314159/t410fhg7rz2ozasqfpooeaegftp2tralvggdhztleoqi";
+export const LOCALNET_SUBNET_ID = "/r31337/t410f6gbdxrbehnaeeo4mrq7wc5hgq6smnefys4qanwi";
 export const DEVNET_SUBNET_ID = "test";
 
-export const TESTNET_CHAIN_ID = subnetIdStringToChainId(TESTNET_SUBNET_ID); // 3258443211374980
-export const LOCALNET_CHAIN_ID = subnetIdStringToChainId(LOCALNET_SUBNET_ID); // 4362550583360910
-export const DEVNET_CHAIN_ID = subnetIdStringToChainId(DEVNET_SUBNET_ID); // 1942764459484029
+export const TESTNET_CHAIN_ID = 2481632;
+export const LOCALNET_CHAIN_ID = 248163216;
+export const DEVNET_CHAIN_ID = 1942764459484029;
 
 export const TESTNET_RPC_URL = "https://api-ignition-0.hoku.sh";
 export const LOCALNET_RPC_URL = "http://127.0.0.1:26657";
@@ -37,8 +37,8 @@ export const DEVNET_EVM_GATEWAY_ADDRESS = "0x77aa40b105843728088c0132e43fc443488
 export const DEVNET_EVM_REGISTRY_ADDRESS = "0x74539671a1d2f1c8f200826baba665179f53a1b7";
 
 export const TESTNET_PARENT_EVM_RPC_URL = "https://api.calibration.node.glif.io/rpc/v1";
-export const TESTNET_PARENT_EVM_GATEWAY_ADDRESS = "0xe17B86E7BEFC691DAEfe2086e56B86D4253f3294";
-export const TESTNET_PARENT_EVM_REGISTRY_ADDRESS = "0xe87AFBEC26f0fdAC69e4256dC1935bEab1e0855E";
+export const TESTNET_PARENT_EVM_GATEWAY_ADDRESS = "0xF8Abf46A1114d3B44d18F2A96D850e36FC6Ee94E";
+export const TESTNET_PARENT_EVM_REGISTRY_ADDRESS = "0x0bb143a180b61ae6b1872bbf99dBe261A2aDde40";
 export const LOCALNET_PARENT_EVM_RPC_URL = "http://127.0.0.1:8545";
 export const LOCALNET_PARENT_EVM_GATEWAY_ADDRESS = "0x9A676e781A523b5d0C0e43731313A708CB607508";
 export const LOCALNET_PARENT_EVM_REGISTRY_ADDRESS = "0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1";
