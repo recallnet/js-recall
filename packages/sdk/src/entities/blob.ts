@@ -26,6 +26,11 @@ export type AddedBlobs = DeepMutable<
   ContractFunctionReturnType<typeof blobManagerABI, AbiStateMutability, "getAddedBlobs">
 >;
 
+// Used for getPendingBlobs()
+export type PendingBlobs = DeepMutable<
+  ContractFunctionReturnType<typeof blobManagerABI, AbiStateMutability, "getPendingBlobs">
+>;
+
 // Used for getPendingBlobsCount()
 export type PendingBlobsCount = DeepMutable<
   ContractFunctionReturnType<typeof blobManagerABI, AbiStateMutability, "getPendingBlobsCount">
@@ -147,7 +152,7 @@ export class BlobManager {
     return this.contract;
   }
 
-  // Add a blob
+  // Add blob inner
   async addBlobInner(addParams: AddBlobParams): Promise<Result<AddBlobResult>> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for adding blobs");
@@ -175,6 +180,7 @@ export class BlobManager {
     }
   }
 
+  // Add blob
   async addBlob(
     blobHash: string,
     subscriptionId: string,
@@ -196,6 +202,38 @@ export class BlobManager {
       ttl,
     } as AddBlobParams;
     return this.addBlobInner(addParams);
+  }
+
+  // Delete blob
+  async deleteBlob(
+    blobHash: string,
+    subscriptionId: string,
+    subscriber?: Address
+  ): Promise<Result<DeleteBlobResult>> {
+    if (!this.client.walletClient?.account) {
+      throw new Error("Wallet client is not initialized for deleting blobs");
+    }
+    try {
+      const args = [subscriber || zeroAddress, blobHash, subscriptionId] satisfies DeleteBlobParams;
+      const { request } = await this.client.publicClient.simulateContract({
+        address: this.contract.address,
+        abi: this.contract.abi,
+        functionName: "deleteBlob",
+        args,
+        account: this.client.walletClient.account,
+      });
+      const hash = await this.client.walletClient.writeContract(request);
+      const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
+      const result = (await parseEventFromTransaction<DeleteBlobResult>(
+        this.client.publicClient,
+        this.contract.abi,
+        "DeleteBlob",
+        hash
+      )) as DeleteBlobResult;
+      return { meta: { tx }, result };
+    } catch (error) {
+      throw new UnhandledBlobError(`Failed to delete blob: ${error}`);
+    }
   }
 
   // Get blob info
@@ -237,39 +275,7 @@ export class BlobManager {
     }
   }
 
-  // Delete blob
-  async deleteBlob(
-    blobHash: string,
-    subscriptionId: string,
-    subscriber?: Address
-  ): Promise<Result<DeleteBlobResult>> {
-    if (!this.client.walletClient?.account) {
-      throw new Error("Wallet client is not initialized for deleting blobs");
-    }
-    try {
-      const args = [subscriber || zeroAddress, blobHash, subscriptionId] satisfies DeleteBlobParams;
-      const { request } = await this.client.publicClient.simulateContract({
-        address: this.contract.address,
-        abi: this.contract.abi,
-        functionName: "deleteBlob",
-        args,
-        account: this.client.walletClient.account,
-      });
-      const hash = await this.client.walletClient.writeContract(request);
-      const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
-      const result = (await parseEventFromTransaction<DeleteBlobResult>(
-        this.client.publicClient,
-        this.contract.abi,
-        "DeleteBlob",
-        hash
-      )) as DeleteBlobResult;
-      return { meta: { tx }, result };
-    } catch (error) {
-      throw new UnhandledBlobError(`Failed to delete blob: ${error}`);
-    }
-  }
-
-  // Overwrite blob
+  // Overwrite blob inner
   async overwriteBlobInner(
     oldHash: string,
     addParams: AddBlobParams
@@ -296,6 +302,7 @@ export class BlobManager {
     return { meta: { tx }, result };
   }
 
+  // Overwrite blob
   async overwriteBlob(
     oldHash: string,
     newHash: string,
@@ -329,6 +336,22 @@ export class BlobManager {
       return { result };
     } catch (error) {
       throw new UnhandledBlobError(`Failed to get added blobs: ${error}`);
+    }
+  }
+
+  // Get pending blobs
+  async getPendingBlobs(size: number, blockNumber?: bigint): Promise<Result<PendingBlobs>> {
+    try {
+      const result = (await this.client.publicClient.readContract({
+        abi: this.contract.abi,
+        address: this.contract.address,
+        functionName: "getPendingBlobs",
+        args: [size],
+        blockNumber,
+      })) as PendingBlobs;
+      return { result };
+    } catch (error) {
+      throw new UnhandledBlobError(`Failed to get pending blobs count: ${error}`);
     }
   }
 

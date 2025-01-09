@@ -312,7 +312,7 @@ describe.only("contracts", function () {
     it("should override default contract address", async () => {
       const creditManagerAddr = credits.getContract().address;
       const overrideCreditManager = client.creditManager(creditManagerAddr);
-      const { result } = await overrideCreditManager.getBalance(to);
+      const { result } = await overrideCreditManager.getCreditBalance(to);
       expect(result.creditFree).to.not.equal(0n);
       expect(result.creditCommitted).to.be.a("bigint");
       expect(result.lastDebitEpoch).to.be.a("bigint");
@@ -400,6 +400,13 @@ describe.only("contracts", function () {
       expect(result.approvals).to.be.an("array");
     });
 
+    it("should get credit balance", async () => {
+      const { result } = await credits.getCreditBalance(to);
+      expect(result.creditFree).to.not.equal(0n);
+      expect(result.creditCommitted).to.be.a("bigint");
+      expect(result.lastDebitEpoch).to.be.a("bigint");
+    });
+
     it("should get credit approvals with no filter", async () => {
       await credits.approve(to);
       const {
@@ -453,6 +460,12 @@ describe.only("contracts", function () {
 
     it("should get added blobs", async () => {
       const { result } = await blobs.getAddedBlobs(10);
+      expect(result).to.be.an("array");
+      expect(result.length).to.be.greaterThanOrEqual(0);
+    });
+
+    it("should get pending blobs", async () => {
+      const { result } = await blobs.getPendingBlobs(10);
       expect(result).to.be.an("array");
       expect(result.length).to.be.greaterThanOrEqual(0);
     });

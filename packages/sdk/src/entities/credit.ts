@@ -126,48 +126,6 @@ export class CreditManager {
     return this.contract;
   }
 
-  // Buy credits
-  async buy(amount: bigint, to?: Address): Promise<Result<BuyResult>> {
-    if (!this.client.walletClient?.account) {
-      throw new Error("Wallet client is not initialized for buying credits");
-    }
-    const balance = await this.client.publicClient.getBalance({
-      address: this.client.walletClient.account.address,
-    });
-    if (balance < amount) {
-      throw new InsufficientFunds(amount);
-    }
-    try {
-      const toAddress = to || this.client.walletClient.account.address;
-      const args = [toAddress] satisfies BuyCreditParams;
-      const { request } = await this.client.publicClient.simulateContract({
-        address: this.contract.address,
-        abi: this.contract.abi,
-        functionName: "buyCredit",
-        args,
-        value: amount,
-        account: this.client.walletClient.account,
-      });
-      const hash = await this.client.walletClient.writeContract(request);
-      const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
-      const result = await parseEventFromTransaction<BuyResult>(
-        this.client.publicClient,
-        this.contract.abi,
-        "BuyCredit",
-        hash
-      );
-      return { meta: { tx }, result };
-    } catch (error) {
-      if (error instanceof ContractFunctionExecutionError) {
-        // Although we make this check above, it's possible multiple buy requests are sent in the same block
-        if (error.message.includes("insufficient funds")) {
-          throw new InsufficientFunds(amount);
-        }
-      }
-      throw new UnhandledCreditError(`Failed to buy credits: ${error}`);
-    }
-  }
-
   // Approve credit spending
   async approve(
     to: Address,
@@ -215,6 +173,48 @@ export class CreditManager {
         }
       }
       throw new UnhandledCreditError(`Failed to approve credits: ${error}`);
+    }
+  }
+
+  // Buy credits
+  async buy(amount: bigint, to?: Address): Promise<Result<BuyResult>> {
+    if (!this.client.walletClient?.account) {
+      throw new Error("Wallet client is not initialized for buying credits");
+    }
+    const balance = await this.client.publicClient.getBalance({
+      address: this.client.walletClient.account.address,
+    });
+    if (balance < amount) {
+      throw new InsufficientFunds(amount);
+    }
+    try {
+      const toAddress = to || this.client.walletClient.account.address;
+      const args = [toAddress] satisfies BuyCreditParams;
+      const { request } = await this.client.publicClient.simulateContract({
+        address: this.contract.address,
+        abi: this.contract.abi,
+        functionName: "buyCredit",
+        args,
+        value: amount,
+        account: this.client.walletClient.account,
+      });
+      const hash = await this.client.walletClient.writeContract(request);
+      const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
+      const result = await parseEventFromTransaction<BuyResult>(
+        this.client.publicClient,
+        this.contract.abi,
+        "BuyCredit",
+        hash
+      );
+      return { meta: { tx }, result };
+    } catch (error) {
+      if (error instanceof ContractFunctionExecutionError) {
+        // Although we make this check above, it's possible multiple buy requests are sent in the same block
+        if (error.message.includes("insufficient funds")) {
+          throw new InsufficientFunds(amount);
+        }
+      }
+      throw new UnhandledCreditError(`Failed to buy credits: ${error}`);
     }
   }
 
@@ -290,28 +290,6 @@ export class CreditManager {
     }
   }
 
-  // Get credit balance
-  async getBalance(address?: Address, blockNumber?: bigint): Promise<Result<CreditBalance>> {
-    try {
-      const forAddress = address || this.client.walletClient?.account?.address;
-      if (!forAddress) throw new InvalidValue("Must provide an address or connect a wallet client");
-      const args = [forAddress] satisfies GetCreditBalanceParams;
-      const result = (await this.client.publicClient.readContract({
-        abi: this.contract.abi,
-        address: this.contract.address,
-        functionName: "getCreditBalance",
-        args,
-        blockNumber,
-      })) as CreditBalance;
-      return { result };
-    } catch (error) {
-      if (error instanceof InvalidValue) {
-        throw error;
-      }
-      throw new UnhandledCreditError(`Failed to get credit balance: ${error}`);
-    }
-  }
-
   // Get account details including approvals
   async getAccount(address?: Address, blockNumber?: bigint): Promise<Result<CreditAccount>> {
     try {
@@ -351,6 +329,28 @@ export class CreditManager {
     // Filter approvals by `to`, if provided
     approvals = to ? approvals.filter((approval) => approval.to === to) : approvals;
     return { result: { approvals } };
+  }
+
+  // Get credit balance
+  async getCreditBalance(address?: Address, blockNumber?: bigint): Promise<Result<CreditBalance>> {
+    try {
+      const forAddress = address || this.client.walletClient?.account?.address;
+      if (!forAddress) throw new InvalidValue("Must provide an address or connect a wallet client");
+      const args = [forAddress] satisfies GetCreditBalanceParams;
+      const result = (await this.client.publicClient.readContract({
+        abi: this.contract.abi,
+        address: this.contract.address,
+        functionName: "getCreditBalance",
+        args,
+        blockNumber,
+      })) as CreditBalance;
+      return { result };
+    } catch (error) {
+      if (error instanceof InvalidValue) {
+        throw error;
+      }
+      throw new UnhandledCreditError(`Failed to get credit balance: ${error}`);
+    }
   }
 
   // Get credit stats

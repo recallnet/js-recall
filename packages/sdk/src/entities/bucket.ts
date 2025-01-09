@@ -233,7 +233,7 @@ export class BucketManager {
     }
   }
 
-  // Add an object to a bucket
+  // Add an object to a bucket inner
   // TODO: should this be private and used internally by `add`
   async addInner(bucket: Address, addParams: AddObjectParams): Promise<Result<AddObjectResult>> {
     if (!this.client.walletClient?.account) {
@@ -262,6 +262,7 @@ export class BucketManager {
     return { meta: { tx }, result: { owner, bucket: eventBucket, key } };
   }
 
+  // Add an object to a bucket
   async add(
     bucket: Address,
     key: string,
@@ -380,6 +381,7 @@ export class BucketManager {
     }
   }
 
+  // Download an object from a bucket, returning a Uint8Array
   async get(
     bucket: Address,
     key: string,
@@ -414,6 +416,7 @@ export class BucketManager {
     }
   }
 
+  // Get a readable stream of an object from a bucket
   async getStream(
     bucket: Address,
     key: string,
