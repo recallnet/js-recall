@@ -11,8 +11,9 @@ import {
 } from "viem";
 import { blobManagerABI } from "../abis.js";
 import { HokuClient } from "../client.js";
-import { blobManagerAddress } from "../constants.js";
-import { UnhandledBlobError } from "./errors.js";
+import { blobManagerAddress, LOCALNET_OBJECT_API_URL, MIN_TTL } from "../constants.js";
+import { getObjectsNodeInfo } from "../provider/object.js";
+import { InvalidValue, UnhandledBlobError } from "./errors.js";
 import { DeepMutable, parseEventFromTransaction, type Result } from "./utils.js";
 
 // Used for getBlob()
@@ -56,7 +57,28 @@ export type SubnetStats = DeepMutable<
 >;
 
 // Used for addBlob()
-type AddBlobParams = ContractFunctionArgs<typeof blobManagerABI, AbiStateMutability, "addBlob">;
+type AddBlobFullParams = ContractFunctionArgs<typeof blobManagerABI, AbiStateMutability, "addBlob">;
+
+// Used for addBlob()
+type AddBlobParams = DeepMutable<
+  Extract<
+    AddBlobFullParams[0],
+    {
+      sponsor: Address;
+      source: string;
+      blobHash: string;
+      metadataHash: string;
+      subscriptionId: string;
+      size: bigint;
+      ttl: bigint;
+    }
+  >
+>;
+
+export type AddBlobOptions = {
+  ttl?: bigint;
+  sponsor?: Address;
+};
 
 // Used for getBlob()
 type GetBlobParams = ContractFunctionArgs<typeof blobManagerABI, AbiStateMutability, "getBlob">;
@@ -77,12 +99,12 @@ type DeleteBlobParams = ContractFunctionArgs<
 
 // Used for addBlob()
 export type AddBlobResult = Required<
-  GetEventArgs<typeof blobManagerABI, "BlobAdded", { IndexedOnly: false }>
+  GetEventArgs<typeof blobManagerABI, "AddBlob", { IndexedOnly: false }>
 >;
 
 // Used for deleteBlob()
 export type DeleteBlobResult = Required<
-  GetEventArgs<typeof blobManagerABI, "BlobDeleted", { IndexedOnly: false }>
+  GetEventArgs<typeof blobManagerABI, "DeleteBlob", { IndexedOnly: false }>
 >;
 
 // Used for overwriteBlob()
@@ -126,30 +148,12 @@ export class BlobManager {
   }
 
   // Add a blob
-  async addBlob(
-    source: string,
-    blobHash: string,
-    metadataHash: string,
-    subscriptionId: string,
-    size: bigint,
-    ttl: bigint = 0n,
-    sponsor?: Address
-  ): Promise<Result<AddBlobResult>> {
+  async addBlobInner(addParams: AddBlobParams): Promise<Result<AddBlobResult>> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for adding blobs");
     }
     try {
-      const args = [
-        {
-          sponsor: sponsor || zeroAddress,
-          source,
-          blobHash,
-          metadataHash,
-          subscriptionId,
-          size,
-          ttl,
-        },
-      ] satisfies AddBlobParams;
+      const args = [addParams] satisfies AddBlobFullParams;
       const { request } = await this.client.publicClient.simulateContract({
         address: this.contract.address,
         abi: this.contract.abi,
@@ -161,7 +165,7 @@ export class BlobManager {
       const result = (await parseEventFromTransaction<AddBlobResult>(
         this.client.publicClient,
         this.contract.abi,
-        "BlobAdded",
+        "AddBlob",
         hash
       )) as AddBlobResult;
       const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
@@ -169,6 +173,29 @@ export class BlobManager {
     } catch (error) {
       throw new UnhandledBlobError(`Failed to add blob: ${error}`);
     }
+  }
+
+  async addBlob(
+    blobHash: string,
+    subscriptionId: string,
+    size: bigint,
+    options: AddBlobOptions = {}
+  ): Promise<Result<AddBlobResult>> {
+    const ttl = options?.ttl ?? 0n;
+    if (ttl !== 0n && ttl < MIN_TTL) {
+      throw new InvalidValue(`TTL must be at least ${MIN_TTL} seconds`);
+    }
+    const { nodeId: source } = await getObjectsNodeInfo(LOCALNET_OBJECT_API_URL);
+    const addParams = {
+      sponsor: options.sponsor ?? zeroAddress,
+      source,
+      blobHash,
+      metadataHash: "",
+      subscriptionId,
+      size,
+      ttl,
+    } as AddBlobParams;
+    return this.addBlobInner(addParams);
   }
 
   // Get blob info
@@ -233,7 +260,7 @@ export class BlobManager {
       const result = (await parseEventFromTransaction<DeleteBlobResult>(
         this.client.publicClient,
         this.contract.abi,
-        "BlobDeleted",
+        "DeleteBlob",
         hash
       )) as DeleteBlobResult;
       return { meta: { tx }, result };
@@ -243,14 +270,14 @@ export class BlobManager {
   }
 
   // Overwrite blob
-  async overwriteBlob(
+  async overwriteBlobInner(
     oldHash: string,
     addParams: AddBlobParams
   ): Promise<Result<OverwriteBlobResult>> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for overwriting blobs");
     }
-    const params = [oldHash, ...addParams] satisfies OverwriteBlobParams;
+    const params = [oldHash, addParams] satisfies OverwriteBlobParams;
     const { request } = await this.client.publicClient.simulateContract({
       address: this.contract.address,
       abi: this.contract.abi,
@@ -267,6 +294,26 @@ export class BlobManager {
       hash
     )) as OverwriteBlobResult;
     return { meta: { tx }, result };
+  }
+
+  async overwriteBlob(
+    oldHash: string,
+    newHash: string,
+    subscriptionId: string,
+    size: bigint,
+    options: AddBlobOptions = {}
+  ): Promise<Result<OverwriteBlobResult>> {
+    const { nodeId: source } = await getObjectsNodeInfo(LOCALNET_OBJECT_API_URL);
+    const params = {
+      sponsor: options.sponsor ?? zeroAddress,
+      source,
+      blobHash: newHash,
+      metadataHash: "",
+      subscriptionId,
+      size,
+      ttl: options.ttl ?? 0n,
+    } as AddBlobParams;
+    return this.overwriteBlobInner(oldHash, params);
   }
 
   // Get added blobs

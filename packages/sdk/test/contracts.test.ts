@@ -80,7 +80,7 @@ describe.only("contracts", function () {
 
       it("should add object from file", async () => {
         const path = await temporaryWrite(fileContents);
-        const { meta, result } = await bucketManager.addFile(bucket, key, path);
+        const { meta, result } = await bucketManager.add(bucket, key, path);
         strictEqual(isHash(meta!.tx!.transactionHash), true);
         strictEqual(result.owner, account.address);
         strictEqual(result.bucket.toLowerCase(), bucket);
@@ -92,48 +92,42 @@ describe.only("contracts", function () {
         const file = new File([content], "test.txt", {
           type: "text/plain",
         });
-
-        // TODO: there's latency in the object being available when overwriting.
-        // this should be fixed elsewhere, but for now, we'll use a different key
-        // and *not* overwrite. latency is still around 5-10 seconds, though, if
-        // an object is added with the same data as another in the bucket...
-        const { meta, result } = await bucketManager.addFile(bucket, "hello/test", file);
+        const { meta, result } = await bucketManager.add(bucket, "hello/test", file);
         strictEqual(isHash(meta!.tx!.transactionHash), true);
         strictEqual(result.owner, account.address);
         strictEqual(result.bucket.toLowerCase(), bucket);
         strictEqual(result.key, "hello/test");
-        await new Promise((resolve) => setTimeout(resolve, 15000));
       });
 
-      it("should get object", async () => {
-        let { result: object } = await bucketManager.get(bucket, key);
+      it("should get object value without downloading", async () => {
+        let { result: object } = await bucketManager.getObjectValue(bucket, key);
         strictEqual(object.blobHash, blobHash);
         strictEqual(object.size, 6n);
 
         // at a specific block number
         const latestBlock = await client.publicClient.getBlockNumber();
-        ({ result: object } = await bucketManager.get(bucket, key, latestBlock));
+        ({ result: object } = await bucketManager.getObjectValue(bucket, key, latestBlock));
         strictEqual(object.blobHash, blobHash);
         strictEqual(object.size, 6n);
       });
 
       it("should fail to get object at non-existent bucket", async () => {
         const missingBucket = "0xff00999999999999999999999999999999999999";
-        const object = bucketManager.get(missingBucket, key);
+        const object = bucketManager.getObjectValue(missingBucket, key);
         await rejects(object, (err) => {
           strictEqual((err as Error).message, `Bucket not found: '${missingBucket}'`);
           return true;
         });
       });
 
-      it("should download object", async () => {
-        const object = await bucketManager.download(bucket, key);
+      it("should get and download object as Uint8Array", async () => {
+        const object = await bucketManager.get(bucket, key);
         const contents = new TextDecoder().decode(object);
         strictEqual(contents, fileContents);
       });
 
-      it("should download object from stream", async () => {
-        const stream = await bucketManager.downloadStream(bucket, key);
+      it("should get and download object as stream", async () => {
+        const stream = await bucketManager.getStream(bucket, key);
         const reader = stream.getReader();
         const chunks: Uint8Array[] = [];
         while (true) {
@@ -149,72 +143,60 @@ describe.only("contracts", function () {
 
       it("should download object with range", async () => {
         let range: { start?: number; end?: number } = { start: 1, end: 3 };
-        let object = await bucketManager.download(bucket, key, range);
+        let object = await bucketManager.get(bucket, key, range);
         let contents = new TextDecoder().decode(object);
         strictEqual(contents, "ell");
 
         range = { start: 1, end: 1 };
-        object = await bucketManager.download(bucket, key, range);
+        object = await bucketManager.get(bucket, key, range);
         contents = new TextDecoder().decode(object);
         strictEqual(contents, "e");
 
         range = { start: 5, end: 11 };
-        object = await bucketManager.download(bucket, key, range);
+        object = await bucketManager.get(bucket, key, range);
         contents = new TextDecoder().decode(object);
         strictEqual(contents, "\n");
 
         range = { start: 1, end: undefined };
-        object = await bucketManager.download(bucket, key, range);
+        object = await bucketManager.get(bucket, key, range);
         contents = new TextDecoder().decode(object);
         strictEqual(contents, "ello\n");
 
         range = { start: undefined, end: 2 };
-        object = await bucketManager.download(bucket, key, range);
+        object = await bucketManager.get(bucket, key, range);
         contents = new TextDecoder().decode(object);
         strictEqual(contents, "o\n");
 
         range = { start: undefined, end: 11 };
-        object = await bucketManager.download(bucket, key, range);
+        object = await bucketManager.get(bucket, key, range);
         contents = new TextDecoder().decode(object);
         strictEqual(contents, fileContents);
 
         range = { start: undefined, end: undefined };
-        object = await bucketManager.download(bucket, key, range);
+        object = await bucketManager.get(bucket, key, range);
         contents = new TextDecoder().decode(object);
         strictEqual(contents, fileContents);
       });
 
       it("should fail to download object with invalid range", async () => {
         let range: { start?: number; end?: number } = { start: 5, end: 2 };
-        let object = bucketManager.download(bucket, key, range);
+        let object = bucketManager.get(bucket, key, range);
         await rejects(object, (err) => {
           strictEqual((err as Error).message, `Invalid range: ${range.start}-${range.end}`);
           return true;
         });
 
         range = { start: 6, end: undefined };
-        object = bucketManager.download(bucket, key, range);
+        object = bucketManager.get(bucket, key, range);
         await rejects(object, (err) => {
           strictEqual((err as Error).message, `Invalid range: ${range.start}-`);
           return true;
         });
       });
 
-      // TODO: mock objects API returning 400 error: {"code":400,"message":"object rzghyg4z3p6vbz5jkgc75lk64fci7kieul65o6hk6xznx7lctkmq is not available"}
-      it.skip("should fail to download unrecoverable object", async () => {
-        const object = bucketManager.download(bucket, key);
-        await rejects(object, (err) => {
-          strictEqual(
-            (err as Error).message,
-            `Object not available: unrecoverable key '${key}' with blob hash '${blobHash}'`
-          );
-          return true;
-        });
-      });
-
       it("should fail to get non-existent object", async () => {
         const missingKey = "hello/foo";
-        const object = bucketManager.get(bucket, missingKey);
+        const object = bucketManager.getObjectValue(bucket, missingKey);
         await rejects(object, (err) => {
           strictEqual(
             (err as Error).message,
@@ -262,11 +244,10 @@ describe.only("contracts", function () {
 
       // TODO: although this test passes in isolation, it leads to weird behavior wrt object
       // availability on the network, causing later tests fail for get/download objects with the same contents
-      it.skip("should delete object", async () => {
+      it("should delete object", async () => {
         const deletedKey = "hello/deleted";
         const path = await temporaryWrite(fileContents);
-        await bucketManager.addFile(bucket, deletedKey, path);
-        await new Promise((resolve) => setTimeout(resolve, 15000));
+        await bucketManager.add(bucket, deletedKey, path);
         const { meta, result } = await bucketManager.delete(bucket, deletedKey);
         strictEqual(isHash(meta!.tx!.transactionHash), true);
         strictEqual(result.owner, account.address);
@@ -458,11 +439,10 @@ describe.only("contracts", function () {
 
   // TODO: some of these tests just check types because we don't have a great CI flow,
   // but we can change that in the future and make them more explicit
-  describe.only("blob manager", function () {
+  describe("blob manager", function () {
     let blobs: BlobManager;
     let to: Address;
     const subscriptionId = "foobar";
-    const fileContents = "hello\n";
     const size = 6n;
     const blobHash = "rzghyg4z3p6vbz5jkgc75lk64fci7kieul65o6hk6xznx7lctkmq";
 
@@ -514,6 +494,14 @@ describe.only("contracts", function () {
       expect(stats.numResolving).to.be.a("bigint");
     });
 
+    // TODO: this assumes the blob already exists on the network since the objects API has no way
+    // to add a blob. Thus, we're taking advantage of its pre-existence on the network to "add" it.
+    it("should add blob", async () => {
+      const { meta, result } = await blobs.addBlob(blobHash, subscriptionId, size);
+      strictEqual(isHash(meta!.tx!.transactionHash), true);
+      strictEqual(result.blobHash, blobHash);
+    });
+
     it("should get blob", async () => {
       const { result } = await blobs.getBlob(blobHash);
       expect(result.size).to.be.equal(size);
@@ -524,6 +512,19 @@ describe.only("contracts", function () {
     it("should get blob status", async () => {
       const { result } = await blobs.getBlobStatus(account.address, blobHash, subscriptionId);
       expect(result).to.be.equal(2); // resolved
+    });
+
+    // TODO: this assumes the new blob already exists on the network / iroh node
+    it("should overwrite blob", async () => {
+      const { meta, result } = await blobs.overwriteBlob(blobHash, blobHash, subscriptionId, size);
+      strictEqual(isHash(meta!.tx!.transactionHash), true);
+      strictEqual(result.newHash, blobHash);
+    });
+
+    it("should delete blob", async () => {
+      const { meta, result } = await blobs.deleteBlob(blobHash, subscriptionId);
+      strictEqual(isHash(meta!.tx!.transactionHash), true);
+      strictEqual(result.blobHash, blobHash);
     });
   });
 
