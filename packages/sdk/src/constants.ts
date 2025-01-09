@@ -36,7 +36,7 @@ export const TESTNET_PARENT_EVM_GATEWAY_ADDRESS = "0xF8Abf46A1114d3B44d18F2A96D8
 export const TESTNET_PARENT_EVM_REGISTRY_ADDRESS = "0x0bb143a180b61ae6b1872bbf99dBe261A2aDde40";
 export const LOCALNET_EVM_GATEWAY_ADDRESS = "0x77aa40b105843728088c0132e43fc44348881da8";
 export const LOCALNET_EVM_REGISTRY_ADDRESS = "0x74539671a1d2f1c8f200826baba665179f53a1b7";
-export const LOCALNET_EVM_SUPPLY_SOURCE_ADDRESS = "0xa85233C63b9Ee964Add6F2cffe00Fd84eb32338f";
+export const LOCALNET_EVM_SUPPLY_SOURCE_ADDRESS = "0x4A679253410272dd5232B3Ff7cF5dbB88f295319";
 export const LOCALNET_PARENT_EVM_GATEWAY_ADDRESS = "0x9A676e781A523b5d0C0e43731313A708CB607508";
 export const LOCALNET_PARENT_EVM_REGISTRY_ADDRESS = "0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1";
 export const DEVNET_EVM_GATEWAY_ADDRESS = "0x77aa40b105843728088c0132e43fc44348881da8";
@@ -46,18 +46,17 @@ export const DEVNET_EVM_REGISTRY_ADDRESS = "0x74539671a1d2f1c8f200826baba665179f
 // TODO: emulates `@wagmi/cli` generated constants
 export const blobManagerAddress = {
   2481632: "0x8c2e3e8ba0d6084786d60A6600e832E8df84846C", // TODO: testnet; outdated contract deployment, but keeping here
-  248163216: "0xe1Aa25618fA0c7A1CFDab5d6B456af611873b629", // TODO: localnet; we need to make this deterministic
+  248163216: "0xe1Aa25618fA0c7A1CFDab5d6B456af611873b629", // localnet
 } as const;
 
 export const bucketManagerAddress = {
   2481632: "0x4c74c78B3698cA00473f12eF517D21C65461305F", // TODO: testnet; outdated contract deployment, but keeping here
-  248163216: "0xf7Cd8fa9b94DB2Aa972023b379c7f72c65E4De9D", // TODO: localnet; we need to make this deterministic
+  248163216: "0xf7Cd8fa9b94DB2Aa972023b379c7f72c65E4De9D", // localnet
 } as const;
 
 export const creditManagerAddress = {
   2481632: "0x8c2e3e8ba0d6084786d60A6600e832E8df84846C", // TODO: testnet; outdated contract deployment, but keeping here
-  // 248163216: "0x82C6D3ed4cD33d8EC1E51d0B5Cc1d822Eaa0c3dC", // TODO: localnet; we need to make this deterministic
-  248163216: "0x4325E8d969Cf9170C41fb2f34Cc86bC511e89664", // TODO: localnet; we need to make this deterministic
+  248163216: "0x82C6D3ed4cD33d8EC1E51d0B5Cc1d822Eaa0c3dC", // localnet
 } as const;
 
 export const gatewayManagerFacetAddress = {
@@ -69,8 +68,8 @@ export const gatewayManagerFacetAddress = {
 } as const;
 
 export const supplySourceAddress = {
-  314159: TESTNET_EVM_SUPPLY_SOURCE_ADDRESS, // testnet
-  31337: LOCALNET_EVM_SUPPLY_SOURCE_ADDRESS, // localnet
+  314159: TESTNET_EVM_SUPPLY_SOURCE_ADDRESS, // calibration (for testnet)
+  31337: LOCALNET_EVM_SUPPLY_SOURCE_ADDRESS, // anvil (for localnet)
 } as const;
 
 // Miscellaneous

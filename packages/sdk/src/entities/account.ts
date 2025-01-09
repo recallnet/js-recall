@@ -17,6 +17,7 @@ import { GatewayManager } from "../ipc/gateway.js";
 import { InvalidValue } from "./errors.js";
 import { parseEventFromTransaction, Result } from "./utils.js";
 
+// Type for account info
 type AccountInfo = {
   address: Address;
   nonce: number;
@@ -24,10 +25,13 @@ type AccountInfo = {
   parentBalance?: bigint;
 };
 
+// Type for approve result
 type ApproveResult = Required<GetEventArgs<typeof ierc20ABI, "Approval", { IndexedOnly: false }>>;
 
+// Type for approve params
 type ApproveParams = ContractFunctionArgs<typeof ierc20ABI, AbiStateMutability, "approve">;
 
+// AccountManager class wrapper around `GatewayManager`
 export class AccountManager {
   client: HokuClient;
   gatewayManager: GatewayManager;
@@ -37,10 +41,12 @@ export class AccountManager {
     this.gatewayManager = new GatewayManager();
   }
 
+  // Get the gateway manager class and underlying contract
   getGatewayManager(): GatewayManager {
     return this.gatewayManager;
   }
 
+  // Switch between parent and child subnet
   async switchSubnet(
     from: Chain,
     to: Chain
@@ -51,6 +57,7 @@ export class AccountManager {
     };
   }
 
+  // Get the supply source contract
   getSupplySource(
     client: HokuClient,
     address?: Address
@@ -73,6 +80,7 @@ export class AccountManager {
     });
   }
 
+  // Get account balance
   async balance(address?: Address): Promise<Result<GetBalanceReturnType>> {
     const addr = address || this.client.walletClient?.account?.address;
     if (!addr) {
@@ -81,6 +89,7 @@ export class AccountManager {
     return { result: await this.client.publicClient.getBalance({ address: addr }) };
   }
 
+  // Get account info
   async info(address?: Address): Promise<Result<AccountInfo>> {
     const addr = address || this.client.walletClient?.account?.address;
     if (!addr) {
@@ -93,9 +102,9 @@ export class AccountManager {
     if (!parentChain) {
       return { result: { address: addr, nonce, balance: balance.result } };
     }
-    const supplySourceAddress = this.getSupplySource(this.client).address;
     const { change, reset } = await this.switchSubnet(currentChain, parentChain);
     await change();
+    const supplySourceAddress = this.getSupplySource(this.client).address;
     const args = [addr] as const;
     const parentBalance = await this.getSupplySource(
       this.client,
@@ -105,6 +114,7 @@ export class AccountManager {
     return { result: { address: addr, nonce, balance: balance.result, parentBalance } };
   }
 
+  // Approve a spender to transfer funds from the account
   async approve(spender: Address, amount: bigint): Promise<Result<ApproveResult>> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for approving");
@@ -142,6 +152,7 @@ export class AccountManager {
     return { meta: { tx }, result: { owner, spender: eventSpender, value } };
   }
 
+  // Deposit funds from parent to child subnet
   async deposit(amount: bigint, recipient?: Address): Promise<Result<boolean>> {
     const currentChain = this.client.publicClient.chain;
     const parentChain = this.client.network.getParentChain();
@@ -150,26 +161,20 @@ export class AccountManager {
     }
     const { change, reset } = await this.switchSubnet(currentChain, parentChain);
     await change();
-    const gatewayParentAddress = this.getGatewayManager().getContract(this.client).address;
-    await reset();
+    const gatewayParentAddress = this.gatewayManager.getContract(this.client).address;
     await this.approve(gatewayParentAddress, amount);
-    await change();
-    const gatewayAddress = this.getGatewayManager().getContract(this.client).address;
-    const result = await this.gatewayManager.fundWithToken(
-      this.client,
-      amount,
-      recipient,
-      gatewayAddress
-    );
+    const result = await this.gatewayManager.fundWithToken(this.client, amount, recipient);
     await reset();
     return result;
   }
 
+  // Withdraw funds from child subnet to parent
   async withdraw(amount: bigint, recipient?: Address): Promise<Result<boolean>> {
     const result = await this.gatewayManager.release(this.client, amount, recipient);
     return result;
   }
 
+  // Transfer funds between accounts within the same subnet
   async transfer(recipient: Address, amount: bigint): Promise<Result<boolean>> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for transfers");
