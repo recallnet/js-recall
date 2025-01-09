@@ -6,10 +6,18 @@ import { Account, Address, getAddress, isAddress, isHash, parseEther } from "vie
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { localnet } from "../src/chains.js";
 import { HokuClient, walletClientFromPrivateKey } from "../src/client.js";
-import { AccountManager } from "../src/entities/account.js";
-import { BlobManager } from "../src/entities/blob.js";
-import { BucketManager } from "../src/entities/bucket.js";
-import { CreditManager } from "../src/entities/credit.js";
+import {
+  AccountManager,
+  BlobManager,
+  BucketManager,
+  CreditManager,
+} from "../src/entities/index.js";
+
+// TODO: once https://github.com/hokunet/contracts/pull/52 is merged, we can remove this.
+// Currently, `ipc` localnet deploys a credit manager contract that emits a different event in
+// credit approvals than what this JS lib expects, so many credit approval tests will fail.
+// You can deploy your own credit manager contract to fix this and replace the address below.
+const CREDIT_MANAGER_ADDRESS = "";
 
 // TODO: these tests are somewhat dependent on one another, so we should refactor to be independent
 describe.only("contracts", function () {
@@ -275,7 +283,7 @@ describe.only("contracts", function () {
     let caller: Address;
 
     before(async () => {
-      credits = client.creditManager();
+      credits = client.creditManager((CREDIT_MANAGER_ADDRESS as Address) ?? undefined);
       to = getAddress("0x9965507d1a55bcc2695c58ba16fb37d819b0a4dc");
       caller = getAddress("0x976ea74026e726554db657fa54763abd0c3a0aa9");
     });
@@ -448,14 +456,13 @@ describe.only("contracts", function () {
   // but we can change that in the future and make them more explicit
   describe("blob manager", function () {
     let blobs: BlobManager;
-    let to: Address;
+    const to = getAddress("0x9965507d1a55bcc2695c58ba16fb37d819b0a4dc");
     const subscriptionId = "foobar";
     const size = 6n;
     const blobHash = "rzghyg4z3p6vbz5jkgc75lk64fci7kieul65o6hk6xznx7lctkmq";
 
     before(async () => {
       blobs = client.blobManager();
-      to = getAddress("0x9965507d1a55bcc2695c58ba16fb37d819b0a4dc");
     });
 
     it("should get added blobs", async () => {
@@ -541,7 +548,7 @@ describe.only("contracts", function () {
     });
   });
 
-  describe.skip("account manager", function () {
+  describe("account manager", function () {
     let accountManager: AccountManager;
 
     before(async () => {
