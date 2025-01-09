@@ -55,8 +55,8 @@ export function createObjectsFormData({
   return formData;
 }
 
-export async function getObjectsNodeInfo(): Promise<ObjectsApiNodeInfo> {
-  const response = await fetch("http://localhost:8001/v1/node");
+export async function getObjectsNodeInfo(objectsProviderUrl: string): Promise<ObjectsApiNodeInfo> {
+  const response = await fetch(`${objectsProviderUrl}/v1/node`);
   if (!response.ok) {
     const error = await response.json();
     throw new Error(`Objects API error: ${error.message}`);
@@ -91,6 +91,7 @@ export async function stageDataToIroh(iroh: Iroh, data: Uint8Array): Promise<Blo
 }
 
 export async function callObjectsApiAddObject(
+  objectsProviderUrl: string,
   client: HokuClient,
   bucketManagerAddress: Address,
   bucket: Address,
@@ -131,7 +132,7 @@ export async function callObjectsApiAddObject(
     size: params.size,
     source,
   });
-  const response = await fetch("http://localhost:8001/v1/objects", {
+  const response = await fetch(`${objectsProviderUrl}/v1/objects`, {
     method: "POST",
     body: formData,
   });
@@ -145,6 +146,7 @@ export async function callObjectsApiAddObject(
 
 // Get a blob from the objects API
 export async function downloadBlob(
+  objectsProviderUrl: string,
   bucket: Address,
   key: string,
   range?: { start?: number; end?: number },
@@ -155,7 +157,7 @@ export async function downloadBlob(
     headers.Range = `bytes=${range.start ?? ""}-${range.end ?? ""}`;
   }
   const bucketIdAddress = AddressId.fromEthAddress(bucket);
-  const url = new URL(`http://localhost:8001/v1/objects/${bucketIdAddress}/${key}`);
+  const url = new URL(`${objectsProviderUrl}/v1/objects/${bucketIdAddress}/${key}`);
   if (blockNumber !== undefined) {
     url.searchParams.set("height", blockNumber.toString());
   }
@@ -179,55 +181,3 @@ export async function downloadBlob(
 
   return response.body;
 }
-
-// TODO: figure out if this is the right pattern for file handling
-export interface FileHandler {
-  readFile: (input: string | File | Uint8Array) => Promise<{
-    data: Uint8Array;
-    contentType?: string;
-    size: bigint;
-  }>;
-}
-
-// TODO: figure out if this is the right pattern for file handling for web vs nodejs
-export const nodeFileHandler: FileHandler = {
-  async readFile(input) {
-    if (typeof input === "string") {
-      const fs = await import("node:fs/promises");
-      const { fileTypeFromBuffer } = await import("file-type");
-      const data = await fs.readFile(input);
-      const type = await fileTypeFromBuffer(data);
-      return {
-        data: new Uint8Array(data),
-        contentType: type?.mime,
-        size: BigInt(data.length),
-      };
-    }
-    const data = input instanceof Uint8Array ? input : new Uint8Array(await input.arrayBuffer());
-    return {
-      data,
-      size: BigInt(data.length),
-    };
-  },
-};
-
-// TODO: figure out if this is the right pattern for file handling for web vs nodejs
-export const webFileHandler: FileHandler = {
-  async readFile(input) {
-    if (input instanceof File) {
-      const data = new Uint8Array(await input.arrayBuffer());
-      return {
-        data,
-        contentType: input.type,
-        size: BigInt(input.size),
-      };
-    }
-    if (typeof input === "string") {
-      throw new Error("File paths are not supported in browser environment");
-    }
-    return {
-      data: input,
-      size: BigInt(input.length),
-    };
-  },
-};

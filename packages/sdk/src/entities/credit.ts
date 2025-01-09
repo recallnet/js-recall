@@ -13,14 +13,9 @@ import {
 } from "viem";
 import { creditManagerABI } from "../abis.js";
 import { HokuClient } from "../client.js";
+import { creditManagerAddress } from "../constants.js";
 import { InsufficientFunds, InvalidValue, UnhandledCreditError } from "./errors.js";
 import { DeepMutable, parseEventFromTransaction, type Result } from "./utils.js";
-
-// TODO: emulates `@wagmi/cli` generated constants
-export const creditManagerAddress = {
-  2481632: "0x8c2e3e8ba0d6084786d60A6600e832E8df84846C", // TODO: testnet; outdated contract deployment, but keeping here
-  248163216: "0x82C6D3ed4cD33d8EC1E51d0B5Cc1d822Eaa0c3dC", // TODO: localnet; we need to make this deterministic
-} as const;
 
 // Used for getBalance()
 export type CreditBalance = DeepMutable<
@@ -106,9 +101,14 @@ export class CreditManager {
 
   constructor(client: HokuClient, contractAddress?: Address) {
     this.client = client;
-    const deployedCreditManagerAddress = (creditManagerAddress as Record<number, Address>)[
-      client.publicClient?.chain?.id || 0
-    ];
+    const chainId = client.publicClient?.chain?.id;
+    if (!chainId) {
+      throw new Error("Client chain ID not found");
+    }
+    const deployedCreditManagerAddress = (creditManagerAddress as Record<number, Address>)[chainId];
+    if (!deployedCreditManagerAddress) {
+      throw new Error(`No contract address found for chain ID ${chainId}}`);
+    }
     this.contract = getContract({
       abi: creditManagerABI,
       address: contractAddress || deployedCreditManagerAddress,

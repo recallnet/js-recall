@@ -9,7 +9,7 @@ import {
   TESTNET_CHAIN_ID,
   TESTNET_EVM_RPC_URL,
   TESTNET_EVM_WS_URL,
-} from "./network.js";
+} from "./constants.js";
 
 export type ChainName = "mainnet" | "testnet" | "localnet" | "devnet";
 
@@ -18,7 +18,7 @@ export const testnet: Chain = defineChain({
   name: "Hoku Testnet",
   nativeCurrency: {
     name: "Hoku",
-    symbol: "tHOKU",
+    symbol: "HOKU",
     decimals: 18,
   },
   rpcUrls: {
@@ -38,7 +38,7 @@ export const localnet: Chain = defineChain({
   name: "Hoku Localnet",
   nativeCurrency: {
     name: "Hoku",
-    symbol: "lHOKU",
+    symbol: "HOKU",
     decimals: 18,
   },
   rpcUrls: {
@@ -54,7 +54,7 @@ export const devnet: Chain = defineChain({
   name: "Hoku Devnet",
   nativeCurrency: {
     name: "Hoku",
-    symbol: "lHOKU",
+    symbol: "HOKU",
     decimals: 18,
   },
   rpcUrls: {

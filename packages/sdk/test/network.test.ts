@@ -1,7 +1,6 @@
 import { strictEqual } from "assert";
 import { expect } from "chai";
 import { describe, it } from "mocha";
-import { Network, NetworkType } from "../src/network.js";
 import {
   LOCALNET_EVM_GATEWAY_ADDRESS,
   LOCALNET_EVM_REGISTRY_ADDRESS,
@@ -14,7 +13,8 @@ import {
   LOCALNET_RPC_URL,
   LOCALNET_SUBNET_ID,
   RPC_TIMEOUT,
-} from "../src/network.js";
+} from "../src/constants.js";
+import { Network, NetworkType } from "../src/network.js";
 
 describe("network", function () {
   let network: Network;
@@ -39,9 +39,7 @@ describe("network", function () {
 
   it("should throw error if invalid or mainnet network", () => {
     expect(() => Network.fromString("invalid")).to.throw("invalid network");
-    expect(() => Network.fromString("mainnet")).to.throw(
-      "network is pre-mainnet"
-    );
+    expect(() => Network.fromString("mainnet")).to.throw("network is pre-mainnet");
   });
 
   it("should get correct cometbft rpc url", () => {

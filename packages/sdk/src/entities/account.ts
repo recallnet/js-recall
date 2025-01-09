@@ -12,6 +12,7 @@ import {
 } from "viem";
 import { ierc20ABI } from "../abis.js";
 import { HokuClient } from "../client.js";
+import { supplySourceAddress } from "../constants.js";
 import { GatewayManager } from "../ipc/gateway.js";
 import { InvalidValue } from "./errors.js";
 import { parseEventFromTransaction, Result } from "./utils.js";
@@ -26,12 +27,6 @@ type AccountInfo = {
 type ApproveResult = Required<GetEventArgs<typeof ierc20ABI, "Approval", { IndexedOnly: false }>>;
 
 type ApproveParams = ContractFunctionArgs<typeof ierc20ABI, AbiStateMutability, "approve">;
-
-// TODO: emulates `@wagmi/cli` generated constants
-export const supplySourceAddress = {
-  1813666457422629: "0x20d8a696091153c4d4816ba1fdefe113f71e0905", // testnet
-  534485604105794: "0x4A679253410272dd5232B3Ff7cF5dbB88f295319", // localnet
-} as const;
 
 export class AccountManager {
   client: HokuClient;
@@ -60,9 +55,14 @@ export class AccountManager {
     client: HokuClient,
     address?: Address
   ): GetContractReturnType<typeof ierc20ABI, Client, Address> {
-    const deployedSupplySourceAddress = (supplySourceAddress as Record<number, Address>)[
-      client.publicClient?.chain?.id || 0
-    ];
+    const chainId = client.publicClient?.chain?.id;
+    if (!chainId) {
+      throw new Error("Client chain ID not found");
+    }
+    const deployedSupplySourceAddress = (supplySourceAddress as Record<number, Address>)[chainId];
+    if (!deployedSupplySourceAddress) {
+      throw new Error(`No contract address found for chain ID ${chainId}}`);
+    }
     return getContract({
       abi: ierc20ABI,
       address: address || deployedSupplySourceAddress,

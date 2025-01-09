@@ -12,17 +12,16 @@ import {
 } from "viem";
 import { bucketManagerABI } from "../abis.js";
 import { HokuClient } from "../client.js";
+import { bucketManagerAddress, MIN_TTL } from "../constants.js";
 import {
   callObjectsApiAddObject,
   createIrohNode,
   downloadBlob,
-  FileHandler,
   getObjectsNodeInfo,
   irohNodeTypeToObjectsApiNodeInfo,
-  nodeFileHandler,
   stageDataToIroh,
-  webFileHandler,
 } from "../provider/object.js";
+import { FileHandler, nodeFileHandler, webFileHandler } from "../provider/utils.js";
 import {
   BucketNotFound,
   CreateBucketError,
@@ -32,14 +31,8 @@ import {
 } from "./errors.js";
 import { DeepMutable, parseEventFromTransaction, type Result } from "./utils.js";
 
-// TODO: emulates `@wagmi/cli` generated constants
-export const bucketManagerAddress = {
-  2481632: "0x4c74c78B3698cA00473f12eF517D21C65461305F", // TODO: testnet; outdated contract deployment, but keeping here
-  248163216: "0xf7Cd8fa9b94DB2Aa972023b379c7f72c65E4De9D", // TODO: localnet; we need to make this deterministic
-} as const;
-
-/// The minimum epoch duration a blob can be stored.
-export const MIN_TTL = 3600n; // one hour
+// TODO: temporary
+export const OBJECTS_PROVIDER_URL = "http://localhost:8001";
 
 // Internally used for add()
 // export type AddParams = {
@@ -157,9 +150,14 @@ export class BucketManager {
 
   constructor(client: HokuClient, contractAddress?: Address) {
     this.client = client;
-    const deployedBucketManagerAddress = (bucketManagerAddress as Record<number, Address>)[
-      client.publicClient?.chain?.id || 0
-    ];
+    const chainId = client.publicClient?.chain?.id;
+    if (!chainId) {
+      throw new Error("Client chain ID not found");
+    }
+    const deployedBucketManagerAddress = (bucketManagerAddress as Record<number, Address>)[chainId];
+    if (!deployedBucketManagerAddress) {
+      throw new Error(`No contract address found for chain ID ${chainId}}`);
+    }
     this.contract = getContract({
       abi: bucketManagerABI,
       address: contractAddress || deployedBucketManagerAddress,
@@ -235,12 +233,12 @@ export class BucketManager {
       })) as ListResult;
       return { result };
     } catch (error) {
-      if (error instanceof ContractFunctionExecutionError) {
-        // Check if includes: `failed to resolve actor for address`; this means the account doesn't exist
-        if (error.message.includes("failed to resolve actor for address")) {
-          return { result: [] };
-        }
-        throw new BucketNotFound(owner);
+      // Check if includes: `failed to resolve actor for address`; this means the account doesn't exist
+      if (
+        error instanceof ContractFunctionExecutionError &&
+        error.message.includes("failed to resolve actor for address")
+      ) {
+        return { result: [] };
       }
       throw new UnhandledBucketError(`Failed to list buckets: ${error}`);
     }
@@ -289,7 +287,7 @@ export class BucketManager {
     if (contentType) {
       metadata.push({ key: "content-type", value: contentType });
     }
-    const { nodeId: source } = await getObjectsNodeInfo();
+    const { nodeId: source } = await getObjectsNodeInfo(OBJECTS_PROVIDER_URL);
     const iroh = await createIrohNode();
     const { hash, size } = await stageDataToIroh(iroh, data);
 
@@ -310,6 +308,7 @@ export class BucketManager {
     };
     const irohNode = await irohNodeTypeToObjectsApiNodeInfo(iroh);
     const { metadataHash } = await callObjectsApiAddObject(
+      OBJECTS_PROVIDER_URL,
       this.client,
       this.contract.address,
       bucket,
@@ -395,7 +394,7 @@ export class BucketManager {
     blockNumber?: bigint
   ): Promise<Uint8Array> {
     try {
-      const stream = await downloadBlob(bucket, key, range, blockNumber);
+      const stream = await downloadBlob(OBJECTS_PROVIDER_URL, bucket, key, range, blockNumber);
       const chunks: Uint8Array[] = [];
       const reader = stream.getReader();
 
@@ -429,7 +428,7 @@ export class BucketManager {
     blockNumber?: bigint
   ): Promise<ReadableStream<Uint8Array>> {
     try {
-      return downloadBlob(bucket, key, range, blockNumber);
+      return downloadBlob(OBJECTS_PROVIDER_URL, bucket, key, range, blockNumber);
     } catch (error) {
       if (error instanceof InvalidValue || error instanceof ObjectNotFound) {
         throw error;
