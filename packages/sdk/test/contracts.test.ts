@@ -152,11 +152,10 @@ describe.only("contracts", function () {
         let contents = new TextDecoder().decode(object);
         strictEqual(contents, "ell");
 
-        // Note: this should work, see https://github.com/hokunet/ipc/pull/435
-        // range = { start: 1, end: 1 };
-        // object = await bucketManager.download(bucket, key, range);
-        // contents = new TextDecoder().decode(object);
-        // strictEqual(contents, "e");
+        range = { start: 1, end: 1 };
+        object = await bucketManager.download(bucket, key, range);
+        contents = new TextDecoder().decode(object);
+        strictEqual(contents, "e");
 
         range = { start: 5, end: 11 };
         object = await bucketManager.download(bucket, key, range);
@@ -495,7 +494,7 @@ describe.only("contracts", function () {
     });
   });
 
-  describe.only("account manager", function () {
+  describe.skip("account manager", function () {
     let accountManager: AccountManager;
 
     before(async () => {
