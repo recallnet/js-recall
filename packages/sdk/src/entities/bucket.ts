@@ -12,12 +12,7 @@ import {
 } from "viem";
 import { bucketManagerABI } from "../abis.js";
 import { HokuClient } from "../client.js";
-import {
-  bucketManagerAddress,
-  LOCALNET_OBJECT_API_URL,
-  MAX_OBJECT_LENGTH,
-  MIN_TTL,
-} from "../constants.js";
+import { bucketManagerAddress, MAX_OBJECT_LENGTH, MIN_TTL } from "../constants.js";
 import {
   callObjectsApiAddObject,
   createIrohNode,
@@ -282,7 +277,8 @@ export class BucketManager {
     if (contentType) {
       metadata.push({ key: "content-type", value: contentType });
     }
-    const { nodeId: source } = await getObjectsNodeInfo(LOCALNET_OBJECT_API_URL);
+    const objectApiUrl = this.client.network.objectApiUrl();
+    const { nodeId: source } = await getObjectsNodeInfo(objectApiUrl);
     const iroh = await createIrohNode();
     const { hash, size } = await stageDataToIroh(iroh, data);
     if (size > MAX_OBJECT_LENGTH) {
@@ -305,7 +301,7 @@ export class BucketManager {
     };
     const irohNode = await irohNodeTypeToObjectsApiNodeInfo(iroh);
     const { metadataHash } = await callObjectsApiAddObject(
-      LOCALNET_OBJECT_API_URL,
+      objectApiUrl,
       this.client,
       this.contract.address,
       bucket,
@@ -397,7 +393,8 @@ export class BucketManager {
     blockNumber?: bigint
   ): Promise<Uint8Array> {
     try {
-      const stream = await downloadBlob(LOCALNET_OBJECT_API_URL, bucket, key, range, blockNumber);
+      const objectApiUrl = this.client.network.objectApiUrl();
+      const stream = await downloadBlob(objectApiUrl, bucket, key, range, blockNumber);
       const chunks: Uint8Array[] = [];
       const reader = stream.getReader();
 
@@ -433,7 +430,8 @@ export class BucketManager {
     blockNumber?: bigint
   ): Promise<ReadableStream<Uint8Array>> {
     try {
-      return downloadBlob(LOCALNET_OBJECT_API_URL, bucket, key, range, blockNumber);
+      const objectApiUrl = this.client.network.objectApiUrl();
+      return downloadBlob(objectApiUrl, bucket, key, range, blockNumber);
     } catch (error) {
       if (error instanceof InvalidValue || error instanceof ObjectNotFound) {
         throw error;
