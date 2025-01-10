@@ -14,10 +14,11 @@ import {
 } from "viem";
 import "viem/window";
 import { privateKeyToAccount } from "viem/accounts";
-import { type ChainName, getChain, localnet } from "./chains.js";
+import { type ChainName, getChain, testnet } from "./chains.js";
 import { AccountManager, BlobManager, BucketManager, CreditManager } from "./entities/index.js";
 import { Network } from "./network.js";
 
+// Creates a public client for the given chain
 export const createPublicClientForChain: (chain: Chain) => PublicClient<Transport, Chain> = (
   chain: Chain
 ) =>
@@ -26,6 +27,7 @@ export const createPublicClientForChain: (chain: Chain) => PublicClient<Transpor
     transport: http(),
   });
 
+// Creates a wallet client for the given chain with a browser wallet provider
 export const walletClientFromBrowser = (chain: Chain): WalletClient<Transport, Chain, Account> => {
   const noopProvider = { request: () => null } as unknown as EIP1193Provider;
   const provider = typeof window !== "undefined" ? window.ethereum! : noopProvider;
@@ -35,6 +37,7 @@ export const walletClientFromBrowser = (chain: Chain): WalletClient<Transport, C
   });
 };
 
+// Creates a wallet client for the given chain with a private key
 export const walletClientFromPrivateKey = (
   privateKey: Hex,
   chain: Chain
@@ -46,17 +49,20 @@ export const walletClientFromPrivateKey = (
   });
 };
 
-export type HokuConfig = {
+// Configuration for the HokuClient
+export interface HokuConfig {
   publicClient?: PublicClient<Transport, Chain>;
   walletClient?: WalletClient<Transport, Chain>;
   network?: Network;
-};
+}
 
+// The HokuClient class for interacting with subnet buckets, blobs, credits, and accounts
 export class HokuClient {
   public publicClient: PublicClient<Transport, Chain>;
   public walletClient: WalletClient | undefined;
   public network: Network;
 
+  // TODO: this logic probably needs to be refactored to properly handle conflicts
   constructor(config: HokuConfig = {}) {
     if (config.walletClient) this.walletClient = config.walletClient;
     if (config.publicClient) {
@@ -71,13 +77,15 @@ export class HokuClient {
     this.network = config.network ?? Network.fromChain(chain);
   }
 
-  static fromChain(chain: Chain = localnet) {
+  // Creates a HokuClient from a chain
+  static fromChain(chain: Chain = testnet) {
     return new HokuClient({
       publicClient: createPublicClient({ chain, transport: http() }),
     });
   }
 
-  static fromChainName(chainName: ChainName = "localnet") {
+  // Creates a HokuClient from a chain name
+  static fromChainName(chainName: ChainName = "testnet") {
     return new HokuClient({
       publicClient: createPublicClient({
         chain: getChain(chainName),
@@ -86,6 +94,7 @@ export class HokuClient {
     });
   }
 
+  // Switches the chain for the client (e.g., from/to a parent and child subnet chain)
   async switchChain(chain: Chain): Promise<void> {
     this.publicClient = createPublicClientForChain(chain);
     if (!this.walletClient) return;
@@ -105,18 +114,27 @@ export class HokuClient {
     }
   }
 
+  // Returns the network for the client
+  getNetwork(): Network {
+    return this.network;
+  }
+
+  // Creates an AccountManager for the client
   accountManager(): AccountManager {
     return new AccountManager(this);
   }
 
+  // Creates a BlobManager for the client
   blobManager(contractAddress?: Address): BlobManager {
     return new BlobManager(this, contractAddress);
   }
 
+  // Creates a BucketManager for the client
   bucketManager(contractAddress?: Address): BucketManager {
     return new BucketManager(this, contractAddress);
   }
 
+  // Creates a CreditManager for the client
   creditManager(contractAddress?: Address): CreditManager {
     return new CreditManager(this, contractAddress);
   }

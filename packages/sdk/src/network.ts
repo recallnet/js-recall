@@ -40,6 +40,7 @@ export enum NetworkType {
   Devnet,
 }
 
+// Converts a chain name to a network type
 function chainNameToNetworkType(chainName: ChainName): NetworkType {
   switch (chainName) {
     case "mainnet":
@@ -55,6 +56,7 @@ function chainNameToNetworkType(chainName: ChainName): NetworkType {
   }
 }
 
+// Converts a network type to a chain name
 function networkTypeToChainName(networkType: NetworkType): ChainName {
   switch (networkType) {
     case NetworkType.Mainnet:
@@ -68,6 +70,7 @@ function networkTypeToChainName(networkType: NetworkType): ChainName {
   }
 }
 
+// Converts a network type to a chain
 export function networkTypeToChain(networkType: NetworkType): Chain {
   switch (networkType) {
     case NetworkType.Mainnet:
@@ -81,6 +84,7 @@ export function networkTypeToChain(networkType: NetworkType): Chain {
   }
 }
 
+// Converts a chain to a network type
 export function chainToNetworkType(chain: Chain): NetworkType {
   switch (chain) {
     case testnet:
@@ -93,10 +97,6 @@ export function chainToNetworkType(chain: Chain): NetworkType {
       throw new Error("invalid chain");
   }
 }
-
-// function networkTypeToChain(networkType: NetworkType): Chain {
-//   return getChain(networkTypeToChainName(networkType));
-// }
 
 // EVM subnet config.
 export type SubnetConfig = {
@@ -141,10 +141,12 @@ export class Network {
     }
   }
 
+  // Creates a Network from a chain name
   static fromChainName(chainName: ChainName): Network {
     return new Network(chainNameToNetworkType(chainName));
   }
 
+  // Creates a Network from a chain
   static fromChain(chain: Chain): Network {
     return new Network(chainToNetworkType(chain));
   }
@@ -342,10 +344,12 @@ export class Network {
     }
   }
 
+  // Returns the chain for the network
   getChain(): Chain {
     return getChain(networkTypeToChainName(this.networkType));
   }
 
+  // Returns the parent chain for the network
   getParentChain(): Chain | undefined {
     return getParentChain(this.getChain());
   }
