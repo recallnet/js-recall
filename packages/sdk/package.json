@@ -1,13 +1,13 @@
 {
-  "name": "@hokunet/sdk",
+  "name": "@recall/sdk",
   "version": "0.0.0",
-  "description": "Core SDK for building with Hoku EVM contracts",
+  "description": "Core SDK for building with Recall EVM contracts",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hokunet/js-hoku.git",
+    "url": "git+https://github.com/hokunet/js-recall.git",
     "directory": "packages/sdk"
   },
-  "homepage": "https://github.com/hokunet/js-hoku#readme",
+  "homepage": "https://github.com/hokunet/js-recall#readme",
   "publishConfig": {
     "access": "public"
   },
@@ -36,7 +36,7 @@
     "build": "npm run build:esm"
   },
   "dependencies": {
-    "@hokunet/fvm": "^0.0.0",
+    "@recall/fvm": "^0.0.0",
     "@noble/hashes": "^1.5.0",
     "@number0/iroh": "^0.28.1",
     "@sindresorhus/fnv1a": "^3.1.0",

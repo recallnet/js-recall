@@ -1,13 +1,13 @@
 {
-  "name": "@hokunet/fvm",
+  "name": "@recall/fvm",
   "version": "0.0.0",
-  "description": "FVM formats and utilities for Hoku",
+  "description": "FVM formats and utilities for Recall",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hokunet/js-hoku.git",
+    "url": "git+https://github.com/hokunet/js-recall.git",
     "directory": "packages/fvm"
   },
-  "homepage": "https://github.com/hokunet/js-hoku#readme",
+  "homepage": "https://github.com/hokunet/js-recall#readme",
   "publishConfig": {
     "access": "public"
   },

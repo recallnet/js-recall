@@ -3,7 +3,7 @@
   "private": true,
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hokunet/js-hoku.git"
+    "url": "git+https://github.com/hokunet/js-recall.git"
   },
   "workspaces": [
     "packages/*"
