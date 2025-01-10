@@ -16,41 +16,53 @@ import { InsufficientFunds, UnhandledGatewayError } from "../entities/errors.js"
 import { DeepMutable, type Result } from "../entities/utils.js";
 import { SubnetId } from "./subnet.js";
 
+// Params for `fundWithToken()` (fund an account in a child subnet)
 type FundWithTokenParams = ContractFunctionArgs<
   typeof gatewayManagerFacetABI,
   AbiStateMutability,
   "fundWithToken"
 >;
 
+// A Solidity-style subnet ID struct
 export type SubnetIdTyped = DeepMutable<FundWithTokenParams[0]>;
+
+// A Solidity-style FVM address struct
 export type FvmAddressTyped = DeepMutable<FundWithTokenParams[1]>;
 
+// Params for `release()` (withdraw funds from a child subnet)
 type ReleaseParams = ContractFunctionArgs<
   typeof gatewayManagerFacetABI,
   AbiStateMutability,
   "release"
 >;
 
+// Convert an EVM address to a Solidity-style FVM address struct
 function addressToFvmAddressTyped(address: Address): FvmAddressTyped {
   const addr = AddressDelegated.fromEthAddress(address);
   return { addrType: addr.getProtocol(), payload: toHex(addr.getPayload()) };
 }
 
+// Convert an address and a subnet ID to a Solidity-style `fundWithToken()` params struct
 function fundParamsToTyped(
   address: Address,
   subnetId: SubnetId,
   amount: bigint
 ): FundWithTokenParams {
   const fvmAddress = addressToFvmAddressTyped(address);
-  const subnet = subnetId.evm as SubnetIdTyped;
+  const subnet: SubnetIdTyped = {
+    root: BigInt(subnetId.evm.root),
+    route: subnetId.evm.route as Address[],
+  };
   return [subnet, fvmAddress, amount];
 }
 
+// Convert an address to a Solidity-style `release()` params struct
 function releaseParamsToTyped(address: Address): ReleaseParams {
   const fvmAddress = addressToFvmAddressTyped(address);
   return [fvmAddress];
 }
 
+// Gateway manager facet for managing gateway funding and releasing
 export class GatewayManager {
   getContract(
     client: HokuClient,

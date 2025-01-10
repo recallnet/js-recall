@@ -20,7 +20,7 @@ import {
 const CREDIT_MANAGER_ADDRESS = "";
 
 // TODO: these tests are somewhat dependent on one another, so we should refactor to be independent
-describe.only("contracts", function () {
+describe("contracts", function () {
   this.timeout(60000);
   let client: HokuClient;
   let account: Account;

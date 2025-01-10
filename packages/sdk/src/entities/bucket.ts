@@ -12,7 +12,12 @@ import {
 } from "viem";
 import { bucketManagerABI } from "../abis.js";
 import { HokuClient } from "../client.js";
-import { bucketManagerAddress, LOCALNET_OBJECT_API_URL, MIN_TTL } from "../constants.js";
+import {
+  bucketManagerAddress,
+  LOCALNET_OBJECT_API_URL,
+  MAX_OBJECT_LENGTH,
+  MIN_TTL,
+} from "../constants.js";
 import {
   callObjectsApiAddObject,
   createIrohNode,
@@ -280,7 +285,9 @@ export class BucketManager {
     const { nodeId: source } = await getObjectsNodeInfo(LOCALNET_OBJECT_API_URL);
     const iroh = await createIrohNode();
     const { hash, size } = await stageDataToIroh(iroh, data);
-
+    if (size > MAX_OBJECT_LENGTH) {
+      throw new InvalidValue(`Object size must be less than ${MAX_OBJECT_LENGTH} bytes`);
+    }
     // TTL of zero is interpreted by Solidity wrappers as null
     const ttl = options?.ttl ?? 0n;
     if (ttl !== 0n && ttl < MIN_TTL) {
