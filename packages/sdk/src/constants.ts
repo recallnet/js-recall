@@ -75,3 +75,4 @@ export const supplySourceAddress = {
 // Miscellaneous
 export const RPC_TIMEOUT = 60_000;
 export const MIN_TTL = 3600n; // one hour
+export const MAX_OBJECT_LENGTH = 5_000_000_000; // 5GB
