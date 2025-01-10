@@ -129,13 +129,13 @@ describe("contracts", function () {
       });
 
       it("should get and download object as Uint8Array", async () => {
-        const object = await bucketManager.get(bucket, key);
+        const { result: object } = await bucketManager.get(bucket, key);
         const contents = new TextDecoder().decode(object);
         strictEqual(contents, fileContents);
       });
 
       it("should get and download object as stream", async () => {
-        const stream = await bucketManager.getStream(bucket, key);
+        const { result: stream } = await bucketManager.getStream(bucket, key);
         const reader = stream.getReader();
         const chunks: Uint8Array[] = [];
         while (true) {
@@ -151,37 +151,37 @@ describe("contracts", function () {
 
       it("should download object with range", async () => {
         let range: { start?: number; end?: number } = { start: 1, end: 3 };
-        let object = await bucketManager.get(bucket, key, range);
+        let { result: object } = await bucketManager.get(bucket, key, range);
         let contents = new TextDecoder().decode(object);
         strictEqual(contents, "ell");
 
         range = { start: 1, end: 1 };
-        object = await bucketManager.get(bucket, key, range);
+        ({ result: object } = await bucketManager.get(bucket, key, range));
         contents = new TextDecoder().decode(object);
         strictEqual(contents, "e");
 
         range = { start: 5, end: 11 };
-        object = await bucketManager.get(bucket, key, range);
+        ({ result: object } = await bucketManager.get(bucket, key, range));
         contents = new TextDecoder().decode(object);
         strictEqual(contents, "\n");
 
         range = { start: 1, end: undefined };
-        object = await bucketManager.get(bucket, key, range);
+        ({ result: object } = await bucketManager.get(bucket, key, range));
         contents = new TextDecoder().decode(object);
         strictEqual(contents, "ello\n");
 
         range = { start: undefined, end: 2 };
-        object = await bucketManager.get(bucket, key, range);
+        ({ result: object } = await bucketManager.get(bucket, key, range));
         contents = new TextDecoder().decode(object);
         strictEqual(contents, "o\n");
 
         range = { start: undefined, end: 11 };
-        object = await bucketManager.get(bucket, key, range);
+        ({ result: object } = await bucketManager.get(bucket, key, range));
         contents = new TextDecoder().decode(object);
         strictEqual(contents, fileContents);
 
         range = { start: undefined, end: undefined };
-        object = await bucketManager.get(bucket, key, range);
+        ({ result: object } = await bucketManager.get(bucket, key, range));
         contents = new TextDecoder().decode(object);
         strictEqual(contents, fileContents);
       });

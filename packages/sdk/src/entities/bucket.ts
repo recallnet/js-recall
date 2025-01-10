@@ -385,13 +385,12 @@ export class BucketManager {
   }
 
   // Download an object from a bucket, returning a Uint8Array
-  // TODO: these return types differ from how everything else works
   async get(
     bucket: Address,
     key: string,
     range?: { start?: number; end?: number },
     blockNumber?: bigint
-  ): Promise<Uint8Array> {
+  ): Promise<Result<Uint8Array>> {
     try {
       const objectApiUrl = this.client.network.objectApiUrl();
       const stream = await downloadBlob(objectApiUrl, bucket, key, range, blockNumber);
@@ -412,7 +411,7 @@ export class BucketManager {
         data.set(chunk, offset);
         offset += chunk.length;
       }
-      return data;
+      return { result: data };
     } catch (error) {
       if (error instanceof InvalidValue || error instanceof ObjectNotFound) {
         throw error;
@@ -422,16 +421,16 @@ export class BucketManager {
   }
 
   // Get a readable stream of an object from a bucket
-  // TODO: these return types differ from how everything else works
   async getStream(
     bucket: Address,
     key: string,
     range?: { start: number; end?: number },
     blockNumber?: bigint
-  ): Promise<ReadableStream<Uint8Array>> {
+  ): Promise<Result<ReadableStream<Uint8Array>>> {
     try {
       const objectApiUrl = this.client.network.objectApiUrl();
-      return downloadBlob(objectApiUrl, bucket, key, range, blockNumber);
+      const stream = await downloadBlob(objectApiUrl, bucket, key, range, blockNumber);
+      return { result: stream };
     } catch (error) {
       if (error instanceof InvalidValue || error instanceof ObjectNotFound) {
         throw error;
