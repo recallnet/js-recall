@@ -181,6 +181,8 @@ export class BlobManager {
   }
 
   // Add blob
+  // TODO: this assumes the blob already exists on the network; there's no way to upload raw blobs
+  // to the objects API (it requires a bucket and a key)
   async addBlob(
     blobHash: string,
     subscriptionId: string,
@@ -237,6 +239,7 @@ export class BlobManager {
   }
 
   // Get blob info
+  // TODO: there's no way to download raw blobs from the objects API (it requires a bucket and a key)
   async getBlob(blobHash: string, blockNumber?: bigint): Promise<Result<BlobInfo>> {
     try {
       const args = [blobHash] satisfies GetBlobParams;

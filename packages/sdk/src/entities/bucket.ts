@@ -389,6 +389,7 @@ export class BucketManager {
   }
 
   // Download an object from a bucket, returning a Uint8Array
+  // TODO: these return types differ from how everything else works
   async get(
     bucket: Address,
     key: string,
@@ -424,6 +425,7 @@ export class BucketManager {
   }
 
   // Get a readable stream of an object from a bucket
+  // TODO: these return types differ from how everything else works
   async getStream(
     bucket: Address,
     key: string,

@@ -98,6 +98,7 @@ export type SetAccountSponsorResult = Required<
   GetEventArgs<typeof creditManagerABI, "SetAccountSponsor", { IndexedOnly: false }>
 >;
 
+// Credit manager for buy, approving, revoking, and general credit operations
 export class CreditManager {
   client: HokuClient;
   contract: GetContractReturnType<typeof creditManagerABI, Client, Address>;
@@ -127,6 +128,7 @@ export class CreditManager {
   }
 
   // Approve credit spending
+  // TODO: maybe make the input params an object for easier optional params
   async approve(
     to: Address,
     caller: Address[] = [],
