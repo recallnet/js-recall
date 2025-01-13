@@ -15,7 +15,8 @@
     "prettier:fix": "npm run prettier -- --write",
     "format": "npm run prettier:fix && npm run lint:fix",
     "test": "npx lerna run test:ci --stream",
-    "build": "npx lerna run build"
+    "build": "npx lerna run build",
+    "clean": "npx lerna clean"
   },
   "devDependencies": {
     "@types/chai": "^4.3.19",
