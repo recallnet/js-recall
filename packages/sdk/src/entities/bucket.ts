@@ -1,4 +1,4 @@
-import { cbor } from "@hokunet/fvm";
+import { cbor } from "@recall/fvm";
 import {
   AbiStateMutability,
   Address,

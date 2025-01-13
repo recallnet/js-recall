@@ -1,4 +1,4 @@
-import { AddressDelegated } from "@hokunet/fvm";
+import { AddressDelegated } from "@recall/fvm";
 import {
   AbiStateMutability,
   Address,
