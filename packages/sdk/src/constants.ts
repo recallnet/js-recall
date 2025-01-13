@@ -31,9 +31,9 @@ export const DEVNET_OBJECT_API_URL = "http://127.0.0.1:8001";
 // EVM Gateway, Registry, and Supply Source addresses
 export const TESTNET_EVM_GATEWAY_ADDRESS = "0x77aa40b105843728088c0132e43fc44348881da8";
 export const TESTNET_EVM_REGISTRY_ADDRESS = "0x74539671a1d2f1c8f200826baba665179f53a1b7";
-export const TESTNET_EVM_SUPPLY_SOURCE_ADDRESS = "0x20d8a696091153c4d4816ba1fdefe113f71e0905";
-export const TESTNET_PARENT_EVM_GATEWAY_ADDRESS = "0xF8Abf46A1114d3B44d18F2A96D850e36FC6Ee94E";
-export const TESTNET_PARENT_EVM_REGISTRY_ADDRESS = "0x0bb143a180b61ae6b1872bbf99dBe261A2aDde40";
+export const TESTNET_EVM_SUPPLY_SOURCE_ADDRESS = "0xA7D1A73173A6854b7C8c1DF4d22a1d39BfcFb021";
+export const TESTNET_PARENT_EVM_GATEWAY_ADDRESS = "0x88b497225c33dDF92A4F94C0C82a20044e68Bc9E";
+export const TESTNET_PARENT_EVM_REGISTRY_ADDRESS = "0x4665468636B81481adac664993782609a1F3cB30";
 export const LOCALNET_EVM_GATEWAY_ADDRESS = "0x77aa40b105843728088c0132e43fc44348881da8";
 export const LOCALNET_EVM_REGISTRY_ADDRESS = "0x74539671a1d2f1c8f200826baba665179f53a1b7";
 export const LOCALNET_EVM_SUPPLY_SOURCE_ADDRESS = "0x4A679253410272dd5232B3Ff7cF5dbB88f295319";
@@ -45,17 +45,17 @@ export const DEVNET_EVM_REGISTRY_ADDRESS = "0x74539671a1d2f1c8f200826baba665179f
 // Wrapper contract addresses, and addresses above formatted in the same way
 // TODO: emulates `@wagmi/cli` generated constants
 export const blobManagerAddress = {
-  2481632: "0x8c2e3e8ba0d6084786d60A6600e832E8df84846C", // TODO: testnet; outdated contract deployment, but keeping here
+  2481632: "0x5d0de68e4B7A67982878B2338f03B735Ca30932b", // testnet -- TODO: update this upon new testnet deployments
   248163216: "0xe1Aa25618fA0c7A1CFDab5d6B456af611873b629", // localnet
 } as const;
 
 export const bucketManagerAddress = {
-  2481632: "0x4c74c78B3698cA00473f12eF517D21C65461305F", // TODO: testnet; outdated contract deployment, but keeping here
+  2481632: "0x3537C0437792B326fa0747b4A95a8667873e916F", // testnet -- TODO: update this upon new testnet deployments
   248163216: "0xf7Cd8fa9b94DB2Aa972023b379c7f72c65E4De9D", // localnet
 } as const;
 
 export const creditManagerAddress = {
-  2481632: "0x8c2e3e8ba0d6084786d60A6600e832E8df84846C", // TODO: testnet; outdated contract deployment, but keeping here
+  2481632: "0x8c2e3e8ba0d6084786d60A6600e832E8df84846C", // testnet -- TODO: update this upon new testnet deployments
   248163216: "0x82C6D3ed4cD33d8EC1E51d0B5Cc1d822Eaa0c3dC", // localnet
 } as const;
 
