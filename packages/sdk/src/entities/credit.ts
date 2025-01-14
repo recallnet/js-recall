@@ -8,11 +8,18 @@ import {
   getContract,
   GetContractReturnType,
   GetEventArgs,
+  zeroAddress,
 } from "viem";
 import { creditManagerABI } from "../abis.js";
 import { HokuClient } from "../client.js";
 import { creditManagerAddress } from "../constants.js";
-import { InsufficientFunds, InvalidValue, UnhandledCreditError } from "./errors.js";
+import {
+  ActorNotFound,
+  InsufficientFunds,
+  InvalidValue,
+  isActorNotFoundError,
+  UnhandledCreditError,
+} from "./errors.js";
 import {
   actorIdToMaskedEvmAddress,
   DeepMutable,
@@ -173,6 +180,10 @@ export class CreditManager {
             `'from' address '${fromAddress}' does not match origin or caller '${this.client.walletClient.account.address}'`
           );
         }
+        const { isActorNotFound, address } = isActorNotFoundError(error);
+        if (isActorNotFound) {
+          throw new ActorNotFound(address as Address);
+        }
       }
       throw new UnhandledCreditError(`Failed to approve credits: ${error}`);
     }
@@ -215,6 +226,10 @@ export class CreditManager {
         if (error.message.includes("insufficient funds")) {
           throw new InsufficientFunds(amount);
         }
+        const { isActorNotFound, address } = isActorNotFoundError(error);
+        if (isActorNotFound) {
+          throw new ActorNotFound(address as Address);
+        }
       }
       throw new UnhandledCreditError(`Failed to buy credits: ${error}`);
     }
@@ -255,6 +270,10 @@ export class CreditManager {
             `'from' address '${fromAddress}' does not match origin or caller '${this.client.walletClient.account.address}'`
           );
         }
+        const { isActorNotFound, address } = isActorNotFoundError(error);
+        if (isActorNotFound) {
+          throw new ActorNotFound(address as Address);
+        }
       }
       throw new UnhandledCreditError(`Failed to revoke credits: ${error}`);
     }
@@ -288,6 +307,12 @@ export class CreditManager {
       );
       return { meta: { tx }, result };
     } catch (error) {
+      if (error instanceof ContractFunctionExecutionError) {
+        const { isActorNotFound, address } = isActorNotFoundError(error);
+        if (isActorNotFound) {
+          throw new ActorNotFound(address as Address);
+        }
+      }
       throw new UnhandledCreditError(`Failed to set account sponsor: ${error}`);
     }
   }
@@ -315,6 +340,22 @@ export class CreditManager {
       });
       return { result: { ...account, approvals } };
     } catch (error) {
+      if (error instanceof ContractFunctionExecutionError) {
+        const { isActorNotFound } = isActorNotFoundError(error);
+        if (isActorNotFound) {
+          const emptyAccount: CreditAccount = {
+            approvals: [],
+            capacityUsed: 0n,
+            creditFree: 0n,
+            creditCommitted: 0n,
+            creditSponsor: "0x0000000000000000000000000000000000000000",
+            lastDebitEpoch: 0n,
+            maxTtl: 0n,
+            gasAllowance: 0n,
+          };
+          return { result: emptyAccount };
+        }
+      }
       throw new UnhandledCreditError(`Failed to get account details: ${error}`);
     }
   }
@@ -350,6 +391,20 @@ export class CreditManager {
     } catch (error) {
       if (error instanceof InvalidValue) {
         throw error;
+      }
+      if (error instanceof ContractFunctionExecutionError) {
+        const { isActorNotFound } = isActorNotFoundError(error);
+        if (isActorNotFound) {
+          const emptyBalance: CreditBalance = {
+            creditFree: 0n,
+            creditCommitted: 0n,
+            creditSponsor: zeroAddress,
+            lastDebitEpoch: 0n,
+            approvals: [],
+            gasAllowance: 0n,
+          };
+          return { result: emptyBalance };
+        }
       }
       throw new UnhandledCreditError(`Failed to get credit balance: ${error}`);
     }

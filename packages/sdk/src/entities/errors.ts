@@ -1,3 +1,5 @@
+import { FilEthAddress } from "@recall/fvm";
+import { Address } from "viem";
 export class BucketNotFound extends Error {
   constructor(bucket: string) {
     super(`Bucket not found: '${bucket}'`);
@@ -9,6 +11,13 @@ export class CreateBucketError extends Error {
   constructor(message: string) {
     super(`Failed to create bucket: ${message}`);
     this.name = "CreateBucketError";
+  }
+}
+
+export class AddObjectError extends Error {
+  constructor(message: string) {
+    super(`Failed to add object: ${message}`);
+    this.name = "AddObjectError";
   }
 }
 
@@ -65,5 +74,40 @@ export class InsufficientFunds extends Error {
   constructor(amount: bigint) {
     super(`Insufficient funds: balance less than amount '${amount}'`);
     this.name = "InsufficientFunds";
+  }
+}
+
+// Check error message for actor not found; it can happen in two different ways:
+// ```
+// 02: t066 (method 3435393067) -- actor f410... not found (17)
+// --> caused by: actor::resolve_address -- actor not found (6: resource not found)
+// ```
+// Or:
+// ```
+// 02: t017 (method 2283215593) -- failed to resolve actor for address f410... (16)
+// --> caused by: actor::resolve_address -- actor not found (6: resource not found)
+// ```
+export interface ActorNotFoundResult {
+  isActorNotFound: boolean;
+  address: Address | null;
+}
+
+// Check if the error message is an actor not found error, and include the hex address if it is
+export function isActorNotFoundError(error: Error): ActorNotFoundResult {
+  const isActorNotFound = error.message.includes("actor::resolve_address -- actor not found");
+  const addressMatch = error.message.match(/f410[a-z0-9]+/i);
+
+  return {
+    isActorNotFound,
+    address: addressMatch
+      ? (FilEthAddress.fromString(addressMatch[0]).toEthAddressHex() as Address)
+      : null,
+  };
+}
+
+export class ActorNotFound extends Error {
+  constructor(address: Address) {
+    super(`Actor not found (hint: ensure the address is registered: '${address}')`);
+    this.name = "ActorNotFound";
   }
 }

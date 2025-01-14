@@ -4,7 +4,12 @@ import { Address, encodeFunctionData } from "viem";
 import { bucketManagerABI } from "../abis.js";
 import { HokuClient } from "../client.js";
 import { AddObjectFullParams, AddObjectParams } from "../entities/bucket.js";
-import { InvalidValue, ObjectNotAvailable, UnhandledBucketError } from "../entities/errors.js";
+import {
+  BucketNotFound,
+  InvalidValue,
+  ObjectNotAvailable,
+  UnhandledBucketError,
+} from "../entities/errors.js";
 import { camelToSnake, hexToBase64, snakeToCamel, SnakeToCamelCase } from "./utils.js";
 
 export type ObjectsApiNodeInfoRaw = {
@@ -166,6 +171,9 @@ export async function downloadBlob(
   });
   if (!response.ok) {
     const error = await response.json();
+    if (error.message.includes("actor does not exist")) {
+      throw new BucketNotFound(bucket);
+    }
     if (error.message.includes("is not available")) {
       const blobHash = error.message.match(/object\s+(.*)\s+is not available/)?.[1] ?? "";
       throw new ObjectNotAvailable(key, blobHash);
