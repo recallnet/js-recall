@@ -1,4 +1,4 @@
-import { strictEqual } from "assert";
+import { strictEqual } from "node:assert";
 import { expect } from "chai";
 import { describe, it } from "mocha";
 import {
