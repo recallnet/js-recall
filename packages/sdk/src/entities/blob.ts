@@ -3,6 +3,7 @@ import {
   Address,
   Client,
   ContractFunctionArgs,
+  ContractFunctionExecutionError,
   ContractFunctionReturnType,
   getContract,
   GetContractReturnType,
@@ -13,7 +14,7 @@ import { blobManagerABI } from "../abis.js";
 import { HokuClient } from "../client.js";
 import { blobManagerAddress, LOCALNET_OBJECT_API_URL, MIN_TTL } from "../constants.js";
 import { getObjectsNodeInfo } from "../provider/object.js";
-import { InvalidValue, UnhandledBlobError } from "./errors.js";
+import { ActorNotFound, InvalidValue, isActorNotFoundError, UnhandledBlobError } from "./errors.js";
 import { DeepMutable, parseEventFromTransaction, type Result } from "./utils.js";
 
 // Used for getBlob()
@@ -175,7 +176,13 @@ export class BlobManager {
       )) as AddBlobResult;
       const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
       return { meta: { tx }, result };
-    } catch (error) {
+    } catch (error: unknown) {
+      if (error instanceof ContractFunctionExecutionError) {
+        const { isActorNotFound, address } = isActorNotFoundError(error);
+        if (isActorNotFound) {
+          throw new ActorNotFound(address as Address);
+        }
+      }
       throw new UnhandledBlobError(`Failed to add blob: ${error}`);
     }
   }
@@ -233,7 +240,13 @@ export class BlobManager {
         hash
       )) as DeleteBlobResult;
       return { meta: { tx }, result };
-    } catch (error) {
+    } catch (error: unknown) {
+      if (error instanceof ContractFunctionExecutionError) {
+        const { isActorNotFound, address } = isActorNotFoundError(error);
+        if (isActorNotFound) {
+          throw new ActorNotFound(address as Address);
+        }
+      }
       throw new UnhandledBlobError(`Failed to delete blob: ${error}`);
     }
   }
@@ -251,7 +264,7 @@ export class BlobManager {
         blockNumber,
       })) as BlobInfo;
       return { result };
-    } catch (error) {
+    } catch (error: unknown) {
       throw new UnhandledBlobError(`Failed to get blob info: ${error}`);
     }
   }
@@ -273,7 +286,13 @@ export class BlobManager {
         blockNumber,
       });
       return { result };
-    } catch (error) {
+    } catch (error: unknown) {
+      if (error instanceof ContractFunctionExecutionError) {
+        const { isActorNotFound, address } = isActorNotFoundError(error);
+        if (isActorNotFound) {
+          throw new ActorNotFound(address as Address);
+        }
+      }
       throw new UnhandledBlobError(`Failed to get blob status: ${error}`);
     }
   }
@@ -283,26 +302,30 @@ export class BlobManager {
     oldHash: string,
     addParams: AddBlobParams
   ): Promise<Result<OverwriteBlobResult>> {
-    if (!this.client.walletClient?.account) {
-      throw new Error("Wallet client is not initialized for overwriting blobs");
+    try {
+      if (!this.client.walletClient?.account) {
+        throw new Error("Wallet client is not initialized for overwriting blobs");
+      }
+      const params = [oldHash, addParams] satisfies OverwriteBlobParams;
+      const { request } = await this.client.publicClient.simulateContract({
+        address: this.contract.address,
+        abi: this.contract.abi,
+        functionName: "overwriteBlob",
+        args: params,
+        account: this.client.walletClient.account,
+      });
+      const hash = await this.client.walletClient.writeContract(request);
+      const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
+      const result = (await parseEventFromTransaction<OverwriteBlobResult>(
+        this.client.publicClient,
+        this.contract.abi,
+        "OverwriteBlob",
+        hash
+      )) as OverwriteBlobResult;
+      return { meta: { tx }, result };
+    } catch (error: unknown) {
+      throw new UnhandledBlobError(`Failed to overwrite blob: ${error}`);
     }
-    const params = [oldHash, addParams] satisfies OverwriteBlobParams;
-    const { request } = await this.client.publicClient.simulateContract({
-      address: this.contract.address,
-      abi: this.contract.abi,
-      functionName: "overwriteBlob",
-      args: params,
-      account: this.client.walletClient.account,
-    });
-    const hash = await this.client.walletClient.writeContract(request);
-    const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
-    const result = (await parseEventFromTransaction<OverwriteBlobResult>(
-      this.client.publicClient,
-      this.contract.abi,
-      "OverwriteBlob",
-      hash
-    )) as OverwriteBlobResult;
-    return { meta: { tx }, result };
   }
 
   // Overwrite blob
@@ -337,7 +360,7 @@ export class BlobManager {
         blockNumber,
       })) as AddedBlobs;
       return { result };
-    } catch (error) {
+    } catch (error: unknown) {
       throw new UnhandledBlobError(`Failed to get added blobs: ${error}`);
     }
   }
@@ -353,7 +376,7 @@ export class BlobManager {
         blockNumber,
       })) as PendingBlobs;
       return { result };
-    } catch (error) {
+    } catch (error: unknown) {
       throw new UnhandledBlobError(`Failed to get pending blobs count: ${error}`);
     }
   }
@@ -368,7 +391,7 @@ export class BlobManager {
         blockNumber,
       });
       return { result };
-    } catch (error) {
+    } catch (error: unknown) {
       throw new UnhandledBlobError(`Failed to get pending blobs count: ${error}`);
     }
   }
@@ -383,7 +406,7 @@ export class BlobManager {
         blockNumber,
       });
       return { result };
-    } catch (error) {
+    } catch (error: unknown) {
       throw new UnhandledBlobError(`Failed to get pending bytes count: ${error}`);
     }
   }
@@ -398,7 +421,7 @@ export class BlobManager {
         blockNumber,
       });
       return { result };
-    } catch (error) {
+    } catch (error: unknown) {
       throw new UnhandledBlobError(`Failed to get storage stats: ${error}`);
     }
   }
@@ -418,7 +441,13 @@ export class BlobManager {
         blockNumber,
       });
       return { result };
-    } catch (error) {
+    } catch (error: unknown) {
+      if (error instanceof ContractFunctionExecutionError) {
+        const { isActorNotFound, address } = isActorNotFoundError(error);
+        if (isActorNotFound) {
+          throw new ActorNotFound(address as Address);
+        }
+      }
       throw new UnhandledBlobError(`Failed to get storage usage: ${error}`);
     }
   }
@@ -433,7 +462,7 @@ export class BlobManager {
         blockNumber,
       });
       return { result };
-    } catch (error) {
+    } catch (error: unknown) {
       throw new UnhandledBlobError(`Failed to get subnet stats: ${error}`);
     }
   }

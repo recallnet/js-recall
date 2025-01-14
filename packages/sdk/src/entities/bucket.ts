@@ -23,9 +23,12 @@ import {
 } from "../provider/object.js";
 import { FileHandler, nodeFileHandler, webFileHandler } from "../provider/utils.js";
 import {
+  ActorNotFound,
+  AddObjectError,
   BucketNotFound,
   CreateBucketError,
   InvalidValue,
+  isActorNotFoundError,
   ObjectNotFound,
   UnhandledBucketError,
 } from "./errors.js";
@@ -204,6 +207,10 @@ export class BucketManager {
       return { meta: { tx }, result: { owner: eventOwner, bucket } };
     } catch (error) {
       if (error instanceof ContractFunctionExecutionError) {
+        const { isActorNotFound, address } = isActorNotFoundError(error);
+        if (isActorNotFound) {
+          throw new ActorNotFound(address as Address);
+        }
         throw new CreateBucketError(error.message);
       }
       throw new UnhandledBucketError(`Failed to create bucket: ${error}`);
@@ -222,12 +229,11 @@ export class BucketManager {
       })) as ListResult;
       return { result };
     } catch (error) {
-      // Check if includes: `failed to resolve actor for address`; this means the account doesn't exist
-      if (
-        error instanceof ContractFunctionExecutionError &&
-        error.message.includes("failed to resolve actor for address")
-      ) {
-        return { result: [] };
+      if (error instanceof ContractFunctionExecutionError) {
+        const { isActorNotFound } = isActorNotFoundError(error);
+        if (isActorNotFound) {
+          return { result: [] };
+        }
       }
       throw new UnhandledBucketError(`Failed to list buckets: ${error}`);
     }
@@ -239,27 +245,38 @@ export class BucketManager {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for adding an object");
     }
-    const args = [bucket, addParams] satisfies AddObjectFullParams;
-    const { request } = await this.client.publicClient.simulateContract({
-      address: this.contract.address,
-      abi: this.contract.abi,
-      functionName: "addObject",
-      args,
-      account: this.client.walletClient.account,
-    });
-    const hash = await this.client.walletClient.writeContract(request);
-    const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
-    const {
-      owner,
-      bucket: eventBucket,
-      key,
-    } = await parseEventFromTransaction<AddObjectResult>(
-      this.client.publicClient,
-      this.contract.abi,
-      "AddObject",
-      hash
-    );
-    return { meta: { tx }, result: { owner, bucket: eventBucket, key } };
+    try {
+      const args = [bucket, addParams] satisfies AddObjectFullParams;
+      const { request } = await this.client.publicClient.simulateContract({
+        address: this.contract.address,
+        abi: this.contract.abi,
+        functionName: "addObject",
+        args,
+        account: this.client.walletClient.account,
+      });
+      const hash = await this.client.walletClient.writeContract(request);
+      const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
+      const {
+        owner,
+        bucket: eventBucket,
+        key,
+      } = await parseEventFromTransaction<AddObjectResult>(
+        this.client.publicClient,
+        this.contract.abi,
+        "AddObject",
+        hash
+      );
+      return { meta: { tx }, result: { owner, bucket: eventBucket, key } };
+    } catch (error) {
+      if (error instanceof ContractFunctionExecutionError) {
+        const { isActorNotFound, address } = isActorNotFoundError(error);
+        if (isActorNotFound) {
+          throw new ActorNotFound(address as Address);
+        }
+        throw new AddObjectError(error.message);
+      }
+      throw new UnhandledBucketError(`${error}`);
+    }
   }
 
   // Add an object to a bucket
@@ -339,12 +356,16 @@ export class BucketManager {
         hash
       );
       return { meta: { tx }, result: { owner, bucket: eventBucket, key: eventKey } };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         // Check for specific error messages
         if (error.message.includes("object not found")) {
           throw new ObjectNotFound(bucket, key);
         }
+        // TODO: We're optimistically assuming an error means the bucket doesn't exist
+        // 00: t0134 (method 3844450837) -- contract reverted (33)
+        // 01: t0134 (method 6) -- contract reverted (33)
+        throw new BucketNotFound(bucket);
       }
       throw new UnhandledBucketError(`Failed to delete object: ${error}`);
     }
@@ -412,8 +433,12 @@ export class BucketManager {
         offset += chunk.length;
       }
       return { result: data };
-    } catch (error) {
-      if (error instanceof InvalidValue || error instanceof ObjectNotFound) {
+    } catch (error: unknown) {
+      if (
+        error instanceof InvalidValue ||
+        error instanceof ObjectNotFound ||
+        error instanceof BucketNotFound
+      ) {
         throw error;
       }
       throw new UnhandledBucketError(`Failed to download object: ${error}`);
@@ -431,8 +456,12 @@ export class BucketManager {
       const objectApiUrl = this.client.network.objectApiUrl();
       const stream = await downloadBlob(objectApiUrl, bucket, key, range, blockNumber);
       return { result: stream };
-    } catch (error) {
-      if (error instanceof InvalidValue || error instanceof ObjectNotFound) {
+    } catch (error: unknown) {
+      if (
+        error instanceof InvalidValue ||
+        error instanceof ObjectNotFound ||
+        error instanceof BucketNotFound
+      ) {
         throw error;
       }
       throw new UnhandledBucketError(`Failed to download object: ${error}`);
@@ -476,7 +505,7 @@ export class BucketManager {
         nextKey,
       };
       return { result };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         // TODO: We're optimistically assuming an error means the bucket doesn't exist
         // 00: t0134 (method 3844450837) -- contract reverted (33)
