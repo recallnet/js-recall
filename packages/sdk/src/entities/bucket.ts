@@ -233,7 +233,7 @@ export class BucketManager {
       const actorId = decoded[0] as number;
       const bucket = actorIdToMaskedEvmAddress(actorId);
       return { meta: { tx }, result: { owner: eventOwner, bucket } };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         const { isActorNotFound, address } = isActorNotFoundError(error);
         if (isActorNotFound) {
@@ -254,7 +254,7 @@ export class BucketManager {
         metadata: convertAbiMetadataToObject(bucket.metadata),
       }));
       return { result };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         const { isActorNotFound } = isActorNotFoundError(error);
         if (isActorNotFound) {
@@ -289,7 +289,7 @@ export class BucketManager {
         hash
       );
       return { meta: { tx }, result };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         const { isActorNotFound, address } = isActorNotFoundError(error);
         if (isActorNotFound) {
@@ -410,7 +410,7 @@ export class BucketManager {
         metadata: convertAbiMetadataToObject(getResult.metadata),
       };
       return { result };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ObjectNotFound) {
         throw error;
       } else if (error instanceof ContractFunctionExecutionError) {
@@ -515,7 +515,7 @@ export class BucketManager {
             metadata: convertAbiMetadataToObject(state.metadata),
           },
         })),
-        commonPrefixes: [...commonPrefixes],
+        commonPrefixes,
         nextKey,
       };
       return { result };
