@@ -1,6 +1,7 @@
 // `Account` class wrapper around `GatewayManager`
 import {
   AbiStateMutability,
+  Account,
   Address,
   Chain,
   Client,
@@ -129,13 +130,10 @@ export class AccountManager {
     const { change, reset } = await this.switchSubnet(currentChain, parentChain);
     await change();
     const supplySource = this.getSupplySource(this.client, supplySourceAddress);
-    const { request } = await this.client.publicClient.simulateContract({
-      address: supplySource.address,
-      abi: supplySource.abi,
-      functionName: "approve",
-      args,
+    const { request } = await supplySource.simulate.approve<Chain, Account>(args, {
       account: this.client.walletClient.account,
     });
+    // TODO: calling `supplySource.write.approve(...)` doesn't work, for some reason
     const hash = await this.client.walletClient.writeContract(request);
     const {
       owner,

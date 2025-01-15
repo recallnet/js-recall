@@ -1,7 +1,9 @@
 import { AddressDelegated } from "@recall/fvm";
 import {
   AbiStateMutability,
+  Account,
   Address,
+  Chain,
   Client,
   ContractFunctionArgs,
   ContractFunctionExecutionError,
@@ -101,13 +103,13 @@ export class GatewayManager {
     try {
       const recipientAddress = recipient || client.walletClient.account.address;
       const args = fundParamsToTyped(recipientAddress, client.network.subnetId(), amount);
-      const { request } = await client.publicClient.simulateContract({
-        address: this.getContract(client, contractAddress).address,
-        abi: this.getContract(client, contractAddress).abi,
-        functionName: "fundWithToken",
-        args,
+      const { request } = await this.getContract(client, contractAddress).simulate.fundWithToken<
+        Chain,
+        Account
+      >(args, {
         account: client.walletClient.account,
       });
+      // TODO: calling `this.getContract(client, contractAddress).write.fundWithToken(...)` doesn't work, for some reason
       const hash = await client.walletClient.writeContract(request);
       const tx = await client.publicClient.waitForTransactionReceipt({ hash });
       return { meta: { tx }, result: true };
@@ -134,14 +136,14 @@ export class GatewayManager {
     try {
       const address = recipient || client.walletClient.account.address;
       const args = releaseParamsToTyped(address);
-      const { request } = await client.publicClient.simulateContract({
-        address: this.getContract(client, contractAddress).address,
-        abi: this.getContract(client, contractAddress).abi,
-        functionName: "release",
-        args,
-        value: amount,
+      const { request } = await this.getContract(client, contractAddress).simulate.release<
+        Chain,
+        Account
+      >(args, {
         account: client.walletClient.account,
+        value: amount,
       });
+      // TODO: calling `this.getContract(client, contractAddress).write.release(...)` doesn't work, for some reason
       const hash = await client.walletClient.writeContract(request);
       const tx = await client.publicClient.waitForTransactionReceipt({ hash });
       return { meta: { tx }, result: true };

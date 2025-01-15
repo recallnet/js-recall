@@ -1,6 +1,8 @@
 import {
   AbiStateMutability,
+  Account,
   Address,
+  Chain,
   Client,
   ContractFunctionArgs,
   ContractFunctionExecutionError,
@@ -176,13 +178,10 @@ export class BlobManager {
     }
     try {
       const args = [addParams] satisfies AddBlobFullParams;
-      const { request } = await this.client.publicClient.simulateContract({
-        address: this.contract.address,
-        abi: this.contract.abi,
-        functionName: "addBlob",
-        args,
+      const { request } = await this.contract.simulate.addBlob<Chain, Account>(args, {
         account: this.client.walletClient.account,
       });
+      // TODO: calling `this.contract.write.addBlob(...)` doesn't work, for some reason
       const hash = await this.client.walletClient.writeContract(request);
       const result = await parseEventFromTransaction<AddBlobResult>(
         this.client.publicClient,
@@ -241,13 +240,10 @@ export class BlobManager {
     }
     try {
       const args = [subscriber || zeroAddress, blobHash, subscriptionId] satisfies DeleteBlobParams;
-      const { request } = await this.client.publicClient.simulateContract({
-        address: this.contract.address,
-        abi: this.contract.abi,
-        functionName: "deleteBlob",
-        args,
+      const { request } = await this.contract.simulate.deleteBlob<Chain, Account>(args, {
         account: this.client.walletClient.account,
       });
+      // TODO: calling `this.contract.write.deleteBlob(...)` doesn't work, for some reason
       const hash = await this.client.walletClient.writeContract(request);
       const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
       const result = await parseEventFromTransaction<DeleteBlobResult>(
@@ -312,13 +308,10 @@ export class BlobManager {
         throw new Error("Wallet client is not initialized for overwriting blobs");
       }
       const params = [oldHash, addParams] satisfies OverwriteBlobParams;
-      const { request } = await this.client.publicClient.simulateContract({
-        address: this.contract.address,
-        abi: this.contract.abi,
-        functionName: "overwriteBlob",
-        args: params,
+      const { request } = await this.contract.simulate.overwriteBlob<Chain, Account>(params, {
         account: this.client.walletClient.account,
       });
+      // TODO: calling `this.contract.write.overwriteBlob(...)` doesn't work, for some reason
       const hash = await this.client.walletClient.writeContract(request);
       const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
       const result = await parseEventFromTransaction<OverwriteBlobResult>(
