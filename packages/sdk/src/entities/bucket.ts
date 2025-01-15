@@ -335,7 +335,7 @@ export class BucketManager {
     if (ttl !== 0n && ttl < MIN_TTL) {
       throw new InvalidValue(`TTL must be at least ${MIN_TTL} seconds`);
     }
-    const addParams: AddObjectParams = {
+    const addParams = {
       source,
       key,
       blobHash: hash,
@@ -344,7 +344,7 @@ export class BucketManager {
       ttl,
       metadata,
       overwrite: options?.overwrite ?? false,
-    };
+    } as AddObjectParams;
     const irohNode = await irohNodeTypeToObjectsApiNodeInfo(iroh);
     const { metadataHash } = await callObjectsApiAddObject(
       objectApiUrl,

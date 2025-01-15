@@ -12,7 +12,7 @@ import {
 } from "viem";
 import { blobManagerABI } from "../abis.js";
 import { HokuClient } from "../client.js";
-import { blobManagerAddress, LOCALNET_OBJECT_API_URL, MIN_TTL } from "../constants.js";
+import { blobManagerAddress, MIN_TTL } from "../constants.js";
 import { getObjectsNodeInfo } from "../provider/object.js";
 import { ActorNotFound, InvalidValue, isActorNotFoundError, UnhandledBlobError } from "./errors.js";
 import { parseEventFromTransaction, type Result } from "./utils.js";
@@ -216,7 +216,8 @@ export class BlobManager {
     if (ttl !== 0n && ttl < MIN_TTL) {
       throw new InvalidValue(`TTL must be at least ${MIN_TTL} seconds`);
     }
-    const { nodeId: source } = await getObjectsNodeInfo(LOCALNET_OBJECT_API_URL);
+    const objectApiUrl = this.client.network.objectApiUrl();
+    const { nodeId: source } = await getObjectsNodeInfo(objectApiUrl);
     const addParams = {
       sponsor: options.sponsor ?? zeroAddress,
       source,
@@ -352,7 +353,8 @@ export class BlobManager {
     size: bigint,
     options: AddBlobOptions = {}
   ): Promise<Result<OverwriteBlobResult>> {
-    const { nodeId: source } = await getObjectsNodeInfo(LOCALNET_OBJECT_API_URL);
+    const objectApiUrl = this.client.network.objectApiUrl();
+    const { nodeId: source } = await getObjectsNodeInfo(objectApiUrl);
     const params = {
       sponsor: options.sponsor ?? zeroAddress,
       source,

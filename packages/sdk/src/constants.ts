@@ -55,7 +55,7 @@ export const bucketManagerAddress = {
 } as const;
 
 export const creditManagerAddress = {
-  2481632: "0x8c2e3e8ba0d6084786d60A6600e832E8df84846C", // testnet -- TODO: update this upon new testnet deployments
+  2481632: "0x612308d30FB994FEF12F2C4e0534a44e3fb6d323", // testnet -- TODO: update this upon new testnet deployments
   248163216: "0x82C6D3ed4cD33d8EC1E51d0B5Cc1d822Eaa0c3dC", // localnet
 } as const;
 
