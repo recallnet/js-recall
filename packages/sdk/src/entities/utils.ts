@@ -23,13 +23,6 @@ export type Result<T = unknown> = {
   meta?: Metadata;
 };
 
-// Remove `readonly` from all properties of an object (via viem contract types)
-export type DeepMutable<T> = T extends readonly (infer U)[]
-  ? DeepMutable<U>[]
-  : T extends object
-    ? { -readonly [P in keyof T]: DeepMutable<T[P]> }
-    : T;
-
 // Parse event from transaction
 export async function parseEventFromTransaction<T extends GetEventArgs<Abi, string>>(
   client: PublicClient,
@@ -56,6 +49,19 @@ export function convertMetadataToAbiParams(
   value: Record<string, string>
 ): { key: string; value: string }[] {
   return Object.entries(value).map(([key, value]) => ({ key, value }));
+}
+
+// Convert solidity `Metadata` struct to normal javascript object
+export function convertAbiMetadataToObject(
+  metadata: readonly { key: string; value: string }[]
+): Record<string, string> {
+  return metadata.reduce(
+    (acc, { key, value }) => {
+      acc[key] = value;
+      return acc;
+    },
+    {} as Record<string, string>
+  );
 }
 
 // Convert actor ID to masked EVM address

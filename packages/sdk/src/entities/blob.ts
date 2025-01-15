@@ -15,70 +15,86 @@ import { HokuClient } from "../client.js";
 import { blobManagerAddress, LOCALNET_OBJECT_API_URL, MIN_TTL } from "../constants.js";
 import { getObjectsNodeInfo } from "../provider/object.js";
 import { ActorNotFound, InvalidValue, isActorNotFoundError, UnhandledBlobError } from "./errors.js";
-import { DeepMutable, parseEventFromTransaction, type Result } from "./utils.js";
+import { parseEventFromTransaction, type Result } from "./utils.js";
 
 // Used for getBlob()
-export type BlobInfo = DeepMutable<
-  ContractFunctionReturnType<typeof blobManagerABI, AbiStateMutability, "getBlob">
+export type BlobInfo = ContractFunctionReturnType<
+  typeof blobManagerABI,
+  AbiStateMutability,
+  "getBlob"
 >;
 
 // Used for getAddedBlobs()
-export type AddedBlobs = DeepMutable<
-  ContractFunctionReturnType<typeof blobManagerABI, AbiStateMutability, "getAddedBlobs">
+export type AddedBlobs = ContractFunctionReturnType<
+  typeof blobManagerABI,
+  AbiStateMutability,
+  "getAddedBlobs"
 >;
 
 // Used for getPendingBlobs()
-export type PendingBlobs = DeepMutable<
-  ContractFunctionReturnType<typeof blobManagerABI, AbiStateMutability, "getPendingBlobs">
+export type PendingBlobs = ContractFunctionReturnType<
+  typeof blobManagerABI,
+  AbiStateMutability,
+  "getPendingBlobs"
 >;
 
 // Used for getPendingBlobsCount()
-export type PendingBlobsCount = DeepMutable<
-  ContractFunctionReturnType<typeof blobManagerABI, AbiStateMutability, "getPendingBlobsCount">
+export type PendingBlobsCount = ContractFunctionReturnType<
+  typeof blobManagerABI,
+  AbiStateMutability,
+  "getPendingBlobsCount"
 >;
 
 // Used for getPendingBytesCount()
-export type PendingBytesCount = DeepMutable<
-  ContractFunctionReturnType<typeof blobManagerABI, AbiStateMutability, "getPendingBytesCount">
+export type PendingBytesCount = ContractFunctionReturnType<
+  typeof blobManagerABI,
+  AbiStateMutability,
+  "getPendingBytesCount"
 >;
 
 // Used for getStorageStats()
-export type StorageStats = DeepMutable<
-  ContractFunctionReturnType<typeof blobManagerABI, AbiStateMutability, "getStorageStats">
+export type StorageStats = ContractFunctionReturnType<
+  typeof blobManagerABI,
+  AbiStateMutability,
+  "getStorageStats"
 >;
 
 // Used for getBlobStatus()
-export type BlobStatus = DeepMutable<
-  ContractFunctionReturnType<typeof blobManagerABI, AbiStateMutability, "getBlobStatus">
+export type BlobStatus = ContractFunctionReturnType<
+  typeof blobManagerABI,
+  AbiStateMutability,
+  "getBlobStatus"
 >;
 
 // Used for getStorageUsage()
-export type StorageUsage = DeepMutable<
-  ContractFunctionReturnType<typeof blobManagerABI, AbiStateMutability, "getStorageUsage">
+export type StorageUsage = ContractFunctionReturnType<
+  typeof blobManagerABI,
+  AbiStateMutability,
+  "getStorageUsage"
 >;
 
 // Used for getSubnetStats()
-export type SubnetStats = DeepMutable<
-  ContractFunctionReturnType<typeof blobManagerABI, AbiStateMutability, "getSubnetStats">
+export type SubnetStats = ContractFunctionReturnType<
+  typeof blobManagerABI,
+  AbiStateMutability,
+  "getSubnetStats"
 >;
 
 // Used for addBlob()
 type AddBlobFullParams = ContractFunctionArgs<typeof blobManagerABI, AbiStateMutability, "addBlob">;
 
 // Used for addBlob()
-type AddBlobParams = DeepMutable<
-  Extract<
-    AddBlobFullParams[0],
-    {
-      sponsor: Address;
-      source: string;
-      blobHash: string;
-      metadataHash: string;
-      subscriptionId: string;
-      size: bigint;
-      ttl: bigint;
-    }
-  >
+type AddBlobParams = Extract<
+  AddBlobFullParams[0],
+  {
+    sponsor: Address;
+    source: string;
+    blobHash: string;
+    metadataHash: string;
+    subscriptionId: string;
+    size: bigint;
+    ttl: bigint;
+  }
 >;
 
 export type AddBlobOptions = {
@@ -168,12 +184,12 @@ export class BlobManager {
         account: this.client.walletClient.account,
       });
       const hash = await this.client.walletClient.writeContract(request);
-      const result = (await parseEventFromTransaction<AddBlobResult>(
+      const result = await parseEventFromTransaction<AddBlobResult>(
         this.client.publicClient,
         this.contract.abi,
         "AddBlob",
         hash
-      )) as AddBlobResult;
+      );
       const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
       return { meta: { tx }, result };
     } catch (error: unknown) {
@@ -209,7 +225,7 @@ export class BlobManager {
       subscriptionId,
       size,
       ttl,
-    } as AddBlobParams;
+    };
     return this.addBlobInner(addParams);
   }
 
@@ -233,12 +249,12 @@ export class BlobManager {
       });
       const hash = await this.client.walletClient.writeContract(request);
       const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
-      const result = (await parseEventFromTransaction<DeleteBlobResult>(
+      const result = await parseEventFromTransaction<DeleteBlobResult>(
         this.client.publicClient,
         this.contract.abi,
         "DeleteBlob",
         hash
-      )) as DeleteBlobResult;
+      );
       return { meta: { tx }, result };
     } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
@@ -256,13 +272,13 @@ export class BlobManager {
   async getBlob(blobHash: string, blockNumber?: bigint): Promise<Result<BlobInfo>> {
     try {
       const args = [blobHash] satisfies GetBlobParams;
-      const result = (await this.client.publicClient.readContract({
+      const result = await this.client.publicClient.readContract({
         abi: this.contract.abi,
         address: this.contract.address,
         functionName: "getBlob",
         args,
         blockNumber,
-      })) as BlobInfo;
+      });
       return { result };
     } catch (error: unknown) {
       throw new UnhandledBlobError(`Failed to get blob info: ${error}`);
@@ -316,12 +332,12 @@ export class BlobManager {
       });
       const hash = await this.client.walletClient.writeContract(request);
       const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
-      const result = (await parseEventFromTransaction<OverwriteBlobResult>(
+      const result = await parseEventFromTransaction<OverwriteBlobResult>(
         this.client.publicClient,
         this.contract.abi,
         "OverwriteBlob",
         hash
-      )) as OverwriteBlobResult;
+      );
       return { meta: { tx }, result };
     } catch (error: unknown) {
       throw new UnhandledBlobError(`Failed to overwrite blob: ${error}`);
@@ -345,20 +361,20 @@ export class BlobManager {
       subscriptionId,
       size,
       ttl: options.ttl ?? 0n,
-    } as AddBlobParams;
+    };
     return this.overwriteBlobInner(oldHash, params);
   }
 
   // Get added blobs
   async getAddedBlobs(size: number, blockNumber?: bigint): Promise<Result<AddedBlobs>> {
     try {
-      const result = (await this.client.publicClient.readContract({
+      const result = await this.client.publicClient.readContract({
         abi: this.contract.abi,
         address: this.contract.address,
         functionName: "getAddedBlobs",
         args: [size],
         blockNumber,
-      })) as AddedBlobs;
+      });
       return { result };
     } catch (error: unknown) {
       throw new UnhandledBlobError(`Failed to get added blobs: ${error}`);
@@ -368,13 +384,13 @@ export class BlobManager {
   // Get pending blobs
   async getPendingBlobs(size: number, blockNumber?: bigint): Promise<Result<PendingBlobs>> {
     try {
-      const result = (await this.client.publicClient.readContract({
+      const result = await this.client.publicClient.readContract({
         abi: this.contract.abi,
         address: this.contract.address,
         functionName: "getPendingBlobs",
         args: [size],
         blockNumber,
-      })) as PendingBlobs;
+      });
       return { result };
     } catch (error: unknown) {
       throw new UnhandledBlobError(`Failed to get pending blobs count: ${error}`);

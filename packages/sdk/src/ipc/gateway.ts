@@ -13,7 +13,7 @@ import { gatewayManagerFacetABI } from "../abis.js";
 import { HokuClient } from "../client.js";
 import { gatewayManagerFacetAddress } from "../constants.js";
 import { InsufficientFunds, UnhandledGatewayError } from "../entities/errors.js";
-import { DeepMutable, type Result } from "../entities/utils.js";
+import { type Result } from "../entities/utils.js";
 import { SubnetId } from "./subnet.js";
 
 // Params for `fundWithToken()` (fund an account in a child subnet)
@@ -24,10 +24,10 @@ type FundWithTokenParams = ContractFunctionArgs<
 >;
 
 // A Solidity-style subnet ID struct
-export type SubnetIdTyped = DeepMutable<FundWithTokenParams[0]>;
+export type SubnetIdTyped = FundWithTokenParams[0];
 
 // A Solidity-style FVM address struct
-export type FvmAddressTyped = DeepMutable<FundWithTokenParams[1]>;
+export type FvmAddressTyped = FundWithTokenParams[1];
 
 // Params for `release()` (withdraw funds from a child subnet)
 type ReleaseParams = ContractFunctionArgs<

@@ -13,10 +13,9 @@ import {
   CreditManager,
 } from "../src/entities/index.js";
 
-// TODO: once https://github.com/hokunet/contracts/pull/52 is merged, we can remove this.
-// Currently, `ipc` localnet deploys a credit manager contract that emits a different event in
-// credit approvals than what this JS lib expects, so many credit approval tests will fail.
-// You can deploy your own credit manager contract to fix this and replace the address below.
+// TODO: once https://github.com/hokunet/contracts/pull/55 is merged, we can remove this.
+// Currently, `ipc` localnet deploys a credit and blob manager contract that returns a different
+// value in `getAccount`, `getCreditBalance`, and `getBlob` than what this JS lib expects.
 const CREDIT_MANAGER_ADDRESS = "";
 
 // TODO: these tests are somewhat dependent on one another, so we should refactor to be independent
@@ -88,7 +87,12 @@ describe("contracts", function () {
 
       it("should add object from file", async () => {
         const path = await temporaryWrite(fileContents);
-        const { meta, result } = await bucketManager.add(bucket, key, path);
+        const opts = {
+          metadata: {
+            foo: "bar",
+          },
+        };
+        const { meta, result } = await bucketManager.add(bucket, key, path, opts);
         strictEqual(isHash(meta!.tx!.transactionHash), true);
         strictEqual(result.owner, account.address);
         strictEqual(result.bucket.toLowerCase(), bucket);
@@ -426,11 +430,7 @@ describe("contracts", function () {
       await credits.revoke(to);
     });
 
-    // TODO: see the comment in the CreditManager `getAccount` method
-    // TL;DR—the `to` field that you pass is an EVM address, but the `to`
-    // field in returned value is a masked ID address, so filtering doesn't
-    // work because these are different hex addresses
-    it.skip("should get credit approvals with 'to' filter", async () => {
+    it("should get credit approvals with 'to' filter", async () => {
       await credits.approve(to);
       const {
         result: { approvals },

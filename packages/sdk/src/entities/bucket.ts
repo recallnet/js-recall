@@ -34,8 +34,8 @@ import {
 } from "./errors.js";
 import {
   actorIdToMaskedEvmAddress,
+  convertAbiMetadataToObject,
   convertMetadataToAbiParams,
-  DeepMutable,
   parseEventFromTransaction,
   type Result,
 } from "./utils.js";
@@ -43,24 +43,54 @@ import {
 // Used for add()
 export type AddOptions = {
   ttl?: bigint;
-  metadata?: { key: string; value: string }[];
+  metadata?: Record<string, string>;
   overwrite?: boolean;
 };
 
 // Used for get()
-export type ObjectValue = DeepMutable<
-  ContractFunctionReturnType<typeof bucketManagerABI, AbiStateMutability, "getObject">
+export type ObjectValueRaw = ContractFunctionReturnType<
+  typeof bucketManagerABI,
+  AbiStateMutability,
+  "getObject"
 >;
+
+// Converts metadata Solidity struct to normal javascript object
+export type ObjectValue = Pick<ObjectValueRaw, "blobHash" | "recoveryHash" | "size" | "expiry"> & {
+  metadata: Record<string, unknown>;
+};
 
 // Used for list()
-export type ListResult = DeepMutable<
-  ContractFunctionReturnType<typeof bucketManagerABI, AbiStateMutability, "listBuckets">
+export type ListResultRaw = ContractFunctionReturnType<
+  typeof bucketManagerABI,
+  AbiStateMutability,
+  "listBuckets"
 >;
 
+// Converts metadata Solidity struct to normal javascript object
+export type ListResultRawBucket = ListResultRaw[number];
+
+export type ListResultBucket = Pick<ListResultRawBucket, "kind" | "addr"> & {
+  metadata: Record<string, unknown>;
+};
+
+export type ListResult = ListResultBucket[];
+
 // Used for query()
-export type QueryResult = DeepMutable<
-  ContractFunctionReturnType<typeof bucketManagerABI, AbiStateMutability, "queryObjects">
+export type QueryResultRaw = ContractFunctionReturnType<
+  typeof bucketManagerABI,
+  AbiStateMutability,
+  "queryObjects"
 >;
+
+// Converts metadata Solidity struct to normal javascript object
+export type QueryResult = Omit<QueryResultRaw, "objects"> & {
+  objects: {
+    key: QueryResultRaw["objects"][number]["key"];
+    state: Omit<QueryResultRaw["objects"][number]["state"], "metadata"> & {
+      metadata: Record<string, unknown>;
+    };
+  }[];
+};
 
 // Note: this emits raw cbor bytes, so we need to decode it to get the bucket address
 export type CreateBucketEvent = Required<
@@ -118,23 +148,21 @@ export type AddObjectFullParams = ContractFunctionArgs<
 >;
 
 // Used for add()
-export type AddObjectParams = DeepMutable<
-  Extract<
-    AddObjectFullParams[1],
-    {
-      source: string;
+export type AddObjectParams = Extract<
+  AddObjectFullParams[1],
+  {
+    source: string;
+    key: string;
+    blobHash: string;
+    recoveryHash: string;
+    size: bigint;
+    ttl: bigint;
+    metadata: readonly {
       key: string;
-      blobHash: string;
-      recoveryHash: string;
-      size: bigint;
-      ttl: bigint;
-      metadata: readonly {
-        key: string;
-        value: string;
-      }[];
-      overwrite: boolean;
-    }
-  >
+      value: string;
+    }[];
+    overwrite: boolean;
+  }
 >;
 
 export class BucketManager {
@@ -220,13 +248,17 @@ export class BucketManager {
   // List buckets
   async list(owner: Address, blockNumber?: bigint): Promise<Result<ListResult>> {
     try {
-      const result = (await this.client.publicClient.readContract({
+      const listResult = await this.client.publicClient.readContract({
         abi: this.contract.abi,
         address: this.contract.address,
         functionName: "listBuckets",
         args: [owner],
         blockNumber,
-      })) as ListResult;
+      });
+      const result = listResult.map((bucket) => ({
+        ...bucket,
+        metadata: convertAbiMetadataToObject(bucket.metadata),
+      }));
       return { result };
     } catch (error) {
       if (error instanceof ContractFunctionExecutionError) {
@@ -256,17 +288,13 @@ export class BucketManager {
       });
       const hash = await this.client.walletClient.writeContract(request);
       const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
-      const {
-        owner,
-        bucket: eventBucket,
-        key,
-      } = await parseEventFromTransaction<AddObjectResult>(
+      const result = await parseEventFromTransaction<AddObjectResult>(
         this.client.publicClient,
         this.contract.abi,
         "AddObject",
         hash
       );
-      return { meta: { tx }, result: { owner, bucket: eventBucket, key } };
+      return { meta: { tx }, result };
     } catch (error) {
       if (error instanceof ContractFunctionExecutionError) {
         const { isActorNotFound, address } = isActorNotFoundError(error);
@@ -289,11 +317,12 @@ export class BucketManager {
     if (!this.client.walletClient || !this.client.walletClient.chain) {
       throw new Error("Wallet client is not initialized for adding an object");
     }
-    const metadata = options?.metadata ?? [];
+    const metadataRaw = options?.metadata ?? {};
     const { data, contentType } = await this.fileHandler.readFile(file);
     if (contentType) {
-      metadata.push({ key: "content-type", value: contentType });
+      metadataRaw["content-type"] = contentType;
     }
+    const metadata = convertMetadataToAbiParams(metadataRaw);
     const objectApiUrl = this.client.network.objectApiUrl();
     const { nodeId: source } = await getObjectsNodeInfo(objectApiUrl);
     const iroh = await createIrohNode();
@@ -345,17 +374,13 @@ export class BucketManager {
       });
       const hash = await this.client.walletClient.writeContract(request);
       const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
-      const {
-        owner,
-        bucket: eventBucket,
-        key: eventKey,
-      } = await parseEventFromTransaction<DeleteObjectResult>(
+      const result = await parseEventFromTransaction<DeleteObjectResult>(
         this.client.publicClient,
         this.contract.abi,
         "DeleteObject",
         hash
       );
-      return { meta: { tx }, result: { owner, bucket: eventBucket, key: eventKey } };
+      return { meta: { tx }, result };
     } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         // Check for specific error messages
@@ -379,18 +404,23 @@ export class BucketManager {
   ): Promise<Result<ObjectValue>> {
     try {
       const args = [bucket, key] satisfies GetObjectParams;
-      const { blobHash, recoveryHash, size, expiry, metadata } =
-        await this.client.publicClient.readContract({
-          abi: this.contract.abi,
-          address: this.contract.address,
-          functionName: "getObject",
-          args,
-          blockNumber,
-        });
-      if (!blobHash) {
+      const getResult = await this.client.publicClient.readContract({
+        abi: this.contract.abi,
+        address: this.contract.address,
+        functionName: "getObject",
+        args,
+        blockNumber,
+      });
+      if (!getResult.blobHash) {
         throw new ObjectNotFound(bucket, key);
       }
-      const result = { blobHash, recoveryHash, size, expiry, metadata: [...metadata] };
+      const result: ObjectValue = {
+        blobHash: getResult.blobHash,
+        recoveryHash: getResult.recoveryHash,
+        size: getResult.size,
+        expiry: getResult.expiry,
+        metadata: convertAbiMetadataToObject(getResult.metadata),
+      };
       return { result };
     } catch (error) {
       if (error instanceof ObjectNotFound) {
@@ -426,13 +456,13 @@ export class BucketManager {
 
       // Combine all chunks into a single Uint8Array
       const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-      const data = new Uint8Array(totalLength);
+      const result = new Uint8Array(totalLength);
       let offset = 0;
       for (const chunk of chunks) {
-        data.set(chunk, offset);
+        result.set(chunk, offset);
         offset += chunk.length;
       }
-      return { result: data };
+      return { result };
     } catch (error: unknown) {
       if (
         error instanceof InvalidValue ||
@@ -454,8 +484,8 @@ export class BucketManager {
   ): Promise<Result<ReadableStream<Uint8Array>>> {
     try {
       const objectApiUrl = this.client.network.objectApiUrl();
-      const stream = await downloadBlob(objectApiUrl, bucket, key, range, blockNumber);
-      return { result: stream };
+      const result = await downloadBlob(objectApiUrl, bucket, key, range, blockNumber);
+      return { result };
     } catch (error: unknown) {
       if (
         error instanceof InvalidValue ||
@@ -498,7 +528,7 @@ export class BucketManager {
           state: {
             blobHash: state.blobHash,
             size: state.size,
-            metadata: [...state.metadata],
+            metadata: convertAbiMetadataToObject(state.metadata),
           },
         })),
         commonPrefixes: [...commonPrefixes],
