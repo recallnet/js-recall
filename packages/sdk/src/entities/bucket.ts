@@ -1,7 +1,9 @@
 import { cbor } from "@recall/fvm";
 import {
   AbiStateMutability,
+  Account,
   Address,
+  Chain,
   Client,
   ContractFunctionArgs,
   ContractFunctionExecutionError,
@@ -210,14 +212,10 @@ export class BucketManager {
         owner ?? this.client.walletClient.account.address,
         metadata ? convertMetadataToAbiParams(metadata) : [],
       ] satisfies CreateBucketParams;
-      const { request } = await this.client.publicClient.simulateContract({
-        address: this.contract.address,
-        abi: this.contract.abi,
-        functionName: "createBucket",
-        args,
+      const { request } = await this.contract.simulate.createBucket<Chain, Account>(args, {
         account: this.client.walletClient.account,
       });
-      const hash = await this.client.walletClient.writeContract(request);
+      const hash = await this.contract.write.createBucket(request);
       const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
       const { owner: eventOwner, data } = await parseEventFromTransaction<CreateBucketEvent>(
         this.client.publicClient,
@@ -273,13 +271,10 @@ export class BucketManager {
     }
     try {
       const args = [bucket, addParams] satisfies AddObjectFullParams;
-      const { request } = await this.client.publicClient.simulateContract({
-        address: this.contract.address,
-        abi: this.contract.abi,
-        functionName: "addObject",
-        args,
+      const { request } = await this.contract.simulate.addObject<Chain, Account>(args, {
         account: this.client.walletClient.account,
       });
+      // TODO: calling `this.contract.write.addObject(...)` doesn't work, for some reason
       const hash = await this.client.walletClient.writeContract(request);
       const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
       const result = await parseEventFromTransaction<AddObjectResult>(
@@ -359,13 +354,10 @@ export class BucketManager {
     }
     try {
       const args = [bucket, key] satisfies DeleteObjectParams;
-      const { request } = await this.client.publicClient.simulateContract({
-        address: this.contract.address,
-        abi: this.contract.abi,
-        functionName: "deleteObject",
-        args,
+      const { request } = await this.contract.simulate.deleteObject<Chain, Account>(args, {
         account: this.client.walletClient.account,
       });
+      // TODO: calling `this.contract.write.deleteObject(...)` doesn't work, for some reason
       const hash = await this.client.walletClient.writeContract(request);
       const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
       const result = await parseEventFromTransaction<DeleteObjectResult>(
@@ -402,13 +394,13 @@ export class BucketManager {
       if (!getResult.blobHash) {
         throw new ObjectNotFound(bucket, key);
       }
-      const result: ObjectValue = {
+      const result = {
         blobHash: getResult.blobHash,
         recoveryHash: getResult.recoveryHash,
         size: getResult.size,
         expiry: getResult.expiry,
         metadata: convertAbiMetadataToObject(getResult.metadata),
-      };
+      } as ObjectValue;
       return { result };
     } catch (error: unknown) {
       if (error instanceof ObjectNotFound) {

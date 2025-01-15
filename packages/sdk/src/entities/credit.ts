@@ -1,6 +1,8 @@
 import {
   AbiStateMutability,
+  Account,
   Address,
+  Chain,
   Client,
   ContractFunctionArgs,
   ContractFunctionExecutionError,
@@ -158,11 +160,7 @@ export class CreditManager {
         gasFeeLimit,
         ttl,
       ] satisfies ApproveCreditParams;
-      const { request } = await this.client.publicClient.simulateContract({
-        address: this.contract.address,
-        abi: this.contract.abi,
-        functionName: "approveCredit",
-        args,
+      const { request } = await this.contract.simulate.approveCredit<Chain, Account>(args, {
         account: this.client.walletClient.account,
       });
       const hash = await this.client.walletClient.writeContract(request);
@@ -204,15 +202,11 @@ export class CreditManager {
     try {
       const toAddress = to || this.client.walletClient.account.address;
       const args = [toAddress] satisfies BuyCreditParams;
-      const { request } = await this.client.publicClient.simulateContract({
-        address: this.contract.address,
-        abi: this.contract.abi,
-        functionName: "buyCredit",
-        args,
+      const { request } = await this.contract.simulate.buyCredit<Chain, Account>(args, {
         value: amount,
         account: this.client.walletClient.account,
       });
-      const hash = await this.client.walletClient.writeContract(request);
+      const hash = await this.contract.write.buyCredit(request);
       const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
       const result = await parseEventFromTransaction<BuyResult>(
         this.client.publicClient,
@@ -248,13 +242,10 @@ export class CreditManager {
     const fromAddress = from || this.client.walletClient.account.address;
     try {
       const args = [fromAddress, to, requiredCaller] satisfies RevokeCreditParams;
-      const { request } = await this.client.publicClient.simulateContract({
-        address: this.contract.address,
-        abi: this.contract.abi,
-        functionName: "revokeCredit",
-        args,
+      const { request } = await this.contract.simulate.revokeCredit<Chain, Account>(args, {
         account: this.client.walletClient.account,
       });
+      // TODO: calling `this.contract.write.revokeCredit(...)` doesn't work, for some reason
       const hash = await this.client.walletClient.writeContract(request);
       const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
       const result = await parseEventFromTransaction<RevokeResult>(
@@ -291,13 +282,10 @@ export class CreditManager {
     const fromAddress = from || this.client.walletClient.account.address;
     try {
       const args = [fromAddress, sponsor] satisfies SetAccountSponsorParams;
-      const { request } = await this.client.publicClient.simulateContract({
-        address: this.contract.address,
-        abi: this.contract.abi,
-        functionName: "setAccountSponsor",
-        args,
+      const { request } = await this.contract.simulate.setAccountSponsor<Chain, Account>(args, {
         account: this.client.walletClient.account,
       });
+      // TODO: calling `this.contract.write.setAccountSponsor(...)` doesn't work, for some reason
       const hash = await this.client.walletClient.writeContract(request);
       const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
       const result = await parseEventFromTransaction<SetAccountSponsorResult>(

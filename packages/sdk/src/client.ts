@@ -52,14 +52,14 @@ export const walletClientFromPrivateKey = (
 // Configuration for the HokuClient
 export interface HokuConfig {
   publicClient?: PublicClient<Transport, Chain>;
-  walletClient?: WalletClient<Transport, Chain>;
+  walletClient?: WalletClient<Transport, Chain, Account>;
   network?: Network;
 }
 
 // The HokuClient class for interacting with subnet buckets, blobs, credits, and accounts
 export class HokuClient {
   public publicClient: PublicClient<Transport, Chain>;
-  public walletClient: WalletClient | undefined;
+  public walletClient: WalletClient<Transport, Chain, Account> | undefined;
   public network: Network;
 
   // TODO: this logic probably needs to be refactored to properly handle conflicts
