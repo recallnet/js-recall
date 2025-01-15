@@ -20,28 +20,29 @@ import {
   isActorNotFoundError,
   UnhandledCreditError,
 } from "./errors.js";
-import {
-  actorIdToMaskedEvmAddress,
-  DeepMutable,
-  parseEventFromTransaction,
-  type Result,
-} from "./utils.js";
+import { parseEventFromTransaction, type Result } from "./utils.js";
 
 // Used for getBalance()
-export type CreditBalance = DeepMutable<
-  ContractFunctionReturnType<typeof creditManagerABI, AbiStateMutability, "getCreditBalance">
+export type CreditBalance = ContractFunctionReturnType<
+  typeof creditManagerABI,
+  AbiStateMutability,
+  "getCreditBalance"
 >;
 
 // Used for getAccount()
-export type CreditAccount = DeepMutable<
-  ContractFunctionReturnType<typeof creditManagerABI, AbiStateMutability, "getAccount">
+export type CreditAccount = ContractFunctionReturnType<
+  typeof creditManagerABI,
+  AbiStateMutability,
+  "getAccount"
 >;
 
 export type CreditApproval = Pick<CreditAccount, "approvals">;
 
 // Used for getCreditStats()
-export type CreditStats = DeepMutable<
-  ContractFunctionReturnType<typeof creditManagerABI, AbiStateMutability, "getCreditStats">
+export type CreditStats = ContractFunctionReturnType<
+  typeof creditManagerABI,
+  AbiStateMutability,
+  "getCreditStats"
 >;
 
 // Used for approve()
@@ -323,27 +324,19 @@ export class CreditManager {
       const forAddress = address || this.client.walletClient?.account?.address;
       if (!forAddress) throw new InvalidValue("Must provide an address or connect a wallet client");
       const args = [forAddress] satisfies GetAccountParams;
-      const account = (await this.client.publicClient.readContract({
+      const result = await this.client.publicClient.readContract({
         abi: this.contract.abi,
         address: this.contract.address,
         functionName: "getAccount",
         args,
         blockNumber,
-      })) as CreditAccount;
-      // The approvals `to` field is the string address (like `f0123`), so we need to convert it to a hex address
-      // TODO: this converts approval addresses to the masked ID address, which can be different from the `to` field
-      // We'd have to somehow get the delegated address from an ID, like this: https://github.com/hokunet/builtin-actors/blob/003960de8ba0075d5cd1fd74e087930db5d7de76/actors/eam/src/lib.rs#L175
-      const approvals = account.approvals.map((approval) => {
-        const actorId = approval.to.slice(2); // Remove the 'f0' prefix
-        const toAddress = actorIdToMaskedEvmAddress(Number(actorId));
-        return { ...approval, to: toAddress };
       });
-      return { result: { ...account, approvals } };
+      return { result };
     } catch (error) {
       if (error instanceof ContractFunctionExecutionError) {
         const { isActorNotFound } = isActorNotFoundError(error);
         if (isActorNotFound) {
-          const emptyAccount: CreditAccount = {
+          const emptyAccount = {
             approvals: [],
             capacityUsed: 0n,
             creditFree: 0n,
@@ -352,7 +345,7 @@ export class CreditManager {
             lastDebitEpoch: 0n,
             maxTtl: 0n,
             gasAllowance: 0n,
-          };
+          } as CreditAccount;
           return { result: emptyAccount };
         }
       }
@@ -395,14 +388,14 @@ export class CreditManager {
       if (error instanceof ContractFunctionExecutionError) {
         const { isActorNotFound } = isActorNotFoundError(error);
         if (isActorNotFound) {
-          const emptyBalance: CreditBalance = {
+          const emptyBalance = {
             creditFree: 0n,
             creditCommitted: 0n,
             creditSponsor: zeroAddress,
             lastDebitEpoch: 0n,
             approvals: [],
             gasAllowance: 0n,
-          };
+          } as CreditBalance;
           return { result: emptyBalance };
         }
       }

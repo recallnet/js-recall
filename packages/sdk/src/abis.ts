@@ -426,8 +426,8 @@ export const blobManagerABI = [
             components: [
               {
                 name: "subscriber",
-                type: "string",
-                internalType: "string",
+                type: "address",
+                internalType: "address",
               },
               {
                 name: "subscriptionGroup",
@@ -857,7 +857,7 @@ export const creditManagerABI = [
             type: "tuple[]",
             internalType: "struct Approval[]",
             components: [
-              { name: "to", type: "string", internalType: "string" },
+              { name: "to", type: "address", internalType: "address" },
               {
                 name: "approval",
                 type: "tuple",
@@ -977,7 +977,7 @@ export const creditManagerABI = [
             type: "tuple[]",
             internalType: "struct Approval[]",
             components: [
-              { name: "to", type: "string", internalType: "string" },
+              { name: "to", type: "address", internalType: "address" },
               {
                 name: "approval",
                 type: "tuple",
