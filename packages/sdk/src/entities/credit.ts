@@ -174,7 +174,7 @@ export class CreditManager {
         hash
       );
       return { meta: { tx }, result };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         if (error.message.includes("does not match origin or caller")) {
           throw new InvalidValue(
@@ -221,7 +221,7 @@ export class CreditManager {
         hash
       );
       return { meta: { tx }, result };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         // Although we make this check above, it's possible multiple buy requests are sent in the same block
         if (error.message.includes("insufficient funds")) {
@@ -264,7 +264,7 @@ export class CreditManager {
         hash
       );
       return { meta: { tx }, result };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         if (error.message.includes("does not match origin or caller")) {
           throw new InvalidValue(
@@ -307,7 +307,7 @@ export class CreditManager {
         hash
       );
       return { meta: { tx }, result };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         const { isActorNotFound, address } = isActorNotFoundError(error);
         if (isActorNotFound) {
@@ -326,7 +326,7 @@ export class CreditManager {
       const args = [forAddress] satisfies GetAccountParams;
       const result = await this.contract.read.getAccount(args, { blockNumber });
       return { result };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         const { isActorNotFound } = isActorNotFoundError(error);
         if (isActorNotFound) {
@@ -369,7 +369,7 @@ export class CreditManager {
       const args = [forAddress] satisfies GetCreditBalanceParams;
       const result = await this.contract.read.getCreditBalance(args, { blockNumber });
       return { result };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof InvalidValue) {
         throw error;
       }
@@ -396,7 +396,7 @@ export class CreditManager {
     try {
       const result = await this.contract.read.getCreditStats({ blockNumber });
       return { result };
-    } catch (error) {
+    } catch (error: unknown) {
       throw new UnhandledCreditError(`Failed to get credit stats: ${error}`);
     }
   }

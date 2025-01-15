@@ -111,7 +111,7 @@ export class GatewayManager {
       const hash = await client.walletClient.writeContract(request);
       const tx = await client.publicClient.waitForTransactionReceipt({ hash });
       return { meta: { tx }, result: true };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         if (error.message.includes("insufficient funds")) {
           throw new InsufficientFunds(amount);
@@ -145,7 +145,7 @@ export class GatewayManager {
       const hash = await client.walletClient.writeContract(request);
       const tx = await client.publicClient.waitForTransactionReceipt({ hash });
       return { meta: { tx }, result: true };
-    } catch (error) {
+    } catch (error: unknown) {
       throw new UnhandledGatewayError(`Failed to release funds: ${error}`);
     }
   }
