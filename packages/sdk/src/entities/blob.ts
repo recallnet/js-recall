@@ -273,13 +273,7 @@ export class BlobManager {
   async getBlob(blobHash: string, blockNumber?: bigint): Promise<Result<BlobInfo>> {
     try {
       const args = [blobHash] satisfies GetBlobParams;
-      const result = await this.client.publicClient.readContract({
-        abi: this.contract.abi,
-        address: this.contract.address,
-        functionName: "getBlob",
-        args,
-        blockNumber,
-      });
+      const result = await this.contract.read.getBlob(args, { blockNumber });
       return { result };
     } catch (error: unknown) {
       throw new UnhandledBlobError(`Failed to get blob info: ${error}`);
@@ -295,13 +289,7 @@ export class BlobManager {
   ): Promise<Result<BlobStatus>> {
     try {
       const args = [subscriber, blobHash, subscriptionId] satisfies GetBlobStatusParams;
-      const result = await this.client.publicClient.readContract({
-        abi: this.contract.abi,
-        address: this.contract.address,
-        functionName: "getBlobStatus",
-        args,
-        blockNumber,
-      });
+      const result = await this.contract.read.getBlobStatus(args, { blockNumber });
       return { result };
     } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
@@ -370,13 +358,7 @@ export class BlobManager {
   // Get added blobs
   async getAddedBlobs(size: number, blockNumber?: bigint): Promise<Result<AddedBlobs>> {
     try {
-      const result = await this.client.publicClient.readContract({
-        abi: this.contract.abi,
-        address: this.contract.address,
-        functionName: "getAddedBlobs",
-        args: [size],
-        blockNumber,
-      });
+      const result = await this.contract.read.getAddedBlobs([size], { blockNumber });
       return { result };
     } catch (error: unknown) {
       throw new UnhandledBlobError(`Failed to get added blobs: ${error}`);
@@ -386,13 +368,7 @@ export class BlobManager {
   // Get pending blobs
   async getPendingBlobs(size: number, blockNumber?: bigint): Promise<Result<PendingBlobs>> {
     try {
-      const result = await this.client.publicClient.readContract({
-        abi: this.contract.abi,
-        address: this.contract.address,
-        functionName: "getPendingBlobs",
-        args: [size],
-        blockNumber,
-      });
+      const result = await this.contract.read.getPendingBlobs([size], { blockNumber });
       return { result };
     } catch (error: unknown) {
       throw new UnhandledBlobError(`Failed to get pending blobs count: ${error}`);
@@ -402,12 +378,7 @@ export class BlobManager {
   // Get pending blobs count
   async getPendingBlobsCount(blockNumber?: bigint): Promise<Result<PendingBlobsCount>> {
     try {
-      const result = await this.client.publicClient.readContract({
-        abi: this.contract.abi,
-        address: this.contract.address,
-        functionName: "getPendingBlobsCount",
-        blockNumber,
-      });
+      const result = await this.contract.read.getPendingBlobsCount({ blockNumber });
       return { result };
     } catch (error: unknown) {
       throw new UnhandledBlobError(`Failed to get pending blobs count: ${error}`);
@@ -417,12 +388,7 @@ export class BlobManager {
   // Get pending bytes count
   async getPendingBytesCount(blockNumber?: bigint): Promise<Result<PendingBytesCount>> {
     try {
-      const result = await this.client.publicClient.readContract({
-        abi: this.contract.abi,
-        address: this.contract.address,
-        functionName: "getPendingBytesCount",
-        blockNumber,
-      });
+      const result = await this.contract.read.getPendingBytesCount({ blockNumber });
       return { result };
     } catch (error: unknown) {
       throw new UnhandledBlobError(`Failed to get pending bytes count: ${error}`);
@@ -432,12 +398,7 @@ export class BlobManager {
   // Get storage stats
   async getStorageStats(blockNumber?: bigint): Promise<Result<StorageStats>> {
     try {
-      const result = await this.client.publicClient.readContract({
-        abi: this.contract.abi,
-        address: this.contract.address,
-        functionName: "getStorageStats",
-        blockNumber,
-      });
+      const result = await this.contract.read.getStorageStats({ blockNumber });
       return { result };
     } catch (error: unknown) {
       throw new UnhandledBlobError(`Failed to get storage stats: ${error}`);
@@ -451,13 +412,7 @@ export class BlobManager {
       throw new Error("Address is required for getting storage usage");
     }
     try {
-      const result = await this.client.publicClient.readContract({
-        abi: this.contract.abi,
-        address: this.contract.address,
-        functionName: "getStorageUsage",
-        args: [addressArg],
-        blockNumber,
-      });
+      const result = await this.contract.read.getStorageUsage([addressArg], { blockNumber });
       return { result };
     } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
@@ -473,12 +428,7 @@ export class BlobManager {
   // Get subnet stats
   async getSubnetStats(blockNumber?: bigint): Promise<Result<SubnetStats>> {
     try {
-      const result = await this.client.publicClient.readContract({
-        abi: this.contract.abi,
-        address: this.contract.address,
-        functionName: "getSubnetStats",
-        blockNumber,
-      });
+      const result = await this.contract.read.getSubnetStats({ blockNumber });
       return { result };
     } catch (error: unknown) {
       throw new UnhandledBlobError(`Failed to get subnet stats: ${error}`);

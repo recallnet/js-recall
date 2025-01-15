@@ -248,13 +248,7 @@ export class BucketManager {
   // List buckets
   async list(owner: Address, blockNumber?: bigint): Promise<Result<ListResult>> {
     try {
-      const listResult = await this.client.publicClient.readContract({
-        abi: this.contract.abi,
-        address: this.contract.address,
-        functionName: "listBuckets",
-        args: [owner],
-        blockNumber,
-      });
+      const listResult = await this.contract.read.listBuckets([owner], { blockNumber });
       const result = listResult.map((bucket) => ({
         ...bucket,
         metadata: convertAbiMetadataToObject(bucket.metadata),
@@ -404,13 +398,7 @@ export class BucketManager {
   ): Promise<Result<ObjectValue>> {
     try {
       const args = [bucket, key] satisfies GetObjectParams;
-      const getResult = await this.client.publicClient.readContract({
-        abi: this.contract.abi,
-        address: this.contract.address,
-        functionName: "getObject",
-        args,
-        blockNumber,
-      });
+      const getResult = await this.contract.read.getObject(args, { blockNumber });
       if (!getResult.blobHash) {
         throw new ObjectNotFound(bucket, key);
       }
@@ -515,11 +503,7 @@ export class BucketManager {
         startKey,
         BigInt(limit),
       ] satisfies QueryObjectsParams;
-      const { objects, commonPrefixes, nextKey } = await this.client.publicClient.readContract({
-        abi: this.contract.abi,
-        address: this.contract.address,
-        functionName: "queryObjects",
-        args,
+      const { objects, commonPrefixes, nextKey } = await this.contract.read.queryObjects(args, {
         blockNumber,
       });
       const result = {

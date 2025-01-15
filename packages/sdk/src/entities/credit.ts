@@ -324,13 +324,7 @@ export class CreditManager {
       const forAddress = address || this.client.walletClient?.account?.address;
       if (!forAddress) throw new InvalidValue("Must provide an address or connect a wallet client");
       const args = [forAddress] satisfies GetAccountParams;
-      const result = await this.client.publicClient.readContract({
-        abi: this.contract.abi,
-        address: this.contract.address,
-        functionName: "getAccount",
-        args,
-        blockNumber,
-      });
+      const result = await this.contract.read.getAccount(args, { blockNumber });
       return { result };
     } catch (error) {
       if (error instanceof ContractFunctionExecutionError) {
@@ -373,13 +367,7 @@ export class CreditManager {
       const forAddress = address || this.client.walletClient?.account?.address;
       if (!forAddress) throw new InvalidValue("Must provide an address or connect a wallet client");
       const args = [forAddress] satisfies GetCreditBalanceParams;
-      const result = (await this.client.publicClient.readContract({
-        abi: this.contract.abi,
-        address: this.contract.address,
-        functionName: "getCreditBalance",
-        args,
-        blockNumber,
-      })) as CreditBalance;
+      const result = await this.contract.read.getCreditBalance(args, { blockNumber });
       return { result };
     } catch (error) {
       if (error instanceof InvalidValue) {
@@ -406,12 +394,7 @@ export class CreditManager {
   // Get credit stats
   async getCreditStats(blockNumber?: bigint): Promise<Result<CreditStats>> {
     try {
-      const result = await this.client.publicClient.readContract({
-        abi: this.contract.abi,
-        address: this.contract.address,
-        functionName: "getCreditStats",
-        blockNumber,
-      });
+      const result = await this.contract.read.getCreditStats({ blockNumber });
       return { result };
     } catch (error) {
       throw new UnhandledCreditError(`Failed to get credit stats: ${error}`);
