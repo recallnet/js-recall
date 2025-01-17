@@ -25,19 +25,29 @@
     "src/**/*.ts"
   ],
   "scripts": {
-    "prepublishOnly": "npm run build",
-    "test": "npm run test:mocha",
+    "prepublishOnly": "pnpm build",
+    "test": "pnpm test:mocha",
     "test:mocha": "mocha --exit",
-    "test:ci": "npm run coverage",
+    "test:ci": "pnpm coverage",
     "coverage": "c8 --exclude test --exclude dist mocha --exit",
     "docs": "typedoc --entryPoints src/index.ts",
     "clean": "rm -rf dist coverage docs",
-    "build:esm": "npx tsc",
-    "build": "npm run build:esm"
+    "build:esm": "pnpm tsc",
+    "build": "pnpm build:esm"
   },
   "dependencies": {
     "blakejs": "^1.2.1",
     "cborg": "^4.2.6",
     "uint8arrays": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/chai": "^5.0.1",
+    "@types/chai-as-promised": "^8.0.1",
+    "@types/mocha": "^10.0.10",
+    "@recall/eslint-config": "workspace:*",
+    "@recall/typescript-config": "workspace:*",
+    "chai": "^5.1.2",
+    "chai-as-promised": "^8.0.1",
+    "typescript": "^5.7.3"
   }
 }

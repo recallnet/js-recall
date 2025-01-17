@@ -1,0 +1,12 @@
+{
+  "extends": "@recall/typescript-config/react-library.json",
+  "compilerOptions": {
+    //"outDir": "dist"
+    "baseUrl": ".",
+    "paths": {
+      "@recall/ui/*": ["./src/*"]
+    }
+  },
+  "include": ["."],
+  "exclude": ["node_modules", "dist"]
+}

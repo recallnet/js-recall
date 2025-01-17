@@ -25,15 +25,15 @@
     "src/**/*.ts"
   ],
   "scripts": {
-    "prepublishOnly": "npm run build",
-    "test": "npm run test:mocha",
+    "prepublishOnly": "pnpm build",
+    "test": "pnpm test:mocha",
     "test:mocha": "mocha --exit",
-    "test:ci": "npm run coverage",
+    "test:ci": "pnpm coverage",
     "coverage": "c8 --exclude test --exclude dist mocha --exit",
     "docs": "typedoc --entryPoints src/index.ts",
     "clean": "rm -rf dist coverage docs",
-    "build:esm": "npx tsc",
-    "build": "npm run build:esm"
+    "build:esm": "pnpm tsc",
+    "build": "pnpm build:esm"
   },
   "dependencies": {
     "@noble/hashes": "^1.5.0",
@@ -46,6 +46,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.6",
+    "@recall/eslint-config": "workspace:*",
+    "@recall/typescript-config": "workspace:*",
     "tempy": "^3.1.0"
   }
 }

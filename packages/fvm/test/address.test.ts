@@ -1,6 +1,7 @@
 // Forked from: https://github.com/Zondax/izari-filecoin/blob/master/tests/jest/logic/address.test.ts
 import { readFileSync } from "fs";
 import { expect } from "chai";
+import { describe, it } from "mocha";
 import * as u8a from "uint8arrays";
 
 import { InvalidId, InvalidProtocolIndicator } from "../src/address/errors.js";

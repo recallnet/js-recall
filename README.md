@@ -1,53 +1,31 @@
-# Recall JS SDK
+# shadcn/ui monorepo template
 
-> Monorepo for the Recall network's JS/TS packages.
-
-## Table of Contents
-
-- [Background](#background)
-- [Usage](#usage)
-- [Development](#development)
-- [Contributing](#contributing)
-- [License](#license)
-
-## Background
-
-This monorepo contains packages for the Recall network, including:
-
-- `@recall/sdk`: SDK for the Recall network, such as creating buckets, managing credits, and more.
-- `@recall/fvm`: Helper library for FVM addresses and operations (most developers will not need this).
+This template is for creating a monorepo with shadcn/ui.
 
 ## Usage
 
-See the respective package READMEs for more information.
-
-## Development
-
-Install dependencies:
-
 ```bash
-pnpm install
+pnpm dlx shadcn@latest init
 ```
 
-Run the tests:
+## Adding components
+
+To add components to your app, run the following command at the root of your `web` app:
 
 ```bash
-pnpm run test
+pnpm dlx shadcn@latest add button -c apps/web
 ```
 
-Build the package:
+This will place the ui components in the `packages/ui/src/components` directory.
 
-```bash
-pnpm run build
+## Tailwind
+
+Your `tailwind.config.ts` and `globals.css` are already set up to use the components from the `ui` package.
+
+## Using components
+
+To use the components in your app, import them from the `ui` package.
+
+```tsx
+import { Button } from "@recall/ui/components/ui/button";
 ```
-
-## Contributing
-
-PRs accepted.
-
-Small note: If editing the README, please conform to
-the [standard-readme](https://github.com/RichardLitt/standard-readme) specification.
-
-## License
-
-MIT OR Apache-2.0, © 2024 Recall Network Corporation
