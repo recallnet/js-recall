@@ -31,7 +31,7 @@ export function getLeb128Length(input: Uint8Array): number {
   while (count < input.length) {
     const byte = input[count];
     count++;
-    if (byte < 128) break;
+    if (byte! < 128) break;
   }
   if (count == input.length) return -1;
 

@@ -1,0 +1,9 @@
+{
+  "extends": "@recall/typescript-config/base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "baseUrl": "."
+  },
+  "include": ["."],
+  "exclude": ["node_modules", "dist"]
+}

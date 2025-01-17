@@ -102,7 +102,7 @@ export function decode(input: string, variant: base32Variant = "RFC4648") {
   let index = 0;
   const output = new Uint8Array(((length * 5) / 8) | 0);
   for (let i = 0; i < length; i++) {
-    value = (value << 5) | readChar(alphabet, input[i]);
+    value = (value << 5) | readChar(alphabet, input[i]!);
     bits += 5;
 
     if (bits >= 8) {

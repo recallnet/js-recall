@@ -22,7 +22,7 @@ export function readBigInt(stream: Stream): bigint {
   let byte: number;
 
   while (true) {
-    byte = stream.read(1)[0];
+    byte = stream.read(1)[0]!;
     num |= BigInt(byte & 0x7f) << BigInt(shift);
     if ((byte & 0x80) === 0) {
       break;

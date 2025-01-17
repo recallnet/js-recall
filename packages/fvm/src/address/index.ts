@@ -102,7 +102,10 @@ export abstract class Address {
    * @returns a new instance of a particular address type.
    */
   static fromString(address: string): Address {
-    const type = parseInt(address[1]);
+    if (address.length === 0) throw new Error("Invalid address");
+    const indicator = address[1];
+    if (!indicator) throw new Error("Invalid network prefix");
+    const type = parseInt(indicator);
 
     switch (type) {
       case ProtocolIndicator.ID:
@@ -136,6 +139,7 @@ export abstract class Address {
     networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
   ): Address => {
     const type = address[0];
+    if (type === undefined) throw new Error("Invalid address");
 
     switch (type) {
       case ProtocolIndicator.ID:
@@ -294,6 +298,9 @@ export class AddressBls extends Address {
     const networkPrefix = address[0];
     const protocolIndicator = address[1];
 
+    if (!networkPrefix) throw new Error("Invalid network prefix");
+    if (!protocolIndicator) throw new Error("Invalid protocol indicator");
+
     if (!validateNetworkPrefix(networkPrefix)) throw new InvalidNetwork(networkPrefix);
     if (parseInt(protocolIndicator) != ProtocolIndicator.BLS)
       throw new InvalidProtocolIndicator(parseInt(protocolIndicator));
@@ -321,7 +328,9 @@ export class AddressBls extends Address {
     bytes: Uint8Array,
     networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
   ): AddressBls {
-    if (bytes[0] != ProtocolIndicator.BLS) throw new InvalidProtocolIndicator(bytes[0]);
+    const indicator = bytes[0];
+    if (!indicator) throw new Error("Invalid protocol indicator");
+    if (indicator != ProtocolIndicator.BLS) throw new InvalidProtocolIndicator(indicator);
 
     const payload = bytes.subarray(1);
     return new AddressBls(payload, networkPrefix);
@@ -398,6 +407,9 @@ export class AddressId extends Address {
     const networkPrefix = address[0];
     const protocolIndicator = address[1];
 
+    if (!networkPrefix) throw new Error("Invalid network prefix");
+    if (!protocolIndicator) throw new Error("Invalid protocol indicator");
+
     if (!validateNetworkPrefix(networkPrefix)) throw new InvalidNetwork(networkPrefix);
     if (parseInt(protocolIndicator) != ProtocolIndicator.ID)
       throw new InvalidProtocolIndicator(parseInt(protocolIndicator));
@@ -416,7 +428,9 @@ export class AddressId extends Address {
     bytes: Uint8Array,
     networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
   ): AddressId {
-    if (bytes[0] != ProtocolIndicator.ID) throw new InvalidProtocolIndicator(bytes[0]);
+    const indicator = bytes[0];
+    if (!indicator) throw new Error("Invalid protocol indicator");
+    if (indicator != ProtocolIndicator.ID) throw new InvalidProtocolIndicator(indicator);
 
     const payload = bytes.subarray(1);
     return new AddressId(payload, networkPrefix);
@@ -489,6 +503,9 @@ export class AddressSecp256k1 extends Address {
     const networkPrefix = address[0];
     const protocolIndicator = address[1];
 
+    if (!networkPrefix) throw new Error("Invalid network prefix");
+    if (!protocolIndicator) throw new Error("Invalid protocol indicator");
+
     if (!validateNetworkPrefix(networkPrefix)) throw new InvalidNetwork(networkPrefix);
     if (parseInt(protocolIndicator) != ProtocolIndicator.SECP256K1)
       throw new InvalidProtocolIndicator(parseInt(protocolIndicator));
@@ -516,7 +533,10 @@ export class AddressSecp256k1 extends Address {
     bytes: Uint8Array,
     networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
   ): AddressSecp256k1 {
-    if (bytes[0] != ProtocolIndicator.SECP256K1) throw new InvalidProtocolIndicator(bytes[0]);
+    const indicator = bytes[0];
+    if (!indicator) throw new Error("Invalid protocol indicator");
+
+    if (indicator != ProtocolIndicator.SECP256K1) throw new InvalidProtocolIndicator(indicator);
 
     const payload = bytes.subarray(1);
     return new AddressSecp256k1(payload, networkPrefix);
@@ -575,6 +595,9 @@ export class AddressActor extends Address {
     const networkPrefix = address[0];
     const protocolIndicator = address[1];
 
+    if (!networkPrefix) throw new Error("Invalid network prefix");
+    if (!protocolIndicator) throw new Error("Invalid protocol indicator");
+
     if (!validateNetworkPrefix(networkPrefix)) throw new InvalidNetwork(networkPrefix);
     if (parseInt(protocolIndicator) != ProtocolIndicator.ACTOR)
       throw new InvalidProtocolIndicator(parseInt(protocolIndicator));
@@ -601,7 +624,10 @@ export class AddressActor extends Address {
     bytes: Uint8Array,
     networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
   ): AddressActor {
-    if (bytes[0] != ProtocolIndicator.ACTOR) throw new InvalidProtocolIndicator(bytes[0]);
+    const indicator = bytes[0];
+    if (!indicator) throw new Error("Invalid protocol indicator");
+
+    if (indicator != ProtocolIndicator.ACTOR) throw new InvalidProtocolIndicator(indicator);
 
     const payload = bytes.subarray(1);
     return new AddressActor(payload, networkPrefix);
@@ -703,6 +729,9 @@ export class AddressDelegated extends Address {
     const networkPrefix = address[0];
     const protocolIndicator = address[1];
 
+    if (!networkPrefix) throw new Error("Invalid network prefix");
+    if (!protocolIndicator) throw new Error("Invalid protocol indicator");
+
     if (!validateNetworkPrefix(networkPrefix)) throw new InvalidNetwork(networkPrefix);
     if (parseInt(protocolIndicator) != ProtocolIndicator.DELEGATED)
       throw new InvalidProtocolIndicator(parseInt(protocolIndicator));
@@ -733,7 +762,10 @@ export class AddressDelegated extends Address {
     bytes: Uint8Array,
     networkPrefix: NetworkPrefix = NetworkPrefix.Testnet
   ): AddressDelegated {
-    if (bytes[0] != ProtocolIndicator.DELEGATED) throw new InvalidProtocolIndicator(bytes[0]);
+    const indicator = bytes[0];
+    if (!indicator) throw new Error("Invalid protocol indicator");
+
+    if (indicator != ProtocolIndicator.DELEGATED) throw new InvalidProtocolIndicator(indicator);
 
     const namespaceLength = getLeb128Length(bytes.subarray(1));
     const namespace = unsigned.decode(bytes.subarray(1, 1 + namespaceLength));

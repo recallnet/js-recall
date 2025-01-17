@@ -48,7 +48,7 @@ export class SubnetId {
       return new SubnetId(0, [], undefined, subnetIdStr);
     }
     const [, rootRaw, routeRaw] = subnetIdStr.split("/");
-    const root = Number(rootRaw.slice(1)); // Remove the "r" prefix
+    const root = Number(rootRaw?.slice(1)); // Remove the "r" prefix
     const route = routeRaw ? routeRaw.split("/") : [];
     let chainId: number | undefined;
     switch (subnetIdStr) {
@@ -138,9 +138,9 @@ export class SubnetId {
   }
 
   // Get the subnet actor address for this subnet ID
-  subnetActorAddress(type: AddressType = "evm"): string | null {
+  subnetActorAddress(type: AddressType = "evm"): string | undefined {
     if (this.isRoot()) {
-      return null;
+      return undefined;
     }
     return type === "evm" ? this.evm.route[-1] : this.real.route[-1];
   }
