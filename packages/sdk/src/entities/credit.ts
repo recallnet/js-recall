@@ -38,7 +38,10 @@ export type CreditAccount = ContractFunctionReturnType<
   "getAccount"
 >;
 
-export type CreditApproval = Pick<CreditAccount, "approvals">;
+export type CreditApproval = Pick<
+  CreditAccount,
+  "approvalsTo" | "approvalsFrom"
+>;
 
 // Used for getCreditStats()
 export type CreditStats = ContractFunctionReturnType<
@@ -307,7 +310,7 @@ export class CreditManager {
   ): Promise<Result<SetAccountSponsorResult>> {
     if (!this.client.walletClient?.account) {
       throw new Error(
-        "Wallet client is not initialized for setting account sponsor",
+        "Wallet client is not initialized for setting account sponsor"
       );
     }
     const fromAddress = from || this.client.walletClient.account.address;
@@ -345,13 +348,13 @@ export class CreditManager {
   // Get account details including approvals
   async getAccount(
     address?: Address,
-    blockNumber?: bigint,
+    blockNumber?: bigint
   ): Promise<Result<CreditAccount>> {
     try {
       const forAddress = address || this.client.walletClient?.account?.address;
       if (!forAddress)
         throw new InvalidValue(
-          "Must provide an address or connect a wallet client",
+          "Must provide an address or connect a wallet client"
         );
       const args = [forAddress] satisfies GetAccountParams;
       const result = await this.contract.read.getAccount(args, { blockNumber });
@@ -361,12 +364,13 @@ export class CreditManager {
         const { isActorNotFound } = isActorNotFoundError(error);
         if (isActorNotFound) {
           const emptyAccount = {
-            approvals: [],
             capacityUsed: 0n,
             creditFree: 0n,
             creditCommitted: 0n,
             creditSponsor: "0x0000000000000000000000000000000000000000",
             lastDebitEpoch: 0n,
+            approvalsTo: [],
+            approvalsFrom: [],
             maxTtl: 0n,
             gasAllowance: 0n,
           } as CreditAccount;
@@ -379,30 +383,41 @@ export class CreditManager {
 
   // Get credit approvals
   async getCreditApprovals(
-    from: Address,
-    to?: Address,
-    blockNumber?: bigint,
+    forAddress?: Address,
+    {
+      filterFrom,
+      filterTo,
+      blockNumber,
+    }: {
+      filterFrom?: Address;
+      filterTo?: Address;
+      blockNumber?: bigint;
+    } = {}
   ): Promise<Result<CreditApproval>> {
     let {
-      result: { approvals },
-    } = await this.getAccount(from, blockNumber);
+      result: { approvalsTo, approvalsFrom },
+    } = await this.getAccount(forAddress, blockNumber);
     // Filter approvals by `to`, if provided
-    approvals = to
-      ? approvals.filter((approval) => approval.to === to)
-      : approvals;
-    return { result: { approvals } };
+    approvalsTo = filterTo
+      ? approvalsTo.filter((approval) => approval.addr === filterTo)
+      : approvalsTo;
+    // Filter approvals by `from`, if provided
+    approvalsFrom = filterFrom
+      ? approvalsFrom.filter((approval) => approval.addr === filterFrom)
+      : approvalsFrom;
+    return { result: { approvalsTo, approvalsFrom } };
   }
 
   // Get credit balance
   async getCreditBalance(
     address?: Address,
-    blockNumber?: bigint,
+    blockNumber?: bigint
   ): Promise<Result<CreditBalance>> {
     try {
       const forAddress = address || this.client.walletClient?.account?.address;
       if (!forAddress)
         throw new InvalidValue(
-          "Must provide an address or connect a wallet client",
+          "Must provide an address or connect a wallet client"
         );
       const args = [forAddress] satisfies GetCreditBalanceParams;
       const result = await this.contract.read.getCreditBalance(args, {
@@ -421,7 +436,8 @@ export class CreditManager {
             creditCommitted: 0n,
             creditSponsor: zeroAddress,
             lastDebitEpoch: 0n,
-            approvals: [],
+            approvalsTo: [],
+            approvalsFrom: [],
             gasAllowance: 0n,
           } as CreditBalance;
           return { result: emptyBalance };
