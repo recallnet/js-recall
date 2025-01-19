@@ -493,7 +493,9 @@ export const blobManagerABI = [
       { name: "blobHash", type: "string", internalType: "string" },
       { name: "subscriptionId", type: "string", internalType: "string" },
     ],
-    outputs: [{ name: "status", type: "uint8", internalType: "enum BlobStatus" }],
+    outputs: [
+      { name: "status", type: "uint8", internalType: "enum BlobStatus" },
+    ],
     stateMutability: "view",
   },
   {
@@ -853,11 +855,51 @@ export const creditManagerABI = [
             internalType: "uint64",
           },
           {
-            name: "approvals",
+            name: "approvalsTo",
             type: "tuple[]",
             internalType: "struct Approval[]",
             components: [
-              { name: "to", type: "address", internalType: "address" },
+              { name: "addr", type: "address", internalType: "address" },
+              {
+                name: "approval",
+                type: "tuple",
+                internalType: "struct CreditApproval",
+                components: [
+                  {
+                    name: "creditLimit",
+                    type: "uint256",
+                    internalType: "uint256",
+                  },
+                  {
+                    name: "gasFeeLimit",
+                    type: "uint256",
+                    internalType: "uint256",
+                  },
+                  {
+                    name: "expiry",
+                    type: "uint64",
+                    internalType: "uint64",
+                  },
+                  {
+                    name: "creditUsed",
+                    type: "uint256",
+                    internalType: "uint256",
+                  },
+                  {
+                    name: "gasFeeUsed",
+                    type: "uint256",
+                    internalType: "uint256",
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            name: "approvalsFrom",
+            type: "tuple[]",
+            internalType: "struct Approval[]",
+            components: [
+              { name: "addr", type: "address", internalType: "address" },
               {
                 name: "approval",
                 type: "tuple",
@@ -973,11 +1015,51 @@ export const creditManagerABI = [
             internalType: "uint64",
           },
           {
-            name: "approvals",
+            name: "approvalsTo",
             type: "tuple[]",
             internalType: "struct Approval[]",
             components: [
-              { name: "to", type: "address", internalType: "address" },
+              { name: "addr", type: "address", internalType: "address" },
+              {
+                name: "approval",
+                type: "tuple",
+                internalType: "struct CreditApproval",
+                components: [
+                  {
+                    name: "creditLimit",
+                    type: "uint256",
+                    internalType: "uint256",
+                  },
+                  {
+                    name: "gasFeeLimit",
+                    type: "uint256",
+                    internalType: "uint256",
+                  },
+                  {
+                    name: "expiry",
+                    type: "uint64",
+                    internalType: "uint64",
+                  },
+                  {
+                    name: "creditUsed",
+                    type: "uint256",
+                    internalType: "uint256",
+                  },
+                  {
+                    name: "gasFeeUsed",
+                    type: "uint256",
+                    internalType: "uint256",
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            name: "approvalsFrom",
+            type: "tuple[]",
+            internalType: "struct Approval[]",
+            components: [
+              { name: "addr", type: "address", internalType: "address" },
               {
                 name: "approval",
                 type: "tuple",
@@ -1270,7 +1352,13 @@ export const gatewayManagerFacetABI = [
     outputs: [],
     stateMutability: "nonpayable",
   },
-  { type: "function", name: "kill", inputs: [], outputs: [], stateMutability: "nonpayable" },
+  {
+    type: "function",
+    name: "kill",
+    inputs: [],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
   {
     type: "function",
     name: "register",
@@ -1308,14 +1396,26 @@ export const gatewayManagerFacetABI = [
   {
     type: "event",
     name: "NewBottomUpMsgBatch",
-    inputs: [{ name: "epoch", type: "uint256", indexed: true, internalType: "uint256" }],
+    inputs: [
+      {
+        name: "epoch",
+        type: "uint256",
+        indexed: true,
+        internalType: "uint256",
+      },
+    ],
     anonymous: false,
   },
   {
     type: "event",
     name: "NewTopDownMessage",
     inputs: [
-      { name: "subnet", type: "address", indexed: true, internalType: "address" },
+      {
+        name: "subnet",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
       {
         name: "message",
         type: "tuple",
@@ -1334,7 +1434,11 @@ export const gatewayManagerFacetABI = [
                 internalType: "struct SubnetID",
                 components: [
                   { name: "root", type: "uint64", internalType: "uint64" },
-                  { name: "route", type: "address[]", internalType: "address[]" },
+                  {
+                    name: "route",
+                    type: "address[]",
+                    internalType: "address[]",
+                  },
                 ],
               },
               {
@@ -1359,7 +1463,11 @@ export const gatewayManagerFacetABI = [
                 internalType: "struct SubnetID",
                 components: [
                   { name: "root", type: "uint64", internalType: "uint64" },
-                  { name: "route", type: "address[]", internalType: "address[]" },
+                  {
+                    name: "route",
+                    type: "address[]",
+                    internalType: "address[]",
+                  },
                 ],
               },
               {
@@ -1400,7 +1508,13 @@ export const gatewayManagerFacetABI = [
   {
     type: "error",
     name: "InvalidXnetMessage",
-    inputs: [{ name: "reason", type: "uint8", internalType: "enum InvalidXnetMessageReason" }],
+    inputs: [
+      {
+        name: "reason",
+        type: "uint8",
+        internalType: "enum InvalidXnetMessageReason",
+      },
+    ],
   },
   {
     type: "error",
