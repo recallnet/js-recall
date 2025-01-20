@@ -24,8 +24,14 @@ importers:
         specifier: ^5.7.3
         version: 5.7.3
 
-  apps/web:
+  apps/studio:
     dependencies:
+      '@recall/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@recall/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
       '@recall/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -173,6 +179,9 @@ importers:
       '@number0/iroh':
         specifier: ^0.28.1
         version: 0.28.1
+      '@recall/contracts':
+        specifier: workspace:*
+        version: link:../contracts
       '@recall/fvm':
         specifier: workspace:*
         version: link:../fvm

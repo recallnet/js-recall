@@ -38,6 +38,7 @@
   "dependencies": {
     "@noble/hashes": "^1.5.0",
     "@number0/iroh": "^0.28.1",
+    "@recall/contracts": "workspace:*",
     "@recall/fvm": "workspace:*",
     "@sindresorhus/fnv1a": "^3.1.0",
     "file-type": "^19.6.0",

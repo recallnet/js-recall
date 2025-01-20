@@ -1,5 +1,5 @@
 {
-  "name": "@recall/contracts",
+  "name": "@recall/sdkx",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -9,7 +9,6 @@
     "lint": "eslint . --max-warnings 0"
   },
   "devDependencies": {
-    "@wagmi/cli": "^2.1.22",
     "@recall/eslint-config": "workspace:*",
     "@recall/typescript-config": "workspace:*",
     "typescript": "^5.7.3"
@@ -18,9 +17,9 @@
     "viem": "^2.22.9"
   },
   "exports": {
-    ".": {
-      "types": "./dist/generated.d.ts",
-      "default": "./dist/generated.js"
+    "./chains": {
+      "types": "./dist/chains.d.ts",
+      "default": "./dist/chains.js"
     }
   }
 }
