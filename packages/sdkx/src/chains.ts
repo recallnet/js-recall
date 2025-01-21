@@ -5,7 +5,7 @@ export const ignition: Chain = {
   name: "Ignition",
   nativeCurrency: {
     name: "Recall",
-    symbol: "RCL",
+    symbol: "RECALL",
     decimals: 18,
   },
   testnet: true,

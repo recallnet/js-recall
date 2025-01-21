@@ -7,8 +7,11 @@
     "lint": "eslint . --max-warnings 0"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.4",
     "@radix-ui/react-dropdown-menu": "^2.1.4",
+    "@radix-ui/react-label": "^2.1.1",
     "@radix-ui/react-slot": "^1.1.1",
+    "@radix-ui/react-toast": "^1.2.4",
     "@rainbow-me/rainbowkit": "^2.2.2",
     "@recall/bigint-utils": "workspace:*",
     "@tanstack/react-query": "^5.64.2",
@@ -25,6 +28,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@recall/address-utils": "workspace:*",
     "@recall/eslint-config": "workspace:*",
     "@recall/typescript-config": "workspace:*",
     "@turbo/gen": "^2.2.3",

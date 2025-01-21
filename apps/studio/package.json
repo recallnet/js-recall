@@ -26,6 +26,7 @@
     "wagmi": "^2.14.8"
   },
   "devDependencies": {
+    "@recall/address-utils": "workspace:*",
     "@recall/eslint-config": "workspace:^",
     "@recall/typescript-config": "workspace:*",
     "@types/node": "^20",

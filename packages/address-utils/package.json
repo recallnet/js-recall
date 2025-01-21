@@ -1,0 +1,23 @@
+{
+  "name": "@recall/address-utils",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "tsc --watch",
+    "build": "tsc",
+    "lint": "eslint . --max-warnings 0"
+  },
+  "devDependencies": {
+    "@recall/eslint-config": "workspace:*",
+    "@recall/typescript-config": "workspace:*",
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {},
+  "exports": {
+    "./display": {
+      "types": "./dist/display.d.ts",
+      "default": "./dist/display.js"
+    }
+  }
+}

@@ -11,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@recall/ui/components/dropdown-menu";
+import { Toaster } from "@recall/ui/components/toaster";
 
 const fontMono = Geist_Mono({
   subsets: ["latin"],
@@ -53,6 +54,7 @@ export default function RootLayout({
             <div className="flex-1 p-2">{children}</div>
           </div>
         </Providers>
+        <Toaster />
       </body>
     </html>
   );
