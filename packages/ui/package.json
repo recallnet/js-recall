@@ -8,6 +8,9 @@
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.1.1",
+    "@rainbow-me/rainbowkit": "^2.2.2",
+    "@recall/bigint-utils": "workspace:*",
+    "@tanstack/react-query": "^5.64.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "lucide-react": "0.456.0",
@@ -16,18 +19,19 @@
     "react-dom": "^19.0.0",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
+    "viem": "2.x",
+    "wagmi": "^2.14.8",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@turbo/gen": "^2.2.3",
-    "@types/node": "^22.9.0",
-    "@types/react": "18.3.0",
-    "@types/react-dom": "18.3.1",
     "@recall/eslint-config": "workspace:*",
     "@recall/typescript-config": "workspace:*",
+    "@turbo/gen": "^2.2.3",
+    "@types/node": "^22.9.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.47",
-    "react": "^18.3.1",
     "tailwindcss": "^3.4.14",
     "typescript": "^5.7.3"
   },
@@ -37,6 +41,7 @@
     "./tailwind.config": "./tailwind.config.ts",
     "./lib/*": "./src/lib/*.ts",
     "./components/*": "./src/components/*.tsx",
-    "./hooks/*": "./src/hooks/*.ts"
+    "./hooks/*": "./src/hooks/*.ts",
+    "./recall/*": "./src/recall/*.tsx"
   }
 }

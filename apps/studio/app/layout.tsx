@@ -1,12 +1,10 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono } from "next/font/google";
 
 import "@recall/ui/globals.css";
 import { Providers } from "@/components/providers";
-
-const fontSans = Geist({
-  subsets: ["latin"],
-  variable: "--font-sans",
-});
+import { Wallet } from "@recall/ui/recall/wallet";
+import Image from "next/image";
+import { Menu } from "lucide-react";
 
 const fontMono = Geist_Mono({
   subsets: ["latin"],
@@ -20,10 +18,25 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased `}
-      >
-        <Providers>{children}</Providers>
+      <body className={`${fontMono.variable} font-mono antialiased`}>
+        <Providers>
+          <div className="flex flex-col min-h-svh">
+            <div className="grid grid-cols-3 items-center p-3 border-b border-primary sticky top-0">
+              <div className="flex gap-6 items-center">
+                <Menu />
+                <span>Agents</span>
+                <span>Buckets</span>
+              </div>
+              <div className="flex justify-center">
+                <Image src="/recall.svg" alt="Recall" width={120} height={30} />
+              </div>
+              <div className="flex justify-end">
+                <Wallet />
+              </div>
+            </div>
+            <div className="flex-1 p-2">{children}</div>
+          </div>
+        </Providers>
       </body>
     </html>
   );

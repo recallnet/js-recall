@@ -1,0 +1,25 @@
+{
+  "name": "@recall/bigint-utils",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "tsc --watch",
+    "build": "tsc",
+    "lint": "eslint . --max-warnings 0"
+  },
+  "devDependencies": {
+    "@recall/eslint-config": "workspace:*",
+    "@recall/typescript-config": "workspace:*",
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "dnum": "^2.14.0"
+  },
+  "exports": {
+    "./format-atto-rcl": {
+      "types": "./dist/format-atto-rcl.d.ts",
+      "default": "./dist/format-atto-rcl.js"
+    }
+  }
+}
