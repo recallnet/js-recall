@@ -15,22 +15,30 @@ import {
 import "viem/window";
 import { privateKeyToAccount } from "viem/accounts";
 import { type ChainName, getChain, testnet } from "./chains.js";
-import { AccountManager, BlobManager, BucketManager, CreditManager } from "./entities/index.js";
+import {
+  AccountManager,
+  BlobManager,
+  BucketManager,
+  CreditManager,
+} from "./entities/index.js";
 import { Network } from "./network.js";
 
 // Creates a public client for the given chain
-export const createPublicClientForChain: (chain: Chain) => PublicClient<Transport, Chain> = (
-  chain: Chain
-) =>
+export const createPublicClientForChain: (
+  chain: Chain,
+) => PublicClient<Transport, Chain> = (chain: Chain) =>
   createPublicClient({
     chain,
     transport: http(),
   });
 
 // Creates a wallet client for the given chain with a browser wallet provider
-export const walletClientFromBrowser = (chain: Chain): WalletClient<Transport, Chain, Account> => {
+export const walletClientFromBrowser = (
+  chain: Chain,
+): WalletClient<Transport, Chain, Account> => {
   const noopProvider = { request: () => null } as unknown as EIP1193Provider;
-  const provider = typeof window !== "undefined" ? window.ethereum! : noopProvider;
+  const provider =
+    typeof window !== "undefined" ? window.ethereum! : noopProvider;
   return createWalletClient({
     chain,
     transport: custom(provider),
@@ -40,7 +48,7 @@ export const walletClientFromBrowser = (chain: Chain): WalletClient<Transport, C
 // Creates a wallet client for the given chain with a private key
 export const walletClientFromPrivateKey = (
   privateKey: Hex,
-  chain: Chain
+  chain: Chain,
 ): WalletClient<Transport, Chain, Account> => {
   return createWalletClient({
     account: privateKeyToAccount(privateKey),

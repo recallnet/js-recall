@@ -27,13 +27,20 @@ export class SubnetId {
   evm: SubnetIdStruct; // Uses EVM addresses
   explicitChainId: number | undefined;
 
-  constructor(root: number, route: string[], chainId: number | undefined, faux: string = "") {
+  constructor(
+    root: number,
+    route: string[],
+    chainId: number | undefined,
+    faux: string = "",
+  ) {
     this.real = {
       root,
       route,
     };
     const evmRoute =
-      route.length > 0 ? route.map((a) => FilEthAddress.fromString(a).toEthAddressHex()) : [];
+      route.length > 0
+        ? route.map((a) => FilEthAddress.fromString(a).toEthAddressHex())
+        : [];
     this.evm = {
       root,
       route: evmRoute,

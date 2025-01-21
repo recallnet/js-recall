@@ -18,7 +18,7 @@ describe("client", function () {
   it("should get client from wallet", () => {
     const walletClient = walletClientFromPrivateKey(
       "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6",
-      localnet
+      localnet,
     );
     const client = new HokuClient({ walletClient });
     strictEqual(client.publicClient.chain.id, localnet.id);
@@ -45,7 +45,7 @@ describe("client", function () {
       publicClient: createPublicClientForChain(localnet),
       walletClient: walletClientFromPrivateKey(
         "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6",
-        localnet
+        localnet,
       ),
       network: Network.fromChain(localnet),
     };

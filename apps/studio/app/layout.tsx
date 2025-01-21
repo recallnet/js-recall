@@ -20,9 +20,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${fontMono.variable} font-mono antialiased`}>
         <Providers>
-          <div className="flex flex-col min-h-svh">
-            <div className="grid grid-cols-3 items-center p-3 border-b border-primary sticky top-0">
-              <div className="flex gap-6 items-center">
+          <div className="flex min-h-svh flex-col">
+            <div className="border-primary sticky top-0 grid grid-cols-3 items-center border-b p-3">
+              <div className="flex items-center gap-6">
                 <Menu />
                 <span>Agents</span>
                 <span>Buckets</span>

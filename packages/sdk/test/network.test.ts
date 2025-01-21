@@ -39,7 +39,9 @@ describe("network", function () {
 
   it("should throw error if invalid or mainnet network", () => {
     expect(() => Network.fromString("invalid")).to.throw("invalid network");
-    expect(() => Network.fromString("mainnet")).to.throw("network is pre-mainnet");
+    expect(() => Network.fromString("mainnet")).to.throw(
+      "network is pre-mainnet",
+    );
   });
 
   it("should get correct cometbft rpc url", () => {

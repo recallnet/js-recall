@@ -37,18 +37,18 @@ export type SnakeToCamelCase<T> =
       : T;
 
 export function snakeToCamel<T>(
-  obj: T extends Record<string, unknown> ? T : never
+  obj: T extends Record<string, unknown> ? T : never,
 ): SnakeToCamelCase<T> {
   return Object.fromEntries(
     Object.entries(obj).map(([key, value]) => [
       key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase()),
       value,
-    ])
+    ]),
   ) as SnakeToCamelCase<T>;
 }
 
 export function camelToSnake<T>(
-  obj: T extends Record<string, unknown> ? T : never
+  obj: T extends Record<string, unknown> ? T : never,
 ): SnakeToCamelCase<T> {
   return Object.fromEntries(
     Object.entries(obj).map(([key, value]) => [
@@ -57,7 +57,7 @@ export function camelToSnake<T>(
       value && typeof value === "object" && !Array.isArray(value)
         ? camelToSnake(value as Record<string, unknown>)
         : value,
-    ])
+    ]),
   ) as SnakeToCamelCase<T>;
 }
 
@@ -84,7 +84,10 @@ export const nodeFileHandler: FileHandler = {
         size: BigInt(data.length),
       };
     }
-    const data = input instanceof Uint8Array ? input : new Uint8Array(await input.arrayBuffer());
+    const data =
+      input instanceof Uint8Array
+        ? input
+        : new Uint8Array(await input.arrayBuffer());
     return {
       data,
       size: BigInt(data.length),

@@ -43,7 +43,8 @@ import { createWalletClient } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
 // Create a wallet client from a private key
-const privateKey = "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6";
+const privateKey =
+  "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6";
 const walletClient = createWalletClient({
   account: privateKeyToAccount(privateKey),
   chain: testnet,
@@ -169,7 +170,7 @@ const subscriptionId = "foobar";
 const { result: blobStatus } = await blobManager.getBlobStatus(
   subscriber,
   blobHash,
-  subscriptionId
+  subscriptionId,
 );
 console.log("Blob status:", blobStatus);
 ```

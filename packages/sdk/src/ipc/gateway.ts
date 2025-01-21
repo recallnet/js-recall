@@ -14,7 +14,10 @@ import {
 import { gatewayManagerFacetABI } from "../abis.js";
 import { HokuClient } from "../client.js";
 import { gatewayManagerFacetAddress } from "../constants.js";
-import { InsufficientFunds, UnhandledGatewayError } from "../entities/errors.js";
+import {
+  InsufficientFunds,
+  UnhandledGatewayError,
+} from "../entities/errors.js";
 import { type Result } from "../entities/utils.js";
 import { SubnetId } from "./subnet.js";
 
@@ -48,7 +51,7 @@ function addressToFvmAddressTyped(address: Address): FvmAddressTyped {
 function fundParamsToTyped(
   address: Address,
   subnetId: SubnetId,
-  amount: bigint
+  amount: bigint,
 ): FundWithTokenParams {
   const fvmAddress = addressToFvmAddressTyped(address);
   const subnet: SubnetIdTyped = {
@@ -68,7 +71,7 @@ function releaseParamsToTyped(address: Address): ReleaseParams {
 export class GatewayManager {
   getContract(
     client: HokuClient,
-    contractAddress?: Address
+    contractAddress?: Address,
   ): GetContractReturnType<typeof gatewayManagerFacetABI, Client, Address> {
     const chainId = client.publicClient?.chain?.id;
     if (!chainId) {
@@ -95,18 +98,22 @@ export class GatewayManager {
     client: HokuClient,
     amount: bigint,
     recipient?: Address,
-    contractAddress?: Address
+    contractAddress?: Address,
   ): Promise<Result<boolean>> {
     if (!client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for funding gateway");
     }
     try {
       const recipientAddress = recipient || client.walletClient.account.address;
-      const args = fundParamsToTyped(recipientAddress, client.network.subnetId(), amount);
-      const { request } = await this.getContract(client, contractAddress).simulate.fundWithToken<
-        Chain,
-        Account
-      >(args, {
+      const args = fundParamsToTyped(
+        recipientAddress,
+        client.network.subnetId(),
+        amount,
+      );
+      const { request } = await this.getContract(
+        client,
+        contractAddress,
+      ).simulate.fundWithToken<Chain, Account>(args, {
         account: client.walletClient.account,
       });
       // TODO: calling `this.getContract(client, contractAddress).write.fundWithToken(...)` doesn't work, for some reason
@@ -128,7 +135,7 @@ export class GatewayManager {
     client: HokuClient,
     amount: bigint,
     recipient?: Address,
-    contractAddress?: Address
+    contractAddress?: Address,
   ): Promise<Result<boolean>> {
     if (!client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for releasing funds");
@@ -136,10 +143,10 @@ export class GatewayManager {
     try {
       const address = recipient || client.walletClient.account.address;
       const args = releaseParamsToTyped(address);
-      const { request } = await this.getContract(client, contractAddress).simulate.release<
-        Chain,
-        Account
-      >(args, {
+      const { request } = await this.getContract(
+        client,
+        contractAddress,
+      ).simulate.release<Chain, Account>(args, {
         account: client.walletClient.account,
         value: amount,
       });

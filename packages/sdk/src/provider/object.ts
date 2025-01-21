@@ -10,7 +10,12 @@ import {
   ObjectNotAvailable,
   UnhandledBucketError,
 } from "../entities/errors.js";
-import { camelToSnake, hexToBase64, snakeToCamel, SnakeToCamelCase } from "./utils.js";
+import {
+  camelToSnake,
+  hexToBase64,
+  snakeToCamel,
+  SnakeToCamelCase,
+} from "./utils.js";
 
 export type ObjectsApiNodeInfoRaw = {
   node_id: string;
@@ -29,7 +34,8 @@ type ObjectsApiUploadResponseRaw = {
 };
 
 // Transformed type with camelCase
-export type ObjectsApiUploadResponse = SnakeToCamelCase<ObjectsApiUploadResponseRaw>;
+export type ObjectsApiUploadResponse =
+  SnakeToCamelCase<ObjectsApiUploadResponseRaw>;
 
 type ObjectsApiFormData = {
   chainId: number;
@@ -60,7 +66,9 @@ export function createObjectsFormData({
   return formData;
 }
 
-export async function getObjectsNodeInfo(objectsProviderUrl: string): Promise<ObjectsApiNodeInfo> {
+export async function getObjectsNodeInfo(
+  objectsProviderUrl: string,
+): Promise<ObjectsApiNodeInfo> {
   const response = await fetch(`${objectsProviderUrl}/v1/node`);
   if (!response.ok) {
     const error = await response.json();
@@ -75,7 +83,9 @@ export async function createIrohNode(): Promise<Iroh> {
   return iroh;
 }
 
-export async function irohNodeTypeToObjectsApiNodeInfo(node: Iroh): Promise<ObjectsApiNodeInfo> {
+export async function irohNodeTypeToObjectsApiNodeInfo(
+  node: Iroh,
+): Promise<ObjectsApiNodeInfo> {
   const irohNet = node.net;
   const nodeId = await irohNet.nodeId();
   const nodeAddr = await irohNet.nodeAddr();
@@ -90,7 +100,10 @@ export async function irohNodeTypeToObjectsApiNodeInfo(node: Iroh): Promise<Obje
   return { nodeId, info: { relayUrl, directAddresses: addresses } };
 }
 
-export async function stageDataToIroh(iroh: Iroh, data: Uint8Array): Promise<BlobAddOutcome> {
+export async function stageDataToIroh(
+  iroh: Iroh,
+  data: Uint8Array,
+): Promise<BlobAddOutcome> {
   const dataArray: number[] = Array.from(data);
   return await iroh.blobs.addBytes(dataArray);
 }
@@ -101,7 +114,7 @@ export async function callObjectsApiAddObject(
   bucketManagerAddress: Address,
   bucket: Address,
   params: AddObjectParams,
-  source: ObjectsApiNodeInfo
+  source: ObjectsApiNodeInfo,
 ): Promise<ObjectsApiUploadResponse> {
   if (!client.walletClient) {
     throw new Error("Wallet client is not initialized for adding an object");
@@ -155,14 +168,16 @@ export async function downloadBlob(
   bucket: Address,
   key: string,
   range?: { start?: number; end?: number },
-  blockNumber?: bigint
+  blockNumber?: bigint,
 ): Promise<ReadableStream<Uint8Array>> {
   const headers: HeadersInit = {};
   if (range) {
     headers.Range = `bytes=${range.start ?? ""}-${range.end ?? ""}`;
   }
   const bucketIdAddress = AddressId.fromEthAddress(bucket);
-  const url = new URL(`${objectsProviderUrl}/v1/objects/${bucketIdAddress}/${key}`);
+  const url = new URL(
+    `${objectsProviderUrl}/v1/objects/${bucketIdAddress}/${key}`,
+  );
   if (blockNumber !== undefined) {
     url.searchParams.set("height", blockNumber.toString());
   }
@@ -175,13 +190,18 @@ export async function downloadBlob(
       throw new BucketNotFound(bucket);
     }
     if (error.message.includes("is not available")) {
-      const blobHash = error.message.match(/object\s+(.*)\s+is not available/)?.[1] ?? "";
+      const blobHash =
+        error.message.match(/object\s+(.*)\s+is not available/)?.[1] ?? "";
       throw new ObjectNotAvailable(key, blobHash);
     }
     if (error.message.includes("invalid range header")) {
-      throw new InvalidValue(`Invalid range: ${range?.start ?? ""}-${range?.end ?? ""}`);
+      throw new InvalidValue(
+        `Invalid range: ${range?.start ?? ""}-${range?.end ?? ""}`,
+      );
     }
-    throw new UnhandledBucketError(`Failed to download object: ${error.message}`);
+    throw new UnhandledBucketError(
+      `Failed to download object: ${error.message}`,
+    );
   }
   if (!response.body) {
     throw new UnhandledBucketError("Failed to download object: no body");

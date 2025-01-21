@@ -31,7 +31,9 @@ export class InvalidValue extends Error {
 // Handle objects API error: {"code":400,"message":"object rzghyg4z3p6vbz5jkgc75lk64fci7kieul65o6hk6xznx7lctkmq is not available"}
 export class ObjectNotAvailable extends Error {
   constructor(key: string, blobHash: string) {
-    super(`Object not available: unrecoverable key '${key}' with blob hash '${blobHash}'`);
+    super(
+      `Object not available: unrecoverable key '${key}' with blob hash '${blobHash}'`,
+    );
     this.name = "ObjectNotAvailable";
   }
 }
@@ -94,7 +96,9 @@ export interface ActorNotFoundResult {
 
 // Check if the error message is an actor not found error, and include the hex address if it is
 export function isActorNotFoundError(error: Error): ActorNotFoundResult {
-  const isActorNotFound = error.message.includes("actor::resolve_address -- actor not found");
+  const isActorNotFound = error.message.includes(
+    "actor::resolve_address -- actor not found",
+  );
   const addressMatch = error.message.match(/f410[a-z0-9]+/i);
 
   return {
@@ -107,7 +111,9 @@ export function isActorNotFoundError(error: Error): ActorNotFoundResult {
 
 export class ActorNotFound extends Error {
   constructor(address: Address) {
-    super(`Actor not found (hint: ensure the address is registered: '${address}')`);
+    super(
+      `Actor not found (hint: ensure the address is registered: '${address}')`,
+    );
     this.name = "ActorNotFound";
   }
 }

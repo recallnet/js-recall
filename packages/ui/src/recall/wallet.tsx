@@ -22,7 +22,7 @@ export const Wallet = ({ className, ...props }: Props) => {
       {balance.data && <span>{formatAttoRcl(balance.data.value)} RCL</span>}
       <div className="flex flex-row items-center gap-1">
         <span>14 Credits</span>
-        <PlusIcon className="opacity-30 hover:opacity-100 hover:cursor-pointer" />
+        <PlusIcon className="opacity-30 hover:cursor-pointer hover:opacity-100" />
       </div>
       <ConnectButton.Custom>
         {({

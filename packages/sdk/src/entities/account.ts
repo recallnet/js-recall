@@ -27,10 +27,16 @@ type AccountInfo = {
 };
 
 // Type for approve result
-type ApproveResult = Required<GetEventArgs<typeof ierc20ABI, "Approval", { IndexedOnly: false }>>;
+type ApproveResult = Required<
+  GetEventArgs<typeof ierc20ABI, "Approval", { IndexedOnly: false }>
+>;
 
 // Type for approve params
-type ApproveParams = ContractFunctionArgs<typeof ierc20ABI, AbiStateMutability, "approve">;
+type ApproveParams = ContractFunctionArgs<
+  typeof ierc20ABI,
+  AbiStateMutability,
+  "approve"
+>;
 
 // AccountManager class wrapper around `GatewayManager`
 export class AccountManager {
@@ -50,7 +56,7 @@ export class AccountManager {
   // Switch between parent and child subnet
   async switchSubnet(
     from: Chain,
-    to: Chain
+    to: Chain,
   ): Promise<{ change: () => Promise<void>; reset: () => Promise<void> }> {
     return {
       change: async () => await this.client.switchChain(to),
@@ -61,13 +67,15 @@ export class AccountManager {
   // Get the supply source contract
   getSupplySource(
     client: HokuClient,
-    address?: Address
+    address?: Address,
   ): GetContractReturnType<typeof ierc20ABI, Client, Address> {
     const chainId = client.publicClient?.chain?.id;
     if (!chainId) {
       throw new Error("Client chain ID not found");
     }
-    const deployedSupplySourceAddress = (supplySourceAddress as Record<number, Address>)[chainId];
+    const deployedSupplySourceAddress = (
+      supplySourceAddress as Record<number, Address>
+    )[chainId];
     if (!deployedSupplySourceAddress) {
       throw new Error(`No contract address found for chain ID ${chainId}}`);
     }
@@ -85,38 +93,54 @@ export class AccountManager {
   async balance(address?: Address): Promise<Result<GetBalanceReturnType>> {
     const addr = address || this.client.walletClient?.account?.address;
     if (!addr) {
-      throw new InvalidValue("Must provide an address or connect a wallet client");
+      throw new InvalidValue(
+        "Must provide an address or connect a wallet client",
+      );
     }
-    return { result: await this.client.publicClient.getBalance({ address: addr }) };
+    return {
+      result: await this.client.publicClient.getBalance({ address: addr }),
+    };
   }
 
   // Get account info
   async info(address?: Address): Promise<Result<AccountInfo>> {
     const addr = address || this.client.walletClient?.account?.address;
     if (!addr) {
-      throw new InvalidValue("Must provide an address or connect a wallet client");
+      throw new InvalidValue(
+        "Must provide an address or connect a wallet client",
+      );
     }
     const balance = await this.balance(addr);
-    const nonce = await this.client.publicClient.getTransactionCount({ address: addr });
+    const nonce = await this.client.publicClient.getTransactionCount({
+      address: addr,
+    });
     const currentChain = this.client.publicClient.chain;
     const parentChain = this.client.network.getParentChain();
     if (!parentChain) {
       return { result: { address: addr, nonce, balance: balance.result } };
     }
-    const { change, reset } = await this.switchSubnet(currentChain, parentChain);
+    const { change, reset } = await this.switchSubnet(
+      currentChain,
+      parentChain,
+    );
     await change();
     const supplySourceAddress = this.getSupplySource(this.client).address;
     const args = [addr] as const;
     const parentBalance = await this.getSupplySource(
       this.client,
-      supplySourceAddress
+      supplySourceAddress,
     ).read.balanceOf(args);
     await reset();
-    return { result: { address: addr, nonce, balance: balance.result, parentBalance } };
+    return {
+      result: { address: addr, nonce, balance: balance.result, parentBalance },
+    };
   }
 
   // Approve a spender to transfer funds from the account
-  async approve(spender: Address, amount: bigint): Promise<Result<ApproveResult>> {
+  async approve(
+    spender: Address,
+    amount: bigint,
+  ): Promise<Result<ApproveResult>> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for approving");
     }
@@ -127,12 +151,18 @@ export class AccountManager {
       throw new InvalidValue("No parent chain found");
     }
     const supplySourceAddress = this.getSupplySource(this.client).address;
-    const { change, reset } = await this.switchSubnet(currentChain, parentChain);
+    const { change, reset } = await this.switchSubnet(
+      currentChain,
+      parentChain,
+    );
     await change();
     const supplySource = this.getSupplySource(this.client, supplySourceAddress);
-    const { request } = await supplySource.simulate.approve<Chain, Account>(args, {
-      account: this.client.walletClient.account,
-    });
+    const { request } = await supplySource.simulate.approve<Chain, Account>(
+      args,
+      {
+        account: this.client.walletClient.account,
+      },
+    );
     // TODO: calling `supplySource.write.approve(...)` doesn't work, for some reason
     const hash = await this.client.walletClient.writeContract(request);
     const {
@@ -143,9 +173,11 @@ export class AccountManager {
       this.client.publicClient,
       supplySource.abi,
       "Approval",
-      hash
+      hash,
     );
-    const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
+    const tx = await this.client.publicClient.waitForTransactionReceipt({
+      hash,
+    });
     await reset();
     return { meta: { tx }, result: { owner, spender: eventSpender, value } };
   }
@@ -157,18 +189,34 @@ export class AccountManager {
     if (!parentChain) {
       throw new InvalidValue("No parent chain found");
     }
-    const { change, reset } = await this.switchSubnet(currentChain, parentChain);
+    const { change, reset } = await this.switchSubnet(
+      currentChain,
+      parentChain,
+    );
     await change();
-    const gatewayParentAddress = this.gatewayManager.getContract(this.client).address;
+    const gatewayParentAddress = this.gatewayManager.getContract(
+      this.client,
+    ).address;
     await this.approve(gatewayParentAddress, amount);
-    const result = await this.gatewayManager.fundWithToken(this.client, amount, recipient);
+    const result = await this.gatewayManager.fundWithToken(
+      this.client,
+      amount,
+      recipient,
+    );
     await reset();
     return result;
   }
 
   // Withdraw funds from child subnet to parent
-  async withdraw(amount: bigint, recipient?: Address): Promise<Result<boolean>> {
-    const result = await this.gatewayManager.release(this.client, amount, recipient);
+  async withdraw(
+    amount: bigint,
+    recipient?: Address,
+  ): Promise<Result<boolean>> {
+    const result = await this.gatewayManager.release(
+      this.client,
+      amount,
+      recipient,
+    );
     return result;
   }
 
@@ -183,7 +231,9 @@ export class AccountManager {
       to: recipient,
       value: amount,
     });
-    const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
+    const tx = await this.client.publicClient.waitForTransactionReceipt({
+      hash,
+    });
     return { meta: { tx }, result: true };
   }
 }

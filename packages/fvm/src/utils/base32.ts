@@ -20,7 +20,7 @@ export type base32Options = { padding: boolean };
 export function encode(
   data: ArrayBuffer,
   variant: base32Variant = "RFC4648",
-  options: base32Options = { padding: false }
+  options: base32Options = { padding: false },
 ) {
   options = options || {};
   let alphabet: string, defaultPadding: boolean;
@@ -43,7 +43,8 @@ export function encode(
 
   if (!alphabet) throw new Error(`Unknown base32 variant: ${variant}`);
 
-  const padding = options.padding !== undefined ? options.padding : defaultPadding;
+  const padding =
+    options.padding !== undefined ? options.padding : defaultPadding;
   const view = toDataView(data);
 
   let bits = 0;
@@ -134,11 +135,17 @@ function readChar(alphabet: string, char: string) {
  * @param data - input ArrayBuffer, Int8Array, Uint8Array, or Uint8ClampedArray to convert
  * @returns DataView
  */
-function toDataView(data: ArrayBuffer | Int8Array | Uint8Array | Uint8ClampedArray) {
-  if (data instanceof Int8Array || data instanceof Uint8Array || data instanceof Uint8ClampedArray)
+function toDataView(
+  data: ArrayBuffer | Int8Array | Uint8Array | Uint8ClampedArray,
+) {
+  if (
+    data instanceof Int8Array ||
+    data instanceof Uint8Array ||
+    data instanceof Uint8ClampedArray
+  )
     return new DataView(data.buffer, data.byteOffset, data.byteLength);
   if (data instanceof ArrayBuffer) return new DataView(data);
   throw new TypeError(
-    "Expected `data` to be an ArrayBuffer, Buffer, Int8Array, Uint8Array or Uint8ClampedArray"
+    "Expected `data` to be an ArrayBuffer, Buffer, Int8Array, Uint8Array or Uint8ClampedArray",
   );
 }

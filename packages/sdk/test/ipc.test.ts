@@ -48,8 +48,14 @@ describe("subnet", function () {
   });
 
   it("should be able to get eth and fvm addresses", () => {
-    strictEqual(subnetId.real.route[0], "t410f6gbdxrbehnaeeo4mrq7wc5hgq6smnefys4qanwi");
-    strictEqual(subnetId.evm.route[0], "0xf1823bc4243b40423b8c8c3f6174e687a4c690b8");
+    strictEqual(
+      subnetId.real.route[0],
+      "t410f6gbdxrbehnaeeo4mrq7wc5hgq6smnefys4qanwi",
+    );
+    strictEqual(
+      subnetId.evm.route[0],
+      "0xf1823bc4243b40423b8c8c3f6174e687a4c690b8",
+    );
   });
 
   it("should be able to get parent subnet", () => {

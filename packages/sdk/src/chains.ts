@@ -83,7 +83,7 @@ export function getChain(chainIdOrName: number | ChainName): Chain {
   const chain = chains.find(
     (c) =>
       c.id === chainIdOrName ||
-      c.name.toLowerCase().includes(chainIdOrName.toString().toLowerCase())
+      c.name.toLowerCase().includes(chainIdOrName.toString().toLowerCase()),
   );
   if (chain) {
     return chain;
@@ -92,7 +92,8 @@ export function getChain(chainIdOrName: number | ChainName): Chain {
 }
 
 export function checkHasParentChain(chain: Chain): boolean {
-  if (!checkChainIsSupported(chain)) throw new Error(`Chain ${chain.name} not found`);
+  if (!checkChainIsSupported(chain))
+    throw new Error(`Chain ${chain.name} not found`);
 
   switch (chain.id) {
     case testnet.id:

@@ -105,7 +105,11 @@ export type SetAccountSponsorParams = ContractFunctionArgs<
 
 // Used for setAccountSponsor()
 export type SetAccountSponsorResult = Required<
-  GetEventArgs<typeof creditManagerABI, "SetAccountSponsor", { IndexedOnly: false }>
+  GetEventArgs<
+    typeof creditManagerABI,
+    "SetAccountSponsor",
+    { IndexedOnly: false }
+  >
 >;
 
 // Credit manager for buy, approving, revoking, and general credit operations
@@ -119,7 +123,9 @@ export class CreditManager {
     if (!chainId) {
       throw new Error("Client chain ID not found");
     }
-    const deployedCreditManagerAddress = (creditManagerAddress as Record<number, Address>)[chainId];
+    const deployedCreditManagerAddress = (
+      creditManagerAddress as Record<number, Address>
+    )[chainId];
     if (!deployedCreditManagerAddress) {
       throw new Error(`No contract address found for chain ID ${chainId}}`);
     }
@@ -133,7 +139,11 @@ export class CreditManager {
     });
   }
 
-  getContract(): GetContractReturnType<typeof creditManagerABI, Client, Address> {
+  getContract(): GetContractReturnType<
+    typeof creditManagerABI,
+    Client,
+    Address
+  > {
     return this.contract;
   }
 
@@ -145,7 +155,7 @@ export class CreditManager {
     creditLimit: bigint = 0n,
     gasFeeLimit: bigint = 0n,
     ttl: bigint = 0n,
-    from?: Address
+    from?: Address,
   ): Promise<Result<ApproveResult>> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for approving credits");
@@ -160,23 +170,28 @@ export class CreditManager {
         gasFeeLimit,
         ttl,
       ] satisfies ApproveCreditParams;
-      const { request } = await this.contract.simulate.approveCredit<Chain, Account>(args, {
+      const { request } = await this.contract.simulate.approveCredit<
+        Chain,
+        Account
+      >(args, {
         account: this.client.walletClient.account,
       });
       const hash = await this.client.walletClient.writeContract(request);
-      const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
+      const tx = await this.client.publicClient.waitForTransactionReceipt({
+        hash,
+      });
       const result = await parseEventFromTransaction<ApproveResult>(
         this.client.publicClient,
         this.contract.abi,
         "ApproveCredit",
-        hash
+        hash,
       );
       return { meta: { tx }, result };
     } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         if (error.message.includes("does not match origin or caller")) {
           throw new InvalidValue(
-            `'from' address '${fromAddress}' does not match origin or caller '${this.client.walletClient.account.address}'`
+            `'from' address '${fromAddress}' does not match origin or caller '${this.client.walletClient.account.address}'`,
           );
         }
         const { isActorNotFound, address } = isActorNotFoundError(error);
@@ -202,17 +217,22 @@ export class CreditManager {
     try {
       const toAddress = to || this.client.walletClient.account.address;
       const args = [toAddress] satisfies BuyCreditParams;
-      const { request } = await this.contract.simulate.buyCredit<Chain, Account>(args, {
+      const { request } = await this.contract.simulate.buyCredit<
+        Chain,
+        Account
+      >(args, {
         value: amount,
         account: this.client.walletClient.account,
       });
       const hash = await this.contract.write.buyCredit(request);
-      const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
+      const tx = await this.client.publicClient.waitForTransactionReceipt({
+        hash,
+      });
       const result = await parseEventFromTransaction<BuyResult>(
         this.client.publicClient,
         this.contract.abi,
         "BuyCredit",
-        hash
+        hash,
       );
       return { meta: { tx }, result };
     } catch (error: unknown) {
@@ -234,32 +254,41 @@ export class CreditManager {
   async revoke(
     to: Address,
     requiredCaller: Address = to,
-    from?: Address
+    from?: Address,
   ): Promise<Result<RevokeResult>> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for revoking credits");
     }
     const fromAddress = from || this.client.walletClient.account.address;
     try {
-      const args = [fromAddress, to, requiredCaller] satisfies RevokeCreditParams;
-      const { request } = await this.contract.simulate.revokeCredit<Chain, Account>(args, {
+      const args = [
+        fromAddress,
+        to,
+        requiredCaller,
+      ] satisfies RevokeCreditParams;
+      const { request } = await this.contract.simulate.revokeCredit<
+        Chain,
+        Account
+      >(args, {
         account: this.client.walletClient.account,
       });
       // TODO: calling `this.contract.write.revokeCredit(...)` doesn't work, for some reason
       const hash = await this.client.walletClient.writeContract(request);
-      const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
+      const tx = await this.client.publicClient.waitForTransactionReceipt({
+        hash,
+      });
       const result = await parseEventFromTransaction<RevokeResult>(
         this.client.publicClient,
         this.contract.abi,
         "RevokeCredit",
-        hash
+        hash,
       );
       return { meta: { tx }, result };
     } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         if (error.message.includes("does not match origin or caller")) {
           throw new InvalidValue(
-            `'from' address '${fromAddress}' does not match origin or caller '${this.client.walletClient.account.address}'`
+            `'from' address '${fromAddress}' does not match origin or caller '${this.client.walletClient.account.address}'`,
           );
         }
         const { isActorNotFound, address } = isActorNotFoundError(error);
@@ -274,25 +303,32 @@ export class CreditManager {
   // Set account sponsor
   async setAccountSponsor(
     sponsor: Address,
-    from?: Address
+    from?: Address,
   ): Promise<Result<SetAccountSponsorResult>> {
     if (!this.client.walletClient?.account) {
-      throw new Error("Wallet client is not initialized for setting account sponsor");
+      throw new Error(
+        "Wallet client is not initialized for setting account sponsor",
+      );
     }
     const fromAddress = from || this.client.walletClient.account.address;
     try {
       const args = [fromAddress, sponsor] satisfies SetAccountSponsorParams;
-      const { request } = await this.contract.simulate.setAccountSponsor<Chain, Account>(args, {
+      const { request } = await this.contract.simulate.setAccountSponsor<
+        Chain,
+        Account
+      >(args, {
         account: this.client.walletClient.account,
       });
       // TODO: calling `this.contract.write.setAccountSponsor(...)` doesn't work, for some reason
       const hash = await this.client.walletClient.writeContract(request);
-      const tx = await this.client.publicClient.waitForTransactionReceipt({ hash });
+      const tx = await this.client.publicClient.waitForTransactionReceipt({
+        hash,
+      });
       const result = await parseEventFromTransaction<SetAccountSponsorResult>(
         this.client.publicClient,
         this.contract.abi,
         "SetAccountSponsor",
-        hash
+        hash,
       );
       return { meta: { tx }, result };
     } catch (error: unknown) {
@@ -307,10 +343,16 @@ export class CreditManager {
   }
 
   // Get account details including approvals
-  async getAccount(address?: Address, blockNumber?: bigint): Promise<Result<CreditAccount>> {
+  async getAccount(
+    address?: Address,
+    blockNumber?: bigint,
+  ): Promise<Result<CreditAccount>> {
     try {
       const forAddress = address || this.client.walletClient?.account?.address;
-      if (!forAddress) throw new InvalidValue("Must provide an address or connect a wallet client");
+      if (!forAddress)
+        throw new InvalidValue(
+          "Must provide an address or connect a wallet client",
+        );
       const args = [forAddress] satisfies GetAccountParams;
       const result = await this.contract.read.getAccount(args, { blockNumber });
       return { result };
@@ -339,23 +381,33 @@ export class CreditManager {
   async getCreditApprovals(
     from: Address,
     to?: Address,
-    blockNumber?: bigint
+    blockNumber?: bigint,
   ): Promise<Result<CreditApproval>> {
     let {
       result: { approvals },
     } = await this.getAccount(from, blockNumber);
     // Filter approvals by `to`, if provided
-    approvals = to ? approvals.filter((approval) => approval.to === to) : approvals;
+    approvals = to
+      ? approvals.filter((approval) => approval.to === to)
+      : approvals;
     return { result: { approvals } };
   }
 
   // Get credit balance
-  async getCreditBalance(address?: Address, blockNumber?: bigint): Promise<Result<CreditBalance>> {
+  async getCreditBalance(
+    address?: Address,
+    blockNumber?: bigint,
+  ): Promise<Result<CreditBalance>> {
     try {
       const forAddress = address || this.client.walletClient?.account?.address;
-      if (!forAddress) throw new InvalidValue("Must provide an address or connect a wallet client");
+      if (!forAddress)
+        throw new InvalidValue(
+          "Must provide an address or connect a wallet client",
+        );
       const args = [forAddress] satisfies GetCreditBalanceParams;
-      const result = await this.contract.read.getCreditBalance(args, { blockNumber });
+      const result = await this.contract.read.getCreditBalance(args, {
+        blockNumber,
+      });
       return { result };
     } catch (error: unknown) {
       if (error instanceof InvalidValue) {

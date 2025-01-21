@@ -1,5 +1,12 @@
 import { Chain } from "viem";
-import { ChainName, devnet, getChain, getParentChain, localnet, testnet } from "./chains.js";
+import {
+  ChainName,
+  devnet,
+  getChain,
+  getParentChain,
+  localnet,
+  testnet,
+} from "./chains.js";
 import {
   DEVNET_EVM_GATEWAY_ADDRESS,
   DEVNET_EVM_REGISTRY_ADDRESS,

@@ -2,7 +2,14 @@ import { rejects, strictEqual } from "node:assert";
 import { expect } from "chai";
 import { describe, it } from "mocha";
 import { temporaryWrite } from "tempy";
-import { Account, Address, getAddress, isAddress, isHash, parseEther } from "viem";
+import {
+  Account,
+  Address,
+  getAddress,
+  isAddress,
+  isHash,
+  parseEther,
+} from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { localnet } from "../src/chains.js";
 import { HokuClient, walletClientFromPrivateKey } from "../src/client.js";
@@ -27,7 +34,7 @@ describe("contracts", function () {
   before(async () => {
     const walletClient = walletClientFromPrivateKey(
       "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6",
-      localnet
+      localnet,
     );
     account = walletClient.account;
     client = new HokuClient({ walletClient });
@@ -54,7 +61,10 @@ describe("contracts", function () {
 
       // at a specific block number
       const latestBlock = await client.publicClient.getBlockNumber();
-      ({ result: buckets } = await bucketManager.list(account.address, latestBlock));
+      ({ result: buckets } = await bucketManager.list(
+        account.address,
+        latestBlock,
+      ));
       expect(buckets).to.be.an("array");
       strictEqual(buckets[0].kind, 0);
 
@@ -68,7 +78,9 @@ describe("contracts", function () {
     it("should override default contract address", async () => {
       const bucketManagerAddr = client.bucketManager().getContract().address;
       const overrideBucketManager = client.bucketManager(bucketManagerAddr);
-      const { result: buckets } = await overrideBucketManager.list(account.address);
+      const { result: buckets } = await overrideBucketManager.list(
+        account.address,
+      );
       expect(buckets).to.be.an("array");
       strictEqual(buckets[0].kind, 0);
     });
@@ -92,7 +104,12 @@ describe("contracts", function () {
             foo: "bar",
           },
         };
-        const { meta, result } = await bucketManager.add(bucket, key, path, opts);
+        const { meta, result } = await bucketManager.add(
+          bucket,
+          key,
+          path,
+          opts,
+        );
         strictEqual(isHash(meta!.tx!.transactionHash), true);
         strictEqual(result.owner, account.address);
         strictEqual(result.bucket.toLowerCase(), bucket);
@@ -104,7 +121,11 @@ describe("contracts", function () {
         const file = new File([content], "test.txt", {
           type: "text/plain",
         });
-        const { meta, result } = await bucketManager.add(bucket, "hello/test", file);
+        const { meta, result } = await bucketManager.add(
+          bucket,
+          "hello/test",
+          file,
+        );
         strictEqual(isHash(meta!.tx!.transactionHash), true);
         strictEqual(result.owner, account.address);
         strictEqual(result.bucket.toLowerCase(), bucket);
@@ -112,13 +133,20 @@ describe("contracts", function () {
       });
 
       it("should get object value without downloading", async () => {
-        let { result: object } = await bucketManager.getObjectValue(bucket, key);
+        let { result: object } = await bucketManager.getObjectValue(
+          bucket,
+          key,
+        );
         strictEqual(object.blobHash, blobHash);
         strictEqual(object.size, 6n);
 
         // at a specific block number
         const latestBlock = await client.publicClient.getBlockNumber();
-        ({ result: object } = await bucketManager.getObjectValue(bucket, key, latestBlock));
+        ({ result: object } = await bucketManager.getObjectValue(
+          bucket,
+          key,
+          latestBlock,
+        ));
         strictEqual(object.blobHash, blobHash);
         strictEqual(object.size, 6n);
       });
@@ -127,7 +155,10 @@ describe("contracts", function () {
         const missingBucket = "0xff00999999999999999999999999999999999999";
         const object = bucketManager.getObjectValue(missingBucket, key);
         await rejects(object, (err) => {
-          strictEqual((err as Error).message, `Bucket not found: '${missingBucket}'`);
+          strictEqual(
+            (err as Error).message,
+            `Bucket not found: '${missingBucket}'`,
+          );
           return true;
         });
       });
@@ -194,7 +225,10 @@ describe("contracts", function () {
         let range: { start?: number; end?: number } = { start: 5, end: 2 };
         let object = bucketManager.get(bucket, key, range);
         await rejects(object, (err) => {
-          strictEqual((err as Error).message, `Invalid range: ${range.start}-${range.end}`);
+          strictEqual(
+            (err as Error).message,
+            `Invalid range: ${range.start}-${range.end}`,
+          );
           return true;
         });
 
@@ -212,7 +246,7 @@ describe("contracts", function () {
         await rejects(object, (err) => {
           strictEqual(
             (err as Error).message,
-            `Object not found: no key '${missingKey}' in bucket '${bucket}'`
+            `Object not found: no key '${missingKey}' in bucket '${bucket}'`,
           );
           return true;
         });
@@ -239,7 +273,14 @@ describe("contracts", function () {
         const latestBlock = await client.publicClient.getBlockNumber();
         ({
           result: { objects, commonPrefixes },
-        } = await bucketManager.query(bucket, "hello/", "/", "", 1, latestBlock));
+        } = await bucketManager.query(
+          bucket,
+          "hello/",
+          "/",
+          "",
+          1,
+          latestBlock,
+        ));
         strictEqual(objects.length, 1);
         strictEqual(objects[0].key, key);
         strictEqual(commonPrefixes.length, 0);
@@ -249,7 +290,10 @@ describe("contracts", function () {
         const missingBucket = "0xff00999999999999999999999999999999999999";
         const query = bucketManager.query(missingBucket, "hello/");
         await rejects(query, (err) => {
-          strictEqual((err as Error).message, `Bucket not found: '${missingBucket}'`);
+          strictEqual(
+            (err as Error).message,
+            `Bucket not found: '${missingBucket}'`,
+          );
           return true;
         });
       });
@@ -273,7 +317,7 @@ describe("contracts", function () {
         await rejects(remove, (err) => {
           strictEqual(
             (err as Error).message,
-            `Object not found: no key '${missingKey}' in bucket '${bucket}'`
+            `Object not found: no key '${missingKey}' in bucket '${bucket}'`,
           );
           return true;
         });
@@ -287,7 +331,9 @@ describe("contracts", function () {
     let caller: Address;
 
     before(async () => {
-      credits = client.creditManager((CREDIT_MANAGER_ADDRESS as Address) ?? undefined);
+      credits = client.creditManager(
+        (CREDIT_MANAGER_ADDRESS as Address) ?? undefined,
+      );
       to = getAddress("0x9965507d1a55bcc2695c58ba16fb37d819b0a4dc");
       caller = getAddress("0x976ea74026e726554db657fa54763abd0c3a0aa9");
     });
@@ -315,7 +361,7 @@ describe("contracts", function () {
       await rejects(credits.buy(amount, to), (err) => {
         strictEqual(
           (err as Error).message,
-          `Insufficient funds: balance less than amount '${amount}'`
+          `Insufficient funds: balance less than amount '${amount}'`,
         );
         return true;
       });
@@ -357,7 +403,7 @@ describe("contracts", function () {
         amount,
         0n,
         3600n,
-        account.address
+        account.address,
       );
       strictEqual(isHash(meta!.tx!.transactionHash), true);
       strictEqual(result.from, account.address);
@@ -396,7 +442,7 @@ describe("contracts", function () {
       await rejects(credits.revoke(to, undefined, to), (err) => {
         strictEqual(
           (err as Error).message,
-          `'from' address '${to}' does not match origin or caller '${account.address}'`
+          `'from' address '${to}' does not match origin or caller '${account.address}'`,
         );
         return true;
       });
@@ -447,7 +493,10 @@ describe("contracts", function () {
       expect(Number(stats.creditCommitted)).to.be.greaterThan(0);
       expect(Number(stats.creditSold)).to.be.greaterThan(0);
       expect(Number(stats.creditDebited)).to.be.greaterThan(0);
-      strictEqual(stats.tokenCreditRate, 1000000000000000000000000000000000000n);
+      strictEqual(
+        stats.tokenCreditRate,
+        1000000000000000000000000000000000000n,
+      );
       expect(Number(stats.numAccounts)).to.be.greaterThan(0);
     });
   });
@@ -508,7 +557,10 @@ describe("contracts", function () {
       expect(Number(stats.creditSold)).to.be.greaterThan(0);
       expect(Number(stats.creditCommitted)).to.be.greaterThan(0);
       expect(Number(stats.creditDebited)).to.be.greaterThan(0);
-      strictEqual(stats.tokenCreditRate, 1000000000000000000000000000000000000n);
+      strictEqual(
+        stats.tokenCreditRate,
+        1000000000000000000000000000000000000n,
+      );
       expect(Number(stats.numAccounts)).to.be.greaterThan(0);
       expect(stats.numBlobs).to.be.a("bigint");
       expect(stats.numResolving).to.be.a("bigint");
@@ -517,7 +569,11 @@ describe("contracts", function () {
     // TODO: this assumes the blob already exists on the network since the objects API has no way
     // to add a blob. Thus, we're taking advantage of its pre-existence on the network to "add" it.
     it("should add blob", async () => {
-      const { meta, result } = await blobs.addBlob(blobHash, subscriptionId, size);
+      const { meta, result } = await blobs.addBlob(
+        blobHash,
+        subscriptionId,
+        size,
+      );
       strictEqual(isHash(meta!.tx!.transactionHash), true);
       strictEqual(result.blobHash, blobHash);
     });
@@ -530,13 +586,22 @@ describe("contracts", function () {
     });
 
     it("should get blob status", async () => {
-      const { result } = await blobs.getBlobStatus(account.address, blobHash, subscriptionId);
+      const { result } = await blobs.getBlobStatus(
+        account.address,
+        blobHash,
+        subscriptionId,
+      );
       expect(result).to.be.equal(2); // resolved
     });
 
     // TODO: this assumes the new blob already exists on the network / iroh node
     it("should overwrite blob", async () => {
-      const { meta, result } = await blobs.overwriteBlob(blobHash, blobHash, subscriptionId, size);
+      const { meta, result } = await blobs.overwriteBlob(
+        blobHash,
+        blobHash,
+        subscriptionId,
+        size,
+      );
       strictEqual(isHash(meta!.tx!.transactionHash), true);
       strictEqual(result.newHash, blobHash);
     });

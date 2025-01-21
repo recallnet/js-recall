@@ -8,7 +8,7 @@ import { fromString } from "uint8arrays/from-string";
  */
 export function bigintToUint8Array(
   value: string | bigint | number,
-  pad: boolean = false
+  pad: boolean = false,
 ): Uint8Array {
   if (value === 0 || value === "0" || value === 0n) return new Uint8Array(0);
 
