@@ -1,13 +1,11 @@
 import { Button } from "@recall/ui/components/button";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 export default function Page() {
   return (
-    <div className="flex items-center justify-center min-h-svh">
+    <div className="flex items-center justify-center">
       <div className="flex flex-col items-center justify-center gap-4">
         <h1 className="text-2xl font-bold">Hello World</h1>
         <Button size="sm">Button</Button>
-        <ConnectButton />
       </div>
     </div>
   );
