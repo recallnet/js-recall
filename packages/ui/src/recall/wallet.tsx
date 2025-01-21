@@ -16,13 +16,15 @@ export const Wallet = ({ className, ...props }: Props) => {
 
   return (
     <div
-      className={cn("flex flex-row items-center gap-6", className)}
+      className={cn("flex flex-none flex-row items-center gap-6", className)}
       {...props}
     >
-      {balance.data && <span>{formatAttoRcl(balance.data.value)} RCL</span>}
-      <div className="flex flex-row items-center gap-1">
-        <span>14 Credits</span>
-        <PlusIcon className="opacity-30 hover:cursor-pointer hover:opacity-100" />
+      <div className="hidden items-center gap-6 lg:flex">
+        {balance.data && <span>{formatAttoRcl(balance.data.value)} RCL</span>}
+        <div className="flex items-center gap-1">
+          <span>14 Credits</span>
+          <PlusIcon className="opacity-30 hover:cursor-pointer hover:opacity-100" />
+        </div>
       </div>
       <ConnectButton.Custom>
         {({

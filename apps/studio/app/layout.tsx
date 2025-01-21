@@ -5,6 +5,12 @@ import { Providers } from "@/components/providers";
 import { Wallet } from "@recall/ui/recall/wallet";
 import Image from "next/image";
 import { Menu } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@recall/ui/components/dropdown-menu";
 
 const fontMono = Geist_Mono({
   subsets: ["latin"],
@@ -23,9 +29,19 @@ export default function RootLayout({
           <div className="flex min-h-svh flex-col">
             <div className="border-primary sticky top-0 grid grid-cols-3 items-center border-b p-3">
               <div className="flex items-center gap-6">
-                <Menu />
-                <span>Agents</span>
-                <span>Buckets</span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="md:hidden">
+                    <Menu />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="ml-2">
+                    <DropdownMenuItem>Agents</DropdownMenuItem>
+                    <DropdownMenuItem>Buckets</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <div className="hidden gap-6 md:flex">
+                  <span>Agents</span>
+                  <span>Buckets</span>
+                </div>
               </div>
               <div className="flex justify-center">
                 <Image src="/recall.svg" alt="Recall" width={120} height={30} />
