@@ -310,7 +310,7 @@ export class CreditManager {
   ): Promise<Result<SetAccountSponsorResult>> {
     if (!this.client.walletClient?.account) {
       throw new Error(
-        "Wallet client is not initialized for setting account sponsor"
+        "Wallet client is not initialized for setting account sponsor",
       );
     }
     const fromAddress = from || this.client.walletClient.account.address;
@@ -348,13 +348,13 @@ export class CreditManager {
   // Get account details including approvals
   async getAccount(
     address?: Address,
-    blockNumber?: bigint
+    blockNumber?: bigint,
   ): Promise<Result<CreditAccount>> {
     try {
       const forAddress = address || this.client.walletClient?.account?.address;
       if (!forAddress)
         throw new InvalidValue(
-          "Must provide an address or connect a wallet client"
+          "Must provide an address or connect a wallet client",
         );
       const args = [forAddress] satisfies GetAccountParams;
       const result = await this.contract.read.getAccount(args, { blockNumber });
@@ -392,7 +392,7 @@ export class CreditManager {
       filterFrom?: Address;
       filterTo?: Address;
       blockNumber?: bigint;
-    } = {}
+    } = {},
   ): Promise<Result<CreditApproval>> {
     let {
       result: { approvalsTo, approvalsFrom },
@@ -411,13 +411,13 @@ export class CreditManager {
   // Get credit balance
   async getCreditBalance(
     address?: Address,
-    blockNumber?: bigint
+    blockNumber?: bigint,
   ): Promise<Result<CreditBalance>> {
     try {
       const forAddress = address || this.client.walletClient?.account?.address;
       if (!forAddress)
         throw new InvalidValue(
-          "Must provide an address or connect a wallet client"
+          "Must provide an address or connect a wallet client",
         );
       const args = [forAddress] satisfies GetCreditBalanceParams;
       const result = await this.contract.read.getCreditBalance(args, {

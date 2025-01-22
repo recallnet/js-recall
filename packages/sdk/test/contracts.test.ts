@@ -64,7 +64,7 @@ describe("contracts", function () {
       const latestBlock = await client.publicClient.getBlockNumber();
       ({ result: buckets } = await bucketManager.list(
         account.address,
-        latestBlock
+        latestBlock,
       ));
       expect(buckets).to.be.an("array");
       strictEqual(buckets[0]?.kind, 0);
@@ -80,7 +80,7 @@ describe("contracts", function () {
       const bucketManagerAddr = client.bucketManager().getContract().address;
       const overrideBucketManager = client.bucketManager(bucketManagerAddr);
       const { result: buckets } = await overrideBucketManager.list(
-        account.address
+        account.address,
       );
       expect(buckets).to.be.an("array");
       strictEqual(buckets[0]?.kind, 0);
@@ -109,7 +109,7 @@ describe("contracts", function () {
           bucket,
           key,
           path,
-          opts
+          opts,
         );
         strictEqual(isHash(meta!.tx!.transactionHash), true);
         strictEqual(result.owner, account.address);
@@ -125,7 +125,7 @@ describe("contracts", function () {
         const { meta, result } = await bucketManager.add(
           bucket,
           "hello/test",
-          file
+          file,
         );
         strictEqual(isHash(meta!.tx!.transactionHash), true);
         strictEqual(result.owner, account.address);
@@ -136,7 +136,7 @@ describe("contracts", function () {
       it("should get object value without downloading", async () => {
         let { result: object } = await bucketManager.getObjectValue(
           bucket,
-          key
+          key,
         );
         strictEqual(object.blobHash, blobHash);
         strictEqual(object.size, 6n);
@@ -146,7 +146,7 @@ describe("contracts", function () {
         ({ result: object } = await bucketManager.getObjectValue(
           bucket,
           key,
-          latestBlock
+          latestBlock,
         ));
         strictEqual(object.blobHash, blobHash);
         strictEqual(object.size, 6n);
@@ -158,7 +158,7 @@ describe("contracts", function () {
         await rejects(object, (err) => {
           strictEqual(
             (err as Error).message,
-            `Bucket not found: '${missingBucket}'`
+            `Bucket not found: '${missingBucket}'`,
           );
           return true;
         });
@@ -228,7 +228,7 @@ describe("contracts", function () {
         await rejects(object, (err) => {
           strictEqual(
             (err as Error).message,
-            `Invalid range: ${range.start}-${range.end}`
+            `Invalid range: ${range.start}-${range.end}`,
           );
           return true;
         });
@@ -280,7 +280,7 @@ describe("contracts", function () {
           "/",
           "",
           1,
-          latestBlock
+          latestBlock,
         ));
         strictEqual(objects.length, 1);
         strictEqual(objects[0]?.key, key);
@@ -293,7 +293,7 @@ describe("contracts", function () {
         await rejects(query, (err) => {
           strictEqual(
             (err as Error).message,
-            `Bucket not found: '${missingBucket}'`
+            `Bucket not found: '${missingBucket}'`,
           );
           return true;
         });
@@ -331,7 +331,7 @@ describe("contracts", function () {
 
     before(async () => {
       credits = client.creditManager(
-        (CREDIT_MANAGER_ADDRESS as Address) ?? undefined
+        (CREDIT_MANAGER_ADDRESS as Address) ?? undefined,
       );
       to = getAddress("0x9965507d1a55bcc2695c58ba16fb37d819b0a4dc");
       caller = getAddress("0x976ea74026e726554db657fa54763abd0c3a0aa9");
@@ -492,11 +492,11 @@ describe("contracts", function () {
     it("should get credit approvals with 'from' filter", async () => {
       const approver = walletClientFromPrivateKey(
         "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6",
-        localnet
+        localnet,
       );
       const approverClient = new HokuClient({ walletClient: approver });
       const approverCredits = approverClient.creditManager(
-        (CREDIT_MANAGER_ADDRESS as Address) ?? undefined
+        (CREDIT_MANAGER_ADDRESS as Address) ?? undefined,
       );
       await approverCredits.approve(account.address);
       const {
@@ -519,7 +519,7 @@ describe("contracts", function () {
       expect(Number(stats.creditDebited)).to.be.greaterThan(0);
       strictEqual(
         stats.tokenCreditRate,
-        1000000000000000000000000000000000000n
+        1000000000000000000000000000000000000n,
       );
       expect(Number(stats.numAccounts)).to.be.greaterThan(0);
     });
@@ -536,7 +536,7 @@ describe("contracts", function () {
 
     before(async () => {
       blobs = client.blobManager(
-        (BLOB_MANAGER_ADDRESS as Address) ?? undefined
+        (BLOB_MANAGER_ADDRESS as Address) ?? undefined,
       );
     });
 
@@ -585,7 +585,7 @@ describe("contracts", function () {
       expect(Number(stats.creditDebited)).to.be.greaterThan(0);
       strictEqual(
         stats.tokenCreditRate,
-        1000000000000000000000000000000000000n
+        1000000000000000000000000000000000000n,
       );
       expect(Number(stats.numAccounts)).to.be.greaterThan(0);
       expect(stats.numBlobs).to.be.a("bigint");
@@ -598,7 +598,7 @@ describe("contracts", function () {
       const { meta, result } = await blobs.addBlob(
         blobHash,
         subscriptionId,
-        size
+        size,
       );
       strictEqual(isHash(meta!.tx!.transactionHash), true);
       strictEqual(result.blobHash, blobHash);
@@ -615,7 +615,7 @@ describe("contracts", function () {
       const { result } = await blobs.getBlobStatus(
         account.address,
         blobHash,
-        subscriptionId
+        subscriptionId,
       );
       expect(result).to.be.equal(2); // resolved
     });
@@ -626,7 +626,7 @@ describe("contracts", function () {
         blobHash,
         blobHash,
         subscriptionId,
-        size
+        size,
       );
       strictEqual(isHash(meta!.tx!.transactionHash), true);
       strictEqual(result.newHash, blobHash);
