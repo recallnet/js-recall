@@ -37,11 +37,13 @@ export default function RootLayout({
                   <DropdownMenuContent className="ml-2">
                     <DropdownMenuItem>Agents</DropdownMenuItem>
                     <DropdownMenuItem>Buckets</DropdownMenuItem>
+                    <DropdownMenuItem>Docs</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <div className="hidden gap-6 md:flex">
                   <span>Agents</span>
                   <span>Buckets</span>
+                  <span>Docs</span>
                 </div>
               </div>
               <div className="flex justify-center">
