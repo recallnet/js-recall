@@ -46,9 +46,14 @@
     "viem": "^2.21.37"
   },
   "devDependencies": {
-    "@types/node": "^22.10.6",
     "@recall/eslint-config": "workspace:*",
     "@recall/typescript-config": "workspace:*",
-    "tempy": "^3.1.0"
+    "@types/chai": "^5.0.1",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.10.7",
+    "chai": "^5.1.2",
+    "mocha": "^11.0.1",
+    "tempy": "^3.1.0",
+    "ts-node": "^10.9.2"
   }
 }
