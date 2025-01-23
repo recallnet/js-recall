@@ -50,9 +50,13 @@ export function useCreditBalance(forAddress?: Address) {
 
 type UseBuyCreditReturnType = Omit<
   UseWriteContractReturnType,
-  "writeContract"
+  "writeContract" | "writeContractAsync"
 > & {
   buyCredit: (recallAmount: bigint, recipient?: Address) => void;
+  buyCreditAsync: (
+    recallAmount: bigint,
+    recipient?: Address,
+  ) => Promise<Address>;
 };
 
 export function useBuyCredit(): UseBuyCreditReturnType {
@@ -61,7 +65,7 @@ export function useBuyCredit(): UseBuyCreditReturnType {
   const contractAddress =
     creditManagerAddress[chainId as keyof typeof creditManagerAddress];
 
-  const { writeContract, ...rest } = useWriteContract();
+  const { writeContract, writeContractAsync, ...rest } = useWriteContract();
 
   const buyCredit = (recallAmount: bigint, recipient?: Address) =>
     writeContract({
@@ -72,5 +76,14 @@ export function useBuyCredit(): UseBuyCreditReturnType {
       value: recallAmount,
     });
 
-  return { buyCredit, ...rest };
+  const buyCreditAsync = (recallAmount: bigint, recipient?: Address) =>
+    writeContractAsync({
+      address: contractAddress,
+      abi: creditManagerAbi,
+      functionName: "buyCredit",
+      args: recipient ? [recipient] : [],
+      value: recallAmount,
+    });
+
+  return { buyCredit, buyCreditAsync, ...rest };
 }

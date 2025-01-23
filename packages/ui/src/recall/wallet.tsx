@@ -1,10 +1,15 @@
 "use client";
 
-import { HTMLAttributes, useState } from "react";
+import { HTMLAttributes, useEffect, useState } from "react";
 import { Button } from "@recall/ui/components/button";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useBalance, useAccount, useDisconnect } from "wagmi";
-import { Plus, Copy, Unplug } from "lucide-react";
+import {
+  useBalance,
+  useAccount,
+  useDisconnect,
+  useWaitForTransactionReceipt,
+} from "wagmi";
+import { Plus, Copy, Unplug, Loader2 } from "lucide-react";
 import { cn } from "@recall/ui/lib/utils";
 import {
   Dialog,
@@ -31,14 +36,37 @@ type Props = {} & HTMLAttributes<HTMLDivElement>;
 
 export const Wallet = ({ className, ...props }: Props) => {
   const { address, isConnected } = useAccount();
-  const { data: creditBalance, error: creditBalanceError } = useCreditBalance();
+  const {
+    data: creditBalance,
+    error: creditBalanceError,
+    refetch: refetchCreditBalance,
+  } = useCreditBalance();
   const balance = useBalance({ address });
-  const { buyCredit, status, error, isPending } = useBuyCredit();
+  const {
+    buyCredit,
+    error: buyCreditError,
+    isPending: buyCreditPending,
+    data: buyCreditTxn,
+  } = useBuyCredit();
+  const { data: buyCreditReceipt, isPending: buyCreditReceiptIsPending } =
+    useWaitForTransactionReceipt({
+      hash: buyCreditTxn,
+      query: {
+        enabled: !!buyCreditTxn,
+      },
+    });
   const { disconnect } = useDisconnect();
   const [accountOpen, setAccountOpen] = useState(false);
   const [buyCreditsOpen, setBuyCreditsOpen] = useState(false);
   const [displayCredits, setDisplayCredits] = useState("0");
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (buyCreditReceipt?.status === "success") {
+      refetchCreditBalance();
+      setBuyCreditsOpen(false);
+    }
+  }, [buyCreditReceipt, refetchCreditBalance]);
 
   const balanceDisplay = recallToDisplay(balance.data?.value ?? 0n, 2);
 
@@ -70,9 +98,12 @@ export const Wallet = ({ className, ...props }: Props) => {
     setAccountOpen(false);
   };
 
-  const handleBuyCredits = () => {
+  const handleBuyCredits = async () => {
     buyCredit(recallToSpend);
   };
+
+  const creditPending =
+    buyCreditPending || (!!buyCreditTxn && buyCreditReceiptIsPending);
 
   return (
     <div
@@ -126,7 +157,10 @@ export const Wallet = ({ className, ...props }: Props) => {
           />
           <span>Cost: {recallToSpendDisplay} Recall</span>
           <DialogFooter className="">
-            <Button onClick={handleBuyCredits}>Submit</Button>
+            <Button onClick={handleBuyCredits} disabled={creditPending}>
+              Submit
+              {creditPending && <Loader2 className="animate-spin" />}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
