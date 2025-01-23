@@ -368,7 +368,7 @@ export const blobManagerAbi = [
  *
  */
 export const blobManagerAddress = {
-  2481632: '0x0A884E8117f04Dd0C8da03B18d2D4516069Dd7C3',
+  2481632: '0x8c2e3e8ba0d6084786d60A6600e832E8df84846C',
 } as const
 
 /**
@@ -962,11 +962,47 @@ export const creditManagerAbi = [
           { name: 'creditSponsor', internalType: 'address', type: 'address' },
           { name: 'lastDebitEpoch', internalType: 'uint64', type: 'uint64' },
           {
-            name: 'approvals',
+            name: 'approvalsTo',
             internalType: 'struct Approval[]',
             type: 'tuple[]',
             components: [
-              { name: 'to', internalType: 'address', type: 'address' },
+              { name: 'addr', internalType: 'address', type: 'address' },
+              {
+                name: 'approval',
+                internalType: 'struct CreditApproval',
+                type: 'tuple',
+                components: [
+                  {
+                    name: 'creditLimit',
+                    internalType: 'uint256',
+                    type: 'uint256',
+                  },
+                  {
+                    name: 'gasFeeLimit',
+                    internalType: 'uint256',
+                    type: 'uint256',
+                  },
+                  { name: 'expiry', internalType: 'uint64', type: 'uint64' },
+                  {
+                    name: 'creditUsed',
+                    internalType: 'uint256',
+                    type: 'uint256',
+                  },
+                  {
+                    name: 'gasFeeUsed',
+                    internalType: 'uint256',
+                    type: 'uint256',
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            name: 'approvalsFrom',
+            internalType: 'struct Approval[]',
+            type: 'tuple[]',
+            components: [
+              { name: 'addr', internalType: 'address', type: 'address' },
               {
                 name: 'approval',
                 internalType: 'struct CreditApproval',
@@ -1042,11 +1078,47 @@ export const creditManagerAbi = [
           { name: 'creditSponsor', internalType: 'address', type: 'address' },
           { name: 'lastDebitEpoch', internalType: 'uint64', type: 'uint64' },
           {
-            name: 'approvals',
+            name: 'approvalsTo',
             internalType: 'struct Approval[]',
             type: 'tuple[]',
             components: [
-              { name: 'to', internalType: 'address', type: 'address' },
+              { name: 'addr', internalType: 'address', type: 'address' },
+              {
+                name: 'approval',
+                internalType: 'struct CreditApproval',
+                type: 'tuple',
+                components: [
+                  {
+                    name: 'creditLimit',
+                    internalType: 'uint256',
+                    type: 'uint256',
+                  },
+                  {
+                    name: 'gasFeeLimit',
+                    internalType: 'uint256',
+                    type: 'uint256',
+                  },
+                  { name: 'expiry', internalType: 'uint64', type: 'uint64' },
+                  {
+                    name: 'creditUsed',
+                    internalType: 'uint256',
+                    type: 'uint256',
+                  },
+                  {
+                    name: 'gasFeeUsed',
+                    internalType: 'uint256',
+                    type: 'uint256',
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            name: 'approvalsFrom',
+            internalType: 'struct Approval[]',
+            type: 'tuple[]',
+            components: [
+              { name: 'addr', internalType: 'address', type: 'address' },
               {
                 name: 'approval',
                 internalType: 'struct CreditApproval',
@@ -1219,7 +1291,7 @@ export const creditManagerAbi = [
  *
  */
 export const creditManagerAddress = {
-  2481632: '0x2639f26Dabe0e98cd68eEA3A89917f925eA68c61',
+  2481632: '0x3537C0437792B326fa0747b4A95a8667873e916F',
 } as const
 
 /**

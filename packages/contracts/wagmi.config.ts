@@ -1719,13 +1719,13 @@ export default defineConfig({
       ],
       deployments: {
         BlobManager: {
-          [chainId]: "0x0A884E8117f04Dd0C8da03B18d2D4516069Dd7C3",
+          [chainId]: "0x8c2e3e8ba0d6084786d60A6600e832E8df84846C",
         },
         BucketManager: {
           [chainId]: "0x5aA5cb07469Cabe65c12137400FBC3b0aE265999",
         },
         CreditManager: {
-          [chainId]: "0x2639f26Dabe0e98cd68eEA3A89917f925eA68c61",
+          [chainId]: "0x3537C0437792B326fa0747b4A95a8667873e916F",
         },
       },
     }),
