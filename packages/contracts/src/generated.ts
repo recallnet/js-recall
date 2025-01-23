@@ -86,7 +86,7 @@ export const blobManagerAbi = [
             internalType: 'struct Subscriber[]',
             type: 'tuple[]',
             components: [
-              { name: 'subscriber', internalType: 'string', type: 'string' },
+              { name: 'subscriber', internalType: 'address', type: 'address' },
               {
                 name: 'subscriptionGroup',
                 internalType: 'struct SubscriptionGroup[]',
@@ -368,7 +368,7 @@ export const blobManagerAbi = [
  *
  */
 export const blobManagerAddress = {
-  2481632: '0x2a9AdA4e05D64aBe8FA77EF6cF57aab06a0517e8',
+  2481632: '0x0A884E8117f04Dd0C8da03B18d2D4516069Dd7C3',
 } as const
 
 /**
@@ -871,7 +871,7 @@ export const bucketManagerAbi = [
  *
  */
 export const bucketManagerAddress = {
-  2481632: '0x48E6c6d0745795Ae0CaeA74a0f1E113Cb5365DC3',
+  2481632: '0x5aA5cb07469Cabe65c12137400FBC3b0aE265999',
 } as const
 
 /**
@@ -962,11 +962,47 @@ export const creditManagerAbi = [
           { name: 'creditSponsor', internalType: 'address', type: 'address' },
           { name: 'lastDebitEpoch', internalType: 'uint64', type: 'uint64' },
           {
-            name: 'approvals',
+            name: 'approvalsTo',
             internalType: 'struct Approval[]',
             type: 'tuple[]',
             components: [
-              { name: 'to', internalType: 'string', type: 'string' },
+              { name: 'addr', internalType: 'address', type: 'address' },
+              {
+                name: 'approval',
+                internalType: 'struct CreditApproval',
+                type: 'tuple',
+                components: [
+                  {
+                    name: 'creditLimit',
+                    internalType: 'uint256',
+                    type: 'uint256',
+                  },
+                  {
+                    name: 'gasFeeLimit',
+                    internalType: 'uint256',
+                    type: 'uint256',
+                  },
+                  { name: 'expiry', internalType: 'uint64', type: 'uint64' },
+                  {
+                    name: 'creditUsed',
+                    internalType: 'uint256',
+                    type: 'uint256',
+                  },
+                  {
+                    name: 'gasFeeUsed',
+                    internalType: 'uint256',
+                    type: 'uint256',
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            name: 'approvalsFrom',
+            internalType: 'struct Approval[]',
+            type: 'tuple[]',
+            components: [
+              { name: 'addr', internalType: 'address', type: 'address' },
               {
                 name: 'approval',
                 internalType: 'struct CreditApproval',
@@ -1042,11 +1078,47 @@ export const creditManagerAbi = [
           { name: 'creditSponsor', internalType: 'address', type: 'address' },
           { name: 'lastDebitEpoch', internalType: 'uint64', type: 'uint64' },
           {
-            name: 'approvals',
+            name: 'approvalsTo',
             internalType: 'struct Approval[]',
             type: 'tuple[]',
             components: [
-              { name: 'to', internalType: 'string', type: 'string' },
+              { name: 'addr', internalType: 'address', type: 'address' },
+              {
+                name: 'approval',
+                internalType: 'struct CreditApproval',
+                type: 'tuple',
+                components: [
+                  {
+                    name: 'creditLimit',
+                    internalType: 'uint256',
+                    type: 'uint256',
+                  },
+                  {
+                    name: 'gasFeeLimit',
+                    internalType: 'uint256',
+                    type: 'uint256',
+                  },
+                  { name: 'expiry', internalType: 'uint64', type: 'uint64' },
+                  {
+                    name: 'creditUsed',
+                    internalType: 'uint256',
+                    type: 'uint256',
+                  },
+                  {
+                    name: 'gasFeeUsed',
+                    internalType: 'uint256',
+                    type: 'uint256',
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            name: 'approvalsFrom',
+            internalType: 'struct Approval[]',
+            type: 'tuple[]',
+            components: [
+              { name: 'addr', internalType: 'address', type: 'address' },
               {
                 name: 'approval',
                 internalType: 'struct CreditApproval',
@@ -1152,7 +1224,7 @@ export const creditManagerAbi = [
         name: 'caller',
         internalType: 'address[]',
         type: 'address[]',
-        indexed: true,
+        indexed: false,
       },
       {
         name: 'creditLimit',
@@ -1219,7 +1291,7 @@ export const creditManagerAbi = [
  *
  */
 export const creditManagerAddress = {
-  2481632: '0xE669d9489bcC22EcFDA455BF9952137011931868',
+  2481632: '0x2639f26Dabe0e98cd68eEA3A89917f925eA68c61',
 } as const
 
 /**
@@ -2277,7 +2349,7 @@ export const gatewayGetterFacetParentAbi = [
  *
  */
 export const gatewayGetterFacetParentAddress = {
-  2481632: '0x88b497225c33dDF92A4F94C0C82a20044e68Bc9E',
+  2481632: '0xb4C4590A2E5Da56aA8310bFF343AFc0645121205',
 } as const
 
 /**
