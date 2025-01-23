@@ -30,7 +30,7 @@ import { useBuyCredit, useCreditBalance } from "@recall/sdkx/react/credits";
 type Props = {} & HTMLAttributes<HTMLDivElement>;
 
 export const Wallet = ({ className, ...props }: Props) => {
-  const { address } = useAccount();
+  const { address, isConnected } = useAccount();
   const { data: creditBalance, error: creditBalanceError } = useCreditBalance();
   const balance = useBalance({ address });
   const { buyCredit, status, error, isPending } = useBuyCredit();
@@ -130,16 +130,18 @@ export const Wallet = ({ className, ...props }: Props) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <div className="hidden items-center gap-6 lg:flex">
-        <span>{balanceDisplay} RECALL</span>
-        <div className="flex items-center gap-1">
-          <span>{gbMonthsBalance} Credits</span>
-          <Plus
-            className="opacity-30 hover:cursor-pointer hover:opacity-100"
-            onClick={handleOpenBuyCredits}
-          />
+      {isConnected && (
+        <div className="hidden items-center gap-6 lg:flex">
+          <span>{balanceDisplay} RECALL</span>
+          <div className="flex items-center gap-1">
+            <span>{gbMonthsBalance} Credits</span>
+            <Plus
+              className="opacity-30 hover:cursor-pointer hover:opacity-100"
+              onClick={handleOpenBuyCredits}
+            />
+          </div>
         </div>
-      </div>
+      )}
       <ConnectButton.Custom>
         {({
           account,
@@ -157,6 +159,7 @@ export const Wallet = ({ className, ...props }: Props) => {
                 connected ? () => setAccountOpen(true) : openConnectModal
               }
               variant={connected ? "outline" : "default"}
+              className="text-primary"
             >
               {connected ? displayAddress(account.address) : "Connect Wallet"}
             </Button>
