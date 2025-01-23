@@ -1,4 +1,4 @@
-import { defineConfig } from "@wagmi/cli";
+import { Config, defineConfig } from "@wagmi/cli";
 import { foundry } from "@wagmi/cli/plugins";
 import { Abi } from "viem";
 
@@ -1701,7 +1701,7 @@ export default defineConfig({
     {
       name: "GatewayGetterFacetParent",
       abi: gatewayGetterFacetAbi,
-      address: { [chainId]: "0x88b497225c33dDF92A4F94C0C82a20044e68Bc9E" },
+      address: { [chainId]: "0xb4C4590A2E5Da56aA8310bFF343AFc0645121205" },
     },
     {
       name: "GatewayGetterFacetSubnet",
@@ -1719,15 +1719,15 @@ export default defineConfig({
       ],
       deployments: {
         BlobManager: {
-          [chainId]: "0x2a9AdA4e05D64aBe8FA77EF6cF57aab06a0517e8",
+          [chainId]: "0x0A884E8117f04Dd0C8da03B18d2D4516069Dd7C3",
         },
         BucketManager: {
-          [chainId]: "0x48E6c6d0745795Ae0CaeA74a0f1E113Cb5365DC3",
+          [chainId]: "0x5aA5cb07469Cabe65c12137400FBC3b0aE265999",
         },
         CreditManager: {
-          [chainId]: "0xE669d9489bcC22EcFDA455BF9952137011931868",
+          [chainId]: "0x2639f26Dabe0e98cd68eEA3A89917f925eA68c61",
         },
       },
     }),
   ],
-});
+}) as Config;

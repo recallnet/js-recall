@@ -17,6 +17,14 @@
     "dnum": "^2.14.0"
   },
   "exports": {
+    "./constants": {
+      "types": "./dist/constants.d.ts",
+      "default": "./dist/constants.js"
+    },
+    "./conversions": {
+      "types": "./dist/conversions.d.ts",
+      "default": "./dist/conversions.js"
+    },
     "./format-atto-rcl": {
       "types": "./dist/format-atto-rcl.d.ts",
       "default": "./dist/format-atto-rcl.js"

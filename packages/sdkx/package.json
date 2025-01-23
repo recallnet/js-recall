@@ -14,12 +14,19 @@
     "typescript": "^5.7.3"
   },
   "dependencies": {
-    "viem": "^2.22.9"
+    "@recall/contracts": "workspace:*",
+    "@tanstack/react-query": "^5.64.2",
+    "viem": "^2.22.9",
+    "wagmi": "^2.14.8"
   },
   "exports": {
     "./chains": {
       "types": "./dist/chains.d.ts",
       "default": "./dist/chains.js"
+    },
+    "./react/credits": {
+      "types": "./dist/react/credits.d.ts",
+      "default": "./dist/react/credits.js"
     }
   }
 }
