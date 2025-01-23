@@ -38,7 +38,10 @@ export type CreditAccount = ContractFunctionReturnType<
   "getAccount"
 >;
 
-export type CreditApproval = Pick<CreditAccount, "approvals">;
+export type CreditApproval = Pick<
+  CreditAccount,
+  "approvalsTo" | "approvalsFrom"
+>;
 
 // Used for getCreditStats()
 export type CreditStats = ContractFunctionReturnType<
@@ -361,12 +364,13 @@ export class CreditManager {
         const { isActorNotFound } = isActorNotFoundError(error);
         if (isActorNotFound) {
           const emptyAccount = {
-            approvals: [],
             capacityUsed: 0n,
             creditFree: 0n,
             creditCommitted: 0n,
             creditSponsor: "0x0000000000000000000000000000000000000000",
             lastDebitEpoch: 0n,
+            approvalsTo: [],
+            approvalsFrom: [],
             maxTtl: 0n,
             gasAllowance: 0n,
           } as CreditAccount;
@@ -379,18 +383,29 @@ export class CreditManager {
 
   // Get credit approvals
   async getCreditApprovals(
-    from: Address,
-    to?: Address,
-    blockNumber?: bigint,
+    forAddress?: Address,
+    {
+      filterFrom,
+      filterTo,
+      blockNumber,
+    }: {
+      filterFrom?: Address;
+      filterTo?: Address;
+      blockNumber?: bigint;
+    } = {},
   ): Promise<Result<CreditApproval>> {
     let {
-      result: { approvals },
-    } = await this.getAccount(from, blockNumber);
+      result: { approvalsTo, approvalsFrom },
+    } = await this.getAccount(forAddress, blockNumber);
     // Filter approvals by `to`, if provided
-    approvals = to
-      ? approvals.filter((approval) => approval.to === to)
-      : approvals;
-    return { result: { approvals } };
+    approvalsTo = filterTo
+      ? approvalsTo.filter((approval) => approval.addr === filterTo)
+      : approvalsTo;
+    // Filter approvals by `from`, if provided
+    approvalsFrom = filterFrom
+      ? approvalsFrom.filter((approval) => approval.addr === filterFrom)
+      : approvalsFrom;
+    return { result: { approvalsTo, approvalsFrom } };
   }
 
   // Get credit balance
@@ -421,7 +436,8 @@ export class CreditManager {
             creditCommitted: 0n,
             creditSponsor: zeroAddress,
             lastDebitEpoch: 0n,
-            approvals: [],
+            approvalsTo: [],
+            approvalsFrom: [],
             gasAllowance: 0n,
           } as CreditBalance;
           return { result: emptyBalance };

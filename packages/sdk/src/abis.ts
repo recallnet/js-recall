@@ -855,11 +855,51 @@ export const creditManagerABI = [
             internalType: "uint64",
           },
           {
-            name: "approvals",
+            name: "approvalsTo",
             type: "tuple[]",
             internalType: "struct Approval[]",
             components: [
-              { name: "to", type: "address", internalType: "address" },
+              { name: "addr", type: "address", internalType: "address" },
+              {
+                name: "approval",
+                type: "tuple",
+                internalType: "struct CreditApproval",
+                components: [
+                  {
+                    name: "creditLimit",
+                    type: "uint256",
+                    internalType: "uint256",
+                  },
+                  {
+                    name: "gasFeeLimit",
+                    type: "uint256",
+                    internalType: "uint256",
+                  },
+                  {
+                    name: "expiry",
+                    type: "uint64",
+                    internalType: "uint64",
+                  },
+                  {
+                    name: "creditUsed",
+                    type: "uint256",
+                    internalType: "uint256",
+                  },
+                  {
+                    name: "gasFeeUsed",
+                    type: "uint256",
+                    internalType: "uint256",
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            name: "approvalsFrom",
+            type: "tuple[]",
+            internalType: "struct Approval[]",
+            components: [
+              { name: "addr", type: "address", internalType: "address" },
               {
                 name: "approval",
                 type: "tuple",
@@ -975,11 +1015,51 @@ export const creditManagerABI = [
             internalType: "uint64",
           },
           {
-            name: "approvals",
+            name: "approvalsTo",
             type: "tuple[]",
             internalType: "struct Approval[]",
             components: [
-              { name: "to", type: "address", internalType: "address" },
+              { name: "addr", type: "address", internalType: "address" },
+              {
+                name: "approval",
+                type: "tuple",
+                internalType: "struct CreditApproval",
+                components: [
+                  {
+                    name: "creditLimit",
+                    type: "uint256",
+                    internalType: "uint256",
+                  },
+                  {
+                    name: "gasFeeLimit",
+                    type: "uint256",
+                    internalType: "uint256",
+                  },
+                  {
+                    name: "expiry",
+                    type: "uint64",
+                    internalType: "uint64",
+                  },
+                  {
+                    name: "creditUsed",
+                    type: "uint256",
+                    internalType: "uint256",
+                  },
+                  {
+                    name: "gasFeeUsed",
+                    type: "uint256",
+                    internalType: "uint256",
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            name: "approvalsFrom",
+            type: "tuple[]",
+            internalType: "struct Approval[]",
+            components: [
+              { name: "addr", type: "address", internalType: "address" },
               {
                 name: "approval",
                 type: "tuple",
