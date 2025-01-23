@@ -1,12 +1,13 @@
-import {
-  useReadContract,
-  useChainId,
-  useAccount,
-  useWriteContract,
-  UseWriteContractReturnType,
-} from "wagmi";
-import { creditManagerAddress, creditManagerAbi } from "@recall/contracts";
 import { Address } from "viem";
+import {
+  UseWriteContractReturnType,
+  useAccount,
+  useChainId,
+  useReadContract,
+  useWriteContract,
+} from "wagmi";
+
+import { creditManagerAbi, creditManagerAddress } from "@recall/contracts";
 
 export function useCreditAccount(forAddress?: Address) {
   const chainId = useChainId();

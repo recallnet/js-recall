@@ -1,6 +1,8 @@
 import { BlobAddOutcome, Iroh } from "@number0/iroh";
-import { AddressId } from "@recall/fvm";
 import { Address, encodeFunctionData } from "viem";
+
+import { AddressId } from "@recall/fvm";
+
 import { bucketManagerABI } from "../abis.js";
 import { HokuClient } from "../client.js";
 import { AddObjectFullParams, AddObjectParams } from "../entities/bucket.js";
@@ -11,10 +13,10 @@ import {
   UnhandledBucketError,
 } from "../entities/errors.js";
 import {
+  SnakeToCamelCase,
   camelToSnake,
   hexToBase64,
   snakeToCamel,
-  SnakeToCamelCase,
 } from "./utils.js";
 
 export type ObjectsApiNodeInfoRaw = {

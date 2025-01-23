@@ -7,22 +7,23 @@ import {
   ContractFunctionArgs,
   ContractFunctionExecutionError,
   ContractFunctionReturnType,
-  getContract,
   GetContractReturnType,
   GetEventArgs,
+  getContract,
   zeroAddress,
 } from "viem";
+
 import { blobManagerABI } from "../abis.js";
 import { HokuClient } from "../client.js";
-import { blobManagerAddress, MIN_TTL } from "../constants.js";
+import { MIN_TTL, blobManagerAddress } from "../constants.js";
 import { getObjectsNodeInfo } from "../provider/object.js";
 import {
   ActorNotFound,
   InvalidValue,
-  isActorNotFoundError,
   UnhandledBlobError,
+  isActorNotFoundError,
 } from "./errors.js";
-import { parseEventFromTransaction, type Result } from "./utils.js";
+import { type Result, parseEventFromTransaction } from "./utils.js";
 
 // Used for getBlob()
 export type BlobInfo = ContractFunctionReturnType<

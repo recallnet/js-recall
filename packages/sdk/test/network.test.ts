@@ -1,6 +1,7 @@
-import { strictEqual } from "node:assert";
 import { expect } from "chai";
 import { describe, it } from "mocha";
+import { strictEqual } from "node:assert";
+
 import {
   LOCALNET_EVM_GATEWAY_ADDRESS,
   LOCALNET_EVM_REGISTRY_ADDRESS,

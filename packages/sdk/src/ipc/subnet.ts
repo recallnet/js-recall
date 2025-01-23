@@ -1,6 +1,8 @@
-import { FilEthAddress } from "@recall/fvm";
 import fnv1a from "@sindresorhus/fnv1a";
 import { Chain } from "viem";
+
+import { FilEthAddress } from "@recall/fvm";
+
 import {
   DEVNET_CHAIN_ID,
   DEVNET_SUBNET_ID,

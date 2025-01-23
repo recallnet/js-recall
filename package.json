@@ -11,6 +11,7 @@
   "devDependencies": {
     "@recall/eslint-config": "workspace:*",
     "@recall/typescript-config": "workspace:*",
+    "@trivago/prettier-plugin-sort-imports": "^5.2.1",
     "prettier": "^3.2.5",
     "prettier-plugin-tailwindcss": "^0.6.10",
     "turbo": "^2.3.0",

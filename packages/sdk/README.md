@@ -38,9 +38,10 @@ pnpm add @recall/sdk
 Create a wallet client from a private key:
 
 ```ts
-import { HokuClient, testnet } from "@recall/sdk";
 import { createWalletClient } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+
+import { HokuClient, testnet } from "@recall/sdk";
 
 // Create a wallet client from a private key
 const privateKey =

@@ -1,5 +1,6 @@
 import { defineChain } from "viem";
-import { anvil, type Chain, filecoinCalibration } from "viem/chains";
+import { type Chain, anvil, filecoinCalibration } from "viem/chains";
+
 import {
   DEVNET_CHAIN_ID,
   DEVNET_EVM_RPC_URL,

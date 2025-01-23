@@ -7,11 +7,12 @@ import {
   ContractFunctionArgs,
   ContractFunctionExecutionError,
   ContractFunctionReturnType,
-  getContract,
   GetContractReturnType,
   GetEventArgs,
+  getContract,
   zeroAddress,
 } from "viem";
+
 import { creditManagerABI } from "../abis.js";
 import { HokuClient } from "../client.js";
 import { creditManagerAddress } from "../constants.js";
@@ -19,10 +20,10 @@ import {
   ActorNotFound,
   InsufficientFunds,
   InvalidValue,
-  isActorNotFoundError,
   UnhandledCreditError,
+  isActorNotFoundError,
 } from "./errors.js";
-import { parseEventFromTransaction, type Result } from "./utils.js";
+import { type Result, parseEventFromTransaction } from "./utils.js";
 
 // Used for getBalance()
 export type CreditBalance = ContractFunctionReturnType<

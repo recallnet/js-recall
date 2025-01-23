@@ -7,16 +7,17 @@ import {
   Client,
   ContractFunctionArgs,
   GetBalanceReturnType,
-  getContract,
   GetContractReturnType,
   GetEventArgs,
+  getContract,
 } from "viem";
+
 import { ierc20ABI } from "../abis.js";
 import { HokuClient } from "../client.js";
 import { supplySourceAddress } from "../constants.js";
 import { GatewayManager } from "../ipc/gateway.js";
 import { InvalidValue } from "./errors.js";
-import { parseEventFromTransaction, Result } from "./utils.js";
+import { Result, parseEventFromTransaction } from "./utils.js";
 
 // Type for account info
 type AccountInfo = {

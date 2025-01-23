@@ -2,6 +2,7 @@
 // Source: https://github.com/Zondax/izari-filecoin/blob/master/src/address/utils.ts
 import blake from "blakejs";
 import { compare } from "uint8arrays/compare";
+
 import {
   ACTOR_ID_ETHEREUM_MASK,
   ACTOR_ID_ETHEREUM_MASK_LEN,

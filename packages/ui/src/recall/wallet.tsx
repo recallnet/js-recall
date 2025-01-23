@@ -1,36 +1,37 @@
 "use client";
 
-import { HTMLAttributes, useEffect, useState } from "react";
-import { Button } from "@recall/ui/components/button";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { Copy, Loader2, Plus, Unplug } from "lucide-react";
+import { HTMLAttributes, useEffect, useState } from "react";
 import {
-  useBalance,
   useAccount,
+  useBalance,
   useDisconnect,
   useWaitForTransactionReceipt,
 } from "wagmi";
-import { Plus, Copy, Unplug, Loader2 } from "lucide-react";
-import { cn } from "@recall/ui/lib/utils";
+
+import { displayAddress } from "@recall/address-utils/display";
+import {
+  crazyCreditsToCredits,
+  creditsToGbMonths,
+  creditsToRecall,
+  gbMonthsToCredits,
+  recallToDisplay,
+} from "@recall/bigint-utils/conversions";
+import { useBuyCredit, useCreditBalance } from "@recall/sdkx/react/credits";
+import { Button } from "@recall/ui/components/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-  DialogDescription,
 } from "@recall/ui/components/dialog";
-import { Label } from "@recall/ui/components/label";
 import { Input } from "@recall/ui/components/input";
-import { displayAddress } from "@recall/address-utils/display";
+import { Label } from "@recall/ui/components/label";
 import { useToast } from "@recall/ui/hooks/use-toast";
-import {
-  creditsToRecall,
-  recallToDisplay,
-  gbMonthsToCredits,
-  creditsToGbMonths,
-  crazyCreditsToCredits,
-} from "@recall/bigint-utils/conversions";
-import { useBuyCredit, useCreditBalance } from "@recall/sdkx/react/credits";
+import { cn } from "@recall/ui/lib/utils";
 
 type Props = {} & HTMLAttributes<HTMLDivElement>;
 

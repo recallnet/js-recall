@@ -1,5 +1,6 @@
 import { getDefaultConfig } from "@rainbow-me/rainbowkit";
 import { http } from "wagmi";
+
 import { ignition } from "@recall/sdkx/chains";
 
 export const config = getDefaultConfig({

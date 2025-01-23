@@ -1,10 +1,11 @@
-import { strictEqual } from "node:assert";
 import { describe, it } from "mocha";
+import { strictEqual } from "node:assert";
+
 import { localnet, testnet } from "../src/chains.js";
 import {
-  createPublicClientForChain,
   HokuClient,
   type HokuConfig,
+  createPublicClientForChain,
   walletClientFromPrivateKey,
 } from "../src/client.js";
 import { Network } from "../src/network.js";

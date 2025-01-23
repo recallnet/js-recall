@@ -1,15 +1,16 @@
 "use client";
 
+import { Menu } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@recall/ui/components/dropdown-menu";
-import { Menu } from "lucide-react";
-import { useRouter, usePathname } from "next/navigation";
-import Link from "next/link";
 import { cn } from "@recall/ui/lib/utils";
 
 function NavLink({

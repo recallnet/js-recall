@@ -1,12 +1,13 @@
 "use client";
 
-import * as React from "react";
-import { ThemeProvider as NextThemesProvider } from "next-themes";
-
 import "@rainbow-me/rainbowkit/styles.css";
+
 import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
+import * as React from "react";
 import { WagmiProvider } from "wagmi";
-import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+
 import { config } from "@/lib/wagmi-config";
 
 const queryClient = new QueryClient();

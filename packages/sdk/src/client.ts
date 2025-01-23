@@ -2,18 +2,19 @@ import {
   Account,
   Address,
   Chain,
-  createPublicClient,
-  createWalletClient,
-  custom,
   EIP1193Provider,
   Hex,
-  http,
   PublicClient,
   Transport,
   WalletClient,
+  createPublicClient,
+  createWalletClient,
+  custom,
+  http,
 } from "viem";
-import "viem/window";
 import { privateKeyToAccount } from "viem/accounts";
+import "viem/window";
+
 import { type ChainName, getChain, testnet } from "./chains.js";
 import {
   AccountManager,

@@ -1,4 +1,3 @@
-import { AddressDelegated } from "@recall/fvm";
 import {
   AbiStateMutability,
   Account,
@@ -7,10 +6,13 @@ import {
   Client,
   ContractFunctionArgs,
   ContractFunctionExecutionError,
-  getContract,
   GetContractReturnType,
+  getContract,
   toHex,
 } from "viem";
+
+import { AddressDelegated } from "@recall/fvm";
+
 import { gatewayManagerFacetABI } from "../abis.js";
 import { HokuClient } from "../client.js";
 import { gatewayManagerFacetAddress } from "../constants.js";

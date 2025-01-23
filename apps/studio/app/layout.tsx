@@ -1,12 +1,15 @@
-import { Geist_Mono } from "next/font/google";
-
 import "@recall/ui/globals.css";
-import { Providers } from "@/components/providers";
-import { Wallet } from "@recall/ui/recall/wallet";
+
+import { Geist_Mono } from "next/font/google";
 import Image from "next/image";
-import { Toaster } from "@recall/ui/components/toaster";
-import { Nav } from "./_components/nav";
 import Link from "next/link";
+
+import { Toaster } from "@recall/ui/components/toaster";
+import { Wallet } from "@recall/ui/recall/wallet";
+
+import { Providers } from "@/components/providers";
+
+import { Nav } from "./_components/nav";
 
 const fontMono = Geist_Mono({
   subsets: ["latin"],

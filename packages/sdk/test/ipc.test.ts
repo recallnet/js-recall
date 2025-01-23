@@ -1,6 +1,7 @@
-import { strictEqual } from "node:assert";
 import { expect } from "chai";
 import { describe, it } from "mocha";
+import { strictEqual } from "node:assert";
+
 import {
   DEVNET_CHAIN_ID,
   DEVNET_SUBNET_ID,

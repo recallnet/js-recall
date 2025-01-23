@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import * as u8a from "uint8arrays";
+
 import * as base32 from "../src/utils/base32.js";
 import * as cbor from "../src/utils/cbor.js";
 import { Stream } from "../src/utils/leb128/common.js";

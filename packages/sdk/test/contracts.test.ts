@@ -1,6 +1,6 @@
-import { rejects, strictEqual } from "node:assert";
 import { expect } from "chai";
 import { describe, it } from "mocha";
+import { rejects, strictEqual } from "node:assert";
 import { temporaryWrite } from "tempy";
 import {
   Account,
@@ -11,6 +11,7 @@ import {
   parseEther,
 } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+
 import { localnet } from "../src/chains.js";
 import { HokuClient, walletClientFromPrivateKey } from "../src/client.js";
 import {

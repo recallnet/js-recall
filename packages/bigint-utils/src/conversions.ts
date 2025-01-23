@@ -1,5 +1,6 @@
-import { CREDIT_RECALL_RATE, ONE_GB_MONTH } from "./constants.js";
 import * as dn from "dnum";
+
+import { CREDIT_RECALL_RATE, ONE_GB_MONTH } from "./constants.js";
 
 export function gbMonthsToCredits(gbMonths: number | string) {
   const res = dn.multiply(gbMonths, ONE_GB_MONTH);
