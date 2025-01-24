@@ -26,7 +26,7 @@ export default function RootLayout({
       <body className={`${fontMono.variable} font-mono antialiased`}>
         <Providers>
           <div className="flex min-h-svh flex-col">
-            <div className="border-primary sticky top-0 grid grid-cols-3 items-center border-b p-3">
+            <div className="border-primary sticky top-0 grid grid-cols-3 items-center border-b p-3 bg-background">
               <Nav />
               <div className="flex justify-center">
                 <Link href="/">

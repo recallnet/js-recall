@@ -194,7 +194,6 @@ export const Wallet = ({ className, ...props }: Props) => {
                 connected ? () => setAccountOpen(true) : openConnectModal
               }
               variant={connected ? "outline" : "default"}
-              className="text-primary"
             >
               {connected ? displayAddress(account.address) : "Connect Wallet"}
             </Button>
