@@ -156,7 +156,7 @@ export const Wallet = ({ className, ...props }: Props) => {
             value={displayCredits}
             onChange={(e) => setDisplayCredits(e.target.value)}
           />
-          <span>Cost: {recallToSpendDisplay} Recall</span>
+          <span>Cost: {recallToSpendDisplay} $RECALL</span>
           <DialogFooter className="">
             <Button onClick={handleBuyCredits} disabled={creditPending}>
               Submit
@@ -167,7 +167,7 @@ export const Wallet = ({ className, ...props }: Props) => {
       </Dialog>
       {isConnected && (
         <div className="hidden items-center gap-6 lg:flex">
-          <span>{balanceDisplay} RECALL</span>
+          <span>{balanceDisplay} $RECALL</span>
           <div className="flex items-center gap-1">
             <span>{gbMonthsBalance} Credits</span>
             <Plus
