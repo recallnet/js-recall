@@ -26,7 +26,7 @@ export default function RootLayout({
       <body className={`${fontMono.variable} font-mono antialiased`}>
         <Providers>
           <div className="flex min-h-svh flex-col">
-            <div className="border-primary sticky top-0 grid grid-cols-3 items-center border-b p-3 bg-background">
+            <div className="border-primary bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 grid grid-cols-3 items-center border-b backdrop-blur">
               <Nav />
               <div className="flex justify-center">
                 <Link href="/">
@@ -42,7 +42,7 @@ export default function RootLayout({
                 <Wallet />
               </div>
             </div>
-            <div className="flex-1 p-2">{children}</div>
+            <div className="flex-1">{children}</div>
           </div>
         </Providers>
         <Toaster />
