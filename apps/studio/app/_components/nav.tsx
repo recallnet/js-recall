@@ -46,7 +46,7 @@ export function Nav() {
         <DropdownMenuTrigger className="md:hidden">
           <Menu />
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="ml-2">
+        <DropdownMenuContent className="ml-4">
           {isConnected && (
             <>
               <DropdownMenuItem onClick={() => router.push("/agents")}>
