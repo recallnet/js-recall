@@ -49,13 +49,11 @@ export function Nav() {
         <DropdownMenuContent className="ml-4">
           {isConnected && (
             <>
-              <DropdownMenuItem onClick={() => router.push("/agents")}>
-                My Agents
+              <DropdownMenuItem onClick={() => router.push("/buckets")}>
+                My Buckets
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => router.push("/credit-delegations")}
-              >
-                Credit Delegations
+              <DropdownMenuItem onClick={() => router.push("/approvals")}>
+                Approvals
               </DropdownMenuItem>
             </>
           )}
@@ -68,14 +66,14 @@ export function Nav() {
         {isConnected && (
           <>
             <NavLink
-              title="My Agents"
-              href="/agents"
-              active={pathname.startsWith("/agents")}
+              title="My Buckets"
+              href="/buckets"
+              active={pathname.startsWith("/buckets")}
             />
             <NavLink
-              title="Credit Delegations"
-              href="/credit-delegations"
-              active={pathname.startsWith("/credit-delegations")}
+              title="Approvals"
+              href="/approvals"
+              active={pathname.startsWith("/approvals")}
             />
           </>
         )}

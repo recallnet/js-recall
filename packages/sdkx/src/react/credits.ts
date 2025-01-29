@@ -1,4 +1,4 @@
-import { Address } from "viem";
+import { Address, Hash } from "viem";
 import {
   UseWriteContractReturnType,
   useAccount,
@@ -29,6 +29,26 @@ export function useCreditAccount(forAddress?: Address) {
   });
 }
 
+export function useCreditApproval(to: Address, from?: Address) {
+  const chainId = useChainId();
+  const { address: accountAddress } = useAccount();
+
+  const fromAddress = from ?? accountAddress;
+
+  const contractAddress =
+    creditManagerAddress[chainId as keyof typeof creditManagerAddress];
+
+  return useReadContract({
+    address: contractAddress,
+    abi: creditManagerAbi,
+    functionName: "getCreditApproval",
+    args: [fromAddress!, to],
+    query: {
+      enabled: !!fromAddress,
+    },
+  });
+}
+
 export function useCreditBalance(forAddress?: Address) {
   const chainId = useChainId();
   const { address: accountAddress } = useAccount();
@@ -49,15 +69,142 @@ export function useCreditBalance(forAddress?: Address) {
   });
 }
 
+export function useCreditStats() {
+  const chainId = useChainId();
+
+  const contractAddress =
+    creditManagerAddress[chainId as keyof typeof creditManagerAddress];
+
+  return useReadContract({
+    address: contractAddress,
+    abi: creditManagerAbi,
+    functionName: "getCreditStats",
+  });
+}
+
+type UseApproveCreditReturnType = Omit<
+  UseWriteContractReturnType,
+  "writeContract" | "writeContractAsync"
+> & {
+  approveCredit: (
+    to: Address,
+    options?: {
+      from: Address;
+      limits?: {
+        creditLimit: bigint;
+        gasFeeLimit: bigint;
+        ttl: bigint;
+      };
+    },
+  ) => void;
+  approveCreditAsync: (
+    to: Address,
+    options?: {
+      from: Address;
+      limits?: {
+        creditLimit: bigint;
+        gasFeeLimit: bigint;
+        ttl: bigint;
+      };
+    },
+  ) => Promise<Hash>;
+};
+
+export function useApproveCredit(): UseApproveCreditReturnType {
+  const chainId = useChainId();
+
+  const contractAddress =
+    creditManagerAddress[chainId as keyof typeof creditManagerAddress];
+
+  const { writeContract, writeContractAsync, ...rest } = useWriteContract();
+
+  const baseConfig = {
+    address: contractAddress,
+    abi: creditManagerAbi,
+    functionName: "approveCredit",
+  } as const;
+
+  const approveCredit = (
+    to: Address,
+    options?: {
+      from: Address;
+      limits?: {
+        creditLimit: bigint;
+        gasFeeLimit: bigint;
+        ttl: bigint;
+      };
+    },
+  ) => {
+    if (options?.limits) {
+      writeContract({
+        ...baseConfig,
+        args: [
+          options.from,
+          to,
+          [],
+          options.limits.creditLimit,
+          options.limits.gasFeeLimit,
+          options.limits.ttl,
+        ],
+      });
+    } else if (options) {
+      writeContract({
+        ...baseConfig,
+        args: [options.from, to],
+      });
+    } else {
+      writeContract({
+        ...baseConfig,
+        args: [to],
+      });
+    }
+  };
+
+  const approveCreditAsync = (
+    to: Address,
+    options?: {
+      from: Address;
+      limits?: {
+        creditLimit: bigint;
+        gasFeeLimit: bigint;
+        ttl: bigint;
+      };
+    },
+  ) => {
+    if (options?.limits) {
+      return writeContractAsync({
+        ...baseConfig,
+        args: [
+          options.from,
+          to,
+          [],
+          options.limits.creditLimit,
+          options.limits.gasFeeLimit,
+          options.limits.ttl,
+        ],
+      });
+    } else if (options) {
+      return writeContractAsync({
+        ...baseConfig,
+        args: [options.from, to],
+      });
+    } else {
+      return writeContractAsync({
+        ...baseConfig,
+        args: [to],
+      });
+    }
+  };
+
+  return { approveCredit, approveCreditAsync, ...rest };
+}
+
 type UseBuyCreditReturnType = Omit<
   UseWriteContractReturnType,
   "writeContract" | "writeContractAsync"
 > & {
   buyCredit: (recallAmount: bigint, recipient?: Address) => void;
-  buyCreditAsync: (
-    recallAmount: bigint,
-    recipient?: Address,
-  ) => Promise<Address>;
+  buyCreditAsync: (recallAmount: bigint, recipient?: Address) => Promise<Hash>;
 };
 
 export function useBuyCredit(): UseBuyCreditReturnType {
@@ -68,23 +215,54 @@ export function useBuyCredit(): UseBuyCreditReturnType {
 
   const { writeContract, writeContractAsync, ...rest } = useWriteContract();
 
+  const baseConfig = {
+    address: contractAddress,
+    abi: creditManagerAbi,
+    functionName: "buyCredit",
+  } as const;
+
   const buyCredit = (recallAmount: bigint, recipient?: Address) =>
     writeContract({
-      address: contractAddress,
-      abi: creditManagerAbi,
-      functionName: "buyCredit",
+      ...baseConfig,
       args: recipient ? [recipient] : [],
       value: recallAmount,
     });
 
   const buyCreditAsync = (recallAmount: bigint, recipient?: Address) =>
     writeContractAsync({
-      address: contractAddress,
-      abi: creditManagerAbi,
-      functionName: "buyCredit",
+      ...baseConfig,
       args: recipient ? [recipient] : [],
       value: recallAmount,
     });
 
   return { buyCredit, buyCreditAsync, ...rest };
+}
+
+export function useRevokeCreditApproval() {
+  const chainId = useChainId();
+
+  const contractAddress =
+    creditManagerAddress[chainId as keyof typeof creditManagerAddress];
+
+  const { writeContract, writeContractAsync, ...rest } = useWriteContract();
+
+  const baseConfig = {
+    address: contractAddress,
+    abi: creditManagerAbi,
+    functionName: "revokeCredit",
+  } as const;
+
+  const revokeCredit = (to: Address, from?: Address) =>
+    writeContract({
+      ...baseConfig,
+      args: from ? [from, to] : [to],
+    });
+
+  const revokeCreditAsync = (to: Address, from?: Address) =>
+    writeContractAsync({
+      ...baseConfig,
+      args: from ? [from, to] : [to],
+    });
+
+  return { revokeCredit, revokeCreditAsync, ...rest };
 }
