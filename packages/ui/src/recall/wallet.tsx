@@ -1,7 +1,7 @@
 "use client";
 
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { Copy, Loader2, Plus, Unplug } from "lucide-react";
+import { Copy, Loader2, Plus, Unplug, WalletIcon } from "lucide-react";
 import { HTMLAttributes, useEffect, useState } from "react";
 import {
   useAccount,
@@ -118,7 +118,7 @@ export const Wallet = ({ className, ...props }: Props) => {
             {address && <DialogTitle>{displayAddress(address)}</DialogTitle>}
           </DialogHeader>
           <div className="flex items-center justify-center gap-6 lg:flex">
-            <span>{balanceDisplay} RECALL</span>
+            <span>{balanceDisplay} $RECALL</span>
             <div className="flex items-center gap-1">
               <span>{gbMonthsBalance} Credits</span>
               <Plus
@@ -165,18 +165,6 @@ export const Wallet = ({ className, ...props }: Props) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {isConnected && (
-        <div className="hidden items-center gap-6 lg:flex">
-          <span>{balanceDisplay} $RECALL</span>
-          <div className="flex items-center gap-1">
-            <span>{gbMonthsBalance} Credits</span>
-            <Plus
-              className="opacity-30 hover:cursor-pointer hover:opacity-100"
-              onClick={handleOpenBuyCredits}
-            />
-          </div>
-        </div>
-      )}
       <ConnectButton.Custom>
         {({
           account,
@@ -195,7 +183,10 @@ export const Wallet = ({ className, ...props }: Props) => {
               }
               variant={connected ? "outline" : "default"}
             >
-              {connected ? displayAddress(account.address) : "Connect Wallet"}
+              <WalletIcon />
+              <span className="hidden md:block">
+                {connected ? displayAddress(account.address) : "Connect Wallet"}
+              </span>
             </Button>
           );
         }}

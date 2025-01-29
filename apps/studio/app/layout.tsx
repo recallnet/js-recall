@@ -35,6 +35,7 @@ export default function RootLayout({
                     alt="Recall"
                     width={120}
                     height={30}
+                    priority
                   />
                 </Link>
               </div>

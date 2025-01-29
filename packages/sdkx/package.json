@@ -27,6 +27,10 @@
     "./react/credits": {
       "types": "./dist/react/credits.d.ts",
       "default": "./dist/react/credits.js"
+    },
+    "./actions/credits": {
+      "types": "./dist/actions/credits.d.ts",
+      "default": "./dist/actions/credits.js"
     }
   }
 }
