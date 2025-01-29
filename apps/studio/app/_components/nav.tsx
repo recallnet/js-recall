@@ -50,7 +50,7 @@ export function Nav() {
           {isConnected && (
             <>
               <DropdownMenuItem onClick={() => router.push("/buckets")}>
-                My Buckets
+                Buckets
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => router.push("/approvals")}>
                 Approvals
@@ -66,7 +66,7 @@ export function Nav() {
         {isConnected && (
           <>
             <NavLink
-              title="My Buckets"
+              title="Buckets"
               href="/buckets"
               active={pathname.startsWith("/buckets")}
             />
