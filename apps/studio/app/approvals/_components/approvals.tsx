@@ -245,8 +245,8 @@ export function Approvals() {
         className="self-end"
         onClick={() => setNewApprovalOpen(true)}
       >
-        New Approval
         <Plus />
+        New Approval
       </Button>
       {!creditAccount && (
         <div className="flex flex-1 items-center justify-center">
