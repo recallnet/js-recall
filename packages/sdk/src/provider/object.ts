@@ -1,9 +1,9 @@
 import { BlobAddOutcome, Iroh } from "@number0/iroh";
 import { Address, encodeFunctionData } from "viem";
 
+import { bucketManagerAbi } from "@recall/contracts";
 import { AddressId } from "@recall/fvm";
 
-import { bucketManagerABI } from "../abis.js";
 import { HokuClient } from "../client.js";
 import { AddObjectFullParams, AddObjectParams } from "../entities/bucket.js";
 import {
@@ -124,7 +124,7 @@ export async function callObjectsApiAddObject(
   const wallet = client.walletClient;
   const args = [bucket, params] satisfies AddObjectFullParams;
   const encodedData = encodeFunctionData({
-    abi: bucketManagerABI,
+    abi: bucketManagerAbi,
     functionName: "addObject",
     args,
   });

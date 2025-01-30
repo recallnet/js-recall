@@ -57,36 +57,6 @@ export const DEVNET_EVM_GATEWAY_ADDRESS =
 export const DEVNET_EVM_REGISTRY_ADDRESS =
   "0x74539671a1d2f1c8f200826baba665179f53a1b7";
 
-// Wrapper contract addresses, and addresses above formatted in the same way
-// TODO: emulates `@wagmi/cli` generated constants
-export const blobManagerAddress = {
-  2481632: "0x8c2e3e8ba0d6084786d60A6600e832E8df84846C", // testnet -- TODO: update this upon new testnet deployments
-  248163216: "0xe1Aa25618fA0c7A1CFDab5d6B456af611873b629", // localnet
-} as const;
-
-export const bucketManagerAddress = {
-  2481632: "0x5aA5cb07469Cabe65c12137400FBC3b0aE265999", // testnet -- TODO: update this upon new testnet deployments
-  248163216: "0xf7Cd8fa9b94DB2Aa972023b379c7f72c65E4De9D", // localnet
-} as const;
-
-export const creditManagerAddress = {
-  2481632: "0x3537C0437792B326fa0747b4A95a8667873e916F", // testnet -- TODO: update this upon new testnet deployments
-  248163216: "0x82C6D3ed4cD33d8EC1E51d0B5Cc1d822Eaa0c3dC", // localnet
-} as const;
-
-export const gatewayManagerFacetAddress = {
-  314159: TESTNET_PARENT_EVM_GATEWAY_ADDRESS, // calibration
-  2481632: TESTNET_EVM_GATEWAY_ADDRESS, // testnet
-  31337: LOCALNET_PARENT_EVM_GATEWAY_ADDRESS, // anvil
-  248163216: LOCALNET_EVM_GATEWAY_ADDRESS, // localnet
-  1942764459484029: DEVNET_EVM_GATEWAY_ADDRESS, // devnet
-} as const;
-
-export const supplySourceAddress = {
-  314159: TESTNET_EVM_SUPPLY_SOURCE_ADDRESS, // calibration (for testnet)
-  31337: LOCALNET_EVM_SUPPLY_SOURCE_ADDRESS, // anvil (for localnet)
-} as const;
-
 // Miscellaneous
 export const RPC_TIMEOUT = 60_000;
 export const MIN_TTL = 3600n; // one hour

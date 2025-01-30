@@ -13,9 +13,9 @@ import {
   zeroAddress,
 } from "viem";
 
-import { creditManagerABI } from "../abis.js";
+import { creditManagerAbi, creditManagerAddress } from "@recall/contracts";
+
 import { HokuClient } from "../client.js";
-import { creditManagerAddress } from "../constants.js";
 import {
   ActorNotFound,
   InsufficientFunds,
@@ -27,14 +27,14 @@ import { type Result, parseEventFromTransaction } from "./utils.js";
 
 // Used for getBalance()
 export type CreditBalance = ContractFunctionReturnType<
-  typeof creditManagerABI,
+  typeof creditManagerAbi,
   AbiStateMutability,
   "getCreditBalance"
 >;
 
 // Used for getAccount()
 export type CreditAccount = ContractFunctionReturnType<
-  typeof creditManagerABI,
+  typeof creditManagerAbi,
   AbiStateMutability,
   "getAccount"
 >;
@@ -46,63 +46,63 @@ export type CreditApproval = Pick<
 
 // Used for getCreditStats()
 export type CreditStats = ContractFunctionReturnType<
-  typeof creditManagerABI,
+  typeof creditManagerAbi,
   AbiStateMutability,
   "getCreditStats"
 >;
 
 // Used for approve()
 export type ApproveResult = Required<
-  GetEventArgs<typeof creditManagerABI, "ApproveCredit", { IndexedOnly: false }>
+  GetEventArgs<typeof creditManagerAbi, "ApproveCredit", { IndexedOnly: false }>
 >;
 
 type ApproveCreditParams = ContractFunctionArgs<
-  typeof creditManagerABI,
+  typeof creditManagerAbi,
   AbiStateMutability,
   "approveCredit"
 >;
 
 // Used for revoke()
 type RevokeCreditParams = ContractFunctionArgs<
-  typeof creditManagerABI,
+  typeof creditManagerAbi,
   AbiStateMutability,
   "revokeCredit"
 >;
 
 // Used for buyCredit()
 type BuyCreditParams = ContractFunctionArgs<
-  typeof creditManagerABI,
+  typeof creditManagerAbi,
   AbiStateMutability,
   "buyCredit"
 >;
 
 // Used for getCreditBalance()
 type GetCreditBalanceParams = ContractFunctionArgs<
-  typeof creditManagerABI,
+  typeof creditManagerAbi,
   AbiStateMutability,
   "getCreditBalance"
 >;
 
 // Used for getAccount()
 type GetAccountParams = ContractFunctionArgs<
-  typeof creditManagerABI,
+  typeof creditManagerAbi,
   AbiStateMutability,
   "getAccount"
 >;
 
 // Used for buyCredit()
 export type BuyResult = Required<
-  GetEventArgs<typeof creditManagerABI, "BuyCredit", { IndexedOnly: false }>
+  GetEventArgs<typeof creditManagerAbi, "BuyCredit", { IndexedOnly: false }>
 >;
 
 // Used for revokeCredit()
 export type RevokeResult = Required<
-  GetEventArgs<typeof creditManagerABI, "RevokeCredit", { IndexedOnly: false }>
+  GetEventArgs<typeof creditManagerAbi, "RevokeCredit", { IndexedOnly: false }>
 >;
 
 // Used for setAccountSponsor()
 export type SetAccountSponsorParams = ContractFunctionArgs<
-  typeof creditManagerABI,
+  typeof creditManagerAbi,
   AbiStateMutability,
   "setAccountSponsor"
 >;
@@ -110,7 +110,7 @@ export type SetAccountSponsorParams = ContractFunctionArgs<
 // Used for setAccountSponsor()
 export type SetAccountSponsorResult = Required<
   GetEventArgs<
-    typeof creditManagerABI,
+    typeof creditManagerAbi,
     "SetAccountSponsor",
     { IndexedOnly: false }
   >
@@ -119,7 +119,7 @@ export type SetAccountSponsorResult = Required<
 // Credit manager for buy, approving, revoking, and general credit operations
 export class CreditManager {
   client: HokuClient;
-  contract: GetContractReturnType<typeof creditManagerABI, Client, Address>;
+  contract: GetContractReturnType<typeof creditManagerAbi, Client, Address>;
 
   constructor(client: HokuClient, contractAddress?: Address) {
     this.client = client;
@@ -134,7 +134,7 @@ export class CreditManager {
       throw new Error(`No contract address found for chain ID ${chainId}}`);
     }
     this.contract = getContract({
-      abi: creditManagerABI,
+      abi: creditManagerAbi,
       address: contractAddress || deployedCreditManagerAddress,
       client: {
         public: client.publicClient,
@@ -144,7 +144,7 @@ export class CreditManager {
   }
 
   getContract(): GetContractReturnType<
-    typeof creditManagerABI,
+    typeof creditManagerAbi,
     Client,
     Address
   > {

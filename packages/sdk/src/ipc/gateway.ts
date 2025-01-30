@@ -11,11 +11,13 @@ import {
   toHex,
 } from "viem";
 
+import {
+  gatewayManagerFacetAbi,
+  gatewayManagerFacetConfig,
+} from "@recall/contracts";
 import { AddressDelegated } from "@recall/fvm";
 
-import { gatewayManagerFacetABI } from "../abis.js";
 import { HokuClient } from "../client.js";
-import { gatewayManagerFacetAddress } from "../constants.js";
 import {
   InsufficientFunds,
   UnhandledGatewayError,
@@ -25,7 +27,7 @@ import { SubnetId } from "./subnet.js";
 
 // Params for `fundWithToken()` (fund an account in a child subnet)
 type FundWithTokenParams = ContractFunctionArgs<
-  typeof gatewayManagerFacetABI,
+  typeof gatewayManagerFacetAbi,
   AbiStateMutability,
   "fundWithToken"
 >;
@@ -38,7 +40,7 @@ export type FvmAddressTyped = FundWithTokenParams[1];
 
 // Params for `release()` (withdraw funds from a child subnet)
 type ReleaseParams = ContractFunctionArgs<
-  typeof gatewayManagerFacetABI,
+  typeof gatewayManagerFacetAbi,
   AbiStateMutability,
   "release"
 >;
@@ -74,19 +76,19 @@ export class GatewayManager {
   getContract(
     client: HokuClient,
     contractAddress?: Address,
-  ): GetContractReturnType<typeof gatewayManagerFacetABI, Client, Address> {
+  ): GetContractReturnType<typeof gatewayManagerFacetAbi, Client, Address> {
     const chainId = client.publicClient?.chain?.id;
     if (!chainId) {
       throw new Error("Client chain ID not found");
     }
     const deployedGatewayManagerFacetAddress = (
-      gatewayManagerFacetAddress as Record<number, Address>
+      gatewayManagerFacetConfig.address as Record<number, Address>
     )[chainId];
     if (!deployedGatewayManagerFacetAddress) {
       throw new Error(`No contract address found for chain ID ${chainId}}`);
     }
     return getContract({
-      abi: gatewayManagerFacetABI,
+      abi: gatewayManagerFacetAbi,
       address: contractAddress || deployedGatewayManagerFacetAddress,
       client: {
         public: client.publicClient,

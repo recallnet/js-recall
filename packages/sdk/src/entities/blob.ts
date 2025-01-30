@@ -13,9 +13,10 @@ import {
   zeroAddress,
 } from "viem";
 
-import { blobManagerABI } from "../abis.js";
+import { blobManagerAbi, blobManagerAddress } from "@recall/contracts";
+
 import { HokuClient } from "../client.js";
-import { MIN_TTL, blobManagerAddress } from "../constants.js";
+import { MIN_TTL } from "../constants.js";
 import { getObjectsNodeInfo } from "../provider/object.js";
 import {
   ActorNotFound,
@@ -27,70 +28,70 @@ import { type Result, parseEventFromTransaction } from "./utils.js";
 
 // Used for getBlob()
 export type BlobInfo = ContractFunctionReturnType<
-  typeof blobManagerABI,
+  typeof blobManagerAbi,
   AbiStateMutability,
   "getBlob"
 >;
 
 // Used for getAddedBlobs()
 export type AddedBlobs = ContractFunctionReturnType<
-  typeof blobManagerABI,
+  typeof blobManagerAbi,
   AbiStateMutability,
   "getAddedBlobs"
 >;
 
 // Used for getPendingBlobs()
 export type PendingBlobs = ContractFunctionReturnType<
-  typeof blobManagerABI,
+  typeof blobManagerAbi,
   AbiStateMutability,
   "getPendingBlobs"
 >;
 
 // Used for getPendingBlobsCount()
 export type PendingBlobsCount = ContractFunctionReturnType<
-  typeof blobManagerABI,
+  typeof blobManagerAbi,
   AbiStateMutability,
   "getPendingBlobsCount"
 >;
 
 // Used for getPendingBytesCount()
 export type PendingBytesCount = ContractFunctionReturnType<
-  typeof blobManagerABI,
+  typeof blobManagerAbi,
   AbiStateMutability,
   "getPendingBytesCount"
 >;
 
 // Used for getStorageStats()
 export type StorageStats = ContractFunctionReturnType<
-  typeof blobManagerABI,
+  typeof blobManagerAbi,
   AbiStateMutability,
   "getStorageStats"
 >;
 
 // Used for getBlobStatus()
 export type BlobStatus = ContractFunctionReturnType<
-  typeof blobManagerABI,
+  typeof blobManagerAbi,
   AbiStateMutability,
   "getBlobStatus"
 >;
 
 // Used for getStorageUsage()
 export type StorageUsage = ContractFunctionReturnType<
-  typeof blobManagerABI,
+  typeof blobManagerAbi,
   AbiStateMutability,
   "getStorageUsage"
 >;
 
 // Used for getSubnetStats()
 export type SubnetStats = ContractFunctionReturnType<
-  typeof blobManagerABI,
+  typeof blobManagerAbi,
   AbiStateMutability,
   "getSubnetStats"
 >;
 
 // Used for addBlob()
 type AddBlobFullParams = ContractFunctionArgs<
-  typeof blobManagerABI,
+  typeof blobManagerAbi,
   AbiStateMutability,
   "addBlob"
 >;
@@ -116,50 +117,50 @@ export type AddBlobOptions = {
 
 // Used for getBlob()
 type GetBlobParams = ContractFunctionArgs<
-  typeof blobManagerABI,
+  typeof blobManagerAbi,
   AbiStateMutability,
   "getBlob"
 >;
 
 // Used for getBlobStatus()
 type GetBlobStatusParams = ContractFunctionArgs<
-  typeof blobManagerABI,
+  typeof blobManagerAbi,
   AbiStateMutability,
   "getBlobStatus"
 >;
 
 // Used for deleteBlob()
 type DeleteBlobParams = ContractFunctionArgs<
-  typeof blobManagerABI,
+  typeof blobManagerAbi,
   AbiStateMutability,
   "deleteBlob"
 >;
 
 // Used for addBlob()
 export type AddBlobResult = Required<
-  GetEventArgs<typeof blobManagerABI, "AddBlob", { IndexedOnly: false }>
+  GetEventArgs<typeof blobManagerAbi, "AddBlob", { IndexedOnly: false }>
 >;
 
 // Used for deleteBlob()
 export type DeleteBlobResult = Required<
-  GetEventArgs<typeof blobManagerABI, "DeleteBlob", { IndexedOnly: false }>
+  GetEventArgs<typeof blobManagerAbi, "DeleteBlob", { IndexedOnly: false }>
 >;
 
 // Used for overwriteBlob()
 export type OverwriteBlobParams = ContractFunctionArgs<
-  typeof blobManagerABI,
+  typeof blobManagerAbi,
   AbiStateMutability,
   "overwriteBlob"
 >;
 
 // Used for overwriteBlob()
 export type OverwriteBlobResult = Required<
-  GetEventArgs<typeof blobManagerABI, "OverwriteBlob", { IndexedOnly: false }>
+  GetEventArgs<typeof blobManagerAbi, "OverwriteBlob", { IndexedOnly: false }>
 >;
 
 export class BlobManager {
   client: HokuClient;
-  contract: GetContractReturnType<typeof blobManagerABI, Client, Address>;
+  contract: GetContractReturnType<typeof blobManagerAbi, Client, Address>;
 
   constructor(client: HokuClient, contractAddress?: Address) {
     this.client = client;
@@ -174,7 +175,7 @@ export class BlobManager {
       throw new Error(`No contract address found for chain ID ${chainId}}`);
     }
     this.contract = getContract({
-      abi: blobManagerABI,
+      abi: blobManagerAbi,
       address: contractAddress || deployedBlobManagerAddress,
       client: {
         public: client.publicClient,
@@ -183,7 +184,7 @@ export class BlobManager {
     });
   }
 
-  getContract(): GetContractReturnType<typeof blobManagerABI, Client, Address> {
+  getContract(): GetContractReturnType<typeof blobManagerAbi, Client, Address> {
     return this.contract;
   }
 
