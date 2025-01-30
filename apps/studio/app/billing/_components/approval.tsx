@@ -24,6 +24,8 @@ import { Card, CardContent } from "@recall/ui/components/card";
 import { useToast } from "@recall/ui/hooks/use-toast";
 import { cn } from "@recall/ui/lib/utils";
 
+import Metric from "./metric";
+
 interface Props {
   type: "to" | "from";
   creditSponsor?: `0x${string}`;
@@ -154,32 +156,21 @@ export function Approval({ type, creditSponsor, approval }: Props) {
               </span>
             </div>
             <div className="flex justify-between">
-              <div className="flex flex-col items-center">
-                <span className="text-muted-foreground text-xs">
-                  Credits used
-                </span>
-                <span className="text-lg font-medium">
-                  {creditUsedDisplay}/{creditLimitDisplay}
-                </span>
-                <span className="text-muted-foreground text-sm">GB Months</span>
-              </div>
-              <div className="flex flex-col items-center">
-                <span className="text-muted-foreground text-xs">Gas used</span>
-                <span className="text-lg font-medium">
-                  {gasFeeUsedDisplay}/{gasFeeLimitDisplay}
-                </span>
-                <span className="text-muted-foreground text-sm">$RECALL</span>
-              </div>
-              <div className="flex flex-col items-center">
-                <span className="text-muted-foreground text-xs">
-                  Expire{blockDiff || 1 < 0 ? "d" : "s"}
-                </span>
-                {ttlDisplay && (
-                  <span title={expiryIso} className="text-lg font-medium">
-                    {ttlDisplay}
-                  </span>
-                )}
-              </div>
+              <Metric
+                title="Credits used"
+                value={`${creditUsedDisplay}/${creditLimitDisplay}`}
+                subtitle="GB Months"
+              />
+              <Metric
+                title="Gas used"
+                value={`${gasFeeUsedDisplay}/${gasFeeLimitDisplay}`}
+                subtitle="$RECALL"
+              />
+              <Metric
+                title={`Expire${blockDiff || 1 < 0 ? "d" : "s"}`}
+                value={ttlDisplay}
+                valueTooltip={expiryIso}
+              />
             </div>
           </div>
           {type === "to" && (

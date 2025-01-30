@@ -35,7 +35,7 @@ export function BillingTabs() {
   };
 
   return (
-    <Tabs value={hash.slice(1)} onValueChange={handleTabChange}>
+    <Tabs value={hash.slice(1) || "account"} onValueChange={handleTabChange}>
       <ScrollArea>
         <TabsList>
           <TabsTrigger value="account">Account</TabsTrigger>
