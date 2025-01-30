@@ -4,9 +4,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "tsc --watch",
-    "build": "tsc",
-    "lint": "eslint . --max-warnings 0"
+    "build": "wagmi generate && tsc",
+    "lint": "eslint . --max-warnings 0",
+    "clean": "rm -rf .turbo node_modules dist"
   },
   "devDependencies": {
     "@wagmi/cli": "^2.1.22",
