@@ -15,7 +15,7 @@ import {
 import { cbor } from "@recall/fvm";
 
 import { bucketManagerABI } from "../abis.js";
-import { HokuClient } from "../client.js";
+import { RecallClient } from "../client.js";
 import {
   MAX_OBJECT_LENGTH,
   MIN_TTL,
@@ -186,10 +186,10 @@ export type AddObjectParams = Extract<
 
 export class BucketManager {
   private fileHandler: FileHandler;
-  client: HokuClient;
+  client: RecallClient;
   contract: GetContractReturnType<typeof bucketManagerABI, Client, Address>;
 
-  constructor(client: HokuClient, contractAddress?: Address) {
+  constructor(client: RecallClient, contractAddress?: Address) {
     this.client = client;
     const chainId = client.publicClient?.chain?.id;
     if (!chainId) {
@@ -254,7 +254,7 @@ export class BucketManager {
           hash,
         );
       // The first value is the actor's ID, the second is the robust t2 address payload; we don't use the robust address
-      // See `CreateExternalReturn`: https://github.com/hokunet/ipc/blob/35abe5f4be2d0dddc9d763ce69bdc4d39a148d0f/fendermint/vm/actor_interface/src/adm.rs#L66
+      // See `CreateExternalReturn`: https://github.com/recallnet/ipc/blob/35abe5f4be2d0dddc9d763ce69bdc4d39a148d0f/fendermint/vm/actor_interface/src/adm.rs#L66
       // We need to decode the actor ID from the CBOR and then convert it to an Ethereum address
       // The actor ID needs to be LEB128 encoded, and the FVM ID address is 1 byte of 0x00 followed by the actor ID
       const decoded = cbor.decode(data);

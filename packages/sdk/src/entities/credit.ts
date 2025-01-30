@@ -14,7 +14,7 @@ import {
 } from "viem";
 
 import { creditManagerABI } from "../abis.js";
-import { HokuClient } from "../client.js";
+import { RecallClient } from "../client.js";
 import { creditManagerAddress } from "../constants.js";
 import {
   ActorNotFound,
@@ -118,10 +118,10 @@ export type SetAccountSponsorResult = Required<
 
 // Credit manager for buy, approving, revoking, and general credit operations
 export class CreditManager {
-  client: HokuClient;
+  client: RecallClient;
   contract: GetContractReturnType<typeof creditManagerABI, Client, Address>;
 
-  constructor(client: HokuClient, contractAddress?: Address) {
+  constructor(client: RecallClient, contractAddress?: Address) {
     this.client = client;
     const chainId = client.publicClient?.chain?.id;
     if (!chainId) {

@@ -25,7 +25,7 @@ export async function accountExists(config: Config, address: Address) {
 }
 
 export async function createAccount(address: Address) {
-  const response = await fetch("https://faucet-ignition-0.hoku.sh/register", {
+  const response = await fetch("https://faucet-ignition-0.recall.network/register", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

@@ -14,7 +14,7 @@ import {
 } from "viem";
 
 import { blobManagerABI } from "../abis.js";
-import { HokuClient } from "../client.js";
+import { RecallClient } from "../client.js";
 import { MIN_TTL, blobManagerAddress } from "../constants.js";
 import { getObjectsNodeInfo } from "../provider/object.js";
 import {
@@ -158,10 +158,10 @@ export type OverwriteBlobResult = Required<
 >;
 
 export class BlobManager {
-  client: HokuClient;
+  client: RecallClient;
   contract: GetContractReturnType<typeof blobManagerABI, Client, Address>;
 
-  constructor(client: HokuClient, contractAddress?: Address) {
+  constructor(client: RecallClient, contractAddress?: Address) {
     this.client = client;
     const chainId = client.publicClient?.chain?.id;
     if (!chainId) {

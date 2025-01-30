@@ -58,44 +58,44 @@ export const walletClientFromPrivateKey = (
   });
 };
 
-// Configuration for the HokuClient
-export interface HokuConfig {
+// Configuration for the RecallClient
+export interface RecallConfig {
   publicClient?: PublicClient<Transport, Chain>;
   walletClient?: WalletClient<Transport, Chain, Account>;
   network?: Network;
 }
 
-// The HokuClient class for interacting with subnet buckets, blobs, credits, and accounts
-export class HokuClient {
+// The RecallClient class for interacting with subnet buckets, blobs, credits, and accounts
+export class RecallClient {
   public publicClient: PublicClient<Transport, Chain>;
   public walletClient: WalletClient<Transport, Chain, Account> | undefined;
   public network: Network;
 
   // TODO: this logic probably needs to be refactored to properly handle conflicts
-  constructor(config: HokuConfig = {}) {
+  constructor(config: RecallConfig = {}) {
     if (config.walletClient) this.walletClient = config.walletClient;
     if (config.publicClient) {
       this.publicClient = config.publicClient;
     } else {
       this.publicClient = config.walletClient
-        ? HokuClient.fromChain(config.walletClient.chain).publicClient
-        : HokuClient.fromChain().publicClient;
+        ? RecallClient.fromChain(config.walletClient.chain).publicClient
+        : RecallClient.fromChain().publicClient;
     }
     const chain = this.publicClient.chain;
     if (!chain) throw new Error("missing chain in provided client");
     this.network = config.network ?? Network.fromChain(chain);
   }
 
-  // Creates a HokuClient from a chain
+  // Creates a RecallClient from a chain
   static fromChain(chain: Chain = testnet) {
-    return new HokuClient({
+    return new RecallClient({
       publicClient: createPublicClient({ chain, transport: http() }),
     });
   }
 
-  // Creates a HokuClient from a chain name
+  // Creates a RecallClient from a chain name
   static fromChainName(chainName: ChainName = "testnet") {
-    return new HokuClient({
+    return new RecallClient({
       publicClient: createPublicClient({
         chain: getChain(chainName),
         transport: http(),
