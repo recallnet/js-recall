@@ -29,7 +29,7 @@ import { useToast } from "@recall/ui/hooks/use-toast";
 
 import { Approval } from "./approval";
 
-export function Approvals() {
+export function ApprovalsTo() {
   const { toast } = useToast();
 
   const config = useConfig();
@@ -98,16 +98,6 @@ export function Approvals() {
   }, [approvalError, toast]);
 
   useEffect(() => {
-    if (approvalError) {
-      toast({
-        title: "Error",
-        description: approvalError.message,
-        variant: "destructive",
-      });
-    }
-  }, [approvalError, toast]);
-
-  useEffect(() => {
     if (approvalReceiptError) {
       toast({
         title: "Error",
@@ -155,9 +145,9 @@ export function Approvals() {
     const limits =
       !!formData.creditLimit || !!formData.gasFeeLimit || !!formData.ttl
         ? {
-            creditLimit: gbMonthsToCredits(formData.creditLimit),
-            gasFeeLimit: displayToRecall(formData.gasFeeLimit),
-            ttl: hoursToNumBlocks(formData.ttl),
+            creditLimit: gbMonthsToCredits(formData.creditLimit || 0),
+            gasFeeLimit: displayToRecall(formData.gasFeeLimit || 0n),
+            ttl: hoursToNumBlocks(formData.ttl || 0),
           }
         : undefined;
     approveCredit(formData.to, { from, limits });
@@ -240,14 +230,6 @@ export function Approvals() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <Button
-        variant="outline"
-        className="self-end"
-        onClick={() => setNewApprovalOpen(true)}
-      >
-        <Plus />
-        New Approval
-      </Button>
       {!creditAccount && (
         <div className="flex flex-1 items-center justify-center">
           <Loader2 className="animate-spin" />
@@ -259,7 +241,7 @@ export function Approvals() {
         </div>
       )}
       {creditAccount?.approvalsTo.map((approval) => {
-        return <Approval key={approval.addr} approvalTo={approval} />;
+        return <Approval key={approval.addr} type="to" approval={approval} />;
       })}
       {/* {creditAccount && (
         <pre>
@@ -271,6 +253,14 @@ export function Approvals() {
           )}
         </pre>
       )} */}
+      <Button
+        variant="outline"
+        className="self-end"
+        onClick={() => setNewApprovalOpen(true)}
+      >
+        <Plus />
+        New Approval
+      </Button>
     </div>
   );
 }

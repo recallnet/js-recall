@@ -266,3 +266,36 @@ export function useRevokeCreditApproval() {
 
   return { revokeCredit, revokeCreditAsync, ...rest };
 }
+
+export function useSetAccountSponsor() {
+  const chainId = useChainId();
+
+  const contractAddress =
+    creditManagerAddress[chainId as keyof typeof creditManagerAddress];
+
+  const { writeContract, writeContractAsync, ...rest } = useWriteContract();
+
+  const baseConfig = {
+    address: contractAddress,
+    abi: creditManagerAbi,
+    functionName: "setAccountSponsor",
+  } as const;
+
+  const setAccountSponsor = (from: Address, sponsor: Address) =>
+    writeContract({
+      ...baseConfig,
+      args: [from, sponsor],
+    });
+
+  const setAccountSponsorAsync = (from: Address, sponsor: Address) =>
+    writeContractAsync({
+      ...baseConfig,
+      args: [from, sponsor],
+    });
+
+  return {
+    setAccountSponsor,
+    setAccountSponsorAsync,
+    ...rest,
+  };
+}
