@@ -299,3 +299,36 @@ export function useSetAccountSponsor() {
     ...rest,
   };
 }
+
+export function useDeleteAccountSponsor() {
+  const chainId = useChainId();
+
+  const contractAddress =
+    creditManagerAddress[chainId as keyof typeof creditManagerAddress];
+
+  const { writeContract, writeContractAsync, ...rest } = useWriteContract();
+
+  const baseConfig = {
+    address: contractAddress,
+    abi: creditManagerAbi,
+    functionName: "setAccountSponsor",
+  } as const;
+
+  const deleteAccountSponsor = (from: Address) =>
+    writeContract({
+      ...baseConfig,
+      args: [from, "0x0000000000000000000000000000000000000000"],
+    });
+
+  const deleteAccountSponsorAsync = (from: Address) =>
+    writeContractAsync({
+      ...baseConfig,
+      args: [from, "0x0000000000000000000000000000000000000000"],
+    });
+
+  return {
+    deleteAccountSponsor,
+    deleteAccountSponsorAsync,
+    ...rest,
+  };
+}

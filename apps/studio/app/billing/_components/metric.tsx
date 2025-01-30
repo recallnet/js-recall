@@ -13,7 +13,7 @@ export default function Metric({
     <div className="flex flex-col items-center">
       {title && <span className="text-muted-foreground text-xs">{title}</span>}
       {value && (
-        <span title={valueTooltip} className="text-lg font-medium">
+        <span title={valueTooltip} className="text-xl font-medium">
           {value}
         </span>
       )}

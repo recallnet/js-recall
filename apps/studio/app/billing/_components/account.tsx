@@ -1,9 +1,10 @@
 "use client";
 
-import { CreditCard, Database, DollarSign } from "lucide-react";
+import { CreditCard, Database, DollarSign, Loader2 } from "lucide-react";
 import { duration } from "moment";
-import { useEffect } from "react";
-import { useAccount, useBalance } from "wagmi";
+import { useEffect, useState } from "react";
+import { isAddress } from "viem";
+import { useAccount, useBalance, useWaitForTransactionReceipt } from "wagmi";
 
 import { displayAddress } from "@recall/address-utils/display";
 import {
@@ -12,7 +13,11 @@ import {
   numBlocksToSeconds,
   recallToDisplay,
 } from "@recall/bigint-utils/conversions";
-import { useCreditAccount } from "@recall/sdkx/react/credits";
+import {
+  useCreditAccount,
+  useDeleteAccountSponsor,
+  useSetAccountSponsor,
+} from "@recall/sdkx/react/credits";
 import { Button } from "@recall/ui/components/button";
 import {
   Card,
@@ -22,6 +27,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@recall/ui/components/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@recall/ui/components/dialog";
+import { Input } from "@recall/ui/components/input";
+import { Label } from "@recall/ui/components/label";
 import { useToast } from "@recall/ui/hooks/use-toast";
 
 import Metric from "./metric";
@@ -33,21 +48,102 @@ export function Account() {
 
   const { data } = useBalance({ address });
 
+  const [setSponsorOpen, setSetSponsorOpen] = useState(false);
+
+  const [sponsorAddress, setSponsorAddress] = useState("");
+
   const {
     data: creditAccount,
     error: creditAccountError,
     refetch: refetchCreditAccount,
   } = useCreditAccount();
 
+  const {
+    setAccountSponsor,
+    isPending: setSponsorPending,
+    data: setSponsorTxnHash,
+    error: setSponsorError,
+  } = useSetAccountSponsor();
+
+  const {
+    isPending: setSponsorReceiptPending,
+    isSuccess: setSponsorReceiptSuccess,
+    error: setSponsorReceiptError,
+  } = useWaitForTransactionReceipt({
+    hash: setSponsorTxnHash,
+  });
+
+  const {
+    deleteAccountSponsor,
+    isPending: deleteSponsorPending,
+    data: deleteSponsorTxnHash,
+    error: deleteSponsorError,
+  } = useDeleteAccountSponsor();
+
+  const {
+    isPending: deleteSponsorReceiptPending,
+    isSuccess: deleteSponsorReceiptSuccess,
+    error: deleteSponsorReceiptError,
+  } = useWaitForTransactionReceipt({
+    hash: deleteSponsorTxnHash,
+  });
+
   useEffect(() => {
-    if (creditAccountError) {
+    if (setSponsorReceiptSuccess || deleteSponsorReceiptSuccess) {
+      refetchCreditAccount();
+      setSetSponsorOpen(false);
+    }
+  }, [
+    setSponsorReceiptSuccess,
+    deleteSponsorReceiptSuccess,
+    refetchCreditAccount,
+  ]);
+
+  useEffect(() => {
+    if (
+      creditAccountError ||
+      setSponsorError ||
+      setSponsorReceiptError ||
+      deleteSponsorError ||
+      deleteSponsorReceiptError
+    ) {
       toast({
         title: "Error",
-        description: creditAccountError.message,
+        description:
+          creditAccountError?.message ||
+          setSponsorError?.message ||
+          setSponsorReceiptError?.message ||
+          deleteSponsorError?.message ||
+          deleteSponsorReceiptError?.message,
         variant: "destructive",
       });
     }
-  }, [creditAccountError, toast]);
+  }, [
+    creditAccountError,
+    setSponsorError,
+    setSponsorReceiptError,
+    deleteSponsorError,
+    deleteSponsorReceiptError,
+    toast,
+  ]);
+
+  const handleSetSponsor = () => {
+    if (!address || !sponsorAddress) return;
+    if (!isAddress(sponsorAddress)) {
+      toast({
+        title: "Invalid address",
+        description: "Please enter a valid address",
+        variant: "destructive",
+      });
+      return;
+    }
+    setAccountSponsor(address, sponsorAddress);
+  };
+
+  const handleDeleteSponsor = () => {
+    if (!address) return;
+    deleteAccountSponsor(address);
+  };
 
   const hasSponsor =
     creditAccount &&
@@ -67,8 +163,54 @@ export function Account() {
       ).humanize()
     : undefined;
 
+  const setPending =
+    setSponsorPending || (setSponsorTxnHash && setSponsorReceiptPending);
+  const deletePending =
+    deleteSponsorPending ||
+    (deleteSponsorTxnHash && deleteSponsorReceiptPending);
+
   return (
     <div className="grid gap-4 md:grid-cols-2">
+      <Dialog open={setSponsorOpen} onOpenChange={setSetSponsorOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Set Sponsor</DialogTitle>
+            <DialogDescription>
+              Set your default account sponsor and they will pay for credits and
+              gas allowance you use from the approval they&apos;ve granted you.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-2">
+              <Label>Wallet Address</Label>
+              <Input
+                id="to"
+                value={sponsorAddress}
+                onChange={(e) => setSponsorAddress(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            {hasSponsor && (
+              <Button
+                variant="destructive"
+                onClick={handleDeleteSponsor}
+                disabled={deletePending}
+              >
+                Delete Sponsor
+                {deletePending && <Loader2 className="animate-spin" />}
+              </Button>
+            )}
+            <Button
+              onClick={handleSetSponsor}
+              disabled={setPending || !sponsorAddress}
+            >
+              Submit
+              {setPending && <Loader2 className="animate-spin" />}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Card className="col-span-2 rounded-none">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -123,7 +265,9 @@ export function Account() {
           <Button variant="outline" className="">
             Buy Credits
           </Button>
-          <Button variant="outline">Set Sponsor</Button>
+          <Button variant="outline" onClick={() => setSetSponsorOpen(true)}>
+            Set Sponsor
+          </Button>
         </CardFooter>
       </Card>
       <Card className="rounded-none">
