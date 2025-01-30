@@ -262,9 +262,7 @@ export function Account() {
           </div>
         </CardContent>
         <CardFooter className="flex justify-center gap-4 sm:justify-end">
-          <Button variant="outline" className="">
-            Buy Credits
-          </Button>
+          <Button>Buy Credits</Button>
           <Button variant="outline" onClick={() => setSetSponsorOpen(true)}>
             Set Sponsor
           </Button>
