@@ -35,34 +35,47 @@ type AddressEthTestCase = {
 
 describe("address", function () {
   this.timeout(60_000);
-  describe("vectors", async () => {
-    describe("from string", async () => {
+  // Note: we run all test vectors in a single test to avoid excessive logging
+  describe("vectors", () => {
+    describe("from string", () => {
       const vectors = JSON.parse(
         readFileSync(new URL(ADDRESSES_VECTOR, import.meta.url), "utf-8"),
       ) as AddressTestCase[];
 
-      vectors.forEach(
-        async ({ string, payload, bytes, protocol, network, eth }, index) => {
-          it(`test case ${index}: ${string}`, async () => {
-            const addr = Address.fromString(string);
+      it(`should handle ${vectors.length} address string vectors`, () => {
+        vectors.forEach(
+          ({ string, payload, bytes, protocol, network, eth }, index) => {
+            try {
+              const addr = Address.fromString(string);
 
-            expect(addr.toString()).to.equal(string);
-            expect(u8a.toString(addr.toBytes(), "hex")).to.equal(bytes);
-            expect(addr.getProtocol()).to.equal(protocol);
-            expect(addr.getNetworkPrefix()).to.equal(network);
-            expect(u8a.toString(addr.getPayload(), "hex")).to.equal(payload);
+              expect(addr.toString()).to.equal(string);
+              expect(u8a.toString(addr.toBytes(), "hex")).to.equal(bytes);
+              expect(addr.getProtocol()).to.equal(protocol);
+              expect(addr.getNetworkPrefix()).to.equal(network);
+              expect(u8a.toString(addr.getPayload(), "hex")).to.equal(payload);
 
-            if (Address.isAddressId(addr)) {
-              expect(addr.getId()).to.equal(string.substring(2));
-              expect(addr.toEthAddressHex()).to.equal(eth); // `toEthAddressHex` defaults to hex prefix
-            }
-            if (Address.isAddressDelegated(addr))
-              expect(addr.getNamespace()).to.equal(
-                string.substring(2, string.indexOf(network, 1)),
+              if (Address.isAddressId(addr)) {
+                expect(addr.getId()).to.equal(string.substring(2));
+                expect(addr.toEthAddressHex()).to.equal(eth);
+              }
+              if (Address.isAddressDelegated(addr)) {
+                expect(addr.getNamespace()).to.equal(
+                  string.substring(2, string.indexOf(network, 1)),
+                );
+              }
+            } catch (error: unknown) {
+              if (error instanceof Error) {
+                throw new Error(
+                  `Vector ${index} failed with string "${string}": ${error.message}`,
+                );
+              }
+              throw new Error(
+                `Vector ${index} failed with string "${string}": ${error}`,
               );
-          });
-        },
-      );
+            }
+          },
+        );
+      });
     });
 
     describe("from bytes", () => {
@@ -70,49 +83,69 @@ describe("address", function () {
         readFileSync(new URL(ADDRESSES_VECTOR, import.meta.url), "utf-8"),
       ) as AddressTestCase[];
 
-      vectors.forEach(
-        ({ string, payload, bytes, protocol, network }, index) => {
-          it(`Test case ${index}: 0x${bytes}`, () => {
-            const addr = Address.fromBytes(
-              u8a.fromString(bytes, "hex"),
-              network as NetworkPrefix,
-            );
-
-            expect(addr.toString()).to.equal(string);
-            expect(u8a.toString(addr.toBytes(), "hex")).to.equal(bytes);
-
-            expect(addr.getProtocol()).to.equal(protocol);
-            expect(addr.getNetworkPrefix()).to.equal(network);
-            expect(u8a.toString(addr.getPayload(), "hex")).to.equal(payload);
-
-            if (Address.isAddressId(addr))
-              expect(addr.getId()).to.equal(string.substring(2));
-            if (Address.isAddressDelegated(addr))
-              expect(addr.getNamespace()).to.equal(
-                string.substring(2, string.indexOf(network, 1)),
+      it(`should handle ${vectors.length} address bytes vectors`, () => {
+        vectors.forEach(
+          ({ string, payload, bytes, protocol, network }, index) => {
+            try {
+              const addr = Address.fromBytes(
+                u8a.fromString(bytes, "hex"),
+                network as NetworkPrefix,
               );
-          });
-        },
-      );
+
+              expect(addr.toString()).to.equal(string);
+              expect(u8a.toString(addr.toBytes(), "hex")).to.equal(bytes);
+              expect(addr.getProtocol()).to.equal(protocol);
+              expect(addr.getNetworkPrefix()).to.equal(network);
+              expect(u8a.toString(addr.getPayload(), "hex")).to.equal(payload);
+
+              if (Address.isAddressId(addr))
+                expect(addr.getId()).to.equal(string.substring(2));
+              if (Address.isAddressDelegated(addr))
+                expect(addr.getNamespace()).to.equal(
+                  string.substring(2, string.indexOf(network, 1)),
+                );
+            } catch (error: unknown) {
+              if (error instanceof Error) {
+                throw new Error(
+                  `Vector ${index} failed with bytes "0x${bytes}": ${error.message}`,
+                );
+              }
+              throw new Error(
+                `Vector ${index} failed with bytes "0x${bytes}": ${error}`,
+              );
+            }
+          },
+        );
+      });
     });
 
-    describe("eth <-> ID address ", () => {
+    describe("eth <-> ID address", () => {
       const vectors = JSON.parse(
         readFileSync(new URL(ADDRESSES_ETH_VECTOR, import.meta.url), "utf-8"),
       ) as AddressEthTestCase[];
 
-      vectors.forEach(async ({ string, eth }) => {
-        it(`test case ${string}: ${eth}`, async () => {
-          const addrId1 = Address.fromEthAddress(eth, NetworkPrefix.Mainnet);
-          expect(addrId1.toString()).to.equal(string);
-          expect(addrId1.toEthAddressHex(true)).to.equal(eth);
+      it(`should handle ${vectors.length} ETH address vectors`, () => {
+        vectors.forEach(({ string, eth }, index) => {
+          try {
+            const addrId1 = Address.fromEthAddress(eth, NetworkPrefix.Mainnet);
+            expect(addrId1.toString()).to.equal(string);
+            expect(addrId1.toEthAddressHex(true)).to.equal(eth);
 
-          const addrId2 = Address.fromString(string);
-
-          expect(addrId2.toString()).to.equal(string);
-          expect(Address.isAddressId(addrId2) === true);
-          if (Address.isAddressId(addrId2)) {
-            expect(addrId2.toEthAddressHex(true)).to.equal(eth);
+            const addrId2 = Address.fromString(string);
+            expect(addrId2.toString()).to.equal(string);
+            expect(Address.isAddressId(addrId2) === true);
+            if (Address.isAddressId(addrId2)) {
+              expect(addrId2.toEthAddressHex(true)).to.equal(eth);
+            }
+          } catch (error: unknown) {
+            if (error instanceof Error) {
+              throw new Error(
+                `Vector ${index} failed with ETH "${eth}": ${error.message}`,
+              );
+            }
+            throw new Error(
+              `Vector ${index} failed with ETH "${eth}": ${error}`,
+            );
           }
         });
       });
