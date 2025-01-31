@@ -22,8 +22,7 @@ import {
 } from "@recall/ui/components/dialog";
 import { useToast } from "@recall/ui/hooks/use-toast";
 import { cn } from "@recall/ui/lib/utils";
-
-import BuyCreditsDialog from "./buy-credits-dialog.js";
+import BuyCreditsDialog from "@recall/ui/recall/buy-credits-dialog";
 
 type Props = {} & HTMLAttributes<HTMLDivElement>;
 
