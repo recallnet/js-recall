@@ -38,6 +38,7 @@ import {
 import { Input } from "@recall/ui/components/input";
 import { Label } from "@recall/ui/components/label";
 import { useToast } from "@recall/ui/hooks/use-toast";
+import BuyCreditsDialog from "@recall/ui/recall/buy-credits-dialog";
 
 import Metric from "./metric";
 
@@ -47,6 +48,8 @@ export function Account() {
   const { address } = useAccount();
 
   const { data } = useBalance({ address });
+
+  const [buyCreditsOpen, setBuyCreditsOpen] = useState(false);
 
   const [setSponsorOpen, setSetSponsorOpen] = useState(false);
 
@@ -171,6 +174,7 @@ export function Account() {
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
+      <BuyCreditsDialog open={buyCreditsOpen} setOpen={setBuyCreditsOpen} />
       <Dialog open={setSponsorOpen} onOpenChange={setSetSponsorOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -262,7 +266,7 @@ export function Account() {
           </div>
         </CardContent>
         <CardFooter className="flex justify-center gap-4 sm:justify-end">
-          <Button>Buy Credits</Button>
+          <Button onClick={() => setBuyCreditsOpen(true)}>Buy Credits</Button>
           <Button variant="outline" onClick={() => setSetSponsorOpen(true)}>
             Set Sponsor
           </Button>
