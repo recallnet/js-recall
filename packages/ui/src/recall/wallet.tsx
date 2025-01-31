@@ -1,82 +1,60 @@
 "use client";
 
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { Copy, Loader2, Plus, Unplug, WalletIcon } from "lucide-react";
+import { Copy, Plus, Unplug, WalletIcon } from "lucide-react";
 import { HTMLAttributes, useEffect, useState } from "react";
-import {
-  useAccount,
-  useBalance,
-  useDisconnect,
-  useWaitForTransactionReceipt,
-} from "wagmi";
+import { useAccount, useBalance, useDisconnect } from "wagmi";
 
 import { displayAddress } from "@recall/address-utils/display";
 import {
   crazyCreditsToCredits,
   creditsToGbMonths,
-  creditsToRecall,
-  gbMonthsToCredits,
   recallToDisplay,
 } from "@recall/bigint-utils/conversions";
-import { useBuyCredit, useCreditBalance } from "@recall/sdkx/react/credits";
+import { useCreditAccount } from "@recall/sdkx/react/credits";
 import { Button } from "@recall/ui/components/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@recall/ui/components/dialog";
-import { Input } from "@recall/ui/components/input";
-import { Label } from "@recall/ui/components/label";
 import { useToast } from "@recall/ui/hooks/use-toast";
 import { cn } from "@recall/ui/lib/utils";
+
+import BuyCreditsDialog from "./buy-credits-dialog.js";
 
 type Props = {} & HTMLAttributes<HTMLDivElement>;
 
 export const Wallet = ({ className, ...props }: Props) => {
-  const { address, isConnected } = useAccount();
-  const {
-    data: creditBalance,
-    error: creditBalanceError,
-    refetch: refetchCreditBalance,
-  } = useCreditBalance();
+  const { address } = useAccount();
+
+  const { data: creditAccount, error: creditAccountError } = useCreditAccount();
+
   const balance = useBalance({ address });
-  const {
-    buyCredit,
-    error: buyCreditError,
-    isPending: buyCreditPending,
-    data: buyCreditTxn,
-  } = useBuyCredit();
-  const { data: buyCreditReceipt, isPending: buyCreditReceiptIsPending } =
-    useWaitForTransactionReceipt({
-      hash: buyCreditTxn,
-      query: {
-        enabled: !!buyCreditTxn,
-      },
-    });
+
   const { disconnect } = useDisconnect();
+
   const [accountOpen, setAccountOpen] = useState(false);
+
   const [buyCreditsOpen, setBuyCreditsOpen] = useState(false);
-  const [displayCredits, setDisplayCredits] = useState("0");
+
   const { toast } = useToast();
 
   useEffect(() => {
-    if (buyCreditReceipt?.status === "success") {
-      refetchCreditBalance();
-      setBuyCreditsOpen(false);
+    if (creditAccountError) {
+      toast({
+        title: "Error fetching credit balance",
+        description: creditAccountError.message,
+      });
     }
-  }, [buyCreditReceipt, refetchCreditBalance]);
+  }, [creditAccountError, toast]);
 
   const balanceDisplay = recallToDisplay(balance.data?.value ?? 0n, 2);
 
-  const creditsBalance = crazyCreditsToCredits(creditBalance?.creditFree ?? 0n);
+  const creditsBalance = crazyCreditsToCredits(creditAccount?.creditFree ?? 0n);
   const gbMonthsBalance = creditsToGbMonths(creditsBalance);
-
-  const creditsToBuy = gbMonthsToCredits(displayCredits || 0);
-  const recallToSpend = creditsToRecall(creditsToBuy);
-  const recallToSpendDisplay = recallToDisplay(recallToSpend, 4);
 
   const handleOpenBuyCredits = async () => {
     if (accountOpen) {
@@ -98,13 +76,6 @@ export const Wallet = ({ className, ...props }: Props) => {
     disconnect();
     setAccountOpen(false);
   };
-
-  const handleBuyCredits = async () => {
-    buyCredit(recallToSpend);
-  };
-
-  const creditPending =
-    buyCreditPending || (!!buyCreditTxn && buyCreditReceiptIsPending);
 
   return (
     <div
@@ -139,32 +110,7 @@ export const Wallet = ({ className, ...props }: Props) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* Buy Credits Dialog */}
-      <Dialog open={buyCreditsOpen} onOpenChange={setBuyCreditsOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Buy Recall Credits</DialogTitle>
-            <DialogDescription>
-              Credits allow you to store data on the Recall network at a fixed
-              rate. One credit stores one GB of data for one month.
-            </DialogDescription>
-          </DialogHeader>
-          <Label>GB Months</Label>
-          <Input
-            type="number"
-            min={1}
-            value={displayCredits}
-            onChange={(e) => setDisplayCredits(e.target.value)}
-          />
-          <span>Cost: {recallToSpendDisplay} $RECALL</span>
-          <DialogFooter className="">
-            <Button onClick={handleBuyCredits} disabled={creditPending}>
-              Submit
-              {creditPending && <Loader2 className="animate-spin" />}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <BuyCreditsDialog open={buyCreditsOpen} setOpen={setBuyCreditsOpen} />
       <ConnectButton.Custom>
         {({
           account,

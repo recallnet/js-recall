@@ -52,8 +52,8 @@ export function Nav() {
               <DropdownMenuItem onClick={() => router.push("/buckets")}>
                 Buckets
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push("/approvals")}>
-                Approvals
+              <DropdownMenuItem onClick={() => router.push("/billing")}>
+                Billing
               </DropdownMenuItem>
             </>
           )}
@@ -71,9 +71,9 @@ export function Nav() {
               active={pathname.startsWith("/buckets")}
             />
             <NavLink
-              title="Approvals"
-              href="/approvals"
-              active={pathname.startsWith("/approvals")}
+              title="Billing"
+              href="/billing"
+              active={pathname.startsWith("/billing")}
             />
           </>
         )}
