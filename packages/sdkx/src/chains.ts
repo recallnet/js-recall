@@ -11,12 +11,12 @@ export const ignition: Chain = {
   testnet: true,
   rpcUrls: {
     [2481632]: {
-      http: ["https://evm-ignition-0.recall.network"],
-      webSocket: ["wss://evm-ignition-0.recall.network"],
+      http: ["https://evm.node-0.testnet.recall.network"],
+      webSocket: ["wss://evm.node-0.testnet.recall.network"],
     },
     default: {
-      http: ["https://evm-ignition-0.recall.network"],
-      webSocket: ["wss://evm-ignition-0.recall.network"],
+      http: ["https://evm.node-0.testnet.recall.network"],
+      webSocket: ["wss://evm.node-0.testnet.recall.network"],
     },
   },
   blockExplorers: {
