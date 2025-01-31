@@ -62,7 +62,7 @@ export default function AgentActivity() {
 
   return (
     <main className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">AI Agent Activity Dashboard</h1>
+      <h1 className="mb-8 text-3xl font-bold">AI Agent Activity Dashboard</h1>
       <SearchAndFilter
         onSearchChange={handleSearchChange}
         onAgentChange={handleAgentChange}

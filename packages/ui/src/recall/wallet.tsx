@@ -22,8 +22,7 @@ import {
 } from "@recall/ui/components/dialog";
 import { useToast } from "@recall/ui/hooks/use-toast";
 import { cn } from "@recall/ui/lib/utils";
-
-import BuyCreditsDialog from "./buy-credits-dialog.js";
+import BuyCreditsDialog from "@recall/ui/recall/buy-credits-dialog";
 
 type Props = {} & HTMLAttributes<HTMLDivElement>;
 
@@ -112,15 +111,7 @@ export const Wallet = ({ className, ...props }: Props) => {
       </Dialog>
       <BuyCreditsDialog open={buyCreditsOpen} setOpen={setBuyCreditsOpen} />
       <ConnectButton.Custom>
-        {({
-          account,
-          chain,
-          openAccountModal,
-          openChainModal,
-          openConnectModal,
-          authenticationStatus,
-          mounted,
-        }) => {
+        {({ account, chain, openConnectModal, mounted }) => {
           const connected = mounted && account && chain;
           return (
             <Button
