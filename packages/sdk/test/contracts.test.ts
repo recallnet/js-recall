@@ -192,44 +192,58 @@ describe("contracts", function () {
 
       it("should download object with range", async () => {
         let range: { start?: number; end?: number } = { start: 1, end: 3 };
-        let { result: object } = await bucketManager.get(bucket, key, range);
+        let { result: object } = await bucketManager.get(bucket, key, {
+          range,
+        });
         let contents = new TextDecoder().decode(object);
         strictEqual(contents, "ell");
 
         range = { start: 1, end: 1 };
-        ({ result: object } = await bucketManager.get(bucket, key, range));
+        ({ result: object } = await bucketManager.get(bucket, key, {
+          range,
+        }));
         contents = new TextDecoder().decode(object);
         strictEqual(contents, "e");
 
         range = { start: 5, end: 11 };
-        ({ result: object } = await bucketManager.get(bucket, key, range));
+        ({ result: object } = await bucketManager.get(bucket, key, {
+          range,
+        }));
         contents = new TextDecoder().decode(object);
         strictEqual(contents, "\n");
 
         range = { start: 1, end: undefined };
-        ({ result: object } = await bucketManager.get(bucket, key, range));
+        ({ result: object } = await bucketManager.get(bucket, key, {
+          range,
+        }));
         contents = new TextDecoder().decode(object);
         strictEqual(contents, "ello\n");
 
         range = { start: undefined, end: 2 };
-        ({ result: object } = await bucketManager.get(bucket, key, range));
+        ({ result: object } = await bucketManager.get(bucket, key, {
+          range,
+        }));
         contents = new TextDecoder().decode(object);
         strictEqual(contents, "o\n");
 
         range = { start: undefined, end: 11 };
-        ({ result: object } = await bucketManager.get(bucket, key, range));
+        ({ result: object } = await bucketManager.get(bucket, key, {
+          range,
+        }));
         contents = new TextDecoder().decode(object);
         strictEqual(contents, fileContents);
 
         range = { start: undefined, end: undefined };
-        ({ result: object } = await bucketManager.get(bucket, key, range));
+        ({ result: object } = await bucketManager.get(bucket, key, {
+          range,
+        }));
         contents = new TextDecoder().decode(object);
         strictEqual(contents, fileContents);
       });
 
       it("should fail to download object with invalid range", async () => {
         let range: { start?: number; end?: number } = { start: 5, end: 2 };
-        let object = bucketManager.get(bucket, key, range);
+        let object = bucketManager.get(bucket, key, { range });
         await rejects(object, (err) => {
           strictEqual(
             (err as Error).message,
@@ -239,7 +253,7 @@ describe("contracts", function () {
         });
 
         range = { start: 6, end: undefined };
-        object = bucketManager.get(bucket, key, range);
+        object = bucketManager.get(bucket, key, { range });
         await rejects(object, (err) => {
           strictEqual((err as Error).message, `Invalid range: ${range.start}-`);
           return true;
@@ -261,7 +275,7 @@ describe("contracts", function () {
       it("should query objects", async () => {
         let {
           result: { objects, commonPrefixes },
-        } = await bucketManager.query(bucket, "hello/");
+        } = await bucketManager.query(bucket, { prefix: "hello/" });
         expect(objects.length).to.be.greaterThan(0);
         strictEqual(objects[0]?.key, key);
         strictEqual(objects[0]?.state?.size, 6n);
@@ -271,7 +285,7 @@ describe("contracts", function () {
         // no objects with prefix
         ({
           result: { objects, commonPrefixes },
-        } = await bucketManager.query(bucket, "foo/"));
+        } = await bucketManager.query(bucket, { prefix: "foo/" }));
         strictEqual(objects.length, 0);
         strictEqual(commonPrefixes.length, 0);
 
@@ -279,14 +293,13 @@ describe("contracts", function () {
         const latestBlock = await client.publicClient.getBlockNumber();
         ({
           result: { objects, commonPrefixes },
-        } = await bucketManager.query(
-          bucket,
-          "hello/",
-          "/",
-          "",
-          1,
-          latestBlock,
-        ));
+        } = await bucketManager.query(bucket, {
+          prefix: "hello/",
+          delimiter: "/",
+          startKey: "",
+          limit: 1,
+          blockNumber: latestBlock,
+        }));
         strictEqual(objects.length, 1);
         strictEqual(objects[0]?.key, key);
         strictEqual(commonPrefixes.length, 0);
@@ -294,7 +307,9 @@ describe("contracts", function () {
 
       it("should fail to query non-existent bucket", async () => {
         const missingBucket = "0xff00999999999999999999999999999999999999";
-        const query = bucketManager.query(missingBucket, "hello/");
+        const query = bucketManager.query(missingBucket, {
+          prefix: "hello/",
+        });
         await rejects(query, (err) => {
           strictEqual(
             (err as Error).message,
