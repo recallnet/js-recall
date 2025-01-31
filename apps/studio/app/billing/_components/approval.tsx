@@ -156,33 +156,11 @@ export function Approval({ type, creditSponsor, approval }: Props) {
           <span title="Copy address" onClick={handleCopy}>
             <Copy className="size-4 cursor-pointer opacity-20 hover:opacity-100" />
           </span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="">
-        <div className="flex items-center gap-8">
-          <div className="flex grow flex-col gap-4">
-            <div className="flex shrink-0 flex-wrap justify-around gap-8">
-              <Metric
-                title="Credits used"
-                value={`${creditUsedDisplay}/${creditLimitDisplay}`}
-                subtitle="GB Months"
-              />
-              <Metric
-                title="Gas used"
-                value={`${gasFeeUsedDisplay}/${gasFeeLimitDisplay}`}
-                subtitle="$RECALL"
-              />
-              <Metric
-                title={`Expire${blockDiff || 1 < 0 ? "d" : "s"}`}
-                value={ttlDisplay}
-                valueTooltip={expiryIso}
-              />
-            </div>
-          </div>
           {type === "to" && (
             <div
               title="Revoke approval"
               onClick={pending ? undefined : handleRevoke}
+              className="ml-auto"
             >
               {pending ? (
                 <Loader2 className="animate-spin" />
@@ -197,6 +175,7 @@ export function Approval({ type, creditSponsor, approval }: Props) {
               onClick={
                 isSponsor ? undefined : pending ? undefined : handleSetSponsor
               }
+              className="ml-auto"
             >
               {pending ? (
                 <Loader2 className="animate-spin" />
@@ -210,6 +189,27 @@ export function Approval({ type, creditSponsor, approval }: Props) {
               )}
             </div>
           )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="">
+        <div className="flex grow flex-col gap-4">
+          <div className="my-4 flex shrink-0 flex-wrap justify-around gap-8">
+            <Metric
+              title="Credits used"
+              value={`${creditUsedDisplay}/${creditLimitDisplay}`}
+              subtitle="GB Months"
+            />
+            <Metric
+              title="Gas used"
+              value={`${gasFeeUsedDisplay}/${gasFeeLimitDisplay}`}
+              subtitle="$RECALL"
+            />
+            <Metric
+              title={`Expire${blockDiff || 1 < 0 ? "d" : "s"}`}
+              value={ttlDisplay}
+              valueTooltip={expiryIso}
+            />
+          </div>
         </div>
       </CardContent>
     </Card>

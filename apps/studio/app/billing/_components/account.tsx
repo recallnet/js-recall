@@ -228,7 +228,7 @@ export function Account() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex shrink-0 flex-wrap justify-around gap-8">
+          <div className="my-5 flex shrink-0 flex-wrap justify-around gap-8">
             <Metric
               title="Credit Available"
               value={
@@ -284,7 +284,7 @@ export function Account() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex shrink-0 flex-wrap justify-around gap-8">
+          <div className="my-8 flex shrink-0 flex-wrap justify-around gap-8">
             <Metric
               title="Balance"
               value={data ? recallToDisplay(data.value) : undefined}
@@ -304,7 +304,7 @@ export function Account() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex shrink-0 flex-wrap justify-around gap-8">
+          <div className="my-8 flex shrink-0 flex-wrap justify-around gap-8">
             <Metric
               title="Capacity Used"
               value={capacityUsedDisplayData?.val.toString()}
