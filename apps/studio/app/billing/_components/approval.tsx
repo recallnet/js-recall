@@ -1,7 +1,7 @@
 "use client";
 
 import TimeAgo from "javascript-time-ago";
-import { Copy, Handshake, Loader2, Trash } from "lucide-react";
+import { Copy, Handshake, Loader2, Trash, Wallet } from "lucide-react";
 import { useEffect } from "react";
 import {
   useAccount,
@@ -20,7 +20,12 @@ import {
   useRevokeCreditApproval,
   useSetAccountSponsor,
 } from "@recall/sdkx/react/credits";
-import { Card, CardContent } from "@recall/ui/components/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@recall/ui/components/card";
 import { useToast } from "@recall/ui/hooks/use-toast";
 import { cn } from "@recall/ui/lib/utils";
 
@@ -144,17 +149,18 @@ export function Approval({ type, creditSponsor, approval }: Props) {
 
   return (
     <Card className="rounded-none">
-      <CardContent className="pt-6">
+      <CardHeader>
+        <CardTitle title={approval.addr} className="flex items-center gap-2">
+          <Wallet />
+          {displayAddress(approval.addr)}
+          <span title="Copy address" onClick={handleCopy}>
+            <Copy className="size-4 cursor-pointer opacity-20 hover:opacity-100" />
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="">
         <div className="flex items-center gap-8">
           <div className="flex grow flex-col gap-4">
-            <div className="flex items-center gap-2">
-              <span title={approval.addr} className="text-xl font-bold">
-                {displayAddress(approval.addr)}
-              </span>
-              <span title="Copy address" onClick={handleCopy}>
-                <Copy className="size-4 cursor-pointer opacity-20 hover:opacity-100" />
-              </span>
-            </div>
             <div className="flex shrink-0 flex-wrap justify-around gap-8">
               <Metric
                 title="Credits used"
