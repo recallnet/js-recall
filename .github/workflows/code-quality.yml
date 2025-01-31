@@ -22,6 +22,11 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
