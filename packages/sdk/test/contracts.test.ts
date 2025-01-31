@@ -61,6 +61,10 @@ describe("contracts", function () {
       expect(buckets).to.be.an("array");
       strictEqual(buckets[0]?.kind, 0);
 
+      ({ result: buckets } = await bucketManager.list());
+      expect(buckets).to.be.an("array");
+      strictEqual(buckets[0]?.kind, 0);
+
       // at a specific block number
       const latestBlock = await client.publicClient.getBlockNumber();
       ({ result: buckets } = await bucketManager.list(

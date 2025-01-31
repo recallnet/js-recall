@@ -278,13 +278,25 @@ export class BucketManager {
 
   // List buckets
   async list(
-    owner: Address,
+    owner?: Address,
     blockNumber?: bigint,
   ): Promise<Result<ListResult>> {
+    let effectiveOwner: Address;
+    if (owner) {
+      effectiveOwner = owner;
+    } else if (this.client.walletClient?.account) {
+      effectiveOwner = this.client.walletClient.account.address;
+    } else {
+      throw new Error("No owner provided or wallet client not initialized");
+    }
+
     try {
-      const listResult = await this.contract.read.listBuckets([owner], {
-        blockNumber,
-      });
+      const listResult = await this.contract.read.listBuckets(
+        [effectiveOwner],
+        {
+          blockNumber,
+        },
+      );
       const result = listResult.map((bucket) => ({
         ...bucket,
         metadata: convertAbiMetadataToObject(bucket.metadata),
