@@ -227,10 +227,13 @@ export class BucketManager {
   }
 
   // Create a bucket
-  async create(
-    owner?: Address,
-    metadata?: Record<string, string>,
-  ): Promise<Result<CreateBucketResult>> {
+  async create({
+    owner,
+    metadata,
+  }: {
+    owner?: Address;
+    metadata?: Record<string, string>;
+  } = {}): Promise<Result<CreateBucketResult>> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for creating a bucket");
     }
