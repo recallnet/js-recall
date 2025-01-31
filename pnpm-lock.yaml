@@ -159,6 +159,25 @@ importers:
         specifier: ^5.7.3
         version: 5.7.3
 
+  packages/demo:
+    dependencies:
+      '@recall/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+      viem:
+        specifier: ^2.22.9
+        version: 2.22.9(bufferutil@4.0.9)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.24.1)
+    devDependencies:
+      '@recall/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@recall/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      typescript:
+        specifier: ^5.7.3
+        version: 5.7.3
+
   packages/eslint-config:
     devDependencies:
       '@next/eslint-plugin-next':
