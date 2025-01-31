@@ -1,6 +1,8 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useAccount } from "wagmi";
 
 import { ScrollArea, ScrollBar } from "@recall/ui/components/scroll-area";
 import {
@@ -28,10 +30,21 @@ const useHash = () => {
 };
 
 export function BillingTabs() {
+  const { isConnected } = useAccount();
+
+  const router = useRouter();
+
   const hash = useHash();
+
+  useEffect(() => {
+    if (!isConnected) {
+      router.push("/");
+    }
+  }, [isConnected, router]);
 
   const handleTabChange = (value: string) => {
     window.location.hash = value;
+    router.push(`/billing#${value}`);
   };
 
   return (
