@@ -492,8 +492,10 @@ export class BucketManager {
   async get(
     bucket: Address,
     key: string,
-    range?: { start?: number; end?: number },
-    blockNumber?: bigint,
+    options?: {
+      range?: { start?: number; end?: number };
+      blockNumber?: bigint;
+    },
   ): Promise<Result<Uint8Array>> {
     try {
       const objectApiUrl = this.client.network.objectApiUrl();
@@ -501,8 +503,8 @@ export class BucketManager {
         objectApiUrl,
         bucket,
         key,
-        range,
-        blockNumber,
+        options?.range,
+        options?.blockNumber,
       );
       const chunks: Uint8Array[] = [];
       const reader = stream.getReader();
@@ -566,23 +568,25 @@ export class BucketManager {
   // Query objects in a bucket
   async query(
     bucket: Address,
-    prefix: string,
-    delimiter: string = "/",
-    startKey: string = "",
-    limit: number = 100,
-    blockNumber?: bigint,
+    options?: {
+      prefix?: string;
+      delimiter?: string;
+      startKey?: string;
+      limit?: number;
+      blockNumber?: bigint;
+    },
   ): Promise<Result<QueryResult>> {
     try {
       const args = [
         bucket,
-        prefix,
-        delimiter,
-        startKey,
-        BigInt(limit),
+        options?.prefix ?? "",
+        options?.delimiter ?? "/",
+        options?.startKey ?? "",
+        BigInt(options?.limit ?? 100),
       ] satisfies QueryObjectsParams;
       const { objects, commonPrefixes, nextKey } =
         (await this.contract.read.queryObjects(args, {
-          blockNumber,
+          blockNumber: options?.blockNumber,
         })) as QueryResultRaw;
       const result = {
         objects: objects.map(({ key, state }) => ({
