@@ -19,7 +19,7 @@ export function InfiniteScroll({ onLoadMore, hasMore }: InfiniteScrollProps) {
 
   return (
     <div ref={ref} className="h-10">
-      {hasMore && <div className="text-center py-4">Loading more...</div>}
+      {hasMore && <div className="py-4 text-center">Loading more...</div>}
     </div>
   );
 }

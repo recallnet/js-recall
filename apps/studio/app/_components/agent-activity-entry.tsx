@@ -40,22 +40,22 @@ export function AgentActivityEntry({ activity }: AgentActivityEntryProps) {
   return (
     <Card className="mb-4 rounded-none">
       <CardContent className="pt-6">
-        <div className="flex justify-between items-start mb-4">
+        <div className="mb-4 flex items-start justify-between">
           <div>
-            <h3 className="text-lg font-semibold mb-1">{activity.filename}</h3>
-            <p className="text-sm text-muted-foreground">
+            <h3 className="mb-1 text-lg font-semibold">{activity.filename}</h3>
+            <p className="text-muted-foreground text-sm">
               {formatDate(activity.timestamp)}
             </p>
           </div>
           <Badge variant="secondary">{activity.agent}</Badge>
         </div>
-        <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="mb-4 grid grid-cols-2 gap-4">
           <div className="flex items-center">
-            <FileText className="mr-2 h-4 w-4 text-muted-foreground" />
+            <FileText className="text-muted-foreground mr-2 h-4 w-4" />
             <span className="text-sm">{formatFileSize(activity.fileSize)}</span>
           </div>
           <div className="flex items-center">
-            <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+            <Clock className="text-muted-foreground mr-2 h-4 w-4" />
             <span className="text-sm">{activity.timeToLive} hours TTL</span>
           </div>
         </div>
@@ -78,8 +78,8 @@ export function AgentActivityEntry({ activity }: AgentActivityEntryProps) {
           )}
         </Button>
         {isExpanded && (
-          <div className="mt-4 p-4 bg-muted rounded-md">
-            <pre className="text-sm whitespace-pre-wrap">
+          <div className="bg-muted mt-4 rounded-md p-4">
+            <pre className="whitespace-pre-wrap text-sm">
               {JSON.stringify(activity.metadata, null, 2)}
             </pre>
           </div>

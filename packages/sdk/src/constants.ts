@@ -27,7 +27,8 @@ export const DEVNET_EVM_RPC_URL = "http://127.0.0.1:8545";
 export const DEVNET_EVM_WS_URL = "ws://127.0.0.1:8545";
 
 // Objects API URLs
-export const TESTNET_OBJECT_API_URL = "https://object-api.node-0.testnet.recall.network";
+export const TESTNET_OBJECT_API_URL =
+  "https://object-api.node-0.testnet.recall.network";
 export const LOCALNET_OBJECT_API_URL = "http://127.0.0.1:8001";
 export const DEVNET_OBJECT_API_URL = "http://127.0.0.1:8001";
 
