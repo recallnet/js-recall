@@ -50,7 +50,7 @@ describe("contracts", function () {
     });
 
     it("should create a bucket", async () => {
-      const { meta, result } = await bucketManager.create(account.address);
+      const { meta, result } = await bucketManager.create();
       strictEqual(isHash(meta!.tx!.transactionHash), true);
       strictEqual(result.owner, account.address);
       strictEqual(isAddress(result.bucket), true);
