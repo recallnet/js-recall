@@ -155,7 +155,7 @@ export function Approval({ type, creditSponsor, approval }: Props) {
                 <Copy className="size-4 cursor-pointer opacity-20 hover:opacity-100" />
               </span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex shrink-0 flex-wrap justify-around gap-8">
               <Metric
                 title="Credits used"
                 value={`${creditUsedDisplay}/${creditLimitDisplay}`}
