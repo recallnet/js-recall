@@ -14,6 +14,11 @@ jobs:
     name: Check lint, format, and build
     runs-on: ubuntu-latest
     steps:
+      - name: Set up SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.CONTRACTS_DEPLOY_KEY }}
+
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
