@@ -111,15 +111,7 @@ export const Wallet = ({ className, ...props }: Props) => {
       </Dialog>
       <BuyCreditsDialog open={buyCreditsOpen} setOpen={setBuyCreditsOpen} />
       <ConnectButton.Custom>
-        {({
-          account,
-          chain,
-          openAccountModal,
-          openChainModal,
-          openConnectModal,
-          authenticationStatus,
-          mounted,
-        }) => {
+        {({ account, chain, openConnectModal, mounted }) => {
           const connected = mounted && account && chain;
           return (
             <Button
