@@ -1,7 +1,7 @@
 // Forked from: https://github.com/Zondax/izari-filecoin/blob/master/tests/jest/logic/address.test.ts
 import { expect } from "chai";
-import { readFileSync } from "fs";
 import { describe, it } from "mocha";
+import { readFileSync } from "node:fs";
 import * as u8a from "uint8arrays";
 
 import { InvalidId, InvalidProtocolIndicator } from "../src/address/errors.js";
@@ -199,7 +199,7 @@ describe("address", function () {
       describe("from bytes", () => {
         it("testnet", async () => {
           const addr = Address.fromBytes(
-            Buffer.from("00da43", "hex"),
+            u8a.fromString("00da43", "hex"),
             NetworkPrefix.Testnet,
           );
           expect(addr.toString()).to.equal("t08666");
@@ -210,7 +210,7 @@ describe("address", function () {
 
         it("mainnet", async () => {
           const addr = Address.fromBytes(
-            Buffer.from("00da43", "hex"),
+            u8a.fromString("00da43", "hex"),
             NetworkPrefix.Mainnet,
           );
           expect(addr.toString()).to.equal("f08666");
@@ -222,7 +222,7 @@ describe("address", function () {
         it("exceed max value", async () => {
           expect(() => {
             Address.fromBytes(
-              Buffer.from("0080808080808080808001", "hex"),
+              u8a.fromString("0080808080808080808001", "hex"),
               NetworkPrefix.Mainnet,
             );
           }).to.throw(InvalidId);
@@ -230,7 +230,7 @@ describe("address", function () {
 
         it("max allowed value", async () => {
           const addr = Address.fromBytes(
-            Buffer.from("00ffffffffffffffff7f", "hex"),
+            u8a.fromString("00ffffffffffffffff7f", "hex"),
             NetworkPrefix.Mainnet,
           );
           expect(addr.toString()).to.equal("f09223372036854775807");
@@ -284,7 +284,7 @@ describe("address", function () {
         expect(() => {
           new AddressDelegated(
             "10",
-            Buffer.from("ff00000000000000000000000000000000000001", "hex"),
+            u8a.fromString("ff00000000000000000000000000000000000001", "hex"),
             NetworkPrefix.Mainnet,
           );
         }).to.throw("masked-id eth addresses not allowed");
@@ -302,7 +302,7 @@ describe("address", function () {
         expect(() => {
           const addr = new AddressDelegated(
             "11",
-            Buffer.from("111111", "hex"),
+            u8a.fromString("111111", "hex"),
             NetworkPrefix.Mainnet,
           );
           FilEthAddress.fromString(addr.toString());
@@ -313,7 +313,7 @@ describe("address", function () {
         expect(() => {
           const addr = new AddressDelegated(
             "10",
-            Buffer.from("111111", "hex"),
+            u8a.fromString("111111", "hex"),
             NetworkPrefix.Mainnet,
           );
           FilEthAddress.fromString(addr.toString());
@@ -323,7 +323,7 @@ describe("address", function () {
       it("masked-id eth address", async () => {
         expect(() => {
           new FilEthAddress(
-            Buffer.from("ff00000000000000000000000000000000000001", "hex"),
+            u8a.fromString("ff00000000000000000000000000000000000001", "hex"),
             NetworkPrefix.Mainnet,
           );
         }).to.throw("masked-id eth addresses not allowed");
