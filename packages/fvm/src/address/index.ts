@@ -107,7 +107,8 @@ export abstract class Address {
   static fromString(address: string): Address {
     if (address.length === 0) throw new Error("Invalid address");
     const indicator = address[1];
-    if (!indicator) throw new Error("Invalid network prefix");
+    if (indicator === undefined) throw new Error("Invalid network prefix");
+
     const type = parseInt(indicator);
 
     switch (type) {
@@ -348,7 +349,7 @@ export class AddressBls extends Address {
     networkPrefix: NetworkPrefix = NetworkPrefix.Testnet,
   ): AddressBls {
     const indicator = bytes[0];
-    if (!indicator) throw new Error("Invalid protocol indicator");
+    if (indicator === undefined) throw new Error("Invalid protocol indicator");
     if (indicator != ProtocolIndicator.BLS)
       throw new InvalidProtocolIndicator(indicator);
 
@@ -455,7 +456,7 @@ export class AddressId extends Address {
     networkPrefix: NetworkPrefix = NetworkPrefix.Testnet,
   ): AddressId {
     const indicator = bytes[0];
-    if (!indicator) throw new Error("Invalid protocol indicator");
+    if (indicator === undefined) throw new Error("Invalid protocol indicator");
     if (indicator != ProtocolIndicator.ID)
       throw new InvalidProtocolIndicator(indicator);
 
@@ -568,7 +569,7 @@ export class AddressSecp256k1 extends Address {
     networkPrefix: NetworkPrefix = NetworkPrefix.Testnet,
   ): AddressSecp256k1 {
     const indicator = bytes[0];
-    if (!indicator) throw new Error("Invalid protocol indicator");
+    if (indicator === undefined) throw new Error("Invalid protocol indicator");
 
     if (indicator != ProtocolIndicator.SECP256K1)
       throw new InvalidProtocolIndicator(indicator);
@@ -667,7 +668,7 @@ export class AddressActor extends Address {
     networkPrefix: NetworkPrefix = NetworkPrefix.Testnet,
   ): AddressActor {
     const indicator = bytes[0];
-    if (!indicator) throw new Error("Invalid protocol indicator");
+    if (indicator === undefined) throw new Error("Invalid protocol indicator");
 
     if (indicator != ProtocolIndicator.ACTOR)
       throw new InvalidProtocolIndicator(indicator);
@@ -815,7 +816,7 @@ export class AddressDelegated extends Address {
     networkPrefix: NetworkPrefix = NetworkPrefix.Testnet,
   ): AddressDelegated {
     const indicator = bytes[0];
-    if (!indicator) throw new Error("Invalid protocol indicator");
+    if (indicator === undefined) throw new Error("Invalid protocol indicator");
 
     if (indicator != ProtocolIndicator.DELEGATED)
       throw new InvalidProtocolIndicator(indicator);
