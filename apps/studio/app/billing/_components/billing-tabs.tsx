@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useAccount } from "wagmi";
 
 import { ScrollArea, ScrollBar } from "@recall/ui/components/scroll-area";
@@ -12,40 +12,31 @@ import {
   TabsTrigger,
 } from "@recall/ui/components/tabs";
 
+import { useHashmark } from "@/hooks/useHashmark";
+import { usePrevious } from "@/hooks/usePrevious";
+
 import { Account } from "./account";
 import { ApprovalsFrom } from "./approvals-from";
 import { ApprovalsTo } from "./approvals-to";
 
-const useHash = () => {
-  const [hash, setHash] = useState("");
-  useEffect(() => {
-    setHash(window.location.hash);
-    const onHashChange = () => {
-      setHash(window.location.hash);
-    };
-    window.addEventListener("hashchange", onHashChange);
-    return () => window.removeEventListener("hashchange", onHashChange);
-  }, []);
-  return hash;
-};
-
 export function BillingTabs() {
   const { isConnected } = useAccount();
+  const { prev: prevConnected, current: connected } = usePrevious(isConnected);
 
   const router = useRouter();
 
-  const hash = useHash();
-
-  useEffect(() => {
-    if (!isConnected) {
-      router.push("/");
-    }
-  }, [isConnected, router]);
+  const hash = useHashmark();
 
   const handleTabChange = (value: string) => {
     window.location.hash = value;
     router.push(`/billing#${value}`);
   };
+
+  useEffect(() => {
+    if (prevConnected && !connected) {
+      router.push("/");
+    }
+  }, [prevConnected, connected, router]);
 
   return (
     <Tabs value={hash.slice(1) || "account"} onValueChange={handleTabChange}>
