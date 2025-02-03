@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "tsc --watch",
-    "build": "wagmi generate && tsc",
+    "generate": "wagmi generate && tsc",
+    "build": "tsc",
     "lint": "eslint . --max-warnings 0",
     "clean": "rm -rf .turbo node_modules dist"
   },
