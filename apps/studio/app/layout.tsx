@@ -1,15 +1,16 @@
 import "@recall/ui/globals.css";
 
 import { Geist_Mono } from "next/font/google";
-import Image from "next/image";
 import Link from "next/link";
 
 import { Toaster } from "@recall/ui/components/toaster";
+import { ThemeToggle } from "@recall/ui/recall/theme-toggle";
 import { Wallet } from "@recall/ui/recall/wallet";
 
 import { Providers } from "@/components/providers";
 
 import { Nav } from "./_components/nav";
+import { RecallLogo } from "./_components/recall-logo";
 
 const fontMono = Geist_Mono({
   subsets: ["latin"],
@@ -30,17 +31,16 @@ export default function RootLayout({
               <Nav />
               <div className="flex justify-center">
                 <Link href="/">
-                  <Image
-                    src="/recall.svg"
-                    alt="Recall"
+                  <RecallLogo
                     width={120}
                     height={30}
-                    priority
+                    className="fill-primary"
                   />
                 </Link>
               </div>
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-3">
                 <Wallet />
+                <ThemeToggle />
               </div>
             </div>
             <div className="flex flex-1">{children}</div>

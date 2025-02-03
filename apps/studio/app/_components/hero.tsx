@@ -42,7 +42,7 @@ export default function Hero() {
             key={`${j}-${i}`}
             width={gridInfo.width}
             height={gridInfo.height}
-            className={`absolute scale-95 hover:rotate-90 hover:fill-fuchsia-600`}
+            className={`fill-primary absolute scale-95 hover:rotate-90 hover:fill-fuchsia-600`}
             style={{
               top: `${i * gridInfo.height}px`,
               left: `${j * gridInfo.width}px`,
