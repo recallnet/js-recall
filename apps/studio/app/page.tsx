@@ -1,5 +1,5 @@
-import AgentActivity from "./_components/agent-activity";
+import Hero from "./_components/hero";
 
 export default function Page() {
-  return <AgentActivity />;
+  return <Hero />;
 }
