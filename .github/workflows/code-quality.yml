@@ -14,13 +14,27 @@ jobs:
     name: Check lint, format, and build
     runs-on: ubuntu-latest
     steps:
+      # TMP: disable SSH & submodules since it causes problems with Vercel
+      # - name: Set up SSH key
+      #   uses: webfactory/ssh-agent@v0.9.0
+      #   with:
+      #     ssh-private-key: ${{ secrets.CONTRACTS_DEPLOY_KEY }}
+
       - name: Checkout Repository
         uses: actions/checkout@v4
+        # with:
+        #   submodules: true
+        #   fetch-depth: 0
 
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
 
       - name: Install pnpm
         uses: pnpm/action-setup@v2

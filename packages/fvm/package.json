@@ -31,7 +31,7 @@
     "test:ci": "pnpm coverage",
     "coverage": "c8 --exclude test --exclude dist mocha --exit",
     "docs": "typedoc --entryPoints src/index.ts",
-    "clean": "rm -rf dist coverage docs",
+    "clean": "rm -rf .turbo node_modules dist coverage docs",
     "build:esm": "pnpm tsc",
     "build": "pnpm build:esm"
   },

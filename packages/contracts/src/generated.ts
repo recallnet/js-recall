@@ -3,8 +3,8 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- *
- */
+
+*/
 export const blobManagerAbi = [
   {
     type: 'function',
@@ -365,15 +365,16 @@ export const blobManagerAbi = [
 ] as const
 
 /**
- *
- */
+
+*/
 export const blobManagerAddress = {
   2481632: '0x8c2e3e8ba0d6084786d60A6600e832E8df84846C',
+  248163216: '0xe1Aa25618fA0c7A1CFDab5d6B456af611873b629',
 } as const
 
 /**
- *
- */
+
+*/
 export const blobManagerConfig = {
   address: blobManagerAddress,
   abi: blobManagerAbi,
@@ -384,8 +385,8 @@ export const blobManagerConfig = {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- *
- */
+
+*/
 export const bucketManagerAbi = [
   {
     type: 'function',
@@ -868,15 +869,16 @@ export const bucketManagerAbi = [
 ] as const
 
 /**
- *
- */
+
+*/
 export const bucketManagerAddress = {
   2481632: '0x5aA5cb07469Cabe65c12137400FBC3b0aE265999',
+  248163216: '0xf7Cd8fa9b94DB2Aa972023b379c7f72c65E4De9D',
 } as const
 
 /**
- *
- */
+
+*/
 export const bucketManagerConfig = {
   address: bucketManagerAddress,
   abi: bucketManagerAbi,
@@ -887,8 +889,8 @@ export const bucketManagerConfig = {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- *
- */
+
+*/
 export const creditManagerAbi = [
   {
     type: 'function',
@@ -1288,258 +1290,36 @@ export const creditManagerAbi = [
 ] as const
 
 /**
- *
- */
+
+*/
 export const creditManagerAddress = {
   2481632: '0x3537C0437792B326fa0747b4A95a8667873e916F',
+  248163216: '0x82C6D3ed4cD33d8EC1E51d0B5Cc1d822Eaa0c3dC',
 } as const
 
 /**
- *
- */
+
+*/
 export const creditManagerConfig = {
   address: creditManagerAddress,
   abi: creditManagerAbi,
 } as const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// GatewayGetterFacetParent
+// GatewayManagerFacet
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- *
+ * -
+ * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0xb4C4590A2E5Da56aA8310bFF343AFc0645121205)
  */
-export const gatewayGetterFacetParentAbi = [
+export const gatewayManagerFacetAbi = [
   {
     type: 'function',
-    inputs: [],
-    name: 'appliedTopDownNonce',
-    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'bottomUpCheckPeriod',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: 'e', internalType: 'uint256', type: 'uint256' }],
-    name: 'bottomUpCheckpoint',
-    outputs: [
-      {
-        name: '',
-        internalType: 'struct BottomUpCheckpoint',
-        type: 'tuple',
-        components: [
-          {
-            name: 'subnetID',
-            internalType: 'struct SubnetID',
-            type: 'tuple',
-            components: [
-              { name: 'root', internalType: 'uint64', type: 'uint64' },
-              { name: 'route', internalType: 'address[]', type: 'address[]' },
-            ],
-          },
-          { name: 'blockHeight', internalType: 'uint256', type: 'uint256' },
-          { name: 'blockHash', internalType: 'bytes32', type: 'bytes32' },
-          {
-            name: 'nextConfigurationNumber',
-            internalType: 'uint64',
-            type: 'uint64',
-          },
-          {
-            name: 'msgs',
-            internalType: 'struct IpcEnvelope[]',
-            type: 'tuple[]',
-            components: [
-              { name: 'kind', internalType: 'enum IpcMsgKind', type: 'uint8' },
-              {
-                name: 'to',
-                internalType: 'struct IPCAddress',
-                type: 'tuple',
-                components: [
-                  {
-                    name: 'subnetId',
-                    internalType: 'struct SubnetID',
-                    type: 'tuple',
-                    components: [
-                      { name: 'root', internalType: 'uint64', type: 'uint64' },
-                      {
-                        name: 'route',
-                        internalType: 'address[]',
-                        type: 'address[]',
-                      },
-                    ],
-                  },
-                  {
-                    name: 'rawAddress',
-                    internalType: 'struct FvmAddress',
-                    type: 'tuple',
-                    components: [
-                      {
-                        name: 'addrType',
-                        internalType: 'uint8',
-                        type: 'uint8',
-                      },
-                      { name: 'payload', internalType: 'bytes', type: 'bytes' },
-                    ],
-                  },
-                ],
-              },
-              {
-                name: 'from',
-                internalType: 'struct IPCAddress',
-                type: 'tuple',
-                components: [
-                  {
-                    name: 'subnetId',
-                    internalType: 'struct SubnetID',
-                    type: 'tuple',
-                    components: [
-                      { name: 'root', internalType: 'uint64', type: 'uint64' },
-                      {
-                        name: 'route',
-                        internalType: 'address[]',
-                        type: 'address[]',
-                      },
-                    ],
-                  },
-                  {
-                    name: 'rawAddress',
-                    internalType: 'struct FvmAddress',
-                    type: 'tuple',
-                    components: [
-                      {
-                        name: 'addrType',
-                        internalType: 'uint8',
-                        type: 'uint8',
-                      },
-                      { name: 'payload', internalType: 'bytes', type: 'bytes' },
-                    ],
-                  },
-                ],
-              },
-              { name: 'nonce', internalType: 'uint64', type: 'uint64' },
-              { name: 'value', internalType: 'uint256', type: 'uint256' },
-              { name: 'message', internalType: 'bytes', type: 'bytes' },
-            ],
-          },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: 'e', internalType: 'uint256', type: 'uint256' }],
-    name: 'bottomUpMsgBatch',
-    outputs: [
-      {
-        name: '',
-        internalType: 'struct BottomUpMsgBatch',
-        type: 'tuple',
-        components: [
-          {
-            name: 'subnetID',
-            internalType: 'struct SubnetID',
-            type: 'tuple',
-            components: [
-              { name: 'root', internalType: 'uint64', type: 'uint64' },
-              { name: 'route', internalType: 'address[]', type: 'address[]' },
-            ],
-          },
-          { name: 'blockHeight', internalType: 'uint256', type: 'uint256' },
-          {
-            name: 'msgs',
-            internalType: 'struct IpcEnvelope[]',
-            type: 'tuple[]',
-            components: [
-              { name: 'kind', internalType: 'enum IpcMsgKind', type: 'uint8' },
-              {
-                name: 'to',
-                internalType: 'struct IPCAddress',
-                type: 'tuple',
-                components: [
-                  {
-                    name: 'subnetId',
-                    internalType: 'struct SubnetID',
-                    type: 'tuple',
-                    components: [
-                      { name: 'root', internalType: 'uint64', type: 'uint64' },
-                      {
-                        name: 'route',
-                        internalType: 'address[]',
-                        type: 'address[]',
-                      },
-                    ],
-                  },
-                  {
-                    name: 'rawAddress',
-                    internalType: 'struct FvmAddress',
-                    type: 'tuple',
-                    components: [
-                      {
-                        name: 'addrType',
-                        internalType: 'uint8',
-                        type: 'uint8',
-                      },
-                      { name: 'payload', internalType: 'bytes', type: 'bytes' },
-                    ],
-                  },
-                ],
-              },
-              {
-                name: 'from',
-                internalType: 'struct IPCAddress',
-                type: 'tuple',
-                components: [
-                  {
-                    name: 'subnetId',
-                    internalType: 'struct SubnetID',
-                    type: 'tuple',
-                    components: [
-                      { name: 'root', internalType: 'uint64', type: 'uint64' },
-                      {
-                        name: 'route',
-                        internalType: 'address[]',
-                        type: 'address[]',
-                      },
-                    ],
-                  },
-                  {
-                    name: 'rawAddress',
-                    internalType: 'struct FvmAddress',
-                    type: 'tuple',
-                    components: [
-                      {
-                        name: 'addrType',
-                        internalType: 'uint8',
-                        type: 'uint8',
-                      },
-                      { name: 'payload', internalType: 'bytes', type: 'bytes' },
-                    ],
-                  },
-                ],
-              },
-              { name: 'nonce', internalType: 'uint64', type: 'uint64' },
-              { name: 'value', internalType: 'uint256', type: 'uint256' },
-              { name: 'message', internalType: 'bytes', type: 'bytes' },
-            ],
-          },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'bottomUpNonce',
-    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
-    stateMutability: 'view',
+    inputs: [{ name: 'amount', internalType: 'uint256', type: 'uint256' }],
+    name: 'addStake',
+    outputs: [],
+    stateMutability: 'payable',
   },
   {
     type: 'function',
@@ -1553,533 +1333,19 @@ export const gatewayGetterFacetParentAbi = [
           { name: 'route', internalType: 'address[]', type: 'address[]' },
         ],
       },
-    ],
-    name: 'getAppliedBottomUpNonce',
-    outputs: [
-      { name: '', internalType: 'bool', type: 'bool' },
-      { name: '', internalType: 'uint64', type: 'uint64' },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: 'h', internalType: 'uint256', type: 'uint256' }],
-    name: 'getCheckpointCurrentWeight',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: 'h', internalType: 'uint256', type: 'uint256' }],
-    name: 'getCheckpointInfo',
-    outputs: [
       {
-        name: '',
-        internalType: 'struct QuorumInfo',
+        name: 'to',
+        internalType: 'struct FvmAddress',
         type: 'tuple',
         components: [
-          { name: 'hash', internalType: 'bytes32', type: 'bytes32' },
-          { name: 'rootHash', internalType: 'bytes32', type: 'bytes32' },
-          { name: 'threshold', internalType: 'uint256', type: 'uint256' },
-          { name: 'currentWeight', internalType: 'uint256', type: 'uint256' },
-          { name: 'reached', internalType: 'bool', type: 'bool' },
+          { name: 'addrType', internalType: 'uint8', type: 'uint8' },
+          { name: 'payload', internalType: 'bytes', type: 'bytes' },
         ],
       },
     ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getCheckpointRetentionHeight',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: 'h', internalType: 'uint256', type: 'uint256' }],
-    name: 'getCheckpointSignatureBundle',
-    outputs: [
-      {
-        name: 'ch',
-        internalType: 'struct BottomUpCheckpoint',
-        type: 'tuple',
-        components: [
-          {
-            name: 'subnetID',
-            internalType: 'struct SubnetID',
-            type: 'tuple',
-            components: [
-              { name: 'root', internalType: 'uint64', type: 'uint64' },
-              { name: 'route', internalType: 'address[]', type: 'address[]' },
-            ],
-          },
-          { name: 'blockHeight', internalType: 'uint256', type: 'uint256' },
-          { name: 'blockHash', internalType: 'bytes32', type: 'bytes32' },
-          {
-            name: 'nextConfigurationNumber',
-            internalType: 'uint64',
-            type: 'uint64',
-          },
-          {
-            name: 'msgs',
-            internalType: 'struct IpcEnvelope[]',
-            type: 'tuple[]',
-            components: [
-              { name: 'kind', internalType: 'enum IpcMsgKind', type: 'uint8' },
-              {
-                name: 'to',
-                internalType: 'struct IPCAddress',
-                type: 'tuple',
-                components: [
-                  {
-                    name: 'subnetId',
-                    internalType: 'struct SubnetID',
-                    type: 'tuple',
-                    components: [
-                      { name: 'root', internalType: 'uint64', type: 'uint64' },
-                      {
-                        name: 'route',
-                        internalType: 'address[]',
-                        type: 'address[]',
-                      },
-                    ],
-                  },
-                  {
-                    name: 'rawAddress',
-                    internalType: 'struct FvmAddress',
-                    type: 'tuple',
-                    components: [
-                      {
-                        name: 'addrType',
-                        internalType: 'uint8',
-                        type: 'uint8',
-                      },
-                      { name: 'payload', internalType: 'bytes', type: 'bytes' },
-                    ],
-                  },
-                ],
-              },
-              {
-                name: 'from',
-                internalType: 'struct IPCAddress',
-                type: 'tuple',
-                components: [
-                  {
-                    name: 'subnetId',
-                    internalType: 'struct SubnetID',
-                    type: 'tuple',
-                    components: [
-                      { name: 'root', internalType: 'uint64', type: 'uint64' },
-                      {
-                        name: 'route',
-                        internalType: 'address[]',
-                        type: 'address[]',
-                      },
-                    ],
-                  },
-                  {
-                    name: 'rawAddress',
-                    internalType: 'struct FvmAddress',
-                    type: 'tuple',
-                    components: [
-                      {
-                        name: 'addrType',
-                        internalType: 'uint8',
-                        type: 'uint8',
-                      },
-                      { name: 'payload', internalType: 'bytes', type: 'bytes' },
-                    ],
-                  },
-                ],
-              },
-              { name: 'nonce', internalType: 'uint64', type: 'uint64' },
-              { name: 'value', internalType: 'uint256', type: 'uint256' },
-              { name: 'message', internalType: 'bytes', type: 'bytes' },
-            ],
-          },
-        ],
-      },
-      {
-        name: 'info',
-        internalType: 'struct QuorumInfo',
-        type: 'tuple',
-        components: [
-          { name: 'hash', internalType: 'bytes32', type: 'bytes32' },
-          { name: 'rootHash', internalType: 'bytes32', type: 'bytes32' },
-          { name: 'threshold', internalType: 'uint256', type: 'uint256' },
-          { name: 'currentWeight', internalType: 'uint256', type: 'uint256' },
-          { name: 'reached', internalType: 'bool', type: 'bool' },
-        ],
-      },
-      { name: 'signatories', internalType: 'address[]', type: 'address[]' },
-      { name: 'signatures', internalType: 'bytes[]', type: 'bytes[]' },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getCommitSha',
-    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getCurrentBottomUpCheckpoint',
-    outputs: [
-      { name: 'exists', internalType: 'bool', type: 'bool' },
-      { name: 'epoch', internalType: 'uint256', type: 'uint256' },
-      {
-        name: 'checkpoint',
-        internalType: 'struct BottomUpCheckpoint',
-        type: 'tuple',
-        components: [
-          {
-            name: 'subnetID',
-            internalType: 'struct SubnetID',
-            type: 'tuple',
-            components: [
-              { name: 'root', internalType: 'uint64', type: 'uint64' },
-              { name: 'route', internalType: 'address[]', type: 'address[]' },
-            ],
-          },
-          { name: 'blockHeight', internalType: 'uint256', type: 'uint256' },
-          { name: 'blockHash', internalType: 'bytes32', type: 'bytes32' },
-          {
-            name: 'nextConfigurationNumber',
-            internalType: 'uint64',
-            type: 'uint64',
-          },
-          {
-            name: 'msgs',
-            internalType: 'struct IpcEnvelope[]',
-            type: 'tuple[]',
-            components: [
-              { name: 'kind', internalType: 'enum IpcMsgKind', type: 'uint8' },
-              {
-                name: 'to',
-                internalType: 'struct IPCAddress',
-                type: 'tuple',
-                components: [
-                  {
-                    name: 'subnetId',
-                    internalType: 'struct SubnetID',
-                    type: 'tuple',
-                    components: [
-                      { name: 'root', internalType: 'uint64', type: 'uint64' },
-                      {
-                        name: 'route',
-                        internalType: 'address[]',
-                        type: 'address[]',
-                      },
-                    ],
-                  },
-                  {
-                    name: 'rawAddress',
-                    internalType: 'struct FvmAddress',
-                    type: 'tuple',
-                    components: [
-                      {
-                        name: 'addrType',
-                        internalType: 'uint8',
-                        type: 'uint8',
-                      },
-                      { name: 'payload', internalType: 'bytes', type: 'bytes' },
-                    ],
-                  },
-                ],
-              },
-              {
-                name: 'from',
-                internalType: 'struct IPCAddress',
-                type: 'tuple',
-                components: [
-                  {
-                    name: 'subnetId',
-                    internalType: 'struct SubnetID',
-                    type: 'tuple',
-                    components: [
-                      { name: 'root', internalType: 'uint64', type: 'uint64' },
-                      {
-                        name: 'route',
-                        internalType: 'address[]',
-                        type: 'address[]',
-                      },
-                    ],
-                  },
-                  {
-                    name: 'rawAddress',
-                    internalType: 'struct FvmAddress',
-                    type: 'tuple',
-                    components: [
-                      {
-                        name: 'addrType',
-                        internalType: 'uint8',
-                        type: 'uint8',
-                      },
-                      { name: 'payload', internalType: 'bytes', type: 'bytes' },
-                    ],
-                  },
-                ],
-              },
-              { name: 'nonce', internalType: 'uint64', type: 'uint64' },
-              { name: 'value', internalType: 'uint256', type: 'uint256' },
-              { name: 'message', internalType: 'bytes', type: 'bytes' },
-            ],
-          },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getCurrentConfigurationNumber',
-    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getCurrentMembership',
-    outputs: [
-      {
-        name: '',
-        internalType: 'struct Membership',
-        type: 'tuple',
-        components: [
-          {
-            name: 'validators',
-            internalType: 'struct Validator[]',
-            type: 'tuple[]',
-            components: [
-              { name: 'weight', internalType: 'uint256', type: 'uint256' },
-              { name: 'addr', internalType: 'address', type: 'address' },
-              { name: 'metadata', internalType: 'bytes', type: 'bytes' },
-            ],
-          },
-          {
-            name: 'configurationNumber',
-            internalType: 'uint64',
-            type: 'uint64',
-          },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getIncompleteCheckpointHeights',
-    outputs: [{ name: '', internalType: 'uint256[]', type: 'uint256[]' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getIncompleteCheckpoints',
-    outputs: [
-      {
-        name: '',
-        internalType: 'struct BottomUpCheckpoint[]',
-        type: 'tuple[]',
-        components: [
-          {
-            name: 'subnetID',
-            internalType: 'struct SubnetID',
-            type: 'tuple',
-            components: [
-              { name: 'root', internalType: 'uint64', type: 'uint64' },
-              { name: 'route', internalType: 'address[]', type: 'address[]' },
-            ],
-          },
-          { name: 'blockHeight', internalType: 'uint256', type: 'uint256' },
-          { name: 'blockHash', internalType: 'bytes32', type: 'bytes32' },
-          {
-            name: 'nextConfigurationNumber',
-            internalType: 'uint64',
-            type: 'uint64',
-          },
-          {
-            name: 'msgs',
-            internalType: 'struct IpcEnvelope[]',
-            type: 'tuple[]',
-            components: [
-              { name: 'kind', internalType: 'enum IpcMsgKind', type: 'uint8' },
-              {
-                name: 'to',
-                internalType: 'struct IPCAddress',
-                type: 'tuple',
-                components: [
-                  {
-                    name: 'subnetId',
-                    internalType: 'struct SubnetID',
-                    type: 'tuple',
-                    components: [
-                      { name: 'root', internalType: 'uint64', type: 'uint64' },
-                      {
-                        name: 'route',
-                        internalType: 'address[]',
-                        type: 'address[]',
-                      },
-                    ],
-                  },
-                  {
-                    name: 'rawAddress',
-                    internalType: 'struct FvmAddress',
-                    type: 'tuple',
-                    components: [
-                      {
-                        name: 'addrType',
-                        internalType: 'uint8',
-                        type: 'uint8',
-                      },
-                      { name: 'payload', internalType: 'bytes', type: 'bytes' },
-                    ],
-                  },
-                ],
-              },
-              {
-                name: 'from',
-                internalType: 'struct IPCAddress',
-                type: 'tuple',
-                components: [
-                  {
-                    name: 'subnetId',
-                    internalType: 'struct SubnetID',
-                    type: 'tuple',
-                    components: [
-                      { name: 'root', internalType: 'uint64', type: 'uint64' },
-                      {
-                        name: 'route',
-                        internalType: 'address[]',
-                        type: 'address[]',
-                      },
-                    ],
-                  },
-                  {
-                    name: 'rawAddress',
-                    internalType: 'struct FvmAddress',
-                    type: 'tuple',
-                    components: [
-                      {
-                        name: 'addrType',
-                        internalType: 'uint8',
-                        type: 'uint8',
-                      },
-                      { name: 'payload', internalType: 'bytes', type: 'bytes' },
-                    ],
-                  },
-                ],
-              },
-              { name: 'nonce', internalType: 'uint64', type: 'uint64' },
-              { name: 'value', internalType: 'uint256', type: 'uint256' },
-              { name: 'message', internalType: 'bytes', type: 'bytes' },
-            ],
-          },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getLastConfigurationNumber',
-    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getLastMembership',
-    outputs: [
-      {
-        name: '',
-        internalType: 'struct Membership',
-        type: 'tuple',
-        components: [
-          {
-            name: 'validators',
-            internalType: 'struct Validator[]',
-            type: 'tuple[]',
-            components: [
-              { name: 'weight', internalType: 'uint256', type: 'uint256' },
-              { name: 'addr', internalType: 'address', type: 'address' },
-              { name: 'metadata', internalType: 'bytes', type: 'bytes' },
-            ],
-          },
-          {
-            name: 'configurationNumber',
-            internalType: 'uint64',
-            type: 'uint64',
-          },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getLatestParentFinality',
-    outputs: [
-      {
-        name: '',
-        internalType: 'struct ParentFinality',
-        type: 'tuple',
-        components: [
-          { name: 'height', internalType: 'uint256', type: 'uint256' },
-          { name: 'blockHash', internalType: 'bytes32', type: 'bytes32' },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getNetworkName',
-    outputs: [
-      {
-        name: '',
-        internalType: 'struct SubnetID',
-        type: 'tuple',
-        components: [
-          { name: 'root', internalType: 'uint64', type: 'uint64' },
-          { name: 'route', internalType: 'address[]', type: 'address[]' },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: 'blockNumber', internalType: 'uint256', type: 'uint256' }],
-    name: 'getParentFinality',
-    outputs: [
-      {
-        name: '',
-        internalType: 'struct ParentFinality',
-        type: 'tuple',
-        components: [
-          { name: 'height', internalType: 'uint256', type: 'uint256' },
-          { name: 'blockHash', internalType: 'bytes32', type: 'bytes32' },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: 'totalWeight', internalType: 'uint256', type: 'uint256' }],
-    name: 'getQuorumThreshold',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
+    name: 'fund',
+    outputs: [],
+    stateMutability: 'payable',
   },
   {
     type: 'function',
@@ -2093,146 +1359,87 @@ export const gatewayGetterFacetParentAbi = [
           { name: 'route', internalType: 'address[]', type: 'address[]' },
         ],
       },
-    ],
-    name: 'getSubnet',
-    outputs: [
-      { name: '', internalType: 'bool', type: 'bool' },
       {
-        name: '',
-        internalType: 'struct Subnet',
+        name: 'to',
+        internalType: 'struct FvmAddress',
         type: 'tuple',
         components: [
-          { name: 'stake', internalType: 'uint256', type: 'uint256' },
-          { name: 'genesisEpoch', internalType: 'uint256', type: 'uint256' },
-          { name: 'circSupply', internalType: 'uint256', type: 'uint256' },
-          { name: 'topDownNonce', internalType: 'uint64', type: 'uint64' },
-          {
-            name: 'appliedBottomUpNonce',
-            internalType: 'uint64',
-            type: 'uint64',
-          },
-          {
-            name: 'id',
-            internalType: 'struct SubnetID',
-            type: 'tuple',
-            components: [
-              { name: 'root', internalType: 'uint64', type: 'uint64' },
-              { name: 'route', internalType: 'address[]', type: 'address[]' },
-            ],
-          },
+          { name: 'addrType', internalType: 'uint8', type: 'uint8' },
+          { name: 'payload', internalType: 'bytes', type: 'bytes' },
         ],
       },
+      { name: 'amount', internalType: 'uint256', type: 'uint256' },
     ],
-    stateMutability: 'view',
+    name: 'fundWithToken',
+    outputs: [],
+    stateMutability: 'nonpayable',
   },
   {
     type: 'function',
     inputs: [],
-    name: 'getSubnetKeys',
-    outputs: [{ name: '', internalType: 'bytes32[]', type: 'bytes32[]' }],
-    stateMutability: 'view',
+    name: 'kill',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'genesisCircSupply', internalType: 'uint256', type: 'uint256' },
+      { name: 'collateral', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'register',
+    outputs: [],
+    stateMutability: 'payable',
   },
   {
     type: 'function',
     inputs: [
       {
-        name: 'subnetId',
-        internalType: 'struct SubnetID',
+        name: 'to',
+        internalType: 'struct FvmAddress',
         type: 'tuple',
         components: [
-          { name: 'root', internalType: 'uint64', type: 'uint64' },
-          { name: 'route', internalType: 'address[]', type: 'address[]' },
+          { name: 'addrType', internalType: 'uint8', type: 'uint8' },
+          { name: 'payload', internalType: 'bytes', type: 'bytes' },
         ],
       },
     ],
-    name: 'getSubnetTopDownMsgsLength',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
+    name: 'release',
+    outputs: [],
+    stateMutability: 'payable',
   },
   {
     type: 'function',
+    inputs: [{ name: 'amount', internalType: 'uint256', type: 'uint256' }],
+    name: 'releaseStake',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'event',
+    anonymous: false,
     inputs: [
       {
-        name: 'subnetId',
-        internalType: 'struct SubnetID',
-        type: 'tuple',
-        components: [
-          { name: 'root', internalType: 'uint64', type: 'uint64' },
-          { name: 'route', internalType: 'address[]', type: 'address[]' },
-        ],
+        name: 'epoch',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: true,
       },
     ],
-    name: 'getTopDownNonce',
-    outputs: [
-      { name: '', internalType: 'bool', type: 'bool' },
-      { name: '', internalType: 'uint64', type: 'uint64' },
-    ],
-    stateMutability: 'view',
+    name: 'NewBottomUpMsgBatch',
   },
   {
-    type: 'function',
-    inputs: [],
-    name: 'getValidatorConfigurationNumbers',
-    outputs: [
-      { name: '', internalType: 'uint64', type: 'uint64' },
-      { name: '', internalType: 'uint64', type: 'uint64' },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'listSubnets',
-    outputs: [
+    type: 'event',
+    anonymous: false,
+    inputs: [
       {
-        name: '',
-        internalType: 'struct Subnet[]',
-        type: 'tuple[]',
-        components: [
-          { name: 'stake', internalType: 'uint256', type: 'uint256' },
-          { name: 'genesisEpoch', internalType: 'uint256', type: 'uint256' },
-          { name: 'circSupply', internalType: 'uint256', type: 'uint256' },
-          { name: 'topDownNonce', internalType: 'uint64', type: 'uint64' },
-          {
-            name: 'appliedBottomUpNonce',
-            internalType: 'uint64',
-            type: 'uint64',
-          },
-          {
-            name: 'id',
-            internalType: 'struct SubnetID',
-            type: 'tuple',
-            components: [
-              { name: 'root', internalType: 'uint64', type: 'uint64' },
-              { name: 'route', internalType: 'address[]', type: 'address[]' },
-            ],
-          },
-        ],
+        name: 'subnet',
+        internalType: 'address',
+        type: 'address',
+        indexed: true,
       },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'majorityPercentage',
-    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'maxMsgsPerBottomUpBatch',
-    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: 'id', internalType: 'bytes32', type: 'bytes32' }],
-    name: 'postbox',
-    outputs: [
       {
-        name: 'storableMsg',
+        name: 'message',
         internalType: 'struct IpcEnvelope',
         type: 'tuple',
         components: [
@@ -2299,1121 +1506,196 @@ export const gatewayGetterFacetParentAbi = [
           { name: 'value', internalType: 'uint256', type: 'uint256' },
           { name: 'message', internalType: 'bytes', type: 'bytes' },
         ],
+        indexed: false,
       },
     ],
-    stateMutability: 'view',
+    name: 'NewTopDownMessage',
   },
   {
-    type: 'function',
-    inputs: [{ name: 'h', internalType: 'bytes32', type: 'bytes32' }],
-    name: 'subnets',
-    outputs: [
+    type: 'error',
+    inputs: [{ name: 'target', internalType: 'address', type: 'address' }],
+    name: 'AddressEmptyCode',
+  },
+  {
+    type: 'error',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'AddressInsufficientBalance',
+  },
+  { type: 'error', inputs: [], name: 'AlreadyRegisteredSubnet' },
+  { type: 'error', inputs: [], name: 'CallFailed' },
+  { type: 'error', inputs: [], name: 'CannotReleaseZero' },
+  { type: 'error', inputs: [], name: 'FailedInnerCall' },
+  { type: 'error', inputs: [], name: 'InsufficientFunds' },
+  { type: 'error', inputs: [], name: 'InvalidActorAddress' },
+  {
+    type: 'error',
+    inputs: [
       {
-        name: 'subnet',
-        internalType: 'struct Subnet',
-        type: 'tuple',
-        components: [
-          { name: 'stake', internalType: 'uint256', type: 'uint256' },
-          { name: 'genesisEpoch', internalType: 'uint256', type: 'uint256' },
-          { name: 'circSupply', internalType: 'uint256', type: 'uint256' },
-          { name: 'topDownNonce', internalType: 'uint64', type: 'uint64' },
-          {
-            name: 'appliedBottomUpNonce',
-            internalType: 'uint64',
-            type: 'uint64',
-          },
-          {
-            name: 'id',
-            internalType: 'struct SubnetID',
-            type: 'tuple',
-            components: [
-              { name: 'root', internalType: 'uint64', type: 'uint64' },
-              { name: 'route', internalType: 'address[]', type: 'address[]' },
-            ],
-          },
-        ],
+        name: 'reason',
+        internalType: 'enum InvalidXnetMessageReason',
+        type: 'uint8',
       },
     ],
-    stateMutability: 'view',
+    name: 'InvalidXnetMessage',
   },
   {
-    type: 'function',
-    inputs: [],
-    name: 'totalSubnets',
-    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
-    stateMutability: 'view',
+    type: 'error',
+    inputs: [{ name: 'reason', internalType: 'string', type: 'string' }],
+    name: 'MethodNotAllowed',
+  },
+  { type: 'error', inputs: [], name: 'NotEmptySubnetCircSupply' },
+  { type: 'error', inputs: [], name: 'NotEnoughBalance' },
+  { type: 'error', inputs: [], name: 'NotEnoughFunds' },
+  { type: 'error', inputs: [], name: 'NotEnoughFundsToRelease' },
+  { type: 'error', inputs: [], name: 'NotRegisteredSubnet' },
+  { type: 'error', inputs: [], name: 'ReentrancyError' },
+  {
+    type: 'error',
+    inputs: [{ name: 'token', internalType: 'address', type: 'address' }],
+    name: 'SafeERC20FailedOperation',
   },
 ] as const
 
 /**
- *
+ * -
+ * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0xb4C4590A2E5Da56aA8310bFF343AFc0645121205)
  */
-export const gatewayGetterFacetParentAddress = {
-  2481632: '0xb4C4590A2E5Da56aA8310bFF343AFc0645121205',
-} as const
-
-/**
- *
- */
-export const gatewayGetterFacetParentConfig = {
-  address: gatewayGetterFacetParentAddress,
-  abi: gatewayGetterFacetParentAbi,
-} as const
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// GatewayGetterFacetSubnet
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
- *
- */
-export const gatewayGetterFacetSubnetAbi = [
-  {
-    type: 'function',
-    inputs: [],
-    name: 'appliedTopDownNonce',
-    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'bottomUpCheckPeriod',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: 'e', internalType: 'uint256', type: 'uint256' }],
-    name: 'bottomUpCheckpoint',
-    outputs: [
-      {
-        name: '',
-        internalType: 'struct BottomUpCheckpoint',
-        type: 'tuple',
-        components: [
-          {
-            name: 'subnetID',
-            internalType: 'struct SubnetID',
-            type: 'tuple',
-            components: [
-              { name: 'root', internalType: 'uint64', type: 'uint64' },
-              { name: 'route', internalType: 'address[]', type: 'address[]' },
-            ],
-          },
-          { name: 'blockHeight', internalType: 'uint256', type: 'uint256' },
-          { name: 'blockHash', internalType: 'bytes32', type: 'bytes32' },
-          {
-            name: 'nextConfigurationNumber',
-            internalType: 'uint64',
-            type: 'uint64',
-          },
-          {
-            name: 'msgs',
-            internalType: 'struct IpcEnvelope[]',
-            type: 'tuple[]',
-            components: [
-              { name: 'kind', internalType: 'enum IpcMsgKind', type: 'uint8' },
-              {
-                name: 'to',
-                internalType: 'struct IPCAddress',
-                type: 'tuple',
-                components: [
-                  {
-                    name: 'subnetId',
-                    internalType: 'struct SubnetID',
-                    type: 'tuple',
-                    components: [
-                      { name: 'root', internalType: 'uint64', type: 'uint64' },
-                      {
-                        name: 'route',
-                        internalType: 'address[]',
-                        type: 'address[]',
-                      },
-                    ],
-                  },
-                  {
-                    name: 'rawAddress',
-                    internalType: 'struct FvmAddress',
-                    type: 'tuple',
-                    components: [
-                      {
-                        name: 'addrType',
-                        internalType: 'uint8',
-                        type: 'uint8',
-                      },
-                      { name: 'payload', internalType: 'bytes', type: 'bytes' },
-                    ],
-                  },
-                ],
-              },
-              {
-                name: 'from',
-                internalType: 'struct IPCAddress',
-                type: 'tuple',
-                components: [
-                  {
-                    name: 'subnetId',
-                    internalType: 'struct SubnetID',
-                    type: 'tuple',
-                    components: [
-                      { name: 'root', internalType: 'uint64', type: 'uint64' },
-                      {
-                        name: 'route',
-                        internalType: 'address[]',
-                        type: 'address[]',
-                      },
-                    ],
-                  },
-                  {
-                    name: 'rawAddress',
-                    internalType: 'struct FvmAddress',
-                    type: 'tuple',
-                    components: [
-                      {
-                        name: 'addrType',
-                        internalType: 'uint8',
-                        type: 'uint8',
-                      },
-                      { name: 'payload', internalType: 'bytes', type: 'bytes' },
-                    ],
-                  },
-                ],
-              },
-              { name: 'nonce', internalType: 'uint64', type: 'uint64' },
-              { name: 'value', internalType: 'uint256', type: 'uint256' },
-              { name: 'message', internalType: 'bytes', type: 'bytes' },
-            ],
-          },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: 'e', internalType: 'uint256', type: 'uint256' }],
-    name: 'bottomUpMsgBatch',
-    outputs: [
-      {
-        name: '',
-        internalType: 'struct BottomUpMsgBatch',
-        type: 'tuple',
-        components: [
-          {
-            name: 'subnetID',
-            internalType: 'struct SubnetID',
-            type: 'tuple',
-            components: [
-              { name: 'root', internalType: 'uint64', type: 'uint64' },
-              { name: 'route', internalType: 'address[]', type: 'address[]' },
-            ],
-          },
-          { name: 'blockHeight', internalType: 'uint256', type: 'uint256' },
-          {
-            name: 'msgs',
-            internalType: 'struct IpcEnvelope[]',
-            type: 'tuple[]',
-            components: [
-              { name: 'kind', internalType: 'enum IpcMsgKind', type: 'uint8' },
-              {
-                name: 'to',
-                internalType: 'struct IPCAddress',
-                type: 'tuple',
-                components: [
-                  {
-                    name: 'subnetId',
-                    internalType: 'struct SubnetID',
-                    type: 'tuple',
-                    components: [
-                      { name: 'root', internalType: 'uint64', type: 'uint64' },
-                      {
-                        name: 'route',
-                        internalType: 'address[]',
-                        type: 'address[]',
-                      },
-                    ],
-                  },
-                  {
-                    name: 'rawAddress',
-                    internalType: 'struct FvmAddress',
-                    type: 'tuple',
-                    components: [
-                      {
-                        name: 'addrType',
-                        internalType: 'uint8',
-                        type: 'uint8',
-                      },
-                      { name: 'payload', internalType: 'bytes', type: 'bytes' },
-                    ],
-                  },
-                ],
-              },
-              {
-                name: 'from',
-                internalType: 'struct IPCAddress',
-                type: 'tuple',
-                components: [
-                  {
-                    name: 'subnetId',
-                    internalType: 'struct SubnetID',
-                    type: 'tuple',
-                    components: [
-                      { name: 'root', internalType: 'uint64', type: 'uint64' },
-                      {
-                        name: 'route',
-                        internalType: 'address[]',
-                        type: 'address[]',
-                      },
-                    ],
-                  },
-                  {
-                    name: 'rawAddress',
-                    internalType: 'struct FvmAddress',
-                    type: 'tuple',
-                    components: [
-                      {
-                        name: 'addrType',
-                        internalType: 'uint8',
-                        type: 'uint8',
-                      },
-                      { name: 'payload', internalType: 'bytes', type: 'bytes' },
-                    ],
-                  },
-                ],
-              },
-              { name: 'nonce', internalType: 'uint64', type: 'uint64' },
-              { name: 'value', internalType: 'uint256', type: 'uint256' },
-              { name: 'message', internalType: 'bytes', type: 'bytes' },
-            ],
-          },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'bottomUpNonce',
-    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [
-      {
-        name: 'subnetId',
-        internalType: 'struct SubnetID',
-        type: 'tuple',
-        components: [
-          { name: 'root', internalType: 'uint64', type: 'uint64' },
-          { name: 'route', internalType: 'address[]', type: 'address[]' },
-        ],
-      },
-    ],
-    name: 'getAppliedBottomUpNonce',
-    outputs: [
-      { name: '', internalType: 'bool', type: 'bool' },
-      { name: '', internalType: 'uint64', type: 'uint64' },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: 'h', internalType: 'uint256', type: 'uint256' }],
-    name: 'getCheckpointCurrentWeight',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: 'h', internalType: 'uint256', type: 'uint256' }],
-    name: 'getCheckpointInfo',
-    outputs: [
-      {
-        name: '',
-        internalType: 'struct QuorumInfo',
-        type: 'tuple',
-        components: [
-          { name: 'hash', internalType: 'bytes32', type: 'bytes32' },
-          { name: 'rootHash', internalType: 'bytes32', type: 'bytes32' },
-          { name: 'threshold', internalType: 'uint256', type: 'uint256' },
-          { name: 'currentWeight', internalType: 'uint256', type: 'uint256' },
-          { name: 'reached', internalType: 'bool', type: 'bool' },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getCheckpointRetentionHeight',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: 'h', internalType: 'uint256', type: 'uint256' }],
-    name: 'getCheckpointSignatureBundle',
-    outputs: [
-      {
-        name: 'ch',
-        internalType: 'struct BottomUpCheckpoint',
-        type: 'tuple',
-        components: [
-          {
-            name: 'subnetID',
-            internalType: 'struct SubnetID',
-            type: 'tuple',
-            components: [
-              { name: 'root', internalType: 'uint64', type: 'uint64' },
-              { name: 'route', internalType: 'address[]', type: 'address[]' },
-            ],
-          },
-          { name: 'blockHeight', internalType: 'uint256', type: 'uint256' },
-          { name: 'blockHash', internalType: 'bytes32', type: 'bytes32' },
-          {
-            name: 'nextConfigurationNumber',
-            internalType: 'uint64',
-            type: 'uint64',
-          },
-          {
-            name: 'msgs',
-            internalType: 'struct IpcEnvelope[]',
-            type: 'tuple[]',
-            components: [
-              { name: 'kind', internalType: 'enum IpcMsgKind', type: 'uint8' },
-              {
-                name: 'to',
-                internalType: 'struct IPCAddress',
-                type: 'tuple',
-                components: [
-                  {
-                    name: 'subnetId',
-                    internalType: 'struct SubnetID',
-                    type: 'tuple',
-                    components: [
-                      { name: 'root', internalType: 'uint64', type: 'uint64' },
-                      {
-                        name: 'route',
-                        internalType: 'address[]',
-                        type: 'address[]',
-                      },
-                    ],
-                  },
-                  {
-                    name: 'rawAddress',
-                    internalType: 'struct FvmAddress',
-                    type: 'tuple',
-                    components: [
-                      {
-                        name: 'addrType',
-                        internalType: 'uint8',
-                        type: 'uint8',
-                      },
-                      { name: 'payload', internalType: 'bytes', type: 'bytes' },
-                    ],
-                  },
-                ],
-              },
-              {
-                name: 'from',
-                internalType: 'struct IPCAddress',
-                type: 'tuple',
-                components: [
-                  {
-                    name: 'subnetId',
-                    internalType: 'struct SubnetID',
-                    type: 'tuple',
-                    components: [
-                      { name: 'root', internalType: 'uint64', type: 'uint64' },
-                      {
-                        name: 'route',
-                        internalType: 'address[]',
-                        type: 'address[]',
-                      },
-                    ],
-                  },
-                  {
-                    name: 'rawAddress',
-                    internalType: 'struct FvmAddress',
-                    type: 'tuple',
-                    components: [
-                      {
-                        name: 'addrType',
-                        internalType: 'uint8',
-                        type: 'uint8',
-                      },
-                      { name: 'payload', internalType: 'bytes', type: 'bytes' },
-                    ],
-                  },
-                ],
-              },
-              { name: 'nonce', internalType: 'uint64', type: 'uint64' },
-              { name: 'value', internalType: 'uint256', type: 'uint256' },
-              { name: 'message', internalType: 'bytes', type: 'bytes' },
-            ],
-          },
-        ],
-      },
-      {
-        name: 'info',
-        internalType: 'struct QuorumInfo',
-        type: 'tuple',
-        components: [
-          { name: 'hash', internalType: 'bytes32', type: 'bytes32' },
-          { name: 'rootHash', internalType: 'bytes32', type: 'bytes32' },
-          { name: 'threshold', internalType: 'uint256', type: 'uint256' },
-          { name: 'currentWeight', internalType: 'uint256', type: 'uint256' },
-          { name: 'reached', internalType: 'bool', type: 'bool' },
-        ],
-      },
-      { name: 'signatories', internalType: 'address[]', type: 'address[]' },
-      { name: 'signatures', internalType: 'bytes[]', type: 'bytes[]' },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getCommitSha',
-    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getCurrentBottomUpCheckpoint',
-    outputs: [
-      { name: 'exists', internalType: 'bool', type: 'bool' },
-      { name: 'epoch', internalType: 'uint256', type: 'uint256' },
-      {
-        name: 'checkpoint',
-        internalType: 'struct BottomUpCheckpoint',
-        type: 'tuple',
-        components: [
-          {
-            name: 'subnetID',
-            internalType: 'struct SubnetID',
-            type: 'tuple',
-            components: [
-              { name: 'root', internalType: 'uint64', type: 'uint64' },
-              { name: 'route', internalType: 'address[]', type: 'address[]' },
-            ],
-          },
-          { name: 'blockHeight', internalType: 'uint256', type: 'uint256' },
-          { name: 'blockHash', internalType: 'bytes32', type: 'bytes32' },
-          {
-            name: 'nextConfigurationNumber',
-            internalType: 'uint64',
-            type: 'uint64',
-          },
-          {
-            name: 'msgs',
-            internalType: 'struct IpcEnvelope[]',
-            type: 'tuple[]',
-            components: [
-              { name: 'kind', internalType: 'enum IpcMsgKind', type: 'uint8' },
-              {
-                name: 'to',
-                internalType: 'struct IPCAddress',
-                type: 'tuple',
-                components: [
-                  {
-                    name: 'subnetId',
-                    internalType: 'struct SubnetID',
-                    type: 'tuple',
-                    components: [
-                      { name: 'root', internalType: 'uint64', type: 'uint64' },
-                      {
-                        name: 'route',
-                        internalType: 'address[]',
-                        type: 'address[]',
-                      },
-                    ],
-                  },
-                  {
-                    name: 'rawAddress',
-                    internalType: 'struct FvmAddress',
-                    type: 'tuple',
-                    components: [
-                      {
-                        name: 'addrType',
-                        internalType: 'uint8',
-                        type: 'uint8',
-                      },
-                      { name: 'payload', internalType: 'bytes', type: 'bytes' },
-                    ],
-                  },
-                ],
-              },
-              {
-                name: 'from',
-                internalType: 'struct IPCAddress',
-                type: 'tuple',
-                components: [
-                  {
-                    name: 'subnetId',
-                    internalType: 'struct SubnetID',
-                    type: 'tuple',
-                    components: [
-                      { name: 'root', internalType: 'uint64', type: 'uint64' },
-                      {
-                        name: 'route',
-                        internalType: 'address[]',
-                        type: 'address[]',
-                      },
-                    ],
-                  },
-                  {
-                    name: 'rawAddress',
-                    internalType: 'struct FvmAddress',
-                    type: 'tuple',
-                    components: [
-                      {
-                        name: 'addrType',
-                        internalType: 'uint8',
-                        type: 'uint8',
-                      },
-                      { name: 'payload', internalType: 'bytes', type: 'bytes' },
-                    ],
-                  },
-                ],
-              },
-              { name: 'nonce', internalType: 'uint64', type: 'uint64' },
-              { name: 'value', internalType: 'uint256', type: 'uint256' },
-              { name: 'message', internalType: 'bytes', type: 'bytes' },
-            ],
-          },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getCurrentConfigurationNumber',
-    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getCurrentMembership',
-    outputs: [
-      {
-        name: '',
-        internalType: 'struct Membership',
-        type: 'tuple',
-        components: [
-          {
-            name: 'validators',
-            internalType: 'struct Validator[]',
-            type: 'tuple[]',
-            components: [
-              { name: 'weight', internalType: 'uint256', type: 'uint256' },
-              { name: 'addr', internalType: 'address', type: 'address' },
-              { name: 'metadata', internalType: 'bytes', type: 'bytes' },
-            ],
-          },
-          {
-            name: 'configurationNumber',
-            internalType: 'uint64',
-            type: 'uint64',
-          },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getIncompleteCheckpointHeights',
-    outputs: [{ name: '', internalType: 'uint256[]', type: 'uint256[]' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getIncompleteCheckpoints',
-    outputs: [
-      {
-        name: '',
-        internalType: 'struct BottomUpCheckpoint[]',
-        type: 'tuple[]',
-        components: [
-          {
-            name: 'subnetID',
-            internalType: 'struct SubnetID',
-            type: 'tuple',
-            components: [
-              { name: 'root', internalType: 'uint64', type: 'uint64' },
-              { name: 'route', internalType: 'address[]', type: 'address[]' },
-            ],
-          },
-          { name: 'blockHeight', internalType: 'uint256', type: 'uint256' },
-          { name: 'blockHash', internalType: 'bytes32', type: 'bytes32' },
-          {
-            name: 'nextConfigurationNumber',
-            internalType: 'uint64',
-            type: 'uint64',
-          },
-          {
-            name: 'msgs',
-            internalType: 'struct IpcEnvelope[]',
-            type: 'tuple[]',
-            components: [
-              { name: 'kind', internalType: 'enum IpcMsgKind', type: 'uint8' },
-              {
-                name: 'to',
-                internalType: 'struct IPCAddress',
-                type: 'tuple',
-                components: [
-                  {
-                    name: 'subnetId',
-                    internalType: 'struct SubnetID',
-                    type: 'tuple',
-                    components: [
-                      { name: 'root', internalType: 'uint64', type: 'uint64' },
-                      {
-                        name: 'route',
-                        internalType: 'address[]',
-                        type: 'address[]',
-                      },
-                    ],
-                  },
-                  {
-                    name: 'rawAddress',
-                    internalType: 'struct FvmAddress',
-                    type: 'tuple',
-                    components: [
-                      {
-                        name: 'addrType',
-                        internalType: 'uint8',
-                        type: 'uint8',
-                      },
-                      { name: 'payload', internalType: 'bytes', type: 'bytes' },
-                    ],
-                  },
-                ],
-              },
-              {
-                name: 'from',
-                internalType: 'struct IPCAddress',
-                type: 'tuple',
-                components: [
-                  {
-                    name: 'subnetId',
-                    internalType: 'struct SubnetID',
-                    type: 'tuple',
-                    components: [
-                      { name: 'root', internalType: 'uint64', type: 'uint64' },
-                      {
-                        name: 'route',
-                        internalType: 'address[]',
-                        type: 'address[]',
-                      },
-                    ],
-                  },
-                  {
-                    name: 'rawAddress',
-                    internalType: 'struct FvmAddress',
-                    type: 'tuple',
-                    components: [
-                      {
-                        name: 'addrType',
-                        internalType: 'uint8',
-                        type: 'uint8',
-                      },
-                      { name: 'payload', internalType: 'bytes', type: 'bytes' },
-                    ],
-                  },
-                ],
-              },
-              { name: 'nonce', internalType: 'uint64', type: 'uint64' },
-              { name: 'value', internalType: 'uint256', type: 'uint256' },
-              { name: 'message', internalType: 'bytes', type: 'bytes' },
-            ],
-          },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getLastConfigurationNumber',
-    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getLastMembership',
-    outputs: [
-      {
-        name: '',
-        internalType: 'struct Membership',
-        type: 'tuple',
-        components: [
-          {
-            name: 'validators',
-            internalType: 'struct Validator[]',
-            type: 'tuple[]',
-            components: [
-              { name: 'weight', internalType: 'uint256', type: 'uint256' },
-              { name: 'addr', internalType: 'address', type: 'address' },
-              { name: 'metadata', internalType: 'bytes', type: 'bytes' },
-            ],
-          },
-          {
-            name: 'configurationNumber',
-            internalType: 'uint64',
-            type: 'uint64',
-          },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getLatestParentFinality',
-    outputs: [
-      {
-        name: '',
-        internalType: 'struct ParentFinality',
-        type: 'tuple',
-        components: [
-          { name: 'height', internalType: 'uint256', type: 'uint256' },
-          { name: 'blockHash', internalType: 'bytes32', type: 'bytes32' },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getNetworkName',
-    outputs: [
-      {
-        name: '',
-        internalType: 'struct SubnetID',
-        type: 'tuple',
-        components: [
-          { name: 'root', internalType: 'uint64', type: 'uint64' },
-          { name: 'route', internalType: 'address[]', type: 'address[]' },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: 'blockNumber', internalType: 'uint256', type: 'uint256' }],
-    name: 'getParentFinality',
-    outputs: [
-      {
-        name: '',
-        internalType: 'struct ParentFinality',
-        type: 'tuple',
-        components: [
-          { name: 'height', internalType: 'uint256', type: 'uint256' },
-          { name: 'blockHash', internalType: 'bytes32', type: 'bytes32' },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: 'totalWeight', internalType: 'uint256', type: 'uint256' }],
-    name: 'getQuorumThreshold',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [
-      {
-        name: 'subnetId',
-        internalType: 'struct SubnetID',
-        type: 'tuple',
-        components: [
-          { name: 'root', internalType: 'uint64', type: 'uint64' },
-          { name: 'route', internalType: 'address[]', type: 'address[]' },
-        ],
-      },
-    ],
-    name: 'getSubnet',
-    outputs: [
-      { name: '', internalType: 'bool', type: 'bool' },
-      {
-        name: '',
-        internalType: 'struct Subnet',
-        type: 'tuple',
-        components: [
-          { name: 'stake', internalType: 'uint256', type: 'uint256' },
-          { name: 'genesisEpoch', internalType: 'uint256', type: 'uint256' },
-          { name: 'circSupply', internalType: 'uint256', type: 'uint256' },
-          { name: 'topDownNonce', internalType: 'uint64', type: 'uint64' },
-          {
-            name: 'appliedBottomUpNonce',
-            internalType: 'uint64',
-            type: 'uint64',
-          },
-          {
-            name: 'id',
-            internalType: 'struct SubnetID',
-            type: 'tuple',
-            components: [
-              { name: 'root', internalType: 'uint64', type: 'uint64' },
-              { name: 'route', internalType: 'address[]', type: 'address[]' },
-            ],
-          },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getSubnetKeys',
-    outputs: [{ name: '', internalType: 'bytes32[]', type: 'bytes32[]' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [
-      {
-        name: 'subnetId',
-        internalType: 'struct SubnetID',
-        type: 'tuple',
-        components: [
-          { name: 'root', internalType: 'uint64', type: 'uint64' },
-          { name: 'route', internalType: 'address[]', type: 'address[]' },
-        ],
-      },
-    ],
-    name: 'getSubnetTopDownMsgsLength',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [
-      {
-        name: 'subnetId',
-        internalType: 'struct SubnetID',
-        type: 'tuple',
-        components: [
-          { name: 'root', internalType: 'uint64', type: 'uint64' },
-          { name: 'route', internalType: 'address[]', type: 'address[]' },
-        ],
-      },
-    ],
-    name: 'getTopDownNonce',
-    outputs: [
-      { name: '', internalType: 'bool', type: 'bool' },
-      { name: '', internalType: 'uint64', type: 'uint64' },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getValidatorConfigurationNumbers',
-    outputs: [
-      { name: '', internalType: 'uint64', type: 'uint64' },
-      { name: '', internalType: 'uint64', type: 'uint64' },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'listSubnets',
-    outputs: [
-      {
-        name: '',
-        internalType: 'struct Subnet[]',
-        type: 'tuple[]',
-        components: [
-          { name: 'stake', internalType: 'uint256', type: 'uint256' },
-          { name: 'genesisEpoch', internalType: 'uint256', type: 'uint256' },
-          { name: 'circSupply', internalType: 'uint256', type: 'uint256' },
-          { name: 'topDownNonce', internalType: 'uint64', type: 'uint64' },
-          {
-            name: 'appliedBottomUpNonce',
-            internalType: 'uint64',
-            type: 'uint64',
-          },
-          {
-            name: 'id',
-            internalType: 'struct SubnetID',
-            type: 'tuple',
-            components: [
-              { name: 'root', internalType: 'uint64', type: 'uint64' },
-              { name: 'route', internalType: 'address[]', type: 'address[]' },
-            ],
-          },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'majorityPercentage',
-    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'maxMsgsPerBottomUpBatch',
-    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: 'id', internalType: 'bytes32', type: 'bytes32' }],
-    name: 'postbox',
-    outputs: [
-      {
-        name: 'storableMsg',
-        internalType: 'struct IpcEnvelope',
-        type: 'tuple',
-        components: [
-          { name: 'kind', internalType: 'enum IpcMsgKind', type: 'uint8' },
-          {
-            name: 'to',
-            internalType: 'struct IPCAddress',
-            type: 'tuple',
-            components: [
-              {
-                name: 'subnetId',
-                internalType: 'struct SubnetID',
-                type: 'tuple',
-                components: [
-                  { name: 'root', internalType: 'uint64', type: 'uint64' },
-                  {
-                    name: 'route',
-                    internalType: 'address[]',
-                    type: 'address[]',
-                  },
-                ],
-              },
-              {
-                name: 'rawAddress',
-                internalType: 'struct FvmAddress',
-                type: 'tuple',
-                components: [
-                  { name: 'addrType', internalType: 'uint8', type: 'uint8' },
-                  { name: 'payload', internalType: 'bytes', type: 'bytes' },
-                ],
-              },
-            ],
-          },
-          {
-            name: 'from',
-            internalType: 'struct IPCAddress',
-            type: 'tuple',
-            components: [
-              {
-                name: 'subnetId',
-                internalType: 'struct SubnetID',
-                type: 'tuple',
-                components: [
-                  { name: 'root', internalType: 'uint64', type: 'uint64' },
-                  {
-                    name: 'route',
-                    internalType: 'address[]',
-                    type: 'address[]',
-                  },
-                ],
-              },
-              {
-                name: 'rawAddress',
-                internalType: 'struct FvmAddress',
-                type: 'tuple',
-                components: [
-                  { name: 'addrType', internalType: 'uint8', type: 'uint8' },
-                  { name: 'payload', internalType: 'bytes', type: 'bytes' },
-                ],
-              },
-            ],
-          },
-          { name: 'nonce', internalType: 'uint64', type: 'uint64' },
-          { name: 'value', internalType: 'uint256', type: 'uint256' },
-          { name: 'message', internalType: 'bytes', type: 'bytes' },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: 'h', internalType: 'bytes32', type: 'bytes32' }],
-    name: 'subnets',
-    outputs: [
-      {
-        name: 'subnet',
-        internalType: 'struct Subnet',
-        type: 'tuple',
-        components: [
-          { name: 'stake', internalType: 'uint256', type: 'uint256' },
-          { name: 'genesisEpoch', internalType: 'uint256', type: 'uint256' },
-          { name: 'circSupply', internalType: 'uint256', type: 'uint256' },
-          { name: 'topDownNonce', internalType: 'uint64', type: 'uint64' },
-          {
-            name: 'appliedBottomUpNonce',
-            internalType: 'uint64',
-            type: 'uint64',
-          },
-          {
-            name: 'id',
-            internalType: 'struct SubnetID',
-            type: 'tuple',
-            components: [
-              { name: 'root', internalType: 'uint64', type: 'uint64' },
-              { name: 'route', internalType: 'address[]', type: 'address[]' },
-            ],
-          },
-        ],
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'totalSubnets',
-    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
-    stateMutability: 'view',
-  },
-] as const
-
-/**
- *
- */
-export const gatewayGetterFacetSubnetAddress = {
+export const gatewayManagerFacetAddress = {
+  31337: '0x9A676e781A523b5d0C0e43731313A708CB607508',
+  314159: '0xb4C4590A2E5Da56aA8310bFF343AFc0645121205',
   2481632: '0x77Aa40B105843728088c0132e43FC44348881DA8',
+  248163216: '0x77Aa40B105843728088c0132e43FC44348881DA8',
 } as const
 
 /**
- *
+ * -
+ * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0xb4C4590A2E5Da56aA8310bFF343AFc0645121205)
  */
-export const gatewayGetterFacetSubnetConfig = {
-  address: gatewayGetterFacetSubnetAddress,
-  abi: gatewayGetterFacetSubnetAbi,
+export const gatewayManagerFacetConfig = {
+  address: gatewayManagerFacetAddress,
+  abi: gatewayManagerFacetAbi,
+} as const
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// RecallERC20
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * -
+ * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0x63DEDA399100Dc536CD4d98FC564ea4Eaf88479F)
+ */
+export const recallErc20Abi = [
+  {
+    type: 'function',
+    inputs: [
+      { name: 'owner', internalType: 'address', type: 'address' },
+      { name: 'spender', internalType: 'address', type: 'address' },
+    ],
+    name: 'allowance',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'spender', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'approve',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'totalSupply',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'transfer',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'from', internalType: 'address', type: 'address' },
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'transferFrom',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      {
+        name: 'owner',
+        internalType: 'address',
+        type: 'address',
+        indexed: true,
+      },
+      {
+        name: 'spender',
+        internalType: 'address',
+        type: 'address',
+        indexed: true,
+      },
+      {
+        name: 'value',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+    ],
+    name: 'Approval',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'from', internalType: 'address', type: 'address', indexed: true },
+      { name: 'to', internalType: 'address', type: 'address', indexed: true },
+      {
+        name: 'value',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+    ],
+    name: 'Transfer',
+  },
+] as const
+
+/**
+ * -
+ * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0x63DEDA399100Dc536CD4d98FC564ea4Eaf88479F)
+ */
+export const recallErc20Address = {
+  31337: '0x4A679253410272dd5232B3Ff7cF5dbB88f295319',
+  314159: '0x63DEDA399100Dc536CD4d98FC564ea4Eaf88479F',
+} as const
+
+/**
+ * -
+ * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0x63DEDA399100Dc536CD4d98FC564ea4Eaf88479F)
+ */
+export const recallErc20Config = {
+  address: recallErc20Address,
+  abi: recallErc20Abi,
 } as const
