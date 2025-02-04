@@ -316,7 +316,8 @@ export class AddressBls extends Address {
     const protocolIndicator = address[1];
 
     if (!networkPrefix) throw new Error("Invalid network prefix");
-    if (!protocolIndicator) throw new Error("Invalid protocol indicator");
+    if (protocolIndicator === undefined)
+      throw new Error("Invalid protocol indicator");
 
     if (!validateNetworkPrefix(networkPrefix))
       throw new InvalidNetwork(networkPrefix);
@@ -434,7 +435,8 @@ export class AddressId extends Address {
     const protocolIndicator = address[1];
 
     if (!networkPrefix) throw new Error("Invalid network prefix");
-    if (!protocolIndicator) throw new Error("Invalid protocol indicator");
+    if (protocolIndicator === undefined)
+      throw new Error("Invalid protocol indicator");
 
     if (!validateNetworkPrefix(networkPrefix))
       throw new InvalidNetwork(networkPrefix);
@@ -536,7 +538,8 @@ export class AddressSecp256k1 extends Address {
     const protocolIndicator = address[1];
 
     if (!networkPrefix) throw new Error("Invalid network prefix");
-    if (!protocolIndicator) throw new Error("Invalid protocol indicator");
+    if (protocolIndicator === undefined)
+      throw new Error("Invalid protocol indicator");
 
     if (!validateNetworkPrefix(networkPrefix))
       throw new InvalidNetwork(networkPrefix);
@@ -570,7 +573,6 @@ export class AddressSecp256k1 extends Address {
   ): AddressSecp256k1 {
     const indicator = bytes[0];
     if (indicator === undefined) throw new Error("Invalid protocol indicator");
-
     if (indicator != ProtocolIndicator.SECP256K1)
       throw new InvalidProtocolIndicator(indicator);
 
@@ -636,7 +638,8 @@ export class AddressActor extends Address {
     const protocolIndicator = address[1];
 
     if (!networkPrefix) throw new Error("Invalid network prefix");
-    if (!protocolIndicator) throw new Error("Invalid protocol indicator");
+    if (protocolIndicator === undefined)
+      throw new Error("Invalid protocol indicator");
 
     if (!validateNetworkPrefix(networkPrefix))
       throw new InvalidNetwork(networkPrefix);
@@ -669,7 +672,6 @@ export class AddressActor extends Address {
   ): AddressActor {
     const indicator = bytes[0];
     if (indicator === undefined) throw new Error("Invalid protocol indicator");
-
     if (indicator != ProtocolIndicator.ACTOR)
       throw new InvalidProtocolIndicator(indicator);
 
@@ -778,7 +780,8 @@ export class AddressDelegated extends Address {
     const protocolIndicator = address[1];
 
     if (!networkPrefix) throw new Error("Invalid network prefix");
-    if (!protocolIndicator) throw new Error("Invalid protocol indicator");
+    if (protocolIndicator === undefined)
+      throw new Error("Invalid protocol indicator");
 
     if (!validateNetworkPrefix(networkPrefix))
       throw new InvalidNetwork(networkPrefix);
@@ -817,7 +820,6 @@ export class AddressDelegated extends Address {
   ): AddressDelegated {
     const indicator = bytes[0];
     if (indicator === undefined) throw new Error("Invalid protocol indicator");
-
     if (indicator != ProtocolIndicator.DELEGATED)
       throw new InvalidProtocolIndicator(indicator);
 
