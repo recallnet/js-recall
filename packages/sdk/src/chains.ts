@@ -16,10 +16,10 @@ export type ChainName = "mainnet" | "testnet" | "localnet" | "devnet";
 
 export const testnet: Chain = defineChain({
   id: Number(TESTNET_CHAIN_ID),
-  name: "Hoku Testnet",
+  name: "Recall Testnet",
   nativeCurrency: {
-    name: "Hoku",
-    symbol: "HOKU",
+    name: "Recall",
+    symbol: "RECALL",
     decimals: 18,
   },
   rpcUrls: {
@@ -36,10 +36,10 @@ export const testnet: Chain = defineChain({
 
 export const localnet: Chain = defineChain({
   id: Number(LOCALNET_CHAIN_ID),
-  name: "Hoku Localnet",
+  name: "Recall Localnet",
   nativeCurrency: {
-    name: "Hoku",
-    symbol: "HOKU",
+    name: "Recall",
+    symbol: "RECALL",
     decimals: 18,
   },
   rpcUrls: {
@@ -52,10 +52,10 @@ export const localnet: Chain = defineChain({
 
 export const devnet: Chain = defineChain({
   id: Number(DEVNET_CHAIN_ID),
-  name: "Hoku Devnet",
+  name: "Recall Devnet",
   nativeCurrency: {
-    name: "Hoku",
-    symbol: "HOKU",
+    name: "Recall",
+    symbol: "RECALL",
     decimals: 18,
   },
   rpcUrls: {
@@ -80,7 +80,7 @@ export function checkChainIsSupported(chain: Chain): boolean {
 
 export function getChain(chainIdOrName: number | ChainName): Chain {
   const chains = supportedChains(true);
-  // TODO: the `chain.name` is prettified like `Hoku Localnet`, but maybe we can add a custom parameter and filter by that
+  // TODO: the `chain.name` is prettified like `Recall Localnet`, but maybe we can add a custom parameter and filter by that
   const chain = chains.find(
     (c) =>
       c.id === chainIdOrName ||

@@ -13,7 +13,7 @@ import {
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 import { localnet } from "../src/chains.js";
-import { HokuClient, walletClientFromPrivateKey } from "../src/client.js";
+import { RecallClient, walletClientFromPrivateKey } from "../src/client.js";
 import {
   AccountManager,
   BlobManager,
@@ -21,7 +21,7 @@ import {
   CreditManager,
 } from "../src/entities/index.js";
 
-// TODO: once https://github.com/hokunet/contracts/pull/56 is merged, we can remove this.
+// TODO: once https://github.com/recallnet/contracts/pull/56 is merged, we can remove this.
 // Currently, `ipc` localnet deploys a credit and blob manager contract that returns a different
 // value in `getAccount`, `getCreditBalance`, and `getStorageUsage` than what this JS lib expects.
 const CREDIT_MANAGER_ADDRESS = "";
@@ -30,7 +30,7 @@ const BLOB_MANAGER_ADDRESS = "";
 // TODO: these tests are somewhat dependent on one another, so we should refactor to be independent
 describe("contracts", function () {
   this.timeout(60000);
-  let client: HokuClient;
+  let client: RecallClient;
   let account: Account;
 
   before(async () => {
@@ -39,7 +39,7 @@ describe("contracts", function () {
       localnet,
     );
     account = walletClient.account;
-    client = new HokuClient({ walletClient });
+    client = new RecallClient({ walletClient });
   });
 
   describe("bucket manager", function () {
@@ -495,7 +495,7 @@ describe("contracts", function () {
         "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6",
         localnet,
       );
-      const approverClient = new HokuClient({ walletClient: approver });
+      const approverClient = new RecallClient({ walletClient: approver });
       const approverCredits = approverClient.creditManager(
         (CREDIT_MANAGER_ADDRESS as Address) ?? undefined,
       );

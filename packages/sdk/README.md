@@ -41,7 +41,7 @@ Create a wallet client from a private key:
 import { createWalletClient } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
-import { HokuClient, testnet } from "@recall/sdk";
+import { RecallClient, testnet } from "@recall/sdk";
 
 // Create a wallet client from a private key
 const privateKey =
@@ -53,7 +53,7 @@ const walletClient = createWalletClient({
 });
 
 // Create a client from the wallet client
-const recall = new HokuClient({ walletClient });
+const recall = new RecallClient({ walletClient });
 ```
 
 ### Bucket operations

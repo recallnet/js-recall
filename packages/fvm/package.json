@@ -4,10 +4,10 @@
   "description": "FVM formats and utilities for Recall",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hokunet/js-recall.git",
+    "url": "git+https://github.com/recallnet/js-recall.git",
     "directory": "packages/fvm"
   },
-  "homepage": "https://github.com/hokunet/js-recall#readme",
+  "homepage": "https://github.com/recallnet/js-recall#readme",
   "publishConfig": {
     "access": "public"
   },

@@ -14,7 +14,7 @@ export enum SystemActorIDs {
   VerifiedRegistry = 6,
   DataCap = 7,
   EAM = 10,
-  // Hoku actors
+  // Recall actors
   ADM = 17,
 }
 
@@ -110,7 +110,7 @@ export enum ActorsMainnetV10 {
 }
 
 /**
- * Actor content IDs for Hoku subnet actors
+ * Actor content IDs for Recall subnet actors
  */
 export enum ActorsSubnet {
   Account = "bafk2bzacecomydaym5xi2burqfxv3kz2xjr3vgpig67fm6gjvqzfxre3z4wku",
@@ -129,6 +129,6 @@ export enum ActorsSubnet {
   StoragePower = "bafk2bzaced3m5k5wnvnkq4wjhaalwspqa3jpn7ok4qv4jwxlfp7jjovvjk3he",
   System = "bafk2bzaceb7an3qpibd2x3a4k2ng4xkgqcbsweaefjpbhxznokxmqij3kyrmy",
   VerifiedRegistry = "bafk2bzacedvd4gp2v2qxcs6wohlur4hio2mxs2kvcyzysg66xmrddlmcnkavm",
-  // Hoku actors
+  // Recall actors
   ADM = "bafk2bzaceb3un4rdw24kbhokgs7vqulh4ptoaua6ynkpgjsbffy7qb5lkj65w",
 }

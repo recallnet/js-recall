@@ -14,7 +14,7 @@ import {
 import { AddressDelegated } from "@recall/fvm";
 
 import { gatewayManagerFacetABI } from "../abis.js";
-import { HokuClient } from "../client.js";
+import { RecallClient } from "../client.js";
 import { gatewayManagerFacetAddress } from "../constants.js";
 import {
   InsufficientFunds,
@@ -72,7 +72,7 @@ function releaseParamsToTyped(address: Address): ReleaseParams {
 // Gateway manager facet for managing gateway funding and releasing
 export class GatewayManager {
   getContract(
-    client: HokuClient,
+    client: RecallClient,
     contractAddress?: Address,
   ): GetContractReturnType<typeof gatewayManagerFacetABI, Client, Address> {
     const chainId = client.publicClient?.chain?.id;
@@ -97,7 +97,7 @@ export class GatewayManager {
 
   // Fund gateway with tokens
   async fundWithToken(
-    client: HokuClient,
+    client: RecallClient,
     amount: bigint,
     recipient?: Address,
     contractAddress?: Address,
@@ -134,7 +134,7 @@ export class GatewayManager {
 
   // Release funds from gateway
   async release(
-    client: HokuClient,
+    client: RecallClient,
     amount: bigint,
     recipient?: Address,
     contractAddress?: Address,

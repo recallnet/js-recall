@@ -13,7 +13,7 @@ import {
 } from "viem";
 
 import { ierc20ABI } from "../abis.js";
-import { HokuClient } from "../client.js";
+import { RecallClient } from "../client.js";
 import { supplySourceAddress } from "../constants.js";
 import { GatewayManager } from "../ipc/gateway.js";
 import { InvalidValue } from "./errors.js";
@@ -41,10 +41,10 @@ type ApproveParams = ContractFunctionArgs<
 
 // AccountManager class wrapper around `GatewayManager`
 export class AccountManager {
-  client: HokuClient;
+  client: RecallClient;
   gatewayManager: GatewayManager;
 
-  constructor(client: HokuClient) {
+  constructor(client: RecallClient) {
     this.client = client;
     this.gatewayManager = new GatewayManager();
   }
@@ -67,7 +67,7 @@ export class AccountManager {
 
   // Get the supply source contract
   getSupplySource(
-    client: HokuClient,
+    client: RecallClient,
     address?: Address,
   ): GetContractReturnType<typeof ierc20ABI, Client, Address> {
     const chainId = client.publicClient?.chain?.id;

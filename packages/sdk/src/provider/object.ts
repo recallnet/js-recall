@@ -4,7 +4,7 @@ import { Address, encodeFunctionData } from "viem";
 import { AddressId } from "@recall/fvm";
 
 import { bucketManagerABI } from "../abis.js";
-import { HokuClient } from "../client.js";
+import { RecallClient } from "../client.js";
 import { AddObjectFullParams, AddObjectParams } from "../entities/bucket.js";
 import {
   BucketNotFound,
@@ -112,7 +112,7 @@ export async function stageDataToIroh(
 
 export async function callObjectsApiAddObject(
   objectsProviderUrl: string,
-  client: HokuClient,
+  client: RecallClient,
   bucketManagerAddress: Address,
   bucket: Address,
   params: AddObjectParams,

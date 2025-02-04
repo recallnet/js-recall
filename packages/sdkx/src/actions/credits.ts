@@ -25,15 +25,18 @@ export async function accountExists(config: Config, address: Address) {
 }
 
 export async function createAccount(address: Address) {
-  const response = await fetch("https://faucet-ignition-0.hoku.sh/register", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+  const response = await fetch(
+    "https://faucet.node-0.testnet.recall.network/register",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        address: address,
+      }),
     },
-    body: JSON.stringify({
-      address: address,
-    }),
-  });
+  );
   if (!response.ok) {
     throw new Error("Failed to register account: " + response.statusText);
   }
