@@ -19,7 +19,7 @@ import { Account } from "./account";
 import { ApprovalsFrom } from "./approvals-from";
 import { ApprovalsTo } from "./approvals-to";
 
-export function BillingTabs() {
+export function AccountTabs() {
   const { isConnected } = useAccount();
   const { prev: prevConnected, current: connected } = usePrevious(isConnected);
 
@@ -29,7 +29,7 @@ export function BillingTabs() {
 
   const handleTabChange = (value: string) => {
     window.location.hash = value;
-    router.push(`/billing#${value}`);
+    router.push(`/account#${value}`);
   };
 
   useEffect(() => {
