@@ -1,3 +1,3 @@
 export default function BucketsPage() {
-  return <div>Buckets</div>;
+  return <div>Buckets coming soon</div>;
 }

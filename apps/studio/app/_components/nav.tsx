@@ -3,6 +3,7 @@
 import { Menu } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { HTMLAttributeAnchorTarget } from "react";
 import { useAccount } from "wagmi";
 
 import {
@@ -16,15 +17,18 @@ import { cn } from "@recall/ui/lib/utils";
 function NavLink({
   title,
   href,
+  target,
   active,
 }: {
   title: string;
   href: string;
+  target?: HTMLAttributeAnchorTarget;
   active?: boolean;
 }) {
   return (
     <Link
       href={href}
+      target={target}
       className={cn(
         !active && "after:scale-x-0",
         "after:bg-primary relative block w-fit after:absolute after:block after:h-[1px] after:w-full after:origin-left after:transition after:duration-300 after:content-[''] after:hover:scale-x-100",
@@ -52,12 +56,16 @@ export function Nav() {
               <DropdownMenuItem onClick={() => router.push("/buckets")}>
                 Buckets
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push("/billing")}>
-                Billing
+              <DropdownMenuItem onClick={() => router.push("/account")}>
+                Account
               </DropdownMenuItem>
             </>
           )}
-          <DropdownMenuItem onClick={() => router.push("/docs")}>
+          <DropdownMenuItem
+            onClick={() =>
+              window.open("https://docs-hoku.vercel.app", "_blank")
+            }
+          >
             Docs
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -71,15 +79,16 @@ export function Nav() {
               active={pathname.startsWith("/buckets")}
             />
             <NavLink
-              title="Billing"
-              href="/billing"
-              active={pathname.startsWith("/billing")}
+              title="Account"
+              href="/account"
+              active={pathname.startsWith("/account")}
             />
           </>
         )}
         <NavLink
           title="Docs"
-          href="/docs"
+          href="https://docs-hoku.vercel.app"
+          target="_blank"
           active={pathname.startsWith("/docs")}
         />
       </div>
