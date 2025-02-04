@@ -16,7 +16,7 @@ import { bucketManagerAbi, bucketManagerAddress } from "@recall/contracts";
 import { cbor } from "@recall/fvm";
 
 import { RecallClient } from "../client.js";
-import { MAX_OBJECT_LENGTH, MIN_TTL } from "../constants.js";
+import { MAX_OBJECT_SIZE, MIN_TTL } from "../constants.js";
 import {
   callObjectsApiAddObject,
   createIrohNode,
@@ -377,9 +377,9 @@ export class BucketManager {
     const { nodeId: source } = await getObjectsNodeInfo(objectApiUrl);
     const iroh = await createIrohNode();
     const { hash, size } = await stageDataToIroh(iroh, data);
-    if (size > MAX_OBJECT_LENGTH) {
+    if (size > MAX_OBJECT_SIZE) {
       throw new InvalidValue(
-        `Object size must be less than ${MAX_OBJECT_LENGTH} bytes`,
+        `Object size must be less than ${MAX_OBJECT_SIZE} bytes`,
       );
     }
     // TTL of zero is interpreted by Solidity wrappers as null

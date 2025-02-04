@@ -1,6 +1,12 @@
 import { Chain } from "viem";
 
 import {
+  gatewayManagerFacetAddress,
+  recallErc20Address,
+  subnetGetterFacetAddress,
+} from "@recall/contracts";
+
+import {
   ChainName,
   devnet,
   getChain,
@@ -9,28 +15,21 @@ import {
   testnet,
 } from "./chains.js";
 import {
-  DEVNET_EVM_GATEWAY_ADDRESS,
-  DEVNET_EVM_REGISTRY_ADDRESS,
+  DEVNET_CHAIN_ID,
   DEVNET_EVM_RPC_URL,
   DEVNET_OBJECT_API_URL,
   DEVNET_RPC_URL,
-  LOCALNET_EVM_GATEWAY_ADDRESS,
-  LOCALNET_EVM_REGISTRY_ADDRESS,
+  LOCALNET_CHAIN_ID,
   LOCALNET_EVM_RPC_URL,
-  LOCALNET_EVM_SUPPLY_SOURCE_ADDRESS,
   LOCALNET_OBJECT_API_URL,
-  LOCALNET_PARENT_EVM_GATEWAY_ADDRESS,
-  LOCALNET_PARENT_EVM_REGISTRY_ADDRESS,
+  LOCALNET_PARENT_CHAIN_ID,
   LOCALNET_PARENT_EVM_RPC_URL,
   LOCALNET_RPC_URL,
   RPC_TIMEOUT,
-  TESTNET_EVM_GATEWAY_ADDRESS,
-  TESTNET_EVM_REGISTRY_ADDRESS,
+  TESTNET_CHAIN_ID,
   TESTNET_EVM_RPC_URL,
-  TESTNET_EVM_SUPPLY_SOURCE_ADDRESS,
   TESTNET_OBJECT_API_URL,
-  TESTNET_PARENT_EVM_GATEWAY_ADDRESS,
-  TESTNET_PARENT_EVM_REGISTRY_ADDRESS,
+  TESTNET_PARENT_CHAIN_ID,
   TESTNET_PARENT_EVM_RPC_URL,
   TESTNET_RPC_URL,
 } from "./constants.js";
@@ -260,11 +259,11 @@ export class Network {
       case NetworkType.Mainnet:
         throw new Error("network is pre-mainnet");
       case NetworkType.Testnet:
-        return TESTNET_EVM_GATEWAY_ADDRESS;
+        return gatewayManagerFacetAddress[TESTNET_CHAIN_ID];
       case NetworkType.Localnet:
-        return LOCALNET_EVM_GATEWAY_ADDRESS;
+        return gatewayManagerFacetAddress[LOCALNET_CHAIN_ID];
       case NetworkType.Devnet:
-        return DEVNET_EVM_GATEWAY_ADDRESS;
+        return gatewayManagerFacetAddress[DEVNET_CHAIN_ID];
     }
   }
 
@@ -274,11 +273,11 @@ export class Network {
       case NetworkType.Mainnet:
         throw new Error("network is pre-mainnet");
       case NetworkType.Testnet:
-        return TESTNET_EVM_REGISTRY_ADDRESS;
+        return subnetGetterFacetAddress[TESTNET_CHAIN_ID];
       case NetworkType.Localnet:
-        return LOCALNET_EVM_REGISTRY_ADDRESS;
+        return subnetGetterFacetAddress[LOCALNET_CHAIN_ID];
       case NetworkType.Devnet:
-        return DEVNET_EVM_REGISTRY_ADDRESS;
+        return subnetGetterFacetAddress[DEVNET_CHAIN_ID];
     }
   }
 
@@ -316,9 +315,9 @@ export class Network {
       case NetworkType.Mainnet:
         throw new Error("network is pre-mainnet");
       case NetworkType.Testnet:
-        return TESTNET_PARENT_EVM_GATEWAY_ADDRESS;
+        return gatewayManagerFacetAddress[TESTNET_PARENT_CHAIN_ID];
       case NetworkType.Localnet:
-        return LOCALNET_PARENT_EVM_GATEWAY_ADDRESS;
+        return gatewayManagerFacetAddress[LOCALNET_PARENT_CHAIN_ID];
       case NetworkType.Devnet:
         throw new Error("network has no parent");
     }
@@ -330,9 +329,9 @@ export class Network {
       case NetworkType.Mainnet:
         throw new Error("network is pre-mainnet");
       case NetworkType.Testnet:
-        return TESTNET_PARENT_EVM_REGISTRY_ADDRESS;
+        return subnetGetterFacetAddress[TESTNET_PARENT_CHAIN_ID];
       case NetworkType.Localnet:
-        return LOCALNET_PARENT_EVM_REGISTRY_ADDRESS;
+        return subnetGetterFacetAddress[LOCALNET_PARENT_CHAIN_ID];
       case NetworkType.Devnet:
         throw new Error("network has no parent");
     }
@@ -344,9 +343,9 @@ export class Network {
       case NetworkType.Mainnet:
         throw new Error("network is pre-mainnet");
       case NetworkType.Testnet:
-        return TESTNET_EVM_SUPPLY_SOURCE_ADDRESS;
+        return recallErc20Address[TESTNET_PARENT_CHAIN_ID];
       case NetworkType.Localnet:
-        return LOCALNET_EVM_SUPPLY_SOURCE_ADDRESS;
+        return recallErc20Address[LOCALNET_PARENT_CHAIN_ID];
       case NetworkType.Devnet:
         throw new Error("network has no parent");
     }
