@@ -15,15 +15,12 @@
   "license": "MIT AND Apache-2.0",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "directories": {
-    "dist": "./dist"
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
-  "files": [
-    "dist/**/*.js(.map)",
-    "dist/**/*.d.ts",
-    "dist/**/package.json",
-    "src/**/*.ts"
-  ],
   "scripts": {
     "prepublishOnly": "pnpm build",
     "test": "pnpm test:mocha",

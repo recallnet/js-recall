@@ -3,13 +3,16 @@ import { describe, it } from "mocha";
 import { strictEqual } from "node:assert";
 
 import {
-  LOCALNET_EVM_GATEWAY_ADDRESS,
-  LOCALNET_EVM_REGISTRY_ADDRESS,
+  gatewayManagerFacetAddress,
+  recallErc20Address,
+  subnetGetterFacetAddress,
+} from "@recall/contracts";
+
+import {
+  LOCALNET_CHAIN_ID,
   LOCALNET_EVM_RPC_URL,
-  LOCALNET_EVM_SUPPLY_SOURCE_ADDRESS,
   LOCALNET_OBJECT_API_URL,
-  LOCALNET_PARENT_EVM_GATEWAY_ADDRESS,
-  LOCALNET_PARENT_EVM_REGISTRY_ADDRESS,
+  LOCALNET_PARENT_CHAIN_ID,
   LOCALNET_PARENT_EVM_RPC_URL,
   LOCALNET_RPC_URL,
   LOCALNET_SUBNET_ID,
@@ -59,8 +62,14 @@ describe("network", function () {
     strictEqual(config.id?.toString(), LOCALNET_SUBNET_ID);
     strictEqual(config.providerHttp, LOCALNET_EVM_RPC_URL);
     strictEqual(config.providerTimeout, RPC_TIMEOUT);
-    strictEqual(config.registryAddr, LOCALNET_EVM_REGISTRY_ADDRESS);
-    strictEqual(config.gatewayAddr, LOCALNET_EVM_GATEWAY_ADDRESS);
+    strictEqual(
+      config.registryAddr,
+      subnetGetterFacetAddress[LOCALNET_CHAIN_ID],
+    );
+    strictEqual(
+      config.gatewayAddr,
+      gatewayManagerFacetAddress[LOCALNET_CHAIN_ID],
+    );
     strictEqual(config.authToken, undefined);
     strictEqual(config.supplySource, undefined);
   });
@@ -71,9 +80,18 @@ describe("network", function () {
     strictEqual(config.id?.toString(), "/r31337");
     strictEqual(config.providerHttp, LOCALNET_PARENT_EVM_RPC_URL);
     strictEqual(config.providerTimeout, RPC_TIMEOUT);
-    strictEqual(config.registryAddr, LOCALNET_PARENT_EVM_REGISTRY_ADDRESS);
-    strictEqual(config.gatewayAddr, LOCALNET_PARENT_EVM_GATEWAY_ADDRESS);
+    strictEqual(
+      config.registryAddr,
+      subnetGetterFacetAddress[LOCALNET_PARENT_CHAIN_ID],
+    );
+    strictEqual(
+      config.gatewayAddr,
+      gatewayManagerFacetAddress[LOCALNET_PARENT_CHAIN_ID],
+    );
     strictEqual(config.authToken, undefined);
-    strictEqual(config.supplySource, LOCALNET_EVM_SUPPLY_SOURCE_ADDRESS);
+    strictEqual(
+      config.supplySource,
+      recallErc20Address[LOCALNET_PARENT_CHAIN_ID],
+    );
   });
 });

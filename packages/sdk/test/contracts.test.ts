@@ -21,11 +21,16 @@ import {
   CreditManager,
 } from "../src/entities/index.js";
 
-// TODO: once https://github.com/recallnet/contracts/pull/56 is merged, we can remove this.
-// Currently, `ipc` localnet deploys a credit and blob manager contract that returns a different
-// value in `getAccount`, `getCreditBalance`, and `getStorageUsage` than what this JS lib expects.
-const CREDIT_MANAGER_ADDRESS = "";
+// TODO: these tests only work with `ipc` commit `2cf4f92` or earlier due to a bug that makes it
+// impossible to add objects via the bucket manager wrapper contract:
+// https://github.com/recallnet/ipc/issues/510
+// If developing locally, you'll also want to make sure you're using the `contracts` repo at commit
+// `9963d4` since this works with the `ipc` commit mentioned above, and pass overrides, if needed.
+
+// Optionally, set these addresses to override the default addresses
 const BLOB_MANAGER_ADDRESS = "";
+const BUCKET_MANAGER_ADDRESS = "";
+const CREDIT_MANAGER_ADDRESS = "";
 
 // TODO: these tests are somewhat dependent on one another, so we should refactor to be independent
 describe("contracts", function () {
@@ -46,11 +51,13 @@ describe("contracts", function () {
     let bucketManager: BucketManager;
 
     before(async () => {
-      bucketManager = client.bucketManager();
+      bucketManager = client.bucketManager(
+        (BUCKET_MANAGER_ADDRESS as Address) ?? undefined,
+      );
     });
 
     it("should create a bucket", async () => {
-      const { meta, result } = await bucketManager.create(account.address);
+      const { meta, result } = await bucketManager.create();
       strictEqual(isHash(meta!.tx!.transactionHash), true);
       strictEqual(result.owner, account.address);
       strictEqual(isAddress(result.bucket), true);
@@ -58,6 +65,10 @@ describe("contracts", function () {
 
     it("should list buckets", async () => {
       let { result: buckets } = await bucketManager.list(account.address);
+      expect(buckets).to.be.an("array");
+      strictEqual(buckets[0]?.kind, 0);
+
+      ({ result: buckets } = await bucketManager.list());
       expect(buckets).to.be.an("array");
       strictEqual(buckets[0]?.kind, 0);
 
@@ -188,44 +199,58 @@ describe("contracts", function () {
 
       it("should download object with range", async () => {
         let range: { start?: number; end?: number } = { start: 1, end: 3 };
-        let { result: object } = await bucketManager.get(bucket, key, range);
+        let { result: object } = await bucketManager.get(bucket, key, {
+          range,
+        });
         let contents = new TextDecoder().decode(object);
         strictEqual(contents, "ell");
 
         range = { start: 1, end: 1 };
-        ({ result: object } = await bucketManager.get(bucket, key, range));
+        ({ result: object } = await bucketManager.get(bucket, key, {
+          range,
+        }));
         contents = new TextDecoder().decode(object);
         strictEqual(contents, "e");
 
         range = { start: 5, end: 11 };
-        ({ result: object } = await bucketManager.get(bucket, key, range));
+        ({ result: object } = await bucketManager.get(bucket, key, {
+          range,
+        }));
         contents = new TextDecoder().decode(object);
         strictEqual(contents, "\n");
 
         range = { start: 1, end: undefined };
-        ({ result: object } = await bucketManager.get(bucket, key, range));
+        ({ result: object } = await bucketManager.get(bucket, key, {
+          range,
+        }));
         contents = new TextDecoder().decode(object);
         strictEqual(contents, "ello\n");
 
         range = { start: undefined, end: 2 };
-        ({ result: object } = await bucketManager.get(bucket, key, range));
+        ({ result: object } = await bucketManager.get(bucket, key, {
+          range,
+        }));
         contents = new TextDecoder().decode(object);
         strictEqual(contents, "o\n");
 
         range = { start: undefined, end: 11 };
-        ({ result: object } = await bucketManager.get(bucket, key, range));
+        ({ result: object } = await bucketManager.get(bucket, key, {
+          range,
+        }));
         contents = new TextDecoder().decode(object);
         strictEqual(contents, fileContents);
 
         range = { start: undefined, end: undefined };
-        ({ result: object } = await bucketManager.get(bucket, key, range));
+        ({ result: object } = await bucketManager.get(bucket, key, {
+          range,
+        }));
         contents = new TextDecoder().decode(object);
         strictEqual(contents, fileContents);
       });
 
       it("should fail to download object with invalid range", async () => {
         let range: { start?: number; end?: number } = { start: 5, end: 2 };
-        let object = bucketManager.get(bucket, key, range);
+        let object = bucketManager.get(bucket, key, { range });
         await rejects(object, (err) => {
           strictEqual(
             (err as Error).message,
@@ -235,7 +260,7 @@ describe("contracts", function () {
         });
 
         range = { start: 6, end: undefined };
-        object = bucketManager.get(bucket, key, range);
+        object = bucketManager.get(bucket, key, { range });
         await rejects(object, (err) => {
           strictEqual((err as Error).message, `Invalid range: ${range.start}-`);
           return true;
@@ -257,7 +282,7 @@ describe("contracts", function () {
       it("should query objects", async () => {
         let {
           result: { objects, commonPrefixes },
-        } = await bucketManager.query(bucket, "hello/");
+        } = await bucketManager.query(bucket, { prefix: "hello/" });
         expect(objects.length).to.be.greaterThan(0);
         strictEqual(objects[0]?.key, key);
         strictEqual(objects[0]?.state?.size, 6n);
@@ -267,7 +292,7 @@ describe("contracts", function () {
         // no objects with prefix
         ({
           result: { objects, commonPrefixes },
-        } = await bucketManager.query(bucket, "foo/"));
+        } = await bucketManager.query(bucket, { prefix: "foo/" }));
         strictEqual(objects.length, 0);
         strictEqual(commonPrefixes.length, 0);
 
@@ -275,14 +300,13 @@ describe("contracts", function () {
         const latestBlock = await client.publicClient.getBlockNumber();
         ({
           result: { objects, commonPrefixes },
-        } = await bucketManager.query(
-          bucket,
-          "hello/",
-          "/",
-          "",
-          1,
-          latestBlock,
-        ));
+        } = await bucketManager.query(bucket, {
+          prefix: "hello/",
+          delimiter: "/",
+          startKey: "",
+          limit: 1,
+          blockNumber: latestBlock,
+        }));
         strictEqual(objects.length, 1);
         strictEqual(objects[0]?.key, key);
         strictEqual(commonPrefixes.length, 0);
@@ -290,7 +314,9 @@ describe("contracts", function () {
 
       it("should fail to query non-existent bucket", async () => {
         const missingBucket = "0xff00999999999999999999999999999999999999";
-        const query = bucketManager.query(missingBucket, "hello/");
+        const query = bucketManager.query(missingBucket, {
+          prefix: "hello/",
+        });
         await rejects(query, (err) => {
           strictEqual(
             (err as Error).message,

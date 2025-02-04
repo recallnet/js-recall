@@ -12,9 +12,9 @@ import {
   getContract,
 } from "viem";
 
-import { ierc20ABI } from "../abis.js";
+import { recallErc20Abi, recallErc20Address } from "@recall/contracts";
+
 import { RecallClient } from "../client.js";
-import { supplySourceAddress } from "../constants.js";
 import { GatewayManager } from "../ipc/gateway.js";
 import { InvalidValue } from "./errors.js";
 import { Result, parseEventFromTransaction } from "./utils.js";
@@ -29,12 +29,12 @@ type AccountInfo = {
 
 // Type for approve result
 type ApproveResult = Required<
-  GetEventArgs<typeof ierc20ABI, "Approval", { IndexedOnly: false }>
+  GetEventArgs<typeof recallErc20Abi, "Approval", { IndexedOnly: false }>
 >;
 
 // Type for approve params
 type ApproveParams = ContractFunctionArgs<
-  typeof ierc20ABI,
+  typeof recallErc20Abi,
   AbiStateMutability,
   "approve"
 >;
@@ -69,19 +69,19 @@ export class AccountManager {
   getSupplySource(
     client: RecallClient,
     address?: Address,
-  ): GetContractReturnType<typeof ierc20ABI, Client, Address> {
+  ): GetContractReturnType<typeof recallErc20Abi, Client, Address> {
     const chainId = client.publicClient?.chain?.id;
     if (!chainId) {
       throw new Error("Client chain ID not found");
     }
     const deployedSupplySourceAddress = (
-      supplySourceAddress as Record<number, Address>
+      recallErc20Address as Record<number, Address>
     )[chainId];
     if (!deployedSupplySourceAddress) {
       throw new Error(`No contract address found for chain ID ${chainId}}`);
     }
     return getContract({
-      abi: ierc20ABI,
+      abi: recallErc20Abi,
       address: address || deployedSupplySourceAddress,
       client: {
         public: this.client.publicClient,

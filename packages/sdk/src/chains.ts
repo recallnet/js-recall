@@ -28,10 +28,12 @@ export const testnet: Chain = defineChain({
       webSocket: [TESTNET_EVM_WS_URL],
     },
   },
-  // blockExplorers: {
-  //   default: { name: "HK Explorer", url: "https://hkexplorer.io" },
-  // },
-  testnet: false, // TODO: update once mainnet is live
+  blockExplorers: {
+    default: {
+      name: "Recall Testnet Explorer",
+      url: "https://explorer.testnet.recall.network",
+    },
+  },
 });
 
 export const localnet: Chain = defineChain({

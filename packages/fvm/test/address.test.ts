@@ -1,7 +1,7 @@
 // Forked from: https://github.com/Zondax/izari-filecoin/blob/master/tests/jest/logic/address.test.ts
 import { expect } from "chai";
-import { readFileSync } from "fs";
 import { describe, it } from "mocha";
+import { readFileSync } from "node:fs";
 import * as u8a from "uint8arrays";
 
 import { InvalidId, InvalidProtocolIndicator } from "../src/address/errors.js";
@@ -35,34 +35,47 @@ type AddressEthTestCase = {
 
 describe("address", function () {
   this.timeout(60_000);
-  describe("vectors", async () => {
-    describe("from string", async () => {
+  // Note: we run all test vectors in a single test to avoid excessive logging
+  describe("vectors", () => {
+    describe("from string", () => {
       const vectors = JSON.parse(
         readFileSync(new URL(ADDRESSES_VECTOR, import.meta.url), "utf-8"),
       ) as AddressTestCase[];
 
-      vectors.forEach(
-        async ({ string, payload, bytes, protocol, network, eth }, index) => {
-          it(`test case ${index}: ${string}`, async () => {
-            const addr = Address.fromString(string);
+      it(`should handle ${vectors.length} address string vectors`, () => {
+        vectors.forEach(
+          ({ string, payload, bytes, protocol, network, eth }, index) => {
+            try {
+              const addr = Address.fromString(string);
 
-            expect(addr.toString()).to.equal(string);
-            expect(u8a.toString(addr.toBytes(), "hex")).to.equal(bytes);
-            expect(addr.getProtocol()).to.equal(protocol);
-            expect(addr.getNetworkPrefix()).to.equal(network);
-            expect(u8a.toString(addr.getPayload(), "hex")).to.equal(payload);
+              expect(addr.toString()).to.equal(string);
+              expect(u8a.toString(addr.toBytes(), "hex")).to.equal(bytes);
+              expect(addr.getProtocol()).to.equal(protocol);
+              expect(addr.getNetworkPrefix()).to.equal(network);
+              expect(u8a.toString(addr.getPayload(), "hex")).to.equal(payload);
 
-            if (Address.isAddressId(addr)) {
-              expect(addr.getId()).to.equal(string.substring(2));
-              expect(addr.toEthAddressHex()).to.equal(eth); // `toEthAddressHex` defaults to hex prefix
-            }
-            if (Address.isAddressDelegated(addr))
-              expect(addr.getNamespace()).to.equal(
-                string.substring(2, string.indexOf(network, 1)),
+              if (Address.isAddressId(addr)) {
+                expect(addr.getId()).to.equal(string.substring(2));
+                expect(addr.toEthAddressHex()).to.equal(eth);
+              }
+              if (Address.isAddressDelegated(addr)) {
+                expect(addr.getNamespace()).to.equal(
+                  string.substring(2, string.indexOf(network, 1)),
+                );
+              }
+            } catch (error: unknown) {
+              if (error instanceof Error) {
+                throw new Error(
+                  `Vector ${index} failed with string "${string}": ${error.message}`,
+                );
+              }
+              throw new Error(
+                `Vector ${index} failed with string "${string}": ${error}`,
               );
-          });
-        },
-      );
+            }
+          },
+        );
+      });
     });
 
     describe("from bytes", () => {
@@ -70,49 +83,69 @@ describe("address", function () {
         readFileSync(new URL(ADDRESSES_VECTOR, import.meta.url), "utf-8"),
       ) as AddressTestCase[];
 
-      vectors.forEach(
-        ({ string, payload, bytes, protocol, network }, index) => {
-          it(`Test case ${index}: 0x${bytes}`, () => {
-            const addr = Address.fromBytes(
-              u8a.fromString(bytes, "hex"),
-              network as NetworkPrefix,
-            );
-
-            expect(addr.toString()).to.equal(string);
-            expect(u8a.toString(addr.toBytes(), "hex")).to.equal(bytes);
-
-            expect(addr.getProtocol()).to.equal(protocol);
-            expect(addr.getNetworkPrefix()).to.equal(network);
-            expect(u8a.toString(addr.getPayload(), "hex")).to.equal(payload);
-
-            if (Address.isAddressId(addr))
-              expect(addr.getId()).to.equal(string.substring(2));
-            if (Address.isAddressDelegated(addr))
-              expect(addr.getNamespace()).to.equal(
-                string.substring(2, string.indexOf(network, 1)),
+      it(`should handle ${vectors.length} address bytes vectors`, () => {
+        vectors.forEach(
+          ({ string, payload, bytes, protocol, network }, index) => {
+            try {
+              const addr = Address.fromBytes(
+                u8a.fromString(bytes, "hex"),
+                network as NetworkPrefix,
               );
-          });
-        },
-      );
+
+              expect(addr.toString()).to.equal(string);
+              expect(u8a.toString(addr.toBytes(), "hex")).to.equal(bytes);
+              expect(addr.getProtocol()).to.equal(protocol);
+              expect(addr.getNetworkPrefix()).to.equal(network);
+              expect(u8a.toString(addr.getPayload(), "hex")).to.equal(payload);
+
+              if (Address.isAddressId(addr))
+                expect(addr.getId()).to.equal(string.substring(2));
+              if (Address.isAddressDelegated(addr))
+                expect(addr.getNamespace()).to.equal(
+                  string.substring(2, string.indexOf(network, 1)),
+                );
+            } catch (error: unknown) {
+              if (error instanceof Error) {
+                throw new Error(
+                  `Vector ${index} failed with bytes "0x${bytes}": ${error.message}`,
+                );
+              }
+              throw new Error(
+                `Vector ${index} failed with bytes "0x${bytes}": ${error}`,
+              );
+            }
+          },
+        );
+      });
     });
 
-    describe("eth <-> ID address ", () => {
+    describe("eth <-> ID address", () => {
       const vectors = JSON.parse(
         readFileSync(new URL(ADDRESSES_ETH_VECTOR, import.meta.url), "utf-8"),
       ) as AddressEthTestCase[];
 
-      vectors.forEach(async ({ string, eth }) => {
-        it(`test case ${string}: ${eth}`, async () => {
-          const addrId1 = Address.fromEthAddress(eth, NetworkPrefix.Mainnet);
-          expect(addrId1.toString()).to.equal(string);
-          expect(addrId1.toEthAddressHex(true)).to.equal(eth);
+      it(`should handle ${vectors.length} ETH address vectors`, () => {
+        vectors.forEach(({ string, eth }, index) => {
+          try {
+            const addrId1 = Address.fromEthAddress(eth, NetworkPrefix.Mainnet);
+            expect(addrId1.toString()).to.equal(string);
+            expect(addrId1.toEthAddressHex(true)).to.equal(eth);
 
-          const addrId2 = Address.fromString(string);
-
-          expect(addrId2.toString()).to.equal(string);
-          expect(Address.isAddressId(addrId2) === true);
-          if (Address.isAddressId(addrId2)) {
-            expect(addrId2.toEthAddressHex(true)).to.equal(eth);
+            const addrId2 = Address.fromString(string);
+            expect(addrId2.toString()).to.equal(string);
+            expect(Address.isAddressId(addrId2) === true);
+            if (Address.isAddressId(addrId2)) {
+              expect(addrId2.toEthAddressHex(true)).to.equal(eth);
+            }
+          } catch (error: unknown) {
+            if (error instanceof Error) {
+              throw new Error(
+                `Vector ${index} failed with ETH "${eth}": ${error.message}`,
+              );
+            }
+            throw new Error(
+              `Vector ${index} failed with ETH "${eth}": ${error}`,
+            );
           }
         });
       });
@@ -199,7 +232,7 @@ describe("address", function () {
       describe("from bytes", () => {
         it("testnet", async () => {
           const addr = Address.fromBytes(
-            Buffer.from("00da43", "hex"),
+            u8a.fromString("00da43", "hex"),
             NetworkPrefix.Testnet,
           );
           expect(addr.toString()).to.equal("t08666");
@@ -210,7 +243,7 @@ describe("address", function () {
 
         it("mainnet", async () => {
           const addr = Address.fromBytes(
-            Buffer.from("00da43", "hex"),
+            u8a.fromString("00da43", "hex"),
             NetworkPrefix.Mainnet,
           );
           expect(addr.toString()).to.equal("f08666");
@@ -222,7 +255,7 @@ describe("address", function () {
         it("exceed max value", async () => {
           expect(() => {
             Address.fromBytes(
-              Buffer.from("0080808080808080808001", "hex"),
+              u8a.fromString("0080808080808080808001", "hex"),
               NetworkPrefix.Mainnet,
             );
           }).to.throw(InvalidId);
@@ -230,7 +263,7 @@ describe("address", function () {
 
         it("max allowed value", async () => {
           const addr = Address.fromBytes(
-            Buffer.from("00ffffffffffffffff7f", "hex"),
+            u8a.fromString("00ffffffffffffffff7f", "hex"),
             NetworkPrefix.Mainnet,
           );
           expect(addr.toString()).to.equal("f09223372036854775807");
@@ -284,7 +317,7 @@ describe("address", function () {
         expect(() => {
           new AddressDelegated(
             "10",
-            Buffer.from("ff00000000000000000000000000000000000001", "hex"),
+            u8a.fromString("ff00000000000000000000000000000000000001", "hex"),
             NetworkPrefix.Mainnet,
           );
         }).to.throw("masked-id eth addresses not allowed");
@@ -302,7 +335,7 @@ describe("address", function () {
         expect(() => {
           const addr = new AddressDelegated(
             "11",
-            Buffer.from("111111", "hex"),
+            u8a.fromString("111111", "hex"),
             NetworkPrefix.Mainnet,
           );
           FilEthAddress.fromString(addr.toString());
@@ -313,7 +346,7 @@ describe("address", function () {
         expect(() => {
           const addr = new AddressDelegated(
             "10",
-            Buffer.from("111111", "hex"),
+            u8a.fromString("111111", "hex"),
             NetworkPrefix.Mainnet,
           );
           FilEthAddress.fromString(addr.toString());
@@ -323,7 +356,7 @@ describe("address", function () {
       it("masked-id eth address", async () => {
         expect(() => {
           new FilEthAddress(
-            Buffer.from("ff00000000000000000000000000000000000001", "hex"),
+            u8a.fromString("ff00000000000000000000000000000000000001", "hex"),
             NetworkPrefix.Mainnet,
           );
         }).to.throw("masked-id eth addresses not allowed");

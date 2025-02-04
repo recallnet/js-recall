@@ -12,15 +12,11 @@ import {
   getContract,
 } from "viem";
 
+import { bucketManagerAbi, bucketManagerAddress } from "@recall/contracts";
 import { cbor } from "@recall/fvm";
 
-import { bucketManagerABI } from "../abis.js";
 import { RecallClient } from "../client.js";
-import {
-  MAX_OBJECT_LENGTH,
-  MIN_TTL,
-  bucketManagerAddress,
-} from "../constants.js";
+import { MAX_OBJECT_SIZE, MIN_TTL } from "../constants.js";
 import {
   callObjectsApiAddObject,
   createIrohNode,
@@ -61,7 +57,7 @@ export type AddOptions = {
 
 // Used for get()
 export type ObjectValueRaw = ContractFunctionReturnType<
-  typeof bucketManagerABI,
+  typeof bucketManagerAbi,
   AbiStateMutability,
   "getObject"
 >;
@@ -76,7 +72,7 @@ export type ObjectValue = Pick<
 
 // Used for list()
 export type ListResultRaw = ContractFunctionReturnType<
-  typeof bucketManagerABI,
+  typeof bucketManagerAbi,
   AbiStateMutability,
   "listBuckets"
 >;
@@ -92,9 +88,16 @@ export type ListResult = ListResultBucket[];
 
 // Used for query()
 export type QueryResultRaw = ContractFunctionReturnType<
-  typeof bucketManagerABI,
-  AbiStateMutability,
-  "queryObjects"
+  typeof bucketManagerAbi,
+  "view",
+  "queryObjects",
+  [
+    bucket: `0x${string}`,
+    prefix: string,
+    delimiter: string,
+    startKey: string,
+    limit: bigint,
+  ]
 >;
 
 // Converts metadata Solidity struct to normal javascript object
@@ -109,7 +112,7 @@ export type QueryResult = Omit<QueryResultRaw, "objects"> & {
 
 // Note: this emits raw cbor bytes, so we need to decode it to get the bucket address
 export type CreateBucketEvent = Required<
-  GetEventArgs<typeof bucketManagerABI, "CreateBucket", { IndexedOnly: false }>
+  GetEventArgs<typeof bucketManagerAbi, "CreateBucket", { IndexedOnly: false }>
 >;
 
 // Used for create()
@@ -120,18 +123,18 @@ export type CreateBucketResult = {
 
 // Used for add()
 export type AddObjectResult = Required<
-  GetEventArgs<typeof bucketManagerABI, "AddObject", { IndexedOnly: false }>
+  GetEventArgs<typeof bucketManagerAbi, "AddObject", { IndexedOnly: false }>
 >;
 
 // Used for delete()
 export type DeleteObjectResult = Required<
-  GetEventArgs<typeof bucketManagerABI, "DeleteObject", { IndexedOnly: false }>
+  GetEventArgs<typeof bucketManagerAbi, "DeleteObject", { IndexedOnly: false }>
 >;
 
 // Used for create()
 export type CreateBucketParams = Extract<
   ContractFunctionArgs<
-    typeof bucketManagerABI,
+    typeof bucketManagerAbi,
     AbiStateMutability,
     "createBucket"
   >,
@@ -140,28 +143,28 @@ export type CreateBucketParams = Extract<
 
 // Used for get()
 export type GetObjectParams = ContractFunctionArgs<
-  typeof bucketManagerABI,
+  typeof bucketManagerAbi,
   AbiStateMutability,
   "getObject"
 >;
 
 // Used for delete()
 export type DeleteObjectParams = ContractFunctionArgs<
-  typeof bucketManagerABI,
+  typeof bucketManagerAbi,
   AbiStateMutability,
   "deleteObject"
 >;
 
 // Used for query()
 export type QueryObjectsParams = ContractFunctionArgs<
-  typeof bucketManagerABI,
+  typeof bucketManagerAbi,
   AbiStateMutability,
   "queryObjects"
 >;
 
 // Used for add()
 export type AddObjectFullParams = ContractFunctionArgs<
-  typeof bucketManagerABI,
+  typeof bucketManagerAbi,
   AbiStateMutability,
   "addObject"
 >;
@@ -187,7 +190,7 @@ export type AddObjectParams = Extract<
 export class BucketManager {
   private fileHandler: FileHandler;
   client: RecallClient;
-  contract: GetContractReturnType<typeof bucketManagerABI, Client, Address>;
+  contract: GetContractReturnType<typeof bucketManagerAbi, Client, Address>;
 
   constructor(client: RecallClient, contractAddress?: Address) {
     this.client = client;
@@ -202,7 +205,7 @@ export class BucketManager {
       throw new Error(`No contract address found for chain ID ${chainId}}`);
     }
     this.contract = getContract({
-      abi: bucketManagerABI,
+      abi: bucketManagerAbi,
       address: contractAddress || deployedBucketManagerAddress,
       client: {
         public: client.publicClient,
@@ -216,7 +219,7 @@ export class BucketManager {
   }
 
   getContract(): GetContractReturnType<
-    typeof bucketManagerABI,
+    typeof bucketManagerAbi,
     Client,
     Address
   > {
@@ -224,10 +227,13 @@ export class BucketManager {
   }
 
   // Create a bucket
-  async create(
-    owner?: Address,
-    metadata?: Record<string, string>,
-  ): Promise<Result<CreateBucketResult>> {
+  async create({
+    owner,
+    metadata,
+  }: {
+    owner?: Address;
+    metadata?: Record<string, string>;
+  } = {}): Promise<Result<CreateBucketResult>> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for creating a bucket");
     }
@@ -275,13 +281,25 @@ export class BucketManager {
 
   // List buckets
   async list(
-    owner: Address,
+    owner?: Address,
     blockNumber?: bigint,
   ): Promise<Result<ListResult>> {
+    let effectiveOwner: Address;
+    if (owner) {
+      effectiveOwner = owner;
+    } else if (this.client.walletClient?.account) {
+      effectiveOwner = this.client.walletClient.account.address;
+    } else {
+      throw new Error("No owner provided or wallet client not initialized");
+    }
+
     try {
-      const listResult = await this.contract.read.listBuckets([owner], {
-        blockNumber,
-      });
+      const listResult = await this.contract.read.listBuckets(
+        [effectiveOwner],
+        {
+          blockNumber,
+        },
+      );
       const result = listResult.map((bucket) => ({
         ...bucket,
         metadata: convertAbiMetadataToObject(bucket.metadata),
@@ -359,9 +377,9 @@ export class BucketManager {
     const { nodeId: source } = await getObjectsNodeInfo(objectApiUrl);
     const iroh = await createIrohNode();
     const { hash, size } = await stageDataToIroh(iroh, data);
-    if (size > MAX_OBJECT_LENGTH) {
+    if (size > MAX_OBJECT_SIZE) {
       throw new InvalidValue(
-        `Object size must be less than ${MAX_OBJECT_LENGTH} bytes`,
+        `Object size must be less than ${MAX_OBJECT_SIZE} bytes`,
       );
     }
     // TTL of zero is interpreted by Solidity wrappers as null
@@ -474,8 +492,10 @@ export class BucketManager {
   async get(
     bucket: Address,
     key: string,
-    range?: { start?: number; end?: number },
-    blockNumber?: bigint,
+    options?: {
+      range?: { start?: number; end?: number };
+      blockNumber?: bigint;
+    },
   ): Promise<Result<Uint8Array>> {
     try {
       const objectApiUrl = this.client.network.objectApiUrl();
@@ -483,8 +503,8 @@ export class BucketManager {
         objectApiUrl,
         bucket,
         key,
-        range,
-        blockNumber,
+        options?.range,
+        options?.blockNumber,
       );
       const chunks: Uint8Array[] = [];
       const reader = stream.getReader();
@@ -548,24 +568,26 @@ export class BucketManager {
   // Query objects in a bucket
   async query(
     bucket: Address,
-    prefix: string,
-    delimiter: string = "/",
-    startKey: string = "",
-    limit: number = 100,
-    blockNumber?: bigint,
+    options?: {
+      prefix?: string;
+      delimiter?: string;
+      startKey?: string;
+      limit?: number;
+      blockNumber?: bigint;
+    },
   ): Promise<Result<QueryResult>> {
     try {
       const args = [
         bucket,
-        prefix,
-        delimiter,
-        startKey,
-        BigInt(limit),
+        options?.prefix ?? "",
+        options?.delimiter ?? "/",
+        options?.startKey ?? "",
+        BigInt(options?.limit ?? 100),
       ] satisfies QueryObjectsParams;
       const { objects, commonPrefixes, nextKey } =
-        await this.contract.read.queryObjects(args, {
-          blockNumber,
-        });
+        (await this.contract.read.queryObjects(args, {
+          blockNumber: options?.blockNumber,
+        })) as QueryResultRaw;
       const result = {
         objects: objects.map(({ key, state }) => ({
           key,
