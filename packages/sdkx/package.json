@@ -10,6 +10,11 @@
       "import": "./dist/chains.mjs",
       "require": "./dist/chains.cjs"
     },
+    "./react/buckets": {
+      "types": "./dist/react/buckets.d.ts",
+      "import": "./dist/react/buckets.mjs",
+      "require": "./dist/react/buckets.cjs"
+    },
     "./react/credits": {
       "types": "./dist/react/credits.d.ts",
       "import": "./dist/react/credits.mjs",

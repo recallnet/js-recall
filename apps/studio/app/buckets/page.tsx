@@ -1,3 +1,5 @@
+import Buckets from "./_components/buckets";
+
 export default function BucketsPage() {
-  return <div>Buckets coming soon</div>;
+  return <Buckets />;
 }

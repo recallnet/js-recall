@@ -1,8 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { Address, Hash } from "viem";
+import { Address } from "viem";
 import {
-  UseWriteContractReturnType,
   useAccount,
   useChainId,
   useReadContract,
@@ -132,35 +131,7 @@ export function useCreditStats() {
   });
 }
 
-type UseApproveCreditReturnType = Omit<
-  UseWriteContractReturnType,
-  "writeContract" | "writeContractAsync"
-> & {
-  approveCredit: (
-    to: Address,
-    options?: {
-      from: Address;
-      limits?: {
-        creditLimit: bigint;
-        gasFeeLimit: bigint;
-        ttl: bigint;
-      };
-    },
-  ) => void;
-  approveCreditAsync: (
-    to: Address,
-    options?: {
-      from: Address;
-      limits?: {
-        creditLimit: bigint;
-        gasFeeLimit: bigint;
-        ttl: bigint;
-      };
-    },
-  ) => Promise<Hash>;
-};
-
-export function useApproveCredit(): UseApproveCreditReturnType {
+export function useApproveCredit() {
   const chainId = useChainId();
 
   const contractAddress =
@@ -249,15 +220,7 @@ export function useApproveCredit(): UseApproveCreditReturnType {
   return { approveCredit, approveCreditAsync, ...rest };
 }
 
-type UseBuyCreditReturnType = Omit<
-  UseWriteContractReturnType,
-  "writeContract" | "writeContractAsync"
-> & {
-  buyCredit: (recallAmount: bigint, recipient?: Address) => void;
-  buyCreditAsync: (recallAmount: bigint, recipient?: Address) => Promise<Hash>;
-};
-
-export function useBuyCredit(): UseBuyCreditReturnType {
+export function useBuyCredit() {
   const chainId = useChainId();
 
   const contractAddress =
