@@ -1,31 +1,35 @@
-# shadcn/ui monorepo template
+# `js-recall`
 
-This template is for creating a monorepo with shadcn/ui.
+[![License](https://img.shields.io/github/license/recallnet/js-recall.svg)](./LICENSE)
+[![standard-readme compliant](https://img.shields.io/badge/standard--readme-OK-green.svg)](https://github.com/RichardLitt/standard-readme)
+
+> JS/TS monorepo for Recall
+
+## Background
+
+This repository contains is package and applications for Recall, written in JavaScript/TypeScript.
 
 ## Usage
 
-```bash
-pnpm dlx shadcn@latest init
-```
+See the respective package READMEs for usage instructions.
 
-## Adding components
+## Development
 
-To add components to your app, run the following command at the root of your `studio` app:
+The following commands are available from root:
 
-```bash
-pnpm dlx shadcn@latest add button -c apps/studio
-```
+- `pnpm build`: Build all packages
+- `pnpm dev`: Run all packages in development mode
+- `pnpm lint`: Run all linters
+- `pnpm format`: Format all files
+- `pnpm clean`: Clean all dependencies
 
-This will place the ui components in the `packages/ui/src/components` directory.
+## Contributing
 
-## Tailwind
+PRs accepted.
 
-Your `tailwind.config.ts` and `globals.css` are already set up to use the components from the `ui` package.
+Small note: If editing the README, please conform to
+the [standard-readme](https://github.com/RichardLitt/standard-readme) specification.
 
-## Using components
+## License
 
-To use the components in your app, import them from the `ui` package.
-
-```tsx
-import { Button } from "@recall/ui/components/ui/button";
-```
+MIT OR Apache-2.0, © 2025 Recall Contributors
