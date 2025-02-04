@@ -368,7 +368,7 @@ export const blobManagerAbi = [
 
 */
 export const blobManagerAddress = {
-  2481632: '0x8c2e3e8ba0d6084786d60A6600e832E8df84846C',
+  2481632: '0x7180B1e71814A3cdC62A414Ae02e3f6E1314B209',
   248163216: '0xe1Aa25618fA0c7A1CFDab5d6B456af611873b629',
 } as const
 
@@ -872,7 +872,7 @@ export const bucketManagerAbi = [
 
 */
 export const bucketManagerAddress = {
-  2481632: '0x5aA5cb07469Cabe65c12137400FBC3b0aE265999',
+  2481632: '0xfbCF213040240BA86Fed92961BB60625233641a1',
   248163216: '0xf7Cd8fa9b94DB2Aa972023b379c7f72c65E4De9D',
 } as const
 
@@ -1293,7 +1293,7 @@ export const creditManagerAbi = [
 
 */
 export const creditManagerAddress = {
-  2481632: '0x3537C0437792B326fa0747b4A95a8667873e916F',
+  2481632: '0xDB85431B6a016e1652c7E898918d787B6aef7185',
   248163216: '0x82C6D3ed4cD33d8EC1E51d0B5Cc1d822Eaa0c3dC',
 } as const
 
@@ -1311,7 +1311,7 @@ export const creditManagerConfig = {
 
 /**
  * -
- * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0xb4C4590A2E5Da56aA8310bFF343AFc0645121205)
+ * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0x45da97E918183cA1f2891E277F600fC0B2dDD9dC)
  */
 export const gatewayManagerFacetAbi = [
   {
@@ -1558,18 +1558,19 @@ export const gatewayManagerFacetAbi = [
 
 /**
  * -
- * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0xb4C4590A2E5Da56aA8310bFF343AFc0645121205)
+ * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0x45da97E918183cA1f2891E277F600fC0B2dDD9dC)
  */
 export const gatewayManagerFacetAddress = {
   31337: '0x9A676e781A523b5d0C0e43731313A708CB607508',
-  314159: '0xb4C4590A2E5Da56aA8310bFF343AFc0645121205',
+  314159: '0x45da97E918183cA1f2891E277F600fC0B2dDD9dC',
   2481632: '0x77Aa40B105843728088c0132e43FC44348881DA8',
   248163216: '0x77Aa40B105843728088c0132e43FC44348881DA8',
+  1942764459484029: '0x77Aa40B105843728088c0132e43FC44348881DA8',
 } as const
 
 /**
  * -
- * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0xb4C4590A2E5Da56aA8310bFF343AFc0645121205)
+ * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0x45da97E918183cA1f2891E277F600fC0B2dDD9dC)
  */
 export const gatewayManagerFacetConfig = {
   address: gatewayManagerFacetAddress,
@@ -1582,7 +1583,7 @@ export const gatewayManagerFacetConfig = {
 
 /**
  * -
- * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0x63DEDA399100Dc536CD4d98FC564ea4Eaf88479F)
+ * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0x2e6453107b4417eC2fB58ABDcc2968955Bd005Df)
  */
 export const recallErc20Abi = [
   {
@@ -1684,18 +1685,174 @@ export const recallErc20Abi = [
 
 /**
  * -
- * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0x63DEDA399100Dc536CD4d98FC564ea4Eaf88479F)
+ * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0x2e6453107b4417eC2fB58ABDcc2968955Bd005Df)
  */
 export const recallErc20Address = {
   31337: '0x4A679253410272dd5232B3Ff7cF5dbB88f295319',
-  314159: '0x63DEDA399100Dc536CD4d98FC564ea4Eaf88479F',
+  314159: '0x2e6453107b4417eC2fB58ABDcc2968955Bd005Df',
 } as const
 
 /**
  * -
- * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0x63DEDA399100Dc536CD4d98FC564ea4Eaf88479F)
+ * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0x2e6453107b4417eC2fB58ABDcc2968955Bd005Df)
  */
 export const recallErc20Config = {
   address: recallErc20Address,
   abi: recallErc20Abi,
+} as const
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// SubnetGetterFacet
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * -
+ * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0xd7719695eE7042cDCFF4065ef93346bF33222d78)
+ */
+export const subnetGetterFacetAbi = [
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getGateway',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getSubnetActorCheckpointerFacet',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getSubnetActorCheckpointerSelectors',
+    outputs: [{ name: '', internalType: 'bytes4[]', type: 'bytes4[]' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getSubnetActorGetterFacet',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getSubnetActorGetterSelectors',
+    outputs: [{ name: '', internalType: 'bytes4[]', type: 'bytes4[]' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getSubnetActorManagerFacet',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getSubnetActorManagerSelectors',
+    outputs: [{ name: '', internalType: 'bytes4[]', type: 'bytes4[]' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getSubnetActorPauserFacet',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getSubnetActorPauserSelectors',
+    outputs: [{ name: '', internalType: 'bytes4[]', type: 'bytes4[]' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getSubnetActorRewarderFacet',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getSubnetActorRewarderSelectors',
+    outputs: [{ name: '', internalType: 'bytes4[]', type: 'bytes4[]' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'owner', internalType: 'address', type: 'address' },
+      { name: 'nonce', internalType: 'uint64', type: 'uint64' },
+    ],
+    name: 'getSubnetDeployedByNonce',
+    outputs: [{ name: 'subnet', internalType: 'address', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'user', internalType: 'address', type: 'address' }],
+    name: 'getUserLastNonce',
+    outputs: [{ name: 'nonce', internalType: 'uint64', type: 'uint64' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'owner', internalType: 'address', type: 'address' }],
+    name: 'latestSubnetDeployed',
+    outputs: [{ name: 'subnet', internalType: 'address', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'newGetterFacet', internalType: 'address', type: 'address' },
+      { name: 'newManagerFacet', internalType: 'address', type: 'address' },
+      {
+        name: 'newSubnetGetterSelectors',
+        internalType: 'bytes4[]',
+        type: 'bytes4[]',
+      },
+      {
+        name: 'newSubnetManagerSelectors',
+        internalType: 'bytes4[]',
+        type: 'bytes4[]',
+      },
+    ],
+    name: 'updateReferenceSubnetContract',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  { type: 'error', inputs: [], name: 'CannotFindSubnet' },
+  { type: 'error', inputs: [], name: 'FacetCannotBeZero' },
+  { type: 'error', inputs: [], name: 'NotOwner' },
+] as const
+
+/**
+ * -
+ * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0xd7719695eE7042cDCFF4065ef93346bF33222d78)
+ */
+export const subnetGetterFacetAddress = {
+  31337: '0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44',
+  314159: '0xd7719695eE7042cDCFF4065ef93346bF33222d78',
+  2481632: '0x74539671A1D2F1c8f200826bAbA665179F53a1b7',
+  248163216: '0x74539671A1D2F1c8f200826bAbA665179F53a1b7',
+  1942764459484029: '0x74539671A1D2F1c8f200826bAbA665179F53a1b7',
+} as const
+
+/**
+ * -
+ * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0xd7719695eE7042cDCFF4065ef93346bF33222d78)
+ */
+export const subnetGetterFacetConfig = {
+  address: subnetGetterFacetAddress,
+  abi: subnetGetterFacetAbi,
 } as const

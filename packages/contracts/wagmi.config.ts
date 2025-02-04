@@ -6,6 +6,7 @@ const testnetSubnetChainId = 2481632;
 const testnetParentChainId = 314159;
 const localnetSubnetChainId = 248163216;
 const localnetParentChainId = 31337;
+const devnetChainId = 1942764459484029;
 
 const gatewayManagerFacetAbi: Abi = [
   {
@@ -358,6 +359,133 @@ export const ierc20Abi: Abi = [
   },
 ];
 
+export const subnetGetterFacetAbi: Abi = [
+  {
+    type: "function",
+    name: "getGateway",
+    inputs: [],
+    outputs: [{ name: "", type: "address", internalType: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getSubnetActorCheckpointerFacet",
+    inputs: [],
+    outputs: [{ name: "", type: "address", internalType: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getSubnetActorCheckpointerSelectors",
+    inputs: [],
+    outputs: [{ name: "", type: "bytes4[]", internalType: "bytes4[]" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getSubnetActorGetterFacet",
+    inputs: [],
+    outputs: [{ name: "", type: "address", internalType: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getSubnetActorGetterSelectors",
+    inputs: [],
+    outputs: [{ name: "", type: "bytes4[]", internalType: "bytes4[]" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getSubnetActorManagerFacet",
+    inputs: [],
+    outputs: [{ name: "", type: "address", internalType: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getSubnetActorManagerSelectors",
+    inputs: [],
+    outputs: [{ name: "", type: "bytes4[]", internalType: "bytes4[]" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getSubnetActorPauserFacet",
+    inputs: [],
+    outputs: [{ name: "", type: "address", internalType: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getSubnetActorPauserSelectors",
+    inputs: [],
+    outputs: [{ name: "", type: "bytes4[]", internalType: "bytes4[]" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getSubnetActorRewarderFacet",
+    inputs: [],
+    outputs: [{ name: "", type: "address", internalType: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getSubnetActorRewarderSelectors",
+    inputs: [],
+    outputs: [{ name: "", type: "bytes4[]", internalType: "bytes4[]" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getSubnetDeployedByNonce",
+    inputs: [
+      { name: "owner", type: "address", internalType: "address" },
+      { name: "nonce", type: "uint64", internalType: "uint64" },
+    ],
+    outputs: [{ name: "subnet", type: "address", internalType: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getUserLastNonce",
+    inputs: [{ name: "user", type: "address", internalType: "address" }],
+    outputs: [{ name: "nonce", type: "uint64", internalType: "uint64" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "latestSubnetDeployed",
+    inputs: [{ name: "owner", type: "address", internalType: "address" }],
+    outputs: [{ name: "subnet", type: "address", internalType: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "updateReferenceSubnetContract",
+    inputs: [
+      { name: "newGetterFacet", type: "address", internalType: "address" },
+      { name: "newManagerFacet", type: "address", internalType: "address" },
+      {
+        name: "newSubnetGetterSelectors",
+        type: "bytes4[]",
+        internalType: "bytes4[]",
+      },
+      {
+        name: "newSubnetManagerSelectors",
+        type: "bytes4[]",
+        internalType: "bytes4[]",
+      },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  { type: "error", name: "CannotFindSubnet", inputs: [] },
+  { type: "error", name: "FacetCannotBeZero", inputs: [] },
+  { type: "error", name: "NotOwner", inputs: [] },
+];
+
 export default defineConfig({
   out: "src/generated.ts",
   contracts: [
@@ -365,17 +493,29 @@ export default defineConfig({
       name: "GatewayManagerFacet",
       abi: gatewayManagerFacetAbi,
       address: {
-        [testnetParentChainId]: "0xb4C4590A2E5Da56aA8310bFF343AFc0645121205",
+        [testnetParentChainId]: "0x45da97E918183cA1f2891E277F600fC0B2dDD9dC",
         [testnetSubnetChainId]: "0x77aa40b105843728088c0132e43fc44348881da8",
         [localnetParentChainId]: "0x9A676e781A523b5d0C0e43731313A708CB607508",
         [localnetSubnetChainId]: "0x77aa40b105843728088c0132e43fc44348881da8",
+        [devnetChainId]: "0x77aa40b105843728088c0132e43fc44348881da8",
+      },
+    },
+    {
+      name: "SubnetGetterFacet",
+      abi: subnetGetterFacetAbi,
+      address: {
+        [testnetParentChainId]: "0xd7719695eE7042cDCFF4065ef93346bF33222d78",
+        [localnetParentChainId]: "0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44",
+        [testnetSubnetChainId]: "0x74539671a1d2f1c8f200826baba665179f53a1b7",
+        [localnetSubnetChainId]: "0x74539671a1d2f1c8f200826baba665179f53a1b7",
+        [devnetChainId]: "0x74539671a1d2f1c8f200826baba665179f53a1b7",
       },
     },
     {
       name: "RecallERC20",
       abi: ierc20Abi,
       address: {
-        [testnetParentChainId]: "0x63DEDA399100Dc536CD4d98FC564ea4Eaf88479F",
+        [testnetParentChainId]: "0x2e6453107b4417eC2fB58ABDcc2968955Bd005Df",
         [localnetParentChainId]: "0x4A679253410272dd5232B3Ff7cF5dbB88f295319",
       },
     },
@@ -390,15 +530,15 @@ export default defineConfig({
       ],
       deployments: {
         BlobManager: {
-          [testnetSubnetChainId]: "0x8c2e3e8ba0d6084786d60A6600e832E8df84846C",
+          [testnetSubnetChainId]: "0x7180B1e71814A3cdC62A414Ae02e3f6E1314B209",
           [localnetSubnetChainId]: "0xe1Aa25618fA0c7A1CFDab5d6B456af611873b629",
         },
         BucketManager: {
-          [testnetSubnetChainId]: "0x5aA5cb07469Cabe65c12137400FBC3b0aE265999",
+          [testnetSubnetChainId]: "0xfbCF213040240BA86Fed92961BB60625233641a1",
           [localnetSubnetChainId]: "0xf7Cd8fa9b94DB2Aa972023b379c7f72c65E4De9D",
         },
         CreditManager: {
-          [testnetSubnetChainId]: "0x3537C0437792B326fa0747b4A95a8667873e916F",
+          [testnetSubnetChainId]: "0xDB85431B6a016e1652c7E898918d787B6aef7185",
           [localnetSubnetChainId]: "0x82C6D3ed4cD33d8EC1E51d0B5Cc1d822Eaa0c3dC",
         },
       },
