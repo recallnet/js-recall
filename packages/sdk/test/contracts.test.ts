@@ -21,11 +21,16 @@ import {
   CreditManager,
 } from "../src/entities/index.js";
 
-// TODO: once https://github.com/recallnet/contracts/pull/56 is merged, we can remove this.
-// Currently, `ipc` localnet deploys a credit and blob manager contract that returns a different
-// value in `getAccount`, `getCreditBalance`, and `getStorageUsage` than what this JS lib expects.
-const CREDIT_MANAGER_ADDRESS = "";
+// TODO: these tests only work with `ipc` commit `2cf4f92` or earlier due to a bug that makes it
+// impossible to add objects via the bucket manager wrapper contract:
+// https://github.com/recallnet/ipc/issues/510
+// If developing locally, you'll also want to make sure you're using the `contracts` repo at commit
+// `9963d4` since this works with the `ipc` commit mentioned above, and pass overrides, if needed.
+
+// Optionally, set these addresses to override the default addresses
 const BLOB_MANAGER_ADDRESS = "";
+const BUCKET_MANAGER_ADDRESS = "";
+const CREDIT_MANAGER_ADDRESS = "";
 
 // TODO: these tests are somewhat dependent on one another, so we should refactor to be independent
 describe("contracts", function () {
@@ -46,7 +51,9 @@ describe("contracts", function () {
     let bucketManager: BucketManager;
 
     before(async () => {
-      bucketManager = client.bucketManager();
+      bucketManager = client.bucketManager(
+        (BUCKET_MANAGER_ADDRESS as Address) ?? undefined,
+      );
     });
 
     it("should create a bucket", async () => {
