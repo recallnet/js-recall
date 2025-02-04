@@ -27,6 +27,10 @@
       "types": "./dist/chains.d.ts",
       "default": "./dist/chains.js"
     },
+    "./react/buckets": {
+      "types": "./dist/react/buckets.d.ts",
+      "default": "./dist/react/buckets.js"
+    },
     "./react/credits": {
       "types": "./dist/react/credits.d.ts",
       "default": "./dist/react/credits.js"
