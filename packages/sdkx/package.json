@@ -12,11 +12,13 @@
   "devDependencies": {
     "@recall/eslint-config": "workspace:*",
     "@recall/typescript-config": "workspace:*",
+    "@types/react": "^19.0.0",
     "typescript": "^5.7.3"
   },
   "dependencies": {
     "@recall/contracts": "workspace:*",
     "@tanstack/react-query": "^5.64.2",
+    "react": "^19.0.0",
     "viem": "^2.22.9",
     "wagmi": "^2.14.8"
   },
