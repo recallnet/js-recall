@@ -1,3 +1,5 @@
+import { useMutation } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { Address, Hash } from "viem";
 import {
   UseWriteContractReturnType,
@@ -9,6 +11,8 @@ import {
 
 import { creditManagerAbi, creditManagerAddress } from "@recall/contracts";
 
+import { createAccount } from "../actions/credits.js";
+
 export function useCreditAccount(forAddress?: Address) {
   const chainId = useChainId();
   const { address: accountAddress } = useAccount();
@@ -18,7 +22,26 @@ export function useCreditAccount(forAddress?: Address) {
   const contractAddress =
     creditManagerAddress[chainId as keyof typeof creditManagerAddress];
 
-  return useReadContract({
+  const {
+    error: createAccountError,
+    isError: isCreateAccountError,
+    isPaused: isCreateAccountPaused,
+    isPending: isCreateAccountPending,
+    isSuccess: isCreateAccountSuccess,
+    status: createAccountStatus,
+    mutate,
+  } = useMutation({ mutationFn: createAccount });
+
+  const {
+    error,
+    isError,
+    isPaused,
+    isPending,
+    isSuccess,
+    status,
+    refetch,
+    ...rest
+  } = useReadContract({
     address: contractAddress,
     abi: creditManagerAbi,
     functionName: "getAccount",
@@ -27,6 +50,33 @@ export function useCreditAccount(forAddress?: Address) {
       enabled: !!address,
     },
   });
+
+  const isActorNotFound = error?.message.includes(
+    "actor::resolve_address -- actor not found",
+  );
+
+  useEffect(() => {
+    if (address && isActorNotFound) {
+      mutate(address);
+    }
+  }, [address, mutate, isActorNotFound]);
+
+  useEffect(() => {
+    if (isCreateAccountSuccess) {
+      refetch();
+    }
+  }, [isCreateAccountSuccess, refetch]);
+
+  return {
+    error: isActorNotFound ? null : (error ?? createAccountError),
+    isError: isError ?? isCreateAccountError,
+    isPaused: isPaused ?? isCreateAccountPaused,
+    isPending: isPending ?? isCreateAccountPending,
+    isSuccess: isSuccess ?? isCreateAccountSuccess,
+    status: createAccountStatus === "idle" ? status : createAccountStatus,
+    refetch,
+    ...rest,
+  };
 }
 
 export function useCreditApproval(to: Address, from?: Address) {

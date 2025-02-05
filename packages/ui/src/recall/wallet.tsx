@@ -44,7 +44,7 @@ export const Wallet = ({ className, ...props }: Props) => {
   useEffect(() => {
     if (creditAccountError) {
       toast({
-        title: "Error fetching credit balance",
+        title: "Error fetching credit account",
         description: creditAccountError.message,
       });
     }

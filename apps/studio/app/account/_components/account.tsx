@@ -148,6 +148,12 @@ export function Account() {
     deleteAccountSponsor(address);
   };
 
+  const handleFaucet = () => {
+    if (!address) return;
+    const url = `https://faucet.recall.network/?address=${address}`;
+    window.open(url, "_blank");
+  };
+
   const hasSponsor =
     creditAccount &&
     creditAccount.creditSponsor !==
@@ -161,9 +167,11 @@ export function Account() {
     : undefined;
 
   const maxTtlDisplay = creditAccount
-    ? duration(
-        Number(numBlocksToSeconds(creditAccount.maxTtl)) * 1000,
-      ).humanize()
+    ? creditAccount.maxTtl
+      ? duration(
+          Number(numBlocksToSeconds(creditAccount.maxTtl)) * 1000,
+        ).humanize()
+      : "None"
     : undefined;
 
   const setPending =
@@ -292,6 +300,11 @@ export function Account() {
             />
           </div>
         </CardContent>
+        <CardFooter className="flex justify-center gap-4 sm:justify-end">
+          <Button variant="outline" onClick={handleFaucet}>
+            Testnet Faucet
+          </Button>
+        </CardFooter>
       </Card>
       <Card className="rounded-none">
         <CardHeader>

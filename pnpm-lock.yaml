@@ -310,6 +310,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.64.2
         version: 5.64.2(react@19.0.0)
+      react:
+        specifier: ^19.0.0
+        version: 19.0.0
       viem:
         specifier: ^2.22.9
         version: 2.22.9(bufferutil@4.0.9)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.24.1)
@@ -323,6 +326,9 @@ importers:
       '@recall/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.0.7
       typescript:
         specifier: ^5.7.3
         version: 5.7.3
