@@ -10,7 +10,8 @@ import {
 } from "wagmi";
 
 import { creditManagerAbi, creditManagerAddress } from "@recall/contracts";
-import { createAccount } from "@recall/sdkx/actions/credits";
+
+import { createAccount } from "../actions/credits.js";
 
 export function useCreditAccount(forAddress?: Address) {
   const chainId = useChainId();
