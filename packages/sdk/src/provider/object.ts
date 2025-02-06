@@ -1,23 +1,14 @@
-import { BlobAddOutcome, Iroh } from "@number0/iroh";
-import { Address, encodeFunctionData } from "viem";
+import { Address } from "viem";
 
-import { bucketManagerAbi } from "@recall/contracts";
 import { AddressId } from "@recall/fvm";
 
-import { RecallClient } from "../client.js";
-import { AddObjectFullParams, AddObjectParams } from "../entities/bucket.js";
 import {
   BucketNotFound,
   InvalidValue,
   ObjectNotAvailable,
   UnhandledBucketError,
 } from "../entities/errors.js";
-import {
-  SnakeToCamelCase,
-  camelToSnake,
-  hexToBase64,
-  snakeToCamel,
-} from "./utils.js";
+import { SnakeToCamelCase, snakeToCamel } from "./utils.js";
 
 export type ObjectsApiNodeInfoRaw = {
   node_id: string;
@@ -39,32 +30,26 @@ type ObjectsApiUploadResponseRaw = {
 export type ObjectsApiUploadResponse =
   SnakeToCamelCase<ObjectsApiUploadResponseRaw>;
 
-type ObjectsApiFormData = {
-  chainId: number;
-  msg: string;
-  hash: string;
+export type ObjectsApiFormData = {
+  data: Uint8Array;
   size: bigint;
-  source: ObjectsApiNodeInfo;
+  contentType?: string;
 };
 
 export function createObjectsFormData({
-  chainId,
-  msg,
-  hash,
+  data,
   size,
-  source,
+  contentType,
 }: ObjectsApiFormData): FormData {
   const formData = new FormData();
-  const formatted = {
-    chain_id: chainId.toString(),
-    msg,
-    hash,
-    size: size.toString(),
-    source: JSON.stringify(camelToSnake(source)),
-  };
-  Object.entries(formatted).forEach(([key, value]) => {
-    formData.append(key, value as string);
-  });
+  formData.append(
+    "data",
+    new File([data], "blob", {
+      type: contentType ?? "application/octet-stream",
+    }),
+  );
+
+  formData.append("size", size.toString());
   return formData;
 }
 
@@ -80,77 +65,16 @@ export async function getObjectsNodeInfo(
   return snakeToCamel(json) as ObjectsApiNodeInfo;
 }
 
-export async function createIrohNode(): Promise<Iroh> {
-  const iroh = await Iroh.memory();
-  return iroh;
-}
-
-export async function irohNodeTypeToObjectsApiNodeInfo(
-  node: Iroh,
-): Promise<ObjectsApiNodeInfo> {
-  const irohNet = node.net;
-  const nodeId = await irohNet.nodeId();
-  const nodeAddr = await irohNet.nodeAddr();
-  const addresses = nodeAddr.addresses;
-  if (!addresses) {
-    throw new Error("No addresses found for node");
-  }
-  const relayUrl = nodeAddr.relayUrl;
-  if (!relayUrl) {
-    throw new Error("No relay URL found for node");
-  }
-  return { nodeId, info: { relayUrl, directAddresses: addresses } };
-}
-
-export async function stageDataToIroh(
-  iroh: Iroh,
-  data: Uint8Array,
-): Promise<BlobAddOutcome> {
-  const dataArray: number[] = Array.from(data);
-  return await iroh.blobs.addBytes(dataArray);
-}
-
 export async function callObjectsApiAddObject(
   objectsProviderUrl: string,
-  client: RecallClient,
-  bucketManagerAddress: Address,
-  bucket: Address,
-  params: AddObjectParams,
-  source: ObjectsApiNodeInfo,
+  data: Uint8Array,
+  size: bigint,
+  contentType?: string,
 ): Promise<ObjectsApiUploadResponse> {
-  if (!client.walletClient) {
-    throw new Error("Wallet client is not initialized for adding an object");
-  }
-  const wallet = client.walletClient;
-  const args = [bucket, params] satisfies AddObjectFullParams;
-  const encodedData = encodeFunctionData({
-    abi: bucketManagerAbi,
-    functionName: "addObject",
-    args,
-  });
-
-  // Create a signed evm transaction:
-  const from = wallet.account?.address;
-  if (!from) {
-    throw new Error("Wallet client is not initialized for adding an object");
-  }
-  const request = await client.walletClient.prepareTransactionRequest({
-    from,
-    to: bucketManagerAddress,
-    value: 0n,
-    data: encodedData,
-    chain: wallet.chain!,
-    account: wallet.account!,
-  });
-  const signedTransaction = await wallet.signTransaction(request);
-  const msg = hexToBase64(signedTransaction);
-
   const formData = createObjectsFormData({
-    chainId: wallet.chain!.id,
-    msg,
-    hash: params.blobHash,
-    size: params.size,
-    source,
+    data,
+    size,
+    contentType,
   });
   const response = await fetch(`${objectsProviderUrl}/v1/objects`, {
     method: "POST",
@@ -176,6 +100,7 @@ export async function downloadBlob(
   if (range) {
     headers.Range = `bytes=${range.start ?? ""}-${range.end ?? ""}`;
   }
+  // TODO: we should be able to use the bucket hex address directly
   const bucketIdAddress = AddressId.fromEthAddress(bucket);
   const url = new URL(
     `${objectsProviderUrl}/v1/objects/${bucketIdAddress}/${key}`,
