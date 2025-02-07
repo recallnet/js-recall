@@ -67,11 +67,9 @@ export default function ObjectCard({ bucketAddress, prefix, object }: Props) {
             value={
               <CollapsedStringDisplay
                 value={object.state.blobHash}
-                options={{
-                  showCopy: true,
-                  copyTooltip: "Copy blob hash",
-                  copySuccessMessage: "Blob hash copied",
-                }}
+                showCopy
+                copyTooltip="Copy blob hash"
+                copySuccessMessage="Blob hash copied"
               />
             }
             valueTooltip={object.state.blobHash}
