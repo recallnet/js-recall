@@ -70,35 +70,14 @@ export interface FileHandler {
   }>;
 }
 
-// TODO: figure out if this is the right pattern for file handling for web vs nodejs
-export const nodeFileHandler: FileHandler = {
-  async readFile(input) {
-    if (typeof input === "string") {
-      const fs = await import("node:fs/promises");
-      const { fileTypeFromBuffer } = await import("file-type");
-      const data = await fs.readFile(input);
-      const type = await fileTypeFromBuffer(data);
-      return {
-        data: new Uint8Array(data),
-        contentType: type?.mime,
-        size: BigInt(data.length),
-      };
-    }
-    const data =
-      input instanceof Uint8Array
-        ? input
-        : new Uint8Array(await input.arrayBuffer());
-    return {
-      data,
-      size: BigInt(data.length),
-    };
-  },
-};
-
-// TODO: figure out if this is the right pattern for file handling for web vs nodejs
-export const webFileHandler: FileHandler = {
-  async readFile(input) {
-    if (input instanceof File) {
+export const createFileHandler = (): FileHandler => ({
+  async readFile(input: string | File | Uint8Array): Promise<{
+    data: Uint8Array;
+    contentType?: string;
+    size: bigint;
+  }> {
+    // Browser File
+    if (typeof File !== "undefined" && input instanceof File) {
       const data = new Uint8Array(await input.arrayBuffer());
       return {
         data,
@@ -106,12 +85,38 @@ export const webFileHandler: FileHandler = {
         size: BigInt(input.size),
       };
     }
+
+    // Node.js file path
     if (typeof input === "string") {
-      throw new Error("File paths are not supported in browser environment");
+      if (typeof window !== "undefined") {
+        throw new Error("File paths are not supported in browser environment");
+      }
+      // Webpack/Next.js friendly dynamic import
+      const fs = await import(/* webpackIgnore: true */ "fs/promises").catch(
+        () => null,
+      );
+      if (!fs) {
+        throw new Error("File system not available in this environment");
+      }
+      const data = await fs.readFile(input);
+      const { fileTypeFromBuffer } = await import("file-type");
+      const type = await fileTypeFromBuffer(data);
+      return {
+        data: new Uint8Array(data),
+        contentType: type?.mime || "application/octet-stream",
+        size: BigInt(data.length),
+      };
     }
+
+    // Uint8Array (works in both environments)
+    const data =
+      input instanceof Uint8Array
+        ? input
+        : new Uint8Array(await input.arrayBuffer());
     return {
-      data: input,
-      size: BigInt(input.length),
+      data,
+      contentType: "application/octet-stream",
+      size: BigInt(data.length),
     };
   },
-};
+});

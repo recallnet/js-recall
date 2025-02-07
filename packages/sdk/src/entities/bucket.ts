@@ -19,17 +19,10 @@ import { RecallClient } from "../client.js";
 import { MAX_OBJECT_SIZE, MIN_TTL } from "../constants.js";
 import {
   callObjectsApiAddObject,
-  createIrohNode,
   downloadBlob,
   getObjectsNodeInfo,
-  irohNodeTypeToObjectsApiNodeInfo,
-  stageDataToIroh,
 } from "../provider/object.js";
-import {
-  FileHandler,
-  nodeFileHandler,
-  webFileHandler,
-} from "../provider/utils.js";
+import { FileHandler, createFileHandler } from "../provider/utils.js";
 import {
   ActorNotFound,
   AddObjectError,
@@ -214,8 +207,7 @@ export class BucketManager {
     });
 
     // Detect environment and set appropriate handler
-    this.fileHandler =
-      typeof process === "undefined" ? webFileHandler : nodeFileHandler;
+    this.fileHandler = createFileHandler();
   }
 
   getContract(): GetContractReturnType<
@@ -368,15 +360,13 @@ export class BucketManager {
       throw new Error("Wallet client is not initialized for adding an object");
     }
     const metadataRaw = options?.metadata ?? {};
-    const { data, contentType } = await this.fileHandler.readFile(file);
+    const { data, contentType, size } = await this.fileHandler.readFile(file);
     if (contentType) {
       metadataRaw["content-type"] = contentType;
     }
     const metadata = convertMetadataToAbiParams(metadataRaw);
     const objectApiUrl = this.client.network.objectApiUrl();
     const { nodeId: source } = await getObjectsNodeInfo(objectApiUrl);
-    const iroh = await createIrohNode();
-    const { hash, size } = await stageDataToIroh(iroh, data);
     if (size > MAX_OBJECT_SIZE) {
       throw new InvalidValue(
         `Object size must be less than ${MAX_OBJECT_SIZE} bytes`,
@@ -387,26 +377,22 @@ export class BucketManager {
     if (ttl !== 0n && ttl < MIN_TTL) {
       throw new InvalidValue(`TTL must be at least ${MIN_TTL} seconds`);
     }
+    const { hash, metadataHash } = await callObjectsApiAddObject(
+      objectApiUrl,
+      data,
+      size,
+      contentType,
+    );
     const addParams = {
       source,
       key,
       blobHash: hash,
-      recoveryHash: "",
+      recoveryHash: metadataHash,
       size,
       ttl,
       metadata,
       overwrite: options?.overwrite ?? false,
     } as AddObjectParams;
-    const irohNode = await irohNodeTypeToObjectsApiNodeInfo(iroh);
-    const { metadataHash } = await callObjectsApiAddObject(
-      objectApiUrl,
-      this.client,
-      this.contract.address,
-      bucket,
-      addParams,
-      irohNode,
-    );
-    addParams.recoveryHash = metadataHash;
     return await this.addInner(bucket, addParams);
   }
 
