@@ -10,6 +10,8 @@ import {
 } from "@recall/ui/components/card";
 import CollapsedStringDisplay from "@recall/ui/recall/collapsed-string-display";
 
+import { arrayToDisplay } from "@/lib/convert-matadata";
+
 interface Props {
   bucket: {
     addr: string;
@@ -57,7 +59,7 @@ export default function BucketCard({ bucket }: Props) {
           <div className="col-span-2 flex flex-col gap-2">
             <span className="text-muted-foreground text-xs">Metadata</span>
             <pre className="text-muted-foreground min-h-12 border p-4">
-              {JSON.stringify(bucket.metadata, null, 2)}
+              {arrayToDisplay(bucket.metadata)}
             </pre>
           </div>
         </CardContent>
