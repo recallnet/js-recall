@@ -205,7 +205,7 @@ export function Approval({ type, creditSponsor, approval }: Props) {
               subtitle="$RECALL"
             />
             <Metric
-              title={`Expire${blockDiff || 1 < 0 ? "d" : "s"}`}
+              title={`Expire${(blockDiff || 1) < 0 ? "d" : "s"}`}
               value={ttlDisplay}
               valueTooltip={expiryIso}
             />

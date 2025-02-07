@@ -1,3 +1,5 @@
+import { ReactNode } from "react";
+
 export default function Metric({
   title,
   value,
@@ -5,7 +7,7 @@ export default function Metric({
   subtitle,
 }: {
   title?: string;
-  value?: string;
+  value?: ReactNode;
   valueTooltip?: string;
   subtitle?: string;
 }) {

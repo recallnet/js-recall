@@ -1,4 +1,4 @@
-import { Address, Hash } from "viem";
+import { AbiStateMutability, Address, ContractFunctionArgs, Hash } from "viem";
 import {
   useAccount,
   useChainId,
@@ -27,20 +27,50 @@ export function useListBuckets(owner?: Address) {
   });
 }
 
-export function useQueryObjects(bucket: Address) {
+export type QueryObjectsArgs = ContractFunctionArgs<
+  typeof bucketManagerAbi,
+  AbiStateMutability,
+  "queryObjects"
+>;
+
+export function useQueryObjects(
+  bucket: Address,
+  options?: {
+    prefix?: string;
+    delimiter?: string;
+    startKey?: string;
+    limit?: number;
+    enabled?: boolean | (() => boolean);
+  },
+) {
   const chainId = useChainId();
   const contractAddress =
     bucketManagerAddress[chainId as keyof typeof bucketManagerAddress];
+
+  const args = [
+    bucket,
+    options?.prefix ?? "",
+    options?.delimiter ?? "/",
+    options?.startKey ?? "",
+    BigInt(options?.limit ?? 100),
+  ] satisfies QueryObjectsArgs;
 
   return useReadContract({
     address: contractAddress,
     abi: bucketManagerAbi,
     functionName: "queryObjects",
-    args: [bucket],
+    args: args,
+    query: {
+      enabled: options?.enabled,
+    },
   });
 }
 
-export function useGetObject(bucket: Address, key: string) {
+export function useGetObject(
+  bucket: Address,
+  key: string,
+  options?: { enabled?: boolean | (() => boolean) },
+) {
   const chainId = useChainId();
   const contractAddress =
     bucketManagerAddress[chainId as keyof typeof bucketManagerAddress];
@@ -50,6 +80,9 @@ export function useGetObject(bucket: Address, key: string) {
     abi: bucketManagerAbi,
     functionName: "getObject",
     args: [bucket, key],
+    query: {
+      enabled: options?.enabled,
+    },
   });
 }
 
