@@ -30,6 +30,7 @@ import { cn } from "@recall/ui/lib/utils";
 import CollapsedStringDisplay from "@recall/ui/recall/collapsed-string-display";
 
 import Metric from "@/app/account/_components/metric";
+import { arrayToDisplay } from "@/lib/convert-matadata";
 import { formatBytes } from "@/lib/format-bytes";
 import { removePrefix } from "@/lib/remove-prefix";
 
@@ -219,7 +220,7 @@ export default function Bucket({
             <div className="flex flex-col gap-2 sm:col-span-2">
               <span className="text-muted-foreground text-xs">Metadata</span>
               <pre className="text-muted-foreground min-h-12 border p-4">
-                {JSON.stringify(object.metadata, null, 2)}
+                {arrayToDisplay(object.metadata)}
               </pre>
             </div>
           </CardContent>
