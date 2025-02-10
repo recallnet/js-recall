@@ -1,10 +1,13 @@
 "use client";
 
+import { useMutation } from "@tanstack/react-query";
+import { default as axios } from "axios";
 import TimeAgo from "javascript-time-ago";
 import { File, Folder, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Fragment, useEffect } from "react";
+import { Fragment, useEffect, useState } from "react";
+import { useDropzone } from "react-dropzone";
 import { Address } from "viem";
 import { useBlockNumber } from "wagmi";
 
@@ -25,12 +28,23 @@ import {
   CardHeader,
   CardTitle,
 } from "@recall/ui/components/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@recall/ui/components/dialog";
+import { Input } from "@recall/ui/components/input";
+import { Label } from "@recall/ui/components/label";
+import { Progress } from "@recall/ui/components/progress";
+import { Textarea } from "@recall/ui/components/textarea";
 import { useToast } from "@recall/ui/hooks/use-toast";
 import { cn } from "@recall/ui/lib/utils";
 import CollapsedStringDisplay from "@recall/ui/recall/collapsed-string-display";
 
 import Metric from "@/app/account/_components/metric";
-import { arrayToDisplay } from "@/lib/convert-matadata";
+import { arrayToDisplay, dislpayToRecord } from "@/lib/convert-matadata";
 import { formatBytes } from "@/lib/format-bytes";
 import { removePrefix } from "@/lib/remove-prefix";
 
@@ -47,10 +61,6 @@ export default function Bucket({
 }) {
   const searchParams = useSearchParams();
 
-  const { toast } = useToast();
-
-  const { data: blockNumber } = useBlockNumber();
-
   const isObject = searchParams.has("object");
   let prefix = prefixParts.join("/");
   prefix = !prefix
@@ -58,6 +68,18 @@ export default function Bucket({
     : !isObject && prefixParts.length
       ? prefix + "/"
       : prefix;
+
+  const [addObjectOpen, setAddObjectOpen] = useState(false);
+  const [key, setKey] = useState(prefix);
+  const [metadata, setMetadata] = useState<string | null>(null);
+  const { acceptedFiles, getRootProps, getInputProps, isDragActive } =
+    useDropzone({
+      maxFiles: 1,
+    });
+
+  const { toast } = useToast();
+
+  const { data: blockNumber } = useBlockNumber();
 
   const {
     data: objects,
@@ -85,6 +107,30 @@ export default function Bucket({
     }
   }, [objectsError, objectError, toast]);
 
+  const handleSubmit = async () => {
+    // const md = metadata ? dislpayToRecord(metadata) : undefined;
+    const file = acceptedFiles[0];
+    if (!file) {
+      throw new Error("No file selected");
+    }
+    const f = new FormData();
+    f.append("data", file);
+    const res = await axios.post(
+      "https://objects.node-0.testnet.recall.network/v1/objects",
+      f,
+      {
+        onUploadProgress: (e) => {
+          console.log(Math.round(e.loaded * 100) / e.total!);
+        },
+      },
+    );
+    console.log(res);
+  };
+
+  const { mutate, isPending, error } = useMutation({
+    mutationFn: handleSubmit,
+  });
+
   const objectSize = object?.size
     ? formatBytes(Number(object.size))
     : undefined;
@@ -108,6 +154,70 @@ export default function Bucket({
 
   return (
     <div className="flex flex-1 flex-col gap-4">
+      <Dialog open={addObjectOpen} onOpenChange={setAddObjectOpen}>
+        <DialogContent className="space-y-4">
+          <DialogHeader>
+            <DialogTitle>Add Object</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="key">Key</Label>
+            <Input
+              id="key"
+              placeholder="prefix/my-object"
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="file">File</Label>
+            <div
+              {...getRootProps()}
+              className={cn(
+                "focus-visible:ring-ring space-y-6 border border-dashed p-6 text-center hover:cursor-pointer focus-visible:outline-none focus-visible:ring-1",
+                isDragActive && "bg-accent",
+              )}
+            >
+              <Input id="file" {...getInputProps()} />
+              {acceptedFiles.length ? (
+                <p className="text-sm">{acceptedFiles[0]?.name}</p>
+              ) : (
+                <p
+                  className={cn(
+                    "text-muted-foreground text-sm",
+                    isDragActive && "text-accent-foreground",
+                  )}
+                >
+                  Drag and drop a file here, or click to select a file.
+                </p>
+              )}
+              <Progress value={45} className="h-1" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="metadata">Metadata</Label>
+            <Textarea
+              id="metadata"
+              onChange={(e) => setMetadata(e.target.value)}
+              placeholder={JSON.stringify(
+                { key1: "value1", key2: "value2", "...": "..." },
+                null,
+                2,
+              )}
+              className="min-h-32"
+            />
+            <p className="text-muted-foreground text-xs">
+              Metadata is optional and must be a JSON object with string
+              property values.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => mutate()}>
+              Submit {true && <Loader2 className="animate-spin" />}
+            </Button>
+            <pre>{error?.message}</pre>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <div className="flex items-end gap-4">
         <Breadcrumb>
           <BreadcrumbList>
@@ -144,7 +254,7 @@ export default function Bucket({
         </Breadcrumb>
         <Button
           variant="secondary"
-          onClick={() => {}}
+          onClick={() => setAddObjectOpen(true)}
           className={cn("ml-auto", isObject && "invisible")}
         >
           Add Object

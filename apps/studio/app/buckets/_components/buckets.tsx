@@ -106,7 +106,7 @@ export default function Buckets() {
             )}
             className="min-h-32"
           />
-          <span className="text-muted-foreground text-sm">
+          <span className="text-muted-foreground text-xs">
             Metadata is optional and must be a JSON object with string property
             values.
           </span>
