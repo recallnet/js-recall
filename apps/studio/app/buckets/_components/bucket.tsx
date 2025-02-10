@@ -115,16 +115,20 @@ export default function Bucket({
     }
     const f = new FormData();
     f.append("data", file);
-    const res = await axios.post(
-      "https://objects.node-0.testnet.recall.network/v1/objects",
-      f,
-      {
+    f.append("size", file.size.toString());
+
+    try {
+      const res = await axios.post("/api/objects", f, {
         onUploadProgress: (e) => {
-          console.log(Math.round(e.loaded * 100) / e.total!);
+          const progress = Math.round((e.loaded * 100) / e.total!);
+          console.log(`Upload progress: ${progress}%`);
         },
-      },
-    );
-    console.log(res);
+      });
+      return res.data;
+    } catch (error) {
+      console.error("Upload failed:", error);
+      throw error;
+    }
   };
 
   const { mutate, isPending, error } = useMutation({
