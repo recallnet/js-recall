@@ -67,7 +67,8 @@ export default function Hero() {
       <Card className="bg-background/85 supports-[backdrop-filter]:bg-background/85 fixed left-1/2 top-1/2 m-0 max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-none p-4 backdrop-blur">
         <CardHeader>
           <CardTitle className="text-3xl uppercase">
-            /&gt; Unleash agent intelligence
+            &gt; Networked{" "}
+            <span className="text-fuchsia-600">intelligence</span> for agents.
           </CardTitle>
           <CardDescription className="text-xl uppercase">
             Recall is the first unstoppable memory network enabling autonomous
