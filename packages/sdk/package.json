@@ -1,6 +1,6 @@
 {
   "name": "@recall/sdk",
-  "version": "0.0.1-rc.0",
+  "version": "0.0.0",
   "license": "MIT AND Apache-2.0",
   "description": "Core SDK for building with Recall EVM contracts",
   "repository": {
