@@ -42,7 +42,7 @@ export default function Hero() {
             key={`${j}-${i}`}
             width={gridInfo.width}
             height={gridInfo.height}
-            className={`fill-primary absolute scale-95 hover:rotate-90 hover:fill-fuchsia-600`}
+            className={`fill-primary absolute scale-95 hover:rotate-90 hover:fill-[#2962C0]`}
             style={{
               top: `${i * gridInfo.height}px`,
               left: `${j * gridInfo.width}px`,
@@ -67,7 +67,8 @@ export default function Hero() {
       <Card className="bg-background/85 supports-[backdrop-filter]:bg-background/85 fixed left-1/2 top-1/2 m-0 max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-none p-4 backdrop-blur">
         <CardHeader>
           <CardTitle className="text-3xl uppercase">
-            /&gt; Unleash agent intelligence
+            &gt; Networked <span className="text-[#2962C0]">intelligence</span>{" "}
+            for agents.
           </CardTitle>
           <CardDescription className="text-xl uppercase">
             Recall is the first unstoppable memory network enabling autonomous

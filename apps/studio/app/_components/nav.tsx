@@ -62,9 +62,7 @@ export function Nav() {
             </>
           )}
           <DropdownMenuItem
-            onClick={() =>
-              window.open("https://docs-hoku.vercel.app", "_blank")
-            }
+            onClick={() => window.open("https://docs.recall.network", "_blank")}
           >
             Docs
           </DropdownMenuItem>
@@ -87,7 +85,7 @@ export function Nav() {
         )}
         <NavLink
           title="Docs"
-          href="https://docs-hoku.vercel.app"
+          href="https://docs.recall.network"
           target="_blank"
           active={pathname.startsWith("/docs")}
         />
