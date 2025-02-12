@@ -1,11 +1,36 @@
 {
   "name": "@recall/bigint-utils",
   "version": "0.0.0",
+  "license": "MIT AND Apache-2.0",
   "type": "module",
-  "private": true,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./constants": {
+      "types": "./dist/constants.d.ts",
+      "import": "./dist/constants.js",
+      "require": "./dist/constants.cjs"
+    },
+    "./conversions": {
+      "types": "./dist/conversions.d.ts",
+      "import": "./dist/conversions.js",
+      "require": "./dist/conversions.cjs"
+    },
+    "./format-atto-rcl": {
+      "types": "./dist/format-atto-rcl.d.ts",
+      "import": "./dist/format-atto-rcl.js",
+      "require": "./dist/format-atto-rcl.cjs"
+    }
+  },
   "scripts": {
-    "dev": "tsc --watch",
-    "build": "tsc",
+    "dev": "tsup --watch",
+    "build": "tsup",
     "lint": "eslint . --max-warnings 0",
     "clean": "rm -rf .turbo node_modules dist"
   },
@@ -16,19 +41,5 @@
   },
   "dependencies": {
     "dnum": "^2.14.0"
-  },
-  "exports": {
-    "./constants": {
-      "types": "./dist/constants.d.ts",
-      "default": "./dist/constants.js"
-    },
-    "./conversions": {
-      "types": "./dist/conversions.d.ts",
-      "default": "./dist/conversions.js"
-    },
-    "./format-atto-rcl": {
-      "types": "./dist/format-atto-rcl.d.ts",
-      "default": "./dist/format-atto-rcl.js"
-    }
   }
 }

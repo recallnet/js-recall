@@ -1,12 +1,22 @@
 {
   "name": "@recall/contracts",
   "version": "0.0.0",
+  "license": "MIT AND Apache-2.0",
   "type": "module",
-  "private": true,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
   "scripts": {
-    "dev": "tsc --watch",
+    "dev": "tsup --watch",
     "generate": "wagmi generate && tsc",
-    "build": "tsc",
+    "build": "tsup",
     "lint": "eslint . --max-warnings 0",
     "clean": "rm -rf .turbo node_modules dist"
   },
@@ -18,11 +28,5 @@
   },
   "dependencies": {
     "viem": "^2.22.9"
-  },
-  "exports": {
-    ".": {
-      "types": "./dist/generated.d.ts",
-      "default": "./dist/generated.js"
-    }
   }
 }

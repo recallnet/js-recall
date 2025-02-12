@@ -1,8 +1,8 @@
 {
   "name": "@recall/eslint-config",
   "version": "0.0.0",
+  "license": "MIT AND Apache-2.0",
   "type": "module",
-  "private": true,
   "exports": {
     "./base": "./base.js",
     "./next-js": "./next.js",

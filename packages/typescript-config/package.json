@@ -1,9 +1,13 @@
 {
   "name": "@recall/typescript-config",
   "version": "0.0.0",
-  "private": true,
-  "license": "PROPRIETARY",
+  "license": "MIT AND Apache-2.0",
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "files": [
+    "base.json",
+    "nextjs.json",
+    "react-library.json"
+  ]
 }
