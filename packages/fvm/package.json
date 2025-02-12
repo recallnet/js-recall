@@ -1,6 +1,6 @@
 {
   "name": "@recall/fvm",
-  "version": "0.0.0",
+  "version": "0.0.1-rc.0",
   "license": "MIT AND Apache-2.0",
   "description": "FVM formats and utilities for Recall",
   "repository": {
