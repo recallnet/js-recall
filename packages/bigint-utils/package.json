@@ -4,30 +4,33 @@
   "license": "MIT AND Apache-2.0",
   "type": "module",
   "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
+      "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },
     "./constants": {
       "types": "./dist/constants.d.ts",
-      "import": "./dist/constants.js",
+      "import": "./dist/constants.mjs",
       "require": "./dist/constants.cjs"
     },
     "./conversions": {
       "types": "./dist/conversions.d.ts",
-      "import": "./dist/conversions.js",
+      "import": "./dist/conversions.mjs",
       "require": "./dist/conversions.cjs"
     },
     "./format-atto-rcl": {
       "types": "./dist/format-atto-rcl.d.ts",
-      "import": "./dist/format-atto-rcl.js",
+      "import": "./dist/format-atto-rcl.mjs",
       "require": "./dist/format-atto-rcl.cjs"
     }
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "tsup --watch",
     "build": "tsup",

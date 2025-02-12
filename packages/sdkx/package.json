@@ -5,30 +5,33 @@
   "type": "module",
   "private": true,
   "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
+      "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },
     "./chains": {
       "types": "./dist/chains.d.ts",
-      "import": "./dist/chains.js",
+      "import": "./dist/chains.mjs",
       "require": "./dist/chains.cjs"
     },
     "./react/credits": {
       "types": "./dist/react/credits.d.ts",
-      "import": "./dist/react/credits.js",
+      "import": "./dist/react/credits.mjs",
       "require": "./dist/react/credits.cjs"
     },
     "./actions/credits": {
       "types": "./dist/actions/credits.d.ts",
-      "import": "./dist/actions/credits.js",
+      "import": "./dist/actions/credits.mjs",
       "require": "./dist/actions/credits.cjs"
     }
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "tsup --watch",
     "build": "tsup",

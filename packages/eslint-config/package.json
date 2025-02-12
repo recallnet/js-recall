@@ -8,6 +8,11 @@
     "./next-js": "./next.js",
     "./react-internal": "./react-internal.js"
   },
+  "files": [
+    "base.js",
+    "next.js",
+    "react-internal.js"
+  ],
   "devDependencies": {
     "@next/eslint-plugin-next": "^15.1.0",
     "@typescript-eslint/eslint-plugin": "^8.15.0",

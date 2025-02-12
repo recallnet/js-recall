@@ -14,23 +14,17 @@
   },
   "type": "module",
   "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
+      "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     }
   },
-  "directories": {
-    "dist": "./dist"
-  },
   "files": [
-    "dist/**/*.js(.map)",
-    "dist/**/*.d.ts",
-    "dist/**/package.json",
-    "src/**/*.ts"
+    "dist"
   ],
   "scripts": {
     "dev": "tsup --watch",
