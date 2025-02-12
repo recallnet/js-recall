@@ -1,4 +1,5 @@
-import { AbiStateMutability, Address, ContractFunctionArgs, Hash } from "viem";
+import { useCallback, useMemo } from "react";
+import { AbiStateMutability, Address, ContractFunctionArgs } from "viem";
 import {
   useAccount,
   useChainId,
@@ -135,69 +136,79 @@ export function useAddObject() {
 
   const { writeContract, writeContractAsync, ...rest } = useWriteContract();
 
-  const baseConfig = {
-    address: contractAddress,
-    abi: bucketManagerAbi,
-    functionName: "addObject",
-  } as const;
+  const baseConfig = useMemo(
+    () =>
+      ({
+        address: contractAddress,
+        abi: bucketManagerAbi,
+        functionName: "addObject",
+      }) as const,
+    [contractAddress],
+  );
 
-  const addObject = (
-    bucket: Address,
-    key: string,
-    source: string,
-    blobHash: Hash,
-    size: bigint,
-    options?: {
-      ttl?: bigint;
-      metadata?: Record<string, string>;
-      overwrite?: boolean;
+  const addObject = useCallback(
+    (
+      bucket: Address,
+      key: string,
+      source: string,
+      blobHash: string,
+      size: bigint,
+      options?: {
+        ttl?: bigint;
+        metadata?: Record<string, string>;
+        overwrite?: boolean;
+      },
+    ) => {
+      const metadata = convertMetadataToAbiParams(options?.metadata ?? {});
+      const params = {
+        source,
+        key,
+        blobHash,
+        recoveryHash: "",
+        size,
+        ttl: options?.ttl ?? 0n,
+        metadata,
+        overwrite: options?.overwrite ?? false,
+      };
+      return writeContract({
+        ...baseConfig,
+        args: [bucket, params],
+      });
     },
-  ) => {
-    const metadata = convertMetadataToAbiParams(options?.metadata ?? {});
-    const params = {
-      source,
-      key,
-      blobHash,
-      recoveryHash: "",
-      size,
-      ttl: options?.ttl ?? 0n,
-      metadata,
-      overwrite: options?.overwrite ?? false,
-    };
-    return writeContract({
-      ...baseConfig,
-      args: [bucket, params],
-    });
-  };
+    [writeContract, baseConfig],
+  );
 
-  const addObjectAsync = (
-    bucket: Address,
-    key: string,
-    source: string,
-    blobHash: Hash,
-    size: bigint,
-    options?: {
-      ttl?: bigint;
-      metadata?: Record<string, string>;
-      overwrite?: boolean;
+  const addObjectAsync = useCallback(
+    (
+      bucket: Address,
+      key: string,
+      source: string,
+      blobHash: string,
+      size: bigint,
+      options?: {
+        ttl?: bigint;
+        metadata?: Record<string, string>;
+        overwrite?: boolean;
+      },
+    ) => {
+      const metadata = convertMetadataToAbiParams(options?.metadata ?? {});
+      const params = {
+        source,
+        key,
+        blobHash,
+        recoveryHash: "",
+        size,
+        ttl: options?.ttl ?? 0n,
+        metadata,
+        overwrite: options?.overwrite ?? false,
+      };
+      return writeContractAsync({
+        ...baseConfig,
+        args: [bucket, params],
+      });
     },
-  ) => {
-    const metadata = convertMetadataToAbiParams(options?.metadata ?? {});
-    const params = {
-      source,
-      key,
-      blobHash,
-      recoveryHash: "",
-      size,
-      ttl: options?.ttl ?? 0n,
-      metadata,
-      overwrite: options?.overwrite ?? false,
-    };
-    return writeContractAsync({
-      ...baseConfig,
-      args: [bucket, params],
-    });
-  };
+    [writeContractAsync, baseConfig],
+  );
 
   return { addObject, addObjectAsync, ...rest };
 }

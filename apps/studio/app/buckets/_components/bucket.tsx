@@ -7,13 +7,20 @@ import { File, Folder, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Fragment, useEffect, useState } from "react";
-import { useDropzone } from "react-dropzone";
+import { FileWithPath, useDropzone } from "react-dropzone";
 import { Address } from "viem";
-import { useBlockNumber } from "wagmi";
+import { useBlockNumber, useWaitForTransactionReceipt } from "wagmi";
 
 import { displayAddress } from "@recall/address-utils/display";
-import { numBlocksToSeconds } from "@recall/bigint-utils/conversions";
-import { useGetObject, useQueryObjects } from "@recall/sdkx/react/buckets";
+import {
+  hoursToNumBlocks,
+  numBlocksToSeconds,
+} from "@recall/bigint-utils/conversions";
+import {
+  useAddObject,
+  useGetObject,
+  useQueryObjects,
+} from "@recall/sdkx/react/buckets";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -38,6 +45,7 @@ import {
 import { Input } from "@recall/ui/components/input";
 import { Label } from "@recall/ui/components/label";
 import { Progress } from "@recall/ui/components/progress";
+import { Switch } from "@recall/ui/components/switch";
 import { Textarea } from "@recall/ui/components/textarea";
 import { useToast } from "@recall/ui/hooks/use-toast";
 import { cn } from "@recall/ui/lib/utils";
@@ -71,11 +79,15 @@ export default function Bucket({
 
   const [addObjectOpen, setAddObjectOpen] = useState(false);
   const [key, setKey] = useState(prefix);
-  const [metadata, setMetadata] = useState<string | null>(null);
-  const { acceptedFiles, getRootProps, getInputProps, isDragActive } =
-    useDropzone({
-      maxFiles: 1,
-    });
+  const [overwrite, setOverwrite] = useState(false);
+  const [ttl, setTtl] = useState("");
+  const [metadata, setMetadata] = useState<string>("");
+  const [file, setFile] = useState<FileWithPath | undefined>(undefined);
+  const [progress, setProgress] = useState<number | undefined>(undefined);
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    maxFiles: 1,
+    onDrop: (files) => setFile(files[0]),
+  });
 
   const { toast } = useToast();
 
@@ -85,6 +97,7 @@ export default function Bucket({
     data: objects,
     error: objectsError,
     isLoading: objectsLoading,
+    refetch: refetchObjects,
   } = useQueryObjects(bucketAddress, {
     prefix,
     enabled: !isObject,
@@ -99,17 +112,39 @@ export default function Bucket({
   });
 
   useEffect(() => {
-    if (objectsError || objectError) {
-      toast({
-        title: "Error",
-        description: objectsError?.message || objectError?.message,
-      });
+    if (!addObjectOpen) {
+      setKey(prefix);
+      setOverwrite(false);
+      setMetadata("");
+      setFile(undefined);
+      setProgress(undefined);
     }
-  }, [objectsError, objectError, toast]);
+  }, [addObjectOpen, prefix]);
+
+  useEffect(() => {
+    if (file) {
+      const metaObj = {
+        ...dislpayToRecord(metadata || "{}"),
+        ...(file.type && { type: file.type }),
+        ...(file.size && { size: file.size }),
+      };
+      setMetadata(JSON.stringify(metaObj, null, 2));
+    }
+  }, [file, metadata]);
+
+  const {
+    addObject,
+    data: addObjectTxnHash,
+    isPending: addObjectPending,
+    error: addObjectError,
+  } = useAddObject();
+
+  const { isPending: addObjectReceiptPending, data: addObjectReceipt } =
+    useWaitForTransactionReceipt({
+      hash: addObjectTxnHash,
+    });
 
   const handleSubmit = async () => {
-    // const md = metadata ? dislpayToRecord(metadata) : undefined;
-    const file = acceptedFiles[0];
     if (!file) {
       throw new Error("No file selected");
     }
@@ -117,23 +152,88 @@ export default function Bucket({
     f.append("data", file);
     f.append("size", file.size.toString());
 
-    try {
-      const res = await axios.post("/api/objects", f, {
+    const res = await axios.post<{ hash: string; metadata_hash: string }>(
+      "/api/objects",
+      f,
+      {
         onUploadProgress: (e) => {
-          const progress = Math.round((e.loaded * 100) / e.total!);
-          console.log(`Upload progress: ${progress}%`);
+          const progress = e.total
+            ? Math.round((e.loaded * 100) / e.total)
+            : undefined;
+          setProgress(progress);
         },
-      });
-      return res.data;
-    } catch (error) {
-      console.error("Upload failed:", error);
-      throw error;
-    }
+      },
+    );
+    const nodeInfo = await axios.get<{
+      node_id: string;
+      info: {
+        relay_url: string;
+        direct_addresses: string[];
+      };
+    }>("https://objects.node-0.testnet.recall.network/v1/node");
+    return { ...res.data, ...nodeInfo.data };
   };
 
-  const { mutate, isPending, error } = useMutation({
+  const {
+    mutate: upload,
+    data: uploadRes,
+    isPending: uploadPending,
+    isSuccess: uploadSuccess,
+    error: uploadError,
+  } = useMutation({
     mutationFn: handleSubmit,
   });
+
+  useEffect(() => {
+    if (uploadRes && file) {
+      addObject(
+        bucketAddress,
+        key,
+        uploadRes.node_id,
+        uploadRes.hash,
+        BigInt(file.size),
+        {
+          metadata: metadata ? dislpayToRecord(metadata) : undefined,
+          overwrite: overwrite || undefined,
+          ttl: ttl ? hoursToNumBlocks(ttl) : undefined,
+        },
+      );
+    }
+  }, [
+    bucketAddress,
+    key,
+    file,
+    uploadRes,
+    metadata,
+    overwrite,
+    ttl,
+    addObject,
+  ]);
+
+  useEffect(() => {
+    if (addObjectReceipt) {
+      refetchObjects();
+      setAddObjectOpen(false);
+      setKey(prefix);
+      setOverwrite(false);
+      setMetadata("");
+      setFile(undefined);
+      setProgress(undefined);
+    }
+  }, [addObjectReceipt, prefix, refetchObjects]);
+
+  useEffect(() => {
+    if (objectsError || objectError || uploadError || addObjectError) {
+      toast({
+        title: "Error",
+        description:
+          objectsError?.message ||
+          objectError?.message ||
+          uploadError?.message ||
+          addObjectError?.message,
+      });
+    }
+  }, [toast, objectsError, objectError, uploadError, addObjectError]);
 
   const objectSize = object?.size
     ? formatBytes(Number(object.size))
@@ -154,7 +254,11 @@ export default function Bucket({
         ? timeAgo.format(expiryMillis)
         : undefined;
 
-  const pending = objectsLoading || objectLoading;
+  const objectsPending = objectsLoading || objectLoading;
+  const addPending =
+    uploadPending ||
+    addObjectPending ||
+    (!!addObjectTxnHash && addObjectReceiptPending);
 
   return (
     <div className="flex flex-1 flex-col gap-4">
@@ -171,36 +275,47 @@ export default function Bucket({
               value={key}
               onChange={(e) => setKey(e.target.value)}
             />
+            <div className="flex items-center gap-2">
+              <Label htmlFor="overwrite">Overwrite</Label>
+              <Switch
+                id="overwrite"
+                checked={overwrite}
+                onCheckedChange={setOverwrite}
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="file">File</Label>
             <div
               {...getRootProps()}
               className={cn(
-                "focus-visible:ring-ring space-y-6 border border-dashed p-6 text-center hover:cursor-pointer focus-visible:outline-none focus-visible:ring-1",
+                "focus-visible:ring-ring flex flex-col items-center gap-6 border border-dashed p-6 text-center hover:cursor-pointer focus-visible:outline-none focus-visible:ring-1",
                 isDragActive && "bg-accent",
               )}
             >
               <Input id="file" {...getInputProps()} />
-              {acceptedFiles.length ? (
-                <p className="text-sm">{acceptedFiles[0]?.name}</p>
+              {file ? (
+                <p className="text-sm">{file.name}</p>
               ) : (
                 <p
                   className={cn(
-                    "text-muted-foreground text-sm",
+                    "text-muted-foreground mt-0 text-sm",
                     isDragActive && "text-accent-foreground",
                   )}
                 >
                   Drag and drop a file here, or click to select a file.
                 </p>
               )}
-              <Progress value={45} className="h-1" />
+              {(uploadPending || uploadSuccess) && (
+                <Progress value={progress} className="h-1" />
+              )}
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="metadata">Metadata</Label>
             <Textarea
               id="metadata"
+              value={metadata}
               onChange={(e) => setMetadata(e.target.value)}
               placeholder={JSON.stringify(
                 { key1: "value1", key2: "value2", "...": "..." },
@@ -214,11 +329,21 @@ export default function Bucket({
               property values.
             </p>
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="ttl">TTL (Hours)</Label>
+            <Input
+              id="ttl"
+              type="number"
+              min={1}
+              placeholder="default"
+              value={ttl}
+              onChange={(e) => setTtl(e.target.value)}
+            />
+          </div>
           <DialogFooter>
-            <Button onClick={() => mutate()}>
-              Submit {true && <Loader2 className="animate-spin" />}
+            <Button onClick={() => upload()} disabled={addPending}>
+              Submit {addPending && <Loader2 className="animate-spin" />}
             </Button>
-            <pre>{error?.message}</pre>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -340,7 +465,7 @@ export default function Bucket({
           </CardContent>
         </Card>
       )}
-      {!pending &&
+      {!objectsPending &&
         !objects?.commonPrefixes.length &&
         !objects?.objects.length &&
         !object && (
@@ -348,7 +473,7 @@ export default function Bucket({
             <p className="text-muted-foreground">This bucket is empty</p>
           </div>
         )}
-      {pending && (
+      {objectsPending && (
         <div className="flex flex-1 items-center justify-center">
           <Loader2 className="animate-spin" />
         </div>
