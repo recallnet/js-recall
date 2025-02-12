@@ -11,9 +11,8 @@ export default function Slash(props: SVGProps<SVGSVGElement>) {
     >
       <path
         id="Path"
-        fillRule="evenodd"
         stroke="none"
-        d="M 30.672127 0 L 99.992989 69.004974 L 99.992989 100 L 70.619209 100 L 0 29.7033 L 0 0 Z"
+        d="M 99.873566 78.703949 L 99.873566 100.102997 L 46.38588 100.102997 L -0.12644 53.806053 L -0.12644 0.102997 L 20.906954 0.102997 L 99.873566 78.703949 Z"
       />
     </svg>
   );
