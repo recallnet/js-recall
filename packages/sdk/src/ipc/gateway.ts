@@ -15,7 +15,7 @@ import {
   gatewayManagerFacetAbi,
   gatewayManagerFacetConfig,
 } from "@recall/contracts";
-import { AddressDelegated } from "@recall/fvm";
+import { AddressDelegated } from "@recall/fvm/address";
 
 import { RecallClient } from "../client.js";
 import {

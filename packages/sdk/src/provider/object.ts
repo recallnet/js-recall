@@ -1,6 +1,6 @@
 import { Address } from "viem";
 
-import { AddressId } from "@recall/fvm";
+import { AddressId } from "@recall/fvm/address";
 
 import {
   BucketNotFound,

@@ -1,7 +1,11 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: ["src/index.ts"],
+  entry: {
+    address: "src/address/index.ts",
+    artifacts: "src/artifacts/index.ts",
+    utils: "src/utils/index.ts",
+  },
   format: ["cjs", "esm"],
   dts: true,
   clean: true,
