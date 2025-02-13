@@ -13,7 +13,7 @@ import {
   zeroAddress,
 } from "viem";
 
-import { blobManagerAbi, blobManagerAddress } from "@recall/contracts";
+import { blobManagerAbi, blobManagerAddress } from "@recallnet/contracts";
 
 import { RecallClient } from "../client.js";
 import { MIN_TTL } from "../constants.js";

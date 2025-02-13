@@ -13,7 +13,7 @@ import {
   zeroAddress,
 } from "viem";
 
-import { creditManagerAbi, creditManagerAddress } from "@recall/contracts";
+import { creditManagerAbi, creditManagerAddress } from "@recallnet/contracts";
 
 import { RecallClient } from "../client.js";
 import {

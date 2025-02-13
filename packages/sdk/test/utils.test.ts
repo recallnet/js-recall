@@ -1,7 +1,7 @@
 import { describe, it } from "mocha";
 import { strictEqual } from "node:assert";
 
-import { cbor } from "@recall/fvm";
+import { cbor } from "@recallnet/fvm";
 
 import { actorIdToMaskedEvmAddress } from "../src/entities/utils.js";
 

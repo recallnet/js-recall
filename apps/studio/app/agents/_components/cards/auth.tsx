@@ -6,10 +6,10 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@recall/ui/components/card";
-import { Input } from "@recall/ui/components/input";
-import { Label } from "@recall/ui/components/label";
-import { cn } from "@recall/ui/lib/utils";
+} from "@recallnet/ui/components/card";
+import { Input } from "@recallnet/ui/components/input";
+import { Label } from "@recallnet/ui/components/label";
+import { cn } from "@recallnet/ui/lib/utils";
 
 type ChatProps = ComponentProps<typeof Card> & {
   apiUrl: string;

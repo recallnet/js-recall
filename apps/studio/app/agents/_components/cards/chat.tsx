@@ -1,16 +1,16 @@
 import { ComponentProps } from "react";
 
-import { Button } from "@recall/ui/components/button";
+import { Button } from "@recallnet/ui/components/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@recall/ui/components/card";
-import { ScrollArea } from "@recall/ui/components/scroll-area";
-import { Textarea } from "@recall/ui/components/textarea";
-import { cn } from "@recall/ui/lib/utils";
+} from "@recallnet/ui/components/card";
+import { ScrollArea } from "@recallnet/ui/components/scroll-area";
+import { Textarea } from "@recallnet/ui/components/textarea";
+import { cn } from "@recallnet/ui/lib/utils";
 
 type ChatProps = ComponentProps<typeof Card>;
 

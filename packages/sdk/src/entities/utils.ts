@@ -8,8 +8,8 @@ import {
   parseEventLogs,
 } from "viem";
 
-import { AddressId } from "@recall/fvm/address";
-import { leb128 } from "@recall/fvm/utils";
+import { AddressId } from "@recallnet/fvm/address";
+import { leb128 } from "@recallnet/fvm/utils";
 
 /**
  * Metadata for read or write operations (currently only `tx` is used, via write operations)

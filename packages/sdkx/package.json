@@ -1,5 +1,5 @@
 {
-  "name": "@recall/sdkx",
+  "name": "@recallnet/sdkx",
   "version": "0.0.0",
   "license": "MIT AND Apache-2.0",
   "private": true,
@@ -36,14 +36,14 @@
     "clean": "rm -rf .turbo node_modules dist"
   },
   "devDependencies": {
-    "@recall/eslint-config": "workspace:*",
-    "@recall/typescript-config": "workspace:*",
+    "@recallnet/eslint-config": "workspace:*",
+    "@recallnet/typescript-config": "workspace:*",
     "@types/react": "^19.0.0",
     "tsup": "^8.3.6",
     "typescript": "^5.7.3"
   },
   "dependencies": {
-    "@recall/contracts": "workspace:*",
+    "@recallnet/contracts": "workspace:*",
     "@tanstack/react-query": "^5.64.2",
     "axios": "^1.7.9",
     "react": "^19.0.0",

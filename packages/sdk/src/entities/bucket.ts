@@ -12,8 +12,8 @@ import {
   getContract,
 } from "viem";
 
-import { bucketManagerAbi, bucketManagerAddress } from "@recall/contracts";
-import { cbor } from "@recall/fvm/utils";
+import { bucketManagerAbi, bucketManagerAddress } from "@recallnet/contracts";
+import { cbor } from "@recallnet/fvm/utils";
 
 import { RecallClient } from "../client.js";
 import { MAX_OBJECT_SIZE, MIN_TTL } from "../constants.js";

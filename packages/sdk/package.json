@@ -1,5 +1,5 @@
 {
-  "name": "@recall/sdk",
+  "name": "@recallnet/sdk",
   "version": "0.0.0",
   "license": "MIT AND Apache-2.0",
   "publishConfig": {
@@ -65,16 +65,16 @@
   },
   "dependencies": {
     "@noble/hashes": "^1.5.0",
-    "@recall/contracts": "workspace:*",
-    "@recall/fvm": "workspace:*",
+    "@recallnet/contracts": "workspace:*",
+    "@recallnet/fvm": "workspace:*",
     "@sindresorhus/fnv1a": "^3.1.0",
     "file-type": "^19.6.0",
     "uint8arrays": "^5.1.0",
     "viem": "^2.21.37"
   },
   "devDependencies": {
-    "@recall/eslint-config": "workspace:*",
-    "@recall/typescript-config": "workspace:*",
+    "@recallnet/eslint-config": "workspace:*",
+    "@recallnet/typescript-config": "workspace:*",
     "@types/chai": "^5.0.1",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.10.7",

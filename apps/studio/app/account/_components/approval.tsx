@@ -9,25 +9,25 @@ import {
   useWaitForTransactionReceipt,
 } from "wagmi";
 
-import { displayAddress } from "@recall/address-utils/display";
+import { displayAddress } from "@recallnet/address-utils/display";
 import {
   crazyCreditsToGbMonths,
   numBlocksToSeconds,
   recallToDisplay,
-} from "@recall/bigint-utils/conversions";
+} from "@recallnet/bigint-utils/conversions";
 import {
   useCreditAccount,
   useRevokeCreditApproval,
   useSetAccountSponsor,
-} from "@recall/sdkx/react/credits";
+} from "@recallnet/sdkx/react/credits";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "@recall/ui/components/card";
-import { useToast } from "@recall/ui/hooks/use-toast";
-import { cn } from "@recall/ui/lib/utils";
+} from "@recallnet/ui/components/card";
+import { useToast } from "@recallnet/ui/hooks/use-toast";
+import { cn } from "@recallnet/ui/lib/utils";
 
 import Metric from "@/components/metric";
 

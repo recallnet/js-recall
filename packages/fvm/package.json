@@ -1,5 +1,5 @@
 {
-  "name": "@recall/fvm",
+  "name": "@recallnet/fvm",
   "version": "0.0.0",
   "license": "MIT AND Apache-2.0",
   "publishConfig": {
@@ -49,8 +49,8 @@
     "uint8arrays": "^5.1.0"
   },
   "devDependencies": {
-    "@recall/eslint-config": "workspace:*",
-    "@recall/typescript-config": "workspace:*",
+    "@recallnet/eslint-config": "workspace:*",
+    "@recallnet/typescript-config": "workspace:*",
     "@types/chai": "^5.0.1",
     "@types/chai-as-promised": "^8.0.1",
     "@types/mocha": "^10.0.10",

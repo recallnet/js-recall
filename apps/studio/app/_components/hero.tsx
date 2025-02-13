@@ -8,7 +8,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@recall/ui/components/card";
+} from "@recallnet/ui/components/card";
 
 import Slash from "./slash";
 

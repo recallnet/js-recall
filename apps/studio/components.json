@@ -14,7 +14,7 @@
     "components": "@/components",
     "hooks": "@/hooks",
     "lib": "@/lib",
-    "utils": "@recall/ui/lib/utils",
-    "ui": "@recall/ui/components"
+    "utils": "@recallnet/ui/lib/utils",
+    "ui": "@recallnet/ui/components"
   }
 }

@@ -1,14 +1,14 @@
 import { useState } from "react";
 
-import { Input } from "@recall/ui/components/input";
-import { Label } from "@recall/ui/components/label";
+import { Input } from "@recallnet/ui/components/input";
+import { Label } from "@recallnet/ui/components/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@recall/ui/components/select";
+} from "@recallnet/ui/components/select";
 
 interface SearchAndFilterProps {
   onSearchChange: (search: string) => void;

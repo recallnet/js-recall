@@ -10,5 +10,5 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["studio", "@recall/ui"]
+  "ignore": ["studio", "@recallnet/ui"]
 }

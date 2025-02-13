@@ -1,5 +1,5 @@
 {
-  "name": "@recall/bigint-utils",
+  "name": "@recallnet/bigint-utils",
   "version": "0.0.0",
   "license": "MIT AND Apache-2.0",
   "private": true,
@@ -31,8 +31,8 @@
     "clean": "rm -rf .turbo node_modules dist"
   },
   "devDependencies": {
-    "@recall/eslint-config": "workspace:*",
-    "@recall/typescript-config": "workspace:*",
+    "@recallnet/eslint-config": "workspace:*",
+    "@recallnet/typescript-config": "workspace:*",
     "tsup": "^8.3.6",
     "typescript": "^5.7.3"
   },

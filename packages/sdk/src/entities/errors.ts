@@ -1,6 +1,6 @@
 import { Address } from "viem";
 
-import { FilEthAddress } from "@recall/fvm/address";
+import { FilEthAddress } from "@recallnet/fvm/address";
 
 export class BucketNotFound extends Error {
   constructor(bucket: string) {

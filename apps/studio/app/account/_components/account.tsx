@@ -6,19 +6,19 @@ import { useEffect, useState } from "react";
 import { isAddress } from "viem";
 import { useAccount, useBalance, useWaitForTransactionReceipt } from "wagmi";
 
-import { displayAddress } from "@recall/address-utils/display";
+import { displayAddress } from "@recallnet/address-utils/display";
 import {
   crazyCreditsToCredits,
   creditsToGbMonths,
   numBlocksToSeconds,
   recallToDisplay,
-} from "@recall/bigint-utils/conversions";
+} from "@recallnet/bigint-utils/conversions";
 import {
   useCreditAccount,
   useDeleteAccountSponsor,
   useSetAccountSponsor,
-} from "@recall/sdkx/react/credits";
-import { Button } from "@recall/ui/components/button";
+} from "@recallnet/sdkx/react/credits";
+import { Button } from "@recallnet/ui/components/button";
 import {
   Card,
   CardContent,
@@ -26,7 +26,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@recall/ui/components/card";
+} from "@recallnet/ui/components/card";
 import {
   Dialog,
   DialogContent,
@@ -34,11 +34,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@recall/ui/components/dialog";
-import { Input } from "@recall/ui/components/input";
-import { Label } from "@recall/ui/components/label";
-import { useToast } from "@recall/ui/hooks/use-toast";
-import BuyCreditsDialog from "@recall/ui/recall/buy-credits-dialog";
+} from "@recallnet/ui/components/dialog";
+import { Input } from "@recallnet/ui/components/input";
+import { Label } from "@recallnet/ui/components/label";
+import { useToast } from "@recallnet/ui/hooks/use-toast";
+import BuyCreditsDialog from "@recallnet/ui/recall/buy-credits-dialog";
 
 import Metric from "@/components/metric";
 import { formatBytes } from "@/lib/format-bytes";

@@ -1,4 +1,4 @@
-# `@recall/fvm`
+# `@recallnet/fvm`
 
 > FVM/Wasm interactions for the Recall network
 

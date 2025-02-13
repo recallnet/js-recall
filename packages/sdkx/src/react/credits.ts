@@ -8,7 +8,7 @@ import {
   useWriteContract,
 } from "wagmi";
 
-import { creditManagerAbi, creditManagerAddress } from "@recall/contracts";
+import { creditManagerAbi, creditManagerAddress } from "@recallnet/contracts";
 
 import { createAccount } from "../actions/credits.js";
 
