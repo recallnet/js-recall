@@ -2,6 +2,9 @@
   "name": "@recall/sdk",
   "version": "0.0.0",
   "license": "MIT AND Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "Core SDK for building with Recall EVM contracts",
   "repository": {
     "type": "git",
@@ -9,9 +12,6 @@
     "directory": "packages/sdk"
   },
   "homepage": "https://github.com/recallnet/js-recall#readme",
-  "publishConfig": {
-    "access": "public"
-  },
   "type": "module",
   "exports": {
     "./chains": {

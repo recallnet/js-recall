@@ -2,8 +2,8 @@
   "name": "@recall/sdkx",
   "version": "0.0.0",
   "license": "MIT AND Apache-2.0",
-  "type": "module",
   "private": true,
+  "type": "module",
   "exports": {
     "./chains": {
       "types": "./dist/chains.d.ts",

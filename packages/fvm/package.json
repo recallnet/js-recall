@@ -2,6 +2,9 @@
   "name": "@recall/fvm",
   "version": "0.0.0",
   "license": "MIT AND Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "FVM formats and utilities for Recall",
   "repository": {
     "type": "git",
@@ -9,9 +12,6 @@
     "directory": "packages/fvm"
   },
   "homepage": "https://github.com/recallnet/js-recall#readme",
-  "publishConfig": {
-    "access": "public"
-  },
   "type": "module",
   "exports": {
     "./address": {
