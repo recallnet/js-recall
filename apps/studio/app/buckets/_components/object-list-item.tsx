@@ -11,7 +11,7 @@ import {
 } from "@recall/ui/components/card";
 import CollapsedStringDisplay from "@recall/ui/recall/collapsed-string-display";
 
-import Metric from "@/app/account/_components/metric";
+import Metric from "@/components/metric";
 import { arrayToDisplay } from "@/lib/convert-matadata";
 import { formatBytes } from "@/lib/format-bytes";
 import { removePrefix } from "@/lib/remove-prefix";

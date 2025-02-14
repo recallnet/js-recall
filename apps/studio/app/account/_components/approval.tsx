@@ -29,7 +29,7 @@ import {
 import { useToast } from "@recall/ui/hooks/use-toast";
 import { cn } from "@recall/ui/lib/utils";
 
-import Metric from "./metric";
+import Metric from "@/components/metric";
 
 interface Props {
   type: "to" | "from";

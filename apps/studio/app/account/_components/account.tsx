@@ -40,9 +40,8 @@ import { Label } from "@recall/ui/components/label";
 import { useToast } from "@recall/ui/hooks/use-toast";
 import BuyCreditsDialog from "@recall/ui/recall/buy-credits-dialog";
 
+import Metric from "@/components/metric";
 import { formatBytes } from "@/lib/format-bytes";
-
-import Metric from "./metric";
 
 export function Account() {
   const { toast } = useToast();
