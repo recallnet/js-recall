@@ -111,7 +111,17 @@ export const Wallet = ({ className, ...props }: Props) => {
       </Dialog>
       <BuyCreditsDialog open={buyCreditsOpen} setOpen={setBuyCreditsOpen} />
       <ConnectButton.Custom>
-        {({ account, chain, openConnectModal, mounted }) => {
+        {/* eslint-disable @typescript-eslint/ban-ts-comment */}
+        {({
+          // @ts-ignore
+          account,
+          // @ts-ignore
+          chain,
+          // @ts-ignore
+          openConnectModal,
+          // @ts-ignore
+          mounted,
+        }) => {
           const connected = mounted && account && chain;
           return (
             <Button

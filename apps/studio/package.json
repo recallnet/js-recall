@@ -1,6 +1,6 @@
 {
   "name": "studio",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "type": "module",
   "private": true,
   "scripts": {
@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.2",
+    "@recall/address-utils": "workspace:*",
     "@recall/bigint-utils": "workspace:*",
     "@recall/contracts": "workspace:*",
     "@recall/sdk": "workspace:*",
@@ -31,7 +32,6 @@
     "wagmi": "^2.14.8"
   },
   "devDependencies": {
-    "@recall/address-utils": "workspace:*",
     "@recall/eslint-config": "workspace:^",
     "@recall/typescript-config": "workspace:*",
     "@types/node": "^20",

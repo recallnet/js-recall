@@ -1,24 +1,29 @@
 {
   "name": "@recall/address-utils",
   "version": "0.0.0",
-  "type": "module",
+  "license": "MIT AND Apache-2.0",
   "private": true,
+  "type": "module",
+  "exports": {
+    "./display": {
+      "types": "./dist/display.d.ts",
+      "import": "./dist/display.mjs",
+      "require": "./dist/display.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "dev": "tsc --watch",
-    "build": "tsc",
+    "dev": "tsup --watch",
+    "build": "tsup",
     "lint": "eslint . --max-warnings 0",
     "clean": "rm -rf .turbo node_modules dist"
   },
   "devDependencies": {
     "@recall/eslint-config": "workspace:*",
     "@recall/typescript-config": "workspace:*",
+    "tsup": "^8.3.6",
     "typescript": "^5.7.3"
-  },
-  "dependencies": {},
-  "exports": {
-    "./display": {
-      "types": "./dist/display.d.ts",
-      "default": "./dist/display.js"
-    }
   }
 }

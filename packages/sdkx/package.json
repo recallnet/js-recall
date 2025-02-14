@@ -1,11 +1,32 @@
 {
   "name": "@recall/sdkx",
   "version": "0.0.0",
-  "type": "module",
+  "license": "MIT AND Apache-2.0",
   "private": true,
+  "type": "module",
+  "exports": {
+    "./chains": {
+      "types": "./dist/chains.d.ts",
+      "import": "./dist/chains.mjs",
+      "require": "./dist/chains.cjs"
+    },
+    "./react/credits": {
+      "types": "./dist/react/credits.d.ts",
+      "import": "./dist/react/credits.mjs",
+      "require": "./dist/react/credits.cjs"
+    },
+    "./actions/credits": {
+      "types": "./dist/actions/credits.d.ts",
+      "import": "./dist/actions/credits.mjs",
+      "require": "./dist/actions/credits.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "dev": "tsc --watch",
-    "build": "tsc",
+    "dev": "tsup --watch",
+    "build": "tsup",
     "lint": "eslint . --max-warnings 0",
     "clean": "rm -rf .turbo node_modules dist"
   },
@@ -13,6 +34,7 @@
     "@recall/eslint-config": "workspace:*",
     "@recall/typescript-config": "workspace:*",
     "@types/react": "^19.0.0",
+    "tsup": "^8.3.6",
     "typescript": "^5.7.3"
   },
   "dependencies": {
@@ -21,19 +43,5 @@
     "react": "^19.0.0",
     "viem": "^2.22.9",
     "wagmi": "^2.14.8"
-  },
-  "exports": {
-    "./chains": {
-      "types": "./dist/chains.d.ts",
-      "default": "./dist/chains.js"
-    },
-    "./react/credits": {
-      "types": "./dist/react/credits.d.ts",
-      "default": "./dist/react/credits.js"
-    },
-    "./actions/credits": {
-      "types": "./dist/actions/credits.d.ts",
-      "default": "./dist/actions/credits.js"
-    }
   }
 }

@@ -1,28 +1,36 @@
 {
   "name": "@recall/contracts",
   "version": "0.0.0",
+  "license": "MIT AND Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
-  "private": true,
+  "exports": {
+    ".": {
+      "types": "./dist/generated.d.ts",
+      "import": "./dist/generated.mjs",
+      "require": "./dist/generated.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "dev": "tsc --watch",
+    "dev": "tsup --watch",
     "generate": "wagmi generate && tsc",
-    "build": "tsc",
+    "build": "tsup",
     "lint": "eslint . --max-warnings 0",
     "clean": "rm -rf .turbo node_modules dist"
   },
   "devDependencies": {
-    "@wagmi/cli": "^2.1.22",
     "@recall/eslint-config": "workspace:*",
     "@recall/typescript-config": "workspace:*",
+    "@wagmi/cli": "^2.1.22",
+    "tsup": "^8.3.6",
     "typescript": "^5.7.3"
   },
   "dependencies": {
     "viem": "^2.22.9"
-  },
-  "exports": {
-    ".": {
-      "types": "./dist/generated.d.ts",
-      "default": "./dist/generated.js"
-    }
   }
 }
