@@ -1,9 +1,12 @@
-import { useCallback, useMemo } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { default as axios } from "axios";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AbiStateMutability, Address, ContractFunctionArgs } from "viem";
 import {
   useAccount,
   useChainId,
   useReadContract,
+  useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
 
@@ -94,42 +97,134 @@ export function useCreateBucket() {
 
   const { writeContract, writeContractAsync, ...rest } = useWriteContract();
 
-  const baseConfig = {
-    address: contractAddress,
-    abi: bucketManagerAbi,
-    functionName: "createBucket",
-  } as const;
+  const baseConfig = useMemo(
+    () =>
+      ({
+        address: contractAddress,
+        abi: bucketManagerAbi,
+        functionName: "createBucket",
+      }) as const,
+    [contractAddress],
+  );
 
-  const createBucket = (options?: {
-    owner: Address;
-    metadata?: Record<string, string>;
-  }) =>
-    writeContract({
-      ...baseConfig,
-      args: options
-        ? options.metadata
-          ? [options.owner, convertMetadataToAbiParams(options.metadata)]
-          : [options.owner]
-        : [],
-    });
+  const createBucket = useCallback(
+    (options?: { owner: Address; metadata?: Record<string, string> }) =>
+      writeContract({
+        ...baseConfig,
+        args: options
+          ? options.metadata
+            ? [options.owner, convertMetadataToAbiParams(options.metadata)]
+            : [options.owner]
+          : [],
+      }),
+    [writeContract, baseConfig],
+  );
 
-  const createBucketAsync = (options?: {
-    owner: Address;
-    metadata?: Record<string, string>;
-  }) =>
-    writeContractAsync({
-      ...baseConfig,
-      args: options
-        ? options.metadata
-          ? [options.owner, convertMetadataToAbiParams(options.metadata)]
-          : [options.owner]
-        : [],
-    });
+  const createBucketAsync = useCallback(
+    (options?: { owner: Address; metadata?: Record<string, string> }) =>
+      writeContractAsync({
+        ...baseConfig,
+        args: options
+          ? options.metadata
+            ? [options.owner, convertMetadataToAbiParams(options.metadata)]
+            : [options.owner]
+          : [],
+      }),
+    [writeContractAsync, baseConfig],
+  );
 
   return { createBucket, createBucketAsync, ...rest };
 }
 
-export function useAddObject() {
+export interface AddFileArgs {
+  bucket: Address;
+  key: string;
+  file: File;
+  options?: {
+    ttl?: bigint;
+    metadata?: Record<string, string>;
+    overwrite?: boolean;
+    onUploadProgress?: (progress: number) => void;
+  };
+}
+
+export function useAddFile() {
+  const [args, setArgs] = useState<AddFileArgs | undefined>(undefined);
+
+  const chainId = useChainId();
+  const contractAddress =
+    bucketManagerAddress[chainId as keyof typeof bucketManagerAddress];
+
+  const {
+    writeContract,
+    isPending: writePending,
+    error: writeError,
+    data: writeTxnHash,
+  } = useWriteContract();
+
+  const {
+    data: writeReceipt,
+    isLoading: writeReceiptLoading,
+    error: writeReceiptError,
+  } = useWaitForTransactionReceipt({
+    hash: writeTxnHash,
+  });
+
+  const {
+    mutate: upload,
+    isPending: uploadPending,
+    data: uploadRes,
+    error: uploadError,
+  } = useMutation({
+    mutationFn: uploadFile,
+  });
+
+  useEffect(() => {
+    if (uploadRes && args) {
+      const metadata = convertMetadataToAbiParams(args.options?.metadata ?? {});
+      const params = {
+        source: uploadRes.node_id,
+        key: args.key,
+        blobHash: uploadRes.hash,
+        recoveryHash: "",
+        size: BigInt(args.file.size),
+        ttl: args.options?.ttl ?? 0n,
+        metadata,
+        overwrite: args.options?.overwrite ?? false,
+      };
+      return writeContract({
+        address: contractAddress,
+        abi: bucketManagerAbi,
+        functionName: "addObject",
+        args: [args.bucket, params],
+      });
+    }
+  }, [args, contractAddress, uploadRes, writeContract]);
+
+  const addFile = useCallback(
+    (args: AddFileArgs) => {
+      setArgs(args);
+      upload({ file: args.file, onProgress: args.options?.onUploadProgress });
+    },
+    [upload],
+  );
+
+  const isPending = uploadPending || writePending || writeReceiptLoading;
+  const isError = !!uploadError || !!writeError || !!writeReceiptError;
+  const error = uploadError || writeError || writeReceiptError;
+  const data =
+    uploadRes && writeReceipt
+      ? {
+          upload: uploadRes,
+          receipt: writeReceipt,
+        }
+      : undefined;
+  const isSuccess = uploadRes && writeReceipt;
+
+  return { addFile, isPending, isSuccess, isError, error, data };
+}
+
+export function useDeleteObject() {
   const chainId = useChainId();
   const contractAddress =
     bucketManagerAddress[chainId as keyof typeof bucketManagerAddress];
@@ -141,102 +236,28 @@ export function useAddObject() {
       ({
         address: contractAddress,
         abi: bucketManagerAbi,
-        functionName: "addObject",
+        functionName: "deleteObject",
       }) as const,
     [contractAddress],
   );
 
-  const addObject = useCallback(
-    (
-      bucket: Address,
-      key: string,
-      source: string,
-      blobHash: string,
-      size: bigint,
-      options?: {
-        ttl?: bigint;
-        metadata?: Record<string, string>;
-        overwrite?: boolean;
-      },
-    ) => {
-      const metadata = convertMetadataToAbiParams(options?.metadata ?? {});
-      const params = {
-        source,
-        key,
-        blobHash,
-        recoveryHash: "",
-        size,
-        ttl: options?.ttl ?? 0n,
-        metadata,
-        overwrite: options?.overwrite ?? false,
-      };
-      return writeContract({
+  const deleteObject = useCallback(
+    (bucket: Address, key: string) =>
+      writeContract({
         ...baseConfig,
-        args: [bucket, params],
-      });
-    },
+        args: [bucket, key],
+      }),
     [writeContract, baseConfig],
   );
 
-  const addObjectAsync = useCallback(
-    (
-      bucket: Address,
-      key: string,
-      source: string,
-      blobHash: string,
-      size: bigint,
-      options?: {
-        ttl?: bigint;
-        metadata?: Record<string, string>;
-        overwrite?: boolean;
-      },
-    ) => {
-      const metadata = convertMetadataToAbiParams(options?.metadata ?? {});
-      const params = {
-        source,
-        key,
-        blobHash,
-        recoveryHash: "",
-        size,
-        ttl: options?.ttl ?? 0n,
-        metadata,
-        overwrite: options?.overwrite ?? false,
-      };
-      return writeContractAsync({
+  const deleteObjectAsync = useCallback(
+    (bucket: Address, key: string) =>
+      writeContractAsync({
         ...baseConfig,
-        args: [bucket, params],
-      });
-    },
+        args: [bucket, key],
+      }),
     [writeContractAsync, baseConfig],
   );
-
-  return { addObject, addObjectAsync, ...rest };
-}
-
-export function useDeleteObject() {
-  const chainId = useChainId();
-  const contractAddress =
-    bucketManagerAddress[chainId as keyof typeof bucketManagerAddress];
-
-  const { writeContract, writeContractAsync, ...rest } = useWriteContract();
-
-  const baseConfig = {
-    address: contractAddress,
-    abi: bucketManagerAbi,
-    functionName: "deleteObject",
-  } as const;
-
-  const deleteObject = (bucket: Address, key: string) =>
-    writeContract({
-      ...baseConfig,
-      args: [bucket, key],
-    });
-
-  const deleteObjectAsync = (bucket: Address, key: string) =>
-    writeContractAsync({
-      ...baseConfig,
-      args: [bucket, key],
-    });
 
   return { deleteObject, deleteObjectAsync, ...rest };
 }
@@ -245,4 +266,31 @@ function convertMetadataToAbiParams(
   value: Record<string, string>,
 ): { key: string; value: string }[] {
   return Object.entries(value).map(([key, value]) => ({ key, value }));
+}
+
+// TODO: Can only be called from studio web app for now because it relays the upload through the studio API.
+async function uploadFile(variables: {
+  file: File;
+  onProgress?: (progress: number) => void;
+}) {
+  const f = new FormData();
+  f.append("data", variables.file);
+  f.append("size", variables.file.size.toString());
+
+  const [uploadRes, nodeInfo] = await Promise.all([
+    axios.post<{ hash: string; metadata_hash: string }>("/api/objects", f, {
+      onUploadProgress: (e) => {
+        const progress = e.total ? Math.round((e.loaded * 100) / e.total) : 0;
+        variables.onProgress?.(progress);
+      },
+    }),
+    axios.get<{
+      node_id: string;
+      info: {
+        relay_url: string;
+        direct_addresses: string[];
+      };
+    }>("https://objects.node-0.testnet.recall.network/v1/node"),
+  ]);
+  return { ...uploadRes.data, ...nodeInfo.data };
 }

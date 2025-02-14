@@ -32,7 +32,11 @@ interface Props {
   };
 }
 
-export default function ObjectCard({ bucketAddress, prefix, object }: Props) {
+export default function ObjectListItem({
+  bucketAddress,
+  prefix,
+  object,
+}: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const size = formatBytes(Number(object.state.size));
 

@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { Address } from "viem";
 import {
   useAccount,
@@ -139,83 +139,93 @@ export function useApproveCredit() {
 
   const { writeContract, writeContractAsync, ...rest } = useWriteContract();
 
-  const baseConfig = {
-    address: contractAddress,
-    abi: creditManagerAbi,
-    functionName: "approveCredit",
-  } as const;
+  const baseConfig = useMemo(
+    () =>
+      ({
+        address: contractAddress,
+        abi: creditManagerAbi,
+        functionName: "approveCredit",
+      }) as const,
+    [contractAddress],
+  );
 
-  const approveCredit = (
-    to: Address,
-    options?: {
-      from: Address;
-      limits?: {
-        creditLimit: bigint;
-        gasFeeLimit: bigint;
-        ttl: bigint;
-      };
+  const approveCredit = useCallback(
+    (
+      to: Address,
+      options?: {
+        from: Address;
+        limits?: {
+          creditLimit: bigint;
+          gasFeeLimit: bigint;
+          ttl: bigint;
+        };
+      },
+    ) => {
+      if (options?.limits) {
+        writeContract({
+          ...baseConfig,
+          args: [
+            options.from,
+            to,
+            [],
+            options.limits.creditLimit,
+            options.limits.gasFeeLimit,
+            options.limits.ttl,
+          ],
+        });
+      } else if (options) {
+        writeContract({
+          ...baseConfig,
+          args: [options.from, to],
+        });
+      } else {
+        writeContract({
+          ...baseConfig,
+          args: [to],
+        });
+      }
     },
-  ) => {
-    if (options?.limits) {
-      writeContract({
-        ...baseConfig,
-        args: [
-          options.from,
-          to,
-          [],
-          options.limits.creditLimit,
-          options.limits.gasFeeLimit,
-          options.limits.ttl,
-        ],
-      });
-    } else if (options) {
-      writeContract({
-        ...baseConfig,
-        args: [options.from, to],
-      });
-    } else {
-      writeContract({
-        ...baseConfig,
-        args: [to],
-      });
-    }
-  };
+    [baseConfig, writeContract],
+  );
 
-  const approveCreditAsync = (
-    to: Address,
-    options?: {
-      from: Address;
-      limits?: {
-        creditLimit: bigint;
-        gasFeeLimit: bigint;
-        ttl: bigint;
-      };
+  const approveCreditAsync = useCallback(
+    (
+      to: Address,
+      options?: {
+        from: Address;
+        limits?: {
+          creditLimit: bigint;
+          gasFeeLimit: bigint;
+          ttl: bigint;
+        };
+      },
+    ) => {
+      if (options?.limits) {
+        return writeContractAsync({
+          ...baseConfig,
+          args: [
+            options.from,
+            to,
+            [],
+            options.limits.creditLimit,
+            options.limits.gasFeeLimit,
+            options.limits.ttl,
+          ],
+        });
+      } else if (options) {
+        return writeContractAsync({
+          ...baseConfig,
+          args: [options.from, to],
+        });
+      } else {
+        return writeContractAsync({
+          ...baseConfig,
+          args: [to],
+        });
+      }
     },
-  ) => {
-    if (options?.limits) {
-      return writeContractAsync({
-        ...baseConfig,
-        args: [
-          options.from,
-          to,
-          [],
-          options.limits.creditLimit,
-          options.limits.gasFeeLimit,
-          options.limits.ttl,
-        ],
-      });
-    } else if (options) {
-      return writeContractAsync({
-        ...baseConfig,
-        args: [options.from, to],
-      });
-    } else {
-      return writeContractAsync({
-        ...baseConfig,
-        args: [to],
-      });
-    }
-  };
+    [baseConfig, writeContractAsync],
+  );
 
   return { approveCredit, approveCreditAsync, ...rest };
 }
@@ -228,25 +238,35 @@ export function useBuyCredit() {
 
   const { writeContract, writeContractAsync, ...rest } = useWriteContract();
 
-  const baseConfig = {
-    address: contractAddress,
-    abi: creditManagerAbi,
-    functionName: "buyCredit",
-  } as const;
+  const baseConfig = useMemo(
+    () =>
+      ({
+        address: contractAddress,
+        abi: creditManagerAbi,
+        functionName: "buyCredit",
+      }) as const,
+    [contractAddress],
+  );
 
-  const buyCredit = (recallAmount: bigint, recipient?: Address) =>
-    writeContract({
-      ...baseConfig,
-      args: recipient ? [recipient] : [],
-      value: recallAmount,
-    });
+  const buyCredit = useCallback(
+    (recallAmount: bigint, recipient?: Address) =>
+      writeContract({
+        ...baseConfig,
+        args: recipient ? [recipient] : [],
+        value: recallAmount,
+      }),
+    [baseConfig, writeContract],
+  );
 
-  const buyCreditAsync = (recallAmount: bigint, recipient?: Address) =>
-    writeContractAsync({
-      ...baseConfig,
-      args: recipient ? [recipient] : [],
-      value: recallAmount,
-    });
+  const buyCreditAsync = useCallback(
+    (recallAmount: bigint, recipient?: Address) =>
+      writeContractAsync({
+        ...baseConfig,
+        args: recipient ? [recipient] : [],
+        value: recallAmount,
+      }),
+    [baseConfig, writeContractAsync],
+  );
 
   return { buyCredit, buyCreditAsync, ...rest };
 }
@@ -259,23 +279,33 @@ export function useRevokeCreditApproval() {
 
   const { writeContract, writeContractAsync, ...rest } = useWriteContract();
 
-  const baseConfig = {
-    address: contractAddress,
-    abi: creditManagerAbi,
-    functionName: "revokeCredit",
-  } as const;
+  const baseConfig = useMemo(
+    () =>
+      ({
+        address: contractAddress,
+        abi: creditManagerAbi,
+        functionName: "revokeCredit",
+      }) as const,
+    [contractAddress],
+  );
 
-  const revokeCredit = (to: Address, from?: Address) =>
-    writeContract({
-      ...baseConfig,
-      args: from ? [from, to] : [to],
-    });
+  const revokeCredit = useCallback(
+    (to: Address, from?: Address) =>
+      writeContract({
+        ...baseConfig,
+        args: from ? [from, to] : [to],
+      }),
+    [baseConfig, writeContract],
+  );
 
-  const revokeCreditAsync = (to: Address, from?: Address) =>
-    writeContractAsync({
-      ...baseConfig,
-      args: from ? [from, to] : [to],
-    });
+  const revokeCreditAsync = useCallback(
+    (to: Address, from?: Address) =>
+      writeContractAsync({
+        ...baseConfig,
+        args: from ? [from, to] : [to],
+      }),
+    [baseConfig, writeContractAsync],
+  );
 
   return { revokeCredit, revokeCreditAsync, ...rest };
 }
@@ -288,23 +318,33 @@ export function useSetAccountSponsor() {
 
   const { writeContract, writeContractAsync, ...rest } = useWriteContract();
 
-  const baseConfig = {
-    address: contractAddress,
-    abi: creditManagerAbi,
-    functionName: "setAccountSponsor",
-  } as const;
+  const baseConfig = useMemo(
+    () =>
+      ({
+        address: contractAddress,
+        abi: creditManagerAbi,
+        functionName: "setAccountSponsor",
+      }) as const,
+    [contractAddress],
+  );
 
-  const setAccountSponsor = (from: Address, sponsor: Address) =>
-    writeContract({
-      ...baseConfig,
-      args: [from, sponsor],
-    });
+  const setAccountSponsor = useCallback(
+    (from: Address, sponsor: Address) =>
+      writeContract({
+        ...baseConfig,
+        args: [from, sponsor],
+      }),
+    [baseConfig, writeContract],
+  );
 
-  const setAccountSponsorAsync = (from: Address, sponsor: Address) =>
-    writeContractAsync({
-      ...baseConfig,
-      args: [from, sponsor],
-    });
+  const setAccountSponsorAsync = useCallback(
+    (from: Address, sponsor: Address) =>
+      writeContractAsync({
+        ...baseConfig,
+        args: [from, sponsor],
+      }),
+    [baseConfig, writeContractAsync],
+  );
 
   return {
     setAccountSponsor,
@@ -321,23 +361,33 @@ export function useDeleteAccountSponsor() {
 
   const { writeContract, writeContractAsync, ...rest } = useWriteContract();
 
-  const baseConfig = {
-    address: contractAddress,
-    abi: creditManagerAbi,
-    functionName: "setAccountSponsor",
-  } as const;
+  const baseConfig = useMemo(
+    () =>
+      ({
+        address: contractAddress,
+        abi: creditManagerAbi,
+        functionName: "setAccountSponsor",
+      }) as const,
+    [contractAddress],
+  );
 
-  const deleteAccountSponsor = (from: Address) =>
-    writeContract({
-      ...baseConfig,
-      args: [from, "0x0000000000000000000000000000000000000000"],
-    });
+  const deleteAccountSponsor = useCallback(
+    (from: Address) =>
+      writeContract({
+        ...baseConfig,
+        args: [from, "0x0000000000000000000000000000000000000000"],
+      }),
+    [baseConfig, writeContract],
+  );
 
-  const deleteAccountSponsorAsync = (from: Address) =>
-    writeContractAsync({
-      ...baseConfig,
-      args: [from, "0x0000000000000000000000000000000000000000"],
-    });
+  const deleteAccountSponsorAsync = useCallback(
+    (from: Address) =>
+      writeContractAsync({
+        ...baseConfig,
+        args: [from, "0x0000000000000000000000000000000000000000"],
+      }),
+    [baseConfig, writeContractAsync],
+  );
 
   return {
     deleteAccountSponsor,

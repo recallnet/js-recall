@@ -45,6 +45,7 @@
   "dependencies": {
     "@recall/contracts": "workspace:*",
     "@tanstack/react-query": "^5.64.2",
+    "axios": "^1.7.9",
     "react": "^19.0.0",
     "viem": "^2.22.9",
     "wagmi": "^2.14.8"
