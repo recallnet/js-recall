@@ -219,7 +219,7 @@ export function ApprovalsTo() {
               />
             </div>
           </div>
-          <DialogFooter className="">
+          <DialogFooter>
             <Button
               onClick={handleApprove}
               disabled={approvalPending || !formData.to}

@@ -10,6 +10,11 @@
       "import": "./dist/chains.mjs",
       "require": "./dist/chains.cjs"
     },
+    "./react/buckets": {
+      "types": "./dist/react/buckets.d.ts",
+      "import": "./dist/react/buckets.mjs",
+      "require": "./dist/react/buckets.cjs"
+    },
     "./react/credits": {
       "types": "./dist/react/credits.d.ts",
       "import": "./dist/react/credits.mjs",
@@ -40,6 +45,7 @@
   "dependencies": {
     "@recall/contracts": "workspace:*",
     "@tanstack/react-query": "^5.64.2",
+    "axios": "^1.7.9",
     "react": "^19.0.0",
     "viem": "^2.22.9",
     "wagmi": "^2.14.8"

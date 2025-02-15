@@ -29,7 +29,7 @@ import {
 import { useToast } from "@recall/ui/hooks/use-toast";
 import { cn } from "@recall/ui/lib/utils";
 
-import Metric from "./metric";
+import Metric from "@/components/metric";
 
 interface Props {
   type: "to" | "from";
@@ -205,7 +205,7 @@ export function Approval({ type, creditSponsor, approval }: Props) {
               subtitle="$RECALL"
             />
             <Metric
-              title={`Expire${blockDiff || 1 < 0 ? "d" : "s"}`}
+              title={`Expire${(blockDiff || 1) < 0 ? "d" : "s"}`}
               value={ttlDisplay}
               valueTooltip={expiryIso}
             />
