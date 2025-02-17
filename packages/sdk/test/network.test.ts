@@ -7,7 +7,6 @@ import {
   recallErc20Address,
   subnetGetterFacetAddress,
 } from "@recallnet/contracts";
-
 import {
   LOCALNET_CHAIN_ID,
   LOCALNET_EVM_RPC_URL,
@@ -17,7 +16,8 @@ import {
   LOCALNET_RPC_URL,
   LOCALNET_SUBNET_ID,
   RPC_TIMEOUT,
-} from "../src/constants.js";
+} from "@recallnet/network-constants";
+
 import { Network, NetworkType } from "../src/network.js";
 
 describe("network", function () {

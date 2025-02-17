@@ -42,14 +42,13 @@ export function createObjectsFormData({
   contentType,
 }: ObjectsApiFormData): FormData {
   const formData = new FormData();
+  formData.append("size", size.toString());
   formData.append(
     "data",
     new File([data], "blob", {
       type: contentType ?? "application/octet-stream",
     }),
   );
-
-  formData.append("size", size.toString());
   return formData;
 }
 

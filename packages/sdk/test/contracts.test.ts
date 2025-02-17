@@ -12,7 +12,8 @@ import {
 } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
-import { localnet } from "../src/chains.js";
+import { localnet } from "@recallnet/chains";
+
 import { RecallClient, walletClientFromPrivateKey } from "../src/client.js";
 import {
   AccountManager,
@@ -20,12 +21,6 @@ import {
   BucketManager,
   CreditManager,
 } from "../src/entities/index.js";
-
-// TODO: these tests only work with `ipc` commit `2cf4f92` or earlier due to a bug that makes it
-// impossible to add objects via the bucket manager wrapper contract:
-// https://github.com/recallnet/ipc/issues/510
-// If developing locally, you'll also want to make sure you're using the `contracts` repo at commit
-// `9963d4` since this works with the `ipc` commit mentioned above, and pass overrides, if needed.
 
 // Optionally, set these addresses to override the default addresses
 const BLOB_MANAGER_ADDRESS = "";

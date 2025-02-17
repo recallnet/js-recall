@@ -107,6 +107,7 @@ type AddBlobParams = Extract<
     subscriptionId: string;
     size: bigint;
     ttl: bigint;
+    from: Address;
   }
 >;
 
@@ -233,12 +234,16 @@ export class BlobManager {
     size: bigint,
     options: AddBlobOptions = {},
   ): Promise<Result<AddBlobResult>> {
+    if (!this.client.walletClient?.account) {
+      throw new Error("Wallet client is not initialized for adding blobs");
+    }
     const ttl = options?.ttl ?? 0n;
     if (ttl !== 0n && ttl < MIN_TTL) {
       throw new InvalidValue(`TTL must be at least ${MIN_TTL} seconds`);
     }
     const objectApiUrl = this.client.network.objectApiUrl();
     const { nodeId: source } = await getObjectsNodeInfo(objectApiUrl);
+    const from = this.client.walletClient.account.address;
     const addParams = {
       sponsor: options.sponsor ?? zeroAddress,
       source,
@@ -247,6 +252,7 @@ export class BlobManager {
       subscriptionId,
       size,
       ttl,
+      from,
     };
     return this.addBlobInner(addParams);
   }
@@ -261,10 +267,12 @@ export class BlobManager {
       throw new Error("Wallet client is not initialized for deleting blobs");
     }
     try {
+      const from = this.client.walletClient.account.address;
       const args = [
         subscriber || zeroAddress,
         blobHash,
         subscriptionId,
+        from,
       ] satisfies DeleteBlobParams;
       const { request } = await this.contract.simulate.deleteBlob<
         Chain,
@@ -381,8 +389,12 @@ export class BlobManager {
     size: bigint,
     options: AddBlobOptions = {},
   ): Promise<Result<OverwriteBlobResult>> {
+    if (!this.client.walletClient?.account) {
+      throw new Error("Wallet client is not initialized for overwriting blobs");
+    }
     const objectApiUrl = this.client.network.objectApiUrl();
     const { nodeId: source } = await getObjectsNodeInfo(objectApiUrl);
+    const from = this.client.walletClient.account.address;
     const params = {
       sponsor: options.sponsor ?? zeroAddress,
       source,
@@ -391,6 +403,7 @@ export class BlobManager {
       subscriptionId,
       size,
       ttl: options.ttl ?? 0n,
+      from,
     };
     return this.overwriteBlobInner(oldHash, params);
   }

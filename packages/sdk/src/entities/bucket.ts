@@ -177,6 +177,7 @@ export type AddObjectParams = Extract<
       value: string;
     }[];
     overwrite: boolean;
+    from: Address;
   }
 >;
 
@@ -356,7 +357,7 @@ export class BucketManager {
     file: string | File | Uint8Array,
     options?: AddOptions,
   ): Promise<Result<AddObjectResult>> {
-    if (!this.client.walletClient || !this.client.walletClient.chain) {
+    if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for adding an object");
     }
     const metadataRaw = options?.metadata ?? {};
@@ -383,6 +384,7 @@ export class BucketManager {
       size,
       contentType,
     );
+    const from = this.client.walletClient.account.address;
     const addParams = {
       source,
       key,
@@ -392,6 +394,7 @@ export class BucketManager {
       ttl,
       metadata,
       overwrite: options?.overwrite ?? false,
+      from,
     } as AddObjectParams;
     return await this.addInner(bucket, addParams);
   }
@@ -405,7 +408,8 @@ export class BucketManager {
       throw new Error("Wallet client is not initialized for adding an object");
     }
     try {
-      const args = [bucket, key] satisfies DeleteObjectParams;
+      const from = this.client.walletClient.account.address;
+      const args = [bucket, key, from] satisfies DeleteObjectParams;
       const { request } = await this.contract.simulate.deleteObject<
         Chain,
         Account

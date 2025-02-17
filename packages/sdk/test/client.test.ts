@@ -1,7 +1,8 @@
 import { describe, it } from "mocha";
 import { strictEqual } from "node:assert";
 
-import { localnet, testnet } from "../src/chains.js";
+import { localnet, testnet } from "@recallnet/chains";
+
 import {
   RecallClient,
   type RecallConfig,
