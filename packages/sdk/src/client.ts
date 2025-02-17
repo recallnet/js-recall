@@ -15,7 +15,8 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 import "viem/window";
 
-import { type ChainName, getChain, testnet } from "./chains.js";
+import { type ChainName, getChain, testnet } from "@recallnet/chains";
+
 import {
   AccountManager,
   BlobManager,

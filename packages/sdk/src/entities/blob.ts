@@ -14,9 +14,9 @@ import {
 } from "viem";
 
 import { blobManagerAbi, blobManagerAddress } from "@recallnet/contracts";
+import { MIN_TTL } from "@recallnet/network-constants";
 
 import { RecallClient } from "../client.js";
-import { MIN_TTL } from "../constants.js";
 import { getObjectsNodeInfo } from "../provider/object.js";
 import {
   ActorNotFound,

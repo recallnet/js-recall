@@ -1,19 +1,18 @@
 import { Chain } from "viem";
 
 import {
-  gatewayManagerFacetAddress,
-  recallErc20Address,
-  subnetGetterFacetAddress,
-} from "@recallnet/contracts";
-
-import {
   ChainName,
   devnet,
   getChain,
   getParentChain,
   localnet,
   testnet,
-} from "./chains.js";
+} from "@recallnet/chains";
+import {
+  gatewayManagerFacetAddress,
+  recallErc20Address,
+  subnetGetterFacetAddress,
+} from "@recallnet/contracts";
 import {
   DEVNET_CHAIN_ID,
   DEVNET_EVM_RPC_URL,
@@ -32,7 +31,8 @@ import {
   TESTNET_PARENT_CHAIN_ID,
   TESTNET_PARENT_EVM_RPC_URL,
   TESTNET_RPC_URL,
-} from "./constants.js";
+} from "@recallnet/network-constants";
+
 import { SubnetId } from "./ipc/subnet.js";
 
 // Network presets.

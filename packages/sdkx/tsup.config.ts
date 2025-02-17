@@ -2,7 +2,6 @@ import { defineConfig } from "tsup";
 
 export default defineConfig({
   entry: [
-    "src/chains.ts",
     "src/react/credits.ts",
     "src/react/buckets.ts",
     "src/actions/credits.ts",

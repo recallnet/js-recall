@@ -14,20 +14,10 @@
   "homepage": "https://github.com/recallnet/js-recall#readme",
   "type": "module",
   "exports": {
-    "./chains": {
-      "types": "./dist/chains.d.ts",
-      "import": "./dist/chains.mjs",
-      "require": "./dist/chains.cjs"
-    },
     "./client": {
       "types": "./dist/client.d.ts",
       "import": "./dist/client.mjs",
       "require": "./dist/client.cjs"
-    },
-    "./constants": {
-      "types": "./dist/constants.d.ts",
-      "import": "./dist/constants.mjs",
-      "require": "./dist/constants.cjs"
     },
     "./entities": {
       "types": "./dist/entities.d.ts",
@@ -65,8 +55,10 @@
   },
   "dependencies": {
     "@noble/hashes": "^1.5.0",
+    "@recallnet/chains": "workspace:*",
     "@recallnet/contracts": "workspace:*",
     "@recallnet/fvm": "workspace:*",
+    "@recallnet/network-constants": "workspace:*",
     "@sindresorhus/fnv1a": "^3.1.0",
     "file-type": "^19.6.0",
     "uint8arrays": "^5.1.0",
