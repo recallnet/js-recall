@@ -10,7 +10,7 @@ import {
   useWriteContract,
 } from "wagmi";
 
-import { bucketManagerAbi, bucketManagerAddress } from "@recall/contracts";
+import { bucketManagerAbi, bucketManagerAddress } from "@recallnet/contracts";
 
 export function useListBuckets(owner?: Address) {
   const chainId = useChainId();

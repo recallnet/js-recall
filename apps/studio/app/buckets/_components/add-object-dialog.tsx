@@ -7,15 +7,15 @@ import { useForm } from "react-hook-form";
 import { Address } from "viem";
 import { z } from "zod";
 
-import { useAddFile } from "@recall/sdkx/react/buckets";
-import { Button } from "@recall/ui/components/button";
+import { useAddFile } from "@recallnet/sdkx/react/buckets";
+import { Button } from "@recallnet/ui/components/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@recall/ui/components/dialog";
+} from "@recallnet/ui/components/dialog";
 import {
   Form,
   FormControl,
@@ -24,13 +24,13 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@recall/ui/components/form";
-import { Input } from "@recall/ui/components/input";
-import { Progress } from "@recall/ui/components/progress";
-import { Switch } from "@recall/ui/components/switch";
-import { Textarea } from "@recall/ui/components/textarea";
-import { useToast } from "@recall/ui/hooks/use-toast";
-import { cn } from "@recall/ui/lib/utils";
+} from "@recallnet/ui/components/form";
+import { Input } from "@recallnet/ui/components/input";
+import { Progress } from "@recallnet/ui/components/progress";
+import { Switch } from "@recallnet/ui/components/switch";
+import { Textarea } from "@recallnet/ui/components/textarea";
+import { useToast } from "@recallnet/ui/hooks/use-toast";
+import { cn } from "@recallnet/ui/lib/utils";
 
 interface Props {
   open: boolean;
