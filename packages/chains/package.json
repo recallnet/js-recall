@@ -1,10 +1,17 @@
 {
-  "name": "@recallnet/contracts",
+  "name": "@recallnet/chains",
   "version": "0.0.0",
   "license": "MIT AND Apache-2.0",
   "publishConfig": {
     "access": "public"
   },
+  "description": "Recall Network chains.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/recallnet/js-recall.git",
+    "directory": "packages/chains"
+  },
+  "homepage": "https://github.com/recallnet/js-recall#readme",
   "type": "module",
   "exports": {
     ".": {
@@ -18,20 +25,16 @@
   ],
   "scripts": {
     "dev": "tsup --watch",
-    "generate": "wagmi generate && tsc",
     "build": "tsup",
-    "lint": "eslint . --max-warnings 0",
     "clean": "rm -rf .turbo node_modules dist"
+  },
+  "dependencies": {
+    "@recallnet/network-constants": "workspace:*",
+    "viem": "^2.21.37"
   },
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:*",
-    "@recallnet/network-constants": "workspace:*",
     "@recallnet/typescript-config": "workspace:*",
-    "@wagmi/cli": "^2.1.22",
-    "tsup": "^8.3.6",
-    "typescript": "^5.7.3"
-  },
-  "dependencies": {
-    "viem": "^2.22.9"
+    "tsup": "^8.3.6"
   }
 }

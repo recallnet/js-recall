@@ -50,12 +50,9 @@ importers:
       '@recallnet/bigint-utils':
         specifier: workspace:*
         version: link:../../packages/bigint-utils
-      '@recallnet/contracts':
+      '@recallnet/chains':
         specifier: workspace:*
-        version: link:../../packages/contracts
-      '@recallnet/sdk':
-        specifier: workspace:*
-        version: link:../../packages/sdk
+        version: link:../../packages/chains
       '@recallnet/sdkx':
         specifier: workspace:*
         version: link:../../packages/sdkx
@@ -167,6 +164,25 @@ importers:
         specifier: ^5.7.3
         version: 5.7.3
 
+  packages/chains:
+    dependencies:
+      '@recallnet/network-constants':
+        specifier: workspace:*
+        version: link:../network-constants
+      viem:
+        specifier: ^2.21.37
+        version: 2.22.9(bufferutil@4.0.9)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.24.1)
+    devDependencies:
+      '@recallnet/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@recallnet/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      tsup:
+        specifier: ^8.3.6
+        version: 8.3.6(jiti@1.21.6)(postcss@8.4.49)(typescript@5.7.3)(yaml@2.6.1)
+
   packages/contracts:
     dependencies:
       viem:
@@ -176,6 +192,9 @@ importers:
       '@recallnet/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
+      '@recallnet/network-constants':
+        specifier: workspace:*
+        version: link:../network-constants
       '@recallnet/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
@@ -277,17 +296,35 @@ importers:
         specifier: ^5.7.3
         version: 5.7.3
 
+  packages/network-constants:
+    devDependencies:
+      '@recallnet/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@recallnet/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      tsup:
+        specifier: ^8.3.6
+        version: 8.3.6(jiti@1.21.6)(postcss@8.4.49)(typescript@5.7.3)(yaml@2.6.1)
+
   packages/sdk:
     dependencies:
       '@noble/hashes':
         specifier: ^1.5.0
         version: 1.6.1
+      '@recallnet/chains':
+        specifier: workspace:*
+        version: link:../chains
       '@recallnet/contracts':
         specifier: workspace:*
         version: link:../contracts
       '@recallnet/fvm':
         specifier: workspace:*
         version: link:../fvm
+      '@recallnet/network-constants':
+        specifier: workspace:*
+        version: link:../network-constants
       '@sindresorhus/fnv1a':
         specifier: ^3.1.0
         version: 3.1.0
@@ -6202,7 +6239,7 @@ snapshots:
       bufferutil: 4.0.9
       cross-fetch: 4.1.0
       date-fns: 2.30.0
-      debug: 4.4.0
+      debug: 4.4.0(supports-color@8.1.1)
       eciesjs: 0.4.13
       eventemitter2: 6.4.9
       readable-stream: 3.6.2
@@ -6226,7 +6263,7 @@ snapshots:
       '@paulmillr/qr': 0.2.1
       bowser: 2.11.0
       cross-fetch: 4.1.0
-      debug: 4.4.0
+      debug: 4.4.0(supports-color@8.1.1)
       eciesjs: 0.4.13
       eth-rpc-errors: 4.0.3
       eventemitter2: 6.4.9
@@ -6249,7 +6286,7 @@ snapshots:
     dependencies:
       '@ethereumjs/tx': 4.2.0
       '@types/debug': 4.1.12
-      debug: 4.4.0
+      debug: 4.4.0(supports-color@8.1.1)
       semver: 7.6.3
       superstruct: 1.0.4
     transitivePeerDependencies:
@@ -6262,7 +6299,7 @@ snapshots:
       '@noble/hashes': 1.6.1
       '@scure/base': 1.2.1
       '@types/debug': 4.1.12
-      debug: 4.4.0
+      debug: 4.4.0(supports-color@8.1.1)
       pony-cause: 2.1.11
       semver: 7.6.3
       uuid: 9.0.1
@@ -6276,7 +6313,7 @@ snapshots:
       '@noble/hashes': 1.6.1
       '@scure/base': 1.2.1
       '@types/debug': 4.1.12
-      debug: 4.4.0
+      debug: 4.4.0(supports-color@8.1.1)
       pony-cause: 2.1.11
       semver: 7.6.3
       uuid: 9.0.1
@@ -8285,10 +8322,6 @@ snapshots:
       '@babel/runtime': 7.26.0
 
   debug@4.3.7:
-    dependencies:
-      ms: 2.1.3
-
-  debug@4.4.0:
     dependencies:
       ms: 2.1.3
 

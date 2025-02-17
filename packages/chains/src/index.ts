@@ -10,7 +10,8 @@ import {
   TESTNET_CHAIN_ID,
   TESTNET_EVM_RPC_URL,
   TESTNET_EVM_WS_URL,
-} from "./constants.js";
+  TESTNET_EXPLORER_URL,
+} from "@recallnet/network-constants";
 
 export type ChainName = "mainnet" | "testnet" | "localnet" | "devnet";
 
@@ -31,7 +32,7 @@ export const testnet: Chain = defineChain({
   blockExplorers: {
     default: {
       name: "Recall Testnet Explorer",
-      url: "https://explorer.testnet.recall.network",
+      url: TESTNET_EXPLORER_URL,
     },
   },
 });

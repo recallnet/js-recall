@@ -1,13 +1,13 @@
 import { getDefaultConfig } from "@rainbow-me/rainbowkit";
 import { http } from "wagmi";
 
-import { ignition } from "@recallnet/sdkx/chains";
+import { testnet } from "@recallnet/chains";
 
 export const config = getDefaultConfig({
   appName: "Recall Studio",
-  chains: [ignition],
+  chains: [testnet],
   transports: {
-    [ignition.id]: http(ignition.rpcUrls.default.http[0]),
+    [testnet.id]: http(testnet.rpcUrls.default.http[0]),
   },
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "",
   ssr: true,

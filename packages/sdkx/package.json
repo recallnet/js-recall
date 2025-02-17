@@ -5,11 +5,6 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./chains": {
-      "types": "./dist/chains.d.ts",
-      "import": "./dist/chains.mjs",
-      "require": "./dist/chains.cjs"
-    },
     "./react/buckets": {
       "types": "./dist/react/buckets.d.ts",
       "import": "./dist/react/buckets.mjs",

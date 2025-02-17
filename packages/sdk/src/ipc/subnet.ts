@@ -2,7 +2,6 @@ import fnv1a from "@sindresorhus/fnv1a";
 import { Chain } from "viem";
 
 import { FilEthAddress } from "@recallnet/fvm/address";
-
 import {
   DEVNET_CHAIN_ID,
   DEVNET_SUBNET_ID,
@@ -10,7 +9,8 @@ import {
   LOCALNET_SUBNET_ID,
   TESTNET_CHAIN_ID,
   TESTNET_SUBNET_ID,
-} from "../constants.js";
+} from "@recallnet/network-constants";
+
 import { Network, NetworkType } from "../network.js";
 
 // Format used by IPC Gateway wrappers, with the `root` field change to a `number` instead of a `bigint`

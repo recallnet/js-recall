@@ -2,11 +2,31 @@ import { Config, defineConfig } from "@wagmi/cli";
 import { foundry } from "@wagmi/cli/plugins";
 import { Abi } from "viem";
 
-const testnetSubnetChainId = 2481632;
-const testnetParentChainId = 314159;
-const localnetSubnetChainId = 248163216;
-const localnetParentChainId = 31337;
-const devnetChainId = 1942764459484029;
+import {
+  DEVNET_CHAIN_ID,
+  DEVNET_GATEWAY_MANAGER_FACET_ADDRESS,
+  DEVNET_SUBNET_GETTER_FACET_ADDRESS,
+  LOCALNET_BLOB_MANAGER_ADDRESS,
+  LOCALNET_BUCKET_MANAGER_ADDRESS,
+  LOCALNET_CHAIN_ID,
+  LOCALNET_CREDIT_MANAGER_ADDRESS,
+  LOCALNET_GATEWAY_MANAGER_FACET_ADDRESS,
+  LOCALNET_PARENT_CHAIN_ID,
+  LOCALNET_PARENT_ERC20_ADDRESS,
+  LOCALNET_PARENT_GATEWAY_MANAGER_FACET_ADDRESS,
+  LOCALNET_PARENT_SUBNET_GETTER_FACET_ADDRESS,
+  LOCALNET_SUBNET_GETTER_FACET_ADDRESS,
+  TESTNET_BLOB_MANAGER_ADDRESS,
+  TESTNET_BUCKET_MANAGER_ADDRESS,
+  TESTNET_CHAIN_ID,
+  TESTNET_CREDIT_MANAGER_ADDRESS,
+  TESTNET_GATEWAY_MANAGER_FACET_ADDRESS,
+  TESTNET_PARENT_CHAIN_ID,
+  TESTNET_PARENT_ERC20_ADDRESS,
+  TESTNET_PARENT_GATEWAY_MANAGER_FACET_ADDRESS,
+  TESTNET_PARENT_SUBNET_GETTER_FACET_ADDRESS,
+  TESTNET_SUBNET_GETTER_FACET_ADDRESS,
+} from "@recallnet/network-constants";
 
 const gatewayManagerFacetAbi: Abi = [
   {
@@ -487,36 +507,37 @@ export const subnetGetterFacetAbi: Abi = [
 ];
 
 export default defineConfig({
-  out: "src/generated.ts",
+  out: "src/index.ts",
   contracts: [
     {
       name: "GatewayManagerFacet",
       abi: gatewayManagerFacetAbi,
       address: {
-        [testnetParentChainId]: "0x45da97E918183cA1f2891E277F600fC0B2dDD9dC",
-        [testnetSubnetChainId]: "0x77aa40b105843728088c0132e43fc44348881da8",
-        [localnetParentChainId]: "0x9A676e781A523b5d0C0e43731313A708CB607508",
-        [localnetSubnetChainId]: "0x77aa40b105843728088c0132e43fc44348881da8",
-        [devnetChainId]: "0x77aa40b105843728088c0132e43fc44348881da8",
+        [TESTNET_PARENT_CHAIN_ID]: TESTNET_PARENT_GATEWAY_MANAGER_FACET_ADDRESS,
+        [TESTNET_CHAIN_ID]: TESTNET_GATEWAY_MANAGER_FACET_ADDRESS,
+        [LOCALNET_PARENT_CHAIN_ID]:
+          LOCALNET_PARENT_GATEWAY_MANAGER_FACET_ADDRESS,
+        [LOCALNET_CHAIN_ID]: LOCALNET_GATEWAY_MANAGER_FACET_ADDRESS,
+        [DEVNET_CHAIN_ID]: DEVNET_GATEWAY_MANAGER_FACET_ADDRESS,
       },
     },
     {
       name: "SubnetGetterFacet",
       abi: subnetGetterFacetAbi,
       address: {
-        [testnetParentChainId]: "0xd7719695eE7042cDCFF4065ef93346bF33222d78",
-        [localnetParentChainId]: "0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44",
-        [testnetSubnetChainId]: "0x74539671a1d2f1c8f200826baba665179f53a1b7",
-        [localnetSubnetChainId]: "0x74539671a1d2f1c8f200826baba665179f53a1b7",
-        [devnetChainId]: "0x74539671a1d2f1c8f200826baba665179f53a1b7",
+        [TESTNET_PARENT_CHAIN_ID]: TESTNET_PARENT_SUBNET_GETTER_FACET_ADDRESS,
+        [LOCALNET_PARENT_CHAIN_ID]: LOCALNET_PARENT_SUBNET_GETTER_FACET_ADDRESS,
+        [TESTNET_CHAIN_ID]: TESTNET_SUBNET_GETTER_FACET_ADDRESS,
+        [LOCALNET_CHAIN_ID]: LOCALNET_SUBNET_GETTER_FACET_ADDRESS,
+        [DEVNET_CHAIN_ID]: DEVNET_SUBNET_GETTER_FACET_ADDRESS,
       },
     },
     {
       name: "RecallERC20",
       abi: ierc20Abi,
       address: {
-        [testnetParentChainId]: "0x2e6453107b4417eC2fB58ABDcc2968955Bd005Df",
-        [localnetParentChainId]: "0x4A679253410272dd5232B3Ff7cF5dbB88f295319",
+        [TESTNET_PARENT_CHAIN_ID]: TESTNET_PARENT_ERC20_ADDRESS,
+        [LOCALNET_PARENT_CHAIN_ID]: LOCALNET_PARENT_ERC20_ADDRESS,
       },
     },
   ],
@@ -530,16 +551,16 @@ export default defineConfig({
       ],
       deployments: {
         BlobManager: {
-          [testnetSubnetChainId]: "0x7180B1e71814A3cdC62A414Ae02e3f6E1314B209",
-          [localnetSubnetChainId]: "0xe1Aa25618fA0c7A1CFDab5d6B456af611873b629",
+          [TESTNET_CHAIN_ID]: TESTNET_BLOB_MANAGER_ADDRESS,
+          [LOCALNET_CHAIN_ID]: LOCALNET_BLOB_MANAGER_ADDRESS,
         },
         BucketManager: {
-          [testnetSubnetChainId]: "0xfbCF213040240BA86Fed92961BB60625233641a1",
-          [localnetSubnetChainId]: "0xf7Cd8fa9b94DB2Aa972023b379c7f72c65E4De9D",
+          [TESTNET_CHAIN_ID]: TESTNET_BUCKET_MANAGER_ADDRESS,
+          [LOCALNET_CHAIN_ID]: LOCALNET_BUCKET_MANAGER_ADDRESS,
         },
         CreditManager: {
-          [testnetSubnetChainId]: "0xDB85431B6a016e1652c7E898918d787B6aef7185",
-          [localnetSubnetChainId]: "0x82C6D3ed4cD33d8EC1E51d0B5Cc1d822Eaa0c3dC",
+          [TESTNET_CHAIN_ID]: TESTNET_CREDIT_MANAGER_ADDRESS,
+          [LOCALNET_CHAIN_ID]: LOCALNET_CREDIT_MANAGER_ADDRESS,
         },
       },
     }),

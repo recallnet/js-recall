@@ -14,9 +14,9 @@ import {
 
 import { bucketManagerAbi, bucketManagerAddress } from "@recallnet/contracts";
 import { cbor } from "@recallnet/fvm/utils";
+import { MAX_OBJECT_SIZE, MIN_TTL } from "@recallnet/network-constants";
 
 import { RecallClient } from "../client.js";
-import { MAX_OBJECT_SIZE, MIN_TTL } from "../constants.js";
 import {
   callObjectsApiAddObject,
   downloadBlob,
