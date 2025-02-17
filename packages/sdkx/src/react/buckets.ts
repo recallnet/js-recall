@@ -139,6 +139,7 @@ export function useCreateBucket() {
 
 export interface AddFileArgs {
   bucket: Address;
+  from: Address;
   key: string;
   file: File;
   options?: {
@@ -195,6 +196,7 @@ export function useAddFile() {
         ttl: args.options?.ttl ?? 0n,
         metadata,
         overwrite: args.options?.overwrite ?? false,
+        from: args.from,
       };
       return writeContract({
         address: contractAddress,
@@ -250,19 +252,19 @@ export function useDeleteObject() {
   );
 
   const deleteObject = useCallback(
-    (bucket: Address, key: string) =>
+    (bucket: Address, from: Address, key: string) =>
       writeContract({
         ...baseConfig,
-        args: [bucket, key],
+        args: [bucket, key, from],
       }),
     [writeContract, baseConfig],
   );
 
   const deleteObjectAsync = useCallback(
-    (bucket: Address, key: string) =>
+    (bucket: Address, from: Address, key: string) =>
       writeContractAsync({
         ...baseConfig,
-        args: [bucket, key],
+        args: [bucket, key, from],
       }),
     [writeContractAsync, baseConfig],
   );
@@ -283,8 +285,8 @@ async function uploadFile(variables: {
   onProgress?: (progress: number) => void;
 }) {
   const f = new FormData();
-  f.append("data", variables.file);
   f.append("size", variables.file.size.toString());
+  f.append("data", variables.file);
 
   const [uploadRes, nodeInfo] = await Promise.all([
     axios.post<{ hash: string; metadata_hash: string }>("/api/objects", f, {
