@@ -371,6 +371,9 @@ importers:
 
   packages/sdkx:
     dependencies:
+      '@recallnet/chains':
+        specifier: workspace:*
+        version: link:../chains
       '@recallnet/contracts':
         specifier: workspace:*
         version: link:../contracts

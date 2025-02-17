@@ -4,13 +4,17 @@ import { type Chain, anvil, filecoinCalibration } from "viem/chains";
 import {
   DEVNET_CHAIN_ID,
   DEVNET_EVM_RPC_URL,
+  DEVNET_OBJECT_API_URL,
   LOCALNET_CHAIN_ID,
   LOCALNET_EVM_RPC_URL,
   LOCALNET_EVM_WS_URL,
+  LOCALNET_OBJECT_API_URL,
   TESTNET_CHAIN_ID,
   TESTNET_EVM_RPC_URL,
   TESTNET_EVM_WS_URL,
   TESTNET_EXPLORER_URL,
+  TESTNET_OBJECT_API_URL,
+  TESTNET_REGISTRAR_URL,
 } from "@recallnet/network-constants";
 
 export type ChainName = "mainnet" | "testnet" | "localnet" | "devnet";
@@ -125,5 +129,27 @@ export function checkChainName(chainName: ChainName): boolean {
     return true;
   } catch {
     return false;
+  }
+}
+
+export function getObjectApiUrl(chain: Chain): string {
+  switch (chain.id) {
+    case testnet.id:
+      return TESTNET_OBJECT_API_URL;
+    case localnet.id:
+      return LOCALNET_OBJECT_API_URL;
+    case devnet.id:
+      return DEVNET_OBJECT_API_URL;
+    default:
+      throw new Error(`Object API URL not found for chain ${chain.name}`);
+  }
+}
+
+export function getRegistrarUrl(chain: Chain): string {
+  switch (chain.id) {
+    case testnet.id:
+      return TESTNET_REGISTRAR_URL;
+    default:
+      throw new Error(`Registrar URL not found for chain ${chain.name}`);
   }
 }

@@ -143,7 +143,7 @@ export function ApprovalsTo() {
     }
     const exists = await accountExists(config, formData.to);
     if (!exists) {
-      await runCreateAccount(formData.to);
+      await runCreateAccount({ config, address: formData.to });
     }
     const limits =
       !!formData.creditLimit || !!formData.gasFeeLimit || !!formData.ttl

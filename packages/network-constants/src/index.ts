@@ -34,6 +34,10 @@ export const TESTNET_OBJECT_API_URL =
 export const LOCALNET_OBJECT_API_URL = "http://127.0.0.1:8001";
 export const DEVNET_OBJECT_API_URL = "http://127.0.0.1:8001";
 
+// Registrar URLs
+export const TESTNET_REGISTRAR_URL =
+  "https://faucet.node-0.testnet.recall.network";
+
 // Explorer URLs
 export const TESTNET_EXPLORER_URL = "https://explorer.testnet.recall.network";
 export const LOCALNET_EXPLORER_URL = "http://127.0.0.1:8000";
