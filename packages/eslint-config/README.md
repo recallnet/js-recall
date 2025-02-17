@@ -1,3 +1,3 @@
-# `@recall/eslint-config`
+# `@recallnet/eslint-config`
 
 Shared eslint configuration for the workspace.

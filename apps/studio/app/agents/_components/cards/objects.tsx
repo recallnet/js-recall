@@ -7,9 +7,9 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@recall/ui/components/card";
-import { Separator } from "@recall/ui/components/separator";
-import { cn } from "@recall/ui/lib/utils";
+} from "@recallnet/ui/components/card";
+import { Separator } from "@recallnet/ui/components/separator";
+import { cn } from "@recallnet/ui/lib/utils";
 
 type ChatProps = ComponentProps<typeof Card>;
 

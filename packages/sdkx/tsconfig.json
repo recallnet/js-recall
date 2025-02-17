@@ -1,5 +1,5 @@
 {
-  "extends": "@recall/typescript-config/react-library.json",
+  "extends": "@recallnet/typescript-config/react-library.json",
   "compilerOptions": {
     "outDir": "dist"
   },

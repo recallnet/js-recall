@@ -8,7 +8,7 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@recall/ui/components/tabs";
+} from "@recallnet/ui/components/tabs";
 
 import { Agent } from "./agent";
 

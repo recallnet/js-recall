@@ -4,13 +4,13 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAccount } from "wagmi";
 
-import { ScrollArea, ScrollBar } from "@recall/ui/components/scroll-area";
+import { ScrollArea, ScrollBar } from "@recallnet/ui/components/scroll-area";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@recall/ui/components/tabs";
+} from "@recallnet/ui/components/tabs";
 
 import { useHashmark } from "@/hooks/useHashmark";
 import { usePrevious } from "@/hooks/usePrevious";

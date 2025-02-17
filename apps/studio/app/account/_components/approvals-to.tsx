@@ -11,10 +11,13 @@ import {
   displayToRecall,
   gbMonthsToCredits,
   hoursToNumBlocks,
-} from "@recall/bigint-utils/conversions";
-import { accountExists, createAccount } from "@recall/sdkx/actions/credits";
-import { useApproveCredit, useCreditAccount } from "@recall/sdkx/react/credits";
-import { Button } from "@recall/ui/components/button";
+} from "@recallnet/bigint-utils/conversions";
+import { accountExists, createAccount } from "@recallnet/sdkx/actions/credits";
+import {
+  useApproveCredit,
+  useCreditAccount,
+} from "@recallnet/sdkx/react/credits";
+import { Button } from "@recallnet/ui/components/button";
 import {
   Dialog,
   DialogContent,
@@ -22,10 +25,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@recall/ui/components/dialog";
-import { Input } from "@recall/ui/components/input";
-import { Label } from "@recall/ui/components/label";
-import { useToast } from "@recall/ui/hooks/use-toast";
+} from "@recallnet/ui/components/dialog";
+import { Input } from "@recallnet/ui/components/input";
+import { Label } from "@recallnet/ui/components/label";
+import { useToast } from "@recallnet/ui/hooks/use-toast";
 
 import { Approval } from "./approval";
 

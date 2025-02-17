@@ -1,10 +1,10 @@
 {
-  "extends": "@recall/typescript-config/nextjs.json",
+  "extends": "@recallnet/typescript-config/nextjs.json",
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
-      "@recall/ui/*": ["../../packages/ui/src/*"]
+      "@recallnet/ui/*": ["../../packages/ui/src/*"]
     },
     "plugins": [
       {

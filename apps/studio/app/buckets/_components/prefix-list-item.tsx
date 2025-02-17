@@ -2,7 +2,7 @@ import { Folder } from "lucide-react";
 import Link from "next/link";
 import { Address } from "viem";
 
-import { Card, CardHeader, CardTitle } from "@recall/ui/components/card";
+import { Card, CardHeader, CardTitle } from "@recallnet/ui/components/card";
 
 export default function PrefixListItem({
   bucketAddress,

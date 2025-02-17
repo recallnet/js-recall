@@ -1,4 +1,4 @@
-# `@recall/sdk`
+# `@recallnet/sdk`
 
 > Official JavaScript/TypeScript SDK for the Recall Network.
 
@@ -30,7 +30,7 @@ First, install the package:
 
 ```bash
 # Note: this package is not published to NPM yet, so you need to install it from the source
-pnpm add @recall/sdk
+pnpm add @recallnet/sdk
 ```
 
 ### Recall client & wallet setup
@@ -41,7 +41,7 @@ Create a wallet client from a private key:
 import { createWalletClient } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
-import { RecallClient, testnet } from "@recall/sdk";
+import { RecallClient, testnet } from "@recallnet/sdk";
 
 // Create a wallet client from a private key
 const privateKey =

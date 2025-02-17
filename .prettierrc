@@ -2,7 +2,7 @@
   "importOrder": [
     "^.*.css",
     "<THIRD_PARTY_MODULES>",
-    "^@recall/(.*)$",
+    "^@recallnet/(.*)$",
     "^@/(.*)$",
     "^[./]"
   ],

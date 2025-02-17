@@ -1,6 +1,6 @@
 "use client"
 
-import { useToast } from "@recall/ui/hooks/use-toast"
+import { useToast } from "@recallnet/ui/hooks/use-toast"
 import {
   Toast,
   ToastClose,
@@ -8,7 +8,7 @@ import {
   ToastProvider,
   ToastTitle,
   ToastViewport,
-} from "@recall/ui/components/toast"
+} from "@recallnet/ui/components/toast"
 
 export function Toaster() {
   const { toasts } = useToast()

@@ -5,18 +5,18 @@ import { useSearchParams } from "next/navigation";
 import { Fragment, useEffect, useState } from "react";
 import { Address } from "viem";
 
-import { displayAddress } from "@recall/address-utils/display";
-import { useGetObject, useQueryObjects } from "@recall/sdkx/react/buckets";
+import { displayAddress } from "@recallnet/address-utils/display";
+import { useGetObject, useQueryObjects } from "@recallnet/sdkx/react/buckets";
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbSeparator,
-} from "@recall/ui/components/breadcrumb";
-import { Button } from "@recall/ui/components/button";
-import { useToast } from "@recall/ui/hooks/use-toast";
-import { cn } from "@recall/ui/lib/utils";
+} from "@recallnet/ui/components/breadcrumb";
+import { Button } from "@recallnet/ui/components/button";
+import { useToast } from "@recallnet/ui/hooks/use-toast";
+import { cn } from "@recallnet/ui/lib/utils";
 
 import { removePrefix } from "@/lib/remove-prefix";
 

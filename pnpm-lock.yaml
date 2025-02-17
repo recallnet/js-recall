@@ -14,10 +14,10 @@ importers:
       '@changesets/cli':
         specifier: ^2.27.12
         version: 2.27.12
-      '@recall/eslint-config':
+      '@recallnet/eslint-config':
         specifier: workspace:*
         version: link:packages/eslint-config
-      '@recall/typescript-config':
+      '@recallnet/typescript-config':
         specifier: workspace:*
         version: link:packages/typescript-config
       '@trivago/prettier-plugin-sort-imports':
@@ -44,22 +44,22 @@ importers:
       '@rainbow-me/rainbowkit':
         specifier: ^2.2.2
         version: 2.2.3(@tanstack/react-query@5.64.2(react@19.0.0))(@types/react@19.0.7)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(viem@2.22.9(bufferutil@4.0.9)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.24.1))(wagmi@2.14.8(@tanstack/query-core@5.64.2)(@tanstack/react-query@5.64.2(react@19.0.0))(@types/react@19.0.7)(bufferutil@4.0.9)(react@19.0.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(viem@2.22.9(bufferutil@4.0.9)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.24.1))(zod@3.24.1))
-      '@recall/address-utils':
+      '@recallnet/address-utils':
         specifier: workspace:*
         version: link:../../packages/address-utils
-      '@recall/bigint-utils':
+      '@recallnet/bigint-utils':
         specifier: workspace:*
         version: link:../../packages/bigint-utils
-      '@recall/contracts':
+      '@recallnet/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@recall/sdk':
+      '@recallnet/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
-      '@recall/sdkx':
+      '@recallnet/sdkx':
         specifier: workspace:*
         version: link:../../packages/sdkx
-      '@recall/ui':
+      '@recallnet/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       '@tanstack/react-query':
@@ -108,10 +108,10 @@ importers:
         specifier: ^3.24.1
         version: 3.24.1
     devDependencies:
-      '@recall/eslint-config':
+      '@recallnet/eslint-config':
         specifier: workspace:^
         version: link:../../packages/eslint-config
-      '@recall/typescript-config':
+      '@recallnet/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
       '@types/node':
@@ -135,10 +135,10 @@ importers:
 
   packages/address-utils:
     devDependencies:
-      '@recall/eslint-config':
+      '@recallnet/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
-      '@recall/typescript-config':
+      '@recallnet/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       tsup:
@@ -154,10 +154,10 @@ importers:
         specifier: ^2.14.0
         version: 2.14.0
     devDependencies:
-      '@recall/eslint-config':
+      '@recallnet/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
-      '@recall/typescript-config':
+      '@recallnet/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       tsup:
@@ -173,10 +173,10 @@ importers:
         specifier: ^2.22.9
         version: 2.22.9(bufferutil@4.0.9)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.24.1)
     devDependencies:
-      '@recall/eslint-config':
+      '@recallnet/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
-      '@recall/typescript-config':
+      '@recallnet/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@wagmi/cli':
@@ -240,10 +240,10 @@ importers:
         specifier: ^5.1.0
         version: 5.1.0
     devDependencies:
-      '@recall/eslint-config':
+      '@recallnet/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
-      '@recall/typescript-config':
+      '@recallnet/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/chai':
@@ -282,10 +282,10 @@ importers:
       '@noble/hashes':
         specifier: ^1.5.0
         version: 1.6.1
-      '@recall/contracts':
+      '@recallnet/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@recall/fvm':
+      '@recallnet/fvm':
         specifier: workspace:*
         version: link:../fvm
       '@sindresorhus/fnv1a':
@@ -301,10 +301,10 @@ importers:
         specifier: ^2.21.37
         version: 2.22.9(bufferutil@4.0.9)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.24.1)
     devDependencies:
-      '@recall/eslint-config':
+      '@recallnet/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
-      '@recall/typescript-config':
+      '@recallnet/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/chai':
@@ -334,7 +334,7 @@ importers:
 
   packages/sdkx:
     dependencies:
-      '@recall/contracts':
+      '@recallnet/contracts':
         specifier: workspace:*
         version: link:../contracts
       '@tanstack/react-query':
@@ -353,10 +353,10 @@ importers:
         specifier: ^2.14.8
         version: 2.14.8(@tanstack/query-core@5.64.2)(@tanstack/react-query@5.64.2(react@19.0.0))(@types/react@19.0.7)(bufferutil@4.0.9)(react@19.0.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(viem@2.22.9(bufferutil@4.0.9)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.24.1))(zod@3.24.1)
     devDependencies:
-      '@recall/eslint-config':
+      '@recallnet/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
-      '@recall/typescript-config':
+      '@recallnet/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/react':
@@ -415,13 +415,13 @@ importers:
       '@rainbow-me/rainbowkit':
         specifier: ^2.2.2
         version: 2.2.3(@tanstack/react-query@5.64.2(react@19.0.0))(@types/react@19.0.7)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(viem@2.22.9(bufferutil@4.0.9)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.24.1))(wagmi@2.14.8(@tanstack/query-core@5.64.2)(@tanstack/react-query@5.64.2(react@19.0.0))(@types/react@19.0.7)(bufferutil@4.0.9)(react@19.0.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(viem@2.22.9(bufferutil@4.0.9)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.24.1))(zod@3.24.1))
-      '@recall/address-utils':
+      '@recallnet/address-utils':
         specifier: workspace:*
         version: link:../address-utils
-      '@recall/bigint-utils':
+      '@recallnet/bigint-utils':
         specifier: workspace:*
         version: link:../bigint-utils
-      '@recall/sdkx':
+      '@recallnet/sdkx':
         specifier: workspace:*
         version: link:../sdkx
       '@tanstack/react-query':
@@ -464,10 +464,10 @@ importers:
         specifier: ^3.24.1
         version: 3.24.1
     devDependencies:
-      '@recall/eslint-config':
+      '@recallnet/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
-      '@recall/typescript-config':
+      '@recallnet/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@turbo/gen':

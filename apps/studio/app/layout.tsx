@@ -1,11 +1,11 @@
-import "@recall/ui/globals.css";
+import "@recallnet/ui/globals.css";
 
 import { Geist_Mono } from "next/font/google";
 import Link from "next/link";
 
-import { Toaster } from "@recall/ui/components/toaster";
-import { ThemeToggle } from "@recall/ui/recall/theme-toggle";
-import { Wallet } from "@recall/ui/recall/wallet";
+import { Toaster } from "@recallnet/ui/components/toaster";
+import { ThemeToggle } from "@recallnet/ui/recall/theme-toggle";
+import { Wallet } from "@recallnet/ui/recall/wallet";
 
 import { Providers } from "@/components/providers";
 

@@ -5,24 +5,24 @@ import { Copy, Plus, Unplug, WalletIcon } from "lucide-react";
 import { HTMLAttributes, useEffect, useState } from "react";
 import { useAccount, useBalance, useDisconnect } from "wagmi";
 
-import { displayAddress } from "@recall/address-utils/display";
+import { displayAddress } from "@recallnet/address-utils/display";
 import {
   crazyCreditsToCredits,
   creditsToGbMonths,
   recallToDisplay,
-} from "@recall/bigint-utils/conversions";
-import { useCreditAccount } from "@recall/sdkx/react/credits";
-import { Button } from "@recall/ui/components/button";
+} from "@recallnet/bigint-utils/conversions";
+import { useCreditAccount } from "@recallnet/sdkx/react/credits";
+import { Button } from "@recallnet/ui/components/button";
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@recall/ui/components/dialog";
-import { useToast } from "@recall/ui/hooks/use-toast";
-import { cn } from "@recall/ui/lib/utils";
-import BuyCreditsDialog from "@recall/ui/recall/buy-credits-dialog";
+} from "@recallnet/ui/components/dialog";
+import { useToast } from "@recallnet/ui/hooks/use-toast";
+import { cn } from "@recallnet/ui/lib/utils";
+import BuyCreditsDialog from "@recallnet/ui/recall/buy-credits-dialog";
 
 type Props = {} & HTMLAttributes<HTMLDivElement>;
 

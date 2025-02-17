@@ -8,8 +8,8 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from "@recall/ui/components/card";
-import CollapsedStringDisplay from "@recall/ui/recall/collapsed-string-display";
+} from "@recallnet/ui/components/card";
+import CollapsedStringDisplay from "@recallnet/ui/recall/collapsed-string-display";
 
 import Metric from "@/components/metric";
 import { arrayToDisplay } from "@/lib/convert-matadata";

@@ -4,18 +4,18 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAccount, useWaitForTransactionReceipt } from "wagmi";
 
-import { useCreateBucket, useListBuckets } from "@recall/sdkx/react/buckets";
-import { Button } from "@recall/ui/components/button";
+import { useCreateBucket, useListBuckets } from "@recallnet/sdkx/react/buckets";
+import { Button } from "@recallnet/ui/components/button";
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@recall/ui/components/dialog";
-import { Label } from "@recall/ui/components/label";
-import { Textarea } from "@recall/ui/components/textarea";
-import { useToast } from "@recall/ui/hooks/use-toast";
+} from "@recallnet/ui/components/dialog";
+import { Label } from "@recallnet/ui/components/label";
+import { Textarea } from "@recallnet/ui/components/textarea";
+import { useToast } from "@recallnet/ui/hooks/use-toast";
 
 import { dislpayToRecord } from "@/lib/convert-matadata";
 

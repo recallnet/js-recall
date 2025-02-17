@@ -1,7 +1,7 @@
 import fnv1a from "@sindresorhus/fnv1a";
 import { Chain } from "viem";
 
-import { FilEthAddress } from "@recall/fvm/address";
+import { FilEthAddress } from "@recallnet/fvm/address";
 
 import {
   DEVNET_CHAIN_ID,

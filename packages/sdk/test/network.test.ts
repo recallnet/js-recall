@@ -6,7 +6,7 @@ import {
   gatewayManagerFacetAddress,
   recallErc20Address,
   subnetGetterFacetAddress,
-} from "@recall/contracts";
+} from "@recallnet/contracts";
 
 import {
   LOCALNET_CHAIN_ID,

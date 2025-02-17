@@ -11,8 +11,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@recall/ui/components/dropdown-menu";
-import { cn } from "@recall/ui/lib/utils";
+} from "@recallnet/ui/components/dropdown-menu";
+import { cn } from "@recallnet/ui/lib/utils";
 
 function NavLink({
   title,

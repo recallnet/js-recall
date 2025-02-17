@@ -12,7 +12,7 @@ import {
   getContract,
 } from "viem";
 
-import { recallErc20Abi, recallErc20Address } from "@recall/contracts";
+import { recallErc20Abi, recallErc20Address } from "@recallnet/contracts";
 
 import { RecallClient } from "../client.js";
 import { GatewayManager } from "../ipc/gateway.js";

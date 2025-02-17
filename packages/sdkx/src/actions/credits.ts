@@ -2,7 +2,7 @@ import { Address } from "viem";
 import { Config } from "wagmi";
 import { getChainId, readContract } from "wagmi/actions";
 
-import { creditManagerAbi, creditManagerAddress } from "@recall/contracts";
+import { creditManagerAbi, creditManagerAddress } from "@recallnet/contracts";
 
 export async function accountExists(config: Config, address: Address) {
   try {

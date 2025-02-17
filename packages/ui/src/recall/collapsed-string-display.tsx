@@ -3,8 +3,8 @@
 import { Copy } from "lucide-react";
 import { HTMLAttributes } from "react";
 
-import { useToast } from "@recall/ui/hooks/use-toast";
-import { cn } from "@recall/ui/lib/utils";
+import { useToast } from "@recallnet/ui/hooks/use-toast";
+import { cn } from "@recallnet/ui/lib/utils";
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   value: string;

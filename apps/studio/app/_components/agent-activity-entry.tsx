@@ -3,9 +3,9 @@
 import { ChevronDown, ChevronUp, Clock, FileText } from "lucide-react";
 import { useState } from "react";
 
-import { Badge } from "@recall/ui/components/badge";
-import { Button } from "@recall/ui/components/button";
-import { Card, CardContent } from "@recall/ui/components/card";
+import { Badge } from "@recallnet/ui/components/badge";
+import { Button } from "@recallnet/ui/components/button";
+import { Card, CardContent } from "@recallnet/ui/components/card";
 
 import type { AgentActivity } from "@/types/agent-activity";
 
