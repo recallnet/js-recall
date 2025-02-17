@@ -38,6 +38,7 @@
     "typescript": "^5.7.3"
   },
   "dependencies": {
+    "@recallnet/chains": "workspace:*",
     "@recallnet/contracts": "workspace:*",
     "@tanstack/react-query": "^5.64.2",
     "axios": "^1.7.9",

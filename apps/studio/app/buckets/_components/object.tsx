@@ -4,9 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Address } from "viem";
-import { useBlockNumber, useWaitForTransactionReceipt } from "wagmi";
+import {
+  useBlockNumber,
+  useChainId,
+  useWaitForTransactionReceipt,
+} from "wagmi";
 
 import { numBlocksToSeconds } from "@recallnet/bigint-utils/conversions";
+import { getChain, getObjectApiUrl } from "@recallnet/chains";
 import { useDeleteObject } from "@recallnet/sdkx/react/buckets";
 import {
   Card,
@@ -40,6 +45,8 @@ interface Props {
 export default function Object({ bucketAddress, prefixParts, object }: Props) {
   const router = useRouter();
 
+  const chainId = useChainId();
+
   const { data: blockNumber } = useBlockNumber();
 
   const {
@@ -68,6 +75,8 @@ export default function Object({ bucketAddress, prefixParts, object }: Props) {
   const handleDelete = () => {
     deleteObject(bucketAddress, prefixParts.join("/"));
   };
+
+  const objectApiUrl = getObjectApiUrl(getChain(chainId));
 
   const objectSize = formatBytes(Number(object.size));
 
@@ -101,7 +110,7 @@ export default function Object({ bucketAddress, prefixParts, object }: Props) {
             />
           )}
           <Link
-            href={`https://objects.node-0.testnet.recall.network/v1/objects/${bucketAddress}/${prefixParts.join("/")}`}
+            href={`${objectApiUrl}/v1/objects/${bucketAddress}/${prefixParts.join("/")}`}
             target="_blank"
             className="opacity-20 hover:cursor-pointer hover:opacity-100"
           >

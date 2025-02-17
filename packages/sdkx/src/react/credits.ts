@@ -4,6 +4,7 @@ import { Address } from "viem";
 import {
   useAccount,
   useChainId,
+  useConfig,
   useReadContract,
   useWriteContract,
 } from "wagmi";
@@ -13,6 +14,7 @@ import { creditManagerAbi, creditManagerAddress } from "@recallnet/contracts";
 import { createAccount } from "../actions/credits.js";
 
 export function useCreditAccount(forAddress?: Address) {
+  const config = useConfig();
   const chainId = useChainId();
   const { address: accountAddress } = useAccount();
 
@@ -56,9 +58,9 @@ export function useCreditAccount(forAddress?: Address) {
 
   useEffect(() => {
     if (address && isActorNotFound) {
-      mutate(address);
+      mutate({ address, config });
     }
-  }, [address, mutate, isActorNotFound]);
+  }, [address, config, mutate, isActorNotFound]);
 
   useEffect(() => {
     if (isCreateAccountSuccess) {

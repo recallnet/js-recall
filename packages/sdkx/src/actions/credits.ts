@@ -2,6 +2,7 @@ import { Address } from "viem";
 import { Config } from "wagmi";
 import { getChainId, readContract } from "wagmi/actions";
 
+import { getChain, getRegistrarUrl } from "@recallnet/chains";
 import { creditManagerAbi, creditManagerAddress } from "@recallnet/contracts";
 
 export async function accountExists(config: Config, address: Address) {
@@ -24,19 +25,25 @@ export async function accountExists(config: Config, address: Address) {
   }
 }
 
-export async function createAccount(address: Address) {
-  const response = await fetch(
-    "https://faucet.node-0.testnet.recall.network/register",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        address: address,
-      }),
+export async function createAccount({
+  config,
+  address,
+}: {
+  config: Config;
+  address: Address;
+}) {
+  const chainId = getChainId(config);
+  const registrarUrl = getRegistrarUrl(getChain(chainId));
+
+  const response = await fetch(`${registrarUrl}/register`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
     },
-  );
+    body: JSON.stringify({
+      address: address,
+    }),
+  });
   if (!response.ok) {
     throw new Error("Failed to register account: " + response.statusText);
   }

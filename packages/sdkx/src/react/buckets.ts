@@ -10,6 +10,7 @@ import {
   useWriteContract,
 } from "wagmi";
 
+import { getChain, getObjectApiUrl } from "@recallnet/chains";
 import { bucketManagerAbi, bucketManagerAddress } from "@recallnet/contracts";
 
 export function useListBuckets(owner?: Address) {
@@ -155,6 +156,9 @@ export function useAddFile() {
   const contractAddress =
     bucketManagerAddress[chainId as keyof typeof bucketManagerAddress];
 
+  const chain = getChain(chainId);
+  const objectApiUrl = getObjectApiUrl(chain);
+
   const {
     writeContract,
     isPending: writePending,
@@ -204,9 +208,13 @@ export function useAddFile() {
   const addFile = useCallback(
     (args: AddFileArgs) => {
       setArgs(args);
-      upload({ file: args.file, onProgress: args.options?.onUploadProgress });
+      upload({
+        file: args.file,
+        objectApiUrl,
+        onProgress: args.options?.onUploadProgress,
+      });
     },
-    [upload],
+    [objectApiUrl, upload],
   );
 
   const isPending = uploadPending || writePending || writeReceiptLoading;
@@ -271,6 +279,7 @@ function convertMetadataToAbiParams(
 // TODO: Can only be called from studio web app for now because it relays the upload through the studio API.
 async function uploadFile(variables: {
   file: File;
+  objectApiUrl: string;
   onProgress?: (progress: number) => void;
 }) {
   const f = new FormData();
@@ -290,7 +299,7 @@ async function uploadFile(variables: {
         relay_url: string;
         direct_addresses: string[];
       };
-    }>("https://objects.node-0.testnet.recall.network/v1/node"),
+    }>(`${variables.objectApiUrl}/v1/node`),
   ]);
   return { ...uploadRes.data, ...nodeInfo.data };
 }
