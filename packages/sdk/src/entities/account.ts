@@ -8,7 +8,6 @@ import {
   ContractFunctionArgs,
   GetBalanceReturnType,
   GetContractReturnType,
-  GetEventArgs,
   getContract,
 } from "viem";
 
@@ -17,23 +16,18 @@ import { recallErc20Abi, recallErc20Address } from "@recallnet/contracts";
 import { RecallClient } from "../client.js";
 import { GatewayManager } from "../ipc/gateway.js";
 import { InvalidValue } from "./errors.js";
-import { Result, parseEventFromTransaction } from "./utils.js";
+import { Result } from "./utils.js";
 
 // Type for account info
-type AccountInfo = {
+export type AccountInfo = {
   address: Address;
   nonce: number;
   balance: bigint;
   parentBalance?: bigint;
 };
 
-// Type for approve result
-type ApproveResult = Required<
-  GetEventArgs<typeof recallErc20Abi, "Approval", { IndexedOnly: false }>
->;
-
 // Type for approve params
-type ApproveParams = ContractFunctionArgs<
+export type ApproveParams = ContractFunctionArgs<
   typeof recallErc20Abi,
   AbiStateMutability,
   "approve"
@@ -138,10 +132,7 @@ export class AccountManager {
   }
 
   // Approve a spender to transfer funds from the account
-  async approve(
-    spender: Address,
-    amount: bigint,
-  ): Promise<Result<ApproveResult>> {
+  async approve(spender: Address, amount: bigint): Promise<Result> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for approving");
     }
@@ -166,25 +157,15 @@ export class AccountManager {
     );
     // TODO: calling `supplySource.write.approve(...)` doesn't work, for some reason
     const hash = await this.client.walletClient.writeContract(request);
-    const {
-      owner,
-      spender: eventSpender,
-      value,
-    } = await parseEventFromTransaction<ApproveResult>(
-      this.client.publicClient,
-      supplySource.abi,
-      "Approval",
-      hash,
-    );
     const tx = await this.client.publicClient.waitForTransactionReceipt({
       hash,
     });
     await reset();
-    return { meta: { tx }, result: { owner, spender: eventSpender, value } };
+    return { meta: { tx }, result: {} };
   }
 
   // Deposit funds from parent to child subnet
-  async deposit(amount: bigint, recipient?: Address): Promise<Result<boolean>> {
+  async deposit(amount: bigint, recipient?: Address): Promise<Result> {
     const currentChain = this.client.publicClient.chain;
     const parentChain = this.client.network.getParentChain();
     if (!parentChain) {
@@ -209,10 +190,7 @@ export class AccountManager {
   }
 
   // Withdraw funds from child subnet to parent
-  async withdraw(
-    amount: bigint,
-    recipient?: Address,
-  ): Promise<Result<boolean>> {
+  async withdraw(amount: bigint, recipient?: Address): Promise<Result> {
     const result = await this.gatewayManager.release(
       this.client,
       amount,
@@ -222,7 +200,7 @@ export class AccountManager {
   }
 
   // Transfer funds between accounts within the same subnet
-  async transfer(recipient: Address, amount: bigint): Promise<Result<boolean>> {
+  async transfer(recipient: Address, amount: bigint): Promise<Result> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for transfers");
     }
@@ -235,6 +213,6 @@ export class AccountManager {
     const tx = await this.client.publicClient.waitForTransactionReceipt({
       hash,
     });
-    return { meta: { tx }, result: true };
+    return { meta: { tx }, result: {} };
   }
 }

@@ -103,7 +103,7 @@ export class GatewayManager {
     amount: bigint,
     recipient?: Address,
     contractAddress?: Address,
-  ): Promise<Result<boolean>> {
+  ): Promise<Result> {
     if (!client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for funding gateway");
     }
@@ -123,7 +123,7 @@ export class GatewayManager {
       // TODO: calling `this.getContract(client, contractAddress).write.fundWithToken(...)` doesn't work, for some reason
       const hash = await client.walletClient.writeContract(request);
       const tx = await client.publicClient.waitForTransactionReceipt({ hash });
-      return { meta: { tx }, result: true };
+      return { meta: { tx }, result: {} };
     } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         if (error.message.includes("insufficient funds")) {
@@ -140,7 +140,7 @@ export class GatewayManager {
     amount: bigint,
     recipient?: Address,
     contractAddress?: Address,
-  ): Promise<Result<boolean>> {
+  ): Promise<Result> {
     if (!client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for releasing funds");
     }
@@ -157,7 +157,7 @@ export class GatewayManager {
       // TODO: calling `this.getContract(client, contractAddress).write.release(...)` doesn't work, for some reason
       const hash = await client.walletClient.writeContract(request);
       const tx = await client.publicClient.waitForTransactionReceipt({ hash });
-      return { meta: { tx }, result: true };
+      return { meta: { tx }, result: {} };
     } catch (error: unknown) {
       throw new UnhandledGatewayError(`Failed to release funds: ${error}`);
     }

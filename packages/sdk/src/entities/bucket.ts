@@ -12,8 +12,11 @@ import {
   getContract,
 } from "viem";
 
-import { bucketManagerAbi, bucketManagerAddress } from "@recallnet/contracts";
-import { cbor } from "@recallnet/fvm/utils";
+import {
+  bucketManagerAbi,
+  bucketManagerAddress,
+  iMachineFacadeAbi,
+} from "@recallnet/contracts";
 import { MAX_OBJECT_SIZE, MIN_TTL } from "@recallnet/network-constants";
 
 import { RecallClient } from "../client.js";
@@ -35,7 +38,6 @@ import {
 } from "./errors.js";
 import {
   type Result,
-  actorIdToMaskedEvmAddress,
   convertAbiMetadataToObject,
   convertMetadataToAbiParams,
   parseEventFromTransaction,
@@ -103,26 +105,20 @@ export type QueryResult = Omit<QueryResultRaw, "objects"> & {
   }[];
 };
 
-// Note: this emits raw cbor bytes, so we need to decode it to get the bucket address
+// Note: this event stems from the underlying machine facade contract; creating a bucket
+// emits a `MachineInitialized` event, which contains the bucket address
 export type CreateBucketEvent = Required<
-  GetEventArgs<typeof bucketManagerAbi, "CreateBucket", { IndexedOnly: false }>
+  GetEventArgs<
+    typeof iMachineFacadeAbi,
+    "MachineInitialized",
+    { IndexedOnly: false }
+  >
 >;
 
 // Used for create()
 export type CreateBucketResult = {
-  owner: Address;
   bucket: Address;
 };
-
-// Used for add()
-export type AddObjectResult = Required<
-  GetEventArgs<typeof bucketManagerAbi, "AddObject", { IndexedOnly: false }>
->;
-
-// Used for delete()
-export type DeleteObjectResult = Required<
-  GetEventArgs<typeof bucketManagerAbi, "DeleteObject", { IndexedOnly: false }>
->;
 
 // Used for create()
 export type CreateBucketParams = Extract<
@@ -156,7 +152,7 @@ export type QueryObjectsParams = ContractFunctionArgs<
 >;
 
 // Used for add()
-export type AddObjectFullParams = ContractFunctionArgs<
+type AddObjectFullParams = ContractFunctionArgs<
   typeof bucketManagerAbi,
   AbiStateMutability,
   "addObject"
@@ -245,21 +241,14 @@ export class BucketManager {
       const tx = await this.client.publicClient.waitForTransactionReceipt({
         hash,
       });
-      const { owner: eventOwner, data } =
+      const { machineAddress } =
         await parseEventFromTransaction<CreateBucketEvent>(
           this.client.publicClient,
-          this.contract.abi,
-          "CreateBucket",
+          iMachineFacadeAbi,
+          "MachineInitialized",
           hash,
         );
-      // The first value is the actor's ID, the second is the robust t2 address payload; we don't use the robust address
-      // See `CreateExternalReturn`: https://github.com/recallnet/ipc/blob/35abe5f4be2d0dddc9d763ce69bdc4d39a148d0f/fendermint/vm/actor_interface/src/adm.rs#L66
-      // We need to decode the actor ID from the CBOR and then convert it to an Ethereum address
-      // The actor ID needs to be LEB128 encoded, and the FVM ID address is 1 byte of 0x00 followed by the actor ID
-      const decoded = cbor.decode(data);
-      const actorId = decoded[0] as number;
-      const bucket = actorIdToMaskedEvmAddress(actorId);
-      return { meta: { tx }, result: { owner: eventOwner, bucket } };
+      return { meta: { tx }, result: { bucket: machineAddress } };
     } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         const { isActorNotFound, address } = isActorNotFoundError(error);
@@ -311,10 +300,7 @@ export class BucketManager {
 
   // Add an object to a bucket inner
   // TODO: should this be private and used internally by `add`
-  async addInner(
-    bucket: Address,
-    addParams: AddObjectParams,
-  ): Promise<Result<AddObjectResult>> {
+  async addInner(bucket: Address, addParams: AddObjectParams): Promise<Result> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for adding an object");
     }
@@ -331,13 +317,7 @@ export class BucketManager {
       const tx = await this.client.publicClient.waitForTransactionReceipt({
         hash,
       });
-      const result = await parseEventFromTransaction<AddObjectResult>(
-        this.client.publicClient,
-        this.contract.abi,
-        "AddObject",
-        hash,
-      );
-      return { meta: { tx }, result };
+      return { meta: { tx }, result: {} };
     } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         const { isActorNotFound, address } = isActorNotFoundError(error);
@@ -356,7 +336,7 @@ export class BucketManager {
     key: string,
     file: string | File | Uint8Array,
     options?: AddOptions,
-  ): Promise<Result<AddObjectResult>> {
+  ): Promise<Result> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for adding an object");
     }
@@ -400,10 +380,7 @@ export class BucketManager {
   }
 
   // Delete an object from a bucket
-  async delete(
-    bucket: Address,
-    key: string,
-  ): Promise<Result<DeleteObjectResult>> {
+  async delete(bucket: Address, key: string): Promise<Result> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for adding an object");
     }
@@ -421,13 +398,7 @@ export class BucketManager {
       const tx = await this.client.publicClient.waitForTransactionReceipt({
         hash,
       });
-      const result = await parseEventFromTransaction<DeleteObjectResult>(
-        this.client.publicClient,
-        this.contract.abi,
-        "DeleteObject",
-        hash,
-      );
-      return { meta: { tx }, result };
+      return { meta: { tx }, result: {} };
     } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         // Check for specific error messages

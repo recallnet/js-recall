@@ -54,7 +54,6 @@ describe("contracts", function () {
     it("should create a bucket", async () => {
       const { meta, result } = await bucketManager.create();
       strictEqual(isHash(meta!.tx!.transactionHash), true);
-      strictEqual(result.owner, account.address);
       strictEqual(isAddress(result.bucket), true);
     });
 
@@ -112,16 +111,8 @@ describe("contracts", function () {
             foo: "bar",
           },
         };
-        const { meta, result } = await bucketManager.add(
-          bucket,
-          key,
-          path,
-          opts,
-        );
+        const { meta } = await bucketManager.add(bucket, key, path, opts);
         strictEqual(isHash(meta!.tx!.transactionHash), true);
-        strictEqual(result.owner, account.address);
-        strictEqual(result.bucket.toLowerCase(), bucket);
-        strictEqual(result.key, key);
       });
 
       it("should add file from File object", async () => {
@@ -129,15 +120,8 @@ describe("contracts", function () {
         const file = new File([content], "test.txt", {
           type: "text/plain",
         });
-        const { meta, result } = await bucketManager.add(
-          bucket,
-          "hello/test",
-          file,
-        );
+        const { meta } = await bucketManager.add(bucket, "hello/test", file);
         strictEqual(isHash(meta!.tx!.transactionHash), true);
-        strictEqual(result.owner, account.address);
-        strictEqual(result.bucket.toLowerCase(), bucket);
-        strictEqual(result.key, "hello/test");
       });
 
       it("should get object value without downloading", async () => {
@@ -325,11 +309,8 @@ describe("contracts", function () {
         const deletedKey = "hello/deleted";
         const path = await temporaryWrite(fileContents);
         await bucketManager.add(bucket, deletedKey, path);
-        const { meta, result } = await bucketManager.delete(bucket, deletedKey);
+        const { meta } = await bucketManager.delete(bucket, deletedKey);
         strictEqual(isHash(meta!.tx!.transactionHash), true);
-        strictEqual(result.owner, account.address);
-        strictEqual(result.bucket.toLowerCase(), bucket);
-        strictEqual(result.key, deletedKey);
       });
 
       it("should fail to delete non-existent object", async () => {
@@ -361,16 +342,12 @@ describe("contracts", function () {
 
     it("should buy credits", async () => {
       const amount = parseEther("1");
-      let { meta, result } = await credits.buy(amount);
+      let { meta } = await credits.buy(amount);
       strictEqual(isHash(meta!.tx!.transactionHash), true);
-      strictEqual(result.addr, account.address);
-      strictEqual(result.amount, amount);
 
       // buy for another account
-      ({ meta, result } = await credits.buy(amount, to));
+      ({ meta } = await credits.buy(amount, to));
       strictEqual(isHash(meta!.tx!.transactionHash), true);
-      strictEqual(result.addr, to);
-      strictEqual(result.amount, amount);
     });
 
     it("should fail to buy with insufficient balance", async () => {
@@ -399,26 +376,20 @@ describe("contracts", function () {
 
     it("should approve credit spending with 'to'", async () => {
       // use only to
-      const { meta, result } = await credits.approve(to);
+      const { meta } = await credits.approve(to);
       strictEqual(isHash(meta!.tx!.transactionHash), true);
-      strictEqual(result.from, account.address);
-      strictEqual(result.to, to);
-      strictEqual(result.caller.length, 0);
     });
 
     it("should approve credit spending with 'to' and 'caller'", async () => {
       // also use a required caller
-      const { meta, result } = await credits.approve(to, [caller]);
+      const { meta } = await credits.approve(to, [caller]);
       strictEqual(isHash(meta!.tx!.transactionHash), true);
-      strictEqual(result.from, account.address);
-      strictEqual(result.to, to);
-      strictEqual(result.caller[0], caller);
     });
 
     it("should approve credit spending with all explicit params", async () => {
       // explicitly set all parameters
       const amount = parseEther("1");
-      const { meta, result } = await credits.approve(
+      const { meta } = await credits.approve(
         to,
         [caller],
         amount,
@@ -427,36 +398,22 @@ describe("contracts", function () {
         account.address,
       );
       strictEqual(isHash(meta!.tx!.transactionHash), true);
-      strictEqual(result.from, account.address);
-      strictEqual(result.to, to);
-      strictEqual(result.caller[0], caller);
-      strictEqual(result.creditLimit, amount);
-      strictEqual(result.gasFeeLimit, 0n);
-      strictEqual(result.ttl, 3600n);
     });
 
     it("should revoke credit approval", async () => {
       // revoke with just to
       await credits.approve(to);
-      let { meta, result } = await credits.revoke(to);
+      let { meta } = await credits.revoke(to);
       strictEqual(isHash(meta!.tx!.transactionHash), true);
-      strictEqual(result.from, account.address);
-      strictEqual(result.to, to);
 
       // revoke to and required caller
       await credits.approve(to, [caller]);
-      ({ meta, result } = await credits.revoke(to, caller));
+      ({ meta } = await credits.revoke(to, caller));
       strictEqual(isHash(meta!.tx!.transactionHash), true);
-      strictEqual(result.from, account.address);
-      strictEqual(result.to, to);
-      strictEqual(result.caller, caller);
 
       // revoke with explicit caller
       await credits.approve(to);
-      ({ meta, result } = await credits.revoke(to, undefined, account.address));
-      strictEqual(isHash(meta!.tx!.transactionHash), true);
-      strictEqual(result.from, account.address);
-      strictEqual(result.to, to);
+      ({ meta } = await credits.revoke(to, undefined, account.address));
     });
 
     it("should fail to revoke with invalid 'from' address", async () => {
@@ -617,13 +574,8 @@ describe("contracts", function () {
     // TODO: this assumes the blob already exists on the network since the objects API has no way
     // to add a blob. Thus, we're taking advantage of its pre-existence on the network to "add" it.
     it("should add blob", async () => {
-      const { meta, result } = await blobs.addBlob(
-        blobHash,
-        subscriptionId,
-        size,
-      );
+      const { meta } = await blobs.addBlob(blobHash, subscriptionId, size);
       strictEqual(isHash(meta!.tx!.transactionHash), true);
-      strictEqual(result.blobHash, blobHash);
     });
 
     it("should get blob", async () => {
@@ -644,20 +596,18 @@ describe("contracts", function () {
 
     // TODO: this assumes the new blob already exists on the network / iroh node
     it("should overwrite blob", async () => {
-      const { meta, result } = await blobs.overwriteBlob(
+      const { meta } = await blobs.overwriteBlob(
         blobHash,
         blobHash,
         subscriptionId,
         size,
       );
       strictEqual(isHash(meta!.tx!.transactionHash), true);
-      strictEqual(result.newHash, blobHash);
     });
 
     it("should delete blob", async () => {
-      const { meta, result } = await blobs.deleteBlob(blobHash, subscriptionId);
+      const { meta } = await blobs.deleteBlob(blobHash, subscriptionId);
       strictEqual(isHash(meta!.tx!.transactionHash), true);
-      strictEqual(result.blobHash, blobHash);
     });
   });
 
