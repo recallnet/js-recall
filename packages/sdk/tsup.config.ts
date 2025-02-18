@@ -2,8 +2,11 @@ import { defineConfig } from "tsup";
 
 export default defineConfig({
   entry: {
+    account: "src/entities/account.ts",
+    blob: "src/entities/blob.ts",
+    bucket: "src/entities/bucket.ts",
     client: "src/client.ts",
-    entities: "src/entities/index.ts",
+    credit: "src/entities/credit.ts",
     ipc: "src/ipc/index.ts",
     network: "src/network.ts",
     provider: "src/provider/index.ts",

@@ -14,15 +14,30 @@
   "homepage": "https://github.com/recallnet/js-recall#readme",
   "type": "module",
   "exports": {
+    "./account": {
+      "types": "./dist/entities/account.d.ts",
+      "import": "./dist/entities/account.mjs",
+      "require": "./dist/entities/account.cjs"
+    },
+    "./blob": {
+      "types": "./dist/entities/blob.d.ts",
+      "import": "./dist/entities/blob.mjs",
+      "require": "./dist/entities/blob.cjs"
+    },
+    "./bucket": {
+      "types": "./dist/entities/bucket.d.ts",
+      "import": "./dist/entities/bucket.mjs",
+      "require": "./dist/entities/bucket.cjs"
+    },
     "./client": {
       "types": "./dist/client.d.ts",
       "import": "./dist/client.mjs",
       "require": "./dist/client.cjs"
     },
-    "./entities": {
-      "types": "./dist/entities.d.ts",
-      "import": "./dist/entities.mjs",
-      "require": "./dist/entities.cjs"
+    "./credit": {
+      "types": "./dist/entities/credit.d.ts",
+      "import": "./dist/entities/credit.mjs",
+      "require": "./dist/entities/credit.cjs"
     },
     "./ipc": {
       "types": "./dist/ipc.d.ts",
