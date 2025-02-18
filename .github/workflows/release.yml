@@ -4,12 +4,12 @@ on:
   push:
     paths:
       - ".changeset/**"
-      - "packages/**"
     branches:
       - main
 
 env:
   NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: fe319abf1a1b0d76b39894e5e17aff0c
+  NEXT_PUBLIC_CHAIN_NAME: testnet
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
@@ -37,13 +37,7 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Create Release Pull Request or Publish to npm
-        id: changesets
+      - name: Create Release Pull Request
         uses: changesets/action@v1
-        with:
-          publish: pnpm publish-packages
-          commit: "ci(changesets): version packages"
-          setupGitUser: false
         env:
-          # NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
