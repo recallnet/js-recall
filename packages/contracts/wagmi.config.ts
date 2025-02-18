@@ -271,7 +271,7 @@ const gatewayManagerFacetAbi: Abi = [
   },
 ];
 
-export const ierc20Abi: Abi = [
+export const iErc20Abi: Abi = [
   {
     type: "function",
     name: "allowance",
@@ -506,6 +506,41 @@ export const subnetGetterFacetAbi: Abi = [
   { type: "error", name: "NotOwner", inputs: [] },
 ];
 
+export const iMachineFacadeAbi: Abi = [
+  {
+    type: "event",
+    name: "MachineCreated",
+    inputs: [
+      {
+        name: "owner",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "metadata",
+        type: "bytes",
+        indexed: false,
+        internalType: "bytes",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "MachineInitialized",
+    inputs: [
+      {
+        name: "machineAddress",
+        type: "address",
+        indexed: false,
+        internalType: "address",
+      },
+    ],
+    anonymous: false,
+  },
+];
+
 export default defineConfig({
   out: "src/index.ts",
   contracts: [
@@ -534,11 +569,15 @@ export default defineConfig({
     },
     {
       name: "RecallERC20",
-      abi: ierc20Abi,
+      abi: iErc20Abi,
       address: {
         [TESTNET_PARENT_CHAIN_ID]: TESTNET_PARENT_ERC20_ADDRESS,
         [LOCALNET_PARENT_CHAIN_ID]: LOCALNET_PARENT_ERC20_ADDRESS,
       },
+    },
+    {
+      name: "IMachineFacade",
+      abi: iMachineFacadeAbi,
     },
   ],
   plugins: [

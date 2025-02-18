@@ -272,99 +272,6 @@ export const blobManagerAbi = [
     outputs: [],
     stateMutability: "nonpayable",
   },
-  {
-    type: "event",
-    anonymous: false,
-    inputs: [
-      {
-        name: "caller",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-      {
-        name: "sponsor",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-      {
-        name: "blobHash",
-        internalType: "string",
-        type: "string",
-        indexed: false,
-      },
-      {
-        name: "subscriptionId",
-        internalType: "string",
-        type: "string",
-        indexed: false,
-      },
-    ],
-    name: "AddBlob",
-  },
-  {
-    type: "event",
-    anonymous: false,
-    inputs: [
-      {
-        name: "caller",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-      {
-        name: "subscriber",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-      {
-        name: "blobHash",
-        internalType: "string",
-        type: "string",
-        indexed: false,
-      },
-      {
-        name: "subscriptionId",
-        internalType: "string",
-        type: "string",
-        indexed: false,
-      },
-    ],
-    name: "DeleteBlob",
-  },
-  {
-    type: "event",
-    anonymous: false,
-    inputs: [
-      {
-        name: "caller",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-      {
-        name: "oldHash",
-        internalType: "string",
-        type: "string",
-        indexed: false,
-      },
-      {
-        name: "newHash",
-        internalType: "string",
-        type: "string",
-        indexed: false,
-      },
-      {
-        name: "subscriptionId",
-        internalType: "string",
-        type: "string",
-        indexed: false,
-      },
-    ],
-    name: "OverwriteBlob",
-  },
 ] as const;
 
 /**
@@ -838,80 +745,6 @@ export const bucketManagerAbi = [
     outputs: [],
     stateMutability: "nonpayable",
   },
-  {
-    type: "event",
-    anonymous: false,
-    inputs: [
-      {
-        name: "owner",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-      {
-        name: "bucket",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-      { name: "key", internalType: "string", type: "string", indexed: false },
-    ],
-    name: "AddObject",
-  },
-  {
-    type: "event",
-    anonymous: false,
-    inputs: [
-      {
-        name: "owner",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-      { name: "data", internalType: "bytes", type: "bytes", indexed: false },
-    ],
-    name: "CreateBucket",
-  },
-  {
-    type: "event",
-    anonymous: false,
-    inputs: [
-      {
-        name: "owner",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-      {
-        name: "bucket",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-      { name: "key", internalType: "string", type: "string", indexed: false },
-    ],
-    name: "DeleteObject",
-  },
-  {
-    type: "event",
-    anonymous: false,
-    inputs: [
-      {
-        name: "owner",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-      {
-        name: "bucket",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-      { name: "key", internalType: "string", type: "string", indexed: false },
-    ],
-    name: "UpdateObjectMetadata",
-  },
 ] as const;
 
 /**
@@ -1262,77 +1095,6 @@ export const creditManagerAbi = [
     outputs: [],
     stateMutability: "nonpayable",
   },
-  {
-    type: "event",
-    anonymous: false,
-    inputs: [
-      { name: "from", internalType: "address", type: "address", indexed: true },
-      { name: "to", internalType: "address", type: "address", indexed: true },
-      {
-        name: "caller",
-        internalType: "address[]",
-        type: "address[]",
-        indexed: false,
-      },
-      {
-        name: "creditLimit",
-        internalType: "uint256",
-        type: "uint256",
-        indexed: false,
-      },
-      {
-        name: "gasFeeLimit",
-        internalType: "uint256",
-        type: "uint256",
-        indexed: false,
-      },
-      { name: "ttl", internalType: "uint64", type: "uint64", indexed: false },
-    ],
-    name: "ApproveCredit",
-  },
-  {
-    type: "event",
-    anonymous: false,
-    inputs: [
-      { name: "addr", internalType: "address", type: "address", indexed: true },
-      {
-        name: "amount",
-        internalType: "uint256",
-        type: "uint256",
-        indexed: false,
-      },
-    ],
-    name: "BuyCredit",
-  },
-  {
-    type: "event",
-    anonymous: false,
-    inputs: [
-      { name: "from", internalType: "address", type: "address", indexed: true },
-      { name: "to", internalType: "address", type: "address", indexed: true },
-      {
-        name: "caller",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-    ],
-    name: "RevokeCredit",
-  },
-  {
-    type: "event",
-    anonymous: false,
-    inputs: [
-      { name: "from", internalType: "address", type: "address", indexed: true },
-      {
-        name: "sponsor",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-    ],
-    name: "SetAccountSponsor",
-  },
 ] as const;
 
 /**
@@ -1622,6 +1384,45 @@ export const gatewayManagerFacetConfig = {
   address: gatewayManagerFacetAddress,
   abi: gatewayManagerFacetAbi,
 } as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// IMachineFacade
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export const iMachineFacadeAbi = [
+  {
+    type: "event",
+    anonymous: false,
+    inputs: [
+      {
+        name: "owner",
+        internalType: "address",
+        type: "address",
+        indexed: true,
+      },
+      {
+        name: "metadata",
+        internalType: "bytes",
+        type: "bytes",
+        indexed: false,
+      },
+    ],
+    name: "MachineCreated",
+  },
+  {
+    type: "event",
+    anonymous: false,
+    inputs: [
+      {
+        name: "machineAddress",
+        internalType: "address",
+        type: "address",
+        indexed: false,
+      },
+    ],
+    name: "MachineInitialized",
+  },
+] as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // RecallERC20
