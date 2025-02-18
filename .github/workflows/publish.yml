@@ -1,0 +1,53 @@
+# Publishes packages to npm *directly after* merging a version PR via `version.yml`
+name: Publish
+
+on:
+  push:
+    paths:
+      - "**/CHANGELOG.md" # Only run when changelog is updated
+    branches:
+      - main
+
+env:
+  NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: fe319abf1a1b0d76b39894e5e17aff0c
+  NEXT_PUBLIC_CHAIN_NAME: testnet
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm build
+
+      # See the automated release feature for more details: https://github.com/changesets/action#with-publishing
+      - name: Publish to npm
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          publish: pnpm publish-packages
+          commit: "chore: publish packages"
+          title: "chore: publish packages"
+          setupGitUser: true
+          createGithubReleases: ${{ github.ref == 'refs/heads/main' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

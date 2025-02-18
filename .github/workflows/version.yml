@@ -1,4 +1,5 @@
-name: Release
+# Creates version PR upon changeset updates merging into main
+name: Version
 
 on:
   push:
@@ -14,8 +15,8 @@ env:
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
-  release:
-    name: Release
+  version:
+    name: Version
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
@@ -39,5 +40,10 @@ jobs:
 
       - name: Create Release Pull Request
         uses: changesets/action@v1
+        with:
+          version: pnpm version
+          commit: "chore: version packages"
+          title: "chore: version packages"
+          setupGitUser: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
