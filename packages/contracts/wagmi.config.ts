@@ -506,41 +506,6 @@ export const subnetGetterFacetAbi: Abi = [
   { type: "error", name: "NotOwner", inputs: [] },
 ];
 
-export const iMachineFacadeAbi: Abi = [
-  {
-    type: "event",
-    name: "MachineCreated",
-    inputs: [
-      {
-        name: "owner",
-        type: "address",
-        indexed: true,
-        internalType: "address",
-      },
-      {
-        name: "metadata",
-        type: "bytes",
-        indexed: false,
-        internalType: "bytes",
-      },
-    ],
-    anonymous: false,
-  },
-  {
-    type: "event",
-    name: "MachineInitialized",
-    inputs: [
-      {
-        name: "machineAddress",
-        type: "address",
-        indexed: false,
-        internalType: "address",
-      },
-    ],
-    anonymous: false,
-  },
-];
-
 export default defineConfig({
   out: "src/index.ts",
   contracts: [
@@ -575,10 +540,6 @@ export default defineConfig({
         [LOCALNET_PARENT_CHAIN_ID]: LOCALNET_PARENT_ERC20_ADDRESS,
       },
     },
-    {
-      name: "IMachineFacade",
-      abi: iMachineFacadeAbi,
-    },
   ],
   plugins: [
     foundry({
@@ -587,6 +548,7 @@ export default defineConfig({
         "BlobManager.sol/BlobManager.json",
         "BucketManager.sol/BucketManager.json",
         "CreditManager.sol/CreditManager.json",
+        "IMachineFacade.sol/IMachineFacade.json",
       ],
       deployments: {
         BlobManager: {
