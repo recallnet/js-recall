@@ -8,7 +8,6 @@ import {
   ContractFunctionExecutionError,
   ContractFunctionReturnType,
   GetContractReturnType,
-  GetEventArgs,
   getContract,
   zeroAddress,
 } from "viem";
@@ -23,7 +22,7 @@ import {
   UnhandledCreditError,
   isActorNotFoundError,
 } from "./errors.js";
-import { type Result, parseEventFromTransaction } from "./utils.js";
+import { type Result } from "./utils.js";
 
 // Used for getBalance()
 export type CreditBalance = ContractFunctionReturnType<
@@ -51,53 +50,38 @@ export type CreditStats = ContractFunctionReturnType<
   "getCreditStats"
 >;
 
-// Used for approve()
-export type ApproveResult = Required<
-  GetEventArgs<typeof creditManagerAbi, "ApproveCredit", { IndexedOnly: false }>
->;
-
-type ApproveCreditParams = ContractFunctionArgs<
+export type ApproveCreditParams = ContractFunctionArgs<
   typeof creditManagerAbi,
   AbiStateMutability,
   "approveCredit"
 >;
 
 // Used for revoke()
-type RevokeCreditParams = ContractFunctionArgs<
+export type RevokeCreditParams = ContractFunctionArgs<
   typeof creditManagerAbi,
   AbiStateMutability,
   "revokeCredit"
 >;
 
 // Used for buyCredit()
-type BuyCreditParams = ContractFunctionArgs<
+export type BuyCreditParams = ContractFunctionArgs<
   typeof creditManagerAbi,
   AbiStateMutability,
   "buyCredit"
 >;
 
 // Used for getCreditBalance()
-type GetCreditBalanceParams = ContractFunctionArgs<
+export type GetCreditBalanceParams = ContractFunctionArgs<
   typeof creditManagerAbi,
   AbiStateMutability,
   "getCreditBalance"
 >;
 
 // Used for getAccount()
-type GetAccountParams = ContractFunctionArgs<
+export type GetAccountParams = ContractFunctionArgs<
   typeof creditManagerAbi,
   AbiStateMutability,
   "getAccount"
->;
-
-// Used for buyCredit()
-export type BuyResult = Required<
-  GetEventArgs<typeof creditManagerAbi, "BuyCredit", { IndexedOnly: false }>
->;
-
-// Used for revokeCredit()
-export type RevokeResult = Required<
-  GetEventArgs<typeof creditManagerAbi, "RevokeCredit", { IndexedOnly: false }>
 >;
 
 // Used for setAccountSponsor()
@@ -105,15 +89,6 @@ export type SetAccountSponsorParams = ContractFunctionArgs<
   typeof creditManagerAbi,
   AbiStateMutability,
   "setAccountSponsor"
->;
-
-// Used for setAccountSponsor()
-export type SetAccountSponsorResult = Required<
-  GetEventArgs<
-    typeof creditManagerAbi,
-    "SetAccountSponsor",
-    { IndexedOnly: false }
-  >
 >;
 
 // Credit manager for buy, approving, revoking, and general credit operations
@@ -160,7 +135,7 @@ export class CreditManager {
     gasFeeLimit: bigint = 0n,
     ttl: bigint = 0n,
     from?: Address,
-  ): Promise<Result<ApproveResult>> {
+  ): Promise<Result> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for approving credits");
     }
@@ -184,13 +159,7 @@ export class CreditManager {
       const tx = await this.client.publicClient.waitForTransactionReceipt({
         hash,
       });
-      const result = await parseEventFromTransaction<ApproveResult>(
-        this.client.publicClient,
-        this.contract.abi,
-        "ApproveCredit",
-        hash,
-      );
-      return { meta: { tx }, result };
+      return { meta: { tx }, result: {} };
     } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         if (error.message.includes("does not match origin or caller")) {
@@ -208,7 +177,7 @@ export class CreditManager {
   }
 
   // Buy credits
-  async buy(amount: bigint, to?: Address): Promise<Result<BuyResult>> {
+  async buy(amount: bigint, to?: Address): Promise<Result> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for buying credits");
     }
@@ -232,13 +201,7 @@ export class CreditManager {
       const tx = await this.client.publicClient.waitForTransactionReceipt({
         hash,
       });
-      const result = await parseEventFromTransaction<BuyResult>(
-        this.client.publicClient,
-        this.contract.abi,
-        "BuyCredit",
-        hash,
-      );
-      return { meta: { tx }, result };
+      return { meta: { tx }, result: {} };
     } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         // Although we make this check above, it's possible multiple buy requests are sent in the same block
@@ -259,7 +222,7 @@ export class CreditManager {
     to: Address,
     requiredCaller: Address = to,
     from?: Address,
-  ): Promise<Result<RevokeResult>> {
+  ): Promise<Result> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for revoking credits");
     }
@@ -281,13 +244,7 @@ export class CreditManager {
       const tx = await this.client.publicClient.waitForTransactionReceipt({
         hash,
       });
-      const result = await parseEventFromTransaction<RevokeResult>(
-        this.client.publicClient,
-        this.contract.abi,
-        "RevokeCredit",
-        hash,
-      );
-      return { meta: { tx }, result };
+      return { meta: { tx }, result: {} };
     } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         if (error.message.includes("does not match origin or caller")) {
@@ -305,10 +262,7 @@ export class CreditManager {
   }
 
   // Set account sponsor
-  async setAccountSponsor(
-    sponsor: Address,
-    from?: Address,
-  ): Promise<Result<SetAccountSponsorResult>> {
+  async setAccountSponsor(sponsor: Address, from?: Address): Promise<Result> {
     if (!this.client.walletClient?.account) {
       throw new Error(
         "Wallet client is not initialized for setting account sponsor",
@@ -328,13 +282,7 @@ export class CreditManager {
       const tx = await this.client.publicClient.waitForTransactionReceipt({
         hash,
       });
-      const result = await parseEventFromTransaction<SetAccountSponsorResult>(
-        this.client.publicClient,
-        this.contract.abi,
-        "SetAccountSponsor",
-        hash,
-      );
-      return { meta: { tx }, result };
+      return { meta: { tx }, result: {} };
     } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         const { isActorNotFound, address } = isActorNotFoundError(error);

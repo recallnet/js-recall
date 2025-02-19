@@ -9,7 +9,8 @@ import {
   LOCALNET_SUBNET_ID,
   TESTNET_CHAIN_ID,
   TESTNET_SUBNET_ID,
-} from "../src/constants.js";
+} from "@recallnet/network-constants";
+
 import { SubnetId } from "../src/ipc/subnet.js";
 import { Network, NetworkType } from "../src/network.js";
 

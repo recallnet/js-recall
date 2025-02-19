@@ -271,7 +271,7 @@ const gatewayManagerFacetAbi: Abi = [
   },
 ];
 
-export const ierc20Abi: Abi = [
+export const iErc20Abi: Abi = [
   {
     type: "function",
     name: "allowance",
@@ -534,7 +534,7 @@ export default defineConfig({
     },
     {
       name: "RecallERC20",
-      abi: ierc20Abi,
+      abi: iErc20Abi,
       address: {
         [TESTNET_PARENT_CHAIN_ID]: TESTNET_PARENT_ERC20_ADDRESS,
         [LOCALNET_PARENT_CHAIN_ID]: LOCALNET_PARENT_ERC20_ADDRESS,
@@ -548,6 +548,7 @@ export default defineConfig({
         "BlobManager.sol/BlobManager.json",
         "BucketManager.sol/BucketManager.json",
         "CreditManager.sol/CreditManager.json",
+        "IMachineFacade.sol/IMachineFacade.json",
       ],
       deployments: {
         BlobManager: {

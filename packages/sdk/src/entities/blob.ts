@@ -8,7 +8,6 @@ import {
   ContractFunctionExecutionError,
   ContractFunctionReturnType,
   GetContractReturnType,
-  GetEventArgs,
   getContract,
   zeroAddress,
 } from "viem";
@@ -24,7 +23,7 @@ import {
   UnhandledBlobError,
   isActorNotFoundError,
 } from "./errors.js";
-import { type Result, parseEventFromTransaction } from "./utils.js";
+import { type Result } from "./utils.js";
 
 // Used for getBlob()
 export type BlobInfo = ContractFunctionReturnType<
@@ -97,7 +96,7 @@ type AddBlobFullParams = ContractFunctionArgs<
 >;
 
 // Used for addBlob()
-type AddBlobParams = Extract<
+export type AddBlobParams = Extract<
   AddBlobFullParams[0],
   {
     sponsor: Address;
@@ -107,6 +106,7 @@ type AddBlobParams = Extract<
     subscriptionId: string;
     size: bigint;
     ttl: bigint;
+    from: Address;
   }
 >;
 
@@ -116,34 +116,24 @@ export type AddBlobOptions = {
 };
 
 // Used for getBlob()
-type GetBlobParams = ContractFunctionArgs<
+export type GetBlobParams = ContractFunctionArgs<
   typeof blobManagerAbi,
   AbiStateMutability,
   "getBlob"
 >;
 
 // Used for getBlobStatus()
-type GetBlobStatusParams = ContractFunctionArgs<
+export type GetBlobStatusParams = ContractFunctionArgs<
   typeof blobManagerAbi,
   AbiStateMutability,
   "getBlobStatus"
 >;
 
 // Used for deleteBlob()
-type DeleteBlobParams = ContractFunctionArgs<
+export type DeleteBlobParams = ContractFunctionArgs<
   typeof blobManagerAbi,
   AbiStateMutability,
   "deleteBlob"
->;
-
-// Used for addBlob()
-export type AddBlobResult = Required<
-  GetEventArgs<typeof blobManagerAbi, "AddBlob", { IndexedOnly: false }>
->;
-
-// Used for deleteBlob()
-export type DeleteBlobResult = Required<
-  GetEventArgs<typeof blobManagerAbi, "DeleteBlob", { IndexedOnly: false }>
 >;
 
 // Used for overwriteBlob()
@@ -151,11 +141,6 @@ export type OverwriteBlobParams = ContractFunctionArgs<
   typeof blobManagerAbi,
   AbiStateMutability,
   "overwriteBlob"
->;
-
-// Used for overwriteBlob()
-export type OverwriteBlobResult = Required<
-  GetEventArgs<typeof blobManagerAbi, "OverwriteBlob", { IndexedOnly: false }>
 >;
 
 export class BlobManager {
@@ -189,7 +174,7 @@ export class BlobManager {
   }
 
   // Add blob inner
-  async addBlobInner(addParams: AddBlobParams): Promise<Result<AddBlobResult>> {
+  async addBlobInner(addParams: AddBlobParams): Promise<Result> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for adding blobs");
     }
@@ -203,16 +188,10 @@ export class BlobManager {
       );
       // TODO: calling `this.contract.write.addBlob(...)` doesn't work, for some reason
       const hash = await this.client.walletClient.writeContract(request);
-      const result = await parseEventFromTransaction<AddBlobResult>(
-        this.client.publicClient,
-        this.contract.abi,
-        "AddBlob",
-        hash,
-      );
       const tx = await this.client.publicClient.waitForTransactionReceipt({
         hash,
       });
-      return { meta: { tx }, result };
+      return { meta: { tx }, result: {} };
     } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         const { isActorNotFound, address } = isActorNotFoundError(error);
@@ -232,13 +211,17 @@ export class BlobManager {
     subscriptionId: string,
     size: bigint,
     options: AddBlobOptions = {},
-  ): Promise<Result<AddBlobResult>> {
+  ): Promise<Result> {
+    if (!this.client.walletClient?.account) {
+      throw new Error("Wallet client is not initialized for adding blobs");
+    }
     const ttl = options?.ttl ?? 0n;
     if (ttl !== 0n && ttl < MIN_TTL) {
       throw new InvalidValue(`TTL must be at least ${MIN_TTL} seconds`);
     }
     const objectApiUrl = this.client.network.objectApiUrl();
     const { nodeId: source } = await getObjectsNodeInfo(objectApiUrl);
+    const from = this.client.walletClient.account.address;
     const addParams = {
       sponsor: options.sponsor ?? zeroAddress,
       source,
@@ -247,6 +230,7 @@ export class BlobManager {
       subscriptionId,
       size,
       ttl,
+      from,
     };
     return this.addBlobInner(addParams);
   }
@@ -256,15 +240,17 @@ export class BlobManager {
     blobHash: string,
     subscriptionId: string,
     subscriber?: Address,
-  ): Promise<Result<DeleteBlobResult>> {
+  ): Promise<Result> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for deleting blobs");
     }
     try {
+      const from = this.client.walletClient.account.address;
       const args = [
         subscriber || zeroAddress,
         blobHash,
         subscriptionId,
+        from,
       ] satisfies DeleteBlobParams;
       const { request } = await this.contract.simulate.deleteBlob<
         Chain,
@@ -277,13 +263,7 @@ export class BlobManager {
       const tx = await this.client.publicClient.waitForTransactionReceipt({
         hash,
       });
-      const result = await parseEventFromTransaction<DeleteBlobResult>(
-        this.client.publicClient,
-        this.contract.abi,
-        "DeleteBlob",
-        hash,
-      );
-      return { meta: { tx }, result };
+      return { meta: { tx }, result: {} };
     } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         const { isActorNotFound, address } = isActorNotFoundError(error);
@@ -342,7 +322,7 @@ export class BlobManager {
   async overwriteBlobInner(
     oldHash: string,
     addParams: AddBlobParams,
-  ): Promise<Result<OverwriteBlobResult>> {
+  ): Promise<Result> {
     try {
       if (!this.client.walletClient?.account) {
         throw new Error(
@@ -361,13 +341,7 @@ export class BlobManager {
       const tx = await this.client.publicClient.waitForTransactionReceipt({
         hash,
       });
-      const result = await parseEventFromTransaction<OverwriteBlobResult>(
-        this.client.publicClient,
-        this.contract.abi,
-        "OverwriteBlob",
-        hash,
-      );
-      return { meta: { tx }, result };
+      return { meta: { tx }, result: {} };
     } catch (error: unknown) {
       throw new UnhandledBlobError(`Failed to overwrite blob: ${error}`);
     }
@@ -380,9 +354,13 @@ export class BlobManager {
     subscriptionId: string,
     size: bigint,
     options: AddBlobOptions = {},
-  ): Promise<Result<OverwriteBlobResult>> {
+  ): Promise<Result> {
+    if (!this.client.walletClient?.account) {
+      throw new Error("Wallet client is not initialized for overwriting blobs");
+    }
     const objectApiUrl = this.client.network.objectApiUrl();
     const { nodeId: source } = await getObjectsNodeInfo(objectApiUrl);
+    const from = this.client.walletClient.account.address;
     const params = {
       sponsor: options.sponsor ?? zeroAddress,
       source,
@@ -391,6 +369,7 @@ export class BlobManager {
       subscriptionId,
       size,
       ttl: options.ttl ?? 0n,
+      from,
     };
     return this.overwriteBlobInner(oldHash, params);
   }

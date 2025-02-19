@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { useForm } from "react-hook-form";
 import { Address } from "viem";
+import { useAccount } from "wagmi";
 import { z } from "zod";
 
 import { useAddFile } from "@recallnet/sdkx/react/buckets";
@@ -74,6 +75,8 @@ export default function AddObjectDialog({
 }: Props) {
   const { toast } = useToast();
 
+  const { address: fromAddress } = useAccount();
+
   const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -114,9 +117,11 @@ export default function AddObjectDialog({
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     console.log(values);
-    if (typeof values.metadata === "string") return;
+    if (fromAddress === undefined || typeof values.metadata === "string")
+      return;
     addFile({
       bucket: bucketAddress,
+      from: fromAddress,
       key: values.key,
       file: values.file,
       options: {

@@ -21,6 +21,7 @@ export const blobManagerAbi = [
           { name: "subscriptionId", internalType: "string", type: "string" },
           { name: "size", internalType: "uint64", type: "uint64" },
           { name: "ttl", internalType: "uint64", type: "uint64" },
+          { name: "from", internalType: "address", type: "address" },
         ],
       },
     ],
@@ -34,6 +35,7 @@ export const blobManagerAbi = [
       { name: "subscriber", internalType: "address", type: "address" },
       { name: "blobHash", internalType: "string", type: "string" },
       { name: "subscriptionId", internalType: "string", type: "string" },
+      { name: "from", internalType: "address", type: "address" },
     ],
     name: "deleteBlob",
     outputs: [],
@@ -262,6 +264,7 @@ export const blobManagerAbi = [
           { name: "subscriptionId", internalType: "string", type: "string" },
           { name: "size", internalType: "uint64", type: "uint64" },
           { name: "ttl", internalType: "uint64", type: "uint64" },
+          { name: "from", internalType: "address", type: "address" },
         ],
       },
     ],
@@ -269,106 +272,13 @@ export const blobManagerAbi = [
     outputs: [],
     stateMutability: "nonpayable",
   },
-  {
-    type: "event",
-    anonymous: false,
-    inputs: [
-      {
-        name: "caller",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-      {
-        name: "sponsor",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-      {
-        name: "blobHash",
-        internalType: "string",
-        type: "string",
-        indexed: false,
-      },
-      {
-        name: "subscriptionId",
-        internalType: "string",
-        type: "string",
-        indexed: false,
-      },
-    ],
-    name: "AddBlob",
-  },
-  {
-    type: "event",
-    anonymous: false,
-    inputs: [
-      {
-        name: "caller",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-      {
-        name: "subscriber",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-      {
-        name: "blobHash",
-        internalType: "string",
-        type: "string",
-        indexed: false,
-      },
-      {
-        name: "subscriptionId",
-        internalType: "string",
-        type: "string",
-        indexed: false,
-      },
-    ],
-    name: "DeleteBlob",
-  },
-  {
-    type: "event",
-    anonymous: false,
-    inputs: [
-      {
-        name: "caller",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-      {
-        name: "oldHash",
-        internalType: "string",
-        type: "string",
-        indexed: false,
-      },
-      {
-        name: "newHash",
-        internalType: "string",
-        type: "string",
-        indexed: false,
-      },
-      {
-        name: "subscriptionId",
-        internalType: "string",
-        type: "string",
-        indexed: false,
-      },
-    ],
-    name: "OverwriteBlob",
-  },
 ] as const;
 
 /**
 
 */
 export const blobManagerAddress = {
-  2481632: "0x7180B1e71814A3cdC62A414Ae02e3f6E1314B209",
+  2481632: "0x22F1039343b4F5cE3C74872B239524d4fFb7CABF",
   248163216: "0xe1Aa25618fA0c7A1CFDab5d6B456af611873b629",
 } as const;
 
@@ -388,6 +298,21 @@ export const blobManagerConfig = {
 
 */
 export const bucketManagerAbi = [
+  {
+    type: "function",
+    inputs: [
+      { name: "bucket", internalType: "address", type: "address" },
+      { name: "source", internalType: "string", type: "string" },
+      { name: "key", internalType: "string", type: "string" },
+      { name: "blobHash", internalType: "string", type: "string" },
+      { name: "recoveryHash", internalType: "string", type: "string" },
+      { name: "size", internalType: "uint64", type: "uint64" },
+      { name: "from", internalType: "address", type: "address" },
+    ],
+    name: "addObject",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
   {
     type: "function",
     inputs: [
@@ -413,22 +338,9 @@ export const bucketManagerAbi = [
             ],
           },
           { name: "overwrite", internalType: "bool", type: "bool" },
+          { name: "from", internalType: "address", type: "address" },
         ],
       },
-    ],
-    name: "addObject",
-    outputs: [],
-    stateMutability: "nonpayable",
-  },
-  {
-    type: "function",
-    inputs: [
-      { name: "bucket", internalType: "address", type: "address" },
-      { name: "source", internalType: "string", type: "string" },
-      { name: "key", internalType: "string", type: "string" },
-      { name: "blobHash", internalType: "string", type: "string" },
-      { name: "recoveryHash", internalType: "string", type: "string" },
-      { name: "size", internalType: "uint64", type: "uint64" },
     ],
     name: "addObject",
     outputs: [],
@@ -471,6 +383,7 @@ export const bucketManagerAbi = [
     inputs: [
       { name: "bucket", internalType: "address", type: "address" },
       { name: "key", internalType: "string", type: "string" },
+      { name: "from", internalType: "address", type: "address" },
     ],
     name: "deleteObject",
     outputs: [],
@@ -813,58 +726,24 @@ export const bucketManagerAbi = [
     stateMutability: "view",
   },
   {
-    type: "event",
-    anonymous: false,
+    type: "function",
     inputs: [
+      { name: "bucket", internalType: "address", type: "address" },
+      { name: "key", internalType: "string", type: "string" },
       {
-        name: "owner",
-        internalType: "address",
-        type: "address",
-        indexed: true,
+        name: "metadata",
+        internalType: "struct KeyValue[]",
+        type: "tuple[]",
+        components: [
+          { name: "key", internalType: "string", type: "string" },
+          { name: "value", internalType: "string", type: "string" },
+        ],
       },
-      {
-        name: "bucket",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-      { name: "key", internalType: "string", type: "string", indexed: false },
+      { name: "from", internalType: "address", type: "address" },
     ],
-    name: "AddObject",
-  },
-  {
-    type: "event",
-    anonymous: false,
-    inputs: [
-      {
-        name: "owner",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-      { name: "data", internalType: "bytes", type: "bytes", indexed: false },
-    ],
-    name: "CreateBucket",
-  },
-  {
-    type: "event",
-    anonymous: false,
-    inputs: [
-      {
-        name: "owner",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-      {
-        name: "bucket",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-      { name: "key", internalType: "string", type: "string", indexed: false },
-    ],
-    name: "DeleteObject",
+    name: "updateObjectMetadata",
+    outputs: [],
+    stateMutability: "nonpayable",
   },
 ] as const;
 
@@ -872,7 +751,7 @@ export const bucketManagerAbi = [
 
 */
 export const bucketManagerAddress = {
-  2481632: "0xfbCF213040240BA86Fed92961BB60625233641a1",
+  2481632: "0x8ce218Fc1e9C443a5A7255B6845d35C104b91516",
   248163216: "0xf7Cd8fa9b94DB2Aa972023b379c7f72c65E4De9D",
 } as const;
 
@@ -1216,84 +1095,13 @@ export const creditManagerAbi = [
     outputs: [],
     stateMutability: "nonpayable",
   },
-  {
-    type: "event",
-    anonymous: false,
-    inputs: [
-      { name: "from", internalType: "address", type: "address", indexed: true },
-      { name: "to", internalType: "address", type: "address", indexed: true },
-      {
-        name: "caller",
-        internalType: "address[]",
-        type: "address[]",
-        indexed: false,
-      },
-      {
-        name: "creditLimit",
-        internalType: "uint256",
-        type: "uint256",
-        indexed: false,
-      },
-      {
-        name: "gasFeeLimit",
-        internalType: "uint256",
-        type: "uint256",
-        indexed: false,
-      },
-      { name: "ttl", internalType: "uint64", type: "uint64", indexed: false },
-    ],
-    name: "ApproveCredit",
-  },
-  {
-    type: "event",
-    anonymous: false,
-    inputs: [
-      { name: "addr", internalType: "address", type: "address", indexed: true },
-      {
-        name: "amount",
-        internalType: "uint256",
-        type: "uint256",
-        indexed: false,
-      },
-    ],
-    name: "BuyCredit",
-  },
-  {
-    type: "event",
-    anonymous: false,
-    inputs: [
-      { name: "from", internalType: "address", type: "address", indexed: true },
-      { name: "to", internalType: "address", type: "address", indexed: true },
-      {
-        name: "caller",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-    ],
-    name: "RevokeCredit",
-  },
-  {
-    type: "event",
-    anonymous: false,
-    inputs: [
-      { name: "from", internalType: "address", type: "address", indexed: true },
-      {
-        name: "sponsor",
-        internalType: "address",
-        type: "address",
-        indexed: true,
-      },
-    ],
-    name: "SetAccountSponsor",
-  },
 ] as const;
 
 /**
 
 */
 export const creditManagerAddress = {
-  2481632: "0xDB85431B6a016e1652c7E898918d787B6aef7185",
+  2481632: "0xe62FBa17E5B9965434C2871492c7Ac851fA8BAF7",
   248163216: "0x82C6D3ed4cD33d8EC1E51d0B5Cc1d822Eaa0c3dC",
 } as const;
 
@@ -1311,7 +1119,7 @@ export const creditManagerConfig = {
 
 /**
  * -
- * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0x45da97E918183cA1f2891E277F600fC0B2dDD9dC)
+ * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0x83BaA1161529413e1c61D7b66BD252Bc5c10A6Cd)
  */
 export const gatewayManagerFacetAbi = [
   {
@@ -1558,11 +1366,11 @@ export const gatewayManagerFacetAbi = [
 
 /**
  * -
- * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0x45da97E918183cA1f2891E277F600fC0B2dDD9dC)
+ * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0x83BaA1161529413e1c61D7b66BD252Bc5c10A6Cd)
  */
 export const gatewayManagerFacetAddress = {
   31337: "0x9A676e781A523b5d0C0e43731313A708CB607508",
-  314159: "0x45da97E918183cA1f2891E277F600fC0B2dDD9dC",
+  314159: "0x83BaA1161529413e1c61D7b66BD252Bc5c10A6Cd",
   2481632: "0x77Aa40B105843728088c0132e43FC44348881DA8",
   248163216: "0x77Aa40B105843728088c0132e43FC44348881DA8",
   1942764459484029: "0x77Aa40B105843728088c0132e43FC44348881DA8",
@@ -1570,7 +1378,7 @@ export const gatewayManagerFacetAddress = {
 
 /**
  * -
- * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0x45da97E918183cA1f2891E277F600fC0B2dDD9dC)
+ * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0x83BaA1161529413e1c61D7b66BD252Bc5c10A6Cd)
  */
 export const gatewayManagerFacetConfig = {
   address: gatewayManagerFacetAddress,
@@ -1578,12 +1386,51 @@ export const gatewayManagerFacetConfig = {
 } as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// IMachineFacade
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export const iMachineFacadeAbi = [
+  {
+    type: "event",
+    anonymous: false,
+    inputs: [
+      {
+        name: "owner",
+        internalType: "address",
+        type: "address",
+        indexed: true,
+      },
+      {
+        name: "metadata",
+        internalType: "bytes",
+        type: "bytes",
+        indexed: false,
+      },
+    ],
+    name: "MachineCreated",
+  },
+  {
+    type: "event",
+    anonymous: false,
+    inputs: [
+      {
+        name: "machineAddress",
+        internalType: "address",
+        type: "address",
+        indexed: false,
+      },
+    ],
+    name: "MachineInitialized",
+  },
+] as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // RecallERC20
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
  * -
- * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0x2e6453107b4417eC2fB58ABDcc2968955Bd005Df)
+ * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0xF084d7543d3B1c3beb2a1D26b5Ae554051D797F9)
  */
 export const recallErc20Abi = [
   {
@@ -1685,16 +1532,16 @@ export const recallErc20Abi = [
 
 /**
  * -
- * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0x2e6453107b4417eC2fB58ABDcc2968955Bd005Df)
+ * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0xF084d7543d3B1c3beb2a1D26b5Ae554051D797F9)
  */
 export const recallErc20Address = {
   31337: "0x4A679253410272dd5232B3Ff7cF5dbB88f295319",
-  314159: "0x2e6453107b4417eC2fB58ABDcc2968955Bd005Df",
+  314159: "0xF084d7543d3B1c3beb2a1D26b5Ae554051D797F9",
 } as const;
 
 /**
  * -
- * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0x2e6453107b4417eC2fB58ABDcc2968955Bd005Df)
+ * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0xF084d7543d3B1c3beb2a1D26b5Ae554051D797F9)
  */
 export const recallErc20Config = {
   address: recallErc20Address,
@@ -1707,7 +1554,7 @@ export const recallErc20Config = {
 
 /**
  * -
- * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0xd7719695eE7042cDCFF4065ef93346bF33222d78)
+ * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0x7e974301C8a8aB3502AaB1ed36f155354c84505f)
  */
 export const subnetGetterFacetAbi = [
   {
@@ -1838,11 +1685,11 @@ export const subnetGetterFacetAbi = [
 
 /**
  * -
- * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0xd7719695eE7042cDCFF4065ef93346bF33222d78)
+ * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0x7e974301C8a8aB3502AaB1ed36f155354c84505f)
  */
 export const subnetGetterFacetAddress = {
   31337: "0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44",
-  314159: "0xd7719695eE7042cDCFF4065ef93346bF33222d78",
+  314159: "0x7e974301C8a8aB3502AaB1ed36f155354c84505f",
   2481632: "0x74539671A1D2F1c8f200826bAbA665179F53a1b7",
   248163216: "0x74539671A1D2F1c8f200826bAbA665179F53a1b7",
   1942764459484029: "0x74539671A1D2F1c8f200826bAbA665179F53a1b7",
@@ -1850,7 +1697,7 @@ export const subnetGetterFacetAddress = {
 
 /**
  * -
- * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0xd7719695eE7042cDCFF4065ef93346bF33222d78)
+ * - [__View Contract on Filecoin Calibration Filscan__](https://calibration.filscan.io/address/0x7e974301C8a8aB3502AaB1ed36f155354c84505f)
  */
 export const subnetGetterFacetConfig = {
   address: subnetGetterFacetAddress,

@@ -5,7 +5,6 @@ import { readFileSync } from "node:fs";
 import * as u8a from "uint8arrays";
 
 import { InvalidId, InvalidProtocolIndicator } from "../src/address/errors.js";
-import { NetworkPrefix, ProtocolIndicator } from "../src/artifacts/address.js";
 import {
   Address,
   AddressActor,
@@ -14,7 +13,8 @@ import {
   AddressId,
   AddressSecp256k1,
   FilEthAddress,
-} from "../src/index.js";
+} from "../src/address/index.js";
+import { NetworkPrefix, ProtocolIndicator } from "../src/artifacts/address.js";
 
 const ADDRESSES_VECTOR = "./vectors/addresses.json";
 const ADDRESSES_ETH_VECTOR = "./vectors/addresses_eth.json";
