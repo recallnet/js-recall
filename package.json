@@ -10,7 +10,7 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,md}\"",
     "clean": "turbo clean && rm -rf node_modules",
     "changeset": "changeset",
-    "version": "changeset version",
+    "version-packages": "changeset version",
     "publish-packages": "changeset publish"
   },
   "devDependencies": {
