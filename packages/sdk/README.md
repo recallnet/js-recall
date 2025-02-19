@@ -41,7 +41,8 @@ Create a wallet client from a private key:
 import { createWalletClient } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
-import { RecallClient, testnet } from "@recallnet/sdk";
+import { testnet } from "@recallnet/chains";
+import { RecallClient } from "@recallnet/sdk/client";
 
 // Create a wallet client from a private key
 const privateKey =
@@ -207,4 +208,4 @@ the [standard-readme](https://github.com/RichardLitt/standard-readme) specificat
 
 ## License
 
-MIT OR Apache-2.0, © 2024 Recall Network Corporation
+MIT OR Apache-2.0, © 2025 Recall Network Corporation
