@@ -1,0 +1,47 @@
+# Creates a release PR and versions packages for publishing to NPM
+# Copied from example: https://github.com/shadcn-ui/ui/blob/main/.github/workflows/release.yml
+name: Release
+
+on:
+  push:
+    branches:
+      - dtb/test-gpg
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  test:
+    name: Test GPG commit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+          git_committer_name: "textileio-machine"
+          git_committer_email: "40302381+textileio-machine@users.noreply.github.com"
+
+      - name: Check GPG key
+        run: gpg --list-secret-keys --keyid-format LONG
+
+      - name: Test GPG commit
+        run: |
+          # Create a dummy file
+          echo "Testing GPG signed commit" > test-gpg-commit.txt
+
+          # Stage file
+          git add test-gpg-commit.txt
+
+          # Commit changes
+          git commit -m "chore: test gpg commit"
+
+          # Display the last commit’s signature info for debugging
+          git log -1 --show-signature
