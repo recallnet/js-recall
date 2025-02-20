@@ -28,6 +28,7 @@ jobs:
           git_commit_gpgsign: true
           git_committer_name: "textileio-machine"
           git_committer_email: "40302381+textileio-machine@users.noreply.github.com"
+          trust_level: 5
 
       - name: Check GPG key
         run: gpg --list-secret-keys --keyid-format LONG
