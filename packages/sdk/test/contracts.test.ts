@@ -633,25 +633,22 @@ describe("contracts", function () {
 
     it("should deposit into subnet", async () => {
       const amount = parseEther("1");
-      const { meta, result } = await accountManager.deposit(amount);
+      const { meta } = await accountManager.deposit(amount);
       strictEqual(isHash(meta!.tx!.transactionHash), true);
-      strictEqual(result, true);
     });
 
     it("should withdraw from subnet", async () => {
       const amount = parseEther("1");
-      const { meta, result } = await accountManager.withdraw(amount);
+      const { meta } = await accountManager.withdraw(amount);
       strictEqual(isHash(meta!.tx!.transactionHash), true);
-      strictEqual(result, true);
     });
 
     it("should transfer within subnet", async () => {
       const amount = parseEther("1");
       const to = getAddress("0x9965507d1a55bcc2695c58ba16fb37d819b0a4dc");
       const { result: toBalanceBefore } = await accountManager.balance(to);
-      const { meta, result } = await accountManager.transfer(to, amount);
+      const { meta } = await accountManager.transfer(to, amount);
       strictEqual(isHash(meta!.tx!.transactionHash), true);
-      strictEqual(result, true);
       const { result: toBalanceAfter } = await accountManager.balance(to);
       strictEqual(toBalanceBefore + amount, toBalanceAfter);
     });

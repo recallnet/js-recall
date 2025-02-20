@@ -18,12 +18,19 @@ describe("client", function () {
   });
 
   it("should get client from wallet", () => {
-    const walletClient = walletClientFromPrivateKey(
+    let walletClient = walletClientFromPrivateKey(
       "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6",
       localnet,
     );
-    const client = new RecallClient({ walletClient });
+    let client = new RecallClient({ walletClient });
     strictEqual(client.publicClient.chain.id, localnet.id);
+
+    walletClient = walletClientFromPrivateKey(
+      "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6",
+      testnet,
+    );
+    client = new RecallClient({ walletClient });
+    strictEqual(client.publicClient.chain.id, testnet.id);
   });
 
   it("should get client from public client", () => {
