@@ -27,7 +27,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 9.12.3 # Note: matches exact version from root `package.json`
 
       - name: Install Node.js
         uses: actions/setup-node@v4
