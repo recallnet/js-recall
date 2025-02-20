@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { describe, it } from "mocha";
 import { strictEqual } from "node:assert";
+import { defineChain } from "viem";
 
 import {
   gatewayManagerFacetAddress,
@@ -8,6 +9,7 @@ import {
   subnetGetterFacetAddress,
 } from "@recallnet/contracts";
 import {
+  DEVNET_CHAIN_ID,
   LOCALNET_CHAIN_ID,
   LOCALNET_EVM_RPC_URL,
   LOCALNET_OBJECT_API_URL,
@@ -16,9 +18,10 @@ import {
   LOCALNET_RPC_URL,
   LOCALNET_SUBNET_ID,
   RPC_TIMEOUT,
+  TESTNET_CHAIN_ID,
 } from "@recallnet/network-constants";
 
-import { Network, NetworkType } from "../src/network.js";
+import { Network, NetworkType, chainToNetworkType } from "../src/network.js";
 
 describe("network", function () {
   let network: Network;
@@ -93,5 +96,52 @@ describe("network", function () {
       config.supplySource,
       recallErc20Address[LOCALNET_PARENT_CHAIN_ID],
     );
+  });
+
+  it("should convert user-defined chains to network type", () => {
+    const chain1 = defineChain({
+      id: LOCALNET_CHAIN_ID,
+      name: "localnet",
+      nativeCurrency: {
+        name: "localnet",
+        symbol: "localnet",
+        decimals: 18,
+      },
+      rpcUrls: {
+        default: { http: ["https://rpc.recall.network"] },
+      },
+    });
+    let net = chainToNetworkType(chain1);
+    strictEqual(net, NetworkType.Localnet);
+
+    const chain2 = defineChain({
+      id: TESTNET_CHAIN_ID,
+      name: "testnet",
+      nativeCurrency: {
+        name: "testnet",
+        symbol: "testnet",
+        decimals: 18,
+      },
+      rpcUrls: {
+        default: { http: ["https://rpc.recall.network"] },
+      },
+    });
+    net = chainToNetworkType(chain2);
+    strictEqual(net, NetworkType.Testnet);
+
+    const chain3 = defineChain({
+      id: DEVNET_CHAIN_ID,
+      name: "devnet",
+      nativeCurrency: {
+        name: "devnet",
+        symbol: "devnet",
+        decimals: 18,
+      },
+      rpcUrls: {
+        default: { http: ["https://rpc.recall.network"] },
+      },
+    });
+    net = chainToNetworkType(chain3);
+    strictEqual(net, NetworkType.Devnet);
   });
 });

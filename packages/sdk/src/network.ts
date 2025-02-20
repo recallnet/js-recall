@@ -93,12 +93,12 @@ export function networkTypeToChain(networkType: NetworkType): Chain {
 
 // Converts a chain to a network type
 export function chainToNetworkType(chain: Chain): NetworkType {
-  switch (chain) {
-    case testnet:
+  switch (chain.id) {
+    case testnet.id:
       return NetworkType.Testnet;
-    case localnet:
+    case localnet.id:
       return NetworkType.Localnet;
-    case devnet:
+    case devnet.id:
       return NetworkType.Devnet;
     default:
       throw new Error("invalid chain");
