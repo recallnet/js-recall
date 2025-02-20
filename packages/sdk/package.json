@@ -15,19 +15,19 @@
   "type": "module",
   "exports": {
     "./account": {
-      "types": "./dist/entities/account.d.ts",
-      "import": "./dist/entities/account.mjs",
-      "require": "./dist/entities/account.cjs"
+      "types": "./dist/account.d.ts",
+      "import": "./dist/account.mjs",
+      "require": "./dist/account.cjs"
     },
     "./blob": {
-      "types": "./dist/entities/blob.d.ts",
-      "import": "./dist/entities/blob.mjs",
-      "require": "./dist/entities/blob.cjs"
+      "types": "./dist/blob.d.ts",
+      "import": "./dist/blob.mjs",
+      "require": "./dist/blob.cjs"
     },
     "./bucket": {
-      "types": "./dist/entities/bucket.d.ts",
-      "import": "./dist/entities/bucket.mjs",
-      "require": "./dist/entities/bucket.cjs"
+      "types": "./dist/bucket.d.ts",
+      "import": "./dist/bucket.mjs",
+      "require": "./dist/bucket.cjs"
     },
     "./client": {
       "types": "./dist/client.d.ts",
@@ -35,9 +35,9 @@
       "require": "./dist/client.cjs"
     },
     "./credit": {
-      "types": "./dist/entities/credit.d.ts",
-      "import": "./dist/entities/credit.mjs",
-      "require": "./dist/entities/credit.cjs"
+      "types": "./dist/credit.d.ts",
+      "import": "./dist/credit.mjs",
+      "require": "./dist/credit.cjs"
     },
     "./ipc": {
       "types": "./dist/ipc.d.ts",
