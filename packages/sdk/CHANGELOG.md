@@ -1,5 +1,11 @@
 # @recallnet/sdk
 
+## 0.0.2
+
+### Patch Changes
+
+- [#70](https://github.com/recallnet/js-recall/pull/70) [`c4bb032`](https://github.com/recallnet/js-recall/commit/c4bb032946ac20064150a3d8ccff645a9d153c05) Thanks [@dtbuchholz](https://github.com/dtbuchholz)! - fixes invalid export path for 'entities' groups
+
 ## 0.0.1
 
 ### Patch Changes
