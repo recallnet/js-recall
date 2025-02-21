@@ -7,7 +7,7 @@ import {
   InvalidValue,
   ObjectNotAvailable,
   UnhandledBucketError,
-} from "../entities/errors.js";
+} from "./errors.js";
 import { SnakeToCamelCase, snakeToCamel } from "./utils.js";
 
 export type ObjectsApiNodeInfoRaw = {

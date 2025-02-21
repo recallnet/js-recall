@@ -17,12 +17,10 @@ import "viem/window";
 
 import { type ChainName, getChain, testnet } from "@recallnet/chains";
 
-import {
-  AccountManager,
-  BlobManager,
-  BucketManager,
-  CreditManager,
-} from "./entities/index.js";
+import { AccountManager } from "./entities/account.js";
+import { BlobManager } from "./entities/blob.js";
+import { BucketManager } from "./entities/bucket.js";
+import { CreditManager } from "./entities/credit.js";
 import { Network } from "./network.js";
 
 // Creates a public client for the given chain

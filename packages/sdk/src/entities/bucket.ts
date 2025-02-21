@@ -21,12 +21,6 @@ import { MAX_OBJECT_SIZE, MIN_TTL } from "@recallnet/network-constants";
 
 import { RecallClient } from "../client.js";
 import {
-  callObjectsApiAddObject,
-  downloadBlob,
-  getObjectsNodeInfo,
-} from "../provider/object.js";
-import { FileHandler, createFileHandler } from "../provider/utils.js";
-import {
   ActorNotFound,
   AddObjectError,
   BucketNotFound,
@@ -35,13 +29,19 @@ import {
   ObjectNotFound,
   UnhandledBucketError,
   isActorNotFoundError,
-} from "./errors.js";
+} from "../errors.js";
+import {
+  callObjectsApiAddObject,
+  downloadBlob,
+  getObjectsNodeInfo,
+} from "../provider.js";
 import {
   type Result,
   convertAbiMetadataToObject,
   convertMetadataToAbiParams,
   parseEventFromTransaction,
-} from "./utils.js";
+} from "../utils.js";
+import { FileHandler, createFileHandler } from "../utils.js";
 
 // Used for add()
 export type AddOptions = {

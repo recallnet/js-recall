@@ -18,15 +18,12 @@ import {
 import { AddressDelegated } from "@recallnet/fvm/address";
 
 import { RecallClient } from "../client.js";
-import {
-  InsufficientFunds,
-  UnhandledGatewayError,
-} from "../entities/errors.js";
-import { type Result } from "../entities/utils.js";
+import { InsufficientFunds, UnhandledGatewayError } from "../errors.js";
+import { type Result } from "../utils.js";
 import { SubnetId } from "./subnet.js";
 
 // Params for `fundWithToken()` (fund an account in a child subnet)
-type FundWithTokenParams = ContractFunctionArgs<
+export type FundWithTokenParams = ContractFunctionArgs<
   typeof gatewayManagerFacetAbi,
   AbiStateMutability,
   "fundWithToken"
@@ -39,7 +36,7 @@ export type SubnetIdTyped = FundWithTokenParams[0];
 export type FvmAddressTyped = FundWithTokenParams[1];
 
 // Params for `release()` (withdraw funds from a child subnet)
-type ReleaseParams = ContractFunctionArgs<
+export type ReleaseParams = ContractFunctionArgs<
   typeof gatewayManagerFacetAbi,
   AbiStateMutability,
   "release"

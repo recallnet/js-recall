@@ -16,14 +16,14 @@ import { blobManagerAbi, blobManagerAddress } from "@recallnet/contracts";
 import { MIN_TTL } from "@recallnet/network-constants";
 
 import { RecallClient } from "../client.js";
-import { getObjectsNodeInfo } from "../provider/object.js";
 import {
   ActorNotFound,
   InvalidValue,
   UnhandledBlobError,
   isActorNotFoundError,
-} from "./errors.js";
-import { type Result } from "./utils.js";
+} from "../errors.js";
+import { getObjectsNodeInfo } from "../provider.js";
+import { type Result } from "../utils.js";
 
 // Used for getBlob()
 export type BlobInfo = ContractFunctionReturnType<

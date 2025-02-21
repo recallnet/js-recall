@@ -14,9 +14,9 @@ import {
 import { recallErc20Abi, recallErc20Address } from "@recallnet/contracts";
 
 import { RecallClient } from "../client.js";
+import { InvalidValue } from "../errors.js";
 import { GatewayManager } from "../ipc/gateway.js";
-import { InvalidValue } from "./errors.js";
-import { Result } from "./utils.js";
+import { Result } from "../utils.js";
 
 // Type for account info
 export type AccountInfo = {

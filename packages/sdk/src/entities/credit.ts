@@ -21,8 +21,8 @@ import {
   InvalidValue,
   UnhandledCreditError,
   isActorNotFoundError,
-} from "./errors.js";
-import { type Result } from "./utils.js";
+} from "../errors.js";
+import { type Result } from "../utils.js";
 
 // Used for getBalance()
 export type CreditBalance = ContractFunctionReturnType<

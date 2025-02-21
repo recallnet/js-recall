@@ -39,6 +39,11 @@
       "import": "./dist/credit.mjs",
       "require": "./dist/credit.cjs"
     },
+    "./errors": {
+      "types": "./dist/errors.d.ts",
+      "import": "./dist/errors.mjs",
+      "require": "./dist/errors.cjs"
+    },
     "./ipc": {
       "types": "./dist/ipc.d.ts",
       "import": "./dist/ipc.mjs",
@@ -53,6 +58,11 @@
       "types": "./dist/provider.d.ts",
       "import": "./dist/provider.mjs",
       "require": "./dist/provider.cjs"
+    },
+    "./utils": {
+      "types": "./dist/utils.d.ts",
+      "import": "./dist/utils.mjs",
+      "require": "./dist/utils.cjs"
     }
   },
   "files": [
