@@ -13,15 +13,13 @@ export const LOCALNET_CHAIN_ID = 248163216;
 export const DEVNET_CHAIN_ID = 1942764459484029;
 
 // CometBFT RPC URLs
-export const TESTNET_RPC_URL = "https://api.v013.node-0.testnet.recall.network";
+export const TESTNET_RPC_URL = "https://api.node-0.testnet.recall.network";
 export const LOCALNET_RPC_URL = "http://127.0.0.1:26657";
 export const DEVNET_RPC_URL = "http://127.0.0.1:26657";
 
 // EVM RPC URLs
-export const TESTNET_EVM_RPC_URL =
-  "https://evm.v013.node-0.testnet.recall.network";
-export const TESTNET_EVM_WS_URL =
-  "wss://evm.v013.node-0.testnet.recall.network";
+export const TESTNET_EVM_RPC_URL = "https://evm.node-0.testnet.recall.network";
+export const TESTNET_EVM_WS_URL = "wss://evm.node-0.testnet.recall.network";
 export const TESTNET_PARENT_EVM_RPC_URL =
   "https://api.calibration.node.glif.io/rpc/v1";
 export const LOCALNET_EVM_RPC_URL = "http://127.0.0.1:8645";
@@ -32,13 +30,13 @@ export const DEVNET_EVM_WS_URL = "ws://127.0.0.1:8545";
 
 // Objects API URLs
 export const TESTNET_OBJECT_API_URL =
-  "https://objects.v013.node-0.testnet.recall.network";
+  "https://objects.node-0.testnet.recall.network";
 export const LOCALNET_OBJECT_API_URL = "http://127.0.0.1:8001";
 export const DEVNET_OBJECT_API_URL = "http://127.0.0.1:8001";
 
 // Registrar URLs
 export const TESTNET_REGISTRAR_URL =
-  "https://faucet.v013.node-0.testnet.recall.network";
+  "https://faucet.node-0.testnet.recall.network";
 
 // Explorer URLs
 export const TESTNET_EXPLORER_URL = "https://explorer.testnet.recall.network";
