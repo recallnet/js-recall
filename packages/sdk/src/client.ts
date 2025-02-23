@@ -2,14 +2,12 @@ import {
   Account,
   Address,
   Chain,
-  EIP1193Provider,
   Hex,
   PublicClient,
   Transport,
   WalletClient,
   createPublicClient,
   createWalletClient,
-  custom,
   http,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -32,19 +30,6 @@ export const createPublicClientForChain: (
     transport: http(),
   });
 
-// Creates a wallet client for the given chain with a browser wallet provider
-export const walletClientFromBrowser = (
-  chain: Chain,
-): WalletClient<Transport, Chain, Account> => {
-  const noopProvider = { request: () => null } as unknown as EIP1193Provider;
-  const provider =
-    typeof window !== "undefined" ? window.ethereum! : noopProvider;
-  return createWalletClient({
-    chain,
-    transport: custom(provider),
-  });
-};
-
 // Creates a wallet client for the given chain with a private key
 export const walletClientFromPrivateKey = (
   privateKey: Hex,
@@ -57,10 +42,25 @@ export const walletClientFromPrivateKey = (
   });
 };
 
+// Map of chain ID to contract address
+export type ContractConfig = Record<number, Address>;
+
+// Contract overrides for a given chain
+export type ContractOverrides = {
+  bucketManager?: ContractConfig;
+  blobManager?: ContractConfig;
+  creditManager?: ContractConfig;
+  accountManager?: {
+    gatewayManager?: ContractConfig;
+    recallErc20?: ContractConfig;
+  };
+};
+
 // Configuration for the RecallClient
 export interface RecallConfig {
   publicClient?: PublicClient<Transport, Chain>;
   walletClient?: WalletClient<Transport, Chain, Account>;
+  contractOverrides?: ContractOverrides;
   network?: Network;
 }
 
@@ -68,6 +68,7 @@ export interface RecallConfig {
 export class RecallClient {
   public publicClient: PublicClient<Transport, Chain>;
   public walletClient: WalletClient<Transport, Chain, Account> | undefined;
+  public contractOverrides: ContractOverrides;
   public network: Network;
 
   // TODO: this logic probably needs to be refactored to properly handle conflicts
@@ -83,6 +84,7 @@ export class RecallClient {
     const chain = this.publicClient.chain;
     if (!chain) throw new Error("missing chain in provided client");
     this.network = config.network ?? Network.fromChain(chain);
+    this.contractOverrides = config.contractOverrides ?? {};
   }
 
   // Creates a RecallClient from a chain
@@ -134,16 +136,25 @@ export class RecallClient {
 
   // Creates a BlobManager for the client
   blobManager(contractAddress?: Address): BlobManager {
-    return new BlobManager(this, contractAddress);
+    const override =
+      contractAddress ??
+      this.contractOverrides.blobManager?.[this.publicClient.chain.id];
+    return new BlobManager(this, override);
   }
 
   // Creates a BucketManager for the client
   bucketManager(contractAddress?: Address): BucketManager {
-    return new BucketManager(this, contractAddress);
+    const override =
+      contractAddress ??
+      this.contractOverrides.bucketManager?.[this.publicClient.chain.id];
+    return new BucketManager(this, override);
   }
 
   // Creates a CreditManager for the client
   creditManager(contractAddress?: Address): CreditManager {
-    return new CreditManager(this, contractAddress);
+    const override =
+      contractAddress ??
+      this.contractOverrides.creditManager?.[this.publicClient.chain.id];
+    return new CreditManager(this, override);
   }
 }

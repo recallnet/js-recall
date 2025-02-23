@@ -62,7 +62,7 @@ export class AccountManager {
   // Get the supply source contract
   getSupplySource(
     client: RecallClient,
-    address?: Address,
+    contractAddress?: Address,
   ): GetContractReturnType<typeof recallErc20Abi, Client, Address> {
     const chainId = client.publicClient?.chain?.id;
     if (!chainId) {
@@ -76,7 +76,7 @@ export class AccountManager {
     }
     return getContract({
       abi: recallErc20Abi,
-      address: address || deployedSupplySourceAddress,
+      address: contractAddress || deployedSupplySourceAddress,
       client: {
         public: this.client.publicClient,
         wallet: this.client.walletClient!,
