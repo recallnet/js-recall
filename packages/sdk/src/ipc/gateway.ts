@@ -7,17 +7,15 @@ import {
   ContractFunctionArgs,
   ContractFunctionExecutionError,
   GetContractReturnType,
+  PublicClient,
+  WalletClient,
   getContract,
   toHex,
 } from "viem";
 
-import {
-  gatewayManagerFacetAbi,
-  gatewayManagerFacetConfig,
-} from "@recallnet/contracts";
+import { gatewayManagerFacetAbi } from "@recallnet/contracts";
 import { AddressDelegated } from "@recallnet/fvm/address";
 
-import { RecallClient } from "../client.js";
 import { InsufficientFunds, UnhandledGatewayError } from "../errors.js";
 import { type Result } from "../utils.js";
 import { SubnetId } from "./subnet.js";
@@ -71,55 +69,50 @@ function releaseParamsToTyped(address: Address): ReleaseParams {
 // Gateway manager facet for managing gateway funding and releasing
 export class GatewayManager {
   getContract(
-    client: RecallClient,
-    contractAddress?: Address,
+    publicClient: PublicClient,
+    walletClient: WalletClient,
+    contractAddress: Address,
   ): GetContractReturnType<typeof gatewayManagerFacetAbi, Client, Address> {
-    const chainId = client.publicClient?.chain?.id;
+    const chainId = publicClient?.chain?.id;
     if (!chainId) {
       throw new Error("Client chain ID not found");
     }
-    const deployedGatewayManagerFacetAddress = (
-      gatewayManagerFacetConfig.address as Record<number, Address>
-    )[chainId];
-    if (!deployedGatewayManagerFacetAddress) {
-      throw new Error(`No contract address found for chain ID ${chainId}}`);
-    }
     return getContract({
       abi: gatewayManagerFacetAbi,
-      address: contractAddress || deployedGatewayManagerFacetAddress,
+      address: contractAddress,
       client: {
-        public: client.publicClient,
-        wallet: client.walletClient!,
+        public: publicClient,
+        wallet: walletClient!,
       },
     });
   }
 
-  // Fund gateway with tokens
+  // Fund gateway with tokens. Assumes the request is coming from the parent chain for a specific
+  // child chain (identified by the subnet ID).
   async fundWithToken(
-    client: RecallClient,
+    publicClient: PublicClient,
+    walletClient: WalletClient,
+    contractAddress: Address,
+    forSubnet: SubnetId,
     amount: bigint,
     recipient?: Address,
-    contractAddress?: Address,
   ): Promise<Result> {
-    if (!client.walletClient?.account) {
+    if (!walletClient.account) {
       throw new Error("Wallet client is not initialized for funding gateway");
     }
     try {
-      const recipientAddress = recipient || client.walletClient.account.address;
-      const args = fundParamsToTyped(
-        recipientAddress,
-        client.getSubnetId(),
-        amount,
-      );
+      const recipientAddress = recipient || walletClient.account.address;
+      const args = fundParamsToTyped(recipientAddress, forSubnet, amount);
       const { request } = await this.getContract(
-        client,
+        publicClient,
+        walletClient,
         contractAddress,
       ).simulate.fundWithToken<Chain, Account>(args, {
-        account: client.walletClient.account,
+        account: walletClient.account,
       });
       // TODO: calling `this.getContract(client, contractAddress).write.fundWithToken(...)` doesn't work, for some reason
-      const hash = await client.walletClient.writeContract(request);
-      const tx = await client.publicClient.waitForTransactionReceipt({ hash });
+      const hash = await walletClient.writeContract(request);
+      const tx = await publicClient.waitForTransactionReceipt({ hash });
       return { meta: { tx }, result: {} };
     } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
@@ -131,29 +124,31 @@ export class GatewayManager {
     }
   }
 
-  // Release funds from gateway
+  // Release funds from gateway (child chain to parent chain)
   async release(
-    client: RecallClient,
+    publicClient: PublicClient,
+    walletClient: WalletClient,
+    contractAddress: Address,
     amount: bigint,
     recipient?: Address,
-    contractAddress?: Address,
   ): Promise<Result> {
-    if (!client.walletClient?.account) {
+    if (!walletClient.account) {
       throw new Error("Wallet client is not initialized for releasing funds");
     }
     try {
-      const address = recipient || client.walletClient.account.address;
+      const address = recipient || walletClient.account.address;
       const args = releaseParamsToTyped(address);
       const { request } = await this.getContract(
-        client,
+        publicClient,
+        walletClient,
         contractAddress,
       ).simulate.release<Chain, Account>(args, {
-        account: client.walletClient.account,
+        account: walletClient.account,
         value: amount,
       });
       // TODO: calling `this.getContract(client, contractAddress).write.release(...)` doesn't work, for some reason
-      const hash = await client.walletClient.writeContract(request);
-      const tx = await client.publicClient.waitForTransactionReceipt({ hash });
+      const hash = await walletClient.writeContract(request);
+      const tx = await publicClient.waitForTransactionReceipt({ hash });
       return { meta: { tx }, result: {} };
     } catch (error: unknown) {
       throw new UnhandledGatewayError(`Failed to release funds: ${error}`);

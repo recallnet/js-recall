@@ -105,9 +105,19 @@ describe("client", function () {
       client.accountManager().getSupplySource(getParentChain(testnet)!).address,
       "0xB5B359EEc9549b0D65B3D1137EFDf51f09c65c5b",
     );
-    // strictEqual(
-    //   client.accountManager().getGatewayManager().getContract(client).address,
-    //   "0xB5B359EEc9549b0D65B3D1137EFDf51f09c65c5b",
-    // );
+    // TODO: the logic for getting the gateway manager is a bit convoluted at the moment. But,
+    // overrides flow from the methods within `accountManager`, which then calls `getGatewayManager()`
+    // with the override address.
+    strictEqual(
+      client
+        .accountManager()
+        .getGatewayManager()
+        .getContract(
+          client.publicClient,
+          client.walletClient!,
+          "0xB5B359EEc9549b0D65B3D1137EFDf51f09c65c5b",
+        ).address,
+      "0xB5B359EEc9549b0D65B3D1137EFDf51f09c65c5b",
+    );
   });
 });

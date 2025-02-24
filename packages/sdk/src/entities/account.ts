@@ -12,11 +12,16 @@ import {
 } from "viem";
 
 import { getParentChain } from "@recallnet/chains";
-import { recallErc20Abi, recallErc20Address } from "@recallnet/contracts";
+import {
+  gatewayManagerFacetConfig,
+  recallErc20Abi,
+  recallErc20Address,
+} from "@recallnet/contracts";
 
 import { RecallClient } from "../client.js";
 import { InvalidValue } from "../errors.js";
 import { GatewayManager } from "../ipc/gateway.js";
+import { SubnetId } from "../ipc/subnet.js";
 import { Result } from "../utils.js";
 
 // Type for account info
@@ -45,6 +50,8 @@ export class AccountManager {
   }
 
   // Get the gateway manager class and underlying contract
+  // TODO: the logic for getting the gateway manager is a bit convoluted at the moment wrt
+  // contract overrides.
   getGatewayManager(): GatewayManager {
     return this.gatewayManager;
   }
@@ -75,7 +82,7 @@ export class AccountManager {
       ? overrideConfig[chainId]
       : contractAddress;
     const override = overrideSupplySourceAddress ?? deployedSupplySourceAddress;
-    if (override === undefined) {
+    if (!override) {
       throw new Error(`No contract address found for chain ID ${chainId}}`);
     }
     return getContract({
@@ -135,12 +142,19 @@ export class AccountManager {
 
   // Approve a spender to transfer funds from the account. Assumes the wallet client is on the
   // correct chain (i.e., should be connected to the parent chain, where the ERC20 exists).
-  async approve(spender: Address, amount: bigint): Promise<Result> {
+  async approve(
+    spender: Address,
+    amount: bigint,
+    contractAddress?: Address,
+  ): Promise<Result> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for approving");
     }
     const args = [spender, amount] as ApproveParams;
-    const supplySource = this.getSupplySource(this.client.walletClient.chain);
+    const supplySource = this.getSupplySource(
+      this.client.walletClient.chain,
+      contractAddress,
+    );
     const { request } = await supplySource.simulate.approve<Chain, Account>(
       args,
       {
@@ -157,8 +171,16 @@ export class AccountManager {
 
   // Deposit funds from parent to child subnet. Assumes the wallet client is on the child chain,
   // and chain switching is handled automatically.
-  async deposit(amount: bigint, recipient?: Address): Promise<Result> {
+  async deposit(
+    amount: bigint,
+    recipient?: Address,
+    contractAddress?: Address,
+  ): Promise<Result> {
+    if (!this.client.walletClient?.account) {
+      throw new Error("Wallet client is not initialized for approving");
+    }
     const currentChain = this.client.publicClient.chain;
+    const subnetId = SubnetId.fromChain(currentChain);
     const parentChain = getParentChain(currentChain);
     if (!parentChain) {
       throw new InvalidValue("No parent chain found");
@@ -168,12 +190,26 @@ export class AccountManager {
       parentChain,
     );
     await change();
-    const gatewayParentAddress = this.gatewayManager.getContract(
-      this.client,
-    ).address;
-    await this.approve(gatewayParentAddress, amount);
-    const result = await this.gatewayManager.fundWithToken(
-      this.client,
+    const chainId = this.client.walletClient?.chain.id;
+    const deployedGatewayManagerFacetAddress = (
+      gatewayManagerFacetConfig.address as Record<number, Address>
+    )[chainId];
+    const overrideConfig =
+      this.client.contractOverrides.accountManager?.gatewayManager;
+    const overrideGatewayAddress = overrideConfig
+      ? overrideConfig[chainId]
+      : contractAddress;
+    const override =
+      overrideGatewayAddress ?? deployedGatewayManagerFacetAddress;
+    if (!override) {
+      throw new Error(`No contract address found for chain ID ${chainId}}`);
+    }
+    await this.approve(override, amount);
+    const result = await this.getGatewayManager().fundWithToken(
+      this.client.publicClient,
+      this.client.walletClient,
+      override,
+      subnetId,
       amount,
       recipient,
     );
@@ -182,19 +218,34 @@ export class AccountManager {
   }
 
   // Withdraw funds from child subnet to parent
-  async withdraw(amount: bigint, recipient?: Address): Promise<Result> {
+  async withdraw(
+    amount: bigint,
+    recipient?: Address,
+    contractAddress?: Address,
+  ): Promise<Result> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for withdrawing");
     }
     const chainId = this.client.walletClient?.chain.id;
-    const override =
+    const deployedGatewayManagerFacetAddress = (
+      gatewayManagerFacetConfig.address as Record<number, Address>
+    )[chainId];
+    const overrideConfig =
       this.client.contractOverrides.accountManager?.gatewayManager;
-    const overrideGatewayAddress = override ? override[chainId] : undefined;
-    const result = await this.gatewayManager.release(
-      this.client,
+    const overrideGatewayAddress = overrideConfig
+      ? overrideConfig[chainId]
+      : contractAddress;
+    const override =
+      overrideGatewayAddress ?? deployedGatewayManagerFacetAddress;
+    if (!override) {
+      throw new Error(`No contract address found for chain ID ${chainId}}`);
+    }
+    const result = await this.getGatewayManager().release(
+      this.client.publicClient,
+      this.client.walletClient,
+      override,
       amount,
       recipient,
-      overrideGatewayAddress,
     );
     return result;
   }
