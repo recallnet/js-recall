@@ -19,7 +19,7 @@ import { AccountManager } from "./entities/account.js";
 import { BlobManager } from "./entities/blob.js";
 import { BucketManager } from "./entities/bucket.js";
 import { CreditManager } from "./entities/credit.js";
-import { Network } from "./network.js";
+import { SubnetId } from "./ipc/subnet.js";
 
 // Creates a public client for the given chain
 export const createPublicClientForChain: (
@@ -61,7 +61,6 @@ export interface RecallConfig {
   publicClient?: PublicClient<Transport, Chain>;
   walletClient?: WalletClient<Transport, Chain, Account>;
   contractOverrides?: ContractOverrides;
-  network?: Network;
 }
 
 // The RecallClient class for interacting with subnet buckets, blobs, credits, and accounts
@@ -69,7 +68,7 @@ export class RecallClient {
   public publicClient: PublicClient<Transport, Chain>;
   public walletClient: WalletClient<Transport, Chain, Account> | undefined;
   public contractOverrides: ContractOverrides;
-  public network: Network;
+  public subnetId: SubnetId;
 
   // TODO: this logic probably needs to be refactored to properly handle conflicts
   constructor(config: RecallConfig = {}) {
@@ -83,7 +82,7 @@ export class RecallClient {
     }
     const chain = this.publicClient.chain;
     if (!chain) throw new Error("missing chain in provided client");
-    this.network = config.network ?? Network.fromChain(chain);
+    this.subnetId = SubnetId.fromChain(chain);
     this.contractOverrides = config.contractOverrides ?? {};
   }
 
@@ -124,9 +123,9 @@ export class RecallClient {
     }
   }
 
-  // Returns the network for the client
-  getNetwork(): Network {
-    return this.network;
+  // Returns the subnet ID for the client
+  getSubnetId(): SubnetId {
+    return this.subnetId;
   }
 
   // Creates an AccountManager for the client

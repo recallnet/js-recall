@@ -12,6 +12,7 @@ import {
   getContract,
 } from "viem";
 
+import { getObjectApiUrl } from "@recallnet/chains";
 import {
   bucketManagerAbi,
   bucketManagerAddress,
@@ -346,7 +347,7 @@ export class BucketManager {
       metadataRaw["content-type"] = contentType;
     }
     const metadata = convertMetadataToAbiParams(metadataRaw);
-    const objectApiUrl = this.client.network.objectApiUrl();
+    const objectApiUrl = getObjectApiUrl(this.client.walletClient.chain);
     const { nodeId: source } = await getObjectsNodeInfo(objectApiUrl);
     if (size > MAX_OBJECT_SIZE) {
       throw new InvalidValue(
@@ -459,7 +460,7 @@ export class BucketManager {
     },
   ): Promise<Result<Uint8Array>> {
     try {
-      const objectApiUrl = this.client.network.objectApiUrl();
+      const objectApiUrl = getObjectApiUrl(this.client.publicClient.chain);
       const stream = await downloadBlob(
         objectApiUrl,
         bucket,
@@ -505,7 +506,7 @@ export class BucketManager {
     blockNumber?: bigint,
   ): Promise<Result<ReadableStream<Uint8Array>>> {
     try {
-      const objectApiUrl = this.client.network.objectApiUrl();
+      const objectApiUrl = getObjectApiUrl(this.client.publicClient.chain);
       const result = await downloadBlob(
         objectApiUrl,
         bucket,

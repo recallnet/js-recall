@@ -11,8 +11,6 @@ import {
   TESTNET_SUBNET_ID,
 } from "@recallnet/network-constants";
 
-import { Network, NetworkType } from "../network.js";
-
 // Format used by IPC Gateway wrappers, with the `root` field change to a `number` instead of a `bigint`
 export type SubnetIdStruct = {
   root: number;
@@ -85,20 +83,6 @@ export class SubnetId {
         return SubnetId.fromString(DEVNET_SUBNET_ID);
       default:
         throw new Error("invalid chain id");
-    }
-  }
-
-  // Create a subnet ID from a network enum value
-  static fromNetwork(network: Network): SubnetId {
-    switch (network.type()) {
-      case NetworkType.Mainnet:
-        throw new Error("network is pre-mainnet");
-      case NetworkType.Testnet:
-        return SubnetId.fromString(TESTNET_SUBNET_ID);
-      case NetworkType.Localnet:
-        return SubnetId.fromString(LOCALNET_SUBNET_ID);
-      case NetworkType.Devnet:
-        return SubnetId.fromString(DEVNET_SUBNET_ID);
     }
   }
 

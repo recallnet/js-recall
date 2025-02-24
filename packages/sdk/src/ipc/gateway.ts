@@ -108,7 +108,7 @@ export class GatewayManager {
       const recipientAddress = recipient || client.walletClient.account.address;
       const args = fundParamsToTyped(
         recipientAddress,
-        client.network.subnetId(),
+        client.getSubnetId(),
         amount,
       );
       const { request } = await this.getContract(

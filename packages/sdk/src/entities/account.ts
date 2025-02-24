@@ -11,6 +11,7 @@ import {
   getContract,
 } from "viem";
 
+import { getParentChain } from "@recallnet/chains";
 import { recallErc20Abi, recallErc20Address } from "@recallnet/contracts";
 
 import { RecallClient } from "../client.js";
@@ -61,22 +62,25 @@ export class AccountManager {
 
   // Get the supply source contract
   getSupplySource(
-    client: RecallClient,
+    chain: Chain,
     contractAddress?: Address,
   ): GetContractReturnType<typeof recallErc20Abi, Client, Address> {
-    const chainId = client.publicClient?.chain?.id;
-    if (!chainId) {
-      throw new Error("Client chain ID not found");
-    }
+    const chainId = chain.id;
     const deployedSupplySourceAddress = (
       recallErc20Address as Record<number, Address>
     )[chainId];
-    if (!deployedSupplySourceAddress) {
+    const overrideConfig =
+      this.client.contractOverrides.accountManager?.recallErc20;
+    const overrideSupplySourceAddress = overrideConfig
+      ? overrideConfig[chainId]
+      : contractAddress;
+    const override = overrideSupplySourceAddress ?? deployedSupplySourceAddress;
+    if (override === undefined) {
       throw new Error(`No contract address found for chain ID ${chainId}}`);
     }
     return getContract({
       abi: recallErc20Abi,
-      address: contractAddress || deployedSupplySourceAddress,
+      address: override,
       client: {
         public: this.client.publicClient,
         wallet: this.client.walletClient!,
@@ -110,7 +114,7 @@ export class AccountManager {
       address: addr,
     });
     const currentChain = this.client.publicClient.chain;
-    const parentChain = this.client.network.getParentChain();
+    const parentChain = getParentChain(currentChain);
     if (!parentChain) {
       return { result: { address: addr, nonce, balance: balance.result } };
     }
@@ -119,11 +123,9 @@ export class AccountManager {
       parentChain,
     );
     await change();
-    const supplySourceAddress = this.getSupplySource(this.client).address;
     const args = [addr] as const;
     const parentBalance = await this.getSupplySource(
-      this.client,
-      supplySourceAddress,
+      this.client.publicClient.chain,
     ).read.balanceOf(args);
     await reset();
     return {
@@ -131,24 +133,14 @@ export class AccountManager {
     };
   }
 
-  // Approve a spender to transfer funds from the account
+  // Approve a spender to transfer funds from the account. Assumes the wallet client is on the
+  // correct chain (i.e., should be connected to the parent chain, where the ERC20 exists).
   async approve(spender: Address, amount: bigint): Promise<Result> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for approving");
     }
     const args = [spender, amount] as ApproveParams;
-    const currentChain = this.client.publicClient.chain;
-    const parentChain = this.client.network.getParentChain();
-    if (!parentChain) {
-      throw new InvalidValue("No parent chain found");
-    }
-    const supplySourceAddress = this.getSupplySource(this.client).address;
-    const { change, reset } = await this.switchSubnet(
-      currentChain,
-      parentChain,
-    );
-    await change();
-    const supplySource = this.getSupplySource(this.client, supplySourceAddress);
+    const supplySource = this.getSupplySource(this.client.walletClient.chain);
     const { request } = await supplySource.simulate.approve<Chain, Account>(
       args,
       {
@@ -160,14 +152,14 @@ export class AccountManager {
     const tx = await this.client.publicClient.waitForTransactionReceipt({
       hash,
     });
-    await reset();
     return { meta: { tx }, result: {} };
   }
 
-  // Deposit funds from parent to child subnet
+  // Deposit funds from parent to child subnet. Assumes the wallet client is on the child chain,
+  // and chain switching is handled automatically.
   async deposit(amount: bigint, recipient?: Address): Promise<Result> {
     const currentChain = this.client.publicClient.chain;
-    const parentChain = this.client.network.getParentChain();
+    const parentChain = getParentChain(currentChain);
     if (!parentChain) {
       throw new InvalidValue("No parent chain found");
     }
@@ -191,10 +183,18 @@ export class AccountManager {
 
   // Withdraw funds from child subnet to parent
   async withdraw(amount: bigint, recipient?: Address): Promise<Result> {
+    if (!this.client.walletClient?.account) {
+      throw new Error("Wallet client is not initialized for withdrawing");
+    }
+    const chainId = this.client.walletClient?.chain.id;
+    const override =
+      this.client.contractOverrides.accountManager?.gatewayManager;
+    const overrideGatewayAddress = override ? override[chainId] : undefined;
     const result = await this.gatewayManager.release(
       this.client,
       amount,
       recipient,
+      overrideGatewayAddress,
     );
     return result;
   }
