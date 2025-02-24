@@ -79,8 +79,11 @@ export class AccountManager {
       this.client.contractOverrides.accountManager?.recallErc20;
     const overrideSupplySourceAddress = overrideConfig
       ? overrideConfig[chainId]
-      : contractAddress;
-    const override = overrideSupplySourceAddress ?? deployedSupplySourceAddress;
+      : undefined;
+    const override =
+      contractAddress ??
+      overrideSupplySourceAddress ??
+      deployedSupplySourceAddress;
     if (!override) {
       throw new Error(`No contract address found for chain ID ${chainId}}`);
     }
@@ -197,9 +200,11 @@ export class AccountManager {
       this.client.contractOverrides.accountManager?.gatewayManager;
     const overrideGatewayAddress = overrideConfig
       ? overrideConfig[chainId]
-      : contractAddress;
+      : undefined;
     const override =
-      overrideGatewayAddress ?? deployedGatewayManagerFacetAddress;
+      contractAddress ??
+      overrideGatewayAddress ??
+      deployedGatewayManagerFacetAddress;
     if (!override) {
       throw new Error(`No contract address found for chain ID ${chainId}}`);
     }
@@ -233,9 +238,11 @@ export class AccountManager {
       this.client.contractOverrides.accountManager?.gatewayManager;
     const overrideGatewayAddress = overrideConfig
       ? overrideConfig[chainId]
-      : contractAddress;
+      : undefined;
     const override =
-      overrideGatewayAddress ?? deployedGatewayManagerFacetAddress;
+      contractAddress ??
+      overrideGatewayAddress ??
+      deployedGatewayManagerFacetAddress;
     if (!override) {
       throw new Error(`No contract address found for chain ID ${chainId}}`);
     }
