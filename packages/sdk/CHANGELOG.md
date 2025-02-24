@@ -1,5 +1,16 @@
 # @recallnet/sdk
 
+## 0.0.3
+
+### Patch Changes
+
+- [#80](https://github.com/recallnet/js-recall/pull/80) [`2923bb8`](https://github.com/recallnet/js-recall/commit/2923bb8a67d0e47bf2abadabd0309fdc74547403) Thanks [@dtbuchholz](https://github.com/dtbuchholz)! - remove legacy 'network' logic and use viem chains everywhere
+
+- Updated dependencies [[`a989499`](https://github.com/recallnet/js-recall/commit/a989499b498f059598f65f38c6c3a09a3769e004)]:
+  - @recallnet/network-constants@0.0.2
+  - @recallnet/chains@0.0.2
+  - @recallnet/contracts@0.0.1
+
 ## 0.0.2
 
 ### Patch Changes
