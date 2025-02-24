@@ -1,0 +1,40 @@
+{
+  "name": "faucet",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "clean": "rm -rf .turbo .next node_modules"
+  },
+  "dependencies": {
+    "@marsidev/react-turnstile": "^1.1.0",
+    "@recallnet/chains": "workspace:*",
+    "@recallnet/ui": "workspace:*",
+    "@vercel/analytics": "^1.5.0",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "dotenv": "^16.4.5",
+    "lucide-react": "0.456.0",
+    "next": "^15.1.0",
+    "next-themes": "^0.4.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^2.5.2",
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@recallnet/eslint-config": "workspace:^",
+    "@recallnet/typescript-config": "workspace:*",
+    "@types/node": "^20",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.7.3"
+  }
+}
