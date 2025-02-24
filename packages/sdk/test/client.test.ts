@@ -1,7 +1,8 @@
 import { describe, it } from "mocha";
 import { strictEqual } from "node:assert";
 
-import { localnet, testnet } from "@recallnet/chains";
+import { getParentChain, localnet, testnet } from "@recallnet/chains";
+import { TESTNET_SUBNET_ID } from "@recallnet/network-constants";
 
 import {
   RecallClient,
@@ -9,7 +10,6 @@ import {
   createPublicClientForChain,
   walletClientFromPrivateKey,
 } from "../src/client.js";
-import { Network } from "../src/network.js";
 
 describe("client", function () {
   it("should get client with empty config", () => {
@@ -56,9 +56,68 @@ describe("client", function () {
         "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6",
         localnet,
       ),
-      network: Network.fromChain(localnet),
     };
     const client = new RecallClient(config);
     strictEqual(client.publicClient.chain.id, localnet.id);
+  });
+
+  it("should get subnet ID", () => {
+    const client = new RecallClient();
+    strictEqual(client.getSubnetId().toString(), TESTNET_SUBNET_ID);
+  });
+
+  it("should use contract overrides", () => {
+    const client = new RecallClient({
+      contractOverrides: {
+        bucketManager: {
+          [testnet.id]: "0xB5B359EEc9549b0D65B3D1137EFDf51f09c65c5b",
+        },
+        blobManager: {
+          [testnet.id]: "0xB5B359EEc9549b0D65B3D1137EFDf51f09c65c5b",
+        },
+        creditManager: {
+          [testnet.id]: "0xB5B359EEc9549b0D65B3D1137EFDf51f09c65c5b",
+        },
+        accountManager: {
+          gatewayManager: {
+            [testnet.id]: "0xB5B359EEc9549b0D65B3D1137EFDf51f09c65c5b",
+          },
+          recallErc20: {
+            [getParentChain(testnet)!.id]:
+              "0xB5B359EEc9549b0D65B3D1137EFDf51f09c65c5b",
+          },
+        },
+      },
+    });
+    strictEqual(
+      client.bucketManager().getContract().address,
+      "0xB5B359EEc9549b0D65B3D1137EFDf51f09c65c5b",
+    );
+    strictEqual(
+      client.blobManager().getContract().address,
+      "0xB5B359EEc9549b0D65B3D1137EFDf51f09c65c5b",
+    );
+    strictEqual(
+      client.creditManager().getContract().address,
+      "0xB5B359EEc9549b0D65B3D1137EFDf51f09c65c5b",
+    );
+    strictEqual(
+      client.accountManager().getSupplySource(getParentChain(testnet)!).address,
+      "0xB5B359EEc9549b0D65B3D1137EFDf51f09c65c5b",
+    );
+    // TODO: the logic for getting the gateway manager is a bit convoluted at the moment. But,
+    // overrides flow from the methods within `accountManager`, which then calls `getGatewayManager()`
+    // with the override address.
+    strictEqual(
+      client
+        .accountManager()
+        .getGatewayManager()
+        .getContract(
+          client.publicClient,
+          client.walletClient!,
+          "0xB5B359EEc9549b0D65B3D1137EFDf51f09c65c5b",
+        ).address,
+      "0xB5B359EEc9549b0D65B3D1137EFDf51f09c65c5b",
+    );
   });
 });

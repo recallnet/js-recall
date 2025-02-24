@@ -3,7 +3,7 @@ import { strictEqual } from "node:assert";
 
 import { cbor } from "@recallnet/fvm/utils";
 
-import { actorIdToMaskedEvmAddress } from "../src/entities/utils.js";
+import { actorIdToMaskedEvmAddress } from "../src/utils.js";
 
 describe("utils", function () {
   it("should convert actor ID to masked EVM address", () => {

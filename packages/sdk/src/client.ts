@@ -2,14 +2,12 @@ import {
   Account,
   Address,
   Chain,
-  EIP1193Provider,
   Hex,
   PublicClient,
   Transport,
   WalletClient,
   createPublicClient,
   createWalletClient,
-  custom,
   http,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -17,13 +15,11 @@ import "viem/window";
 
 import { type ChainName, getChain, testnet } from "@recallnet/chains";
 
-import {
-  AccountManager,
-  BlobManager,
-  BucketManager,
-  CreditManager,
-} from "./entities/index.js";
-import { Network } from "./network.js";
+import { AccountManager } from "./entities/account.js";
+import { BlobManager } from "./entities/blob.js";
+import { BucketManager } from "./entities/bucket.js";
+import { CreditManager } from "./entities/credit.js";
+import { SubnetId } from "./ipc/subnet.js";
 
 // Creates a public client for the given chain
 export const createPublicClientForChain: (
@@ -33,19 +29,6 @@ export const createPublicClientForChain: (
     chain,
     transport: http(),
   });
-
-// Creates a wallet client for the given chain with a browser wallet provider
-export const walletClientFromBrowser = (
-  chain: Chain,
-): WalletClient<Transport, Chain, Account> => {
-  const noopProvider = { request: () => null } as unknown as EIP1193Provider;
-  const provider =
-    typeof window !== "undefined" ? window.ethereum! : noopProvider;
-  return createWalletClient({
-    chain,
-    transport: custom(provider),
-  });
-};
 
 // Creates a wallet client for the given chain with a private key
 export const walletClientFromPrivateKey = (
@@ -59,18 +42,33 @@ export const walletClientFromPrivateKey = (
   });
 };
 
+// Map of chain ID to contract address
+export type ContractConfig = Record<number, Address>;
+
+// Contract overrides for a given chain
+export type ContractOverrides = {
+  bucketManager?: ContractConfig;
+  blobManager?: ContractConfig;
+  creditManager?: ContractConfig;
+  accountManager?: {
+    gatewayManager?: ContractConfig;
+    recallErc20?: ContractConfig;
+  };
+};
+
 // Configuration for the RecallClient
 export interface RecallConfig {
   publicClient?: PublicClient<Transport, Chain>;
   walletClient?: WalletClient<Transport, Chain, Account>;
-  network?: Network;
+  contractOverrides?: ContractOverrides;
 }
 
 // The RecallClient class for interacting with subnet buckets, blobs, credits, and accounts
 export class RecallClient {
   public publicClient: PublicClient<Transport, Chain>;
   public walletClient: WalletClient<Transport, Chain, Account> | undefined;
-  public network: Network;
+  public contractOverrides: ContractOverrides;
+  public subnetId: SubnetId;
 
   // TODO: this logic probably needs to be refactored to properly handle conflicts
   constructor(config: RecallConfig = {}) {
@@ -84,7 +82,8 @@ export class RecallClient {
     }
     const chain = this.publicClient.chain;
     if (!chain) throw new Error("missing chain in provided client");
-    this.network = config.network ?? Network.fromChain(chain);
+    this.subnetId = SubnetId.fromChain(chain);
+    this.contractOverrides = config.contractOverrides ?? {};
   }
 
   // Creates a RecallClient from a chain
@@ -124,9 +123,9 @@ export class RecallClient {
     }
   }
 
-  // Returns the network for the client
-  getNetwork(): Network {
-    return this.network;
+  // Returns the subnet ID for the client
+  getSubnetId(): SubnetId {
+    return this.subnetId;
   }
 
   // Creates an AccountManager for the client
@@ -136,16 +135,25 @@ export class RecallClient {
 
   // Creates a BlobManager for the client
   blobManager(contractAddress?: Address): BlobManager {
-    return new BlobManager(this, contractAddress);
+    const override =
+      contractAddress ??
+      this.contractOverrides.blobManager?.[this.publicClient.chain.id];
+    return new BlobManager(this, override);
   }
 
   // Creates a BucketManager for the client
   bucketManager(contractAddress?: Address): BucketManager {
-    return new BucketManager(this, contractAddress);
+    const override =
+      contractAddress ??
+      this.contractOverrides.bucketManager?.[this.publicClient.chain.id];
+    return new BucketManager(this, override);
   }
 
   // Creates a CreditManager for the client
   creditManager(contractAddress?: Address): CreditManager {
-    return new CreditManager(this, contractAddress);
+    const override =
+      contractAddress ??
+      this.contractOverrides.creditManager?.[this.publicClient.chain.id];
+    return new CreditManager(this, override);
   }
 }

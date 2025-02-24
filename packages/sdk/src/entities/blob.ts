@@ -12,18 +12,19 @@ import {
   zeroAddress,
 } from "viem";
 
+import { getObjectApiUrl } from "@recallnet/chains";
 import { blobManagerAbi, blobManagerAddress } from "@recallnet/contracts";
 import { MIN_TTL } from "@recallnet/network-constants";
 
 import { RecallClient } from "../client.js";
-import { getObjectsNodeInfo } from "../provider/object.js";
 import {
   ActorNotFound,
   InvalidValue,
   UnhandledBlobError,
   isActorNotFoundError,
-} from "./errors.js";
-import { type Result } from "./utils.js";
+} from "../errors.js";
+import { getObjectsNodeInfo } from "../provider.js";
+import { type Result } from "../utils.js";
 
 // Used for getBlob()
 export type BlobInfo = ContractFunctionReturnType<
@@ -219,7 +220,7 @@ export class BlobManager {
     if (ttl !== 0n && ttl < MIN_TTL) {
       throw new InvalidValue(`TTL must be at least ${MIN_TTL} seconds`);
     }
-    const objectApiUrl = this.client.network.objectApiUrl();
+    const objectApiUrl = getObjectApiUrl(this.client.walletClient.chain);
     const { nodeId: source } = await getObjectsNodeInfo(objectApiUrl);
     const from = this.client.walletClient.account.address;
     const addParams = {
@@ -358,7 +359,7 @@ export class BlobManager {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for overwriting blobs");
     }
-    const objectApiUrl = this.client.network.objectApiUrl();
+    const objectApiUrl = getObjectApiUrl(this.client.walletClient.chain);
     const { nodeId: source } = await getObjectsNodeInfo(objectApiUrl);
     const from = this.client.walletClient.account.address;
     const params = {

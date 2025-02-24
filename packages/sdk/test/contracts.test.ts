@@ -15,12 +15,10 @@ import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { localnet } from "@recallnet/chains";
 
 import { RecallClient, walletClientFromPrivateKey } from "../src/client.js";
-import {
-  AccountManager,
-  BlobManager,
-  BucketManager,
-  CreditManager,
-} from "../src/entities/index.js";
+import { AccountManager } from "../src/entities/account.js";
+import { BlobManager } from "../src/entities/blob.js";
+import { BucketManager } from "../src/entities/bucket.js";
+import { CreditManager } from "../src/entities/credit.js";
 
 // Optionally, set these addresses to override the default addresses
 const BLOB_MANAGER_ADDRESS = "";
