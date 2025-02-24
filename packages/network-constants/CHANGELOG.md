@@ -1,5 +1,11 @@
 # @recallnet/network-constants
 
+## 0.0.2
+
+### Patch Changes
+
+- [#74](https://github.com/recallnet/js-recall/pull/74) [`a989499`](https://github.com/recallnet/js-recall/commit/a989499b498f059598f65f38c6c3a09a3769e004) Thanks [@dtbuchholz](https://github.com/dtbuchholz)! - use stable RPC URLs instead of versioned subdomain
+
 ## 0.0.1
 
 ### Patch Changes
