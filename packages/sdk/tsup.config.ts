@@ -9,7 +9,6 @@ export default defineConfig({
     credit: "src/entities/credit.ts",
     errors: "src/errors.ts",
     ipc: "src/ipc/index.ts",
-    network: "src/network.ts",
     provider: "src/provider.ts",
     utils: "src/utils.ts",
   },
