@@ -21,7 +21,6 @@ import {
 import { RecallClient } from "../client.js";
 import { InvalidValue } from "../errors.js";
 import { GatewayManager } from "../ipc/gateway.js";
-import { SubnetId } from "../ipc/subnet.js";
 import { Result } from "../utils.js";
 
 // Type for account info
@@ -180,7 +179,7 @@ export class AccountManager {
       throw new Error("Wallet client is not initialized for approving");
     }
     const currentChain = this.client.publicClient.chain;
-    const subnetId = SubnetId.fromChain(currentChain);
+    const subnetId = this.client.getSubnetId();
     const parentChain = getParentChain(currentChain);
     if (!parentChain) {
       throw new InvalidValue("No parent chain found");
