@@ -6,7 +6,7 @@ import { ChainName, getChain } from "@recallnet/chains";
 const chain = getChain(process.env.NEXT_PUBLIC_CHAIN_NAME as ChainName);
 
 export const config = getDefaultConfig({
-  appName: "Recall Studio",
+  appName: "Recall Portal",
   chains: [chain],
   transports: {
     [chain.id]: http(chain.rpcUrls.default.http[0]),
