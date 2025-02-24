@@ -1,5 +1,6 @@
 import "@recallnet/ui/globals.css";
 
+import { Analytics } from "@vercel/analytics/react";
 import { Geist_Mono } from "next/font/google";
 import Link from "next/link";
 
@@ -25,6 +26,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${fontMono.variable} font-mono antialiased`}>
+        <Analytics />
         <Providers>
           <div className="flex min-h-svh flex-col">
             <div className="border-primary bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 grid grid-cols-3 items-center border-b p-4 backdrop-blur">
