@@ -278,7 +278,7 @@ function convertMetadataToAbiParams(
   return Object.entries(value).map(([key, value]) => ({ key, value }));
 }
 
-// TODO: Can only be called from studio web app for now because it relays the upload through the studio API.
+// TODO: Can only be called from portal web app for now because it relays the upload through the portal API.
 async function uploadFile(variables: {
   file: File;
   objectApiUrl: string;
