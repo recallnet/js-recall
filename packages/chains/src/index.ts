@@ -4,10 +4,12 @@ import { type Chain, anvil, filecoinCalibration } from "viem/chains";
 import {
   DEVNET_CHAIN_ID,
   DEVNET_EVM_RPC_URL,
+  DEVNET_EXPLORER_URL,
   DEVNET_OBJECT_API_URL,
   LOCALNET_CHAIN_ID,
   LOCALNET_EVM_RPC_URL,
   LOCALNET_EVM_WS_URL,
+  LOCALNET_EXPLORER_URL,
   LOCALNET_OBJECT_API_URL,
   TESTNET_CHAIN_ID,
   TESTNET_EVM_RPC_URL,
@@ -55,6 +57,12 @@ export const localnet: Chain = defineChain({
       webSocket: [LOCALNET_EVM_WS_URL],
     },
   },
+  blockExplorers: {
+    default: {
+      name: "Recall Localnet Explorer",
+      url: LOCALNET_EXPLORER_URL,
+    },
+  },
 });
 
 export const devnet: Chain = defineChain({
@@ -68,6 +76,12 @@ export const devnet: Chain = defineChain({
   rpcUrls: {
     default: {
       http: [DEVNET_EVM_RPC_URL],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: "Recall Devnet Explorer",
+      url: DEVNET_EXPLORER_URL,
     },
   },
 });
@@ -151,5 +165,18 @@ export function getRegistrarUrl(chain: Chain): string {
       return TESTNET_REGISTRAR_URL;
     default:
       throw new Error(`Registrar URL not found for chain ${chain.name}`);
+  }
+}
+
+export function getExplorerUrl(chain: Chain): string {
+  switch (chain.id) {
+    case testnet.id:
+      return TESTNET_EXPLORER_URL;
+    case localnet.id:
+      return LOCALNET_EXPLORER_URL;
+    case devnet.id:
+      return DEVNET_EXPLORER_URL;
+    default:
+      throw new Error(`Explorer URL not found for chain ${chain.name}`);
   }
 }
