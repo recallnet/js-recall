@@ -13,8 +13,8 @@ export default async function Home() {
           height="100%"
           className="fill-primary max-w-52"
         />
-        <span className="text-muted-foreground text-base font-medium leading-none">
-          Testnet faucet
+        <span className="text-muted-foreground text-base font-medium uppercase leading-none">
+          Testnet Faucet
         </span>
       </div>
       <RequestTokensForm />
