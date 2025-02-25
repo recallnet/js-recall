@@ -50,7 +50,10 @@ export default function RequestTokensForm() {
   }, [state, toast]);
 
   return (
-    <form className="flex flex-col items-center gap-4" action={formAction}>
+    <form
+      className="flex max-w-96 flex-col items-stretch gap-4"
+      action={formAction}
+    >
       <FormContents />
     </form>
   );
@@ -73,11 +76,15 @@ function FormContents() {
       />
       <Turnstile
         siteKey={process.env.NEXT_PUBLIC_TS_SITE_KEY || ""}
-        options={{ size: "normal" }}
+        options={{ size: "flexible" }}
         onSuccess={setTsResponse}
         onExpire={() => setTsResponse(null)}
       />
-      <Button type="submit" disabled={pending || !tsResponse} size="default">
+      <Button
+        type="submit"
+        disabled={pending || !tsResponse}
+        className="md:self-center"
+      >
         {pending && <Loader2 className="mr-2 size-5 animate-spin" />}
         Request $RECALL
       </Button>
