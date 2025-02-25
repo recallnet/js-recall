@@ -1,17 +1,24 @@
 import "@recallnet/ui/globals.css";
 
 import { Analytics } from "@vercel/analytics/react";
+import { Metadata } from "next";
 import { Geist_Mono } from "next/font/google";
 import Link from "next/link";
 
 import { Toaster } from "@recallnet/ui/components/toaster";
+import { RecallLogo } from "@recallnet/ui/recall/logos/recall-logo";
 import { ThemeToggle } from "@recallnet/ui/recall/theme-toggle";
 import { Wallet } from "@recallnet/ui/recall/wallet";
 
 import { Providers } from "@/components/providers";
 
 import { Nav } from "./_components/nav";
-import { RecallLogo } from "./_components/recall-logo";
+
+export const metadata: Metadata = {
+  title: "Recall Portal",
+  description:
+    "Interact with Recall services and discover data stored on the Recall network.",
+};
 
 const fontMono = Geist_Mono({
   subsets: ["latin"],

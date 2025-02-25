@@ -6,9 +6,10 @@ import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
-import { ThemeProvider as NextThemesProvider } from "next-themes";
 import * as React from "react";
 import { WagmiProvider } from "wagmi";
+
+import { ThemeProvider } from "@recallnet/ui/recall/theme-provider";
 
 import { config } from "@/lib/wagmi-config";
 
@@ -26,7 +27,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             fontStack: "system",
           })}
         >
-          <NextThemesProvider
+          <ThemeProvider
             attribute="class"
             defaultTheme="system"
             enableSystem
@@ -34,7 +35,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             enableColorScheme
           >
             {children}
-          </NextThemesProvider>
+          </ThemeProvider>
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
