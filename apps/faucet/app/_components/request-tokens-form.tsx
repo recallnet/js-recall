@@ -23,6 +23,7 @@ export default function RequestTokensForm() {
         title: "Error",
         description: state.error,
         variant: "destructive",
+        duration: 120000,
       });
     }
     if (state.result) {
@@ -31,18 +32,25 @@ export default function RequestTokensForm() {
         description: (
           <span>
             RECALL sent in txn{" "}
-            <a href={state.result.txUrl}>
-              {state.result.txHash.slice(0, 6)}...
-              {state.result.txHash.slice(-6)}
+            <a
+              href={state.result.txUrl}
+              className="text-muted-foreground hover:text-foreground"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {state.result.txHash.slice(0, 4)}...
+              {state.result.txHash.slice(-4)}
             </a>
+            .
           </span>
         ),
+        duration: 120000,
       });
     }
   }, [state, toast]);
 
   return (
-    <form className="flex flex-col items-center gap-2" action={formAction}>
+    <form className="flex flex-col items-center gap-4" action={formAction}>
       <FormContents />
     </form>
   );
@@ -62,7 +70,6 @@ function FormContents() {
         pattern="^0x[0-9a-fA-F]{40}$"
         title="Provide a valid EVM address"
         required
-        className="bg-primary-foreground"
       />
       <Turnstile
         siteKey={process.env.NEXT_PUBLIC_TS_SITE_KEY || ""}
@@ -72,7 +79,7 @@ function FormContents() {
       />
       <Button type="submit" disabled={pending || !tsResponse} size="default">
         {pending && <Loader2 className="mr-2 size-5 animate-spin" />}
-        Request RECALL
+        Request $RECALL
       </Button>
     </>
   );
