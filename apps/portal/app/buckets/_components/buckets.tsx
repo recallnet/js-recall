@@ -70,7 +70,6 @@ export default function Buckets() {
     }
   }, [createBucketError, createBucketTxnError, listBucketsError, toast]);
 
-  const listPending = listBucketsPending;
   const createPending = createBucketPending || createBucketTxnLoading;
 
   const handleCreateBucket = () => {
@@ -111,7 +110,7 @@ export default function Buckets() {
             values.
           </span>
           <DialogFooter>
-            <Button onClick={handleCreateBucket}>
+            <Button onClick={handleCreateBucket} disabled={createPending}>
               Submit {createPending && <Loader2 className="animate-spin" />}
             </Button>
           </DialogFooter>
@@ -127,12 +126,12 @@ export default function Buckets() {
       {buckets?.map((bucket) => (
         <BucketCard key={bucket.addr} bucket={bucket} />
       ))}
-      {listPending && (
+      {listBucketsPending && (
         <div className="flex flex-1 items-center justify-center">
           <Loader2 className="animate-spin" />
         </div>
       )}
-      {!listPending && !buckets && (
+      {!listBucketsPending && !buckets?.length && (
         <div className="text-muted-foreground flex flex-1 items-center justify-center">
           No buckets to display.
         </div>
