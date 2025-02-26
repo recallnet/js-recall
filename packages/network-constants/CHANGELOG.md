@@ -1,5 +1,11 @@
 # @recallnet/network-constants
 
+## 0.0.3
+
+### Patch Changes
+
+- [#84](https://github.com/recallnet/js-recall/pull/84) [`c3bf227`](https://github.com/recallnet/js-recall/commit/c3bf2277010ff4f77d804f01cd94d8e29896e6e3) Thanks [@dtbuchholz](https://github.com/dtbuchholz)! - update to use public RPCs from protofire / chain.love
+
 ## 0.0.2
 
 ### Patch Changes
