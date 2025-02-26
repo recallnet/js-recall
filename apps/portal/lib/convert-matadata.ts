@@ -18,6 +18,7 @@ export function arrayToRecord(
 }
 
 export function dislpayToRecord(metadata: string) {
+  if (!metadata) return undefined;
   return JSON.parse(metadata) as Record<string, string>;
 }
 
