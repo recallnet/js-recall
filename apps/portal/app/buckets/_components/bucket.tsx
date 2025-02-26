@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Fragment, useEffect, useState } from "react";
 import { Address } from "viem";
@@ -86,13 +87,17 @@ export default function Bucket({
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink href={`/buckets`}>Buckets</BreadcrumbLink>
+              <BreadcrumbLink asChild>
+                <Link href="/buckets">Buckets</Link>
+              </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
               {prefixParts.length ? (
-                <BreadcrumbLink href={`/buckets/${bucketAddress}`}>
-                  {displayAddress(bucketAddress)}
+                <BreadcrumbLink asChild>
+                  <Link href={`/buckets/${bucketAddress}`}>
+                    {displayAddress(bucketAddress)}
+                  </Link>
                 </BreadcrumbLink>
               ) : (
                 displayAddress(bucketAddress)
@@ -105,10 +110,12 @@ export default function Bucket({
                   {index === prefixParts.length - 1 ? (
                     part
                   ) : (
-                    <BreadcrumbLink
-                      href={`/buckets/${bucketAddress}/${prefixParts.slice(0, index + 1).join("/")}`}
-                    >
-                      {part}
+                    <BreadcrumbLink asChild>
+                      <Link
+                        href={`/buckets/${bucketAddress}/${prefixParts.slice(0, index + 1).join("/")}`}
+                      >
+                        {part}
+                      </Link>
                     </BreadcrumbLink>
                   )}
                 </BreadcrumbItem>
