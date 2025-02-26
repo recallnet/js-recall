@@ -30,8 +30,8 @@ importers:
         specifier: ^0.6.10
         version: 0.6.10(@trivago/prettier-plugin-sort-imports@5.2.1(prettier@3.4.2))(prettier@3.4.2)
       turbo:
-        specifier: ^2.3.0
-        version: 2.3.3
+        specifier: ^2.3.7
+        version: 2.3.7
       typescript:
         specifier: ^5.7.3
         version: 5.7.3
@@ -305,8 +305,8 @@ importers:
         specifier: ^5.0.0
         version: 5.1.0(eslint@9.17.0(jiti@1.21.6))
       eslint-plugin-turbo:
-        specifier: ^2.3.0
-        version: 2.3.3(eslint@9.17.0(jiti@1.21.6))
+        specifier: ^2.3.7
+        version: 2.3.7(eslint@9.17.0(jiti@1.21.6))(turbo@2.3.7)
       globals:
         specifier: ^15.12.0
         version: 15.13.0
@@ -3222,10 +3222,11 @@ packages:
     peerDependencies:
       eslint: ^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9.7
 
-  eslint-plugin-turbo@2.3.3:
-    resolution: {integrity: sha512-j8UEA0Z+NNCsjZep9G5u5soDQHcXq/x4amrwulk6eHF1U91H2qAjp5I4jQcvJewmccCJbVp734PkHHTRnosjpg==}
+  eslint-plugin-turbo@2.3.7:
+    resolution: {integrity: sha512-VihoJMs5Mp0vkAuw2XV0HyZ46QUBi597hscMV79cLB1n2Tlnwv+zmcG0i1nNAQE7g/jrm36ZwDXSxAVPNl8tPQ==}
     peerDependencies:
       eslint: '>6.6.0'
+      turbo: '>2.0.0'
 
   eslint-scope@8.2.0:
     resolution: {integrity: sha512-PHlWUfG6lvPc3yvP5A4PNyBL1W8fkDUccmI21JUu/+GKZBoH/W5u6usENXUrWFRsyoW5ACUjFGgAFQp5gUlb/A==}
@@ -4494,6 +4495,9 @@ packages:
   preact@10.25.4:
     resolution: {integrity: sha512-jLdZDb+Q+odkHJ+MpW/9U5cODzqnB+fy2EiHSZES7ldV5LK7yjlVzTp7R8Xy6W6y75kfK8iWYtFVH7lvjwrCMA==}
 
+  preact@10.26.2:
+    resolution: {integrity: sha512-0gNmv4qpS9HaN3+40CLBAnKe0ZfyE4ZWo5xKlC1rVrr0ckkEvJvAQqKaHANdFKsGstoxrY4AItZ7kZSGVoVjgg==}
+
   prelude-ls@1.2.1:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
@@ -4829,6 +4833,11 @@ packages:
 
   semver@7.6.3:
     resolution: {integrity: sha512-oVekP1cKtI+CTDvHWYFUcMtsK/00wmAEfyqKfNdARm8u1wNVhSgaX7A8d4UuIlUI5e84iEwOhs7ZPYRmzU9U6A==}
+    engines: {node: '>=10'}
+    hasBin: true
+
+  semver@7.7.1:
+    resolution: {integrity: sha512-hlq8tAfn0m/61p4BVRcPzIGr6LKiMwo4VM6dGi6pt4qcRkmNzTcWq6eCEjEh+qXjkMDvPlOFFSGwQjoEa6gyMA==}
     engines: {node: '>=10'}
     hasBin: true
 
@@ -5187,38 +5196,38 @@ packages:
       typescript:
         optional: true
 
-  turbo-darwin-64@2.3.3:
-    resolution: {integrity: sha512-bxX82xe6du/3rPmm4aCC5RdEilIN99VUld4HkFQuw+mvFg6darNBuQxyWSHZTtc25XgYjQrjsV05888w1grpaA==}
+  turbo-darwin-64@2.3.7:
+    resolution: {integrity: sha512-XL0DwYZyM3uE9K1UiVMm5AQ8yiyEZsRPakjUAgxfnMWujNQNlVx1ts6edDHNTFK+Lnx0rhoEb7sDMMI2p0fkGg==}
     cpu: [x64]
     os: [darwin]
 
-  turbo-darwin-arm64@2.3.3:
-    resolution: {integrity: sha512-DYbQwa3NsAuWkCUYVzfOUBbSUBVQzH5HWUFy2Kgi3fGjIWVZOFk86ss+xsWu//rlEAfYwEmopigsPYSmW4X15A==}
+  turbo-darwin-arm64@2.3.7:
+    resolution: {integrity: sha512-0oV0Gj9Bfd9SvvvY77lUZlwii2FhVF/jAYu++RpEgQ6vjfjLjpnSYIxU+e3bvuS7f2ZMmD3GsOwEkfI4NdA7mA==}
     cpu: [arm64]
     os: [darwin]
 
-  turbo-linux-64@2.3.3:
-    resolution: {integrity: sha512-eHj9OIB0dFaP6BxB88jSuaCLsOQSYWBgmhy2ErCu6D2GG6xW3b6e2UWHl/1Ho9FsTg4uVgo4DB9wGsKa5erjUA==}
+  turbo-linux-64@2.3.7:
+    resolution: {integrity: sha512-hrSFc+vK1+DBZXlvrcwelzDkKceoZDZvvZaEqVOHmxzZlqWH/5fPGlvlQJOn0hSlWyCLVHP4qLAJFKpWCFywow==}
     cpu: [x64]
     os: [linux]
 
-  turbo-linux-arm64@2.3.3:
-    resolution: {integrity: sha512-NmDE/NjZoDj1UWBhMtOPmqFLEBKhzGS61KObfrDEbXvU3lekwHeoPvAMfcovzswzch+kN2DrtbNIlz+/rp8OCg==}
+  turbo-linux-arm64@2.3.7:
+    resolution: {integrity: sha512-vC+S/Wzm8Tt4n+MLKdJxEHeLOs7Eg/SdPjHubMGYoHYvpGmp7fiGcoRRfpaJNIvRyTtoQoVJdt091eXo9bufVg==}
     cpu: [arm64]
     os: [linux]
 
-  turbo-windows-64@2.3.3:
-    resolution: {integrity: sha512-O2+BS4QqjK3dOERscXqv7N2GXNcqHr9hXumkMxDj/oGx9oCatIwnnwx34UmzodloSnJpgSqjl8iRWiY65SmYoQ==}
+  turbo-windows-64@2.3.7:
+    resolution: {integrity: sha512-UDyI6vuGSwRGXqlJHlHTcQyt6KajxsowlfazWbD+Nakbn+3+9cWUUY6PKyKvhCrHxFNY7L6EPPV2UqmmHCFYMw==}
     cpu: [x64]
     os: [win32]
 
-  turbo-windows-arm64@2.3.3:
-    resolution: {integrity: sha512-dW4ZK1r6XLPNYLIKjC4o87HxYidtRRcBeo/hZ9Wng2XM/MqqYkAyzJXJGgRMsc0MMEN9z4+ZIfnSNBrA0b08ag==}
+  turbo-windows-arm64@2.3.7:
+    resolution: {integrity: sha512-5Z0ng8XgQpLrLlBMi08fu7ZztPFgyYPCyCKHbEKmZx0efp1HQMoSe43aUK5AGwDTkV70hdynrEbPyNz3an3sDw==}
     cpu: [arm64]
     os: [win32]
 
-  turbo@2.3.3:
-    resolution: {integrity: sha512-DUHWQAcC8BTiUZDRzAYGvpSpGLiaOQPfYXlCieQbwUvmml/LRGIe3raKdrOPOoiX0DYlzxs2nH6BoWJoZrj8hA==}
+  turbo@2.3.7:
+    resolution: {integrity: sha512-TSSghF6wTlsREaH3qST1VUNfJj+nM0bF/qvLL0OTLQoHtukv0F/sCUkGu/j7ilcnOAadeYZ3QV4tSPfBjIiABQ==}
     hasBin: true
 
   type-check@0.4.0:
@@ -5875,7 +5884,7 @@ snapshots:
       eth-json-rpc-filters: 6.0.1
       eventemitter3: 5.0.1
       keccak: 3.0.4
-      preact: 10.25.4
+      preact: 10.26.2
       sha.js: 2.4.11
     transitivePeerDependencies:
       - supports-color
@@ -6349,7 +6358,7 @@ snapshots:
       bufferutil: 4.0.9
       cross-fetch: 4.1.0
       date-fns: 2.30.0
-      debug: 4.4.0
+      debug: 4.4.0(supports-color@8.1.1)
       eciesjs: 0.4.13
       eventemitter2: 6.4.9
       readable-stream: 3.6.2
@@ -6373,7 +6382,7 @@ snapshots:
       '@paulmillr/qr': 0.2.1
       bowser: 2.11.0
       cross-fetch: 4.1.0
-      debug: 4.4.0
+      debug: 4.4.0(supports-color@8.1.1)
       eciesjs: 0.4.13
       eth-rpc-errors: 4.0.3
       eventemitter2: 6.4.9
@@ -6396,8 +6405,8 @@ snapshots:
     dependencies:
       '@ethereumjs/tx': 4.2.0
       '@types/debug': 4.1.12
-      debug: 4.4.0
-      semver: 7.6.3
+      debug: 4.4.0(supports-color@8.1.1)
+      semver: 7.7.1
       superstruct: 1.0.4
     transitivePeerDependencies:
       - supports-color
@@ -6409,7 +6418,7 @@ snapshots:
       '@noble/hashes': 1.6.1
       '@scure/base': 1.2.1
       '@types/debug': 4.1.12
-      debug: 4.4.0
+      debug: 4.4.0(supports-color@8.1.1)
       pony-cause: 2.1.11
       semver: 7.6.3
       uuid: 9.0.1
@@ -6423,7 +6432,7 @@ snapshots:
       '@noble/hashes': 1.6.1
       '@scure/base': 1.2.1
       '@types/debug': 4.1.12
-      debug: 4.4.0
+      debug: 4.4.0(supports-color@8.1.1)
       pony-cause: 2.1.11
       semver: 7.6.3
       uuid: 9.0.1
@@ -8440,10 +8449,6 @@ snapshots:
     dependencies:
       ms: 2.1.3
 
-  debug@4.4.0:
-    dependencies:
-      ms: 2.1.3
-
   debug@4.4.0(supports-color@8.1.1):
     dependencies:
       ms: 2.1.3
@@ -8806,10 +8811,11 @@ snapshots:
       string.prototype.matchall: 4.0.11
       string.prototype.repeat: 1.0.0
 
-  eslint-plugin-turbo@2.3.3(eslint@9.17.0(jiti@1.21.6)):
+  eslint-plugin-turbo@2.3.7(eslint@9.17.0(jiti@1.21.6))(turbo@2.3.7):
     dependencies:
       dotenv: 16.0.3
       eslint: 9.17.0(jiti@1.21.6)
+      turbo: 2.3.7
 
   eslint-scope@8.2.0:
     dependencies:
@@ -10159,6 +10165,8 @@ snapshots:
 
   preact@10.25.4: {}
 
+  preact@10.26.2: {}
+
   prelude-ls@1.2.1: {}
 
   prettier-plugin-tailwindcss@0.6.10(@trivago/prettier-plugin-sort-imports@5.2.1(prettier@3.4.2))(prettier@3.4.2):
@@ -10473,6 +10481,8 @@ snapshots:
   semver@7.6.2: {}
 
   semver@7.6.3: {}
+
+  semver@7.7.1: {}
 
   sentence-case@2.1.1:
     dependencies:
@@ -11005,32 +11015,32 @@ snapshots:
       - tsx
       - yaml
 
-  turbo-darwin-64@2.3.3:
+  turbo-darwin-64@2.3.7:
     optional: true
 
-  turbo-darwin-arm64@2.3.3:
+  turbo-darwin-arm64@2.3.7:
     optional: true
 
-  turbo-linux-64@2.3.3:
+  turbo-linux-64@2.3.7:
     optional: true
 
-  turbo-linux-arm64@2.3.3:
+  turbo-linux-arm64@2.3.7:
     optional: true
 
-  turbo-windows-64@2.3.3:
+  turbo-windows-64@2.3.7:
     optional: true
 
-  turbo-windows-arm64@2.3.3:
+  turbo-windows-arm64@2.3.7:
     optional: true
 
-  turbo@2.3.3:
+  turbo@2.3.7:
     optionalDependencies:
-      turbo-darwin-64: 2.3.3
-      turbo-darwin-arm64: 2.3.3
-      turbo-linux-64: 2.3.3
-      turbo-linux-arm64: 2.3.3
-      turbo-windows-64: 2.3.3
-      turbo-windows-arm64: 2.3.3
+      turbo-darwin-64: 2.3.7
+      turbo-darwin-arm64: 2.3.7
+      turbo-linux-64: 2.3.7
+      turbo-linux-arm64: 2.3.7
+      turbo-windows-64: 2.3.7
+      turbo-windows-arm64: 2.3.7
 
   type-check@0.4.0:
     dependencies:
