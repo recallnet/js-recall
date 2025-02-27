@@ -7,7 +7,7 @@
   "exports": {
     "./display": {
       "types": "./dist/display.d.ts",
-      "import": "./dist/display.mjs",
+      "import": "./dist/display.js",
       "require": "./dist/display.cjs"
     }
   },
@@ -15,7 +15,7 @@
     "dist"
   ],
   "scripts": {
-    "dev": "tsup --watch",
+    "dev": "tsc --watch",
     "build": "tsup",
     "lint": "eslint . --max-warnings 0",
     "clean": "rm -rf .turbo node_modules dist"

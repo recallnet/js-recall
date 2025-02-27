@@ -1,12 +1,14 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Fragment, useEffect, useState } from "react";
 import { Address } from "viem";
 
 import { displayAddress } from "@recallnet/address-utils/display";
 import { useGetObject, useQueryObjects } from "@recallnet/sdkx/react/buckets";
+import { useCreditAccount } from "@recallnet/sdkx/react/credits";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -21,6 +23,7 @@ import { cn } from "@recallnet/ui/lib/utils";
 import { removePrefix } from "@/lib/remove-prefix";
 
 import AddObjectDialog from "./add-object-dialog";
+import CreditNeededDialog from "./credit-needed-dialog";
 import Object from "./object";
 import ObjectListItem from "./object-list-item";
 import PrefixListItem from "./prefix-list-item";
@@ -43,6 +46,9 @@ export default function Bucket({
       : prefix;
 
   const [addObjectOpen, setAddObjectOpen] = useState(false);
+  const [creditNeededOpen, setCreditNeededOpen] = useState(false);
+
+  const { data: creditAccount } = useCreditAccount();
 
   const { toast } = useToast();
 
@@ -72,6 +78,14 @@ export default function Bucket({
     }
   }, [toast, objectsError, objectError]);
 
+  const handleAddObject = () => {
+    if (creditAccount?.creditFree === 0n) {
+      setCreditNeededOpen(true);
+    } else {
+      setAddObjectOpen(true);
+    }
+  };
+
   const objectsPending = objectsLoading || objectLoading;
 
   return (
@@ -82,17 +96,25 @@ export default function Bucket({
         bucketAddress={bucketAddress}
         prefix={prefix}
       />
+      <CreditNeededDialog
+        open={creditNeededOpen}
+        onOpenChange={setCreditNeededOpen}
+      />
       <div className="flex items-end gap-4">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink href={`/buckets`}>Buckets</BreadcrumbLink>
+              <BreadcrumbLink asChild>
+                <Link href="/buckets">Buckets</Link>
+              </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
               {prefixParts.length ? (
-                <BreadcrumbLink href={`/buckets/${bucketAddress}`}>
-                  {displayAddress(bucketAddress)}
+                <BreadcrumbLink asChild>
+                  <Link href={`/buckets/${bucketAddress}`}>
+                    {displayAddress(bucketAddress)}
+                  </Link>
                 </BreadcrumbLink>
               ) : (
                 displayAddress(bucketAddress)
@@ -105,10 +127,12 @@ export default function Bucket({
                   {index === prefixParts.length - 1 ? (
                     part
                   ) : (
-                    <BreadcrumbLink
-                      href={`/buckets/${bucketAddress}/${prefixParts.slice(0, index + 1).join("/")}`}
-                    >
-                      {part}
+                    <BreadcrumbLink asChild>
+                      <Link
+                        href={`/buckets/${bucketAddress}/${prefixParts.slice(0, index + 1).join("/")}`}
+                      >
+                        {part}
+                      </Link>
                     </BreadcrumbLink>
                   )}
                 </BreadcrumbItem>
@@ -118,7 +142,7 @@ export default function Bucket({
         </Breadcrumb>
         <Button
           variant="secondary"
-          onClick={() => setAddObjectOpen(true)}
+          onClick={handleAddObject}
           className={cn("ml-auto", isObject && "invisible")}
         >
           Add Object

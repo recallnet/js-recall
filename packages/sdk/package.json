@@ -16,52 +16,52 @@
   "exports": {
     "./account": {
       "types": "./dist/account.d.ts",
-      "import": "./dist/account.mjs",
+      "import": "./dist/account.js",
       "require": "./dist/account.cjs"
     },
     "./blob": {
       "types": "./dist/blob.d.ts",
-      "import": "./dist/blob.mjs",
+      "import": "./dist/blob.js",
       "require": "./dist/blob.cjs"
     },
     "./bucket": {
       "types": "./dist/bucket.d.ts",
-      "import": "./dist/bucket.mjs",
+      "import": "./dist/bucket.js",
       "require": "./dist/bucket.cjs"
     },
     "./client": {
       "types": "./dist/client.d.ts",
-      "import": "./dist/client.mjs",
+      "import": "./dist/client.js",
       "require": "./dist/client.cjs"
     },
     "./credit": {
       "types": "./dist/credit.d.ts",
-      "import": "./dist/credit.mjs",
+      "import": "./dist/credit.js",
       "require": "./dist/credit.cjs"
     },
     "./errors": {
       "types": "./dist/errors.d.ts",
-      "import": "./dist/errors.mjs",
+      "import": "./dist/errors.js",
       "require": "./dist/errors.cjs"
     },
     "./ipc": {
       "types": "./dist/ipc.d.ts",
-      "import": "./dist/ipc.mjs",
+      "import": "./dist/ipc.js",
       "require": "./dist/ipc.cjs"
     },
     "./network": {
       "types": "./dist/network.d.ts",
-      "import": "./dist/network.mjs",
+      "import": "./dist/network.js",
       "require": "./dist/network.cjs"
     },
     "./provider": {
       "types": "./dist/provider.d.ts",
-      "import": "./dist/provider.mjs",
+      "import": "./dist/provider.js",
       "require": "./dist/provider.cjs"
     },
     "./utils": {
       "types": "./dist/utils.d.ts",
-      "import": "./dist/utils.mjs",
+      "import": "./dist/utils.js",
       "require": "./dist/utils.cjs"
     }
   },
@@ -69,7 +69,7 @@
     "dist"
   ],
   "scripts": {
-    "dev": "tsup --watch",
+    "dev": "tsc --watch",
     "build": "tsup",
     "test": "pnpm test:mocha",
     "test:mocha": "mocha --exit",
