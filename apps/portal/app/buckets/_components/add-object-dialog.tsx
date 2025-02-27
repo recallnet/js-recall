@@ -116,16 +116,16 @@ export default function AddObjectDialog({
   const { addFile, isPending, isSuccess, error } = useAddFile();
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    if (fromAddress === undefined || typeof values.metadata === "string")
-      return;
+    if (fromAddress === undefined) return;
+    const metadata =
+      typeof values.metadata === "string" ? undefined : values.metadata;
     addFile({
       bucket: bucketAddress,
       from: fromAddress,
       key: values.key,
       file: values.file,
       options: {
-        metadata: values.metadata,
+        metadata,
         overwrite: values.overwrite,
         ttl: BigInt(values.ttl),
         onUploadProgress: (progress) => {
