@@ -168,7 +168,7 @@ export function ApprovalsTo() {
           <DialogHeader>
             <DialogTitle>New Approval</DialogTitle>
             <DialogDescription>
-              You can approve other wallet addresses to spend of your Recall
+              You can approve other wallet addresses to spend your Recall
               credits and gas allowance.
             </DialogDescription>
           </DialogHeader>
