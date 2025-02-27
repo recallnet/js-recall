@@ -7,17 +7,17 @@
   "exports": {
     "./react/buckets": {
       "types": "./dist/react/buckets.d.ts",
-      "import": "./dist/react/buckets.mjs",
-      "require": "./dist/react/buckets.cjs"
+      "import": "./dist/react/buckets.js",
+      "require": "./dist/react/buckets.js"
     },
     "./react/credits": {
       "types": "./dist/react/credits.d.ts",
-      "import": "./dist/react/credits.mjs",
+      "import": "./dist/react/credits.js",
       "require": "./dist/react/credits.cjs"
     },
     "./actions/credits": {
       "types": "./dist/actions/credits.d.ts",
-      "import": "./dist/actions/credits.mjs",
+      "import": "./dist/actions/credits.js",
       "require": "./dist/actions/credits.cjs"
     }
   },
@@ -25,7 +25,7 @@
     "dist"
   ],
   "scripts": {
-    "dev": "tsup --watch",
+    "dev": "tsc --watch",
     "build": "tsup",
     "lint": "eslint . --max-warnings 0",
     "clean": "rm -rf .turbo node_modules dist"

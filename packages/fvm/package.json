@@ -16,17 +16,17 @@
   "exports": {
     "./address": {
       "types": "./dist/address.d.ts",
-      "import": "./dist/address.mjs",
+      "import": "./dist/address.js",
       "require": "./dist/address.cjs"
     },
     "./artifacts": {
       "types": "./dist/artifacts.d.ts",
-      "import": "./dist/artifacts.mjs",
+      "import": "./dist/artifacts.js",
       "require": "./dist/artifacts.cjs"
     },
     "./utils": {
       "types": "./dist/utils.d.ts",
-      "import": "./dist/utils.mjs",
+      "import": "./dist/utils.js",
       "require": "./dist/utils.cjs"
     }
   },
@@ -34,7 +34,7 @@
     "dist"
   ],
   "scripts": {
-    "dev": "tsup --watch",
+    "dev": "tsc --watch",
     "build": "tsup",
     "test": "pnpm test:mocha",
     "test:mocha": "mocha --exit",
