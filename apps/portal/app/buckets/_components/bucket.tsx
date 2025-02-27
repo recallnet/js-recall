@@ -8,6 +8,7 @@ import { Address } from "viem";
 
 import { displayAddress } from "@recallnet/address-utils/display";
 import { useGetObject, useQueryObjects } from "@recallnet/sdkx/react/buckets";
+import { useCreditAccount } from "@recallnet/sdkx/react/credits";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -22,6 +23,7 @@ import { cn } from "@recallnet/ui/lib/utils";
 import { removePrefix } from "@/lib/remove-prefix";
 
 import AddObjectDialog from "./add-object-dialog";
+import CreditNeededDialog from "./credit-needed-dialog";
 import Object from "./object";
 import ObjectListItem from "./object-list-item";
 import PrefixListItem from "./prefix-list-item";
@@ -44,6 +46,9 @@ export default function Bucket({
       : prefix;
 
   const [addObjectOpen, setAddObjectOpen] = useState(false);
+  const [creditNeededOpen, setCreditNeededOpen] = useState(false);
+
+  const { data: creditAccount } = useCreditAccount();
 
   const { toast } = useToast();
 
@@ -73,6 +78,14 @@ export default function Bucket({
     }
   }, [toast, objectsError, objectError]);
 
+  const handleAddObject = () => {
+    if (creditAccount?.creditFree === 0n) {
+      setCreditNeededOpen(true);
+    } else {
+      setAddObjectOpen(true);
+    }
+  };
+
   const objectsPending = objectsLoading || objectLoading;
 
   return (
@@ -82,6 +95,10 @@ export default function Bucket({
         onOpenChange={setAddObjectOpen}
         bucketAddress={bucketAddress}
         prefix={prefix}
+      />
+      <CreditNeededDialog
+        open={creditNeededOpen}
+        onOpenChange={setCreditNeededOpen}
       />
       <div className="flex items-end gap-4">
         <Breadcrumb>
@@ -125,7 +142,7 @@ export default function Bucket({
         </Breadcrumb>
         <Button
           variant="secondary"
-          onClick={() => setAddObjectOpen(true)}
+          onClick={handleAddObject}
           className={cn("ml-auto", isObject && "invisible")}
         >
           Add Object

@@ -109,7 +109,7 @@ export default function Object({ bucketAddress, prefixParts, object }: Props) {
             <Loader2 className="ml-auto animate-spin" />
           ) : (
             <Trash
-              className="text-destructive ml-auto opacity-40 hover:cursor-pointer hover:opacity-100"
+              className="hover:text-destructive ml-auto opacity-20 hover:cursor-pointer hover:opacity-100"
               onClick={handleDelete}
             />
           )}
