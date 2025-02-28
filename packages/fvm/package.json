@@ -15,19 +15,34 @@
   "type": "module",
   "exports": {
     "./address": {
-      "types": "./dist/address.d.ts",
-      "import": "./dist/address.js",
-      "require": "./dist/address.cjs"
+      "import": {
+        "types": "./dist/address.d.ts",
+        "default": "./dist/address.js"
+      },
+      "require": {
+        "types": "./dist/address.d.cts",
+        "default": "./dist/address.cjs"
+      }
     },
     "./artifacts": {
-      "types": "./dist/artifacts.d.ts",
-      "import": "./dist/artifacts.js",
-      "require": "./dist/artifacts.cjs"
+      "import": {
+        "types": "./dist/artifacts.d.ts",
+        "default": "./dist/artifacts.js"
+      },
+      "require": {
+        "types": "./dist/artifacts.d.cts",
+        "default": "./dist/artifacts.cjs"
+      }
     },
     "./utils": {
-      "types": "./dist/utils.d.ts",
-      "import": "./dist/utils.js",
-      "require": "./dist/utils.cjs"
+      "import": {
+        "types": "./dist/utils.d.ts",
+        "default": "./dist/utils.js"
+      },
+      "require": {
+        "types": "./dist/utils.d.cts",
+        "default": "./dist/utils.cjs"
+      }
     }
   },
   "files": [
