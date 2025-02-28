@@ -6,19 +6,34 @@
   "type": "module",
   "exports": {
     "./constants": {
-      "types": "./dist/constants.d.ts",
-      "import": "./dist/constants.js",
-      "require": "./dist/constants.cjs"
+      "import": {
+        "types": "./dist/constants.d.ts",
+        "default": "./dist/constants.js"
+      },
+      "require": {
+        "types": "./dist/constants.d.cts",
+        "default": "./dist/constants.cjs"
+      }
     },
     "./conversions": {
-      "types": "./dist/conversions.d.ts",
-      "import": "./dist/conversions.js",
-      "require": "./dist/conversions.cjs"
+      "import": {
+        "types": "./dist/conversions.d.ts",
+        "default": "./dist/conversions.js"
+      },
+      "require": {
+        "types": "./dist/conversions.d.cts",
+        "default": "./dist/conversions.cjs"
+      }
     },
     "./format-atto-rcl": {
-      "types": "./dist/format-atto-rcl.d.ts",
-      "import": "./dist/format-atto-rcl.js",
-      "require": "./dist/format-atto-rcl.cjs"
+      "import": {
+        "types": "./dist/format-atto-rcl.d.ts",
+        "default": "./dist/format-atto-rcl.js"
+      },
+      "require": {
+        "types": "./dist/format-atto-rcl.d.cts",
+        "default": "./dist/format-atto-rcl.cjs"
+      }
     }
   },
   "files": [

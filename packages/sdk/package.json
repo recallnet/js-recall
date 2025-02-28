@@ -15,54 +15,94 @@
   "type": "module",
   "exports": {
     "./account": {
-      "types": "./dist/account.d.ts",
-      "import": "./dist/account.js",
-      "require": "./dist/account.cjs"
+      "import": {
+        "types": "./dist/account.d.ts",
+        "default": "./dist/account.js"
+      },
+      "require": {
+        "types": "./dist/account.d.cts",
+        "default": "./dist/account.cjs"
+      }
     },
     "./blob": {
-      "types": "./dist/blob.d.ts",
-      "import": "./dist/blob.js",
-      "require": "./dist/blob.cjs"
+      "import": {
+        "types": "./dist/blob.d.ts",
+        "default": "./dist/blob.js"
+      },
+      "require": {
+        "types": "./dist/blob.d.cts",
+        "default": "./dist/blob.cjs"
+      }
     },
     "./bucket": {
-      "types": "./dist/bucket.d.ts",
-      "import": "./dist/bucket.js",
-      "require": "./dist/bucket.cjs"
+      "import": {
+        "types": "./dist/bucket.d.ts",
+        "default": "./dist/bucket.js"
+      },
+      "require": {
+        "types": "./dist/bucket.d.cts",
+        "default": "./dist/bucket.cjs"
+      }
     },
     "./client": {
-      "types": "./dist/client.d.ts",
-      "import": "./dist/client.js",
-      "require": "./dist/client.cjs"
+      "import": {
+        "types": "./dist/client.d.ts",
+        "default": "./dist/client.js"
+      },
+      "require": {
+        "types": "./dist/client.d.cts",
+        "default": "./dist/client.cjs"
+      }
     },
     "./credit": {
-      "types": "./dist/credit.d.ts",
-      "import": "./dist/credit.js",
-      "require": "./dist/credit.cjs"
+      "import": {
+        "types": "./dist/credit.d.ts",
+        "default": "./dist/credit.js"
+      },
+      "require": {
+        "types": "./dist/credit.d.cts",
+        "default": "./dist/credit.cjs"
+      }
     },
     "./errors": {
-      "types": "./dist/errors.d.ts",
-      "import": "./dist/errors.js",
-      "require": "./dist/errors.cjs"
+      "import": {
+        "types": "./dist/errors.d.ts",
+        "default": "./dist/errors.js"
+      },
+      "require": {
+        "types": "./dist/errors.d.cts",
+        "default": "./dist/errors.cjs"
+      }
     },
     "./ipc": {
-      "types": "./dist/ipc.d.ts",
-      "import": "./dist/ipc.js",
-      "require": "./dist/ipc.cjs"
-    },
-    "./network": {
-      "types": "./dist/network.d.ts",
-      "import": "./dist/network.js",
-      "require": "./dist/network.cjs"
+      "import": {
+        "types": "./dist/ipc.d.ts",
+        "default": "./dist/ipc.js"
+      },
+      "require": {
+        "types": "./dist/ipc.d.cts",
+        "default": "./dist/ipc.cjs"
+      }
     },
     "./provider": {
-      "types": "./dist/provider.d.ts",
-      "import": "./dist/provider.js",
-      "require": "./dist/provider.cjs"
+      "import": {
+        "types": "./dist/provider.d.ts",
+        "default": "./dist/provider.js"
+      },
+      "require": {
+        "types": "./dist/provider.d.cts",
+        "default": "./dist/provider.cjs"
+      }
     },
     "./utils": {
-      "types": "./dist/utils.d.ts",
-      "import": "./dist/utils.js",
-      "require": "./dist/utils.cjs"
+      "import": {
+        "types": "./dist/utils.d.ts",
+        "default": "./dist/utils.js"
+      },
+      "require": {
+        "types": "./dist/utils.d.cts",
+        "default": "./dist/utils.cjs"
+      }
     }
   },
   "files": [

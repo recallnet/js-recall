@@ -6,9 +6,14 @@
   "type": "module",
   "exports": {
     "./display": {
-      "types": "./dist/display.d.ts",
-      "import": "./dist/display.js",
-      "require": "./dist/display.cjs"
+      "import": {
+        "types": "./dist/display.d.ts",
+        "default": "./dist/display.js"
+      },
+      "require": {
+        "types": "./dist/display.d.cts",
+        "default": "./dist/display.cjs"
+      }
     }
   },
   "files": [

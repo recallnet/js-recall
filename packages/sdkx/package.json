@@ -6,19 +6,34 @@
   "type": "module",
   "exports": {
     "./react/buckets": {
-      "types": "./dist/react/buckets.d.ts",
-      "import": "./dist/react/buckets.js",
-      "require": "./dist/react/buckets.js"
+      "import": {
+        "types": "./dist/react/buckets.d.ts",
+        "default": "./dist/react/buckets.js"
+      },
+      "require": {
+        "types": "./dist/react/buckets.d.cts",
+        "default": "./dist/react/buckets.cjs"
+      }
     },
     "./react/credits": {
-      "types": "./dist/react/credits.d.ts",
-      "import": "./dist/react/credits.js",
-      "require": "./dist/react/credits.cjs"
+      "import": {
+        "types": "./dist/react/credits.d.ts",
+        "default": "./dist/react/credits.js"
+      },
+      "require": {
+        "types": "./dist/react/credits.d.cts",
+        "default": "./dist/react/credits.cjs"
+      }
     },
     "./actions/credits": {
-      "types": "./dist/actions/credits.d.ts",
-      "import": "./dist/actions/credits.js",
-      "require": "./dist/actions/credits.cjs"
+      "import": {
+        "types": "./dist/actions/credits.d.ts",
+        "default": "./dist/actions/credits.js"
+      },
+      "require": {
+        "types": "./dist/actions/credits.d.cts",
+        "default": "./dist/actions/credits.cjs"
+      }
     }
   },
   "files": [
