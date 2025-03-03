@@ -1394,6 +1394,7 @@ export const iMachineFacadeAbi = [
     type: "event",
     anonymous: false,
     inputs: [
+      { name: "kind", internalType: "uint8", type: "uint8", indexed: true },
       {
         name: "owner",
         internalType: "address",
@@ -1413,6 +1414,7 @@ export const iMachineFacadeAbi = [
     type: "event",
     anonymous: false,
     inputs: [
+      { name: "kind", internalType: "uint8", type: "uint8", indexed: true },
       {
         name: "machineAddress",
         internalType: "address",
