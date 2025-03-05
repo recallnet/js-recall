@@ -240,7 +240,7 @@ importers:
         specifier: workspace:*
         version: link:../network-constants
       viem:
-        specifier: ^2.21.37
+        specifier: ^2.22.9
         version: 2.22.9(bufferutil@4.0.9)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.24.1)
     devDependencies:
       '@recallnet/eslint-config':
@@ -405,7 +405,7 @@ importers:
         specifier: ^5.1.0
         version: 5.1.0
       viem:
-        specifier: ^2.21.37
+        specifier: ^2.22.9
         version: 2.22.9(bufferutil@4.0.9)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.24.1)
     devDependencies:
       '@recallnet/eslint-config':
@@ -3946,6 +3946,7 @@ packages:
 
   lodash.get@4.4.2:
     resolution: {integrity: sha512-z+Uw/vLuy6gQe8cfaFWD7p0wVv8fJl3mbzXh33RS+0oW2wvUqiRXiQ69gLWSLpgB5/6sU+r6BlQR0MBILadqTQ==}
+    deprecated: This package is deprecated. Use the optional chaining (?.) operator instead.
 
   lodash.isequal@4.5.0:
     resolution: {integrity: sha512-pDo3lu8Jhfjqls6GkMgpahsF9kCyayhgykjyLMNFTKWrpVdAQtYyB4muAMWozBB4ig/dtWAmsMxLEI8wuz+DYQ==}
