@@ -1,5 +1,13 @@
 # @recallnet/network-constants
 
+## 0.0.4
+
+### Patch Changes
+
+- [#94](https://github.com/recallnet/js-recall/pull/94) [`b3e3182`](https://github.com/recallnet/js-recall/commit/b3e3182b3c78c759f71117b379c2768c19863871) Thanks [@dtbuchholz](https://github.com/dtbuchholz)! - the localnet script changed, resulting in new wrapper contract addreses
+
+- [#96](https://github.com/recallnet/js-recall/pull/96) [`22b19b5`](https://github.com/recallnet/js-recall/commit/22b19b58d27aea5b33c13bcefdf2cfcbd7efaafd) Thanks [@dtbuchholz](https://github.com/dtbuchholz)! - new contract addresses for testnet v0.1.4
+
 ## 0.0.3
 
 ### Patch Changes

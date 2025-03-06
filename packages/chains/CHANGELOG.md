@@ -1,5 +1,12 @@
 # @recallnet/chains
 
+## 0.0.4
+
+### Patch Changes
+
+- Updated dependencies [[`b3e3182`](https://github.com/recallnet/js-recall/commit/b3e3182b3c78c759f71117b379c2768c19863871), [`22b19b5`](https://github.com/recallnet/js-recall/commit/22b19b58d27aea5b33c13bcefdf2cfcbd7efaafd)]:
+  - @recallnet/network-constants@0.0.4
+
 ## 0.0.3
 
 ### Patch Changes

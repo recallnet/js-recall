@@ -1,5 +1,18 @@
 # @recallnet/sdk
 
+## 0.0.5
+
+### Patch Changes
+
+- [#92](https://github.com/recallnet/js-recall/pull/92) [`1fda7c6`](https://github.com/recallnet/js-recall/commit/1fda7c66c0ee28cdb4bd25f4075e00b827362efc) Thanks [@dtbuchholz](https://github.com/dtbuchholz)! - the `MachineInitialized` event signature changed to include a `kind` param, in addition to the existing `machineAddress`–so this accounts for the different event signature
+
+- [#96](https://github.com/recallnet/js-recall/pull/96) [`22b19b5`](https://github.com/recallnet/js-recall/commit/22b19b58d27aea5b33c13bcefdf2cfcbd7efaafd) Thanks [@dtbuchholz](https://github.com/dtbuchholz)! - new contract addresses for testnet v0.1.4
+
+- Updated dependencies [[`1fda7c6`](https://github.com/recallnet/js-recall/commit/1fda7c66c0ee28cdb4bd25f4075e00b827362efc), [`b3e3182`](https://github.com/recallnet/js-recall/commit/b3e3182b3c78c759f71117b379c2768c19863871), [`22b19b5`](https://github.com/recallnet/js-recall/commit/22b19b58d27aea5b33c13bcefdf2cfcbd7efaafd)]:
+  - @recallnet/contracts@0.0.2
+  - @recallnet/network-constants@0.0.4
+  - @recallnet/chains@0.0.4
+
 ## 0.0.4
 
 ### Patch Changes
