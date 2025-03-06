@@ -7,7 +7,11 @@ import { Fragment, useEffect, useState } from "react";
 import { Address } from "viem";
 
 import { displayAddress } from "@recallnet/address-utils/display";
-import { useGetObject, useQueryObjects } from "@recallnet/sdkx/react/buckets";
+import {
+  useGetObject,
+  useInfiniteQueryObjects,
+  useQueryObjects,
+} from "@recallnet/sdkx/react/buckets";
 import { useCreditAccount } from "@recallnet/sdkx/react/credits";
 import {
   Breadcrumb,
@@ -20,6 +24,7 @@ import { Button } from "@recallnet/ui/components/button";
 import { useToast } from "@recallnet/ui/hooks/use-toast";
 import { cn } from "@recallnet/ui/lib/utils";
 
+import { InfiniteScroll } from "@/app/_components/infinite-scroll";
 import { removePrefix } from "@/lib/remove-prefix";
 
 import AddObjectDialog from "./add-object-dialog";
@@ -52,13 +57,25 @@ export default function Bucket({
 
   const { toast } = useToast();
 
+  // const {
+  //   data: objects,
+  //   error: objectsError,
+  //   isLoading: objectsLoading,
+  // } = useQueryObjects(bucketAddress, {
+  //   prefix,
+  //   enabled: !isObject,
+  // });
+
   const {
-    data: objects,
+    data: objectsRes,
     error: objectsError,
     isLoading: objectsLoading,
-  } = useQueryObjects(bucketAddress, {
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteQueryObjects(bucketAddress, {
     prefix,
     enabled: !isObject,
+    pageSize: 2,
   });
 
   const {
@@ -148,22 +165,40 @@ export default function Bucket({
           Add Object
         </Button>
       </div>
-      {objects?.commonPrefixes.map((commonPrefix) => (
-        <PrefixListItem
-          key={commonPrefix}
-          bucketAddress={bucketAddress}
-          commonPrefix={commonPrefix}
-          label={removePrefix(commonPrefix, prefix).slice(0, -1)}
-        />
+      {/* <pre>
+        {JSON.stringify(
+          objectsRes,
+          (key, val) => (typeof val === "bigint" ? val.toString() : val),
+          2,
+        )}
+      </pre>
+      <pre>{JSON.stringify(hasNextPage)}</pre> */}
+      {objectsRes?.pages.map((page, num) => (
+        <Fragment key={num}>
+          {page.result?.commonPrefixes.map((commonPrefix) => (
+            <PrefixListItem
+              key={commonPrefix}
+              bucketAddress={bucketAddress}
+              commonPrefix={commonPrefix}
+              label={removePrefix(commonPrefix, prefix).slice(0, -1)}
+            />
+          ))}
+          {page.result?.objects.map((object) => (
+            <ObjectListItem
+              key={object.key}
+              bucketAddress={bucketAddress}
+              prefix={prefix}
+              object={object}
+            />
+          ))}
+        </Fragment>
       ))}
-      {objects?.objects.map((object) => (
-        <ObjectListItem
-          key={object.key}
-          bucketAddress={bucketAddress}
-          prefix={prefix}
-          object={object}
+      {hasNextPage && !objectsPending && (
+        <InfiniteScroll
+          hasMore={hasNextPage && !objectsPending}
+          onLoadMore={() => fetchNextPage()}
         />
-      ))}
+      )}
       {object && (
         <Object
           bucketAddress={bucketAddress}
@@ -172,8 +207,9 @@ export default function Bucket({
         />
       )}
       {!objectsPending &&
-        !objects?.commonPrefixes.length &&
-        !objects?.objects.length &&
+        objectsRes?.pages.length === 1 &&
+        !objectsRes.pages[0]?.result?.commonPrefixes.length &&
+        !objectsRes.pages[0]?.result?.objects.length &&
         !object && (
           <div className="flex flex-1 items-center justify-center">
             <p className="text-muted-foreground">This bucket is empty</p>
