@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { isAddress } from "viem";
 
-import Bucket from "../_components/bucket";
+import Bucket from "./_components/bucket";
 
 export default async function BucketPage({
   params,

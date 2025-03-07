@@ -5,6 +5,7 @@ import { AbiStateMutability, Address, ContractFunctionArgs } from "viem";
 import {
   useAccount,
   useChainId,
+  useInfiniteReadContracts,
   useReadContract,
   useWaitForTransactionReceipt,
   useWriteContract,
@@ -37,6 +38,57 @@ export type QueryObjectsArgs = ContractFunctionArgs<
   AbiStateMutability,
   "queryObjects"
 >;
+
+export function useInfiniteQueryObjects(
+  bucket: Address,
+  options?: {
+    prefix?: string;
+    delimiter?: string;
+    pageSize?: number;
+    enabled?: boolean | (() => boolean);
+  },
+) {
+  const chainId = useChainId();
+  const contractAddress =
+    bucketManagerAddress[chainId as keyof typeof bucketManagerAddress];
+
+  const prefix = options?.prefix ?? "";
+  const delimiter = options?.delimiter ?? "/";
+
+  return useInfiniteReadContracts({
+    cacheKey: `queryObjectsResults_${bucket}_${prefix}`,
+    contracts(pageParam) {
+      const args = [
+        bucket,
+        prefix,
+        delimiter,
+        pageParam,
+        BigInt(options?.pageSize ?? 100),
+      ] satisfies QueryObjectsArgs;
+      return [
+        {
+          address: contractAddress,
+          abi: bucketManagerAbi,
+          functionName: "queryObjects",
+          args: args,
+        },
+      ];
+    },
+    query: {
+      enabled: options?.enabled,
+      initialPageParam: "",
+      select: (data) => ({
+        ...data,
+        pages: data.pages.map((page) => page[0]),
+      }),
+      getNextPageParam: (lastPage) => {
+        return lastPage.length > 0
+          ? lastPage[lastPage.length - 1]?.result?.nextKey || undefined
+          : null;
+      },
+    },
+  });
+}
 
 export function useQueryObjects(
   bucket: Address,

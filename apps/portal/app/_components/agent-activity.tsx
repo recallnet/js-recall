@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { InfiniteScroll } from "@recallnet/ui/recall/infinite-scroll";
+
 import type { AgentActivity } from "@/types/agent-activity";
 import { fetchAgentActivity } from "@/utils/fetch-agent-activity";
 
 import { AgentActivityList } from "./agent-activity-list";
-import { InfiniteScroll } from "./infinite-scroll";
 import { SearchAndFilter } from "./search-and-filter";
 
 const PAGE_SIZE = 10;

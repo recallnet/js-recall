@@ -1,13 +1,11 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useState } from "react";
 import { Address } from "viem";
 
 import { displayAddress } from "@recallnet/address-utils/display";
-import { useGetObject, useQueryObjects } from "@recallnet/sdkx/react/buckets";
 import { useCreditAccount } from "@recallnet/sdkx/react/credits";
 import {
   Breadcrumb,
@@ -17,16 +15,12 @@ import {
   BreadcrumbSeparator,
 } from "@recallnet/ui/components/breadcrumb";
 import { Button } from "@recallnet/ui/components/button";
-import { useToast } from "@recallnet/ui/hooks/use-toast";
 import { cn } from "@recallnet/ui/lib/utils";
-
-import { removePrefix } from "@/lib/remove-prefix";
 
 import AddObjectDialog from "./add-object-dialog";
 import CreditNeededDialog from "./credit-needed-dialog";
 import Object from "./object";
-import ObjectListItem from "./object-list-item";
-import PrefixListItem from "./prefix-list-item";
+import Objects from "./objects";
 
 export default function Bucket({
   bucketAddress,
@@ -38,45 +32,13 @@ export default function Bucket({
   const searchParams = useSearchParams();
 
   const isObject = searchParams.has("object");
-  let prefix = prefixParts.join("/");
-  prefix = !prefix
-    ? ""
-    : !isObject && prefixParts.length
-      ? prefix + "/"
-      : prefix;
+  const prefix =
+    prefixParts.join("/") + (prefixParts.length && !isObject ? "/" : "");
 
   const [addObjectOpen, setAddObjectOpen] = useState(false);
   const [creditNeededOpen, setCreditNeededOpen] = useState(false);
 
   const { data: creditAccount } = useCreditAccount();
-
-  const { toast } = useToast();
-
-  const {
-    data: objects,
-    error: objectsError,
-    isLoading: objectsLoading,
-  } = useQueryObjects(bucketAddress, {
-    prefix,
-    enabled: !isObject,
-  });
-
-  const {
-    data: object,
-    error: objectError,
-    isLoading: objectLoading,
-  } = useGetObject(bucketAddress, prefix, {
-    enabled: isObject,
-  });
-
-  useEffect(() => {
-    if (objectsError || objectError) {
-      toast({
-        title: "Error",
-        description: objectsError?.message || objectError?.message,
-      });
-    }
-  }, [toast, objectsError, objectError]);
 
   const handleAddObject = () => {
     if (creditAccount?.creditFree === 0n) {
@@ -86,7 +48,22 @@ export default function Bucket({
     }
   };
 
-  const objectsPending = objectsLoading || objectLoading;
+  function mainContent() {
+    if (isObject) {
+      const name = prefixParts[prefixParts.length - 1] ?? "unknown";
+      const containingPrefix = prefixParts.slice(0, -1).join("/");
+      return (
+        <Object
+          bucketAddress={bucketAddress}
+          name={name}
+          prefix={prefix}
+          containingPrefix={containingPrefix}
+        />
+      );
+    } else {
+      return <Objects bucketAddress={bucketAddress} prefix={prefix} />;
+    }
+  }
 
   return (
     <div className="flex flex-1 flex-col gap-4">
@@ -148,42 +125,7 @@ export default function Bucket({
           Add Object
         </Button>
       </div>
-      {objects?.commonPrefixes.map((commonPrefix) => (
-        <PrefixListItem
-          key={commonPrefix}
-          bucketAddress={bucketAddress}
-          commonPrefix={commonPrefix}
-          label={removePrefix(commonPrefix, prefix).slice(0, -1)}
-        />
-      ))}
-      {objects?.objects.map((object) => (
-        <ObjectListItem
-          key={object.key}
-          bucketAddress={bucketAddress}
-          prefix={prefix}
-          object={object}
-        />
-      ))}
-      {object && (
-        <Object
-          bucketAddress={bucketAddress}
-          prefixParts={prefixParts}
-          object={object}
-        />
-      )}
-      {!objectsPending &&
-        !objects?.commonPrefixes.length &&
-        !objects?.objects.length &&
-        !object && (
-          <div className="flex flex-1 items-center justify-center">
-            <p className="text-muted-foreground">This bucket is empty</p>
-          </div>
-        )}
-      {objectsPending && (
-        <div className="flex flex-1 items-center justify-center">
-          <Loader2 className="animate-spin" />
-        </div>
-      )}
+      {mainContent()}
     </div>
   );
 }
