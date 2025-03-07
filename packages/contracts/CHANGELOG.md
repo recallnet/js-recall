@@ -1,5 +1,11 @@
 # @recallnet/contracts
 
+## 0.0.3
+
+### Patch Changes
+
+- [#97](https://github.com/recallnet/js-recall/pull/97) [`1724dc6`](https://github.com/recallnet/js-recall/commit/1724dc65fcfbed29932cded1624a2025130c61ff) Thanks [@dtbuchholz](https://github.com/dtbuchholz)! - update wrapper contract addresses for testnet v0.1.4
+
 ## 0.0.2
 
 ### Patch Changes

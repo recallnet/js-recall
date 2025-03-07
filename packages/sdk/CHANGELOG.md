@@ -1,5 +1,16 @@
 # @recallnet/sdk
 
+## 0.0.6
+
+### Patch Changes
+
+- [#97](https://github.com/recallnet/js-recall/pull/97) [`1724dc6`](https://github.com/recallnet/js-recall/commit/1724dc65fcfbed29932cded1624a2025130c61ff) Thanks [@dtbuchholz](https://github.com/dtbuchholz)! - update wrapper contract addresses for testnet v0.1.4
+
+- Updated dependencies [[`1724dc6`](https://github.com/recallnet/js-recall/commit/1724dc65fcfbed29932cded1624a2025130c61ff)]:
+  - @recallnet/network-constants@0.0.5
+  - @recallnet/contracts@0.0.3
+  - @recallnet/chains@0.0.5
+
 ## 0.0.5
 
 ### Patch Changes
