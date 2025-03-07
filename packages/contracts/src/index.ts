@@ -278,7 +278,7 @@ export const blobManagerAbi = [
 
 */
 export const blobManagerAddress = {
-  2481632: "0x22F1039343b4F5cE3C74872B239524d4fFb7CABF",
+  2481632: "0xDE2b390bba012f028B75A45190ed28a2838633e3",
   248163216: "0x8ce361602B935680E8DeC218b820ff5056BeB7af",
 } as const;
 
@@ -751,7 +751,7 @@ export const bucketManagerAbi = [
 
 */
 export const bucketManagerAddress = {
-  2481632: "0x8ce218Fc1e9C443a5A7255B6845d35C104b91516",
+  2481632: "0x4ce14F0751287Bfcd3ba4A8Ddb46DdA5d36a0b7E",
   248163216: "0xeD1DB453C3156Ff3155a97AD217b3087D5Dc5f6E",
 } as const;
 
@@ -1101,7 +1101,7 @@ export const creditManagerAbi = [
 
 */
 export const creditManagerAddress = {
-  2481632: "0xe62FBa17E5B9965434C2871492c7Ac851fA8BAF7",
+  2481632: "0x7E6855FF43C2A434707eE9Ff031d450cceB2EcbE",
   248163216: "0x196dBCBb54b8ec4958c959D8949EBFE87aC2Aaaf",
 } as const;
 
