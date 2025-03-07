@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { default as axios } from "axios";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AbiStateMutability, Address, ContractFunctionArgs } from "viem";
@@ -52,13 +52,16 @@ export function useInfiniteQueryObjects(
   const contractAddress =
     bucketManagerAddress[chainId as keyof typeof bucketManagerAddress];
 
+  const prefix = options?.prefix ?? "";
+  const delimiter = options?.delimiter ?? "/";
+
   return useInfiniteReadContracts({
-    cacheKey: `queryObjectsResults_${bucket}`,
+    cacheKey: `queryObjectsResults_${bucket}_${prefix}`,
     contracts(pageParam) {
       const args = [
         bucket,
-        options?.prefix ?? "",
-        options?.delimiter ?? "/",
+        prefix,
+        delimiter,
         pageParam,
         BigInt(options?.pageSize ?? 100),
       ] satisfies QueryObjectsArgs;
@@ -78,7 +81,7 @@ export function useInfiniteQueryObjects(
         ...data,
         pages: data.pages.map((page) => page[0]),
       }),
-      getNextPageParam: (lastPage, _allPages, _lastPageParam) => {
+      getNextPageParam: (lastPage) => {
         return lastPage.length > 0
           ? lastPage[lastPage.length - 1]?.result?.nextKey || undefined
           : null;

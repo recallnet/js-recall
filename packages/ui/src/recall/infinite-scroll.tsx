@@ -8,7 +8,7 @@ interface InfiniteScrollProps {
 }
 
 export function InfiniteScroll({ onLoadMore, hasMore }: InfiniteScrollProps) {
-  const { ref, inView } = useInView();
+  const { ref, inView } = useInView({ triggerOnce: true });
   const prevInView = useRef(false);
 
   useEffect(() => {
