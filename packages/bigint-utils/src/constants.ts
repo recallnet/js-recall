@@ -1,3 +1,3 @@
-export const ONE_GB_MONTH = 2_592_000_000_000_000;
+export const ONE_GB_MONTH_TO_CREDITS = 2_592_000_000_000_000;
 
-export const CREDIT_RECALL_RATE = 1;
+export const RECALL_TO_CREDIT_RATE = 1e18;

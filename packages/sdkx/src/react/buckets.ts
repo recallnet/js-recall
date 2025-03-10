@@ -341,12 +341,16 @@ async function uploadFile(variables: {
   f.append("data", variables.file);
 
   const [uploadRes, nodeInfo] = await Promise.all([
-    axios.post<{ hash: string; metadata_hash: string }>("/api/objects", f, {
-      onUploadProgress: (e) => {
-        const progress = e.total ? Math.round((e.loaded * 100) / e.total) : 0;
-        variables.onProgress?.(progress);
+    axios.post<{ hash: string; metadata_hash: string }>(
+      `${variables.objectApiUrl}/v1/objects`,
+      f,
+      {
+        onUploadProgress: (e) => {
+          const progress = e.total ? Math.round((e.loaded * 100) / e.total) : 0;
+          variables.onProgress?.(progress);
+        },
       },
-    }),
+    ),
     axios.get<{
       node_id: string;
       info: {

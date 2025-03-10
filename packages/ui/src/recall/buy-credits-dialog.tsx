@@ -1,11 +1,10 @@
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useBalance, useWaitForTransactionReceipt } from "wagmi";
 
 import {
-  creditsToRecall,
-  gbMonthsToCredits,
-  recallToDisplay,
+  attoRecallToRecallDisplay,
+  gbMonthsToAttoRecall,
 } from "@recallnet/bigint-utils/conversions";
 import { useBuyCredit, useCreditAccount } from "@recallnet/sdkx/react/credits";
 import { Button } from "@recallnet/ui/components/button";
@@ -30,7 +29,11 @@ export default function BuyCreditsDialog({
 }) {
   const { toast } = useToast();
 
-  const [displayCredits, setDisplayCredits] = useState("0");
+  const [gbMonths, setGbMonths] = useState("0");
+
+  const { address } = useAccount();
+
+  const { refetch: refetchBalance } = useBalance({ address });
 
   const { refetch: refetchCreditAccount } = useCreditAccount();
 
@@ -53,10 +56,11 @@ export default function BuyCreditsDialog({
 
   useEffect(() => {
     if (buyCreditReceiptSuccess) {
+      refetchBalance();
       refetchCreditAccount();
       setOpen(false);
     }
-  }, [buyCreditReceiptSuccess, refetchCreditAccount, setOpen]);
+  }, [buyCreditReceiptSuccess, refetchBalance, refetchCreditAccount, setOpen]);
 
   useEffect(() => {
     if (buyCreditError) {
@@ -68,12 +72,11 @@ export default function BuyCreditsDialog({
   }, [buyCreditError, toast]);
 
   const handleBuyCredits = async () => {
-    buyCredit(recallToSpend);
+    buyCredit(attoRecallToSpend);
   };
 
-  const creditsToBuy = gbMonthsToCredits(displayCredits || 0);
-  const recallToSpend = creditsToRecall(creditsToBuy);
-  const recallToSpendDisplay = recallToDisplay(recallToSpend, 4);
+  const attoRecallToSpend = gbMonthsToAttoRecall(gbMonths || 0);
+  const recallToSpendDisplay = attoRecallToRecallDisplay(attoRecallToSpend, 4);
 
   const creditPending =
     buyCreditPending || (!!buyCreditTxn && buyCreditReceiptIsPending);
@@ -92,8 +95,8 @@ export default function BuyCreditsDialog({
         <Input
           type="number"
           min={1}
-          value={displayCredits}
-          onChange={(e) => setDisplayCredits(e.target.value)}
+          value={gbMonths}
+          onChange={(e) => setGbMonths(e.target.value)}
         />
         <span>Cost: {recallToSpendDisplay} $RECALL</span>
         <DialogFooter className="">

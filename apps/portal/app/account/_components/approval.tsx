@@ -11,9 +11,9 @@ import {
 
 import { displayAddress } from "@recallnet/address-utils/display";
 import {
-  crazyCreditsToGbMonths,
+  attoCreditsToGbMonths,
+  attoRecallToRecallDisplay,
   numBlocksToSeconds,
-  recallToDisplay,
 } from "@recallnet/bigint-utils/conversions";
 import {
   useCreditAccount,
@@ -109,19 +109,19 @@ export function Approval({ type, creditSponsor, approval }: Props) {
     setAccountSponsor(address, approval.addr);
   };
 
-  const creditUsedDisplay = crazyCreditsToGbMonths(
-    approval.approval.creditUsed,
-  );
+  const creditUsedDisplay = attoCreditsToGbMonths(approval.approval.creditUsed);
   const creditLimitDisplay =
     approval.approval.creditLimit === BigInt(0)
       ? "∞"
-      : crazyCreditsToGbMonths(approval.approval.creditLimit);
+      : attoCreditsToGbMonths(approval.approval.creditLimit);
 
-  const gasFeeUsedDisplay = recallToDisplay(approval.approval.gasFeeUsed);
+  const gasFeeUsedDisplay = attoRecallToRecallDisplay(
+    approval.approval.gasFeeUsed,
+  );
   const gasFeeLimitDisplay =
     approval.approval.gasFeeLimit === BigInt(0)
       ? "∞"
-      : recallToDisplay(approval.approval.gasFeeLimit);
+      : attoRecallToRecallDisplay(approval.approval.gasFeeLimit);
 
   const blockDiff =
     blockNumber && !!approval.approval.expiry

@@ -8,10 +8,9 @@ import { useAccount, useBalance, useWaitForTransactionReceipt } from "wagmi";
 
 import { displayAddress } from "@recallnet/address-utils/display";
 import {
-  crazyCreditsToCredits,
-  creditsToGbMonths,
+  attoCreditsToGbMonths,
+  attoRecallToRecallDisplay,
   numBlocksToSeconds,
-  recallToDisplay,
 } from "@recallnet/bigint-utils/conversions";
 import {
   useCreditAccount,
@@ -242,7 +241,7 @@ export function Account() {
               title="Credit Available"
               value={
                 creditAccount
-                  ? `${creditsToGbMonths(crazyCreditsToCredits(creditAccount.creditFree))}`
+                  ? `${attoCreditsToGbMonths(creditAccount.creditFree)}`
                   : undefined
               }
               subtitle="GB Months"
@@ -251,7 +250,7 @@ export function Account() {
               title="Credit Committed"
               value={
                 creditAccount
-                  ? `${creditsToGbMonths(crazyCreditsToCredits(creditAccount.creditCommitted))}`
+                  ? `${attoCreditsToGbMonths(creditAccount.creditCommitted)}`
                   : undefined
               }
               subtitle="GB Months"
@@ -260,7 +259,7 @@ export function Account() {
               title="Gas Allowance"
               value={
                 creditAccount
-                  ? `${recallToDisplay(creditAccount.gasAllowance)}`
+                  ? `${attoRecallToRecallDisplay(creditAccount.gasAllowance)}`
                   : undefined
               }
               subtitle="$RECALL"
@@ -296,7 +295,7 @@ export function Account() {
           <div className="my-8 flex shrink-0 flex-wrap justify-around gap-8">
             <Metric
               title="Balance"
-              value={data ? recallToDisplay(data.value) : undefined}
+              value={data ? attoRecallToRecallDisplay(data.value) : undefined}
               subtitle="$RECALL"
             />
           </div>
