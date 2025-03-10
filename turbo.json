@@ -19,7 +19,8 @@
       "persistent": true
     },
     "clean": {
-      "dependsOn": ["^clean"]
+      "dependsOn": ["^clean"],
+      "cache": false
     }
   }
 }
