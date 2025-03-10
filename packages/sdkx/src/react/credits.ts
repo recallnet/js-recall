@@ -251,21 +251,21 @@ export function useBuyCredit() {
   );
 
   const buyCredit = useCallback(
-    (recallAmount: bigint, recipient?: Address) =>
+    (attoRecallAmount: bigint, recipient?: Address) =>
       writeContract({
         ...baseConfig,
         args: recipient ? [recipient] : [],
-        value: recallAmount,
+        value: attoRecallAmount,
       }),
     [baseConfig, writeContract],
   );
 
   const buyCreditAsync = useCallback(
-    (recallAmount: bigint, recipient?: Address) =>
+    (attoRecallAmount: bigint, recipient?: Address) =>
       writeContractAsync({
         ...baseConfig,
         args: recipient ? [recipient] : [],
-        value: recallAmount,
+        value: attoRecallAmount,
       }),
     [baseConfig, writeContractAsync],
   );

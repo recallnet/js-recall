@@ -8,9 +8,9 @@ import { isAddress } from "viem";
 import { useAccount, useConfig, useWaitForTransactionReceipt } from "wagmi";
 
 import {
-  displayToRecall,
   gbMonthsToCredits,
   hoursToNumBlocks,
+  recallToAttoRecall,
 } from "@recallnet/bigint-utils/conversions";
 import { accountExists, createAccount } from "@recallnet/sdkx/actions/credits";
 import {
@@ -149,7 +149,7 @@ export function ApprovalsTo() {
       !!formData.creditLimit || !!formData.gasFeeLimit || !!formData.ttl
         ? {
             creditLimit: gbMonthsToCredits(formData.creditLimit || 0),
-            gasFeeLimit: displayToRecall(formData.gasFeeLimit || 0n),
+            gasFeeLimit: recallToAttoRecall(formData.gasFeeLimit || 0n),
             ttl: hoursToNumBlocks(formData.ttl || 0),
           }
         : undefined;

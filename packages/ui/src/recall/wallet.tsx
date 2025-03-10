@@ -7,9 +7,8 @@ import { useAccount, useBalance, useDisconnect } from "wagmi";
 
 import { displayAddress } from "@recallnet/address-utils/display";
 import {
-  crazyCreditsToCredits,
-  creditsToGbMonths,
-  recallToDisplay,
+  attoCreditsToGbMonths,
+  attoRecallToRecallDisplay,
 } from "@recallnet/bigint-utils/conversions";
 import { useCreditAccount } from "@recallnet/sdkx/react/credits";
 import { Button } from "@recallnet/ui/components/button";
@@ -50,10 +49,14 @@ export const Wallet = ({ className, ...props }: Props) => {
     }
   }, [creditAccountError, toast]);
 
-  const balanceDisplay = recallToDisplay(balance.data?.value ?? 0n, 2);
+  const balanceDisplay = attoRecallToRecallDisplay(
+    balance.data?.value ?? 0n,
+    2,
+  );
 
-  const creditsBalance = crazyCreditsToCredits(creditAccount?.creditFree ?? 0n);
-  const gbMonthsBalance = creditsToGbMonths(creditsBalance);
+  const gbMonthsBalance = attoCreditsToGbMonths(
+    creditAccount?.creditFree ?? 0n,
+  );
 
   const handleOpenBuyCredits = async () => {
     if (accountOpen) {
