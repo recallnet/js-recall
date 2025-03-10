@@ -1,6 +1,6 @@
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useBalance, useWaitForTransactionReceipt } from "wagmi";
 
 import {
   creditsToRecall,
@@ -30,7 +30,9 @@ export default function BuyCreditsDialog({
 }) {
   const { toast } = useToast();
 
-  const [displayCredits, setDisplayCredits] = useState("0");
+  const { address } = useAccount();
+
+  const { refetch: refetchBalance } = useBalance({ address });
 
   const { refetch: refetchCreditAccount } = useCreditAccount();
 
@@ -53,10 +55,11 @@ export default function BuyCreditsDialog({
 
   useEffect(() => {
     if (buyCreditReceiptSuccess) {
+      refetchBalance();
       refetchCreditAccount();
       setOpen(false);
     }
-  }, [buyCreditReceiptSuccess, refetchCreditAccount, setOpen]);
+  }, [buyCreditReceiptSuccess, refetchBalance, refetchCreditAccount, setOpen]);
 
   useEffect(() => {
     if (buyCreditError) {
