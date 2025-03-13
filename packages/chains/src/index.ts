@@ -24,6 +24,9 @@ export type ChainName = "mainnet" | "testnet" | "localnet" | "devnet";
 export const testnet: Chain = defineChain({
   id: Number(TESTNET_CHAIN_ID),
   name: "Recall Testnet",
+  fees: {
+    baseFeeMultiplier: 120,
+  },
   nativeCurrency: {
     name: "Recall",
     symbol: "RECALL",
@@ -46,6 +49,9 @@ export const testnet: Chain = defineChain({
 export const localnet: Chain = defineChain({
   id: Number(LOCALNET_CHAIN_ID),
   name: "Recall Localnet",
+  fees: {
+    baseFeeMultiplier: 120,
+  },
   nativeCurrency: {
     name: "Recall",
     symbol: "RECALL",
@@ -68,6 +74,9 @@ export const localnet: Chain = defineChain({
 export const devnet: Chain = defineChain({
   id: Number(DEVNET_CHAIN_ID),
   name: "Recall Devnet",
+  fees: {
+    baseFeeMultiplier: 120,
+  },
   nativeCurrency: {
     name: "Recall",
     symbol: "RECALL",
