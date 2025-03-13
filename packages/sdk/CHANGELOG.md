@@ -1,5 +1,12 @@
 # @recallnet/sdk
 
+## 0.0.7
+
+### Patch Changes
+
+- Updated dependencies [[`35c6c8e`](https://github.com/recallnet/js-recall/commit/35c6c8ebdb7447e17225014770bc2e968916bf67)]:
+  - @recallnet/chains@0.0.6
+
 ## 0.0.6
 
 ### Patch Changes
