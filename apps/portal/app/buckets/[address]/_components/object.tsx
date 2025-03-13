@@ -2,7 +2,7 @@ import TimeAgo from "javascript-time-ago";
 import { Download, File, Loader2, Trash } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Address } from "viem";
 import {
   useAccount,
@@ -29,6 +29,22 @@ import { formatBytes } from "@/lib/format-bytes";
 
 const timeAgo = new TimeAgo("en-US");
 
+// Maximum size for full content display (1MB)
+const MAX_FULL_DISPLAY_SIZE = 1024 * 1024;
+// Maximum size for preview (5MB)
+const MAX_PREVIEW_SIZE = 5 * 1024 * 1024;
+// Preview length in characters
+const PREVIEW_LENGTH = 1000;
+
+// Types of files we can preview
+const PREVIEWABLE_TYPES = new Set([
+  'application/json',
+  'text/plain',
+  'text/markdown',
+  'text/csv',
+  'text/x-markdown'
+]);
+
 interface Props {
   bucketAddress: Address;
   name: string;
@@ -37,6 +53,22 @@ interface Props {
   delimiter: string;
 }
 
+/**
+ * Object Component
+ * Displays and manages object content from Recall buckets with preview capabilities.
+ *
+ * Features:
+ * - Automatic MIME type detection
+ * - Content preview for supported file types (JSON, text, markdown, CSV)
+ * - Pretty printing for JSON content
+ * - Size-based content truncation with full content toggle
+ * - Debug logging for content fetching and rendering
+ *
+ * @param bucketAddress - The address of the bucket containing the object
+ * @param name - The name of the object
+ * @param prefix - The full path/prefix of the object
+ * @param containingPrefix - The prefix of the containing directory
+ */
 export default function Object({
   bucketAddress,
   name,
@@ -45,20 +77,157 @@ export default function Object({
   delimiter,
 }: Props) {
   const router = useRouter();
-
   const { toast } = useToast();
-
   const { address: fromAddress } = useAccount();
-
   const chainId = useChainId();
-
   const { data: blockNumber } = useBlockNumber();
+  const [detectedMimeType, setDetectedMimeType] = useState<string | undefined>();
+  const [fileContent, setFileContent] = useState<string | undefined>();
+  const [isLoadingContent, setIsLoadingContent] = useState(false);
+  const [showFullContent, setShowFullContent] = useState(false);
 
   const {
     data: object,
     error: objectError,
     isLoading: objectLoading,
   } = useGetObject(bucketAddress, path);
+
+  /**
+   * Detects MIME type from file content using file-type library and extension fallbacks.
+   * Handles special cases for text-based files (JSON, txt, md, csv).
+   *
+   * @param url - The URL of the object to analyze
+   */
+  const detectMimeType = async (url: string) => {
+    try {
+      console.log('Detecting MIME type for:', url);
+      // Fetch first 4100 bytes of the file (magic numbers are usually in the first few bytes)
+      const response = await fetch(url, {
+        headers: {
+          Range: 'bytes=0-4099'
+        }
+      });
+
+      if (!response.ok) {
+        console.log('Failed to fetch file for MIME detection:', response.status);
+        return;
+      }
+
+      const buffer = await response.arrayBuffer();
+      console.log('Got buffer for MIME detection, size:', buffer.byteLength);
+
+      const { fileTypeFromBuffer } = await import('file-type');
+      const fileType = await fileTypeFromBuffer(new Uint8Array(buffer));
+
+      if (fileType) {
+        console.log('Detected MIME type:', fileType.mime);
+        setDetectedMimeType(fileType.mime);
+      } else {
+        // Handle text-based files by extension
+        const extension = name.split('.').pop()?.toLowerCase();
+        let detectedType: string | undefined;
+
+        switch (extension) {
+          case 'json': {
+            const text = new TextDecoder().decode(new Uint8Array(buffer));
+            try {
+              JSON.parse(text);
+              detectedType = 'application/json';
+            } catch {
+              detectedType = 'text/plain';
+            }
+            break;
+          }
+          case 'txt':
+            detectedType = 'text/plain';
+            break;
+          case 'md':
+          case 'markdown':
+            detectedType = 'text/markdown';
+            break;
+          case 'csv':
+            detectedType = 'text/csv';
+            break;
+        }
+
+        if (detectedType) {
+          console.log('Detected type from extension:', detectedType);
+          setDetectedMimeType(detectedType);
+        }
+      }
+    } catch (error) {
+      console.error('Error detecting mime type:', error);
+    }
+  };
+
+  /**
+   * Fetches and processes file content for preview.
+   * - Handles large files by fetching only preview portion
+   * - Validates JSON content when applicable
+   * - Provides debug logging for content processing
+   *
+   * @param url - The URL to fetch content from
+   * @param size - The total size of the object
+   */
+  const fetchContent = async (url: string, size: bigint) => {
+    try {
+      console.log('Fetching content for:', url);
+      setIsLoadingContent(true);
+      const numericSize = Number(size);
+
+      // If file is too large, only fetch preview
+      const range = numericSize > MAX_FULL_DISPLAY_SIZE
+        ? 'bytes=0-' + (PREVIEW_LENGTH - 1)
+        : undefined;
+
+      console.log('Using range:', range);
+
+      // First try to fetch without the ?object parameter to get raw content
+      const rawUrl = url.replace('?object', '');
+      console.log('Fetching raw content from:', rawUrl);
+
+      const response = await fetch(rawUrl, {
+        headers: range ? { Range: range } : {}
+      });
+
+      if (!response.ok) {
+        console.log('Failed to fetch content:', response.status);
+        return;
+      }
+
+      // Log response headers
+      console.log('Response headers:', {
+        contentType: response.headers.get('content-type'),
+        contentLength: response.headers.get('content-length'),
+        allHeaders: Array.from(response.headers.entries()).reduce((acc, [key, value]) => {
+          acc[key] = value;
+          return acc;
+        }, {} as Record<string, string>)
+      });
+
+      const text = await response.text();
+      console.log('Got raw content:', text);
+      console.log('Got content, length:', text.length);
+
+      try {
+        // Try to parse as JSON to verify it's valid
+        const parsed = JSON.parse(text);
+        console.log('Successfully parsed JSON:', parsed);
+        setFileContent(text);
+      } catch (e) {
+        console.error('Failed to parse as JSON:', e);
+        setFileContent(text);
+      }
+    } catch (error) {
+      console.error('Error fetching file content:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load file preview",
+      });
+    } finally {
+      setIsLoadingContent(false);
+    }
+  };
 
   const {
     deleteObject,
@@ -97,12 +266,153 @@ export default function Object({
     }
   }, [toast, objectError, deleteError, deleteReceiptError]);
 
+  // Effect to detect MIME type and fetch content when object is loaded
+  useEffect(() => {
+    if (object) {
+      console.log('Object loaded:', {
+        name,
+        size: object.size.toString(),
+        metadata: object.metadata,
+        maxPreviewSize: MAX_PREVIEW_SIZE,
+        previewableTypes: Array.from(PREVIEWABLE_TYPES)
+      });
+
+      const contentType = object.metadata.find((m: { key: string; value: string }) => m.key === 'content-type')?.value;
+      console.log('Found content type in metadata:', contentType);
+
+      const objectApiUrl = getObjectApiUrl(getChain(chainId));
+      const url = `${objectApiUrl}/v1/objects/${bucketAddress}/${prefix}`;
+      console.log('Object URL:', url);
+
+      // Check file extension first
+      const extension = name.split('.').pop()?.toLowerCase();
+      let effectiveContentType = contentType;
+
+      if (extension === 'json') {
+        console.log('JSON file detected by extension');
+        effectiveContentType = 'application/json';
+      } else if (contentType === 'application/octet-stream') {
+        // For octet-stream, try to detect more specific type
+        if (extension === 'txt') {
+          effectiveContentType = 'text/plain';
+        } else if (extension === 'md' || extension === 'markdown') {
+          effectiveContentType = 'text/markdown';
+        } else if (extension === 'csv') {
+          effectiveContentType = 'text/csv';
+        }
+      }
+
+      if (!effectiveContentType) {
+        console.log('No content type determined, detecting from file...');
+        detectMimeType(url);
+      } else {
+        console.log('Using effective content type:', effectiveContentType);
+        setDetectedMimeType(effectiveContentType);
+      }
+
+      // If it's a previewable type and not too large, fetch content
+      const finalContentType = effectiveContentType || detectedMimeType;
+      const numericSize = Number(object.size);
+      console.log('Preview check:', {
+        finalContentType,
+        isPreviewable: finalContentType && PREVIEWABLE_TYPES.has(finalContentType),
+        size: numericSize,
+        isUnderSizeLimit: numericSize <= MAX_PREVIEW_SIZE
+      });
+
+      if (finalContentType &&
+          PREVIEWABLE_TYPES.has(finalContentType) &&
+          numericSize <= MAX_PREVIEW_SIZE) {
+        console.log('Fetching content for preview');
+        fetchContent(url, object.size);
+      } else {
+        console.log('Skipping preview - file type not previewable or too large');
+      }
+    }
+  }, [object, bucketAddress, prefix, chainId, name, detectedMimeType, toast]);
+
   const handleDelete = () => {
     if (fromAddress === undefined) return;
     deleteObject(bucketAddress, fromAddress, path);
   };
 
   const objectApiUrl = getObjectApiUrl(getChain(chainId));
+
+  /**
+   * Renders content with appropriate formatting based on content type.
+   * For JSON content:
+   * - Attempts to parse and pretty print with proper indentation
+   * - Preserves whitespace and line breaks
+   * - Handles truncation for large files
+   *
+   * @param content - The content to render
+   * @param type - The content type (MIME type)
+   * @param size - The total size of the content
+   */
+  const renderContent = (content: string, type: string, size: bigint) => {
+    console.log('renderContent called with:', { content, type, size: size.toString() });
+
+    const numericSize = Number(size);
+    const isLarge = numericSize > MAX_FULL_DISPLAY_SIZE;
+    const displayContent = isLarge && !showFullContent ? content : fileContent || content;
+
+    console.log('Display content preparation:', {
+      isLarge,
+      showFullContent,
+      contentLength: content?.length,
+      fileContentLength: fileContent?.length,
+      finalLength: displayContent?.length
+    });
+
+    let formattedContent = displayContent;
+    if (type === 'application/json') {
+      try {
+        // Parse and re-stringify with pretty formatting
+        const parsed = JSON.parse(displayContent || '');
+        formattedContent = JSON.stringify(parsed, null, 2);
+        console.log('JSON formatting successful, length:', formattedContent?.length);
+      } catch (e) {
+        console.error('Error parsing JSON:', e, 'Content was:', displayContent);
+      }
+    }
+
+    return (
+      <div className="flex flex-col gap-2 sm:col-span-2">
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground text-xs">Content Preview</span>
+          {isLarge && (
+            <button
+              onClick={() => {
+                if (!showFullContent) {
+                  fetchContent(`${objectApiUrl}/v1/objects/${bucketAddress}/${prefix}`, size);
+                }
+                setShowFullContent(!showFullContent);
+              }}
+              className="text-xs text-blue-500 hover:text-blue-700"
+            >
+              {showFullContent ? "Show Preview" : "Show Full Content"}
+            </button>
+          )}
+        </div>
+        {isLoadingContent ? (
+          <div className="flex items-center justify-center p-4">
+            <Loader2 className="animate-spin" />
+          </div>
+        ) : (
+          <pre className={`text-muted-foreground min-h-12 max-h-[500px] overflow-auto border p-4 text-sm ${
+            type === 'application/json' ? 'whitespace-pre' : ''
+          }`}>
+            {formattedContent}
+            {isLarge && !showFullContent && (
+              <div className="mt-2 text-sm text-muted-foreground">
+                ... (Content truncated, {formatBytes(numericSize).formatted} total)
+              </div>
+            )}
+          </pre>
+        )}
+      </div>
+    );
+  };
 
   if (object) {
     const objectSize = formatBytes(Number(object.size));
@@ -120,6 +430,19 @@ export default function Object({
         : expiryMillis
           ? timeAgo.format(expiryMillis)
           : undefined;
+
+    const contentType = object.metadata.find((m: { key: string; value: string }) => m.key === 'content-type')?.value || detectedMimeType;
+
+    console.log('Render conditions:', {
+      hasContentType: !!contentType,
+      isPreviewable: contentType && PREVIEWABLE_TYPES.has(contentType),
+      underSizeLimit: Number(object.size) <= MAX_PREVIEW_SIZE,
+      hasFileContent: !!fileContent,
+      contentType,
+      fileContentLength: fileContent?.length,
+      detectedMimeType,
+      effectiveContentType: contentType || detectedMimeType
+    });
 
     return (
       <Card className="rounded-none">
@@ -179,12 +502,24 @@ export default function Object({
             value={objectExpiryDisplay}
             valueTooltip={objectExpiryIso}
           />
+          {contentType && (
+            <Metric
+              title="Content Type"
+              value={contentType}
+            />
+          )}
           <div className="flex flex-col gap-2 sm:col-span-2">
             <span className="text-muted-foreground text-xs">Metadata</span>
             <pre className="text-muted-foreground min-h-12 border p-4 font-mono">
               {arrayToDisplay(object.metadata)}
             </pre>
           </div>
+          {((contentType && PREVIEWABLE_TYPES.has(contentType)) ||
+            (detectedMimeType && PREVIEWABLE_TYPES.has(detectedMimeType))) &&
+           Number(object.size) <= MAX_PREVIEW_SIZE &&
+           fileContent && (
+            renderContent(fileContent, contentType || detectedMimeType || 'application/json', object.size)
+          )}
         </CardContent>
       </Card>
     );

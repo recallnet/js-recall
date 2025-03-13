@@ -21,6 +21,7 @@
     "@recallnet/ui": "workspace:*",
     "@tanstack/react-query": "^5.64.2",
     "@vercel/analytics": "^1.5.0",
+    "file-type": "^19.6.0",
     "javascript-time-ago": "^2.5.11",
     "lucide-react": "0.456.0",
     "moment": "^2.30.1",
