@@ -100,7 +100,6 @@ export default function Object({
    */
   const detectMimeType = async (url: string) => {
     try {
-      console.log('Detecting MIME type for:', url);
       // Fetch first 4100 bytes of the file (magic numbers are usually in the first few bytes)
       const response = await fetch(url, {
         headers: {
@@ -109,18 +108,14 @@ export default function Object({
       });
 
       if (!response.ok) {
-        console.log('Failed to fetch file for MIME detection:', response.status);
         return;
       }
 
       const buffer = await response.arrayBuffer();
-      console.log('Got buffer for MIME detection, size:', buffer.byteLength);
-
       const { fileTypeFromBuffer } = await import('file-type');
       const fileType = await fileTypeFromBuffer(new Uint8Array(buffer));
 
       if (fileType) {
-        console.log('Detected MIME type:', fileType.mime);
         setDetectedMimeType(fileType.mime);
       } else {
         // Handle text-based files by extension
@@ -151,7 +146,6 @@ export default function Object({
         }
 
         if (detectedType) {
-          console.log('Detected type from extension:', detectedType);
           setDetectedMimeType(detectedType);
         }
       }
@@ -171,7 +165,6 @@ export default function Object({
    */
   const fetchContent = async (url: string, size: bigint) => {
     try {
-      console.log('Fetching content for:', url);
       setIsLoadingContent(true);
       const numericSize = Number(size);
 
@@ -180,42 +173,23 @@ export default function Object({
         ? 'bytes=0-' + (PREVIEW_LENGTH - 1)
         : undefined;
 
-      console.log('Using range:', range);
-
       // First try to fetch without the ?object parameter to get raw content
       const rawUrl = url.replace('?object', '');
-      console.log('Fetching raw content from:', rawUrl);
-
       const response = await fetch(rawUrl, {
         headers: range ? { Range: range } : {}
       });
 
       if (!response.ok) {
-        console.log('Failed to fetch content:', response.status);
         return;
       }
 
-      // Log response headers
-      console.log('Response headers:', {
-        contentType: response.headers.get('content-type'),
-        contentLength: response.headers.get('content-length'),
-        allHeaders: Array.from(response.headers.entries()).reduce((acc, [key, value]) => {
-          acc[key] = value;
-          return acc;
-        }, {} as Record<string, string>)
-      });
-
       const text = await response.text();
-      console.log('Got raw content:', text);
-      console.log('Got content, length:', text.length);
 
       try {
         // Try to parse as JSON to verify it's valid
-        const parsed = JSON.parse(text);
-        console.log('Successfully parsed JSON:', parsed);
+        JSON.parse(text);
         setFileContent(text);
       } catch (e) {
-        console.error('Failed to parse as JSON:', e);
         setFileContent(text);
       }
     } catch (error) {
@@ -269,27 +243,15 @@ export default function Object({
   // Effect to detect MIME type and fetch content when object is loaded
   useEffect(() => {
     if (object) {
-      console.log('Object loaded:', {
-        name,
-        size: object.size.toString(),
-        metadata: object.metadata,
-        maxPreviewSize: MAX_PREVIEW_SIZE,
-        previewableTypes: Array.from(PREVIEWABLE_TYPES)
-      });
-
       const contentType = object.metadata.find((m: { key: string; value: string }) => m.key === 'content-type')?.value;
-      console.log('Found content type in metadata:', contentType);
-
       const objectApiUrl = getObjectApiUrl(getChain(chainId));
       const url = `${objectApiUrl}/v1/objects/${bucketAddress}/${prefix}`;
-      console.log('Object URL:', url);
 
       // Check file extension first
       const extension = name.split('.').pop()?.toLowerCase();
       let effectiveContentType = contentType;
 
       if (extension === 'json') {
-        console.log('JSON file detected by extension');
         effectiveContentType = 'application/json';
       } else if (contentType === 'application/octet-stream') {
         // For octet-stream, try to detect more specific type
@@ -303,30 +265,19 @@ export default function Object({
       }
 
       if (!effectiveContentType) {
-        console.log('No content type determined, detecting from file...');
         detectMimeType(url);
       } else {
-        console.log('Using effective content type:', effectiveContentType);
         setDetectedMimeType(effectiveContentType);
       }
 
       // If it's a previewable type and not too large, fetch content
       const finalContentType = effectiveContentType || detectedMimeType;
       const numericSize = Number(object.size);
-      console.log('Preview check:', {
-        finalContentType,
-        isPreviewable: finalContentType && PREVIEWABLE_TYPES.has(finalContentType),
-        size: numericSize,
-        isUnderSizeLimit: numericSize <= MAX_PREVIEW_SIZE
-      });
 
       if (finalContentType &&
           PREVIEWABLE_TYPES.has(finalContentType) &&
           numericSize <= MAX_PREVIEW_SIZE) {
-        console.log('Fetching content for preview');
         fetchContent(url, object.size);
-      } else {
-        console.log('Skipping preview - file type not previewable or too large');
       }
     }
   }, [object, bucketAddress, prefix, chainId, name, detectedMimeType, toast]);
@@ -350,19 +301,9 @@ export default function Object({
    * @param size - The total size of the content
    */
   const renderContent = (content: string, type: string, size: bigint) => {
-    console.log('renderContent called with:', { content, type, size: size.toString() });
-
     const numericSize = Number(size);
     const isLarge = numericSize > MAX_FULL_DISPLAY_SIZE;
     const displayContent = isLarge && !showFullContent ? content : fileContent || content;
-
-    console.log('Display content preparation:', {
-      isLarge,
-      showFullContent,
-      contentLength: content?.length,
-      fileContentLength: fileContent?.length,
-      finalLength: displayContent?.length
-    });
 
     let formattedContent = displayContent;
     if (type === 'application/json') {
@@ -370,9 +311,8 @@ export default function Object({
         // Parse and re-stringify with pretty formatting
         const parsed = JSON.parse(displayContent || '');
         formattedContent = JSON.stringify(parsed, null, 2);
-        console.log('JSON formatting successful, length:', formattedContent?.length);
       } catch (e) {
-        console.error('Error parsing JSON:', e, 'Content was:', displayContent);
+        console.error('Error parsing JSON:', e);
       }
     }
 
@@ -432,17 +372,6 @@ export default function Object({
           : undefined;
 
     const contentType = object.metadata.find((m: { key: string; value: string }) => m.key === 'content-type')?.value || detectedMimeType;
-
-    console.log('Render conditions:', {
-      hasContentType: !!contentType,
-      isPreviewable: contentType && PREVIEWABLE_TYPES.has(contentType),
-      underSizeLimit: Number(object.size) <= MAX_PREVIEW_SIZE,
-      hasFileContent: !!fileContent,
-      contentType,
-      fileContentLength: fileContent?.length,
-      detectedMimeType,
-      effectiveContentType: contentType || detectedMimeType
-    });
 
     return (
       <Card className="rounded-none">
