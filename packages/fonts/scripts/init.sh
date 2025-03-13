@@ -6,8 +6,10 @@ FONTS_DIR=""
 OUTPUT_DIR="src/fonts"
 OUTPUT_FILE="src/index.ts"
 
-rm -rf src/index.ts
-rm -rf src/fonts
+rm -rf src
+
+# Create output directory if it doesn't exist
+mkdir -p "${OUTPUT_DIR}"
 
 # Only proceed if PRIVATE_FONTS environment variable is set
 if [ -n "${PRIVATE_FONTS}" ] && [ "${PRIVATE_FONTS}" != "false" ] && [ "${PRIVATE_FONTS}" != "0" ]; then
@@ -16,9 +18,6 @@ if [ -n "${PRIVATE_FONTS}" ] && [ "${PRIVATE_FONTS}" != "false" ] && [ "${PRIVAT
 
   # Clone repository
   git clone --depth 1 "${REPO_URL}" "${TEMP_DIR}"
-
-  # Create output directory if it doesn't exist
-  mkdir -p "${OUTPUT_DIR}"
 
   # Copy font files
   cp "${TEMP_DIR}/${FONTS_DIR}"/*.{woff2,woff} "${OUTPUT_DIR}/" 2>/dev/null
