@@ -197,6 +197,7 @@ export function Account() {
               <Label>Wallet Address</Label>
               <Input
                 id="to"
+                placeholder="0x..."
                 value={sponsorAddress}
                 onChange={(e) => setSponsorAddress(e.target.value)}
               />

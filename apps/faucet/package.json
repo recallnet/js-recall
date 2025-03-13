@@ -13,6 +13,7 @@
   "dependencies": {
     "@marsidev/react-turnstile": "^1.1.0",
     "@recallnet/chains": "workspace:*",
+    "@recallnet/fonts": "workspace:*",
     "@recallnet/ui": "workspace:*",
     "@vercel/analytics": "^1.5.0",
     "class-variance-authority": "^0.7.0",

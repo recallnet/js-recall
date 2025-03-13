@@ -16,6 +16,7 @@
     "@recallnet/address-utils": "workspace:*",
     "@recallnet/bigint-utils": "workspace:*",
     "@recallnet/chains": "workspace:*",
+    "@recallnet/fonts": "workspace:*",
     "@recallnet/sdkx": "workspace:*",
     "@recallnet/ui": "workspace:*",
     "@tanstack/react-query": "^5.64.2",
