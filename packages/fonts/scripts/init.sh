@@ -1,7 +1,16 @@
 #!/bin/bash
 
-# GitHub details with SSH
-REPO_URL="git@github.com:recallnet/fonts.git"
+# Exit immediately if a command exits with a non-zero status
+set -e
+# Pipelines return the exit status of the last command to exit with a non-zero status
+set -o pipefail
+
+# GitHub details
+if [ -n "${GITHUB_TOKEN}" ]; then
+  REPO_URL="https://${GITHUB_TOKEN}@github.com/recallnet/fonts.git"
+else
+  REPO_URL="git@github.com:recallnet/fonts.git"
+fi
 FONTS_DIR=""
 OUTPUT_DIR="src/fonts"
 OUTPUT_FILE="src/index.ts"
@@ -20,7 +29,7 @@ if [ -n "${PRIVATE_FONTS}" ] && [ "${PRIVATE_FONTS}" != "false" ] && [ "${PRIVAT
   git clone --depth 1 "${REPO_URL}" "${TEMP_DIR}"
 
   # Copy font files
-  cp "${TEMP_DIR}/${FONTS_DIR}"/*.{woff2,woff} "${OUTPUT_DIR}/" 2>/dev/null
+  cp "${TEMP_DIR}/${FONTS_DIR}"/*.{woff2,woff} "${OUTPUT_DIR}/"
 
   # Clean up
   rm -rf "${TEMP_DIR}"
