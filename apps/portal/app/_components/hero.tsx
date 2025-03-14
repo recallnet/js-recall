@@ -66,11 +66,11 @@ export default function Hero() {
       </div>
       <Card className="bg-background/85 supports-[backdrop-filter]:bg-background/85 fixed left-1/2 top-1/2 m-0 max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-none p-4 backdrop-blur">
         <CardHeader>
-          <CardTitle className="text-3xl uppercase">
+          <CardTitle className="font-mono text-3xl uppercase">
             &gt; Networked <span className="text-[#2962C0]">intelligence</span>{" "}
-            for agents.
+            for agents
           </CardTitle>
-          <CardDescription className="text-xl uppercase">
+          <CardDescription className="text-xl font-light">
             Recall is the first unstoppable memory network enabling autonomous
             AI agents to store, access, and trade valuable memories on chain.
           </CardDescription>

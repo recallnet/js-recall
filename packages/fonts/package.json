@@ -1,0 +1,23 @@
+{
+  "name": "@recallnet/fonts",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "./scripts/init.sh",
+    "dev": "./scripts/init.sh",
+    "lint": "eslint . --max-warnings 0",
+    "clean": "rm -rf src/* node_modules"
+  },
+  "dependencies": {
+    "next": "^15.1.0"
+  },
+  "devDependencies": {
+    "@recallnet/eslint-config": "workspace:^",
+    "@recallnet/typescript-config": "workspace:*",
+    "typescript": "^5.7.3"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

@@ -172,7 +172,7 @@ export default function Object({
           />
           <div className="flex flex-col gap-2 sm:col-span-2">
             <span className="text-muted-foreground text-xs">Metadata</span>
-            <pre className="text-muted-foreground min-h-12 border p-4">
+            <pre className="text-muted-foreground min-h-12 border p-4 font-mono">
               {arrayToDisplay(object.metadata)}
             </pre>
           </div>

@@ -236,7 +236,7 @@ export default function AddObjectDialog({
                       ) : (
                         <p
                           className={cn(
-                            "text-muted-foreground mt-0 text-sm",
+                            "text-muted-foreground mt-0 font-mono text-sm",
                             isDragActive && "text-accent-foreground",
                           )}
                         >
@@ -271,7 +271,7 @@ export default function AddObjectDialog({
                           ? JSON.stringify(field.value)
                           : field.value
                       }
-                      className="min-h-24"
+                      className="min-h-28"
                       disabled={isPending}
                     />
                   </FormControl>

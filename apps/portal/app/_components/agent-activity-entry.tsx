@@ -79,7 +79,7 @@ export function AgentActivityEntry({ activity }: AgentActivityEntryProps) {
         </Button>
         {isExpanded && (
           <div className="bg-muted mt-4 rounded-md p-4">
-            <pre className="whitespace-pre-wrap text-sm">
+            <pre className="whitespace-pre-wrap font-mono text-sm">
               {JSON.stringify(activity.metadata, null, 2)}
             </pre>
           </div>

@@ -58,7 +58,7 @@ export default function BucketCard({ bucket }: Props) {
         <CardContent className="grid grid-cols-2 gap-6">
           <div className="col-span-2 flex flex-col gap-2">
             <span className="text-muted-foreground text-xs">Metadata</span>
-            <pre className="text-muted-foreground min-h-12 border p-4">
+            <pre className="text-muted-foreground min-h-12 border p-4 font-mono">
               {arrayToDisplay(bucket.metadata)}
             </pre>
           </div>
