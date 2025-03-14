@@ -32,7 +32,7 @@ if [ -n "${PRIVATE_FONTS}" ] && [ "${PRIVATE_FONTS}" != "false" ] && [ "${PRIVAT
   git clone --depth 1 "${REPO_URL}" "${TEMP_DIR}"
 
   # Copy font files
-  cp "${TEMP_DIR}/${FONTS_DIR}"/*.{woff2,woff} "${OUTPUT_DIR}/"
+  cp "${TEMP_DIR}/${FONTS_DIR}"/*.woff2 "${OUTPUT_DIR}/"
 
   # Clean up
   rm -rf "${TEMP_DIR}"
