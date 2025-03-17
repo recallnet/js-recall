@@ -1,0 +1,82 @@
+import localFont from "next/font/local";
+
+const fontSans = localFont({
+  variable: "--font-sans",
+  fallback: ["ui-sans-serif"],
+  src: [
+    {
+      path: "./ReplicaLLWeb-Light.woff2",
+      weight: "300",
+      style: "normal",
+    },
+    {
+      path: "./ReplicaLLWeb-LightItalic.woff2",
+      weight: "300",
+      style: "italic",
+    },
+    {
+      path: "./ReplicaLLWeb-Regular.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "./ReplicaLLWeb-Italic.woff2",
+      weight: "400",
+      style: "italic",
+    },
+    {
+      path: "./ReplicaLLWeb-Bold.woff2",
+      weight: "700",
+      style: "normal",
+    },
+    {
+      path: "./ReplicaLLWeb-BoldItalic.woff2",
+      weight: "700",
+      style: "italic",
+    },
+    {
+      path: "./ReplicaLLWeb-Heavy.woff2",
+      weight: "900",
+      style: "normal",
+    },
+    {
+      path: "./ReplicaLLWeb-HeavyItalic.woff2",
+      weight: "900",
+      style: "italic",
+    },
+  ],
+});
+
+const fontMono = localFont({
+  variable: "--font-mono",
+  fallback: ["ui-monospace", "monospace"],
+  src: [
+    {
+      path: "./TrimMono-Light.woff2",
+      weight: "300",
+      style: "normal",
+    },
+    {
+      path: "./TrimMono-Regular.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "./TrimMono-Medium.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "./TrimMono-SemiBold.woff2",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "./TrimMono-Bold.woff2",
+      weight: "700",
+      style: "normal",
+    },
+  ],
+});
+
+export { fontSans, fontMono };

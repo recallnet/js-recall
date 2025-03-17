@@ -175,7 +175,12 @@ export function ApprovalsTo() {
           <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-2">
               <Label>Wallet Address</Label>
-              <Input id="to" value={formData.to} onChange={handleChange} />
+              <Input
+                id="to"
+                placeholder="0x..."
+                value={formData.to}
+                onChange={handleChange}
+              />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="creditLimit">

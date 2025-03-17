@@ -2,9 +2,9 @@ import "@recallnet/ui/globals.css";
 
 import { Analytics } from "@vercel/analytics/react";
 import { Metadata } from "next";
-import { Geist_Mono } from "next/font/google";
 import Link from "next/link";
 
+import { fontMono, fontSans } from "@recallnet/fonts";
 import { Toaster } from "@recallnet/ui/components/toaster";
 import { RecallLogo } from "@recallnet/ui/recall/logos/recall-logo";
 import { ThemeToggle } from "@recallnet/ui/recall/theme-toggle";
@@ -20,11 +20,6 @@ export const metadata: Metadata = {
     "Interact with Recall services and discover data stored on the Recall network.",
 };
 
-const fontMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-});
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -32,7 +27,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${fontMono.variable} font-mono antialiased`}>
+      <body
+        className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased`}
+      >
         <Analytics />
         <Providers>
           <div className="flex min-h-svh flex-col">

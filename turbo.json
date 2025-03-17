@@ -1,7 +1,13 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
-  "globalEnv": ["NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID"],
+  "globalEnv": [
+    "NEXT_PUBLIC_TS_SITE_KEY",
+    "NEXT_PUBLIC_CHAIN_NAME",
+    "NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID",
+    "PRIVATE_FONTS",
+    "FONTS_REPO_ACCESS_TOKEN"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

@@ -82,7 +82,7 @@ export default function ObjectListItem({
           <Metric title="Size" value={size.val} subtitle={size.unit} />
           <div className="col-span-2 flex flex-col gap-2">
             <span className="text-muted-foreground text-xs">Metadata</span>
-            <pre className="text-muted-foreground min-h-12 border p-4">
+            <pre className="text-muted-foreground min-h-12 border p-4 font-mono">
               {arrayToDisplay(object.state.metadata)}
             </pre>
           </div>
