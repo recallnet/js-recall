@@ -22,18 +22,18 @@ import CreditNeededDialog from "./credit-needed-dialog";
 import Object from "./object";
 import Objects from "./objects";
 
-export default function Bucket({
-  bucketAddress,
-  prefixParts,
-}: {
-  bucketAddress: Address;
-  prefixParts: string[];
-}) {
+export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
   const searchParams = useSearchParams();
 
-  const isObject = searchParams.has("object");
-  const prefix =
-    prefixParts.join("/") + (prefixParts.length && !isObject ? "/" : "");
+  const [delimiter, setDelimiter] = useState(
+    searchParams.get("delimiter") || "/",
+  );
+
+  const path = searchParams.get("path") || "";
+  const isObject = path && !path.endsWith(delimiter);
+  const pathParts = path
+    ? path.split(delimiter).slice(0, isObject ? undefined : -1)
+    : [];
 
   const [addObjectOpen, setAddObjectOpen] = useState(false);
   const [creditNeededOpen, setCreditNeededOpen] = useState(false);
@@ -50,18 +50,27 @@ export default function Bucket({
 
   function mainContent() {
     if (isObject) {
-      const name = prefixParts[prefixParts.length - 1] ?? "unknown";
-      const containingPrefix = prefixParts.slice(0, -1).join("/");
+      const name = pathParts[pathParts.length - 1] ?? "unknown";
+      const parentPath =
+        pathParts.slice(0, -1).join(delimiter) +
+        (pathParts.length > 1 ? delimiter : "");
       return (
         <Object
           bucketAddress={bucketAddress}
           name={name}
-          prefix={prefix}
-          containingPrefix={containingPrefix}
+          path={path}
+          parentPath={parentPath}
+          delimiter={delimiter}
         />
       );
     } else {
-      return <Objects bucketAddress={bucketAddress} prefix={prefix} />;
+      return (
+        <Objects
+          bucketAddress={bucketAddress}
+          path={path}
+          delimiter={delimiter}
+        />
+      );
     }
   }
 
@@ -71,7 +80,7 @@ export default function Bucket({
         open={addObjectOpen}
         onOpenChange={setAddObjectOpen}
         bucketAddress={bucketAddress}
-        prefix={prefix}
+        prefix={path}
       />
       <CreditNeededDialog
         open={creditNeededOpen}
@@ -87,9 +96,14 @@ export default function Bucket({
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              {prefixParts.length ? (
+              {pathParts.length ? (
                 <BreadcrumbLink asChild>
-                  <Link href={`/buckets/${bucketAddress}`}>
+                  <Link
+                    href={{
+                      pathname: `/buckets/${bucketAddress}`,
+                      ...(delimiter !== "/" ? { query: { delimiter } } : {}),
+                    }}
+                  >
                     {displayAddress(bucketAddress)}
                   </Link>
                 </BreadcrumbLink>
@@ -97,22 +111,31 @@ export default function Bucket({
                 displayAddress(bucketAddress)
               )}
             </BreadcrumbItem>
-            {prefixParts.map((part, index) => (
-              <Fragment key={part}>
-                <BreadcrumbSeparator />
+            {!!pathParts.length && <BreadcrumbSeparator />}
+            {pathParts.map((part, index) => (
+              <Fragment key={`${index}-${part}`}>
                 <BreadcrumbItem>
-                  {index === prefixParts.length - 1 ? (
-                    part
+                  {index === pathParts.length - 1 ? (
+                    part || "\u00A0\u00A0"
                   ) : (
                     <BreadcrumbLink asChild>
                       <Link
-                        href={`/buckets/${bucketAddress}/${prefixParts.slice(0, index + 1).join("/")}`}
+                        href={{
+                          pathname: `/buckets/${bucketAddress}`,
+                          query: {
+                            path: `${pathParts.slice(0, index + 1).join(delimiter)}${delimiter}`,
+                            ...(delimiter !== "/" ? { delimiter } : {}),
+                          },
+                        }}
                       >
-                        {part}
+                        {part || "\u00A0\u00A0"}
                       </Link>
                     </BreadcrumbLink>
                   )}
                 </BreadcrumbItem>
+                {(index < pathParts.length - 1 || !isObject) && (
+                  <BreadcrumbSeparator>{delimiter}</BreadcrumbSeparator>
+                )}
               </Fragment>
             ))}
           </BreadcrumbList>

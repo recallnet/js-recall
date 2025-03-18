@@ -4,14 +4,18 @@ import { Address } from "viem";
 
 import { Card, CardHeader, CardTitle } from "@recallnet/ui/components/card";
 
+import { removePrefix } from "@/lib/remove-prefix";
+
 export default function PrefixListItem({
   bucketAddress,
+  parentPath,
   commonPrefix,
-  label,
+  delimiter,
 }: {
   bucketAddress: Address;
+  parentPath: string;
   commonPrefix: string;
-  label: string;
+  delimiter: string;
 }) {
   return (
     <Card key={commonPrefix} className="rounded-none">
@@ -19,11 +23,17 @@ export default function PrefixListItem({
         <CardTitle>
           <Link
             key={commonPrefix}
-            href={`/buckets/${bucketAddress}/${commonPrefix}`}
+            href={{
+              pathname: `/buckets/${bucketAddress}`,
+              query: {
+                path: commonPrefix,
+                ...(delimiter !== "/" ? { delimiter } : {}),
+              },
+            }}
             className="flex items-center gap-4 justify-self-start"
           >
             <Folder />
-            {label}
+            {removePrefix(commonPrefix, parentPath)}
           </Link>
         </CardTitle>
       </CardHeader>
