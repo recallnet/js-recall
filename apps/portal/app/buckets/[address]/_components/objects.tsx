@@ -8,17 +8,17 @@ import { useInfiniteQueryObjects } from "@recallnet/sdkx/react/buckets";
 import { useToast } from "@recallnet/ui/hooks/use-toast";
 import { InfiniteScroll } from "@recallnet/ui/recall/infinite-scroll";
 
-import { removePrefix } from "@/lib/remove-prefix";
-
 import ObjectListItem from "./object-list-item";
 import PrefixListItem from "./prefix-list-item";
 
 export default function Objects({
   bucketAddress,
-  prefix,
+  path,
+  delimiter,
 }: {
   bucketAddress: Address;
-  prefix: string;
+  path: string;
+  delimiter: string;
 }) {
   const { toast } = useToast();
 
@@ -29,8 +29,9 @@ export default function Objects({
     hasNextPage,
     fetchNextPage,
   } = useInfiniteQueryObjects(bucketAddress, {
-    prefix,
+    prefix: path,
     pageSize: 50,
+    delimiter,
   });
 
   useEffect(() => {
@@ -58,16 +59,18 @@ export default function Objects({
             <PrefixListItem
               key={commonPrefix}
               bucketAddress={bucketAddress}
+              parentPath={path}
               commonPrefix={commonPrefix}
-              label={removePrefix(commonPrefix, prefix).slice(0, -1)}
+              delimiter={delimiter}
             />
           ))}
           {page.result?.objects.map((object) => (
             <ObjectListItem
               key={object.key}
               bucketAddress={bucketAddress}
-              prefix={prefix}
+              parentPath={path}
               object={object}
+              delimiter={delimiter}
             />
           ))}
         </Fragment>

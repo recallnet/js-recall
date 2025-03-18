@@ -32,15 +32,17 @@ const timeAgo = new TimeAgo("en-US");
 interface Props {
   bucketAddress: Address;
   name: string;
-  prefix: string;
-  containingPrefix: string;
+  path: string;
+  parentPath: string;
+  delimiter: string;
 }
 
 export default function Object({
   bucketAddress,
   name,
-  prefix,
-  containingPrefix,
+  path,
+  parentPath,
+  delimiter,
 }: Props) {
   const router = useRouter();
 
@@ -56,7 +58,7 @@ export default function Object({
     data: object,
     error: objectError,
     isLoading: objectLoading,
-  } = useGetObject(bucketAddress, prefix);
+  } = useGetObject(bucketAddress, path);
 
   const {
     deleteObject,
@@ -75,9 +77,16 @@ export default function Object({
 
   useEffect(() => {
     if (deleteReceipt) {
-      router.replace(`/buckets/${bucketAddress}/${containingPrefix}`);
+      const params = new URLSearchParams();
+      if (parentPath) {
+        params.set("path", parentPath);
+      }
+      if (delimiter !== "/") {
+        params.set("delimiter", delimiter);
+      }
+      router.replace(`/buckets/${bucketAddress}?${params.toString()}`);
     }
-  }, [bucketAddress, deleteReceipt, containingPrefix, router]);
+  }, [bucketAddress, deleteReceipt, parentPath, router, delimiter]);
 
   useEffect(() => {
     if (objectError || deleteError || deleteReceiptError) {
@@ -90,7 +99,7 @@ export default function Object({
 
   const handleDelete = () => {
     if (fromAddress === undefined) return;
-    deleteObject(bucketAddress, fromAddress, prefix);
+    deleteObject(bucketAddress, fromAddress, path);
   };
 
   const objectApiUrl = getObjectApiUrl(getChain(chainId));
@@ -127,7 +136,7 @@ export default function Object({
               />
             )}
             <Link
-              href={`${objectApiUrl}/v1/objects/${bucketAddress}/${prefix}`}
+              href={`${objectApiUrl}/v1/objects/${bucketAddress}/${encodeURIComponent(path)}`}
               target="_blank"
               className="opacity-20 hover:cursor-pointer hover:opacity-100"
             >

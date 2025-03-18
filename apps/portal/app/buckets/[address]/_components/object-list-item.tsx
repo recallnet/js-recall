@@ -18,7 +18,7 @@ import { removePrefix } from "@/lib/remove-prefix";
 
 interface Props {
   bucketAddress: Address;
-  prefix: string;
+  parentPath: string;
   object: {
     key: string;
     state: {
@@ -30,12 +30,14 @@ interface Props {
       }[];
     };
   };
+  delimiter: string;
 }
 
 export default function ObjectListItem({
   bucketAddress,
-  prefix,
+  parentPath,
   object,
+  delimiter,
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const size = formatBytes(Number(object.state.size));
@@ -45,11 +47,17 @@ export default function ObjectListItem({
       <CardHeader>
         <CardTitle className="flex items-center gap-4">
           <Link
-            href={`/buckets/${bucketAddress}/${object.key}?object`}
+            href={{
+              pathname: `/buckets/${bucketAddress}`,
+              query: {
+                path: object.key,
+                ...(delimiter !== "/" ? { delimiter } : {}),
+              },
+            }}
             className="flex items-center gap-4"
           >
             <File />
-            {removePrefix(object.key, prefix)}
+            {removePrefix(object.key, parentPath)}
           </Link>
           {!isOpen && (
             <ChevronDown
