@@ -88,43 +88,12 @@ export const blobManagerAbi = [
             internalType: "struct Subscriber[]",
             type: "tuple[]",
             components: [
-              { name: "subscriber", internalType: "address", type: "address" },
               {
-                name: "subscriptionGroup",
-                internalType: "struct SubscriptionGroup[]",
-                type: "tuple[]",
-                components: [
-                  {
-                    name: "subscriptionId",
-                    internalType: "string",
-                    type: "string",
-                  },
-                  {
-                    name: "subscription",
-                    internalType: "struct Subscription",
-                    type: "tuple",
-                    components: [
-                      { name: "added", internalType: "uint64", type: "uint64" },
-                      {
-                        name: "expiry",
-                        internalType: "uint64",
-                        type: "uint64",
-                      },
-                      {
-                        name: "source",
-                        internalType: "string",
-                        type: "string",
-                      },
-                      {
-                        name: "delegate",
-                        internalType: "address",
-                        type: "address",
-                      },
-                      { name: "failed", internalType: "bool", type: "bool" },
-                    ],
-                  },
-                ],
+                name: "subscriptionId",
+                internalType: "string",
+                type: "string",
               },
+              { name: "expiry", internalType: "uint64", type: "uint64" },
             ],
           },
           { name: "status", internalType: "enum BlobStatus", type: "uint8" },
@@ -495,6 +464,7 @@ export const bucketManagerAbi = [
                 components: [
                   { name: "blobHash", internalType: "string", type: "string" },
                   { name: "size", internalType: "uint64", type: "uint64" },
+                  { name: "expiry", internalType: "uint64", type: "uint64" },
                   {
                     name: "metadata",
                     internalType: "struct KeyValue[]",
@@ -548,6 +518,7 @@ export const bucketManagerAbi = [
                 components: [
                   { name: "blobHash", internalType: "string", type: "string" },
                   { name: "size", internalType: "uint64", type: "uint64" },
+                  { name: "expiry", internalType: "uint64", type: "uint64" },
                   {
                     name: "metadata",
                     internalType: "struct KeyValue[]",
@@ -599,6 +570,7 @@ export const bucketManagerAbi = [
                 components: [
                   { name: "blobHash", internalType: "string", type: "string" },
                   { name: "size", internalType: "uint64", type: "uint64" },
+                  { name: "expiry", internalType: "uint64", type: "uint64" },
                   {
                     name: "metadata",
                     internalType: "struct KeyValue[]",
@@ -651,6 +623,7 @@ export const bucketManagerAbi = [
                 components: [
                   { name: "blobHash", internalType: "string", type: "string" },
                   { name: "size", internalType: "uint64", type: "uint64" },
+                  { name: "expiry", internalType: "uint64", type: "uint64" },
                   {
                     name: "metadata",
                     internalType: "struct KeyValue[]",
@@ -701,6 +674,7 @@ export const bucketManagerAbi = [
                 components: [
                   { name: "blobHash", internalType: "string", type: "string" },
                   { name: "size", internalType: "uint64", type: "uint64" },
+                  { name: "expiry", internalType: "uint64", type: "uint64" },
                   {
                     name: "metadata",
                     internalType: "struct KeyValue[]",
