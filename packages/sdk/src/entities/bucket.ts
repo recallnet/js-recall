@@ -556,6 +556,7 @@ export class BucketManager {
           state: {
             blobHash: state.blobHash,
             size: state.size,
+            expiry: state.expiry,
             metadata: convertAbiMetadataToObject(state.metadata),
           },
         })),
