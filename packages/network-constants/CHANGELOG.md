@@ -1,5 +1,11 @@
 # @recallnet/network-constants
 
+## 0.0.6
+
+### Patch Changes
+
+- [#116](https://github.com/recallnet/js-recall/pull/116) [`c1591ac`](https://github.com/recallnet/js-recall/commit/c1591acd7b4488b9010af0e7aa5c734682738607) Thanks [@dtbuchholz](https://github.com/dtbuchholz)! - testnet v0.1.5 updates with new contract addresses and ABI changes for buckets and blobs
+
 ## 0.0.5
 
 ### Patch Changes

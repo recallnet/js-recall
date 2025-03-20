@@ -1,5 +1,14 @@
 # @recallnet/chains
 
+## 0.0.6
+
+### Patch Changes
+
+- [#105](https://github.com/recallnet/js-recall/pull/105) [`35c6c8e`](https://github.com/recallnet/js-recall/commit/35c6c8ebdb7447e17225014770bc2e968916bf67) Thanks [@dtbuchholz](https://github.com/dtbuchholz)! - increases base fee multiplier from 1.2 to 120
+
+- Updated dependencies [[`c1591ac`](https://github.com/recallnet/js-recall/commit/c1591acd7b4488b9010af0e7aa5c734682738607)]:
+  - @recallnet/network-constants@0.0.6
+
 ## 0.0.5
 
 ### Patch Changes
