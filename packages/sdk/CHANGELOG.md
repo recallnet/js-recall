@@ -1,5 +1,16 @@
 # @recallnet/sdk
 
+## 0.0.7
+
+### Patch Changes
+
+- [#116](https://github.com/recallnet/js-recall/pull/116) [`c1591ac`](https://github.com/recallnet/js-recall/commit/c1591acd7b4488b9010af0e7aa5c734682738607) Thanks [@dtbuchholz](https://github.com/dtbuchholz)! - testnet v0.1.5 updates with new contract addresses and ABI changes for buckets and blobs
+
+- Updated dependencies [[`35c6c8e`](https://github.com/recallnet/js-recall/commit/35c6c8ebdb7447e17225014770bc2e968916bf67), [`c1591ac`](https://github.com/recallnet/js-recall/commit/c1591acd7b4488b9010af0e7aa5c734682738607)]:
+  - @recallnet/chains@0.0.6
+  - @recallnet/network-constants@0.0.6
+  - @recallnet/contracts@0.0.4
+
 ## 0.0.6
 
 ### Patch Changes
