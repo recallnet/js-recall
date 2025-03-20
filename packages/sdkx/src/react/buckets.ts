@@ -243,7 +243,7 @@ export function useAddFile() {
         source: uploadRes.node_id,
         key: args.key,
         blobHash: uploadRes.hash,
-        recoveryHash: "",
+        recoveryHash: uploadRes.metadata_hash,
         size: BigInt(args.file.size),
         ttl: args.options?.ttl ?? 0n,
         metadata,

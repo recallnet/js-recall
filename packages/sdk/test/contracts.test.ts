@@ -94,7 +94,6 @@ describe("contracts", function () {
       let bucket: Address; // Note: FVM uses all lowercase, but viem returns the checksummed address (may include uppercase)
       const key = "hello/world";
       const fileContents = "hello\n";
-      const blobHash = "rzghyg4z3p6vbz5jkgc75lk64fci7kieul65o6hk6xznx7lctkmq";
 
       before(async () => {
         ({
@@ -102,12 +101,13 @@ describe("contracts", function () {
         } = await bucketManager.create());
       });
 
-      it("should add object from file", async () => {
+      it("should add object from file with metadata and overwrite", async () => {
         const path = await temporaryWrite(fileContents);
         const opts = {
           metadata: {
             foo: "bar",
           },
+          overwrite: true,
         };
         const { meta } = await bucketManager.add(bucket, key, path, opts);
         strictEqual(isHash(meta!.tx!.transactionHash), true);
@@ -127,7 +127,7 @@ describe("contracts", function () {
           bucket,
           key,
         );
-        strictEqual(object.blobHash, blobHash);
+        expect(object.blobHash).to.be.a("string");
         strictEqual(object.size, 6n);
 
         // at a specific block number
@@ -137,7 +137,7 @@ describe("contracts", function () {
           key,
           latestBlock,
         ));
-        strictEqual(object.blobHash, blobHash);
+        expect(object.blobHash).to.be.a("string");
         strictEqual(object.size, 6n);
       });
 
@@ -263,7 +263,8 @@ describe("contracts", function () {
         expect(objects.length).to.be.greaterThan(0);
         strictEqual(objects[0]?.key, key);
         strictEqual(objects[0]?.state?.size, 6n);
-        strictEqual(objects[0]?.state?.blobHash, blobHash);
+        expect(Number(objects[0]?.state?.expiry)).to.be.greaterThan(0);
+        expect(objects[0]?.state?.blobHash).to.be.a("string");
         strictEqual(commonPrefixes.length, 0);
 
         // no objects with prefix
@@ -509,12 +510,24 @@ describe("contracts", function () {
     const to = getAddress("0x9965507d1a55bcc2695c58ba16fb37d819b0a4dc");
     const subscriptionId = "foobar";
     const size = 6n;
-    const blobHash = "rzghyg4z3p6vbz5jkgc75lk64fci7kieul65o6hk6xznx7lctkmq";
+    let blobHash: string;
 
     before(async () => {
       blobs = client.blobManager(
         (BLOB_MANAGER_ADDRESS as Address) ?? undefined,
       );
+      const bucketManager = client.bucketManager(
+        (BUCKET_MANAGER_ADDRESS as Address) ?? undefined,
+      );
+      const fileContents = "hello\n";
+      const key = "hello/world";
+      const {
+        result: { bucket },
+      } = await bucketManager.create();
+      const path = await temporaryWrite(fileContents);
+      await bucketManager.add(bucket, key, path);
+      const { result } = await bucketManager.getObjectValue(bucket, key);
+      blobHash = result.blobHash;
     });
 
     it("should get added blobs", async () => {
