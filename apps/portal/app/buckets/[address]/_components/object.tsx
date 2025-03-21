@@ -38,11 +38,11 @@ const PREVIEW_LENGTH = 1000;
 
 // Types of files we can preview
 const PREVIEWABLE_TYPES = new Set([
-  'application/json',
-  'text/plain',
-  'text/markdown',
-  'text/csv',
-  'text/x-markdown'
+  "application/json",
+  "text/plain",
+  "text/markdown",
+  "text/csv",
+  "text/x-markdown",
 ]);
 
 interface Props {
@@ -81,7 +81,9 @@ export default function Object({
   const { address: fromAddress } = useAccount();
   const chainId = useChainId();
   const { data: blockNumber } = useBlockNumber();
-  const [detectedMimeType, setDetectedMimeType] = useState<string | undefined>();
+  const [detectedMimeType, setDetectedMimeType] = useState<
+    string | undefined
+  >();
   const [fileContent, setFileContent] = useState<string | undefined>();
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [showFullContent, setShowFullContent] = useState(false);
@@ -103,8 +105,8 @@ export default function Object({
       // Fetch first 4100 bytes of the file (magic numbers are usually in the first few bytes)
       const response = await fetch(url, {
         headers: {
-          Range: 'bytes=0-4099'
-        }
+          Range: "bytes=0-4099",
+        },
       });
 
       if (!response.ok) {
@@ -112,36 +114,36 @@ export default function Object({
       }
 
       const buffer = await response.arrayBuffer();
-      const { fileTypeFromBuffer } = await import('file-type');
+      const { fileTypeFromBuffer } = await import("file-type");
       const fileType = await fileTypeFromBuffer(new Uint8Array(buffer));
 
       if (fileType) {
         setDetectedMimeType(fileType.mime);
       } else {
         // Handle text-based files by extension
-        const extension = name.split('.').pop()?.toLowerCase();
+        const extension = name.split(".").pop()?.toLowerCase();
         let detectedType: string | undefined;
 
         switch (extension) {
-          case 'json': {
+          case "json": {
             const text = new TextDecoder().decode(new Uint8Array(buffer));
             try {
               JSON.parse(text);
-              detectedType = 'application/json';
+              detectedType = "application/json";
             } catch {
-              detectedType = 'text/plain';
+              detectedType = "text/plain";
             }
             break;
           }
-          case 'txt':
-            detectedType = 'text/plain';
+          case "txt":
+            detectedType = "text/plain";
             break;
-          case 'md':
-          case 'markdown':
-            detectedType = 'text/markdown';
+          case "md":
+          case "markdown":
+            detectedType = "text/markdown";
             break;
-          case 'csv':
-            detectedType = 'text/csv';
+          case "csv":
+            detectedType = "text/csv";
             break;
         }
 
@@ -150,7 +152,7 @@ export default function Object({
         }
       }
     } catch (error) {
-      console.error('Error detecting mime type:', error);
+      console.error("Error detecting mime type:", error);
     }
   };
 
@@ -169,14 +171,15 @@ export default function Object({
       const numericSize = Number(size);
 
       // If file is too large, only fetch preview
-      const range = numericSize > MAX_FULL_DISPLAY_SIZE
-        ? 'bytes=0-' + (PREVIEW_LENGTH - 1)
-        : undefined;
+      const range =
+        numericSize > MAX_FULL_DISPLAY_SIZE
+          ? "bytes=0-" + (PREVIEW_LENGTH - 1)
+          : undefined;
 
       // First try to fetch without the ?object parameter to get raw content
-      const rawUrl = url.replace('?object', '');
+      const rawUrl = url.replace("?object", "");
       const response = await fetch(rawUrl, {
-        headers: range ? { Range: range } : {}
+        headers: range ? { Range: range } : {},
       });
 
       if (!response.ok) {
@@ -193,7 +196,7 @@ export default function Object({
         setFileContent(text);
       }
     } catch (error) {
-      console.error('Error fetching file content:', error);
+      console.error("Error fetching file content:", error);
       toast({
         title: "Error",
         description: "Failed to load file preview",
@@ -243,24 +246,26 @@ export default function Object({
   // Effect to detect MIME type and fetch content when object is loaded
   useEffect(() => {
     if (object) {
-      const contentType = object.metadata.find((m: { key: string; value: string }) => m.key === 'content-type')?.value;
+      const contentType = object.metadata.find(
+        (m: { key: string; value: string }) => m.key === "content-type",
+      )?.value;
       const objectApiUrl = getObjectApiUrl(getChain(chainId));
       const url = `${objectApiUrl}/v1/objects/${bucketAddress}/${prefix}`;
 
       // Check file extension first
-      const extension = name.split('.').pop()?.toLowerCase();
+      const extension = name.split(".").pop()?.toLowerCase();
       let effectiveContentType = contentType;
 
-      if (extension === 'json') {
-        effectiveContentType = 'application/json';
-      } else if (contentType === 'application/octet-stream') {
+      if (extension === "json") {
+        effectiveContentType = "application/json";
+      } else if (contentType === "application/octet-stream") {
         // For octet-stream, try to detect more specific type
-        if (extension === 'txt') {
-          effectiveContentType = 'text/plain';
-        } else if (extension === 'md' || extension === 'markdown') {
-          effectiveContentType = 'text/markdown';
-        } else if (extension === 'csv') {
-          effectiveContentType = 'text/csv';
+        if (extension === "txt") {
+          effectiveContentType = "text/plain";
+        } else if (extension === "md" || extension === "markdown") {
+          effectiveContentType = "text/markdown";
+        } else if (extension === "csv") {
+          effectiveContentType = "text/csv";
         }
       }
 
@@ -274,9 +279,11 @@ export default function Object({
       const finalContentType = effectiveContentType || detectedMimeType;
       const numericSize = Number(object.size);
 
-      if (finalContentType &&
-          PREVIEWABLE_TYPES.has(finalContentType) &&
-          numericSize <= MAX_PREVIEW_SIZE) {
+      if (
+        finalContentType &&
+        PREVIEWABLE_TYPES.has(finalContentType) &&
+        numericSize <= MAX_PREVIEW_SIZE
+      ) {
         fetchContent(url, object.size);
       }
     }
@@ -303,16 +310,17 @@ export default function Object({
   const renderContent = (content: string, type: string, size: bigint) => {
     const numericSize = Number(size);
     const isLarge = numericSize > MAX_FULL_DISPLAY_SIZE;
-    const displayContent = isLarge && !showFullContent ? content : fileContent || content;
+    const displayContent =
+      isLarge && !showFullContent ? content : fileContent || content;
 
     let formattedContent = displayContent;
-    if (type === 'application/json') {
+    if (type === "application/json") {
       try {
         // Parse and re-stringify with pretty formatting
-        const parsed = JSON.parse(displayContent || '');
+        const parsed = JSON.parse(displayContent || "");
         formattedContent = JSON.stringify(parsed, null, 2);
       } catch (e) {
-        console.error('Error parsing JSON:', e);
+        console.error("Error parsing JSON:", e);
       }
     }
 
@@ -324,7 +332,10 @@ export default function Object({
             <button
               onClick={() => {
                 if (!showFullContent) {
-                  fetchContent(`${objectApiUrl}/v1/objects/${bucketAddress}/${prefix}`, size);
+                  fetchContent(
+                    `${objectApiUrl}/v1/objects/${bucketAddress}/${prefix}`,
+                    size,
+                  );
                 }
                 setShowFullContent(!showFullContent);
               }}
@@ -339,13 +350,16 @@ export default function Object({
             <Loader2 className="animate-spin" />
           </div>
         ) : (
-          <pre className={`text-muted-foreground min-h-12 max-h-[500px] overflow-auto border p-4 text-sm ${
-            type === 'application/json' ? 'whitespace-pre' : ''
-          }`}>
+          <pre
+            className={`text-muted-foreground max-h-[500px] min-h-12 overflow-auto border p-4 text-sm ${
+              type === "application/json" ? "whitespace-pre" : ""
+            }`}
+          >
             {formattedContent}
             {isLarge && !showFullContent && (
-              <div className="mt-2 text-sm text-muted-foreground">
-                ... (Content truncated, {formatBytes(numericSize).formatted} total)
+              <div className="text-muted-foreground mt-2 text-sm">
+                ... (Content truncated, {formatBytes(numericSize).formatted}{" "}
+                total)
               </div>
             )}
           </pre>
@@ -371,7 +385,10 @@ export default function Object({
           ? timeAgo.format(expiryMillis)
           : undefined;
 
-    const contentType = object.metadata.find((m: { key: string; value: string }) => m.key === 'content-type')?.value || detectedMimeType;
+    const contentType =
+      object.metadata.find(
+        (m: { key: string; value: string }) => m.key === "content-type",
+      )?.value || detectedMimeType;
 
     return (
       <Card className="rounded-none">
@@ -431,12 +448,7 @@ export default function Object({
             value={objectExpiryDisplay}
             valueTooltip={objectExpiryIso}
           />
-          {contentType && (
-            <Metric
-              title="Content Type"
-              value={contentType}
-            />
-          )}
+          {contentType && <Metric title="Content Type" value={contentType} />}
           <div className="flex flex-col gap-2 sm:col-span-2">
             <span className="text-muted-foreground text-xs">Metadata</span>
             <pre className="text-muted-foreground min-h-12 border p-4 font-mono">
@@ -445,10 +457,13 @@ export default function Object({
           </div>
           {((contentType && PREVIEWABLE_TYPES.has(contentType)) ||
             (detectedMimeType && PREVIEWABLE_TYPES.has(detectedMimeType))) &&
-           Number(object.size) <= MAX_PREVIEW_SIZE &&
-           fileContent && (
-            renderContent(fileContent, contentType || detectedMimeType || 'application/json', object.size)
-          )}
+            Number(object.size) <= MAX_PREVIEW_SIZE &&
+            fileContent &&
+            renderContent(
+              fileContent,
+              contentType || detectedMimeType || "application/json",
+              object.size,
+            )}
         </CardContent>
       </Card>
     );
