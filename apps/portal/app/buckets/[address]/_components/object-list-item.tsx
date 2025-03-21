@@ -1,4 +1,17 @@
-import { ChevronDown, ChevronUp, File, FileCode, FileImage, FileText } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  File,
+  FileCode,
+  FileImage,
+  FileText,
+  FileVideo,
+  FileAudio,
+  FileType,
+  Archive,
+  Table,
+  FileSliders,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Address } from "viem";
@@ -10,11 +23,14 @@ import {
   CardTitle,
 } from "@recallnet/ui/components/card";
 import CollapsedStringDisplay from "@recallnet/ui/recall/collapsed-string-display";
+import * as Tooltip from "@radix-ui/react-tooltip";
+import { cn } from "@recallnet/ui/lib/utils";
 
 import Metric from "@/components/metric";
 import { arrayToDisplay } from "@/lib/convert-matadata";
 import { formatBytes } from "@/lib/format-bytes";
 import { removePrefix } from "@/lib/remove-prefix";
+import MetadataDisplay from "./metadata-display";
 
 interface Props {
   bucketAddress: Address;
@@ -35,10 +51,33 @@ interface Props {
 }
 
 function getFileIcon(type: string | undefined) {
-  if (!type) return File;
+  if (!type) {
+    // Try to guess from extension
+    const ext = type?.split(".").pop()?.toLowerCase();
+    if (ext) {
+      if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return FileImage;
+      if (['mp4', 'webm', 'mov', 'avi'].includes(ext)) return FileVideo;
+      if (['mp3', 'wav', 'ogg', 'flac'].includes(ext)) return FileAudio;
+      if (['pdf'].includes(ext)) return FileType;
+      if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return Archive;
+      if (['xls', 'xlsx', 'csv'].includes(ext)) return Table;
+      if (['ppt', 'pptx'].includes(ext)) return FileSliders;
+      if (['txt', 'md', 'rtf'].includes(ext)) return FileText;
+      if (['js', 'ts', 'jsx', 'tsx', 'json', 'html', 'css', 'py', 'rb', 'php'].includes(ext)) return FileCode;
+    }
+    return File;
+  }
+
   if (type.startsWith("image/")) return FileImage;
+  if (type.startsWith("video/")) return FileVideo;
+  if (type.startsWith("audio/")) return FileAudio;
+  if (type.includes("pdf")) return FileType;
+  if (type.includes("zip") || type.includes("compressed") || type.includes("archive")) return Archive;
+  if (type.includes("spreadsheet") || type.includes("excel") || type.includes("csv")) return Table;
+  if (type.includes("presentation") || type.includes("powerpoint")) return FileSliders;
   if (type.startsWith("text/")) return FileText;
-  if (type.includes("json") || type.includes("javascript") || type.includes("typescript")) return FileCode;
+  if (type.includes("json") || type.includes("javascript") || type.includes("typescript") ||
+      type.includes("html") || type.includes("css")) return FileCode;
   return File;
 }
 
@@ -74,7 +113,24 @@ export default function ObjectListItem({
           >
             <FileIcon className="flex-shrink-0 text-primary" />
             <div className={viewMode === "grid" ? "flex flex-col gap-1 min-w-0" : "flex-1 min-w-0"}>
-              <div className="truncate font-medium leading-6">{displayName}</div>
+              <Tooltip.Provider>
+                <Tooltip.Root>
+                  <Tooltip.Trigger asChild>
+                    <div className="truncate font-medium leading-6 font-mono">
+                      {displayName}
+                    </div>
+                  </Tooltip.Trigger>
+                  <Tooltip.Portal>
+                    <Tooltip.Content
+                      className="rounded-md bg-popover px-3 py-1.5 text-sm text-popover-foreground animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2"
+                      side="top"
+                    >
+                      <p>{displayName}</p>
+                      <Tooltip.Arrow className="fill-popover" />
+                    </Tooltip.Content>
+                  </Tooltip.Portal>
+                </Tooltip.Root>
+              </Tooltip.Provider>
               {viewMode === "grid" && (
                 <>
                   <span className="text-xs text-muted-foreground">{size.val} {size.unit}</span>
@@ -126,9 +182,7 @@ export default function ObjectListItem({
           <Metric title="Size" value={size.val} subtitle={size.unit} />
           <div className="col-span-2 flex flex-col gap-2">
             <span className="text-muted-foreground text-xs">Metadata</span>
-            <pre className="text-muted-foreground min-h-12 border p-4 font-mono overflow-auto">
-              {arrayToDisplay(object.state.metadata)}
-            </pre>
+            <MetadataDisplay metadata={object.state.metadata} />
           </div>
         </CardContent>
       )}
