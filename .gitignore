@@ -3,6 +3,7 @@
 # Ignore all fonts files since we pull them from a private repository at build time and generate source code.
 packages/fonts/src/*
 
+.cursorrules
 .direnv
 
 # Dependencies
