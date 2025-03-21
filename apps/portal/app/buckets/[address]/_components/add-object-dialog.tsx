@@ -38,6 +38,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   bucketAddress: Address;
   prefix: string;
+  defaultTTLString: string;
 }
 
 const formSchema = z.object({
@@ -72,6 +73,7 @@ export default function AddObjectDialog({
   onOpenChange,
   bucketAddress,
   prefix,
+  defaultTTLString,
 }: Props) {
   const { toast } = useToast();
 
@@ -103,7 +105,7 @@ export default function AddObjectDialog({
       if (typeof metadata !== "string") {
         const metaObj = {
           ...metadata,
-          ...(file.type ? { type: file.type } : {}),
+          ...(file.type ? { "content-type": file.type } : {}),
           ...(file.size ? { size: `${file.size}` } : {}),
         };
         form.setValue("metadata", metaObj);
@@ -127,7 +129,7 @@ export default function AddObjectDialog({
       options: {
         metadata,
         overwrite: values.overwrite,
-        ttl: BigInt(values.ttl),
+        ttl: BigInt(values.ttl * 60 * 60),
         onUploadProgress: (progress) => {
           setProgress(progress);
         },
@@ -137,9 +139,10 @@ export default function AddObjectDialog({
 
   useEffect(() => {
     if (isSuccess) {
-      router.push(`/buckets/${bucketAddress}/${form.getValues("key")}?object`);
+      onOpenChange(false);
+      router.push(`/buckets/${bucketAddress}?path=${form.getValues("key")}`);
     }
-  }, [bucketAddress, form, isSuccess, router]);
+  }, [bucketAddress, form, isSuccess, router, onOpenChange]);
 
   useEffect(() => {
     if (error) {
@@ -292,7 +295,7 @@ export default function AddObjectDialog({
                     <FormLabel>TTL</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="default"
+                        placeholder={`default (${defaultTTLString})`}
                         {...field}
                         type="number"
                         disabled={isPending}

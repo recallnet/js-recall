@@ -14,7 +14,7 @@ export function attoCreditsToGbMonths(attoCredits: dn.Numberish) {
   const res = dn.divide(
     dn.multiply(attoCredits, 1e-18),
     ONE_GB_MONTH_TO_CREDITS,
-    2,
+    4,
   );
   return dn.toNumber(res);
 }
