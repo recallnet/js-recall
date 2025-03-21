@@ -6,19 +6,21 @@ import { Card, CardHeader, CardTitle } from "@recallnet/ui/components/card";
 
 import { removePrefix } from "@/lib/remove-prefix";
 
+interface Props {
+  bucketAddress: Address;
+  parentPath: string;
+  commonPrefix: string;
+  delimiter: string;
+}
+
 export default function PrefixListItem({
   bucketAddress,
   parentPath,
   commonPrefix,
   delimiter,
-}: {
-  bucketAddress: Address;
-  parentPath: string;
-  commonPrefix: string;
-  delimiter: string;
-}) {
+}: Props) {
   return (
-    <Card key={commonPrefix} className="rounded-none">
+    <Card key={commonPrefix} className="rounded-none hover:bg-accent/5 transition-colors truncate">
       <CardHeader>
         <CardTitle>
           <Link
@@ -32,8 +34,8 @@ export default function PrefixListItem({
             }}
             className="flex items-center gap-4 justify-self-start"
           >
-            <Folder />
-            {removePrefix(commonPrefix, parentPath)}
+            <Folder className="text-primary" />
+            <span className="font-mono truncate">{removePrefix(commonPrefix, parentPath)}</span>
           </Link>
         </CardTitle>
       </CardHeader>
