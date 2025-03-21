@@ -250,7 +250,7 @@ export default function Object({
         (m: { key: string; value: string }) => m.key === "content-type",
       )?.value;
       const objectApiUrl = getObjectApiUrl(getChain(chainId));
-      const url = `${objectApiUrl}/v1/objects/${bucketAddress}/${prefix}`;
+      const url = `${objectApiUrl}/v1/objects/${bucketAddress}/${path}`;
 
       // Check file extension first
       const extension = name.split(".").pop()?.toLowerCase();
@@ -287,7 +287,17 @@ export default function Object({
         fetchContent(url, object.size);
       }
     }
-  }, [object, bucketAddress, prefix, chainId, name, detectedMimeType, toast]);
+  }, [
+    object,
+    bucketAddress,
+    path,
+    chainId,
+    name,
+    detectedMimeType,
+    toast,
+    fetchContent,
+    detectMimeType,
+  ]);
 
   const handleDelete = () => {
     if (fromAddress === undefined) return;
@@ -333,7 +343,7 @@ export default function Object({
               onClick={() => {
                 if (!showFullContent) {
                   fetchContent(
-                    `${objectApiUrl}/v1/objects/${bucketAddress}/${prefix}`,
+                    `${objectApiUrl}/v1/objects/${bucketAddress}/${path}`,
                     size,
                   );
                 }
