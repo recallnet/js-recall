@@ -1,8 +1,8 @@
 import TimeAgo from "javascript-time-ago";
-import { Download, File, Loader2, Trash } from "lucide-react";
+import { Download, File, Loader2, Trash, ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Address } from "viem";
 import {
   useAccount,
@@ -26,6 +26,8 @@ import CollapsedStringDisplay from "@recallnet/ui/recall/collapsed-string-displa
 import Metric from "@/components/metric";
 import { arrayToDisplay } from "@/lib/convert-matadata";
 import { formatBytes } from "@/lib/format-bytes";
+import FilePreview from "./file-preview";
+import MetadataDisplay from "./metadata-display";
 
 const timeAgo = new TimeAgo("en-US");
 
@@ -45,12 +47,11 @@ export default function Object({
   delimiter,
 }: Props) {
   const router = useRouter();
-
   const { toast } = useToast();
-
-  const { address: fromAddress } = useAccount();
-
+  const { address } = useAccount();
   const chainId = useChainId();
+  const chain = getChain(chainId);
+  const objectApiUrl = getObjectApiUrl(chain);
 
   const { data: blockNumber } = useBlockNumber();
 
@@ -62,47 +63,46 @@ export default function Object({
 
   const {
     deleteObject,
-    isPending: deletePending,
     data: deleteTxnHash,
     error: deleteError,
+    isPending: deletePending,
   } = useDeleteObject();
 
   const {
-    isFetching: deleteReceiptFetching,
-    data: deleteReceipt,
-    error: deleteReceiptError,
+    isSuccess: deleteTxnSuccess,
+    error: deleteTxnError,
+    isLoading: deleteReceiptFetching,
   } = useWaitForTransactionReceipt({
     hash: deleteTxnHash,
   });
 
-  useEffect(() => {
-    if (deleteReceipt) {
-      const params = new URLSearchParams();
-      if (parentPath) {
-        params.set("path", parentPath);
-      }
-      if (delimiter !== "/") {
-        params.set("delimiter", delimiter);
-      }
-      router.replace(`/buckets/${bucketAddress}?${params.toString()}`);
-    }
-  }, [bucketAddress, deleteReceipt, parentPath, router, delimiter]);
+  const [isMetadataExpanded, setIsMetadataExpanded] = useState(false);
 
   useEffect(() => {
-    if (objectError || deleteError || deleteReceiptError) {
+    if (objectError || deleteError || deleteTxnError) {
       toast({
         title: "Error",
-        description: objectError?.message,
+        description:
+          objectError?.message ||
+          deleteError?.message ||
+          deleteTxnError?.message,
+        variant: "destructive",
       });
     }
-  }, [toast, objectError, deleteError, deleteReceiptError]);
+  }, [toast, objectError, deleteError, deleteTxnError]);
+
+  useEffect(() => {
+    if (deleteTxnSuccess) {
+      router.push(
+        `/buckets/${bucketAddress}${parentPath ? `?path=${parentPath}` : ""}`,
+      );
+    }
+  }, [bucketAddress, deleteTxnSuccess, parentPath, router]);
 
   const handleDelete = () => {
-    if (fromAddress === undefined) return;
-    deleteObject(bucketAddress, fromAddress, path);
+    if (!address) return;
+    deleteObject({ owner: address, bucketAddress, key: path });
   };
-
-  const objectApiUrl = getObjectApiUrl(getChain(chainId));
 
   if (object) {
     const objectSize = formatBytes(Number(object.size));
@@ -121,72 +121,57 @@ export default function Object({
           ? timeAgo.format(expiryMillis)
           : undefined;
 
+    const type = object.metadata.find((m) => m.key === "type")?.value;
+
     return (
-      <Card className="rounded-none">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-4">
-            <File />
-            {name}
-            {deletePending || deleteReceiptFetching ? (
-              <Loader2 className="ml-auto animate-spin" />
-            ) : (
-              <Trash
-                className="hover:text-destructive ml-auto opacity-20 hover:cursor-pointer hover:opacity-100"
-                onClick={handleDelete}
-              />
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <File className="h-4 w-4" />
+              {name}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <span>{formatBytes(object?.size || 0n).formatted}</span>
+              <span>•</span>
+              <span>Created: {object?.metadata.find((m) => m.key === "createdAt")?.value || "-"}</span>
+              <span>•</span>
+              <span>Updated: {object?.metadata.find((m) => m.key === "updatedAt")?.value || "-"}</span>
+            </div>
+            {object?.metadata && (
+              <div className="mt-3">
+                <div
+                  className="flex items-center gap-2 cursor-pointer"
+                  onClick={() => setIsMetadataExpanded(!isMetadataExpanded)}
+                >
+                  <h3 className="text-sm font-medium">Additional Metadata</h3>
+                  {isMetadataExpanded ? (
+                    <ChevronUp className="h-4 w-4 opacity-50" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  )}
+                </div>
+                {isMetadataExpanded && (
+                  <div className="bg-muted/30 rounded-lg p-2 mt-2">
+                    <MetadataDisplay
+                      metadata={object.metadata.filter(m => !['createdAt', 'updatedAt'].includes(m.key))}
+                    />
+                  </div>
+                )}
+              </div>
             )}
-            <Link
-              href={`${objectApiUrl}/v1/objects/${bucketAddress}/${encodeURIComponent(path)}`}
-              target="_blank"
-              className="opacity-20 hover:cursor-pointer hover:opacity-100"
-            >
-              <Download />
-            </Link>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-14 sm:grid-cols-2">
-          <Metric
-            title="Blob Hash"
-            value={
-              <CollapsedStringDisplay
-                value={object.blobHash}
-                showCopy
-                copyTooltip="Copy blob hash"
-                copySuccessMessage="Blob hash copied"
-              />
-            }
-            valueTooltip={object.blobHash}
-          />
-          <Metric
-            title="Recovery Hash"
-            value={
-              <CollapsedStringDisplay
-                value={object.recoveryHash}
-                showCopy
-                copyTooltip="Copy recovery hash"
-                copySuccessMessage="Recovery hash copied"
-              />
-            }
-            valueTooltip={object.recoveryHash}
-          />
-          <Metric
-            title="Size"
-            value={objectSize.val}
-            subtitle={objectSize.unit}
-          />
-          <Metric
-            title={`Expire${(objectBlockDiff || 1) < 0 ? "d" : "s"}`}
-            value={objectExpiryDisplay}
-            valueTooltip={objectExpiryIso}
-          />
-          <div className="flex flex-col gap-2 sm:col-span-2">
-            <span className="text-muted-foreground text-xs">Metadata</span>
-            <pre className="text-muted-foreground min-h-12 border p-4 font-mono">
-              {arrayToDisplay(object.metadata)}
-            </pre>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        <FilePreview
+          bucketAddress={bucketAddress}
+          path={path}
+          type={object?.metadata.find((m) => m.key === "type")?.value}
+          className="mt-4"
+        />
+      </div>
     );
   } else if (objectLoading) {
     return (
@@ -195,4 +180,6 @@ export default function Object({
       </div>
     );
   }
+
+  return null;
 }

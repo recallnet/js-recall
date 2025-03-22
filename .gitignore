@@ -1,6 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # cursor
+.cursorrules
 development_plan.md
 
 # Ignore all fonts files since we pull them from a private repository at build time and generate source code.

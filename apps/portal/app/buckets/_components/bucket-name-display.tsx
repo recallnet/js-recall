@@ -3,8 +3,6 @@ import Link from "next/link";
 import { useState } from "react";
 
 import CollapsedStringDisplay from "@recallnet/ui/recall/collapsed-string-display";
-import { Button } from "@recallnet/ui/components/button";
-import * as Tooltip from "@radix-ui/react-tooltip";
 import { cn } from "@recallnet/ui/lib/utils";
 
 interface Props {
@@ -72,34 +70,18 @@ function formatValue(type: MetadataType, value: string): string {
 }
 
 function MetadataItem({ item: { key, value } }: { item: { key: string; value: string } }) {
-  const [copied, setCopied] = useState(false);
   const type = getMetadataType(key, value);
   const Icon = getMetadataIcon(type);
   const color = getMetadataColor(type);
   const formattedValue = formatValue(type, value);
 
   return (
-    <Tooltip.Provider>
-      <Tooltip.Root>
-        <Tooltip.Trigger asChild>
-          <div className="flex items-center gap-1">
-            <Icon className={cn("h-3 w-3", color)} />
-            <span className={cn("font-mono text-xs", color)}>
-              {formattedValue}
-            </span>
-          </div>
-        </Tooltip.Trigger>
-        <Tooltip.Portal>
-          <Tooltip.Content
-            className="rounded-md bg-popover px-3 py-1.5 text-sm text-popover-foreground animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2"
-            side="top"
-          >
-            <p>{value}</p>
-            <Tooltip.Arrow className="fill-popover" />
-          </Tooltip.Content>
-        </Tooltip.Portal>
-      </Tooltip.Root>
-    </Tooltip.Provider>
+    <div className="flex items-center gap-1">
+      <Icon className={cn("h-3 w-3", color)} />
+      <span className={cn("font-mono text-xs", color)}>
+        {formattedValue}
+      </span>
+    </div>
   );
 }
 

@@ -18,17 +18,31 @@ export function arrayToRecord(
 }
 
 export function dislpayToRecord(metadata: string) {
-  if (!metadata) return undefined;
-  return JSON.parse(metadata) as Record<string, string>;
+  return metadata
+    .split("\n")
+    .filter((line) => line.trim())
+    .reduce((acc, line) => {
+      const parts = line.split(": ");
+      if (parts.length >= 2) {
+        const [key, ...valueParts] = parts;
+        acc[key] = valueParts.join(": ");
+      }
+      return acc;
+    }, {} as Record<string, string>);
 }
 
 export function arrayToDisplay(
-  array: readonly { key: string; value: string }[],
-) {
-  const rec = arrayToRecord(array);
-  return JSON.stringify(rec, null, 2);
+  metadata: Record<string, string> | { key: string; value: string }[] | null | undefined,
+): [string, string][] {
+  if (!metadata) return [];
+  if (Array.isArray(metadata)) {
+    return metadata.map(({ key, value }) => [key, value]);
+  }
+  return Object.entries(metadata);
 }
 
 export function recordToDisplay(record: Record<string, string>) {
-  return JSON.stringify(record, null, 2);
+  return Object.entries(record)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join("\n");
 }

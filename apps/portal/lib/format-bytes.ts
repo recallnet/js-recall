@@ -1,15 +1,19 @@
 // TODO:Convert to bigint
-export function formatBytes(bytes: number) {
+export function formatBytes(bytes: bigint | number) {
   const sizes = (i: number, val: number) => {
     const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
     if (i === 0 && val === 1) return "Byte";
     return sizes[i];
   };
-  if (bytes === 0) return { val: 0, unit: "Bytes" };
-  const i = Number.parseInt(
-    Math.floor(Math.log(bytes) / Math.log(1024)).toString(),
+
+  const bytesNum = typeof bytes === 'bigint' ? Number(bytes) : bytes;
+  if (bytesNum === 0) return { val: 0, unit: "Bytes" };
+
+  const i = Math.min(
+    4, // Cap at TB
+    Math.floor(Math.log(bytesNum) / Math.log(1024))
   );
-  const val = Math.round((bytes / Math.pow(1024, i)) * 100) / 100;
+  const val = Math.round((bytesNum / Math.pow(1024, i)) * 100) / 100;
   return {
     val,
     unit: sizes(i, val),
