@@ -8,8 +8,32 @@ import { useInfiniteQueryObjects } from "@recallnet/sdkx/react/buckets";
 import { useToast } from "@recallnet/ui/hooks/use-toast";
 import { InfiniteScroll } from "@recallnet/ui/recall/infinite-scroll";
 
-import ObjectListItem from "./object-list-item";
-import PrefixListItem from "./prefix-list-item";
+import FileListView from "./file-list-view";
+
+interface ObjectResult {
+  key: string;
+  state: {
+    blobHash: string;
+    size: bigint;
+    metadata: readonly {
+      key: string;
+      value: string;
+    }[];
+  };
+}
+
+interface PageResult {
+  commonPrefixes: string[];
+  objects: ObjectResult[];
+}
+
+interface QueryResult {
+  pages: {
+    result?: PageResult;
+    error?: Error;
+    status: "success" | "failure";
+  }[];
+}
 
 export default function Objects({
   bucketAddress,
@@ -32,7 +56,13 @@ export default function Objects({
     prefix: path,
     pageSize: 50,
     delimiter,
-  });
+  }) as {
+    data: QueryResult | undefined;
+    error: Error | null;
+    isLoading: boolean;
+    hasNextPage: boolean;
+    fetchNextPage: () => void;
+  };
 
   useEffect(() => {
     if (objectsError) {
@@ -55,24 +85,13 @@ export default function Objects({
       </pre> */}
       {objectsRes?.pages.map((page, num) => (
         <Fragment key={num}>
-          {page.result?.commonPrefixes.map((commonPrefix) => (
-            <PrefixListItem
-              key={commonPrefix}
-              bucketAddress={bucketAddress}
-              parentPath={path}
-              commonPrefix={commonPrefix}
-              delimiter={delimiter}
-            />
-          ))}
-          {page.result?.objects.map((object) => (
-            <ObjectListItem
-              key={object.key}
-              bucketAddress={bucketAddress}
-              parentPath={path}
-              object={object}
-              delimiter={delimiter}
-            />
-          ))}
+          <FileListView
+            bucketAddress={bucketAddress}
+            parentPath={path}
+            delimiter={delimiter}
+            commonPrefixes={page.result?.commonPrefixes || []}
+            objects={page.result?.objects || []}
+          />
         </Fragment>
       ))}
       {hasNextPage && !objectsLoading && (

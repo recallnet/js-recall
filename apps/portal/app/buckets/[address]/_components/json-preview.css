@@ -1,0 +1,58 @@
+:root {
+  --json-key-color: hsl(var(--primary));
+  --json-string-color: hsl(142.1 76.2% 36.3%);
+  --json-number-color: hsl(20.5 90.2% 48.2%);
+  --json-boolean-color: hsl(262.1 83.3% 57.8%);
+  --json-null-color: hsl(var(--muted-foreground));
+  --json-punctuation-color: hsl(var(--muted-foreground));
+}
+
+:root[class~="dark"] {
+  --json-key-color: hsl(var(--primary));
+  --json-string-color: hsl(142.1 70.6% 65.3%);
+  --json-number-color: hsl(20.5 90.2% 70%);
+  --json-boolean-color: hsl(262.1 83.3% 78.2%);
+  --json-null-color: hsl(var(--muted-foreground));
+  --json-punctuation-color: hsl(var(--muted-foreground));
+}
+
+.rjv-container {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  background: transparent;
+}
+
+.rjv-object-key {
+  color: #60a5fa !important; /* bright blue */
+}
+
+.rjv-string {
+  color: #86efac !important; /* bright green */
+}
+
+.rjv-number {
+  color: #fba !important; /* bright salmon */
+}
+
+.rjv-boolean {
+  color: #c4b5fd !important; /* bright purple */
+}
+
+.rjv-null {
+  color: #94a3b8 !important; /* light gray */
+}
+
+.rjv-object-bracket,
+.rjv-array-bracket,
+.rjv-object-colon,
+.rjv-array-colon,
+.rjv-object-comma,
+.rjv-array-comma {
+  color: #94a3b8 !important; /* light gray */
+}
+
+/* Container styles */
+.json-preview .rjv-container {
+  padding-left: 1rem;
+}
