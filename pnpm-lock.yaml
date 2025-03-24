@@ -129,6 +129,9 @@ importers:
       '@recallnet/fonts':
         specifier: workspace:*
         version: link:../../packages/fonts
+      '@recallnet/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
       '@recallnet/sdkx':
         specifier: workspace:*
         version: link:../../packages/sdkx
@@ -488,6 +491,9 @@ importers:
       '@recallnet/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
+      '@recallnet/sdk':
+        specifier: workspace:*
+        version: link:../sdk
       '@recallnet/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config

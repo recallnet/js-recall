@@ -13,6 +13,7 @@ import {
 
 import { numBlocksToSeconds } from "@recallnet/bigint-utils/conversions";
 import { getChain, getObjectApiUrl } from "@recallnet/chains";
+import { downloadBlob } from "@recallnet/sdk/provider";
 import { useDeleteObject, useGetObject } from "@recallnet/sdkx/react/buckets";
 import {
   Card,
@@ -103,6 +104,7 @@ export default function Object({
   const detectMimeType = async (url: string) => {
     try {
       // Fetch first 4100 bytes of the file (magic numbers are usually in the first few bytes)
+      const foo = await downloadBlob(url, bucketAddress, path);
       const response = await fetch(url, {
         headers: {
           Range: "bytes=0-4099",

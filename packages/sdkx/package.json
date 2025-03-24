@@ -47,6 +47,7 @@
   },
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:*",
+    "@recallnet/sdk": "workspace:*",
     "@recallnet/typescript-config": "workspace:*",
     "@types/react": "^19.0.0",
     "tsup": "^8.3.6",

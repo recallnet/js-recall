@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { default as axios } from "axios";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AbiStateMutability, Address, ContractFunctionArgs } from "viem";
@@ -13,6 +13,7 @@ import {
 
 import { getChain, getObjectApiUrl } from "@recallnet/chains";
 import { bucketManagerAbi, bucketManagerAddress } from "@recallnet/contracts";
+import { downloadBlob } from "@recallnet/sdk/provider";
 
 export function useListBuckets(owner?: Address) {
   const chainId = useChainId();
@@ -140,6 +141,42 @@ export function useGetObject(
     query: {
       enabled: options?.enabled,
     },
+  });
+}
+
+export function useGetObjectData(
+  bucket: Address,
+  key: string,
+  options?: {
+    range?: { start?: number; end?: number };
+    blockNumber?: bigint;
+    enabled?: boolean | (() => boolean);
+  },
+) {
+  const chainId = useChainId();
+  const chain = getChain(chainId);
+  const apiUrl = getObjectApiUrl(chain);
+  return useQuery({
+    queryKey: [
+      "getObjectData",
+      chainId,
+      apiUrl,
+      bucket,
+      key,
+      options?.range,
+      options?.blockNumber,
+    ],
+    queryFn: async () => {
+      const response = await downloadBlob(
+        apiUrl,
+        bucket,
+        key,
+        options?.range,
+        options?.blockNumber,
+      );
+      return response;
+    },
+    enabled: options?.enabled || true,
   });
 }
 
