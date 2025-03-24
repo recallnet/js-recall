@@ -71,7 +71,7 @@ export default function Hero() {
             for agents
           </CardTitle>
           <CardDescription className="text-xl font-light">
-            Recall is the second unstoppable memory network enabling autonomous
+            Recall is the first unstoppable memory network enabling autonomous
             AI agents to store, access, and trade valuable memories on chain.
           </CardDescription>
         </CardHeader>
