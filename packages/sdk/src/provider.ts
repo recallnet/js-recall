@@ -99,11 +99,7 @@ export async function downloadBlob(
   if (range) {
     headers.Range = `bytes=${range.start ?? ""}-${range.end ?? ""}`;
   }
-  // TODO: we should be able to use the bucket hex address directly
-  const bucketIdAddress = AddressId.fromEthAddress(bucket);
-  const url = new URL(
-    `${objectsProviderUrl}/v1/objects/${bucketIdAddress}/${key}`,
-  );
+  const url = new URL(`${objectsProviderUrl}/v1/objects/${bucket}/${key}`);
   if (blockNumber !== undefined) {
     url.searchParams.set("height", blockNumber.toString());
   }
