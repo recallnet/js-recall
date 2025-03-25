@@ -31,10 +31,28 @@ The `@recallnet/agent-toolkit` is a collection of tools for building agents that
 
 ### Installation
 
-Install the package:
+Install the package with your preferred package manager, such as pnpm, npm, yarn, or deno:
+
+```bash
+pnpm add @recallnet/agent-toolkit
+```
+
+With npm:
 
 ```bash
 npm install @recallnet/agent-toolkit
+```
+
+With yarn:
+
+```bash
+yarn add @recallnet/agent-toolkit
+```
+
+Or with deno:
+
+```ts
+deno add npm:@recallnet/agent-toolkit
 ```
 
 ### Adapters
@@ -86,8 +104,8 @@ The resources are:
 
 The permissions are:
 
-- `read`: Read-only operations (i.e., do not cost any tokens/credit)
-- `write`: Write operations, which modify state (i.e., submit transactions)
+- `read`: Read-only operations (i.e., operations that do not cost any tokens/credit)
+- `write`: Write operations, which modify state (i.e., operations that submit transactions)
 
 For example, the `get_account_info` tool has the following resources and permissions:
 
