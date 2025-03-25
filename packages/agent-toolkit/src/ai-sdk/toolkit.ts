@@ -1,8 +1,4 @@
-import type {
-  Tool as CoreTool,
-  LanguageModelV1Middleware,
-  LanguageModelV1StreamPart,
-} from "ai";
+import type { Tool as CoreTool } from "ai";
 
 import RecallAPI from "../shared/api.js";
 import { type Configuration, isToolAllowed } from "../shared/configuration.js";
@@ -53,34 +49,6 @@ export default class RecallAgentToolkit {
         tool.parameters,
       );
     });
-  }
-
-  middleware(): LanguageModelV1Middleware {
-    return {
-      wrapGenerate: async ({ doGenerate }) => {
-        const result = await doGenerate();
-
-        return result;
-      },
-
-      wrapStream: async ({ doStream }) => {
-        const { stream, ...rest } = await doStream();
-
-        const transformStream = new TransformStream<
-          LanguageModelV1StreamPart,
-          LanguageModelV1StreamPart
-        >({
-          async transform(chunk, controller) {
-            controller.enqueue(chunk);
-          },
-        });
-
-        return {
-          stream: stream.pipeThrough(transformStream),
-          ...rest,
-        };
-      },
-    };
   }
 
   getTools(): { [key: string]: CoreTool } {

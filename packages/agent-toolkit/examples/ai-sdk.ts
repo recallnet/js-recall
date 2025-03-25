@@ -1,5 +1,5 @@
 import { openai } from "@ai-sdk/openai";
-import { generateText, wrapLanguageModel } from "ai";
+import { generateText } from "ai";
 import { config } from "dotenv";
 import { existsSync } from "fs";
 import { dirname, resolve } from "path";
@@ -50,14 +50,9 @@ const recallAgentToolkit = new RecallAgentToolkit({
   },
 });
 
-const model = wrapLanguageModel({
-  model: openai("gpt-4o"),
-  middleware: recallAgentToolkit.middleware(),
-});
-
 (async () => {
   const result = await generateText({
-    model: model,
+    model: openai("gpt-4o"),
     tools: {
       ...recallAgentToolkit.getTools(),
     },
