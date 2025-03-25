@@ -56,32 +56,4 @@ export default defineConfig([
       js: format === "esm" ? ".js" : ".cjs",
     }),
   },
-  // Also, publish examples so that they can be used as standalone processes (e.g., MCP server)
-  {
-    entry: ["src/examples/ai-sdk.ts"],
-    outDir: "dist/examples",
-    format: ["esm"],
-    dts: true,
-    clean: true,
-  },
-  {
-    entry: ["src/examples/langchain.ts"],
-    outDir: "dist/examples",
-    format: ["esm"],
-    dts: true,
-    clean: true,
-  },
-  {
-    entry: ["src/examples/mcp.ts"],
-    outDir: "dist/examples",
-    format: ["esm"],
-    dts: true,
-    clean: true,
-  },
-  {
-    entry: ["src/examples/openai.ts"],
-    outDir: "dist/examples",
-    format: ["esm"],
-    dts: true,
-  },
 ]);

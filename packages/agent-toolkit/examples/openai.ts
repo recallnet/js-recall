@@ -1,13 +1,11 @@
-import type { ChatPromptTemplate } from "@langchain/core/prompts";
-import { ChatOpenAI } from "@langchain/openai";
 import { config } from "dotenv";
 import { existsSync } from "fs";
-import { AgentExecutor, createStructuredChatAgent } from "langchain/agents";
-import { pull } from "langchain/hub";
+import OpenAI from "openai";
+import type { ChatCompletionMessageParam } from "openai/resources";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 
-import { RecallAgentToolkit } from "../langchain/index.js";
+import { RecallAgentToolkit } from "../src/openai/index.js";
 
 // Get the directory where this script is located
 const __filename = fileURLToPath(import.meta.url);
@@ -33,8 +31,7 @@ if (!RECALL_PRIVATE_KEY || !OPENAI_API_KEY) {
   );
 }
 
-const llm = new ChatOpenAI({
-  model: "gpt-4o",
+const openai = new OpenAI({
   apiKey: OPENAI_API_KEY,
 });
 
@@ -52,35 +49,45 @@ const recallAgentToolkit = new RecallAgentToolkit({
       },
     },
     context: {
-      network: RECALL_NETWORK,
+      network: RECALL_NETWORK!,
     },
   },
 });
 
 (async (): Promise<void> => {
-  const prompt = await pull<ChatPromptTemplate>(
-    "hwchase17/structured-chat-agent",
-  );
+  let messages: ChatCompletionMessageParam[] = [
+    {
+      role: "user",
+      content: `Create a bucket called 'agent-toolkit-test' and tell me its resulting bucket address, and
+      then get the account info for the account that created it.`,
+    },
+  ];
 
-  const tools = recallAgentToolkit.getTools();
+  while (true) {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages,
+      tools: recallAgentToolkit.getTools(),
+    });
 
-  const agent = await createStructuredChatAgent({
-    llm,
-    tools,
-    prompt,
-  });
+    if (!completion.choices[0]?.message) {
+      throw new Error("No message returned from OpenAI");
+    }
 
-  const agentExecutor = new AgentExecutor({
-    agent,
-    tools,
-  });
+    const message = completion.choices[0].message;
 
-  const response = await agentExecutor.invoke({
-    input: `
-      Create a bucket called 'agent-toolkit-test' and tell me its resulting bucket address, and
-      then get the account info for the account that created it.
-    `,
-  });
+    messages.push(message);
 
-  console.log(response);
+    if (message.tool_calls) {
+      const toolMessages = await Promise.all(
+        message.tool_calls.map((tc: any) =>
+          recallAgentToolkit.handleToolCall(tc),
+        ),
+      );
+      messages = [...messages, ...toolMessages];
+    } else {
+      console.log(completion.choices[0].message);
+      break;
+    }
+  }
 })();

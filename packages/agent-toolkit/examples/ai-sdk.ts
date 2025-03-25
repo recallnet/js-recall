@@ -5,7 +5,7 @@ import { existsSync } from "fs";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 
-import { RecallAgentToolkit } from "../ai-sdk/index.js";
+import { RecallAgentToolkit } from "../src/ai-sdk/index.js";
 
 // Get the directory where this script is located
 const __filename = fileURLToPath(import.meta.url);

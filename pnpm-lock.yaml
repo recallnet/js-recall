@@ -220,15 +220,9 @@ importers:
 
   packages/agent-toolkit:
     dependencies:
-      '@ai-sdk/openai':
-        specifier: ^1.2.5
-        version: 1.2.5(zod@3.24.1)
       '@langchain/core':
         specifier: ^0.3.42
         version: 0.3.42(openai@4.87.3(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.24.1))
-      '@langchain/openai':
-        specifier: ^0.4.4
-        version: 0.4.4(@langchain/core@0.3.42(openai@4.87.3(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.24.1)))(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
       '@modelcontextprotocol/sdk':
         specifier: ^1.7.0
         version: 1.7.0
@@ -241,12 +235,6 @@ importers:
       ai:
         specifier: ^4.1.61
         version: 4.1.61(react@19.0.0)(zod@3.24.1)
-      dotenv:
-        specifier: ^16.4.7
-        version: 16.4.7
-      langchain:
-        specifier: ^0.3.19
-        version: 0.3.19(@langchain/core@0.3.42(openai@4.87.3(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.24.1)))(axios@1.7.9)(handlebars@4.7.8)(openai@4.87.3(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.24.1))(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
       openai:
         specifier: ^4.87.3
         version: 4.87.3(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.24.1)
@@ -260,12 +248,24 @@ importers:
         specifier: ^3.24.4
         version: 3.24.4(zod@3.24.1)
     devDependencies:
+      '@ai-sdk/openai':
+        specifier: ^1.2.5
+        version: 1.2.5(zod@3.24.1)
+      '@langchain/openai':
+        specifier: ^0.4.4
+        version: 0.4.4(@langchain/core@0.3.42(openai@4.87.3(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.24.1)))(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
       '@recallnet/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
       '@recallnet/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
+      dotenv:
+        specifier: ^16.4.7
+        version: 16.4.7
+      langchain:
+        specifier: ^0.3.19
+        version: 0.3.19(@langchain/core@0.3.42(openai@4.87.3(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.24.1)))(axios@1.7.9)(handlebars@4.7.8)(openai@4.87.3(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.24.1))(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
       tsup:
         specifier: ^8.3.6
         version: 8.3.6(jiti@1.21.6)(postcss@8.4.49)(tsx@4.19.3)(typescript@5.7.3)(yaml@2.6.1)

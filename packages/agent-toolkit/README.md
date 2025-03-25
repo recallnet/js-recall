@@ -184,16 +184,29 @@ Arguments:
 
 ### Examples
 
-A few examples of how to use the `RecallAgentToolkit` are available in the [`/examples`](./src/examples) directory. There is one for each framework adapter: MCP, LangChain, OpenAI, and AI SDK. To use them, follow these steps:
+A few examples of how to use the `RecallAgentToolkit` are available in the [`/examples`](./examples) directory. There is one for each framework adapter: MCP, LangChain, OpenAI, and AI SDK. To use them, follow these steps:
 
-1. Clone the repository
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/recallnet/agent-toolkit
+   ```
 2. Install dependencies:
    ```bash
    pnpm install
    ```
-3. Create a `.env` file based on `.env.example` with your Recall private key:
-
+3. Build the project:
+   ```bash
+   pnpm run build
    ```
+4. Change into the `examples` directory and create a `.env` file (based on `.env.example`) with your Recall private key:
+
+   ```bash
+   cd examples
+   cp .env.example .env
+   ```
+
+   ```txt
+   # .env
    RECALL_PRIVATE_KEY=your_private_key_here
    RECALL_NETWORK=testnet
 
@@ -201,26 +214,22 @@ A few examples of how to use the `RecallAgentToolkit` are available in the [`/ex
    OPENAI_API_KEY=your_openai_api_key_here
    ```
 
-4. Build the project:
-   ```bash
-   pnpm run build
-   ```
-5. Run one of the examples:
+5. Run one of the examples, for example, with `tsx`:
    - OpenAI:
      ```bash
-     node dist/examples/openai.js
+     npx tsx openai.ts
      ```
    - LangChain:
      ```bash
-     node dist/examples/langchain.js
+     npx tsx langchain.ts
      ```
    - MCP:
      ```bash
-     node dist/examples/mcp.js --tools=all
+     npx tsx mcp.ts --tools=all
      ```
    - AI SDK:
      ```bash
-     node dist/examples/ai-sdk.js
+     npx tsx ai-sdk.ts
      ```
 
 ## Development

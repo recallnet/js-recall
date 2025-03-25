@@ -5,8 +5,8 @@ import { existsSync } from "fs";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 
-import { RecallAgentToolkit } from "../mcp/index.js";
-import { Configuration, Resource } from "../shared/configuration.js";
+import { RecallAgentToolkit } from "../src/mcp/index.js";
+import { Configuration, Resource } from "../src/shared/configuration.js";
 
 /**
  * Options for the Recall MCP server
