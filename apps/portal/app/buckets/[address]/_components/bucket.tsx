@@ -1,11 +1,13 @@
 "use client";
 
+import { duration } from "moment";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Fragment, useState } from "react";
 import { Address } from "viem";
 
 import { displayAddress } from "@recallnet/address-utils/display";
+import { numBlocksToSeconds } from "@recallnet/bigint-utils/conversions";
 import { useCreditAccount } from "@recallnet/sdkx/react/credits";
 import {
   Breadcrumb,
@@ -39,6 +41,14 @@ export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
   const [creditNeededOpen, setCreditNeededOpen] = useState(false);
 
   const { data: creditAccount } = useCreditAccount();
+
+  const maxTtlDisplay = creditAccount
+    ? creditAccount.maxTtl
+      ? duration(
+          Number(numBlocksToSeconds(creditAccount.maxTtl)) * 1000,
+        ).humanize()
+      : "None"
+    : "Unknown";
 
   const handleAddObject = () => {
     if (creditAccount?.creditFree === 0n) {
@@ -77,10 +87,12 @@ export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
   return (
     <div className="flex flex-1 flex-col gap-4">
       <AddObjectDialog
+        key={`${addObjectOpen}`}
         open={addObjectOpen}
         onOpenChange={setAddObjectOpen}
         bucketAddress={bucketAddress}
         prefix={path}
+        defaultTTLString={maxTtlDisplay}
       />
       <CreditNeededDialog
         open={creditNeededOpen}
