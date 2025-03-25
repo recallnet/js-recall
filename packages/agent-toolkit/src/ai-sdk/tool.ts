@@ -15,7 +15,8 @@ export default function RecallTool(
   recallAPI: RecallAPI,
   method: string,
   description: string,
-  schema: z.ZodObject<any, any, any, any, { [x: string]: any }>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  schema: z.ZodObject<any, any, any, any>,
 ): CoreTool {
   return tool({
     description: description,

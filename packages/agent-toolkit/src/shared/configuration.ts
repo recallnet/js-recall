@@ -43,7 +43,7 @@ export type Actions = {
  */
 export type Context = {
   network?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 /**

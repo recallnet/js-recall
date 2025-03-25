@@ -3,7 +3,7 @@
  * @param obj - The object to stringify.
  * @returns The stringified object.
  */
-export function jsonStringify(obj: any) {
+export function jsonStringify(obj: unknown) {
   return JSON.stringify(obj, (_, value) =>
     typeof value === "bigint" ? value.toString() : value,
   );

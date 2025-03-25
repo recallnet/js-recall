@@ -198,10 +198,10 @@ A few examples of how to use the `RecallAgentToolkit` are available in the [`/ex
    ```bash
    pnpm run build
    ```
-4. Change into the `examples` directory and create a `.env` file (based on `.env.example`) with your Recall private key:
+4. Change into the `agent-toolkit`'s `examples` directory and create a `.env` file (based on `.env.example`) with your Recall private key:
 
    ```bash
-   cd examples
+   cd packages/agent-toolkit/examples
    cp .env.example .env
    ```
 

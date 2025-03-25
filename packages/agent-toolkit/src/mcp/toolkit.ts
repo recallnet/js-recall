@@ -63,6 +63,7 @@ export default class RecallAgentToolkit extends McpServer {
         tool.parameters.shape,
         async (
           arg: z.infer<typeof tool.parameters>,
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           _extra: RequestHandlerExtra,
         ) => {
           const result = await this._recall.run(tool.method, arg);

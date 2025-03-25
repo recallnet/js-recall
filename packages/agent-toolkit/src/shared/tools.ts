@@ -36,6 +36,7 @@ export type Tool = {
   method: string;
   name: string;
   description: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   parameters: z.ZodObject<any, any, any, any>;
   actions: Actions;
 };
@@ -44,6 +45,7 @@ export type Tool = {
  * A list of {@link Tool}s that can be used by the agent.
  */
 export const tools: Tool[] = [
+  // Account read methods
   {
     method: "get_account_info",
     name: "Get Account Info",
@@ -66,6 +68,7 @@ export const tools: Tool[] = [
       },
     },
   },
+  // Account write methods
   {
     method: "buy_credit",
     name: "Buy Credit",
@@ -77,6 +80,41 @@ export const tools: Tool[] = [
       },
     },
   },
+  // Bucket read methods
+  {
+    method: "list_buckets",
+    name: "List Buckets",
+    description: listBucketsPrompt,
+    parameters: listBucketsParameters,
+    actions: {
+      bucket: {
+        read: true,
+      },
+    },
+  },
+  {
+    method: "get_object",
+    name: "Get Object",
+    description: getObjectPrompt,
+    parameters: getObjectParameters,
+    actions: {
+      bucket: {
+        read: true,
+      },
+    },
+  },
+  {
+    method: "query_objects",
+    name: "Query Objects",
+    description: queryObjectsPrompt,
+    parameters: queryObjectsParameters,
+    actions: {
+      bucket: {
+        read: true,
+      },
+    },
+  },
+  // Bucket write methods
   {
     method: "create_bucket",
     name: "Create Bucket",
@@ -101,17 +139,6 @@ export const tools: Tool[] = [
     },
   },
   {
-    method: "list_buckets",
-    name: "List Buckets",
-    description: listBucketsPrompt,
-    parameters: listBucketsParameters,
-    actions: {
-      bucket: {
-        read: true,
-      },
-    },
-  },
-  {
     method: "add_object",
     name: "Add Object",
     description: addObjectPrompt,
@@ -119,28 +146,6 @@ export const tools: Tool[] = [
     actions: {
       bucket: {
         write: true,
-      },
-    },
-  },
-  {
-    method: "get_object",
-    name: "Get Object",
-    description: getObjectPrompt,
-    parameters: getObjectParameters,
-    actions: {
-      bucket: {
-        read: true,
-      },
-    },
-  },
-  {
-    method: "query_objects",
-    name: "Query Objects",
-    description: queryObjectsPrompt,
-    parameters: queryObjectsParameters,
-    actions: {
-      bucket: {
-        read: true,
       },
     },
   },

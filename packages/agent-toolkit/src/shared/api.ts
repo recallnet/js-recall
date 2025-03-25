@@ -38,7 +38,7 @@ import { jsonStringify } from "./util.js";
 export default class RecallAPI {
   private _recall: RecallClient;
   private _context: Context;
-  private _serialize: (data: any) => string;
+  private _serialize: (data: unknown) => string;
 
   /**
    * Create a new RecallAPI instance.
@@ -50,7 +50,7 @@ export default class RecallAPI {
   constructor(
     privateKey: string,
     context?: Context,
-    serializer: (data: any) => string = jsonStringify,
+    serializer: (data: unknown) => string = jsonStringify,
   ) {
     const chain =
       context?.network !== undefined &&
@@ -71,6 +71,7 @@ export default class RecallAPI {
    * @param arg - The arguments to pass to the method.
    * @returns The result of the method.
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async run(method: string, arg: any) {
     switch (method) {
       // Account read methods

@@ -17,13 +17,15 @@ class RecallTool extends StructuredTool {
   method: string;
   name: string;
   description: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   schema: z.ZodObject<any, any, any, any>;
 
   constructor(
     recallAPI: RecallAPI,
     method: string,
     description: string,
-    schema: z.ZodObject<any, any, any, any, { [x: string]: any }>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    schema: z.ZodObject<any, any, any, any>,
   ) {
     super();
 
@@ -36,9 +38,11 @@ class RecallTool extends StructuredTool {
 
   _call(
     arg: z.output<typeof this.schema>,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _runManager?: CallbackManagerForToolRun,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _parentConfig?: RunnableConfig,
-  ): Promise<any> {
+  ): Promise<string> {
     return this._recall.run(this.method, arg);
   }
 }

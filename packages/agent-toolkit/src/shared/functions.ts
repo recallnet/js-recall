@@ -36,10 +36,16 @@ export const getAccountInfo = async (
       return { success: false, error: "Failed to get account info" };
     }
     return { success: true, result };
-  } catch (error: any) {
+  } catch (error) {
+    if (error instanceof Error) {
+      return {
+        success: false,
+        error: `Failed to get account info: ${error.message}`,
+      };
+    }
     return {
       success: false,
-      error: `Failed to get account info: ${error.message}`,
+      error: "Failed to get account info: Unknown error",
     };
   }
 };
@@ -60,10 +66,16 @@ export const listBuckets = async (
       return { success: false, error: "Failed to list buckets" };
     }
     return { success: true, result };
-  } catch (error: any) {
+  } catch (error) {
+    if (error instanceof Error) {
+      return {
+        success: false,
+        error: `Failed to list buckets: ${error.message}`,
+      };
+    }
     return {
       success: false,
-      error: `Failed to list buckets: ${error.message}`,
+      error: "Failed to list buckets: Unknown error",
     };
   }
 };
@@ -84,10 +96,16 @@ export const getCreditInfo = async (
       return { success: false, error: "Failed to get credit info" };
     }
     return { success: true, result };
-  } catch (error: any) {
+  } catch (error) {
+    if (error instanceof Error) {
+      return {
+        success: false,
+        error: `Failed to get credit info: ${error.message}`,
+      };
+    }
     return {
       success: false,
-      error: `Failed to get credit info: ${error.message}`,
+      error: "Failed to get credit info: Unknown error",
     };
   }
 };
@@ -110,8 +128,14 @@ export const buyCredit = async (
       return { success: false, error: "Transaction not found" };
     }
     return { success: true, result: meta.tx.transactionHash };
-  } catch (error: any) {
-    return { success: false, error: `Failed to buy credit: ${error.message}` };
+  } catch (error) {
+    if (error instanceof Error) {
+      return {
+        success: false,
+        error: `Failed to buy credit: ${error.message}`,
+      };
+    }
+    return { success: false, error: "Failed to buy credit: Unknown error" };
   }
 };
 
@@ -136,10 +160,16 @@ export const createBucket = async (
       success: true,
       result: { bucket: result.bucket, txHash: meta.tx.transactionHash },
     };
-  } catch (error: any) {
+  } catch (error) {
+    if (error instanceof Error) {
+      return {
+        success: false,
+        error: `Failed to create bucket: ${error.message}`,
+      };
+    }
     return {
       success: false,
-      error: `Failed to create bucket: ${error.message}`,
+      error: "Failed to create bucket: Unknown error",
     };
   }
 };
@@ -177,10 +207,16 @@ export const getOrCreateBucket = async (
       success: true,
       result: { bucket: result.bucket, tx: meta.tx.transactionHash },
     };
-  } catch (error: any) {
+  } catch (error) {
+    if (error instanceof Error) {
+      return {
+        success: false,
+        error: `Failed to get or create bucket: ${error.message}`,
+      };
+    }
     return {
       success: false,
-      error: `Failed to get or create bucket: ${error.message}`,
+      error: "Failed to get or create bucket: Unknown error",
     };
   }
 };
@@ -211,8 +247,14 @@ export const addObject = async (
       return { success: false, error: "Transaction not found" };
     }
     return { success: true, result: { txHash: meta.tx.transactionHash } };
-  } catch (error: any) {
-    return { success: false, error: `Failed to add object: ${error.message}` };
+  } catch (error) {
+    if (error instanceof Error) {
+      return {
+        success: false,
+        error: `Failed to add object: ${error.message}`,
+      };
+    }
+    return { success: false, error: "Failed to add object: Unknown error" };
   }
 };
 
@@ -237,8 +279,14 @@ export const getObject = async (
     return params.outputType === "string" || params.outputType === undefined
       ? { success: true, result: new TextDecoder().decode(result) }
       : { success: true, result };
-  } catch (error: any) {
-    return { success: false, error: `Failed to get object: ${error.message}` };
+  } catch (error) {
+    if (error instanceof Error) {
+      return {
+        success: false,
+        error: `Failed to get object: ${error.message}`,
+      };
+    }
+    return { success: false, error: "Failed to get object: Unknown error" };
   }
 };
 
@@ -264,10 +312,13 @@ export const queryObjects = async (
       return { success: false, error: "Failed to query objects" };
     }
     return { success: true, result };
-  } catch (error: any) {
-    return {
-      success: false,
-      error: `Failed to query objects: ${error.message}`,
-    };
+  } catch (error) {
+    if (error instanceof Error) {
+      return {
+        success: false,
+        error: `Failed to query objects: ${error.message}`,
+      };
+    }
+    return { success: false, error: "Failed to query objects: Unknown error" };
   }
 };
