@@ -1,13 +1,16 @@
 import { z } from "zod";
 
 /**
+ * EVM hex string address (e.g., accounts or buckets).
+ */
+const addressSchema = z.string().regex(/^0x[a-fA-F0-9]{40}$/);
+
+/**
  * Parameters for the getAccountInfo function
  * @param address - The address of the account to get account info for (optional)
  */
 export const getAccountInfoParameters = z.object({
-  address: z
-    .string()
-    .regex(/^0x[a-fA-F0-9]{40}$/)
+  address: addressSchema
     .optional()
     .describe("The address of the account (EVM hex string address)"),
 });
@@ -17,9 +20,7 @@ export const getAccountInfoParameters = z.object({
  * @param address - The address of the account to list buckets for (optional)
  */
 export const listBucketsParameters = z.object({
-  address: z
-    .string()
-    .regex(/^0x[a-fA-F0-9]{40}$/)
+  address: addressSchema
     .optional()
     .describe(
       "The address of the account to list buckets for (EVM hex string address)",
@@ -31,9 +32,7 @@ export const listBucketsParameters = z.object({
  * @param address - The address of the account to get credit info for (optional)
  */
 export const getCreditInfoParameters = z.object({
-  address: z
-    .string()
-    .regex(/^0x[a-fA-F0-9]{40}$/)
+  address: addressSchema
     .optional()
     .describe("The address of the account (EVM hex string address)"),
 });
@@ -45,9 +44,7 @@ export const getCreditInfoParameters = z.object({
  */
 export const buyCreditParameters = z.object({
   amount: z.string().min(1).describe("The amount of credit to buy"),
-  to: z
-    .string()
-    .regex(/^0x[a-fA-F0-9]{40}$/)
+  to: addressSchema
     .optional()
     .describe(
       "The address of the account to buy credit for (EVM hex string address)",
@@ -97,10 +94,7 @@ export const getOrCreateBucketParameters = z.object({
  * @param overwrite - Whether to overwrite existing data at that key
  */
 export const addObjectParameters = z.object({
-  bucket: z
-    .string()
-    .regex(/^0x[a-fA-F0-9]{40}$/)
-    .describe("The address of the bucket"),
+  bucket: addressSchema.describe("The address of the bucket"),
   key: z.string().min(1).describe("The key under which to store the object"),
   data: z
     .union([z.string(), z.instanceof(File), z.instanceof(Uint8Array)])
@@ -125,10 +119,7 @@ export const addObjectParameters = z.object({
  * @param outputType - The type of the output (default: string)
  */
 export const getObjectParameters = z.object({
-  bucket: z
-    .string()
-    .regex(/^0x[a-fA-F0-9]{40}$/)
-    .describe("The address of the bucket"),
+  bucket: addressSchema.describe("The address of the bucket"),
   key: z.string().min(1).describe("The key under which the object is stored"),
   outputType: z
     .enum(["string", "uint8array"])
@@ -145,10 +136,7 @@ export const getObjectParameters = z.object({
  * @param limit - The maximum number of objects to query (optional)
  */
 export const queryObjectsParameters = z.object({
-  bucket: z
-    .string()
-    .regex(/^0x[a-fA-F0-9]{40}$/)
-    .describe("The address of the bucket"),
+  bucket: addressSchema.describe("The address of the bucket"),
   prefix: z
     .string()
     .min(1)
