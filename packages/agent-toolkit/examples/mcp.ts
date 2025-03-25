@@ -81,11 +81,9 @@ export function parseArgs(args: string[]): Options {
     }
   });
 
-  // Check if required tools arguments is present
+  // Check if the tools argument is present, else, use all tools
   if (!options.tools) {
-    throw new Error(
-      "The --tools argument must be provided (e.g., `--tools=all` or `--tools=account.read`).",
-    );
+    options.tools = ACCEPTED_TOOLS;
   }
 
   // Validate tools against accepted enum values
