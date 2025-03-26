@@ -53,14 +53,12 @@ js-recall/
 ## Installation
 
 1. Clone the repository:
-
    ```bash
    git clone https://github.com/recallnet/js-recall.git
    cd js-recall
    ```
 
 2. Install dependencies:
-
    ```bash
    pnpm install
    ```
@@ -77,7 +75,6 @@ Each package in the monorepo has its own specific usage instructions. Here's a q
 ### Applications
 
 - **Portal** (`apps/portal`): Main web application
-
   ```bash
   cd apps/portal
   pnpm dev
@@ -92,14 +89,13 @@ Each package in the monorepo has its own specific usage instructions. Here's a q
 ### Core Packages
 
 - **SDK** (`@recallnet/sdk`): Core SDK implementation
-
   ```typescript
-  import { RecallSDK } from "@recallnet/sdk";
+  import { RecallSDK } from '@recallnet/sdk';
   ```
 
 - **UI Library** (`@recallnet/ui`): Shared UI components
   ```typescript
-  import { Button } from "@recallnet/ui";
+  import { Button } from '@recallnet/ui';
   ```
 
 See individual package READMEs for detailed usage instructions.
@@ -125,7 +121,6 @@ The monorepo uses Turborepo for task orchestration. The following commands are a
 ### Development Environment
 
 The project includes configurations for:
-
 - ESLint for code linting
 - Prettier for code formatting
 - TypeScript for type checking
@@ -134,7 +129,6 @@ The project includes configurations for:
 ### IDE Support
 
 The repository includes configurations for:
-
 - VSCode
 - Cursor
 - Zed
@@ -158,19 +152,16 @@ The repository uses Cursor's Agent mode for advanced development assistance:
 To get the most out of Cursor's AI features, add the following documentation to your Cursor Settings (Settings → Cursor Settings → Features → Docs):
 
 1. Recall TypeScript SDK
-
    ```
    https://docs.recall.network/tools/sdk/javascript
    ```
 
 2. Recall Rust SDK
-
    ```
    https://docs.recall.network/tools/sdk/rust
    ```
 
 3. TypeDoc Documentation
-
    ```
    https://typedoc.org/
    ```
@@ -200,31 +191,26 @@ To get the most out of Cursor's AI features, add the following documentation to 
 Here are some useful prompts to help you work with the Cursor Agent:
 
 #### Issue Analysis and Spec Creation
-
 ```
 Use the gh CLI to read and then create a spec for a project to fix this issue: https://github.com/recallnet/js-recall/issues/126
 ```
 
 #### Code Review and Documentation
-
 ```
 Review the changes in the current branch and create a PR description that follows our standards. Include a summary of changes, testing notes, and any breaking changes.
 ```
 
 #### Development Planning
-
 ```
 Create a development plan for implementing feature X. Break it down into phases and include any necessary research links or documentation references.
 ```
 
 #### Codebase Navigation
-
 ```
 Help me understand how the authentication flow works in this codebase. Show me the relevant files and explain the process.
 ```
 
 #### Testing and Quality
-
 ```
 Review my changes and suggest appropriate test cases. Include unit tests, integration tests, and edge cases we should consider.
 ```
