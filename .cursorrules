@@ -19,6 +19,7 @@ The GitHub repo for this project is: https://github.com/recallnet/js-recall
 - When using command-line tools, don't try to run them in interactive mode if they may hang waiting for input.
 - Maintain excellent inline documentation for any code you contribute.
 - Always thoroughly use inline documentation for all functions, methods, types, etc.
+- When adding scripts or executing scripts, always ensure they are in non-interactive mode. Otherwise, development agents will hang.
 
 # Agent Context Folder
 
@@ -102,15 +103,15 @@ Every time you complete a task, ensure:
 - Keep packages focused and minimal
 - Document exports and complex functions
 - Write tests for critical functionality
-- (only if the pnpm docs:check or pnpm docs:build script exists) Maintain comprehensive TSDoc documentation:
+- Maintain comprehensive TSDoc documentation:
   - All public APIs must have TSDoc comments
   - All functions must have parameter and return type documentation
   - All types, interfaces, and classes must be documented
   - Complex algorithms must include detailed explanations
   - Examples should be provided for non-obvious usage
   - Documentation coverage must be at least 99%
-  - Run `pnpm docs:check` to verify documentation coverage
-  - Run `pnpm docs:build` to generate documentation
+  - (only if the pnpm docs:check or pnpm docs:build script exists) Run `pnpm docs:check` to verify documentation coverage
+  - (only if the pnpm docs:check or pnpm docs:build script exists) Run `pnpm docs:build` to generate documentation
 
 ## Package Development
 - Keep packages small and focused
