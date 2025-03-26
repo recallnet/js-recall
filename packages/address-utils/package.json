@@ -34,6 +34,7 @@
     "@recallnet/typescript-config": "workspace:*",
     "tsup": "^8.3.6",
     "typedoc": "^0.28.1",
+    "typedoc-plugin-coverage": "^3.4.1",
     "typedoc-plugin-markdown": "^4.6.0",
     "typescript": "^5.7.3"
   }
