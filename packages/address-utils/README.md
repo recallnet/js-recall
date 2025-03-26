@@ -15,7 +15,7 @@ pnpm add @recallnet/address-utils@workspace:*
 The package provides utilities for formatting Ethereum addresses:
 
 ```typescript
-import { displayAddress } from '@recallnet/address-utils/display';
+import { displayAddress } from "@recallnet/address-utils/display";
 
 // Basic usage (shows first 4 and last 4 characters)
 displayAddress("0x1234567890abcdef1234567890abcdef12345678");
@@ -26,7 +26,9 @@ displayAddress("0x1234567890abcdef1234567890abcdef12345678", { numChars: 6 });
 // Returns: "0x1234…345678"
 
 // Custom separator
-displayAddress("0x1234567890abcdef1234567890abcdef12345678", { separator: "..." });
+displayAddress("0x1234567890abcdef1234567890abcdef12345678", {
+  separator: "...",
+});
 // Returns: "0x12...5678"
 ```
 
@@ -35,6 +37,7 @@ displayAddress("0x1234567890abcdef1234567890abcdef12345678", { separator: "..." 
 For detailed API documentation, you can:
 
 1. Build the documentation locally:
+
    ```bash
    pnpm docs:build
    ```
@@ -51,16 +54,19 @@ The documentation will be available in the `docs` directory after building.
 To contribute to this package:
 
 1. Install dependencies:
+
    ```bash
    pnpm install
    ```
 
 2. Start development mode:
+
    ```bash
    pnpm dev
    ```
 
 3. Build the package:
+
    ```bash
    pnpm build
    ```
