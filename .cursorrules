@@ -39,11 +39,22 @@ The `.agent/` directory is used for maintaining development context and task tra
 - Document dependencies and prerequisites
 - Split complex plans into multiple PRs if needed
 
+###  Build and Test Requirements
+You can never check off a task unless the following pass
+1. Lint passes: `pnpm lint`
+2. Prettier check passes: `pnpm format:check`
+3. (only if the pnpm docs:check script exists) Dev environment runs: `pnpm docs:check`
+4. Build succeeds: `pnpm build`
+5. Dev environment runs: `pnpm dev`
+
 ## Task Management
 - Use checkboxes to track completed items
 - Document blockers and dependencies
 - Keep notes on additional work discovered
 - Track progress against acceptance criteria
+
+## Pull request
+- use .agent/pull_request.md to document a pull request comment for the project.
 
 ## Quality Gates
 Before marking a phase complete, verify:
