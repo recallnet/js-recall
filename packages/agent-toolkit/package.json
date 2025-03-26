@@ -1,7 +1,17 @@
 {
   "name": "@recallnet/agent-toolkit",
   "version": "0.0.0",
+  "license": "MIT OR Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "Recall agent toolkit with framework agnostic adapters",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/recallnet/js-recall.git",
+    "directory": "packages/agent-toolkit"
+  },
+  "homepage": "https://github.com/recallnet/js-recall/tree/main/packages/agent-toolkit#readme",
   "type": "module",
   "scripts": {
     "dev": "tsc --watch",
