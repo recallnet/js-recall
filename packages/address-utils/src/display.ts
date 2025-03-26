@@ -51,7 +51,9 @@ export function displayAddress(
   const separator = options?.separator ?? "…";
 
   if (address.length < numChars * 2) {
-    throw new Error("Address is too short for the specified number of characters");
+    throw new Error(
+      "Address is too short for the specified number of characters",
+    );
   }
 
   return `${address.slice(0, numChars)}${separator}${address.slice(-numChars)}`;
