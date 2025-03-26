@@ -1,0 +1,106 @@
+{
+  "name": "@recallnet/agent-toolkit",
+  "version": "0.0.0",
+  "description": "Recall agent toolkit with framework agnostic adapters",
+  "type": "module",
+  "scripts": {
+    "dev": "tsc --watch",
+    "build": "tsup",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "exports": {
+    "./ai-sdk": {
+      "import": {
+        "types": "./dist/ai-sdk/index.d.ts",
+        "default": "./dist/ai-sdk/index.js"
+      },
+      "require": {
+        "types": "./dist/ai-sdk/index.d.cts",
+        "default": "./dist/ai-sdk/index.cjs"
+      }
+    },
+    "./langchain": {
+      "import": {
+        "types": "./dist/langchain/index.d.ts",
+        "default": "./dist/langchain/index.js"
+      },
+      "require": {
+        "types": "./dist/langchain/index.d.cts",
+        "default": "./dist/langchain/index.cjs"
+      }
+    },
+    "./mcp": {
+      "import": {
+        "types": "./dist/mcp/index.d.ts",
+        "default": "./dist/mcp/index.js"
+      },
+      "require": {
+        "types": "./dist/mcp/index.d.cts",
+        "default": "./dist/mcp/index.cjs"
+      }
+    },
+    "./openai": {
+      "import": {
+        "types": "./dist/openai/index.d.ts",
+        "default": "./dist/openai/index.js"
+      },
+      "require": {
+        "types": "./dist/openai/index.d.cts",
+        "default": "./dist/openai/index.cjs"
+      }
+    },
+    "./shared": {
+      "import": {
+        "types": "./dist/shared/index.d.ts",
+        "default": "./dist/shared/index.js"
+      },
+      "require": {
+        "types": "./dist/shared/index.d.cts",
+        "default": "./dist/shared/index.cjs"
+      }
+    }
+  },
+  "dependencies": {
+    "@recallnet/chains": "workspace:*",
+    "@recallnet/sdk": "workspace:*",
+    "viem": "^2.22.9",
+    "zod": "^3.24.1"
+  },
+  "peerDependencies": {
+    "@langchain/core": "^0.3.42",
+    "@modelcontextprotocol/sdk": "^1.7.0",
+    "ai": "^4.1.61",
+    "openai": "^4.87.3",
+    "zod-to-json-schema": "^3.24.4"
+  },
+  "peerDependenciesMeta": {
+    "@langchain/core": {
+      "optional": true
+    },
+    "@modelcontextprotocol/sdk": {
+      "optional": true
+    },
+    "ai": {
+      "optional": true
+    },
+    "openai": {
+      "optional": true
+    },
+    "zod-to-json-schema": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@ai-sdk/openai": "^1.2.5",
+    "@langchain/openai": "^0.4.4",
+    "@recallnet/eslint-config": "workspace:*",
+    "@recallnet/typescript-config": "workspace:*",
+    "dotenv": "^16.4.7",
+    "langchain": "^0.3.19",
+    "tsup": "^8.3.6",
+    "typescript": "^5.7.3"
+  }
+}
