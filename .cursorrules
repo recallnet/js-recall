@@ -85,9 +85,9 @@ Development Tools:
 Every time you complete a task, ensure:
 1. Lint passes: `pnpm lint`
 2. Prettier check passes: `pnpm format:check`
-4. Dev environment runs: `pnpm docs:check`
-3. Build succeeds: `pnpm build`
-4. Dev environment runs: `pnpm dev`
+3. (only if the pnpm docs:check script exists) Dev environment runs: `pnpm docs:check`
+4. Build succeeds: `pnpm build`
+5. Dev environment runs: `pnpm dev`
 
 ## Monorepo Rules
 - Each package/app must be able to build and run independently
@@ -102,7 +102,7 @@ Every time you complete a task, ensure:
 - Keep packages focused and minimal
 - Document exports and complex functions
 - Write tests for critical functionality
-- Maintain comprehensive TSDoc documentation:
+- (only if the pnpm docs:check or pnpm docs:build script exists) Maintain comprehensive TSDoc documentation:
   - All public APIs must have TSDoc comments
   - All functions must have parameter and return type documentation
   - All types, interfaces, and classes must be documented
