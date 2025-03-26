@@ -23,12 +23,18 @@
     "dev": "tsc --watch",
     "build": "tsup",
     "lint": "eslint . --max-warnings 0",
-    "clean": "rm -rf .turbo node_modules dist"
+    "clean": "rm -rf .turbo node_modules dist",
+    "docs:check": "typedoc --check",
+    "docs:build": "typedoc",
+    "docs:watch": "typedoc --watch",
+    "docs:serve": "typedoc --serve"
   },
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:*",
     "@recallnet/typescript-config": "workspace:*",
     "tsup": "^8.3.6",
+    "typedoc": "^0.28.1",
+    "typedoc-plugin-markdown": "^4.6.0",
     "typescript": "^5.7.3"
   }
 }
