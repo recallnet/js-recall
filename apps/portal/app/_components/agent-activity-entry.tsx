@@ -8,6 +8,7 @@ import { Button } from "@recallnet/ui/components/button";
 import { Card, CardContent } from "@recallnet/ui/components/card";
 
 import type { AgentActivity } from "@/types/agent-activity";
+import { formatBytes } from "@/lib/format-bytes";
 
 interface AgentActivityEntryProps {
   activity: AgentActivity;
@@ -17,24 +18,14 @@ export function AgentActivityEntry({ activity }: AgentActivityEntryProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString("en-US", {
+    return new Date(dateString).toLocaleString("en-US", {
       year: "numeric",
-      month: "short",
-      day: "numeric",
+      month: "2-digit",
+      day: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
     });
-  };
-
-  const formatFileSize = (bytes: number) => {
-    const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
-    if (bytes === 0) return "0 Byte";
-    const i = Number.parseInt(
-      Math.floor(Math.log(bytes) / Math.log(1024)).toString(),
-    );
-    return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + " " + sizes[i];
   };
 
   return (
@@ -52,7 +43,7 @@ export function AgentActivityEntry({ activity }: AgentActivityEntryProps) {
         <div className="mb-4 grid grid-cols-2 gap-4">
           <div className="flex items-center">
             <FileText className="text-muted-foreground mr-2 h-4 w-4" />
-            <span className="text-sm">{formatFileSize(activity.fileSize)}</span>
+            <span className="text-sm">{formatBytes(activity.fileSize).formatted}</span>
           </div>
           <div className="flex items-center">
             <Clock className="text-muted-foreground mr-2 h-4 w-4" />

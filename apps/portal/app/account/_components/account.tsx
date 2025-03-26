@@ -232,7 +232,7 @@ export function Account() {
           </CardTitle>
           <CardDescription>
             Credits allow you to store data on the Recall network at a fixed
-            rate. One credit stores one GB of data for one month and buying
+            rate. One credit stores one GiB of data for one month and buying
             credits grants you gas allowance.
           </CardDescription>
         </CardHeader>
@@ -245,7 +245,7 @@ export function Account() {
                   ? `${attoCreditsToGbMonths(creditAccount.creditFree)}`
                   : undefined
               }
-              subtitle="GB Months"
+              subtitle="GiB Months"
             />
             <Metric
               title="Credit Committed"
@@ -254,7 +254,7 @@ export function Account() {
                   ? `${attoCreditsToGbMonths(creditAccount.creditCommitted)}`
                   : undefined
               }
-              subtitle="GB Months"
+              subtitle="GiB Months"
             />
             <Metric
               title="Gas Allowance"

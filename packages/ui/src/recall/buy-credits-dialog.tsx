@@ -88,10 +88,10 @@ export default function BuyCreditsDialog({
           <DialogTitle>Buy Recall Credits</DialogTitle>
           <DialogDescription>
             Credits allow you to store data on the Recall network at a fixed
-            rate. One credit stores one GB of data for one month.
+            rate. One credit stores one GiB of data for one month.
           </DialogDescription>
         </DialogHeader>
-        <Label>GB Months</Label>
+        <Label>GiB Months</Label>
         <Input
           type="number"
           min={1}

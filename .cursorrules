@@ -102,15 +102,15 @@ Every time you complete a task, ensure:
 - Keep packages focused and minimal
 - Document exports and complex functions
 - Write tests for critical functionality
-- (only if the pnpm docs:check or pnpm docs:build script exists) Maintain comprehensive TSDoc documentation:
+- Maintain comprehensive TSDoc documentation:
   - All public APIs must have TSDoc comments
   - All functions must have parameter and return type documentation
   - All types, interfaces, and classes must be documented
   - Complex algorithms must include detailed explanations
   - Examples should be provided for non-obvious usage
   - Documentation coverage must be at least 99%
-  - Run `pnpm docs:check` to verify documentation coverage
-  - Run `pnpm docs:build` to generate documentation
+  - (only if the pnpm docs:check or pnpm docs:build script exists) Run `pnpm docs:check` to verify documentation coverage
+  - (only if the pnpm docs:check or pnpm docs:build script exists) Run `pnpm docs:build` to generate documentation
 
 ## Package Development
 - Keep packages small and focused
