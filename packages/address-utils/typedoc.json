@@ -5,7 +5,8 @@
   ],
   "out": "docs",
   "plugin": [
-    "typedoc-plugin-markdown"
+    "typedoc-plugin-markdown",
+    "typedoc-plugin-coverage"
   ],
   "theme": "default",
   "excludePrivate": true,
@@ -24,5 +25,8 @@
   "validation": {
     "invalidLink": true,
     "notDocumented": true
-  }
+  },
+  "coverageLabel": "docs",
+  "coverageColor": "brightgreen",
+  "coverageOutputType": "all"
 }
