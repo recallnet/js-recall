@@ -3,8 +3,8 @@
  * These tests verify that the function correctly formats byte values using binary (base-2) units
  * and handles various edge cases appropriately.
  */
-
 import { describe, expect, it } from "vitest";
+
 import { formatBytes } from "../format-bytes";
 
 describe("formatBytes", () => {

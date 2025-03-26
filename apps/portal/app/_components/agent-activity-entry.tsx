@@ -7,8 +7,8 @@ import { Badge } from "@recallnet/ui/components/badge";
 import { Button } from "@recallnet/ui/components/button";
 import { Card, CardContent } from "@recallnet/ui/components/card";
 
-import type { AgentActivity } from "@/types/agent-activity";
 import { formatBytes } from "@/lib/format-bytes";
+import type { AgentActivity } from "@/types/agent-activity";
 
 interface AgentActivityEntryProps {
   activity: AgentActivity;
@@ -43,7 +43,9 @@ export function AgentActivityEntry({ activity }: AgentActivityEntryProps) {
         <div className="mb-4 grid grid-cols-2 gap-4">
           <div className="flex items-center">
             <FileText className="text-muted-foreground mr-2 h-4 w-4" />
-            <span className="text-sm">{formatBytes(activity.fileSize).formatted}</span>
+            <span className="text-sm">
+              {formatBytes(activity.fileSize).formatted}
+            </span>
           </div>
           <div className="flex items-center">
             <Clock className="text-muted-foreground mr-2 h-4 w-4" />
