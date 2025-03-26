@@ -34,6 +34,10 @@
         "types": "./dist/format-atto-rcl.d.cts",
         "default": "./dist/format-atto-rcl.cjs"
       }
+    },
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     }
   },
   "files": [
@@ -41,15 +45,24 @@
   ],
   "scripts": {
     "dev": "tsc --watch",
-    "build": "tsup",
-    "lint": "eslint . --max-warnings 0",
-    "clean": "rm -rf .turbo node_modules dist"
+    "build": "tsc",
+    "lint": "eslint .",
+    "clean": "rm -rf .turbo node_modules dist",
+    "typecheck": "tsc --noEmit",
+    "docs:build": "typedoc --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage",
+    "docs:serve": "typedoc --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage --watch --serve",
+    "docs:coverage": "typedoc --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage --coverageThreshold 100"
   },
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:*",
     "@recallnet/typescript-config": "workspace:*",
-    "tsup": "^8.3.6",
-    "typescript": "^5.7.3"
+    "@types/node": "^20.10.6",
+    "dnum": "^2.9.0",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3",
+    "typedoc": "^0.25.7",
+    "typedoc-plugin-coverage": "^3.1.0",
+    "typedoc-plugin-markdown": "^3.17.1"
   },
   "dependencies": {
     "dnum": "^2.14.0"
