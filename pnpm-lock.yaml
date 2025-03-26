@@ -440,6 +440,37 @@ importers:
         specifier: ^5.7.3
         version: 5.7.3
 
+  packages/mcp:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.7.0
+        version: 1.7.0
+      '@recallnet/agent-toolkit':
+        specifier: workspace:*
+        version: link:../agent-toolkit
+      chalk:
+        specifier: ^5.4.1
+        version: 5.4.1
+      zod:
+        specifier: ^3.24.1
+        version: 3.24.1
+    devDependencies:
+      '@recallnet/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@recallnet/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@types/node':
+        specifier: ^22.13.13
+        version: 22.13.13
+      tsup:
+        specifier: ^8.3.6
+        version: 8.3.6(jiti@1.21.6)(postcss@8.4.49)(tsx@4.19.3)(typescript@5.7.3)(yaml@2.6.1)
+      typescript:
+        specifier: ^5.7.3
+        version: 5.7.3
+
   packages/network-constants:
     devDependencies:
       '@recallnet/eslint-config':
@@ -2504,6 +2535,9 @@ packages:
 
   '@types/node@22.12.0':
     resolution: {integrity: sha512-Fll2FZ1riMjNmlmJOdAyY5pUbkftXslB5DgEzlIuNaiWhXd00FhWxVC/r4yV/4wBb9JfImTu+jiSvXTkJ7F/gA==}
+
+  '@types/node@22.13.13':
+    resolution: {integrity: sha512-ClsL5nMwKaBRwPcCvH8E7+nU4GxHVx1axNvMZTFHMEfNI7oahimt26P5zjVCRrjiIWj6YFXfE1v3dEp94wLcGQ==}
 
   '@types/react-dom@19.0.3':
     resolution: {integrity: sha512-0Knk+HJiMP/qOZgMyNFamlIjw9OFCsyC2ZbigmEEyXXixgre6IQpm/4V+r3qH4GC1JPvRJKInw+on2rV6YZLeA==}
@@ -8241,6 +8275,10 @@ snapshots:
       undici-types: 6.20.0
 
   '@types/node@22.12.0':
+    dependencies:
+      undici-types: 6.20.0
+
+  '@types/node@22.13.13':
     dependencies:
       undici-types: 6.20.0
 
