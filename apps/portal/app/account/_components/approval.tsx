@@ -197,7 +197,7 @@ export function Approval({ type, creditSponsor, approval }: Props) {
             <Metric
               title="Credits used"
               value={`${creditUsedDisplay}/${creditLimitDisplay}`}
-              subtitle="GB Months"
+              subtitle="GiB Months"
             />
             <Metric
               title="Gas used"

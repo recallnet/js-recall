@@ -27,7 +27,7 @@ import Objects from "./objects";
 export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
   const searchParams = useSearchParams();
 
-  const [delimiter, setDelimiter] = useState(
+  const [delimiter, _setDelimiter] = useState(
     searchParams.get("delimiter") || "/",
   );
 

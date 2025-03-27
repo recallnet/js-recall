@@ -185,7 +185,7 @@ export function ApprovalsTo() {
             <div className="flex flex-col gap-2">
               <Label htmlFor="creditLimit">
                 Credit Limit{" "}
-                <span className="text-muted-foreground">(GB Months)</span>
+                <span className="text-muted-foreground">(GiB Months)</span>
               </Label>
               <Input
                 id="creditLimit"
