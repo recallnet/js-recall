@@ -13,10 +13,12 @@
   },
   "homepage": "https://github.com/recallnet/js-recall/tree/main/packages/mcp#readme",
   "type": "module",
-  "bin": "dist/index.js",
+  "bin": {
+    "recall-mcp": "dist/index.js"
+  },
   "scripts": {
     "dev": "tsc --watch",
-    "build": "tsup && node -e \"require('fs').chmodSync('dist/index.js', '755')\"",
+    "build": "tsup && shx chmod +x dist/*.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -32,6 +34,7 @@
     "@recallnet/eslint-config": "workspace:*",
     "@recallnet/typescript-config": "workspace:*",
     "@types/node": "^22.13.13",
+    "shx": "^0.4.0",
     "tsup": "^8.3.6",
     "typescript": "^5.7.3"
   }
