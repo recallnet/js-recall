@@ -451,6 +451,9 @@ importers:
       chalk:
         specifier: ^5.4.1
         version: 5.4.1
+      minimist:
+        specifier: ^1.2.8
+        version: 1.2.8
       zod:
         specifier: ^3.24.1
         version: 3.24.1
@@ -461,6 +464,9 @@ importers:
       '@recallnet/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
+      '@types/minimist':
+        specifier: ^1.2.5
+        version: 1.2.5
       '@types/node':
         specifier: ^22.13.13
         version: 22.13.13
@@ -2511,6 +2517,9 @@ packages:
 
   '@types/minimatch@5.1.2':
     resolution: {integrity: sha512-K0VQKziLUWkVKiRVrx4a40iPaxTUefQmjtkQofBkYRcoaaL/8rhwDWww9qWbrgicNOgnpIsMxyNIUM4+n6dUIA==}
+
+  '@types/minimist@1.2.5':
+    resolution: {integrity: sha512-hov8bUuiLiyFPGyFPE1lwWhmzYbirOXQNNo40+y3zow8aFVTeyn3VWL0VFFfdNddA8S4Vf0Tc062rzyNr7Paag==}
 
   '@types/mocha@10.0.10':
     resolution: {integrity: sha512-xPyYSz1cMPnJQhl0CLMH68j3gprKZaTjG3s5Vi+fDgx+uhG9NOXwbVt52eFS8ECyXhyKcjDLCBEqBExKuiZb7Q==}
@@ -8314,6 +8323,8 @@ snapshots:
   '@types/json-schema@7.0.15': {}
 
   '@types/minimatch@5.1.2': {}
+
+  '@types/minimist@1.2.5': {}
 
   '@types/mocha@10.0.10': {}
 
