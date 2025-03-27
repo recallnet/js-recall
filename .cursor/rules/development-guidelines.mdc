@@ -118,11 +118,11 @@ alwaysApply: true
 
 # Additional Resources
 
-- [Turborepo Documentation](https://turbo.build/repo/docs)
-- [pnpm Workspace Guide](https://pnpm.io/workspaces)
-- [Next.js Documentation](https://nextjs.org/docs)
-- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
-- [React Documentation](https://react.dev/)
+- [Turborepo Documentation](mdc:https:/turbo.build/repo/docs)
+- [pnpm Workspace Guide](mdc:https:/pnpm.io/workspaces)
+- [Next.js Documentation](mdc:https:/nextjs.org/docs)
+- [TypeScript Handbook](mdc:https:/www.typescriptlang.org/docs)
+- [React Documentation](mdc:https:/react.dev)
 
 # AI Interaction Guidelines
 

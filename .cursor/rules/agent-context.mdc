@@ -40,7 +40,7 @@ Before marking a phase complete, verify:
 - Documentation is complete
 - Build succeeds
 - Development environment runs
-- If editing the README, please conform to the [standard-readme](https://github.com/RichardLitt/standard-readme) specification.
+- If editing the README, please conform to the [standard-readme](mdc:https:/github.com/RichardLitt/standard-readme) specification.
 
 ## Development Tracking
 - Ensure all secrets or passwords are ketp out of tracked code. Never commit files such as .env.
