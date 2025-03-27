@@ -1,0 +1,48 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Agent Context Folder
+
+The `.agent/` directory is used for maintaining development context and task tracking:
+
+## Specifications
+- Create `spec.md` for new features or major changes
+- Ensure specs align with GitHub issues
+- Get developer approval on specs before proceeding
+- Include acceptance criteria and requirements
+
+## Development Plans
+- Create `developer_plan.md` for implementation tracking
+- Break down tasks into clear, measurable phases
+- Include links to relevant documentation and examples
+- Track completion status for each task
+- Document dependencies and prerequisites
+- Split complex plans into multiple PRs if needed
+
+###  Build and Test Requirements
+You can never check off a task unless the following pass all quality checks.
+
+## Task Management
+- Use checkboxes to track completed items
+- Document blockers and dependencies
+- Keep notes on additional work discovered
+- Track progress against acceptance criteria
+
+## Pull request
+- use .agent/pull_request.md to document a pull request comment for the project.
+
+## Quality Gates
+Before marking a phase complete, verify:
+- All lint checks pass
+- Prettier formatting is correct
+- Documentation is complete
+- Build succeeds
+- Development environment runs
+- If editing the README, please conform to the [standard-readme](mdc:https:/github.com/RichardLitt/standard-readme) specification.
+
+## Development Tracking
+- Ensure all secrets or passwords are ketp out of tracked code. Never commit files such as .env.
+- Execute a `git add . && git commit -m "<description of the change>"` after each change you make.
+
