@@ -33,7 +33,6 @@ const ACCEPTED_TOOLS = [
   "bucket.write",
 ];
 
-// eslint-disable-next-line turbo/no-undeclared-env-vars
 const { RECALL_PRIVATE_KEY, RECALL_NETWORK } = process.env;
 
 /**
