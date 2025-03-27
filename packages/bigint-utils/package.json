@@ -58,7 +58,7 @@
     "@recallnet/typescript-config": "workspace:*",
     "@types/node": "^20.10.6",
     "dnum": "^2.9.0",
-    "eslint": "^8.56.0",
+    "eslint": "^9.15.0",
     "typescript": "^5.3.3",
     "typedoc": "^0.25.7",
     "typedoc-plugin-coverage": "^3.1.0",

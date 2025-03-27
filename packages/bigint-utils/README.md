@@ -22,7 +22,10 @@ pnpm add @recallnet/bigint-utils
 ### Converting Storage Units
 
 ```typescript
-import { gbMonthsToCredits, attoCreditsToGbMonths } from '@recallnet/bigint-utils';
+import {
+  attoCreditsToGbMonths,
+  gbMonthsToCredits,
+} from "@recallnet/bigint-utils";
 
 // Convert 1 GB-month to credits
 const credits = gbMonthsToCredits(1);
@@ -37,9 +40,9 @@ const gbMonths = attoCreditsToGbMonths("2592000000000000");
 
 ```typescript
 import {
+  attoRecallToRecallDisplay,
   recallToAttoRecall,
-  attoRecallToRecallDisplay
-} from '@recallnet/bigint-utils';
+} from "@recallnet/bigint-utils";
 
 // Convert 1.5 RECALL to atto-RECALL
 const attoRecall = recallToAttoRecall(1.5);
@@ -53,7 +56,7 @@ const display = attoRecallToRecallDisplay("1500000000000000000");
 ### Time and Block Conversions
 
 ```typescript
-import { hoursToNumBlocks, numBlocksToSeconds } from '@recallnet/bigint-utils';
+import { hoursToNumBlocks, numBlocksToSeconds } from "@recallnet/bigint-utils";
 
 // Convert 1 hour to blocks
 const blocks = hoursToNumBlocks(1);
