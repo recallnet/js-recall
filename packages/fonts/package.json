@@ -7,7 +7,11 @@
     "build": "./scripts/init.sh",
     "dev": "./scripts/init.sh",
     "lint": "eslint . --max-warnings 0",
-    "clean": "rm -rf src/* node_modules"
+    "clean": "rm -rf src/* node_modules",
+    "docs:check": "typedoc --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage",
+    "docs:build": "typedoc --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage",
+    "docs:watch": "typedoc --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage --watch",
+    "docs:serve": "typedoc --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage --watch --serve"
   },
   "dependencies": {
     "next": "^15.1.0"
@@ -15,7 +19,10 @@
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:^",
     "@recallnet/typescript-config": "workspace:*",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "typedoc": "^0.28.1",
+    "typedoc-plugin-coverage": "^3.4.1",
+    "typedoc-plugin-markdown": "^4.6.0"
   },
   "exports": {
     ".": "./src/index.ts"

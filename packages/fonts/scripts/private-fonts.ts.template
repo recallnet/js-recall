@@ -1,5 +1,21 @@
+/**
+ * Private font configuration for the Recall Network applications.
+ *
+ * This module configures local fonts (Replica LL Web and Trim Mono) for use in Next.js applications.
+ * These fonts are loaded from local .woff2 files.
+ *
+ * @packageDocumentation
+ */
+
 import localFont from "next/font/local";
 
+/**
+ * Replica LL Web font configuration.
+ *
+ * This sans-serif font is the primary font used throughout the Recall Network applications.
+ * It includes multiple weights and styles loaded from local .woff2 files.
+ * It is configured with the CSS variable `--font-sans`.
+ */
 const fontSans = localFont({
   variable: "--font-sans",
   fallback: ["ui-sans-serif"],
@@ -47,6 +63,13 @@ const fontSans = localFont({
   ],
 });
 
+/**
+ * Trim Mono font configuration.
+ *
+ * This monospace font is used for code snippets, terminal output, and other monospaced text.
+ * It includes multiple weights loaded from local .woff2 files.
+ * It is configured with the CSS variable `--font-mono`.
+ */
 const fontMono = localFont({
   variable: "--font-mono",
   fallback: ["ui-monospace", "monospace"],
