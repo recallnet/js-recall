@@ -1,15 +1,37 @@
 /**
+ * Utility functions for formatting Ethereum addresses for display purposes.
+ *
+ * @packageDocumentation
+ */
+
+/**
  * Options for customizing the address display format.
  */
 export interface DisplayAddressOptions {
   /**
    * The number of characters to show at the start and end of the address.
+   * This determines how many characters from the beginning and end of the address will be visible.
+   *
+   * @example
+   * ```typescript
+   * // Show 6 characters at start and end
+   * { numChars: 6 } // "0x1234...5678"
+   * ```
+   *
    * @default 4
    */
   numChars?: number;
 
   /**
    * The separator string to use between the start and end portions of the address.
+   * This string is inserted between the visible parts of the address.
+   *
+   * @example
+   * ```typescript
+   * // Use a custom separator
+   * { separator: "..." } // "0x12...5678"
+   * ```
+   *
    * @default "…"
    */
   separator?: string;
