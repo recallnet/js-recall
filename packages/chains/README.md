@@ -11,18 +11,18 @@ pnpm add @recallnet/chains
 ## Usage
 
 ```typescript
-import { testnet, localnet, devnet, getChain } from '@recallnet/chains';
+import { devnet, getChain, localnet, testnet } from "@recallnet/chains";
+// Check if a chain has a parent chain
+import { checkHasParentChain, getParentChain } from "@recallnet/chains";
+// Get service URLs for a chain
+import { getExplorerUrl, getObjectApiUrl } from "@recallnet/chains";
 
 // Get a specific chain by name
-const chain = getChain('testnet');
+const chain = getChain("testnet");
 
-// Check if a chain has a parent chain
-import { checkHasParentChain, getParentChain } from '@recallnet/chains';
 const hasParent = checkHasParentChain(testnet);
 const parentChain = getParentChain(testnet);
 
-// Get service URLs for a chain
-import { getObjectApiUrl, getExplorerUrl } from '@recallnet/chains';
 const apiUrl = getObjectApiUrl(testnet);
 const explorerUrl = getExplorerUrl(testnet);
 ```

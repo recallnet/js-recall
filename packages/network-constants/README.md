@@ -15,7 +15,7 @@ import {
   TESTNET_CHAIN_ID,
   TESTNET_EVM_RPC_URL,
   // other constants...
-} from '@recallnet/network-constants';
+} from "@recallnet/network-constants";
 
 console.log(`Testnet Chain ID: ${TESTNET_CHAIN_ID}`);
 ```

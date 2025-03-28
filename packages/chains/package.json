@@ -32,6 +32,7 @@
     "dev": "tsc --watch",
     "build": "tsup",
     "clean": "rm -rf .turbo node_modules dist",
+    "lint": "eslint . --max-warnings 0",
     "docs:check": "typedoc --skipErrorChecking --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage",
     "docs:build": "typedoc --skipErrorChecking --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage",
     "docs:watch": "typedoc --skipErrorChecking --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage --watch",

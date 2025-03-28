@@ -7,11 +7,7 @@
     "build": "./scripts/init.sh",
     "dev": "./scripts/init.sh",
     "lint": "eslint . --max-warnings 0",
-    "clean": "rm -rf src/* node_modules",
-    "docs:check": "mkdir -p docs && echo '# Fonts Documentation' > docs/README.md && echo 'Documentation coverage: 100%' > docs/coverage.md",
-    "docs:build": "mkdir -p docs && echo '# Fonts Documentation' > docs/README.md && echo 'Documentation coverage: 100%' > docs/coverage.md",
-    "docs:watch": "echo 'Watch mode not applicable for fonts package'",
-    "docs:serve": "echo 'Serve mode not applicable for fonts package'"
+    "clean": "rm -rf src/* node_modules"
   },
   "dependencies": {
     "next": "^15.1.0"
@@ -19,10 +15,7 @@
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:^",
     "@recallnet/typescript-config": "workspace:*",
-    "typescript": "^5.7.3",
-    "typedoc": "^0.28.1",
-    "typedoc-plugin-coverage": "^3.4.1",
-    "typedoc-plugin-markdown": "^4.6.0"
+    "typescript": "^5.7.3"
   },
   "exports": {
     ".": "./src/index.ts"
