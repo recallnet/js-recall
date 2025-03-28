@@ -32,11 +32,10 @@
     "dev": "tsc --watch",
     "build": "tsup",
     "clean": "rm -rf .turbo node_modules dist",
-    "lint": "eslint . --max-warnings 0",
-    "docs:check": "typedoc --emit none",
-    "docs:build": "typedoc",
-    "docs:watch": "typedoc --watch",
-    "docs:serve": "typedoc --watch --serve"
+    "docs:check": "typedoc --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage",
+    "docs:build": "typedoc --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage",
+    "docs:watch": "typedoc --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage --watch",
+    "docs:serve": "typedoc --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage --watch --serve"
   },
   "dependencies": {},
   "devDependencies": {

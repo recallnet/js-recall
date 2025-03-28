@@ -42,7 +42,6 @@ When the `PRIVATE_FONTS` environment variable is set, the package will use priva
 - Trim Mono (monospace)
 
 To use private fonts, set the following environment variables:
-
 - `PRIVATE_FONTS=true`
 - `FONTS_REPO_ACCESS_TOKEN=<your_github_token>` (optional, for CI environments)
 

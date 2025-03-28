@@ -1,7 +1,9 @@
 {
   "$schema": "https://typedoc.org/schema.json",
+  "entryPointStrategy": "resolve",
   "entryPoints": [
-    "./src/index.ts"
+    "./scripts/open-fonts.ts.template",
+    "./scripts/private-fonts.ts.template"
   ],
   "out": "docs",
   "plugin": [
