@@ -35,8 +35,11 @@ export function formatBytes(bytes: number) {
   );
   const val = Math.round((bytes / Math.pow(1024, i)) * 100) / 100;
   return {
+    /** The numeric value after conversion (rounded to 2 decimal places) */
     val,
+    /** The unit of measurement (Bytes, KiB, MiB, GiB, TiB) */
     unit: sizes(i, val),
+    /** A formatted string combining the value and unit */
     formatted: `${val} ${sizes(i, val)}`,
   };
 }

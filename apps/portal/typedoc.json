@@ -1,0 +1,36 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": [
+    "./lib/format-bytes.ts",
+    "./lib/convert-matadata.ts",
+    "./lib/remove-prefix.ts",
+    "./lib/wagmi-config.ts",
+    "./types/agent-activity.ts"
+  ],
+  "out": "docs",
+  "plugin": [
+    "typedoc-plugin-markdown",
+    "typedoc-plugin-coverage"
+  ],
+  "theme": "default",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": true,
+  "includeVersion": true,
+  "categorizeByGroup": true,
+  "categoryOrder": [
+    "Functions",
+    "Types",
+    "Interfaces",
+    "Variables"
+  ],
+  "searchInComments": true,
+  "readme": "README.md",
+  "validation": {
+    "invalidLink": true,
+    "notDocumented": true
+  },
+  "coverageLabel": "docs",
+  "coverageColor": "brightgreen",
+  "coverageOutputType": "all"
+}
