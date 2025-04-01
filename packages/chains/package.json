@@ -33,10 +33,10 @@
     "build": "tsup",
     "clean": "rm -rf .turbo node_modules dist",
     "lint": "eslint . --max-warnings 0",
-    "docs:check": "typedoc --skipErrorChecking --emit none",
-    "docs:build": "typedoc --skipErrorChecking",
-    "docs:watch": "typedoc --skipErrorChecking --watch",
-    "docs:serve": "typedoc --skipErrorChecking --watch --serve"
+    "docs:check": "typedoc --emit none",
+    "docs:build": "typedoc",
+    "docs:watch": "typedoc --watch",
+    "docs:serve": "typedoc --watch --serve"
   },
   "dependencies": {
     "@recallnet/network-constants": "workspace:*",

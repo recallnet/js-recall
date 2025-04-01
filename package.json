@@ -13,9 +13,7 @@
     "version-packages": "changeset version",
     "publish-packages": "changeset publish",
     "docs:build": "turbo docs:build",
-    "docs:check": "turbo docs:check",
-    "docs:watch": "typedoc --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage --watch",
-    "docs:serve": "typedoc --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage --watch --serve"
+    "docs:check": "turbo docs:check"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.0",
