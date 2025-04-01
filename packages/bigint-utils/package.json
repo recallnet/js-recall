@@ -51,7 +51,7 @@
     "typecheck": "tsc --noEmit",
     "docs:build": "typedoc",
     "docs:serve": "typedoc --watch --serve",
-    "docs:check": "typedoc --check",
+    "docs:check": "typedoc --emit none",
     "docs:watch": "typedoc --watch"
   },
   "devDependencies": {
