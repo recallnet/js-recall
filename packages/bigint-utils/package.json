@@ -49,10 +49,10 @@
     "lint": "eslint .",
     "clean": "rm -rf .turbo node_modules dist",
     "typecheck": "tsc --noEmit",
-    "docs:build": "typedoc --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage",
-    "docs:serve": "typedoc --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage --watch --serve",
-    "docs:check": "typedoc --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage",
-    "docs:watch": "typedoc --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage --watch"
+    "docs:build": "typedoc",
+    "docs:serve": "typedoc --watch --serve",
+    "docs:check": "typedoc --emit none",
+    "docs:watch": "typedoc --watch"
   },
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:*",

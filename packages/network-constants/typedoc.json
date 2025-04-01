@@ -1,32 +1,9 @@
 {
   "$schema": "https://typedoc.org/schema.json",
+  "extends": [
+    "../../typedoc.base.json"
+  ],
   "entryPoints": [
     "./src/index.ts"
-  ],
-  "out": "docs",
-  "plugin": [
-    "typedoc-plugin-markdown",
-    "typedoc-plugin-coverage"
-  ],
-  "theme": "default",
-  "excludePrivate": true,
-  "excludeProtected": true,
-  "excludeInternal": true,
-  "includeVersion": true,
-  "categorizeByGroup": true,
-  "categoryOrder": [
-    "Functions",
-    "Types",
-    "Interfaces",
-    "Variables"
-  ],
-  "searchInComments": true,
-  "readme": "README.md",
-  "validation": {
-    "invalidLink": true,
-    "notDocumented": true
-  },
-  "coverageLabel": "docs",
-  "coverageColor": "brightgreen",
-  "coverageOutputType": "all"
+  ]
 }
