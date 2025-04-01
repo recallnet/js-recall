@@ -6,37 +6,11 @@
   "entryPoints": [
     "./src/index.ts"
   ],
-  "out": "docs",
-  "plugin": [
-    "typedoc-plugin-markdown",
-    "typedoc-plugin-coverage"
-  ],
-  "theme": "default",
-  "excludePrivate": true,
-  "excludeProtected": true,
-  "excludeInternal": true,
-  "includeVersion": true,
   "externalSymbolLinkMappings": {
     "@recallnet/network-constants": {
       "TESTNET_CHAIN_ID": "https://github.com/recallnet/js-recall/blob/main/packages/network-constants/src/index.ts",
       "DEVNET_CHAIN_ID": "https://github.com/recallnet/js-recall/blob/main/packages/network-constants/src/index.ts"
     }
   },
-  "skipErrorChecking": true,
-  "categorizeByGroup": true,
-  "categoryOrder": [
-    "Functions",
-    "Types",
-    "Interfaces",
-    "Variables"
-  ],
-  "searchInComments": true,
-  "readme": "README.md",
-  "validation": {
-    "invalidLink": true,
-    "notDocumented": true
-  },
-  "coverageLabel": "docs",
-  "coverageColor": "brightgreen",
-  "coverageOutputType": "all"
+  "skipErrorChecking": true
 }
