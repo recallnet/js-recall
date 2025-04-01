@@ -33,10 +33,10 @@
     "build": "tsup",
     "clean": "rm -rf .turbo node_modules dist",
     "lint": "eslint . --max-warnings 0",
-    "docs:check": "typedoc --skipErrorChecking --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage",
-    "docs:build": "typedoc --skipErrorChecking --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage",
-    "docs:watch": "typedoc --skipErrorChecking --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage --watch",
-    "docs:serve": "typedoc --skipErrorChecking --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage --watch --serve"
+    "docs:check": "typedoc --skipErrorChecking",
+    "docs:build": "typedoc --skipErrorChecking",
+    "docs:watch": "typedoc --skipErrorChecking --watch",
+    "docs:serve": "typedoc --skipErrorChecking --watch --serve"
   },
   "dependencies": {
     "@recallnet/network-constants": "workspace:*",
