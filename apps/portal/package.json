@@ -10,10 +10,10 @@
     "lint": "next lint",
     "clean": "rm -rf .turbo .next node_modules",
     "test": "vitest run",
-    "docs:check": "typedoc --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage",
-    "docs:build": "typedoc --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage",
-    "docs:watch": "typedoc --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage --watch",
-    "docs:serve": "typedoc --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage --watch --serve"
+    "docs:check": "typedoc --emit none",
+    "docs:build": "typedoc",
+    "docs:watch": "typedoc --watch",
+    "docs:serve": "typedoc --watch --serve"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.0.0",
