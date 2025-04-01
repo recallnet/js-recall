@@ -1,0 +1,13 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "extends": [
+    "../../typedoc.base.json"
+  ],
+  "entryPoints": [
+    "./lib/format-bytes.ts",
+    "./lib/convert-matadata.ts",
+    "./lib/remove-prefix.ts",
+    "./lib/wagmi-config.ts",
+    "./types/agent-activity.ts"
+  ]
+}

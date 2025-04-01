@@ -9,7 +9,11 @@
     "start": "next start",
     "lint": "next lint",
     "clean": "rm -rf .turbo .next node_modules",
-    "test": "vitest run"
+    "test": "vitest run",
+    "docs:check": "typedoc --emit none",
+    "docs:build": "typedoc",
+    "docs:watch": "typedoc --watch",
+    "docs:serve": "typedoc --watch --serve"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.0.0",
@@ -44,6 +48,9 @@
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.7.3",
+    "typedoc": "^0.28.1",
+    "typedoc-plugin-coverage": "^3.4.1",
+    "typedoc-plugin-markdown": "^4.6.0",
     "vitest": "^3.0.9"
   }
 }
