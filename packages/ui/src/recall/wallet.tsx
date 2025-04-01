@@ -3,7 +3,13 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Copy, Plus, Unplug, WalletIcon } from "lucide-react";
 import { HTMLAttributes, useEffect, useState } from "react";
-import { useAccount, useBalance, useDisconnect } from "wagmi";
+import {
+  useAccount,
+  useBalance,
+  useConfig,
+  useDisconnect,
+  useSwitchChain,
+} from "wagmi";
 
 import { displayAddress } from "@recallnet/address-utils/display";
 import {
@@ -39,6 +45,18 @@ export const Wallet = ({ className, ...props }: Props) => {
   const [buyCreditsOpen, setBuyCreditsOpen] = useState(false);
 
   const { toast } = useToast();
+
+  const { chainId } = useAccount();
+  const { switchChain } = useSwitchChain();
+  const config = useConfig();
+
+  useEffect(() => {
+    if (chainId && chainId !== config.chains[0].id) {
+      switchChain({
+        chainId: config.chains[0].id,
+      });
+    }
+  }, [switchChain, chainId, config]);
 
   useEffect(() => {
     if (creditAccountError) {
