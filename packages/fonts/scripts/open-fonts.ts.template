@@ -1,10 +1,30 @@
+/**
+ * Open-source font configuration for the Recall Network applications.
+ *
+ * This module exports Google Fonts (Geist and Geist Mono) configured for use in Next.js applications.
+ *
+ * @packageDocumentation
+ */
+
 import { Geist, Geist_Mono } from "next/font/google";
 
+/**
+ * Geist Mono font configuration with Latin subset.
+ *
+ * This monospace font is used for code snippets, terminal output, and other monospaced text.
+ * It is configured with the CSS variable `--font-mono`.
+ */
 const fontMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
 });
 
+/**
+ * Geist Sans font configuration with Latin subset.
+ *
+ * This sans-serif font is the primary font used throughout the Recall Network applications.
+ * It is configured with the CSS variable `--font-sans`.
+ */
 const fontSans = Geist({
   subsets: ["latin"],
   variable: "--font-sans",

@@ -27,6 +27,17 @@
     "clean": {
       "dependsOn": ["^clean"],
       "cache": false
+    },
+    "docs:build": {
+      "dependsOn": ["^docs:build"],
+      "outputs": ["docs/**"],
+      "inputs": ["src/**/*.ts", "typedoc.json"],
+      "cache": true
+    },
+    "docs:check": {
+      "dependsOn": ["^docs:check"],
+      "inputs": ["src/**/*.ts", "typedoc.json"],
+      "cache": true
     }
   }
 }

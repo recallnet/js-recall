@@ -4,8 +4,6 @@
     "../../typedoc.base.json"
   ],
   "entryPoints": [
-    "./src/constants.ts",
-    "./src/conversions.ts",
-    "./src/format-atto-rcl.ts"
+    "./src/index.ts"
   ]
 }

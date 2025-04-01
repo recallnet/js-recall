@@ -49,9 +49,10 @@
     "lint": "eslint .",
     "clean": "rm -rf .turbo node_modules dist",
     "typecheck": "tsc --noEmit",
-    "docs:build": "typedoc --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage",
-    "docs:serve": "typedoc --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage --watch --serve",
-    "docs:coverage": "typedoc --plugin typedoc-plugin-markdown --plugin typedoc-plugin-coverage --coverageThreshold 100"
+    "docs:build": "typedoc",
+    "docs:serve": "typedoc --watch --serve",
+    "docs:check": "typedoc --emit none",
+    "docs:watch": "typedoc --watch"
   },
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:*",
@@ -60,9 +61,9 @@
     "dnum": "^2.9.0",
     "eslint": "^9.15.0",
     "typescript": "^5.3.3",
-    "typedoc": "^0.25.7",
-    "typedoc-plugin-coverage": "^3.1.0",
-    "typedoc-plugin-markdown": "^3.17.1"
+    "typedoc": "^0.28.1",
+    "typedoc-plugin-coverage": "^3.4.1",
+    "typedoc-plugin-markdown": "^4.6.0"
   },
   "dependencies": {
     "dnum": "^2.14.0"

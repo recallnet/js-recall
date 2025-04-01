@@ -31,7 +31,12 @@
   "scripts": {
     "dev": "tsc --watch",
     "build": "tsup",
-    "clean": "rm -rf .turbo node_modules dist"
+    "clean": "rm -rf .turbo node_modules dist",
+    "lint": "eslint . --max-warnings 0",
+    "docs:check": "typedoc --emit none",
+    "docs:build": "typedoc",
+    "docs:watch": "typedoc --watch",
+    "docs:serve": "typedoc --watch --serve"
   },
   "dependencies": {
     "@recallnet/network-constants": "workspace:*",
@@ -40,6 +45,10 @@
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:*",
     "@recallnet/typescript-config": "workspace:*",
-    "tsup": "^8.3.6"
+    "tsup": "^8.3.6",
+    "typedoc": "^0.28.1",
+    "typedoc-plugin-coverage": "^3.4.1",
+    "typedoc-plugin-markdown": "^4.6.0",
+    "typescript": "^5.7.3"
   }
 }

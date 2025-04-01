@@ -24,10 +24,10 @@
     "build": "tsup",
     "lint": "eslint . --max-warnings 0",
     "clean": "rm -rf .turbo node_modules dist",
-    "docs:check": "typedoc --check",
+    "docs:check": "typedoc --emit none",
     "docs:build": "typedoc",
     "docs:watch": "typedoc --watch",
-    "docs:serve": "typedoc --serve"
+    "docs:serve": "typedoc --watch --serve"
   },
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:*",
