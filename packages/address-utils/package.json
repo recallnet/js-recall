@@ -24,7 +24,7 @@
     "build": "tsup",
     "lint": "eslint . --max-warnings 0",
     "clean": "rm -rf .turbo node_modules dist",
-    "docs:check": "typedoc",
+    "docs:check": "typedoc --emit none",
     "docs:build": "typedoc",
     "docs:watch": "typedoc --watch",
     "docs:serve": "typedoc --watch --serve"
