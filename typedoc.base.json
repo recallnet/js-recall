@@ -1,11 +1,5 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "extends": [
-    "../../typedoc.base.json"
-  ],
-  "entryPoints": [
-    "./src/index.ts"
-  ],
   "out": "docs",
   "plugin": [
     "typedoc-plugin-markdown",
@@ -16,13 +10,6 @@
   "excludeProtected": true,
   "excludeInternal": true,
   "includeVersion": true,
-  "externalSymbolLinkMappings": {
-    "@recallnet/network-constants": {
-      "TESTNET_CHAIN_ID": "https://github.com/recallnet/js-recall/blob/main/packages/network-constants/src/index.ts",
-      "DEVNET_CHAIN_ID": "https://github.com/recallnet/js-recall/blob/main/packages/network-constants/src/index.ts"
-    }
-  },
-  "skipErrorChecking": true,
   "categorizeByGroup": true,
   "categoryOrder": [
     "Functions",

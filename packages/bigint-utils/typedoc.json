@@ -1,5 +1,8 @@
 {
   "$schema": "https://typedoc.org/schema.json",
+  "extends": [
+    "../../typedoc.base.json"
+  ],
   "entryPoints": [
     "./src/constants.ts",
     "./src/conversions.ts",
