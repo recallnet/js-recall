@@ -41,30 +41,33 @@ Details the specific layout of this monorepo:
 ### Packages (`packages/*`)
 **Core Libraries:**
 - `sdk/` (@recallnet/sdk): Core SDK implementation ([README](packages/sdk/README.md))
-- `sdkx/` (@recallnet/sdkx): Extended SDK features
 
 **Agent Dev Tools:**
-- `agent-toolkit/` (@recallnet/agent-toolkit): Tools for AI agent interaction
-- `mcp/`: (Purpose TBD - investigate further if needed)
+- `agent-toolkit/` (@recallnet/agent-toolkit): Tools for AI agent interaction with Recall ([README](packages/agent-toolkit/README.md))
+- `mcp/` (@recallnet/mcp): Model Context Protocol (MCP) server for Recall ([README](packages/mcp/README.md))
 
 **Development Tools:**
-- `eslint-config/` (@recallnet/eslint-config): Shared ESLint configuration
-- `typescript-config/` (@recallnet/typescript-config): Shared TypeScript configuration
+- `eslint-config/` (@recallnet/eslint-config): Shared ESLint configuration ([README](packages/eslint-config/README.md))
+- `typescript-config/` (@recallnet/typescript-config): Shared TypeScript configuration ([README](packages/typescript-config/README.md))
 
 **Utilities:**
-- `ui/` (@recallnet/ui): Shared UI component library ([README](packages/ui/README.md))
-- `contracts/` (@recallnet/contracts): Smart contract interfaces
-- `chains/` (@recallnet/chains): Chain-specific configurations
-- `address-utils/` (@recallnet/address-utils): Utility library
-- `bigint-utils/` (@recallnet/bigint-utils): Utility library
-- `fvm/` (@recallnet/fvm): FVM-specific functionality
-- `network-constants/` (@recallnet/network-constants v0.0.6): Network configuration constants
-- `fonts/` (@recallnet/fonts): Shared font resources
+- `ui/` (@recallnet/ui): Shared UI component library *(README missing)*
+- `contracts/` (@recallnet/contracts): Smart contract interfaces *(README missing)*
+- `chains/` (@recallnet/chains): Chain-specific configurations ([README](packages/chains/README.md))
+- `address-utils/` (@recallnet/address-utils): Address formatting utility ([README](packages/address-utils/README.md))
+- `bigint-utils/` (@recallnet/bigint-utils): BigInt conversion utilities ([README](packages/bigint-utils/README.md))
+- `fvm/` (@recallnet/fvm): FVM-specific functionality ([README](packages/fvm/README.md))
+- `network-constants/` (@recallnet/network-constants v0.0.6): Network configuration constants ([README](packages/network-constants/README.md))
+- `fonts/` (@recallnet/fonts): Shared font resources ([README](packages/fonts/README.md))
+- `sdkx/` (@recallnet/sdkx): Extended SDK features *(README missing)*
 
 ## Versioning & Release (Changesets)
 - This repository uses [Changesets](https://github.com/changesets/changesets) for version management and publishing.
 - **Developer Workflow:** When making changes to packages (`packages/*`) that require a version bump (feature, fix, etc.), run `pnpm changeset` and follow the prompts to document the change. This creates a markdown file in the `.changeset/` directory.
-- **CI Process:** The `release.yml` workflow ([.github/workflows/release.yml](.github/workflows/release.yml)) uses these changeset files to automatically create versioning PRs or publish updated packages to npm upon merging to aliBefplethe**MUST** pass (enforced by CI in [.github/workflows/code-quality.yml](.github/workflows/code-quality.yml)):
+- **CI Process:** The `release.yml` workflow ([.github/workflows/release.yml](.github/workflows/release.yml)) uses these changeset files to automatically create versioning PRs or publish updated packages to npm upon merging to `main`.
+
+## Mandatory Quality Checks & Commands
+Before marking a task complete or merging code, the following commands **MUST** pass (enforced by CI in [.github/workflows/code-quality.yml](.github/workflows/code-quality.yml)):
 
 1.  **Lint:** `pnpm lint`
 2.  **Format Check:** `pnpm format:check`
