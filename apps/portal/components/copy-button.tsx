@@ -22,14 +22,8 @@ export function CopyButton({
 
   const handleCopy = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
-    e.stopPropagation();
     navigator.clipboard.writeText(value);
-
-    // Show toast and automatically dismiss after 3 seconds
-    const { dismiss } = toast({ title: successMessage });
-    setTimeout(() => {
-      dismiss();
-    }, 3000);
+    toast({ title: successMessage ?? "Copied to clipboard" });
   };
 
   return (

@@ -22,14 +22,8 @@ export function ShareButton({
 
   const handleShare = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
-    e.stopPropagation();
     navigator.clipboard.writeText(url);
-
-    // Show toast and automatically dismiss after 3 seconds
-    const { dismiss } = toast({ title: successMessage });
-    setTimeout(() => {
-      dismiss();
-    }, 3000);
+    toast({ title: successMessage ?? "Link copied to clipboard" });
   };
 
   return (

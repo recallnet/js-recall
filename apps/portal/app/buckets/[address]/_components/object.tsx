@@ -137,7 +137,7 @@ export default function Object({
                 `${objectSize.val} ${objectSize.unit || ""}`}
             </span>
             <span>
-              Expires {objectBlockDiff && objectBlockDiff < 0n ? "d" : ""}:{" "}
+              Expires {objectBlockDiff && objectBlockDiff < 0n ? "d" : ""}{" "}
               {objectExpiryDisplay}
             </span>
           </div>
