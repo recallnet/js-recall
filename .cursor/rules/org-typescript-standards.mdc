@@ -1,0 +1,79 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Organization TypeScript Standards
+
+## Core Requirement
+- Use TypeScript for all new code development.
+
+## Code Quality & Style
+- **TSDoc:** Maintain comprehensive TSDoc documentation:
+  - All public APIs (functions, classes, types, interfaces, variables) must have TSDoc comments.
+  - All functions must document parameters (`@param`) and return values (`@returns`).
+  - All types, interfaces, and classes must have descriptive comments.
+  - Complex algorithms or logic must include detailed explanations within comments.
+  - Provide `@example` blocks for non-obvious usage.
+  - Aim for near-complete documentation coverage (e.g., target 99% if tooling allows measurement).
+- **Type Safety:** Utilize TypeScript's type system effectively. Avoid `any` where possible and prefer specific types.
+- **Async/Await:** Use `async/await` consistently for asynchronous operations. Handle errors properly using `try...catch` blocks or promise rejection handling.
+- **Immutability:** Prefer immutable data structures and updates, especially when dealing with state management, to avoid side effects.
+
+## Package Development (for Libraries/Shared Code)
+- **Modularity:** Keep packages small, focused, and with clear responsibilities.
+- **API Design:** Export types for all public APIs to support consumers.
+- **Versioning:** Use a standard process (like changesets - see repo-specific rules) for versioning packages.
+- **Change Management:** Clearly document breaking changes.
+- **Compatibility:** Strive for backward compatibility when making changes.
+
+## Component Development (Primarily for UI/React)
+- **Accessibility:** Follow accessibility (a11y) best practices.
+- **Error Handling:** Implement proper error boundaries and user-friendly error states.
+- **Typing:** Use TypeScript strictly for props, state, and event handlers.
+- **Documentation:** Document component props, usage, and purpose clearly (using TSDoc for exported components).
+- **Purity:** Keep components pure (predictable output for given inputs) whenever feasible.
+
+## State Management (Primarily for UI/React)
+- **Local State:** Use standard mechanisms like React hooks (`useState`, `useReducer`) for local component state.
+- **Loading/Error States:** Implement clear loading indicators and handle errors gracefully in the UI.
+- **Network Requests:** Cache network requests appropriately to improve performance and reduce redundant calls.
+
+## Testing
+- **Unit Tests:** Write unit tests for utilities, helper functions, and isolated logic.
+- **Component Tests:** Test UI components in isolation to verify rendering and behavior.
+- **Integration Tests:** Implement integration tests to verify interactions between different parts of the system.
+- **Scenario Coverage:** Ensure tests cover common use cases, edge cases, and error scenarios.
+- **Accessibility Tests:** Include automated accessibility checks in the testing process where possible.
+
+## Performance
+- **Optimization:** Be mindful of performance implications. Optimize critical code paths.
+- **Bundling:** Utilize techniques like bundle analysis and code splitting to manage application size.
+- **Caching:** Implement appropriate caching strategies (client-side and server-side).
+- **Asset Optimization:** Optimize images, fonts, and other static assets.
+
+## Documentation Standards
+- **API Changes:** Document changes to public APIs clearly (e.g., in changelogs or PR descriptions).
+- **Usage Examples:** Update usage examples when APIs change or new features are added.
+- **Setup Instructions:** Ensure setup and installation instructions are clear and accurate.
+- **Environment Variables:** Document necessary environment variables for setup and configuration.
+
+## Deployment Guidelines
+- **Pre-Deployment Checks:** Verify all tests pass, check bundle sizes, and review dependency updates before deploying.
+- **Staging Environment:** Test thoroughly in a staging environment that mirrors production.
+- **Monitoring:** Monitor application performance and errors post-deployment.
+
+## Dependency Management
+- Minimize adding new external dependencies. Check if existing project dependencies or standard browser/Node.js APIs can achieve the goal first.
+- If adding a new dependency is necessary, justify its inclusion and prefer well-maintained and reputable libraries.
+
+## AI Interaction Guidelines (When using AI Assistance)
+- **Language:** Generate TypeScript code.
+- **Consistency:** Follow existing project patterns, conventions, and architectural choices.
+- **Error Handling:** Implement consistent and robust error handling.
+- **Documentation:** Ensure AI-generated code, especially complex algorithms, is well-documented.
+- **Testing:** Thoroughly test any code generated or modified by AI.
+- **Performance:** Consider the performance implications of generated code.
+- **Reuse:** Prefer using existing utilities, components, and libraries within the project.
+- **Structure:** Respect the established monorepo structure and package boundaries.
+- **Dependencies:** Be mindful of adding new dependencies; use existing ones where possible (see Dependency Management section).

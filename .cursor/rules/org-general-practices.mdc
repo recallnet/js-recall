@@ -1,0 +1,73 @@
+---
+description: General coding practices and agent interaction rules applicable across the organization, regardless of language.
+globs: 
+alwaysApply: true
+---
+# Organization General Practices
+
+## Core Coding Philosophy
+– **Simplicity:** Always prefer simple, understandable solutions.
+– **DRY (Don't Repeat Yourself):** Avoid duplication. Check for existing similar code/functionality before writing new code.
+– **Cleanliness:** Keep the codebase clean, well-organized, and maintainable.
+– **Environment Awareness:** Write code that correctly handles different environments (e.g., dev, test, prod).
+– **Focused Changes:** Only make changes that are requested or clearly understood and directly related to the task. Avoid implementing unrelated improvements or refactors without explicit instruction (see Agent Task Scope below).
+– **Incremental Improvement:** When fixing bugs, avoid introducing new patterns/technologies unless necessary after exhausting existing options. If a new pattern replaces an old one, remove the old implementation.
+– **File Size:** Avoid overly long files. Consider refactoring files exceeding 200–300 lines.
+– **Script Usage:** Avoid writing one-off scripts if a more integrated solution is feasible.
+
+## Data Handling
+– **Mocking:** Mock data *only* for automated tests. Never use mocked or stubbed data in development or production environments.
+– **Secrets:** Ensure secrets, API keys, or passwords are *never* committed to the repository. Use environment variables or secure secret management solutions.
+
+## Tooling Interaction
+– **Non-Interactive Execution:** When using command-line tools or scripts, ensure they run in non-interactive mode to prevent hangs (e.g., append `| cat` to commands like `git log` if needed, use appropriate flags).
+
+## Documentation
+– **Inline Documentation:** Maintain excellent, thorough inline documentation (e.g., commentsr functions, methods, types, classes, and complex logic.
+– **READMEs:** When editing README files, conform to the [standard-readme](mdc:https:/github.com/RichardLitt/standard-readme) specification.
+
+## Security
+- Be mindful of security best practices, especially when handling user input, authentication, authorization, or interacting with external services.
+- Avoid common vulnerabilities (e.g., XSS, CSRF, insecure direct object references).
+
+# Agent Collaboration & Workflow (.agent/ Directory)
+
+The `.agent/` directory is used for maintaining development context and task tracking:
+
+## Agent Task Scope (Preventing Sidequests)
+- Focus solely on the requested task or bug fix.
+- If you identify a related but separate issue or potential refactoring, document it (e.g., in `.agent/backlog.md` or as a comment) but **do not** implement it without explicit instruction.
+
+## Specifications (`.agent/spec.md`)
+- Create `spec.md` for new features or major changes.
+- Ensure specs align with relevant GitHub issues.
+- Get developer approval on specs before proceeding with implementation.
+- Include clear acceptance criteria and requirements.
+
+## Development Plans (`.agent/developer_plan.md`)
+- Create `developer_plan.md` for tracking implementation steps.
+- Break down tasks into clear, measurable phases.
+- Outline not just *what* needs to be done, but *how* it interacts with existing code (key functions/components/packages involved) and *how* it will be tested.
+- Include links to relevant documentation and examples.
+- Track completion status for each task using checkboxes (`- [ ]` or `- [x]`).
+- Document dependencies, prerequisites, and potential blockers.
+- Split complex plans into multiple smaller plans/PRs if needed.
+- Use `.agent/backlog.md` to track work identified but deferred for later.
+
+## Task Management & Error Handling
+- Use checkboxes within `developer_plan.md` to track completed items.
+- Document blockers and dependencies clearly.
+- Keep notes on additional work discovered during development.
+- Track progress against acceptance criteria defined in `spec.md`.
+- If you encounter errors during development (e.g., build failures, test failures), analyze the root cause and attempt to fix it. Document the error and the fix applied.
+
+## Pull Requests (`.agent/pull_request.md`)
+- Use `.agent/pull_request.md` to draft the description for pull requests.
+
+## Development Tracking & Quality Gates
+- **Commits:** Execute a `git add . && git commit -m "<description of the change>"` after each logical change or task completion.
+- **Quality Checks:** All code changes **must** pass the mandatory quality checks defined in repository-specific rules (e.g., `repo-specific-config.mdc`). These checks typically include linting, formatting, documentation coverage, and building, and are often enforced by CI pipelines (e.g., `.github/workflows/code-quality.yml`). Ensure these pass before marking a task as complete.
+
+## Leveraging Context
+- Utilize the documentation sources configured in the user's Cursor settings (as mentioned in the root README) for context on core technologies and SDKs.
+- Refer to the repository structure and package descriptions outlined in repository-specific rules.
