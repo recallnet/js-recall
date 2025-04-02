@@ -17,10 +17,9 @@ alwaysApply: true
 - **Prettier:** Maintain consistent formatting using Prettier (configuration likely shared or in `package.json`).
 
 ## Application Development (Next.js)
-- **Framework:** Use Next.js for web applications (`apps/portal`, `apps/faucet`).
-- **Structure:** Follow the standard Next.js App Router directory structure (`app/`).
-- **UI:** Implement responsive designs suitable for various screen sizes. The primary UI component library is `@recallnet/ui`. Standard state management patterns are TBD (use component state or React Context unless otherwise specified).
-- **Interactions:** Note that `apps/portal` heavily relies on `@recallnet/ui` and `@recallnet/sdk`.
+- **Framework:** Use Next.js for web applications (`apps/portal`, potentially others).
+- **Structure:** Follow the standard Next.js App Router directory structure.
+- **UI:** Implement responsive designs suitable for various screen sizes.
 
 ## Specific Libraries & Packages
 - **UI Components:** Use the shared `@recallnet/ui` library for common UI elements when possible.
@@ -35,39 +34,28 @@ alwaysApply: true
 Details the specific layout of this monorepo:
 
 ### Apps (`apps/*`)
-- `portal/`: Main web application for Recall ([README](mdc:apps/portal/README.md))
+- `portal/`: Main web application for Recall
 - `faucet/`: Faucet application
 
 ### Packages (`packages/*`)
 **Core Libraries:**
-- `sdk/` (@recallnet/sdk): Core SDK implementation ([README](mdc:packages/sdk/README.md))
-
-**Agent Dev Tools:**
-- `agent-toolkit/` (@recallnet/agent-toolkit): Tools for AI agent interaction with Recall ([README](mdc:packages/agent-toolkit/README.md))
-- `mcp/` (@recallnet/mcp): Model Context Protocol (MCP) server for Recall ([README](mdc:packages/mcp/README.md))
+- `sdk/` (@recallnet/sdk): Core SDK implementation
+- `sdkx/` (@recallnet/sdkx): Core SDK implementation
+- `ui/` (@recallnet/ui): Shared UI component library
+- `contracts/` (@recallnet/contracts): Smart contract interfaces
+- `chains/` (@recallnet/chains): Chain-specific configurations
+- `address-utils/` (@recallnet/address-utils): Utility library
+- `bigint-utils/` (@recallnet/bigint-utils): Utility library
+- `fvm/` (@recallnet/fvm): FVM-specific functionality
+- `network-constants/` (@recallnet/network-constants v0.0.6): Network configuration constants
+- `fonts/` (@recallnet/fonts): Shared font resources
 
 **Development Tools:**
-- `eslint-config/` (@recallnet/eslint-config): Shared ESLint configuration ([README](mdc:packages/eslint-config/README.md))
-- `typescript-config/` (@recallnet/typescript-config): Shared TypeScript configuration ([README](mdc:packages/typescript-config/README.md))
-
-**Utilities:**
-- `ui/` (@recallnet/ui): Shared UI component library *(README missing)*
-- `contracts/` (@recallnet/contracts): Smart contract interfaces *(README missing)*
-- `chains/` (@recallnet/chains): Chain-specific configurations ([README](mdc:packages/chains/README.md))
-- `address-utils/` (@recallnet/address-utils): Address formatting utility ([README](mdc:packages/address-utils/README.md))
-- `bigint-utils/` (@recallnet/bigint-utils): BigInt conversion utilities ([README](mdc:packages/bigint-utils/README.md))
-- `fvm/` (@recallnet/fvm): FVM-specific functionality ([README](mdc:packages/fvm/README.md))
-- `network-constants/` (@recallnet/network-constants v0.0.6): Network configuration constants ([README](mdc:packages/network-constants/README.md))
-- `fonts/` (@recallnet/fonts): Shared font resources ([README](mdc:packages/fonts/README.md))
-- `sdkx/` (@recallnet/sdkx): Extended SDK features *(README missing)*
-
-## Versioning & Release (Changesets)
-- This repository uses [Changesets](mdc:https:/github.com/changesets/changesets) for version management and publishing.
-- **Developer Workflow:** When making changes to packages (`packages/*`) that require a version bump (feature, fix, etc.), run `pnpm changeset` and follow the prompts to document the change. This creates a markdown file in the `.changeset/` directory.
-- **CI Process:** The `release.yml` workflow ([.github/workflows/release.yml](mdc:.github/workflows/release.yml)) uses these changeset files to automatically create versioning PRs or publish updated packages to npm upon merging to `main`.
+- `eslint-config/` (@recallnet/eslint-config): Shared ESLint configuration
+- `typescript-config/` (@recallnet/typescript-config): Shared TypeScript configuration
 
 ## Mandatory Quality Checks & Commands
-Before marking a task complete or merging code, the following commands **MUST** pass (enforced by CI in [.github/workflows/code-quality.yml](mdc:.github/workflows/code-quality.yml)):
+Before marking a task complete or merging code, the following commands **MUST** pass:
 
 1.  **Lint:** `pnpm lint`
 2.  **Format Check:** `pnpm format:check`
@@ -84,16 +72,14 @@ Commonly used scripts defined in `package.json` or `turbo.json`:
 - `pnpm format:check`: Check formatting without making changes.
 - `pnpm clean`: Clean build artifacts (`dist`, `node_modules`, etc.).
 - `pnpm changeset`: Create a changeset file to document package changes for versioning.
-- `pnpm version-packages`: Update package versions based on changesets (usually handled by CI).
-- `pnpm publish-packages`: Publish updated packages to the registry (usually handled by CI).
+- `pnpm version-packages`: Update package versions based on changesets.
+- `pnpm publish-packages`: Publish updated packages to the registry.
 - `pnpm docs:check`: Verify TSDoc coverage.
 - `pnpm docs:build`: Generate TypeDoc documentation for all packages.
 
 ## Additional Resources (Project Context)
-- [Root README](README.md)
 - [Turborepo Documentation](mdc:https:/turbo.build/repo/docs)
 - [pnpm Workspace Guide](mdc:https:/pnpm.io/workspaces)
 - [Next.js Documentation](mdc:https:/nextjs.org/docs)
 - [React Documentation](mdc:https:/react.dev)
 - [TypeScript Handbook](mdc:https:/www.typescriptlang.org/docs)
-- [Changesets Documentation](https://github.com/changesets/changesets)

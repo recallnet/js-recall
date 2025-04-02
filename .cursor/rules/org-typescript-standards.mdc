@@ -17,13 +17,11 @@ alwaysApply: true
   - Provide `@example` blocks for non-obvious usage.
   - Aim for near-complete documentation coverage (e.g., target 99% if tooling allows measurement).
 - **Type Safety:** Utilize TypeScript's type system effectively. Avoid `any` where possible and prefer specific types.
-- **Async/Await:** Use `async/await` consistently for asynchronous operations. Handle errors properly using `try...catch` blocks or promise rejection handling.
-- **Immutability:** Prefer immutable data structures and updates, especially when dealing with state management, to avoid side effects.
 
 ## Package Development (for Libraries/Shared Code)
 - **Modularity:** Keep packages small, focused, and with clear responsibilities.
 - **API Design:** Export types for all public APIs to support consumers.
-- **Versioning:** Use a standard process (like changesets - see repo-specific rules) for versioning packages.
+- **Versioning:** Use a standard process (like changesets) for versioning packages.
 - **Change Management:** Clearly document breaking changes.
 - **Compatibility:** Strive for backward compatibility when making changes.
 
@@ -63,10 +61,6 @@ alwaysApply: true
 - **Staging Environment:** Test thoroughly in a staging environment that mirrors production.
 - **Monitoring:** Monitor application performance and errors post-deployment.
 
-## Dependency Management
-- Minimize adding new external dependencies. Check if existing project dependencies or standard browser/Node.js APIs can achieve the goal first.
-- If adding a new dependency is necessary, justify its inclusion and prefer well-maintained and reputable libraries.
-
 ## AI Interaction Guidelines (When using AI Assistance)
 - **Language:** Generate TypeScript code.
 - **Consistency:** Follow existing project patterns, conventions, and architectural choices.
@@ -76,4 +70,4 @@ alwaysApply: true
 - **Performance:** Consider the performance implications of generated code.
 - **Reuse:** Prefer using existing utilities, components, and libraries within the project.
 - **Structure:** Respect the established monorepo structure and package boundaries.
-- **Dependencies:** Be mindful of adding new dependencies; use existing ones where possible (see Dependency Management section).
+- **Dependencies:** Be mindful of adding new dependencies; use existing ones where possible.
