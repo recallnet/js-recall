@@ -14,18 +14,13 @@ import {
 import { numBlocksToSeconds } from "@recallnet/bigint-utils/conversions";
 import { getChain, getObjectApiUrl } from "@recallnet/chains";
 import { useDeleteObject, useGetObject } from "@recallnet/sdkx/react/buckets";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@recallnet/ui/components/card";
+import { Card, CardHeader, CardTitle } from "@recallnet/ui/components/card";
 import { useToast } from "@recallnet/ui/hooks/use-toast";
-import CollapsedStringDisplay from "@recallnet/ui/recall/collapsed-string-display";
 
-import Metric from "@/components/metric";
-import { arrayToDisplay } from "@/lib/convert-matadata";
 import { formatBytes } from "@/lib/format-bytes";
+
+import { FilePreviewPlaceholder } from "./file-preview-placeholder";
+import { MetadataPanel } from "./metadata-panel";
 
 const timeAgo = new TimeAgo("en-US");
 
@@ -122,7 +117,7 @@ export default function Object({
           : undefined;
 
     return (
-      <Card className="rounded-none">
+      <Card className="flex flex-col rounded-none">
         <CardHeader>
           <CardTitle className="flex items-center gap-4">
             <File />
@@ -144,48 +139,20 @@ export default function Object({
             </Link>
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-14 sm:grid-cols-2">
-          <Metric
-            title="Blob Hash"
-            value={
-              <CollapsedStringDisplay
-                value={object.blobHash}
-                showCopy
-                copyTooltip="Copy blob hash"
-                copySuccessMessage="Blob hash copied"
-              />
-            }
-            valueTooltip={object.blobHash}
-          />
-          <Metric
-            title="Recovery Hash"
-            value={
-              <CollapsedStringDisplay
-                value={object.recoveryHash}
-                showCopy
-                copyTooltip="Copy recovery hash"
-                copySuccessMessage="Recovery hash copied"
-              />
-            }
-            valueTooltip={object.recoveryHash}
-          />
-          <Metric
-            title="Size"
-            value={objectSize.val}
-            subtitle={objectSize.unit}
-          />
-          <Metric
-            title={`Expire${(objectBlockDiff || 1) < 0 ? "d" : "s"}`}
-            value={objectExpiryDisplay}
-            valueTooltip={objectExpiryIso}
-          />
-          <div className="flex flex-col gap-2 sm:col-span-2">
-            <span className="text-muted-foreground text-xs">Metadata</span>
-            <pre className="text-muted-foreground min-h-12 border p-4 font-mono">
-              {arrayToDisplay(object.metadata)}
-            </pre>
-          </div>
-        </CardContent>
+
+        {/* File Preview Area - Prioritized in layout */}
+        <div className="min-h-[400px] flex-1 p-4">
+          <FilePreviewPlaceholder />
+        </div>
+
+        {/* Metadata Panel - Collapsed by default */}
+        <MetadataPanel
+          object={object}
+          objectSize={objectSize}
+          objectExpiryDisplay={objectExpiryDisplay}
+          objectExpiryIso={objectExpiryIso}
+          objectBlockDiff={objectBlockDiff}
+        />
       </Card>
     );
   } else if (objectLoading) {
