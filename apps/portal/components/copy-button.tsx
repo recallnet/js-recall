@@ -24,7 +24,12 @@ export function CopyButton({
     e.preventDefault();
     e.stopPropagation();
     navigator.clipboard.writeText(value);
-    toast({ title: successMessage });
+
+    // Show toast and automatically dismiss after 3 seconds
+    const { dismiss } = toast({ title: successMessage });
+    setTimeout(() => {
+      dismiss();
+    }, 3000);
   };
 
   return (

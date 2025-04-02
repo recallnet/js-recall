@@ -7,6 +7,7 @@ interface ShareButtonProps {
   url: string;
   tooltip?: string;
   successMessage?: string;
+
   className?: string;
   iconClassName?: string;
 }
@@ -24,7 +25,12 @@ export function ShareButton({
     e.preventDefault();
     e.stopPropagation();
     navigator.clipboard.writeText(url);
-    toast({ title: successMessage });
+
+    // Show toast and automatically dismiss after 3 seconds
+    const { dismiss } = toast({ title: successMessage });
+    setTimeout(() => {
+      dismiss();
+    }, 3000);
   };
 
   return (
