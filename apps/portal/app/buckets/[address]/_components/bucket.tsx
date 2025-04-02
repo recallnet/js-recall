@@ -131,8 +131,8 @@ export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
               <Fragment key={`${index}-${part}`}>
                 <BreadcrumbItem>
                   {index === pathParts.length - 1 ? (
-                    <div className="flex items-center gap-2 font-semibold text-foreground">
-                      <File className="mr-1 size-4 text-primary" />
+                    <div className="text-foreground flex items-center gap-2 font-semibold">
+                      <File className="text-primary mr-1 size-4" />
                       {part || "\u00A0\u00A0"}
                       {isObject && (
                         <CopyButton

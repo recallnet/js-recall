@@ -1,7 +1,7 @@
 import TimeAgo from "javascript-time-ago";
 import { Download, File, Loader2, Trash } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { Address } from "viem";
 import {
@@ -43,6 +43,8 @@ export default function Object({
   delimiter,
 }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const { toast } = useToast();
 
@@ -102,6 +104,12 @@ export default function Object({
 
   const objectApiUrl = getObjectApiUrl(getChain(chainId));
 
+  // Construct the full portal URL for sharing
+  const getPortalShareUrl = () => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    return `${origin}${pathname}?${searchParams.toString()}`;
+  };
+
   if (object) {
     const objectSize = formatBytes(Number(object.size));
     const objectBlockDiff =
@@ -149,8 +157,9 @@ export default function Object({
               <Download />
             </Link>
             <ShareButton
-              url={`${objectApiUrl}/v1/objects/${bucketAddress}/${encodeURIComponent(path)}`}
-              tooltip="Copy object URL"
+              url={getPortalShareUrl()}
+              tooltip="Copy portal link to share"
+              successMessage="Portal link copied to clipboard"
             />
           </div>
         </div>
