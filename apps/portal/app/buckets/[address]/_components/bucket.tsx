@@ -1,5 +1,6 @@
 "use client";
 
+import { File } from "lucide-react";
 import { duration } from "moment";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -130,7 +131,8 @@ export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
               <Fragment key={`${index}-${part}`}>
                 <BreadcrumbItem>
                   {index === pathParts.length - 1 ? (
-                    <div className="flex items-center gap-2">
+                    <div className="bg-muted/40 border-border/40 flex items-center gap-2 rounded-md border px-2.5 py-1 font-medium">
+                      <File className="mr-1 size-4 opacity-60" />
                       {part || "\u00A0\u00A0"}
                       {isObject && (
                         <CopyButton
