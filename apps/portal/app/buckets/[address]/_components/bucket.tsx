@@ -131,14 +131,15 @@ export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
               <Fragment key={`${index}-${part}`}>
                 <BreadcrumbItem>
                   {index === pathParts.length - 1 ? (
-                    <div className="bg-muted/40 border-border/40 flex items-center gap-2 rounded-md border px-2.5 py-1 font-medium">
-                      <File className="mr-1 size-4 opacity-60" />
+                    <div className="flex items-center gap-2 font-semibold text-foreground">
+                      <File className="mr-1 size-4 text-primary" />
                       {part || "\u00A0\u00A0"}
                       {isObject && (
                         <CopyButton
                           value={part}
                           tooltip="Copy filename"
                           successMessage="Filename copied to clipboard"
+                          iconClassName="opacity-40 hover:opacity-100"
                         />
                       )}
                     </div>
