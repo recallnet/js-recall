@@ -14,9 +14,12 @@ import {
 import { numBlocksToSeconds } from "@recallnet/bigint-utils/conversions";
 import { getChain, getObjectApiUrl } from "@recallnet/chains";
 import { useDeleteObject, useGetObject } from "@recallnet/sdkx/react/buckets";
-import { Card, CardHeader, CardTitle } from "@recallnet/ui/components/card";
+import { Card } from "@recallnet/ui/components/card";
 import { useToast } from "@recallnet/ui/hooks/use-toast";
+import { cn } from "@recallnet/ui/lib/utils";
 
+import { CopyButton } from "@/components/copy-button";
+import { ShareButton } from "@/components/share-button";
 import { formatBytes } from "@/lib/format-bytes";
 
 import { FilePreviewPlaceholder } from "./file-preview-placeholder";
@@ -118,27 +121,39 @@ export default function Object({
 
     return (
       <Card className="flex flex-col rounded-none">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-4">
-            <File />
-            {name}
+        {/* Toolbar - Contains file size and actions */}
+        <div className="flex items-center justify-between border-b p-3">
+          <div className="text-muted-foreground flex items-center gap-2 text-sm">
+            <span>
+              {objectSize.formatted ||
+                `${objectSize.val} ${objectSize.unit || ""}`}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
             {deletePending || deleteReceiptFetching ? (
-              <Loader2 className="ml-auto animate-spin" />
+              <Loader2 className="animate-spin" />
             ) : (
-              <Trash
-                className="hover:text-destructive ml-auto opacity-20 hover:cursor-pointer hover:opacity-100"
-                onClick={handleDelete}
-              />
+              <div title="Delete object">
+                <Trash
+                  className="hover:text-destructive opacity-20 hover:cursor-pointer hover:opacity-100"
+                  onClick={handleDelete}
+                />
+              </div>
             )}
             <Link
               href={`${objectApiUrl}/v1/objects/${bucketAddress}/${encodeURIComponent(path)}`}
               target="_blank"
               className="opacity-20 hover:cursor-pointer hover:opacity-100"
+              title="Download object"
             >
               <Download />
             </Link>
-          </CardTitle>
-        </CardHeader>
+            <ShareButton
+              url={`${objectApiUrl}/v1/objects/${bucketAddress}/${encodeURIComponent(path)}`}
+              tooltip="Copy object URL"
+            />
+          </div>
+        </div>
 
         {/* File Preview Area - Prioritized in layout */}
         <div className="min-h-[400px] flex-1 p-4">

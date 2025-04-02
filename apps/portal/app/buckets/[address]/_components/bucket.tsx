@@ -19,6 +19,8 @@ import {
 import { Button } from "@recallnet/ui/components/button";
 import { cn } from "@recallnet/ui/lib/utils";
 
+import { CopyButton } from "@/components/copy-button";
+
 import AddObjectDialog from "./add-object-dialog";
 import CreditNeededDialog from "./credit-needed-dialog";
 import Object from "./object";
@@ -128,7 +130,16 @@ export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
               <Fragment key={`${index}-${part}`}>
                 <BreadcrumbItem>
                   {index === pathParts.length - 1 ? (
-                    part || "\u00A0\u00A0"
+                    <div className="flex items-center gap-2">
+                      {part || "\u00A0\u00A0"}
+                      {isObject && (
+                        <CopyButton
+                          value={part}
+                          tooltip="Copy filename"
+                          successMessage="Filename copied to clipboard"
+                        />
+                      )}
+                    </div>
                   ) : (
                     <BreadcrumbLink asChild>
                       <Link
