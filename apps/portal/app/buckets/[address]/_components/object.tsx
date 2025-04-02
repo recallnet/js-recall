@@ -131,10 +131,14 @@ export default function Object({
       <Card className="flex flex-col rounded-none">
         {/* Toolbar - Contains file size and actions */}
         <div className="flex items-center justify-between border-b p-3">
-          <div className="text-muted-foreground flex items-center gap-2 text-sm">
+          <div className="text-muted-foreground flex items-center gap-4 text-sm">
             <span>
               {objectSize.formatted ||
                 `${objectSize.val} ${objectSize.unit || ""}`}
+            </span>
+            <span>
+              Expires {objectBlockDiff && objectBlockDiff < 0n ? "d" : ""}:{" "}
+              {objectExpiryDisplay}
             </span>
           </div>
           <div className="flex items-center gap-3">

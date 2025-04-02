@@ -7,7 +7,6 @@ interface ShareButtonProps {
   url: string;
   tooltip?: string;
   successMessage?: string;
-
   className?: string;
   iconClassName?: string;
 }
