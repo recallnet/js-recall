@@ -130,8 +130,7 @@ export default function Object({
         <div className="flex items-center justify-between border-b p-3">
           <div className="text-muted-foreground flex items-center gap-4 text-sm">
             <span>
-              {objectSize.formatted ||
-                `${objectSize.val} ${objectSize.unit || ""}`}
+              {objectSize.formatted}
             </span>
             <span>
               Expires {objectBlockDiff && objectBlockDiff < 0n ? "d" : ""}{" "}
