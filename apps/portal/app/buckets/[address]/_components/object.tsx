@@ -19,7 +19,6 @@ import { useToast } from "@recallnet/ui/hooks/use-toast";
 import { cn } from "@recallnet/ui/lib/utils";
 
 import { CopyButton } from "@/components/copy-button";
-import { ShareButton } from "@/components/share-button";
 import { formatBytes } from "@/lib/format-bytes";
 
 import { FilePreviewPlaceholder } from "./file-preview-placeholder";
@@ -133,7 +132,7 @@ export default function Object({
               {objectSize.formatted}
             </span>
             <span>
-              Expires {objectBlockDiff && objectBlockDiff < 0n ? "d" : ""}{" "}
+              Expire{objectBlockDiff && objectBlockDiff < 0n ? "d" : "s"}{" "}
               {objectExpiryDisplay}
             </span>
           </div>
@@ -156,8 +155,9 @@ export default function Object({
             >
               <Download />
             </Link>
-            <ShareButton
-              url={getPortalShareUrl()}
+            <CopyButton
+              type="share"
+              value={getPortalShareUrl()}
               tooltip="Copy portal link to share"
               successMessage="Portal link copied to clipboard"
             />
