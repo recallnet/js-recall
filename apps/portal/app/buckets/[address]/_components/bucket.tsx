@@ -70,7 +70,6 @@ export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
       return (
         <Object
           bucketAddress={bucketAddress}
-          name={name}
           path={path}
           parentPath={parentPath}
           delimiter={delimiter}
