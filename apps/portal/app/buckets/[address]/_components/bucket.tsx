@@ -1,6 +1,5 @@
 "use client";
 
-import { File } from "lucide-react";
 import { duration } from "moment";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -98,7 +97,7 @@ export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
         onOpenChange={setCreditNeededOpen}
       />
       <div className="flex items-end gap-4">
-        <Breadcrumb>
+        <Breadcrumb className="min-w-0 flex-grow">
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
@@ -125,7 +124,7 @@ export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
                     value={bucketAddress}
                     tooltip="Copy bucket ID"
                     successMessage="Bucket ID copied to clipboard"
-                    className="opacity-40 hover:opacity-100"
+                    className="size-5 opacity-40 hover:opacity-100"
                   />
                 </div>
               )}
@@ -136,15 +135,12 @@ export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
                 <BreadcrumbItem>
                   {index === pathParts.length - 1 ? (
                     <div className="text-foreground flex items-center gap-2 font-semibold">
-                      <File className="text-primary mr-1 size-4" />
                       {part || "\u00A0\u00A0"}
                       <CopyButton
-                        value={part}
-                        tooltip={
-                          isObject ? "Copy filename" : "Copy directory name"
-                        }
-                        successMessage={`${isObject ? "Filename" : "Directory name"} copied to clipboard`}
-                        className="opacity-40 hover:opacity-100"
+                        value={path}
+                        tooltip="Copy full path"
+                        successMessage="Full path copied to clipboard"
+                        className="size-5 opacity-40 hover:opacity-100"
                       />
                     </div>
                   ) : (
@@ -170,6 +166,7 @@ export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
             ))}
           </BreadcrumbList>
         </Breadcrumb>
+
         <Button
           variant="secondary"
           onClick={handleAddObject}

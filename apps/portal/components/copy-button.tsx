@@ -10,8 +10,6 @@ type CopyButtonProps = {
   type?: "copy" | "share";
   tooltip?: string;
   successMessage?: string;
-  // We still need a wrapperClassName for the tooltip span
-  wrapperClassName?: string;
 } & Omit<React.SVGProps<SVGSVGElement>, "onClick">; // Omit onClick as we handle it on the span
 
 export function CopyButton({
@@ -20,7 +18,6 @@ export function CopyButton({
   tooltip: tooltipProp,
   successMessage: successMessageProp,
   className, // This will now apply to the SVG
-  wrapperClassName, // New prop for the wrapper
   ...rest // Capture remaining SVG props
 }: CopyButtonProps) {
   const { toast } = useToast();
@@ -47,14 +44,11 @@ export function CopyButton({
     <span
       title={tooltip}
       onClick={handleCopy}
-      className={cn(
-        "inline-flex cursor-pointer items-center justify-center",
-        wrapperClassName,
-      )}
+      className={cn("inline-flex cursor-pointer items-center justify-center")}
     >
       <Icon
         className={cn(
-          "size-4 opacity-20 hover:opacity-100", // Base styles for the icon
+          "opacity-20 hover:opacity-100", // Base styles for the icon
           className, // Merge with user-provided className for the icon itself
         )}
         aria-hidden="true" // Icon is decorative

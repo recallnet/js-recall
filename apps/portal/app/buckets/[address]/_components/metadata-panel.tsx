@@ -22,9 +22,8 @@ interface MetadataPanelProps {
     }[];
   };
   objectSize: {
-    val: string | number;
-    unit: string | undefined;
-    formatted?: string;
+    val: number;
+    unit: string;
   };
   objectExpiryDisplay?: string;
   objectExpiryIso?: string;
@@ -40,15 +39,6 @@ export function MetadataPanel({
 }: MetadataPanelProps) {
   const [expanded, setExpanded] = useState(false);
 
-  // Convert number val to string if needed
-  const sizeVal =
-    typeof objectSize.val === "number"
-      ? objectSize.val.toString()
-      : objectSize.val;
-
-  // Ensure unit is not undefined
-  const sizeUnit = objectSize.unit || "";
-
   return (
     <div className="border-t">
       <div
@@ -61,7 +51,7 @@ export function MetadataPanel({
 
       {expanded && (
         <div className="space-y-4 p-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Metric
               title="Blob Hash"
               value={
@@ -86,7 +76,11 @@ export function MetadataPanel({
               }
               valueTooltip={object.recoveryHash}
             />
-            <Metric title="Size" value={sizeVal} subtitle={sizeUnit} />
+            <Metric
+              title="Size"
+              value={objectSize.val}
+              subtitle={objectSize.unit}
+            />
             <Metric
               title={`Expire${(objectBlockDiff || 1n) < 0n ? "d" : "s"}`}
               value={objectExpiryDisplay}

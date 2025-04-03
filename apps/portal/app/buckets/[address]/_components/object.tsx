@@ -167,7 +167,7 @@ export default function Object({
         {/* Metadata Panel - Collapsed by default */}
         <MetadataPanel
           object={object}
-          objectSize={objectSize}
+          objectSize={{ ...objectSize, unit: objectSize.unit ?? "" }}
           objectExpiryDisplay={objectExpiryDisplay}
           objectExpiryIso={objectExpiryIso}
           objectBlockDiff={objectBlockDiff}
