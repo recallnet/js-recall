@@ -136,7 +136,7 @@ export default function Object({
               />
             )}
             <Link
-              href={`${objectApiUrl}/v1/objects/${bucketAddress}/${encodeURIComponent(path)}`}
+              href={`${objectApiUrl}/v1/objects/${bucketAddress}/${path}`}
               target="_blank"
               className="opacity-20 hover:cursor-pointer hover:opacity-100"
             >
