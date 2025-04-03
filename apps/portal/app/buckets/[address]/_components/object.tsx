@@ -138,11 +138,11 @@ export default function Object({
           </div>
           <div className="flex items-center gap-3">
             {deletePending || deleteReceiptFetching ? (
-              <Loader2 className="animate-spin" />
+              <Loader2 className="animate-spin size-4" />
             ) : (
               <div title="Delete object">
                 <Trash
-                  className="hover:text-destructive opacity-20 hover:cursor-pointer hover:opacity-100"
+                  className="size-4 hover:text-destructive opacity-20 hover:cursor-pointer hover:opacity-100"
                   onClick={handleDelete}
                 />
               </div>
@@ -150,10 +150,9 @@ export default function Object({
             <Link
               href={`${objectApiUrl}/v1/objects/${bucketAddress}/${encodeURIComponent(path)}`}
               target="_blank"
-              className="opacity-20 hover:cursor-pointer hover:opacity-100"
               title="Download object"
             >
-              <Download />
+              <Download className="size-4 opacity-20 hover:cursor-pointer hover:opacity-100" />
             </Link>
             <CopyButton
               type="share"
