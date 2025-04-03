@@ -4,22 +4,24 @@ import React from "react";
 import { useToast } from "@recallnet/ui/hooks/use-toast";
 import { cn } from "@recallnet/ui/lib/utils";
 
-interface CopyButtonProps {
+// Extend SVGProps for direct SVG element attributes
+type CopyButtonProps = {
   value: string;
   type?: "copy" | "share";
   tooltip?: string;
   successMessage?: string;
-  className?: string;
-  iconClassName?: string;
-}
+  // We still need a wrapperClassName for the tooltip span
+  wrapperClassName?: string;
+} & Omit<React.SVGProps<SVGSVGElement>, "onClick">; // Omit onClick as we handle it on the span
 
 export function CopyButton({
   value,
   type = "copy",
   tooltip: tooltipProp,
   successMessage: successMessageProp,
-  className,
-  iconClassName,
+  className, // This will now apply to the SVG
+  wrapperClassName, // New prop for the wrapper
+  ...rest // Capture remaining SVG props
 }: CopyButtonProps) {
   const { toast } = useToast();
 
@@ -31,7 +33,7 @@ export function CopyButton({
   const tooltip = tooltipProp ?? defaultTooltip;
   const successMessage = successMessageProp ?? defaultSuccessMessage;
 
-  const handleCopy = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleCopy = (e: React.MouseEvent<HTMLSpanElement>) => {
     e.preventDefault();
     e.stopPropagation(); // Prevent click event from bubbling up
     navigator.clipboard.writeText(value);
@@ -40,18 +42,21 @@ export function CopyButton({
 
   const Icon = type === "share" ? Share2 : Copy;
 
+  // Render the Icon within a span for tooltip and click handling
   return (
-    <div
+    <span
       title={tooltip}
       onClick={handleCopy}
-      className={cn("cursor-pointer inline-flex items-center justify-center", className)}
-      // Prevent focus when clicking, similar to Button behavior if needed
-      tabIndex={-1}
+      className={cn("cursor-pointer inline-flex items-center justify-center", wrapperClassName)}
     >
       <Icon
-        className={cn("size-4 opacity-20 hover:opacity-100", iconClassName)}
+        className={cn(
+          "size-4 opacity-20 hover:opacity-100", // Base styles for the icon
+          className // Merge with user-provided className for the icon itself
+        )}
         aria-hidden="true" // Icon is decorative
+        {...rest} // Spread remaining props onto the SVG element
       />
-    </div>
+    </span>
   );
 }
