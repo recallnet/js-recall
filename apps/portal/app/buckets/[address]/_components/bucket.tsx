@@ -129,7 +129,7 @@ export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
                     value={bucketAddress}
                     tooltip="Copy bucket ID"
                     successMessage="Bucket ID copied to clipboard"
-                    iconClassName="opacity-40 hover:opacity-100"
+                    className="opacity-40 hover:opacity-100"
                   />
                 </div>
               )}
@@ -140,12 +140,13 @@ export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
                 <BreadcrumbItem>
                   {index === pathParts.length - 1 ? (
                     <div className="text-foreground flex items-center gap-2 font-semibold">
+                      <File className="text-primary mr-1 size-4" />
                       {part || "\u00A0\u00A0"}
                       <CopyButton
                         value={part}
                         tooltip={isObject ? "Copy filename" : "Copy directory name"}
                         successMessage={`${isObject ? "Filename" : "Directory name"} copied to clipboard`}
-                        iconClassName="opacity-40 hover:opacity-100"
+                        className="opacity-40 hover:opacity-100"
                       />
                     </div>
                   ) : (

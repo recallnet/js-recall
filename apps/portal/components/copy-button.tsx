@@ -1,4 +1,4 @@
-import { Copy, Share2 } from "lucide-react";
+import { Copy, Share } from "lucide-react";
 import React from "react";
 
 import { useToast } from "@recallnet/ui/hooks/use-toast";
@@ -40,7 +40,7 @@ export function CopyButton({
     toast({ title: successMessage });
   };
 
-  const Icon = type === "share" ? Share2 : Copy;
+  const Icon = type === "share" ? Share : Copy;
 
   // Render the Icon within a span for tooltip and click handling
   return (
