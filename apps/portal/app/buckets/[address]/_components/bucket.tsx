@@ -63,7 +63,6 @@ export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
 
   function mainContent() {
     if (isObject) {
-      const name = pathParts[pathParts.length - 1] ?? "unknown";
       const parentPath =
         pathParts.slice(0, -1).join(delimiter) +
         (pathParts.length > 1 ? delimiter : "");
