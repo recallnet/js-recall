@@ -138,11 +138,11 @@ export default function Object({
           </div>
           <div className="flex items-center gap-3">
             {deletePending || deleteReceiptFetching ? (
-              <Loader2 className="animate-spin size-4" />
+              <Loader2 className="animate-spin size-5" />
             ) : (
               <div title="Delete object">
                 <Trash
-                  className="size-4 hover:text-destructive opacity-20 hover:cursor-pointer hover:opacity-100"
+                  className="size-5 hover:text-destructive opacity-20 hover:cursor-pointer hover:opacity-100"
                   onClick={handleDelete}
                 />
               </div>
@@ -152,13 +152,14 @@ export default function Object({
               target="_blank"
               title="Download object"
             >
-              <Download className="size-4 opacity-20 hover:cursor-pointer hover:opacity-100" />
+              <Download className="size-5 opacity-20 hover:cursor-pointer hover:opacity-100" />
             </Link>
             <CopyButton
               type="share"
               value={getPortalShareUrl()}
               tooltip="Copy portal link to share"
               successMessage="Portal link copied to clipboard"
+              className="size-5"
             />
           </div>
         </div>
