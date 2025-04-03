@@ -47,12 +47,15 @@ export function CopyButton({
     <span
       title={tooltip}
       onClick={handleCopy}
-      className={cn("cursor-pointer inline-flex items-center justify-center", wrapperClassName)}
+      className={cn(
+        "inline-flex cursor-pointer items-center justify-center",
+        wrapperClassName,
+      )}
     >
       <Icon
         className={cn(
           "size-4 opacity-20 hover:opacity-100", // Base styles for the icon
-          className // Merge with user-provided className for the icon itself
+          className, // Merge with user-provided className for the icon itself
         )}
         aria-hidden="true" // Icon is decorative
         {...rest} // Spread remaining props onto the SVG element

@@ -4,13 +4,11 @@
  */
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
-import { Address } from "viem";
 
 import CollapsedStringDisplay from "@recallnet/ui/recall/collapsed-string-display";
 
 import Metric from "@/components/metric";
 import { arrayToDisplay } from "@/lib/convert-matadata";
-import { formatBytes } from "@/lib/format-bytes";
 
 interface MetadataPanelProps {
   object: {

@@ -30,7 +30,7 @@ import Objects from "./objects";
 export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
   const searchParams = useSearchParams();
 
-  const [delimiter, _setDelimiter] = useState(
+  const [delimiter] = useState(
     searchParams.get("delimiter") || "/",
   );
 
@@ -144,7 +144,9 @@ export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
                       {part || "\u00A0\u00A0"}
                       <CopyButton
                         value={part}
-                        tooltip={isObject ? "Copy filename" : "Copy directory name"}
+                        tooltip={
+                          isObject ? "Copy filename" : "Copy directory name"
+                        }
                         successMessage={`${isObject ? "Filename" : "Directory name"} copied to clipboard`}
                         className="opacity-40 hover:opacity-100"
                       />
