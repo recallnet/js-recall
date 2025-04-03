@@ -1,7 +1,7 @@
 import TimeAgo from "javascript-time-ago";
 import { Download, File, Loader2, Trash } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Address } from "viem";
 import {
@@ -43,8 +43,6 @@ export default function Object({
   delimiter,
 }: Props) {
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   const { toast } = useToast();
 
@@ -104,10 +102,9 @@ export default function Object({
 
   const objectApiUrl = getObjectApiUrl(getChain(chainId));
 
-  // Construct the full portal URL for sharing
+  // Simplified function to get the current URL for sharing
   const getPortalShareUrl = () => {
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    return `${origin}${pathname}?${searchParams.toString()}`;
+    return typeof window !== "undefined" ? window.location.toString() : "";
   };
 
   if (object) {
