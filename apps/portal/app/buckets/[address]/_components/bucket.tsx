@@ -30,9 +30,7 @@ import Objects from "./objects";
 export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
   const searchParams = useSearchParams();
 
-  const [delimiter] = useState(
-    searchParams.get("delimiter") || "/",
-  );
+  const [delimiter] = useState(searchParams.get("delimiter") || "/");
 
   const path = searchParams.get("path") || "";
   const isObject = path && !path.endsWith(delimiter);
