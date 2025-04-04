@@ -142,7 +142,7 @@ export function detectContentType(
         context: {
           source: "extension-priority",
           extension,
-          originalContentType: contentType
+          originalContentType: contentType,
         },
       };
     }
@@ -154,7 +154,7 @@ export function detectContentType(
         context: {
           source: "extension-priority",
           extension,
-          originalContentType: contentType
+          originalContentType: contentType,
         },
       };
     }
@@ -166,14 +166,18 @@ export function detectContentType(
         context: {
           source: "extension-priority",
           extension,
-          originalContentType: contentType
+          originalContentType: contentType,
         },
       };
     }
   }
 
   // Strategy 2: Use content type if available and it's not a generic type
-  if (contentType && !GENERIC_CONTENT_TYPES.has(contentType) && CONTENT_TYPE_TO_PREVIEW_TYPE[contentType]) {
+  if (
+    contentType &&
+    !GENERIC_CONTENT_TYPES.has(contentType) &&
+    CONTENT_TYPE_TO_PREVIEW_TYPE[contentType]
+  ) {
     return {
       type: CONTENT_TYPE_TO_PREVIEW_TYPE[contentType],
       context: { source: "content-type", contentType },
@@ -188,7 +192,7 @@ export function detectContentType(
         context: {
           source: "extension",
           extension,
-          originalContentType: contentType
+          originalContentType: contentType,
         },
       };
     }
@@ -199,7 +203,7 @@ export function detectContentType(
       context: {
         source: "extension-fallback",
         extension,
-        originalContentType: contentType
+        originalContentType: contentType,
       },
     };
   }
@@ -209,7 +213,7 @@ export function detectContentType(
     type: FilePreviewType.BINARY,
     context: {
       source: "default",
-      originalContentType: contentType
+      originalContentType: contentType,
     },
   };
 }

@@ -3,8 +3,6 @@
 import { FileQuestion } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { Button } from "@recallnet/ui/components/button";
-
 import { formatBytes } from "@/lib/format-bytes";
 
 import { FilePreviewerProps } from "./types";
