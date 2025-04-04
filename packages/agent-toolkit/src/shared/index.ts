@@ -40,6 +40,7 @@ import {
   listBucketsPrompt,
   queryObjectsPrompt,
 } from "./prompts.js";
+import { Tool, tools } from "./tools.js";
 import { Result } from "./util.js";
 
 export {
@@ -72,10 +73,12 @@ export {
   queryObjectsParameters,
   queryObjectsPrompt,
   isToolAllowed,
-  type Configuration,
-  type Resource,
-  type Permission,
+  tools,
   type Actions,
+  type Configuration,
   type Context,
+  type Permission,
+  type Resource,
   type Result,
+  type Tool,
 };
