@@ -14,18 +14,13 @@ import { FilePreviewerProps } from "./types";
  * Plain text file previewer component
  * Renders text content with syntax highlighting
  */
-export function PlainTextPreview({
-  bucketAddress,
-  path,
-  chainId,
-}: Pick<FilePreviewerProps, 'bucketAddress' | 'path'> & { chainId?: number }) {
+export function PlainTextPreview(props: FilePreviewerProps) {
+  const { bucketAddress, path } = props;
   const [content, setContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const hookChainId = useChainId();
-  // Use chainId from props if provided, otherwise use the one from hook
-  const effectiveChainId = chainId ?? hookChainId;
+  const chainId = useChainId();
 
   // Function to fetch and set the text content
   async function fetchTextContent() {
@@ -34,7 +29,7 @@ export function PlainTextPreview({
 
     try {
       // Get proper API URL for the chain
-      const objectApiUrl = getObjectApiUrl(getChain(effectiveChainId));
+      const objectApiUrl = getObjectApiUrl(getChain(chainId));
 
       // Construct the endpoint URL without encoding the path
       const url = `${objectApiUrl}/v1/objects/${bucketAddress}/${path}`;
@@ -68,7 +63,7 @@ export function PlainTextPreview({
   useEffect(() => {
     fetchTextContent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bucketAddress, path, effectiveChainId]); // We're not including fetchTextContent to avoid recreation on each render
+  }, [bucketAddress, path, chainId]); // We're not including fetchTextContent to avoid recreation on each render
 
   // Loading state
   if (loading) {

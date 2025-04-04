@@ -11,11 +11,8 @@ import { FilePreviewerProps } from "./types";
  * A fallback previewer for binary or unknown file types
  * Shows a simple message instead of duplicating metadata
  */
-export function BinaryMetadataPreview({
-  fileName,
-  contentType,
-  size,
-}: FilePreviewerProps) {
+export function BinaryMetadataPreview(props: FilePreviewerProps) {
+  const { fileName, contentType, size } = props;
   const [sizeFormatted, setSizeFormatted] = useState<{
     val: string | number;
     unit?: string;

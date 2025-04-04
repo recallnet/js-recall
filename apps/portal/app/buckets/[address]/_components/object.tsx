@@ -101,11 +101,6 @@ export default function Object({
     return typeof window !== "undefined" ? window.location.toString() : "";
   };
 
-  // Helper function to construct object URLs consistently
-  const constructObjectUrl = (apiUrl: string, bucket: string, objectPath: string) => {
-    return `${apiUrl}/v1/objects/${bucket}/${objectPath}`;
-  };
-
   if (object) {
     const objectSize = formatBytes(Number(object.size));
     const objectBlockDiff =
@@ -136,7 +131,7 @@ export default function Object({
           <div className="text-muted-foreground flex items-center gap-4 text-sm">
             <span>{objectSize.formatted}</span>
             <span>
-              Expires {objectBlockDiff && objectBlockDiff < 0n ? "d" : ""}{" "}
+              Expire{objectBlockDiff && objectBlockDiff < 0n ? "d" : "s"}{" "}
               {objectExpiryDisplay}
             </span>
           </div>
@@ -152,7 +147,7 @@ export default function Object({
               </div>
             )}
             <Link
-              href={constructObjectUrl(objectApiUrl, bucketAddress, path)}
+              href={`${objectApiUrl}/v1/objects/${bucketAddress}/${path}`}
               target="_blank"
               title="Download object"
             >
