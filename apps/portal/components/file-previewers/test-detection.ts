@@ -137,9 +137,7 @@ function runTests() {
     console.log(
       `Filename: ${test.fileName}, Content-Type: ${test.contentType || "(none)"}`,
     );
-    console.log(
-      `Expected: ${test.expectedType}, Got: ${result.type}`,
-    );
+    console.log(`Expected: ${test.expectedType}, Got: ${result.type}`);
     console.log(`Detection context: ${JSON.stringify(result.context)}`);
     console.log(`Result: ${passed ? "✅ PASS" : "❌ FAIL"}`);
   });

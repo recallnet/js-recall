@@ -31,7 +31,14 @@ export function FilePreviewer(props: FilePreviewerProps) {
     case FilePreviewType.JSONL:
       // For now, all text-based formats use the same PlainTextPreview
       // We'll implement specialized viewers in a future project
-      return <PlainTextPreview fileName={fileName} size={size} bucketAddress={props.bucketAddress} path={props.path} />;
+      return (
+        <PlainTextPreview
+          fileName={fileName}
+          size={size}
+          bucketAddress={props.bucketAddress}
+          path={props.path}
+        />
+      );
 
     case FilePreviewType.BINARY:
     default:
