@@ -16,7 +16,8 @@ const testCases = [
     fileName: "data.jsonl",
     contentType: "application/octet-stream",
     expectedType: FilePreviewType.JSONL,
-    description: "JSONL file with generic content type - should detect from extension",
+    description:
+      "JSONL file with generic content type - should detect from extension",
   },
 
   // Test case 3: JSONL file with no content type (should use extension)
@@ -24,7 +25,8 @@ const testCases = [
     fileName: "data.jsonl",
     contentType: undefined,
     expectedType: FilePreviewType.JSONL,
-    description: "JSONL file with no content type - should detect from extension",
+    description:
+      "JSONL file with no content type - should detect from extension",
   },
 
   // Test case 4: JSONL file with text/plain content type (should still prioritize extension)
@@ -32,7 +34,8 @@ const testCases = [
     fileName: "data.jsonl",
     contentType: "text/plain",
     expectedType: FilePreviewType.JSONL,
-    description: "JSONL file with text/plain content type - should prioritize extension",
+    description:
+      "JSONL file with text/plain content type - should prioritize extension",
   },
 
   // Test case 5: Timestamped-named JSONL file with generic content type
@@ -72,7 +75,8 @@ const testCases = [
     fileName: "README.md",
     contentType: "text/plain",
     expectedType: FilePreviewType.MARKDOWN,
-    description: "Markdown file with plain text content type - should prioritize extension",
+    description:
+      "Markdown file with plain text content type - should prioritize extension",
   },
 
   // Test case 10: Unknown extension
@@ -114,11 +118,11 @@ function runTests() {
     { input: "2025-04-02-20-10-00.jsonl", expected: "jsonl" },
   ];
 
-  extensionTests.forEach(test => {
+  extensionTests.forEach((test) => {
     const result = getFileExtension(test.input);
     const passed = result === test.expected;
     console.log(
-      `${passed ? "✅" : "❌"} ${test.input} → ${result} ${passed ? "" : `(expected: ${test.expected})`}`
+      `${passed ? "✅" : "❌"} ${test.input} → ${result} ${passed ? "" : `(expected: ${test.expected})`}`,
     );
   });
 
@@ -130,15 +134,21 @@ function runTests() {
     const passed = result.type === test.expectedType;
 
     console.log(`\nTest #${index + 1}: ${test.description}`);
-    console.log(`Filename: ${test.fileName}, Content-Type: ${test.contentType || "(none)"}`);
-    console.log(`Expected: ${FilePreviewType[test.expectedType]}, Got: ${FilePreviewType[result.type]}`);
+    console.log(
+      `Filename: ${test.fileName}, Content-Type: ${test.contentType || "(none)"}`,
+    );
+    console.log(
+      `Expected: ${test.expectedType}, Got: ${result.type}`,
+    );
     console.log(`Detection context: ${JSON.stringify(result.context)}`);
     console.log(`Result: ${passed ? "✅ PASS" : "❌ FAIL"}`);
   });
 
   // Calculate overall results
   const passedTests = testCases.filter(
-    (test) => detectContentType(test.contentType, test.fileName).type === test.expectedType
+    (test) =>
+      detectContentType(test.contentType, test.fileName).type ===
+      test.expectedType,
   ).length;
 
   console.log(`\nSummary: ${passedTests}/${testCases.length} tests passed`);

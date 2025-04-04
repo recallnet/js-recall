@@ -1,15 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useChainId } from "wagmi";
-import { Address } from "viem";
 
+import { getChain, getObjectApiUrl } from "@recallnet/chains";
 import { Button } from "@recallnet/ui/components/button";
 import { toast } from "@recallnet/ui/hooks/use-toast";
-import { getChain, getObjectApiUrl } from "@recallnet/chains";
 
-import { constructObjectUrl } from "@/lib/object-url";
 import { FilePreviewerProps } from "./types";
 
 /**
@@ -19,15 +17,15 @@ import { FilePreviewerProps } from "./types";
 export function PlainTextPreview({
   bucketAddress,
   path,
-  fileName,
-  contentType,
-  size,
-}: FilePreviewerProps) {
+  chainId,
+}: Pick<FilePreviewerProps, 'bucketAddress' | 'path'> & { chainId?: number }) {
   const [content, setContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const chainId = useChainId();
+  const hookChainId = useChainId();
+  // Use chainId from props if provided, otherwise use the one from hook
+  const effectiveChainId = chainId ?? hookChainId;
 
   // Function to fetch and set the text content
   async function fetchTextContent() {
@@ -36,10 +34,10 @@ export function PlainTextPreview({
 
     try {
       // Get proper API URL for the chain
-      const objectApiUrl = getObjectApiUrl(getChain(chainId));
+      const objectApiUrl = getObjectApiUrl(getChain(effectiveChainId));
 
-      // Construct the endpoint URL using our helper function
-      const url = constructObjectUrl(objectApiUrl, bucketAddress, path);
+      // Construct the endpoint URL without encoding the path
+      const url = `${objectApiUrl}/v1/objects/${bucketAddress}/${path}`;
 
       const response = await fetch(url);
 
@@ -52,10 +50,13 @@ export function PlainTextPreview({
       setContent(text);
     } catch (err) {
       console.error("Error fetching text content:", err);
-      setError(err instanceof Error ? err.message : "Failed to load file content");
+      setError(
+        err instanceof Error ? err.message : "Failed to load file content",
+      );
       toast({
         title: "Error loading file",
-        description: err instanceof Error ? err.message : "Failed to load file content",
+        description:
+          err instanceof Error ? err.message : "Failed to load file content",
         variant: "destructive",
       });
     } finally {
@@ -63,18 +64,21 @@ export function PlainTextPreview({
     }
   }
 
-  // Fetch the content on component mount
+  // Fetch content on component mount and when dependencies change
   useEffect(() => {
     fetchTextContent();
-  }, [bucketAddress, path, chainId]); // Re-fetch if bucket, path, or chain changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bucketAddress, path, effectiveChainId]); // We're not including fetchTextContent to avoid recreation on each render
 
   // Loading state
   if (loading) {
     return (
       <div className="flex h-full min-h-[300px] w-full items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="size-8 animate-spin text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Loading file content...</p>
+          <Loader2 className="text-muted-foreground size-8 animate-spin" />
+          <p className="text-muted-foreground text-sm">
+            Loading file content...
+          </p>
         </div>
       </div>
     );
@@ -85,12 +89,8 @@ export function PlainTextPreview({
     return (
       <div className="flex h-full min-h-[300px] w-full flex-col items-center justify-center gap-4 p-8 text-center">
         <div className="text-destructive">Failed to load file content</div>
-        <p className="max-w-md text-sm text-muted-foreground">{error}</p>
-        <Button
-          variant="outline"
-          onClick={fetchTextContent}
-          className="mt-4"
-        >
+        <p className="text-muted-foreground max-w-md text-sm">{error}</p>
+        <Button variant="outline" onClick={fetchTextContent} className="mt-4">
           Retry
         </Button>
       </div>
@@ -100,9 +100,7 @@ export function PlainTextPreview({
   // Content display
   return (
     <div className="h-full w-full overflow-auto">
-      <pre className="whitespace-pre-wrap break-all p-4 text-sm">
-        {content}
-      </pre>
+      <pre className="whitespace-pre-wrap break-all p-4 text-sm">{content}</pre>
     </div>
   );
 }

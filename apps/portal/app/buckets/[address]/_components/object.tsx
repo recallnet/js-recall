@@ -1,7 +1,7 @@
 import TimeAgo from "javascript-time-ago";
 import { Download, Loader2, Trash } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Address } from "viem";
 import {
@@ -16,10 +16,10 @@ import { getChain, getObjectApiUrl } from "@recallnet/chains";
 import { useDeleteObject, useGetObject } from "@recallnet/sdkx/react/buckets";
 import { Card } from "@recallnet/ui/components/card";
 import { useToast } from "@recallnet/ui/hooks/use-toast";
+
 import { CopyButton } from "@/components/copy-button";
 import { FilePreviewer } from "@/components/file-previewers/file-previewer";
 import { formatBytes } from "@/lib/format-bytes";
-import { constructObjectUrl } from "@/lib/object-url";
 
 import { MetadataPanel } from "./metadata-panel";
 
@@ -39,9 +39,6 @@ export default function Object({
   delimiter,
 }: Props) {
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
   const { toast } = useToast();
 
   const { address: fromAddress } = useAccount();
@@ -101,8 +98,12 @@ export default function Object({
   const objectApiUrl = getObjectApiUrl(getChain(chainId));
 
   const getPortalShareUrl = () => {
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    return `${origin}${pathname}?${searchParams.toString()}`;
+    return typeof window !== "undefined" ? window.location.toString() : "";
+  };
+
+  // Helper function to construct object URLs consistently
+  const constructObjectUrl = (apiUrl: string, bucket: string, objectPath: string) => {
+    return `${apiUrl}/v1/objects/${bucket}/${objectPath}`;
   };
 
   if (object) {
@@ -126,11 +127,6 @@ export default function Object({
       (item) => item.key.toLowerCase() === "content-type",
     );
     const contentType = contentTypeMetadata?.value;
-
-    const fileMetadata = object.metadata.reduce((acc, item) => {
-      acc[item.key] = item.value;
-      return acc;
-    }, {} as Record<string, string>);
 
     const fileName = path.split(delimiter).pop() || path;
 
@@ -158,7 +154,6 @@ export default function Object({
             <Link
               href={constructObjectUrl(objectApiUrl, bucketAddress, path)}
               target="_blank"
-              className="opacity-20 hover:cursor-pointer hover:opacity-100"
               title="Download object"
             >
               <Download className="size-5 opacity-20 hover:cursor-pointer hover:opacity-100" />
