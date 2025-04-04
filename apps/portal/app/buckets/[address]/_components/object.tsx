@@ -143,7 +143,7 @@ export default function Object({
               </div>
             )}
             <Link
-              href={`${objectApiUrl}/v1/objects/${bucketAddress}/${encodeURIComponent(path)}`}
+              href={`${objectApiUrl}/v1/objects/${bucketAddress}/${path}`}
               target="_blank"
               title="Download object"
             >
