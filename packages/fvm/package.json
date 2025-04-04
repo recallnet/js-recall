@@ -56,6 +56,7 @@
     "test:ci": "pnpm coverage",
     "coverage": "c8 --exclude test --exclude dist mocha --exit",
     "docs": "typedoc --entryPoints src/index.ts",
+    "lint": "eslint . --max-warnings 0",
     "clean": "rm -rf .turbo node_modules dist coverage docs"
   },
   "dependencies": {
