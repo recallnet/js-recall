@@ -19,6 +19,8 @@ import {
 import { Button } from "@recallnet/ui/components/button";
 import { cn } from "@recallnet/ui/lib/utils";
 
+import { CopyButton } from "@/components/copy-button";
+
 import AddObjectDialog from "./add-object-dialog";
 import CreditNeededDialog from "./credit-needed-dialog";
 import Object from "./object";
@@ -27,9 +29,7 @@ import Objects from "./objects";
 export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
   const searchParams = useSearchParams();
 
-  const [delimiter, _setDelimiter] = useState(
-    searchParams.get("delimiter") || "/",
-  );
+  const [delimiter] = useState(searchParams.get("delimiter") || "/");
 
   const path = searchParams.get("path") || "";
   const isObject = path && !path.endsWith(delimiter);
@@ -60,14 +60,12 @@ export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
 
   function mainContent() {
     if (isObject) {
-      const name = pathParts[pathParts.length - 1] ?? "unknown";
       const parentPath =
         pathParts.slice(0, -1).join(delimiter) +
         (pathParts.length > 1 ? delimiter : "");
       return (
         <Object
           bucketAddress={bucketAddress}
-          name={name}
           path={path}
           parentPath={parentPath}
           delimiter={delimiter}
@@ -99,7 +97,7 @@ export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
         onOpenChange={setCreditNeededOpen}
       />
       <div className="flex items-end gap-4">
-        <Breadcrumb>
+        <Breadcrumb className="min-w-0 flex-grow">
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
@@ -120,7 +118,15 @@ export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
                   </Link>
                 </BreadcrumbLink>
               ) : (
-                displayAddress(bucketAddress)
+                <div className="text-foreground flex items-center gap-2 font-semibold">
+                  {displayAddress(bucketAddress)}
+                  <CopyButton
+                    value={bucketAddress}
+                    tooltip="Copy bucket ID"
+                    successMessage="Bucket ID copied to clipboard"
+                    className="size-5 opacity-40 hover:opacity-100"
+                  />
+                </div>
               )}
             </BreadcrumbItem>
             {!!pathParts.length && <BreadcrumbSeparator />}
@@ -128,7 +134,15 @@ export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
               <Fragment key={`${index}-${part}`}>
                 <BreadcrumbItem>
                   {index === pathParts.length - 1 ? (
-                    part || "\u00A0\u00A0"
+                    <div className="text-foreground flex items-center gap-2 font-semibold">
+                      {part || "\u00A0\u00A0"}
+                      <CopyButton
+                        value={path}
+                        tooltip="Copy full path"
+                        successMessage="Full path copied to clipboard"
+                        className="size-5 opacity-40 hover:opacity-100"
+                      />
+                    </div>
                   ) : (
                     <BreadcrumbLink asChild>
                       <Link
@@ -152,6 +166,7 @@ export default function Bucket({ bucketAddress }: { bucketAddress: Address }) {
             ))}
           </BreadcrumbList>
         </Breadcrumb>
+
         <Button
           variant="secondary"
           onClick={handleAddObject}
