@@ -8,7 +8,6 @@ const config = {
     "app/**/*.{ts,tsx}",
     "components/**/*.{ts,tsx}",
     "../../packages/ui/src/components/**/*.{ts,tsx}",
-    "../../packages/ui/src/recall/**/*.{ts,tsx}",
   ],
   theme: {
     extend: {

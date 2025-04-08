@@ -1,14 +1,14 @@
 import { useState } from "react";
 
-import { Input } from "@recallnet/ui/components/input";
-import { Label } from "@recallnet/ui/components/label";
+import { Input } from "@recallnet/ui/components/shadcn/input";
+import { Label } from "@recallnet/ui/components/shadcn/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@recallnet/ui/components/select";
+} from "@recallnet/ui/components/shadcn/select";
 
 interface SearchAndFilterProps {
   onSearchChange: (search: string) => void;

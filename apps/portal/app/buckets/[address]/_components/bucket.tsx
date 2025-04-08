@@ -15,8 +15,8 @@ import {
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbSeparator,
-} from "@recallnet/ui/components/breadcrumb";
-import { Button } from "@recallnet/ui/components/button";
+} from "@recallnet/ui/components/shadcn/breadcrumb";
+import { Button } from "@recallnet/ui/components/shadcn/button";
 import { cn } from "@recallnet/ui/lib/utils";
 
 import { CopyButton } from "@/components/copy-button";

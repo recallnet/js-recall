@@ -2,7 +2,11 @@ import { Folder } from "lucide-react";
 import Link from "next/link";
 import { Address } from "viem";
 
-import { Card, CardHeader, CardTitle } from "@recallnet/ui/components/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+} from "@recallnet/ui/components/shadcn/card";
 
 import { removePrefix } from "@/lib/remove-prefix";
 

@@ -11,10 +11,10 @@
   },
   "iconLibrary": "lucide",
   "aliases": {
-    "components": "@recallnet/ui/components",
+    "components": "@recallnet/ui/components/shadcn",
     "utils": "@recallnet/ui/lib/utils",
     "hooks": "@recallnet/ui/hooks",
     "lib": "@recallnet/ui/lib",
-    "ui": "@recallnet/ui/components"
+    "ui": "@recallnet/ui/components/shadcn"
   }
 }

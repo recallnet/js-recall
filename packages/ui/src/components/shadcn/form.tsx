@@ -13,7 +13,7 @@ import {
 } from "react-hook-form"
 
 import { cn } from "@recallnet/ui/lib/utils"
-import { Label } from "@recallnet/ui/components/label"
+import { Label } from "@recallnet/ui/components/shadcn/label"
 
 const Form = FormProvider
 

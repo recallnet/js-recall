@@ -4,13 +4,13 @@ import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { ComponentProps } from "react";
 
-import { Button } from "@recallnet/ui/components/button";
+import { Button } from "@recallnet/ui/components/shadcn/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@recallnet/ui/components/dropdown-menu";
+} from "@recallnet/ui/components/shadcn/dropdown-menu";
 
 type Props = ComponentProps<typeof Button>;
 

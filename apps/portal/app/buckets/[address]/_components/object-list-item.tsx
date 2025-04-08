@@ -3,13 +3,13 @@ import Link from "next/link";
 import { useState } from "react";
 import { Address } from "viem";
 
+import CollapsedStringDisplay from "@recallnet/ui/components/collapsed-string-display";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "@recallnet/ui/components/card";
-import CollapsedStringDisplay from "@recallnet/ui/recall/collapsed-string-display";
+} from "@recallnet/ui/components/shadcn/card";
 
 import Metric from "@/components/metric";
 import { arrayToDisplay } from "@/lib/convert-matadata";

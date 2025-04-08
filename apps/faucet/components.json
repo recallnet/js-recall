@@ -15,6 +15,6 @@
     "hooks": "@/hooks",
     "lib": "@/lib",
     "utils": "@recallnet/ui/lib/utils",
-    "ui": "@recallnet/ui/components"
+    "ui": "@recallnet/ui/components/shadcn"
   }
 }

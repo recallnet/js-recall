@@ -17,17 +17,17 @@ import {
   attoRecallToRecallDisplay,
 } from "@recallnet/bigint-utils/conversions";
 import { useCreditAccount } from "@recallnet/sdkx/react/credits";
-import { Button } from "@recallnet/ui/components/button";
+import BuyCreditsDialog from "@recallnet/ui/components/buy-credits-dialog";
+import { Button } from "@recallnet/ui/components/shadcn/button";
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@recallnet/ui/components/dialog";
+} from "@recallnet/ui/components/shadcn/dialog";
 import { useToast } from "@recallnet/ui/hooks/use-toast";
 import { cn } from "@recallnet/ui/lib/utils";
-import BuyCreditsDialog from "@recallnet/ui/recall/buy-credits-dialog";
 
 type Props = {} & HTMLAttributes<HTMLDivElement>;
 

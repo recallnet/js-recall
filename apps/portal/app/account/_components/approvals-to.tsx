@@ -17,7 +17,7 @@ import {
   useApproveCredit,
   useCreditAccount,
 } from "@recallnet/sdkx/react/credits";
-import { Button } from "@recallnet/ui/components/button";
+import { Button } from "@recallnet/ui/components/shadcn/button";
 import {
   Dialog,
   DialogContent,
@@ -25,9 +25,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@recallnet/ui/components/dialog";
-import { Input } from "@recallnet/ui/components/input";
-import { Label } from "@recallnet/ui/components/label";
+} from "@recallnet/ui/components/shadcn/dialog";
+import { Input } from "@recallnet/ui/components/shadcn/input";
+import { Label } from "@recallnet/ui/components/shadcn/label";
 import { useToast } from "@recallnet/ui/hooks/use-toast";
 
 import { Approval } from "./approval";

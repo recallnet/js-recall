@@ -17,7 +17,8 @@ import {
   useDeleteAccountSponsor,
   useSetAccountSponsor,
 } from "@recallnet/sdkx/react/credits";
-import { Button } from "@recallnet/ui/components/button";
+import BuyCreditsDialog from "@recallnet/ui/components/buy-credits-dialog";
+import { Button } from "@recallnet/ui/components/shadcn/button";
 import {
   Card,
   CardContent,
@@ -25,7 +26,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@recallnet/ui/components/card";
+} from "@recallnet/ui/components/shadcn/card";
 import {
   Dialog,
   DialogContent,
@@ -33,11 +34,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@recallnet/ui/components/dialog";
-import { Input } from "@recallnet/ui/components/input";
-import { Label } from "@recallnet/ui/components/label";
+} from "@recallnet/ui/components/shadcn/dialog";
+import { Input } from "@recallnet/ui/components/shadcn/input";
+import { Label } from "@recallnet/ui/components/shadcn/label";
 import { useToast } from "@recallnet/ui/hooks/use-toast";
-import BuyCreditsDialog from "@recallnet/ui/recall/buy-credits-dialog";
 
 import Metric from "@/components/metric";
 import { formatBytes } from "@/lib/format-bytes";

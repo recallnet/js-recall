@@ -8,7 +8,7 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@recallnet/ui/components/tabs";
+} from "@recallnet/ui/components/shadcn/tabs";
 
 import { Agent } from "./agent";
 

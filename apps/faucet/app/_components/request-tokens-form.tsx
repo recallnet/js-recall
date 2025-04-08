@@ -5,8 +5,8 @@ import { Loader2 } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 
-import { Button } from "@recallnet/ui/components/button";
-import { Input } from "@recallnet/ui/components/input";
+import { Button } from "@recallnet/ui/components/shadcn/button";
+import { Input } from "@recallnet/ui/components/shadcn/input";
 import { useToast } from "@recallnet/ui/hooks/use-toast";
 
 import { RequestTokensState, requestTokens } from "@/client-actions";

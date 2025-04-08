@@ -25,7 +25,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from "@recallnet/ui/components/card";
+} from "@recallnet/ui/components/shadcn/card";
 import { useToast } from "@recallnet/ui/hooks/use-toast";
 import { cn } from "@recallnet/ui/lib/utils";
 

@@ -4,8 +4,8 @@ import { Analytics } from "@vercel/analytics/react";
 import type { Metadata } from "next";
 
 import { fontMono, fontSans } from "@recallnet/fonts";
-import { Toaster } from "@recallnet/ui/components/toaster";
-import { ThemeProvider } from "@recallnet/ui/recall/theme-provider";
+import { Toaster } from "@recallnet/ui/components/shadcn/toaster";
+import { ThemeProvider } from "@recallnet/ui/components/theme-provider";
 
 export const metadata: Metadata = {
   title: "Recall Faucet",

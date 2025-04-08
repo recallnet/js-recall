@@ -5,16 +5,16 @@ import { useEffect, useState } from "react";
 import { useAccount, useWaitForTransactionReceipt } from "wagmi";
 
 import { useCreateBucket, useListBuckets } from "@recallnet/sdkx/react/buckets";
-import { Button } from "@recallnet/ui/components/button";
+import { Button } from "@recallnet/ui/components/shadcn/button";
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@recallnet/ui/components/dialog";
-import { Label } from "@recallnet/ui/components/label";
-import { Textarea } from "@recallnet/ui/components/textarea";
+} from "@recallnet/ui/components/shadcn/dialog";
+import { Label } from "@recallnet/ui/components/shadcn/label";
+import { Textarea } from "@recallnet/ui/components/shadcn/textarea";
 import { useToast } from "@recallnet/ui/hooks/use-toast";
 
 import { dislpayToRecord } from "@/lib/convert-matadata";

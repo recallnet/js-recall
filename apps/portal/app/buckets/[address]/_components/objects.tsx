@@ -5,8 +5,8 @@ import { Fragment, useEffect } from "react";
 import { Address } from "viem";
 
 import { useInfiniteQueryObjects } from "@recallnet/sdkx/react/buckets";
+import { InfiniteScroll } from "@recallnet/ui/components/infinite-scroll";
 import { useToast } from "@recallnet/ui/hooks/use-toast";
-import { InfiniteScroll } from "@recallnet/ui/recall/infinite-scroll";
 
 import ObjectListItem from "./object-list-item";
 import PrefixListItem from "./prefix-list-item";

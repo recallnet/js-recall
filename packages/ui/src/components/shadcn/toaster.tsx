@@ -8,7 +8,7 @@ import {
   ToastProvider,
   ToastTitle,
   ToastViewport,
-} from "@recallnet/ui/components/toast"
+} from "@recallnet/ui/components/shadcn/toast"
 
 export function Toaster() {
   const { toasts } = useToast()

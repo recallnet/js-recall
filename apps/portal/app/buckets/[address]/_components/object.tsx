@@ -14,7 +14,7 @@ import {
 import { numBlocksToSeconds } from "@recallnet/bigint-utils/conversions";
 import { getChain, getObjectApiUrl } from "@recallnet/chains";
 import { useDeleteObject, useGetObject } from "@recallnet/sdkx/react/buckets";
-import { Card } from "@recallnet/ui/components/card";
+import { Card } from "@recallnet/ui/components/shadcn/card";
 import { useToast } from "@recallnet/ui/hooks/use-toast";
 
 import { CopyButton } from "@/components/copy-button";

@@ -9,14 +9,14 @@ import { useAccount } from "wagmi";
 import { z } from "zod";
 
 import { useAddFile } from "@recallnet/sdkx/react/buckets";
-import { Button } from "@recallnet/ui/components/button";
+import { Button } from "@recallnet/ui/components/shadcn/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@recallnet/ui/components/dialog";
+} from "@recallnet/ui/components/shadcn/dialog";
 import {
   Form,
   FormControl,
@@ -25,11 +25,11 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@recallnet/ui/components/form";
-import { Input } from "@recallnet/ui/components/input";
-import { Progress } from "@recallnet/ui/components/progress";
-import { Switch } from "@recallnet/ui/components/switch";
-import { Textarea } from "@recallnet/ui/components/textarea";
+} from "@recallnet/ui/components/shadcn/form";
+import { Input } from "@recallnet/ui/components/shadcn/input";
+import { Progress } from "@recallnet/ui/components/shadcn/progress";
+import { Switch } from "@recallnet/ui/components/shadcn/switch";
+import { Textarea } from "@recallnet/ui/components/shadcn/textarea";
 import { useToast } from "@recallnet/ui/hooks/use-toast";
 import { cn } from "@recallnet/ui/lib/utils";
 
