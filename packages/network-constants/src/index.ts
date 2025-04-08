@@ -125,7 +125,7 @@ export const DEVNET_OBJECT_API_URL = "http://127.0.0.1:8001";
  * Registrar URL for the Recall Testnet.
  */
 export const TESTNET_REGISTRAR_URL =
-  "https://faucet.node-0.testnet.recall.network";
+  "https://registrar.node-0.testnet.recall.network";
 
 /**
  * Explorer URL for the Recall Testnet.
