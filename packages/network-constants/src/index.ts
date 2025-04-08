@@ -11,7 +11,7 @@
  * Subnet ID for the Recall Testnet.
  */
 export const TESTNET_SUBNET_ID =
-  "/r314159/t410frrql2ooeoz2t4hlor3hqw33druwnc4jzhajdbeq";
+  "/r314159/t410fntaew3dtef2zpfox2hlhy4cgrksdt5zjwg3hbfi";
 
 /**
  * Subnet ID for the Recall Localnet.
@@ -166,7 +166,7 @@ export const MAX_OBJECT_SIZE = 5_000_000_000; // 5GB
  * Gateway Manager Facet contract address for the Testnet parent chain.
  */
 export const TESTNET_PARENT_GATEWAY_MANAGER_FACET_ADDRESS =
-  "0x136066500b332e7D72643EE7690E9C708702c7e6";
+  "0x2758f99EaB8ea9B8678B5d841851D62Ef18AAB26";
 
 /**
  * Gateway Manager Facet contract address for the Recall Testnet.
@@ -196,7 +196,7 @@ export const DEVNET_GATEWAY_MANAGER_FACET_ADDRESS =
  * Subnet Getter (Registry) Facet contract address for the Testnet parent chain.
  */
 export const TESTNET_PARENT_SUBNET_GETTER_FACET_ADDRESS =
-  "0xdf3Fe12002826Ff617F2d7500c61B72A8e3E9436";
+  "0xE8090d55E7ecc0565830845Df67bfD3fA81D4158";
 
 /**
  * Subnet Getter (Registry) Facet contract address for the Localnet parent chain.
@@ -226,7 +226,7 @@ export const DEVNET_SUBNET_GETTER_FACET_ADDRESS =
  * ERC20 contract address for the Testnet parent chain.
  */
 export const TESTNET_PARENT_ERC20_ADDRESS =
-  "0x9E5ea73a639484CcE57F865dC1E582Cd01F3251F";
+  "0xd1239c6b6f806EC3752df12CEaddD88187BCf1E5";
 
 /**
  * ERC20 contract address for the Localnet parent chain.
@@ -238,7 +238,7 @@ export const LOCALNET_PARENT_ERC20_ADDRESS =
  * BlobManager contract address for the Recall Testnet.
  */
 export const TESTNET_BLOB_MANAGER_ADDRESS =
-  "0x6E3f94065567560c6e1Bbc5e4584127220c15e14";
+  "0x27594F8412bA08278b15b55C6347605Ee3b2020C";
 
 /**
  * BlobManager contract address for the Recall Localnet.
@@ -250,7 +250,7 @@ export const LOCALNET_BLOB_MANAGER_ADDRESS =
  * BucketManager contract address for the Recall Testnet.
  */
 export const TESTNET_BUCKET_MANAGER_ADDRESS =
-  "0x7a9Cec860adF2C64274D0aD7fbF0b5Bf0426a200";
+  "0x170a22c76a2Bb7c5F1b0e7067a0ddb7C3452c8e0";
 
 /**
  * BucketManager contract address for the Recall Localnet.
@@ -262,7 +262,7 @@ export const LOCALNET_BUCKET_MANAGER_ADDRESS =
  * CreditManager contract address for the Recall Testnet.
  */
 export const TESTNET_CREDIT_MANAGER_ADDRESS =
-  "0x61F50eEC83043a4635956B54EEDf5Eea8CcaBc76";
+  "0x296042865b783D8E8Fb09F04FFAE2A66a16B85Bc";
 
 /**
  * CreditManager contract address for the Recall Localnet.
