@@ -16,9 +16,9 @@ type ChatProps = ComponentProps<typeof Card> & {
   human: string;
 };
 
-export function Memory({ className, persona, human, ...props }: ChatProps) {
+export function Memory({ persona, human, ...props }: ChatProps) {
   return (
-    <Card className={cn("rounded-none", className)} {...props}>
+    <Card {...props}>
       <CardHeader className="pb-3">
         <CardTitle>Core Memory</CardTitle>
         <CardDescription>

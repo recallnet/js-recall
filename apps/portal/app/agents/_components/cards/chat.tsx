@@ -10,13 +10,12 @@ import {
 } from "@recallnet/ui/components/shadcn/card";
 import { ScrollArea } from "@recallnet/ui/components/shadcn/scroll-area";
 import { Textarea } from "@recallnet/ui/components/shadcn/textarea";
-import { cn } from "@recallnet/ui/lib/utils";
 
 type ChatProps = ComponentProps<typeof Card>;
 
-export function Chat({ className, ...props }: ChatProps) {
+export function Chat(props: ChatProps) {
   return (
-    <Card className={cn("rounded-none", className)} {...props}>
+    <Card {...props}>
       <CardHeader className="pb-3">
         <CardTitle>Agent chat</CardTitle>
         <CardDescription>Interact with your agent.</CardDescription>

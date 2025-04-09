@@ -217,7 +217,7 @@ export function Account() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <Card className="col-span-2 rounded-none">
+      <Card className="col-span-2">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CreditCard />
@@ -274,7 +274,7 @@ export function Account() {
           </Button>
         </CardFooter>
       </Card>
-      <Card className="rounded-none">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <DollarSign />
@@ -300,7 +300,7 @@ export function Account() {
           </Button>
         </CardFooter>
       </Card>
-      <Card className="rounded-none">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Database />

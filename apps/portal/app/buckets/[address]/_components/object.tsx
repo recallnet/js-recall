@@ -124,7 +124,8 @@ export default function Object({
     const fileName = path.split(delimiter).pop() || path;
 
     return (
-      <Card className="flex flex-col rounded-none">
+      <Card className="flex flex-col">
+        {/* Toolbar - Contains file size and actions */}
         <div className="flex items-center justify-between border-b p-3">
           <div className="text-muted-foreground flex items-center gap-4 text-sm">
             <span>{objectSize.formatted}</span>

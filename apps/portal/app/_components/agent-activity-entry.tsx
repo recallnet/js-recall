@@ -29,7 +29,7 @@ export function AgentActivityEntry({ activity }: AgentActivityEntryProps) {
   };
 
   return (
-    <Card className="mb-4 rounded-none">
+    <Card className="mb-4">
       <CardContent className="pt-6">
         <div className="mb-4 flex items-start justify-between">
           <div>

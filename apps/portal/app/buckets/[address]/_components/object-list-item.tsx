@@ -43,7 +43,7 @@ export default function ObjectListItem({
   const size = formatBytes(Number(object.state.size));
 
   return (
-    <Card className="rounded-none">
+    <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-4">
           <Link

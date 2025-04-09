@@ -144,7 +144,7 @@ export function Approval({ type, creditSponsor, approval }: Props) {
     (setSponsorTxHash && setSponsorTxPending);
 
   return (
-    <Card className="rounded-none">
+    <Card>
       <CardHeader>
         <CardTitle title={approval.addr} className="flex items-center gap-2">
           <Wallet />

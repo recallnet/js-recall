@@ -25,7 +25,7 @@ interface Props {
 export default function BucketCard({ bucket }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   return (
-    <Card className="rounded-none">
+    <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-4">
           <Link

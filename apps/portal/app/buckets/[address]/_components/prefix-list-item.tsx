@@ -22,7 +22,7 @@ export default function PrefixListItem({
   delimiter: string;
 }) {
   return (
-    <Card key={commonPrefix} className="rounded-none">
+    <Card key={commonPrefix}>
       <CardHeader>
         <CardTitle>
           <Link

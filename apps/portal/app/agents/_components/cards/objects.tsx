@@ -9,13 +9,12 @@ import {
   CardTitle,
 } from "@recallnet/ui/components/shadcn/card";
 import { Separator } from "@recallnet/ui/components/shadcn/separator";
-import { cn } from "@recallnet/ui/lib/utils";
 
 type ChatProps = ComponentProps<typeof Card>;
 
-export function Objects({ className, ...props }: ChatProps) {
+export function Objects(props: ChatProps) {
   return (
-    <Card className={cn("rounded-none", className)} {...props}>
+    <Card {...props}>
       <CardHeader className="pb-3">
         <CardTitle>Objects</CardTitle>
         <CardDescription>

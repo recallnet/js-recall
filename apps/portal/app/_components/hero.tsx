@@ -64,7 +64,7 @@ export default function Hero() {
       >
         {getItems(gridInfo.columns, gridInfo.rows)}
       </div>
-      <Card className="bg-background/85 supports-[backdrop-filter]:bg-background/85 fixed left-1/2 top-1/2 m-0 max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-none p-4 backdrop-blur">
+      <Card className="bg-background/85 supports-[backdrop-filter]:bg-background/85 fixed left-1/2 top-1/2 m-0 max-w-2xl -translate-x-1/2 -translate-y-1/2 p-4 backdrop-blur">
         <CardHeader>
           <CardTitle className="font-mono text-3xl uppercase">
             &gt; Networked <span className="text-[#2962C0]">intelligence</span>{" "}
