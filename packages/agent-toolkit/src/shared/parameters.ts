@@ -11,7 +11,6 @@ const addressSchema = z.string().regex(/^0x[a-fA-F0-9]{40}$/);
  * Parameters for the getAccountInfo function
  * @param address - The address of the account to get account info for (optional)
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const getAccountInfoParameters = (_context: Context = {}) =>
   z.object({
     address: addressSchema
@@ -23,7 +22,6 @@ export const getAccountInfoParameters = (_context: Context = {}) =>
  * Parameters for the listBuckets function
  * @param address - The address of the account to list buckets for (optional)
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const listBucketsParameters = (_context: Context = {}) =>
   z.object({
     address: addressSchema
@@ -37,7 +35,6 @@ export const listBucketsParameters = (_context: Context = {}) =>
  * Parameters for the getCreditInfo function
  * @param address - The address of the account to get credit info for (optional)
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const getCreditInfoParameters = (_context: Context = {}) =>
   z.object({
     address: addressSchema
@@ -50,7 +47,6 @@ export const getCreditInfoParameters = (_context: Context = {}) =>
  * @param amount - The amount of credit to buy
  * @param to - The address of the account to buy credit for (optional)
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const buyCreditParameters = (_context: Context = {}) =>
   z.object({
     amount: z.string().min(1).describe("The amount of credit to buy"),
@@ -66,7 +62,6 @@ export const buyCreditParameters = (_context: Context = {}) =>
  * @param bucketAlias - The alias of the bucket to create
  * @param metadata - The metadata to store with the bucket (optional)
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const createBucketParameters = (_context: Context = {}) =>
   z.object({
     bucketAlias: z
@@ -87,7 +82,6 @@ export const createBucketParameters = (_context: Context = {}) =>
  * @param bucketAlias - The alias of the bucket to retrieve or create
  * @param metadata - The metadata to store with the bucket (optional)
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const getOrCreateBucketParameters = (_context: Context = {}) =>
   z.object({
     bucketAlias: z
@@ -110,7 +104,6 @@ export const getOrCreateBucketParameters = (_context: Context = {}) =>
  * @param metadata - The metadata to store with the object
  * @param overwrite - Whether to overwrite existing data at that key
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const addObjectParameters = (_context: Context = {}) =>
   z.object({
     bucket: addressSchema.describe("The address of the bucket"),
@@ -137,7 +130,6 @@ export const addObjectParameters = (_context: Context = {}) =>
  * @param key - The key under which the object is stored
  * @param outputType - The type of the output (default: string)
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const getObjectParameters = (_context: Context = {}) =>
   z.object({
     bucket: addressSchema.describe("The address of the bucket"),
@@ -156,7 +148,6 @@ export const getObjectParameters = (_context: Context = {}) =>
  * @param startKey - The starting key of the objects to query (optional)
  * @param limit - The maximum number of objects to query (optional)
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const queryObjectsParameters = (_context: Context = {}) =>
   z.object({
     bucket: addressSchema.describe("The address of the bucket"),

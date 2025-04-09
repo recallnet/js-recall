@@ -4,6 +4,14 @@ import { config } from "@recallnet/eslint-config/base";
 export default [
   ...config,
   {
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_" },
+      ],
+    },
+  },
+  {
     ignores: ["examples/**"],
   },
 ];

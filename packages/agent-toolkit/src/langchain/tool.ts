@@ -38,9 +38,7 @@ class RecallTool extends StructuredTool {
 
   _call(
     arg: z.output<typeof this.schema>,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _runManager?: CallbackManagerForToolRun,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _parentConfig?: RunnableConfig,
   ): Promise<string> {
     return this._recall.run(this.method, arg);

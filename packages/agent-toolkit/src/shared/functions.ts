@@ -26,7 +26,7 @@ import { Result } from "./util.js";
  */
 export const getAccountInfo = async (
   recall: RecallClient,
-  context: Context,
+  _context: Context,
   params: z.infer<ReturnType<typeof getAccountInfoParameters>>,
 ): Promise<Result<AccountInfo>> => {
   try {
@@ -56,7 +56,7 @@ export const getAccountInfo = async (
  */
 export const listBuckets = async (
   recall: RecallClient,
-  context: Context,
+  _context: Context,
   params: z.infer<ReturnType<typeof listBucketsParameters>>,
 ): Promise<Result<ListResult>> => {
   try {
@@ -86,7 +86,7 @@ export const listBuckets = async (
  */
 export const getCreditInfo = async (
   recall: RecallClient,
-  context: Context,
+  _context: Context,
   params: z.infer<ReturnType<typeof getCreditInfoParameters>>,
 ): Promise<Result<CreditAccount>> => {
   try {
@@ -116,7 +116,7 @@ export const getCreditInfo = async (
  */
 export const buyCredit = async (
   recall: RecallClient,
-  context: Context,
+  _context: Context,
   params: z.infer<ReturnType<typeof buyCreditParameters>>,
 ): Promise<Result<string>> => {
   try {
@@ -145,7 +145,7 @@ export const buyCredit = async (
  */
 export const createBucket = async (
   recall: RecallClient,
-  context: Context,
+  _context: Context,
   params: z.infer<ReturnType<typeof createBucketParameters>>,
 ): Promise<Result<{ bucket: Address; txHash: string }>> => {
   try {
@@ -180,7 +180,7 @@ export const createBucket = async (
  */
 export const getOrCreateBucket = async (
   recall: RecallClient,
-  context: Context,
+  _context: Context,
   params: z.infer<ReturnType<typeof getOrCreateBucketParameters>>,
 ): Promise<Result<{ bucket: Address; tx: string }>> => {
   try {
@@ -227,7 +227,7 @@ export const getOrCreateBucket = async (
  */
 export const addObject = async (
   recall: RecallClient,
-  context: Context,
+  _context: Context,
   params: z.infer<ReturnType<typeof addObjectParameters>>,
 ): Promise<Result<{ txHash: string }>> => {
   try {
@@ -264,7 +264,7 @@ export const addObject = async (
  */
 export const getObject = async (
   recall: RecallClient,
-  context: Context,
+  _context: Context,
   params: z.infer<ReturnType<typeof getObjectParameters>>,
 ): Promise<Result<string | Uint8Array>> => {
   try {
@@ -296,7 +296,7 @@ export const getObject = async (
  */
 export const queryObjects = async (
   recall: RecallClient,
-  context: Context,
+  _context: Context,
   params: z.infer<ReturnType<typeof queryObjectsParameters>>,
 ): Promise<Result<QueryResult>> => {
   try {
