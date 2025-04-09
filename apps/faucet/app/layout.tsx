@@ -4,7 +4,7 @@ import { Analytics } from "@vercel/analytics/react";
 import type { Metadata } from "next";
 
 import { fontMono, fontSans } from "@recallnet/fonts";
-import { Toaster } from "@recallnet/ui/components/shadcn/toaster";
+import { Toaster } from "@recallnet/ui/components/shadcn/sonner";
 import { ThemeProvider } from "@recallnet/ui/components/theme-provider";
 
 export const metadata: Metadata = {

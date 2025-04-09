@@ -7,7 +7,7 @@ import { useFormStatus } from "react-dom";
 
 import { Button } from "@recallnet/ui/components/shadcn/button";
 import { Input } from "@recallnet/ui/components/shadcn/input";
-import { useToast } from "@recallnet/ui/hooks/use-toast";
+import { toast } from "@recallnet/ui/components/toast";
 
 import { RequestTokensState, requestTokens } from "@/client-actions";
 
@@ -15,20 +15,16 @@ const initialState: RequestTokensState = {};
 
 export default function RequestTokensForm() {
   const [state, formAction] = useActionState(requestTokens, initialState);
-  const { toast } = useToast();
 
   useEffect(() => {
     if (state.error) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: state.error,
-        variant: "destructive",
         duration: 120000,
       });
     }
     if (state.result) {
-      toast({
-        title: "Success!",
+      toast("Success!", {
         description: (
           <span>
             RECALL sent in txn{" "}
@@ -47,7 +43,7 @@ export default function RequestTokensForm() {
         duration: 120000,
       });
     }
-  }, [state, toast]);
+  }, [state]);
 
   return (
     <form
