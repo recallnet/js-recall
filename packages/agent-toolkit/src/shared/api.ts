@@ -53,8 +53,7 @@ export default class RecallAPI {
     serializer: (data: unknown) => string = jsonStringify,
   ) {
     const chain =
-      context?.network !== undefined &&
-      checkChainName(context.network as ChainName)
+      context?.network !== undefined && checkChainName(context.network)
         ? getChain(context.network as ChainName)
         : testnet;
     const walletClient = walletClientFromPrivateKey(privateKey as Hex, chain);

@@ -108,6 +108,7 @@
     "@langchain/openai": "^0.4.4",
     "@recallnet/eslint-config": "workspace:*",
     "@recallnet/typescript-config": "workspace:*",
+    "ai": "^4.2.11",
     "dotenv": "^16.4.7",
     "langchain": "^0.3.19",
     "tsup": "^8.3.6",
