@@ -1,5 +1,11 @@
 # @recallnet/network-constants
 
+## 0.0.7
+
+### Patch Changes
+
+- [#194](https://github.com/recallnet/js-recall/pull/194) [`89690dc`](https://github.com/recallnet/js-recall/commit/89690dc6a9430f4b22e6dec42e372f93ca10c592) Thanks [@dtbuchholz](https://github.com/dtbuchholz)! - update constants for testnet v0.1.6
+
 ## 0.0.6
 
 ### Patch Changes
