@@ -270,7 +270,7 @@ export default function AddObjectDialog({
                           ? JSON.stringify(field.value)
                           : field.value
                       }
-                      className="min-h-28"
+                      className="min-h-28 font-mono"
                       disabled={isPending}
                     />
                   </FormControl>
