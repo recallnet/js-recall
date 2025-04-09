@@ -65,14 +65,13 @@ export type Tool = {
 /**
  * A list of {@link Tool}s that can be used by the agent.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const tools = (context?: Context): Tool[] => [
   // Account read methods
   {
     method: "get_account_info",
     name: "Get Account Info",
-    description: getAccountInfoPrompt,
-    parameters: getAccountInfoParameters,
+    description: getAccountInfoPrompt(context),
+    parameters: getAccountInfoParameters(context),
     actions: {
       account: {
         read: true,
@@ -83,8 +82,8 @@ export const tools = (context?: Context): Tool[] => [
   {
     method: "get_credit_info",
     name: "Get Credit Info",
-    description: getCreditInfoPrompt,
-    parameters: getCreditInfoParameters,
+    description: getCreditInfoPrompt(context),
+    parameters: getCreditInfoParameters(context),
     actions: {
       account: {
         read: true,
@@ -96,8 +95,8 @@ export const tools = (context?: Context): Tool[] => [
   {
     method: "buy_credit",
     name: "Buy Credit",
-    description: buyCreditPrompt,
-    parameters: buyCreditParameters,
+    description: buyCreditPrompt(context),
+    parameters: buyCreditParameters(context),
     actions: {
       account: {
         write: true,
@@ -109,8 +108,8 @@ export const tools = (context?: Context): Tool[] => [
   {
     method: "list_buckets",
     name: "List Buckets",
-    description: listBucketsPrompt,
-    parameters: listBucketsParameters,
+    description: listBucketsPrompt(context),
+    parameters: listBucketsParameters(context),
     actions: {
       bucket: {
         read: true,
@@ -121,8 +120,8 @@ export const tools = (context?: Context): Tool[] => [
   {
     method: "get_object",
     name: "Get Object",
-    description: getObjectPrompt,
-    parameters: getObjectParameters,
+    description: getObjectPrompt(context),
+    parameters: getObjectParameters(context),
     actions: {
       bucket: {
         read: true,
@@ -133,8 +132,8 @@ export const tools = (context?: Context): Tool[] => [
   {
     method: "query_objects",
     name: "Query Objects",
-    description: queryObjectsPrompt,
-    parameters: queryObjectsParameters,
+    description: queryObjectsPrompt(context),
+    parameters: queryObjectsParameters(context),
     actions: {
       bucket: {
         read: true,
@@ -146,8 +145,8 @@ export const tools = (context?: Context): Tool[] => [
   {
     method: "create_bucket",
     name: "Create Bucket",
-    description: createBucketPrompt,
-    parameters: createBucketParameters,
+    description: createBucketPrompt(context),
+    parameters: createBucketParameters(context),
     actions: {
       bucket: {
         write: true,
@@ -158,8 +157,8 @@ export const tools = (context?: Context): Tool[] => [
   {
     method: "get_or_create_bucket",
     name: "Get or Create Bucket",
-    description: getOrCreateBucketPrompt,
-    parameters: getOrCreateBucketParameters,
+    description: getOrCreateBucketPrompt(context),
+    parameters: getOrCreateBucketParameters(context),
     actions: {
       bucket: {
         read: true,
@@ -171,8 +170,8 @@ export const tools = (context?: Context): Tool[] => [
   {
     method: "add_object",
     name: "Add Object",
-    description: addObjectPrompt,
-    parameters: addObjectParameters,
+    description: addObjectPrompt(context),
+    parameters: addObjectParameters(context),
     actions: {
       bucket: {
         write: true,

@@ -27,7 +27,7 @@ import { Result } from "./util.js";
 export const getAccountInfo = async (
   recall: RecallClient,
   context: Context,
-  params: z.infer<typeof getAccountInfoParameters>,
+  params: z.infer<ReturnType<typeof getAccountInfoParameters>>,
 ): Promise<Result<AccountInfo>> => {
   try {
     const address = params.address ? (params.address as Address) : undefined;
@@ -57,7 +57,7 @@ export const getAccountInfo = async (
 export const listBuckets = async (
   recall: RecallClient,
   context: Context,
-  params: z.infer<typeof listBucketsParameters>,
+  params: z.infer<ReturnType<typeof listBucketsParameters>>,
 ): Promise<Result<ListResult>> => {
   try {
     const address = params.address ? (params.address as Address) : undefined;
@@ -87,7 +87,7 @@ export const listBuckets = async (
 export const getCreditInfo = async (
   recall: RecallClient,
   context: Context,
-  params: z.infer<typeof getCreditInfoParameters>,
+  params: z.infer<ReturnType<typeof getCreditInfoParameters>>,
 ): Promise<Result<CreditAccount>> => {
   try {
     const address = params.address ? (params.address as Address) : undefined;
@@ -117,7 +117,7 @@ export const getCreditInfo = async (
 export const buyCredit = async (
   recall: RecallClient,
   context: Context,
-  params: z.infer<typeof buyCreditParameters>,
+  params: z.infer<ReturnType<typeof buyCreditParameters>>,
 ): Promise<Result<string>> => {
   try {
     const to = params.to ? (params.to as Address) : undefined;
@@ -146,7 +146,7 @@ export const buyCredit = async (
 export const createBucket = async (
   recall: RecallClient,
   context: Context,
-  params: z.infer<typeof createBucketParameters>,
+  params: z.infer<ReturnType<typeof createBucketParameters>>,
 ): Promise<Result<{ bucket: Address; txHash: string }>> => {
   try {
     const metadata = params.metadata ?? {};
@@ -181,7 +181,7 @@ export const createBucket = async (
 export const getOrCreateBucket = async (
   recall: RecallClient,
   context: Context,
-  params: z.infer<typeof getOrCreateBucketParameters>,
+  params: z.infer<ReturnType<typeof getOrCreateBucketParameters>>,
 ): Promise<Result<{ bucket: Address; tx: string }>> => {
   try {
     // Try to find the bucket by alias
@@ -228,7 +228,7 @@ export const getOrCreateBucket = async (
 export const addObject = async (
   recall: RecallClient,
   context: Context,
-  params: z.infer<typeof addObjectParameters>,
+  params: z.infer<ReturnType<typeof addObjectParameters>>,
 ): Promise<Result<{ txHash: string }>> => {
   try {
     const metadata = params.metadata ?? {};
@@ -265,7 +265,7 @@ export const addObject = async (
 export const getObject = async (
   recall: RecallClient,
   context: Context,
-  params: z.infer<typeof getObjectParameters>,
+  params: z.infer<ReturnType<typeof getObjectParameters>>,
 ): Promise<Result<string | Uint8Array>> => {
   try {
     const { result } = await recall
@@ -297,7 +297,7 @@ export const getObject = async (
 export const queryObjects = async (
   recall: RecallClient,
   context: Context,
-  params: z.infer<typeof queryObjectsParameters>,
+  params: z.infer<ReturnType<typeof queryObjectsParameters>>,
 ): Promise<Result<QueryResult>> => {
   try {
     const { result } = await recall

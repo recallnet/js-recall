@@ -1,25 +1,31 @@
-export const getAccountInfoPrompt = `
+import { Context } from "./configuration.js";
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const getAccountInfoPrompt = (_context: Context = {}) => `
 This tool will get account information from Recall, including token $RECALL balances, address, and nonce.
 
 Arguments:
 - address (str, optional): The address of the account, else, defaults to the connected user's account address.
 `;
 
-export const listBucketsPrompt = `
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const listBucketsPrompt = (_context: Context = {}) => `
 Lists all buckets owned by the connected account in Recall.
 
 Arguments:
 - owner (str, optional): The address of the account, else, defaults to the connected user's account address.
 `;
 
-export const getCreditInfoPrompt = `
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const getCreditInfoPrompt = (_context: Context = {}) => `
 Gets the credit information for the connected account.
 
 Arguments:
 - address (str, optional): The address of the account, else, defaults to the connected user's account address.
 `;
 
-export const buyCreditPrompt = `
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const buyCreditPrompt = (_context: Context = {}) => `
 Buys credit for the connected account.
 
 Arguments:
@@ -27,21 +33,24 @@ Arguments:
 - to (str, optional): The address of the account to buy credit for, else, defaults to the connected user's account address.
 `;
 
-export const createBucketPrompt = `
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const createBucketPrompt = (_context: Context = {}) => `
 Creates a new bucket in Recall.
 
 Arguments:
 - bucketAlias (str): The alias to assign to the new bucket.
 `;
 
-export const getOrCreateBucketPrompt = `
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const getOrCreateBucketPrompt = (_context: Context = {}) => `
 Gets an existing bucket by alias or creates a new one if it doesn't exist.
 
 Arguments:
 - bucketAlias (str): The alias of the bucket to retrieve or create.
 `;
 
-export const addObjectPrompt = `
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const addObjectPrompt = (_context: Context = {}) => `
 Adds an object to a bucket in Recall.
 
 Arguments:
@@ -51,7 +60,8 @@ Arguments:
 - overwrite (bool, optional): Whether to overwrite existing data. Defaults to false.
 `;
 
-export const getObjectPrompt = `
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const getObjectPrompt = (_context: Context = {}) => `
 Gets an object from a bucket in Recall.
 
 Arguments:
@@ -60,7 +70,8 @@ Arguments:
 - outputType (str, optional): The type of output to return ("string" or "uint8array"). Defaults to "uint8array".
 `;
 
-export const queryObjectsPrompt = `
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const queryObjectsPrompt = (_context: Context = {}) => `
 Queries objects from a bucket in Recall.
 
 Arguments:
