@@ -24,10 +24,10 @@ importers:
         specifier: ^5.2.1
         version: 5.2.2(prettier@3.5.3)
       prettier:
-        specifier: ^3.2.5
+        specifier: ^3.5.3
         version: 3.5.3
       prettier-plugin-tailwindcss:
-        specifier: ^0.6.10
+        specifier: ^0.6.11
         version: 0.6.11(@trivago/prettier-plugin-sort-imports@5.2.2(prettier@3.5.3))(prettier@3.5.3)
       turbo:
         specifier: ^2.3.7
