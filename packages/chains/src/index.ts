@@ -253,16 +253,16 @@ export function getParentChain(chain: Chain): Chain | undefined {
  * const isValid = checkChainName("testnet");
  * // Returns: true
  *
- * const isInvalid = checkChainName("unknown" as ChainName);
+ * const isInvalid = checkChainName("unknown");
  * // Returns: false
  * ```
  *
- * @param chainName - The chain name to check
+ * @param chainName - The chain name to check (e.g., "testnet", "localnet", "devnet")
  * @returns True if the chain name is valid, false otherwise
  */
-export function checkChainName(chainName: ChainName): boolean {
+export function checkChainName(chainName: string): boolean {
   try {
-    getChain(chainName);
+    getChain(chainName as ChainName);
     return true;
   } catch {
     return false;
