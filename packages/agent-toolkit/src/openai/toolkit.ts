@@ -14,7 +14,7 @@ import { tools } from "../shared/tools.js";
  * @example
  * ```ts
  * const toolkit = new RecallAgentToolkit({
- *   secretKey: "0x...",
+ *   privateKey: "0x...",
  *   configuration: {
  *     actions: {
  *       account: {
@@ -44,7 +44,7 @@ export default class RecallAgentToolkit {
   }) {
     this._recall = new RecallAPI(privateKey, configuration.context);
 
-    const filteredTools = tools.filter((tool) =>
+    const filteredTools = tools(configuration.context).filter((tool) =>
       isToolAllowed(tool, configuration),
     );
 
@@ -69,13 +69,15 @@ export default class RecallAgentToolkit {
    * @returns A promise that resolves to a tool message object containing the result of the tool
    * execution with the proper format for the OpenAI API
    */
-  async handleToolCall(toolCall: ChatCompletionMessageToolCall) {
+  async handleToolCall(
+    toolCall: ChatCompletionMessageToolCall,
+  ): Promise<ChatCompletionToolMessageParam> {
     const args = JSON.parse(toolCall.function.arguments);
     const response = await this._recall.run(toolCall.function.name, args);
     return {
       role: "tool",
       tool_call_id: toolCall.id,
       content: response,
-    } as ChatCompletionToolMessageParam;
+    };
   }
 }

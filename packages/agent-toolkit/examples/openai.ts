@@ -49,7 +49,7 @@ const recallAgentToolkit = new RecallAgentToolkit({
       },
     },
     context: {
-      network: RECALL_NETWORK!,
+      network: RECALL_NETWORK,
     },
   },
 });

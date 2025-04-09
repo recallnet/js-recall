@@ -12,17 +12,7 @@ import {
 } from "@recallnet/sdk/client";
 
 import type { Context } from "./configuration.js";
-import {
-  addObject,
-  buyCredit,
-  createBucket,
-  getAccountInfo,
-  getCreditInfo,
-  getObject,
-  getOrCreateBucket,
-  listBuckets,
-  queryObjects,
-} from "./functions.js";
+import { Tool, tools } from "./tools.js";
 import { jsonStringify } from "./util.js";
 
 /**
@@ -38,8 +28,8 @@ import { jsonStringify } from "./util.js";
 export default class RecallAPI {
   private _recall: RecallClient;
   private _context: Context;
+  private _tools: Tool[];
   private _serialize: (data: unknown) => string;
-
   /**
    * Create a new RecallAPI instance.
    * @param privateKey - The private key of the account to use.
@@ -61,6 +51,7 @@ export default class RecallAPI {
 
     this._recall = recallClient;
     this._context = context || {};
+    this._tools = tools(context);
     this._serialize = serializer;
   }
 
@@ -72,49 +63,14 @@ export default class RecallAPI {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async run(method: string, arg: any) {
-    switch (method) {
-      // Account read methods
-      case "get_account_info":
-        return this._serialize(
-          await getAccountInfo(this._recall, this._context, arg),
-        );
-      case "get_credit_info":
-        return this._serialize(
-          await getCreditInfo(this._recall, this._context, arg),
-        );
-      // Account write methods
-      case "buy_credit":
-        return this._serialize(
-          await buyCredit(this._recall, this._context, arg),
-        );
-      // Bucket read methods
-      case "list_buckets":
-        return this._serialize(
-          await listBuckets(this._recall, this._context, arg),
-        );
-      case "get_object":
-        return this._serialize(
-          await getObject(this._recall, this._context, arg),
-        );
-      case "query_objects":
-        return this._serialize(
-          await queryObjects(this._recall, this._context, arg),
-        );
-      // Bucket write methods
-      case "create_bucket":
-        return this._serialize(
-          await createBucket(this._recall, this._context, arg),
-        );
-      case "get_or_create_bucket":
-        return this._serialize(
-          await getOrCreateBucket(this._recall, this._context, arg),
-        );
-      case "add_object":
-        return this._serialize(
-          await addObject(this._recall, this._context, arg),
-        );
-      default:
-        throw new Error(`Invalid method: ${method}`);
+    const tool = this._tools.find((t) => t.method === method);
+    if (tool !== undefined) {
+      const output = this._serialize(
+        await tool.execute(this._recall, this._context, arg),
+      );
+      return output;
+    } else {
+      throw new Error(`Invalid method: ${method}`);
     }
   }
 }

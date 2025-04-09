@@ -1,6 +1,19 @@
 import { z } from "zod";
 
-import { Actions } from "./configuration.js";
+import { RecallClient } from "@recallnet/sdk/client";
+
+import { Actions, Context } from "./configuration.js";
+import {
+  addObject,
+  buyCredit,
+  createBucket,
+  getAccountInfo,
+  getCreditInfo,
+  getObject,
+  getOrCreateBucket,
+  listBuckets,
+  queryObjects,
+} from "./functions.js";
 import {
   addObjectParameters,
   buyCreditParameters,
@@ -23,6 +36,7 @@ import {
   listBucketsPrompt,
   queryObjectsPrompt,
 } from "./prompts.js";
+import { Result } from "./util.js";
 
 /**
  * A tool is a function that can be called by the agent.
@@ -39,12 +53,20 @@ export type Tool = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   parameters: z.ZodObject<any, any, any, any>;
   actions: Actions;
+  execute: (
+    recall: RecallClient,
+    context: Context,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    params: any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ) => Promise<Result<any>>;
 };
 
 /**
  * A list of {@link Tool}s that can be used by the agent.
  */
-export const tools: Tool[] = [
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const tools = (context?: Context): Tool[] => [
   // Account read methods
   {
     method: "get_account_info",
@@ -56,6 +78,7 @@ export const tools: Tool[] = [
         read: true,
       },
     },
+    execute: getAccountInfo,
   },
   {
     method: "get_credit_info",
@@ -67,6 +90,7 @@ export const tools: Tool[] = [
         read: true,
       },
     },
+    execute: getCreditInfo,
   },
   // Account write methods
   {
@@ -79,6 +103,7 @@ export const tools: Tool[] = [
         write: true,
       },
     },
+    execute: buyCredit,
   },
   // Bucket read methods
   {
@@ -91,6 +116,7 @@ export const tools: Tool[] = [
         read: true,
       },
     },
+    execute: listBuckets,
   },
   {
     method: "get_object",
@@ -102,6 +128,7 @@ export const tools: Tool[] = [
         read: true,
       },
     },
+    execute: getObject,
   },
   {
     method: "query_objects",
@@ -113,6 +140,7 @@ export const tools: Tool[] = [
         read: true,
       },
     },
+    execute: queryObjects,
   },
   // Bucket write methods
   {
@@ -125,6 +153,7 @@ export const tools: Tool[] = [
         write: true,
       },
     },
+    execute: createBucket,
   },
   {
     method: "get_or_create_bucket",
@@ -137,6 +166,7 @@ export const tools: Tool[] = [
         write: true,
       },
     },
+    execute: getOrCreateBucket,
   },
   {
     method: "add_object",
@@ -148,5 +178,6 @@ export const tools: Tool[] = [
         write: true,
       },
     },
+    execute: addObject,
   },
 ];

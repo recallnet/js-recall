@@ -52,7 +52,7 @@ export default class RecallAgentToolkit extends McpServer {
 
     this._recall = new RecallAPI(privateKey, configuration.context);
 
-    const filteredTools = tools.filter((tool) =>
+    const filteredTools = tools(configuration.context).filter((tool) =>
       isToolAllowed(tool, configuration),
     );
 

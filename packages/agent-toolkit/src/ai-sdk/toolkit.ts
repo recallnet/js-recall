@@ -37,7 +37,7 @@ export default class RecallAgentToolkit {
     this._recall = new RecallAPI(privateKey, configuration.context);
     this.tools = {};
 
-    const filteredTools = tools.filter((tool) =>
+    const filteredTools = tools(configuration.context).filter((tool) =>
       isToolAllowed(tool, configuration),
     );
 
