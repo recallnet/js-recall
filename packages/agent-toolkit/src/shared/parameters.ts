@@ -100,7 +100,7 @@ export const getOrCreateBucketParameters = (_context: Context = {}) =>
  * Parameters for the addObject function
  * @param bucket - The address of the bucket
  * @param key - The key under which to store the object
- * @param data - The data to store as a string, File, or Uint8Array
+ * @param data - The data to store as a string value
  * @param metadata - The metadata to store with the object
  * @param overwrite - Whether to overwrite existing data at that key
  */
@@ -108,9 +108,7 @@ export const addObjectParameters = (_context: Context = {}) =>
   z.object({
     bucket: addressSchema.describe("The address of the bucket"),
     key: z.string().min(1).describe("The key under which to store the object"),
-    data: z
-      .union([z.string(), z.instanceof(File), z.instanceof(Uint8Array)])
-      .describe("The data to store as a string, File, or Uint8Array value"),
+    data: z.string().describe("The data to store as a string value"),
     metadata: z
       .record(
         z.string().min(1).describe("The key of the metadata"),
@@ -128,16 +126,11 @@ export const addObjectParameters = (_context: Context = {}) =>
  * Parameters for the getObject function
  * @param bucket - The address of the bucket
  * @param key - The key under which the object is stored
- * @param outputType - The type of the output (default: string)
  */
 export const getObjectParameters = (_context: Context = {}) =>
   z.object({
     bucket: addressSchema.describe("The address of the bucket"),
     key: z.string().min(1).describe("The key under which the object is stored"),
-    outputType: z
-      .enum(["string", "uint8array"])
-      .optional()
-      .describe("The type of the output (default: string)"),
   });
 
 /**

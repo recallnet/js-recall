@@ -89,7 +89,7 @@ Adds an object to a bucket in Recall. Use this to store data like files, JSON, o
 Arguments:
 - bucket (str): The address of the bucket (EVM hex string address).
 - key (str): The key under which to store the object. Use a descriptive path-like structure (e.g. "users/profile/avatar.jpg").
-- data (str | Uint8Array): The data to store. Can be a string or binary data.
+- data (str): The data to store as a string value.
 - overwrite (bool, optional): Whether to overwrite existing data. Defaults to false.
 
 Returns the transaction hash at which the object was stored.
@@ -105,9 +105,8 @@ Gets an object from a bucket in Recall. Use this to retrieve previously stored d
 Arguments:
 - bucket (str): The address of the bucket (EVM hex string address).
 - key (str): The key under which the object is stored.
-- outputType (str, optional): The type of output to return ("string" or "uint8array"). Defaults to "uint8array".
 
-Returns the object's data, either as a string or Uint8Array, based on the outputType parameter.
+Returns the object's data as a string value.
 `;
 
 /**

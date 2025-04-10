@@ -253,16 +253,13 @@ export const addObject = async (
 ): Promise<Result<{ txHash: string }>> => {
   try {
     const metadata = params.metadata ?? {};
-    const dataToStore =
-      typeof params.data === "string"
-        ? new TextEncoder().encode(params.data)
-        : params.data;
+    const data = new TextEncoder().encode(params.data);
 
     const { meta } = await recall
       .bucketManager()
-      .add(params.bucket as Address, params.key, dataToStore, {
+      .add(params.bucket as Address, params.key, data, {
         overwrite: params.overwrite ?? false,
-        metadata: { ...metadata },
+        metadata,
       });
     if (!meta?.tx) {
       return { success: false, error: "Transaction not found" };
@@ -284,25 +281,23 @@ export const addObject = async (
  * @param recall - The Recall client.
  * @param _context - The context to provide to the function.
  * @param params - The function parameters.
- * @returns The object.
+ * @returns The object as a string value.
  */
 export const getObject = async (
   recall: RecallClient,
   _context: Context,
   params: z.infer<ReturnType<typeof getObjectParameters>>,
-): Promise<Result<string | Uint8Array>> => {
+): Promise<Result<string>> => {
   try {
-    const { result } = await recall
+    const { result: object } = await recall
       .bucketManager()
       .get(params.bucket as Address, params.key);
 
-    if (!result) {
+    if (!object) {
       return { success: false, error: "Object not found" };
     }
-
-    return params.outputType === "string" || params.outputType === undefined
-      ? { success: true, result: new TextDecoder().decode(result) }
-      : { success: true, result };
+    const result = new TextDecoder().decode(object);
+    return { success: true, result };
   } catch (error) {
     if (error instanceof Error) {
       return {
