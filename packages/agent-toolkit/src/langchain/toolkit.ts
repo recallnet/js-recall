@@ -22,10 +22,23 @@ import RecallTool from "./tool.js";
  * ```
  */
 export default class RecallAgentToolkit implements BaseToolkit {
+  /**
+   * The Recall API instance used to interact with the Recall network.
+   * @private
+   */
   private _recall: RecallAPI;
 
+  /**
+   * The collection of tools available in this toolkit. Each tool is configured as a
+   * LangChain `StructuredTool` that can be used in function calling scenarios.
+   */
   tools: RecallTool[];
 
+  /**
+   * Create a new RecallAgentToolkit instance.
+   * @param privateKey - The private key of the account to use.
+   * @param configuration - The {@link Configuration} to use.
+   */
   constructor({
     privateKey,
     configuration,

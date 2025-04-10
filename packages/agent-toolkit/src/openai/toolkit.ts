@@ -26,7 +26,16 @@ import { type Configuration, isToolAllowed } from "../shared/configuration.js";
  * ```
  */
 export default class RecallAgentToolkit {
+  /**
+   * The Recall API instance used to interact with the Recall network.
+   * @private
+   */
   private _recall: RecallAPI;
+
+  /**
+   * The collection of tools available in this toolkit. Each tool is configured as an OpenAI
+   * `ChatCompletionTool` that can be used in function calling scenarios.
+   */
   tools: ChatCompletionTool[];
 
   /**

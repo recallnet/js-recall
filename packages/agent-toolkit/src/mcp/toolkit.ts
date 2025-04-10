@@ -29,6 +29,10 @@ import { Configuration, isToolAllowed } from "../shared/configuration.js";
  * ```
  */
 export default class RecallAgentToolkit extends McpServer {
+  /**
+   * The Recall API instance used to interact with the Recall network.
+   * @private
+   */
   private _recall: RecallAPI;
 
   /**
