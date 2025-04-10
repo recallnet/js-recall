@@ -10,7 +10,7 @@ Gets account information from Recall, including token $RECALL balances, address,
 Arguments:
 - address (str, optional): The address of the account, else, defaults to the connected user's account address.
 
-Returns the account's balance, address and nonce information. 
+Returns the account's balance, address, and nonce information. 
 `;
 
 /**

@@ -4,7 +4,6 @@ import { z } from "zod";
 
 import RecallAPI from "../shared/api.js";
 import { Configuration, isToolAllowed } from "../shared/configuration.js";
-import { tools } from "../shared/tools.js";
 
 /**
  * Recall agent toolkit for the Model Context Protocol.
@@ -52,9 +51,9 @@ export default class RecallAgentToolkit extends McpServer {
 
     this._recall = new RecallAPI(privateKey, configuration.context);
 
-    const filteredTools = tools(configuration.context).filter((tool) =>
-      isToolAllowed(tool, configuration),
-    );
+    const filteredTools = this._recall
+      .getTools()
+      .filter((tool) => isToolAllowed(tool, configuration));
 
     filteredTools.forEach((tool) => {
       this.tool(

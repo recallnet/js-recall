@@ -7,7 +7,6 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 
 import RecallAPI from "../shared/api.js";
 import { type Configuration, isToolAllowed } from "../shared/configuration.js";
-import { tools } from "../shared/tools.js";
 
 /**
  * An OpenAI compatible toolkit for the Recall agent.
@@ -44,9 +43,9 @@ export default class RecallAgentToolkit {
   }) {
     this._recall = new RecallAPI(privateKey, configuration.context);
 
-    const filteredTools = tools(configuration.context).filter((tool) =>
-      isToolAllowed(tool, configuration),
-    );
+    const filteredTools = this._recall
+      .getTools()
+      .filter((tool) => isToolAllowed(tool, configuration));
 
     this.tools = filteredTools.map((tool) => ({
       type: "function",

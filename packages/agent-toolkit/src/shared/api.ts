@@ -56,6 +56,14 @@ export default class RecallAPI {
   }
 
   /**
+   * Get the tools available to the `RecallAPI` instance.
+   * @returns The tools available to the `RecallAPI` instance.
+   */
+  getTools() {
+    return this._tools;
+  }
+
+  /**
    * Run a method on the Recall network.
    * @param method - The method to run.
    * @param arg - The arguments to pass to the method.

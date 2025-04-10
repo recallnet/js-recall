@@ -2,7 +2,6 @@ import { BaseToolkit } from "@langchain/core/tools";
 
 import RecallAPI from "../shared/api.js";
 import { type Configuration, isToolAllowed } from "../shared/configuration.js";
-import { tools } from "../shared/tools.js";
 import RecallTool from "./tool.js";
 
 /**
@@ -36,9 +35,9 @@ export default class RecallAgentToolkit implements BaseToolkit {
   }) {
     this._recall = new RecallAPI(privateKey, configuration.context);
 
-    const filteredTools = tools(configuration.context).filter((tool) =>
-      isToolAllowed(tool, configuration),
-    );
+    const filteredTools = this._recall
+      .getTools()
+      .filter((tool) => isToolAllowed(tool, configuration));
 
     this.tools = filteredTools.map(
       (tool) =>

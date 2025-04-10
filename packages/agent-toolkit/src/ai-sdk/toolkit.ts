@@ -2,7 +2,6 @@ import type { Tool as CoreTool } from "ai";
 
 import RecallAPI from "../shared/api.js";
 import { type Configuration, isToolAllowed } from "../shared/configuration.js";
-import { tools } from "../shared/tools.js";
 import RecallTool from "./tool.js";
 
 /**
@@ -37,9 +36,9 @@ export default class RecallAgentToolkit {
     this._recall = new RecallAPI(privateKey, configuration.context);
     this.tools = {};
 
-    const filteredTools = tools(configuration.context).filter((tool) =>
-      isToolAllowed(tool, configuration),
-    );
+    const filteredTools = this._recall
+      .getTools()
+      .filter((tool) => isToolAllowed(tool, configuration));
 
     filteredTools.forEach((tool) => {
       this.tools[tool.method] = RecallTool(
