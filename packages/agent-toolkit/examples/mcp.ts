@@ -136,9 +136,6 @@ export async function main() {
           `Invalid tool: ${tool}. Tool must be in the format of "resource.action".`,
         );
       }
-      if (!configuration.actions) {
-        configuration.actions = {};
-      }
       configuration.actions[resource as Resource] = {
         ...configuration.actions[resource as Resource],
         [action]: true,
@@ -151,9 +148,6 @@ export async function main() {
         throw new Error(
           `Invalid tool: ${tool}. Tool must be in the format of "resource.action".`,
         );
-      }
-      if (!configuration.actions) {
-        configuration.actions = {};
       }
       configuration.actions[resource as Resource] = {
         ...configuration.actions[resource as Resource],

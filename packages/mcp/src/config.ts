@@ -116,9 +116,6 @@ export function buildMcpConfiguration(config: ValidatedConfig): Configuration {
   if (config.tools.includes("all")) {
     ACCEPTED_TOOLS.forEach((tool) => {
       const [resource, action] = tool.split(".");
-      if (!configuration.actions) {
-        configuration.actions = {};
-      }
       configuration.actions[resource as Resource] = {
         ...configuration.actions[resource as Resource],
         [action as Permission]: true,
@@ -127,9 +124,6 @@ export function buildMcpConfiguration(config: ValidatedConfig): Configuration {
   } else {
     config.tools.forEach((tool) => {
       const [resource, action] = tool.split(".");
-      if (!configuration.actions) {
-        configuration.actions = {};
-      }
       configuration.actions[resource as Resource] = {
         ...configuration.actions[resource as Resource],
         [action as Permission]: true,
