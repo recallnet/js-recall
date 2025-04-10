@@ -4,7 +4,6 @@ import { z } from "zod";
 
 import RecallAPI from "../shared/api.js";
 import { Configuration, isToolAllowed } from "../shared/configuration.js";
-import { tools } from "../shared/tools.js";
 
 /**
  * Recall agent toolkit for the Model Context Protocol.
@@ -30,6 +29,10 @@ import { tools } from "../shared/tools.js";
  * ```
  */
 export default class RecallAgentToolkit extends McpServer {
+  /**
+   * The Recall API instance used to interact with the Recall network.
+   * @private
+   */
   private _recall: RecallAPI;
 
   /**
@@ -52,9 +55,9 @@ export default class RecallAgentToolkit extends McpServer {
 
     this._recall = new RecallAPI(privateKey, configuration.context);
 
-    const filteredTools = tools.filter((tool) =>
-      isToolAllowed(tool, configuration),
-    );
+    const filteredTools = this._recall
+      .getTools()
+      .filter((tool) => isToolAllowed(tool, configuration));
 
     filteredTools.forEach((tool) => {
       this.tool(
@@ -63,7 +66,6 @@ export default class RecallAgentToolkit extends McpServer {
         tool.parameters.shape,
         async (
           arg: z.infer<typeof tool.parameters>,
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           _extra: RequestHandlerExtra,
         ) => {
           const result = await this._recall.run(tool.method, arg);

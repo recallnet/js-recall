@@ -7,14 +7,13 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 
 import RecallAPI from "../shared/api.js";
 import { type Configuration, isToolAllowed } from "../shared/configuration.js";
-import { tools } from "../shared/tools.js";
 
 /**
  * An OpenAI compatible toolkit for the Recall agent.
  * @example
  * ```ts
  * const toolkit = new RecallAgentToolkit({
- *   secretKey: "0x...",
+ *   privateKey: "0x...",
  *   configuration: {
  *     actions: {
  *       account: {
@@ -27,7 +26,16 @@ import { tools } from "../shared/tools.js";
  * ```
  */
 export default class RecallAgentToolkit {
+  /**
+   * The Recall API instance used to interact with the Recall network.
+   * @private
+   */
   private _recall: RecallAPI;
+
+  /**
+   * The collection of tools available in this toolkit. Each tool is configured as an OpenAI
+   * `ChatCompletionTool` that can be used in function calling scenarios.
+   */
   tools: ChatCompletionTool[];
 
   /**
@@ -44,9 +52,9 @@ export default class RecallAgentToolkit {
   }) {
     this._recall = new RecallAPI(privateKey, configuration.context);
 
-    const filteredTools = tools.filter((tool) =>
-      isToolAllowed(tool, configuration),
-    );
+    const filteredTools = this._recall
+      .getTools()
+      .filter((tool) => isToolAllowed(tool, configuration));
 
     this.tools = filteredTools.map((tool) => ({
       type: "function",
@@ -69,13 +77,15 @@ export default class RecallAgentToolkit {
    * @returns A promise that resolves to a tool message object containing the result of the tool
    * execution with the proper format for the OpenAI API
    */
-  async handleToolCall(toolCall: ChatCompletionMessageToolCall) {
+  async handleToolCall(
+    toolCall: ChatCompletionMessageToolCall,
+  ): Promise<ChatCompletionToolMessageParam> {
     const args = JSON.parse(toolCall.function.arguments);
     const response = await this._recall.run(toolCall.function.name, args);
     return {
       role: "tool",
       tool_call_id: toolCall.id,
       content: response,
-    } as ChatCompletionToolMessageParam;
+    };
   }
 }

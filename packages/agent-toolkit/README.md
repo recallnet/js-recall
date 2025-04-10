@@ -160,8 +160,8 @@ The `RecallAgentToolkit` exposes the following tools:
 | `buy_credit`           | Buy credit for Recall account                                          |
 | `list_buckets`         | List all buckets owned by an address                                   |
 | `get_or_create_bucket` | Get or create a bucket in Recall                                       |
-| `add_object`           | Add an object to a Recall bucket                                       |
-| `get_object`           | Get an object from a Recall bucket                                     |
+| `add_object`           | Add an object to a Recall bucket (as a string)                         |
+| `get_object`           | Get an object from a Recall bucket (as a string)                       |
 | `query_objects`        | Query objects in a Recall bucket                                       |
 
 Each of these also has a corresponding prompt that is used to generate the tool call. For example, the `get_account_info` tool has the following prompt:
@@ -169,17 +169,19 @@ Each of these also has a corresponding prompt that is used to generate the tool 
 ```ts
 import { getAccountInfoPrompt } from "@recallnet/agent-toolkit/shared";
 
-const prompt = getAccountInfoPrompt;
+const prompt = getAccountInfoPrompt();
 console.log(prompt);
 ```
 
 Frameworks will, generally, see the prompt alongside the tool call, which gives the agent context on what the tool does and the arguments it accepts:
 
 ```txt
-This tool will get account information from Recall, including token $RECALL balances, address, and nonce.
+Gets account information from Recall, including token $RECALL balances, address, and nonce.
 
 Arguments:
 - address (str, optional): The address of the account, else, defaults to the connected user's account address.
+
+Returns the account's balance, address, and nonce information.
 ```
 
 ### Examples
@@ -188,7 +190,7 @@ A few examples of how to use the `RecallAgentToolkit` are available in the [`/ex
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/recallnet/agent-toolkit
+   git clone https://github.com/recallnet/js-recall
    ```
 2. Install dependencies:
    ```bash
@@ -201,7 +203,7 @@ A few examples of how to use the `RecallAgentToolkit` are available in the [`/ex
 4. Change into the `agent-toolkit`'s `examples` directory and create a `.env` file (based on `.env.example`) with your Recall private key:
 
    ```bash
-   cd packages/agent-toolkit/examples
+   cd js-recall/packages/agent-toolkit/examples
    cp .env.example .env
    ```
 

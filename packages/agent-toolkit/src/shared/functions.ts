@@ -22,12 +22,15 @@ import { Result } from "./util.js";
 
 /**
  * Gets the account information for the current user.
+ * @param recall - The Recall client.
+ * @param _context - The context to provide to the function.
+ * @param params - The function parameters.
  * @returns The account information.
  */
 export const getAccountInfo = async (
   recall: RecallClient,
-  context: Context,
-  params: z.infer<typeof getAccountInfoParameters>,
+  _context: Context,
+  params: z.infer<ReturnType<typeof getAccountInfoParameters>>,
 ): Promise<Result<AccountInfo>> => {
   try {
     const address = params.address ? (params.address as Address) : undefined;
@@ -52,12 +55,15 @@ export const getAccountInfo = async (
 
 /**
  * Lists all buckets for the current user.
+ * @param recall - The Recall client.
+ * @param _context - The context to provide to the function.
+ * @param params - The function parameters.
  * @returns The list of buckets.
  */
 export const listBuckets = async (
   recall: RecallClient,
-  context: Context,
-  params: z.infer<typeof listBucketsParameters>,
+  _context: Context,
+  params: z.infer<ReturnType<typeof listBucketsParameters>>,
 ): Promise<Result<ListResult>> => {
   try {
     const address = params.address ? (params.address as Address) : undefined;
@@ -82,12 +88,15 @@ export const listBuckets = async (
 
 /**
  * Gets the credit information for the current user.
+ * @param recall - The Recall client.
+ * @param _context - The context to provide to the function.
+ * @param params - The function parameters.
  * @returns The credit information.
  */
 export const getCreditInfo = async (
   recall: RecallClient,
-  context: Context,
-  params: z.infer<typeof getCreditInfoParameters>,
+  _context: Context,
+  params: z.infer<ReturnType<typeof getCreditInfoParameters>>,
 ): Promise<Result<CreditAccount>> => {
   try {
     const address = params.address ? (params.address as Address) : undefined;
@@ -112,12 +121,15 @@ export const getCreditInfo = async (
 
 /**
  * Buys credit for the current user.
+ * @param recall - The Recall client.
+ * @param _context - The context to provide to the function.
+ * @param params - The function parameters.
  * @returns The transaction hash of the credit purchase.
  */
 export const buyCredit = async (
   recall: RecallClient,
-  context: Context,
-  params: z.infer<typeof buyCreditParameters>,
+  _context: Context,
+  params: z.infer<ReturnType<typeof buyCreditParameters>>,
 ): Promise<Result<string>> => {
   try {
     const to = params.to ? (params.to as Address) : undefined;
@@ -141,12 +153,15 @@ export const buyCredit = async (
 
 /**
  * Creates a new bucket for the current user.
+ * @param recall - The Recall client.
+ * @param _context - The context to provide to the function.
+ * @param params - The function parameters.
  * @returns The bucket address and transaction hash.
  */
 export const createBucket = async (
   recall: RecallClient,
-  context: Context,
-  params: z.infer<typeof createBucketParameters>,
+  _context: Context,
+  params: z.infer<ReturnType<typeof createBucketParameters>>,
 ): Promise<Result<{ bucket: Address; txHash: string }>> => {
   try {
     const metadata = params.metadata ?? {};
@@ -176,12 +191,15 @@ export const createBucket = async (
 
 /**
  * Gets or creates a bucket for the current user.
+ * @param recall - The Recall client.
+ * @param _context - The context to provide to the function.
+ * @param params - The function parameters.
  * @returns The bucket address and transaction hash.
  */
 export const getOrCreateBucket = async (
   recall: RecallClient,
-  context: Context,
-  params: z.infer<typeof getOrCreateBucketParameters>,
+  _context: Context,
+  params: z.infer<ReturnType<typeof getOrCreateBucketParameters>>,
 ): Promise<Result<{ bucket: Address; tx: string }>> => {
   try {
     // Try to find the bucket by alias
@@ -223,25 +241,25 @@ export const getOrCreateBucket = async (
 
 /**
  * Adds an object to a bucket.
+ * @param recall - The Recall client.
+ * @param _context - The context to provide to the function.
+ * @param params - The function parameters.
  * @returns The transaction hash of the object addition.
  */
 export const addObject = async (
   recall: RecallClient,
-  context: Context,
-  params: z.infer<typeof addObjectParameters>,
+  _context: Context,
+  params: z.infer<ReturnType<typeof addObjectParameters>>,
 ): Promise<Result<{ txHash: string }>> => {
   try {
     const metadata = params.metadata ?? {};
-    const dataToStore =
-      typeof params.data === "string"
-        ? new TextEncoder().encode(params.data)
-        : params.data;
+    const data = new TextEncoder().encode(params.data);
 
     const { meta } = await recall
       .bucketManager()
-      .add(params.bucket as Address, params.key, dataToStore, {
+      .add(params.bucket as Address, params.key, data, {
         overwrite: params.overwrite ?? false,
-        metadata: { ...metadata },
+        metadata,
       });
     if (!meta?.tx) {
       return { success: false, error: "Transaction not found" };
@@ -260,25 +278,26 @@ export const addObject = async (
 
 /**
  * Gets an object from a bucket.
- * @returns The object.
+ * @param recall - The Recall client.
+ * @param _context - The context to provide to the function.
+ * @param params - The function parameters.
+ * @returns The object as a string value.
  */
 export const getObject = async (
   recall: RecallClient,
-  context: Context,
-  params: z.infer<typeof getObjectParameters>,
-): Promise<Result<string | Uint8Array>> => {
+  _context: Context,
+  params: z.infer<ReturnType<typeof getObjectParameters>>,
+): Promise<Result<string>> => {
   try {
-    const { result } = await recall
+    const { result: object } = await recall
       .bucketManager()
       .get(params.bucket as Address, params.key);
 
-    if (!result) {
+    if (!object) {
       return { success: false, error: "Object not found" };
     }
-
-    return params.outputType === "string" || params.outputType === undefined
-      ? { success: true, result: new TextDecoder().decode(result) }
-      : { success: true, result };
+    const result = new TextDecoder().decode(object);
+    return { success: true, result };
   } catch (error) {
     if (error instanceof Error) {
       return {
@@ -292,12 +311,15 @@ export const getObject = async (
 
 /**
  * Queries objects in a bucket.
+ * @param recall - The Recall client.
+ * @param _context - The context to provide to the function.
+ * @param params - The function parameters.
  * @returns The query result.
  */
 export const queryObjects = async (
   recall: RecallClient,
-  context: Context,
-  params: z.infer<typeof queryObjectsParameters>,
+  _context: Context,
+  params: z.infer<ReturnType<typeof queryObjectsParameters>>,
 ): Promise<Result<QueryResult>> => {
   try {
     const { result } = await recall

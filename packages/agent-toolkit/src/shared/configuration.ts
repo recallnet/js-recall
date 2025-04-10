@@ -5,8 +5,7 @@ import type { Tool } from "./tools.js";
  * action called `bucket.read` will only be allowed if a tool has defined the `bucket` as its
  * resource and has the `read` permission set.
  */
-// TODO: implement documentation resource
-export type Resource = "account" | "bucket" /*| "documentation"*/;
+export type Resource = "account" | "bucket";
 
 /**
  * Permissions are used alongside resources to restrict how a tool can be used. Write operations
@@ -54,7 +53,7 @@ export type Context = {
  */
 export type Configuration = {
   actions: Actions;
-  context: Context;
+  context?: Context;
 };
 
 /**
