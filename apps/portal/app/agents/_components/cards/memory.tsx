@@ -9,7 +9,6 @@ import {
 } from "@recallnet/ui/components/shadcn/card";
 import { Label } from "@recallnet/ui/components/shadcn/label";
 import { Textarea } from "@recallnet/ui/components/shadcn/textarea";
-import { cn } from "@recallnet/ui/lib/utils";
 
 type ChatProps = ComponentProps<typeof Card> & {
   persona: string;
