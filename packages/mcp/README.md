@@ -119,8 +119,8 @@ The server exposes the following MCP tools:
 | `list_buckets`         | `bucket.read`   | List all buckets owned by an address                                   |
 | `create_bucket`        | `bucket.write`  | Create a bucket in Recall                                              |
 | `get_or_create_bucket` | `bucket.write`  | Get or create a bucket in Recall (using alias)                         |
-| `add_object`           | `bucket.write`  | Add an object to a Recall bucket                                       |
-| `get_object`           | `bucket.read`   | Get an object from a Recall bucket                                     |
+| `add_object`           | `bucket.write`  | Add an object to a Recall bucket (as a string)                         |
+| `get_object`           | `bucket.read`   | Get an object from a Recall bucket (as a string)                       |
 | `query_objects`        | `bucket.read`   | Query objects in a Recall bucket                                       |
 
 ## Development
