@@ -22,6 +22,9 @@ import { Result } from "./util.js";
 
 /**
  * Gets the account information for the current user.
+ * @param recall - The Recall client.
+ * @param _context - The context to provide to the function.
+ * @param params - The function parameters.
  * @returns The account information.
  */
 export const getAccountInfo = async (
@@ -52,6 +55,9 @@ export const getAccountInfo = async (
 
 /**
  * Lists all buckets for the current user.
+ * @param recall - The Recall client.
+ * @param _context - The context to provide to the function.
+ * @param params - The function parameters.
  * @returns The list of buckets.
  */
 export const listBuckets = async (
@@ -82,6 +88,9 @@ export const listBuckets = async (
 
 /**
  * Gets the credit information for the current user.
+ * @param recall - The Recall client.
+ * @param _context - The context to provide to the function.
+ * @param params - The function parameters.
  * @returns The credit information.
  */
 export const getCreditInfo = async (
@@ -112,6 +121,9 @@ export const getCreditInfo = async (
 
 /**
  * Buys credit for the current user.
+ * @param recall - The Recall client.
+ * @param _context - The context to provide to the function.
+ * @param params - The function parameters.
  * @returns The transaction hash of the credit purchase.
  */
 export const buyCredit = async (
@@ -141,6 +153,9 @@ export const buyCredit = async (
 
 /**
  * Creates a new bucket for the current user.
+ * @param recall - The Recall client.
+ * @param _context - The context to provide to the function.
+ * @param params - The function parameters.
  * @returns The bucket address and transaction hash.
  */
 export const createBucket = async (
@@ -176,6 +191,9 @@ export const createBucket = async (
 
 /**
  * Gets or creates a bucket for the current user.
+ * @param recall - The Recall client.
+ * @param _context - The context to provide to the function.
+ * @param params - The function parameters.
  * @returns The bucket address and transaction hash.
  */
 export const getOrCreateBucket = async (
@@ -223,6 +241,9 @@ export const getOrCreateBucket = async (
 
 /**
  * Adds an object to a bucket.
+ * @param recall - The Recall client.
+ * @param _context - The context to provide to the function.
+ * @param params - The function parameters.
  * @returns The transaction hash of the object addition.
  */
 export const addObject = async (
@@ -260,6 +281,9 @@ export const addObject = async (
 
 /**
  * Gets an object from a bucket.
+ * @param recall - The Recall client.
+ * @param _context - The context to provide to the function.
+ * @param params - The function parameters.
  * @returns The object.
  */
 export const getObject = async (
@@ -292,6 +316,9 @@ export const getObject = async (
 
 /**
  * Queries objects in a bucket.
+ * @param recall - The Recall client.
+ * @param _context - The context to provide to the function.
+ * @param params - The function parameters.
  * @returns The query result.
  */
 export const queryObjects = async (
