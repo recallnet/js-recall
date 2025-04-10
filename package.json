@@ -21,8 +21,8 @@
     "@recallnet/eslint-config": "workspace:*",
     "@recallnet/typescript-config": "workspace:*",
     "@trivago/prettier-plugin-sort-imports": "^5.2.1",
-    "prettier": "^3.2.5",
-    "prettier-plugin-tailwindcss": "^0.6.10",
+    "prettier": "^3.5.3",
+    "prettier-plugin-tailwindcss": "^0.6.11",
     "turbo": "^2.3.7",
     "typescript": "^5.7.3"
   },

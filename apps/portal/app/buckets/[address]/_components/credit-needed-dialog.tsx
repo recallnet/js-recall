@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { Button } from "@recallnet/ui/components/button";
+import { Button } from "@recallnet/ui/components/shadcn/button";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@recallnet/ui/components/dialog";
+} from "@recallnet/ui/components/shadcn/dialog";
 
 export default function CreditNeededDialog({
   open,

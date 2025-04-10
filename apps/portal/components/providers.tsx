@@ -9,7 +9,7 @@ import en from "javascript-time-ago/locale/en";
 import * as React from "react";
 import { WagmiProvider } from "wagmi";
 
-import { ThemeProvider } from "@recallnet/ui/recall/theme-provider";
+import { ThemeProvider } from "@recallnet/ui/components/theme-provider";
 
 import { config } from "@/lib/wagmi-config";
 

@@ -6,19 +6,18 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@recallnet/ui/components/card";
-import { Label } from "@recallnet/ui/components/label";
-import { Textarea } from "@recallnet/ui/components/textarea";
-import { cn } from "@recallnet/ui/lib/utils";
+} from "@recallnet/ui/components/shadcn/card";
+import { Label } from "@recallnet/ui/components/shadcn/label";
+import { Textarea } from "@recallnet/ui/components/shadcn/textarea";
 
 type ChatProps = ComponentProps<typeof Card> & {
   persona: string;
   human: string;
 };
 
-export function Memory({ className, persona, human, ...props }: ChatProps) {
+export function Memory({ persona, human, ...props }: ChatProps) {
   return (
-    <Card className={cn("rounded-none", className)} {...props}>
+    <Card {...props}>
       <CardHeader className="pb-3">
         <CardTitle>Core Memory</CardTitle>
         <CardDescription>

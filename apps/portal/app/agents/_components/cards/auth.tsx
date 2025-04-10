@@ -6,19 +6,18 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@recallnet/ui/components/card";
-import { Input } from "@recallnet/ui/components/input";
-import { Label } from "@recallnet/ui/components/label";
-import { cn } from "@recallnet/ui/lib/utils";
+} from "@recallnet/ui/components/shadcn/card";
+import { Input } from "@recallnet/ui/components/shadcn/input";
+import { Label } from "@recallnet/ui/components/shadcn/label";
 
 type ChatProps = ComponentProps<typeof Card> & {
   apiUrl: string;
   apiKey: string;
 };
 
-export function Auth({ className, apiUrl, apiKey, ...props }: ChatProps) {
+export function Auth({ apiUrl, apiKey, ...props }: ChatProps) {
   return (
-    <Card className={cn("rounded-none", className)} {...props}>
+    <Card {...props}>
       <CardHeader className="pb-3">
         <CardTitle>Agent Authentication</CardTitle>
         <CardDescription>

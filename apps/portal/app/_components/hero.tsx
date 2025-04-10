@@ -8,7 +8,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@recallnet/ui/components/card";
+} from "@recallnet/ui/components/shadcn/card";
 
 import Slash from "./slash";
 
@@ -57,14 +57,14 @@ export default function Hero() {
   const gridInfo = getGridInfo(dimensions);
 
   return (
-    <div className="flex flex-1 p-[2px]">
+    <div className="flex-1 p-[2px]">
       <div
         ref={observedElementRef}
         className="relative h-full w-full overflow-hidden"
       >
         {getItems(gridInfo.columns, gridInfo.rows)}
       </div>
-      <Card className="bg-background/85 supports-[backdrop-filter]:bg-background/85 fixed left-1/2 top-1/2 m-0 max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-none p-4 backdrop-blur">
+      <Card className="bg-background/85 supports-[backdrop-filter]:bg-background/85 min-w-xs fixed left-1/2 top-1/2 m-0 w-1/2 max-w-xl -translate-x-1/2 -translate-y-1/2 p-4 backdrop-blur">
         <CardHeader>
           <CardTitle className="font-mono text-3xl uppercase">
             &gt; Networked <span className="text-[#2962C0]">intelligence</span>{" "}

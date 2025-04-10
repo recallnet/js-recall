@@ -1,5 +1,5 @@
-import { RecallLogo } from "@recallnet/ui/recall/logos/recall-logo";
-import { ThemeToggle } from "@recallnet/ui/recall/theme-toggle";
+import { RecallLogo } from "@recallnet/ui/components/logos/recall-logo";
+import { ThemeToggle } from "@recallnet/ui/components/theme-toggle";
 
 import RequestTokensForm from "./_components/request-tokens-form";
 

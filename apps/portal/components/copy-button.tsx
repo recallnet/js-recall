@@ -1,7 +1,7 @@
 import { Copy, Share } from "lucide-react";
 import React from "react";
 
-import { useToast } from "@recallnet/ui/hooks/use-toast";
+import { toast } from "@recallnet/ui/components/toast";
 import { cn } from "@recallnet/ui/lib/utils";
 
 // Extend SVGProps for direct SVG element attributes
@@ -20,8 +20,6 @@ export function CopyButton({
   className, // This will now apply to the SVG
   ...rest // Capture remaining SVG props
 }: CopyButtonProps) {
-  const { toast } = useToast();
-
   // Determine defaults based on type
   const defaultTooltip = type === "share" ? "Copy link" : "Copy to clipboard";
   const defaultSuccessMessage =
@@ -34,7 +32,7 @@ export function CopyButton({
     e.preventDefault();
     e.stopPropagation(); // Prevent click event from bubbling up
     navigator.clipboard.writeText(value);
-    toast({ title: successMessage });
+    toast.success(successMessage);
   };
 
   const Icon = type === "share" ? Share : Copy;

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { InfiniteScroll } from "@recallnet/ui/recall/infinite-scroll";
+import { InfiniteScroll } from "@recallnet/ui/components/infinite-scroll";
 
 import type { AgentActivity } from "@/types/agent-activity";
 import { fetchAgentActivity } from "@/utils/fetch-agent-activity";

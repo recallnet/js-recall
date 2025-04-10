@@ -6,25 +6,19 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@recallnet/ui/components/card";
-import { Input } from "@recallnet/ui/components/input";
-import { Label } from "@recallnet/ui/components/label";
-import { Textarea } from "@recallnet/ui/components/textarea";
-import { cn } from "@recallnet/ui/lib/utils";
+} from "@recallnet/ui/components/shadcn/card";
+import { Input } from "@recallnet/ui/components/shadcn/input";
+import { Label } from "@recallnet/ui/components/shadcn/label";
+import { Textarea } from "@recallnet/ui/components/shadcn/textarea";
 
 type ChatProps = ComponentProps<typeof Card> & {
   name: string;
   systemInstructions: string;
 };
 
-export function Settings({
-  className,
-  name,
-  systemInstructions,
-  ...props
-}: ChatProps) {
+export function Settings({ name, systemInstructions, ...props }: ChatProps) {
   return (
-    <Card className={cn("rounded-none", className)} {...props}>
+    <Card {...props}>
       <CardHeader className="pb-3">
         <CardTitle>Agent Settings</CardTitle>
         <CardDescription>General agenent information.</CardDescription>
