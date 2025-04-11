@@ -18,7 +18,11 @@ import {
   bucketManagerAddress,
   iMachineFacadeAbi,
 } from "@recallnet/contracts";
-import { MAX_OBJECT_SIZE, MIN_TTL } from "@recallnet/network-constants";
+import {
+  MAX_OBJECT_SIZE,
+  MAX_QUERY_LIMIT,
+  MIN_TTL,
+} from "@recallnet/network-constants";
 
 import { RecallClient } from "../client.js";
 import {
@@ -28,6 +32,7 @@ import {
   CreateBucketError,
   InvalidValue,
   ObjectNotFound,
+  OutOfGasError,
   UnhandledBucketError,
   isActorNotFoundError,
 } from "../errors.js";
@@ -96,14 +101,32 @@ export type QueryResultRaw = ContractFunctionReturnType<
   ]
 >;
 
+// Object value in query response (converted `metadata` to normal javascript object)
+export type QueryObjectValue = Omit<
+  QueryResultRaw["objects"][number]["state"],
+  "metadata"
+> & {
+  metadata: Record<string, unknown>;
+};
+
+// Object in query response
+export type QueryResultObject = {
+  key: QueryResultRaw["objects"][number]["key"];
+  state: QueryObjectValue;
+};
+
 // Converts metadata Solidity struct to normal javascript object
 export type QueryResult = Omit<QueryResultRaw, "objects"> & {
-  objects: {
-    key: QueryResultRaw["objects"][number]["key"];
-    state: Omit<QueryResultRaw["objects"][number]["state"], "metadata"> & {
-      metadata: Record<string, unknown>;
-    };
-  }[];
+  objects: QueryResultObject[];
+};
+
+// Options for query()
+export type QueryOptions = {
+  prefix?: string;
+  delimiter?: string;
+  startKey?: string;
+  limit?: number;
+  blockNumber?: bigint;
 };
 
 // Note: this event stems from the underlying machine facade contract; creating a bucket
@@ -302,8 +325,10 @@ export class BucketManager {
   }
 
   // Add an object to a bucket inner
-  // TODO: should this be private and used internally by `add`
-  async addInner(bucket: Address, addParams: AddObjectParams): Promise<Result> {
+  private async executeAdd(
+    bucket: Address,
+    addParams: AddObjectParams,
+  ): Promise<Result> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for adding an object");
     }
@@ -381,7 +406,7 @@ export class BucketManager {
       overwrite: options?.overwrite ?? false,
       from,
     } as AddObjectParams;
-    return await this.addInner(bucket, addParams);
+    return await this.executeAdd(bucket, addParams);
   }
 
   // Delete an object from a bucket
@@ -536,13 +561,64 @@ export class BucketManager {
   // Query objects in a bucket
   async query(
     bucket: Address,
-    options?: {
-      prefix?: string;
-      delimiter?: string;
-      startKey?: string;
-      limit?: number;
-      blockNumber?: bigint;
-    },
+    options?: QueryOptions,
+  ): Promise<Result<QueryResult>> {
+    const requestedLimit = options?.limit ?? MAX_QUERY_LIMIT;
+
+    // If within MAX_QUERY_LIMIT, use a single query
+    if (requestedLimit <= MAX_QUERY_LIMIT) {
+      return this.executeQuery(bucket, options);
+    }
+
+    // Otherwise, paginate and collect results. Note: this is needed to avoid
+    // hitting gas limits and failing to retrieve all objects.
+    try {
+      const allObjects: Array<QueryResultObject> = [];
+      let currentKey = options?.startKey;
+      while (true) {
+        const remainingLimit = requestedLimit - allObjects.length;
+        const batchLimit = Math.min(MAX_QUERY_LIMIT, remainingLimit);
+
+        const batchResult = await this.executeQuery(bucket, {
+          ...options,
+          startKey: currentKey,
+          limit: batchLimit,
+        });
+        allObjects.push(...batchResult.result.objects);
+
+        // If no `nextKey` or we've reached the limit, we've collected all objects
+        if (
+          !batchResult.result.nextKey ||
+          allObjects.length >= requestedLimit
+        ) {
+          return {
+            result: {
+              objects: allObjects,
+              commonPrefixes: batchResult.result.commonPrefixes,
+              nextKey: batchResult.result.nextKey,
+            },
+          };
+        }
+
+        // Update `startKey` for next iteration
+        currentKey = batchResult.result.nextKey;
+      }
+    } catch (error: unknown) {
+      if (
+        error instanceof BucketNotFound ||
+        error instanceof OutOfGasError ||
+        error instanceof UnhandledBucketError
+      ) {
+        throw error;
+      }
+      throw new UnhandledBucketError(`Failed to query bucket: ${error}`);
+    }
+  }
+
+  // Helper method for single query execution
+  private async executeQuery(
+    bucket: Address,
+    options?: QueryOptions,
   ): Promise<Result<QueryResult>> {
     try {
       const args = [
@@ -550,7 +626,7 @@ export class BucketManager {
         options?.prefix ?? "",
         options?.delimiter ?? "/",
         options?.startKey ?? "",
-        BigInt(options?.limit ?? 100),
+        BigInt(options?.limit ?? MAX_QUERY_LIMIT),
       ] satisfies QueryObjectsParams;
       const { objects, commonPrefixes, nextKey } =
         (await this.contract.read.queryObjects(args, {
@@ -572,10 +648,18 @@ export class BucketManager {
       return { result };
     } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
-        // TODO: We're optimistically assuming an error means the bucket doesn't exist
-        // 00: t0134 (method 3844450837) -- contract reverted (33)
-        // 01: t0134 (method 6) -- contract reverted (33)
-        throw new BucketNotFound(bucket);
+        if (error.message.includes("contract reverted")) {
+          const isOutOfGasError =
+            error.message.includes("wasm `unreachable` instruction executed") ||
+            error.message.includes("out of gas");
+          if (isOutOfGasError) {
+            throw new OutOfGasError(error.message);
+          }
+          // We're optimistically assuming this error means the bucket doesn't exist:
+          // 00: t0134 (method 3844450837) -- contract reverted (33)
+          // 01: t0134 (method 6) -- contract reverted (33)
+          throw new BucketNotFound(bucket);
+        }
       }
       throw new UnhandledBucketError(`Failed to query bucket: ${error}`);
     }

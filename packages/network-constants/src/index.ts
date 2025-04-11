@@ -163,6 +163,11 @@ export const MIN_TTL = 3600n; // one hour
 export const MAX_OBJECT_SIZE = 5_000_000_000; // 5GB
 
 /**
+ * Maximum number of objects that can be returned in a single query (to avoid hitting gas limits).
+ */
+export const MAX_QUERY_LIMIT = 50;
+
+/**
  * Gateway Manager Facet contract address for the Testnet parent chain.
  */
 export const TESTNET_PARENT_GATEWAY_MANAGER_FACET_ADDRESS =
