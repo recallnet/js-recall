@@ -149,11 +149,13 @@ export class CreditManager {
         gasFeeLimit,
         ttl,
       ] satisfies ApproveCreditParams;
+      const gasPrice = await this.client.publicClient.getGasPrice();
       const { request } = await this.contract.simulate.approveCredit<
         Chain,
         Account
       >(args, {
         account: this.client.walletClient.account,
+        gasPrice,
       });
       const hash = await this.client.walletClient.writeContract(request);
       const tx = await this.client.publicClient.waitForTransactionReceipt({
@@ -190,12 +192,14 @@ export class CreditManager {
     try {
       const toAddress = to || this.client.walletClient.account.address;
       const args = [toAddress] satisfies BuyCreditParams;
+      const gasPrice = await this.client.publicClient.getGasPrice();
       const { request } = await this.contract.simulate.buyCredit<
         Chain,
         Account
       >(args, {
         value: amount,
         account: this.client.walletClient.account,
+        gasPrice,
       });
       const hash = await this.contract.write.buyCredit(request);
       const tx = await this.client.publicClient.waitForTransactionReceipt({
@@ -233,11 +237,13 @@ export class CreditManager {
         to,
         requiredCaller,
       ] satisfies RevokeCreditParams;
+      const gasPrice = await this.client.publicClient.getGasPrice();
       const { request } = await this.contract.simulate.revokeCredit<
         Chain,
         Account
       >(args, {
         account: this.client.walletClient.account,
+        gasPrice,
       });
       // TODO: calling `this.contract.write.revokeCredit(...)` doesn't work, for some reason
       const hash = await this.client.walletClient.writeContract(request);
@@ -271,11 +277,13 @@ export class CreditManager {
     const fromAddress = from || this.client.walletClient.account.address;
     try {
       const args = [fromAddress, sponsor] satisfies SetAccountSponsorParams;
+      const gasPrice = await this.client.publicClient.getGasPrice();
       const { request } = await this.contract.simulate.setAccountSponsor<
         Chain,
         Account
       >(args, {
         account: this.client.walletClient.account,
+        gasPrice,
       });
       // TODO: calling `this.contract.write.setAccountSponsor(...)` doesn't work, for some reason
       const hash = await this.client.walletClient.writeContract(request);

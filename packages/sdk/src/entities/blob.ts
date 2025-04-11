@@ -181,10 +181,12 @@ export class BlobManager {
     }
     try {
       const args = [addParams] satisfies AddBlobFullParams;
+      const gasPrice = await this.client.publicClient.getGasPrice();
       const { request } = await this.contract.simulate.addBlob<Chain, Account>(
         args,
         {
           account: this.client.walletClient.account,
+          gasPrice,
         },
       );
       // TODO: calling `this.contract.write.addBlob(...)` doesn't work, for some reason
@@ -253,11 +255,13 @@ export class BlobManager {
         subscriptionId,
         from,
       ] satisfies DeleteBlobParams;
+      const gasPrice = await this.client.publicClient.getGasPrice();
       const { request } = await this.contract.simulate.deleteBlob<
         Chain,
         Account
       >(args, {
         account: this.client.walletClient.account,
+        gasPrice,
       });
       // TODO: calling `this.contract.write.deleteBlob(...)` doesn't work, for some reason
       const hash = await this.client.walletClient.writeContract(request);
@@ -331,11 +335,13 @@ export class BlobManager {
         );
       }
       const params = [oldHash, addParams] satisfies OverwriteBlobParams;
+      const gasPrice = await this.client.publicClient.getGasPrice();
       const { request } = await this.contract.simulate.overwriteBlob<
         Chain,
         Account
       >(params, {
         account: this.client.walletClient.account,
+        gasPrice,
       });
       // TODO: calling `this.contract.write.overwriteBlob(...)` doesn't work, for some reason
       const hash = await this.client.walletClient.writeContract(request);

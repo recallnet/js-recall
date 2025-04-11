@@ -232,11 +232,13 @@ export class BucketManager {
         owner ?? this.client.walletClient.account.address,
         metadata ? convertMetadataToAbiParams(metadata) : [],
       ] satisfies CreateBucketParams;
+      const gasPrice = await this.client.publicClient.getGasPrice();
       const { request } = await this.contract.simulate.createBucket<
         Chain,
         Account
       >(args, {
         account: this.client.walletClient.account,
+        gasPrice,
       });
       const hash = await this.contract.write.createBucket(request);
       const tx = await this.client.publicClient.waitForTransactionReceipt({
@@ -307,11 +309,13 @@ export class BucketManager {
     }
     try {
       const args = [bucket, addParams] satisfies AddObjectFullParams;
+      const gasPrice = await this.client.publicClient.getGasPrice();
       const { request } = await this.contract.simulate.addObject<
         Chain,
         Account
       >(args, {
         account: this.client.walletClient.account,
+        gasPrice,
       });
       // TODO: calling `this.contract.write.addObject(...)` doesn't work, for some reason
       const hash = await this.client.walletClient.writeContract(request);
@@ -388,11 +392,13 @@ export class BucketManager {
     try {
       const from = this.client.walletClient.account.address;
       const args = [bucket, key, from] satisfies DeleteObjectParams;
+      const gasPrice = await this.client.publicClient.getGasPrice();
       const { request } = await this.contract.simulate.deleteObject<
         Chain,
         Account
       >(args, {
         account: this.client.walletClient.account,
+        gasPrice,
       });
       // TODO: calling `this.contract.write.deleteObject(...)` doesn't work, for some reason
       const hash = await this.client.walletClient.writeContract(request);

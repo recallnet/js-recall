@@ -103,12 +103,14 @@ export class GatewayManager {
     try {
       const recipientAddress = recipient || walletClient.account.address;
       const args = fundParamsToTyped(recipientAddress, forSubnet, amount);
+      const gasPrice = await publicClient.getGasPrice();
       const { request } = await this.getContract(
         publicClient,
         walletClient,
         contractAddress,
       ).simulate.fundWithToken<Chain, Account>(args, {
         account: walletClient.account,
+        gasPrice,
       });
       // TODO: calling `this.getContract(client, contractAddress).write.fundWithToken(...)` doesn't work, for some reason
       const hash = await walletClient.writeContract(request);
@@ -138,6 +140,7 @@ export class GatewayManager {
     try {
       const address = recipient || walletClient.account.address;
       const args = releaseParamsToTyped(address);
+      const gasPrice = await publicClient.getGasPrice();
       const { request } = await this.getContract(
         publicClient,
         walletClient,
@@ -145,6 +148,7 @@ export class GatewayManager {
       ).simulate.release<Chain, Account>(args, {
         account: walletClient.account,
         value: amount,
+        gasPrice,
       });
       // TODO: calling `this.getContract(client, contractAddress).write.release(...)` doesn't work, for some reason
       const hash = await walletClient.writeContract(request);
