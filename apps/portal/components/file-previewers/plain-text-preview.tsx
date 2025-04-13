@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useChainId } from "wagmi";
 
 import { getChain, getObjectApiUrl } from "@recallnet/chains";
-import { Button } from "@recallnet/ui/components/shadcn/button";
+import { Button } from "@recallnet/ui/components/button";
 import { toast } from "@recallnet/ui/components/toast";
 
 import { FilePreviewerProps } from "./types";

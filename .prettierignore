@@ -1,7 +1,7 @@
 packages/contracts/contracts
 **/pnpm-lock.yaml
 packages/contracts/src/generated.ts
-packages/ui/src/components
+packages/ui/src/components/shadcn
 packages/ui/src/hooks
 packages/ui/src/lib
 packages/ui/src/styles

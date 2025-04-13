@@ -17,7 +17,7 @@ import {
   useApproveCredit,
   useCreditAccount,
 } from "@recallnet/sdkx/react/credits";
-import { Button } from "@recallnet/ui/components/shadcn/button";
+import { Button } from "@recallnet/ui/components/button";
 import {
   Dialog,
   DialogContent,

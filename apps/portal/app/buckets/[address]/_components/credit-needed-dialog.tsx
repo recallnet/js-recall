@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { Button } from "@recallnet/ui/components/shadcn/button";
+import { Button } from "@recallnet/ui/components/button";
 import {
   Dialog,
   DialogContent,

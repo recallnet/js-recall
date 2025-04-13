@@ -1,6 +1,6 @@
 import { ComponentProps } from "react";
 
-import { Button } from "@recallnet/ui/components/shadcn/button";
+import { Button } from "@recallnet/ui/components/button";
 import {
   Card,
   CardContent,

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useAccount, useWaitForTransactionReceipt } from "wagmi";
 
 import { useCreateBucket, useListBuckets } from "@recallnet/sdkx/react/buckets";
-import { Button } from "@recallnet/ui/components/shadcn/button";
+import { Button } from "@recallnet/ui/components/button";
 import {
   Dialog,
   DialogContent,
@@ -98,7 +98,7 @@ export default function Buckets() {
               null,
               2,
             )}
-            className="min-h-32"
+            className="min-h-32 font-mono"
           />
           <span className="text-muted-foreground text-xs">
             Metadata is optional and must be a JSON object with string property

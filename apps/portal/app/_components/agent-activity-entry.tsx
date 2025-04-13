@@ -3,8 +3,8 @@
 import { ChevronDown, ChevronUp, Clock, FileText } from "lucide-react";
 import { useState } from "react";
 
+import { Button } from "@recallnet/ui/components/button";
 import { Badge } from "@recallnet/ui/components/shadcn/badge";
-import { Button } from "@recallnet/ui/components/shadcn/button";
 import { Card, CardContent } from "@recallnet/ui/components/shadcn/card";
 
 import { formatBytes } from "@/lib/format-bytes";

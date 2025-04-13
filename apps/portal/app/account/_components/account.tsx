@@ -17,8 +17,8 @@ import {
   useDeleteAccountSponsor,
   useSetAccountSponsor,
 } from "@recallnet/sdkx/react/credits";
+import { Button } from "@recallnet/ui/components/button";
 import BuyCreditsDialog from "@recallnet/ui/components/buy-credits-dialog";
-import { Button } from "@recallnet/ui/components/shadcn/button";
 import {
   Card,
   CardContent,

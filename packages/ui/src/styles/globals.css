@@ -122,4 +122,9 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Added this because shadcn/ui removed button pointer behavior with Tailwind v4 */
+  button:not([disabled]),
+  [role="button"]:not([disabled]) {
+    cursor: pointer;
+  }
 }

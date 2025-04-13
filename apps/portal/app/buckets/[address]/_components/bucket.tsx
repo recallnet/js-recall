@@ -9,6 +9,7 @@ import { Address } from "viem";
 import { displayAddress } from "@recallnet/address-utils/display";
 import { numBlocksToSeconds } from "@recallnet/bigint-utils/conversions";
 import { useCreditAccount } from "@recallnet/sdkx/react/credits";
+import { Button } from "@recallnet/ui/components/button";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -16,7 +17,6 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator,
 } from "@recallnet/ui/components/shadcn/breadcrumb";
-import { Button } from "@recallnet/ui/components/shadcn/button";
 import { cn } from "@recallnet/ui/lib/utils";
 
 import { CopyButton } from "@/components/copy-button";

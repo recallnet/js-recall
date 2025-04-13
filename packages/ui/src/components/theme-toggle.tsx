@@ -4,7 +4,7 @@ import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { ComponentProps } from "react";
 
-import { Button } from "@recallnet/ui/components/shadcn/button";
+import { Button } from "@recallnet/ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuContent,

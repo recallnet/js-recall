@@ -18,7 +18,7 @@ import {
 } from "@recallnet/bigint-utils/conversions";
 import { useCreditAccount } from "@recallnet/sdkx/react/credits";
 import BuyCreditsDialog from "@recallnet/ui/components/buy-credits-dialog";
-import { Button } from "@recallnet/ui/components/shadcn/button";
+import { Button } from "@recallnet/ui/components/button";
 import {
   Dialog,
   DialogContent,

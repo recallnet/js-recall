@@ -9,7 +9,7 @@ import { useAccount } from "wagmi";
 import { z } from "zod";
 
 import { useAddFile } from "@recallnet/sdkx/react/buckets";
-import { Button } from "@recallnet/ui/components/shadcn/button";
+import { Button } from "@recallnet/ui/components/button";
 import {
   Dialog,
   DialogContent,
