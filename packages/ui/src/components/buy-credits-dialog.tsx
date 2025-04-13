@@ -15,10 +15,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@recallnet/ui/components/dialog";
-import { Input } from "@recallnet/ui/components/input";
-import { Label } from "@recallnet/ui/components/label";
-import { useToast } from "@recallnet/ui/hooks/use-toast";
+} from "@recallnet/ui/components/shadcn/dialog";
+import { Input } from "@recallnet/ui/components/shadcn/input";
+import { Label } from "@recallnet/ui/components/shadcn/label";
+import { toast } from "@recallnet/ui/components/toast";
 
 export default function BuyCreditsDialog({
   open,
@@ -27,8 +27,6 @@ export default function BuyCreditsDialog({
   open: boolean;
   setOpen: (open: boolean) => void;
 }) {
-  const { toast } = useToast();
-
   const [gbMonths, setGbMonths] = useState("0");
 
   const { address } = useAccount();
@@ -64,12 +62,11 @@ export default function BuyCreditsDialog({
 
   useEffect(() => {
     if (buyCreditError) {
-      toast({
-        title: "Error buying credits",
+      toast.error("Error buying credits", {
         description: buyCreditError.message,
       });
     }
-  }, [buyCreditError, toast]);
+  }, [buyCreditError]);
 
   const handleBuyCredits = async () => {
     buyCredit(attoRecallToSpend);

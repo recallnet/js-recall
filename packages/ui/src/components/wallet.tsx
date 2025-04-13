@@ -18,16 +18,16 @@ import {
 } from "@recallnet/bigint-utils/conversions";
 import { useCreditAccount } from "@recallnet/sdkx/react/credits";
 import { Button } from "@recallnet/ui/components/button";
+import BuyCreditsDialog from "@recallnet/ui/components/buy-credits-dialog";
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@recallnet/ui/components/dialog";
-import { useToast } from "@recallnet/ui/hooks/use-toast";
+} from "@recallnet/ui/components/shadcn/dialog";
+import { toast } from "@recallnet/ui/components/toast";
 import { cn } from "@recallnet/ui/lib/utils";
-import BuyCreditsDialog from "@recallnet/ui/recall/buy-credits-dialog";
 
 type Props = {} & HTMLAttributes<HTMLDivElement>;
 
@@ -44,8 +44,6 @@ export const Wallet = ({ className, ...props }: Props) => {
 
   const [buyCreditsOpen, setBuyCreditsOpen] = useState(false);
 
-  const { toast } = useToast();
-
   const { chainId } = useAccount();
   const { switchChain } = useSwitchChain();
   const config = useConfig();
@@ -60,12 +58,11 @@ export const Wallet = ({ className, ...props }: Props) => {
 
   useEffect(() => {
     if (creditAccountError) {
-      toast({
-        title: "Error fetching credit account",
+      toast.error("Error fetching credit account", {
         description: creditAccountError.message,
       });
     }
-  }, [creditAccountError, toast]);
+  }, [creditAccountError]);
 
   const balanceDisplay = attoRecallToRecallDisplay(
     balance.data?.value ?? 0n,
@@ -86,9 +83,7 @@ export const Wallet = ({ className, ...props }: Props) => {
 
   const handleCopyAddress = async () => {
     await navigator.clipboard.writeText(address ?? "");
-    toast({
-      title: "Address Copied!",
-    });
+    toast.success("Address Copied!");
     setAccountOpen(false);
   };
 

@@ -5,7 +5,7 @@
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 
-import CollapsedStringDisplay from "@recallnet/ui/recall/collapsed-string-display";
+import CollapsedStringDisplay from "@recallnet/ui/components/collapsed-string-display";
 
 import Metric from "@/components/metric";
 import { arrayToDisplay } from "@/lib/convert-matadata";

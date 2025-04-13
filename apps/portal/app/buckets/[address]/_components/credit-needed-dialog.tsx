@@ -9,7 +9,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@recallnet/ui/components/dialog";
+} from "@recallnet/ui/components/shadcn/dialog";
 
 export default function CreditNeededDialog({
   open,

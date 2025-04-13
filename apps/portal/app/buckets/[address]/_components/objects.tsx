@@ -5,8 +5,8 @@ import { Fragment, useEffect } from "react";
 import { Address } from "viem";
 
 import { useInfiniteQueryObjects } from "@recallnet/sdkx/react/buckets";
-import { useToast } from "@recallnet/ui/hooks/use-toast";
-import { InfiniteScroll } from "@recallnet/ui/recall/infinite-scroll";
+import { InfiniteScroll } from "@recallnet/ui/components/infinite-scroll";
+import { toast } from "@recallnet/ui/components/toast";
 
 import ObjectListItem from "./object-list-item";
 import PrefixListItem from "./prefix-list-item";
@@ -20,8 +20,6 @@ export default function Objects({
   path: string;
   delimiter: string;
 }) {
-  const { toast } = useToast();
-
   const {
     data: objectsRes,
     error: objectsError,
@@ -36,12 +34,11 @@ export default function Objects({
 
   useEffect(() => {
     if (objectsError) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: objectsError?.message,
       });
     }
-  }, [toast, objectsError]);
+  }, [objectsError]);
 
   return (
     <div className="flex flex-1 flex-col gap-4">

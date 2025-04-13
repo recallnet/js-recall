@@ -2,13 +2,13 @@ import { ChevronDown, ChevronUp, Database } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
+import CollapsedStringDisplay from "@recallnet/ui/components/collapsed-string-display";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "@recallnet/ui/components/card";
-import CollapsedStringDisplay from "@recallnet/ui/recall/collapsed-string-display";
+} from "@recallnet/ui/components/shadcn/card";
 
 import { arrayToDisplay } from "@/lib/convert-matadata";
 
@@ -25,7 +25,7 @@ interface Props {
 export default function BucketCard({ bucket }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   return (
-    <Card className="rounded-none">
+    <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-4">
           <Link

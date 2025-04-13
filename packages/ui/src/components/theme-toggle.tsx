@@ -10,7 +10,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@recallnet/ui/components/dropdown-menu";
+} from "@recallnet/ui/components/shadcn/dropdown-menu";
 
 type Props = ComponentProps<typeof Button>;
 

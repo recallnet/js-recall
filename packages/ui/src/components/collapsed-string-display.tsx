@@ -3,7 +3,7 @@
 import { Copy } from "lucide-react";
 import { HTMLAttributes } from "react";
 
-import { useToast } from "@recallnet/ui/hooks/use-toast";
+import { toast } from "@recallnet/ui/components/toast";
 import { cn } from "@recallnet/ui/lib/utils";
 
 type Props = HTMLAttributes<HTMLDivElement> & {
@@ -25,15 +25,13 @@ export default function CollapsedStringDisplay({
   className,
   ...rest
 }: Props) {
-  const { toast } = useToast();
-
   numChars = numChars ?? 4;
   separator = separator ?? "…";
 
   const handleCopy = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     navigator.clipboard.writeText(value);
-    toast({ title: copySuccessMessage ?? "Copied to clipboard" });
+    toast.success(copySuccessMessage ?? "Copied to clipboard");
   };
 
   return (

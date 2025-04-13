@@ -12,17 +12,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@recallnet/ui/components/dialog";
-import { Label } from "@recallnet/ui/components/label";
-import { Textarea } from "@recallnet/ui/components/textarea";
-import { useToast } from "@recallnet/ui/hooks/use-toast";
+} from "@recallnet/ui/components/shadcn/dialog";
+import { Label } from "@recallnet/ui/components/shadcn/label";
+import { Textarea } from "@recallnet/ui/components/shadcn/textarea";
+import { toast } from "@recallnet/ui/components/toast";
 
 import { dislpayToRecord } from "@/lib/convert-matadata";
 
 import BucketCard from "./bucket-card";
 
 export default function Buckets() {
-  const { toast } = useToast();
   const [newBucketOpen, setNewBucketOpen] = useState(false);
   const [metadata, setMetadata] = useState("");
 
@@ -59,16 +58,14 @@ export default function Buckets() {
 
   useEffect(() => {
     if (listBucketsError || createBucketError || createBucketTxnError) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description:
           listBucketsError?.message ||
           createBucketError?.message ||
           createBucketTxnError?.message,
-        variant: "destructive",
       });
     }
-  }, [createBucketError, createBucketTxnError, listBucketsError, toast]);
+  }, [createBucketError, createBucketTxnError, listBucketsError]);
 
   const createPending = createBucketPending || createBucketTxnLoading;
 
@@ -78,11 +75,9 @@ export default function Buckets() {
       const jsonMetadata = dislpayToRecord(metadata);
       createBucket({ owner: address, metadata: jsonMetadata });
     } catch (error) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description:
           error instanceof Error ? error.message : "Failed to create bucket",
-        variant: "destructive",
       });
     }
   };
@@ -103,7 +98,7 @@ export default function Buckets() {
               null,
               2,
             )}
-            className="min-h-32"
+            className="min-h-32 font-mono"
           />
           <span className="text-muted-foreground text-xs">
             Metadata is optional and must be a JSON object with string property

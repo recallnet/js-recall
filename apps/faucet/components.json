@@ -4,9 +4,9 @@
   "rsc": true,
   "tsx": true,
   "tailwind": {
-    "config": "../../packages/ui/tailwind.config.ts",
+    "config": "",
     "css": "../../packages/ui/src/styles/globals.css",
-    "baseColor": "zinc",
+    "baseColor": "neutral",
     "cssVariables": true
   },
   "iconLibrary": "lucide",
@@ -15,6 +15,6 @@
     "hooks": "@/hooks",
     "lib": "@/lib",
     "utils": "@recallnet/ui/lib/utils",
-    "ui": "@recallnet/ui/components"
+    "ui": "@recallnet/ui/components/shadcn"
   }
 }

@@ -25,16 +25,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@recallnet/ui/components/dialog";
-import { Input } from "@recallnet/ui/components/input";
-import { Label } from "@recallnet/ui/components/label";
-import { useToast } from "@recallnet/ui/hooks/use-toast";
+} from "@recallnet/ui/components/shadcn/dialog";
+import { Input } from "@recallnet/ui/components/shadcn/input";
+import { Label } from "@recallnet/ui/components/shadcn/label";
+import { toast } from "@recallnet/ui/components/toast";
 
 import { Approval } from "./approval";
 
 export function ApprovalsTo() {
-  const { toast } = useToast();
-
   const config = useConfig();
 
   const [newApprovalOpen, setNewApprovalOpen] = useState(false);
@@ -82,43 +80,35 @@ export function ApprovalsTo() {
 
   useEffect(() => {
     if (creditAccountError) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: creditAccountError.message,
-        variant: "destructive",
       });
     }
-  }, [creditAccountError, toast]);
+  }, [creditAccountError]);
 
   useEffect(() => {
     if (approvalError) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: approvalError.message,
-        variant: "destructive",
       });
     }
-  }, [approvalError, toast]);
+  }, [approvalError]);
 
   useEffect(() => {
     if (approvalReceiptError) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: approvalReceiptError.message,
-        variant: "destructive",
       });
     }
-  }, [approvalReceiptError, toast]);
+  }, [approvalReceiptError]);
 
   useEffect(() => {
     if (createAccountError) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: createAccountError.message,
-        variant: "destructive",
       });
     }
-  }, [createAccountError, toast]);
+  }, [createAccountError]);
 
   useEffect(() => {
     if (isApprovalReceiptSuccess) {
@@ -134,10 +124,8 @@ export function ApprovalsTo() {
   const handleApprove = async () => {
     if (!from || !formData.to) return;
     if (!isAddress(formData.to)) {
-      toast({
-        title: "Invalid address",
+      toast.error("Invalid address", {
         description: "Please enter a valid address",
-        variant: "destructive",
       });
       return;
     }

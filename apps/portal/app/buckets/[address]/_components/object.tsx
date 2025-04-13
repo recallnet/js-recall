@@ -14,8 +14,8 @@ import {
 import { numBlocksToSeconds } from "@recallnet/bigint-utils/conversions";
 import { getChain, getObjectApiUrl } from "@recallnet/chains";
 import { useDeleteObject, useGetObject } from "@recallnet/sdkx/react/buckets";
-import { Card } from "@recallnet/ui/components/card";
-import { useToast } from "@recallnet/ui/hooks/use-toast";
+import { Card } from "@recallnet/ui/components/shadcn/card";
+import { toast } from "@recallnet/ui/components/toast";
 
 import { CopyButton } from "@/components/copy-button";
 import { FilePreviewer } from "@/components/file-previewers/file-previewer";
@@ -39,7 +39,6 @@ export default function Object({
   delimiter,
 }: Props) {
   const router = useRouter();
-  const { toast } = useToast();
 
   const { address: fromAddress } = useAccount();
 
@@ -83,12 +82,11 @@ export default function Object({
 
   useEffect(() => {
     if (objectError || deleteError || deleteReceiptError) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: objectError?.message,
       });
     }
-  }, [toast, objectError, deleteError, deleteReceiptError]);
+  }, [objectError, deleteError, deleteReceiptError]);
 
   const handleDelete = () => {
     if (fromAddress === undefined) return;
@@ -126,7 +124,8 @@ export default function Object({
     const fileName = path.split(delimiter).pop() || path;
 
     return (
-      <Card className="flex flex-col rounded-none">
+      <Card className="flex flex-col">
+        {/* Toolbar - Contains file size and actions */}
         <div className="flex items-center justify-between border-b p-3">
           <div className="text-muted-foreground flex items-center gap-4 text-sm">
             <span>{objectSize.formatted}</span>

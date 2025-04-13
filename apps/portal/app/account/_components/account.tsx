@@ -18,6 +18,7 @@ import {
   useSetAccountSponsor,
 } from "@recallnet/sdkx/react/credits";
 import { Button } from "@recallnet/ui/components/button";
+import BuyCreditsDialog from "@recallnet/ui/components/buy-credits-dialog";
 import {
   Card,
   CardContent,
@@ -25,7 +26,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@recallnet/ui/components/card";
+} from "@recallnet/ui/components/shadcn/card";
 import {
   Dialog,
   DialogContent,
@@ -33,18 +34,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@recallnet/ui/components/dialog";
-import { Input } from "@recallnet/ui/components/input";
-import { Label } from "@recallnet/ui/components/label";
-import { useToast } from "@recallnet/ui/hooks/use-toast";
-import BuyCreditsDialog from "@recallnet/ui/recall/buy-credits-dialog";
+} from "@recallnet/ui/components/shadcn/dialog";
+import { Input } from "@recallnet/ui/components/shadcn/input";
+import { Label } from "@recallnet/ui/components/shadcn/label";
+import { toast } from "@recallnet/ui/components/toast";
 
 import Metric from "@/components/metric";
 import { formatBytes } from "@/lib/format-bytes";
 
 export function Account() {
-  const { toast } = useToast();
-
   const { address } = useAccount();
 
   const { data } = useBalance({ address });
@@ -110,15 +108,13 @@ export function Account() {
       deleteSponsorError ||
       deleteSponsorReceiptError
     ) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description:
           creditAccountError?.message ||
           setSponsorError?.message ||
           setSponsorReceiptError?.message ||
           deleteSponsorError?.message ||
           deleteSponsorReceiptError?.message,
-        variant: "destructive",
       });
     }
   }, [
@@ -127,16 +123,13 @@ export function Account() {
     setSponsorReceiptError,
     deleteSponsorError,
     deleteSponsorReceiptError,
-    toast,
   ]);
 
   const handleSetSponsor = () => {
     if (!address || !sponsorAddress) return;
     if (!isAddress(sponsorAddress)) {
-      toast({
-        title: "Invalid address",
+      toast.error("Invalid address", {
         description: "Please enter a valid address",
-        variant: "destructive",
       });
       return;
     }
@@ -224,7 +217,7 @@ export function Account() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <Card className="col-span-2 rounded-none">
+      <Card className="col-span-2">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CreditCard />
@@ -281,7 +274,7 @@ export function Account() {
           </Button>
         </CardFooter>
       </Card>
-      <Card className="rounded-none">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <DollarSign />
@@ -307,7 +300,7 @@ export function Account() {
           </Button>
         </CardFooter>
       </Card>
-      <Card className="rounded-none">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Database />

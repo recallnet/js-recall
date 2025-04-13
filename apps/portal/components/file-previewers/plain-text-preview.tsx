@@ -6,7 +6,7 @@ import { useChainId } from "wagmi";
 
 import { getChain, getObjectApiUrl } from "@recallnet/chains";
 import { Button } from "@recallnet/ui/components/button";
-import { toast } from "@recallnet/ui/hooks/use-toast";
+import { toast } from "@recallnet/ui/components/toast";
 
 import { FilePreviewerProps } from "./types";
 
@@ -48,11 +48,9 @@ export function PlainTextPreview(props: FilePreviewerProps) {
       setError(
         err instanceof Error ? err.message : "Failed to load file content",
       );
-      toast({
-        title: "Error loading file",
+      toast.error("Error loading file", {
         description:
           err instanceof Error ? err.message : "Failed to load file content",
-        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -95,7 +93,9 @@ export function PlainTextPreview(props: FilePreviewerProps) {
   // Content display
   return (
     <div className="h-full w-full overflow-auto">
-      <pre className="whitespace-pre-wrap break-all p-4 text-sm">{content}</pre>
+      <pre className="whitespace-pre-wrap break-all p-4 font-mono text-sm">
+        {content}
+      </pre>
     </div>
   );
 }

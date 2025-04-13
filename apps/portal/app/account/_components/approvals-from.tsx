@@ -4,24 +4,20 @@ import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 
 import { useCreditAccount } from "@recallnet/sdkx/react/credits";
-import { useToast } from "@recallnet/ui/hooks/use-toast";
+import { toast } from "@recallnet/ui/components/toast";
 
 import { Approval } from "./approval";
 
 export function ApprovalsFrom() {
-  const { toast } = useToast();
-
   const { data: creditAccount, error: creditAccountError } = useCreditAccount();
 
   useEffect(() => {
     if (creditAccountError) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: creditAccountError.message,
-        variant: "destructive",
       });
     }
-  }, [creditAccountError, toast]);
+  }, [creditAccountError]);
 
   return (
     <div className="flex flex-1 flex-col gap-4">

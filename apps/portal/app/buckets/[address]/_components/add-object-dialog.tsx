@@ -16,7 +16,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@recallnet/ui/components/dialog";
+} from "@recallnet/ui/components/shadcn/dialog";
 import {
   Form,
   FormControl,
@@ -25,12 +25,12 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@recallnet/ui/components/form";
-import { Input } from "@recallnet/ui/components/input";
-import { Progress } from "@recallnet/ui/components/progress";
-import { Switch } from "@recallnet/ui/components/switch";
-import { Textarea } from "@recallnet/ui/components/textarea";
-import { useToast } from "@recallnet/ui/hooks/use-toast";
+} from "@recallnet/ui/components/shadcn/form";
+import { Input } from "@recallnet/ui/components/shadcn/input";
+import { Progress } from "@recallnet/ui/components/shadcn/progress";
+import { Switch } from "@recallnet/ui/components/shadcn/switch";
+import { Textarea } from "@recallnet/ui/components/shadcn/textarea";
+import { toast } from "@recallnet/ui/components/toast";
 import { cn } from "@recallnet/ui/lib/utils";
 
 interface Props {
@@ -75,8 +75,6 @@ export default function AddObjectDialog({
   prefix,
   defaultTTLString,
 }: Props) {
-  const { toast } = useToast();
-
   const { address: fromAddress } = useAccount();
 
   const router = useRouter();
@@ -146,13 +144,11 @@ export default function AddObjectDialog({
 
   useEffect(() => {
     if (error) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: error.message,
-        variant: "destructive",
       });
     }
-  }, [error, toast]);
+  }, [error]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -274,7 +270,7 @@ export default function AddObjectDialog({
                           ? JSON.stringify(field.value)
                           : field.value
                       }
-                      className="min-h-28"
+                      className="min-h-28 font-mono"
                       disabled={isPending}
                     />
                   </FormControl>
