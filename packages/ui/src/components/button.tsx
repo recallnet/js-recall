@@ -1,5 +1,5 @@
-import { cn } from "../lib/utils.js";
-import { Button as ShadcnButton } from "./shadcn/button.js";
+import { Button as ShadcnButton } from "@recallnet/ui/components/shadcn/button";
+import { cn } from "@recallnet/ui/lib/utils";
 
 function Button({
   className,
