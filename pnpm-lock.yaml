@@ -591,6 +591,9 @@ importers:
       '@recallnet/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@recallnet/fvm':
+        specifier: workspace:*
+        version: link:../fvm
       '@tanstack/react-query':
         specifier: ^5.64.2
         version: 5.69.0(react@19.0.0)

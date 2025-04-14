@@ -1,6 +1,12 @@
 "use client";
 
-import { CreditCard, Database, DollarSign, Loader2 } from "lucide-react";
+import {
+  CreditCard,
+  Database,
+  DollarSign,
+  Ellipsis,
+  Loader2,
+} from "lucide-react";
 import { duration } from "moment";
 import { useEffect, useState } from "react";
 import { isAddress } from "viem";
@@ -35,6 +41,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@recallnet/ui/components/shadcn/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@recallnet/ui/components/shadcn/dropdown-menu";
 import { Input } from "@recallnet/ui/components/shadcn/input";
 import { Label } from "@recallnet/ui/components/shadcn/label";
 import { toast } from "@recallnet/ui/components/toast";
@@ -42,12 +54,16 @@ import { toast } from "@recallnet/ui/components/toast";
 import Metric from "@/components/metric";
 import { formatBytes } from "@/lib/format-bytes";
 
+import WithdrawDialog from "./withdraw-dialog";
+
 export function Account() {
   const { address } = useAccount();
 
   const { data } = useBalance({ address });
 
   const [buyCreditsOpen, setBuyCreditsOpen] = useState(false);
+
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
 
   const [setSponsorOpen, setSetSponsorOpen] = useState(false);
 
@@ -175,7 +191,16 @@ export function Account() {
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <BuyCreditsDialog open={buyCreditsOpen} setOpen={setBuyCreditsOpen} />
+      <BuyCreditsDialog
+        key={`buy-credits-${buyCreditsOpen}`}
+        open={buyCreditsOpen}
+        setOpen={setBuyCreditsOpen}
+      />
+      <WithdrawDialog
+        key={`withdraw-${withdrawOpen}`}
+        open={withdrawOpen}
+        onOpenChange={setWithdrawOpen}
+      />
       <Dialog open={setSponsorOpen} onOpenChange={setSetSponsorOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -279,6 +304,20 @@ export function Account() {
           <CardTitle className="flex items-center gap-2">
             <DollarSign />
             RECALL Token
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Ellipsis
+                  className="ml-auto opacity-40 hover:opacity-100"
+                  role="button"
+                />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem>Deposit</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setWithdrawOpen(true)}>
+                  Withdraw
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </CardTitle>
           <CardDescription>
             $RECALL is the native token of the Recall network and can be used to

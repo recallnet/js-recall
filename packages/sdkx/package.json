@@ -5,6 +5,16 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./react/account": {
+      "import": {
+        "types": "./dist/react/account.d.ts",
+        "default": "./dist/react/account.js"
+      },
+      "require": {
+        "types": "./dist/react/account.d.cts",
+        "default": "./dist/react/account.cjs"
+      }
+    },
     "./react/buckets": {
       "import": {
         "types": "./dist/react/buckets.d.ts",
@@ -55,6 +65,7 @@
   "dependencies": {
     "@recallnet/chains": "workspace:*",
     "@recallnet/contracts": "workspace:*",
+    "@recallnet/fvm": "workspace:*",
     "@tanstack/react-query": "^5.64.2",
     "axios": "^1.7.9",
     "react": "^19.0.0",
