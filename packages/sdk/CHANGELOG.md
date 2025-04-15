@@ -1,5 +1,16 @@
 # @recallnet/sdk
 
+## 0.0.10
+
+### Patch Changes
+
+- [#203](https://github.com/recallnet/js-recall/pull/203) [`dda6d1c`](https://github.com/recallnet/js-recall/commit/dda6d1c3a27199bf177ade7e480d63a4af61176e) Thanks [@dtbuchholz](https://github.com/dtbuchholz)! - fix gas estimation and query limit errors
+
+- Updated dependencies [[`dda6d1c`](https://github.com/recallnet/js-recall/commit/dda6d1c3a27199bf177ade7e480d63a4af61176e)]:
+  - @recallnet/network-constants@0.0.8
+  - @recallnet/chains@0.0.9
+  - @recallnet/contracts@0.0.5
+
 ## 0.0.9
 
 ### Patch Changes

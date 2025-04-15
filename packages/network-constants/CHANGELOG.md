@@ -1,5 +1,11 @@
 # @recallnet/network-constants
 
+## 0.0.8
+
+### Patch Changes
+
+- [#203](https://github.com/recallnet/js-recall/pull/203) [`dda6d1c`](https://github.com/recallnet/js-recall/commit/dda6d1c3a27199bf177ade7e480d63a4af61176e) Thanks [@dtbuchholz](https://github.com/dtbuchholz)! - fix gas estimation and query limit errors
+
 ## 0.0.7
 
 ### Patch Changes
