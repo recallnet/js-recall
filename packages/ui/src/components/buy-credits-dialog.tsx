@@ -5,8 +5,8 @@ import { useAccount, useBalance, useWaitForTransactionReceipt } from "wagmi";
 import {
   attoRecallToRecallDisplay,
   gbMonthsToAttoRecall,
-} from "@recallnet/bigint-utils/conversions";
-import { useBuyCredit, useCreditAccount } from "@recallnet/sdkx/react/credits";
+} from "@recallnet/conversions";
+import { useBuyCredit, useCreditAccount } from "@recallnet/react/react/credits";
 import { Button } from "@recallnet/ui/components/button";
 import {
   Dialog,

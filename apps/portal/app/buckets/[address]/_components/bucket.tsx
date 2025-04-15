@@ -7,8 +7,8 @@ import { Fragment, useState } from "react";
 import { Address } from "viem";
 
 import { displayAddress } from "@recallnet/address-utils/display";
-import { numBlocksToSeconds } from "@recallnet/bigint-utils/conversions";
-import { useCreditAccount } from "@recallnet/sdkx/react/credits";
+import { numBlocksToSeconds } from "@recallnet/conversions";
+import { useCreditAccount } from "@recallnet/react/react/credits";
 import { Button } from "@recallnet/ui/components/button";
 import {
   Breadcrumb,

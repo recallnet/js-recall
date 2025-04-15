@@ -55,11 +55,11 @@ Details the specific layout of this monorepo:
 - `contracts/` (@recallnet/contracts): Smart contract interfaces *(README missing)*
 - `chains/` (@recallnet/chains): Chain-specific configurations ([README](mdc:packages/chains/README.md))
 - `address-utils/` (@recallnet/address-utils): Address formatting utility ([README](mdc:packages/address-utils/README.md))
-- `bigint-utils/` (@recallnet/bigint-utils): BigInt conversion utilities ([README](mdc:packages/bigint-utils/README.md))
+- `conversions/` (@recallnet/conversions): BigInt conversion utilities ([README](mdc:packages/conversions/README.md))
 - `fvm/` (@recallnet/fvm): FVM-specific functionality ([README](mdc:packages/fvm/README.md))
 - `network-constants/` (@recallnet/network-constants v0.0.6): Network configuration constants ([README](mdc:packages/network-constants/README.md))
 - `fonts/` (@recallnet/fonts): Shared font resources ([README](mdc:packages/fonts/README.md))
-- `sdkx/` (@recallnet/sdkx): Extended SDK features *(README missing)*
+- `react/` (@recallnet/react): Extended SDK features *(README missing)*
 
 ## Versioning & Release (Changesets)
 - This repository uses [Changesets](mdc:https:/github.com/changesets/changesets) for version management and publishing.

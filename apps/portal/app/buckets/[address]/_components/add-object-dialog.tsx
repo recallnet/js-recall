@@ -8,7 +8,7 @@ import { Address } from "viem";
 import { useAccount } from "wagmi";
 import { z } from "zod";
 
-import { useAddFile } from "@recallnet/sdkx/react/buckets";
+import { useAddFile } from "@recallnet/react/react/buckets";
 import { Button } from "@recallnet/ui/components/button";
 import {
   Dialog,

@@ -1,4 +1,4 @@
-# @recallnet/bigint-utils
+# @recallnet/conversions
 
 Utility functions for working with BigInt values in the Recall network.
 
@@ -14,7 +14,7 @@ Utility functions for working with BigInt values in the Recall network.
 This package is part of the Recall monorepo and is installed via pnpm workspaces:
 
 ```bash
-pnpm add @recallnet/bigint-utils
+pnpm add @recallnet/conversions
 ```
 
 ## Usage
@@ -25,7 +25,7 @@ pnpm add @recallnet/bigint-utils
 import {
   attoCreditsToGbMonths,
   gbMonthsToCredits,
-} from "@recallnet/bigint-utils";
+} from "@recallnet/conversions";
 
 // Convert 1 GB-month to credits
 const credits = gbMonthsToCredits(1);
@@ -42,7 +42,7 @@ const gbMonths = attoCreditsToGbMonths("2592000000000000");
 import {
   attoRecallToRecallDisplay,
   recallToAttoRecall,
-} from "@recallnet/bigint-utils";
+} from "@recallnet/conversions";
 
 // Convert 1.5 RECALL to atto-RECALL
 const attoRecall = recallToAttoRecall(1.5);
@@ -56,7 +56,7 @@ const display = attoRecallToRecallDisplay("1500000000000000000");
 ### Time and Block Conversions
 
 ```typescript
-import { hoursToNumBlocks, numBlocksToSeconds } from "@recallnet/bigint-utils";
+import { hoursToNumBlocks, numBlocksToSeconds } from "@recallnet/conversions";
 
 // Convert 1 hour to blocks
 const blocks = hoursToNumBlocks(1);

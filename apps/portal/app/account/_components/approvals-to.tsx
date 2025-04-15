@@ -11,12 +11,12 @@ import {
   gbMonthsToCredits,
   hoursToNumBlocks,
   recallToAttoRecall,
-} from "@recallnet/bigint-utils/conversions";
-import { accountExists, createAccount } from "@recallnet/sdkx/actions/credits";
+} from "@recallnet/conversions";
+import { accountExists, createAccount } from "@recallnet/react/actions/credits";
 import {
   useApproveCredit,
   useCreditAccount,
-} from "@recallnet/sdkx/react/credits";
+} from "@recallnet/react/react/credits";
 import { Button } from "@recallnet/ui/components/button";
 import {
   Dialog,
