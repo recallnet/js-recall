@@ -9,6 +9,13 @@ export class BucketNotFound extends Error {
   }
 }
 
+export class OutOfGasError extends Error {
+  constructor(message: string) {
+    super(`Out of gas: ${message}`);
+    this.name = "OutOfGas";
+  }
+}
+
 export class CreateBucketError extends Error {
   constructor(message: string) {
     super(`Failed to create bucket: ${message}`);

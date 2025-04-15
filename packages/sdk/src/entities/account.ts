@@ -153,6 +153,7 @@ export class AccountManager {
       throw new Error("Wallet client is not initialized for approving");
     }
     const args = [spender, amount] as ApproveParams;
+    const gasPrice = await this.client.publicClient.getGasPrice();
     const supplySource = this.getSupplySource(
       this.client.walletClient.chain,
       contractAddress,
@@ -161,6 +162,7 @@ export class AccountManager {
       args,
       {
         account: this.client.walletClient.account,
+        gasPrice,
       },
     );
     // TODO: calling `supplySource.write.approve(...)` doesn't work, for some reason
@@ -261,11 +263,13 @@ export class AccountManager {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for transfers");
     }
+    const gasPrice = await this.client.publicClient.getGasPrice();
     const hash = await this.client.walletClient?.sendTransaction({
       account: this.client.walletClient.account,
       chain: this.client.walletClient.chain,
       to: recipient,
       value: amount,
+      gasPrice,
     });
     const tx = await this.client.publicClient.waitForTransactionReceipt({
       hash,
