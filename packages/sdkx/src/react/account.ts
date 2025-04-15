@@ -6,8 +6,33 @@ import { useChainId, useWriteContract } from "wagmi";
 import {
   gatewayManagerFacetAbi,
   gatewayManagerFacetAddress,
+  recallErc20Abi,
+  recallErc20Address,
 } from "@recallnet/contracts";
 import { AddressDelegated } from "@recallnet/fvm/address";
+
+export function useApprove() {
+  const chainId = useChainId();
+
+  const contractAddress =
+    recallErc20Address[chainId as keyof typeof recallErc20Address];
+
+  const { writeContract, ...rest } = useWriteContract();
+
+  const approve = useCallback(
+    (spender: Address, amount: bigint) => {
+      writeContract({
+        address: contractAddress,
+        abi: recallErc20Abi,
+        functionName: "approve",
+        args: [spender, amount],
+      });
+    },
+    [contractAddress, writeContract],
+  );
+
+  return { approve, ...rest };
+}
 
 export function useWithdraw() {
   const chainId = useChainId();
