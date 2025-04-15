@@ -16,7 +16,7 @@ import {
   attoCreditsToGbMonths,
   attoRecallToRecallDisplay,
 } from "@recallnet/conversions";
-import { useCreditAccount } from "@recallnet/react/react/credits";
+import { useCreditAccount } from "@recallnet/react/hooks/credits";
 import { Button } from "@recallnet/ui/components/button";
 import BuyCreditsDialog from "@recallnet/ui/components/buy-credits-dialog";
 import {

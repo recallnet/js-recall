@@ -5,24 +5,24 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./react/buckets": {
+    "./hooks/buckets": {
       "import": {
-        "types": "./dist/react/buckets.d.ts",
-        "default": "./dist/react/buckets.js"
+        "types": "./dist/hooks/buckets.d.ts",
+        "default": "./dist/hooks/buckets.js"
       },
       "require": {
-        "types": "./dist/react/buckets.d.cts",
-        "default": "./dist/react/buckets.cjs"
+        "types": "./dist/hooks/buckets.d.cts",
+        "default": "./dist/hooks/buckets.cjs"
       }
     },
-    "./react/credits": {
+    "./hooks/credits": {
       "import": {
-        "types": "./dist/react/credits.d.ts",
-        "default": "./dist/react/credits.js"
+        "types": "./dist/hooks/credits.d.ts",
+        "default": "./dist/hooks/credits.js"
       },
       "require": {
-        "types": "./dist/react/credits.d.cts",
-        "default": "./dist/react/credits.cjs"
+        "types": "./dist/hooks/credits.d.cts",
+        "default": "./dist/hooks/credits.cjs"
       }
     },
     "./actions/credits": {

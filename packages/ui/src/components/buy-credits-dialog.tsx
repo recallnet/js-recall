@@ -6,7 +6,7 @@ import {
   attoRecallToRecallDisplay,
   gbMonthsToAttoRecall,
 } from "@recallnet/conversions";
-import { useBuyCredit, useCreditAccount } from "@recallnet/react/react/credits";
+import { useBuyCredit, useCreditAccount } from "@recallnet/react/hooks/credits";
 import { Button } from "@recallnet/ui/components/button";
 import {
   Dialog,

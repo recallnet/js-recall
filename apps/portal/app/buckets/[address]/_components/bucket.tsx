@@ -8,7 +8,7 @@ import { Address } from "viem";
 
 import { displayAddress } from "@recallnet/address-utils/display";
 import { numBlocksToSeconds } from "@recallnet/conversions";
-import { useCreditAccount } from "@recallnet/react/react/credits";
+import { useCreditAccount } from "@recallnet/react/hooks/credits";
 import { Button } from "@recallnet/ui/components/button";
 import {
   Breadcrumb,

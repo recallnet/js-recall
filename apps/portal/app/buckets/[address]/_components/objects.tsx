@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react";
 import { Fragment, useEffect } from "react";
 import { Address } from "viem";
 
-import { useInfiniteQueryObjects } from "@recallnet/react/react/buckets";
+import { useInfiniteQueryObjects } from "@recallnet/react/hooks/buckets";
 import { InfiniteScroll } from "@recallnet/ui/components/infinite-scroll";
 import { toast } from "@recallnet/ui/components/toast";
 

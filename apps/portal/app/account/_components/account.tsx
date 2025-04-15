@@ -16,7 +16,7 @@ import {
   useCreditAccount,
   useDeleteAccountSponsor,
   useSetAccountSponsor,
-} from "@recallnet/react/react/credits";
+} from "@recallnet/react/hooks/credits";
 import { Button } from "@recallnet/ui/components/button";
 import BuyCreditsDialog from "@recallnet/ui/components/buy-credits-dialog";
 import {

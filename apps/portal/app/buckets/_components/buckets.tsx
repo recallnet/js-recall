@@ -7,7 +7,7 @@ import { useAccount, useWaitForTransactionReceipt } from "wagmi";
 import {
   useCreateBucket,
   useListBuckets,
-} from "@recallnet/react/react/buckets";
+} from "@recallnet/react/hooks/buckets";
 import { Button } from "@recallnet/ui/components/button";
 import {
   Dialog,

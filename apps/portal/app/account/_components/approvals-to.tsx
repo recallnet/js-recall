@@ -16,7 +16,7 @@ import { accountExists, createAccount } from "@recallnet/react/actions/credits";
 import {
   useApproveCredit,
   useCreditAccount,
-} from "@recallnet/react/react/credits";
+} from "@recallnet/react/hooks/credits";
 import { Button } from "@recallnet/ui/components/button";
 import {
   Dialog,

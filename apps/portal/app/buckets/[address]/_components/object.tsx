@@ -13,7 +13,7 @@ import {
 
 import { getChain, getObjectApiUrl } from "@recallnet/chains";
 import { numBlocksToSeconds } from "@recallnet/conversions";
-import { useDeleteObject, useGetObject } from "@recallnet/react/react/buckets";
+import { useDeleteObject, useGetObject } from "@recallnet/react/hooks/buckets";
 import { Card } from "@recallnet/ui/components/shadcn/card";
 import { toast } from "@recallnet/ui/components/toast";
 

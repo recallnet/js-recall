@@ -19,7 +19,7 @@ import {
   useCreditAccount,
   useRevokeCreditApproval,
   useSetAccountSponsor,
-} from "@recallnet/react/react/credits";
+} from "@recallnet/react/hooks/credits";
 import {
   Card,
   CardContent,
