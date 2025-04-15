@@ -35,7 +35,7 @@ js-recall/
 │   ├── contracts/         # Smart contract interfaces
 │   ├── chains/            # Chain-specific configurations
 │   ├── address-utils/     # Address manipulation utilities
-│   ├── conversions/      # BigInt manipulation utilities
+│   ├── conversions/      # Functions to convert between units and or display values
 │   ├── fvm/               # FVM-specific functionality
 │   ├── network-constants/ # Network configuration constants
 │   ├── fonts/            # Shared font resources
