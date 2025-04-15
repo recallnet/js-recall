@@ -30,12 +30,12 @@ js-recall/
 │   └── faucet/            # Faucet application
 ├── packages/               # Shared packages
 │   ├── sdk/               # Core SDK implementation
-│   ├── sdkx/              # Extended SDK features
+│   ├── react/              # Extended SDK features
 │   ├── ui/                # Shared UI component library
 │   ├── contracts/         # Smart contract interfaces
 │   ├── chains/            # Chain-specific configurations
 │   ├── address-utils/     # Address manipulation utilities
-│   ├── bigint-utils/      # BigInt manipulation utilities
+│   ├── conversions/      # BigInt manipulation utilities
 │   ├── fvm/               # FVM-specific functionality
 │   ├── network-constants/ # Network configuration constants
 │   ├── fonts/            # Shared font resources

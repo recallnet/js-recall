@@ -3,7 +3,7 @@
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 
-import { useCreditAccount } from "@recallnet/sdkx/react/credits";
+import { useCreditAccount } from "@recallnet/react/hooks/credits";
 import { toast } from "@recallnet/ui/components/toast";
 
 import { Approval } from "./approval";

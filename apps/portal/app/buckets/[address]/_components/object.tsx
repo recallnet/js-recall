@@ -11,9 +11,9 @@ import {
   useWaitForTransactionReceipt,
 } from "wagmi";
 
-import { numBlocksToSeconds } from "@recallnet/bigint-utils/conversions";
 import { getChain, getObjectApiUrl } from "@recallnet/chains";
-import { useDeleteObject, useGetObject } from "@recallnet/sdkx/react/buckets";
+import { numBlocksToSeconds } from "@recallnet/conversions";
+import { useDeleteObject, useGetObject } from "@recallnet/react/hooks/buckets";
 import { Card } from "@recallnet/ui/components/shadcn/card";
 import { toast } from "@recallnet/ui/components/toast";
 

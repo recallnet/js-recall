@@ -15,8 +15,8 @@ import { displayAddress } from "@recallnet/address-utils/display";
 import {
   attoCreditsToGbMonths,
   attoRecallToRecallDisplay,
-} from "@recallnet/bigint-utils/conversions";
-import { useCreditAccount } from "@recallnet/sdkx/react/credits";
+} from "@recallnet/conversions";
+import { useCreditAccount } from "@recallnet/react/hooks/credits";
 import { Button } from "@recallnet/ui/components/button";
 import BuyCreditsDialog from "@recallnet/ui/components/buy-credits-dialog";
 import {

@@ -1,10 +1,20 @@
 {
-  "name": "@recallnet/bigint-utils",
+  "name": "@recallnet/conversions",
   "version": "0.0.0",
   "license": "MIT AND Apache-2.0",
   "private": true,
   "type": "module",
   "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
     "./constants": {
       "import": {
         "types": "./dist/constants.d.ts",
@@ -14,30 +24,6 @@
         "types": "./dist/constants.d.cts",
         "default": "./dist/constants.cjs"
       }
-    },
-    "./conversions": {
-      "import": {
-        "types": "./dist/conversions.d.ts",
-        "default": "./dist/conversions.js"
-      },
-      "require": {
-        "types": "./dist/conversions.d.cts",
-        "default": "./dist/conversions.cjs"
-      }
-    },
-    "./format-atto-rcl": {
-      "import": {
-        "types": "./dist/format-atto-rcl.d.ts",
-        "default": "./dist/format-atto-rcl.js"
-      },
-      "require": {
-        "types": "./dist/format-atto-rcl.d.cts",
-        "default": "./dist/format-atto-rcl.cjs"
-      }
-    },
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
     }
   },
   "files": [

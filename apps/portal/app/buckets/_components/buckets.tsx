@@ -4,7 +4,10 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAccount, useWaitForTransactionReceipt } from "wagmi";
 
-import { useCreateBucket, useListBuckets } from "@recallnet/sdkx/react/buckets";
+import {
+  useCreateBucket,
+  useListBuckets,
+} from "@recallnet/react/hooks/buckets";
 import { Button } from "@recallnet/ui/components/button";
 import {
   Dialog,

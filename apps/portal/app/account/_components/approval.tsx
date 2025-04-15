@@ -14,12 +14,12 @@ import {
   attoCreditsToGbMonths,
   attoRecallToRecallDisplay,
   numBlocksToSeconds,
-} from "@recallnet/bigint-utils/conversions";
+} from "@recallnet/conversions";
 import {
   useCreditAccount,
   useRevokeCreditApproval,
   useSetAccountSponsor,
-} from "@recallnet/sdkx/react/credits";
+} from "@recallnet/react/hooks/credits";
 import {
   Card,
   CardContent,
