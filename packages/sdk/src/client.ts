@@ -25,7 +25,7 @@ import { SubnetId } from "./ipc/subnet.js";
 // Creates a public client for the given chain
 export const createPublicClientForChain: (
   chain: Chain,
-) => PublicClient<Transport, Chain> = (chain: Chain) =>
+) => PublicClient<Transport, Chain> = (chain: Chain = testnet) =>
   createPublicClient({
     chain,
     transport: http(),
