@@ -1,4 +1,4 @@
-import "@recallnet/ui/globals.css";
+import "@recallnet/ui2/globals.css";
 
 import { Analytics } from "@vercel/analytics/react";
 import { Metadata } from "next";

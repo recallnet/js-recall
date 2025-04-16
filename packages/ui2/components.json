@@ -5,16 +5,16 @@
   "tsx": true,
   "tailwind": {
     "config": "",
-    "css": "../../packages/ui2/src/styles/globals.css",
+    "css": "src/styles/globals.css",
     "baseColor": "neutral",
     "cssVariables": true
   },
   "iconLibrary": "lucide",
   "aliases": {
-    "components": "@/components",
-    "hooks": "@/hooks",
-    "lib": "@/lib",
+    "components": "@recallnet/ui2/components/shadcn",
     "utils": "@recallnet/ui2/lib/utils",
+    "hooks": "@recallnet/ui2/hooks",
+    "lib": "@recallnet/ui2/lib",
     "ui": "@recallnet/ui2/components/shadcn"
   }
 }

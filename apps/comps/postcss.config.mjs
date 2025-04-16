@@ -1,1 +1,1 @@
-export { default } from "@recallnet/ui/postcss.config";
+export { default } from "@recallnet/ui2/postcss.config";

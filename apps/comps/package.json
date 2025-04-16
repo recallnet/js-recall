@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@recallnet/fonts": "workspace:*",
-    "@recallnet/ui": "workspace:*",
+    "@recallnet/ui2": "workspace:*",
     "@vercel/analytics": "^1.5.0",
     "next": "^15.1.0",
     "react": "^19.0.0",
