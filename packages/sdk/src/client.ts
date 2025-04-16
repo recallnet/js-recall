@@ -88,14 +88,33 @@ export class RecallClient {
     this.contractOverrides = config.contractOverrides ?? {};
   }
 
-  // Creates a RecallClient from a chain
-  static fromChain(chain: Chain = testnet) {
+  // Creates a RecallClient with read & write capabilities from a private key
+  static fromPrivateKey(
+    privateKey: string,
+    chain: Chain = testnet,
+    contractOverrides?: ContractOverrides,
+  ): RecallClient {
+    const walletClient = walletClientFromPrivateKey(privateKey, chain);
+    const publicClient = createPublicClientForChain(chain);
     return new RecallClient({
-      publicClient: createPublicClient({ chain, transport: http() }),
+      publicClient,
+      walletClient,
+      contractOverrides,
     });
   }
 
-  // Creates a RecallClient from a chain name
+  // Creates a public RecallClient from a chain
+  static fromChain(
+    chain: Chain = testnet,
+    contractOverrides?: ContractOverrides,
+  ) {
+    return new RecallClient({
+      publicClient: createPublicClient({ chain, transport: http() }),
+      contractOverrides,
+    });
+  }
+
+  // Creates a public RecallClient from a chain name
   static fromChainName(chainName: ChainName = "testnet") {
     return new RecallClient({
       publicClient: createPublicClient({
