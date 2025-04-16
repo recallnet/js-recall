@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { ThemeProvider } from "@recallnet/ui2/components/theme-provider";
+import { ThemeProvider } from "@recallnet/ui/components/theme-provider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (

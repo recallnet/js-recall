@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["@recallnet/ui2", "@recallnet/fonts"],
+  transpilePackages: ["@recallnet/ui", "@recallnet/fonts"],
 };
 
 export default nextConfig;

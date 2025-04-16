@@ -1,4 +1,4 @@
-import { Button } from "@recallnet/ui2/components/button";
+import { Button } from "@recallnet/ui/components/button";
 
 export default function Page() {
   return (
