@@ -15,5 +15,17 @@
   ],
   "eslint.codeActionsOnSave.mode": "all",
   "eslint.lintTask.enable": true,
-  "typescript.tsdk": "node_modules/typescript/lib"
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "tailwindCSS.experimental.configFile": {
+    "packages/ui/src/styles/globals.css": [
+      "packages/ui/src/**",
+      "apps/faucet/**",
+      "apps/portal/**"
+    ],
+    "packages/ui2/src/styles/globals.css": [
+      "packages/ui2/src/**",
+      "apps/comps/**"
+    ]
+  },
+  "tailwindCSS.classFunctions": ["cn", "cva", "cx"]
 }
