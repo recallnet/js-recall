@@ -9,6 +9,7 @@ import {
   createPublicClient,
   createWalletClient,
   http,
+  isHex,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import "viem/window";
@@ -32,11 +33,12 @@ export const createPublicClientForChain: (
 
 // Creates a wallet client for the given chain with a private key
 export const walletClientFromPrivateKey = (
-  privateKey: Hex,
-  chain: Chain,
+  privateKey: string,
+  chain: Chain = testnet,
 ): WalletClient<Transport, Chain, Account> => {
+  const hexPrivateKey = isHex(privateKey) ? privateKey : `0x${privateKey}`;
   return createWalletClient({
-    account: privateKeyToAccount(privateKey),
+    account: privateKeyToAccount(hexPrivateKey as Hex),
     chain,
     transport: http(),
   });
