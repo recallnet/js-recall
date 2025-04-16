@@ -1,6 +1,6 @@
 # @recallnet/conversions
 
-Utility functions for working with BigInt values in the Recall network.
+Utility functions for converting between units and converting from units to display strings.
 
 ## Features
 
