@@ -1,5 +1,11 @@
 # @recallnet/sdk
 
+## 0.0.11
+
+### Patch Changes
+
+- [#212](https://github.com/recallnet/js-recall/pull/212) [`0c60f89`](https://github.com/recallnet/js-recall/commit/0c60f89819d46ac1189f945ba6d39595f4bd60ce) Thanks [@dtbuchholz](https://github.com/dtbuchholz)! - allow string valued private keys, and let clients instantiate w/o 'chains' package import
+
 ## 0.0.10
 
 ### Patch Changes

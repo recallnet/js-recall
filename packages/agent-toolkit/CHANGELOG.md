@@ -1,5 +1,12 @@
 # @recallnet/agent-toolkit
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies [[`0c60f89`](https://github.com/recallnet/js-recall/commit/0c60f89819d46ac1189f945ba6d39595f4bd60ce)]:
+  - @recallnet/sdk@0.0.11
+
 ## 0.0.4
 
 ### Patch Changes
