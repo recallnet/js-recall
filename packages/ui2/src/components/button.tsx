@@ -1,5 +1,7 @@
 import { type VariantProps, cva } from "class-variance-authority";
 
+// This is just an example of a component that uses the cva utility and Tailwind CSS classes.
+
 const buttonVariants = cva("p-4", {
   variants: {
     variant: {
