@@ -13,8 +13,8 @@ export default function Page() {
     <main className="container mx-auto p-4">
       <div className="flex flex-col items-center gap-4">
         <Avatar>
-          <AvatarImage src="https://github.com/asutula.png" alt="asutula" />
-          <AvatarFallback>AS</AvatarFallback>
+          <AvatarImage src="https://github.com/recallnet.png" alt="recallnet" />
+          <AvatarFallback>R</AvatarFallback>
         </Avatar>
         <Button variant="default">Default button</Button>
         <Button variant="destructive">Destructive button</Button>
