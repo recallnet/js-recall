@@ -1,5 +1,12 @@
 # @recallnet/mcp
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @recallnet/agent-toolkit@0.0.5
+
 ## 0.0.4
 
 ### Patch Changes
