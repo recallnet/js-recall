@@ -5,11 +5,14 @@ import * as React from "react";
 import { type ReactNode, useState } from "react";
 import { WagmiProvider } from "wagmi";
 
-import { ThemeProvider } from "@recallnet/ui2/components/theme-provider";
+import {ThemeProvider} from "@recallnet/ui2/components/theme-provider";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {useState, type ReactNode} from "react";
+import {WagmiProvider} from "wagmi";
 
-import { config } from "@/wagmi-config";
+import {config} from "@/wagmi-config";
 
-function WalletProvider(props: { children: ReactNode }) {
+function WalletProvider(props: {children: ReactNode}) {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
@@ -21,7 +24,7 @@ function WalletProvider(props: { children: ReactNode }) {
   );
 }
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({children}: {children: React.ReactNode}) {
   return (
     <ThemeProvider
       attribute="class"
@@ -30,7 +33,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
       enableColorScheme
     >
-      <WalletProvider>{children}</WalletProvider>
+      <WalletProvider>
+        {children}
+      </WalletProvider>
     </ThemeProvider>
   );
 }
+
