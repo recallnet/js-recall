@@ -1,5 +1,7 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {SiweMessage} from 'siwe';
+import {verifyMessage} from '@wagmi/core';
+import {config} from "@/wagmi-config";
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,18 +12,12 @@ export async function POST(req: NextRequest) {
     }
 
     const siweMessage = new SiweMessage(message);
-    const fields = await siweMessage.verify({
-      signature,
-      time: siweMessage.issuedAt,
-      scheme: siweMessage.scheme,
-      domain: siweMessage.domain,
-      nonce: siweMessage.nonce,
-    });
+    const result = await verifyMessage(config, {address: message.address, message: siweMessage.prepareMessage(), signature})
 
-    if (!fields.success)
-      throw new Error(fields.error || "signature validation error")
+    if (!result)
+      throw new Error("signature validation error")
 
-    return NextResponse.json({ok: fields.success, address: fields.data.address});
+    return NextResponse.json({ok: true, address: message.address});
   } catch (err: any) {
     console.error('[SIWE LOGIN ERROR]', err);
     return NextResponse.json({error: 'Invalid SIWE message or signature'}, {status: 400});

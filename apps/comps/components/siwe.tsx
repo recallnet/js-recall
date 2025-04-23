@@ -43,10 +43,12 @@ export function ConnectAndSIWE() {
           nonce: res.nonce,
         });
         setMessage(m);
-        signMessage({message: m.prepareMessage()});
+        console.log('HEREEE', address)
+        signMessage({account: address, message: m.prepareMessage()});
       },
     },
   });
+  console.log('MESSAGE', message, Boolean(signature))
 
   const account = useAccount();
   const client = usePublicClient();
