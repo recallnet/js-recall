@@ -6,11 +6,13 @@ import axios from "axios";
 import {useAccount, useConnect, usePublicClient, useSignMessage} from "wagmi";
 import {SiweMessage} from "siwe";
 import {cbWalletConnector} from "@/wagmi-config";
+import {Button} from "@recallnet/ui2/components/button";
 
 export function ConnectAndSIWE() {
   const [message, setMessage] = useState<SiweMessage | undefined>(undefined);
   const [signature, setSignature] = useState<Hex | undefined>(undefined);
   const [valid, setValid] = useState<boolean | undefined>(undefined);
+  const [login, setLoggedIn] = useState<boolean | undefined>(undefined);
 
   const {signMessage} = useSignMessage({
     mutation: {
@@ -75,7 +77,7 @@ export function ConnectAndSIWE() {
         })
 
 
-        console.log("Login response:", res.data);
+        setLoggedIn(true)
       } catch (err) {
         console.error("SIWE login failed:", err);
       }
@@ -87,12 +89,9 @@ export function ConnectAndSIWE() {
   }, [signature, account]);
 
   return (
-    <div>
-      <button onClick={() => connect({connector: cbWalletConnector})}>
-        Connect + SIWE
-      </button>
-      {valid !== undefined && <p>Is valid: {valid.toString()}</p>}
-    </div>
+    <Button onClick={() => connect({connector: cbWalletConnector})}>
+      {login ? "Logged in" : "Connect + SIWE"}
+    </Button>
   );
 }
 
