@@ -16,6 +16,7 @@
     "docs:serve": "typedoc --watch --serve"
   },
   "dependencies": {
+    "@recallnet/comps-db": "workspace:*",
     "@recallnet/fonts": "workspace:*",
     "@recallnet/ui2": "workspace:*",
     "@vercel/analytics": "^1.5.0",
