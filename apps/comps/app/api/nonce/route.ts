@@ -1,28 +1,12 @@
-import { serialize } from "cookie";
-import { NextResponse } from "next/server";
-import { generateSiweNonce } from "viem/siwe";
+import {NextRequest, NextResponse} from 'next/server';
+import {generateNonce} from 'siwe';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const nonce = generateSiweNonce();
-
-    const cookie = serialize("session", nonce, {
-      httpOnly: true,
-      secure: true,
-      maxAge: 60 * 60 * 24 * 7, // One week
-      path: "/",
-    });
-
-    const response = NextResponse.json({ nonce });
-    response.headers.set("Set-Cookie", cookie);
-
-    return response;
-  } catch (err: unknown) {
-    return NextResponse.json(
-      {
-        error: `Error when generating nonce: ${(err as { message: string }).message}`,
-      },
-      { status: 500 },
-    );
+    return NextResponse.json({nonce: generateNonce()});
+  } catch (err: any) {
+    return NextResponse.json({error: 'Error when generating nonce'}, {status: 500});
   }
 }
+
+
