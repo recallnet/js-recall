@@ -18,6 +18,7 @@
   "dependencies": {
     "@coinbase/wallet-sdk": "^4.3.2",
     "@recallnet/comps-db": "workspace:*",
+    "@coinbase/wallet-sdk": "^4.3.2",
     "@recallnet/fonts": "workspace:*",
     "@recallnet/ui2": "workspace:*",
     "@tanstack/react-query": "^5.64.2",
