@@ -1,10 +1,11 @@
+import {ConnectAndSIWE} from "@/components/siwe";
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "@recallnet/ui2/components/avatar";
-import { Button } from "@recallnet/ui2/components/button";
-import { Button as ShadcnButton } from "@recallnet/ui2/components/shadcn/button";
+import {Button} from "@recallnet/ui2/components/button";
+import {Button as ShadcnButton} from "@recallnet/ui2/components/shadcn/button";
 
 // This is just a simple placeholder page to test some ui2 components.
 
@@ -19,6 +20,7 @@ export default function Page() {
         <Button variant="default">Default button</Button>
         <Button variant="destructive">Destructive button</Button>
         <ShadcnButton>Shadcn button</ShadcnButton>
+        <ConnectAndSIWE />
       </div>
     </main>
   );

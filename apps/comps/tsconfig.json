@@ -1,10 +1,15 @@
 {
   "extends": "@recallnet/typescript-config/nextjs.json",
   "compilerOptions": {
+    "moduleResolution": "node",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "@recallnet/ui2/*": ["../../packages/ui2/src/*"]
+      "@/*": [
+        "./*"
+      ],
+      "@recallnet/ui2/*": [
+        "../../packages/ui2/src/*"
+      ]
     },
     "plugins": [
       {
@@ -19,5 +24,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }
