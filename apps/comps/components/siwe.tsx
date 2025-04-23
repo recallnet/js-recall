@@ -21,7 +21,7 @@ export function ConnectAndSIWE() {
   const {connect} = useConnect({
     mutation: {
       onSuccess: async (data) => {
-        const res = await axios<{nonce: number}>({
+        const {data: res} = await axios<{nonce: number}>({
           baseURL: '',
           method: 'get',
           url: '/api/nonce',
@@ -39,16 +39,14 @@ export function ConnectAndSIWE() {
           chainId,
           uri: document.location.origin,
           version: "1",
-          statement: "Smart Wallet SIWE Example",
+          statement: "Sign with ethereum",
           nonce: res.nonce,
         });
         setMessage(m);
-        console.log('HEREEE', address)
         signMessage({account: address, message: m.prepareMessage()});
       },
     },
   });
-  console.log('MESSAGE', message, Boolean(signature))
 
   const account = useAccount();
   const client = usePublicClient();
@@ -90,13 +88,7 @@ export function ConnectAndSIWE() {
 
   return (
     <div>
-      <button onClick={() => {
-        try {
-          connect({connector: cbWalletConnector})
-        } catch (err) {
-          console.log('ERROR ON CLICK', err)
-        }
-      }}>
+      <button onClick={() => connect({connector: cbWalletConnector})}>
         Connect + SIWE
       </button>
       {valid !== undefined && <p>Is valid: {valid.toString()}</p>}
