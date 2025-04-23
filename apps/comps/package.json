@@ -16,17 +16,19 @@
     "docs:serve": "typedoc --watch --serve"
   },
   "dependencies": {
+    "@coinbase/wallet-sdk": "^4.3.2",
     "@recallnet/comps-db": "workspace:*",
+    "@coinbase/wallet-sdk": "^4.3.2",
     "@recallnet/fonts": "workspace:*",
     "@recallnet/ui2": "workspace:*",
     "@tanstack/react-query": "^5.64.2",
     "@vercel/analytics": "^1.5.0",
     "@wagmi/core": "^2.17.0",
     "axios": "^1.7.9",
-    "cookie": "^1.0.2",
     "next": "^15.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "siwe": "^3.0.0",
     "viem": "^2.28.0",
     "wagmi": "^2.14.8"
   },
