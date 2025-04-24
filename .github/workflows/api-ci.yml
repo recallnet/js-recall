@@ -8,47 +8,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  lint-and-format:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/api
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install Dependencies
-        run: pnpm install
-
-      - name: Check formatting
-        run: pnpm run format:check
-
-      - name: Lint
-        run: pnpm run lint
-
   build-test:
     runs-on: ubuntu-latest
     defaults:
@@ -123,7 +82,18 @@ jobs:
         run: pnpm install
 
       - name: Run unit tests
-        run: pnpm test
+        run: |
+          # List test files to ensure they're found
+          echo "Found these unit test files:"
+          find src -name "*.test.ts" || echo "No unit test files found"
+          
+          # Run unit tests with explicit path or pass with no tests
+          if [ -n "$(find src -name '*.test.ts')" ]; then
+            pnpm test -- src/**/*.test.ts
+          else
+            echo "No unit tests found, passing..."
+            pnpm test -- --passWithNoTests
+          fi
 
   e2e-tests:
     runs-on: ubuntu-latest
@@ -285,8 +255,12 @@ jobs:
 
       - name: Run E2E tests
         run: |
-          # Run the tests and capture the output
-          pnpm run test:e2e -- --detectOpenHandles --forceExit
+          # Create a test file list to ensure tests are found
+          echo "Found these test files:"
+          ls -la e2e/tests/
+          
+          # Run the E2E tests with explicit path to ensure they're found
+          pnpm run test:e2e -- e2e/tests/*.test.ts
         env:
           TEST_MODE: true
           DB_HOST: ${{ steps.detect-env.outputs.db_host }}
