@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
-import { BlockchainType, SpecificChain } from '../types';
+import { SpecificChain } from '../types';
 
 // Environment file selection logic:
 // - When NODE_ENV=test, load from .env.test

@@ -1,7 +1,6 @@
 import { BaseRepository } from '../base-repository';
 import { BlockchainType, SpecificChain } from '../../types';
 import { PriceRecord, DatabaseRow } from '../types';
-import { PoolClient } from 'pg';
 
 /**
  * Type for SQL query parameters
@@ -28,16 +27,13 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
     );
 
     try {
-      let query: string;
-      let values: SqlParams;
-
-      query = `
+      const query = `
           INSERT INTO prices (token, price, timestamp, chain, specific_chain)
           VALUES ($1, $2, $3, $4, $5)
           RETURNING id, token, price, timestamp, chain, specific_chain
         `;
 
-      values = [
+      const values = [
         priceData.token,
         priceData.price,
         priceData.timestamp,

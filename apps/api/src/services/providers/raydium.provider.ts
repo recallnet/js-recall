@@ -204,7 +204,7 @@ export class RaydiumProvider implements PriceSource {
         this.setCachedPrice(tokenAddress, price);
         return price;
       } catch (error) {
-        console.log(`[RaydiumProvider] Attempt ${attempt} failed, retrying...`);
+        console.log(`[RaydiumProvider] Attempt ${attempt} failed with error: ${error}, retrying...`);
         if (attempt === this.MAX_RETRIES) {
           // Try alternative endpoint as last resort
           return await this.fetchFromPriceAPI(tokenAddress);

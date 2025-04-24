@@ -66,6 +66,7 @@ function parseSelectionInput(input: string, maxIndex: number): number[] {
     }
 
     return result;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     return [];
   }

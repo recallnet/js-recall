@@ -1,5 +1,5 @@
 import { BaseRepository } from '../base-repository';
-import { Balance, SpecificChain } from '../../types';
+import { Balance } from '../../types';
 import { DatabaseRow } from '../types';
 import { PoolClient } from 'pg';
 import { config } from '../../config';
@@ -170,7 +170,7 @@ export class BalanceRepository extends BaseRepository<Balance> {
 
     for (const [chain, tokens] of Object.entries(specificChainTokens)) {
       // Check all tokens for this chain
-      for (const [symbol, address] of Object.entries(tokens)) {
+      for (const [, address] of Object.entries(tokens)) {
         if (address.toLowerCase() === token) {
           return chain;
         }
