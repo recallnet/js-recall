@@ -277,8 +277,7 @@ jobs:
             echo "❌ .env.test NOT found at expected path"
           fi
           
-          # Run the tests without additional flags (script already has --forceExit)
-          pnpm run test:e2e
+          pnpm run test:e2e -- --forceExit
         env:
           TEST_MODE: true
           DB_HOST: ${{ steps.detect-env.outputs.db_host }}
