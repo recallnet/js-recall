@@ -2,8 +2,8 @@
 
 import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
-import { SiweMessage } from "siwe";
 import type { Hex } from "viem";
+import { createSiweMessage } from "viem/siwe";
 import { useAccount, useConnect, usePublicClient, useSignMessage } from "wagmi";
 
 import { Button } from "@recallnet/ui2/components/button";
@@ -11,9 +11,8 @@ import { Button } from "@recallnet/ui2/components/button";
 import { cbWalletConnector } from "@/wagmi-config";
 
 export function ConnectAndSIWE() {
-  const [message, setMessage] = useState<SiweMessage | undefined>(undefined);
+  const [message, setMessage] = useState<string>("");
   const [signature, setSignature] = useState<Hex | undefined>(undefined);
-  const [valid, setValid] = useState<boolean | undefined>(undefined);
   const [login, setLoggedIn] = useState<boolean | undefined>(undefined);
 
   const { signMessage } = useSignMessage({
@@ -25,7 +24,7 @@ export function ConnectAndSIWE() {
   const { connect } = useConnect({
     mutation: {
       onSuccess: async (data) => {
-        const { data: res } = await axios<{ nonce: number }>({
+        const { data: res } = await axios<{ nonce: string }>({
           baseURL: "",
           method: "get",
           url: "/api/nonce",
@@ -37,7 +36,7 @@ export function ConnectAndSIWE() {
 
         const address = data.accounts[0];
         const chainId = data.chainId;
-        const m = new SiweMessage({
+        const m = createSiweMessage({
           domain: document.location.host,
           address,
           chainId,
@@ -47,7 +46,7 @@ export function ConnectAndSIWE() {
           nonce: res.nonce,
         });
         setMessage(m);
-        signMessage({ account: address, message: m.prepareMessage() });
+        signMessage({ account: address, message: m });
       },
     },
   });
@@ -60,11 +59,9 @@ export function ConnectAndSIWE() {
 
     const localValid = await client.verifyMessage({
       address: account.address,
-      message: message.prepareMessage(),
+      message: message,
       signature,
     });
-
-    setValid(localValid);
 
     if (localValid) {
       try {
