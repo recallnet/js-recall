@@ -39,32 +39,35 @@ async function generateSecrets(): Promise<void> {
   const rootEncryptionKey = generateSecureSecret();
 
   // Replace placeholder values
-  const placeholderPatterns = [/ROOT_ENCRYPTION_KEY=.*$/m];
-
-  const replacements = [`ROOT_ENCRYPTION_KEY=${rootEncryptionKey}`];
+  const placeholderPatterns = [
+    {
+      pattern: /ROOT_ENCRYPTION_KEY=.*$/m,
+      replacement: `ROOT_ENCRYPTION_KEY=${rootEncryptionKey}`,
+    },
+  ];
 
   // Only replace if the value looks like a placeholder or if it's a new file
   let newEnvContent = envContent;
 
-  placeholderPatterns.forEach((pattern, index) => {
-    const match = pattern.exec(newEnvContent);
+  placeholderPatterns.forEach((item) => {
+    const match = item.pattern.exec(newEnvContent);
 
     if (match) {
       const value = match[0].split("=")[1];
       // Check if it's a placeholder or has 'dev' or 'test' in it
       if (
         isNewFile ||
-        value.includes("your_") ||
-        value.includes("dev_") ||
-        value.includes("test_") ||
-        value.includes("replace_in_production") ||
+        value?.includes("your_") ||
+        value?.includes("dev_") ||
+        value?.includes("test_") ||
+        value?.includes("replace_in_production") ||
         value === ""
       ) {
-        newEnvContent = newEnvContent.replace(pattern, replacements[index]);
+        newEnvContent = newEnvContent.replace(item.pattern, item.replacement);
       }
     } else {
       // The variable doesn't exist in the file, add it
-      newEnvContent += `\n${replacements[index]}`;
+      newEnvContent += `\n${item.replacement}`;
     }
   });
 

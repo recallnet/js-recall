@@ -42,7 +42,11 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
       ];
 
       const result = await this.db.query(query, values);
-      return this.mapToEntity(this.toCamelCase(result.rows[0]));
+      const row = result.rows[0];
+      if (!row) {
+        throw new Error("No price record returned");
+      }
+      return this.mapToEntity(this.toCamelCase(row));
     } catch (error) {
       console.error("[PriceRepository] Error creating price record:", error);
       throw error;
@@ -70,7 +74,11 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
       `;
 
       const result = await this.db.query(query, [tableName, columnName]);
-      return result.rows[0].column_exists as boolean;
+      const row = result.rows[0];
+      if (!row) {
+        throw new Error("No row returned");
+      }
+      return row.column_exists as boolean;
     } catch (error) {
       console.error(
         `[PriceRepository] Error checking if column ${columnName} exists in table ${tableName}:`,
@@ -139,7 +147,12 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
       const result = await this.db.query(query, values);
       if (result.rows.length === 0) return null;
 
-      return this.mapToEntity(this.toCamelCase(result.rows[0]));
+      const row = result.rows[0];
+      if (!row) {
+        throw new Error("No row returned");
+      }
+
+      return this.mapToEntity(this.toCamelCase(row));
     } catch (error) {
       console.error("[PriceRepository] Error getting latest price:", error);
       throw error;
@@ -257,7 +270,7 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
       }
 
       const result = await this.db.query(query, values);
-      if (!result.rows[0].avg_price) return null;
+      if (!result.rows[0]?.avg_price) return null;
 
       return parseFloat(result.rows[0].avg_price as string);
     } catch (error) {
@@ -322,7 +335,7 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
       const result = await this.db.query(query, values);
       if (result.rows.length === 0) return null;
 
-      const earliestPrice = parseFloat(result.rows[0].price as string);
+      const earliestPrice = parseFloat(result.rows[0]!.price as string);
       const latestPrice = latestPriceRecord.price;
 
       // Calculate percentage change
@@ -344,7 +357,11 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
     try {
       const query = `SELECT COUNT(*) FROM prices`;
       const result = await this.db.query(query);
-      return parseInt(result.rows[0].count as string, 10);
+      const row = result.rows[0];
+      if (!row) {
+        throw new Error("No row returned");
+      }
+      return parseInt(row.count as string, 10);
     } catch (error) {
       console.error("[PriceRepository] Error counting records:", error);
       throw error;

@@ -273,8 +273,8 @@ export class TeamManager {
         throw new Error("Invalid encrypted key format");
       }
 
-      const iv = Buffer.from(parts[0], "hex");
-      const encrypted = parts[1];
+      const iv = Buffer.from(parts[0]!, "hex");
+      const encrypted = parts[1]!;
 
       // Create a consistently-sized key from the root encryption key
       const cryptoKey = crypto

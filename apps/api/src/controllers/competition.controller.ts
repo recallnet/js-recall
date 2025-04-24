@@ -312,7 +312,7 @@ export class CompetitionController {
 
         for (const token of Object.keys(chainBalances)) {
           const amount = chainBalances[token];
-          if (amount > 0) {
+          if (amount && amount > 0) {
             tokenItems.push(`${amount} ${token.toUpperCase()}`);
           }
         }

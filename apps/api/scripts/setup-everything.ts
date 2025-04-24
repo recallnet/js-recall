@@ -73,7 +73,7 @@ function generateRandomPassword(length: number = 16): string {
 
   for (let i = 0; i < length; i++) {
     const randomIndex = Math.floor(
-      (crypto.randomBytes(1)[0] / 255) * charset.length,
+      (crypto.randomBytes(1)[0]! / 255) * charset.length,
     );
     password += charset[randomIndex];
   }

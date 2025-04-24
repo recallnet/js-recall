@@ -49,8 +49,7 @@ async function listAllTeams() {
     // Sort teams by creation date (newest first)
     teams.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-    for (let i = 0; i < teams.length; i++) {
-      const team = teams[i];
+    teams.forEach((team, i) => {
       const created = new Date(team.createdAt).toLocaleString();
       const updated = new Date(team.updatedAt).toLocaleString();
 
@@ -87,7 +86,7 @@ async function listAllTeams() {
       if (i < teams.length - 1) {
         console.log(""); // Add an empty line between teams
       }
-    }
+    });
 
     console.log(`\n${colors.green}End of team listing.${colors.reset}`);
   } catch (error) {
