@@ -79,7 +79,7 @@ export async function initializeDatabase(): Promise<void> {
     const sqlSections = splitSqlIntoSections(sql);
 
     // Execute each section separately to better isolate errors
-    sqlSections.forEach(async (sqlSection, i) => {
+    for (const [i, sqlSection] of sqlSections.entries()) {
       try {
         console.log(
           `[Database] Executing SQL section ${i + 1} of ${sqlSections.length}...`,
@@ -96,7 +96,7 @@ export async function initializeDatabase(): Promise<void> {
         );
         throw error;
       }
-    });
+    }
 
     console.log("[Database] Database schema initialized successfully");
   } catch (error) {
