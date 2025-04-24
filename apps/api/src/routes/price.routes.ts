@@ -1,5 +1,6 @@
-import { Router } from 'express';
-import { PriceController } from '../controllers/price.controller';
+import { Router } from "express";
+
+import { PriceController } from "../controllers/price.controller";
 
 export const priceRoutes = Router();
 
@@ -85,7 +86,7 @@ export const priceRoutes = Router();
  *       500:
  *         description: Server error
  */
-priceRoutes.get('/', PriceController.getPrice);
+priceRoutes.get("/", PriceController.getPrice);
 
 /**
  * @openapi
@@ -165,6 +166,6 @@ priceRoutes.get('/', PriceController.getPrice);
  *       500:
  *         description: Server error
  */
-priceRoutes.get('/token-info', PriceController.getTokenInfo);
+priceRoutes.get("/token-info", PriceController.getTokenInfo);
 
 export default priceRoutes;

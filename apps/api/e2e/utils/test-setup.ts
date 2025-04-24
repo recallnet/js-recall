@@ -3,19 +3,19 @@
  *
  * This is used to set up global Jest configurations and hooks
  */
+import fs from "fs";
+import path from "path";
 
-import { dbManager } from './db-manager';
-import { services } from '../../src/services';
-import fs from 'fs';
-import path from 'path';
+import { services } from "../../src/services";
+import { dbManager } from "./db-manager";
 
 // Path to log file
-const logFile = path.resolve(__dirname, '../e2e-server.log');
+const logFile = path.resolve(__dirname, "../e2e-server.log");
 
 // Function to log to both console and file
 const log = (message: string) => {
   console.log(message);
-  fs.appendFileSync(logFile, message + '\n');
+  fs.appendFileSync(logFile, message + "\n");
 };
 
 // Extend the timeout for all tests
@@ -24,18 +24,18 @@ jest.setTimeout(60000);
 // Global Jest setup for E2E tests
 
 // Set test mode environment variable
-process.env.TEST_MODE = 'true';
+process.env.TEST_MODE = "true";
 
 // Before all tests in every file
 beforeAll(async () => {
-  log('[Global Setup] Initializing test environment...');
+  log("[Global Setup] Initializing test environment...");
 
   // Ensure database is initialized
   await dbManager.initialize();
 
   // Ensure scheduler is reset at the start of tests
   if (services.scheduler) {
-    log('[Global Setup] Resetting scheduler service...');
+    log("[Global Setup] Resetting scheduler service...");
     services.scheduler.reset();
   }
 });
@@ -44,12 +44,12 @@ beforeAll(async () => {
 beforeEach(async () => {
   // Reset scheduler to ensure a clean state for each test
   if (services.scheduler) {
-    log('[Global Setup] Resetting scheduler service for new test...');
+    log("[Global Setup] Resetting scheduler service for new test...");
     services.scheduler.reset();
   }
 
   // Reset caches to ensure a clean state for each test
-  log('[Global Setup] Resetting service caches...');
+  log("[Global Setup] Resetting service caches...");
 
   // Reset TeamManager caches
   if (services.teamManager) {
@@ -59,7 +59,9 @@ beforeEach(async () => {
       //@ts-expect-error known private class property
       const count = services.teamManager.apiKeyCache.size;
       if (count > 0) {
-        log(`[Global Setup] Clearing ${count} entries from TeamManager.apiKeyCache`);
+        log(
+          `[Global Setup] Clearing ${count} entries from TeamManager.apiKeyCache`,
+        );
         //@ts-expect-error known private class property
         services.teamManager.apiKeyCache.clear();
       }
@@ -71,7 +73,9 @@ beforeEach(async () => {
       //@ts-expect-error known private class property
       const count = services.teamManager.inactiveTeamsCache.size;
       if (count > 0) {
-        log(`[Global Setup] Clearing ${count} entries from TeamManager.inactiveTeamsCache`);
+        log(
+          `[Global Setup] Clearing ${count} entries from TeamManager.inactiveTeamsCache`,
+        );
         //@ts-expect-error known private class property
         services.teamManager.inactiveTeamsCache.clear();
       }
@@ -82,7 +86,7 @@ beforeEach(async () => {
   if (services.competitionManager) {
     //@ts-expect-error known private class property
     if (services.competitionManager.activeCompetitionCache !== null) {
-      log('[Global Setup] Resetting CompetitionManager.activeCompetitionCache');
+      log("[Global Setup] Resetting CompetitionManager.activeCompetitionCache");
       //@ts-expect-error known private class property
       services.competitionManager.activeCompetitionCache = null;
     }
@@ -95,7 +99,9 @@ beforeEach(async () => {
       //@ts-expect-error known private class property
       const count = services.balanceManager.balanceCache.size;
       if (count > 0) {
-        log(`[Global Setup] Clearing ${count} entries from BalanceManager.balanceCache`);
+        log(
+          `[Global Setup] Clearing ${count} entries from BalanceManager.balanceCache`,
+        );
         //@ts-expect-error known private class property
         services.balanceManager.balanceCache.clear();
       }
@@ -109,7 +115,9 @@ beforeEach(async () => {
       //@ts-expect-error known private class property
       const count = services.tradeSimulator.tradeCache.size;
       if (count > 0) {
-        log(`[Global Setup] Clearing ${count} entries from TradeSimulator.tradeCache`);
+        log(
+          `[Global Setup] Clearing ${count} entries from TradeSimulator.tradeCache`,
+        );
         //@ts-expect-error known private class property
         services.tradeSimulator.tradeCache.clear();
       }
@@ -123,7 +131,9 @@ beforeEach(async () => {
       //@ts-expect-error known private class property
       const count = services.priceTracker.priceCache.size;
       if (count > 0) {
-        log(`[Global Setup] Clearing ${count} entries from PriceTracker.priceCache`);
+        log(
+          `[Global Setup] Clearing ${count} entries from PriceTracker.priceCache`,
+        );
         //@ts-expect-error known private class property
         services.priceTracker.priceCache.clear();
       }
@@ -133,7 +143,7 @@ beforeEach(async () => {
   // Clear provider caches if they exist
   // These are typically accessed through the priceTracker service
   if (services.priceTracker) {
-    const providers = ['dexscreenerProvider', 'multiChainProvider'];
+    const providers = ["dexscreenerProvider", "multiChainProvider"];
 
     providers.forEach((providerName) => {
       //@ts-expect-error known private class property
@@ -142,7 +152,9 @@ beforeEach(async () => {
         if (provider.cache instanceof Map) {
           const count = provider.cache.size;
           if (count > 0) {
-            log(`[Global Setup] Clearing ${count} entries from ${providerName}.cache`);
+            log(
+              `[Global Setup] Clearing ${count} entries from ${providerName}.cache`,
+            );
             provider.cache.clear();
           }
         }
@@ -153,14 +165,14 @@ beforeEach(async () => {
 
 // After all tests in every file
 afterAll(async () => {
-  log('[Global Teardown] Cleaning up test environment...');
+  log("[Global Teardown] Cleaning up test environment...");
 
   try {
     // Stop the scheduler to prevent ongoing database connections
     if (services.scheduler) {
-      log('[Global Teardown] Stopping scheduler service...');
+      log("[Global Teardown] Stopping scheduler service...");
       services.scheduler.stopSnapshotScheduler();
-      log('[Global Teardown] Scheduler service stopped');
+      log("[Global Teardown] Scheduler service stopped");
     }
 
     // Add a small delay to allow any pending operations to complete
@@ -170,7 +182,7 @@ afterAll(async () => {
     await dbManager.cleanupTestState();
   } catch (error) {
     log(
-      '[Global Teardown] Error during cleanup: ' +
+      "[Global Teardown] Error during cleanup: " +
         (error instanceof Error ? error.message : String(error)),
     );
   }

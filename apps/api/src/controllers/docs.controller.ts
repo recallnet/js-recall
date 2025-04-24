@@ -1,6 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
-import swaggerUi from 'swagger-ui-express';
-import { swaggerSpec } from '../config/swagger';
+import { NextFunction, Request, Response } from "express";
+import swaggerUi from "swagger-ui-express";
+
+import { swaggerSpec } from "../config/swagger";
 
 /**
  * Documentation Controller
@@ -12,9 +13,9 @@ export class DocsController {
    */
   static readonly swaggerUiOptions = {
     explorer: true,
-    customCss: '.swagger-ui .topbar { display: none }',
+    customCss: ".swagger-ui .topbar { display: none }",
     swaggerOptions: {
-      docExpansion: 'none',
+      docExpansion: "none",
       filter: true,
       showRequestDuration: true,
     },
@@ -24,7 +25,10 @@ export class DocsController {
    * Get API documentation - Serves the Swagger UI
    * This is a placeholder method for route configuration - the actual UI is handled by swagger-ui-express
    */
-  static getApiDocs = swaggerUi.setup(swaggerSpec, DocsController.swaggerUiOptions);
+  static getApiDocs = swaggerUi.setup(
+    swaggerSpec,
+    DocsController.swaggerUiOptions,
+  );
 
   /**
    * Middleware for serving swagger-ui assets
@@ -38,7 +42,7 @@ export class DocsController {
    */
   static getApiSpec(req: Request, res: Response, next: NextFunction) {
     try {
-      res.setHeader('Content-Type', 'application/json');
+      res.setHeader("Content-Type", "application/json");
       res.send(swaggerSpec);
     } catch (error) {
       next(error);

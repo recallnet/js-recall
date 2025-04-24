@@ -1,17 +1,23 @@
-import { PriceSource } from '../../types';
-import { BlockchainType, SpecificChain, PriceReport } from '../../types';
-import axios from 'axios';
-import config from '../../config';
+import axios from "axios";
+
+import config from "../../config";
+import { PriceSource } from "../../types";
+import { BlockchainType, PriceReport, SpecificChain } from "../../types";
 
 /**
  * Noves price provider implementation
  * Uses Noves API to get token prices across multiple chains
  */
 export class NovesProvider implements PriceSource {
-  private readonly API_BASE = 'https://pricing.noves.fi';
+  private readonly API_BASE = "https://pricing.noves.fi";
   private cache: Map<
     string,
-    { price: number; timestamp: number; chain: string; specificChain?: SpecificChain }
+    {
+      price: number;
+      timestamp: number;
+      chain: string;
+      specificChain?: SpecificChain;
+    }
   >;
   private readonly CACHE_DURATION = 30000; // 30 seconds
   private lastRequestTime: number = 0;
@@ -25,7 +31,7 @@ export class NovesProvider implements PriceSource {
   }
 
   getName(): string {
-    return 'Noves';
+    return "Noves";
   }
 
   private async delay(ms: number): Promise<void> {
@@ -48,7 +54,10 @@ export class NovesProvider implements PriceSource {
     const cacheKey = `${chain}:${tokenAddress}`;
     const cached = this.cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
-      return { price: cached.price, specificChain: cached.specificChain as SpecificChain };
+      return {
+        price: cached.price,
+        specificChain: cached.specificChain as SpecificChain,
+      };
     }
     return null;
   }
@@ -92,7 +101,9 @@ export class NovesProvider implements PriceSource {
   async determineSpecificEVMChain(
     tokenAddress: string,
   ): Promise<{ specificChain: SpecificChain; price: number } | null> {
-    console.log(`[NovesProvider] Determining specific chain for EVM token: ${tokenAddress}`);
+    console.log(
+      `[NovesProvider] Determining specific chain for EVM token: ${tokenAddress}`,
+    );
 
     // Try each supported chain until we find one that returns a price
     for (const chain of this.supportedChains) {
@@ -100,44 +111,54 @@ export class NovesProvider implements PriceSource {
         await this.enforceRateLimit();
 
         const url = `${this.API_BASE}/evm/${chain}/price/${tokenAddress}`;
-        console.log(`[NovesProvider] Trying to find token on chain: ${chain}, URL: ${url}`);
+        console.log(
+          `[NovesProvider] Trying to find token on chain: ${chain}, URL: ${url}`,
+        );
 
         const response = await axios.get(url, {
           headers: {
             apiKey: this.apiKey,
-            accept: 'application/json',
+            accept: "application/json",
           },
           timeout: 10000,
         });
 
-        console.log(`[NovesProvider] Response for ${chain}: ${JSON.stringify(response.data)}`);
+        console.log(
+          `[NovesProvider] Response for ${chain}: ${JSON.stringify(response.data)}`,
+        );
 
         // Check if the response has a valid structure
         if (response.status === 200 && response.data) {
           // Check if the price is completed (not in progress)
           if (
-            response.data.priceStatus !== 'inProgress' &&
+            response.data.priceStatus !== "inProgress" &&
             response.data.price &&
             response.data.price.amount
           ) {
             const price = parseFloat(response.data.price.amount);
             if (!isNaN(price)) {
-              console.log(`[NovesProvider] Found token on chain ${chain} with price: $${price}`);
+              console.log(
+                `[NovesProvider] Found token on chain ${chain} with price: $${price}`,
+              );
               return { specificChain: chain, price };
             } else {
               console.log(
                 `[NovesProvider] Invalid price amount for token on chain ${chain}: ${response.data.price.amount}`,
               );
             }
-          } else if (response.data.priceStatus === 'inProgress') {
-            console.log(`[NovesProvider] Price calculation in progress for ${chain}`);
+          } else if (response.data.priceStatus === "inProgress") {
+            console.log(
+              `[NovesProvider] Price calculation in progress for ${chain}`,
+            );
           } else {
             console.log(
               `[NovesProvider] Invalid or missing price data for ${chain}: ${JSON.stringify(response.data.price)}`,
             );
           }
         } else {
-          console.log(`[NovesProvider] Unexpected response format for ${chain}`);
+          console.log(
+            `[NovesProvider] Unexpected response format for ${chain}`,
+          );
         }
       } catch (error) {
         // 401/404 errors are expected when the token is not on this chain
@@ -152,13 +173,15 @@ export class NovesProvider implements PriceSource {
         } else {
           console.error(
             `[NovesProvider] Error checking chain ${chain}:`,
-            error instanceof Error ? error.message : 'Unknown error',
+            error instanceof Error ? error.message : "Unknown error",
           );
         }
       }
     }
 
-    console.log(`[NovesProvider] Could not find token ${tokenAddress} on any supported EVM chain`);
+    console.log(
+      `[NovesProvider] Could not find token ${tokenAddress} on any supported EVM chain`,
+    );
     return null;
   }
 
@@ -180,13 +203,14 @@ export class NovesProvider implements PriceSource {
 
       // Determine chain if provided as default
       const tokenChain = chain || this.determineChain(normalizedAddress);
-      const finalSpecificChain = tokenChain === BlockchainType.SVM ? 'svm' : specificChain;
+      const finalSpecificChain =
+        tokenChain === BlockchainType.SVM ? "svm" : specificChain;
 
       // Check cache first
       const cachedResult = this.getCachedPrice(normalizedAddress, tokenChain);
       if (cachedResult !== null) {
         console.log(
-          `[NovesProvider] Using cached price for ${normalizedAddress} on ${tokenChain} (${cachedResult.specificChain || 'unknown'}): $${cachedResult.price}`,
+          `[NovesProvider] Using cached price for ${normalizedAddress} on ${tokenChain} (${cachedResult.specificChain || "unknown"}): $${cachedResult.price}`,
         );
         return {
           token: normalizedAddress,
@@ -197,7 +221,9 @@ export class NovesProvider implements PriceSource {
         };
       }
 
-      console.log(`[NovesProvider] Getting price for ${normalizedAddress} on ${tokenChain}`);
+      console.log(
+        `[NovesProvider] Getting price for ${normalizedAddress} on ${tokenChain}`,
+      );
 
       // For Solana tokens
       if (tokenChain === BlockchainType.SVM) {
@@ -208,7 +234,7 @@ export class NovesProvider implements PriceSource {
             price,
             timestamp: new Date(),
             chain: BlockchainType.SVM,
-            specificChain: 'svm',
+            specificChain: "svm",
           };
         }
         return null;
@@ -217,9 +243,17 @@ export class NovesProvider implements PriceSource {
       // For EVM tokens
       // If specificChain is provided, try that first
       if (specificChain) {
-        const price = await this.getPriceForSpecificEVMChain(normalizedAddress, specificChain);
+        const price = await this.getPriceForSpecificEVMChain(
+          normalizedAddress,
+          specificChain,
+        );
         if (price !== null) {
-          this.setCachedPrice(normalizedAddress, tokenChain, price, specificChain);
+          this.setCachedPrice(
+            normalizedAddress,
+            tokenChain,
+            price,
+            specificChain,
+          );
           return {
             token: normalizedAddress,
             price,
@@ -231,7 +265,8 @@ export class NovesProvider implements PriceSource {
       }
 
       // Otherwise, we need to determine which specific chain the token is on
-      const chainResult = await this.determineSpecificEVMChain(normalizedAddress);
+      const chainResult =
+        await this.determineSpecificEVMChain(normalizedAddress);
       if (chainResult !== null) {
         this.setCachedPrice(
           normalizedAddress,
@@ -253,7 +288,7 @@ export class NovesProvider implements PriceSource {
     } catch (error) {
       console.error(
         `[NovesProvider] Error fetching price for ${tokenAddress}:`,
-        error instanceof Error ? error.message : 'Unknown error',
+        error instanceof Error ? error.message : "Unknown error",
       );
       return null;
     }
@@ -277,7 +312,7 @@ export class NovesProvider implements PriceSource {
       const response = await axios.get(url, {
         headers: {
           apiKey: this.apiKey,
-          accept: 'application/json',
+          accept: "application/json",
         },
         timeout: 10000,
       });
@@ -290,13 +325,15 @@ export class NovesProvider implements PriceSource {
       if (response.status === 200 && response.data) {
         // Check if the price is completed (not in progress)
         if (
-          response.data.priceStatus !== 'inProgress' &&
+          response.data.priceStatus !== "inProgress" &&
           response.data.price &&
           response.data.price.amount
         ) {
           const price = parseFloat(response.data.price.amount);
           if (!isNaN(price)) {
-            console.log(`[NovesProvider] Found price on specific chain ${chain}: $${price}`);
+            console.log(
+              `[NovesProvider] Found price on specific chain ${chain}: $${price}`,
+            );
             return price;
           } else {
             console.log(
@@ -304,8 +341,10 @@ export class NovesProvider implements PriceSource {
             );
             return null;
           }
-        } else if (response.data.priceStatus === 'inProgress') {
-          console.log(`[NovesProvider] Price calculation in progress for specific chain ${chain}`);
+        } else if (response.data.priceStatus === "inProgress") {
+          console.log(
+            `[NovesProvider] Price calculation in progress for specific chain ${chain}`,
+          );
           return null;
         } else {
           console.log(
@@ -314,18 +353,24 @@ export class NovesProvider implements PriceSource {
           return null;
         }
       } else {
-        console.log(`[NovesProvider] Unexpected response format for specific chain ${chain}`);
+        console.log(
+          `[NovesProvider] Unexpected response format for specific chain ${chain}`,
+        );
         return null;
       }
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response && error.response.status >= 400) {
+      if (
+        axios.isAxiosError(error) &&
+        error.response &&
+        error.response.status >= 400
+      ) {
         console.log(
           `[NovesProvider] Token ${tokenAddress} not found on ${chain} chain: ${error.response.status}`,
         );
         return null;
       }
       console.log(
-        `[NovesProvider] Error querying ${chain}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `[NovesProvider] Error querying ${chain}: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
 
@@ -350,18 +395,20 @@ export class NovesProvider implements PriceSource {
         const response = await axios.get(url, {
           headers: {
             apiKey: this.apiKey,
-            accept: 'application/json',
+            accept: "application/json",
           },
           timeout: 10000, // Increase timeout to 10 seconds
         });
 
-        console.log(`[NovesProvider] Solana response: ${JSON.stringify(response.data)}`);
+        console.log(
+          `[NovesProvider] Solana response: ${JSON.stringify(response.data)}`,
+        );
 
         // Check if the response has a valid structure
         if (response.status === 200 && response.data) {
           // Check if the price is completed (not in progress)
           if (
-            response.data.priceStatus !== 'inProgress' &&
+            response.data.priceStatus !== "inProgress" &&
             response.data.price &&
             response.data.price.amount
           ) {
@@ -379,7 +426,7 @@ export class NovesProvider implements PriceSource {
               await this.delay(this.RETRY_DELAY * attempt);
               continue;
             }
-          } else if (response.data.priceStatus === 'inProgress') {
+          } else if (response.data.priceStatus === "inProgress") {
             console.log(
               `[NovesProvider] Price calculation in progress for Solana token ${tokenAddress}`,
             );
@@ -404,7 +451,11 @@ export class NovesProvider implements PriceSource {
         }
       } catch (error) {
         if (attempt === this.MAX_RETRIES) {
-          if (axios.isAxiosError(error) && error.response && error.response.status >= 400) {
+          if (
+            axios.isAxiosError(error) &&
+            error.response &&
+            error.response.status >= 400
+          ) {
             console.log(
               `[NovesProvider] API error for Solana token ${tokenAddress}: ${error.response.status}`,
             );
@@ -412,7 +463,9 @@ export class NovesProvider implements PriceSource {
           }
           throw error;
         }
-        console.log(`[NovesProvider] Attempt ${attempt} failed, retrying after delay...`);
+        console.log(
+          `[NovesProvider] Attempt ${attempt} failed, retrying after delay...`,
+        );
         if (axios.isAxiosError(error)) {
           console.error(`[NovesProvider] Axios error details:`, {
             message: error.message,
@@ -433,9 +486,14 @@ export class NovesProvider implements PriceSource {
    * @param specificChain Optional specific chain to check
    * @returns True if token is supported, false otherwise
    */
-  async supports(tokenAddress: string, specificChain: SpecificChain): Promise<boolean> {
+  async supports(
+    tokenAddress: string,
+    specificChain: SpecificChain,
+  ): Promise<boolean> {
     try {
-      console.log(`[NovesProvider] Checking support for token: ${tokenAddress}`);
+      console.log(
+        `[NovesProvider] Checking support for token: ${tokenAddress}`,
+      );
       // First determine the chain
       const tokenChain = this.determineChain(tokenAddress);
 
@@ -445,12 +503,16 @@ export class NovesProvider implements PriceSource {
       }
 
       // Try to get the price - if we get a value back, it's supported
-      const price = await this.getPrice(tokenAddress, tokenChain, specificChain);
+      const price = await this.getPrice(
+        tokenAddress,
+        tokenChain,
+        specificChain,
+      );
       return price !== null;
     } catch (error) {
       console.error(
         `[NovesProvider] Error checking token support:`,
-        error instanceof Error ? error.message : 'Unknown error',
+        error instanceof Error ? error.message : "Unknown error",
       );
       return false;
     }

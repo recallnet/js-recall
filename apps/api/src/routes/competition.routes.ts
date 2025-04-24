@@ -1,5 +1,6 @@
-import { Router } from 'express';
-import { CompetitionController } from '../controllers/competition.controller';
+import { Router } from "express";
+
+import { CompetitionController } from "../controllers/competition.controller";
 
 const router = Router();
 
@@ -110,7 +111,7 @@ const router = Router();
  *       500:
  *         description: Server error
  */
-router.get('/leaderboard', CompetitionController.getLeaderboard);
+router.get("/leaderboard", CompetitionController.getLeaderboard);
 
 /**
  * @openapi
@@ -192,7 +193,7 @@ router.get('/leaderboard', CompetitionController.getLeaderboard);
  *       500:
  *         description: Server error
  */
-router.get('/status', CompetitionController.getStatus);
+router.get("/status", CompetitionController.getStatus);
 
 /**
  * @openapi
@@ -265,6 +266,6 @@ router.get('/status', CompetitionController.getStatus);
  *       500:
  *         description: Server error
  */
-router.get('/rules', CompetitionController.getRules);
+router.get("/rules", CompetitionController.getRules);
 
 export default router;

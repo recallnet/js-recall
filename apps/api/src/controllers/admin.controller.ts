@@ -1,12 +1,13 @@
-import { Request, Response, NextFunction } from 'express';
-import { services } from '../services';
-import { ApiError } from '../middleware/errorHandler';
-import { v4 as uuidv4 } from 'uuid';
-import { repositories } from '../database';
-import { CompetitionStatus } from '../types';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as crypto from 'crypto';
+import * as crypto from "crypto";
+import { NextFunction, Request, Response } from "express";
+import * as fs from "fs";
+import * as path from "path";
+import { v4 as uuidv4 } from "uuid";
+
+import { repositories } from "../database";
+import { ApiError } from "../middleware/errorHandler";
+import { services } from "../services";
+import { CompetitionStatus } from "../types";
 
 /**
  * Admin Controller
@@ -27,28 +28,34 @@ export class AdminController {
       const adminExists = teams.some((team) => team.isAdmin === true);
 
       if (adminExists) {
-        throw new ApiError(403, 'Admin setup is not allowed - an admin account already exists');
+        throw new ApiError(
+          403,
+          "Admin setup is not allowed - an admin account already exists",
+        );
       }
 
       // Validate required parameters
       const { username, password, email } = req.body;
       if (!username || !password || !email) {
-        throw new ApiError(400, 'Missing required parameters: username, password, email');
+        throw new ApiError(
+          400,
+          "Missing required parameters: username, password, email",
+        );
       }
 
       // Validate password strength
       if (password.length < 8) {
-        throw new ApiError(400, 'Password must be at least 8 characters long');
+        throw new ApiError(400, "Password must be at least 8 characters long");
       }
 
       // Ensure that ROOT_ENCRYPTION_KEY exists in .env file
       try {
         // Find .env file in app root directory
-        const envPath = path.resolve(process.cwd(), '.env');
+        const envPath = path.resolve(process.cwd(), ".env");
         console.log(`[AdminController] Checking for .env file at: ${envPath}`);
 
         if (fs.existsSync(envPath)) {
-          const envContent = fs.readFileSync(envPath, 'utf8');
+          const envContent = fs.readFileSync(envPath, "utf8");
           const rootKeyPattern = /ROOT_ENCRYPTION_KEY=.*$/m;
 
           // Check if ROOT_ENCRYPTION_KEY already exists and is not the default
@@ -56,26 +63,28 @@ export class AdminController {
           let needsNewKey = true;
 
           if (keyMatch) {
-            const currentValue = keyMatch[0].split('=')[1];
+            const currentValue = keyMatch[0].split("=")[1];
             if (
               currentValue &&
               currentValue.length >= 32 &&
-              !currentValue.includes('default_encryption_key') &&
-              !currentValue.includes('your_') &&
-              !currentValue.includes('dev_') &&
-              !currentValue.includes('test_') &&
-              !currentValue.includes('replace_in_production')
+              !currentValue.includes("default_encryption_key") &&
+              !currentValue.includes("your_") &&
+              !currentValue.includes("dev_") &&
+              !currentValue.includes("test_") &&
+              !currentValue.includes("replace_in_production")
             ) {
               // Key exists and seems to be a proper key already
-              console.log('[AdminController] ROOT_ENCRYPTION_KEY already exists in .env');
+              console.log(
+                "[AdminController] ROOT_ENCRYPTION_KEY already exists in .env",
+              );
               needsNewKey = false;
             }
           }
 
           if (needsNewKey) {
             // Generate a new secure encryption key
-            const newEncryptionKey = crypto.randomBytes(32).toString('hex');
-            console.log('[AdminController] Generated new ROOT_ENCRYPTION_KEY');
+            const newEncryptionKey = crypto.randomBytes(32).toString("hex");
+            console.log("[AdminController] Generated new ROOT_ENCRYPTION_KEY");
 
             // Update the .env file
             let updatedEnvContent = envContent;
@@ -89,20 +98,28 @@ export class AdminController {
             } else {
               // Add new key
               updatedEnvContent =
-                envContent.trim() + `\n\nROOT_ENCRYPTION_KEY=${newEncryptionKey}\n`;
+                envContent.trim() +
+                `\n\nROOT_ENCRYPTION_KEY=${newEncryptionKey}\n`;
             }
 
             fs.writeFileSync(envPath, updatedEnvContent);
-            console.log('[AdminController] Updated ROOT_ENCRYPTION_KEY in .env file');
+            console.log(
+              "[AdminController] Updated ROOT_ENCRYPTION_KEY in .env file",
+            );
 
             // We need to update the process.env with the new key for it to be used immediately
             process.env.ROOT_ENCRYPTION_KEY = newEncryptionKey;
           }
         } else {
-          console.error('[AdminController] .env file not found at expected location');
+          console.error(
+            "[AdminController] .env file not found at expected location",
+          );
         }
       } catch (envError) {
-        console.error('[AdminController] Error updating ROOT_ENCRYPTION_KEY:', envError);
+        console.error(
+          "[AdminController] Error updating ROOT_ENCRYPTION_KEY:",
+          envError,
+        );
         // Continue with admin setup even if the env update fails
       }
 
@@ -117,9 +134,9 @@ export class AdminController {
         id: uuidv4(),
         name: username, // Use username as team name for admin
         email,
-        contactPerson: 'System Administrator',
+        contactPerson: "System Administrator",
         apiKey: encryptedApiKey,
-        walletAddress: '0x0000000000000000000000000000000000000000', // Placeholder address for admin
+        walletAddress: "0x0000000000000000000000000000000000000000", // Placeholder address for admin
         isAdmin: true, // Set admin flag
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -128,7 +145,7 @@ export class AdminController {
       // Return success without exposing password
       res.status(201).json({
         success: true,
-        message: 'Admin account created successfully',
+        message: "Admin account created successfully",
         admin: {
           id: admin.id,
           username: admin.name,
@@ -150,13 +167,15 @@ export class AdminController {
    */
   static async registerTeam(req: Request, res: Response, next: NextFunction) {
     try {
-      const { teamName, email, contactPerson, walletAddress, metadata } = req.body;
+      const { teamName, email, contactPerson, walletAddress, metadata } =
+        req.body;
 
       // Validate required parameters
       if (!teamName || !email || !contactPerson || !walletAddress) {
         return res.status(400).json({
           success: false,
-          error: 'Missing required parameters: teamName, email, contactPerson, walletAddress',
+          error:
+            "Missing required parameters: teamName, email, contactPerson, walletAddress",
         });
       }
 
@@ -165,7 +184,7 @@ export class AdminController {
 
       if (existingTeam) {
         const errorMessage = `A team with email ${email} already exists`;
-        console.log('[AdminController] Duplicate email error:', errorMessage);
+        console.log("[AdminController] Duplicate email error:", errorMessage);
         return res.status(409).json({
           success: false,
           error: errorMessage,
@@ -197,10 +216,13 @@ export class AdminController {
           },
         });
       } catch (error) {
-        console.error('[AdminController] Error registering team:', error);
+        console.error("[AdminController] Error registering team:", error);
 
         // Check if this is a duplicate email error that somehow got here
-        if (error instanceof Error && error.message.includes('email already exists')) {
+        if (
+          error instanceof Error &&
+          error.message.includes("email already exists")
+        ) {
           return res.status(409).json({
             success: false,
             error: error.message,
@@ -210,8 +232,8 @@ export class AdminController {
         // Check if this is an invalid wallet address error
         if (
           error instanceof Error &&
-          (error.message.includes('Wallet address is required') ||
-            error.message.includes('Invalid Ethereum address'))
+          (error.message.includes("Wallet address is required") ||
+            error.message.includes("Invalid Ethereum address"))
         ) {
           return res.status(400).json({
             success: false,
@@ -222,22 +244,27 @@ export class AdminController {
         // Check if this is a duplicate wallet address error (UNIQUE constraint)
         if (
           error instanceof Error &&
-          error.message.includes('duplicate key value violates unique constraint')
+          error.message.includes(
+            "duplicate key value violates unique constraint",
+          )
         ) {
           return res.status(409).json({
             success: false,
-            error: 'A team with this wallet address already exists',
+            error: "A team with this wallet address already exists",
           });
         }
 
         // Handle other errors
         return res.status(500).json({
           success: false,
-          error: error instanceof Error ? error.message : 'Unknown error registering team',
+          error:
+            error instanceof Error
+              ? error.message
+              : "Unknown error registering team",
         });
       }
     } catch (error) {
-      console.error('[AdminController] Uncaught error in registerTeam:', error);
+      console.error("[AdminController] Uncaught error in registerTeam:", error);
       next(error);
     }
   }
@@ -247,17 +274,24 @@ export class AdminController {
    * @param res Express response
    * @param next Express next function
    */
-  static async createCompetition(req: Request, res: Response, next: NextFunction) {
+  static async createCompetition(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
     try {
       const { name, description } = req.body;
 
       // Validate required parameters
       if (!name) {
-        throw new ApiError(400, 'Missing required parameter: name');
+        throw new ApiError(400, "Missing required parameter: name");
       }
 
       // Create a new competition
-      const competition = await services.competitionManager.createCompetition(name, description);
+      const competition = await services.competitionManager.createCompetition(
+        name,
+        description,
+      );
 
       // Return the created competition
       res.status(201).json({
@@ -274,13 +308,17 @@ export class AdminController {
    * @param res Express response
    * @param next Express next function
    */
-  static async startCompetition(req: Request, res: Response, next: NextFunction) {
+  static async startCompetition(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
     try {
       const { competitionId, name, description, teamIds } = req.body;
 
       // Validate required parameters
       if (!teamIds || !Array.isArray(teamIds) || teamIds.length === 0) {
-        throw new ApiError(400, 'Missing required parameter: teamIds (array)');
+        throw new ApiError(400, "Missing required parameter: teamIds (array)");
       }
 
       let competition;
@@ -288,10 +326,11 @@ export class AdminController {
       // Check if we're starting an existing competition or creating a new one
       if (competitionId) {
         // Get the existing competition
-        competition = await services.competitionManager.getCompetition(competitionId);
+        competition =
+          await services.competitionManager.getCompetition(competitionId);
 
         if (!competition) {
-          throw new ApiError(404, 'Competition not found');
+          throw new ApiError(404, "Competition not found");
         }
 
         // Verify competition is in PENDING state
@@ -306,19 +345,23 @@ export class AdminController {
         if (!name) {
           throw new ApiError(
             400,
-            'Missing required parameter: name (required when competitionId is not provided)',
+            "Missing required parameter: name (required when competitionId is not provided)",
           );
         }
 
         // Create a new competition
-        competition = await services.competitionManager.createCompetition(name, description);
+        competition = await services.competitionManager.createCompetition(
+          name,
+          description,
+        );
       }
 
       // Start the competition
-      const startedCompetition = await services.competitionManager.startCompetition(
-        competition.id,
-        teamIds,
-      );
+      const startedCompetition =
+        await services.competitionManager.startCompetition(
+          competition.id,
+          teamIds,
+        );
 
       // Return the started competition
       res.status(200).json({
@@ -344,14 +387,16 @@ export class AdminController {
 
       // Validate required parameters
       if (!competitionId) {
-        throw new ApiError(400, 'Missing required parameter: competitionId');
+        throw new ApiError(400, "Missing required parameter: competitionId");
       }
 
       // End the competition
-      const endedCompetition = await services.competitionManager.endCompetition(competitionId);
+      const endedCompetition =
+        await services.competitionManager.endCompetition(competitionId);
 
       // Get final leaderboard
-      const leaderboard = await services.competitionManager.getLeaderboard(competitionId);
+      const leaderboard =
+        await services.competitionManager.getLeaderboard(competitionId);
 
       // Return the ended competition with leaderboard
       res.status(200).json({
@@ -369,23 +414,31 @@ export class AdminController {
    * @param res Express response
    * @param next Express next function
    */
-  static async getPerformanceReports(req: Request, res: Response, next: NextFunction) {
+  static async getPerformanceReports(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
     try {
       const { competitionId } = req.query;
 
       // Validate required parameters
       if (!competitionId) {
-        throw new ApiError(400, 'Missing required parameter: competitionId');
+        throw new ApiError(400, "Missing required parameter: competitionId");
       }
 
       // Get the competition
-      const competition = await services.competitionManager.getCompetition(competitionId as string);
+      const competition = await services.competitionManager.getCompetition(
+        competitionId as string,
+      );
       if (!competition) {
-        throw new ApiError(404, 'Competition not found');
+        throw new ApiError(404, "Competition not found");
       }
 
       // Get leaderboard
-      const leaderboard = await services.competitionManager.getLeaderboard(competitionId as string);
+      const leaderboard = await services.competitionManager.getLeaderboard(
+        competitionId as string,
+      );
 
       // Get all teams
       const teams = await services.teamManager.getAllTeams();
@@ -397,7 +450,7 @@ export class AdminController {
       const formattedLeaderboard = leaderboard.map((entry, index) => ({
         rank: index + 1,
         teamId: entry.teamId,
-        teamName: teamMap.get(entry.teamId) || 'Unknown Team',
+        teamName: teamMap.get(entry.teamId) || "Unknown Team",
         portfolioValue: entry.value,
       }));
 
@@ -459,7 +512,7 @@ export class AdminController {
       if (!teamId) {
         return res.status(400).json({
           success: false,
-          error: 'Team ID is required',
+          error: "Team ID is required",
         });
       }
 
@@ -469,7 +522,7 @@ export class AdminController {
       if (!team) {
         return res.status(404).json({
           success: false,
-          error: 'Team not found',
+          error: "Team not found",
         });
       }
 
@@ -477,7 +530,7 @@ export class AdminController {
       if (team.isAdmin) {
         return res.status(403).json({
           success: false,
-          error: 'Cannot delete admin accounts',
+          error: "Cannot delete admin accounts",
         });
       }
 
@@ -487,16 +540,16 @@ export class AdminController {
       if (deleted) {
         return res.status(200).json({
           success: true,
-          message: 'Team successfully deleted',
+          message: "Team successfully deleted",
         });
       } else {
         return res.status(500).json({
           success: false,
-          error: 'Failed to delete team',
+          error: "Failed to delete team",
         });
       }
     } catch (error) {
-      console.error('[AdminController] Error deleting team:', error);
+      console.error("[AdminController] Error deleting team:", error);
       next(error);
     }
   }
@@ -506,19 +559,24 @@ export class AdminController {
    * @param res Express response
    * @param next Express next function
    */
-  static async getCompetitionSnapshots(req: Request, res: Response, next: NextFunction) {
+  static async getCompetitionSnapshots(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
     try {
       const { competitionId } = req.params;
 
       // Validate required parameters
       if (!competitionId) {
-        throw new ApiError(400, 'Missing required parameter: competitionId');
+        throw new ApiError(400, "Missing required parameter: competitionId");
       }
 
       // Check if the competition exists
-      const competition = await services.competitionManager.getCompetition(competitionId);
+      const competition =
+        await services.competitionManager.getCompetition(competitionId);
       if (!competition) {
-        throw new ApiError(404, 'Competition not found');
+        throw new ApiError(404, "Competition not found");
       }
 
       // Get team ID from query param if provided
@@ -530,16 +588,20 @@ export class AdminController {
         // Check if the team exists and is in the competition
         const team = await repositories.teamRepository.findById(teamId);
         if (!team) {
-          throw new ApiError(404, 'Team not found');
+          throw new ApiError(404, "Team not found");
         }
 
-        const isTeamInCompetition = await repositories.teamRepository.isTeamInCompetition(
-          teamId,
-          competitionId,
-        );
+        const isTeamInCompetition =
+          await repositories.teamRepository.isTeamInCompetition(
+            teamId,
+            competitionId,
+          );
 
         if (!isTeamInCompetition) {
-          throw new ApiError(400, 'Team is not participating in this competition');
+          throw new ApiError(
+            400,
+            "Team is not participating in this competition",
+          );
         }
 
         // Get snapshots for the specific team
@@ -549,14 +611,18 @@ export class AdminController {
         );
       } else {
         // Get snapshots for all teams in the competition
-        const teams = await repositories.competitionRepository.getCompetitionTeams(competitionId);
+        const teams =
+          await repositories.competitionRepository.getCompetitionTeams(
+            competitionId,
+          );
         snapshots = [];
 
         for (const teamId of teams) {
-          const teamSnapshots = await services.competitionManager.getTeamPortfolioSnapshots(
-            competitionId,
-            teamId,
-          );
+          const teamSnapshots =
+            await services.competitionManager.getTeamPortfolioSnapshots(
+              competitionId,
+              teamId,
+            );
           snapshots.push(...teamSnapshots);
         }
       }
@@ -586,14 +652,14 @@ export class AdminController {
       if (!teamId) {
         return res.status(400).json({
           success: false,
-          error: 'Team ID is required',
+          error: "Team ID is required",
         });
       }
 
       if (!reason) {
         return res.status(400).json({
           success: false,
-          error: 'Reason for deactivation is required',
+          error: "Reason for deactivation is required",
         });
       }
 
@@ -603,7 +669,7 @@ export class AdminController {
       if (!team) {
         return res.status(404).json({
           success: false,
-          error: 'Team not found',
+          error: "Team not found",
         });
       }
 
@@ -611,7 +677,7 @@ export class AdminController {
       if (team.isAdmin) {
         return res.status(403).json({
           success: false,
-          error: 'Cannot deactivate admin accounts',
+          error: "Cannot deactivate admin accounts",
         });
       }
 
@@ -619,7 +685,7 @@ export class AdminController {
       if (team.active === false) {
         return res.status(400).json({
           success: false,
-          error: 'Team is already inactive',
+          error: "Team is already inactive",
           team: {
             id: team.id,
             name: team.name,
@@ -631,12 +697,15 @@ export class AdminController {
       }
 
       // Deactivate the team
-      const deactivatedTeam = await services.teamManager.deactivateTeam(teamId, reason);
+      const deactivatedTeam = await services.teamManager.deactivateTeam(
+        teamId,
+        reason,
+      );
 
       if (!deactivatedTeam) {
         return res.status(500).json({
           success: false,
-          error: 'Failed to deactivate team',
+          error: "Failed to deactivate team",
         });
       }
 
@@ -670,7 +739,7 @@ export class AdminController {
       if (!teamId) {
         return res.status(400).json({
           success: false,
-          error: 'Team ID is required',
+          error: "Team ID is required",
         });
       }
 
@@ -680,7 +749,7 @@ export class AdminController {
       if (!team) {
         return res.status(404).json({
           success: false,
-          error: 'Team not found',
+          error: "Team not found",
         });
       }
 
@@ -688,7 +757,7 @@ export class AdminController {
       if (team.active !== false) {
         return res.status(400).json({
           success: false,
-          error: 'Team is already active',
+          error: "Team is already active",
           team: {
             id: team.id,
             name: team.name,
@@ -703,7 +772,7 @@ export class AdminController {
       if (!reactivatedTeam) {
         return res.status(500).json({
           success: false,
-          error: 'Failed to reactivate team',
+          error: "Failed to reactivate team",
         });
       }
 
@@ -734,7 +803,7 @@ export class AdminController {
       if (!teamId) {
         return res.status(400).json({
           success: false,
-          error: 'Team ID is required',
+          error: "Team ID is required",
         });
       }
 
@@ -744,7 +813,7 @@ export class AdminController {
       if (!team) {
         return res.status(404).json({
           success: false,
-          error: 'Team not found',
+          error: "Team not found",
         });
       }
 
@@ -783,7 +852,7 @@ export class AdminController {
       const { teamId } = req.params;
 
       if (!teamId) {
-        throw new ApiError(400, 'Team ID is required');
+        throw new ApiError(400, "Team ID is required");
       }
 
       // Get the decrypted API key using the service method
@@ -792,7 +861,10 @@ export class AdminController {
 
       if (!result.success) {
         // If there was an error, use the error code and message from the service
-        throw new ApiError(result.errorCode || 500, result.errorMessage || 'Unknown error');
+        throw new ApiError(
+          result.errorCode || 500,
+          result.errorMessage || "Unknown error",
+        );
       }
 
       // Return the team with the decrypted API key
@@ -800,7 +872,7 @@ export class AdminController {
         success: true,
         team: {
           id: result.team?.id || teamId,
-          name: result.team?.name || 'Unknown',
+          name: result.team?.name || "Unknown",
           apiKey: result.apiKey,
         },
       });

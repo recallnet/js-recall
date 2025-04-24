@@ -1,5 +1,6 @@
-import { Router } from 'express';
-import { AccountController } from '../controllers/account.controller';
+import { Router } from "express";
+
+import { AccountController } from "../controllers/account.controller";
 
 const router = Router();
 
@@ -94,7 +95,7 @@ const router = Router();
  *       500:
  *         description: Server error
  */
-router.get('/profile', AccountController.getProfile);
+router.get("/profile", AccountController.getProfile);
 
 /**
  * @openapi
@@ -228,7 +229,7 @@ router.get('/profile', AccountController.getProfile);
  *       500:
  *         description: Server error
  */
-router.put('/profile', AccountController.updateProfile);
+router.put("/profile", AccountController.updateProfile);
 
 /**
  * @openapi
@@ -286,7 +287,7 @@ router.put('/profile', AccountController.updateProfile);
  *       500:
  *         description: Server error
  */
-router.get('/balances', AccountController.getBalances);
+router.get("/balances", AccountController.getBalances);
 
 /**
  * @openapi
@@ -361,7 +362,7 @@ router.get('/balances', AccountController.getBalances);
  *       500:
  *         description: Server error
  */
-router.get('/portfolio', AccountController.getPortfolio);
+router.get("/portfolio", AccountController.getPortfolio);
 
 /**
  * @openapi
@@ -454,6 +455,6 @@ router.get('/portfolio', AccountController.getPortfolio);
  *       500:
  *         description: Server error
  */
-router.get('/trades', AccountController.getTrades);
+router.get("/trades", AccountController.getTrades);
 
 export default router;

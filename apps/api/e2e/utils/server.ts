@@ -1,15 +1,15 @@
-import { Server } from 'http';
-import { spawn, ChildProcess } from 'child_process';
-import axios from 'axios';
+import axios from "axios";
+import { ChildProcess, spawn } from "child_process";
+import { Server } from "http";
 
 // Reference to the server process
 let serverProcess: ChildProcess | null = null;
 let server: Server | null = null;
 
 // Server configuration
-const PORT = process.env.TEST_PORT || '3001';
+const PORT = process.env.TEST_PORT || "3001";
 // Allow configuring the host from environment (0.0.0.0 for Docker)
-const HOST = process.env.TEST_HOST || 'localhost';
+const HOST = process.env.TEST_HOST || "localhost";
 const BASE_URL = `http://${HOST}:${PORT}`;
 
 /**
@@ -23,22 +23,22 @@ export async function startServer(): Promise<Server> {
 
   return new Promise((resolve, reject) => {
     try {
-      const testPort = process.env.TEST_PORT || '3001';
-      const testHost = process.env.TEST_HOST || '0.0.0.0'; // Bind to all interfaces in Docker
+      const testPort = process.env.TEST_PORT || "3001";
+      const testHost = process.env.TEST_HOST || "0.0.0.0"; // Bind to all interfaces in Docker
 
       console.log(`Starting test server on ${testHost}:${testPort}...`);
 
       // Start the server script in a separate process
       // Use the index.ts file which is the main entry point
-      serverProcess = spawn('npx', ['ts-node', 'src/index.ts'], {
+      serverProcess = spawn("npx", ["ts-node", "src/index.ts"], {
         env: {
           ...process.env,
-          NODE_ENV: 'test',
+          NODE_ENV: "test",
           PORT: testPort,
           HOST: testHost,
-          TEST_MODE: 'true',
+          TEST_MODE: "true",
         },
-        stdio: 'inherit',
+        stdio: "inherit",
         detached: true,
       });
 
@@ -52,15 +52,15 @@ export async function startServer(): Promise<Server> {
             }
             callback();
           } catch (error) {
-            console.error('Error shutting down server:', error);
+            console.error("Error shutting down server:", error);
             callback();
           }
         },
       } as unknown as Server;
 
       // Handle server process errors
-      serverProcess.on('error', (error) => {
-        console.error('Server process error:', error);
+      serverProcess.on("error", (error) => {
+        console.error("Server process error:", error);
         reject(error);
       });
 
@@ -71,19 +71,22 @@ export async function startServer(): Promise<Server> {
           resolve(mockServer);
         })
         .catch((error) => {
-          console.error('Server failed to start:', error);
+          console.error("Server failed to start:", error);
           // Try to kill the process if it's hanging
           if (serverProcess && serverProcess.pid) {
             try {
               process.kill(-serverProcess.pid);
             } catch (err) {
-              console.error('Error killing server process during startup failure:', err);
+              console.error(
+                "Error killing server process during startup failure:",
+                err,
+              );
             }
           }
           reject(error);
         });
     } catch (error) {
-      console.error('Failed to start server:', error);
+      console.error("Failed to start server:", error);
       reject(error);
     }
   });
@@ -97,27 +100,27 @@ export async function startServer(): Promise<Server> {
 export async function stopServer(server: Server): Promise<void> {
   return new Promise((resolve) => {
     try {
-      console.log('Stopping server...');
+      console.log("Stopping server...");
 
       // Kill the server process if it exists
       if (serverProcess && serverProcess.pid) {
         try {
           console.log(`Killing server process with PID: ${serverProcess.pid}`);
           // Use negative PID to kill the entire process group since we used detached: true
-          process.kill(-serverProcess.pid, 'SIGTERM');
+          process.kill(-serverProcess.pid, "SIGTERM");
           serverProcess = null;
         } catch (error) {
-          console.error('Error killing server process:', error);
+          console.error("Error killing server process:", error);
         }
       }
 
       // Close the server
       server.close(() => {
-        console.log('Server stopped');
+        console.log("Server stopped");
         resolve();
       });
     } catch (error) {
-      console.error('Error in stopServer:', error);
+      console.error("Error in stopServer:", error);
       resolve(); // Resolve anyway to avoid hanging promises
     }
   });
@@ -130,38 +133,40 @@ export async function stopServer(server: Server): Promise<void> {
 export async function killExistingServers(): Promise<void> {
   return new Promise<void>((resolve) => {
     try {
-      const testPort = process.env.TEST_PORT || '3001';
+      const testPort = process.env.TEST_PORT || "3001";
       console.log(`Checking for existing servers on port ${testPort}...`);
 
       // Platform-specific command to find and kill processes using the test port
       let command: string;
       let args: string[];
 
-      if (process.platform === 'win32') {
+      if (process.platform === "win32") {
         // Windows
-        command = 'cmd.exe';
+        command = "cmd.exe";
         args = [
-          '/c',
+          "/c",
           `for /f "tokens=5" %a in ('netstat -ano ^| findstr :${testPort}') do taskkill /F /PID %a`,
         ];
       } else {
         // Unix-like (macOS, Linux)
-        command = 'bash';
-        args = ['-c', `lsof -i:${testPort} -t | xargs -r kill -9`];
+        command = "bash";
+        args = ["-c", `lsof -i:${testPort} -t | xargs -r kill -9`];
       }
 
-      const killProcess = spawn(command, args, { stdio: 'pipe' });
+      const killProcess = spawn(command, args, { stdio: "pipe" });
 
-      killProcess.on('close', (code) => {
+      killProcess.on("close", (code) => {
         if (code !== 0) {
-          console.log('No existing server processes found or unable to kill them.');
+          console.log(
+            "No existing server processes found or unable to kill them.",
+          );
         } else {
-          console.log('Successfully killed existing server processes.');
+          console.log("Successfully killed existing server processes.");
         }
         resolve();
       });
     } catch (error) {
-      console.error('Error killing existing servers:', error);
+      console.error("Error killing existing servers:", error);
       resolve(); // Resolve anyway to avoid hanging
     }
   });
@@ -170,7 +175,10 @@ export async function killExistingServers(): Promise<void> {
 /**
  * Wait for the server to be ready by polling the health endpoint
  */
-async function waitForServerReady(maxRetries = 30, interval = 500): Promise<void> {
+async function waitForServerReady(
+  maxRetries = 30,
+  interval = 500,
+): Promise<void> {
   console.log(`⏳ Waiting for server to be ready at ${BASE_URL}/health...`);
 
   let retries = 0;
@@ -179,7 +187,7 @@ async function waitForServerReady(maxRetries = 30, interval = 500): Promise<void
       // Try to reach the health endpoint
       const response = await axios.get(`${BASE_URL}/health`);
       if (response.status === 200) {
-        console.log('✅ Server is ready');
+        console.log("✅ Server is ready");
 
         // Additional verification of API endpoints
         try {
@@ -189,10 +197,13 @@ async function waitForServerReady(maxRetries = 30, interval = 500): Promise<void
           // Verify admin setup endpoint is available
           const adminSetupResponse = await axios.get(`${BASE_URL}/api/health`);
           console.log(
-            `Admin API health check: ${adminSetupResponse.status === 200 ? 'OK' : 'Failed'}`,
+            `Admin API health check: ${adminSetupResponse.status === 200 ? "OK" : "Failed"}`,
           );
         } catch (err) {
-          console.warn('Additional API verification failed, but continuing:', err);
+          console.warn(
+            "Additional API verification failed, but continuing:",
+            err,
+          );
         }
 
         return;

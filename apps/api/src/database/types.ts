@@ -1,4 +1,4 @@
-import { BlockchainType, SpecificChain } from '../types';
+import { BlockchainType, SpecificChain } from "../types";
 
 /**
  * Database Types
@@ -61,6 +61,6 @@ export interface RepositoryFilter {
   limit?: number;
   offset?: number;
   orderBy?: string;
-  order?: 'ASC' | 'DESC';
+  order?: "ASC" | "DESC";
   [key: string]: unknown;
 }

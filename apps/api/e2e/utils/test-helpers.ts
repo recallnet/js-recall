@@ -1,17 +1,22 @@
-import { ApiClient } from './api-client';
-import { dbManager } from './db-manager';
-import { resetRateLimiters } from '../../src/middleware/rate-limiter.middleware';
-import * as crypto from 'crypto';
-import { StartCompetitionResponse, CreateCompetitionResponse } from './api-types';
+import * as crypto from "crypto";
+
+import { resetRateLimiters } from "../../src/middleware/rate-limiter.middleware";
+import { ApiClient } from "./api-client";
+import {
+  CreateCompetitionResponse,
+  StartCompetitionResponse,
+} from "./api-types";
+import { dbManager } from "./db-manager";
 
 // Configured test token address
 export const TEST_TOKEN_ADDRESS =
-  process.env.TEST_SOL_TOKEN_ADDRESS || '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R';
+  process.env.TEST_SOL_TOKEN_ADDRESS ||
+  "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R";
 
 // Fixed admin credentials - must match setup-admin.ts
-export const ADMIN_USERNAME = 'admin';
-export const ADMIN_PASSWORD = 'admin123';
-export const ADMIN_EMAIL = 'admin@test.com';
+export const ADMIN_USERNAME = "admin";
+export const ADMIN_PASSWORD = "admin123";
+export const ADMIN_EMAIL = "admin@test.com";
 
 // Flag to track if database is initialized
 let isDatabaseInitialized = false;
@@ -22,8 +27,8 @@ let isDatabaseInitialized = false;
  */
 export function createTestClient(baseUrl?: string): ApiClient {
   // Generate a random key
-  const segment1 = crypto.randomBytes(8).toString('hex'); // 16 chars
-  const segment2 = crypto.randomBytes(8).toString('hex'); // 16 chars
+  const segment1 = crypto.randomBytes(8).toString("hex"); // 16 chars
+  const segment2 = crypto.randomBytes(8).toString("hex"); // 16 chars
   return new ApiClient(`${segment1}_${segment2}`, baseUrl);
 }
 
@@ -47,7 +52,7 @@ export async function registerTeamAndGetClient(
   );
 
   if (!result.success || !result.team) {
-    throw new Error('Failed to register team');
+    throw new Error("Failed to register team");
   }
 
   // Create a client with the team's API key
@@ -74,7 +79,7 @@ export async function startTestCompetition(
   );
 
   if (!result.success) {
-    throw new Error('Failed to start competition');
+    throw new Error("Failed to start competition");
   }
 
   return result as StartCompetitionResponse;
@@ -97,7 +102,7 @@ export async function createTestCompetition(
   );
 
   if (!result.success) {
-    throw new Error('Failed to create competition');
+    throw new Error("Failed to create competition");
   }
 
   return result as CreateCompetitionResponse;
@@ -114,10 +119,13 @@ export async function startExistingTestCompetition(
   // Ensure database is initialized
   await ensureDatabaseInitialized();
 
-  const result = await adminClient.startExistingCompetition(competitionId, teamIds);
+  const result = await adminClient.startExistingCompetition(
+    competitionId,
+    teamIds,
+  );
 
   if (!result.success) {
-    throw new Error('Failed to start existing competition');
+    throw new Error("Failed to start existing competition");
   }
 
   return result as StartCompetitionResponse;
@@ -128,7 +136,7 @@ export async function startExistingTestCompetition(
  */
 async function ensureDatabaseInitialized(): Promise<void> {
   if (!isDatabaseInitialized) {
-    console.log('Initializing database for tests...');
+    console.log("Initializing database for tests...");
     await dbManager.initialize();
     isDatabaseInitialized = true;
   }
@@ -159,8 +167,9 @@ export function wait(ms: number): Promise<void> {
  * Generate a random string of specified length
  */
 export function generateRandomString(length: number): string {
-  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let result = '';
+  const chars =
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let result = "";
   for (let i = 0; i < length; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }

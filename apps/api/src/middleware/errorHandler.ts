@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from "express";
 
 /**
  * Custom error class with HTTP status code
@@ -17,7 +17,13 @@ export class ApiError extends Error {
 /**
  * Global error handler middleware
  */
-const errorHandler = (err: Error | ApiError, req: Request, res: Response) => {
+const errorHandler = (
+  err: Error | ApiError,
+  req: Request,
+  res: Response,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  next: NextFunction,
+) => {
   console.error(`Error: ${err.message}`);
   console.error(err.stack);
 
@@ -30,7 +36,7 @@ const errorHandler = (err: Error | ApiError, req: Request, res: Response) => {
   }
 
   // Handle inactive team errors
-  if (err.message && err.message.includes('inactive')) {
+  if (err.message && err.message.includes("inactive")) {
     return res.status(403).json({
       success: false,
       error: err.message,
@@ -41,7 +47,7 @@ const errorHandler = (err: Error | ApiError, req: Request, res: Response) => {
   // Handle other errors
   return res.status(500).json({
     success: false,
-    error: 'Internal Server Error',
+    error: "Internal Server Error",
   });
 };
 
