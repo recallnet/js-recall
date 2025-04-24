@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 
 /**
  * Custom error class with HTTP status code
@@ -17,7 +17,13 @@ export class ApiError extends Error {
 /**
  * Global error handler middleware
  */
-const errorHandler = (err: Error | ApiError, req: Request, res: Response) => {
+const errorHandler = (
+  err: Error | ApiError,
+  req: Request,
+  res: Response,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  next: NextFunction,
+) => {
   console.error(`Error: ${err.message}`);
   console.error(err.stack);
 

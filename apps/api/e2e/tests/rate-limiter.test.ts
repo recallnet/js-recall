@@ -369,17 +369,33 @@ describe("Rate Limiter Middleware", () => {
           ).toBe(true);
 
           // Verify rate limit headers
-          expect(axiosError.response.headers["retry-after"]).toBeDefined();
-          expect(
-            axiosError.response.headers["x-ratelimit-reset"],
-          ).toBeDefined();
+          const headerKeys = Object.keys(axiosError.response.headers).map(
+            (key) => key.toLowerCase(),
+          );
 
-          // Parse header values
+          // Check for retry-after header (case-insensitive)
+          const hasRetryAfterHeader = headerKeys.includes("retry-after");
+          expect(hasRetryAfterHeader).toBe(true);
+
+          // Check for x-ratelimit-reset header (case-insensitive)
+          const hasRateLimitResetHeader =
+            headerKeys.includes("x-ratelimit-reset");
+          expect(hasRateLimitResetHeader).toBe(true);
+
+          // Find the actual header keys (preserving original case for logging)
+          const retryAfterKey = Object.keys(axiosError.response.headers).find(
+            (key) => key.toLowerCase() === "retry-after",
+          );
+          const rateLimitResetKey = Object.keys(
+            axiosError.response.headers,
+          ).find((key) => key.toLowerCase() === "x-ratelimit-reset");
+
+          // Parse header values (using the actual keys)
           const retryAfter = parseInt(
-            axiosError.response.headers["retry-after"] as string,
+            axiosError.response.headers[retryAfterKey as string] as string,
           );
           const resetTime = parseInt(
-            axiosError.response.headers["x-ratelimit-reset"] as string,
+            axiosError.response.headers[rateLimitResetKey as string] as string,
           );
 
           // Verify they contain meaningful values
