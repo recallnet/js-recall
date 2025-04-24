@@ -278,7 +278,7 @@ jobs:
           fi
           
           # Run the tests without additional flags (script already has --forceExit)
-          pnpm run test:e2e -- --forceExit
+          pnpm run test:e2e
         env:
           TEST_MODE: true
           DB_HOST: ${{ steps.detect-env.outputs.db_host }}
