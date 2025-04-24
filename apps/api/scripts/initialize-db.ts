@@ -1,6 +1,7 @@
-import { DatabaseConnection } from '../src/database/connection';
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from "fs";
+import * as path from "path";
+
+import { DatabaseConnection } from "../src/database/connection";
 
 /**
  * Split the SQL initialization file into sections by comments
@@ -10,9 +11,13 @@ function splitSqlIntoSections(sql: string): string[] {
   // Split into major sections: tables, indexes, functions
 
   // Find the function definition part
-  const functionsStartIndex = sql.indexOf('-- Function to update updated_at timestamp');
-  const tablesPart = functionsStartIndex !== -1 ? sql.substring(0, functionsStartIndex) : sql;
-  const functionsPart = functionsStartIndex !== -1 ? sql.substring(functionsStartIndex) : '';
+  const functionsStartIndex = sql.indexOf(
+    "-- Function to update updated_at timestamp",
+  );
+  const tablesPart =
+    functionsStartIndex !== -1 ? sql.substring(0, functionsStartIndex) : sql;
+  const functionsPart =
+    functionsStartIndex !== -1 ? sql.substring(functionsStartIndex) : "";
 
   // Split tables by CREATE TABLE
   const tables = tablesPart.split(/-- [A-Za-z]+ table/);
@@ -44,7 +49,7 @@ export async function initializeDatabase(): Promise<void> {
   const db = DatabaseConnection.getInstance();
 
   try {
-    console.log('[Database] Checking database connection and schema...');
+    console.log("[Database] Checking database connection and schema...");
 
     // Now check if the database schema is already initialized
     const tableCheckResult = await db.query(`
@@ -58,15 +63,17 @@ export async function initializeDatabase(): Promise<void> {
     const tablesExist = tableCheckResult.rows[0]?.exists;
 
     if (tablesExist) {
-      console.log('[Database] Database schema already initialized, skipping initialization');
+      console.log(
+        "[Database] Database schema already initialized, skipping initialization",
+      );
       return;
     }
 
-    console.log('[Database] Tables not found, initializing database schema...');
+    console.log("[Database] Tables not found, initializing database schema...");
 
     // Read SQL file
-    const sqlFile = path.join(__dirname, '../src/database/init.sql');
-    const sql = fs.readFileSync(sqlFile, 'utf8');
+    const sqlFile = path.join(__dirname, "../src/database/init.sql");
+    const sql = fs.readFileSync(sqlFile, "utf8");
 
     // Split the SQL into sections for easier error isolation
     const sqlSections = splitSqlIntoSections(sql);
@@ -74,22 +81,33 @@ export async function initializeDatabase(): Promise<void> {
     // Execute each section separately to better isolate errors
     for (let i = 0; i < sqlSections.length; i++) {
       try {
-        console.log(`[Database] Executing SQL section ${i + 1} of ${sqlSections.length}...`);
+        console.log(
+          `[Database] Executing SQL section ${i + 1} of ${sqlSections.length}...`,
+        );
         await db.query(sqlSections[i]);
       } catch (error) {
-        console.error(`[Database] Error executing SQL section ${i + 1}:`, error);
-        console.error('SQL section content:', sqlSections[i].substring(0, 200) + '...');
+        console.error(
+          `[Database] Error executing SQL section ${i + 1}:`,
+          error,
+        );
+        console.error(
+          "SQL section content:",
+          sqlSections[i].substring(0, 200) + "...",
+        );
         throw error;
       }
     }
 
-    console.log('[Database] Database schema initialized successfully');
+    console.log("[Database] Database schema initialized successfully");
   } catch (error) {
     // If there's a database connection error, we should log but not fail server startup
-    console.error('[Database] Error during database schema check/initialization:', error);
-    if (process.env.NODE_ENV === 'production') {
+    console.error(
+      "[Database] Error during database schema check/initialization:",
+      error,
+    );
+    if (process.env.NODE_ENV === "production") {
       console.warn(
-        '[Database] Continuing server startup despite database error in production mode',
+        "[Database] Continuing server startup despite database error in production mode",
       );
     } else {
       throw error; // In development, we want to fail fast
@@ -101,11 +119,11 @@ export async function initializeDatabase(): Promise<void> {
 if (require.main === module) {
   initializeDatabase()
     .then(() => {
-      console.log('Database initialization completed');
+      console.log("Database initialization completed");
       process.exit(0);
     })
     .catch((err) => {
-      console.error('Database initialization failed:', err);
+      console.error("Database initialization failed:", err);
       process.exit(1);
     });
 }

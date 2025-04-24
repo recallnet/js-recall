@@ -1,11 +1,12 @@
-import * as readline from 'readline';
-import * as dotenv from 'dotenv';
-import * as path from 'path';
-import { services } from '../src/services';
-import { DatabaseConnection } from '../src/database';
+import * as dotenv from "dotenv";
+import * as path from "path";
+import * as readline from "readline";
+
+import { DatabaseConnection } from "../src/database";
+import { services } from "../src/services";
 
 // Load environment variables
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
 // Create readline interface for prompting user
 const rl = readline.createInterface({
@@ -24,12 +25,12 @@ function prompt(question: string): Promise<string> {
 
 // Colors for console output
 const colors = {
-  red: '\x1b[31m',
-  yellow: '\x1b[33m',
-  green: '\x1b[32m',
-  blue: '\x1b[34m',
-  cyan: '\x1b[36m',
-  reset: '\x1b[0m',
+  red: "\x1b[31m",
+  yellow: "\x1b[33m",
+  green: "\x1b[32m",
+  blue: "\x1b[34m",
+  cyan: "\x1b[36m",
+  reset: "\x1b[0m",
 };
 
 /**
@@ -40,12 +41,16 @@ async function listAllTeams() {
     const teams = await services.teamManager.getAllTeams(false);
 
     if (teams.length === 0) {
-      console.log(`\n${colors.yellow}No teams found in the database.${colors.reset}`);
+      console.log(
+        `\n${colors.yellow}No teams found in the database.${colors.reset}`,
+      );
       return;
     }
 
     console.log(`\n${colors.cyan}Registered Teams:${colors.reset}`);
-    console.log(`${colors.cyan}----------------------------------------${colors.reset}`);
+    console.log(
+      `${colors.cyan}----------------------------------------${colors.reset}`,
+    );
 
     teams.forEach((team, index) => {
       console.log(`${index + 1}. ${team.name} (${team.id})`);
@@ -53,11 +58,15 @@ async function listAllTeams() {
       console.log(`   Contact: ${team.contactPerson}`);
       console.log(`   Created: ${team.createdAt.toLocaleString()}`);
       if (index < teams.length - 1) {
-        console.log(`   ${colors.cyan}----------------------------------------${colors.reset}`);
+        console.log(
+          `   ${colors.cyan}----------------------------------------${colors.reset}`,
+        );
       }
     });
 
-    console.log(`${colors.cyan}----------------------------------------${colors.reset}`);
+    console.log(
+      `${colors.cyan}----------------------------------------${colors.reset}`,
+    );
   } catch (error) {
     console.error(
       `\n${colors.red}Error listing teams:${colors.reset}`,
@@ -75,7 +84,9 @@ async function deleteTeam(teamId: string) {
     const team = await services.teamManager.getTeam(teamId);
 
     if (!team) {
-      console.log(`\n${colors.red}Error: Team with ID ${teamId} not found.${colors.reset}`);
+      console.log(
+        `\n${colors.red}Error: Team with ID ${teamId} not found.${colors.reset}`,
+      );
       return false;
     }
 
@@ -102,10 +113,14 @@ ${colors.red}Type the team name (${team.name}) to confirm deletion:${colors.rese
     const result = await services.teamManager.deleteTeam(teamId);
 
     if (result) {
-      console.log(`\n${colors.green}✓ Team "${team.name}" deleted successfully!${colors.reset}`);
+      console.log(
+        `\n${colors.green}✓ Team "${team.name}" deleted successfully!${colors.reset}`,
+      );
       return true;
     } else {
-      console.log(`\n${colors.red}Failed to delete team "${team.name}".${colors.reset}`);
+      console.log(
+        `\n${colors.red}Failed to delete team "${team.name}".${colors.reset}`,
+      );
       return false;
     }
   } catch (error) {
@@ -144,7 +159,7 @@ async function main() {
         `\n${colors.yellow}Do you want to list all registered teams? (y/n):${colors.reset} `,
       );
 
-      if (listTeams.toLowerCase() === 'y') {
+      if (listTeams.toLowerCase() === "y") {
         await listAllTeams();
       }
 
@@ -154,7 +169,9 @@ async function main() {
     }
 
     if (!teamId) {
-      console.log(`\n${colors.red}No team ID provided. Operation cancelled.${colors.reset}`);
+      console.log(
+        `\n${colors.red}No team ID provided. Operation cancelled.${colors.reset}`,
+      );
       return;
     }
 

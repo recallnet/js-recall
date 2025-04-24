@@ -1,6 +1,7 @@
-import { MultiChainProvider } from '../multi-chain.provider';
-import { BlockchainType, SpecificChain } from '../../../types';
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
+
+import { BlockchainType, SpecificChain } from "../../../types";
+import { MultiChainProvider } from "../multi-chain.provider";
 
 // Load environment variables for API access
 dotenv.config();
@@ -12,19 +13,19 @@ const runTests = !!apiKey;
 // Known test tokens from different chains
 const testTokens = [
   {
-    address: '0x912CE59144191C1204E64559FE8253a0e49E6548',
-    name: 'Arbitrum (ARB)',
-    expectedChain: 'arbitrum' as SpecificChain,
+    address: "0x912CE59144191C1204E64559FE8253a0e49E6548",
+    name: "Arbitrum (ARB)",
+    expectedChain: "arbitrum" as SpecificChain,
   },
   {
-    address: '0x532f27101965dd16442E59d40670FaF5eBB142E4',
-    name: 'TOSHI Token',
-    expectedChain: 'base' as SpecificChain,
+    address: "0x532f27101965dd16442E59d40670FaF5eBB142E4",
+    name: "TOSHI Token",
+    expectedChain: "base" as SpecificChain,
   },
   {
-    address: '0x514910771af9ca656af840dff83e8264ecf986ca',
-    name: 'Chainlink (LINK)',
-    expectedChain: 'eth' as SpecificChain,
+    address: "0x514910771af9ca656af840dff83e8264ecf986ca",
+    name: "Chainlink (LINK)",
+    expectedChain: "eth" as SpecificChain,
   },
 ];
 
@@ -33,7 +34,7 @@ const testTokens = [
  * specify the chain type and/or specific chain, bypassing the determineChain step
  * to improve API response times.
  */
-describe('Chain Override Tests', () => {
+describe("Chain Override Tests", () => {
   let multiChainProvider: MultiChainProvider;
 
   beforeEach(() => {
@@ -42,10 +43,10 @@ describe('Chain Override Tests', () => {
     }
   });
 
-  describe('Direct provider tests with chain override', () => {
-    it('should successfully fetch prices when providing the exact chain for at least one token', async () => {
+  describe("Direct provider tests with chain override", () => {
+    it("should successfully fetch prices when providing the exact chain for at least one token", async () => {
       if (!runTests) {
-        console.log('Skipping test - NOVES_API_KEY not set');
+        console.log("Skipping test - NOVES_API_KEY not set");
         return;
       }
 
@@ -67,7 +68,9 @@ describe('Chain Override Tests', () => {
         );
         const endTime = Date.now();
 
-        console.log(`MultiChainProvider fetch time with chain override: ${endTime - startTime}ms`);
+        console.log(
+          `MultiChainProvider fetch time with chain override: ${endTime - startTime}ms`,
+        );
         console.log(`Price: $${price}`);
 
         if (price !== null) {
@@ -75,7 +78,7 @@ describe('Chain Override Tests', () => {
           atLeastOneSuccess = true;
 
           // Verify price format
-          expect(typeof price?.price).toBe('number');
+          expect(typeof price?.price).toBe("number");
           expect(price?.price).toBeGreaterThan(0);
 
           // Also get detailed token info with chain override
@@ -85,7 +88,9 @@ describe('Chain Override Tests', () => {
             token.expectedChain,
           );
 
-          console.log(`Token info with chain override: ${JSON.stringify(tokenInfo)}`);
+          console.log(
+            `Token info with chain override: ${JSON.stringify(tokenInfo)}`,
+          );
 
           // Verify token info
           expect(tokenInfo).not.toBeNull();
@@ -104,9 +109,9 @@ describe('Chain Override Tests', () => {
       expect(atLeastOneSuccess).toBe(true);
     }, 60000); // 60 second timeout for API calls
 
-    it('should be faster to get prices with chain override than without', async () => {
+    it("should be faster to get prices with chain override than without", async () => {
       if (!runTests) {
-        console.log('Skipping test - NOVES_API_KEY not set');
+        console.log("Skipping test - NOVES_API_KEY not set");
         return;
       }
 
@@ -126,7 +131,11 @@ describe('Chain Override Tests', () => {
 
         // Get price WITH chain override
         const startTimeWith = Date.now();
-        await multiChainProvider.getPrice(token.address, BlockchainType.EVM, token.expectedChain);
+        await multiChainProvider.getPrice(
+          token.address,
+          BlockchainType.EVM,
+          token.expectedChain,
+        );
         const endTimeWith = Date.now();
         const timeWith = endTimeWith - startTimeWith;
 

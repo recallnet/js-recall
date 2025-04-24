@@ -1,7 +1,8 @@
-import { Request, Response, NextFunction } from 'express';
-import { services } from '../services';
-import { ApiError } from '../middleware/errorHandler';
-import { BlockchainType, SpecificChain } from '../types';
+import { NextFunction, Request, Response } from "express";
+
+import { ApiError } from "../middleware/errorHandler";
+import { services } from "../services";
+import { BlockchainType, SpecificChain } from "../types";
 
 /**
  * Trade Controller
@@ -34,29 +35,34 @@ export class TradeController {
 
       // Validate required parameters
       if (!fromToken || !toToken || !amount) {
-        throw new ApiError(400, 'Missing required parameters: fromToken, toToken, amount');
+        throw new ApiError(
+          400,
+          "Missing required parameters: fromToken, toToken, amount",
+        );
       }
 
       // Validate reason is provided
       if (!reason) {
-        throw new ApiError(400, 'Missing required parameter: reason');
+        throw new ApiError(400, "Missing required parameter: reason");
       }
 
       // Validate amount is a number
       const parsedAmount = parseFloat(amount);
       if (isNaN(parsedAmount) || parsedAmount <= 0) {
-        throw new ApiError(400, 'Amount must be a positive number');
+        throw new ApiError(400, "Amount must be a positive number");
       }
 
       // Validate that we have a competition ID
       if (!competitionId) {
         throw new ApiError(
           400,
-          'Missing competitionId: No active competition or competition ID not set',
+          "Missing competitionId: No active competition or competition ID not set",
         );
       }
 
-      console.log(`[TradeController] Executing trade with competition ID: ${competitionId}`);
+      console.log(
+        `[TradeController] Executing trade with competition ID: ${competitionId}`,
+      );
 
       // Create chain options object if any chain parameters were provided
       const chainOptions =
@@ -71,7 +77,10 @@ export class TradeController {
 
       // Log chain options if provided
       if (chainOptions) {
-        console.log(`[TradeController] Using chain options:`, JSON.stringify(chainOptions));
+        console.log(
+          `[TradeController] Using chain options:`,
+          JSON.stringify(chainOptions),
+        );
       }
 
       // Execute the trade with optional chain parameters
@@ -87,7 +96,7 @@ export class TradeController {
       );
 
       if (!result.success) {
-        throw new ApiError(400, result.error || 'Trade execution failed');
+        throw new ApiError(400, result.error || "Trade execution failed");
       }
 
       // Return successful trade result
@@ -121,13 +130,16 @@ export class TradeController {
 
       // Validate required parameters
       if (!fromToken || !toToken || !amount) {
-        throw new ApiError(400, 'Missing required parameters: fromToken, toToken, amount');
+        throw new ApiError(
+          400,
+          "Missing required parameters: fromToken, toToken, amount",
+        );
       }
 
       // Validate amount is a number
       const parsedAmount = parseFloat(amount as string);
       if (isNaN(parsedAmount) || parsedAmount <= 0) {
-        throw new ApiError(400, 'Amount must be a positive number');
+        throw new ApiError(400, "Amount must be a positive number");
       }
 
       // Determine chains for from/to tokens
@@ -151,10 +163,15 @@ export class TradeController {
       }
 
       // Log chain information if provided
-      if (fromTokenChain || fromTokenSpecificChain || toTokenChain || toTokenSpecificChain) {
+      if (
+        fromTokenChain ||
+        fromTokenSpecificChain ||
+        toTokenChain ||
+        toTokenSpecificChain
+      ) {
         console.log(`[TradeController] Quote with chain info:
-          From Token Chain: ${fromTokenChain || 'auto'}, Specific Chain: ${fromTokenSpecificChain || 'auto'}
-          To Token Chain: ${toTokenChain || 'auto'}, Specific Chain: ${toTokenSpecificChain || 'auto'}
+          From Token Chain: ${fromTokenChain || "auto"}, Specific Chain: ${fromTokenSpecificChain || "auto"}
+          To Token Chain: ${toTokenChain || "auto"}, Specific Chain: ${toTokenSpecificChain || "auto"}
         `);
       }
 
@@ -172,7 +189,7 @@ export class TradeController {
       );
 
       if (!fromPrice || !toPrice) {
-        throw new ApiError(400, 'Unable to determine price for tokens');
+        throw new ApiError(400, "Unable to determine price for tokens");
       }
 
       // Calculate the trade
@@ -200,8 +217,12 @@ export class TradeController {
           toToken: toPrice,
         },
         chains: {
-          fromChain: fromTokenChain || services.priceTracker.determineChain(fromToken as string),
-          toChain: toTokenChain || services.priceTracker.determineChain(toToken as string),
+          fromChain:
+            fromTokenChain ||
+            services.priceTracker.determineChain(fromToken as string),
+          toChain:
+            toTokenChain ||
+            services.priceTracker.determineChain(toToken as string),
         },
       });
     } catch (error) {

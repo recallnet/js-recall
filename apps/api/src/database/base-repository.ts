@@ -1,6 +1,7 @@
-import { DatabaseConnection } from './connection';
-import { DatabaseRow } from './types';
-import { PoolClient } from 'pg';
+import { PoolClient } from "pg";
+
+import { DatabaseConnection } from "./connection";
+import { DatabaseRow } from "./types";
 
 /**
  * Base Repository
@@ -27,7 +28,9 @@ export abstract class BaseRepository<T> {
     for (const key in entity) {
       if (Object.prototype.hasOwnProperty.call(entity, key)) {
         // Convert snake_case to camelCase
-        const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+        const camelKey = key.replace(/_([a-z])/g, (_, letter) =>
+          letter.toUpperCase(),
+        );
         result[camelKey] = entity[key];
       }
     }
@@ -47,7 +50,10 @@ export abstract class BaseRepository<T> {
     for (const key in entity) {
       if (Object.prototype.hasOwnProperty.call(entity, key)) {
         // Convert camelCase to snake_case
-        const snakeKey = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+        const snakeKey = key.replace(
+          /[A-Z]/g,
+          (letter) => `_${letter.toLowerCase()}`,
+        );
         result[snakeKey] = entity[key];
       }
     }
@@ -69,7 +75,9 @@ export abstract class BaseRepository<T> {
         ? await client.query(query, values)
         : await this.db.query(query, values);
 
-      return result.rows.length > 0 ? this.mapToEntity(this.toCamelCase(result.rows[0])) : null;
+      return result.rows.length > 0
+        ? this.mapToEntity(this.toCamelCase(result.rows[0]))
+        : null;
     } catch (error) {
       console.error(`[${this.tableName}Repository] Error in findById:`, error);
       throw error;
@@ -84,9 +92,13 @@ export abstract class BaseRepository<T> {
     try {
       const query = `SELECT * FROM ${this.tableName}`;
 
-      const result = client ? await client.query(query) : await this.db.query(query);
+      const result = client
+        ? await client.query(query)
+        : await this.db.query(query);
 
-      return result.rows.map((row: DatabaseRow) => this.mapToEntity(this.toCamelCase(row)));
+      return result.rows.map((row: DatabaseRow) =>
+        this.mapToEntity(this.toCamelCase(row)),
+      );
     } catch (error) {
       console.error(`[${this.tableName}Repository] Error in findAll:`, error);
       throw error;
@@ -122,7 +134,9 @@ export abstract class BaseRepository<T> {
     try {
       const query = `SELECT COUNT(*) as count FROM ${this.tableName}`;
 
-      const result = client ? await client.query(query) : await this.db.query(query);
+      const result = client
+        ? await client.query(query)
+        : await this.db.query(query);
 
       return parseInt(result.rows[0].count, 10);
     } catch (error) {

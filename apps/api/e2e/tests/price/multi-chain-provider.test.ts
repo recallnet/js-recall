@@ -1,22 +1,23 @@
 // import { NovesProvider } from '../../../src/services/providers/noves.provider';
-import { MultiChainProvider } from '../../../src/services/providers/multi-chain.provider';
-import { PriceTracker } from '../../../src/services/price-tracker.service';
-import { BlockchainType, SpecificChain, PriceSource } from '../../../src/types';
+import axios from "axios";
+import dotenv from "dotenv";
+
+import config from "../../../src/config";
+import { PriceTracker } from "../../../src/services/price-tracker.service";
+import { MultiChainProvider } from "../../../src/services/providers/multi-chain.provider";
+import { BlockchainType, PriceSource, SpecificChain } from "../../../src/types";
+import { ApiClient } from "../../utils/api-client";
+import { PriceResponse } from "../../utils/api-types";
+import { dbManager } from "../../utils/db-manager";
+import { getBaseUrl } from "../../utils/server";
 import {
-  ADMIN_USERNAME,
-  ADMIN_PASSWORD,
   ADMIN_EMAIL,
-  createTestClient,
+  ADMIN_PASSWORD,
+  ADMIN_USERNAME,
   cleanupTestState,
+  createTestClient,
   registerTeamAndGetClient,
-} from '../../utils/test-helpers';
-import axios from 'axios';
-import { getBaseUrl } from '../../utils/server';
-import dotenv from 'dotenv';
-import config from '../../../src/config';
-import { dbManager } from '../../utils/db-manager';
-import { ApiClient } from '../../utils/api-client';
-import { PriceResponse } from '../../utils/api-types';
+} from "../../utils/test-helpers";
 
 // Load environment variables
 dotenv.config();
@@ -33,37 +34,37 @@ const evmChains = config.evmChains;
 const testTokens = {
   // Ethereum Mainnet
   eth: {
-    ETH: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
-    USDC: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+    ETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH
+    USDC: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
   },
   // Polygon
   polygon: {
-    MATIC: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270', // WMATIC
-    USDC: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
+    MATIC: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", // WMATIC
+    USDC: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
   },
   // Binance Smart Chain
   bsc: {
-    BNB: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', // WBNB
-    USDT: '0x55d398326f99059fF775485246999027B3197955',
+    BNB: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", // WBNB
+    USDT: "0x55d398326f99059fF775485246999027B3197955",
   },
   // Arbitrum
   arbitrum: {
-    ETH: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1', // WETH on Arbitrum
-    USDC: '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8',
+    ETH: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", // WETH on Arbitrum
+    USDC: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
   },
   // Base
   base: {
-    ETH: '0x4200000000000000000000000000000000000006', // WETH on Base
-    USDC: '0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA',
+    ETH: "0x4200000000000000000000000000000000000006", // WETH on Base
+    USDC: "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA",
   },
   // Solana tokens for comparison
   svm: {
-    SOL: 'So11111111111111111111111111111111111111112',
-    USDC: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+    SOL: "So11111111111111111111111111111111111111112",
+    USDC: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
   },
 };
 
-describe('Multi-Chain Provider Tests', () => {
+describe("Multi-Chain Provider Tests", () => {
   let multiChainProvider: MultiChainProvider;
   let priceTracker: PriceTracker;
   // Add authenticated clients
@@ -106,9 +107,9 @@ describe('Multi-Chain Provider Tests', () => {
   });
 
   // Check database schema as a test
-  it('should have the correct schema with specific_chain column', async () => {
+  it("should have the correct schema with specific_chain column", async () => {
     if (!runTests) {
-      console.log('Skipping test - Tests disabled');
+      console.log("Skipping test - Tests disabled");
       return;
     }
 
@@ -125,7 +126,9 @@ describe('Multi-Chain Provider Tests', () => {
       ) as column_exists;
     `);
 
-    console.log(`Does specific_chain column exist? ${result.rows[0].column_exists}`);
+    console.log(
+      `Does specific_chain column exist? ${result.rows[0].column_exists}`,
+    );
     expect(result.rows[0].column_exists).toBe(true);
   });
 
@@ -143,10 +146,10 @@ describe('Multi-Chain Provider Tests', () => {
     priceTracker = new PriceTracker();
   });
 
-  describe('Multi-chain token detection', () => {
-    it('should correctly identify the blockchain type for EVM tokens', () => {
+  describe("Multi-chain token detection", () => {
+    it("should correctly identify the blockchain type for EVM tokens", () => {
       if (!runTests) {
-        console.log('Skipping test - Tests disabled');
+        console.log("Skipping test - Tests disabled");
         return;
       }
 
@@ -165,12 +168,12 @@ describe('Multi-Chain Provider Tests', () => {
       const bscChain = multiChainProvider.determineChain(bscToken);
       expect(bscChain).toBe(BlockchainType.EVM);
 
-      console.log('✅ All EVM tokens correctly identified as EVM chains');
+      console.log("✅ All EVM tokens correctly identified as EVM chains");
     });
 
-    it('should correctly identify Solana token addresses', () => {
+    it("should correctly identify Solana token addresses", () => {
       if (!runTests) {
-        console.log('Skipping test - Tests disabled');
+        console.log("Skipping test - Tests disabled");
         return;
       }
 
@@ -182,14 +185,14 @@ describe('Multi-Chain Provider Tests', () => {
       const usdcChain = multiChainProvider.determineChain(usdcToken);
       expect(usdcChain).toBe(BlockchainType.SVM);
 
-      console.log('✅ Solana tokens correctly identified as SVM chains');
+      console.log("✅ Solana tokens correctly identified as SVM chains");
     });
   });
 
-  describe('Multi-chain price fetching', () => {
-    it('should try to fetch prices for Ethereum mainnet tokens', async () => {
+  describe("Multi-chain price fetching", () => {
+    it("should try to fetch prices for Ethereum mainnet tokens", async () => {
       if (!runTests) {
-        console.log('Skipping test - Tests disabled');
+        console.log("Skipping test - Tests disabled");
         return;
       }
 
@@ -198,7 +201,10 @@ describe('Multi-Chain Provider Tests', () => {
 
       try {
         // Get price using the MultiChainProvider
-        const priceReport = await multiChainProvider.getPrice(ethToken, BlockchainType.EVM);
+        const priceReport = await multiChainProvider.getPrice(
+          ethToken,
+          BlockchainType.EVM,
+        );
 
         console.log(`Ethereum token price result:`, priceReport);
 
@@ -211,14 +217,14 @@ describe('Multi-Chain Provider Tests', () => {
           expect(priceReport.price).toBeGreaterThan(0);
           console.log(`ETH price: $${priceReport.price}`);
           expect(priceReport.chain).toBe(BlockchainType.EVM);
-          expect(priceReport.specificChain).toBe('eth');
+          expect(priceReport.specificChain).toBe("eth");
         } else {
           console.log(`Could not get ETH price (API might be unavailable)`);
         }
       } catch (error) {
         console.log(
-          'Error fetching price:',
-          error instanceof Error ? error.message : 'Unknown error',
+          "Error fetching price:",
+          error instanceof Error ? error.message : "Unknown error",
         );
       }
 
@@ -236,18 +242,18 @@ describe('Multi-Chain Provider Tests', () => {
 
         // Check price is present and valid
         if (response.price !== undefined) {
-          expect(typeof response.price).toBe('number');
+          expect(typeof response.price).toBe("number");
           expect(response.price).toBeGreaterThan(0);
           console.log(`ETH price from API: $${response.price}`);
         }
       } catch (error) {
-        console.log('Error fetching price through API:', error);
+        console.log("Error fetching price through API:", error);
       }
     });
 
-    it('should try to fetch prices for Base tokens', async () => {
+    it("should try to fetch prices for Base tokens", async () => {
       if (!runTests) {
-        console.log('Skipping test - Tests disabled');
+        console.log("Skipping test - Tests disabled");
         return;
       }
 
@@ -258,7 +264,7 @@ describe('Multi-Chain Provider Tests', () => {
         const priceReport = await multiChainProvider.getPrice(
           baseToken,
           BlockchainType.EVM,
-          'base',
+          "base",
         );
 
         console.log(`Base ETH price result:`, priceReport);
@@ -272,32 +278,40 @@ describe('Multi-Chain Provider Tests', () => {
           expect(priceReport.price).toBeGreaterThan(0);
           console.log(`Base ETH price: $${priceReport.price}`);
           expect(priceReport.chain).toBe(BlockchainType.EVM);
-          expect(priceReport.specificChain).toBe('base');
+          expect(priceReport.specificChain).toBe("base");
         } else {
-          console.log(`Could not get Base ETH price (API might be unavailable)`);
+          console.log(
+            `Could not get Base ETH price (API might be unavailable)`,
+          );
         }
       } catch (error) {
         console.log(
-          'Error fetching Base token price:',
-          error instanceof Error ? error.message : 'Unknown error',
+          "Error fetching Base token price:",
+          error instanceof Error ? error.message : "Unknown error",
         );
       }
     });
 
-    it('should try to fetch prices for unknown tokens by searching multiple chains', async () => {
+    it("should try to fetch prices for unknown tokens by searching multiple chains", async () => {
       if (!runTests) {
-        console.log('Skipping test - Tests disabled');
+        console.log("Skipping test - Tests disabled");
         return;
       }
 
       // Example token from Base chain (this is a real token, but may not be in our test data)
-      const unknownToken = '0x532f27101965dd16442E59d40670FaF5eBB142E4';
+      const unknownToken = "0x532f27101965dd16442E59d40670FaF5eBB142E4";
 
       try {
         // First check if the MultiChainProvider can find this token
-        const priceReport = await multiChainProvider.getPrice(unknownToken, BlockchainType.EVM);
+        const priceReport = await multiChainProvider.getPrice(
+          unknownToken,
+          BlockchainType.EVM,
+        );
 
-        console.log(`Unknown token (${unknownToken}) price result:`, priceReport);
+        console.log(
+          `Unknown token (${unknownToken}) price result:`,
+          priceReport,
+        );
 
         // We don't assert a specific result here since it depends on the token existence
         // If the token exists on any chain, we'll get a result
@@ -307,7 +321,10 @@ describe('Multi-Chain Provider Tests', () => {
           expect(priceReport.chain).toBe(BlockchainType.EVM);
 
           // Get detailed token info to see which chain it was found on
-          const tokenInfo = await multiChainProvider.getTokenInfo(unknownToken, BlockchainType.EVM);
+          const tokenInfo = await multiChainProvider.getTokenInfo(
+            unknownToken,
+            BlockchainType.EVM,
+          );
           if (tokenInfo && tokenInfo.specificChain) {
             console.log(`Token was found on chain: ${tokenInfo.specificChain}`);
           }
@@ -316,56 +333,64 @@ describe('Multi-Chain Provider Tests', () => {
         }
       } catch (error) {
         console.log(
-          'Error fetching unknown token price:',
-          error instanceof Error ? error.message : 'Unknown error',
+          "Error fetching unknown token price:",
+          error instanceof Error ? error.message : "Unknown error",
         );
       }
 
       // Test the token through the API
       try {
         const baseUrl = getBaseUrl();
-        const apiResponse = await axios.get(`${baseUrl}/api/price?token=${unknownToken}`);
-        console.log(`API response for token: ${JSON.stringify(apiResponse.data, null, 2)}`);
+        const apiResponse = await axios.get(
+          `${baseUrl}/api/price?token=${unknownToken}`,
+        );
+        console.log(
+          `API response for token: ${JSON.stringify(apiResponse.data, null, 2)}`,
+        );
 
         // Validate that the chain is correctly identified
         expect(apiResponse.data.chain).toBe(BlockchainType.EVM);
       } catch (error) {
         console.log(
-          `Error fetching price via API: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          `Error fetching price via API: ${error instanceof Error ? error.message : "Unknown error"}`,
         );
       }
     });
 
     // Replace the test that was using NovesProvider with one that just tests MultiChainProvider
-    it('should find token on Base chain', async () => {
+    it("should find token on Base chain", async () => {
       if (!runTests) {
-        console.log('Skipping test - Tests disabled');
+        console.log("Skipping test - Tests disabled");
         return;
       }
 
       // Token from the base chain
-      const baseToken = '0x532f27101965dd16442e59d40670faf5ebb142e4';
+      const baseToken = "0x532f27101965dd16442e59d40670faf5ebb142e4";
 
       console.log(`Testing MultiChainProvider for token ${baseToken}...`);
 
       // Call getPrice to get the result
-      const priceReport = await multiChainProvider.getPrice(baseToken, BlockchainType.EVM, 'base');
+      const priceReport = await multiChainProvider.getPrice(
+        baseToken,
+        BlockchainType.EVM,
+        "base",
+      );
 
       console.log(`Price result for ${baseToken} on Base:`, priceReport);
 
       // If the API works correctly, we should get a non-null price
       if (priceReport !== null) {
         // Verify the price is a valid number and greater than 0
-        expect(typeof priceReport).toBe('object');
+        expect(typeof priceReport).toBe("object");
         expect(priceReport.price).toBeGreaterThan(0);
         expect(priceReport.chain).toBe(BlockchainType.EVM);
-        expect(priceReport.specificChain).toBe('base');
+        expect(priceReport.specificChain).toBe("base");
 
         // Also test the token info
         const tokenInfo = await multiChainProvider.getTokenInfo(
           baseToken,
           BlockchainType.EVM,
-          'base',
+          "base",
         );
 
         if (tokenInfo && tokenInfo.specificChain) {
@@ -374,15 +399,15 @@ describe('Multi-Chain Provider Tests', () => {
           );
 
           // Based on the previous tests, we expect this token to be on Base
-          expect(tokenInfo.specificChain).toBe('base');
+          expect(tokenInfo.specificChain).toBe("base");
         }
       }
     }, 60000); // Increase timeout for API calls
 
     // Replace the test for NovesProvider fallback
-    it('should handle token lookups without specific chain parameter', async () => {
+    it("should handle token lookups without specific chain parameter", async () => {
       if (!runTests) {
-        console.log('Skipping test - Tests disabled');
+        console.log("Skipping test - Tests disabled");
         return;
       }
 
@@ -390,24 +415,34 @@ describe('Multi-Chain Provider Tests', () => {
       const ethToken = testTokens.eth.ETH; // WETH token
 
       // Test MultiChainProvider directly
-      console.log('Testing MultiChainProvider auto chain detection...');
-      const multiChainResult = await multiChainProvider.getPrice(ethToken, BlockchainType.EVM);
+      console.log("Testing MultiChainProvider auto chain detection...");
+      const multiChainResult = await multiChainProvider.getPrice(
+        ethToken,
+        BlockchainType.EVM,
+      );
 
       if (multiChainResult !== null) {
-        console.log(`MultiChainProvider auto detected price: $${multiChainResult.price}`);
+        console.log(
+          `MultiChainProvider auto detected price: $${multiChainResult.price}`,
+        );
         expect(multiChainResult.price).toBeGreaterThan(0);
         expect(multiChainResult.chain).toBe(BlockchainType.EVM);
-        expect(multiChainResult.specificChain).toBe('eth');
+        expect(multiChainResult.specificChain).toBe("eth");
       } else {
         console.log(`No price found for ETH token`);
       }
 
       // Get detailed info to see which chain was detected
-      const tokenInfo = await multiChainProvider.getTokenInfo(ethToken, BlockchainType.EVM);
-      console.log(`MultiChainProvider token info: ${JSON.stringify(tokenInfo)}`);
+      const tokenInfo = await multiChainProvider.getTokenInfo(
+        ethToken,
+        BlockchainType.EVM,
+      );
+      console.log(
+        `MultiChainProvider token info: ${JSON.stringify(tokenInfo)}`,
+      );
 
       // Check PriceTracker
-      console.log('Testing PriceTracker...');
+      console.log("Testing PriceTracker...");
       const priceTracker = new PriceTracker();
 
       // Make sure the PriceTracker has the MultiChainProvider
@@ -416,13 +451,15 @@ describe('Multi-Chain Provider Tests', () => {
 
       // Find MultiChainProvider in the list
       const hasMultiChain = providers.some(
-        (p: PriceSource) => p.getName() === 'DexScreener MultiChain',
+        (p: PriceSource) => p.getName() === "DexScreener MultiChain",
       );
       expect(hasMultiChain).toBe(true);
 
       // Get token info through PriceTracker
       const trackerTokenInfo = await priceTracker.getTokenInfo(ethToken);
-      console.log(`PriceTracker.getTokenInfo result: ${JSON.stringify(trackerTokenInfo)}`);
+      console.log(
+        `PriceTracker.getTokenInfo result: ${JSON.stringify(trackerTokenInfo)}`,
+      );
 
       // The token info should have info regardless of the price
       expect(trackerTokenInfo).not.toBeNull();
@@ -434,28 +471,28 @@ describe('Multi-Chain Provider Tests', () => {
       }
     });
 
-    it('should fetch prices for specific known tokens across different chains', async () => {
+    it("should fetch prices for specific known tokens across different chains", async () => {
       if (!runTests) {
-        console.log('Skipping test - Tests disabled');
+        console.log("Skipping test - Tests disabled");
         return;
       }
 
       // List of known tokens that should work with DexScreener
       const knownTokens = [
         {
-          address: '0x912CE59144191C1204E64559FE8253a0e49E6548',
-          name: 'Arbitrum (ARB)',
-          expectedChain: 'arbitrum',
+          address: "0x912CE59144191C1204E64559FE8253a0e49E6548",
+          name: "Arbitrum (ARB)",
+          expectedChain: "arbitrum",
         },
         {
-          address: '0x532f27101965dd16442E59d40670FaF5eBB142E4',
-          name: 'TOSHI Token',
-          expectedChain: 'base',
+          address: "0x532f27101965dd16442E59d40670FaF5eBB142E4",
+          name: "TOSHI Token",
+          expectedChain: "base",
         },
         {
-          address: '0x514910771af9ca656af840dff83e8264ecf986ca',
-          name: 'Chainlink (LINK)',
-          expectedChain: 'eth',
+          address: "0x514910771af9ca656af840dff83e8264ecf986ca",
+          name: "Chainlink (LINK)",
+          expectedChain: "eth",
         },
       ];
 
@@ -492,14 +529,18 @@ describe('Multi-Chain Provider Tests', () => {
 
           // If we got a price, verify it looks reasonable
           if (tokenInfo.price !== null) {
-            expect(typeof tokenInfo.price).toBe('number');
+            expect(typeof tokenInfo.price).toBe("number");
             expect(tokenInfo.price).toBeGreaterThan(0);
-            console.log(`✅ Verified price for ${token.name}: $${tokenInfo.price}`);
+            console.log(
+              `✅ Verified price for ${token.name}: $${tokenInfo.price}`,
+            );
           }
 
           // If we got a specific chain, verify it matches our expectation
           if (tokenInfo.specificChain) {
-            console.log(`Token ${token.name} detected on chain: ${tokenInfo.specificChain}`);
+            console.log(
+              `Token ${token.name} detected on chain: ${tokenInfo.specificChain}`,
+            );
 
             // The chain should match our expected chain
             if (tokenInfo.specificChain !== token.expectedChain) {
@@ -507,7 +548,9 @@ describe('Multi-Chain Provider Tests', () => {
                 `⚠️ Note: ${token.name} was found on ${tokenInfo.specificChain} (expected ${token.expectedChain})`,
               );
             } else {
-              console.log(`✅ Confirmed ${token.name} on expected chain: ${token.expectedChain}`);
+              console.log(
+                `✅ Confirmed ${token.name} on expected chain: ${token.expectedChain}`,
+              );
             }
           }
         }
@@ -518,28 +561,33 @@ describe('Multi-Chain Provider Tests', () => {
           const apiResponse = await axios.get(
             `${baseUrl}/api/price/token-info?token=${token.address}`,
           );
-          console.log(`API token-info response for ${token.name}:`, apiResponse.data);
+          console.log(
+            `API token-info response for ${token.name}:`,
+            apiResponse.data,
+          );
 
           // Chain type should always be correctly identified
           expect(apiResponse.data.chain).toBe(BlockchainType.EVM);
 
           if (apiResponse.data.price !== null) {
-            console.log(`✅ API returned price for ${token.name}: $${apiResponse.data.price}`);
+            console.log(
+              `✅ API returned price for ${token.name}: $${apiResponse.data.price}`,
+            );
           }
         } catch (error) {
           console.log(
             `Error fetching ${token.name} through API:`,
-            error instanceof Error ? error.message : 'Unknown error',
+            error instanceof Error ? error.message : "Unknown error",
           );
         }
       }
     }, 60000); // 60 second timeout for API tests
   });
 
-  describe('API integration for multi-chain price fetching', () => {
-    it('should fetch token price using price tracker service', async () => {
+  describe("API integration for multi-chain price fetching", () => {
+    it("should fetch token price using price tracker service", async () => {
       if (!runTests) {
-        console.log('Skipping test - Tests disabled');
+        console.log("Skipping test - Tests disabled");
         return;
       }
 
@@ -553,7 +601,7 @@ describe('Multi-Chain Provider Tests', () => {
         console.log(`ETH price from price tracker: $${priceReport.price}`);
         expect(priceReport.price).toBeGreaterThan(0);
         expect(priceReport.chain).toBe(BlockchainType.EVM);
-        expect(priceReport.specificChain).toBe('eth');
+        expect(priceReport.specificChain).toBe("eth");
       } else {
         console.log(`No price found for ETH token from price tracker`);
       }
@@ -571,15 +619,15 @@ describe('Multi-Chain Provider Tests', () => {
       if (tokenInfo) {
         expect(tokenInfo.chain).toBe(BlockchainType.EVM);
         if (tokenInfo.specificChain) {
-          expect(typeof tokenInfo.specificChain).toBe('string');
+          expect(typeof tokenInfo.specificChain).toBe("string");
           console.log(`Token specific chain: ${tokenInfo.specificChain}`);
         }
       }
     });
 
-    it('should handle errors gracefully for unsupported tokens', async () => {
+    it("should handle errors gracefully for unsupported tokens", async () => {
       // Test with an invalid token address
-      const invalidToken = 'not-a-valid-token-address';
+      const invalidToken = "not-a-valid-token-address";
 
       try {
         // This should throw an error or return null
@@ -589,18 +637,18 @@ describe('Multi-Chain Provider Tests', () => {
       } catch (error) {
         // Error is expected
         console.log(
-          `Expected error for invalid token: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          `Expected error for invalid token: ${error instanceof Error ? error.message : "Unknown error"}`,
         );
         expect(error).toBeDefined();
       }
     });
 
-    it('should fetch prices faster when providing the exact chain parameter', async () => {
+    it("should fetch prices faster when providing the exact chain parameter", async () => {
       // Use a token that's available on a specific chain
-      const linkToken = '0x514910771af9ca656af840dff83e8264ecf986ca'; // Chainlink on Ethereum
+      const linkToken = "0x514910771af9ca656af840dff83e8264ecf986ca"; // Chainlink on Ethereum
 
       console.log(
-        'Testing chain override performance for Chainlink token (0x514910771af9ca656af840dff83e8264ecf986ca)',
+        "Testing chain override performance for Chainlink token (0x514910771af9ca656af840dff83e8264ecf986ca)",
       );
 
       // Get price with chain detection (which may try multiple chains)
@@ -610,8 +658,12 @@ describe('Multi-Chain Provider Tests', () => {
       const timeWithout = endTimeWithout - startTimeWithout;
 
       if (priceReportWithoutChain !== null) {
-        console.log(`Price fetch time without chain parameter: ${timeWithout}ms`);
-        console.log(`Price result without specific chain: $${priceReportWithoutChain.price}`);
+        console.log(
+          `Price fetch time without chain parameter: ${timeWithout}ms`,
+        );
+        console.log(
+          `Price result without specific chain: $${priceReportWithoutChain.price}`,
+        );
         expect(priceReportWithoutChain.price).toBeGreaterThan(0);
         expect(priceReportWithoutChain.chain).toBe(BlockchainType.EVM);
       } else {
@@ -626,17 +678,19 @@ describe('Multi-Chain Provider Tests', () => {
       const priceReportWithChain = await multiChainProvider.getPrice(
         linkToken,
         BlockchainType.EVM,
-        'eth',
+        "eth",
       );
       const endTimeWith = Date.now();
       const timeWith = endTimeWith - startTimeWith;
 
       if (priceReportWithChain !== null) {
         console.log(`Price fetch time with chain parameter: ${timeWith}ms`);
-        console.log(`Price result with specific chain: $${priceReportWithChain.price}`);
+        console.log(
+          `Price result with specific chain: $${priceReportWithChain.price}`,
+        );
         expect(priceReportWithChain.price).toBeGreaterThan(0);
         expect(priceReportWithChain.chain).toBe(BlockchainType.EVM);
-        expect(priceReportWithChain.specificChain).toBe('eth');
+        expect(priceReportWithChain.specificChain).toBe("eth");
 
         // Log performance difference
         console.log(

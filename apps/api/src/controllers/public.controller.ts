@@ -1,6 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
-import { services } from '../services';
-import { repositories } from '../database';
+import { NextFunction, Request, Response } from "express";
+
+import { repositories } from "../database";
+import { services } from "../services";
 
 /**
  * Public Controller
@@ -15,13 +16,15 @@ export class PublicController {
    */
   static async registerTeam(req: Request, res: Response, next: NextFunction) {
     try {
-      const { teamName, email, contactPerson, walletAddress, metadata } = req.body;
+      const { teamName, email, contactPerson, walletAddress, metadata } =
+        req.body;
 
       // Validate required parameters
       if (!teamName || !email || !contactPerson || !walletAddress) {
         return res.status(400).json({
           success: false,
-          error: 'Missing required parameters: teamName, email, contactPerson, walletAddress',
+          error:
+            "Missing required parameters: teamName, email, contactPerson, walletAddress",
         });
       }
 
@@ -30,7 +33,7 @@ export class PublicController {
 
       if (existingTeam) {
         const errorMessage = `A team with email ${email} already exists`;
-        console.log('[PublicController] Duplicate email error:', errorMessage);
+        console.log("[PublicController] Duplicate email error:", errorMessage);
         return res.status(409).json({
           success: false,
           error: errorMessage,
@@ -62,10 +65,13 @@ export class PublicController {
           },
         });
       } catch (error) {
-        console.error('[PublicController] Error registering team:', error);
+        console.error("[PublicController] Error registering team:", error);
 
         // Check if this is a duplicate email error that somehow got here
-        if (error instanceof Error && error.message.includes('email already exists')) {
+        if (
+          error instanceof Error &&
+          error.message.includes("email already exists")
+        ) {
           return res.status(409).json({
             success: false,
             error: error.message,
@@ -75,8 +81,8 @@ export class PublicController {
         // Check if this is an invalid wallet address error
         if (
           error instanceof Error &&
-          (error.message.includes('Wallet address is required') ||
-            error.message.includes('Invalid Ethereum address'))
+          (error.message.includes("Wallet address is required") ||
+            error.message.includes("Invalid Ethereum address"))
         ) {
           return res.status(400).json({
             success: false,
@@ -87,22 +93,30 @@ export class PublicController {
         // Check if this is a duplicate wallet address error (UNIQUE constraint)
         if (
           error instanceof Error &&
-          error.message.includes('duplicate key value violates unique constraint')
+          error.message.includes(
+            "duplicate key value violates unique constraint",
+          )
         ) {
           return res.status(409).json({
             success: false,
-            error: 'A team with this wallet address already exists',
+            error: "A team with this wallet address already exists",
           });
         }
 
         // Handle other errors
         return res.status(500).json({
           success: false,
-          error: error instanceof Error ? error.message : 'Unknown error registering team',
+          error:
+            error instanceof Error
+              ? error.message
+              : "Unknown error registering team",
         });
       }
     } catch (error) {
-      console.error('[PublicController] Uncaught error in registerTeam:', error);
+      console.error(
+        "[PublicController] Uncaught error in registerTeam:",
+        error,
+      );
       next(error);
     }
   }

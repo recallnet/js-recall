@@ -1,5 +1,6 @@
-import { Router } from 'express';
-import { PublicController } from '../controllers/public.controller';
+import { Router } from "express";
+
+import { PublicController } from "../controllers/public.controller";
 
 const router = Router();
 
@@ -102,6 +103,6 @@ const router = Router();
  *       500:
  *         description: Server error
  */
-router.post('/teams/register', PublicController.registerTeam);
+router.post("/teams/register", PublicController.registerTeam);
 
 export default router;

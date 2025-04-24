@@ -1,9 +1,10 @@
-import { Response, NextFunction } from 'express';
-import { services } from '../services';
-import { repositories } from '../database';
-import { ApiError } from '../middleware/errorHandler';
-import { config, features } from '../config';
-import { AuthenticatedRequest } from '../types';
+import { NextFunction, Response } from "express";
+
+import { config, features } from "../config";
+import { repositories } from "../database";
+import { ApiError } from "../middleware/errorHandler";
+import { services } from "../services";
+import { AuthenticatedRequest } from "../types";
 
 /**
  * Competition Controller
@@ -16,7 +17,11 @@ export class CompetitionController {
    * @param res Express response
    * @param next Express next function
    */
-  static async getLeaderboard(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  static async getLeaderboard(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ) {
     try {
       // Get active competition or use competitionId from query
       const competitionId =
@@ -24,13 +29,17 @@ export class CompetitionController {
         (await services.competitionManager.getActiveCompetition())?.id;
 
       if (!competitionId) {
-        throw new ApiError(400, 'No active competition and no competitionId provided');
+        throw new ApiError(
+          400,
+          "No active competition and no competitionId provided",
+        );
       }
 
       // Get the competition
-      const competition = await services.competitionManager.getCompetition(competitionId);
+      const competition =
+        await services.competitionManager.getCompetition(competitionId);
       if (!competition) {
-        throw new ApiError(404, 'Competition not found');
+        throw new ApiError(404, "Competition not found");
       }
 
       // Check if the team is part of the competition
@@ -38,7 +47,7 @@ export class CompetitionController {
 
       // If no team ID, they can't be in the competition
       if (!teamId) {
-        throw new ApiError(401, 'Authentication required to view leaderboard');
+        throw new ApiError(401, "Authentication required to view leaderboard");
       }
 
       // Check if user is an admin (added by auth middleware)
@@ -54,19 +63,23 @@ export class CompetitionController {
         );
         throw new ApiError(
           403,
-          'Leaderboard access is currently restricted to administrators only',
+          "Leaderboard access is currently restricted to administrators only",
         );
       }
 
       // If not an admin, verify team is part of the competition
       if (!isAdmin) {
-        const isTeamInCompetition = await repositories.teamRepository.isTeamInCompetition(
-          teamId,
-          competitionId,
-        );
+        const isTeamInCompetition =
+          await repositories.teamRepository.isTeamInCompetition(
+            teamId,
+            competitionId,
+          );
 
         if (!isTeamInCompetition) {
-          throw new ApiError(403, 'Your team is not participating in this competition');
+          throw new ApiError(
+            403,
+            "Your team is not participating in this competition",
+          );
         }
       } else {
         console.log(
@@ -75,7 +88,8 @@ export class CompetitionController {
       }
 
       // Get leaderboard
-      const leaderboard = await services.competitionManager.getLeaderboard(competitionId);
+      const leaderboard =
+        await services.competitionManager.getLeaderboard(competitionId);
 
       // Get all teams (excluding admin teams)
       const teams = await services.teamManager.getAllTeams(false);
@@ -98,7 +112,7 @@ export class CompetitionController {
         return {
           rank: index + 1,
           teamId: entry.teamId,
-          teamName: team ? team.name : 'Unknown Team',
+          teamName: team ? team.name : "Unknown Team",
           portfolioValue: entry.value,
           active: team?.active !== false,
           deactivationReason: isInactive ? team?.deactivationReason : null,
@@ -124,12 +138,17 @@ export class CompetitionController {
    * @param res Express response
    * @param next Express next function
    */
-  static async getStatus(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  static async getStatus(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ) {
     try {
-      console.log('[CompetitionController] Processing getStatus request');
+      console.log("[CompetitionController] Processing getStatus request");
 
       // Get active competition
-      const activeCompetition = await services.competitionManager.getActiveCompetition();
+      const activeCompetition =
+        await services.competitionManager.getActiveCompetition();
 
       // Get team ID from request (if authenticated)
       const teamId = req.teamId;
@@ -144,35 +163,40 @@ export class CompetitionController {
             }
           : null;
 
-        console.log(`[CompetitionController] Returning basic competition status (no auth)`);
+        console.log(
+          `[CompetitionController] Returning basic competition status (no auth)`,
+        );
 
         return res.status(200).json({
           success: true,
           active: !!activeCompetition,
           competition: info,
-          message: 'Authenticate to get full competition details',
+          message: "Authenticate to get full competition details",
         });
       }
 
       // No active competition, return empty response
       if (!activeCompetition) {
-        console.log('[CompetitionController] No active competition found');
+        console.log("[CompetitionController] No active competition found");
 
         return res.status(200).json({
           success: true,
           active: false,
           competition: null,
-          message: 'No active competition found',
+          message: "No active competition found",
         });
       }
 
-      console.log(`[CompetitionController] Found active competition: ${activeCompetition.id}`);
+      console.log(
+        `[CompetitionController] Found active competition: ${activeCompetition.id}`,
+      );
 
       // Check if the team is part of the competition
-      const isTeamInCompetition = await repositories.teamRepository.isTeamInCompetition(
-        teamId,
-        activeCompetition.id,
-      );
+      const isTeamInCompetition =
+        await repositories.teamRepository.isTeamInCompetition(
+          teamId,
+          activeCompetition.id,
+        );
 
       // Check if the team is an admin
       const isAdmin = req.isAdmin === true;
@@ -192,13 +216,15 @@ export class CompetitionController {
             status: activeCompetition.status,
             startDate: activeCompetition.startDate,
           },
-          message: 'Your team is not participating in this competition',
+          message: "Your team is not participating in this competition",
         });
       }
 
       // Return full competition details for participants and admins
       if (isAdmin) {
-        console.log(`[CompetitionController] Admin ${teamId} accessing competition status`);
+        console.log(
+          `[CompetitionController] Admin ${teamId} accessing competition status`,
+        );
       } else {
         console.log(
           `[CompetitionController] Team ${teamId} is participating in competition ${activeCompetition.id}`,
@@ -222,14 +248,21 @@ export class CompetitionController {
    * @param res Express response
    * @param next Express next function
    */
-  static async getRules(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  static async getRules(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ) {
     try {
       // Check if the team is authenticated
       const teamId = req.teamId;
 
       // If no team ID, they can't be authenticated
       if (!teamId) {
-        throw new ApiError(401, 'Authentication required to view competition rules');
+        throw new ApiError(
+          401,
+          "Authentication required to view competition rules",
+        );
       }
 
       // Check if user is an admin (added by auth middleware)
@@ -238,22 +271,29 @@ export class CompetitionController {
       // If not an admin, verify team is part of the active competition
       if (!isAdmin) {
         // Get active competition
-        const activeCompetition = await services.competitionManager.getActiveCompetition();
+        const activeCompetition =
+          await services.competitionManager.getActiveCompetition();
 
         if (!activeCompetition) {
-          throw new ApiError(400, 'No active competition');
+          throw new ApiError(400, "No active competition");
         }
 
-        const isTeamInCompetition = await repositories.teamRepository.isTeamInCompetition(
-          teamId,
-          activeCompetition.id,
-        );
+        const isTeamInCompetition =
+          await repositories.teamRepository.isTeamInCompetition(
+            teamId,
+            activeCompetition.id,
+          );
 
         if (!isTeamInCompetition) {
-          throw new ApiError(403, 'Your team is not participating in the active competition');
+          throw new ApiError(
+            403,
+            "Your team is not participating in the active competition",
+          );
         }
       } else {
-        console.log(`[CompetitionController] Admin ${teamId} accessing competition rules`);
+        console.log(
+          `[CompetitionController] Admin ${teamId} accessing competition rules`,
+        );
       }
 
       // Get available chains and tokens
@@ -265,7 +305,9 @@ export class CompetitionController {
       // Chain-specific balances
       for (const chain of Object.keys(config.specificChainBalances)) {
         const chainBalances =
-          config.specificChainBalances[chain as keyof typeof config.specificChainBalances];
+          config.specificChainBalances[
+            chain as keyof typeof config.specificChainBalances
+          ];
         const tokenItems = [];
 
         for (const token of Object.keys(chainBalances)) {
@@ -278,11 +320,13 @@ export class CompetitionController {
         if (tokenItems.length > 0) {
           let chainName = chain;
           // Format chain name for better readability
-          if (chain === 'eth') chainName = 'Ethereum';
-          else if (chain === 'svm') chainName = 'Solana';
+          if (chain === "eth") chainName = "Ethereum";
+          else if (chain === "svm") chainName = "Solana";
           else chainName = chain.charAt(0).toUpperCase() + chain.slice(1); // Capitalize
 
-          initialBalanceDescriptions.push(`${chainName}: ${tokenItems.join(', ')}`);
+          initialBalanceDescriptions.push(
+            `${chainName}: ${tokenItems.join(", ")}`,
+          );
         }
       }
 
@@ -291,29 +335,29 @@ export class CompetitionController {
         success: true,
         rules: {
           tradingRules: [
-            'Trading is only allowed for tokens with valid price data',
-            `All teams start with identical token balances: ${initialBalanceDescriptions.join('; ')}`,
-            'Minimum trade amount: 0.000001 tokens',
+            "Trading is only allowed for tokens with valid price data",
+            `All teams start with identical token balances: ${initialBalanceDescriptions.join("; ")}`,
+            "Minimum trade amount: 0.000001 tokens",
             `Maximum single trade: ${config.maxTradePercentage}% of team's total portfolio value`,
-            'No shorting allowed (trades limited to available balance)',
-            'Slippage is applied to all trades based on trade size',
-            `Cross-chain trading: ${features.ALLOW_CROSS_CHAIN_TRADING ? 'Enabled' : 'Disabled'}`,
-            'Transaction fees are not simulated',
+            "No shorting allowed (trades limited to available balance)",
+            "Slippage is applied to all trades based on trade size",
+            `Cross-chain trading: ${features.ALLOW_CROSS_CHAIN_TRADING ? "Enabled" : "Disabled"}`,
+            "Transaction fees are not simulated",
           ],
           rateLimits: [
             `${config.rateLimiting.maxRequests} requests per ${config.rateLimiting.windowMs / 1000} seconds per endpoint`,
-            '100 requests per minute for trade operations',
-            '300 requests per minute for price queries',
-            '30 requests per minute for balance/portfolio checks',
-            '3,000 requests per minute across all endpoints',
-            '10,000 requests per hour per team',
+            "100 requests per minute for trade operations",
+            "300 requests per minute for price queries",
+            "30 requests per minute for balance/portfolio checks",
+            "3,000 requests per minute across all endpoints",
+            "10,000 requests per hour per team",
           ],
           availableChains: {
             svm: true,
             evm: evmChains,
           },
           slippageFormula:
-            'baseSlippage = (tradeAmountUSD / 10000) * 0.05%, actualSlippage = baseSlippage * (0.9 + (Math.random() * 0.2))',
+            "baseSlippage = (tradeAmountUSD / 10000) * 0.05%, actualSlippage = baseSlippage * (0.9 + (Math.random() * 0.2))",
           portfolioSnapshots: {
             interval: `${config.portfolio.snapshotIntervalMs / 60000} minutes`,
           },

@@ -1,7 +1,8 @@
-import { BaseRepository } from '../base-repository';
-import { Team } from '../../types';
-import { DatabaseRow } from '../types';
-import { PoolClient } from 'pg';
+import { PoolClient } from "pg";
+
+import { Team } from "../../types";
+import { BaseRepository } from "../base-repository";
+import { DatabaseRow } from "../types";
 
 /**
  * Team Repository
@@ -9,7 +10,7 @@ import { PoolClient } from 'pg';
  */
 export class TeamRepository extends BaseRepository<Team> {
   constructor() {
-    super('teams');
+    super("teams");
   }
 
   /**
@@ -52,7 +53,7 @@ export class TeamRepository extends BaseRepository<Team> {
 
       return this.mapToEntity(this.toCamelCase(result.rows[0]));
     } catch (error) {
-      console.error('[TeamRepository] Error in create:', error);
+      console.error("[TeamRepository] Error in create:", error);
       throw error;
     }
   }
@@ -76,9 +77,11 @@ export class TeamRepository extends BaseRepository<Team> {
         ? await client.query(query, values)
         : await this.db.query(query, values);
 
-      return result.rows.length > 0 ? this.mapToEntity(this.toCamelCase(result.rows[0])) : null;
+      return result.rows.length > 0
+        ? this.mapToEntity(this.toCamelCase(result.rows[0]))
+        : null;
     } catch (error) {
-      console.error('[TeamRepository] Error in findByEmail:', error);
+      console.error("[TeamRepository] Error in findByEmail:", error);
       throw error;
     }
   }
@@ -134,7 +137,7 @@ export class TeamRepository extends BaseRepository<Team> {
 
       return this.mapToEntity(this.toCamelCase(result.rows[0]));
     } catch (error) {
-      console.error('[TeamRepository] Error in update:', error);
+      console.error("[TeamRepository] Error in update:", error);
       throw error;
     }
   }
@@ -144,7 +147,10 @@ export class TeamRepository extends BaseRepository<Team> {
    * @param apiKey The API key to search for
    * @param client Optional database client for transactions
    */
-  async findByApiKey(apiKey: string, client?: PoolClient): Promise<Team | null> {
+  async findByApiKey(
+    apiKey: string,
+    client?: PoolClient,
+  ): Promise<Team | null> {
     try {
       const query = `
         SELECT * FROM teams
@@ -157,9 +163,11 @@ export class TeamRepository extends BaseRepository<Team> {
         ? await client.query(query, values)
         : await this.db.query(query, values);
 
-      return result.rows.length > 0 ? this.mapToEntity(this.toCamelCase(result.rows[0])) : null;
+      return result.rows.length > 0
+        ? this.mapToEntity(this.toCamelCase(result.rows[0]))
+        : null;
     } catch (error) {
-      console.error('[TeamRepository] Error in findByApiKey:', error);
+      console.error("[TeamRepository] Error in findByApiKey:", error);
       throw error;
     }
   }
@@ -189,7 +197,7 @@ export class TeamRepository extends BaseRepository<Team> {
 
       return result.rows.length > 0;
     } catch (error) {
-      console.error('[TeamRepository] Error in isTeamInCompetition:', error);
+      console.error("[TeamRepository] Error in isTeamInCompetition:", error);
       throw error;
     }
   }
@@ -200,7 +208,11 @@ export class TeamRepository extends BaseRepository<Team> {
    * @param reason Reason for deactivation
    * @param client Optional database client for transactions
    */
-  async deactivateTeam(teamId: string, reason: string, client?: PoolClient): Promise<Team | null> {
+  async deactivateTeam(
+    teamId: string,
+    reason: string,
+    client?: PoolClient,
+  ): Promise<Team | null> {
     try {
       // First check if team exists
       const team = await this.findById(teamId, client);
@@ -230,7 +242,7 @@ export class TeamRepository extends BaseRepository<Team> {
 
       return this.mapToEntity(this.toCamelCase(result.rows[0]));
     } catch (error) {
-      console.error('[TeamRepository] Error in deactivateTeam:', error);
+      console.error("[TeamRepository] Error in deactivateTeam:", error);
       throw error;
     }
   }
@@ -240,7 +252,10 @@ export class TeamRepository extends BaseRepository<Team> {
    * @param teamId Team ID to reactivate
    * @param client Optional database client for transactions
    */
-  async reactivateTeam(teamId: string, client?: PoolClient): Promise<Team | null> {
+  async reactivateTeam(
+    teamId: string,
+    client?: PoolClient,
+  ): Promise<Team | null> {
     try {
       // First check if team exists
       const team = await this.findById(teamId, client);
@@ -270,7 +285,7 @@ export class TeamRepository extends BaseRepository<Team> {
 
       return this.mapToEntity(this.toCamelCase(result.rows[0]));
     } catch (error) {
-      console.error('[TeamRepository] Error in reactivateTeam:', error);
+      console.error("[TeamRepository] Error in reactivateTeam:", error);
       throw error;
     }
   }
@@ -287,11 +302,15 @@ export class TeamRepository extends BaseRepository<Team> {
         ORDER BY deactivation_date DESC
       `;
 
-      const result = client ? await client.query(query) : await this.db.query(query);
+      const result = client
+        ? await client.query(query)
+        : await this.db.query(query);
 
-      return result.rows.map((row: DatabaseRow) => this.mapToEntity(this.toCamelCase(row)));
+      return result.rows.map((row: DatabaseRow) =>
+        this.mapToEntity(this.toCamelCase(row)),
+      );
     } catch (error) {
-      console.error('[TeamRepository] Error in findInactiveTeams:', error);
+      console.error("[TeamRepository] Error in findInactiveTeams:", error);
       throw error;
     }
   }

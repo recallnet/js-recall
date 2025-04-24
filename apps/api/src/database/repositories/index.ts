@@ -1,8 +1,8 @@
-import { TeamRepository } from './team-repository';
-import { CompetitionRepository } from './competition-repository';
-import { BalanceRepository } from './balance-repository';
-import { TradeRepository } from './trade-repository';
-import { PriceRepository } from './price-repository';
+import { BalanceRepository } from "./balance-repository";
+import { CompetitionRepository } from "./competition-repository";
+import { PriceRepository } from "./price-repository";
+import { TeamRepository } from "./team-repository";
+import { TradeRepository } from "./trade-repository";
 
 /**
  * Repository Registry
@@ -24,7 +24,7 @@ class RepositoryRegistry {
     this._tradeRepository = new TradeRepository();
     this._priceRepository = new PriceRepository();
 
-    console.log('[RepositoryRegistry] All repositories initialized');
+    console.log("[RepositoryRegistry] All repositories initialized");
   }
 
   /**

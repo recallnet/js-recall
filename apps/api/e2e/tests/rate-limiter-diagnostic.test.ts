@@ -1,14 +1,15 @@
+import axios, { AxiosError } from "axios";
+
+import { getBaseUrl } from "../utils/server";
 import {
-  registerTeamAndGetClient,
-  cleanupTestState,
-  wait,
-  ADMIN_USERNAME,
-  ADMIN_PASSWORD,
   ADMIN_EMAIL,
+  ADMIN_PASSWORD,
+  ADMIN_USERNAME,
+  cleanupTestState,
   createTestClient,
-} from '../utils/test-helpers';
-import axios, { AxiosError } from 'axios';
-import { getBaseUrl } from '../utils/server';
+  registerTeamAndGetClient,
+  wait,
+} from "../utils/test-helpers";
 
 /**
  * DIAGNOSTIC TEST FOR RATE LIMITER
@@ -16,7 +17,7 @@ import { getBaseUrl } from '../utils/server';
  * This test is specifically designed to diagnose issues with the rate limiter,
  * focusing on whether it properly isolates rate limits by team ID.
  */
-describe('Rate Limiter Diagnostics', () => {
+describe("Rate Limiter Diagnostics", () => {
   // Begin with clean state
   let adminApiKey: string;
 
@@ -36,23 +37,29 @@ describe('Rate Limiter Diagnostics', () => {
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
-  test('properly isolates rate limits by team', async () => {
+  test("properly isolates rate limits by team", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
-    console.log('[DIAGNOSTIC] Admin client setup complete');
+    console.log("[DIAGNOSTIC] Admin client setup complete");
 
     // Register two teams
     const {
       client: team1Client,
       team: team1,
       apiKey: team1ApiKey,
-    } = await registerTeamAndGetClient(adminClient, 'Rate Limit Diagnostic Team 1');
+    } = await registerTeamAndGetClient(
+      adminClient,
+      "Rate Limit Diagnostic Team 1",
+    );
     const {
       client: team2Client,
       team: team2,
       apiKey: team2ApiKey,
-    } = await registerTeamAndGetClient(adminClient, 'Rate Limit Diagnostic Team 2');
+    } = await registerTeamAndGetClient(
+      adminClient,
+      "Rate Limit Diagnostic Team 2",
+    );
     console.log(
       `[DIAGNOSTIC] Registered Team 1 ID: ${team1.id}, API Key: ${team1ApiKey.substring(0, 8)}...`,
     );
@@ -66,16 +73,18 @@ describe('Rate Limiter Diagnostics', () => {
     // Start a competition with both teams
     await adminClient.startCompetition(
       `Rate Limit Diagnostic Test ${Date.now()}`,
-      'Test competition for diagnosing rate limiting',
+      "Test competition for diagnosing rate limiting",
       [team1.id, team2.id],
     );
-    console.log('[DIAGNOSTIC] Started test competition');
+    console.log("[DIAGNOSTIC] Started test competition");
 
     // Wait for competition setup to complete
     await wait(500);
 
     // Make a request with Team 1 until we hit a rate limit
-    console.log('[DIAGNOSTIC] Making requests as Team 1 to test rate limiting...');
+    console.log(
+      "[DIAGNOSTIC] Making requests as Team 1 to test rate limiting...",
+    );
 
     let team1RateLimited = false;
     let team1SuccessCount = 0;
@@ -113,12 +122,12 @@ describe('Rate Limiter Diagnostics', () => {
     let team2RateLimited = false;
 
     try {
-      console.log('[DIAGNOSTIC] Now trying a request with Team 2...');
+      console.log("[DIAGNOSTIC] Now trying a request with Team 2...");
       const team2Response = await team2Client.getBalance();
       if (team2Response && team2Response.success !== false) {
         team2Success = true;
         console.log(
-          '[DIAGNOSTIC] Team 2 request succeeded, suggesting rate limits are properly isolated by team',
+          "[DIAGNOSTIC] Team 2 request succeeded, suggesting rate limits are properly isolated by team",
         );
       }
     } catch (error) {
@@ -126,24 +135,26 @@ describe('Rate Limiter Diagnostics', () => {
       if (axiosError.response && axiosError.response.status === 429) {
         team2RateLimited = true;
         console.log(
-          '[DIAGNOSTIC] Team 2 also hit rate limit - this is unexpected with proper team isolation',
+          "[DIAGNOSTIC] Team 2 also hit rate limit - this is unexpected with proper team isolation",
         );
       } else {
-        console.error('[DIAGNOSTIC] Unexpected error for Team 2:', error);
+        console.error("[DIAGNOSTIC] Unexpected error for Team 2:", error);
         throw error;
       }
     }
 
     // CASE 1: If Team 1 was rate limited, Team 2 should not be
     if (team1RateLimited) {
-      console.log('[DIAGNOSTIC] Team 1 was rate limited, verifying Team 2 can still make requests');
+      console.log(
+        "[DIAGNOSTIC] Team 1 was rate limited, verifying Team 2 can still make requests",
+      );
       expect(team2Success).toBe(true);
       expect(team2RateLimited).toBe(false);
     }
     // CASE 2: If Team 1 wasn't rate limited, we can't draw a clear conclusion
     else {
       console.log(
-        '[DIAGNOSTIC] Team 1 was not rate limited during the test - consider increasing request count',
+        "[DIAGNOSTIC] Team 1 was not rate limited during the test - consider increasing request count",
       );
       // The test is still valuable as we verified authentication and rate limiting paths
     }
@@ -152,13 +163,17 @@ describe('Rate Limiter Diagnostics', () => {
     // If one team hits a rate limit but the other team can still make requests,
     // it proves the rate limiter is properly isolating limits by team
     if (team1RateLimited && team2Success && !team2RateLimited) {
-      console.log('[DIAGNOSTIC] SUCCESS: Rate limits are properly isolated by team ID');
+      console.log(
+        "[DIAGNOSTIC] SUCCESS: Rate limits are properly isolated by team ID",
+      );
     } else if (team1RateLimited && team2RateLimited) {
       console.log(
-        '[DIAGNOSTIC] FAILURE: Both teams hit rate limits, suggesting rate limits are not properly isolated',
+        "[DIAGNOSTIC] FAILURE: Both teams hit rate limits, suggesting rate limits are not properly isolated",
       );
     } else {
-      console.log('[DIAGNOSTIC] INCONCLUSIVE: Could not fully verify rate limit isolation');
+      console.log(
+        "[DIAGNOSTIC] INCONCLUSIVE: Could not fully verify rate limit isolation",
+      );
     }
   });
 });

@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response } from "express";
 
 /**
  * Custom error class with HTTP status code
@@ -30,7 +30,7 @@ const errorHandler = (err: Error | ApiError, req: Request, res: Response) => {
   }
 
   // Handle inactive team errors
-  if (err.message && err.message.includes('inactive')) {
+  if (err.message && err.message.includes("inactive")) {
     return res.status(403).json({
       success: false,
       error: err.message,
@@ -41,7 +41,7 @@ const errorHandler = (err: Error | ApiError, req: Request, res: Response) => {
   // Handle other errors
   return res.status(500).json({
     success: false,
-    error: 'Internal Server Error',
+    error: "Internal Server Error",
   });
 };
 

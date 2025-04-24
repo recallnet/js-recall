@@ -1,7 +1,8 @@
-import { Router } from 'express';
-import { AdminController } from '../controllers/admin.controller';
-import { adminAuthMiddleware } from '../middleware/admin-auth.middleware';
-import { services } from '../services';
+import { Router } from "express";
+
+import { AdminController } from "../controllers/admin.controller";
+import { adminAuthMiddleware } from "../middleware/admin-auth.middleware";
+import { services } from "../services";
 
 const router = Router();
 
@@ -75,7 +76,7 @@ const router = Router();
  *       500:
  *         description: Server error
  */
-router.post('/setup', AdminController.setupAdmin);
+router.post("/setup", AdminController.setupAdmin);
 
 // Apply admin auth middleware to protected routes - pass the teamManager instance
 router.use(adminAuthMiddleware(services.teamManager));
@@ -182,7 +183,7 @@ router.use(adminAuthMiddleware(services.teamManager));
  *       500:
  *         description: Server error
  */
-router.post('/teams/register', AdminController.registerTeam);
+router.post("/teams/register", AdminController.registerTeam);
 
 /**
  * @openapi
@@ -235,7 +236,7 @@ router.post('/teams/register', AdminController.registerTeam);
  *       500:
  *         description: Server error
  */
-router.get('/teams', AdminController.listAllTeams);
+router.get("/teams", AdminController.listAllTeams);
 
 /**
  * @openapi
@@ -286,7 +287,7 @@ router.get('/teams', AdminController.listAllTeams);
  *       500:
  *         description: Server error
  */
-router.get('/teams/:teamId/key', AdminController.getTeamApiKey);
+router.get("/teams/:teamId/key", AdminController.getTeamApiKey);
 
 /**
  * @openapi
@@ -330,7 +331,7 @@ router.get('/teams/:teamId/key', AdminController.getTeamApiKey);
  *       500:
  *         description: Server error
  */
-router.delete('/teams/:teamId', AdminController.deleteTeam);
+router.delete("/teams/:teamId", AdminController.deleteTeam);
 
 /**
  * @openapi
@@ -397,7 +398,7 @@ router.delete('/teams/:teamId', AdminController.deleteTeam);
  *       500:
  *         description: Server error
  */
-router.post('/competition/create', AdminController.createCompetition);
+router.post("/competition/create", AdminController.createCompetition);
 
 /**
  * @openapi
@@ -484,7 +485,7 @@ router.post('/competition/create', AdminController.createCompetition);
  *       500:
  *         description: Server error
  */
-router.post('/competition/start', AdminController.startCompetition);
+router.post("/competition/start", AdminController.startCompetition);
 
 /**
  * @openapi
@@ -563,7 +564,7 @@ router.post('/competition/start', AdminController.startCompetition);
  *       500:
  *         description: Server error
  */
-router.post('/competition/end', AdminController.endCompetition);
+router.post("/competition/end", AdminController.endCompetition);
 
 /**
  * @openapi
@@ -629,7 +630,10 @@ router.post('/competition/end', AdminController.endCompetition);
  *       500:
  *         description: Server error
  */
-router.get('/competition/:competitionId/snapshots', AdminController.getCompetitionSnapshots);
+router.get(
+  "/competition/:competitionId/snapshots",
+  AdminController.getCompetitionSnapshots,
+);
 
 /**
  * @openapi
@@ -710,7 +714,7 @@ router.get('/competition/:competitionId/snapshots', AdminController.getCompetiti
  *       500:
  *         description: Server error
  */
-router.get('/reports/performance', AdminController.getPerformanceReports);
+router.get("/reports/performance", AdminController.getPerformanceReports);
 
 /**
  * @openapi
@@ -783,7 +787,7 @@ router.get('/reports/performance', AdminController.getPerformanceReports);
  *       500:
  *         description: Server error
  */
-router.post('/teams/:teamId/deactivate', AdminController.deactivateTeam);
+router.post("/teams/:teamId/deactivate", AdminController.deactivateTeam);
 
 /**
  * @openapi
@@ -834,6 +838,6 @@ router.post('/teams/:teamId/deactivate', AdminController.deactivateTeam);
  *       500:
  *         description: Server error
  */
-router.post('/teams/:teamId/reactivate', AdminController.reactivateTeam);
+router.post("/teams/:teamId/reactivate", AdminController.reactivateTeam);
 
 export default router;
