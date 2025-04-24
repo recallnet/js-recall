@@ -1,13 +1,16 @@
 import { verifyMessage } from "@wagmi/core";
+import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { SiweMessage, createSiweMessage, parseSiweMessage } from "viem/siwe";
+import { SiweMessage, parseSiweMessage } from "viem/siwe";
 
 import { config } from "@/wagmi-config";
 
 const TIME_LIMIT = 24 * 3600 * 1000; // 1 day before sig expires
 
-const validateMessage = (req: NextRequest, msg: SiweMessage) => {
-  const host = req.headers.get("host"); // e.g. "localhost:3000"
+const validateMessage = async (req: NextRequest, msg: SiweMessage) => {
+  const host = req.headers.get("host");
+  const cookieStore = await cookies();
+  const nonce = cookieStore.get("session")?.value;
 
   if (msg.domain != host) {
     throw new Error("Invalid domain");
@@ -15,8 +18,7 @@ const validateMessage = (req: NextRequest, msg: SiweMessage) => {
   if (msg.chainId != 84532) {
     throw new Error("Invalid chain id");
   }
-  if (msg.nonce != "" && false) {
-    // we should get nonce from some db
+  if (msg.nonce != nonce) {
     throw new Error("Invalid nonce");
   }
   if (
@@ -39,7 +41,7 @@ export async function POST(req: NextRequest) {
     }
 
     const siweMessage = parseSiweMessage(message) as SiweMessage;
-    validateMessage(req, siweMessage);
+    await validateMessage(req, siweMessage);
 
     const result = await verifyMessage(config, {
       address: siweMessage.address as `0x${string}`,
