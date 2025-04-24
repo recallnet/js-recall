@@ -40,9 +40,10 @@ const colors = {
 /**
  * Parse selection input like "1,3,5-8" into an array of indices
  */
-function parseSelectionInput(input: string, maxIndex: number): number[] {
+function parseSelectionInput(input: string, teams: Team[]): Team[] {
   try {
-    const result: number[] = [];
+    const maxIndex = teams.length;
+    const result: Team[] = [];
     const parts = input.split(",");
 
     for (const part of parts) {
@@ -50,11 +51,15 @@ function parseSelectionInput(input: string, maxIndex: number): number[] {
       if (part.includes("-")) {
         // Handle ranges (e.g., "5-8")
         const [start, end] = part.split("-").map((p) => parseInt(p.trim(), 10));
-        if (isNaN(start) || isNaN(end)) continue;
+        if (!start || !end || isNaN(start) || isNaN(end)) continue;
 
         for (let i = start; i <= end; i++) {
-          if (i > 0 && i <= maxIndex && !result.includes(i)) {
-            result.push(i);
+          if (
+            i > 0 &&
+            i <= maxIndex &&
+            !result.find((t) => t.id === teams[i - 1]!.id)
+          ) {
+            result.push(teams[i - 1]!);
           }
         }
       } else {
@@ -64,9 +69,9 @@ function parseSelectionInput(input: string, maxIndex: number): number[] {
           !isNaN(num) &&
           num > 0 &&
           num <= maxIndex &&
-          !result.includes(num)
+          !result.find((t) => t.id === teams[num - 1]!.id)
         ) {
-          result.push(num);
+          result.push(teams[num - 1]!);
         }
       }
     }
@@ -138,8 +143,7 @@ async function selectTeams(): Promise<Team[]> {
     }
 
     // Parse the selection and return selected teams
-    const selectedIndices = parseSelectionInput(selection, teams.length);
-    const selectedTeams = selectedIndices.map((idx) => teams[idx - 1]);
+    const selectedTeams = parseSelectionInput(selection, teams);
 
     if (selectedTeams.length === 0) {
       console.log(

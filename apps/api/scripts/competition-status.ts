@@ -210,9 +210,21 @@ async function showCompetitionStatus() {
       );
     } else {
       // Sort leaderboard by value (descending)
-      const sortedLeaderboard = [...leaderboard].sort(
-        (a, b) => b.value - a.value,
-      );
+      const sortedLeaderboard = [
+        ...(leaderboard as [
+          (typeof leaderboard)[number],
+          ...typeof leaderboard,
+        ]),
+      ].sort((a, b) => b.value - a.value) as [
+        {
+          teamId: string;
+          value: number;
+        },
+        ...{
+          teamId: string;
+          value: number;
+        }[],
+      ];
 
       // Get initial snapshots for each team
       const initialSnapshots = new Map<string, number>();
@@ -232,14 +244,15 @@ async function showCompetitionStatus() {
           );
 
           if (sortedSnapshots.length > 0) {
-            initialSnapshots.set(entry.teamId, sortedSnapshots[0].totalValue);
+            initialSnapshots.set(entry.teamId, sortedSnapshots[0]!.totalValue);
           }
         }
       }
 
       // Calculate highest value for statistics
       const highestValue = sortedLeaderboard[0].value;
-      const lowestValue = sortedLeaderboard[sortedLeaderboard.length - 1].value;
+      const lowestValue =
+        sortedLeaderboard[sortedLeaderboard.length - 1]!.value;
 
       // Display each team's position
       sortedLeaderboard.forEach((entry, index) => {
@@ -295,7 +308,7 @@ async function showCompetitionStatus() {
 
       // Update best/worst performer stats to use initial values
       const bestTeam = sortedLeaderboard[0];
-      const worstTeam = sortedLeaderboard[sortedLeaderboard.length - 1];
+      const worstTeam = sortedLeaderboard[sortedLeaderboard.length - 1]!;
       const bestInitial =
         initialSnapshots.get(bestTeam.teamId) || bestTeam.value;
       const worstInitial =

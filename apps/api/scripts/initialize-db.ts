@@ -26,7 +26,7 @@ function splitSqlIntoSections(sql: string): string[] {
 
   // Add each table section
   for (let i = 1; i < tables.length; i++) {
-    const tableSection = tables[i].trim();
+    const tableSection = tables[i]?.trim();
     if (tableSection) {
       result.push(`-- Table section ${i}\n${tableSection}`);
     }
@@ -79,12 +79,12 @@ export async function initializeDatabase(): Promise<void> {
     const sqlSections = splitSqlIntoSections(sql);
 
     // Execute each section separately to better isolate errors
-    for (let i = 0; i < sqlSections.length; i++) {
+    sqlSections.forEach(async (sqlSection, i) => {
       try {
         console.log(
           `[Database] Executing SQL section ${i + 1} of ${sqlSections.length}...`,
         );
-        await db.query(sqlSections[i]);
+        await db.query(sqlSection);
       } catch (error) {
         console.error(
           `[Database] Error executing SQL section ${i + 1}:`,
@@ -92,11 +92,11 @@ export async function initializeDatabase(): Promise<void> {
         );
         console.error(
           "SQL section content:",
-          sqlSections[i].substring(0, 200) + "...",
+          sqlSection.substring(0, 200) + "...",
         );
         throw error;
       }
-    }
+    });
 
     console.log("[Database] Database schema initialized successfully");
   } catch (error) {

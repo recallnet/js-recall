@@ -8,8 +8,7 @@
     "forceConsistentCasingInFileNames": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "sourceMap": true,
-    "noUncheckedIndexedAccess": false
+    "sourceMap": true
   },
   "include": ["src/**/*.ts", "scripts/**/*.ts"],
   "exclude": ["node_modules", "dist", "e2e"]

@@ -203,7 +203,7 @@ export class AccountController {
         // If we have a snapshot, use it
         if (teamSnapshots.length > 0) {
           // Get the most recent snapshot
-          const latestSnapshot = teamSnapshots[teamSnapshots.length - 1];
+          const latestSnapshot = teamSnapshots[teamSnapshots.length - 1]!;
 
           // Get the token values for this snapshot
           const tokenValues =
