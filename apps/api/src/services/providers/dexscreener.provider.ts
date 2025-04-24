@@ -1,14 +1,15 @@
-import { PriceReport, PriceSource } from '../../types';
-import { BlockchainType, SpecificChain } from '../../types';
-import axios from 'axios';
-import config from '../../config';
+import axios from "axios";
+
+import config from "../../config";
+import { PriceReport, PriceSource } from "../../types";
+import { BlockchainType, SpecificChain } from "../../types";
 
 /**
  * DexScreener price provider implementation
  * Uses DexScreener API to get token prices across multiple chains
  */
 export class DexScreenerProvider implements PriceSource {
-  private readonly API_BASE = 'https://api.dexscreener.com/tokens/v1';
+  private readonly API_BASE = "https://api.dexscreener.com/tokens/v1";
   private cache: Map<string, PriceReport>;
   private readonly CACHE_DURATION = 30000; // 30 seconds
   private lastRequestTime: number = 0;
@@ -18,18 +19,18 @@ export class DexScreenerProvider implements PriceSource {
 
   // Mapping for DexScreener specific chain names
   private readonly chainMapping: Record<SpecificChain, string> = {
-    eth: 'ethereum',
-    polygon: 'polygon',
-    bsc: 'bsc',
-    arbitrum: 'arbitrum',
-    optimism: 'optimism',
-    avalanche: 'avalanche',
-    base: 'base',
-    linea: 'linea',
-    zksync: 'zksync',
-    scroll: 'scroll',
-    mantle: 'mantle',
-    svm: 'solana',
+    eth: "ethereum",
+    polygon: "polygon",
+    bsc: "bsc",
+    arbitrum: "arbitrum",
+    optimism: "optimism",
+    avalanche: "avalanche",
+    base: "base",
+    linea: "linea",
+    zksync: "zksync",
+    scroll: "scroll",
+    mantle: "mantle",
+    svm: "solana",
   };
 
   constructor() {
@@ -37,7 +38,7 @@ export class DexScreenerProvider implements PriceSource {
   }
 
   getName(): string {
-    return 'DexScreener';
+    return "DexScreener";
   }
 
   private async delay(ms: number): Promise<void> {
@@ -53,10 +54,16 @@ export class DexScreenerProvider implements PriceSource {
     this.lastRequestTime = Date.now();
   }
 
-  private getCachedPrice(tokenAddress: string, chain: string): PriceReport | null {
+  private getCachedPrice(
+    tokenAddress: string,
+    chain: string,
+  ): PriceReport | null {
     const cacheKey = `${chain}:${tokenAddress}`;
     const cached = this.cache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp.getTime() < this.CACHE_DURATION) {
+    if (
+      cached &&
+      Date.now() - cached.timestamp.getTime() < this.CACHE_DURATION
+    ) {
       return cached;
     }
     return null;
@@ -80,7 +87,7 @@ export class DexScreenerProvider implements PriceSource {
 
   determineChain(tokenAddress: string): BlockchainType {
     // Simple heuristic: Solana tokens don't start with '0x'
-    if (!tokenAddress.startsWith('0x')) {
+    if (!tokenAddress.startsWith("0x")) {
       return BlockchainType.SVM;
     }
     return BlockchainType.EVM;
@@ -100,12 +107,17 @@ export class DexScreenerProvider implements PriceSource {
   /**
    * Determine if a token is a stablecoin (USDC, USDT, etc.)
    */
-  private isStablecoin(tokenAddress: string, specificChain: SpecificChain): boolean {
+  private isStablecoin(
+    tokenAddress: string,
+    specificChain: SpecificChain,
+  ): boolean {
     // Check if this specific chain exists in our config
     if (!(specificChain in config.specificChainTokens)) return false;
 
     const chainTokens =
-      config.specificChainTokens[specificChain as keyof typeof config.specificChainTokens];
+      config.specificChainTokens[
+        specificChain as keyof typeof config.specificChainTokens
+      ];
 
     const normalizedAddress = tokenAddress.toLowerCase();
     return (
@@ -117,22 +129,33 @@ export class DexScreenerProvider implements PriceSource {
   /**
    * Get the best trading pair for price fetching based on the token and chain
    */
-  private getBestPairForPrice(tokenAddress: string, specificChain: SpecificChain): string | null {
+  private getBestPairForPrice(
+    tokenAddress: string,
+    specificChain: SpecificChain,
+  ): string | null {
     // Check if this specific chain exists in our config
     if (!(specificChain in config.specificChainTokens)) return null;
 
     const chainTokens =
-      config.specificChainTokens[specificChain as keyof typeof config.specificChainTokens];
+      config.specificChainTokens[
+        specificChain as keyof typeof config.specificChainTokens
+      ];
 
     const normalizedAddress = tokenAddress.toLowerCase();
 
     // If token is USDC, pair it with USDT
-    if (normalizedAddress === chainTokens.usdc?.toLowerCase() && chainTokens.usdt) {
+    if (
+      normalizedAddress === chainTokens.usdc?.toLowerCase() &&
+      chainTokens.usdt
+    ) {
       return `${chainTokens.usdc},${chainTokens.usdt}`;
     }
 
     // If token is USDT, pair it with USDC
-    if (normalizedAddress === chainTokens.usdt?.toLowerCase() && chainTokens.usdc) {
+    if (
+      normalizedAddress === chainTokens.usdt?.toLowerCase() &&
+      chainTokens.usdc
+    ) {
       return `${chainTokens.usdt},${chainTokens.usdc}`;
     }
 
@@ -172,9 +195,16 @@ export class DexScreenerProvider implements PriceSource {
         const response = await axios.get(url);
 
         // Check if response has data
-        if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+        if (
+          response.data &&
+          Array.isArray(response.data) &&
+          response.data.length > 0
+        ) {
           const normalizedAddress = tokenAddress.toLowerCase();
-          const tokenIsStablecoin = this.isStablecoin(tokenAddress, specificChain);
+          const tokenIsStablecoin = this.isStablecoin(
+            tokenAddress,
+            specificChain,
+          );
 
           // For regular tokens, find a pair where our token is the base token
           if (!tokenIsStablecoin) {
@@ -194,19 +224,24 @@ export class DexScreenerProvider implements PriceSource {
           } else {
             // For stablecoins, we need more careful handling
             const chainTokens =
-              config.specificChainTokens[specificChain as keyof typeof config.specificChainTokens];
+              config.specificChainTokens[
+                specificChain as keyof typeof config.specificChainTokens
+              ];
 
             // Find the best pair for stablecoin pricing
             const stablecoinPair = response.data.find((pair) => {
               // First, ensure our token appears in the pair
-              const ourTokenIsBase = pair.baseToken?.address?.toLowerCase() === normalizedAddress;
-              const ourTokenIsQuote = pair.quoteToken?.address?.toLowerCase() === normalizedAddress;
+              const ourTokenIsBase =
+                pair.baseToken?.address?.toLowerCase() === normalizedAddress;
+              const ourTokenIsQuote =
+                pair.quoteToken?.address?.toLowerCase() === normalizedAddress;
 
               // If our token doesn't appear in this pair, skip it
               if (!ourTokenIsBase && !ourTokenIsQuote) return false;
 
               // Check if it has a valid price
-              if (!pair.priceUsd || isNaN(parseFloat(pair.priceUsd))) return false;
+              if (!pair.priceUsd || isNaN(parseFloat(pair.priceUsd)))
+                return false;
 
               // Our token is the base token - this is ideal
               if (ourTokenIsBase) return true;
@@ -215,9 +250,11 @@ export class DexScreenerProvider implements PriceSource {
               // to ensure accurate pricing
               if (ourTokenIsQuote) {
                 const pairedWithUsdc =
-                  pair.baseToken?.address?.toLowerCase() === chainTokens.usdc?.toLowerCase();
+                  pair.baseToken?.address?.toLowerCase() ===
+                  chainTokens.usdc?.toLowerCase();
                 const pairedWithUsdt =
-                  pair.baseToken?.address?.toLowerCase() === chainTokens.usdt?.toLowerCase();
+                  pair.baseToken?.address?.toLowerCase() ===
+                  chainTokens.usdt?.toLowerCase();
                 return pairedWithUsdc || pairedWithUsdt;
               }
 
@@ -227,7 +264,8 @@ export class DexScreenerProvider implements PriceSource {
             if (stablecoinPair) {
               // Determine the correct price based on whether our token is base or quote
               const ourTokenIsBase =
-                stablecoinPair.baseToken?.address?.toLowerCase() === normalizedAddress;
+                stablecoinPair.baseToken?.address?.toLowerCase() ===
+                normalizedAddress;
 
               if (ourTokenIsBase) {
                 // If our token is the base token, use the price directly
@@ -245,7 +283,8 @@ export class DexScreenerProvider implements PriceSource {
                 // For USDT/USDC pairs, price is usually very close to 1
                 // But to be more accurate, we could calculate the inverse: 1 / priceNative
                 if (stablecoinPair.priceNative) {
-                  const inversePrice = 1 / parseFloat(stablecoinPair.priceNative);
+                  const inversePrice =
+                    1 / parseFloat(stablecoinPair.priceNative);
                   console.log(
                     `[DexScreenerProvider] Calculated inverse price for stablecoin as quote token: $${inversePrice}`,
                   );
@@ -265,7 +304,9 @@ export class DexScreenerProvider implements PriceSource {
         }
 
         // If no valid price found in response
-        console.log(`[DexScreenerProvider] No valid price found for ${tokenAddress}`);
+        console.log(
+          `[DexScreenerProvider] No valid price found for ${tokenAddress}`,
+        );
         return null;
       } catch (error) {
         console.error(
@@ -302,7 +343,11 @@ export class DexScreenerProvider implements PriceSource {
     }
 
     // Get the DexScreener chain identifier
-    const dexScreenerChain = this.getDexScreenerChain(tokenAddress, chain, specificChain);
+    const dexScreenerChain = this.getDexScreenerChain(
+      tokenAddress,
+      chain,
+      specificChain,
+    );
 
     // Check cache first
     const cachedPrice = this.getCachedPrice(tokenAddress, dexScreenerChain);
@@ -311,7 +356,11 @@ export class DexScreenerProvider implements PriceSource {
     }
 
     // Fetch the price
-    const price = await this.fetchPrice(tokenAddress, dexScreenerChain, specificChain);
+    const price = await this.fetchPrice(
+      tokenAddress,
+      dexScreenerChain,
+      specificChain,
+    );
 
     // Cache the result if we got a valid price
     if (price !== null) {
@@ -330,7 +379,10 @@ export class DexScreenerProvider implements PriceSource {
   /**
    * Check if the provider supports this token
    */
-  async supports(tokenAddress: string, specificChain: SpecificChain): Promise<boolean> {
+  async supports(
+    tokenAddress: string,
+    specificChain: SpecificChain,
+  ): Promise<boolean> {
     const chain = this.determineChain(tokenAddress);
 
     // Try to get a price - if successful, we support it

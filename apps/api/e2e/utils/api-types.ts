@@ -17,37 +17,37 @@ export interface ErrorResponse {
 
 // Enum for blockchain types
 export enum BlockchainType {
-  EVM = 'evm',
-  SVM = 'svm',
+  EVM = "evm",
+  SVM = "svm",
 }
 
 // Enum for specific chains
 export enum SpecificChain {
-  ETH = 'eth',
-  POLYGON = 'polygon',
-  BSC = 'bsc',
-  ARBITRUM = 'arbitrum',
-  OPTIMISM = 'optimism',
-  AVALANCHE = 'avalanche',
-  BASE = 'base',
-  LINEA = 'linea',
-  ZKSYNC = 'zksync',
-  SCROLL = 'scroll',
-  MANTLE = 'mantle',
-  SVM = 'svm',
+  ETH = "eth",
+  POLYGON = "polygon",
+  BSC = "bsc",
+  ARBITRUM = "arbitrum",
+  OPTIMISM = "optimism",
+  AVALANCHE = "avalanche",
+  BASE = "base",
+  LINEA = "linea",
+  ZKSYNC = "zksync",
+  SCROLL = "scroll",
+  MANTLE = "mantle",
+  SVM = "svm",
 }
 
 // Competition status
 export enum CompetitionStatus {
-  PENDING = 'PENDING',
-  ACTIVE = 'ACTIVE',
-  COMPLETED = 'COMPLETED',
+  PENDING = "PENDING",
+  ACTIVE = "ACTIVE",
+  COMPLETED = "COMPLETED",
 }
 
 // Portfolio source
 export enum PortfolioSource {
-  SNAPSHOT = 'snapshot',
-  LIVE_CALCULATION = 'live-calculation',
+  SNAPSHOT = "snapshot",
+  LIVE_CALCULATION = "live-calculation",
 }
 
 // Team metadata structure
@@ -325,24 +325,24 @@ export interface CompetitionRulesResponse extends ApiResponse {
 
 // Health check response
 export interface HealthCheckResponse extends ApiResponse {
-  status: 'ok' | 'error';
+  status: "ok" | "error";
   version?: string;
   uptime?: number;
   timestamp: string;
   services?: {
     database?: {
-      status: 'ok' | 'error';
+      status: "ok" | "error";
       message?: string;
     };
     cache?: {
-      status: 'ok' | 'error';
+      status: "ok" | "error";
       message?: string;
     };
     priceProviders?: {
-      status: 'ok' | 'error';
+      status: "ok" | "error";
       providers?: {
         name: string;
-        status: 'ok' | 'error';
+        status: "ok" | "error";
         message?: string;
       }[];
     };
@@ -351,7 +351,7 @@ export interface HealthCheckResponse extends ApiResponse {
 
 // Detailed health check response
 export interface DetailedHealthCheckResponse extends ApiResponse {
-  status: 'ok' | 'error';
+  status: "ok" | "error";
   timestamp: string;
   uptime: number;
   version: string;

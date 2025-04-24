@@ -1,4 +1,4 @@
-import { Request } from 'express';
+import { Request } from "express";
 
 /**
  * Token information interface
@@ -15,24 +15,24 @@ export interface TokenInfo {
  * Blockchain type enum
  */
 export enum BlockchainType {
-  SVM = 'svm',
-  EVM = 'evm',
+  SVM = "svm",
+  EVM = "evm",
 }
 
 // New type for specific chains
 export type SpecificChain =
-  | 'eth' // Ethereum Mainnet
-  | 'polygon' // Polygon
-  | 'bsc' // Binance Smart Chain
-  | 'arbitrum' // Arbitrum
-  | 'optimism' // Optimism
-  | 'avalanche' // Avalanche
-  | 'base' // Base
-  | 'linea' // Linea
-  | 'zksync' // zkSync Era
-  | 'scroll' // Scroll
-  | 'mantle' // Mantle
-  | 'svm'; // Solana (for consistency)
+  | "eth" // Ethereum Mainnet
+  | "polygon" // Polygon
+  | "bsc" // Binance Smart Chain
+  | "arbitrum" // Arbitrum
+  | "optimism" // Optimism
+  | "avalanche" // Avalanche
+  | "base" // Base
+  | "linea" // Linea
+  | "zksync" // zkSync Era
+  | "scroll" // Scroll
+  | "mantle" // Mantle
+  | "svm"; // Solana (for consistency)
 
 // Mapping from SpecificChain to BlockchainType
 export const chainTypeMapping: Record<SpecificChain, BlockchainType> = {
@@ -51,13 +51,15 @@ export const chainTypeMapping: Record<SpecificChain, BlockchainType> = {
 };
 
 // Get general chain type from specific chain
-export function getBlockchainType(specificChain: SpecificChain): BlockchainType {
+export function getBlockchainType(
+  specificChain: SpecificChain,
+): BlockchainType {
   return chainTypeMapping[specificChain] || BlockchainType.EVM;
 }
 
 // Helper to determine if a chain is EVM compatible
 export function isEvmChain(chain: SpecificChain | BlockchainType): boolean {
-  if (typeof chain === 'string' && chain in chainTypeMapping) {
+  if (typeof chain === "string" && chain in chainTypeMapping) {
     return chainTypeMapping[chain as SpecificChain] === BlockchainType.EVM;
   }
   return chain === BlockchainType.EVM;
@@ -105,7 +107,10 @@ export interface PriceSource {
     chain: BlockchainType,
     specificChain: SpecificChain,
   ): Promise<PriceReport | null>;
-  supports(tokenAddress: string, specificChain: SpecificChain): Promise<boolean>;
+  supports(
+    tokenAddress: string,
+    specificChain: SpecificChain,
+  ): Promise<boolean>;
 }
 
 export interface PriceReport {
@@ -198,9 +203,9 @@ export interface Competition {
  * Competition status enum
  */
 export enum CompetitionStatus {
-  PENDING = 'PENDING',
-  ACTIVE = 'ACTIVE',
-  COMPLETED = 'COMPLETED',
+  PENDING = "PENDING",
+  ACTIVE = "ACTIVE",
+  COMPLETED = "COMPLETED",
 }
 
 /**

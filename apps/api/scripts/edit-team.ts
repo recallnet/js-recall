@@ -16,13 +16,14 @@
  * 3. Update the team's wallet address and/or bucket addresses
  * 4. Close the database connection
  */
-import * as readline from 'readline';
-import * as dotenv from 'dotenv';
-import * as path from 'path';
-import { DatabaseConnection } from '../src/database';
+import * as dotenv from "dotenv";
+import * as path from "path";
+import * as readline from "readline";
+
+import { DatabaseConnection } from "../src/database";
 
 // Load environment variables
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
 // Create readline interface for prompting user
 const rl = readline.createInterface({
@@ -32,13 +33,13 @@ const rl = readline.createInterface({
 
 // Colors for console output
 const colors = {
-  red: '\x1b[31m',
-  yellow: '\x1b[33m',
-  green: '\x1b[32m',
-  blue: '\x1b[34m',
-  cyan: '\x1b[36m',
-  magenta: '\x1b[35m',
-  reset: '\x1b[0m',
+  red: "\x1b[31m",
+  yellow: "\x1b[33m",
+  green: "\x1b[32m",
+  blue: "\x1b[34m",
+  cyan: "\x1b[36m",
+  magenta: "\x1b[35m",
+  reset: "\x1b[0m",
 };
 
 // Prompt function that returns a promise
@@ -81,7 +82,7 @@ interface TeamRecord {
 async function editTeam() {
   try {
     // Banner with clear visual separation
-    safeLog('\n\n');
+    safeLog("\n\n");
     safeLog(
       `${colors.magenta}╔════════════════════════════════════════════════════════════════╗${colors.reset}`,
     );
@@ -112,26 +113,30 @@ async function editTeam() {
 
     // Collect all input upfront before database operations
     if (!teamEmail) {
-      teamEmail = await prompt('Enter team email to find the team:');
+      teamEmail = await prompt("Enter team email to find the team:");
       if (!teamEmail) {
-        throw new Error('Team email is required');
+        throw new Error("Team email is required");
       }
     }
 
     // Apply the quieter console.log during database operations
     console.log = function (...args) {
       // Only log critical errors, or explicit service messages
-      if (typeof args[0] === 'string' && args[0].includes('Error')) {
+      if (typeof args[0] === "string" && args[0].includes("Error")) {
         originalConsoleLog.apply(console, args);
       }
     };
 
     // Find the team first
-    safeLog(`\n${colors.blue}Finding team with email: ${teamEmail}...${colors.reset}`);
+    safeLog(
+      `\n${colors.blue}Finding team with email: ${teamEmail}...${colors.reset}`,
+    );
 
     // Fetch the team by email
     const db = DatabaseConnection.getInstance();
-    const team = await db.query('SELECT * FROM teams WHERE email = $1', [teamEmail]);
+    const team = await db.query("SELECT * FROM teams WHERE email = $1", [
+      teamEmail,
+    ]);
 
     if (!team.rows || team.rows.length === 0) {
       throw new Error(`No team found with email: ${teamEmail}`);
@@ -139,55 +144,71 @@ async function editTeam() {
 
     const currentTeam = team.rows[0] as unknown as TeamRecord;
 
-    safeLog(`\n${colors.green}✓ Team found: ${currentTeam.name}${colors.reset}`);
+    safeLog(
+      `\n${colors.green}✓ Team found: ${currentTeam.name}${colors.reset}`,
+    );
     safeLog(`\n${colors.cyan}Current Team Details:${colors.reset}`);
-    safeLog(`${colors.cyan}----------------------------------------${colors.reset}`);
+    safeLog(
+      `${colors.cyan}----------------------------------------${colors.reset}`,
+    );
     safeLog(`Team ID: ${currentTeam.id}`);
     safeLog(`Team Name: ${currentTeam.name}`);
     safeLog(`Email: ${currentTeam.email}`);
     safeLog(`Contact: ${currentTeam.contact_person}`);
-    safeLog(`Wallet Address: ${currentTeam.wallet_address || 'Not set'}`);
+    safeLog(`Wallet Address: ${currentTeam.wallet_address || "Not set"}`);
     safeLog(
-      `Bucket Addresses: ${currentTeam.bucket_addresses ? currentTeam.bucket_addresses.join(', ') : 'None'}`,
+      `Bucket Addresses: ${currentTeam.bucket_addresses ? currentTeam.bucket_addresses.join(", ") : "None"}`,
     );
-    safeLog(`${colors.cyan}----------------------------------------${colors.reset}`);
+    safeLog(
+      `${colors.cyan}----------------------------------------${colors.reset}`,
+    );
 
     const updateWallet =
-      !walletAddress && (await prompt(`Do you want to update the wallet address? (y/n):`));
+      !walletAddress &&
+      (await prompt(`Do you want to update the wallet address? (y/n):`));
 
     if (
-      (updateWallet && typeof updateWallet === 'string' && updateWallet.toLowerCase() === 'y') ||
+      (updateWallet &&
+        typeof updateWallet === "string" &&
+        updateWallet.toLowerCase() === "y") ||
       walletAddress
     ) {
       if (!walletAddress) {
-        walletAddress = await prompt('Enter new wallet address (0x...): ');
+        walletAddress = await prompt("Enter new wallet address (0x...): ");
       }
 
       if (walletAddress && !isValidEthereumAddress(walletAddress)) {
         throw new Error(
-          'Invalid Ethereum address format. Must be 0x followed by 40 hex characters.',
+          "Invalid Ethereum address format. Must be 0x followed by 40 hex characters.",
         );
       }
     }
 
     const updateBucket =
-      !bucketAddress && (await prompt(`Do you want to add a bucket address? (y/n):`));
+      !bucketAddress &&
+      (await prompt(`Do you want to add a bucket address? (y/n):`));
 
     if (
-      (updateBucket && typeof updateBucket === 'string' && updateBucket.toLowerCase() === 'y') ||
+      (updateBucket &&
+        typeof updateBucket === "string" &&
+        updateBucket.toLowerCase() === "y") ||
       bucketAddress
     ) {
       if (!bucketAddress) {
-        bucketAddress = await prompt('Enter bucket address to add (0x...): ');
+        bucketAddress = await prompt("Enter bucket address to add (0x...): ");
       }
 
       if (bucketAddress && !isValidEthereumAddress(bucketAddress)) {
-        throw new Error('Invalid bucket address format. Must be 0x followed by 40 hex characters.');
+        throw new Error(
+          "Invalid bucket address format. Must be 0x followed by 40 hex characters.",
+        );
       }
     }
 
     if (!walletAddress && !bucketAddress) {
-      safeLog(`\n${colors.yellow}No changes requested. Operation cancelled.${colors.reset}`);
+      safeLog(
+        `\n${colors.yellow}No changes requested. Operation cancelled.${colors.reset}`,
+      );
       return;
     }
 
@@ -204,7 +225,7 @@ async function editTeam() {
       `${colors.yellow}Proceed with these changes? (y/n):${colors.reset}`,
     );
 
-    if (confirmUpdate.toLowerCase() !== 'y') {
+    if (confirmUpdate.toLowerCase() !== "y") {
       safeLog(`\n${colors.red}Update cancelled.${colors.reset}`);
       return;
     }
@@ -238,7 +259,7 @@ async function editTeam() {
       params.push(currentTeam.id);
       const updateQuery = `
         UPDATE teams 
-        SET ${updateFields.join(', ')} 
+        SET ${updateFields.join(", ")} 
         WHERE id = $${paramIndex}
         RETURNING *
       `;
@@ -248,16 +269,20 @@ async function editTeam() {
 
       safeLog(`\n${colors.green}✓ Team updated successfully!${colors.reset}`);
       safeLog(`\n${colors.cyan}Updated Team Details:${colors.reset}`);
-      safeLog(`${colors.cyan}----------------------------------------${colors.reset}`);
+      safeLog(
+        `${colors.cyan}----------------------------------------${colors.reset}`,
+      );
       safeLog(`Team ID: ${updatedTeam.id}`);
       safeLog(`Team Name: ${updatedTeam.name}`);
       safeLog(`Email: ${updatedTeam.email}`);
       safeLog(`Contact: ${updatedTeam.contact_person}`);
-      safeLog(`Wallet Address: ${updatedTeam.wallet_address || 'Not set'}`);
+      safeLog(`Wallet Address: ${updatedTeam.wallet_address || "Not set"}`);
       safeLog(
-        `Bucket Addresses: ${updatedTeam.bucket_addresses ? updatedTeam.bucket_addresses.join(', ') : 'None'}`,
+        `Bucket Addresses: ${updatedTeam.bucket_addresses ? updatedTeam.bucket_addresses.join(", ") : "None"}`,
       );
-      safeLog(`${colors.cyan}----------------------------------------${colors.reset}`);
+      safeLog(
+        `${colors.cyan}----------------------------------------${colors.reset}`,
+      );
     }
   } catch (error) {
     safeLog(
@@ -273,9 +298,9 @@ async function editTeam() {
     // Close database connection
     try {
       await DatabaseConnection.getInstance().close();
-      safeLog('Database connection closed.');
+      safeLog("Database connection closed.");
     } catch (err) {
-      safeLog('Error closing database connection:', err);
+      safeLog("Error closing database connection:", err);
     }
 
     // Exit the process after clean closure

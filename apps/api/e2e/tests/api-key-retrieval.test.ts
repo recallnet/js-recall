@@ -1,16 +1,21 @@
-import {
-  createTestClient,
-  cleanupTestState,
-  ADMIN_USERNAME,
-  ADMIN_PASSWORD,
-  ADMIN_EMAIL,
-  registerTeamAndGetClient,
-} from '../utils/test-helpers';
-import axios from 'axios';
-import { getBaseUrl } from '../utils/server';
-import { TeamApiKeyResponse, ErrorResponse, AdminTeamsListResponse } from '../utils/api-types';
+import axios from "axios";
 
-describe('API Key Retrieval', () => {
+import {
+  AdminTeamsListResponse,
+  ErrorResponse,
+  TeamApiKeyResponse,
+} from "../utils/api-types";
+import { getBaseUrl } from "../utils/server";
+import {
+  ADMIN_EMAIL,
+  ADMIN_PASSWORD,
+  ADMIN_USERNAME,
+  cleanupTestState,
+  createTestClient,
+  registerTeamAndGetClient,
+} from "../utils/test-helpers";
+
+describe("API Key Retrieval", () => {
   let adminApiKey: string;
   let adminId: string; // Store the admin ID
 
@@ -43,7 +48,9 @@ describe('API Key Retrieval', () => {
     const { team, apiKey } = await registerTeamAndGetClient(adminClient);
 
     // Retrieve the team's API key
-    const keyResponse = (await adminClient.getTeamApiKey(team.id)) as TeamApiKeyResponse;
+    const keyResponse = (await adminClient.getTeamApiKey(
+      team.id,
+    )) as TeamApiKeyResponse;
 
     // Assert the API key was retrieved successfully
     expect(keyResponse.success).toBe(true);
@@ -56,13 +63,14 @@ describe('API Key Retrieval', () => {
     expect(keyResponse.team.apiKey).toBe(apiKey);
   });
 
-  test('regular team cannot retrieve API keys', async () => {
+  test("regular team cannot retrieve API keys", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register two teams
-    const { client: teamClient, team } = await registerTeamAndGetClient(adminClient);
+    const { client: teamClient, team } =
+      await registerTeamAndGetClient(adminClient);
     const { team: otherTeam } = await registerTeamAndGetClient(adminClient);
 
     // Attempt to retrieve the other team's API key using team client
@@ -81,22 +89,24 @@ describe('API Key Retrieval', () => {
     }
   });
 
-  test('admin cannot retrieve API key for non-existent team', async () => {
+  test("admin cannot retrieve API key for non-existent team", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Try to retrieve an API key for a non-existent team ID
-    const nonExistentId = '00000000-0000-4000-a000-000000000000'; // Valid UUID that doesn't exist
-    const result = (await adminClient.getTeamApiKey(nonExistentId)) as ErrorResponse;
+    const nonExistentId = "00000000-0000-4000-a000-000000000000"; // Valid UUID that doesn't exist
+    const result = (await adminClient.getTeamApiKey(
+      nonExistentId,
+    )) as ErrorResponse;
 
     // Assert the failure
     expect(result.success).toBe(false);
-    expect(result.error).toContain('not found');
+    expect(result.error).toContain("not found");
     expect(result.status).toBe(404);
   });
 
-  test('admin cannot retrieve API key for admin accounts', async () => {
+  test("admin cannot retrieve API key for admin accounts", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -112,13 +122,15 @@ describe('API Key Retrieval', () => {
     // The important part is that it's not successful, so we'll make a more flexible check
     if (result.status === 403) {
       // Ideal case - admin access blocked with proper code
-      expect(result.error).toContain('admin');
+      expect(result.error).toContain("admin");
     } else if (result.status === 404) {
       // This could happen if admin accounts aren't in the regular team DB
-      console.log('Admin lookup resulted in not found error');
+      console.log("Admin lookup resulted in not found error");
     } else if (result.status === 500) {
       // Server implementation may have different behavior
-      console.log(`Server returned status ${result.status} with error: ${result.error}`);
+      console.log(
+        `Server returned status ${result.status} with error: ${result.error}`,
+      );
     }
 
     // The key expectation is that the operation was not successful

@@ -1,4 +1,4 @@
-import { Request } from 'express';
+import { Request } from "express";
 
 /**
  * Extract API key from request's Authorization header
@@ -6,16 +6,16 @@ import { Request } from 'express';
  * @returns The API key or undefined if not found
  */
 export function extractApiKey(req: Request): string | undefined {
-  const authHeader = req.header('Authorization');
+  const authHeader = req.header("Authorization");
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return undefined;
   }
 
   const apiKey = authHeader.substring(7);
 
   // Log partial key for debugging (only first 8 chars)
-  const partialKey = apiKey ? `${apiKey.substring(0, 8)}...` : 'undefined';
+  const partialKey = apiKey ? `${apiKey.substring(0, 8)}...` : "undefined";
   console.log(`[AuthHelper] Using API Key: ${partialKey}`);
 
   return apiKey;

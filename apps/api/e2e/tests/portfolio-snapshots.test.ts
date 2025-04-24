@@ -1,24 +1,29 @@
+import axios from "axios";
+
+import config from "../../src/config";
+import { services } from "../../src/services";
+import { PriceTracker } from "../../src/services/price-tracker.service";
+import { BlockchainType } from "../../src/types";
 import {
+  BalancesResponse,
+  SnapshotResponse,
+  TokenPortfolioItem,
+} from "../utils/api-types";
+import { getBaseUrl } from "../utils/server";
+import {
+  ADMIN_EMAIL,
+  ADMIN_PASSWORD,
+  ADMIN_USERNAME,
+  cleanupTestState,
   createTestClient,
   registerTeamAndGetClient,
   startTestCompetition,
-  cleanupTestState,
   wait,
-  ADMIN_USERNAME,
-  ADMIN_PASSWORD,
-  ADMIN_EMAIL,
-} from '../utils/test-helpers';
-import axios from 'axios';
-import { getBaseUrl } from '../utils/server';
-import config from '../../src/config';
-import { services } from '../../src/services';
-import { BlockchainType } from '../../src/types';
-import { PriceTracker } from '../../src/services/price-tracker.service';
-import { BalancesResponse, SnapshotResponse, TokenPortfolioItem } from '../utils/api-types';
+} from "../utils/test-helpers";
 
-const reason = 'portfolio-snapshots end-to-end tests';
+const reason = "portfolio-snapshots end-to-end tests";
 
-describe('Portfolio Snapshots', () => {
+describe("Portfolio Snapshots", () => {
   let adminApiKey: string;
 
   // Reset database between tests
@@ -40,7 +45,7 @@ describe('Portfolio Snapshots', () => {
   });
 
   // Test that a snapshot is taken when a competition starts
-  test('takes a snapshot when a competition starts', async () => {
+  test("takes a snapshot when a competition starts", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -48,12 +53,16 @@ describe('Portfolio Snapshots', () => {
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
       adminClient,
-      'Snapshot Test Team',
+      "Snapshot Test Team",
     );
 
     // Start a competition with our team
     const competitionName = `Snapshot Test ${Date.now()}`;
-    const startResult = await startTestCompetition(adminClient, competitionName, [team.id]);
+    const startResult = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [team.id],
+    );
 
     // Wait for operations to complete
     await wait(500);
@@ -63,11 +72,11 @@ describe('Portfolio Snapshots', () => {
 
     // Verify that a portfolio snapshot was taken for the team
     const snapshotsResponse = await adminClient.request(
-      'get',
+      "get",
       `/api/admin/competition/${competitionId}/snapshots`,
     );
     const typedResponse = snapshotsResponse as SnapshotResponse;
-    console.log(JSON.stringify(typedResponse), 'typedResponse');
+    console.log(JSON.stringify(typedResponse), "typedResponse");
     expect(typedResponse.success).toBe(true);
     expect(typedResponse.snapshots).toBeDefined();
     expect(typedResponse.snapshots.length).toBeGreaterThan(0);
@@ -82,7 +91,7 @@ describe('Portfolio Snapshots', () => {
   });
 
   // Test that snapshots can be taken manually
-  test('manually taking snapshots creates new portfolio snapshots', async () => {
+  test("manually taking snapshots creates new portfolio snapshots", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -90,12 +99,16 @@ describe('Portfolio Snapshots', () => {
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
       adminClient,
-      'Periodic Snapshot Team',
+      "Periodic Snapshot Team",
     );
 
     // Start a competition with our team
     const competitionName = `Periodic Snapshot Test ${Date.now()}`;
-    const startResult = await startTestCompetition(adminClient, competitionName, [team.id]);
+    const startResult = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [team.id],
+    );
 
     // Get the competition ID
     const competitionId = startResult.competition.id;
@@ -105,7 +118,7 @@ describe('Portfolio Snapshots', () => {
 
     // Initial snapshot count
     const initialSnapshotsResponse = (await adminClient.request(
-      'get',
+      "get",
       `/api/admin/competition/${competitionId}/snapshots`,
     )) as SnapshotResponse;
     const initialSnapshotCount = initialSnapshotsResponse.snapshots.length;
@@ -117,7 +130,7 @@ describe('Portfolio Snapshots', () => {
 
     // Get snapshots again
     const afterFirstSnapshotResponse = (await adminClient.request(
-      'get',
+      "get",
       `/api/admin/competition/${competitionId}/snapshots`,
     )) as SnapshotResponse;
     const afterFirstSnapshotCount = afterFirstSnapshotResponse.snapshots.length;
@@ -135,17 +148,20 @@ describe('Portfolio Snapshots', () => {
 
     // Get snapshots again
     const afterSecondSnapshotResponse = (await adminClient.request(
-      'get',
+      "get",
       `/api/admin/competition/${competitionId}/snapshots`,
     )) as SnapshotResponse;
-    const afterSecondSnapshotCount = afterSecondSnapshotResponse.snapshots.length;
+    const afterSecondSnapshotCount =
+      afterSecondSnapshotResponse.snapshots.length;
 
     // Should have at least one more snapshot than after the first manual snapshot
-    expect(afterSecondSnapshotCount).toBeGreaterThan(countAfterFirstManualSnapshot);
+    expect(afterSecondSnapshotCount).toBeGreaterThan(
+      countAfterFirstManualSnapshot,
+    );
   });
 
   // Test that a snapshot is taken when a competition ends
-  test('takes a snapshot when a competition ends', async () => {
+  test("takes a snapshot when a competition ends", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -153,12 +169,16 @@ describe('Portfolio Snapshots', () => {
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
       adminClient,
-      'End Snapshot Team',
+      "End Snapshot Team",
     );
 
     // Start a competition with our team
     const competitionName = `End Snapshot Test ${Date.now()}`;
-    const startResult = await startTestCompetition(adminClient, competitionName, [team.id]);
+    const startResult = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [team.id],
+    );
 
     // Get the competition ID
     const competitionId = startResult.competition.id;
@@ -173,7 +193,7 @@ describe('Portfolio Snapshots', () => {
     await teamClient.executeTrade({
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
-      amount: '100',
+      amount: "100",
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason,
@@ -184,7 +204,7 @@ describe('Portfolio Snapshots', () => {
 
     // Get snapshot count before ending
     const beforeEndResponse = (await adminClient.request(
-      'get',
+      "get",
       `/api/admin/competition/${competitionId}/snapshots`,
     )) as SnapshotResponse;
     const beforeEndCount = beforeEndResponse.snapshots.length;
@@ -196,7 +216,7 @@ describe('Portfolio Snapshots', () => {
 
     // Get snapshots after ending
     const afterEndResponse = (await adminClient.request(
-      'get',
+      "get",
       `/api/admin/competition/${competitionId}/snapshots`,
     )) as SnapshotResponse;
     const afterEndCount = afterEndResponse.snapshots.length;
@@ -204,13 +224,16 @@ describe('Portfolio Snapshots', () => {
     // Should have at least one more snapshot
     expect(afterEndCount).toBeGreaterThan(beforeEndCount);
     // Verify the final snapshot has current portfolio values
-    const finalSnapshot = afterEndResponse.snapshots[afterEndResponse.snapshots.length - 1];
+    const finalSnapshot =
+      afterEndResponse.snapshots[afterEndResponse.snapshots.length - 1];
     expect(finalSnapshot.valuesByToken[solTokenAddress]).toBeDefined();
-    expect(finalSnapshot.valuesByToken[solTokenAddress]?.amount).toBeGreaterThan(0);
+    expect(
+      finalSnapshot.valuesByToken[solTokenAddress]?.amount,
+    ).toBeGreaterThan(0);
   });
 
   // Test portfolio value calculation accuracy
-  test('calculates portfolio value correctly based on token prices', async () => {
+  test("calculates portfolio value correctly based on token prices", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -218,12 +241,16 @@ describe('Portfolio Snapshots', () => {
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
       adminClient,
-      'Value Calc Team',
+      "Value Calc Team",
     );
 
     // Start a competition with our team
     const competitionName = `Value Calculation Test ${Date.now()}`;
-    const startResult = await startTestCompetition(adminClient, competitionName, [team.id]);
+    const startResult = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [team.id],
+    );
 
     // Get the competition ID
     const competitionId = startResult.competition.id;
@@ -232,10 +259,12 @@ describe('Portfolio Snapshots', () => {
     await wait(500);
 
     // Get initial balances
-    const initialBalanceResponse = (await teamClient.getBalance()) as BalancesResponse;
+    const initialBalanceResponse =
+      (await teamClient.getBalance()) as BalancesResponse;
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
     const initialUsdcBalance =
-      initialBalanceResponse.balances.find((b) => b.token === usdcTokenAddress)?.amount || 0;
+      initialBalanceResponse.balances.find((b) => b.token === usdcTokenAddress)
+        ?.amount || 0;
 
     // Get token price using direct service call instead of API
     const priceTracker = new PriceTracker();
@@ -245,7 +274,7 @@ describe('Portfolio Snapshots', () => {
 
     // Get initial snapshot
     const initialSnapshotsResponse = (await adminClient.request(
-      'get',
+      "get",
       `/api/admin/competition/${competitionId}/snapshots`,
     )) as SnapshotResponse;
     const initialSnapshot = initialSnapshotsResponse.snapshots[0];
@@ -254,7 +283,10 @@ describe('Portfolio Snapshots', () => {
     const usdcValue = initialSnapshot.valuesByToken[usdcTokenAddress];
     expect(usdcValue?.amount).toBeCloseTo(initialUsdcBalance);
     if (usdcPrice) {
-      expect(usdcValue?.valueUsd).toBeCloseTo(initialUsdcBalance * usdcPrice.price, 0);
+      expect(usdcValue?.valueUsd).toBeCloseTo(
+        initialUsdcBalance * usdcPrice.price,
+        0,
+      );
     }
 
     // Verify total portfolio value is the sum of all token values
@@ -266,7 +298,7 @@ describe('Portfolio Snapshots', () => {
   });
 
   // Test that the configuration is loaded correctly
-  test('loads price freshness configuration correctly', async () => {
+  test("loads price freshness configuration correctly", async () => {
     // Verify that config has the portfolio section and the priceFreshnessMs property
     expect(config.portfolio).toBeDefined();
     expect(config.portfolio.priceFreshnessMs).toBeDefined();
@@ -275,11 +307,13 @@ describe('Portfolio Snapshots', () => {
     // Note: This only works if .env.test is being loaded as expected
     expect(config.portfolio.priceFreshnessMs).toBe(10000);
 
-    console.log(`[Test] Portfolio config loaded correctly: ${JSON.stringify(config.portfolio)}`);
+    console.log(
+      `[Test] Portfolio config loaded correctly: ${JSON.stringify(config.portfolio)}`,
+    );
   });
 
   // Test that price freshness threshold works correctly
-  test('reuses prices within freshness threshold', async () => {
+  test("reuses prices within freshness threshold", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -287,12 +321,16 @@ describe('Portfolio Snapshots', () => {
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
       adminClient,
-      'Price Freshness Team',
+      "Price Freshness Team",
     );
 
     // Start a competition with our team
     const competitionName = `Price Freshness Test ${Date.now()}`;
-    const startResult = await startTestCompetition(adminClient, competitionName, [team.id]);
+    const startResult = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [team.id],
+    );
 
     // Get the competition ID
     const competitionId = startResult.competition.id;
@@ -303,12 +341,19 @@ describe('Portfolio Snapshots', () => {
     // Get the freshness threshold from config
     const freshnessThreshold = config.portfolio.priceFreshnessMs;
 
-    console.log(`[Test] Using price freshness threshold of ${freshnessThreshold}ms`);
-    console.log(`[Test] Price freshness setting from config: `, config.portfolio.priceFreshnessMs);
+    console.log(
+      `[Test] Using price freshness threshold of ${freshnessThreshold}ms`,
+    );
+    console.log(
+      `[Test] Price freshness setting from config: `,
+      config.portfolio.priceFreshnessMs,
+    );
 
     // Ensure we have a token priced in the database first by querying the price directly
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
-    console.log(`[Test] Getting price for token ${usdcTokenAddress} to ensure it exists in DB`);
+    console.log(
+      `[Test] Getting price for token ${usdcTokenAddress} to ensure it exists in DB`,
+    );
 
     // Use direct service call instead of API
     const priceTracker = new PriceTracker();
@@ -332,7 +377,7 @@ describe('Portfolio Snapshots', () => {
     try {
       // Mock console.log to capture messages
       console.log = (...args: any[]) => {
-        const message = args.join(' ');
+        const message = args.join(" ");
         logMessages.push(message);
         originalConsoleLog(...args);
       };
@@ -344,26 +389,28 @@ describe('Portfolio Snapshots', () => {
       // Output all CompetitionManager logs for debugging
       console.log(`[Test] ---- Log messages from second snapshot ----`);
       logMessages
-        .filter((msg) => msg.includes('[CompetitionManager]'))
+        .filter((msg) => msg.includes("[CompetitionManager]"))
         .forEach((msg) => console.log(`[Debug] ${msg}`));
       console.log(`[Test] ---- End log messages ----`);
 
       // Check if at least one price was reused by looking for the specific log pattern
       const priceReuseMessages = logMessages.filter(
         (msg) =>
-          msg.includes('[CompetitionManager]') &&
-          msg.includes('Using fresh price') &&
-          msg.includes('from DB'),
+          msg.includes("[CompetitionManager]") &&
+          msg.includes("Using fresh price") &&
+          msg.includes("from DB"),
       );
 
-      console.log(`[Test] Found ${priceReuseMessages.length} instances of price reuse`);
+      console.log(
+        `[Test] Found ${priceReuseMessages.length} instances of price reuse`,
+      );
 
       // Look for DB hit messages to confirm we're finding price records
       const dbHitMessages = logMessages.filter(
         (msg) =>
-          msg.includes('[CompetitionManager]') &&
-          msg.includes('Price lookup stats') &&
-          msg.includes('DB hits'),
+          msg.includes("[CompetitionManager]") &&
+          msg.includes("Price lookup stats") &&
+          msg.includes("DB hits"),
       );
 
       if (dbHitMessages.length > 0) {
@@ -372,16 +419,22 @@ describe('Portfolio Snapshots', () => {
 
       // For debugging, relaxing the assertion and printing more info instead
       if (priceReuseMessages.length === 0) {
-        console.log(`[Test] WARNING: No price reuse detected. This could be because:`);
-        console.log(`[Test] 1. The price freshness threshold might not be working`);
+        console.log(
+          `[Test] WARNING: No price reuse detected. This could be because:`,
+        );
+        console.log(
+          `[Test] 1. The price freshness threshold might not be working`,
+        );
         console.log(`[Test] 2. No prices were found in the database`);
-        console.log(`[Test] 3. The log message format differs from what we're looking for`);
+        console.log(
+          `[Test] 3. The log message format differs from what we're looking for`,
+        );
 
         // Check if we found any tokens in DB but didn't reuse them
         const specifcChainMessages = logMessages.filter(
           (msg) =>
-            msg.includes('[CompetitionManager]') &&
-            msg.includes('Using specific chain info from DB'),
+            msg.includes("[CompetitionManager]") &&
+            msg.includes("Using specific chain info from DB"),
         );
 
         if (specifcChainMessages.length > 0) {
@@ -395,16 +448,22 @@ describe('Portfolio Snapshots', () => {
       // Change to a softer assertion for now - we're debugging
       // We'll log a warning instead of failing the test
       if (priceReuseMessages.length === 0) {
-        console.warn(`[Test] Expected to find price reuse messages but none were found`);
+        console.warn(
+          `[Test] Expected to find price reuse messages but none were found`,
+        );
       }
 
       // Extract the overall stats
-      const statsMessage = logMessages.find((msg) => msg.includes('Reused existing prices:'));
+      const statsMessage = logMessages.find((msg) =>
+        msg.includes("Reused existing prices:"),
+      );
       if (statsMessage) {
         console.log(`[Test] Stats: ${statsMessage}`);
 
         // Extract the reuse percentage from the log message
-        const reusePercentage = parseFloat(statsMessage?.match(/\((\d+\.\d+)%\)/)?.[1] || '0');
+        const reusePercentage = parseFloat(
+          statsMessage?.match(/\((\d+\.\d+)%\)/)?.[1] || "0",
+        );
 
         console.log(`[Test] Reuse percentage: ${reusePercentage}%`);
       } else {

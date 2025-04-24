@@ -1,14 +1,18 @@
-import { PriceSource } from '../../types';
-import { BlockchainType, PriceReport, SpecificChain } from '../../types';
-import axios from 'axios';
+import axios from "axios";
+
+import { PriceSource } from "../../types";
+import { BlockchainType, PriceReport, SpecificChain } from "../../types";
 
 /**
  * Jupiter price provider implementation
  * Uses Jupiter's API to get token prices
  */
 export class JupiterProvider implements PriceSource {
-  private readonly API_BASE = 'https://api.jup.ag/price/v2';
-  private cache: Map<string, { price: number; timestamp: number; confidence: string }>;
+  private readonly API_BASE = "https://api.jup.ag/price/v2";
+  private cache: Map<
+    string,
+    { price: number; timestamp: number; confidence: string }
+  >;
   private readonly CACHE_DURATION = 30000; // 30 seconds
   private lastRequestTime: number = 0;
   private readonly MIN_REQUEST_INTERVAL = 100;
@@ -20,7 +24,7 @@ export class JupiterProvider implements PriceSource {
   }
 
   getName(): string {
-    return 'Jupiter';
+    return "Jupiter";
   }
 
   private async delay(ms: number): Promise<void> {
@@ -36,7 +40,9 @@ export class JupiterProvider implements PriceSource {
     this.lastRequestTime = Date.now();
   }
 
-  private getCachedPrice(tokenAddress: string): { price: number; confidence: string } | null {
+  private getCachedPrice(
+    tokenAddress: string,
+  ): { price: number; confidence: string } | null {
     const cached = this.cache.get(tokenAddress);
     if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
       return { price: cached.price, confidence: cached.confidence };
@@ -44,7 +50,11 @@ export class JupiterProvider implements PriceSource {
     return null;
   }
 
-  private setCachedPrice(tokenAddress: string, price: number, confidence: string): void {
+  private setCachedPrice(
+    tokenAddress: string,
+    price: number,
+    confidence: string,
+  ): void {
     this.cache.set(tokenAddress, {
       price,
       confidence,
@@ -64,7 +74,7 @@ export class JupiterProvider implements PriceSource {
 
       // Check cache first
       const cachedPrice = this.getCachedPrice(tokenAddress);
-      if (cachedPrice !== null && cachedPrice.confidence === 'high') {
+      if (cachedPrice !== null && cachedPrice.confidence === "high") {
         console.log(
           `[JupiterProvider] Using cached price for ${tokenAddress}: $${cachedPrice.price}`,
         );
@@ -73,7 +83,7 @@ export class JupiterProvider implements PriceSource {
           price: cachedPrice.price,
           timestamp: new Date(),
           chain: BlockchainType.SVM,
-          specificChain: 'svm',
+          specificChain: "svm",
         };
       }
 
@@ -93,15 +103,19 @@ export class JupiterProvider implements PriceSource {
           const response = await axios.get(url, {
             timeout: 5000,
             headers: {
-              Accept: 'application/json',
-              'User-Agent': 'TradingSimulator/1.0',
+              Accept: "application/json",
+              "User-Agent": "TradingSimulator/1.0",
             },
           });
 
-          console.log(`[JupiterProvider] Received response status: ${response.status}`);
+          console.log(
+            `[JupiterProvider] Received response status: ${response.status}`,
+          );
 
           if (!response.data?.data?.[tokenAddress]) {
-            console.log(`[JupiterProvider] No price data found for token: ${tokenAddress}`);
+            console.log(
+              `[JupiterProvider] No price data found for token: ${tokenAddress}`,
+            );
             if (attempt === this.MAX_RETRIES) return null;
             await this.delay(this.RETRY_DELAY * attempt);
             continue;
@@ -110,11 +124,13 @@ export class JupiterProvider implements PriceSource {
           const tokenData = response.data.data[tokenAddress];
           const price = parseFloat(tokenData.price);
           if (isNaN(price)) {
-            console.log(`[JupiterProvider] Invalid price format for token: ${tokenAddress}`);
+            console.log(
+              `[JupiterProvider] Invalid price format for token: ${tokenAddress}`,
+            );
             return null;
           }
 
-          let confidence = 'low';
+          let confidence = "low";
           if (tokenData.extraInfo?.confidenceLevel) {
             confidence = tokenData.extraInfo.confidenceLevel.toLowerCase();
           }
@@ -129,13 +145,15 @@ export class JupiterProvider implements PriceSource {
             price,
             timestamp: new Date(),
             chain: BlockchainType.SVM,
-            specificChain: 'svm',
+            specificChain: "svm",
           };
         } catch (error) {
           if (attempt === this.MAX_RETRIES) {
             throw error;
           }
-          console.log(`[JupiterProvider] Attempt ${attempt} failed, retrying after delay...`);
+          console.log(
+            `[JupiterProvider] Attempt ${attempt} failed, retrying after delay...`,
+          );
           if (axios.isAxiosError(error)) {
             console.error(`[JupiterProvider] Axios error details:`, {
               message: error.message,
@@ -151,18 +169,23 @@ export class JupiterProvider implements PriceSource {
     } catch (error) {
       console.error(
         `[JupiterProvider] Error fetching price for ${tokenAddress}:`,
-        error instanceof Error ? error.message : 'Unknown error',
+        error instanceof Error ? error.message : "Unknown error",
       );
       return null;
     }
   }
 
-  async supports(tokenAddress: string, specificChain: SpecificChain = 'svm'): Promise<boolean> {
+  async supports(
+    tokenAddress: string,
+    specificChain: SpecificChain = "svm",
+  ): Promise<boolean> {
     try {
-      console.log(`[JupiterProvider] Checking support for token: ${tokenAddress}`);
+      console.log(
+        `[JupiterProvider] Checking support for token: ${tokenAddress}`,
+      );
 
       // Jupiter only supports Solana tokens
-      if (specificChain !== 'svm') {
+      if (specificChain !== "svm") {
         return false;
       }
 
@@ -176,7 +199,7 @@ export class JupiterProvider implements PriceSource {
     } catch (error) {
       console.error(
         `[JupiterProvider] Error checking token support:`,
-        error instanceof Error ? error.message : 'Unknown error',
+        error instanceof Error ? error.message : "Unknown error",
       );
       return false;
     }

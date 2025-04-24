@@ -1,5 +1,6 @@
-import { Router } from 'express';
-import { HealthController } from '../controllers/health.controller';
+import { Router } from "express";
+
+import { HealthController } from "../controllers/health.controller";
 
 const router = Router();
 
@@ -36,7 +37,7 @@ const router = Router();
  *       500:
  *         description: Server error
  */
-router.get('/', HealthController.check);
+router.get("/", HealthController.check);
 
 /**
  * @openapi
@@ -95,6 +96,6 @@ router.get('/', HealthController.check);
  *       500:
  *         description: Server error
  */
-router.get('/detailed', HealthController.detailed);
+router.get("/detailed", HealthController.detailed);
 
 export default router;

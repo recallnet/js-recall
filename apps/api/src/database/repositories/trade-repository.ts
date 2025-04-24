@@ -1,7 +1,8 @@
-import { BaseRepository } from '../base-repository';
-import { Trade, BlockchainType, SpecificChain } from '../../types';
-import { DatabaseRow } from '../types';
-import { PoolClient } from 'pg';
+import { PoolClient } from "pg";
+
+import { BlockchainType, SpecificChain, Trade } from "../../types";
+import { BaseRepository } from "../base-repository";
+import { DatabaseRow } from "../types";
 
 /**
  * Trade Repository
@@ -9,7 +10,7 @@ import { PoolClient } from 'pg';
  */
 export class TradeRepository extends BaseRepository<Trade> {
   constructor() {
-    super('trades');
+    super("trades");
   }
 
   /**
@@ -54,7 +55,7 @@ export class TradeRepository extends BaseRepository<Trade> {
 
       return this.mapToEntity(this.toCamelCase(result.rows[0]));
     } catch (error) {
-      console.error('[TradeRepository] Error in create:', error);
+      console.error("[TradeRepository] Error in create:", error);
       throw error;
     }
   }
@@ -96,9 +97,11 @@ export class TradeRepository extends BaseRepository<Trade> {
         ? await client.query(query, values)
         : await this.db.query(query, values);
 
-      return result.rows.map((row: DatabaseRow) => this.mapToEntity(this.toCamelCase(row)));
+      return result.rows.map((row: DatabaseRow) =>
+        this.mapToEntity(this.toCamelCase(row)),
+      );
     } catch (error) {
-      console.error('[TradeRepository] Error in getTeamTrades:', error);
+      console.error("[TradeRepository] Error in getTeamTrades:", error);
       throw error;
     }
   }
@@ -140,9 +143,11 @@ export class TradeRepository extends BaseRepository<Trade> {
         ? await client.query(query, values)
         : await this.db.query(query, values);
 
-      return result.rows.map((row: DatabaseRow) => this.mapToEntity(this.toCamelCase(row)));
+      return result.rows.map((row: DatabaseRow) =>
+        this.mapToEntity(this.toCamelCase(row)),
+      );
     } catch (error) {
-      console.error('[TradeRepository] Error in getCompetitionTrades:', error);
+      console.error("[TradeRepository] Error in getCompetitionTrades:", error);
       throw error;
     }
   }
@@ -167,7 +172,7 @@ export class TradeRepository extends BaseRepository<Trade> {
 
       return parseInt(result.rows[0].count, 10);
     } catch (error) {
-      console.error('[TradeRepository] Error in countTeamTrades:', error);
+      console.error("[TradeRepository] Error in countTeamTrades:", error);
       throw error;
     }
   }

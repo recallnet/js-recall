@@ -17,14 +17,15 @@
  * 4. Display the API key (only shown once)
  * 5. Close the database connection
  */
-import * as readline from 'readline';
-import * as dotenv from 'dotenv';
-import * as path from 'path';
-import { services } from '../src/services';
-import { DatabaseConnection } from '../src/database';
+import * as dotenv from "dotenv";
+import * as path from "path";
+import * as readline from "readline";
+
+import { DatabaseConnection } from "../src/database";
+import { services } from "../src/services";
 
 // Load environment variables
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
 // Create readline interface for prompting user
 const rl = readline.createInterface({
@@ -34,13 +35,13 @@ const rl = readline.createInterface({
 
 // Colors for console output
 const colors = {
-  red: '\x1b[31m',
-  yellow: '\x1b[33m',
-  green: '\x1b[32m',
-  blue: '\x1b[34m',
-  cyan: '\x1b[36m',
-  magenta: '\x1b[35m',
-  reset: '\x1b[0m',
+  red: "\x1b[31m",
+  yellow: "\x1b[33m",
+  green: "\x1b[32m",
+  blue: "\x1b[34m",
+  cyan: "\x1b[36m",
+  magenta: "\x1b[35m",
+  reset: "\x1b[0m",
 };
 
 // Prompt function that returns a promise
@@ -73,7 +74,7 @@ function isValidEthereumAddress(address: string): boolean {
 async function registerTeam() {
   try {
     // Banner with clear visual separation
-    safeLog('\n\n');
+    safeLog("\n\n");
     safeLog(
       `${colors.magenta}╔════════════════════════════════════════════════════════════════╗${colors.reset}`,
     );
@@ -105,42 +106,46 @@ async function registerTeam() {
 
     // Collect all input upfront before database operations
     if (!teamName) {
-      teamName = await prompt('Enter team name: ');
+      teamName = await prompt("Enter team name: ");
       if (!teamName) {
-        throw new Error('Team name is required');
+        throw new Error("Team name is required");
       }
     }
 
     if (!email) {
-      email = await prompt('Enter team email: ');
+      email = await prompt("Enter team email: ");
       if (!email) {
-        throw new Error('Team email is required');
+        throw new Error("Team email is required");
       }
     }
 
     if (!contactPerson) {
-      contactPerson = await prompt('Enter contact person name: ');
+      contactPerson = await prompt("Enter contact person name: ");
       if (!contactPerson) {
-        throw new Error('Contact person is required');
+        throw new Error("Contact person is required");
       }
     }
 
     if (!walletAddress) {
-      walletAddress = await prompt('Enter wallet address (0x...): ');
+      walletAddress = await prompt("Enter wallet address (0x...): ");
       if (!walletAddress) {
-        throw new Error('Wallet address is required');
+        throw new Error("Wallet address is required");
       }
 
       if (!isValidEthereumAddress(walletAddress)) {
         throw new Error(
-          'Invalid Ethereum address format. Must be 0x followed by 40 hex characters.',
+          "Invalid Ethereum address format. Must be 0x followed by 40 hex characters.",
         );
       }
     } else if (!isValidEthereumAddress(walletAddress)) {
-      throw new Error('Invalid Ethereum address format. Must be 0x followed by 40 hex characters.');
+      throw new Error(
+        "Invalid Ethereum address format. Must be 0x followed by 40 hex characters.",
+      );
     }
 
-    safeLog(`\n${colors.yellow}Registering team with the following details:${colors.reset}`);
+    safeLog(
+      `\n${colors.yellow}Registering team with the following details:${colors.reset}`,
+    );
     safeLog(`- Team Name: ${teamName}`);
     safeLog(`- Email: ${email}`);
     safeLog(`- Contact Person: ${contactPerson}`);
@@ -150,7 +155,7 @@ async function registerTeam() {
       `${colors.yellow}Proceed with registration? (y/n): ${colors.reset}`,
     );
 
-    if (confirmRegistration.toLowerCase() !== 'y') {
+    if (confirmRegistration.toLowerCase() !== "y") {
       safeLog(`\n${colors.red}Registration cancelled.${colors.reset}`);
       return;
     }
@@ -158,7 +163,7 @@ async function registerTeam() {
     // Apply the quieter console.log during database operations
     console.log = function (...args) {
       // Only log critical errors, or explicit service messages
-      if (typeof args[0] === 'string' && args[0].includes('Error')) {
+      if (typeof args[0] === "string" && args[0].includes("Error")) {
         originalConsoleLog.apply(console, args);
       }
     };
@@ -175,18 +180,28 @@ async function registerTeam() {
 
     safeLog(`\n${colors.green}✓ Team registered successfully!${colors.reset}`);
     safeLog(`\n${colors.cyan}Team Details:${colors.reset}`);
-    safeLog(`${colors.cyan}----------------------------------------${colors.reset}`);
+    safeLog(
+      `${colors.cyan}----------------------------------------${colors.reset}`,
+    );
     safeLog(`Team ID: ${team.id}`);
     safeLog(`Team Name: ${team.name}`);
     safeLog(`Email: ${team.email}`);
     safeLog(`Contact: ${team.contactPerson}`);
     safeLog(`Wallet Address: ${team.walletAddress}`);
-    safeLog(`${colors.cyan}----------------------------------------${colors.reset}`);
+    safeLog(
+      `${colors.cyan}----------------------------------------${colors.reset}`,
+    );
 
-    safeLog(`\n${colors.yellow}API Credentials (SAVE THESE SECURELY):${colors.reset}`);
-    safeLog(`${colors.yellow}----------------------------------------${colors.reset}`);
+    safeLog(
+      `\n${colors.yellow}API Credentials (SAVE THESE SECURELY):${colors.reset}`,
+    );
+    safeLog(
+      `${colors.yellow}----------------------------------------${colors.reset}`,
+    );
     safeLog(`API Key: ${team.apiKey}`); // Using apiKey from the team object returned by TeamManager
-    safeLog(`${colors.yellow}----------------------------------------${colors.reset}`);
+    safeLog(
+      `${colors.yellow}----------------------------------------${colors.reset}`,
+    );
 
     safeLog(
       `\n${colors.red}IMPORTANT: The API Key will only be shown once when the team is first created.${colors.reset}`,
@@ -206,9 +221,9 @@ async function registerTeam() {
     // Close database connection
     try {
       await DatabaseConnection.getInstance().close();
-      safeLog('Database connection closed.');
+      safeLog("Database connection closed.");
     } catch (err) {
-      safeLog('Error closing database connection:', err);
+      safeLog("Error closing database connection:", err);
     }
 
     // Exit the process after clean closure

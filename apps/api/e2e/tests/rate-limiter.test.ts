@@ -1,19 +1,20 @@
+import axios, { AxiosError } from "axios";
+
+import config from "../../src/config";
+import { BalancesResponse, ErrorResponse } from "../utils/api-types";
+import { getBaseUrl } from "../utils/server";
 import {
+  ADMIN_EMAIL,
+  ADMIN_PASSWORD,
+  ADMIN_USERNAME,
+  cleanupTestState,
+  createTestClient,
   registerTeamAndGetClient,
   startTestCompetition,
-  cleanupTestState,
   wait,
-  ADMIN_USERNAME,
-  ADMIN_PASSWORD,
-  ADMIN_EMAIL,
-  createTestClient,
-} from '../utils/test-helpers';
-import axios, { AxiosError } from 'axios';
-import { getBaseUrl } from '../utils/server';
-import config from '../../src/config';
-import { BalancesResponse, ErrorResponse } from '../utils/api-types';
+} from "../utils/test-helpers";
 
-describe('Rate Limiter Middleware', () => {
+describe("Rate Limiter Middleware", () => {
   // Clean up test state before each test
   let adminApiKey: string;
 
@@ -33,7 +34,7 @@ describe('Rate Limiter Middleware', () => {
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
-  test('enforces separate rate limits for different teams', async () => {
+  test("enforces separate rate limits for different teams", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -41,21 +42,26 @@ describe('Rate Limiter Middleware', () => {
     // Register two teams
     const { client: team1Client, team: team1 } = await registerTeamAndGetClient(
       adminClient,
-      'Rate Limit Team 1',
+      "Rate Limit Team 1",
     );
     const { client: team2Client, team: team2 } = await registerTeamAndGetClient(
       adminClient,
-      'Rate Limit Team 2',
+      "Rate Limit Team 2",
     );
 
     // Start a competition with both teams
     const competitionName = `Rate Limit Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team1.id, team2.id]);
+    await startTestCompetition(adminClient, competitionName, [
+      team1.id,
+      team2.id,
+    ]);
 
     // Wait for competition to initialize
     await wait(500);
 
-    console.log(`Starting per-team rate limit test with teams ${team1.id} and ${team2.id}`);
+    console.log(
+      `Starting per-team rate limit test with teams ${team1.id} and ${team2.id}`,
+    );
 
     // Test for the existence of per-team rate limits:
     // 1. If a team is already rate-limited, verify another team can still make requests
@@ -69,21 +75,28 @@ describe('Rate Limiter Middleware', () => {
     const firstResponse = await team1Client.getBalance();
 
     if (firstResponse.success === true) {
-      console.log('Team 1 first request succeeded');
+      console.log("Team 1 first request succeeded");
       team1SuccessfulRequests = 1;
     } else if ((firstResponse as ErrorResponse).status === 429) {
-      console.log('Team 1 is already rate limited');
+      console.log("Team 1 is already rate limited");
       team1RateLimited = true;
     } else {
-      console.error('Unexpected error for team 1:', (firstResponse as ErrorResponse).error);
-      throw new Error(`Unexpected error: ${(firstResponse as ErrorResponse).error}`);
+      console.error(
+        "Unexpected error for team 1:",
+        (firstResponse as ErrorResponse).error,
+      );
+      throw new Error(
+        `Unexpected error: ${(firstResponse as ErrorResponse).error}`,
+      );
     }
 
     // If team 1 isn't rate limited yet, make more requests until we hit the limit
     if (!team1RateLimited) {
       const limit = 35; // Set slightly higher than the rate limit (30) to ensure we hit it
 
-      console.log(`Team 1 not rate limited yet. Making up to ${limit} requests`);
+      console.log(
+        `Team 1 not rate limited yet. Making up to ${limit} requests`,
+      );
 
       for (let i = 1; i < limit; i++) {
         // Start from 1 because we already made one request
@@ -91,7 +104,9 @@ describe('Rate Limiter Middleware', () => {
 
         if (response.success === true) {
           team1SuccessfulRequests++;
-          console.log(`Request ${i + 1}/${limit} succeeded (total: ${team1SuccessfulRequests})`);
+          console.log(
+            `Request ${i + 1}/${limit} succeeded (total: ${team1SuccessfulRequests})`,
+          );
         } else if ((response as ErrorResponse).status === 429) {
           team1RateLimited = true;
           console.log(
@@ -99,13 +114,20 @@ describe('Rate Limiter Middleware', () => {
           );
 
           // Verify we have additional information about the rate limit
-          expect((response as ErrorResponse).error).toContain('Rate limit exceeded');
+          expect((response as ErrorResponse).error).toContain(
+            "Rate limit exceeded",
+          );
 
           // Once we hit the rate limit, we can break out of the loop
           break;
         } else {
-          console.error('Unexpected error for team 1:', (response as ErrorResponse).error);
-          throw new Error(`Unexpected error: ${(response as ErrorResponse).error}`);
+          console.error(
+            "Unexpected error for team 1:",
+            (response as ErrorResponse).error,
+          );
+          throw new Error(
+            `Unexpected error: ${(response as ErrorResponse).error}`,
+          );
         }
 
         // Small wait to avoid overwhelming the server
@@ -115,36 +137,43 @@ describe('Rate Limiter Middleware', () => {
 
     // Verify we either found Team 1 already rate limited, or hit the rate limit during testing
     if (team1RateLimited) {
-      console.log(`Team 1 rate limited after ${team1SuccessfulRequests} requests`);
+      console.log(
+        `Team 1 rate limited after ${team1SuccessfulRequests} requests`,
+      );
     } else {
       console.log(
         `Failed to trigger rate limit for Team 1 after ${team1SuccessfulRequests} requests`,
       );
       // If we get here, something is wrong with rate limiting
-      throw new Error('Failed to trigger rate limit for Team 1');
+      throw new Error("Failed to trigger rate limit for Team 1");
     }
 
     // Now verify team 2 can still make requests, confirming rate limits are per-team
     const team2Response = await team2Client.getBalance();
 
     if (team2Response.success === true) {
-      console.log('Team 2 was able to make a request successfully');
+      console.log("Team 2 was able to make a request successfully");
     } else {
-      console.error('Team 2 request failed:', (team2Response as ErrorResponse).error);
+      console.error(
+        "Team 2 request failed:",
+        (team2Response as ErrorResponse).error,
+      );
 
       // Check if the error is a rate limit error
       if ((team2Response as ErrorResponse).status === 429) {
-        console.error('Team 2 should not be rate limited at this point');
-        fail('Rate limits are not properly isolated per team');
+        console.error("Team 2 should not be rate limited at this point");
+        fail("Rate limits are not properly isolated per team");
       } else {
-        throw new Error(`Unexpected error for team 2: ${(team2Response as ErrorResponse).error}`);
+        throw new Error(
+          `Unexpected error for team 2: ${(team2Response as ErrorResponse).error}`,
+        );
       }
     }
 
-    console.log('Successfully verified per-team rate limiting');
+    console.log("Successfully verified per-team rate limiting");
   });
 
-  test('enforces different rate limits for different endpoint types', async () => {
+  test("enforces different rate limits for different endpoint types", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -152,7 +181,7 @@ describe('Rate Limiter Middleware', () => {
     // Register team
     const { client: teamClient, team } = await registerTeamAndGetClient(
       adminClient,
-      'Endpoint Rate Limit Team',
+      "Endpoint Rate Limit Team",
     );
 
     // Start a competition
@@ -164,14 +193,19 @@ describe('Rate Limiter Middleware', () => {
 
     // Need to use price endpoint for testing since it doesn't modify state
     // We'll make requests to account endpoint and then check if price endpoint still works
-    console.log(`Testing whether different endpoints have different rate limits`);
+    console.log(
+      `Testing whether different endpoints have different rate limits`,
+    );
 
     // First check if we're already rate limited for account endpoint
     let rateLimitHit = false;
     let successfulRequests = 0;
 
     // Make first request
-    const firstAccountResponse = await teamClient.request('get', '/api/account/balances');
+    const firstAccountResponse = await teamClient.request(
+      "get",
+      "/api/account/balances",
+    );
 
     if ((firstAccountResponse as BalancesResponse).success === true) {
       successfulRequests++;
@@ -184,17 +218,24 @@ describe('Rate Limiter Middleware', () => {
         `Unexpected error on first request:`,
         (firstAccountResponse as ErrorResponse).error,
       );
-      throw new Error(`Unexpected error: ${(firstAccountResponse as ErrorResponse).error}`);
+      throw new Error(
+        `Unexpected error: ${(firstAccountResponse as ErrorResponse).error}`,
+      );
     }
 
     // If not already rate limited, make more requests
     if (!rateLimitHit) {
       const accountEndpointLimit = 35; // Set higher than actual limit (30)
-      console.log(`Making ${accountEndpointLimit} requests to account endpoint`);
+      console.log(
+        `Making ${accountEndpointLimit} requests to account endpoint`,
+      );
 
       for (let i = 1; i < accountEndpointLimit; i++) {
         // Start from 1 because we already made one request
-        const response = await teamClient.request('get', '/api/account/balances');
+        const response = await teamClient.request(
+          "get",
+          "/api/account/balances",
+        );
 
         if ((response as BalancesResponse).success === true) {
           successfulRequests++;
@@ -206,8 +247,13 @@ describe('Rate Limiter Middleware', () => {
           console.log(`Rate limit hit at request ${i + 1}`);
           break;
         } else {
-          console.error(`Unexpected error on request ${i + 1}:`, (response as ErrorResponse).error);
-          throw new Error(`Unexpected error: ${(response as ErrorResponse).error}`);
+          console.error(
+            `Unexpected error on request ${i + 1}:`,
+            (response as ErrorResponse).error,
+          );
+          throw new Error(
+            `Unexpected error: ${(response as ErrorResponse).error}`,
+          );
         }
 
         // Small delay to avoid overwhelming the server
@@ -217,29 +263,40 @@ describe('Rate Limiter Middleware', () => {
 
     // Verify we hit or found the rate limit
     expect(rateLimitHit).toBe(true);
-    console.log(`Confirmed account endpoint rate limit after ${successfulRequests} requests`);
+    console.log(
+      `Confirmed account endpoint rate limit after ${successfulRequests} requests`,
+    );
 
     // Now verify the price endpoint still works (300 requests/min limit)
     // This confirms different endpoints have different limits
-    console.log('Verifying price endpoint still accessible (has higher limit)');
+    console.log("Verifying price endpoint still accessible (has higher limit)");
     const priceResponse = await teamClient.request(
-      'get',
+      "get",
       `/api/price?token=${config.specificChainTokens.svm.sol}`,
     );
 
     if ((priceResponse as BalancesResponse).success === true) {
-      console.log('Success: Price endpoint has different rate limit from account endpoint');
+      console.log(
+        "Success: Price endpoint has different rate limit from account endpoint",
+      );
     } else if ((priceResponse as ErrorResponse).status === 429) {
-      fail('Price endpoint should have a different rate limit from account endpoint');
+      fail(
+        "Price endpoint should have a different rate limit from account endpoint",
+      );
     } else {
-      console.error('Price endpoint request failed:', (priceResponse as ErrorResponse).error);
-      throw new Error(`Unexpected error: ${(priceResponse as ErrorResponse).error}`);
+      console.error(
+        "Price endpoint request failed:",
+        (priceResponse as ErrorResponse).error,
+      );
+      throw new Error(
+        `Unexpected error: ${(priceResponse as ErrorResponse).error}`,
+      );
     }
 
-    console.log('Successfully verified endpoint-specific rate limiting');
+    console.log("Successfully verified endpoint-specific rate limiting");
   });
 
-  test('rate limited requests include correct headers', async () => {
+  test("rate limited requests include correct headers", async () => {
     // We need to use direct axios for this test to access the response headers
     // The ApiClient transforms the response and we lose access to headers
 
@@ -252,7 +309,7 @@ describe('Rate Limiter Middleware', () => {
       client: teamClient,
       team,
       apiKey,
-    } = await registerTeamAndGetClient(adminClient, 'Headers Rate Limit Team');
+    } = await registerTeamAndGetClient(adminClient, "Headers Rate Limit Team");
 
     // Start a competition
     const competitionName = `Headers Rate Limit Test ${Date.now()}`;
@@ -272,7 +329,7 @@ describe('Rate Limiter Middleware', () => {
       config.headers = config.headers || {};
 
       // Add Bearer token authorization
-      config.headers['Authorization'] = `Bearer ${apiKey}`;
+      config.headers["Authorization"] = `Bearer ${apiKey}`;
 
       return config;
     });
@@ -280,7 +337,9 @@ describe('Rate Limiter Middleware', () => {
     // Find an endpoint with a small limit to test quickly
     // We'll use /api/account/balances which has a 30 req/min limit
     const limit = 35; // Set higher than the rate limit to ensure we hit it
-    console.log(`Testing rate limit headers using /api/account/balances (30 req/min limit)`);
+    console.log(
+      `Testing rate limit headers using /api/account/balances (30 req/min limit)`,
+    );
 
     // Make requests up to the limit
     let hitRateLimit = false;
@@ -301,19 +360,27 @@ describe('Rate Limiter Middleware', () => {
           // Safely check response data
           const responseData = axiosError.response.data as any;
           expect(responseData).toBeTruthy();
-          expect(typeof responseData === 'object' && 'error' in responseData).toBe(true);
           expect(
-            typeof responseData.error === 'string' &&
-              responseData.error.includes('Rate limit exceeded'),
+            typeof responseData === "object" && "error" in responseData,
+          ).toBe(true);
+          expect(
+            typeof responseData.error === "string" &&
+              responseData.error.includes("Rate limit exceeded"),
           ).toBe(true);
 
           // Verify rate limit headers
-          expect(axiosError.response.headers['retry-after']).toBeDefined();
-          expect(axiosError.response.headers['x-ratelimit-reset']).toBeDefined();
+          expect(axiosError.response.headers["retry-after"]).toBeDefined();
+          expect(
+            axiosError.response.headers["x-ratelimit-reset"],
+          ).toBeDefined();
 
           // Parse header values
-          const retryAfter = parseInt(axiosError.response.headers['retry-after'] as string);
-          const resetTime = parseInt(axiosError.response.headers['x-ratelimit-reset'] as string);
+          const retryAfter = parseInt(
+            axiosError.response.headers["retry-after"] as string,
+          );
+          const resetTime = parseInt(
+            axiosError.response.headers["x-ratelimit-reset"] as string,
+          );
 
           // Verify they contain meaningful values
           expect(retryAfter).toBeGreaterThan(0);
@@ -336,10 +403,10 @@ describe('Rate Limiter Middleware', () => {
 
     // Ensure we actually hit the rate limit
     expect(hitRateLimit).toBe(true);
-    console.log('Successfully verified rate limit headers');
+    console.log("Successfully verified rate limit headers");
   });
 
-  test('health endpoint is exempt from rate limits', async () => {
+  test("health endpoint is exempt from rate limits", async () => {
     // Create a simple axios instance
     const httpClient = axios.create();
 
@@ -366,10 +433,12 @@ describe('Rate Limiter Middleware', () => {
 
     // Verify all requests succeeded
     const successfulResponses = responses.filter(
-      (r) => r && typeof r === 'object' && 'status' in r && r.status === 200,
+      (r) => r && typeof r === "object" && "status" in r && r.status === 200,
     );
     expect(successfulResponses.length).toBe(requestCount);
 
-    console.log('Successfully verified health endpoint exemption from rate limits');
+    console.log(
+      "Successfully verified health endpoint exemption from rate limits",
+    );
   });
 });
