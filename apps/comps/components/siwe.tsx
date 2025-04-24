@@ -1,12 +1,14 @@
 "use client";
 
-import {useCallback, useEffect, useState} from "react";
-import type {Hex} from "viem";
 import axios from "axios";
-import {useAccount, useConnect, usePublicClient, useSignMessage} from "wagmi";
-import {SiweMessage} from "siwe";
-import {cbWalletConnector} from "@/wagmi-config";
-import {Button} from "@recallnet/ui2/components/button";
+import { useCallback, useEffect, useState } from "react";
+import { SiweMessage } from "siwe";
+import type { Hex } from "viem";
+import { useAccount, useConnect, usePublicClient, useSignMessage } from "wagmi";
+
+import { Button } from "@recallnet/ui2/components/button";
+
+import { cbWalletConnector } from "@/wagmi-config";
 
 export function ConnectAndSIWE() {
   const [message, setMessage] = useState<SiweMessage | undefined>(undefined);
@@ -14,24 +16,24 @@ export function ConnectAndSIWE() {
   const [valid, setValid] = useState<boolean | undefined>(undefined);
   const [login, setLoggedIn] = useState<boolean | undefined>(undefined);
 
-  const {signMessage} = useSignMessage({
+  const { signMessage } = useSignMessage({
     mutation: {
       onSuccess: (sig) => setSignature(sig),
     },
   });
 
-  const {connect} = useConnect({
+  const { connect } = useConnect({
     mutation: {
       onSuccess: async (data) => {
-        const {data: res} = await axios<{nonce: number}>({
-          baseURL: '',
-          method: 'get',
-          url: '/api/nonce',
+        const { data: res } = await axios<{ nonce: number }>({
+          baseURL: "",
+          method: "get",
+          url: "/api/nonce",
           headers: {
-            Accept: 'application/json',
+            Accept: "application/json",
           },
-          data: null
-        })
+          data: null,
+        });
 
         const address = data.accounts[0];
         const chainId = data.chainId;
@@ -45,7 +47,7 @@ export function ConnectAndSIWE() {
           nonce: res.nonce,
         });
         setMessage(m);
-        signMessage({account: address, message: m.prepareMessage()});
+        signMessage({ account: address, message: m.prepareMessage() });
       },
     },
   });
@@ -66,18 +68,17 @@ export function ConnectAndSIWE() {
 
     if (localValid) {
       try {
-        const res = await axios<{ok: boolean, address: string}>({
-          baseURL: '',
-          method: 'post',
-          url: '/api/login',
+        const res = await axios<{ ok: boolean; address: string }>({
+          baseURL: "",
+          method: "post",
+          url: "/api/login",
           headers: {
-            Accept: 'application/json',
+            Accept: "application/json",
           },
-          data: {message, signature}
-        })
+          data: { message, signature },
+        });
 
-
-        setLoggedIn(true)
+        setLoggedIn(true);
       } catch (err) {
         console.error("SIWE login failed:", err);
       }
@@ -89,10 +90,8 @@ export function ConnectAndSIWE() {
   }, [signature, account]);
 
   return (
-    <Button onClick={() => connect({connector: cbWalletConnector})}>
+    <Button onClick={() => connect({ connector: cbWalletConnector })}>
       {login ? "Logged in" : "Connect + SIWE"}
     </Button>
   );
 }
-
-
