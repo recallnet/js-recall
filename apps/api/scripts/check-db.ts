@@ -1,5 +1,4 @@
 import { DatabaseConnection } from '../src/database/connection';
-import * as fs from 'fs';
 import * as path from 'path';
 import dotenv from 'dotenv';
 

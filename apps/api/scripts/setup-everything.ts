@@ -2,8 +2,6 @@ import { spawn, exec } from 'child_process';
 import * as readline from 'readline';
 import * as os from 'os';
 import * as crypto from 'crypto';
-import * as fs from 'fs';
-import * as path from 'path';
 
 // Helper function to execute shell commands
 function executeCommand(command: string): Promise<string> {

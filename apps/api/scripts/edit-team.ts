@@ -212,8 +212,8 @@ async function editTeam() {
     // Proceed with updates
     safeLog(`\n${colors.blue}Updating team...${colors.reset}`);
 
-    let params = [];
-    let updateFields = [];
+    const params = [];
+    const updateFields = [];
     let paramIndex = 1;
 
     if (walletAddress) {

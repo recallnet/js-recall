@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 
 /**
  * Custom error class with HTTP status code
@@ -17,7 +17,7 @@ export class ApiError extends Error {
 /**
  * Global error handler middleware
  */
-const errorHandler = (err: Error | ApiError, req: Request, res: Response, next: NextFunction) => {
+const errorHandler = (err: Error | ApiError, req: Request, res: Response) => {
   console.error(`Error: ${err.message}`);
   console.error(err.stack);
 

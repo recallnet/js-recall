@@ -75,12 +75,10 @@ export const authMiddleware = (
 };
 
 // Extend Express Request interface to include teamId, competitionId, and isAdmin
-declare global {
-  namespace Express {
-    interface Request {
-      teamId?: string;
-      competitionId?: string;
-      isAdmin?: boolean;
-    }
+declare module 'express' {
+  interface Request {
+    teamId?: string;
+    competitionId?: string;
+    isAdmin?: boolean;
   }
 }
