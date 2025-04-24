@@ -16,7 +16,6 @@
     "docs:serve": "typedoc --watch --serve"
   },
   "dependencies": {
-    "@coinbase/wallet-sdk": "^4.3.2",
     "@recallnet/comps-db": "workspace:*",
     "@recallnet/fonts": "workspace:*",
     "@recallnet/ui2": "workspace:*",
