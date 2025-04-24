@@ -1,6 +1,6 @@
 import { verifyMessage } from "@wagmi/core";
 import { NextRequest, NextResponse } from "next/server";
-import { SiweMessage } from "siwe";
+import { SiweMessage, createSiweMessage, parseSiweMessage } from "viem/siwe";
 
 import { config } from "@/wagmi-config";
 
@@ -19,7 +19,10 @@ const validateMessage = (req: NextRequest, msg: SiweMessage) => {
     // we should get nonce from some db
     throw new Error("Invalid nonce");
   }
-  if (new Date(msg.issuedAt as string).getTime() < Date.now() - TIME_LIMIT) {
+  if (
+    msg.issuedAt &&
+    new Date((msg as any).issuedAt).getTime() < Date.now() - TIME_LIMIT
+  ) {
     throw new Error("Invalid issue date");
   }
 };
@@ -35,12 +38,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const siweMessage = new SiweMessage(message);
+    const siweMessage = parseSiweMessage(message) as SiweMessage;
     validateMessage(req, siweMessage);
 
     const result = await verifyMessage(config, {
-      address: message.address,
-      message: siweMessage.prepareMessage(),
+      address: siweMessage.address as `0x${string}`,
+      message: message,
       signature,
     });
 
