@@ -47,6 +47,9 @@ importers:
       '@types/node':
         specifier: ^18.15.0
         version: 18.19.84
+      axios:
+        specifier: ^1.6.0
+        version: 1.8.4
       bcrypt:
         specifier: ^5.1.0
         version: 5.1.1
@@ -117,9 +120,6 @@ importers:
       '@types/uuid':
         specifier: ^9.0.1
         version: 9.0.8
-      axios:
-        specifier: ^1.6.0
-        version: 1.8.4
       jest:
         specifier: ^29.5.0
         version: 29.7.0(@types/node@18.19.84)(ts-node@10.9.2(@types/node@18.19.84)(typescript@5.8.2))
