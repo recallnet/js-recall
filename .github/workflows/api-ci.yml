@@ -21,30 +21,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          cache: 'npm'
 
       - name: Install Dependencies
-        run: pnpm install
+        run: npm ci
 
       - name: Build project
-        run: pnpm run build
+        run: npm run build
 
   unit-tests:
     runs-on: ubuntu-latest
@@ -59,27 +42,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          cache: 'npm'
 
       - name: Install Dependencies
-        run: pnpm install
+        run: npm ci
 
       - name: Run unit tests
         run: |
@@ -87,13 +53,8 @@ jobs:
           echo "Found these unit test files:"
           find src -name "*.test.ts" || echo "No unit test files found"
           
-          # Run unit tests with explicit path or pass with no tests
-          if [ -n "$(find src -name '*.test.ts')" ]; then
-            pnpm test -- src/**/*.test.ts
-          else
-            echo "No unit tests found, passing..."
-            pnpm test -- --passWithNoTests
-          fi
+          # Run unit tests directly
+          npm test -- src/**/*.test.ts
 
   e2e-tests:
     runs-on: ubuntu-latest
@@ -124,27 +85,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          cache: 'npm'
 
       - name: Install Dependencies
-        run: pnpm install
+        run: npm ci
 
       - name: Detect environment and get postgres IP
         id: detect-env
@@ -277,10 +221,11 @@ jobs:
             echo "❌ .env.test NOT found at expected path"
           fi
           
-          # Run the tests without additional flags (script already has --forceExit)
-          pnpm run test:e2e
+          # Run the tests with the same args that worked in the previous CI file
+          npm run test:e2e -- --detectOpenHandles --forceExit
         env:
           TEST_MODE: true
+          CI: true
           DB_HOST: ${{ steps.detect-env.outputs.db_host }}
           DB_PORT: 5432
           DB_USERNAME: postgres
@@ -293,5 +238,4 @@ jobs:
           NODE_OPTIONS: "--max-old-space-size=4096" # Increase Node.js memory limit
           E2E_CLEANUP_DB: true
           DB_CLEANUP_STRATEGY: truncate
-          # Add additional environment variables to ensure proper cleanup
           TEST_FORCE_EXIT: true 
