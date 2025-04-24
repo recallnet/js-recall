@@ -1,6 +1,6 @@
-import {http, createConfig} from "wagmi";
-import {baseSepolia} from "wagmi/chains";
-import {coinbaseWallet} from "wagmi/connectors";
+import { createConfig, http } from "wagmi";
+import { baseSepolia } from "wagmi/chains";
+import { coinbaseWallet } from "wagmi/connectors";
 
 export const cbWalletConnector = coinbaseWallet({
   appName: "Wagmi Smart Wallet",
@@ -23,4 +23,3 @@ declare module "wagmi" {
     config: typeof config;
   }
 }
-
