@@ -1,6 +1,5 @@
 import { PriceReport, PriceSource } from '../../types';
-import { BlockchainType, SpecificChain, getBlockchainType } from '../../types';
-import axios from 'axios';
+import { BlockchainType, SpecificChain } from '../../types';
 import config from '../../config';
 import { DexScreenerProvider } from './dexscreener.provider';
 

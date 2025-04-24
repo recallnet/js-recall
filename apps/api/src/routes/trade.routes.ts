@@ -1,7 +1,8 @@
-import { Router } from 'express';
-import { TradeController } from '../controllers/trade.controller';
+import { Router } from "express";
 
-const router = Router();
+import { TradeController } from "../controllers/trade.controller";
+
+const router: Router = Router();
 
 /**
  * @openapi
@@ -140,7 +141,7 @@ const router = Router();
  *       500:
  *         description: Server error
  */
-router.post('/execute', TradeController.executeTrade);
+router.post("/execute", TradeController.executeTrade);
 
 /**
  * @openapi
@@ -259,6 +260,6 @@ router.post('/execute', TradeController.executeTrade);
  *       500:
  *         description: Server error
  */
-router.get('/quote', TradeController.getQuote);
+router.get("/quote", TradeController.getQuote);
 
 export default router;

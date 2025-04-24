@@ -294,7 +294,7 @@ export class CompetitionController {
             'Trading is only allowed for tokens with valid price data',
             `All teams start with identical token balances: ${initialBalanceDescriptions.join('; ')}`,
             'Minimum trade amount: 0.000001 tokens',
-            `Maximum single trade: ${config.maxTradePercentage}% of team\'s total portfolio value`,
+            `Maximum single trade: ${config.maxTradePercentage}% of team's total portfolio value`,
             'No shorting allowed (trades limited to available balance)',
             'Slippage is applied to all trades based on trade size',
             `Cross-chain trading: ${features.ALLOW_CROSS_CHAIN_TRADING ? 'Enabled' : 'Disabled'}`,

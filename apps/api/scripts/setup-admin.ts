@@ -156,6 +156,7 @@ async function setupAdmin() {
         await axios.get(`${baseUrl}/api/health`);
         serverAvailable = true;
         break;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
         process.stdout.write('.');
         await new Promise((resolve) => setTimeout(resolve, 1000));

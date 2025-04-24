@@ -3,15 +3,14 @@ import { ApiError } from './errorHandler';
 import { TeamManager } from '../services/team-manager.service';
 import { extractApiKey } from './auth-helpers';
 
-// Extend Express Request interface to include admin property
-declare global {
-  namespace Express {
-    interface Request {
-      admin?: {
-        id: string;
-        name: string;
-      };
-    }
+// Extend Express Request interface using module augmentation
+declare module 'express' {
+  interface Request {
+    admin?: {
+      id: string;
+      name: string;
+    };
+    teamId?: string;
   }
 }
 

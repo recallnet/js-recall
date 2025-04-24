@@ -55,7 +55,6 @@ export class JupiterProvider implements PriceSource {
   async getPrice(
     tokenAddress: string,
     chain: BlockchainType = BlockchainType.SVM,
-    specificChain: SpecificChain = 'svm',
   ): Promise<PriceReport | null> {
     try {
       // Jupiter only supports Solana tokens
@@ -172,7 +171,7 @@ export class JupiterProvider implements PriceSource {
         return true;
       }
 
-      const price = await this.getPrice(tokenAddress, BlockchainType.SVM, 'svm');
+      const price = await this.getPrice(tokenAddress, BlockchainType.SVM);
       return price !== null;
     } catch (error) {
       console.error(

@@ -232,12 +232,11 @@ async function showCompetitionStatus() {
 
         // Calculate performance metrics
         const performanceVsInitial = (entry.value / initialValue - 1) * 100;
-        const performanceVsLeader = index === 0 ? 0 : (entry.value / highestValue - 1) * 100;
 
         // Format the performance indicators
-        let performanceColor = performanceVsInitial >= 0 ? colors.green : colors.red;
-        let performanceSign = performanceVsInitial >= 0 ? '+' : '';
-        let performanceText = `${performanceSign}${performanceVsInitial.toFixed(2)}%`;
+        const performanceColor = performanceVsInitial >= 0 ? colors.green : colors.red;
+        const performanceSign = performanceVsInitial >= 0 ? '+' : '';
+        const performanceText = `${performanceSign}${performanceVsInitial.toFixed(2)}%`;
 
         // Display team ranking with portfolio value and performance
         console.log(

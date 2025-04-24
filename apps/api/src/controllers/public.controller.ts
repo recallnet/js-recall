@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { services } from '../services';
 import { repositories } from '../database';
-import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Public Controller
