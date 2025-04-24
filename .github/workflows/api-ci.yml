@@ -255,12 +255,30 @@ jobs:
 
       - name: Run E2E tests
         run: |
-          # Create a test file list to ensure tests are found
-          echo "Found these test files:"
-          ls -la e2e/tests/
+          # Show the current working directory
+          echo "Current working directory: $(pwd)"
           
-          # Run the E2E tests with explicit path to ensure they're found
-          pnpm run test:e2e -- e2e/tests/*.test.ts
+          # Show the environment file that will be used
+          echo "Contents of .env.test file:"
+          cat .env.test
+          
+          # Verify the path for e2e tests
+          echo "E2E directory structure:"
+          find e2e -type f -name "*.test.ts" | sort
+          
+          # Check that .env.test is in the location expected by setup.ts
+          echo "Verifying .env.test is in the location expected by setup.ts:"
+          SETUP_PATH="$(pwd)/e2e/setup.ts"
+          RELATIVE_ENV_PATH="$(dirname $SETUP_PATH)/../.env.test"
+          echo "Expected path from setup.ts: $RELATIVE_ENV_PATH"
+          if [ -f "$RELATIVE_ENV_PATH" ]; then
+            echo "✅ .env.test exists at the expected path"
+          else
+            echo "❌ .env.test NOT found at expected path"
+          fi
+          
+          # Run the tests - using the original command from the standalone repo
+          pnpm run test:e2e -- --forceExit
         env:
           TEST_MODE: true
           DB_HOST: ${{ steps.detect-env.outputs.db_host }}
