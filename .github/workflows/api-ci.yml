@@ -277,8 +277,8 @@ jobs:
             echo "❌ .env.test NOT found at expected path"
           fi
           
-          # Run the tests without additional flags (script already has --forceExit)
-          pnpm run test:e2e
+          # Run the tests with the same args that worked in the previous CI file
+          pnpm run test:e2e -- --detectOpenHandles --forceExit
         env:
           TEST_MODE: true
           DB_HOST: ${{ steps.detect-env.outputs.db_host }}
@@ -290,3 +290,7 @@ jobs:
           JEST_WORKER_ID: 1 # Force single worker to prevent open handles from child processes
           DB_CONNECTION_TIMEOUT: 5000
           DB_IDLE_TIMEOUT: 1000 
+          E2E_CLEANUP_DB: true
+          DB_CLEANUP_STRATEGY: truncate
+          TEST_FORCE_EXIT: true
+          JEST_TIMEOUT: 60000 

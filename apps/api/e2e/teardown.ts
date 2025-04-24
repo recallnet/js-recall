@@ -65,8 +65,8 @@ export default async function () {
     try {
       // NodeJS internals: this is safe but not officially supported
       // @ts-ignore -- Using Node.js internal API
-      const activeHandles = process._getActiveHandles
-        ? process._getActiveHandles()
+      const activeHandles = (process as any)._getActiveHandles
+        ? (process as any)._getActiveHandles()
         : [];
 
       if (activeHandles && activeHandles.length > 0) {
