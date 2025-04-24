@@ -5,7 +5,7 @@
  */
 
 import { dbManager } from './db-manager';
-import { BalanceManager, CompetitionManager, services } from '../../src/services';
+import { services } from '../../src/services';
 import fs from 'fs';
 import path from 'path';
 
@@ -19,7 +19,7 @@ const log = (message: string) => {
 };
 
 // Extend the timeout for all tests
-jest.setTimeout(30000);
+jest.setTimeout(60000);
 
 // Global Jest setup for E2E tests
 

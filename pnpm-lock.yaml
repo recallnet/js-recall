@@ -47,6 +47,9 @@ importers:
       '@types/node':
         specifier: ^18.15.0
         version: 18.19.84
+      axios:
+        specifier: ^1.6.0
+        version: 1.8.4
       bcrypt:
         specifier: ^5.1.0
         version: 5.1.1
@@ -126,9 +129,6 @@ importers:
       '@typescript-eslint/utils':
         specifier: ^8.23.0
         version: 8.28.0(eslint@9.23.0(jiti@2.4.2))(typescript@5.8.2)
-      axios:
-        specifier: ^1.6.0
-        version: 1.8.4
       eslint:
         specifier: ^9.19.0
         version: 9.23.0(jiti@2.4.2)

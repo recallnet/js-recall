@@ -1,0 +1,53 @@
+# Version control
+.git
+.gitignore
+.github
+
+# Node.js
+node_modules
+npm-debug.log
+
+# Build artifacts
+dist
+*.log
+coverage
+.nyc_output
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Development files
+.vscode
+.idea
+*.md
+!README.md
+DEPLOYMENT.md
+LICENSE
+.editorconfig
+.prettier*
+.eslint*
+jest.config.js
+tsconfig.tsbuildinfo
+
+# Backup files
+backups
+*.dump
+*.backup
+*.sql
+
+# Test directories
+test
+tests
+e2e
+__tests__
+
+# OS specific files
+.DS_Store
+Thumbs.db 

@@ -4,6 +4,9 @@ import { ApiError } from '../middleware/errorHandler';
 import { v4 as uuidv4 } from 'uuid';
 import { repositories } from '../database';
 import { CompetitionStatus } from '../types';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as crypto from 'crypto';
 
 /**
  * Admin Controller
@@ -36,6 +39,71 @@ export class AdminController {
       // Validate password strength
       if (password.length < 8) {
         throw new ApiError(400, 'Password must be at least 8 characters long');
+      }
+
+      // Ensure that ROOT_ENCRYPTION_KEY exists in .env file
+      try {
+        // Find .env file in app root directory
+        const envPath = path.resolve(process.cwd(), '.env');
+        console.log(`[AdminController] Checking for .env file at: ${envPath}`);
+
+        if (fs.existsSync(envPath)) {
+          const envContent = fs.readFileSync(envPath, 'utf8');
+          const rootKeyPattern = /ROOT_ENCRYPTION_KEY=.*$/m;
+
+          // Check if ROOT_ENCRYPTION_KEY already exists and is not the default
+          const keyMatch = rootKeyPattern.exec(envContent);
+          let needsNewKey = true;
+
+          if (keyMatch) {
+            const currentValue = keyMatch[0].split('=')[1];
+            if (
+              currentValue &&
+              currentValue.length >= 32 &&
+              !currentValue.includes('default_encryption_key') &&
+              !currentValue.includes('your_') &&
+              !currentValue.includes('dev_') &&
+              !currentValue.includes('test_') &&
+              !currentValue.includes('replace_in_production')
+            ) {
+              // Key exists and seems to be a proper key already
+              console.log('[AdminController] ROOT_ENCRYPTION_KEY already exists in .env');
+              needsNewKey = false;
+            }
+          }
+
+          if (needsNewKey) {
+            // Generate a new secure encryption key
+            const newEncryptionKey = crypto.randomBytes(32).toString('hex');
+            console.log('[AdminController] Generated new ROOT_ENCRYPTION_KEY');
+
+            // Update the .env file
+            let updatedEnvContent = envContent;
+
+            if (keyMatch) {
+              // Replace existing key
+              updatedEnvContent = envContent.replace(
+                rootKeyPattern,
+                `ROOT_ENCRYPTION_KEY=${newEncryptionKey}`,
+              );
+            } else {
+              // Add new key
+              updatedEnvContent =
+                envContent.trim() + `\n\nROOT_ENCRYPTION_KEY=${newEncryptionKey}\n`;
+            }
+
+            fs.writeFileSync(envPath, updatedEnvContent);
+            console.log('[AdminController] Updated ROOT_ENCRYPTION_KEY in .env file');
+
+            // We need to update the process.env with the new key for it to be used immediately
+            process.env.ROOT_ENCRYPTION_KEY = newEncryptionKey;
+          }
+        } else {
+          console.error('[AdminController] .env file not found at expected location');
+        }
+      } catch (envError) {
+        console.error('[AdminController] Error updating ROOT_ENCRYPTION_KEY:', envError);
+        // Continue with admin setup even if the env update fails
       }
 
       // Generate API key (same as for regular teams)
