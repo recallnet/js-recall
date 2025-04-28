@@ -23,7 +23,8 @@ const validateMessage = async (req: NextRequest, msg: SiweMessage) => {
   }
   if (
     msg.issuedAt &&
-    new Date((msg as any).issuedAt).getTime() < Date.now() - TIME_LIMIT
+    new Date((msg as { issuedAt: Date }).issuedAt).getTime() <
+      Date.now() - TIME_LIMIT
   ) {
     throw new Error("Invalid issue date");
   }
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
     if (!result) throw new Error("signature validation error");
 
     return NextResponse.json({ ok: true, address: message.address });
-  } catch (err: any) {
+  } catch (err) {
     console.error("[SIWE LOGIN ERROR]", err);
     return NextResponse.json(
       { error: "Invalid SIWE message or signature" },
