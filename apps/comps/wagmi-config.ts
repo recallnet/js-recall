@@ -1,15 +1,14 @@
-import { createConfig, http } from "wagmi";
-import { baseSepolia } from "wagmi/chains";
-import { coinbaseWallet } from "wagmi/connectors";
+import {Config, createConfig, CreateConnectorFn, http} from "wagmi";
+import {baseSepolia} from "wagmi/chains";
+import {coinbaseWallet} from "wagmi/connectors";
 
-export const cbWalletConnector = coinbaseWallet({
+export const cbWalletConnector: CreateConnectorFn = coinbaseWallet({
   appName: "Wagmi Smart Wallet",
   preference: "smartWalletOnly",
 });
 
-export const config = createConfig({
+export const config: Config = createConfig({
   chains: [baseSepolia],
-  // turn off injected provider discovery
   multiInjectedProviderDiscovery: false,
   connectors: [cbWalletConnector],
   ssr: true,
