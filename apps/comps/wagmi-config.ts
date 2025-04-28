@@ -1,6 +1,6 @@
-import {Config, createConfig, CreateConnectorFn, http} from "wagmi";
-import {baseSepolia} from "wagmi/chains";
-import {coinbaseWallet} from "wagmi/connectors";
+import { Config, CreateConnectorFn, createConfig, http } from "wagmi";
+import { baseSepolia } from "wagmi/chains";
+import { coinbaseWallet } from "wagmi/connectors";
 
 export const cbWalletConnector: CreateConnectorFn = coinbaseWallet({
   appName: "Wagmi Smart Wallet",
