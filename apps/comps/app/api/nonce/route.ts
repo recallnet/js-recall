@@ -1,9 +1,8 @@
 import { serialize } from "cookie";
-import { NextApiRequest } from "next";
 import { NextResponse } from "next/server";
 import { generateSiweNonce } from "viem/siwe";
 
-export async function GET(req: NextApiRequest) {
+export async function GET() {
   try {
     const nonce = generateSiweNonce();
 
@@ -18,9 +17,9 @@ export async function GET(req: NextApiRequest) {
     response.headers.set("Set-Cookie", cookie);
 
     return response;
-  } catch (err: any) {
+  } catch (err) {
     return NextResponse.json(
-      { error: "Error when generating nonce" },
+      { error: `Error when generating nonce: ${err.message}` },
       { status: 500 },
     );
   }
