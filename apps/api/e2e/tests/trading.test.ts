@@ -168,10 +168,10 @@ describe("Trading API", () => {
 
     // Verify chain fields in trades if they exist
     const lastTrade = (tradeHistoryResponse as TradeHistoryResponse).trades[0];
-    if (lastTrade.fromChain) {
+    if (lastTrade?.fromChain) {
       expect(lastTrade.fromChain).toBe(BlockchainType.SVM);
     }
-    if (lastTrade.toChain) {
+    if (lastTrade?.toChain) {
       expect(lastTrade.toChain).toBe(BlockchainType.SVM);
     }
 
@@ -333,9 +333,9 @@ describe("Trading API", () => {
 
     // Verify the last trade has the correct tokens
     const lastTrade = (tradeHistoryResponse as TradeHistoryResponse).trades[0];
-    expect(lastTrade.fromToken).toBe(usdcTokenAddress);
-    expect(lastTrade.toToken).toBe(arbitraryTokenAddress);
-    expect((lastTrade as TradeTransaction).fromAmount).toBeCloseTo(
+    expect(lastTrade?.fromToken).toBe(usdcTokenAddress);
+    expect(lastTrade?.toToken).toBe(arbitraryTokenAddress);
+    expect((lastTrade as TradeTransaction)?.fromAmount).toBeCloseTo(
       tradeAmount,
       1,
     ); // Allow for small rounding differences
@@ -713,10 +713,10 @@ describe("Trading API", () => {
 
     // Verify the trade details in history
     const lastTrade = tradeHistory.trades[0];
-    expect(lastTrade.fromToken).toBe(usdcTokenAddress);
-    expect(lastTrade.toToken).toBe(arbitraryTokenAddress);
-    expect(lastTrade.fromAmount).toBeCloseTo(usdcAmount, 1);
-    expect(lastTrade.toAmount).toBeCloseTo(expectedTokenAmount, 1);
+    expect(lastTrade?.fromToken).toBe(usdcTokenAddress);
+    expect(lastTrade?.toToken).toBe(arbitraryTokenAddress);
+    expect(lastTrade?.fromAmount).toBeCloseTo(usdcAmount, 1);
+    expect(lastTrade?.toAmount).toBeCloseTo(expectedTokenAmount, 1);
   });
 
   test("team can trade with Ethereum tokens", async () => {
@@ -854,10 +854,10 @@ describe("Trading API", () => {
       // Verify the last trade details
       const lastTrade = (tradeHistoryResponse as TradeHistoryResponse)
         .trades[0];
-      expect(lastTrade.toToken).toBe(ethTokenAddress);
+      expect(lastTrade?.toToken).toBe(ethTokenAddress);
 
       // Verify chain fields if they exist
-      if (lastTrade.toChain) {
+      if (lastTrade?.toChain) {
         expect(lastTrade.toChain).toBe(BlockchainType.EVM);
         console.log(`Confirmed trade to chain is ${lastTrade.toChain}`);
       }
@@ -966,8 +966,8 @@ describe("Trading API", () => {
     const lastTrade = (tradeHistoryResponse as TradeHistoryResponse).trades[0];
 
     // Verify chain fields in the trade history
-    expect(lastTrade.fromChain).toBe(BlockchainType.SVM);
-    expect(lastTrade.toChain).toBe(BlockchainType.SVM);
+    expect(lastTrade?.fromChain).toBe(BlockchainType.SVM);
+    expect(lastTrade?.toChain).toBe(BlockchainType.SVM);
 
     // Test cross-chain trading validation when disabled
     // First, we need to check if cross-chain trading is disabled
@@ -1077,14 +1077,69 @@ describe("Trading API", () => {
     const lastTrade = tradeHistoryResponse.trades[0];
 
     // Verify reason is included in trade history
-    expect(lastTrade.reason).toBe(specificReason);
+    expect(lastTrade?.reason).toBe(specificReason);
     console.log(
-      `Verified reason in trade history response: "${lastTrade.reason}"`,
+      `Verified reason in trade history response: "${lastTrade?.reason}"`,
     );
 
     // Further verify other trade details match
-    expect(lastTrade.fromToken).toBe(usdcTokenAddress);
-    expect(lastTrade.toToken).toBe(solTokenAddress);
-    expect(parseFloat(lastTrade.fromAmount.toString())).toBeCloseTo(10, 1);
+    expect(lastTrade?.fromToken).toBe(usdcTokenAddress);
+    expect(lastTrade?.toToken).toBe(solTokenAddress);
+    expect(parseFloat(lastTrade?.fromAmount.toString() || "0")).toBeCloseTo(
+      10,
+      1,
+    );
+  });
+
+  test("team cannot execute a trade without a reason field", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register team and get client
+    const { client: teamClient, team } = await registerTeamAndGetClient(
+      adminClient,
+      "Reason Required Team",
+    );
+
+    // Start a competition with our team
+    const competitionName = `Reason Required Test ${Date.now()}`;
+    await startTestCompetition(adminClient, competitionName, [team.id]);
+
+    // Wait for balances to be properly initialized
+    await wait(500);
+
+    // Get tokens to trade
+    const usdcTokenAddress = config.specificChainTokens.svm.usdc;
+    const solTokenAddress = config.specificChainTokens.svm.sol;
+
+    // Attempt to execute a trade without providing a reason field
+    const tradeResponse = await teamClient.executeTrade({
+      fromToken: usdcTokenAddress,
+      toToken: solTokenAddress,
+      amount: "10",
+      fromChain: BlockchainType.SVM,
+      toChain: BlockchainType.SVM,
+      // reason field intentionally omitted
+    } as any); // Using 'as any' to bypass TypeScript checking
+
+    // Verify the trade failed
+    expect(tradeResponse.success).toBe(false);
+
+    // Verify the error message indicates that reason is required
+    expect((tradeResponse as ErrorResponse).error).toContain("reason");
+
+    // Now execute a trade with reason to verify the endpoint works when reason is provided
+    const validTradeResponse = await teamClient.executeTrade({
+      fromToken: usdcTokenAddress,
+      toToken: solTokenAddress,
+      amount: "10",
+      fromChain: BlockchainType.SVM,
+      toChain: BlockchainType.SVM,
+      reason: "Validation test",
+    });
+
+    // Verify the trade succeeded when reason is provided
+    expect(validTradeResponse.success).toBe(true);
   });
 });

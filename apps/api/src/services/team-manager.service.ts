@@ -596,4 +596,73 @@ export class TeamManager {
       return { isInactive: false };
     }
   }
+
+  /**
+   * Reset a team's API key
+   * @param teamId The team ID
+   * @returns Object with new API key (unencrypted for display) and updated team
+   */
+  async resetApiKey(teamId: string): Promise<{
+    apiKey: string;
+    team: Team;
+  }> {
+    try {
+      console.log(`[TeamManager] Resetting API key for team: ${teamId}`);
+
+      // Get the team
+      const team = await repositories.teamRepository.findById(teamId);
+      if (!team) {
+        throw new Error(`Team with ID ${teamId} not found`);
+      }
+
+      // Generate a new API key
+      const newApiKey = this.generateApiKey();
+
+      // Encrypt the new API key for storage
+      const encryptedApiKey = this.encryptApiKey(newApiKey);
+
+      // Update the team with the new encrypted API key
+      team.apiKey = encryptedApiKey;
+      team.updatedAt = new Date();
+
+      // Save the updated team to the database
+      const updatedTeam = await repositories.teamRepository.update(team);
+      if (!updatedTeam) {
+        throw new Error(`Failed to update API key for team ${teamId}`);
+      }
+
+      // Remove old API key from cache if it exists (find by team ID)
+      for (const [key, auth] of this.apiKeyCache.entries()) {
+        if (auth.teamId === teamId) {
+          this.apiKeyCache.delete(key);
+          break;
+        }
+      }
+
+      // Add new API key to cache
+      this.apiKeyCache.set(newApiKey, {
+        teamId: teamId,
+        key: newApiKey,
+      });
+
+      console.log(
+        `[TeamManager] Successfully reset API key for team: ${teamId}`,
+      );
+
+      // Return the new API key (unencrypted) and the updated team
+      return {
+        apiKey: newApiKey,
+        team: {
+          ...updatedTeam,
+          apiKey: newApiKey, // Return unencrypted for display to user
+        },
+      };
+    } catch (error) {
+      console.error(
+        `[TeamManager] Error resetting API key for team ${teamId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
 }
