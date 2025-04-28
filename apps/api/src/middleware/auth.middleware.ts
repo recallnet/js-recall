@@ -35,7 +35,10 @@ export const authMiddleware = (
 
       if (!teamId) {
         console.log(`[AuthMiddleware] Invalid API key`);
-        throw new ApiError(401, "Invalid API key");
+        throw new ApiError(
+          401,
+          "Invalid API key. This key may have been reset or is no longer associated with an active account. Please ensure you're using your most recent API key.",
+        );
       }
 
       console.log(

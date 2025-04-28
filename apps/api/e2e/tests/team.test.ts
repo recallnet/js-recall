@@ -498,7 +498,7 @@ describe("Team API", () => {
     const newProfileResponse = await newClient.getProfile();
     expect(newProfileResponse.success).toBe(true);
 
-    // Step 6: Verify the old API key no longer works
+    // Step 6: Verify the old API key no longer works and provides a helpful error message
     const oldClient = adminClient.createTeamClient(originalApiKey);
     try {
       await oldClient.getProfile();
@@ -509,6 +509,8 @@ describe("Team API", () => {
       expect(error).toBeDefined();
       if (axios.isAxiosError(error) && error.response) {
         expect(error.response.status).toBe(401);
+        // Verify error message is helpful
+        expect(error.response.data.error).toContain("may have been reset");
       } else {
         expect((error as any).status || 401).toBe(401);
       }
