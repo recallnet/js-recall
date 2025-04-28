@@ -320,7 +320,7 @@ describe("Competition API", () => {
 
     // There should be one team in the leaderboard
     expect(adminLeaderboardResponse.leaderboard.length).toBe(1);
-    expect(adminLeaderboardResponse.leaderboard[0].teamName).toBe(
+    expect(adminLeaderboardResponse.leaderboard[0]!.teamName).toBe(
       "Regular Team",
     );
 
@@ -448,6 +448,84 @@ describe("Competition API", () => {
     } catch (error) {
       // Expect error due to inactive status
       expect(error).toBeDefined();
+    }
+  });
+
+  test("creating competition with cross-chain trading parameter", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register a team
+    const { client: teamClient, team } = await registerTeamAndGetClient(
+      adminClient,
+      "Cross-Chain Test Team",
+    );
+
+    // Create and start competition with cross-chain trading enabled
+    const competitionName = `Cross-Chain Competition ${Date.now()}`;
+    const competitionResponse = await adminClient.startCompetition({
+      name: competitionName,
+      teamIds: [team.id],
+      allowCrossChainTrading: true,
+    });
+
+    expect(competitionResponse.success).toBe(true);
+
+    // Check competition status to verify it was created
+    const statusResponse = await teamClient.getCompetitionStatus();
+    expect(statusResponse.success).toBe(true);
+
+    if (statusResponse.success && statusResponse.competition) {
+      expect(statusResponse.competition.name).toBe(competitionName);
+    }
+
+    // Check competition rules to verify cross-chain trading is enabled
+    const rulesResponse = await teamClient.getRules();
+    expect(rulesResponse.success).toBe(true);
+
+    // Verify cross-chain trading setting in rules
+    if (rulesResponse.success && rulesResponse.rules) {
+      expect(rulesResponse.rules.tradingRules).toBeDefined();
+
+      // Find the cross-chain trading rule
+      const crossChainRule = rulesResponse.rules.tradingRules.find(
+        (rule: string) => rule.includes("Cross-chain trading"),
+      );
+      expect(crossChainRule).toBeDefined();
+      expect(crossChainRule).toContain("Enabled");
+    }
+
+    // Create second competition with cross-chain trading disabled
+    const secondCompetitionName = `No-Cross-Chain Competition ${Date.now()}`;
+
+    // End the first competition
+    if (competitionResponse.success && "competition" in competitionResponse) {
+      await adminClient.endCompetition(competitionResponse.competition.id);
+
+      // Start a new competition with cross-chain trading disabled
+      const secondCompetitionResponse = await adminClient.startCompetition({
+        name: secondCompetitionName,
+        teamIds: [team.id],
+        allowCrossChainTrading: false,
+      });
+
+      expect(secondCompetitionResponse.success).toBe(true);
+
+      // Check competition rules to verify cross-chain trading is disabled
+      const secondRulesResponse = await teamClient.getRules();
+      expect(secondRulesResponse.success).toBe(true);
+
+      // Verify cross-chain trading setting in rules
+      if (secondRulesResponse.success && secondRulesResponse.rules) {
+        // Find the cross-chain trading rule
+        const secondCrossChainRule =
+          secondRulesResponse.rules.tradingRules.find((rule: string) =>
+            rule.includes("Cross-chain trading"),
+          );
+        expect(secondCrossChainRule).toBeDefined();
+        expect(secondCrossChainRule).toContain("Disabled");
+      }
     }
   });
 });

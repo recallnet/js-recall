@@ -83,6 +83,10 @@ const startServer = async () => {
     console.log("Database connection and schema verification completed");
     databaseInitialized = true;
 
+    // Load competition-specific configuration settings
+    await services.configurationService.loadCompetitionSettings();
+    console.log("Competition-specific configuration settings loaded");
+
     // Start snapshot scheduler
     services.scheduler.startSnapshotScheduler();
     console.log("Portfolio snapshot scheduler started");

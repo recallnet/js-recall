@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS competitions (
   start_date TIMESTAMP WITH TIME ZONE,
   end_date TIMESTAMP WITH TIME ZONE,
   status VARCHAR(20) NOT NULL, -- PENDING, ACTIVE, COMPLETED
+  allow_cross_chain_trading BOOLEAN NOT NULL DEFAULT FALSE, -- Controls cross-chain trading for this competition
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

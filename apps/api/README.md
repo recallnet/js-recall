@@ -621,13 +621,12 @@ The application will automatically detect and use the base64-encoded certificate
 
 ### Chain Configuration
 
-| Variable                    | Required | Default                                                  | Description                                                  |
-| --------------------------- | -------- | -------------------------------------------------------- | ------------------------------------------------------------ |
-| `EVM_CHAINS`                | Optional | `eth,polygon,bsc,arbitrum,base,optimism,avalanche,linea` | Comma-separated list of supported EVM chains                 |
-| `ALLOW_CROSS_CHAIN_TRADING` | Optional | `false`                                                  | Enable trading between different chains                      |
-| `MAX_TRADE_PERCENTAGE`      | Optional | `25`                                                     | Maximum trade size as percentage of portfolio value          |
-| `EVM_CHAIN_PRIORITY`        | Optional | `eth,polygon,base,arbitrum`                              | Chain priority for price lookups (first chain checked first) |
-| `ALLOW_MOCK_PRICE_HISTORY`  | Optional | `true` in dev, `false` in prod                           | Allow generation of mock price history data                  |
+| Variable                   | Required | Default                                                  | Description                                                  |
+| -------------------------- | -------- | -------------------------------------------------------- | ------------------------------------------------------------ |
+| `EVM_CHAINS`               | Optional | `eth,polygon,bsc,arbitrum,base,optimism,avalanche,linea` | Comma-separated list of supported EVM chains                 |
+| `MAX_TRADE_PERCENTAGE`     | Optional | `25`                                                     | Maximum trade size as percentage of portfolio value          |
+| `EVM_CHAIN_PRIORITY`       | Optional | `eth,polygon,base,arbitrum`                              | Chain priority for price lookups (first chain checked first) |
+| `ALLOW_MOCK_PRICE_HISTORY` | Optional | `true` in dev, `false` in prod                           | Allow generation of mock price history data                  |
 
 ### Competition Settings
 
@@ -808,7 +807,7 @@ INITIAL_ETH_USDC_BALANCE=5000
 INITIAL_BASE_USDC_BALANCE=5000  # Required for base-trades.test.ts
 ```
 
-If you modify these values, you may need to update the test assertions as well. The test suite will automatically adapt to the `ALLOW_CROSS_CHAIN_TRADING` setting, running or skipping cross-chain tests accordingly.
+If you modify these values, you may need to update the test assertions as well. The test suite adapts to the cross-chain trading settings that are configured for each test competition.
 
 > **Note**: The test suite tries to adapt to whatever balances are available, but setting balances to zero will cause certain tests to fail with "Insufficient balance" errors, as those tests expect minimum balances to be available for trading.
 
@@ -893,11 +892,11 @@ When enabled, participants will receive a 403 Forbidden response with the messag
 
 ## Cross-Chain Trading Configuration
 
-The trading simulator supports two modes of operation for cross-chain trading, configurable in your `.env` file:
+The trading simulator supports two modes of operation for cross-chain trading, now configurable at the competition level:
 
 ### Allowed Cross-Chain Trading
 
-With `ALLOW_CROSS_CHAIN_TRADING=true`, users can:
+With cross-chain trading enabled for a competition, users can:
 
 - Trade between tokens on different blockchain types (e.g., Solana SOL to Ethereum ETH)
 - Execute trades between any supported chains (e.g., Polygon USDC to Base ETH)
@@ -911,7 +910,7 @@ This mode is ideal for:
 
 ### Restricted Same-Chain Trading (Default)
 
-With `ALLOW_CROSS_CHAIN_TRADING=false` (the default setting), the system will:
+By default, competitions are created with cross-chain trading disabled. In this mode, the system will:
 
 - Reject trades where the source and destination tokens are on different chains
 - Return an error message indicating that cross-chain trading is disabled
@@ -925,20 +924,30 @@ This mode is useful for:
 
 ### Implementation
 
-Configure this option in your `.env` file after copying from `.env.example`:
+When creating or starting a new competition through the admin interface, you can specify the `allowCrossChainTrading` parameter:
 
-```
-# Set to true to enable trades between different chains (disabled by default)
-ALLOW_CROSS_CHAIN_TRADING=false
+```javascript
+// Creating a competition with cross-chain trading enabled
+await adminClient.startCompetition({
+  name: "Cross-Chain Trading Competition",
+  teamIds: ["team1", "team2"],
+  allowCrossChainTrading: true,
+});
+
+// Creating a competition with cross-chain trading disabled (default)
+await adminClient.startCompetition({
+  name: "Single-Chain Trading Competition",
+  teamIds: ["team3", "team4"],
+});
 ```
 
-When disabled, the trade validation in the `TradeSimulator` service will verify that both tokens are on the same chain before proceeding with the trade execution.
+The cross-chain trading setting is stored with the competition and applied whenever teams execute trades. Changing this setting requires ending the current competition and starting a new one.
 
 ### Using Chain Parameters with Trade Restrictions
 
-When executing trades with explicit chain parameters, the system's behavior will depend on the `ALLOW_CROSS_CHAIN_TRADING` setting:
+When executing trades with explicit chain parameters, the system's behavior will depend on the competition's cross-chain trading setting:
 
-#### With Cross-Chain Trading Allowed (`ALLOW_CROSS_CHAIN_TRADING=true`):
+#### With Cross-Chain Trading Allowed:
 
 ```javascript
 // Example 1: Cross-chain trade from Solana to Ethereum - ACCEPTED
@@ -975,7 +984,7 @@ When executing trades with explicit chain parameters, the system's behavior will
 }
 ```
 
-#### DEFAULT - With Cross-Chain Trading Disabled (`ALLOW_CROSS_CHAIN_TRADING=false`):
+#### DEFAULT - With Cross-Chain Trading Disabled:
 
 ```javascript
 // This cross-chain trade will be REJECTED with an error
@@ -1001,7 +1010,7 @@ When executing trades with explicit chain parameters, the system's behavior will
 }
 ```
 
-This approach allows you to control whether trades can cross between different blockchains, while still using explicit chain parameters to avoid chain detection overhead.
+This approach allows you to control whether trades can cross between different blockchains at the competition level, while still using explicit chain parameters to avoid chain detection overhead.
 
 ### Manual Setup
 
@@ -1019,7 +1028,6 @@ Then edit the file to configure your environment. Key configuration options incl
 
 - `EVM_CHAINS`: Comma-separated list of supported EVM chains (defaults to eth,polygon,bsc,arbitrum,base,optimism,avalanche,linea)
 - `ALLOW_MOCK_PRICE_HISTORY`: Whether to allow mock price history data generation (defaults to true in development, false in production)
-- `ALLOW_CROSS_CHAIN_TRADING`: Whether to allow trades between different chains (defaults to false for security, set to true to enable cross-chain trading)
 - `POSTGRES_URL`: PostgreSQL connection string
 - `DB_SSL`: Enable SSL for database connection
 - `PORT`: The port to run the server on (defaults to 3000)
