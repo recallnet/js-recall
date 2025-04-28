@@ -75,7 +75,7 @@ export function ConnectAndSIWE() {
           data: { message, signature },
         });
 
-        setLoggedIn(true);
+        if (res.status >= 200 && res.status < 300) setLoggedIn(true);
       } catch (err) {
         console.error("SIWE login failed:", err);
       }
@@ -84,7 +84,7 @@ export function ConnectAndSIWE() {
 
   useEffect(() => {
     checkValid();
-  }, [signature, account]);
+  }, [signature, account, checkValid]);
 
   return (
     <Button onClick={() => connect({ connector: cbWalletConnector })}>
