@@ -223,18 +223,34 @@ export class ApiClient {
    * Start a competition
    */
   async startCompetition(
-    name: string,
-    description: string,
-    teamIds: string[],
+    params:
+      | {
+          name: string;
+          description?: string;
+          teamIds: string[];
+          allowCrossChainTrading?: boolean;
+        }
+      | string,
+    description?: string,
+    teamIds?: string[],
   ): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
+      let requestData;
+
+      // Handle both object-based and individual parameter calls
+      if (typeof params === "object") {
+        requestData = params;
+      } else {
+        requestData = {
+          name: params,
+          description,
+          teamIds: teamIds || [],
+        };
+      }
+
       const response = await this.axiosInstance.post(
         "/api/admin/competition/start",
-        {
-          name,
-          description,
-          teamIds,
-        },
+        requestData,
       );
 
       return response.data;
@@ -249,6 +265,7 @@ export class ApiClient {
   async createCompetition(
     name: string,
     description?: string,
+    allowCrossChainTrading?: boolean,
   ): Promise<CreateCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
@@ -256,6 +273,7 @@ export class ApiClient {
         {
           name,
           description,
+          allowCrossChainTrading,
         },
       );
 
@@ -271,6 +289,7 @@ export class ApiClient {
   async startExistingCompetition(
     competitionId: string,
     teamIds: string[],
+    allowCrossChainTrading?: boolean,
   ): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
@@ -278,6 +297,7 @@ export class ApiClient {
         {
           competitionId,
           teamIds,
+          allowCrossChainTrading,
         },
       );
 

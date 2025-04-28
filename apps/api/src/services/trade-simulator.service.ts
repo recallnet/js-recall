@@ -24,8 +24,6 @@ export class TradeSimulator {
   private priceTracker: PriceTracker;
   // Cache of recent trades for performance (teamId -> trades)
   private tradeCache: Map<string, Trade[]>;
-  // Whether to allow cross-chain trading
-  private allowCrossChainTrading: boolean;
   // Maximum trade percentage of portfolio value
   private maxTradePercentage: number;
 
@@ -33,8 +31,6 @@ export class TradeSimulator {
     this.balanceManager = balanceManager;
     this.priceTracker = priceTracker;
     this.tradeCache = new Map();
-    // Use features config instead of directly accessing environment variable
-    this.allowCrossChainTrading = features.ALLOW_CROSS_CHAIN_TRADING;
     // Get the maximum trade percentage from config
     this.maxTradePercentage = config.maxTradePercentage;
   }
@@ -165,7 +161,7 @@ export class TradeSimulator {
 
       // Check for cross-chain trades if not allowed
       if (
-        !this.allowCrossChainTrading &&
+        !features.ALLOW_CROSS_CHAIN_TRADING &&
         (fromTokenChain !== toTokenChain ||
           (fromTokenSpecificChain &&
             toTokenSpecificChain &&
@@ -205,7 +201,7 @@ export class TradeSimulator {
 
       // Check for cross-chain trades if not allowed
       if (
-        !this.allowCrossChainTrading &&
+        !features.ALLOW_CROSS_CHAIN_TRADING &&
         (fromTokenChain !== toTokenChain ||
           (fromTokenSpecificChain &&
             toTokenSpecificChain &&

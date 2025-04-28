@@ -195,6 +195,7 @@ export interface Competition {
   startDate: Date | null;
   endDate: Date | null;
   status: CompetitionStatus;
+  allowCrossChainTrading: boolean; // Controls whether cross-chain trading is allowed
   createdAt: Date;
   updatedAt: Date;
 }

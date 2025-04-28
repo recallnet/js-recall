@@ -150,6 +150,7 @@ export interface Competition {
   startDate: string | null;
   endDate: string | null;
   status: CompetitionStatus;
+  allowCrossChainTrading: boolean;
   createdAt: string;
   updatedAt: string;
   teamIds?: string[];

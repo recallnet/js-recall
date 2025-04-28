@@ -268,12 +268,13 @@ export class CompetitionController {
       // Check if user is an admin (added by auth middleware)
       const isAdmin = req.isAdmin === true;
 
+      // Get active competition
+      const activeCompetition =
+        await services.competitionManager.getActiveCompetition();
+
       // If not an admin, verify team is part of the active competition
       if (!isAdmin) {
         // Get active competition
-        const activeCompetition =
-          await services.competitionManager.getActiveCompetition();
-
         if (!activeCompetition) {
           throw new ApiError(400, "No active competition");
         }

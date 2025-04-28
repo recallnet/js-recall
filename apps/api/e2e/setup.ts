@@ -93,9 +93,6 @@ export async function setup() {
         `- INITIAL_BASE_USDC_BALANCE: ${process.env.INITIAL_BASE_USDC_BALANCE} (was: ${originalBaseUsdcBalance})`,
       );
       console.log(
-        `- ALLOW_CROSS_CHAIN_TRADING: ${process.env.ALLOW_CROSS_CHAIN_TRADING}`,
-      );
-      console.log(
         `- DISABLE_PARTICIPANT_LEADERBOARD_ACCESS: ${process.env.DISABLE_PARTICIPANT_LEADERBOARD_ACCESS} (was: ${originalLeaderboardAccess})`,
       );
     }

@@ -3,12 +3,14 @@ import axios from "axios";
 import config from "../../src/config";
 import { services } from "../../src/services";
 import { BlockchainType } from "../../src/types";
+import { ApiClient } from "../utils/api-client";
 import {
   BalancesResponse,
   ErrorResponse,
   PortfolioResponse,
   PriceResponse,
   SpecificChain,
+  StartCompetitionResponse,
   TokenBalance,
   TradeHistoryResponse,
   TradeResponse,
@@ -61,7 +63,11 @@ describe("Trading API", () => {
 
     // Start a competition with our team
     const competitionName = `Trading Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    (await adminClient.startCompetition({
+      name: competitionName,
+      teamIds: [team.id],
+      allowCrossChainTrading: true,
+    })) as StartCompetitionResponse;
 
     // Wait for balances to be properly initialized
     await wait(500);
@@ -720,24 +726,6 @@ describe("Trading API", () => {
   });
 
   test("team can trade with Ethereum tokens", async () => {
-    // Skip if Noves provider isn't configured (required for EVM tokens)
-    if (!config.api.noves?.enabled) {
-      console.log(
-        "Skipping Ethereum token test: Noves provider not configured",
-      );
-      return;
-    }
-
-    // Check if cross-chain trading is allowed
-    const allowCrossChainTrading =
-      process.env.ALLOW_CROSS_CHAIN_TRADING === "true";
-    if (!allowCrossChainTrading) {
-      console.log(
-        "Skipping Ethereum token test: Cross-chain trading is disabled",
-      );
-      return;
-    }
-
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -750,7 +738,11 @@ describe("Trading API", () => {
 
     // Start a competition with our team
     const competitionName = `Ethereum Token Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    (await adminClient.startCompetition({
+      name: competitionName,
+      teamIds: [team.id],
+      allowCrossChainTrading: true,
+    })) as StartCompetitionResponse;
 
     // Wait for balances to be properly initialized
     await wait(500);
@@ -798,7 +790,7 @@ describe("Trading API", () => {
     const initialEthBalance = parseFloat(
       (initialBalanceResponse as BalancesResponse).balances
         .find((b) => b.token === ethTokenAddress)
-        ?.toString() || "0",
+        ?.amount.toString() || "0",
     );
     console.log(`Initial ETH balance: ${initialEthBalance}`);
 
@@ -816,14 +808,14 @@ describe("Trading API", () => {
       const tradeAmount = Math.min(100, svmUsdcBalance * 0.1);
 
       // Execute a buy trade (buying ETH with USDC)
-      const buyTradeResponse = await teamClient.executeTrade({
+      const buyTradeResponse = (await teamClient.executeTrade({
         fromToken: svmUsdcAddress,
         toToken: ethTokenAddress,
         amount: tradeAmount.toString(),
         fromChain: BlockchainType.SVM,
         toChain: BlockchainType.EVM,
         reason,
-      });
+      })) as TradeResponse;
 
       console.log(
         `Buy ETH trade response: ${JSON.stringify(buyTradeResponse)}`,
@@ -838,7 +830,7 @@ describe("Trading API", () => {
       // ETH balance should have increased
       const updatedEthBalance = parseFloat(
         (updatedBalanceResponse as BalancesResponse).balances
-          .find((b: TokenBalance) => b.token === ethTokenAddress)
+          .find((b) => b.token === ethTokenAddress)
           ?.amount.toString() || "0",
       );
       console.log(`Updated ETH balance: ${updatedEthBalance}`);
@@ -999,18 +991,10 @@ describe("Trading API", () => {
         `Cross-chain trade response: ${JSON.stringify(crossChainTradeResponse)}`,
       );
 
-      // If ALLOW_CROSS_CHAIN_TRADING is false, this should fail
-      const allowCrossChainTrading =
-        process.env.ALLOW_CROSS_CHAIN_TRADING === "true";
-      if (!allowCrossChainTrading) {
-        expect(crossChainTradeResponse.success).toBe(false);
-        expect((crossChainTradeResponse as ErrorResponse).error).toContain(
-          "Cross-chain trading is disabled",
-        );
-      } else {
-        // If cross-chain trading is allowed, this should succeed
-        expect(crossChainTradeResponse.success).toBe(true);
-      }
+      expect(crossChainTradeResponse.success).toBe(false);
+      expect((crossChainTradeResponse as ErrorResponse).error).toContain(
+        "Cross-chain trading is disabled",
+      );
     } catch (error) {
       console.error("Error testing cross-chain trading:", error);
     }
@@ -1141,5 +1125,283 @@ describe("Trading API", () => {
 
     // Verify the trade succeeded when reason is provided
     expect(validTradeResponse.success).toBe(true);
+  });
+
+  test("cross-chain trading respects competition settings", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register team and get client
+    const { client: teamClient, team } = await registerTeamAndGetClient(
+      adminClient,
+      "Cross-Chain Settings Team",
+    );
+
+    // Get token addresses for testing
+    const svmUsdcAddress = config.specificChainTokens.svm.usdc;
+    const ethTokenAddress = config.specificChainTokens.eth.eth;
+
+    if (!ethTokenAddress) {
+      console.log("Skipping test: Ethereum ETH token address not configured");
+      return;
+    }
+
+    // Start a competition with cross-chain trading DISABLED
+    const competitionName = `Cross-Chain Settings Test ${Date.now()}`;
+    const competitionResponse = await adminClient.startCompetition({
+      name: competitionName,
+      teamIds: [team.id],
+      allowCrossChainTrading: false,
+    });
+
+    expect(competitionResponse.success).toBe(true);
+
+    // Wait for balances to be properly initialized
+    await wait(500);
+
+    // Check if competition rules reflect the disabled cross-chain trading
+    const rulesResponse = await teamClient.getRules();
+    expect(rulesResponse.success).toBe(true);
+
+    // Find cross-chain trading rule in the rules list
+    if (rulesResponse.success && rulesResponse.rules) {
+      const crossChainRule = rulesResponse.rules.tradingRules.find(
+        (rule: string) => rule.includes("Cross-chain trading"),
+      );
+      expect(crossChainRule).toBeDefined();
+      expect(crossChainRule).toContain("Disabled");
+    }
+
+    // Verify that cross-chain trading is actually disabled by attempting a cross-chain trade
+    console.log(
+      "Attempting cross-chain trade when it's disabled in competition settings",
+    );
+
+    const balanceResponse = await teamClient.getBalance();
+    const svmUsdcBalance = parseFloat(
+      (balanceResponse as BalancesResponse).balances
+        .find((b) => b.token === svmUsdcAddress)
+        ?.amount.toString() || "0",
+    );
+    const tradeAmount = Math.min(50, svmUsdcBalance * 0.1).toString();
+
+    // Attempt to execute a cross-chain trade (should fail)
+    const crossChainTradeResponse = await teamClient.executeTrade({
+      fromToken: svmUsdcAddress,
+      toToken: ethTokenAddress,
+      amount: tradeAmount,
+      fromChain: BlockchainType.SVM,
+      toChain: BlockchainType.EVM,
+      reason: "testing cross-chain trading disabled",
+    });
+
+    // Expect the trade to fail due to cross-chain trading being disabled
+    expect(crossChainTradeResponse.success).toBe(false);
+    expect((crossChainTradeResponse as ErrorResponse).error).toContain(
+      "Cross-chain trading is disabled",
+    );
+
+    // End the first competition
+    await adminClient.endCompetition(
+      (competitionResponse as StartCompetitionResponse).competition.id,
+    );
+    await wait(500);
+
+    // Start a new competition with cross-chain trading ENABLED
+    const secondCompetitionName = `Cross-Chain Enabled Test ${Date.now()}`;
+    const secondCompetitionResponse = await adminClient.startCompetition({
+      name: secondCompetitionName,
+      teamIds: [team.id],
+      allowCrossChainTrading: true,
+    });
+
+    expect(secondCompetitionResponse.success).toBe(true);
+    await wait(500);
+
+    // Check if competition rules reflect the enabled cross-chain trading
+    const secondRulesResponse = await teamClient.getRules();
+    expect(secondRulesResponse.success).toBe(true);
+
+    // Find cross-chain trading rule in the rules list
+    if (secondRulesResponse.success && secondRulesResponse.rules) {
+      const crossChainRule = secondRulesResponse.rules.tradingRules.find(
+        (rule: string) => rule.includes("Cross-chain trading"),
+      );
+      expect(crossChainRule).toBeDefined();
+      expect(crossChainRule).toContain("Enabled");
+    }
+
+    // Now try to execute a cross-chain trade (should succeed)
+    console.log(
+      "Attempting cross-chain trade when it's enabled in competition settings",
+    );
+
+    const secondTradeResponse = await teamClient.executeTrade({
+      fromToken: svmUsdcAddress,
+      toToken: ethTokenAddress,
+      amount: tradeAmount,
+      fromChain: BlockchainType.SVM,
+      toChain: BlockchainType.EVM,
+      reason: "testing cross-chain trading enabled",
+    });
+
+    // Expect the trade to succeed now that cross-chain trading is enabled
+    expect(secondTradeResponse.success).toBe(true);
+    if (!secondTradeResponse.success) {
+      console.error(
+        "Cross-chain trade failed with error:",
+        (secondTradeResponse as ErrorResponse).error,
+      );
+      console.error("Competition settings were:", secondCompetitionResponse);
+    }
+  });
+
+  test("EVM-to-EVM trades are recognized as cross-chain", async () => {
+    // Check if we have at least two EVM chains configured
+    const evmChains = Object.keys(config.specificChainTokens).filter(
+      (chain) => chain !== "svm" && chain !== "evm",
+    );
+
+    if (evmChains.length < 2) {
+      console.log(
+        "Skipping EVM-to-EVM cross-chain test: Need at least 2 EVM chains configured",
+      );
+      return;
+    }
+
+    // Select two different EVM chains for testing
+    const sourceChain = config.evmChains[0] as SpecificChain;
+    const targetChain = evmChains[1] as SpecificChain;
+
+    console.log(
+      `Testing EVM-to-EVM cross-chain trading from ${sourceChain} to ${targetChain}`,
+    );
+
+    // Get USDC addresses for both chains
+    const sourceUsdcAddress =
+      config.specificChainTokens[
+        sourceChain as keyof typeof config.specificChainTokens
+      ]?.usdc;
+    const targetUsdcAddress =
+      config.specificChainTokens[
+        targetChain as keyof typeof config.specificChainTokens
+      ]?.usdc;
+
+    if (!sourceUsdcAddress || !targetUsdcAddress) {
+      console.log(
+        `Skipping EVM-to-EVM test: USDC not configured for ${sourceChain} or ${targetChain}`,
+      );
+      return;
+    }
+
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register team and get client
+    const { client: teamClient, team } = await registerTeamAndGetClient(
+      adminClient,
+      "EVM-to-EVM Cross-Chain Team",
+    );
+
+    // Start a competition with cross-chain trading DISABLED first
+    const competitionName = `EVM-EVM Cross-Chain Test ${Date.now()}`;
+    const competitionResponse = await adminClient.startCompetition({
+      name: competitionName,
+      teamIds: [team.id],
+      allowCrossChainTrading: false,
+    });
+
+    expect(competitionResponse.success).toBe(true);
+    await wait(500);
+
+    // Verify the team has some balance on the source chain
+    const initialBalanceResponse = await teamClient.getBalance();
+    const sourceUsdcBalance = parseFloat(
+      (initialBalanceResponse.success &&
+        (initialBalanceResponse as BalancesResponse).balances
+          .find((b) => b.token === sourceUsdcAddress)
+          ?.amount.toString()) ||
+        "0",
+    );
+
+    // If we don't have any balance, we'll need to skip this test
+    if (!sourceUsdcBalance || sourceUsdcBalance <= 0) {
+      console.log(
+        `No balance available for ${sourceChain} USDC, skipping test`,
+      );
+      return;
+    }
+
+    const tradeAmount = Math.min(10, sourceUsdcBalance * 0.1).toString();
+    console.log(
+      `Trading ${tradeAmount} USDC from ${sourceChain} to ${targetChain}`,
+    );
+
+    // Attempt to execute an EVM-to-EVM cross-chain trade when disabled
+    const crossChainTradeResponse = await teamClient.executeTrade({
+      fromToken: sourceUsdcAddress,
+      toToken: targetUsdcAddress,
+      amount: tradeAmount,
+      fromChain: BlockchainType.EVM,
+      toChain: BlockchainType.EVM,
+      fromSpecificChain: sourceChain,
+      toSpecificChain: targetChain,
+      reason: "testing EVM-to-EVM cross-chain trading disabled",
+    });
+
+    // Expect the trade to fail due to cross-chain trading being disabled
+    expect(crossChainTradeResponse.success).toBe(false);
+    expect((crossChainTradeResponse as ErrorResponse).error).toContain(
+      "Cross-chain trading is disabled",
+    );
+
+    // End the first competition
+    await adminClient.endCompetition(
+      (competitionResponse as StartCompetitionResponse).competition.id,
+    );
+    await wait(500);
+
+    // Start a new competition with cross-chain trading ENABLED
+    const secondCompetitionName = `EVM-EVM Cross-Chain Enabled Test ${Date.now()}`;
+    const secondCompetitionResponse = await adminClient.startCompetition({
+      name: secondCompetitionName,
+      teamIds: [team.id],
+      allowCrossChainTrading: true,
+    });
+
+    expect(secondCompetitionResponse.success).toBe(true);
+    await wait(500);
+
+    // Now try to execute the same EVM-to-EVM cross-chain trade (should succeed)
+    const secondTradeResponse = await teamClient.executeTrade({
+      fromToken: sourceUsdcAddress,
+      toToken: targetUsdcAddress,
+      amount: tradeAmount,
+      fromChain: BlockchainType.EVM,
+      toChain: BlockchainType.EVM,
+      fromSpecificChain: sourceChain,
+      toSpecificChain: targetChain,
+      reason: "testing EVM-to-EVM cross-chain trading enabled",
+    });
+
+    // Expect the trade to succeed now that cross-chain trading is enabled
+    expect(secondTradeResponse.success).toBe(true);
+    if (!secondTradeResponse.success) {
+      console.error(
+        "EVM-to-EVM cross-chain trade failed with error:",
+        (secondTradeResponse as ErrorResponse).error,
+      );
+      console.error("Competition settings were:", secondCompetitionResponse);
+      console.error("Trade parameters:", {
+        fromToken: sourceUsdcAddress,
+        toToken: targetUsdcAddress,
+        fromChain: BlockchainType.EVM,
+        toChain: BlockchainType.EVM,
+        fromSpecificChain: sourceChain,
+        toSpecificChain: targetChain,
+      });
+    }
   });
 });

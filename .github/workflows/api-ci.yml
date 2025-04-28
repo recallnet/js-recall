@@ -285,9 +285,6 @@ jobs:
           PORTFOLIO_SNAPSHOT_INTERVAL_MS=10000
           PORTFOLIO_PRICE_FRESHNESS_MS=10000
 
-          # Cross-chain trading configuration
-          ALLOW_CROSS_CHAIN_TRADING=false
-
           # Optional: Disable ability for participants to view leaderboard activity
           DISABLE_PARTICIPANT_LEADERBOARD_ACCESS=false
           EOF

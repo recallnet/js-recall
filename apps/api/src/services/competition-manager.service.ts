@@ -69,11 +69,13 @@ export class CompetitionManager {
    * Create a new competition
    * @param name Competition name
    * @param description Optional description
+   * @param allowCrossChainTrading Whether to allow cross-chain trading in this competition (defaults to false)
    * @returns The created competition
    */
   async createCompetition(
     name: string,
     description?: string,
+    allowCrossChainTrading: boolean = false,
   ): Promise<Competition> {
     const id = uuidv4();
     const competition: Competition = {
@@ -83,13 +85,16 @@ export class CompetitionManager {
       startDate: null,
       endDate: null,
       status: CompetitionStatus.PENDING,
+      allowCrossChainTrading,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
     await repositories.competitionRepository.create(competition);
 
-    console.log(`[CompetitionManager] Created competition: ${name} (${id})`);
+    console.log(
+      `[CompetitionManager] Created competition: ${name} (${id}), allowCrossChainTrading: ${allowCrossChainTrading}`,
+    );
     return competition;
   }
 
@@ -173,6 +178,10 @@ export class CompetitionManager {
     // Take initial portfolio snapshots
     await this.takePortfolioSnapshots(competitionId);
 
+    // Reload competition-specific configuration settings
+    await services.configurationService.loadCompetitionSettings();
+    console.log(`[CompetitionManager] Reloaded configuration settings`);
+
     return competition;
   }
 
@@ -237,6 +246,10 @@ export class CompetitionManager {
     console.log(
       `[CompetitionManager] Ended competition: ${competition.name} (${competitionId})`,
     );
+
+    // Reload configuration settings (revert to environment defaults)
+    await services.configurationService.loadCompetitionSettings();
+    console.log(`[CompetitionManager] Reloaded configuration settings`);
 
     return competition;
   }
