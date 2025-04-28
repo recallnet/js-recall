@@ -2,7 +2,9 @@
   "extends": "@recallnet/typescript-config/nextjs.json",
   "compilerOptions": {
     "baseUrl": ".",
-    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "paths": {
       "@/*": ["./*"],
       "@recallnet/ui2/*": ["../../packages/ui2/src/*"]
