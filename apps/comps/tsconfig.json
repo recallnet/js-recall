@@ -2,7 +2,9 @@
   "extends": "@recallnet/typescript-config/nextjs.json",
   "compilerOptions": {
     "baseUrl": ".",
-    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "paths": {
       "@/*": [
         "./*"
@@ -25,6 +27,7 @@
     ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "wagmi-config.ts"
   ]
 }
