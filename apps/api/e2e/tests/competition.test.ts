@@ -2,6 +2,7 @@ import axios from "axios";
 
 import {
   ApiResponse,
+  Competition,
   CompetitionRulesResponse,
   CompetitionStatusResponse,
   EndCompetitionResponse,
@@ -320,7 +321,7 @@ describe("Competition API", () => {
 
     // There should be one team in the leaderboard
     expect(adminLeaderboardResponse.leaderboard.length).toBe(1);
-    expect(adminLeaderboardResponse.leaderboard[0]!.teamName).toBe(
+    expect(adminLeaderboardResponse.leaderboard[0]?.teamName).toBe(
       "Regular Team",
     );
 
@@ -525,6 +526,76 @@ describe("Competition API", () => {
           );
         expect(secondCrossChainRule).toBeDefined();
         expect(secondCrossChainRule).toContain("Disabled");
+      }
+    }
+  });
+
+  test("competition responses include allowCrossChainTrading property", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register a team
+    const { team } = await registerTeamAndGetClient(
+      adminClient,
+      "Response Fields Test Team",
+    );
+
+    // 1. Test creating a competition with allowCrossChainTrading=true
+    const createCompetitionName = `Create Fields Test ${Date.now()}`;
+    const createResponse = await adminClient.createCompetition(
+      createCompetitionName,
+      "Test description",
+      true,
+    );
+
+    expect(createResponse.success).toBe(true);
+    if (createResponse.success && "competition" in createResponse) {
+      expect(createResponse.competition).toBeDefined();
+      expect(createResponse.competition.allowCrossChainTrading).toBe(true);
+    }
+
+    // 2. Test starting a competition with allowCrossChainTrading=false
+    const startCompetitionName = `Start Fields Test ${Date.now()}`;
+    const startResponse = await adminClient.startCompetition({
+      name: startCompetitionName,
+      teamIds: [team.id],
+      allowCrossChainTrading: false,
+    });
+
+    expect(startResponse.success).toBe(true);
+    if (startResponse.success && "competition" in startResponse) {
+      expect(startResponse.competition).toBeDefined();
+      expect(startResponse.competition.allowCrossChainTrading).toBe(false);
+
+      // 3. Test ending a competition and check field is preserved
+      const endResponse = await adminClient.endCompetition(
+        startResponse.competition.id,
+      );
+
+      expect(endResponse.success).toBe(true);
+      if (endResponse.success && "competition" in endResponse) {
+        const competition = endResponse.competition as Competition;
+        expect(competition).toBeDefined();
+        expect(competition.allowCrossChainTrading).toBe(false);
+      }
+    }
+
+    // 4. Verify competition status endpoint also includes the property
+    const statusResponse = await adminClient.getCompetitionStatus();
+
+    if (statusResponse.success && statusResponse.competition) {
+      expect(statusResponse.competition.allowCrossChainTrading).toBeDefined();
+    }
+
+    // 5. Get performance reports - use helper function because the API client doesn't have this method directly
+    if (startResponse.success && "competition" in startResponse) {
+      const reportsUrl = `/api/admin/reports/performance?competitionId=${startResponse.competition.id}`;
+      const reportsResponse = await adminClient.request<any>("get", reportsUrl);
+
+      if (reportsResponse.success && "competition" in reportsResponse) {
+        const competition = reportsResponse.competition as Competition;
+        expect(competition.allowCrossChainTrading).toBeDefined();
       }
     }
   });
