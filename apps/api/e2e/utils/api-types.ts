@@ -418,3 +418,10 @@ export interface TeamApiKeyResponse extends ApiResponse {
     apiKey: string;
   };
 }
+
+// Reset API key response
+export interface ResetApiKeyResponse extends ApiResponse {
+  success: true;
+  apiKey: string;
+  previousKey?: string;
+}

@@ -17,6 +17,7 @@ import {
   PriceHistoryResponse,
   PriceResponse,
   QuoteResponse,
+  ResetApiKeyResponse,
   SpecificChain,
   StartCompetitionResponse,
   TeamApiKeyResponse,
@@ -753,6 +754,21 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "publicly register team");
+    }
+  }
+
+  /**
+   * Reset the team's API key
+   * @returns A promise that resolves to the reset API key response
+   */
+  async resetApiKey(): Promise<ResetApiKeyResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post(
+        "/api/account/reset-api-key",
+      );
+      return response.data as ResetApiKeyResponse;
+    } catch (error) {
+      return this.handleApiError(error, "reset API key");
     }
   }
 }
