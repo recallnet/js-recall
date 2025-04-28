@@ -459,39 +459,47 @@ For details and examples in TypeScript, see the [API Documentation](docs/API_DOC
 We provide a [TypeScript client class](docs/examples/api-client.ts) that handles authentication and requests for you. Usage example:
 
 ```typescript
-import { TradingSimulatorClient, BlockchainType, SpecificChain } from './api-client';
+import {
+  BlockchainType,
+  SpecificChain,
+  TradingSimulatorClient,
+} from "./api-client";
 
 // Create client with your API key
-const client = new TradingSimulatorClient('your-api-key');
+const client = new TradingSimulatorClient("your-api-key");
 
 // Get account balances
 const balances = await client.getBalances();
-console.log('Balances:', balances);
+console.log("Balances:", balances);
 
 // Get current price of SOL on Solana
-const solPrice = await client.getPrice('So11111111111111111111111111111111111111112');
-console.log('SOL Price:', solPrice);
+const solPrice = await client.getPrice(
+  "So11111111111111111111111111111111111111112",
+);
+console.log("SOL Price:", solPrice);
 
 // Get current price of WETH on Ethereum (WITHOUT chain override - slower)
-const ethPrice = await client.getPrice('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2');
-console.log('ETH Price:', ethPrice);
+const ethPrice = await client.getPrice(
+  "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+);
+console.log("ETH Price:", ethPrice);
 
 // Get current price of LINK on Ethereum (WITH chain override - faster)
 const linkPrice = await client.getPrice(
-  '0x514910771af9ca656af840dff83e8264ecf986ca', // LINK token
+  "0x514910771af9ca656af840dff83e8264ecf986ca", // LINK token
   BlockchainType.EVM, // Blockchain type
   SpecificChain.ETH, // Specific chain (Ethereum)
 );
-console.log('LINK Price (with chain override):', linkPrice);
-console.log('Response time: ~50-100ms (vs 1-3 seconds without override)');
+console.log("LINK Price (with chain override):", linkPrice);
+console.log("Response time: ~50-100ms (vs 1-3 seconds without override)");
 
 // Get current price of ARB on Arbitrum (WITH chain override - faster)
 const arbPrice = await client.getPrice(
-  '0x912CE59144191C1204E64559FE8253a0e49E6548', // ARB token
+  "0x912CE59144191C1204E64559FE8253a0e49E6548", // ARB token
   BlockchainType.EVM,
   SpecificChain.ARBITRUM, // Specific chain (Arbitrum)
 );
-console.log('ARB Price (with chain override):', arbPrice);
+console.log("ARB Price (with chain override):", arbPrice);
 ```
 
 ## Chain Override Feature
@@ -520,7 +528,7 @@ Or, when using our TypeScript client:
 ```typescript
 // Get price for Chainlink (LINK) token WITH chain override
 const linkPrice = await client.getPrice(
-  '0x514910771af9ca656af840dff83e8264ecf986ca', // LINK token
+  "0x514910771af9ca656af840dff83e8264ecf986ca", // LINK token
   BlockchainType.EVM, // Blockchain type
   SpecificChain.ETH, // Specific chain (Ethereum)
 );
@@ -547,10 +555,10 @@ For optimal performance, maintain a mapping of tokens to their specific chains i
 ```typescript
 const TOKEN_CHAINS = {
   // EVM tokens with their specific chains
-  '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2': 'eth', // WETH on Ethereum
-  '0x514910771af9ca656af840dff83e8264ecf986ca': 'eth', // LINK on Ethereum
-  '0x912CE59144191C1204E64559FE8253a0e49E6548': 'arbitrum', // ARB on Arbitrum
-  '0x532f27101965dd16442E59d40670FaF5eBB142E4': 'base', // TOSHI on Base
+  "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2": "eth", // WETH on Ethereum
+  "0x514910771af9ca656af840dff83e8264ecf986ca": "eth", // LINK on Ethereum
+  "0x912CE59144191C1204E64559FE8253a0e49E6548": "arbitrum", // ARB on Arbitrum
+  "0x532f27101965dd16442E59d40670FaF5eBB142E4": "base", // TOSHI on Base
 };
 ```
 

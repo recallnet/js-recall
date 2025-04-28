@@ -1,18 +1,9 @@
-import {
-  createTestClient,
-  registerTeamAndGetClient,
-  startTestCompetition,
-  cleanupTestState,
-  wait,
-  ADMIN_USERNAME,
-  ADMIN_PASSWORD,
-  ADMIN_EMAIL,
-} from '../utils/test-helpers';
-import axios from 'axios';
-import { getBaseUrl } from '../utils/server';
-import config from '../../src/config';
-import { BlockchainType } from '../../src/types';
-import { services } from '../../src/services';
+import axios from "axios";
+
+import config from "../../src/config";
+import { services } from "../../src/services";
+import { BlockchainType } from "../../src/types";
+import { ApiClient } from "../utils/api-client";
 import {
   BalancesResponse,
   CompetitionStatusResponse,
@@ -22,10 +13,20 @@ import {
   SpecificChain,
   TeamProfileResponse,
   TradeResponse,
-} from '../utils/api-types';
-import { ApiClient } from '../utils/api-client';
+} from "../utils/api-types";
+import { getBaseUrl } from "../utils/server";
+import {
+  ADMIN_EMAIL,
+  ADMIN_PASSWORD,
+  ADMIN_USERNAME,
+  cleanupTestState,
+  createTestClient,
+  registerTeamAndGetClient,
+  startTestCompetition,
+  wait,
+} from "../utils/test-helpers";
 
-describe('Multi-Team Competition', () => {
+describe("Multi-Team Competition", () => {
   let adminApiKey: string;
 
   // Number of teams to create for multi-team tests
@@ -33,19 +34,19 @@ describe('Multi-Team Competition', () => {
 
   // Base tokens for each team to trade
   const BASE_TOKENS = [
-    '0xacfE6019Ed1A7Dc6f7B508C02d1b04ec88cC21bf', //VVV
-    '0x3992B27dA26848C2b19CeA6Fd25ad5568B68AB98', // DEGEN
-    '0x63706e401c06ac8513145b7687A14804d17f814b', // MOBY
-    '0xB6fe221Fe9EeF5aBa221c348bA20A1Bf5e73624c', // SUSHI
-    '0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b', // OBO
-    '0x98d0baa52b2D063E780DE12F615f963Fe8537553', // BEAN
+    "0xacfE6019Ed1A7Dc6f7B508C02d1b04ec88cC21bf", //VVV
+    "0x3992B27dA26848C2b19CeA6Fd25ad5568B68AB98", // DEGEN
+    "0x63706e401c06ac8513145b7687A14804d17f814b", // MOBY
+    "0xB6fe221Fe9EeF5aBa221c348bA20A1Bf5e73624c", // SUSHI
+    "0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b", // OBO
+    "0x98d0baa52b2D063E780DE12F615f963Fe8537553", // BEAN
   ];
 
   // Base USDC token address
-  const BASE_USDC_ADDRESS = '0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA';
+  const BASE_USDC_ADDRESS = "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA";
 
   // Base specific chain identifier
-  const BASE_CHAIN = 'base';
+  const BASE_CHAIN = "base";
   // Store team details for use in tests
   let teamClients: {
     client: ApiClient;
@@ -60,7 +61,7 @@ describe('Multi-Team Competition', () => {
   let adminClient: ApiClient;
   let competitionId: string;
 
-  const reason = 'multi-team-competition end-to-end test';
+  const reason = "multi-team-competition end-to-end test";
 
   // Clean up test state before each test
   beforeEach(async () => {
@@ -79,8 +80,8 @@ describe('Multi-Team Competition', () => {
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
-  test('should create a competition with multiple teams and validate isolation', async () => {
-    console.log('[Test] Starting multi-team competition test');
+  test("should create a competition with multiple teams and validate isolation", async () => {
+    console.log("[Test] Starting multi-team competition test");
 
     // Step 1: Setup admin client
     adminClient = createTestClient();
@@ -95,7 +96,12 @@ describe('Multi-Team Competition', () => {
       const email = `team${i + 1}_${Date.now()}@example.com`;
       const contactPerson = `Contact Person ${i + 1}`;
 
-      const teamData = await registerTeamAndGetClient(adminClient, teamName, email, contactPerson);
+      const teamData = await registerTeamAndGetClient(
+        adminClient,
+        teamName,
+        email,
+        contactPerson,
+      );
 
       teamClients.push(teamData);
       console.log(`Registered team: ${teamName} with ID: ${teamData.team.id}`);
@@ -108,7 +114,11 @@ describe('Multi-Team Competition', () => {
     const teamIds = teamClients.map((tc) => tc.team.id);
 
     console.log(`Starting competition with ${teamIds.length} teams...`);
-    const competitionResponse = await startTestCompetition(adminClient, competitionName, teamIds);
+    const competitionResponse = await startTestCompetition(
+      adminClient,
+      competitionName,
+      teamIds,
+    );
 
     expect(competitionResponse.success).toBe(true);
     expect(competitionResponse.competition).toBeDefined();
@@ -118,10 +128,11 @@ describe('Multi-Team Competition', () => {
     await wait(500);
 
     // Step 4: Validate that all teams have the same starting balances
-    console.log('Validating starting balances...');
+    console.log("Validating starting balances...");
 
     // Get first team's balance as reference
-    const referenceBalanceResponse = (await teamClients[0].client.getBalance()) as BalancesResponse;
+    const referenceBalanceResponse =
+      (await teamClients[0].client.getBalance()) as BalancesResponse;
     expect(referenceBalanceResponse.success).toBe(true);
     expect(referenceBalanceResponse.balances).toBeDefined();
 
@@ -134,10 +145,14 @@ describe('Multi-Team Competition', () => {
 
     // Track reference balances for key tokens
     const referenceUsdcBalance = parseFloat(
-      referenceBalance.find((b) => b.token === usdcTokenAddress)?.amount.toString() || '0',
+      referenceBalance
+        .find((b) => b.token === usdcTokenAddress)
+        ?.amount.toString() || "0",
     );
     const referenceSolBalance = parseFloat(
-      referenceBalance.find((b) => b.token === solTokenAddress)?.amount.toString() || '0',
+      referenceBalance
+        .find((b) => b.token === solTokenAddress)
+        ?.amount.toString() || "0",
     );
 
     console.log(`Reference USDC balance: ${referenceUsdcBalance}`);
@@ -145,7 +160,8 @@ describe('Multi-Team Competition', () => {
     // Validate other teams have identical balances
     for (let i = 1; i < NUM_TEAMS; i++) {
       const teamClient = teamClients[i].client;
-      const teamBalanceResponse = (await teamClient.getBalance()) as BalancesResponse;
+      const teamBalanceResponse =
+        (await teamClient.getBalance()) as BalancesResponse;
 
       expect(teamBalanceResponse.success).toBe(true);
       expect(teamBalanceResponse.balances).toBeDefined();
@@ -153,13 +169,17 @@ describe('Multi-Team Competition', () => {
       const teamBalance = teamBalanceResponse.balances;
       // Validate USDC balance
       const teamUsdcBalance = parseFloat(
-        teamBalance.find((b) => b.token === usdcTokenAddress)?.amount.toString() || '0',
+        teamBalance
+          .find((b) => b.token === usdcTokenAddress)
+          ?.amount.toString() || "0",
       );
       expect(teamUsdcBalance).toBe(referenceUsdcBalance);
 
       // Validate SOL balance
       const teamSolBalance = parseFloat(
-        teamBalance.find((b) => b.token === solTokenAddress)?.amount.toString() || '0',
+        teamBalance
+          .find((b) => b.token === solTokenAddress)
+          ?.amount.toString() || "0",
       );
       expect(teamSolBalance).toBe(referenceSolBalance);
 
@@ -172,7 +192,7 @@ describe('Multi-Team Competition', () => {
     }
 
     // Step 5: Validate that API keys are properly isolated
-    console.log('Validating API key isolation...');
+    console.log("Validating API key isolation...");
 
     // Try to access Team 2's data using Team 1's API key
     // Create a new client with Team 1's API key
@@ -204,28 +224,32 @@ describe('Multi-Team Competition', () => {
     }
 
     // Verify Team 1's client can access its own data
-    const team1ProfileResponse = (await teamClients[0].client.getProfile()) as TeamProfileResponse;
+    const team1ProfileResponse =
+      (await teamClients[0].client.getProfile()) as TeamProfileResponse;
     expect(team1ProfileResponse.success).toBe(true);
     expect(team1ProfileResponse.team.id).toBe(teamClients[0].team.id);
 
     // Verify Team 2's client can access its own data
-    const team2ProfileResponse = (await teamClients[1].client.getProfile()) as TeamProfileResponse;
+    const team2ProfileResponse =
+      (await teamClients[1].client.getProfile()) as TeamProfileResponse;
     expect(team2ProfileResponse.success).toBe(true);
     expect(team2ProfileResponse.team.id).toBe(teamClients[1].team.id);
 
     // Step 6: Validate that all teams can see the competition and leaderboard
-    console.log('Validating competition visibility...');
+    console.log("Validating competition visibility...");
     for (let i = 0; i < NUM_TEAMS; i++) {
       const teamClient = teamClients[i].client;
 
       // Check competition status
-      const statusResponse = (await teamClient.getCompetitionStatus()) as CompetitionStatusResponse;
+      const statusResponse =
+        (await teamClient.getCompetitionStatus()) as CompetitionStatusResponse;
       expect(statusResponse.success).toBe(true);
       expect(statusResponse.competition).toBeDefined();
       expect(statusResponse.competition?.id).toBe(competitionId);
 
       // Check leaderboard
-      const leaderboardResponse = (await teamClient.getLeaderboard()) as LeaderboardResponse;
+      const leaderboardResponse =
+        (await teamClient.getLeaderboard()) as LeaderboardResponse;
       expect(leaderboardResponse.success).toBe(true);
       expect(leaderboardResponse.leaderboard).toBeDefined();
       expect(leaderboardResponse.leaderboard).toBeInstanceOf(Array);
@@ -238,11 +262,11 @@ describe('Multi-Team Competition', () => {
       expect(teamInLeaderboard).toBeDefined();
     }
 
-    console.log('[Test] Completed multi-team competition test');
+    console.log("[Test] Completed multi-team competition test");
   });
 
-  test('each team should purchase a different token resulting in unique portfolio compositions', async () => {
-    console.log('[Test] Starting multi-team unique token purchasing test');
+  test("each team should purchase a different token resulting in unique portfolio compositions", async () => {
+    console.log("[Test] Starting multi-team unique token purchasing test");
 
     // Step 1: Setup admin client
     adminClient = createTestClient();
@@ -257,7 +281,12 @@ describe('Multi-Team Competition', () => {
       const email = `team${i + 1}_${Date.now()}@example.com`;
       const contactPerson = `Contact Person ${i + 1}`;
 
-      const teamData = await registerTeamAndGetClient(adminClient, teamName, email, contactPerson);
+      const teamData = await registerTeamAndGetClient(
+        adminClient,
+        teamName,
+        email,
+        contactPerson,
+      );
 
       teamClients.push(teamData);
       console.log(`Registered team: ${teamName} with ID: ${teamData.team.id}`);
@@ -271,7 +300,11 @@ describe('Multi-Team Competition', () => {
     const teamIds = teamClients.map((tc) => tc.team.id);
 
     console.log(`Starting competition with ${teamIds.length} teams...`);
-    const competitionResponse = await startTestCompetition(adminClient, competitionName, teamIds);
+    const competitionResponse = await startTestCompetition(
+      adminClient,
+      competitionName,
+      teamIds,
+    );
 
     expect(competitionResponse.success).toBe(true);
     expect(competitionResponse.competition).toBeDefined();
@@ -281,7 +314,7 @@ describe('Multi-Team Competition', () => {
     await wait(500);
 
     // Step 4: Each team trades for a different token
-    console.log('Executing unique token trades for each team...');
+    console.log("Executing unique token trades for each team...");
 
     // Amount of USDC each team will trade
     const tradeAmount = 100;
@@ -294,7 +327,9 @@ describe('Multi-Team Competition', () => {
       const team = teamClients[i];
       const tokenToTrade = BASE_TOKENS[i];
 
-      console.log(`Team ${i + 1} trading ${tradeAmount} USDC for token ${tokenToTrade}`);
+      console.log(
+        `Team ${i + 1} trading ${tradeAmount} USDC for token ${tokenToTrade}`,
+      );
 
       // Execute trade using the client - each team buys a different BASE token with 100 USDC
       const tradeResponse = (await team.client.executeTrade({
@@ -316,7 +351,9 @@ describe('Multi-Team Competition', () => {
       if (tradeResponse.transaction.toAmount) {
         const tokenAmount = tradeResponse.transaction.toAmount;
         tokenQuantities[tokenToTrade] = tokenAmount;
-        console.log(`Team ${i + 1} received ${tokenAmount} of token ${tokenToTrade}`);
+        console.log(
+          `Team ${i + 1} received ${tokenAmount} of token ${tokenToTrade}`,
+        );
       }
       // Wait briefly between trades
       await wait(100);
@@ -326,21 +363,26 @@ describe('Multi-Team Competition', () => {
     await wait(500);
 
     // Step 5: Verify each team has a unique token composition
-    console.log('Verifying unique token portfolios...');
+    console.log("Verifying unique token portfolios...");
 
     for (let i = 0; i < NUM_TEAMS; i++) {
       const team = teamClients[i];
       const expectedToken = BASE_TOKENS[i];
 
       // Get team's current balance
-      const balanceResponse = (await team.client.getBalance()) as BalancesResponse;
+      const balanceResponse =
+        (await team.client.getBalance()) as BalancesResponse;
       expect(balanceResponse.success).toBe(true);
       expect(balanceResponse.balances).toBeDefined();
       // Check that the team has the expected token
       const tokenBalance = parseFloat(
-        balanceResponse.balances.find((b) => b.token === expectedToken)?.amount.toString() || '0',
+        balanceResponse.balances
+          .find((b) => b.token === expectedToken)
+          ?.amount.toString() || "0",
       );
-      console.log(`Team ${i + 1} final balance of token ${expectedToken}: ${tokenBalance}`);
+      console.log(
+        `Team ${i + 1} final balance of token ${expectedToken}: ${tokenBalance}`,
+      );
 
       // Verify they have a non-zero balance of their unique token
       expect(tokenBalance).toBeGreaterThan(0);
@@ -351,7 +393,9 @@ describe('Multi-Team Competition', () => {
           // Skip their own token
           const otherToken = BASE_TOKENS[j];
           const otherTokenBalance = parseFloat(
-            balanceResponse.balances.find((b) => b.token === otherToken)?.amount.toString() || '0',
+            balanceResponse.balances
+              .find((b) => b.token === otherToken)
+              ?.amount.toString() || "0",
           );
 
           // They should have 0 of other teams' tokens
@@ -366,7 +410,7 @@ describe('Multi-Team Competition', () => {
     }
 
     // Step 6: Verify that token quantities differ due to different token prices
-    console.log('Verifying token quantities differ between teams...');
+    console.log("Verifying token quantities differ between teams...");
 
     // Get unique token quantities
     const uniqueQuantities = Object.values(tokenQuantities);
@@ -387,12 +431,12 @@ describe('Multi-Team Competition', () => {
       }
     }
 
-    console.log('[Test] Completed multi-team unique token purchasing test');
+    console.log("[Test] Completed multi-team unique token purchasing test");
   });
 
   // Test that portfolio values change over time due to price fluctuations
-  test('portfolio values should change differently for teams holding different tokens', async () => {
-    console.log('[Test] Starting portfolio value fluctuation test');
+  test("portfolio values should change differently for teams holding different tokens", async () => {
+    console.log("[Test] Starting portfolio value fluctuation test");
 
     // Step 1: Setup admin client
     adminClient = createTestClient();
@@ -411,7 +455,12 @@ describe('Multi-Team Competition', () => {
       const email = `price_team${i + 1}_${Date.now()}@example.com`;
       const contactPerson = `Price Contact ${i + 1}`;
 
-      const teamData = await registerTeamAndGetClient(adminClient, teamName, email, contactPerson);
+      const teamData = await registerTeamAndGetClient(
+        adminClient,
+        teamName,
+        email,
+        contactPerson,
+      );
 
       teamClients.push(teamData);
       console.log(`Registered team: ${teamName} with ID: ${teamData.team.id}`);
@@ -425,7 +474,11 @@ describe('Multi-Team Competition', () => {
     const teamIds = teamClients.map((tc) => tc.team.id);
 
     console.log(`Starting competition with ${teamIds.length} teams...`);
-    const competitionResponse = await startTestCompetition(adminClient, competitionName, teamIds);
+    const competitionResponse = await startTestCompetition(
+      adminClient,
+      competitionName,
+      teamIds,
+    );
 
     expect(competitionResponse.success).toBe(true);
     expect(competitionResponse.competition).toBeDefined();
@@ -435,7 +488,7 @@ describe('Multi-Team Competition', () => {
     await wait(1000);
 
     // Step 4: Each team trades for a different token
-    console.log('Executing unique token trades for each team...');
+    console.log("Executing unique token trades for each team...");
 
     // Amount of USDC each team will trade
     const tradeAmount = 500; // Using a larger amount to make price fluctuations more noticeable
@@ -468,8 +521,12 @@ describe('Multi-Team Competition', () => {
 
       // Log the token amount received
       if (tradeResponse.transaction.toAmount) {
-        const tokenAmount = parseFloat(String(tradeResponse.transaction.toAmount));
-        console.log(`Team ${i + 1} received ${tokenAmount} of token ${tokenToTrade}`);
+        const tokenAmount = parseFloat(
+          String(tradeResponse.transaction.toAmount),
+        );
+        console.log(
+          `Team ${i + 1} received ${tokenAmount} of token ${tokenToTrade}`,
+        );
       }
 
       // Wait briefly between trades
@@ -480,7 +537,7 @@ describe('Multi-Team Competition', () => {
     await wait(1000);
 
     // Step 5: Get initial portfolio values after trades
-    console.log('\n[Test] Getting initial portfolio values after trades...');
+    console.log("\n[Test] Getting initial portfolio values after trades...");
 
     for (let i = 0; i < NUM_TEAMS; i++) {
       const team = teamClients[i];
@@ -491,7 +548,7 @@ describe('Multi-Team Competition', () => {
 
       // Get team's initial portfolio value
       const snapshotsResponse = (await adminClient.request(
-        'get',
+        "get",
         `/api/admin/competition/${competitionId}/snapshots?teamId=${team.team.id}`,
       )) as SnapshotResponse;
       expect(snapshotsResponse.success).toBe(true);
@@ -499,7 +556,8 @@ describe('Multi-Team Competition', () => {
       expect(snapshotsResponse.snapshots.length).toBeGreaterThan(0);
 
       // Get the most recent snapshot
-      const latestSnapshot = snapshotsResponse.snapshots[snapshotsResponse.snapshots.length - 1];
+      const latestSnapshot =
+        snapshotsResponse.snapshots[snapshotsResponse.snapshots.length - 1];
       const initialValue = latestSnapshot.totalValue;
       initialPortfolioValues[team.team.id] = initialValue;
 
@@ -531,11 +589,18 @@ describe('Multi-Team Competition', () => {
     }
 
     // Step 7: Get final portfolio values
-    console.log('\n[Test] Getting final portfolio values after waiting period...');
+    console.log(
+      "\n[Test] Getting final portfolio values after waiting period...",
+    );
 
     const finalPortfolioValues: { [teamId: string]: number } = {};
     const portfolioChanges: {
-      [teamId: string]: { initial: number; final: number; change: number; percentChange: number };
+      [teamId: string]: {
+        initial: number;
+        final: number;
+        change: number;
+        percentChange: number;
+      };
     } = {};
     let allTeamsHaveSameChange = true;
     let previousPercentChange: number | null = null;
@@ -549,7 +614,7 @@ describe('Multi-Team Competition', () => {
 
       // Get team's final portfolio value
       const snapshotsResponse = (await adminClient.request(
-        'get',
+        "get",
         `/api/admin/competition/${competitionId}/snapshots?teamId=${team.team.id}`,
       )) as SnapshotResponse;
       expect(snapshotsResponse.success).toBe(true);
@@ -557,7 +622,8 @@ describe('Multi-Team Competition', () => {
       expect(snapshotsResponse.snapshots.length).toBeGreaterThan(0);
 
       // Get the most recent snapshot
-      const latestSnapshot = snapshotsResponse.snapshots[snapshotsResponse.snapshots.length - 1];
+      const latestSnapshot =
+        snapshotsResponse.snapshots[snapshotsResponse.snapshots.length - 1];
       const finalValue = latestSnapshot.totalValue;
       finalPortfolioValues[team.team.id] = finalValue;
 
@@ -577,7 +643,9 @@ describe('Multi-Team Competition', () => {
       console.log(
         `Team ${i + 1} (${team.team.name}) final portfolio value: $${finalValue.toFixed(2)}`,
       );
-      console.log(`  - Change: $${absoluteChange.toFixed(2)} (${percentChange.toFixed(2)}%)`);
+      console.log(
+        `  - Change: $${absoluteChange.toFixed(2)} (${percentChange.toFixed(2)}%)`,
+      );
 
       // Log token-specific details
       const token = tokensByTeam[team.team.id];
@@ -599,7 +667,7 @@ describe('Multi-Team Competition', () => {
     }
 
     // Step 8: Summary of portfolio changes
-    console.log('\n[Test] Portfolio change summary:');
+    console.log("\n[Test] Portfolio change summary:");
     for (let i = 0; i < NUM_TEAMS; i++) {
       const team = teamClients[i];
       const changes = portfolioChanges[team.team.id];
@@ -613,17 +681,17 @@ describe('Multi-Team Competition', () => {
     // or if there's a bug in the pricing system. We log a warning instead of failing in that case.
     if (allTeamsHaveSameChange) {
       console.warn(
-        '[Test] WARNING: All teams showed identical percentage changes in portfolio value.',
+        "[Test] WARNING: All teams showed identical percentage changes in portfolio value.",
       );
       console.warn(
-        '[Test] This could indicate either extremely stable market conditions or a potential issue with pricing.',
+        "[Test] This could indicate either extremely stable market conditions or a potential issue with pricing.",
       );
     } else {
       console.log(
-        '[Test] Confirmed that teams with different tokens have different portfolio value changes.',
+        "[Test] Confirmed that teams with different tokens have different portfolio value changes.",
       );
     }
 
-    console.log('[Test] Completed portfolio value fluctuation test');
+    console.log("[Test] Completed portfolio value fluctuation test");
   }, 60000); // Added timeout parameter
 });

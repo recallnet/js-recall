@@ -1,23 +1,24 @@
+import axios from "axios";
+
 import {
-  registerTeamAndGetClient,
-  cleanupTestState,
-  ADMIN_USERNAME,
-  ADMIN_PASSWORD,
-  ADMIN_EMAIL,
-  createTestClient,
-} from '../utils/test-helpers';
-import axios from 'axios';
-import { getBaseUrl } from '../utils/server';
-import {
-  TeamProfileResponse,
   AdminTeamsListResponse,
-  TeamMetadata,
-  TeamRegistrationResponse,
   CreateCompetitionResponse,
   PriceResponse,
-} from '../utils/api-types';
+  TeamMetadata,
+  TeamProfileResponse,
+  TeamRegistrationResponse,
+} from "../utils/api-types";
+import { getBaseUrl } from "../utils/server";
+import {
+  ADMIN_EMAIL,
+  ADMIN_PASSWORD,
+  ADMIN_USERNAME,
+  cleanupTestState,
+  createTestClient,
+  registerTeamAndGetClient,
+} from "../utils/test-helpers";
 
-describe('Team API', () => {
+describe("Team API", () => {
   // Clean up test state before each test
   let adminApiKey: string;
 
@@ -37,18 +38,20 @@ describe('Team API', () => {
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
-  test('admin can register a team and team can authenticate', async () => {
+  test("admin can register a team and team can authenticate", async () => {
     // Create a test client
     const client = createTestClient();
     // Attempt to login as admin with correct API key
-    console.log(`TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`);
+    console.log(
+      `TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`,
+    );
     const loginSuccess = await client.loginAsAdmin(adminApiKey);
     console.log(`TEST: Login result: ${loginSuccess}`);
 
     // Register a team
     const teamName = `Team ${Date.now()}`;
     const email = `team${Date.now()}@example.com`;
-    const contactPerson = 'Test Contact';
+    const contactPerson = "Test Contact";
 
     const {
       client: teamClient,
@@ -71,11 +74,13 @@ describe('Team API', () => {
     expect((profileResponse as TeamProfileResponse).team.name).toBe(teamName);
   });
 
-  test('teams can update their profile information', async () => {
+  test("teams can update their profile information", async () => {
     // Setup admin client
     const client = createTestClient();
     // Attempt to login as admin with correct API key
-    console.log(`TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`);
+    console.log(
+      `TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`,
+    );
     const loginSuccess = await client.loginAsAdmin(adminApiKey);
     console.log(`TEST: Login result: ${loginSuccess}`);
 
@@ -83,25 +88,31 @@ describe('Team API', () => {
     const { client: teamClient } = await registerTeamAndGetClient(client);
 
     // Update team profile
-    const newContactPerson = 'Updated Contact Person';
+    const newContactPerson = "Updated Contact Person";
     const updateResponse = await teamClient.updateProfile({
       contactPerson: newContactPerson,
     });
 
     expect(updateResponse.success).toBe(true);
     expect((updateResponse as TeamProfileResponse).team).toBeDefined();
-    expect((updateResponse as TeamProfileResponse).team.contactPerson).toBe(newContactPerson);
+    expect((updateResponse as TeamProfileResponse).team.contactPerson).toBe(
+      newContactPerson,
+    );
 
     // Verify changes persisted
     const profileResponse = await teamClient.getProfile();
     expect(profileResponse.success).toBe(true);
-    expect((profileResponse as TeamProfileResponse).team.contactPerson).toBe(newContactPerson);
+    expect((profileResponse as TeamProfileResponse).team.contactPerson).toBe(
+      newContactPerson,
+    );
   });
 
-  test('teams can update their profile metadata', async () => {
+  test("teams can update their profile metadata", async () => {
     // Setup admin client
     const client = createTestClient();
-    console.log(`TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`);
+    console.log(
+      `TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`,
+    );
     const loginSuccess = await client.loginAsAdmin(adminApiKey);
     console.log(`TEST: Login result: ${loginSuccess}`);
 
@@ -111,15 +122,15 @@ describe('Team API', () => {
     // Define metadata for the update
     const metadata = {
       ref: {
-        name: 'TradingBot',
-        version: '1.0.0',
-        url: 'https://github.com/example/trading-bot',
+        name: "TradingBot",
+        version: "1.0.0",
+        url: "https://github.com/example/trading-bot",
       },
-      description: 'An algorithmic trading bot for the competition',
+      description: "An algorithmic trading bot for the competition",
       social: {
-        name: 'Trading Team',
-        email: 'contact@tradingteam.com',
-        twitter: '@tradingbot',
+        name: "Trading Team",
+        email: "contact@tradingteam.com",
+        twitter: "@tradingbot",
       },
     };
 
@@ -130,19 +141,25 @@ describe('Team API', () => {
 
     expect(updateResponse.success).toBe(true);
     expect((updateResponse as TeamProfileResponse).team).toBeDefined();
-    expect((updateResponse as TeamProfileResponse).team.metadata).toEqual(metadata);
+    expect((updateResponse as TeamProfileResponse).team.metadata).toEqual(
+      metadata,
+    );
 
     // Verify changes persisted
     const profileResponse = await teamClient.getProfile();
     expect(profileResponse.success).toBe(true);
-    expect((profileResponse as TeamProfileResponse).team.metadata).toEqual(metadata);
+    expect((profileResponse as TeamProfileResponse).team.metadata).toEqual(
+      metadata,
+    );
   });
 
-  test('team cannot authenticate with invalid API key', async () => {
+  test("team cannot authenticate with invalid API key", async () => {
     // Setup admin client
     const client = createTestClient();
     // Attempt to login as admin with correct API key
-    console.log(`TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`);
+    console.log(
+      `TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`,
+    );
     const loginSuccess = await client.loginAsAdmin(adminApiKey);
     console.log(`TEST: Login result: ${loginSuccess}`);
 
@@ -150,7 +167,7 @@ describe('Team API', () => {
     await registerTeamAndGetClient(client);
 
     // Create a client with an invalid API key
-    const invalidApiKey = 'invalid_key_12345';
+    const invalidApiKey = "invalid_key_12345";
     const invalidClient = client.createTeamClient(invalidApiKey);
 
     // Try to get profile with invalid API key
@@ -170,7 +187,7 @@ describe('Team API', () => {
     }
   });
 
-  test('admin can list all registered teams', async () => {
+  test("admin can list all registered teams", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
@@ -192,9 +209,9 @@ describe('Team API', () => {
 
     expect(teamsResponse.success).toBe(true);
     expect((teamsResponse as AdminTeamsListResponse).teams).toBeDefined();
-    expect((teamsResponse as AdminTeamsListResponse).teams.length).toBeGreaterThanOrEqual(
-      teamData.length,
-    );
+    expect(
+      (teamsResponse as AdminTeamsListResponse).teams.length,
+    ).toBeGreaterThanOrEqual(teamData.length);
 
     // Verify all our teams are in the list
     for (const data of teamData) {
@@ -205,32 +222,34 @@ describe('Team API', () => {
     }
   });
 
-  test('team can retrieve profile with metadata', async () => {
+  test("team can retrieve profile with metadata", async () => {
     // Setup admin client
     const client = createTestClient();
-    console.log(`TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`);
+    console.log(
+      `TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`,
+    );
     const loginSuccess = await client.loginAsAdmin(adminApiKey);
     console.log(`TEST: Login result: ${loginSuccess}`);
 
     // Define metadata for the team
     const metadata: TeamMetadata = {
       ref: {
-        name: 'ProfileTestBot',
-        version: '1.5.0',
-        url: 'https://github.com/example/profile-test-bot',
+        name: "ProfileTestBot",
+        version: "1.5.0",
+        url: "https://github.com/example/profile-test-bot",
       },
-      description: 'A bot for testing profile retrieval',
+      description: "A bot for testing profile retrieval",
       social: {
-        name: 'Profile Testing Team',
-        email: 'profile@testingteam.com',
-        twitter: '@profilebot',
+        name: "Profile Testing Team",
+        email: "profile@testingteam.com",
+        twitter: "@profilebot",
       },
     };
 
     // Register a team with metadata
     const teamName = `Profile Metadata Team ${Date.now()}`;
     const email = `profile-metadata-${Date.now()}@example.com`;
-    const contactPerson = 'Profile Test Contact';
+    const contactPerson = "Profile Test Contact";
 
     // Register team with metadata
     const registerResponse = await client.registerTeam(
@@ -244,7 +263,9 @@ describe('Team API', () => {
 
     // Create a client for the new team
     const registrationResponse = registerResponse as TeamRegistrationResponse;
-    const teamClient = client.createTeamClient(registrationResponse.team.apiKey);
+    const teamClient = client.createTeamClient(
+      registrationResponse.team.apiKey,
+    );
 
     // Get the team profile
     const profileResponse = await teamClient.getProfile();
@@ -261,7 +282,7 @@ describe('Team API', () => {
     expect(teamProfile.team.updatedAt).toBeDefined();
   });
 
-  test('team can continue using API between competitions after inactiveTeamsCache fix', async () => {
+  test("team can continue using API between competitions after inactiveTeamsCache fix", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
@@ -269,7 +290,10 @@ describe('Team API', () => {
 
     // Step 1: Register a team
     const teamName = `Test Team ${Date.now()}`;
-    const { client: teamClient, team } = await registerTeamAndGetClient(adminClient, teamName);
+    const { client: teamClient, team } = await registerTeamAndGetClient(
+      adminClient,
+      teamName,
+    );
     expect(team).toBeDefined();
     expect(team.id).toBeDefined();
 
@@ -277,16 +301,17 @@ describe('Team API', () => {
     const firstCompName = `Competition 1 ${Date.now()}`;
     const createCompResult = await adminClient.createCompetition(
       firstCompName,
-      'First test competition',
+      "First test competition",
     );
     expect(createCompResult.success).toBe(true);
     const createCompResponse = createCompResult as CreateCompetitionResponse;
     const firstCompetitionId = createCompResponse.competition.id;
 
     // Start the first competition with our team
-    const startCompResult = await adminClient.startExistingCompetition(firstCompetitionId, [
-      team.id,
-    ]);
+    const startCompResult = await adminClient.startExistingCompetition(
+      firstCompetitionId,
+      [team.id],
+    );
     expect(startCompResult.success).toBe(true);
 
     // Verify team can use API during first competition
@@ -295,7 +320,7 @@ describe('Team API', () => {
 
     // Get a token price to confirm API functionality
     const firstPriceResponse = await teamClient.getPrice(
-      '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+      "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
     ); // WETH token
     expect(firstPriceResponse.success).toBe(true);
     const firstPriceData = firstPriceResponse as PriceResponse;
@@ -309,16 +334,17 @@ describe('Team API', () => {
     const secondCompName = `Competition 2 ${Date.now()}`;
     const createCompResult2 = await adminClient.createCompetition(
       secondCompName,
-      'Second test competition',
+      "Second test competition",
     );
     expect(createCompResult2.success).toBe(true);
     const createCompResponse2 = createCompResult2 as CreateCompetitionResponse;
     const secondCompetitionId = createCompResponse2.competition.id;
 
     // Start the second competition with the same team
-    const startCompResult2 = await adminClient.startExistingCompetition(secondCompetitionId, [
-      team.id,
-    ]);
+    const startCompResult2 = await adminClient.startExistingCompetition(
+      secondCompetitionId,
+      [team.id],
+    );
     expect(startCompResult2.success).toBe(true);
 
     // Step 5: Verify team can still use API after being added to second competition
@@ -328,14 +354,14 @@ describe('Team API', () => {
 
     // Get a token price to confirm API functionality is working after being re-added
     const secondPriceResponse = await teamClient.getPrice(
-      '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+      "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
     ); // WETH token
     expect(secondPriceResponse.success).toBe(true);
     const secondPriceData = secondPriceResponse as PriceResponse;
     expect(secondPriceData.price).toBeGreaterThan(0);
   });
 
-  test('team profile updates maintain cache consistency', async () => {
+  test("team profile updates maintain cache consistency", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
@@ -343,7 +369,10 @@ describe('Team API', () => {
 
     // Step 1: Register a team
     const teamName = `Cache Test Team ${Date.now()}`;
-    const { client: teamClient, team } = await registerTeamAndGetClient(adminClient, teamName);
+    const { client: teamClient, team } = await registerTeamAndGetClient(
+      adminClient,
+      teamName,
+    );
     expect(team).toBeDefined();
     expect(team.id).toBeDefined();
 
@@ -351,14 +380,17 @@ describe('Team API', () => {
     const compName = `Cache Test Competition ${Date.now()}`;
     const createCompResult = await adminClient.createCompetition(
       compName,
-      'Competition to test cache consistency',
+      "Competition to test cache consistency",
     );
     expect(createCompResult.success).toBe(true);
     const createCompResponse = createCompResult as CreateCompetitionResponse;
     const competitionId = createCompResponse.competition.id;
 
     // Start the competition with our team
-    const startCompResult = await adminClient.startExistingCompetition(competitionId, [team.id]);
+    const startCompResult = await adminClient.startExistingCompetition(
+      competitionId,
+      [team.id],
+    );
     expect(startCompResult.success).toBe(true);
 
     // Step 3: Verify initial API functionality
@@ -368,8 +400,8 @@ describe('Team API', () => {
     // Step 4: Update the team's profile multiple times in rapid succession
     // This tests that cache consistency is maintained during updates
     const metadata = {
-      description: 'Testing cache consistency',
-      version: '1.0',
+      description: "Testing cache consistency",
+      version: "1.0",
     };
 
     // Update 1: Set metadata
@@ -377,23 +409,29 @@ describe('Team API', () => {
     expect(updateResponse1.success).toBe(true);
 
     // Immediately verify API still works
-    const priceResponse1 = await teamClient.getPrice('0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2');
+    const priceResponse1 = await teamClient.getPrice(
+      "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+    );
     expect(priceResponse1.success).toBe(true);
 
     // Update 2: Change contact person
     const newContactPerson = `Cache Test Contact ${Date.now()}`;
-    const updateResponse2 = await teamClient.updateProfile({ contactPerson: newContactPerson });
+    const updateResponse2 = await teamClient.updateProfile({
+      contactPerson: newContactPerson,
+    });
     expect(updateResponse2.success).toBe(true);
 
     // Immediately verify API still works
-    const priceResponse2 = await teamClient.getPrice('0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'); // USDC token
+    const priceResponse2 = await teamClient.getPrice(
+      "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+    ); // USDC token
     expect(priceResponse2.success).toBe(true);
 
     // Update 3: Change both metadata and contact person
     const newMetadata = {
       ...metadata,
-      version: '1.1',
-      notes: 'Updated during test',
+      version: "1.1",
+      notes: "Updated during test",
     };
     const updateResponse3 = await teamClient.updateProfile({
       contactPerson: `${newContactPerson} Updated`,
@@ -404,10 +442,12 @@ describe('Team API', () => {
     // Step 5: Verify final profile state
     const finalProfileResponse = await teamClient.getProfile();
     expect(finalProfileResponse.success).toBe(true);
-    expect((finalProfileResponse as TeamProfileResponse).team.contactPerson).toBe(
-      `${newContactPerson} Updated`,
+    expect(
+      (finalProfileResponse as TeamProfileResponse).team.contactPerson,
+    ).toBe(`${newContactPerson} Updated`);
+    expect((finalProfileResponse as TeamProfileResponse).team.metadata).toEqual(
+      newMetadata,
     );
-    expect((finalProfileResponse as TeamProfileResponse).team.metadata).toEqual(newMetadata);
 
     // Step 6: Make multiple API calls to verify authentication still works
     // This confirms the apiKeyCache remains consistent

@@ -1,8 +1,9 @@
-import { BaseRepository } from '../base-repository';
-import { Balance, SpecificChain } from '../../types';
-import { DatabaseRow } from '../types';
-import { PoolClient } from 'pg';
-import { config } from '../../config';
+import { PoolClient } from "pg";
+
+import { config } from "../../config";
+import { Balance } from "../../types";
+import { BaseRepository } from "../base-repository";
+import { DatabaseRow } from "../types";
 
 /**
  * Balance Repository
@@ -10,7 +11,7 @@ import { config } from '../../config';
  */
 export class BalanceRepository extends BaseRepository<Balance> {
   constructor() {
-    super('balances');
+    super("balances");
   }
 
   /**
@@ -43,7 +44,7 @@ export class BalanceRepository extends BaseRepository<Balance> {
 
       return this.mapToEntity(this.toCamelCase(result.rows[0]));
     } catch (error) {
-      console.error('[BalanceRepository] Error in saveBalance:', error);
+      console.error("[BalanceRepository] Error in saveBalance:", error);
       throw error;
     }
   }
@@ -72,9 +73,11 @@ export class BalanceRepository extends BaseRepository<Balance> {
         ? await client.query(query, values)
         : await this.db.query(query, values);
 
-      return result.rows.length > 0 ? this.mapToEntity(this.toCamelCase(result.rows[0])) : null;
+      return result.rows.length > 0
+        ? this.mapToEntity(this.toCamelCase(result.rows[0]))
+        : null;
     } catch (error) {
-      console.error('[BalanceRepository] Error in getBalance:', error);
+      console.error("[BalanceRepository] Error in getBalance:", error);
       throw error;
     }
   }
@@ -84,7 +87,10 @@ export class BalanceRepository extends BaseRepository<Balance> {
    * @param teamId Team ID
    * @param client Optional database client for transactions
    */
-  async getTeamBalances(teamId: string, client?: PoolClient): Promise<Balance[]> {
+  async getTeamBalances(
+    teamId: string,
+    client?: PoolClient,
+  ): Promise<Balance[]> {
     try {
       const query = `
         SELECT id, team_id, token_address, amount, created_at, updated_at
@@ -98,9 +104,11 @@ export class BalanceRepository extends BaseRepository<Balance> {
         ? await client.query(query, values)
         : await this.db.query(query, values);
 
-      return result.rows.map((row: DatabaseRow) => this.mapToEntity(this.toCamelCase(row)));
+      return result.rows.map((row: DatabaseRow) =>
+        this.mapToEntity(this.toCamelCase(row)),
+      );
     } catch (error) {
-      console.error('[BalanceRepository] Error in getTeamBalances:', error);
+      console.error("[BalanceRepository] Error in getTeamBalances:", error);
       throw error;
     }
   }
@@ -120,13 +128,24 @@ export class BalanceRepository extends BaseRepository<Balance> {
       // Use a transaction if no client is provided
       if (!client) {
         await this.db.transaction(async (transactionClient) => {
-          await this.initializeBalancesInTransaction(teamId, initialBalances, transactionClient);
+          await this.initializeBalancesInTransaction(
+            teamId,
+            initialBalances,
+            transactionClient,
+          );
         });
       } else {
-        await this.initializeBalancesInTransaction(teamId, initialBalances, client);
+        await this.initializeBalancesInTransaction(
+          teamId,
+          initialBalances,
+          client,
+        );
       }
     } catch (error) {
-      console.error('[BalanceRepository] Error in initializeTeamBalances:', error);
+      console.error(
+        "[BalanceRepository] Error in initializeTeamBalances:",
+        error,
+      );
       throw error;
     }
   }
@@ -170,7 +189,7 @@ export class BalanceRepository extends BaseRepository<Balance> {
 
     for (const [chain, tokens] of Object.entries(specificChainTokens)) {
       // Check all tokens for this chain
-      for (const [symbol, address] of Object.entries(tokens)) {
+      for (const [, address] of Object.entries(tokens)) {
         if (address.toLowerCase() === token) {
           return chain;
         }
@@ -199,20 +218,31 @@ export class BalanceRepository extends BaseRepository<Balance> {
       if (!client) {
         await this.db.transaction(async (transactionClient) => {
           // First delete all current balances
-          await transactionClient.query('DELETE FROM balances WHERE team_id = $1', [teamId]);
+          await transactionClient.query(
+            "DELETE FROM balances WHERE team_id = $1",
+            [teamId],
+          );
 
           // Then initialize new ones
-          await this.initializeBalancesInTransaction(teamId, initialBalances, transactionClient);
+          await this.initializeBalancesInTransaction(
+            teamId,
+            initialBalances,
+            transactionClient,
+          );
         });
       } else {
         // First delete all current balances
-        await client.query('DELETE FROM balances WHERE team_id = $1', [teamId]);
+        await client.query("DELETE FROM balances WHERE team_id = $1", [teamId]);
 
         // Then initialize new ones
-        await this.initializeBalancesInTransaction(teamId, initialBalances, client);
+        await this.initializeBalancesInTransaction(
+          teamId,
+          initialBalances,
+          client,
+        );
       }
     } catch (error) {
-      console.error('[BalanceRepository] Error in resetTeamBalances:', error);
+      console.error("[BalanceRepository] Error in resetTeamBalances:", error);
       throw error;
     }
   }

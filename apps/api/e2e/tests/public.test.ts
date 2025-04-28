@@ -1,18 +1,22 @@
-import { cleanupTestState, createTestClient, generateRandomString } from '../utils/test-helpers';
 import {
+  ErrorResponse,
   TeamMetadata,
   TeamProfileResponse,
   TeamRegistrationResponse,
-  ErrorResponse,
-} from '../utils/api-types';
+} from "../utils/api-types";
+import {
+  cleanupTestState,
+  createTestClient,
+  generateRandomString,
+} from "../utils/test-helpers";
 
 /**
  * Generate a valid Ethereum address
  * @returns A valid Ethereum address (0x + 40 hex characters)
  */
 function generateValidEthAddress(): string {
-  const chars = '0123456789abcdef';
-  let address = '0x';
+  const chars = "0123456789abcdef";
+  let address = "0x";
 
   // Generate 40 random hex characters
   for (let i = 0; i < 40; i++) {
@@ -22,13 +26,13 @@ function generateValidEthAddress(): string {
   return address;
 }
 
-describe('Public API', () => {
+describe("Public API", () => {
   // Clean up test state before each test
   beforeEach(async () => {
     await cleanupTestState();
   });
 
-  test('public team registration works correctly', async () => {
+  test("public team registration works correctly", async () => {
     // Create a test client (no auth needed for public endpoints)
     const client = createTestClient();
 
@@ -51,7 +55,9 @@ describe('Public API', () => {
 
     // Type guard to ensure we have a successful registration response
     if (!registerResponse.success) {
-      throw new Error('Registration failed: ' + (registerResponse as ErrorResponse).error);
+      throw new Error(
+        "Registration failed: " + (registerResponse as ErrorResponse).error,
+      );
     }
 
     // Cast to proper type
@@ -74,7 +80,9 @@ describe('Public API', () => {
 
     // Type guard for the profile response
     if (!profileResponse.success) {
-      throw new Error('Profile fetch failed: ' + (profileResponse as ErrorResponse).error);
+      throw new Error(
+        "Profile fetch failed: " + (profileResponse as ErrorResponse).error,
+      );
     }
 
     const teamProfile = profileResponse as TeamProfileResponse;
@@ -83,7 +91,7 @@ describe('Public API', () => {
     expect(teamProfile.team.name).toBe(teamName);
   });
 
-  test('public team registration with metadata works correctly', async () => {
+  test("public team registration with metadata works correctly", async () => {
     // Create a test client (no auth needed for public endpoints)
     const client = createTestClient();
 
@@ -96,15 +104,15 @@ describe('Public API', () => {
     // Define metadata for the team
     const metadata: TeamMetadata = {
       ref: {
-        name: 'PublicTestBot',
-        version: '1.0.0',
-        url: 'https://github.com/example/public-test-bot',
+        name: "PublicTestBot",
+        version: "1.0.0",
+        url: "https://github.com/example/public-test-bot",
       },
-      description: 'A bot registered through the public API',
+      description: "A bot registered through the public API",
       social: {
-        name: 'Public Testing Team',
-        email: 'public@testingteam.com',
-        twitter: '@publictestbot',
+        name: "Public Testing Team",
+        email: "public@testingteam.com",
+        twitter: "@publictestbot",
       },
     };
 
@@ -122,7 +130,9 @@ describe('Public API', () => {
 
     // Type guard to ensure we have a successful registration response
     if (!registerResponse.success) {
-      throw new Error('Registration failed: ' + (registerResponse as ErrorResponse).error);
+      throw new Error(
+        "Registration failed: " + (registerResponse as ErrorResponse).error,
+      );
     }
 
     // Cast to proper type
@@ -146,7 +156,9 @@ describe('Public API', () => {
 
     // Type guard for the profile response
     if (!profileResponse.success) {
-      throw new Error('Profile fetch failed: ' + (profileResponse as ErrorResponse).error);
+      throw new Error(
+        "Profile fetch failed: " + (profileResponse as ErrorResponse).error,
+      );
     }
 
     const teamProfile = profileResponse as TeamProfileResponse;
@@ -155,7 +167,7 @@ describe('Public API', () => {
     expect(teamProfile.team.metadata).toEqual(metadata);
   });
 
-  test('public team registration fails with duplicate email', async () => {
+  test("public team registration fails with duplicate email", async () => {
     // Create a test client
     const client = createTestClient();
 
@@ -188,11 +200,11 @@ describe('Public API', () => {
 
     // Make sure this is an error response before accessing error properties
     if (secondRegisterResponse.success) {
-      throw new Error('Expected registration to fail, but it succeeded');
+      throw new Error("Expected registration to fail, but it succeeded");
     }
 
     const errorResponse = secondRegisterResponse as ErrorResponse;
     expect(errorResponse.status).toBe(409);
-    expect(errorResponse.error).toContain('already exists');
+    expect(errorResponse.error).toContain("already exists");
   });
 });

@@ -1,33 +1,34 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance } from "axios";
+
 import {
-  ApiResponse,
-  ErrorResponse,
-  BlockchainType,
-  SpecificChain,
-  TeamProfileResponse,
-  BalancesResponse,
-  TradeHistoryResponse,
-  TradeResponse,
-  CompetitionStatusResponse,
-  LeaderboardResponse,
-  PriceResponse,
-  TokenInfoResponse,
-  PriceHistoryResponse,
   AdminTeamResponse,
   AdminTeamsListResponse,
-  TeamRegistrationResponse,
-  CreateCompetitionResponse,
-  StartCompetitionResponse,
+  ApiResponse,
+  BalancesResponse,
+  BlockchainType,
   CompetitionRulesResponse,
-  HealthCheckResponse,
+  CompetitionStatusResponse,
+  CreateCompetitionResponse,
   DetailedHealthCheckResponse,
-  TradeExecutionParams,
-  QuoteResponse,
+  ErrorResponse,
+  HealthCheckResponse,
+  LeaderboardResponse,
   PortfolioResponse,
+  PriceHistoryResponse,
+  PriceResponse,
+  QuoteResponse,
+  SpecificChain,
+  StartCompetitionResponse,
   TeamApiKeyResponse,
   TeamMetadata,
-} from './api-types';
-import { getBaseUrl } from './server';
+  TeamProfileResponse,
+  TeamRegistrationResponse,
+  TokenInfoResponse,
+  TradeExecutionParams,
+  TradeHistoryResponse,
+  TradeResponse,
+} from "./api-types";
+import { getBaseUrl } from "./server";
 
 /**
  * API client for testing the Solana Trading Simulator
@@ -55,7 +56,7 @@ export class ApiClient {
     this.axiosInstance = axios.create({
       baseURL: baseUrl,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
 
@@ -66,22 +67,24 @@ export class ApiClient {
 
       // Set authentication header if API key is available
       if (this.apiKey) {
-        config.headers['Authorization'] = `Bearer ${this.apiKey}`;
+        config.headers["Authorization"] = `Bearer ${this.apiKey}`;
       }
 
       // For admin routes, use admin API key if available and different from regular API key
       if (
         this.adminApiKey &&
-        (config.url?.startsWith('/api/admin') ||
-          config.url?.includes('admin') ||
-          config.url?.includes('competition')) &&
+        (config.url?.startsWith("/api/admin") ||
+          config.url?.includes("admin") ||
+          config.url?.includes("competition")) &&
         this.adminApiKey !== this.apiKey
       ) {
-        config.headers['Authorization'] = `Bearer ${this.adminApiKey}`;
+        config.headers["Authorization"] = `Bearer ${this.adminApiKey}`;
       }
 
       // Log request (simplified)
-      console.log(`[ApiClient] Request to ${config.method?.toUpperCase()} ${config.url}`);
+      console.log(
+        `[ApiClient] Request to ${config.method?.toUpperCase()} ${config.url}`,
+      );
 
       return config;
     });
@@ -107,7 +110,10 @@ export class ApiClient {
       // Return the actual error message from the server with correct status
       return {
         success: false,
-        error: error.response.data.error || error.response.data.message || error.message,
+        error:
+          error.response.data.error ||
+          error.response.data.message ||
+          error.message,
         status: error.response.status,
       };
     }
@@ -125,7 +131,7 @@ export class ApiClient {
     email: string,
   ): Promise<AdminTeamResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.post('/api/admin/setup', {
+      const response = await this.axiosInstance.post("/api/admin/setup", {
         username,
         password,
         email,
@@ -138,7 +144,7 @@ export class ApiClient {
 
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, 'create admin account');
+      return this.handleApiError(error, "create admin account");
     }
   }
 
@@ -151,12 +157,12 @@ export class ApiClient {
       this.adminApiKey = apiKey;
 
       // Verify the API key by making a simple admin request
-      const response = await this.axiosInstance.get('/api/admin/teams');
+      const response = await this.axiosInstance.get("/api/admin/teams");
       return response.data.success;
     } catch (error) {
       // Clear the admin API key if login fails
       this.adminApiKey = undefined;
-      return this.handleApiError(error, 'login as admin').success;
+      return this.handleApiError(error, "login as admin").success;
     }
   }
 
@@ -165,8 +171,8 @@ export class ApiClient {
    * @returns A valid Ethereum address (0x + 40 hex characters)
    */
   private generateRandomEthAddress(): string {
-    const chars = '0123456789abcdef';
-    let address = '0x';
+    const chars = "0123456789abcdef";
+    let address = "0x";
 
     // Generate 40 random hex characters
     for (let i = 0; i < 40; i++) {
@@ -195,17 +201,20 @@ export class ApiClient {
       // Generate a random Ethereum address if one isn't provided
       const address = walletAddress || this.generateRandomEthAddress();
 
-      const response = await this.axiosInstance.post('/api/admin/teams/register', {
-        teamName: name,
-        email,
-        contactPerson,
-        walletAddress: address,
-        metadata,
-      });
+      const response = await this.axiosInstance.post(
+        "/api/admin/teams/register",
+        {
+          teamName: name,
+          email,
+          contactPerson,
+          walletAddress: address,
+          metadata,
+        },
+      );
 
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, 'register team');
+      return this.handleApiError(error, "register team");
     }
   }
 
@@ -218,15 +227,18 @@ export class ApiClient {
     teamIds: string[],
   ): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.post('/api/admin/competition/start', {
-        name,
-        description,
-        teamIds,
-      });
+      const response = await this.axiosInstance.post(
+        "/api/admin/competition/start",
+        {
+          name,
+          description,
+          teamIds,
+        },
+      );
 
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, 'start competition');
+      return this.handleApiError(error, "start competition");
     }
   }
 
@@ -238,14 +250,17 @@ export class ApiClient {
     description?: string,
   ): Promise<CreateCompetitionResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.post('/api/admin/competition/create', {
-        name,
-        description,
-      });
+      const response = await this.axiosInstance.post(
+        "/api/admin/competition/create",
+        {
+          name,
+          description,
+        },
+      );
 
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, 'create competition');
+      return this.handleApiError(error, "create competition");
     }
   }
 
@@ -257,14 +272,17 @@ export class ApiClient {
     teamIds: string[],
   ): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.post('/api/admin/competition/start', {
-        competitionId,
-        teamIds,
-      });
+      const response = await this.axiosInstance.post(
+        "/api/admin/competition/start",
+        {
+          competitionId,
+          teamIds,
+        },
+      );
 
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, 'start existing competition');
+      return this.handleApiError(error, "start existing competition");
     }
   }
 
@@ -280,10 +298,10 @@ export class ApiClient {
    */
   async getProfile(): Promise<TeamProfileResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get('/api/account/profile');
+      const response = await this.axiosInstance.get("/api/account/profile");
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, 'get profile');
+      return this.handleApiError(error, "get profile");
     }
   }
 
@@ -295,10 +313,13 @@ export class ApiClient {
     metadata?: TeamMetadata;
   }): Promise<TeamProfileResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.put('/api/account/profile', profileData);
+      const response = await this.axiosInstance.put(
+        "/api/account/profile",
+        profileData,
+      );
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, 'update profile');
+      return this.handleApiError(error, "update profile");
     }
   }
 
@@ -307,10 +328,10 @@ export class ApiClient {
    */
   async listAllTeams(): Promise<AdminTeamsListResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get('/api/admin/teams');
+      const response = await this.axiosInstance.get("/api/admin/teams");
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, 'list teams');
+      return this.handleApiError(error, "list teams");
     }
   }
 
@@ -327,10 +348,12 @@ export class ApiClient {
    */
   async deleteTeam(teamId: string): Promise<ApiResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.delete(`/api/admin/teams/${teamId}`);
+      const response = await this.axiosInstance.delete(
+        `/api/admin/teams/${teamId}`,
+      );
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, 'delete team');
+      return this.handleApiError(error, "delete team");
     }
   }
 
@@ -339,10 +362,10 @@ export class ApiClient {
    */
   async getBalance(): Promise<BalancesResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get('/api/account/balances');
+      const response = await this.axiosInstance.get("/api/account/balances");
       return response.data as BalancesResponse;
     } catch (error) {
-      return this.handleApiError(error, 'get balances');
+      return this.handleApiError(error, "get balances");
     }
   }
   /**
@@ -350,22 +373,24 @@ export class ApiClient {
    */
   async getPortfolio(): Promise<PortfolioResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get('/api/account/portfolio');
+      const response = await this.axiosInstance.get("/api/account/portfolio");
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, 'get portfolio');
+      return this.handleApiError(error, "get portfolio");
     }
   }
 
   /**
    * Get competition rules
    */
-  async getCompetitionRules(): Promise<CompetitionRulesResponse | ErrorResponse> {
+  async getCompetitionRules(): Promise<
+    CompetitionRulesResponse | ErrorResponse
+  > {
     try {
-      const response = await this.axiosInstance.get('/api/competition/rules');
+      const response = await this.axiosInstance.get("/api/competition/rules");
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, 'get competition rules');
+      return this.handleApiError(error, "get competition rules");
     }
   }
 
@@ -374,41 +399,52 @@ export class ApiClient {
    */
   async getTradeHistory(): Promise<TradeHistoryResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get('/api/account/trades');
+      const response = await this.axiosInstance.get("/api/account/trades");
       return response.data as TradeHistoryResponse;
     } catch (error) {
-      return this.handleApiError(error, 'get trade history');
+      return this.handleApiError(error, "get trade history");
     }
   }
 
   /**
    * Execute a trade
    */
-  async executeTrade(params: TradeExecutionParams): Promise<TradeResponse | ErrorResponse> {
-    console.log(`[ApiClient] executeTrade called with params: ${JSON.stringify(params, null, 2)}`);
+  async executeTrade(
+    params: TradeExecutionParams,
+  ): Promise<TradeResponse | ErrorResponse> {
+    console.log(
+      `[ApiClient] executeTrade called with params: ${JSON.stringify(params, null, 2)}`,
+    );
 
     try {
       // Debug log
-      console.log(`[ApiClient] About to execute trade with: ${JSON.stringify(params, null, 2)}`);
+      console.log(
+        `[ApiClient] About to execute trade with: ${JSON.stringify(params, null, 2)}`,
+      );
 
       // Make the API call with the exact parameters
-      const response = await this.axiosInstance.post('/api/trade/execute', params);
+      const response = await this.axiosInstance.post(
+        "/api/trade/execute",
+        params,
+      );
 
       return response.data as TradeResponse;
     } catch (error) {
-      return this.handleApiError(error, 'execute trade');
+      return this.handleApiError(error, "execute trade");
     }
   }
 
   /**
    * Get competition status
    */
-  async getCompetitionStatus(): Promise<CompetitionStatusResponse | ErrorResponse> {
+  async getCompetitionStatus(): Promise<
+    CompetitionStatusResponse | ErrorResponse
+  > {
     try {
-      const response = await this.axiosInstance.get('/api/competition/status');
+      const response = await this.axiosInstance.get("/api/competition/status");
       return response.data as CompetitionStatusResponse;
     } catch (error) {
-      return this.handleApiError(error, 'get competition status');
+      return this.handleApiError(error, "get competition status");
     }
   }
 
@@ -417,10 +453,12 @@ export class ApiClient {
    */
   async getLeaderboard(): Promise<LeaderboardResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get('/api/competition/leaderboard');
+      const response = await this.axiosInstance.get(
+        "/api/competition/leaderboard",
+      );
       return response.data as LeaderboardResponse;
     } catch (error) {
-      return this.handleApiError(error, 'get leaderboard');
+      return this.handleApiError(error, "get leaderboard");
     }
   }
 
@@ -429,10 +467,10 @@ export class ApiClient {
    */
   async getRules(): Promise<CompetitionRulesResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get('/api/competition/rules');
+      const response = await this.axiosInstance.get("/api/competition/rules");
       return response.data as CompetitionRulesResponse;
     } catch (error) {
-      return this.handleApiError(error, 'get competition rules');
+      return this.handleApiError(error, "get competition rules");
     }
   }
 
@@ -460,7 +498,7 @@ export class ApiClient {
       const response = await this.axiosInstance.get(path);
       return response.data as PriceResponse;
     } catch (error) {
-      return this.handleApiError(error, 'get price');
+      return this.handleApiError(error, "get price");
     }
   }
 
@@ -488,7 +526,7 @@ export class ApiClient {
       const response = await this.axiosInstance.get(path);
       return response.data as TokenInfoResponse;
     } catch (error) {
-      return this.handleApiError(error, 'get token info');
+      return this.handleApiError(error, "get token info");
     }
   }
 
@@ -528,7 +566,7 @@ export class ApiClient {
       const response = await this.axiosInstance.get(path);
       return response.data as PriceHistoryResponse;
     } catch (error) {
-      return this.handleApiError(error, 'get price history');
+      return this.handleApiError(error, "get price history");
     }
   }
 
@@ -546,7 +584,7 @@ export class ApiClient {
       );
       return response.data as QuoteResponse;
     } catch (error) {
-      return this.handleApiError(error, 'get quote');
+      return this.handleApiError(error, "get quote");
     }
   }
 
@@ -554,14 +592,19 @@ export class ApiClient {
    * End a competition (admin only)
    * @param competitionId ID of the competition to end
    */
-  async endCompetition(competitionId: string): Promise<ApiResponse | ErrorResponse> {
+  async endCompetition(
+    competitionId: string,
+  ): Promise<ApiResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.post('/api/admin/competition/end', {
-        competitionId,
-      });
+      const response = await this.axiosInstance.post(
+        "/api/admin/competition/end",
+        {
+          competitionId,
+        },
+      );
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, 'end competition');
+      return this.handleApiError(error, "end competition");
     }
   }
 
@@ -570,14 +613,20 @@ export class ApiClient {
    * @param teamId ID of the team to deactivate
    * @param reason Reason for deactivation
    */
-  async deactivateTeam(teamId: string, reason: string): Promise<AdminTeamResponse | ErrorResponse> {
+  async deactivateTeam(
+    teamId: string,
+    reason: string,
+  ): Promise<AdminTeamResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.post(`/api/admin/teams/${teamId}/deactivate`, {
-        reason,
-      });
+      const response = await this.axiosInstance.post(
+        `/api/admin/teams/${teamId}/deactivate`,
+        {
+          reason,
+        },
+      );
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, 'deactivate team');
+      return this.handleApiError(error, "deactivate team");
     }
   }
 
@@ -585,12 +634,16 @@ export class ApiClient {
    * Reactivate a team (admin only)
    * @param teamId ID of the team to reactivate
    */
-  async reactivateTeam(teamId: string): Promise<AdminTeamResponse | ErrorResponse> {
+  async reactivateTeam(
+    teamId: string,
+  ): Promise<AdminTeamResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.post(`/api/admin/teams/${teamId}/reactivate`);
+      const response = await this.axiosInstance.post(
+        `/api/admin/teams/${teamId}/reactivate`,
+      );
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, 'reactivate team');
+      return this.handleApiError(error, "reactivate team");
     }
   }
 
@@ -599,22 +652,24 @@ export class ApiClient {
    */
   async getHealthStatus(): Promise<HealthCheckResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get('/api/health');
+      const response = await this.axiosInstance.get("/api/health");
       return response.data as HealthCheckResponse;
     } catch (error) {
-      return this.handleApiError(error, 'get health status');
+      return this.handleApiError(error, "get health status");
     }
   }
 
   /**
    * Get detailed system health status
    */
-  async getDetailedHealthStatus(): Promise<DetailedHealthCheckResponse | ErrorResponse> {
+  async getDetailedHealthStatus(): Promise<
+    DetailedHealthCheckResponse | ErrorResponse
+  > {
     try {
-      const response = await this.axiosInstance.get('/api/health/detailed');
+      const response = await this.axiosInstance.get("/api/health/detailed");
       return response.data as DetailedHealthCheckResponse;
     } catch (error) {
-      return this.handleApiError(error, 'get detailed health status');
+      return this.handleApiError(error, "get detailed health status");
     }
   }
 
@@ -625,19 +680,19 @@ export class ApiClient {
    * @param data Optional request data
    */
   async request<T>(
-    method: 'get' | 'post' | 'put' | 'delete',
+    method: "get" | "post" | "put" | "delete",
     path: string,
     data?: any,
   ): Promise<T | ErrorResponse> {
     try {
       let response;
-      if (method === 'get') {
+      if (method === "get") {
         response = await this.axiosInstance.get(path);
-      } else if (method === 'post') {
+      } else if (method === "post") {
         response = await this.axiosInstance.post(path, data);
-      } else if (method === 'put') {
+      } else if (method === "put") {
         response = await this.axiosInstance.put(path, data);
-      } else if (method === 'delete') {
+      } else if (method === "delete") {
         response = await this.axiosInstance.delete(path);
       } else {
         throw new Error(`Unsupported method: ${method}`);
@@ -652,12 +707,16 @@ export class ApiClient {
    * Get a team's API key (admin only)
    * @param teamId The ID of the team
    */
-  async getTeamApiKey(teamId: string): Promise<TeamApiKeyResponse | ErrorResponse> {
+  async getTeamApiKey(
+    teamId: string,
+  ): Promise<TeamApiKeyResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get(`/api/admin/teams/${teamId}/key`);
+      const response = await this.axiosInstance.get(
+        `/api/admin/teams/${teamId}/key`,
+      );
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, 'get team API key');
+      return this.handleApiError(error, "get team API key");
     }
   }
 
@@ -680,17 +739,20 @@ export class ApiClient {
       // Generate a random Ethereum address if one isn't provided
       const address = walletAddress || this.generateRandomEthAddress();
 
-      const response = await this.axiosInstance.post('/api/public/teams/register', {
-        teamName: name,
-        email,
-        contactPerson,
-        walletAddress: address,
-        metadata,
-      });
+      const response = await this.axiosInstance.post(
+        "/api/public/teams/register",
+        {
+          teamName: name,
+          email,
+          contactPerson,
+          walletAddress: address,
+          metadata,
+        },
+      );
 
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, 'publicly register team');
+      return this.handleApiError(error, "publicly register team");
     }
   }
 }

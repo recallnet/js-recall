@@ -1,7 +1,8 @@
-import { Request, Response, NextFunction } from 'express';
-import { services } from '../services';
-import { ApiError } from '../middleware/errorHandler';
-import { BlockchainType, SpecificChain } from '../types';
+import { NextFunction, Request, Response } from "express";
+
+import { ApiError } from "../middleware/errorHandler";
+import { services } from "../services";
+import { BlockchainType, SpecificChain } from "../types";
 
 /**
  * Price Controller
@@ -17,19 +18,25 @@ export class PriceController {
   static async getPrice(req: Request, res: Response, next: NextFunction) {
     try {
       const teamId = req.teamId as string;
-      const { token, chain: requestedChain, specificChain: requestedSpecificChain } = req.query;
+      const {
+        token,
+        chain: requestedChain,
+        specificChain: requestedSpecificChain,
+      } = req.query;
 
-      if (!token || typeof token !== 'string') {
-        throw new ApiError(400, 'Token address is required');
+      if (!token || typeof token !== "string") {
+        throw new ApiError(400, "Token address is required");
       }
 
-      console.log(`[PriceController] Getting price for token ${token} requested by team ${teamId}`);
+      console.log(
+        `[PriceController] Getting price for token ${token} requested by team ${teamId}`,
+      );
 
       // Determine the blockchain type for this token, using the requested chain if provided
       let blockchainType: BlockchainType;
-      if (requestedChain === 'evm') {
+      if (requestedChain === "evm") {
         blockchainType = BlockchainType.EVM;
-      } else if (requestedChain === 'svm') {
+      } else if (requestedChain === "svm") {
         blockchainType = BlockchainType.SVM;
       } else {
         blockchainType = services.priceTracker.determineChain(token);
@@ -38,20 +45,20 @@ export class PriceController {
       // Determine specific chain if provided
       let specificChain: SpecificChain | undefined = undefined;
       if (
-        typeof requestedSpecificChain === 'string' &&
+        typeof requestedSpecificChain === "string" &&
         [
-          'eth',
-          'polygon',
-          'bsc',
-          'arbitrum',
-          'optimism',
-          'avalanche',
-          'base',
-          'linea',
-          'zksync',
-          'scroll',
-          'mantle',
-          'svm',
+          "eth",
+          "polygon",
+          "bsc",
+          "arbitrum",
+          "optimism",
+          "avalanche",
+          "base",
+          "linea",
+          "zksync",
+          "scroll",
+          "mantle",
+          "svm",
         ].includes(requestedSpecificChain)
       ) {
         specificChain = requestedSpecificChain as SpecificChain;
@@ -77,7 +84,11 @@ export class PriceController {
 
       // Get the price from price tracker for non-EVM tokens or if getTokenInfo failed
       // Pass both blockchainType and specificChain to getPrice
-      const price = await services.priceTracker.getPrice(token, blockchainType, specificChain);
+      const price = await services.priceTracker.getPrice(
+        token,
+        blockchainType,
+        specificChain,
+      );
 
       res.status(200).json({
         success: price !== null,
@@ -97,19 +108,25 @@ export class PriceController {
   static async getTokenInfo(req: Request, res: Response, next: NextFunction) {
     try {
       const teamId = req.teamId as string;
-      const { token, chain: requestedChain, specificChain: requestedSpecificChain } = req.query;
+      const {
+        token,
+        chain: requestedChain,
+        specificChain: requestedSpecificChain,
+      } = req.query;
 
-      if (!token || typeof token !== 'string') {
-        throw new ApiError(400, 'Token address is required');
+      if (!token || typeof token !== "string") {
+        throw new ApiError(400, "Token address is required");
       }
 
-      console.log(`[PriceController] Getting token info for ${token} requested by team ${teamId}`);
+      console.log(
+        `[PriceController] Getting token info for ${token} requested by team ${teamId}`,
+      );
 
       // Determine blockchain type using the requested chain if provided
       let blockchainType: BlockchainType;
-      if (requestedChain === 'evm') {
+      if (requestedChain === "evm") {
         blockchainType = BlockchainType.EVM;
-      } else if (requestedChain === 'svm') {
+      } else if (requestedChain === "svm") {
         blockchainType = BlockchainType.SVM;
       } else {
         blockchainType = services.priceTracker.determineChain(token);
@@ -118,20 +135,20 @@ export class PriceController {
       // Determine specific chain if provided
       let specificChain: SpecificChain | undefined = undefined;
       if (
-        typeof requestedSpecificChain === 'string' &&
+        typeof requestedSpecificChain === "string" &&
         [
-          'eth',
-          'polygon',
-          'bsc',
-          'arbitrum',
-          'optimism',
-          'avalanche',
-          'base',
-          'linea',
-          'zksync',
-          'scroll',
-          'mantle',
-          'svm',
+          "eth",
+          "polygon",
+          "bsc",
+          "arbitrum",
+          "optimism",
+          "avalanche",
+          "base",
+          "linea",
+          "zksync",
+          "scroll",
+          "mantle",
+          "svm",
         ].includes(requestedSpecificChain)
       ) {
         specificChain = requestedSpecificChain as SpecificChain;

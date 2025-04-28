@@ -1,6 +1,7 @@
-import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
-import { config } from '../config';
-import fs from 'fs';
+import fs from "fs";
+import { Pool, PoolClient, QueryResult, QueryResultRow } from "pg";
+
+import { config } from "../config";
 
 /**
  * Database Connection Manager
@@ -23,7 +24,7 @@ export class DatabaseConnection {
       if (certBase64) {
         return {
           ssl: {
-            ca: Buffer.from(certBase64, 'base64').toString(),
+            ca: Buffer.from(certBase64, "base64").toString(),
             rejectUnauthorized: true,
           },
         };
@@ -53,7 +54,9 @@ export class DatabaseConnection {
         ...sslConfig,
       });
 
-      console.log('[DatabaseConnection] Connected to PostgreSQL using connection URL');
+      console.log(
+        "[DatabaseConnection] Connected to PostgreSQL using connection URL",
+      );
     } else {
       // Use individual connection parameters
       this.pool = new Pool({
@@ -73,8 +76,8 @@ export class DatabaseConnection {
       );
     }
 
-    this.pool.on('error', (err: Error) => {
-      console.error('Unexpected error on idle client', err);
+    this.pool.on("error", (err: Error) => {
+      console.error("Unexpected error on idle client", err);
       process.exit(-1);
     });
   }
@@ -118,15 +121,17 @@ export class DatabaseConnection {
    * Execute a transaction
    * @param callback Function to execute within the transaction
    */
-  public async transaction<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
+  public async transaction<T>(
+    callback: (client: PoolClient) => Promise<T>,
+  ): Promise<T> {
     const client = await this.getClient();
     try {
-      await client.query('BEGIN');
+      await client.query("BEGIN");
       const result = await callback(client);
-      await client.query('COMMIT');
+      await client.query("COMMIT");
       return result;
     } catch (e) {
-      await client.query('ROLLBACK');
+      await client.query("ROLLBACK");
       throw e;
     } finally {
       client.release();

@@ -1,20 +1,21 @@
-import * as dotenv from 'dotenv';
-import * as path from 'path';
-import { services } from '../src/services';
-import { DatabaseConnection } from '../src/database';
+import * as dotenv from "dotenv";
+import * as path from "path";
+
+import { DatabaseConnection } from "../src/database";
+import { services } from "../src/services";
 
 // Load environment variables
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
 // Colors for console output
 const colors = {
-  red: '\x1b[31m',
-  yellow: '\x1b[33m',
-  green: '\x1b[32m',
-  blue: '\x1b[34m',
-  cyan: '\x1b[36m',
-  magenta: '\x1b[35m',
-  reset: '\x1b[0m',
+  red: "\x1b[31m",
+  yellow: "\x1b[33m",
+  green: "\x1b[32m",
+  blue: "\x1b[34m",
+  cyan: "\x1b[36m",
+  magenta: "\x1b[35m",
+  reset: "\x1b[0m",
 };
 
 /**
@@ -35,17 +36,20 @@ async function listAllTeams() {
     const teams = await services.teamManager.getAllTeams(false);
 
     if (teams.length === 0) {
-      console.log(`\n${colors.yellow}No teams found in the database.${colors.reset}`);
+      console.log(
+        `\n${colors.yellow}No teams found in the database.${colors.reset}`,
+      );
       return;
     }
 
-    console.log(`\n${colors.green}Found ${teams.length} registered team(s):${colors.reset}\n`);
+    console.log(
+      `\n${colors.green}Found ${teams.length} registered team(s):${colors.reset}\n`,
+    );
 
     // Sort teams by creation date (newest first)
     teams.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-    for (let i = 0; i < teams.length; i++) {
-      const team = teams[i];
+    teams.forEach((team, i) => {
       const created = new Date(team.createdAt).toLocaleString();
       const updated = new Date(team.updatedAt).toLocaleString();
 
@@ -53,7 +57,7 @@ async function listAllTeams() {
         `${colors.cyan}╔════════════════════════════════════════════════════════════════╗${colors.reset}`,
       );
       console.log(
-        `${colors.cyan}║ TEAM #${i + 1}${' '.repeat(60 - `TEAM #${i + 1}`.length)}║${colors.reset}`,
+        `${colors.cyan}║ TEAM #${i + 1}${" ".repeat(60 - `TEAM #${i + 1}`.length)}║${colors.reset}`,
       );
       console.log(
         `${colors.cyan}╠════════════════════════════════════════════════════════════════╣${colors.reset}`,
@@ -80,9 +84,9 @@ async function listAllTeams() {
       );
 
       if (i < teams.length - 1) {
-        console.log(''); // Add an empty line between teams
+        console.log(""); // Add an empty line between teams
       }
-    }
+    });
 
     console.log(`\n${colors.green}End of team listing.${colors.reset}`);
   } catch (error) {

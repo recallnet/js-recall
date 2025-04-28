@@ -1,7 +1,6 @@
-import { BaseRepository } from '../base-repository';
-import { BlockchainType, SpecificChain } from '../../types';
-import { PriceRecord, DatabaseRow } from '../types';
-import { PoolClient } from 'pg';
+import { BlockchainType, SpecificChain } from "../../types";
+import { BaseRepository } from "../base-repository";
+import { DatabaseRow, PriceRecord } from "../types";
 
 /**
  * Type for SQL query parameters
@@ -13,8 +12,8 @@ type SqlParams = (string | number | Date | null | undefined)[];
  */
 export class PriceRepository extends BaseRepository<PriceRecord> {
   constructor() {
-    super('prices');
-    console.log('[PriceRepository] Initialized');
+    super("prices");
+    console.log("[PriceRepository] Initialized");
   }
 
   /**
@@ -24,20 +23,17 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
    */
   async create(priceData: PriceRecord): Promise<PriceRecord> {
     console.log(
-      `[PriceRepository] Storing price for ${priceData.token}: $${priceData.price}${priceData.chain ? ` on chain ${priceData.chain}` : ''}${priceData.specificChain ? ` (${priceData.specificChain})` : ''}`,
+      `[PriceRepository] Storing price for ${priceData.token}: $${priceData.price}${priceData.chain ? ` on chain ${priceData.chain}` : ""}${priceData.specificChain ? ` (${priceData.specificChain})` : ""}`,
     );
 
     try {
-      let query: string;
-      let values: SqlParams;
-
-      query = `
+      const query = `
           INSERT INTO prices (token, price, timestamp, chain, specific_chain)
           VALUES ($1, $2, $3, $4, $5)
           RETURNING id, token, price, timestamp, chain, specific_chain
         `;
 
-      values = [
+      const values = [
         priceData.token,
         priceData.price,
         priceData.timestamp,
@@ -46,9 +42,13 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
       ];
 
       const result = await this.db.query(query, values);
-      return this.mapToEntity(this.toCamelCase(result.rows[0]));
+      const row = result.rows[0];
+      if (!row) {
+        throw new Error("No price record returned");
+      }
+      return this.mapToEntity(this.toCamelCase(row));
     } catch (error) {
-      console.error('[PriceRepository] Error creating price record:', error);
+      console.error("[PriceRepository] Error creating price record:", error);
       throw error;
     }
   }
@@ -59,7 +59,10 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
    * @param columnName The column name
    * @returns True if the column exists, false otherwise
    */
-  private async checkIfColumnExists(tableName: string, columnName: string): Promise<boolean> {
+  private async checkIfColumnExists(
+    tableName: string,
+    columnName: string,
+  ): Promise<boolean> {
     try {
       const query = `
         SELECT EXISTS (
@@ -71,7 +74,11 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
       `;
 
       const result = await this.db.query(query, [tableName, columnName]);
-      return result.rows[0].column_exists as boolean;
+      const row = result.rows[0];
+      if (!row) {
+        throw new Error("No row returned");
+      }
+      return row.column_exists as boolean;
     } catch (error) {
       console.error(
         `[PriceRepository] Error checking if column ${columnName} exists in table ${tableName}:`,
@@ -87,14 +94,20 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
    * @param specificChain Optional specific chain to filter by
    * @returns The latest price record or null if not found
    */
-  async getLatestPrice(token: string, specificChain?: SpecificChain): Promise<PriceRecord | null> {
+  async getLatestPrice(
+    token: string,
+    specificChain?: SpecificChain,
+  ): Promise<PriceRecord | null> {
     console.log(
-      `[PriceRepository] Getting latest price for ${token}${specificChain ? ` on ${specificChain}` : ''}`,
+      `[PriceRepository] Getting latest price for ${token}${specificChain ? ` on ${specificChain}` : ""}`,
     );
 
     try {
       // Check if specific_chain column exists
-      const specificChainColumnExists = await this.checkIfColumnExists('prices', 'specific_chain');
+      const specificChainColumnExists = await this.checkIfColumnExists(
+        "prices",
+        "specific_chain",
+      );
 
       let query: string;
       let values: SqlParams;
@@ -134,9 +147,14 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
       const result = await this.db.query(query, values);
       if (result.rows.length === 0) return null;
 
-      return this.mapToEntity(this.toCamelCase(result.rows[0]));
+      const row = result.rows[0];
+      if (!row) {
+        throw new Error("No row returned");
+      }
+
+      return this.mapToEntity(this.toCamelCase(row));
     } catch (error) {
-      console.error('[PriceRepository] Error getting latest price:', error);
+      console.error("[PriceRepository] Error getting latest price:", error);
       throw error;
     }
   }
@@ -154,12 +172,15 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
     specificChain?: SpecificChain,
   ): Promise<PriceRecord[]> {
     console.log(
-      `[PriceRepository] Getting price history for ${token}${specificChain ? ` on ${specificChain}` : ''} (last ${hours} hours)`,
+      `[PriceRepository] Getting price history for ${token}${specificChain ? ` on ${specificChain}` : ""} (last ${hours} hours)`,
     );
 
     try {
       // Check if specific_chain column exists
-      const specificChainColumnExists = await this.checkIfColumnExists('prices', 'specific_chain');
+      const specificChainColumnExists = await this.checkIfColumnExists(
+        "prices",
+        "specific_chain",
+      );
 
       let query: string;
       let values: SqlParams;
@@ -198,9 +219,11 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
       }
 
       const result = await this.db.query(query, values);
-      return result.rows.map((row: DatabaseRow) => this.mapToEntity(this.toCamelCase(row)));
+      return result.rows.map((row: DatabaseRow) =>
+        this.mapToEntity(this.toCamelCase(row)),
+      );
     } catch (error) {
-      console.error('[PriceRepository] Error getting price history:', error);
+      console.error("[PriceRepository] Error getting price history:", error);
       throw error;
     }
   }
@@ -219,7 +242,10 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
   ): Promise<number | null> {
     try {
       // Check if specific_chain column exists
-      const specificChainColumnExists = await this.checkIfColumnExists('prices', 'specific_chain');
+      const specificChainColumnExists = await this.checkIfColumnExists(
+        "prices",
+        "specific_chain",
+      );
 
       let query: string;
       let values: SqlParams;
@@ -244,11 +270,14 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
       }
 
       const result = await this.db.query(query, values);
-      if (!result.rows[0].avg_price) return null;
+      if (!result.rows[0]?.avg_price) return null;
 
       return parseFloat(result.rows[0].avg_price as string);
     } catch (error) {
-      console.error(`[PriceRepository] Error getting average price for ${token}:`, error);
+      console.error(
+        `[PriceRepository] Error getting average price for ${token}:`,
+        error,
+      );
       return null;
     }
   }
@@ -271,7 +300,10 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
       if (!latestPriceRecord) return null;
 
       // Check if specific_chain column exists
-      const specificChainColumnExists = await this.checkIfColumnExists('prices', 'specific_chain');
+      const specificChainColumnExists = await this.checkIfColumnExists(
+        "prices",
+        "specific_chain",
+      );
 
       let query: string;
       let values: SqlParams;
@@ -303,13 +335,16 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
       const result = await this.db.query(query, values);
       if (result.rows.length === 0) return null;
 
-      const earliestPrice = parseFloat(result.rows[0].price as string);
+      const earliestPrice = parseFloat(result.rows[0]!.price as string);
       const latestPrice = latestPriceRecord.price;
 
       // Calculate percentage change
       return ((latestPrice - earliestPrice) / earliestPrice) * 100;
     } catch (error) {
-      console.error(`[PriceRepository] Error calculating price change for ${token}:`, error);
+      console.error(
+        `[PriceRepository] Error calculating price change for ${token}:`,
+        error,
+      );
       return null;
     }
   }
@@ -322,9 +357,13 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
     try {
       const query = `SELECT COUNT(*) FROM prices`;
       const result = await this.db.query(query);
-      return parseInt(result.rows[0].count as string, 10);
+      const row = result.rows[0];
+      if (!row) {
+        throw new Error("No row returned");
+      }
+      return parseInt(row.count as string, 10);
     } catch (error) {
-      console.error('[PriceRepository] Error counting records:', error);
+      console.error("[PriceRepository] Error counting records:", error);
       throw error;
     }
   }

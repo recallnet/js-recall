@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { NextFunction, Request, Response } from "express";
 
 /**
  * Health Controller
@@ -14,10 +14,10 @@ export class HealthController {
   static async check(req: Request, res: Response, next: NextFunction) {
     try {
       res.status(200).json({
-        status: 'ok',
+        status: "ok",
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
-        version: process.env.npm_package_version || '1.0.0',
+        version: process.env.npm_package_version || "1.0.0",
       });
     } catch (error) {
       next(error);
@@ -37,16 +37,16 @@ export class HealthController {
       // In a real implementation, we would check the health of each service
 
       res.status(200).json({
-        status: 'ok',
+        status: "ok",
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
-        version: process.env.npm_package_version || '1.0.0',
+        version: process.env.npm_package_version || "1.0.0",
         services: {
-          priceTracker: 'ok',
-          balanceManager: 'ok',
-          tradeSimulator: 'ok',
-          competitionManager: 'ok',
-          teamManager: 'ok',
+          priceTracker: "ok",
+          balanceManager: "ok",
+          tradeSimulator: "ok",
+          competitionManager: "ok",
+          teamManager: "ok",
         },
       });
     } catch (error) {

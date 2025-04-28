@@ -1,8 +1,9 @@
-import { v4 as uuidv4 } from 'uuid';
-import * as crypto from 'crypto';
-import { Team, ApiAuth, AgentMetadata } from '../types';
-import { config } from '../config';
-import { repositories } from '../database';
+import * as crypto from "crypto";
+import { v4 as uuidv4 } from "uuid";
+
+import { config } from "../config";
+import { repositories } from "../database";
+import { AgentMetadata, ApiAuth, Team } from "../types";
 
 /**
  * Team Manager Service
@@ -47,12 +48,12 @@ export class TeamManager {
     try {
       // Validate wallet address
       if (!walletAddress) {
-        throw new Error('Wallet address is required');
+        throw new Error("Wallet address is required");
       }
 
       if (!this.isValidEthereumAddress(walletAddress)) {
         throw new Error(
-          'Invalid Ethereum address format. Must be 0x followed by 40 hex characters.',
+          "Invalid Ethereum address format. Must be 0x followed by 40 hex characters.",
         );
       }
 
@@ -96,11 +97,11 @@ export class TeamManager {
       };
     } catch (error) {
       if (error instanceof Error) {
-        console.error('[TeamManager] Error registering team:', error);
+        console.error("[TeamManager] Error registering team:", error);
         throw error;
       }
 
-      console.error('[TeamManager] Unknown error registering team:', error);
+      console.error("[TeamManager] Unknown error registering team:", error);
       throw new Error(`Failed to register team: ${error}`);
     }
   }
@@ -129,13 +130,15 @@ export class TeamManager {
       const teams = await repositories.teamRepository.findAll();
 
       // Filter out admin teams if needed
-      const filteredTeams = includeAdmins ? teams : teams.filter((team) => !team.isAdmin);
+      const filteredTeams = includeAdmins
+        ? teams
+        : teams.filter((team) => !team.isAdmin);
 
       return filteredTeams.map((team) => ({
         ...team,
       }));
     } catch (error) {
-      console.error('[TeamManager] Error retrieving all teams:', error);
+      console.error("[TeamManager] Error retrieving all teams:", error);
       return [];
     }
   }
@@ -153,7 +156,9 @@ export class TeamManager {
       if (cachedAuth) {
         // Check if the team is inactive
         if (this.inactiveTeamsCache.has(cachedAuth.teamId)) {
-          const deactivationInfo = this.inactiveTeamsCache.get(cachedAuth.teamId);
+          const deactivationInfo = this.inactiveTeamsCache.get(
+            cachedAuth.teamId,
+          );
           throw new Error(
             `Your team has been deactivated from the competition: ${deactivationInfo?.reason}`,
           );
@@ -173,7 +178,7 @@ export class TeamManager {
             if (team.active === false && !team.isAdmin) {
               // Cache the deactivation info
               this.inactiveTeamsCache.set(team.id, {
-                reason: team.deactivationReason || 'No reason provided',
+                reason: team.deactivationReason || "No reason provided",
                 date: team.deactivationDate || new Date(),
               });
               throw new Error(
@@ -191,14 +196,17 @@ export class TeamManager {
           }
         } catch (decryptError) {
           // Log but continue checking other teams
-          console.error(`[TeamManager] Error decrypting key for team ${team.id}:`, decryptError);
+          console.error(
+            `[TeamManager] Error decrypting key for team ${team.id}:`,
+            decryptError,
+          );
         }
       }
 
       // No matching team found
       return null;
     } catch (error) {
-      console.error('[TeamManager] Error validating API key:', error);
+      console.error("[TeamManager] Error validating API key:", error);
       throw error; // Re-throw to allow middleware to handle it
     }
   }
@@ -209,8 +217,8 @@ export class TeamManager {
    */
   public generateApiKey(): string {
     // Generate just 2 segments for a shorter key
-    const segment1 = crypto.randomBytes(8).toString('hex'); // 16 chars
-    const segment2 = crypto.randomBytes(8).toString('hex'); // 16 chars
+    const segment1 = crypto.randomBytes(8).toString("hex"); // 16 chars
+    const segment2 = crypto.randomBytes(8).toString("hex"); // 16 chars
 
     // Combine with a prefix and separator underscore for readability
     const key = `${segment1}_${segment2}`;
@@ -225,27 +233,29 @@ export class TeamManager {
    */
   public encryptApiKey(key: string): string {
     try {
-      console.log(`[TeamManager] Encrypting API key with length: ${key.length}`);
-      const algorithm = 'aes-256-cbc';
+      console.log(
+        `[TeamManager] Encrypting API key with length: ${key.length}`,
+      );
+      const algorithm = "aes-256-cbc";
       const iv = crypto.randomBytes(16);
 
       // Create a consistently-sized key from the root encryption key
       const cryptoKey = crypto
-        .createHash('sha256')
+        .createHash("sha256")
         .update(String(config.security.rootEncryptionKey))
         .digest();
 
       const cipher = crypto.createCipheriv(algorithm, cryptoKey, iv);
-      let encrypted = cipher.update(key, 'utf8', 'hex');
-      encrypted += cipher.final('hex');
+      let encrypted = cipher.update(key, "utf8", "hex");
+      encrypted += cipher.final("hex");
 
       // Return the IV and encrypted data together, clearly separated
-      const result = `${iv.toString('hex')}:${encrypted}`;
+      const result = `${iv.toString("hex")}:${encrypted}`;
       console.log(`[TeamManager] Encrypted key length: ${result.length}`);
       return result;
     } catch (error) {
-      console.error('[TeamManager] Error encrypting API key:', error);
-      throw new Error('Failed to encrypt API key');
+      console.error("[TeamManager] Error encrypting API key:", error);
+      throw new Error("Failed to encrypt API key");
     }
   }
 
@@ -256,29 +266,29 @@ export class TeamManager {
    */
   private decryptApiKey(encryptedKey: string): string {
     try {
-      const algorithm = 'aes-256-cbc';
-      const parts = encryptedKey.split(':');
+      const algorithm = "aes-256-cbc";
+      const parts = encryptedKey.split(":");
 
       if (parts.length !== 2) {
-        throw new Error('Invalid encrypted key format');
+        throw new Error("Invalid encrypted key format");
       }
 
-      const iv = Buffer.from(parts[0], 'hex');
-      const encrypted = parts[1];
+      const iv = Buffer.from(parts[0]!, "hex");
+      const encrypted = parts[1]!;
 
       // Create a consistently-sized key from the root encryption key
       const cryptoKey = crypto
-        .createHash('sha256')
+        .createHash("sha256")
         .update(String(config.security.rootEncryptionKey))
         .digest();
 
       const decipher = crypto.createDecipheriv(algorithm, cryptoKey, iv);
-      let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-      decrypted += decipher.final('utf8');
+      let decrypted = decipher.update(encrypted, "hex", "utf8");
+      decrypted += decipher.final("utf8");
 
       return decrypted;
     } catch (error) {
-      console.error('[TeamManager] Error decrypting API key:', error);
+      console.error("[TeamManager] Error decrypting API key:", error);
       throw error;
     }
   }
@@ -307,7 +317,7 @@ export class TeamManager {
         return {
           success: false,
           errorCode: 404,
-          errorMessage: 'Team not found',
+          errorMessage: "Team not found",
         };
       }
 
@@ -316,7 +326,7 @@ export class TeamManager {
         return {
           success: false,
           errorCode: 403,
-          errorMessage: 'Cannot retrieve API key for admin accounts',
+          errorMessage: "Cannot retrieve API key for admin accounts",
         };
       }
 
@@ -332,19 +342,25 @@ export class TeamManager {
           },
         };
       } catch (decryptError) {
-        console.error(`[TeamManager] Error decrypting API key for team ${teamId}:`, decryptError);
+        console.error(
+          `[TeamManager] Error decrypting API key for team ${teamId}:`,
+          decryptError,
+        );
         return {
           success: false,
           errorCode: 500,
-          errorMessage: 'Failed to decrypt API key',
+          errorMessage: "Failed to decrypt API key",
         };
       }
     } catch (error) {
-      console.error(`[TeamManager] Error retrieving decrypted API key for team ${teamId}:`, error);
+      console.error(
+        `[TeamManager] Error retrieving decrypted API key for team ${teamId}:`,
+        error,
+      );
       return {
         success: false,
         errorCode: 500,
-        errorMessage: 'Server error retrieving API key',
+        errorMessage: "Server error retrieving API key",
       };
     }
   }
@@ -357,7 +373,7 @@ export class TeamManager {
       const count = await repositories.teamRepository.count();
       return count >= 0;
     } catch (error) {
-      console.error('[TeamManager] Health check failed:', error);
+      console.error("[TeamManager] Health check failed:", error);
       return false;
     }
   }
@@ -386,15 +402,21 @@ export class TeamManager {
       const deleted = await repositories.teamRepository.delete(teamId);
 
       if (deleted) {
-        console.log(`[TeamManager] Successfully deleted team: ${team.name} (${teamId})`);
+        console.log(
+          `[TeamManager] Successfully deleted team: ${team.name} (${teamId})`,
+        );
       } else {
-        console.log(`[TeamManager] Failed to delete team: ${team.name} (${teamId})`);
+        console.log(
+          `[TeamManager] Failed to delete team: ${team.name} (${teamId})`,
+        );
       }
 
       return deleted;
     } catch (error) {
       console.error(`[TeamManager] Error deleting team ${teamId}:`, error);
-      throw new Error(`Failed to delete team: ${error instanceof Error ? error.message : error}`);
+      throw new Error(
+        `Failed to delete team: ${error instanceof Error ? error.message : error}`,
+      );
     }
   }
 
@@ -406,10 +428,15 @@ export class TeamManager {
    */
   async deactivateTeam(teamId: string, reason: string): Promise<Team | null> {
     try {
-      console.log(`[TeamManager] Deactivating team: ${teamId}, Reason: ${reason}`);
+      console.log(
+        `[TeamManager] Deactivating team: ${teamId}, Reason: ${reason}`,
+      );
 
       // Call repository to deactivate the team
-      const deactivatedTeam = await repositories.teamRepository.deactivateTeam(teamId, reason);
+      const deactivatedTeam = await repositories.teamRepository.deactivateTeam(
+        teamId,
+        reason,
+      );
 
       if (!deactivatedTeam) {
         console.log(`[TeamManager] Team not found for deactivation: ${teamId}`);
@@ -445,7 +472,8 @@ export class TeamManager {
       console.log(`[TeamManager] Reactivating team: ${teamId}`);
 
       // Call repository to reactivate the team
-      const reactivatedTeam = await repositories.teamRepository.reactivateTeam(teamId);
+      const reactivatedTeam =
+        await repositories.teamRepository.reactivateTeam(teamId);
 
       if (!reactivatedTeam) {
         console.log(`[TeamManager] Team not found for reactivation: ${teamId}`);
@@ -494,11 +522,15 @@ export class TeamManager {
         return null;
       }
 
-      console.log(`[TeamManager] Successfully updated team: ${updatedTeam.name} (${team.id})`);
+      console.log(
+        `[TeamManager] Successfully updated team: ${updatedTeam.name} (${team.id})`,
+      );
       return updatedTeam;
     } catch (error) {
       console.error(`[TeamManager] Error updating team ${team.id}:`, error);
-      throw new Error(`Failed to update team: ${error instanceof Error ? error.message : error}`);
+      throw new Error(
+        `Failed to update team: ${error instanceof Error ? error.message : error}`,
+      );
     }
   }
 
@@ -510,7 +542,7 @@ export class TeamManager {
     try {
       return await repositories.teamRepository.findInactiveTeams();
     } catch (error) {
-      console.error('[TeamManager] Error retrieving inactive teams:', error);
+      console.error("[TeamManager] Error retrieving inactive teams:", error);
       return [];
     }
   }
@@ -544,7 +576,7 @@ export class TeamManager {
       if (team.active === false) {
         // Update cache
         this.inactiveTeamsCache.set(teamId, {
-          reason: team.deactivationReason || 'No reason provided',
+          reason: team.deactivationReason || "No reason provided",
           date: team.deactivationDate || new Date(),
         });
 
@@ -557,7 +589,10 @@ export class TeamManager {
 
       return { isInactive: false };
     } catch (error) {
-      console.error(`[TeamManager] Error checking inactive status for team ${teamId}:`, error);
+      console.error(
+        `[TeamManager] Error checking inactive status for team ${teamId}:`,
+        error,
+      );
       return { isInactive: false };
     }
   }

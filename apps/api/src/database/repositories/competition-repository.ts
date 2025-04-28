@@ -1,7 +1,8 @@
-import { BaseRepository } from '../base-repository';
-import { Competition, CompetitionStatus, SpecificChain } from '../../types';
-import { PortfolioSnapshot, PortfolioTokenValue, DatabaseRow } from '../types';
-import { PoolClient } from 'pg';
+import { PoolClient } from "pg";
+
+import { Competition, CompetitionStatus, SpecificChain } from "../../types";
+import { BaseRepository } from "../base-repository";
+import { DatabaseRow, PortfolioSnapshot, PortfolioTokenValue } from "../types";
 
 /**
  * Competition Repository
@@ -9,7 +10,7 @@ import { PoolClient } from 'pg';
  */
 export class CompetitionRepository extends BaseRepository<Competition> {
   constructor() {
-    super('competitions');
+    super("competitions");
   }
 
   /**
@@ -17,7 +18,10 @@ export class CompetitionRepository extends BaseRepository<Competition> {
    * @param competition Competition to create
    * @param client Optional database client for transactions
    */
-  async create(competition: Competition, client?: PoolClient): Promise<Competition> {
+  async create(
+    competition: Competition,
+    client?: PoolClient,
+  ): Promise<Competition> {
     try {
       const query = `
         INSERT INTO competitions (
@@ -44,7 +48,7 @@ export class CompetitionRepository extends BaseRepository<Competition> {
 
       return this.mapToEntity(this.toCamelCase(result.rows[0]));
     } catch (error) {
-      console.error('[CompetitionRepository] Error in create:', error);
+      console.error("[CompetitionRepository] Error in create:", error);
       throw error;
     }
   }
@@ -54,7 +58,10 @@ export class CompetitionRepository extends BaseRepository<Competition> {
    * @param competition Competition to update
    * @param client Optional database client for transactions
    */
-  async update(competition: Competition, client?: PoolClient): Promise<Competition> {
+  async update(
+    competition: Competition,
+    client?: PoolClient,
+  ): Promise<Competition> {
     try {
       const query = `
         UPDATE competitions SET
@@ -88,7 +95,7 @@ export class CompetitionRepository extends BaseRepository<Competition> {
 
       return this.mapToEntity(this.toCamelCase(result.rows[0]));
     } catch (error) {
-      console.error('[CompetitionRepository] Error in update:', error);
+      console.error("[CompetitionRepository] Error in update:", error);
       throw error;
     }
   }
@@ -131,18 +138,26 @@ export class CompetitionRepository extends BaseRepository<Competition> {
    * @param teamIds Array of team IDs
    * @param client Optional database client for transactions
    */
-  async addTeams(competitionId: string, teamIds: string[], client?: PoolClient): Promise<void> {
+  async addTeams(
+    competitionId: string,
+    teamIds: string[],
+    client?: PoolClient,
+  ): Promise<void> {
     try {
       // Use a transaction if no client is provided
       if (!client) {
         await this.db.transaction(async (transactionClient) => {
-          await this.addTeamsInTransaction(competitionId, teamIds, transactionClient);
+          await this.addTeamsInTransaction(
+            competitionId,
+            teamIds,
+            transactionClient,
+          );
         });
       } else {
         await this.addTeamsInTransaction(competitionId, teamIds, client);
       }
     } catch (error) {
-      console.error('[CompetitionRepository] Error in addTeams:', error);
+      console.error("[CompetitionRepository] Error in addTeams:", error);
       throw error;
     }
   }
@@ -174,7 +189,10 @@ export class CompetitionRepository extends BaseRepository<Competition> {
    * @param competitionId Competition ID
    * @param client Optional database client for transactions
    */
-  async getTeams(competitionId: string, client?: PoolClient): Promise<string[]> {
+  async getTeams(
+    competitionId: string,
+    client?: PoolClient,
+  ): Promise<string[]> {
     try {
       const query = `
         SELECT team_id FROM competition_teams
@@ -187,7 +205,7 @@ export class CompetitionRepository extends BaseRepository<Competition> {
 
       return result.rows.map((row: { team_id: string }) => row.team_id);
     } catch (error) {
-      console.error('[CompetitionRepository] Error in getTeams:', error);
+      console.error("[CompetitionRepository] Error in getTeams:", error);
       throw error;
     }
   }
@@ -216,9 +234,11 @@ export class CompetitionRepository extends BaseRepository<Competition> {
         ? await client.query(query, [CompetitionStatus.ACTIVE])
         : await this.db.query(query, [CompetitionStatus.ACTIVE]);
 
-      return result.rows.length > 0 ? this.mapToEntity(this.toCamelCase(result.rows[0])) : null;
+      return result.rows.length > 0
+        ? this.mapToEntity(this.toCamelCase(result.rows[0]))
+        : null;
     } catch (error) {
-      console.error('[CompetitionRepository] Error in findActive:', error);
+      console.error("[CompetitionRepository] Error in findActive:", error);
       throw error;
     }
   }
@@ -229,7 +249,7 @@ export class CompetitionRepository extends BaseRepository<Competition> {
    * @param client Optional database client for transactions
    */
   async createPortfolioSnapshot(
-    snapshot: Omit<PortfolioSnapshot, 'id'>,
+    snapshot: Omit<PortfolioSnapshot, "id">,
     client?: PoolClient,
   ): Promise<PortfolioSnapshot> {
     try {
@@ -261,7 +281,10 @@ export class CompetitionRepository extends BaseRepository<Competition> {
         totalValue: parseFloat(String(row.totalValue)),
       };
     } catch (error) {
-      console.error('[CompetitionRepository] Error creating portfolio snapshot:', error);
+      console.error(
+        "[CompetitionRepository] Error creating portfolio snapshot:",
+        error,
+      );
       throw error;
     }
   }
@@ -272,7 +295,7 @@ export class CompetitionRepository extends BaseRepository<Competition> {
    * @param client Optional database client for transactions
    */
   async createPortfolioTokenValue(
-    tokenValue: Omit<PortfolioTokenValue, 'id'>,
+    tokenValue: Omit<PortfolioTokenValue, "id">,
     client?: PoolClient,
   ): Promise<PortfolioTokenValue> {
     try {
@@ -308,7 +331,10 @@ export class CompetitionRepository extends BaseRepository<Competition> {
         specificChain: row.specificChain as SpecificChain,
       };
     } catch (error) {
-      console.error('[CompetitionRepository] Error creating portfolio token value:', error);
+      console.error(
+        "[CompetitionRepository] Error creating portfolio token value:",
+        error,
+      );
       throw error;
     }
   }
@@ -455,9 +481,16 @@ export class CompetitionRepository extends BaseRepository<Competition> {
     try {
       const query = `SELECT COUNT(*) FROM competitions`;
       const result = await this.db.query(query);
-      return parseInt(result.rows[0].count as string, 10);
+      const row = result.rows[0];
+      if (!row) {
+        throw new Error("No count returned");
+      }
+      return parseInt(row.count as string, 10);
     } catch (error) {
-      console.error('[CompetitionRepository] Error counting competitions:', error);
+      console.error(
+        "[CompetitionRepository] Error counting competitions:",
+        error,
+      );
       throw error;
     }
   }
@@ -471,8 +504,12 @@ export class CompetitionRepository extends BaseRepository<Competition> {
       id: data.id as string,
       name: data.name as string,
       description: data.description as string | undefined,
-      startDate: data.startDate ? new Date(data.startDate as string | number | Date) : null,
-      endDate: data.endDate ? new Date(data.endDate as string | number | Date) : null,
+      startDate: data.startDate
+        ? new Date(data.startDate as string | number | Date)
+        : null,
+      endDate: data.endDate
+        ? new Date(data.endDate as string | number | Date)
+        : null,
       status: data.status as CompetitionStatus,
       createdAt: new Date(data.createdAt as string | number | Date),
       updatedAt: new Date(data.updatedAt as string | number | Date),

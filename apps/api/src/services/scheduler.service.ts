@@ -1,5 +1,5 @@
-import { CompetitionManager } from './competition-manager.service';
-import { config } from '../config';
+import { config } from "../config";
+import { CompetitionManager } from "./competition-manager.service";
 
 // Keep track of all scheduler timers globally (helpful for tests)
 const allSchedulerTimers = new Set<NodeJS.Timeout>();
@@ -18,12 +18,12 @@ export class SchedulerService {
   constructor(competitionManager: CompetitionManager) {
     this.competitionManager = competitionManager;
     // Check if we're in test mode
-    this.isTestMode = process.env.TEST_MODE === 'true';
+    this.isTestMode = process.env.TEST_MODE === "true";
 
     // Get the snapshot interval from environment config with default
     this.snapshotInterval = config.portfolio.snapshotIntervalMs;
     console.log(
-      `[SchedulerService] Initialized with snapshot interval of ${this.snapshotInterval}ms${this.isTestMode ? ' (TEST MODE)' : ''}`,
+      `[SchedulerService] Initialized with snapshot interval of ${this.snapshotInterval}ms${this.isTestMode ? " (TEST MODE)" : ""}`,
     );
   }
 
@@ -32,12 +32,16 @@ export class SchedulerService {
    */
   startSnapshotScheduler(): void {
     if (this.isShuttingDown) {
-      console.log('[SchedulerService] Scheduler is shutting down, cannot start');
+      console.log(
+        "[SchedulerService] Scheduler is shutting down, cannot start",
+      );
       return;
     }
 
     if (this.snapshotTimer) {
-      console.log('[SchedulerService] Snapshot scheduler already running, restarting...');
+      console.log(
+        "[SchedulerService] Snapshot scheduler already running, restarting...",
+      );
       this.stopSnapshotScheduler();
     }
 
@@ -47,7 +51,7 @@ export class SchedulerService {
       : this.snapshotInterval;
 
     console.log(
-      `[SchedulerService] Starting portfolio snapshot scheduler at ${interval}ms intervals${this.isTestMode ? ' (TEST MODE)' : ''}`,
+      `[SchedulerService] Starting portfolio snapshot scheduler at ${interval}ms intervals${this.isTestMode ? " (TEST MODE)" : ""}`,
     );
 
     // Schedule periodic snapshots
@@ -59,7 +63,10 @@ export class SchedulerService {
       try {
         await this.takePortfolioSnapshots();
       } catch (error) {
-        console.error('[SchedulerService] Error in snapshot timer callback:', error);
+        console.error(
+          "[SchedulerService] Error in snapshot timer callback:",
+          error,
+        );
         // Don't let errors stop the scheduler in production
         if (this.isTestMode) {
           this.stopSnapshotScheduler();
@@ -78,7 +85,7 @@ export class SchedulerService {
    */
   stopSnapshotScheduler(): void {
     this.isShuttingDown = true;
-    console.log('[SchedulerService] Marking scheduler for shutdown');
+    console.log("[SchedulerService] Marking scheduler for shutdown");
 
     // Clear this instance's timer
     if (this.snapshotTimer) {
@@ -90,7 +97,7 @@ export class SchedulerService {
       }
 
       this.snapshotTimer = null;
-      console.log('[SchedulerService] Portfolio snapshot scheduler stopped');
+      console.log("[SchedulerService] Portfolio snapshot scheduler stopped");
     }
 
     // In test mode, also clear all known timers for safety
@@ -111,25 +118,35 @@ export class SchedulerService {
    */
   async takePortfolioSnapshots(): Promise<void> {
     if (this.isShuttingDown) {
-      console.log('[SchedulerService] Skipping snapshot due to shutdown in progress');
+      console.log(
+        "[SchedulerService] Skipping snapshot due to shutdown in progress",
+      );
       return;
     }
 
     try {
       // Get active competition
-      const activeCompetition = await this.competitionManager.getActiveCompetition();
+      const activeCompetition =
+        await this.competitionManager.getActiveCompetition();
 
       if (!activeCompetition) {
-        console.log('[SchedulerService] No active competition, skipping portfolio snapshots');
+        console.log(
+          "[SchedulerService] No active competition, skipping portfolio snapshots",
+        );
         return;
       }
 
       console.log(
         `[SchedulerService] Taking scheduled portfolio snapshots for competition ${activeCompetition.id}`,
       );
-      await this.competitionManager.takePortfolioSnapshots(activeCompetition.id);
+      await this.competitionManager.takePortfolioSnapshots(
+        activeCompetition.id,
+      );
     } catch (error) {
-      console.error('[SchedulerService] Error taking portfolio snapshots:', error);
+      console.error(
+        "[SchedulerService] Error taking portfolio snapshots:",
+        error,
+      );
       throw error; // Re-throw so caller can handle or log
     }
   }
@@ -153,14 +170,16 @@ export class SchedulerService {
     this.isShuttingDown = false;
 
     // Log reset
-    console.log('[SchedulerService] Service reset complete');
+    console.log("[SchedulerService] Service reset complete");
   }
 
   /**
    * Static method to clear all timers globally (for test cleanup)
    */
   static clearAllTimers(): void {
-    console.log(`[SchedulerService] Clearing all ${allSchedulerTimers.size} global timers`);
+    console.log(
+      `[SchedulerService] Clearing all ${allSchedulerTimers.size} global timers`,
+    );
 
     // Clear all timers in the global set
     allSchedulerTimers.forEach((timer) => {

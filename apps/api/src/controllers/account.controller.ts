@@ -1,7 +1,8 @@
-import { Request, Response, NextFunction } from 'express';
-import { services } from '../services';
-import { ApiError } from '../middleware/errorHandler';
-import { repositories } from '../database';
+import { NextFunction, Request, Response } from "express";
+
+import { repositories } from "../database";
+import { ApiError } from "../middleware/errorHandler";
+import { services } from "../services";
 
 /**
  * Account Controller
@@ -22,7 +23,7 @@ export class AccountController {
       const team = await services.teamManager.getTeam(teamId);
 
       if (!team) {
-        throw new ApiError(404, 'Team not found');
+        throw new ApiError(404, "Team not found");
       }
 
       // Return the team profile
@@ -58,7 +59,7 @@ export class AccountController {
       const team = await services.teamManager.getTeam(teamId);
 
       if (!team) {
-        throw new ApiError(404, 'Team not found');
+        throw new ApiError(404, "Team not found");
       }
 
       // Update contact person
@@ -75,7 +76,7 @@ export class AccountController {
       const updatedTeam = await services.teamManager.updateTeam(team);
 
       if (!updatedTeam) {
-        throw new ApiError(500, 'Failed to update team profile');
+        throw new ApiError(500, "Failed to update team profile");
       }
 
       // Return the updated team profile
@@ -113,23 +114,25 @@ export class AccountController {
       const enhancedBalances = await Promise.all(
         balances.map(async (balance) => {
           // First check if we have chain information in our database
-          const latestPriceRecord = await repositories.priceRepository.getLatestPrice(
-            balance.token,
-          );
+          const latestPriceRecord =
+            await repositories.priceRepository.getLatestPrice(balance.token);
 
           // If we have complete chain info in our database, use that
           if (latestPriceRecord && latestPriceRecord.chain) {
             // For SVM tokens, specificChain is always 'svm'
-            if (latestPriceRecord.chain === 'svm') {
+            if (latestPriceRecord.chain === "svm") {
               return {
                 ...balance,
                 chain: latestPriceRecord.chain,
-                specificChain: 'svm',
+                specificChain: "svm",
               };
             }
 
             // For EVM tokens, if we have a specificChain, use it
-            if (latestPriceRecord.chain === 'evm' && latestPriceRecord.specificChain) {
+            if (
+              latestPriceRecord.chain === "evm" &&
+              latestPriceRecord.specificChain
+            ) {
               return {
                 ...balance,
                 chain: latestPriceRecord.chain,
@@ -139,7 +142,9 @@ export class AccountController {
           }
 
           // If we don't have complete chain info, use getTokenInfo (which will update our database)
-          const tokenInfo = await services.priceTracker.getTokenInfo(balance.token);
+          const tokenInfo = await services.priceTracker.getTokenInfo(
+            balance.token,
+          );
 
           if (tokenInfo) {
             return {
@@ -151,7 +156,7 @@ export class AccountController {
 
           // As a last resort, determine chain type locally
           const chain = services.priceTracker.determineChain(balance.token);
-          const specificChain = chain === 'svm' ? 'svm' : null;
+          const specificChain = chain === "svm" ? "svm" : null;
 
           return {
             ...balance,
@@ -183,34 +188,39 @@ export class AccountController {
       const teamId = req.teamId as string;
 
       // First, check if there's an active competition
-      const activeCompetition = await repositories.competitionRepository.findActive();
+      const activeCompetition =
+        await repositories.competitionRepository.findActive();
 
       // Check if we have snapshot data (preferred method)
       if (activeCompetition) {
         // Try to get the latest snapshot for this team
-        const teamSnapshots = await repositories.competitionRepository.getTeamPortfolioSnapshots(
-          activeCompetition.id,
-          teamId,
-        );
+        const teamSnapshots =
+          await repositories.competitionRepository.getTeamPortfolioSnapshots(
+            activeCompetition.id,
+            teamId,
+          );
 
         // If we have a snapshot, use it
         if (teamSnapshots.length > 0) {
           // Get the most recent snapshot
-          const latestSnapshot = teamSnapshots[teamSnapshots.length - 1];
+          const latestSnapshot = teamSnapshots[teamSnapshots.length - 1]!;
 
           // Get the token values for this snapshot
-          const tokenValues = await repositories.competitionRepository.getPortfolioTokenValues(
-            latestSnapshot.id,
-          );
+          const tokenValues =
+            await repositories.competitionRepository.getPortfolioTokenValues(
+              latestSnapshot.id,
+            );
 
           // Format the token values with additional information
           const formattedTokens = tokenValues.map((tokenValue) => {
             // Use the price from the snapshot and only determine chain type
-            const chain = services.priceTracker.determineChain(tokenValue.tokenAddress);
+            const chain = services.priceTracker.determineChain(
+              tokenValue.tokenAddress,
+            );
 
             // For SVM tokens, the specificChain is always 'svm'
             // For EVM tokens, we don't have specificChain without an API call, so we'll leave it undefined
-            const specificChain = chain === 'svm' ? 'svm' : undefined;
+            const specificChain = chain === "svm" ? "svm" : undefined;
 
             return {
               token: tokenValue.tokenAddress,
@@ -229,7 +239,7 @@ export class AccountController {
             totalValue: latestSnapshot.totalValue,
             tokens: formattedTokens,
             snapshotTime: latestSnapshot.timestamp,
-            source: 'snapshot', // Indicate this is from a snapshot
+            source: "snapshot", // Indicate this is from a snapshot
           });
         }
 
@@ -238,13 +248,20 @@ export class AccountController {
           `[AccountController] No portfolio snapshots found for team ${teamId} in competition ${activeCompetition.id}`,
         );
         // Request a snapshot asynchronously (don't await)
-        services.competitionManager.takePortfolioSnapshots(activeCompetition.id).catch((error) => {
-          console.error(`[AccountController] Error taking snapshot for team ${teamId}:`, error);
-        });
+        services.competitionManager
+          .takePortfolioSnapshots(activeCompetition.id)
+          .catch((error) => {
+            console.error(
+              `[AccountController] Error taking snapshot for team ${teamId}:`,
+              error,
+            );
+          });
       }
 
       // Fall back to calculating portfolio on-demand
-      console.log(`[AccountController] Using live calculation for portfolio of team ${teamId}`);
+      console.log(
+        `[AccountController] Using live calculation for portfolio of team ${teamId}`,
+      );
 
       // Get the balances
       const balances = await services.balanceManager.getAllBalances(teamId);
@@ -254,7 +271,9 @@ export class AccountController {
       // Calculate values with minimal API calls
       for (const balance of balances) {
         // Get price and token information using the existing service method
-        const tokenInfo = await services.priceTracker.getTokenInfo(balance.token);
+        const tokenInfo = await services.priceTracker.getTokenInfo(
+          balance.token,
+        );
         const price = tokenInfo?.price || 0;
         const value = price ? balance.amount * price : 0;
         totalValue += value;
@@ -275,7 +294,7 @@ export class AccountController {
         teamId,
         totalValue,
         tokens: tokenValues,
-        source: 'live-calculation', // Indicate this is a live calculation
+        source: "live-calculation", // Indicate this is a live calculation
       });
     } catch (error) {
       next(error);
