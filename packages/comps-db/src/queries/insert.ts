@@ -1,8 +1,10 @@
 import { db } from "../index.js";
 import {
+  InsertBalance,
   InsertCompetition,
   InsertCompetitionTeam,
   InsertTeam,
+  balances,
   competitionTeams,
   competitions,
   teams,
@@ -20,4 +22,14 @@ export async function registerTeamToCompetition(
   competitionTeam: InsertCompetitionTeam,
 ) {
   await db.insert(competitionTeams).values(competitionTeam);
+}
+
+export async function createBalance(balance: InsertBalance) {
+  return await db
+    .insert(balances)
+    .values(balance)
+    .onConflictDoUpdate({
+      target: [balances.teamId, balances.tokenAddress],
+      set: { amount: balance.amount, updatedAt: new Date() },
+    });
 }

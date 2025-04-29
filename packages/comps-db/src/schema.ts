@@ -1,213 +1,344 @@
-import { relations } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
   boolean,
-  decimal,
+  foreignKey,
+  index,
+  integer,
   jsonb,
+  numeric,
   pgTable,
   primaryKey,
   serial,
   text,
   timestamp,
+  unique,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
 
-// Teams table
-export const teams = pgTable("teams", {
-  id: uuid("id").primaryKey(),
-  name: varchar("name", { length: 100 }).notNull(),
-  email: varchar("email", { length: 100 }).notNull().unique(),
-  contactPerson: varchar("contact_person", { length: 100 }).notNull(),
-  apiKey: varchar("api_key", { length: 400 }).notNull().unique(),
-  walletAddress: varchar("wallet_address", { length: 42 }).unique(),
-  bucketAddresses: text("bucket_addresses").array(),
-  metadata: jsonb("metadata"),
-  isAdmin: boolean("is_admin").default(false),
-  active: boolean("active").default(false),
-  deactivationReason: text("deactivation_reason"),
-  deactivationDate: timestamp("deactivation_date", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-});
+export const teams = pgTable(
+  "teams",
+  {
+    id: uuid().primaryKey().notNull(),
+    name: varchar({ length: 100 }).notNull(),
+    email: varchar({ length: 100 }).notNull(),
+    contactPerson: varchar("contact_person", { length: 100 }).notNull(),
+    apiKey: varchar("api_key", { length: 400 }).notNull(),
+    walletAddress: varchar("wallet_address", { length: 42 }),
+    bucketAddresses: text("bucket_addresses").array(),
+    metadata: jsonb(),
+    isAdmin: boolean("is_admin").default(false),
+    active: boolean().default(false),
+    deactivationReason: text("deactivation_reason"),
+    deactivationDate: timestamp("deactivation_date", {
+      withTimezone: true,
+    }),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    }).default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    }).default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("idx_teams_active").using(
+      "btree",
+      table.active.asc().nullsLast().op("bool_ops"),
+    ),
+    index("idx_teams_api_key").using(
+      "btree",
+      table.apiKey.asc().nullsLast().op("text_ops"),
+    ),
+    index("idx_teams_is_admin").using(
+      "btree",
+      table.isAdmin.asc().nullsLast().op("bool_ops"),
+    ),
+    index("idx_teams_metadata_ref_name").using(
+      "btree",
+      sql`(((metadata -> 'ref'::text) ->> 'name'::text))`,
+    ),
+    unique("teams_email_key").on(table.email),
+    unique("teams_api_key_key").on(table.apiKey),
+    unique("teams_wallet_address_key").on(table.walletAddress),
+  ],
+);
 
-// Teams relations
-export const teamsRelations = relations(teams, ({ many }) => ({
-  competitionTeams: many(competitionTeams),
-  balances: many(balances),
-  trades: many(trades),
-  portfolioSnapshots: many(portfolioSnapshots),
-}));
+export const competitions = pgTable(
+  "competitions",
+  {
+    id: uuid().primaryKey().notNull(),
+    name: varchar({ length: 100 }).notNull(),
+    description: text(),
+    startDate: timestamp("start_date", { withTimezone: true }),
+    endDate: timestamp("end_date", { withTimezone: true }),
+    status: varchar({ length: 20 }).notNull(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    }).default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    }).default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("idx_competitions_status").using(
+      "btree",
+      table.status.asc().nullsLast().op("text_ops"),
+    ),
+  ],
+);
 
-// Competitions table
-export const competitions = pgTable("competitions", {
-  id: uuid("id").primaryKey(),
-  name: varchar("name", { length: 100 }).notNull(),
-  description: text("description"),
-  startDate: timestamp("start_date", { withTimezone: true }),
-  endDate: timestamp("end_date", { withTimezone: true }),
-  status: varchar("status", { length: 20 }).notNull(), // PENDING, ACTIVE, COMPLETED
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-});
-
-// Competitions relations
-export const competitionsRelations = relations(competitions, ({ many }) => ({
-  competitionTeams: many(competitionTeams),
-  trades: many(trades),
-  portfolioSnapshots: many(portfolioSnapshots),
-}));
-
-// Competition Teams junction table
 export const competitionTeams = pgTable(
   "competition_teams",
   {
-    competitionId: uuid("competition_id")
-      .notNull()
-      .references(() => competitions.id, { onDelete: "cascade" }),
-    teamId: uuid("team_id")
-      .notNull()
-      .references(() => teams.id, { onDelete: "cascade" }),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    competitionId: uuid("competition_id").notNull(),
+    teamId: uuid("team_id").notNull(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    }).default(sql`CURRENT_TIMESTAMP`),
   },
-  (table) => [primaryKey({ columns: [table.competitionId, table.teamId] })],
+  (table) => [
+    foreignKey({
+      columns: [table.competitionId],
+      foreignColumns: [competitions.id],
+      name: "competition_teams_competition_id_fkey",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.teamId],
+      foreignColumns: [teams.id],
+      name: "competition_teams_team_id_fkey",
+    }).onDelete("cascade"),
+    primaryKey({
+      columns: [table.competitionId, table.teamId],
+      name: "competition_teams_pkey",
+    }),
+  ],
 );
 
-// Competition Teams relations
-export const competitionTeamsRelations = relations(
-  competitionTeams,
-  ({ one }) => ({
-    team: one(teams, {
-      fields: [competitionTeams.teamId],
-      references: [teams.id],
-    }),
-    competition: one(competitions, {
-      fields: [competitionTeams.competitionId],
-      references: [competitions.id],
-    }),
-  }),
+export const balances = pgTable(
+  "balances",
+  {
+    id: serial().primaryKey().notNull(),
+    teamId: uuid("team_id").notNull(),
+    tokenAddress: varchar("token_address", { length: 50 }).notNull(),
+    amount: numeric({ precision: 30, scale: 15, mode: "number" }).notNull(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    }).default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    }).default(sql`CURRENT_TIMESTAMP`),
+    specificChain: varchar("specific_chain", { length: 20 }),
+  },
+  (table) => [
+    index("idx_balances_specific_chain").using(
+      "btree",
+      table.specificChain.asc().nullsLast().op("text_ops"),
+    ),
+    index("idx_balances_team_id").using(
+      "btree",
+      table.teamId.asc().nullsLast().op("uuid_ops"),
+    ),
+    foreignKey({
+      columns: [table.teamId],
+      foreignColumns: [teams.id],
+      name: "balances_team_id_fkey",
+    }).onDelete("cascade"),
+    unique("balances_team_id_token_address_key").on(
+      table.teamId,
+      table.tokenAddress,
+    ),
+  ],
 );
 
-// Balances table
-export const balances = pgTable("balances", {
-  id: serial("id").primaryKey(),
-  teamId: uuid("team_id")
-    .notNull()
-    .references(() => teams.id, { onDelete: "cascade" }),
-  tokenAddress: varchar("token_address", { length: 50 }).notNull(),
-  amount: decimal("amount", { precision: 30, scale: 15 }).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-  specificChain: varchar("specific_chain", { length: 20 }),
-});
-
-// Balances relations
-export const balancesRelations = relations(balances, ({ one }) => ({
-  team: one(teams, {
-    fields: [balances.teamId],
-    references: [teams.id],
-  }),
-}));
-
-// Trades table
-export const trades = pgTable("trades", {
-  id: uuid("id").primaryKey(),
-  teamId: uuid("team_id")
-    .notNull()
-    .references(() => teams.id, { onDelete: "cascade" }),
-  competitionId: uuid("competition_id")
-    .notNull()
-    .references(() => competitions.id, { onDelete: "cascade" }),
-  fromToken: varchar("from_token", { length: 50 }).notNull(),
-  toToken: varchar("to_token", { length: 50 }).notNull(),
-  fromAmount: decimal("from_amount", { precision: 30, scale: 15 }).notNull(),
-  toAmount: decimal("to_amount", { precision: 30, scale: 15 }).notNull(),
-  price: decimal("price", { precision: 30, scale: 15 }).notNull(),
-  success: boolean("success").notNull(),
-  error: text("error"),
-  reason: text("reason").notNull(),
-  timestamp: timestamp("timestamp", { withTimezone: true }).defaultNow(),
-  fromChain: varchar("from_chain", { length: 10 }),
-  toChain: varchar("to_chain", { length: 10 }),
-  fromSpecificChain: varchar("from_specific_chain", { length: 20 }),
-  toSpecificChain: varchar("to_specific_chain", { length: 20 }),
-});
-
-// Trades relations
-export const tradesRelations = relations(trades, ({ one }) => ({
-  team: one(teams, {
-    fields: [trades.teamId],
-    references: [teams.id],
-  }),
-  competition: one(competitions, {
-    fields: [trades.competitionId],
-    references: [competitions.id],
-  }),
-}));
-
-// Prices table
-export const prices = pgTable("prices", {
-  id: serial("id").primaryKey(),
-  token: varchar("token", { length: 50 }).notNull(),
-  price: decimal("price", { precision: 30, scale: 15 }).notNull(),
-  timestamp: timestamp("timestamp", { withTimezone: true }).defaultNow(),
-  chain: varchar("chain", { length: 10 }),
-  specificChain: varchar("specific_chain", { length: 20 }),
-});
-
-// Portfolio Snapshots table
-export const portfolioSnapshots = pgTable("portfolio_snapshots", {
-  id: serial("id").primaryKey(),
-  teamId: uuid("team_id")
-    .notNull()
-    .references(() => teams.id, { onDelete: "cascade" }),
-  competitionId: uuid("competition_id")
-    .notNull()
-    .references(() => competitions.id, { onDelete: "cascade" }),
-  timestamp: timestamp("timestamp", { withTimezone: true }).defaultNow(),
-  totalValue: decimal("total_value", { precision: 30, scale: 15 }).notNull(),
-});
-
-// Portfolio Snapshots relations
-export const portfolioSnapshotsRelations = relations(
-  portfolioSnapshots,
-  ({ one, many }) => ({
-    team: one(teams, {
-      fields: [portfolioSnapshots.teamId],
-      references: [teams.id],
-    }),
-    competition: one(competitions, {
-      fields: [portfolioSnapshots.competitionId],
-      references: [competitions.id],
-    }),
-    tokenValues: many(portfolioTokenValues),
-  }),
+export const trades = pgTable(
+  "trades",
+  {
+    id: uuid().primaryKey().notNull(),
+    teamId: uuid("team_id").notNull(),
+    competitionId: uuid("competition_id").notNull(),
+    fromToken: varchar("from_token", { length: 50 }).notNull(),
+    toToken: varchar("to_token", { length: 50 }).notNull(),
+    fromAmount: numeric("from_amount", {
+      precision: 30,
+      scale: 15,
+      mode: "number",
+    }).notNull(),
+    toAmount: numeric("to_amount", {
+      precision: 30,
+      scale: 15,
+      mode: "number",
+    }).notNull(),
+    price: numeric({ precision: 30, scale: 15, mode: "number" }).notNull(),
+    success: boolean().notNull(),
+    error: text(),
+    reason: text().notNull(),
+    timestamp: timestamp({ withTimezone: true }).default(
+      sql`CURRENT_TIMESTAMP`,
+    ),
+    fromChain: varchar("from_chain", { length: 10 }),
+    toChain: varchar("to_chain", { length: 10 }),
+    fromSpecificChain: varchar("from_specific_chain", { length: 20 }),
+    toSpecificChain: varchar("to_specific_chain", { length: 20 }),
+  },
+  (table) => [
+    index("idx_trades_competition_id").using(
+      "btree",
+      table.competitionId.asc().nullsLast().op("uuid_ops"),
+    ),
+    index("idx_trades_from_chain").using(
+      "btree",
+      table.fromChain.asc().nullsLast().op("text_ops"),
+    ),
+    index("idx_trades_from_specific_chain").using(
+      "btree",
+      table.fromSpecificChain.asc().nullsLast().op("text_ops"),
+    ),
+    index("idx_trades_team_id").using(
+      "btree",
+      table.teamId.asc().nullsLast().op("uuid_ops"),
+    ),
+    index("idx_trades_timestamp").using(
+      "btree",
+      table.timestamp.asc().nullsLast().op("timestamptz_ops"),
+    ),
+    index("idx_trades_to_chain").using(
+      "btree",
+      table.toChain.asc().nullsLast().op("text_ops"),
+    ),
+    index("idx_trades_to_specific_chain").using(
+      "btree",
+      table.toSpecificChain.asc().nullsLast().op("text_ops"),
+    ),
+    foreignKey({
+      columns: [table.teamId],
+      foreignColumns: [teams.id],
+      name: "trades_team_id_fkey",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.competitionId],
+      foreignColumns: [competitions.id],
+      name: "trades_competition_id_fkey",
+    }).onDelete("cascade"),
+  ],
 );
 
-// Portfolio Token Values table
-export const portfolioTokenValues = pgTable("portfolio_token_values", {
-  id: serial("id").primaryKey(),
-  portfolioSnapshotId: serial("portfolio_snapshot_id")
-    .notNull()
-    .references(() => portfolioSnapshots.id, { onDelete: "cascade" }),
-  tokenAddress: varchar("token_address", { length: 50 }).notNull(),
-  amount: decimal("amount", { precision: 30, scale: 15 }).notNull(),
-  valueUsd: decimal("value_usd", { precision: 30, scale: 15 }).notNull(),
-  price: decimal("price", { precision: 30, scale: 15 }).notNull(),
-  specificChain: varchar("specific_chain", { length: 20 }),
-});
-
-// Portfolio Token Values relations
-export const portfolioTokenValuesRelations = relations(
-  portfolioTokenValues,
-  ({ one }) => ({
-    portfolioSnapshot: one(portfolioSnapshots, {
-      fields: [portfolioTokenValues.portfolioSnapshotId],
-      references: [portfolioSnapshots.id],
-    }),
-  }),
+export const prices = pgTable(
+  "prices",
+  {
+    id: serial().primaryKey().notNull(),
+    token: varchar({ length: 50 }).notNull(),
+    price: numeric({ precision: 30, scale: 15, mode: "number" }).notNull(),
+    timestamp: timestamp({ withTimezone: true }).default(
+      sql`CURRENT_TIMESTAMP`,
+    ),
+    chain: varchar({ length: 10 }),
+    specificChain: varchar("specific_chain", { length: 20 }),
+  },
+  (table) => [
+    index("idx_prices_chain").using(
+      "btree",
+      table.chain.asc().nullsLast().op("text_ops"),
+    ),
+    index("idx_prices_specific_chain").using(
+      "btree",
+      table.specificChain.asc().nullsLast().op("text_ops"),
+    ),
+    index("idx_prices_timestamp").using(
+      "btree",
+      table.timestamp.asc().nullsLast().op("timestamptz_ops"),
+    ),
+    index("idx_prices_token").using(
+      "btree",
+      table.token.asc().nullsLast().op("text_ops"),
+    ),
+    index("idx_prices_token_chain").using(
+      "btree",
+      table.token.asc().nullsLast().op("text_ops"),
+      table.chain.asc().nullsLast().op("text_ops"),
+    ),
+    index("idx_prices_token_specific_chain").using(
+      "btree",
+      table.token.asc().nullsLast().op("text_ops"),
+      table.specificChain.asc().nullsLast().op("text_ops"),
+    ),
+    index("idx_prices_token_timestamp").using(
+      "btree",
+      table.token.asc().nullsLast().op("timestamptz_ops"),
+      table.timestamp.asc().nullsLast().op("timestamptz_ops"),
+    ),
+  ],
 );
 
-// Type exports
+export const portfolioSnapshots = pgTable(
+  "portfolio_snapshots",
+  {
+    id: serial().primaryKey().notNull(),
+    teamId: uuid("team_id").notNull(),
+    competitionId: uuid("competition_id").notNull(),
+    timestamp: timestamp({ withTimezone: true }).default(
+      sql`CURRENT_TIMESTAMP`,
+    ),
+    totalValue: numeric("total_value", {
+      precision: 30,
+      scale: 15,
+      mode: "number",
+    }).notNull(),
+  },
+  (table) => [
+    index("idx_portfolio_snapshots_team_competition").using(
+      "btree",
+      table.teamId.asc().nullsLast().op("uuid_ops"),
+      table.competitionId.asc().nullsLast().op("uuid_ops"),
+    ),
+    index("idx_portfolio_snapshots_timestamp").using(
+      "btree",
+      table.timestamp.asc().nullsLast().op("timestamptz_ops"),
+    ),
+    foreignKey({
+      columns: [table.teamId],
+      foreignColumns: [teams.id],
+      name: "portfolio_snapshots_team_id_fkey",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.competitionId],
+      foreignColumns: [competitions.id],
+      name: "portfolio_snapshots_competition_id_fkey",
+    }).onDelete("cascade"),
+  ],
+);
+
+export const portfolioTokenValues = pgTable(
+  "portfolio_token_values",
+  {
+    id: serial().primaryKey().notNull(),
+    portfolioSnapshotId: integer("portfolio_snapshot_id").notNull(),
+    tokenAddress: varchar("token_address", { length: 50 }).notNull(),
+    amount: numeric({ precision: 30, scale: 15, mode: "number" }).notNull(),
+    valueUsd: numeric("value_usd", {
+      precision: 30,
+      scale: 15,
+      mode: "number",
+    }).notNull(),
+    price: numeric({ precision: 30, scale: 15, mode: "number" }).notNull(),
+    specificChain: varchar("specific_chain", { length: 20 }),
+  },
+  (table) => [
+    index("idx_portfolio_token_values_snapshot_id").using(
+      "btree",
+      table.portfolioSnapshotId.asc().nullsLast().op("int4_ops"),
+    ),
+    index("idx_portfolio_token_values_specific_chain").using(
+      "btree",
+      table.specificChain.asc().nullsLast().op("text_ops"),
+    ),
+    foreignKey({
+      columns: [table.portfolioSnapshotId],
+      foreignColumns: [portfolioSnapshots.id],
+      name: "portfolio_token_values_portfolio_snapshot_id_fkey",
+    }).onDelete("cascade"),
+  ],
+);
+
 export type SelectTeam = typeof teams.$inferSelect;
 export type InsertTeam = typeof teams.$inferInsert;
 

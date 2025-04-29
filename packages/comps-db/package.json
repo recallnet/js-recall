@@ -25,6 +25,16 @@
         "default": "./dist/schema.cjs"
       }
     },
+    "./relations": {
+      "import": {
+        "types": "./dist/relations.d.ts",
+        "default": "./dist/relations.js"
+      },
+      "require": {
+        "types": "./dist/relations.d.cts",
+        "default": "./dist/relations.cjs"
+      }
+    },
     "./queries/insert": {
       "import": {
         "types": "./dist/queries/insert.d.ts",
