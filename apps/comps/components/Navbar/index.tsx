@@ -6,8 +6,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
-
-import { Button } from "@/../../packages/ui2/src/components/shadcn/button";
+import { Button } from "@recallnet/ui2/components/shadcn/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@recallnet/ui2/components/shadcn/dropdown-menu";
 
 import { userAtom } from "../../state/atoms";
 import { Identicon } from "../Identicon";
@@ -17,14 +22,20 @@ import { SIWEButton } from "../siwe";
 
 // components/Navbar.tsx
 
+// components/Navbar.tsx
+
 export const Navbar: React.FunctionComponent = () => {
   const pathname = usePathname();
-  const [user] = useAtom(userAtom);
+  const [user, setUser] = useAtom(userAtom);
 
   const navItems = [
     { label: "COMPETITIONS", href: "/competitions" },
     { label: "LEADERBOARDS", href: "/leaderboards" },
   ];
+
+  const handleLogout = () => {
+    setUser({ loggedIn: false, address: "" });
+  };
 
   return (
     <nav className="flex w-full items-center justify-between bg-black p-5">
@@ -70,10 +81,24 @@ export const Navbar: React.FunctionComponent = () => {
           <Button className="bg-black p-0 text-sky-700 hover:text-sky-600">
             ADD FUNDS
           </Button>
-          <Identicon address={user.address} />
-          <span className="text-sm font-medium text-white">
-            {user.address.slice(0, 6)}...{user.address.slice(-4)}
-          </span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div className="ml-5 flex cursor-pointer items-center justify-between">
+                <Identicon address={user.address} />
+                <div className="focus ml-3 text-sm font-medium text-white">
+                  {user.address.slice(0, 6)}...{user.address.slice(-4)}
+                </div>
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-gray-900">
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="cursor-pointer hover:bg-gray-800"
+              >
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       ) : (
         <div className="mx-3 flex items-center space-x-10">
