@@ -1,25 +1,29 @@
 // components/Navbar.tsx
 "use client";
 
+import { useAtom } from "jotai";
 import Link from "next/link";
-import {usePathname} from "next/navigation";
+import { usePathname } from "next/navigation";
 
-import {Avatar, AvatarImage} from "@recallnet/ui2/components/avatar";
+import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
 
-import {SIWEButton} from "../siwe";
-import {Button} from "@/../../packages/ui2/src/components/shadcn/button";
-import {Identicon} from "../Identicon";
+import { Button } from "@/../../packages/ui2/src/components/shadcn/button";
+
+import { userAtom } from "../../state/atoms";
+import { Identicon } from "../Identicon";
+import { SIWEButton } from "../siwe";
+
+// components/Navbar.tsx
 
 // components/Navbar.tsx
 
 export const Navbar: React.FunctionComponent = () => {
   const pathname = usePathname();
-  const loggedIn = true
-  const address = '0x40D12C464523Fc72Bdb31ce45Da2073b1174f802'
+  const [user] = useAtom(userAtom);
 
   const navItems = [
-    {label: "COMPETITIONS", href: "/competitions"},
-    {label: "LEADERBOARDS", href: "/leaderboards"},
+    { label: "COMPETITIONS", href: "/competitions" },
+    { label: "LEADERBOARDS", href: "/leaderboards" },
   ];
 
   return (
@@ -43,10 +47,11 @@ export const Navbar: React.FunctionComponent = () => {
             return (
               <Link key={item.href} href={item.href}>
                 <span
-                  className={`text-sm font-medium transition-colors ${isActive
-                    ? "text-white underline underline-offset-4"
-                    : "text-gray-400 hover:text-white"
-                    }`}
+                  className={`text-sm font-medium transition-colors ${
+                    isActive
+                      ? "text-white underline underline-offset-4"
+                      : "text-gray-400 hover:text-white"
+                  }`}
                 >
                   {item.label}
                 </span>
@@ -56,41 +61,30 @@ export const Navbar: React.FunctionComponent = () => {
         </div>
       </div>
 
-      {
-        loggedIn ?
-          <div className="mx-3 flex items-center space-x-3">
-            <span className="text-gray-400 text-sm font-medium">
-              STAKED
-            </span>
-            <span className="text-white text-sm font-medium">
-              700
-            </span>
-            <span className="text-gray-400 text-sm font-medium">
-              WALLET
-            </span>
-            <span className="text-white text-sm font-medium">
-              1000
-            </span>
-            <Button className="bg-black text-sky-700 hover:bg-sky-600 p-0">
-              ADD FUNDS
-            </Button>
-            <Identicon address={address} />
-            <span className="text-white text-sm font-medium">
-              {address.slice(0, 6)}...{address.slice(-4)}
-            </span>
-          </div>
-          :
-          <div className="mx-3 flex items-center space-x-10">
-            {/* Recall Network Text */}
-            <span className="text-sm font-medium">
-              RECALL.NETWORK
-            </span>
+      {user.loggedIn ? (
+        <div className="mx-3 flex items-center space-x-3">
+          <span className="text-sm font-medium text-gray-400">STAKED</span>
+          <span className="text-sm font-medium text-white">700</span>
+          <span className="text-sm font-medium text-gray-400">WALLET</span>
+          <span className="text-sm font-medium text-white">1000</span>
+          <Button className="bg-black p-0 text-sky-700 hover:text-sky-600">
+            ADD FUNDS
+          </Button>
+          <Identicon address={user.address} />
+          <span className="text-sm font-medium text-white">
+            {user.address.slice(0, 6)}...{user.address.slice(-4)}
+          </span>
+        </div>
+      ) : (
+        <div className="mx-3 flex items-center space-x-10">
+          {/* Recall Network Text */}
+          <span className="text-sm font-medium">RECALL.NETWORK</span>
 
-            <SIWEButton className="bg-sky-700 px-6 py-5 text-white hover:bg-sky-600">
-              JOIN / SIGN IN
-            </SIWEButton>
-          </div>
-      }
+          <SIWEButton className="bg-sky-700 px-6 py-5 text-white hover:bg-sky-600">
+            JOIN / SIGN IN
+          </SIWEButton>
+        </div>
+      )}
     </nav>
   );
 };
