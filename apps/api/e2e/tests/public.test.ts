@@ -3,12 +3,12 @@ import {
   TeamMetadata,
   TeamProfileResponse,
   TeamRegistrationResponse,
-} from "../utils/api-types";
+} from "@/e2e/utils/api-types.js";
 import {
   cleanupTestState,
   createTestClient,
   generateRandomString,
-} from "../utils/test-helpers";
+} from "@/e2e/utils/test-helpers.js";
 
 /**
  * Generate a valid Ethereum address

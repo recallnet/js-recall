@@ -1,6 +1,6 @@
 import swaggerJsdoc from "swagger-jsdoc";
 
-import { config } from "./index";
+import { config } from "./index.js";
 
 // Basic Swagger configuration
 const swaggerOptions: swaggerJsdoc.Options = {

@@ -2,14 +2,11 @@
 import axios from "axios";
 import dotenv from "dotenv";
 
-import config from "../../../src/config";
-import { PriceTracker } from "../../../src/services/price-tracker.service";
-import { MultiChainProvider } from "../../../src/services/providers/multi-chain.provider";
-import { BlockchainType, PriceSource, SpecificChain } from "../../../src/types";
-import { ApiClient } from "../../utils/api-client";
-import { PriceResponse } from "../../utils/api-types";
-import { dbManager } from "../../utils/db-manager";
-import { getBaseUrl } from "../../utils/server";
+import config from "@/config/index.js";
+import { ApiClient } from "@/e2e/utils/api-client.js";
+import { PriceResponse } from "@/e2e/utils/api-types.js";
+import { dbManager } from "@/e2e/utils/db-manager.js";
+import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
@@ -17,7 +14,10 @@ import {
   cleanupTestState,
   createTestClient,
   registerTeamAndGetClient,
-} from "../../utils/test-helpers";
+} from "@/e2e/utils/test-helpers.js";
+import { PriceTracker } from "@/services/price-tracker.service.js";
+import { MultiChainProvider } from "@/services/providers/multi-chain.provider.js";
+import { BlockchainType, PriceSource, SpecificChain } from "@/types/index.js";
 
 // Load environment variables
 dotenv.config();

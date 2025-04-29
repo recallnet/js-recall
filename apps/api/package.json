@@ -1,6 +1,8 @@
 {
-  "name": "@recallnet/api",
+  "name": "api",
   "version": "1.0.0",
+  "type": "module",
+  "private": true,
   "description": "Solana Trading Simulator Server for hosting trading competitions",
   "main": "dist/src/index.js",
   "scripts": {

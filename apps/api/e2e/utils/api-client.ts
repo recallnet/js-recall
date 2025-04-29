@@ -29,8 +29,8 @@ import {
   TradeHistoryResponse,
   TradeResponse,
   UpcomingCompetitionsResponse,
-} from "./api-types";
-import { getBaseUrl } from "./server";
+} from "./api-types.js";
+import { getBaseUrl } from "./server.js";
 
 /**
  * API client for testing the Solana Trading Simulator

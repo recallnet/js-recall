@@ -2,8 +2,8 @@ import axios from "axios";
 import * as dotenv from "dotenv";
 import * as path from "path";
 
-import { dbManager } from "./db-manager";
-import { getBaseUrl } from "./server";
+import { dbManager } from "./db-manager.js";
+import { getBaseUrl } from "./server.js";
 
 // Load test environment variables
 dotenv.config({ path: path.resolve(__dirname, "../../.env.test") });

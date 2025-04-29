@@ -1,11 +1,17 @@
 import { v4 as uuidv4 } from "uuid";
 
-import { config, features } from "../config";
-import { repositories } from "../database";
-import { BlockchainType, SpecificChain, Trade, TradeResult } from "../types";
-import { BalanceManager } from "./balance-manager.service";
-import { services } from "./index";
-import { PriceTracker } from "./price-tracker.service";
+import { config, features } from "@/config/index.js";
+import { repositories } from "@/database/index.js";
+import { BalanceManager } from "@/services/balance-manager.service.js";
+import { services } from "@/services/index.js";
+import {
+  BlockchainType,
+  SpecificChain,
+  Trade,
+  TradeResult,
+} from "@/types/index.js";
+
+import { PriceTracker } from "./price-tracker.service.js";
 
 // Define an interface for chain options
 interface ChainOptions {

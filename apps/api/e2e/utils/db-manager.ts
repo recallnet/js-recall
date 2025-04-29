@@ -3,11 +3,11 @@ import path from "path";
 import { PoolClient } from "pg";
 import { Client } from "pg";
 
-// Use the main connection class
-import { dropAllTables } from "../../scripts/drop-all-tables";
-import { initializeDatabase } from "../../src/database";
 // Import production initialization code
-import { DatabaseConnection } from "../../src/database/connection";
+import { DatabaseConnection } from "@/database/connection.js";
+import { initializeDatabase } from "@/database/index.js";
+// Use the main connection class
+import { dropAllTables } from "@/scripts/drop-all-tables.js";
 
 /**
  * Database Manager for E2E Tests

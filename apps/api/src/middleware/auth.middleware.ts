@@ -1,9 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 
-import { CompetitionManager } from "../services/competition-manager.service";
-import { TeamManager } from "../services/team-manager.service";
-import { extractApiKey } from "./auth-helpers";
-import { ApiError } from "./errorHandler";
+import { extractApiKey } from "@/middleware/auth-helpers.js";
+import { ApiError } from "@/middleware/errorHandler.js";
+import { CompetitionManager } from "@/services/competition-manager.service.js";
+import { TeamManager } from "@/services/team-manager.service.js";
 
 /**
  * Authentication middleware

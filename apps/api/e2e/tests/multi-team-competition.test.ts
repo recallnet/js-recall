@@ -1,9 +1,7 @@
 import axios from "axios";
 
-import config from "../../src/config";
-import { services } from "../../src/services";
-import { BlockchainType } from "../../src/types";
-import { ApiClient } from "../utils/api-client";
+import config from "@/config/index.js";
+import { ApiClient } from "@/e2e/utils/api-client.js";
 import {
   BalancesResponse,
   CompetitionStatusResponse,
@@ -13,8 +11,8 @@ import {
   SpecificChain,
   TeamProfileResponse,
   TradeResponse,
-} from "../utils/api-types";
-import { getBaseUrl } from "../utils/server";
+} from "@/e2e/utils/api-types.js";
+import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
@@ -24,7 +22,9 @@ import {
   registerTeamAndGetClient,
   startTestCompetition,
   wait,
-} from "../utils/test-helpers";
+} from "@/e2e/utils/test-helpers.js";
+import { services } from "@/services/index.js";
+import { BlockchainType } from "@/types/index.js";
 
 describe("Multi-Team Competition", () => {
   let adminApiKey: string;

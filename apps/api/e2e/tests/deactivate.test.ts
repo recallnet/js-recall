@@ -1,15 +1,14 @@
 import axios from "axios";
 
-import config from "../../src/config";
-import { BlockchainType } from "../../src/types";
+import config from "@/config/index.js";
 import {
   AdminTeamResponse,
   AdminTeamsListResponse,
   ErrorResponse,
   LeaderboardResponse,
   TeamProfileResponse,
-} from "../utils/api-types";
-import { getBaseUrl } from "../utils/server";
+} from "@/e2e/utils/api-types.js";
+import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
@@ -19,7 +18,8 @@ import {
   registerTeamAndGetClient,
   startTestCompetition,
   wait,
-} from "../utils/test-helpers";
+} from "@/e2e/utils/test-helpers.js";
+import { BlockchainType } from "@/types/index.js";
 
 describe("Team Deactivation API", () => {
   let adminApiKey: string;

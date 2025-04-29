@@ -2,7 +2,7 @@ import axios from "axios";
 import * as crypto from "crypto";
 import * as readline from "readline";
 
-import { config } from "../src/config";
+import { config } from "@/config/index.js";
 
 // Create readline interface for prompting user
 const rl = readline.createInterface({

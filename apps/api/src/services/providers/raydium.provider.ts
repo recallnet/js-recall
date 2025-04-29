@@ -1,7 +1,7 @@
 import axios from "axios";
 
-import { PriceSource } from "../../types";
-import { BlockchainType, PriceReport, SpecificChain } from "../../types";
+import { PriceSource } from "@/types/index.js";
+import { BlockchainType, PriceReport, SpecificChain } from "@/types/index.js";
 
 interface RaydiumPool {
   liquidity: number;

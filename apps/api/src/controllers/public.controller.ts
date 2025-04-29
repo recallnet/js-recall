@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 
-import { repositories } from "../database";
-import { services } from "../services";
+import { repositories } from "@/database/index.js";
+import { services } from "@/services/index.js";
 
 /**
  * Public Controller

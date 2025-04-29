@@ -1,4 +1,4 @@
-import { initializeDatabase } from "../src/database";
+import { initializeDatabase } from "@/database/index.js";
 
 /**
  * Database Setup Script

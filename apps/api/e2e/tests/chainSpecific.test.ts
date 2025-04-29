@@ -1,9 +1,9 @@
 import axios from "axios";
 
-import { config } from "../../src/config";
-import { BalancesResponse } from "../utils/api-types";
-import { getPool } from "../utils/db-manager";
-import { getBaseUrl } from "../utils/server";
+import { config } from "@/config/index.js";
+import { BalancesResponse } from "@/e2e/utils/api-types.js";
+import { getPool } from "@/e2e/utils/db-manager.js";
+import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
@@ -12,7 +12,7 @@ import {
   createTestClient,
   registerTeamAndGetClient,
   startTestCompetition,
-} from "../utils/test-helpers";
+} from "@/e2e/utils/test-helpers.js";
 
 const reason = "chainSpecific end to end tests";
 

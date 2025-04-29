@@ -1,18 +1,18 @@
 import { v4 as uuidv4 } from "uuid";
 
-import { config } from "../config";
-import { repositories } from "../database";
-import { services } from "../services";
+import { config } from "@/config/index.js";
+import { repositories } from "@/database/index.js";
+import { BalanceManager } from "@/services/balance-manager.service.js";
+import { services } from "@/services/index.js";
+import { PriceTracker } from "@/services/price-tracker.service.js";
+import { TradeSimulator } from "@/services/trade-simulator.service.js";
 import {
   Competition,
   CompetitionStatus,
   PortfolioValue,
   PriceReport,
   SpecificChain,
-} from "../types";
-import { BalanceManager } from "./balance-manager.service";
-import { PriceTracker } from "./price-tracker.service";
-import { TradeSimulator } from "./trade-simulator.service";
+} from "@/types/index.js";
 
 // Define the shape of portfolio snapshot data
 interface PortfolioSnapshot {
