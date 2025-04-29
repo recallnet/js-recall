@@ -1,32 +1,31 @@
 "use client";
 
 import axios from "axios";
-import React, { useCallback, useEffect, useState } from "react";
-import type { Hex } from "viem";
-import { createSiweMessage } from "viem/siwe";
-import { useAccount, useConnect, usePublicClient, useSignMessage } from "wagmi";
+import React, {useCallback, useEffect, useState} from "react";
+import type {Hex} from "viem";
+import {createSiweMessage} from "viem/siwe";
+import {useAccount, useConnect, usePublicClient, useSignMessage} from "wagmi";
 
-import { Button } from "@recallnet/ui2/components/shadcn/button";
+import {Button} from "@recallnet/ui2/components/shadcn/button";
 
-import { cbWalletConnector } from "@/wagmi-config";
+import {cbWalletConnector} from "@/wagmi-config";
 
 export const SIWEButton: React.FunctionComponent<
   React.ComponentProps<typeof Button>
 > = (props) => {
   const [message, setMessage] = useState<string>("");
   const [signature, setSignature] = useState<Hex | undefined>(undefined);
-  const [login, setLoggedIn] = useState<boolean | undefined>(undefined);
 
-  const { signMessage } = useSignMessage({
+  const {signMessage} = useSignMessage({
     mutation: {
       onSuccess: (sig) => setSignature(sig),
     },
   });
 
-  const { connect } = useConnect({
+  const {connect} = useConnect({
     mutation: {
       onSuccess: async (data) => {
-        const { data: res } = await axios<{ nonce: string }>({
+        const {data: res} = await axios<{nonce: string}>({
           baseURL: "",
           method: "get",
           url: "/api/nonce",
@@ -48,7 +47,7 @@ export const SIWEButton: React.FunctionComponent<
           nonce: res.nonce,
         });
         setMessage(m);
-        signMessage({ account: address, message: m });
+        signMessage({account: address, message: m});
       },
     },
   });
@@ -67,17 +66,17 @@ export const SIWEButton: React.FunctionComponent<
 
     if (localValid) {
       try {
-        const res = await axios<{ ok: boolean; address: string }>({
+        const res = await axios<{ok: boolean; address: string}>({
           baseURL: "",
           method: "post",
           url: "/api/login",
           headers: {
             Accept: "application/json",
           },
-          data: { message, signature },
+          data: {message, signature},
         });
 
-        if (res.status >= 200 && res.status < 300) setLoggedIn(true);
+        //if (res.status >= 200 && res.status < 300) setLoggedIn(true);
       } catch (err) {
         console.error("SIWE login failed:", err);
       }
@@ -90,7 +89,7 @@ export const SIWEButton: React.FunctionComponent<
 
   return (
     <Button
-      onClick={() => connect({ connector: cbWalletConnector })}
+      onClick={() => connect({connector: cbWalletConnector})}
       {...props}
     >
       {props.children}
