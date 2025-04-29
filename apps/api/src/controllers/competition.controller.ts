@@ -1,10 +1,10 @@
 import { NextFunction, Response } from "express";
 
-import { config, features } from "../config";
-import { repositories } from "../database";
-import { ApiError } from "../middleware/errorHandler";
-import { services } from "../services";
-import { AuthenticatedRequest } from "../types";
+import { config, features } from "@/config/index.js";
+import { repositories } from "@/database/index.js";
+import { ApiError } from "@/middleware/errorHandler.js";
+import { services } from "@/services/index.js";
+import { AuthenticatedRequest } from "@/types/index.js";
 
 /**
  * Competition Controller

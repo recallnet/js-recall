@@ -8,8 +8,8 @@ import {
   TeamMetadata,
   TeamProfileResponse,
   TeamRegistrationResponse,
-} from "../utils/api-types";
-import { getBaseUrl } from "../utils/server";
+} from "@/e2e/utils/api-types.js";
+import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
@@ -17,7 +17,7 @@ import {
   cleanupTestState,
   createTestClient,
   registerTeamAndGetClient,
-} from "../utils/test-helpers";
+} from "@/e2e/utils/test-helpers.js";
 
 describe("Team API", () => {
   // Clean up test state before each test

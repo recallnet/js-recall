@@ -6,11 +6,12 @@
 import fs from "fs";
 import path from "path";
 
-import { DatabaseConnection } from "../src/database/connection";
-import { services } from "../src/services";
-import { SchedulerService } from "../src/services/scheduler.service";
-import { dbManager } from "./utils/db-manager";
-import { killExistingServers } from "./utils/server";
+import { DatabaseConnection } from "@/database/connection.js";
+import { services } from "@/services/index.js";
+import { SchedulerService } from "@/services/scheduler.service.js";
+
+import { dbManager } from "./utils/db-manager.js";
+import { killExistingServers } from "./utils/server.js";
 
 // Path to log file
 const logFile = path.resolve(__dirname, "e2e-server.log");

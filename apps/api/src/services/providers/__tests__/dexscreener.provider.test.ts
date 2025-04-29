@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 
-import { BlockchainType } from "../../../types";
-import { DexScreenerProvider } from "../dexscreener.provider";
+import { DexScreenerProvider } from "@/services/providers/dexscreener.provider.js";
+import { BlockchainType } from "@/types/index.js";
 
 // Load environment variables
 dotenv.config();

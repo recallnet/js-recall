@@ -10,9 +10,9 @@ import {
   LeaderboardResponse,
   TeamProfileResponse,
   UpcomingCompetitionsResponse,
-} from "../utils/api-types";
-import { getPool } from "../utils/db-manager";
-import { getBaseUrl } from "../utils/server";
+} from "@/e2e/utils/api-types.js";
+import { getPool } from "@/e2e/utils/db-manager.js";
+import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
@@ -23,8 +23,8 @@ import {
   registerTeamAndGetClient,
   startExistingTestCompetition,
   startTestCompetition,
-} from "../utils/test-helpers";
-import { wait } from "../utils/test-helpers";
+} from "@/e2e/utils/test-helpers.js";
+import { wait } from "@/e2e/utils/test-helpers.js";
 
 describe("Competition API", () => {
   let adminApiKey: string;

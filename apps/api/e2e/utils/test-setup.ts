@@ -6,8 +6,9 @@
 import fs from "fs";
 import path from "path";
 
-import { services } from "../../src/services";
-import { dbManager } from "./db-manager";
+import { services } from "@/services/index.js";
+
+import { dbManager } from "./db-manager.js";
 
 // Path to log file
 const logFile = path.resolve(__dirname, "../e2e-server.log");

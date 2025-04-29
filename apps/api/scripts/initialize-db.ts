@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 
-import { DatabaseConnection } from "../src/database/connection";
+import { DatabaseConnection } from "@/database/connection.js";
 
 /**
  * Split the SQL initialization file into sections by comments

@@ -1,8 +1,8 @@
 import axios, { AxiosError } from "axios";
 
-import config from "../../src/config";
-import { BalancesResponse, ErrorResponse } from "../utils/api-types";
-import { getBaseUrl } from "../utils/server";
+import config from "@/config/index.js";
+import { BalancesResponse, ErrorResponse } from "@/e2e/utils/api-types.js";
+import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
@@ -12,7 +12,7 @@ import {
   registerTeamAndGetClient,
   startTestCompetition,
   wait,
-} from "../utils/test-helpers";
+} from "@/e2e/utils/test-helpers.js";
 
 describe("Rate Limiter Middleware", () => {
   // Clean up test state before each test

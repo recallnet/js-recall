@@ -1,5 +1,5 @@
-const fs = require('fs');
-const path = require('path');
+import { appendFileSync } from "fs";
+import { resolve } from "path";
 
 /**
  * Custom Jest reporter that logs test results to e2e-server.log file
@@ -8,11 +8,11 @@ class LogReporter {
   constructor(globalConfig, options) {
     this.globalConfig = globalConfig;
     this.options = options;
-    this.logFile = path.resolve(__dirname, '../e2e-server.log');
+    this.logFile = resolve(__dirname, "../e2e-server.log");
   }
 
   onRunStart(results, options) {
-    this.log('==== JEST TEST SUITE STARTED ====');
+    this.log("==== JEST TEST SUITE STARTED ====");
   }
 
   onTestStart(test) {
@@ -30,11 +30,15 @@ class LogReporter {
     // Log individual test results
     testResults.forEach((result) => {
       const status =
-        result.status === 'passed' ? '✅ PASS' : result.status === 'failed' ? '❌ FAIL' : '⏸️ SKIP';
+        result.status === "passed"
+          ? "✅ PASS"
+          : result.status === "failed"
+            ? "❌ FAIL"
+            : "⏸️ SKIP";
       this.log(`${status}: ${result.fullName}`);
 
       // Log failures in detail
-      if (result.status === 'failed') {
+      if (result.status === "failed") {
         result.failureMessages.forEach((failure) => {
           this.log(`  Error: ${failure}`);
         });
@@ -43,7 +47,7 @@ class LogReporter {
   }
 
   onRunComplete(contexts, results) {
-    this.log('\n==== JEST TEST SUITE COMPLETED ====');
+    this.log("\n==== JEST TEST SUITE COMPLETED ====");
     this.log(
       `Tests: ${results.numPassedTests} passed, ${results.numFailedTests} failed, ${results.numPendingTests} pending`,
     );
@@ -54,8 +58,8 @@ class LogReporter {
   }
 
   log(message) {
-    fs.appendFileSync(this.logFile, message + '\n');
+    appendFileSync(this.logFile, message + "\n");
   }
 }
 
-module.exports = LogReporter;
+export default LogReporter;

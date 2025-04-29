@@ -12,7 +12,7 @@ import { config } from "dotenv";
 import fs from "fs";
 import path from "path";
 
-import { killExistingServers } from "./utils/server";
+import { killExistingServers } from "./utils/server.js";
 
 // Load test environment variables
 config({ path: path.resolve(__dirname, "../.env.test") });

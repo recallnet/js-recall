@@ -1,6 +1,6 @@
-import { BlockchainType, SpecificChain } from "../../types";
-import { BaseRepository } from "../base-repository";
-import { DatabaseRow, PriceRecord } from "../types";
+import { BaseRepository } from "@/database/base-repository.js";
+import { DatabaseRow, PriceRecord } from "@/database/types.js";
+import { BlockchainType, SpecificChain } from "@/types/index.js";
 
 /**
  * Type for SQL query parameters

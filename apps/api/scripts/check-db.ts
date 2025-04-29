@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import * as path from "path";
 
-import { DatabaseConnection } from "../src/database/connection";
+import { DatabaseConnection } from "@/database/connection.js";
 
 // Ensure environment is loaded
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });

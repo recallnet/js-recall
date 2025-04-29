@@ -1,8 +1,8 @@
 import { Router } from "express";
 
-import { AdminController } from "../controllers/admin.controller";
-import { adminAuthMiddleware } from "../middleware/admin-auth.middleware";
-import { services } from "../services";
+import { AdminController } from "@/controllers/admin.controller.js";
+import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
+import { services } from "@/services/index.js";
 
 const router = Router();
 

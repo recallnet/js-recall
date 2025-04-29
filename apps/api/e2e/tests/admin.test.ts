@@ -6,15 +6,15 @@ import {
   ErrorResponse,
   TeamProfileResponse,
   TeamRegistrationResponse,
-} from "../utils/api-types";
-import { getBaseUrl } from "../utils/server";
+} from "@/e2e/utils/api-types.js";
+import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
   ADMIN_USERNAME,
   cleanupTestState,
   createTestClient,
-} from "../utils/test-helpers";
+} from "@/e2e/utils/test-helpers.js";
 
 describe("Admin API", () => {
   let adminApiKey: string;
