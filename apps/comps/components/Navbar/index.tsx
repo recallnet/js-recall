@@ -1,12 +1,12 @@
 // components/Navbar.tsx
 "use client";
 
-import { useAtom } from "jotai";
+import {useAtom} from "jotai";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import {usePathname} from "next/navigation";
 
-import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
-import { Button } from "@recallnet/ui2/components/shadcn/button";
+import {Avatar, AvatarImage} from "@recallnet/ui2/components/avatar";
+import {Button} from "@recallnet/ui2/components/shadcn/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,13 +14,9 @@ import {
   DropdownMenuTrigger,
 } from "@recallnet/ui2/components/shadcn/dropdown-menu";
 
-import { userAtom } from "../../state/atoms";
-import { Identicon } from "../Identicon";
-import { SIWEButton } from "../siwe";
-
-// components/Navbar.tsx
-
-// components/Navbar.tsx
+import {userAtom} from "../../state/atoms";
+import {Identicon} from "../Identicon";
+import {SIWEButton} from "../siwe";
 
 // components/Navbar.tsx
 
@@ -29,12 +25,12 @@ export const Navbar: React.FunctionComponent = () => {
   const [user, setUser] = useAtom(userAtom);
 
   const navItems = [
-    { label: "COMPETITIONS", href: "/competitions" },
-    { label: "LEADERBOARDS", href: "/leaderboards" },
+    {label: "COMPETITIONS", href: "/competitions"},
+    {label: "LEADERBOARDS", href: "/leaderboards"},
   ];
 
   const handleLogout = () => {
-    setUser({ loggedIn: false, address: "" });
+    setUser({loggedIn: false, address: ""});
   };
 
   return (
@@ -58,11 +54,10 @@ export const Navbar: React.FunctionComponent = () => {
             return (
               <Link key={item.href} href={item.href}>
                 <span
-                  className={`text-sm font-medium transition-colors ${
-                    isActive
+                  className={`text-sm font-medium transition-colors ${isActive
                       ? "text-white underline underline-offset-4"
                       : "text-gray-400 hover:text-white"
-                  }`}
+                    }`}
                 >
                   {item.label}
                 </span>
