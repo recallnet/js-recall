@@ -307,6 +307,12 @@ export interface StartCompetitionResponse extends ApiResponse {
   initializedTeams: string[];
 }
 
+// Upcoming competitions response
+export interface UpcomingCompetitionsResponse extends ApiResponse {
+  success: true;
+  competitions: Competition[];
+}
+
 // Competition rules response
 export interface CompetitionRulesResponse extends ApiResponse {
   success: true;

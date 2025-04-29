@@ -5,9 +5,11 @@ import {
   Competition,
   CompetitionRulesResponse,
   CompetitionStatusResponse,
+  CreateCompetitionResponse,
   EndCompetitionResponse,
   LeaderboardResponse,
   TeamProfileResponse,
+  UpcomingCompetitionsResponse,
 } from "../utils/api-types";
 import { getPool } from "../utils/db-manager";
 import { getBaseUrl } from "../utils/server";
@@ -236,7 +238,7 @@ describe("Competition API", () => {
 
     // The team should be in the leaderboard
     const teamInLeaderboard = leaderboardResponse.leaderboard.find(
-      (entry: any) => entry.teamName === "Team Gamma",
+      (entry) => entry.teamName === "Team Gamma",
     );
     expect(teamInLeaderboard).toBeDefined();
   });
@@ -383,7 +385,7 @@ describe("Competition API", () => {
 
     // Find the team in the leaderboard
     const teamInLeaderboard = leaderboardResponse.leaderboard.find(
-      (entry: any) => entry.teamId === team.id,
+      (entry) => entry.teamId === team.id,
     );
     expect(teamInLeaderboard).toBeDefined();
     expect(teamInLeaderboard?.active).toBe(true);
@@ -598,5 +600,116 @@ describe("Competition API", () => {
         expect(competition.allowCrossChainTrading).toBeDefined();
       }
     }
+  });
+
+  test("teams can view upcoming competitions", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register a team
+    const { client: teamClient } = await registerTeamAndGetClient(
+      adminClient,
+      "Upcoming Viewer Team",
+    );
+
+    // Create several competitions in PENDING state
+    const comp1Name = `Upcoming Competition 1 ${Date.now()}`;
+    const comp2Name = `Upcoming Competition 2 ${Date.now()}`;
+    const comp3Name = `Upcoming Competition 3 ${Date.now()}`;
+
+    // Create the competitions
+    const createResponse1 = (await adminClient.createCompetition(
+      comp1Name,
+      "Test competition 1",
+      true,
+    )) as CreateCompetitionResponse;
+    const createResponse2 = (await adminClient.createCompetition(
+      comp2Name,
+      "Test competition 2",
+      false,
+    )) as CreateCompetitionResponse;
+    const createResponse3 = (await adminClient.createCompetition(
+      comp3Name,
+      "Test competition 3",
+      true,
+    )) as CreateCompetitionResponse;
+
+    // Verify all competitions were created and in PENDING state
+    expect(createResponse1.competition.status).toBe("PENDING");
+    expect(createResponse2.competition.status).toBe("PENDING");
+    expect(createResponse3.competition.status).toBe("PENDING");
+
+    // Call the new endpoint to get upcoming competitions
+    const upcomingResponse =
+      (await teamClient.getUpcomingCompetitions()) as UpcomingCompetitionsResponse;
+
+    // Verify the response
+    expect(upcomingResponse.success).toBe(true);
+    expect(upcomingResponse.competitions).toBeDefined();
+    expect(Array.isArray(upcomingResponse.competitions)).toBe(true);
+
+    // At least our 3 competitions should be there (there might be others from previous tests)
+    expect(upcomingResponse.competitions.length).toBeGreaterThanOrEqual(3);
+
+    // Verify our competitions are in the response
+    const foundComp1 = upcomingResponse.competitions.some(
+      (comp) => comp.name === comp1Name && comp.status === "PENDING",
+    );
+    const foundComp2 = upcomingResponse.competitions.some(
+      (comp) => comp.name === comp2Name && comp.status === "PENDING",
+    );
+    const foundComp3 = upcomingResponse.competitions.some(
+      (comp) => comp.name === comp3Name && comp.status === "PENDING",
+    );
+
+    expect(foundComp1).toBe(true);
+    expect(foundComp2).toBe(true);
+    expect(foundComp3).toBe(true);
+
+    // Verify each competition has all expected fields
+    upcomingResponse.competitions.forEach((comp) => {
+      expect(comp.id).toBeDefined();
+      expect(comp.name).toBeDefined();
+      expect(comp.status).toBe("PENDING");
+      expect(comp.allowCrossChainTrading).toBeDefined();
+      expect(comp.createdAt).toBeDefined();
+      expect(comp.updatedAt).toBeDefined();
+    });
+
+    // Register a team
+    const { team } = await registerTeamAndGetClient(
+      adminClient,
+      "Upcoming competitions viewer test",
+    );
+
+    // Start one of the competitions to verify it disappears from upcoming list
+    await startExistingTestCompetition(
+      adminClient,
+      createResponse1.competition.id,
+      [team.id],
+    );
+
+    // Get upcoming competitions again
+    const upcomingResponseAfterStart =
+      (await teamClient.getUpcomingCompetitions()) as UpcomingCompetitionsResponse;
+
+    // Verify the started competition is no longer in the list
+    const foundComp1AfterStart = upcomingResponseAfterStart.competitions.some(
+      (comp) => comp.id === createResponse1.competition.id,
+    );
+
+    expect(foundComp1AfterStart).toBe(false);
+
+    // But the other two should still be there
+    const foundComp2AfterStart = upcomingResponseAfterStart.competitions.some(
+      (comp) => comp.id === createResponse2.competition.id,
+    );
+    const foundComp3AfterStart = upcomingResponseAfterStart.competitions.some(
+      (comp) => comp.id === createResponse3.competition.id,
+    );
+
+    expect(foundComp2AfterStart).toBe(true);
+    expect(foundComp3AfterStart).toBe(true);
   });
 });

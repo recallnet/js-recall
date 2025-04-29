@@ -499,6 +499,39 @@ export class CompetitionRepository extends BaseRepository<Competition> {
   }
 
   /**
+   * Find competitions by status
+   * @param status The competition status to filter by
+   * @param client Optional database client for transactions
+   */
+  async findByStatus(
+    status: CompetitionStatus,
+    client?: PoolClient,
+  ): Promise<Competition[]> {
+    try {
+      const query = `
+          SELECT * FROM competitions
+          WHERE status = $1
+          ORDER BY created_at DESC
+        `;
+
+      const result = client
+        ? await client.query(query, [status])
+        : await this.db.query(query, [status]);
+
+      return result.rows.map((row: DatabaseRow) => {
+        const camelRow = this.toCamelCase(row);
+        return this.mapToEntity(camelRow);
+      });
+    } catch (error) {
+      console.error(
+        `[CompetitionRepository] Error finding competitions with status ${status}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Map database row to Competition entity
    * @param data Row data with camelCase keys
    */
