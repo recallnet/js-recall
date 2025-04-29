@@ -1,16 +1,18 @@
 "use client";
 
 import axios from "axios";
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import type { Hex } from "viem";
 import { createSiweMessage } from "viem/siwe";
 import { useAccount, useConnect, usePublicClient, useSignMessage } from "wagmi";
 
-import { Button } from "@recallnet/ui2/components/button";
+import { Button } from "@recallnet/ui2/components/shadcn/button";
 
 import { cbWalletConnector } from "@/wagmi-config";
 
-export function ConnectAndSIWE() {
+export const SIWEButton: React.FunctionComponent<
+  React.ComponentProps<typeof Button>
+> = (props) => {
   const [message, setMessage] = useState<string>("");
   const [signature, setSignature] = useState<Hex | undefined>(undefined);
   const [login, setLoggedIn] = useState<boolean | undefined>(undefined);
@@ -87,8 +89,11 @@ export function ConnectAndSIWE() {
   }, [signature, account, checkValid]);
 
   return (
-    <Button onClick={() => connect({ connector: cbWalletConnector })}>
-      {login ? "Logged in" : "Connect + SIWE"}
+    <Button
+      onClick={() => connect({ connector: cbWalletConnector })}
+      {...props}
+    >
+      {props.children}
     </Button>
   );
-}
+};
