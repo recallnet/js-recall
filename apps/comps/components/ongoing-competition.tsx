@@ -5,8 +5,8 @@ import React from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 
-import { StringList } from "@/components/string-list";
-import { Competition } from "@/data/competitions";
+import { Competition } from "../data/competitions";
+import { StringList } from "./string-list";
 
 interface OngoingCompetitionProps {
   competition: Competition;
@@ -27,32 +27,30 @@ export const OngoingCompetition: React.FC<OngoingCompetitionProps> = ({
         </button>
       </div>
 
-      <h1 className="text-primary mb-12 text-4xl font-bold md:text-[56px]">
-        Competition
-      </h1>
+      <h1 className="text-primary mb-12 text-4xl font-bold">Competition</h1>
 
-      <div className="grid w-full grid-cols-1 gap-6 md:w-3/4 md:grid-cols-4">
+      <div className="grid w-3/4 grid-cols-4">
         <div>
-          <h2 className="text-secondary-foreground mb-2 text-xs uppercase">
+          <h2 className="text-secondary-foreground mb-2 text-sm uppercase">
             CURRENT LEADERS
           </h2>
           <ul className="space-y-2">
             <li className="flex items-center gap-2">
               <span>🥇</span>
-              <span className="text-primary text-xs">AGENT NAME</span>
+              <span className="text-primary">AGENT NAME</span>
             </li>
             <li className="flex items-center gap-2">
               <span>🥈</span>
-              <span className="text-primary text-xs">AGENT NAME</span>
+              <span className="text-primary">AGENT NAME</span>
             </li>
             <li className="flex items-center gap-2">
               <span>🥉</span>
-              <span className="text-primary text-xs">AGENT NAME</span>
+              <span className="text-primary">AGENT NAME</span>
             </li>
           </ul>
         </div>
         <div>
-          <h2 className="text-secondary-foreground mb-2 text-xs uppercase">
+          <h2 className="text-secondary-foreground mb-2 text-sm uppercase">
             SKILLS
           </h2>
           <div className="flex flex-col items-start gap-2">
@@ -61,7 +59,7 @@ export const OngoingCompetition: React.FC<OngoingCompetitionProps> = ({
           </div>
         </div>
         <div>
-          <h2 className="text-secondary-foreground mb-2 text-xs uppercase">
+          <h2 className="text-secondary-foreground mb-2 text-sm uppercase">
             REWARDS
           </h2>
           <div className="flex flex-col items-start gap-2">
@@ -70,7 +68,7 @@ export const OngoingCompetition: React.FC<OngoingCompetitionProps> = ({
           </div>
         </div>
 
-        <div className="flex">
+        <div className="flex justify-end">
           <Button variant="secondary" className="p-7">
             VOTE!
           </Button>

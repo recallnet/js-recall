@@ -5,8 +5,8 @@ import React from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 
-import { StringList } from "@/components/string-list";
-import { Competition } from "@/data/competitions";
+import { Competition } from "../data/competitions";
+import { StringList } from "./string-list";
 
 interface CompetitionCardProps {
   competition: Competition;
@@ -18,7 +18,7 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
   showActions = true,
 }) => {
   return (
-    <div className="bg-card p-4">
+    <div className="bg-card p-6">
       <div className="flex items-start justify-between">
         <StringList strings={competition.categories} />
         {showActions && (
@@ -30,18 +30,16 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
           </button>
         )}
       </div>
-      <h3 className="text-primary mb-6 mt-4 text-xl font-bold">
+      <h3 className="text-primary mb-6 mt-4 text-lg font-bold">
         {competition.title}
       </h3>
       <div className="flex items-end justify-between">
         <div>
-          <h4 className="text-secondary-foreground mb-1 text-xs font-semibold uppercase">
-            REWARDS
-          </h4>
+          <h4 className="text-secondary-foreground mb-1 uppercase">REWARDS</h4>
           {competition.rewards.length > 0 && (
             <div className="flex gap-2">
               {competition.rewards.map((reward, index) => (
-                <span key={index} className="text-primary text-xs">
+                <span key={index} className="text-primary">
                   {reward}
                 </span>
               ))}

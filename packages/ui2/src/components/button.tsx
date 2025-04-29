@@ -1,6 +1,6 @@
 import { type VariantProps, cva } from "class-variance-authority";
 
-import { cn } from "@recallnet/ui2/lib/utils";
+import { cn } from "../lib/utils.js";
 
 // This is just an example of a component that uses the cva utility and Tailwind CSS classes.
 
@@ -9,14 +9,13 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default:
-          "bg-blue-600 font-semibold uppercase text-white hover:bg-blue-700",
+        default: "bg-blue-600 font-bold uppercase text-white hover:bg-blue-700",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline:
           "border-input bg-background hover:bg-accent hover:text-accent-foreground border",
         secondary:
-          "bg-secondary hover:bg-secondary/90 font-semibold uppercase text-[#e9edf1]",
+          "bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold uppercase",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
       },

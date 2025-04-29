@@ -12,7 +12,7 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import { Competition } from "@/data/competitions";
+import { Competition } from "../data/competitions";
 
 interface CompetitionTableProps {
   competitions: Competition[];
@@ -25,22 +25,18 @@ export const CompetitionTable: React.FC<CompetitionTableProps> = ({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="text-primary w-[600px] p-0 text-left text-xs font-semibold">
+          <TableHead className="text-primary w-[600px] p-0 text-left">
             COMPETITION
           </TableHead>
-          <TableHead className="text-primary w-[100px] text-xs font-semibold">
-            REWARDS
-          </TableHead>
-          <TableHead className="text-primary w-[200px] text-xs font-semibold">
-            WINNERS
-          </TableHead>
+          <TableHead className="text-primary w-[100px]">REWARDS</TableHead>
+          <TableHead className="text-primary w-[200px]">WINNERS</TableHead>
           <TableHead className="w-[50px]"></TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {competitions.map((competition) => (
           <TableRow key={competition.id} className="border-t border-slate-700">
-            <TableCell className="text-primary text-xs font-medium font-semibold">
+            <TableCell className="text-primary font-medium">
               <div>
                 <div>{competition.title}</div>
                 <div
@@ -57,7 +53,7 @@ export const CompetitionTable: React.FC<CompetitionTableProps> = ({
                 <div className="h-1 w-12 bg-white"></div>
               </div>
             </TableCell>
-            <TableCell className="text-xs font-semibold">
+            <TableCell>
               <div className="flex items-start gap-2">
                 <span>🥇</span>
                 <div className="flex flex-col">

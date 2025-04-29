@@ -9,8 +9,8 @@ import {
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
 
-import { CompetitionTable } from "@/components/competition-table";
-import { Competition } from "@/data/competitions";
+import { Competition } from "../data/competitions";
+import { CompetitionTable } from "./competition-table";
 
 interface RecentlyEndedSectionProps {
   competitions: Competition[];
@@ -32,9 +32,7 @@ export const RecentlyEndedSection: React.FC<RecentlyEndedSectionProps> = ({
 
   return (
     <section className="my-12">
-      <h2 className="text-primary mb-6 text-[28px] font-bold">
-        Recently Ended
-      </h2>
+      <h2 className="text-primary mb-6 text-2xl font-bold">Recently Ended</h2>
 
       <Tabs defaultValue="all" onValueChange={setActiveTab}>
         <TabsList className="mb-6">

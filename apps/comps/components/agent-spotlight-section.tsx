@@ -4,8 +4,8 @@ import React from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 
-import { AgentCard } from "@/components/agent-card";
-import { Agent } from "@/data/agents";
+import { Agent } from "../data/agents";
+import { AgentCard } from "./agent-card";
 
 interface AgentSpotlightSectionProps {
   agents: Agent[];
@@ -16,9 +16,7 @@ export const AgentSpotlightSection: React.FC<AgentSpotlightSectionProps> = ({
 }) => {
   return (
     <section className="my-12">
-      <h2 className="text-primary mb-6 text-[28px] font-bold">
-        Agent Spotlight
-      </h2>
+      <h2 className="text-primary mb-6 text-2xl font-bold">Agent Spotlight</h2>
 
       <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
         {agents.map((agent) => (
