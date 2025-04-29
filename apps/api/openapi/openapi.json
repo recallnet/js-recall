@@ -17,10 +17,6 @@
     {
       "url": "http://localhost:3000",
       "description": "Local development server"
-    },
-    {
-      "url": "https://api.example.com",
-      "description": "Production server"
     }
   ],
   "components": {
@@ -182,18 +178,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "in": "header",
-            "name": "Authorization",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "Bearer token for authentication (format \"Bearer YOUR_API_KEY\")",
-            "example": "Bearer abc123def456_ghi789jkl012"
-          }
-        ],
         "responses": {
           "200": {
             "description": "Team profile",
@@ -307,18 +291,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "header",
-            "name": "Authorization",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "Bearer token for authentication (format \"Bearer YOUR_API_KEY\")",
-            "example": "Bearer abc123def456_ghi789jkl012"
           }
         ],
         "requestBody": {
@@ -498,18 +470,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "in": "header",
-            "name": "Authorization",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "Bearer token for authentication (format \"Bearer YOUR_API_KEY\")",
-            "example": "Bearer abc123def456_ghi789jkl012"
-          }
-        ],
         "responses": {
           "200": {
             "description": "API key reset successfully",
@@ -554,18 +514,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "header",
-            "name": "Authorization",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "Bearer token for authentication (format \"Bearer YOUR_API_KEY\")",
-            "example": "Bearer abc123def456_ghi789jkl012"
           }
         ],
         "responses": {
@@ -637,18 +585,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "header",
-            "name": "Authorization",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "Bearer token for authentication (format \"Bearer YOUR_API_KEY\")",
-            "example": "Bearer abc123def456_ghi789jkl012"
           }
         ],
         "responses": {
@@ -745,18 +681,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "header",
-            "name": "Authorization",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "Bearer token for authentication (format \"Bearer YOUR_API_KEY\")",
-            "example": "Bearer abc123def456_ghi789jkl012"
           }
         ],
         "responses": {
@@ -2063,16 +1987,6 @@
         ],
         "parameters": [
           {
-            "in": "header",
-            "name": "Authorization",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "Bearer token for authentication (format \"Bearer YOUR_API_KEY\")",
-            "example": "Bearer abc123def456_ghi789jkl012"
-          },
-          {
             "in": "query",
             "name": "competitionId",
             "schema": {
@@ -2214,18 +2128,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "in": "header",
-            "name": "Authorization",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "Bearer token for authentication (format \"Bearer YOUR_API_KEY\")",
-            "example": "Bearer abc123def456_ghi789jkl012"
-          }
-        ],
         "responses": {
           "200": {
             "description": "Competition status",
@@ -2325,18 +2227,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "header",
-            "name": "Authorization",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "Bearer token for authentication (format \"Bearer YOUR_API_KEY\")",
-            "example": "Bearer abc123def456_ghi789jkl012"
           }
         ],
         "responses": {
@@ -2552,16 +2442,6 @@
         ],
         "parameters": [
           {
-            "in": "header",
-            "name": "Authorization",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "Bearer token for authentication (format \"Bearer YOUR_API_KEY\")",
-            "example": "Bearer abc123def456_ghi789jkl012"
-          },
-          {
             "in": "query",
             "name": "token",
             "schema": {
@@ -2686,16 +2566,6 @@
           }
         ],
         "parameters": [
-          {
-            "in": "header",
-            "name": "Authorization",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "Bearer token for authentication (format \"Bearer YOUR_API_KEY\")",
-            "example": "Bearer abc123def456_ghi789jkl012"
-          },
           {
             "in": "query",
             "name": "token",
@@ -2945,17 +2815,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "in": "header",
-            "name": "Authorization",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "Bearer token for authentication (format \"Bearer YOUR_API_KEY\")"
-          }
-        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -3134,15 +2993,6 @@
           }
         ],
         "parameters": [
-          {
-            "in": "header",
-            "name": "Authorization",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "Bearer token for authentication (format \"Bearer YOUR_API_KEY\")"
-          },
           {
             "in": "query",
             "name": "fromToken",
