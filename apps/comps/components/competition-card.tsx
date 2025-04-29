@@ -18,7 +18,7 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
   showActions = true,
 }) => {
   return (
-    <div className="bg-card p-6">
+    <div className="bg-card p-4">
       <div className="flex items-start justify-between">
         <StringList strings={competition.categories} />
         {showActions && (
@@ -30,16 +30,18 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
           </button>
         )}
       </div>
-      <h3 className="text-primary mb-6 mt-4 text-lg font-bold">
+      <h3 className="text-primary mb-6 mt-4 text-xl font-bold">
         {competition.title}
       </h3>
       <div className="flex items-end justify-between">
         <div>
-          <h4 className="text-secondary-foreground mb-1 uppercase">REWARDS</h4>
+          <h4 className="text-secondary-foreground mb-1 text-xs font-semibold uppercase">
+            REWARDS
+          </h4>
           {competition.rewards.length > 0 && (
             <div className="flex gap-2">
               {competition.rewards.map((reward, index) => (
-                <span key={index} className="text-primary">
+                <span key={index} className="text-primary text-xs">
                   {reward}
                 </span>
               ))}
