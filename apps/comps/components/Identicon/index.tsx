@@ -1,18 +1,23 @@
-import {toSvg} from 'jdenticon';
+import { toSvg } from "jdenticon";
 
-export function Identicon({address}: {address: string}) {
+export function Identicon({ address }: { address: string }) {
   const svg = toSvg(address, 40, {
-    padding: 0.8, // Reduce padding to make figures smaller relative to the canvas
+    padding: 0.8,
+    hues: [227],
     lightness: {
-      color: [0, 10, 10, 0.4],   // Darker color (R, G, B, Alpha - adjust as needed)
+      color: [0.74, 1.0],
+      grayscale: [0.63, 0.82],
     },
-    backColor: 'black',
-  }); // 40px size
+    saturation: {
+      color: 0.51,
+      grayscale: 0.67,
+    },
+    backColor: "#0000",
+  });
   return (
     <div
-      dangerouslySetInnerHTML={{__html: svg}}
-      className="w-10 h-10"
+      dangerouslySetInnerHTML={{ __html: svg }}
+      className="h-10 w-10 rounded-full bg-gray-700"
     />
   );
 }
-
