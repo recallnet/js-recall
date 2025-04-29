@@ -1,9 +1,9 @@
-import {McpServer} from "@modelcontextprotocol/sdk/server/mcp.js";
-import {RequestHandlerExtra} from "@modelcontextprotocol/sdk/shared/protocol.js";
-import {z} from "zod";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
+import { z } from "zod";
 
 import RecallAPI from "../shared/api.js";
-import {Configuration, isToolAllowed} from "../shared/configuration.js";
+import { Configuration, isToolAllowed } from "../shared/configuration.js";
 
 /**
  * Recall agent toolkit for the Model Context Protocol.
