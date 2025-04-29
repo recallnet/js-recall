@@ -28,6 +28,7 @@ import {
   TradeExecutionParams,
   TradeHistoryResponse,
   TradeResponse,
+  UpcomingCompetitionsResponse,
 } from "./api-types";
 import { getBaseUrl } from "./server";
 
@@ -492,6 +493,22 @@ export class ApiClient {
       return response.data as CompetitionRulesResponse;
     } catch (error) {
       return this.handleApiError(error, "get competition rules");
+    }
+  }
+
+  /**
+   * Get upcoming competitions (status=PENDING)
+   */
+  async getUpcomingCompetitions(): Promise<
+    UpcomingCompetitionsResponse | ErrorResponse
+  > {
+    try {
+      const response = await this.axiosInstance.get(
+        "/api/competition/upcoming",
+      );
+      return response.data as UpcomingCompetitionsResponse;
+    } catch (error) {
+      return this.handleApiError(error, "get upcoming competitions");
     }
   }
 

@@ -551,4 +551,14 @@ export class CompetitionManager {
       return false;
     }
   }
+
+  /**
+   * Get all upcoming (pending) competitions
+   * @returns Array of competitions with PENDING status
+   */
+  async getUpcomingCompetitions(): Promise<Competition[]> {
+    return repositories.competitionRepository.findByStatus(
+      CompetitionStatus.PENDING,
+    );
+  }
 }
