@@ -705,6 +705,38 @@ Get the rules, rate limits, and other configuration details for the competition
 | --------------- | ------ |
 | BearerAuth      |        |
 
+### /api/competition/upcoming
+
+#### GET
+
+##### Summary:
+
+Get upcoming competitions
+
+##### Description:
+
+Get all competitions that have not started yet (status=PENDING)
+
+##### Parameters
+
+| Name          | Located in | Description                                                    | Required | Schema |
+| ------------- | ---------- | -------------------------------------------------------------- | -------- | ------ |
+| Authorization | header     | Bearer token for authentication (format "Bearer YOUR_API_KEY") | Yes      | string |
+
+##### Responses
+
+| Code | Description                                      |
+| ---- | ------------------------------------------------ |
+| 200  | Upcoming competitions retrieved successfully     |
+| 401  | Unauthorized - Missing or invalid authentication |
+| 500  | Server error                                     |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
 ### /api/health
 
 #### GET
