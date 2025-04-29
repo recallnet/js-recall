@@ -27,7 +27,6 @@
     ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules",
-    "wagmi-config.ts"
+    "node_modules"
   ]
 }
