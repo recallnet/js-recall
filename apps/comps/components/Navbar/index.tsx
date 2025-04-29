@@ -24,6 +24,8 @@ import { SIWEButton } from "../siwe";
 
 // components/Navbar.tsx
 
+// components/Navbar.tsx
+
 export const Navbar: React.FunctionComponent = () => {
   const pathname = usePathname();
   const [user, setUser] = useAtom(userAtom);
