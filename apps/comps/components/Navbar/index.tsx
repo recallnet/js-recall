@@ -1,4 +1,3 @@
-// components/Navbar.tsx
 "use client";
 
 import { useAtom } from "jotai";
@@ -17,16 +16,6 @@ import {
 import { userAtom } from "../../state/atoms";
 import { Identicon } from "../Identicon";
 import { SIWEButton } from "../siwe";
-
-// components/Navbar.tsx
-
-// components/Navbar.tsx
-
-// components/Navbar.tsx
-
-// components/Navbar.tsx
-
-// components/Navbar.tsx
 
 export const Navbar: React.FunctionComponent = () => {
   const pathname = usePathname();
