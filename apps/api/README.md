@@ -771,6 +771,48 @@ For a more comprehensive test run with database setup:
 npm run test:e2e:runner
 ```
 
+### Testing CI Workflows Locally
+
+This repository is configured to support local testing of GitHub Actions workflows using [act](https://github.com/nektos/act).
+
+#### Prerequisites
+
+1. Install [act](https://github.com/nektos/act#installation)
+2. Docker installed and running
+3. Make sure you're in the root directory of this repository, and not the `apps/api` directory
+
+#### Running the Entire CI Workflow
+
+To run the complete CI workflow with all jobs in sequence (similar to how GitHub Actions would run it):
+
+```bash
+act -W .github/workflows/api-ci.yml --container-architecture linux/amd64
+```
+
+or with Apple Silicon:
+
+```bash
+act -W .github/workflows/api-ci.yml --container-architecture linux/arm64
+```
+
+This will execute all jobs defined in the workflow: `lint-and-format`, `unit-tests`, and `e2e-tests`.
+
+#### Running Individual Jobs
+
+If you want to run specific jobs separately:
+
+##### Running the End-to-End Tests
+
+```bash
+act -j e2e-tests -W .github/workflows/api-ci.yml --container-architecture linux/amd64
+```
+
+##### Running Unit Tests
+
+```bash
+act -j unit-tests -W .github/workflows/api-ci.yml --container-architecture linux/amd64
+```
+
 ### Areas for Testing Improvement
 
 While our E2E testing is comprehensive, we have identified several areas for improvement:

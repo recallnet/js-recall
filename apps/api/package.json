@@ -2,6 +2,7 @@
   "name": "@recallnet/api",
   "version": "1.0.0",
   "description": "Solana Trading Simulator Server for hosting trading competitions",
+  "private": true,
   "main": "dist/src/index.js",
   "scripts": {
     "lint": "eslint . --max-warnings 0",
