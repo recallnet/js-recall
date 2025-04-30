@@ -11,10 +11,11 @@
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": [
+    "comps",
     "faucet",
     "portal",
+    "@recallnet/api",
     "@recallnet/ui",
-    "@recallnet/react",
-    "@recallnet/api"
+    "@recallnet/react"
   ]
 }
