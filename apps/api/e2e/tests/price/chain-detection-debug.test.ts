@@ -29,10 +29,6 @@ const ethereumTokens = {
   USDC: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 };
 
-// Skip tests if API key is not set
-const apiKey = process.env.NOVES_API_KEY;
-const runProviderTests = !!apiKey;
-
 describe("Chain Detection Debug", () => {
   // Create variables for authenticated clients
   let adminClient: ApiClient;
@@ -97,7 +93,7 @@ describe("Chain Detection Debug", () => {
   });
 
   // Only run provider tests if API key is available
-  (runProviderTests ? describe : describe.skip)("Direct Provider Tests", () => {
+  describe("Direct Provider Tests", () => {
     it("should fetch Ethereum price via PriceTracker", async () => {
       // Test PriceTracker (which uses providers internally)
       console.log(

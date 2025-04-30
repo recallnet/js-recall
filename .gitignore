@@ -45,6 +45,12 @@ docs/
 # Debug
 npm-debug.log*
 
+# API server logs Logs
+# Specific pattern for apps/api logs, including subdirectories
+apps/api/logs/
+apps/api/**/*.log
+apps/api/*.log
+
 # Misc
 .DS_Store
 *.pem
