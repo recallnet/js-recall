@@ -1,5 +1,9 @@
+import { drizzle } from "drizzle-orm/node-postgres";
 import fs from "fs";
-import { Pool, PoolClient, QueryResult, QueryResultRow } from "pg";
+import { Pool } from "pg";
+
+import * as relations from "@recallnet/comps-db/relations";
+import * as schema from "@recallnet/comps-db/schema";
 
 import { config } from "@/config/index.js";
 
@@ -9,7 +13,7 @@ import { config } from "@/config/index.js";
  */
 export class DatabaseConnection {
   private static instance: DatabaseConnection;
-  private pool: Pool;
+  public db;
 
   private constructor() {
     // Configure SSL options based on config
@@ -49,17 +53,19 @@ export class DatabaseConnection {
     // Check if a connection URL is provided
     if (config.database.url) {
       // Use connection URL which includes all connection parameters
-      this.pool = new Pool({
+      const pool = new Pool({
         connectionString: config.database.url,
         ...sslConfig,
       });
+
+      this.db = drizzle(pool, { schema: { ...schema, ...relations } });
 
       console.log(
         "[DatabaseConnection] Connected to PostgreSQL using connection URL",
       );
     } else {
       // Use individual connection parameters
-      this.pool = new Pool({
+      const pool = new Pool({
         user: config.database.username,
         password: config.database.password,
         host: config.database.host,
@@ -71,12 +77,14 @@ export class DatabaseConnection {
         connectionTimeoutMillis: 2000, // How long to wait for a connection to become available
       });
 
+      this.db = drizzle(pool, { schema: { ...schema, ...relations } });
+
       console.log(
         `[DatabaseConnection] Connected to PostgreSQL at ${config.database.host}:${config.database.port}`,
       );
     }
 
-    this.pool.on("error", (err: Error) => {
+    this.db.$client.on("error", (err: Error) => {
       console.error("Unexpected error on idle client", err);
       process.exit(-1);
     });
@@ -93,55 +101,9 @@ export class DatabaseConnection {
   }
 
   /**
-   * Get a client from the pool
-   */
-  public async getClient(): Promise<PoolClient> {
-    return await this.pool.connect();
-  }
-
-  /**
-   * Execute a query using the pool
-   * @param text Query text
-   * @param params Query parameters
-   */
-  public async query<T extends QueryResultRow = Record<string, unknown>>(
-    text: string,
-    params: unknown[] = [],
-  ): Promise<QueryResult<T>> {
-    try {
-      const res = await this.pool.query<T>(text, params);
-      return res;
-    } catch (err) {
-      console.error(`[DatabaseConnection] Error executing query: ${text}`, err);
-      throw err;
-    }
-  }
-
-  /**
-   * Execute a transaction
-   * @param callback Function to execute within the transaction
-   */
-  public async transaction<T>(
-    callback: (client: PoolClient) => Promise<T>,
-  ): Promise<T> {
-    const client = await this.getClient();
-    try {
-      await client.query("BEGIN");
-      const result = await callback(client);
-      await client.query("COMMIT");
-      return result;
-    } catch (e) {
-      await client.query("ROLLBACK");
-      throw e;
-    } finally {
-      client.release();
-    }
-  }
-
-  /**
    * Close the pool
    */
   public async close(): Promise<void> {
-    await this.pool.end();
+    await this.db.$client.end();
   }
 }

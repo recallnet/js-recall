@@ -369,8 +369,8 @@ export class PriceTracker {
         console.log(
           `[PriceTracker] Retrieved ${history.length} historical price points from database`,
         );
-        return history.map((point: PriceRecord) => ({
-          timestamp: point.timestamp.toISOString(),
+        return history.map((point) => ({
+          timestamp: point.timestamp?.toISOString() ?? "",
           price: point.price,
         }));
       }

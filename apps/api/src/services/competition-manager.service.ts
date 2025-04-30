@@ -78,7 +78,7 @@ export class CompetitionManager {
     allowCrossChainTrading: boolean = false,
   ): Promise<Competition> {
     const id = uuidv4();
-    const competition: Competition = {
+    const competition = {
       id,
       name,
       description,
@@ -103,7 +103,7 @@ export class CompetitionManager {
    * @param competitionId The competition ID
    * @returns The competition or null if not found
    */
-  async getCompetition(competitionId: string): Promise<Competition | null> {
+  async getCompetition(competitionId: string) {
     return repositories.competitionRepository.findById(competitionId);
   }
 
@@ -111,7 +111,7 @@ export class CompetitionManager {
    * Get all competitions
    * @returns Array of all competitions
    */
-  async getAllCompetitions(): Promise<Competition[]> {
+  async getAllCompetitions() {
     return repositories.competitionRepository.findAll();
   }
 
@@ -121,10 +121,7 @@ export class CompetitionManager {
    * @param teamIds Array of team IDs participating in the competition
    * @returns The updated competition
    */
-  async startCompetition(
-    competitionId: string,
-    teamIds: string[],
-  ): Promise<Competition> {
+  async startCompetition(competitionId: string, teamIds: string[]) {
     const competition =
       await repositories.competitionRepository.findById(competitionId);
     if (!competition) {
@@ -190,7 +187,7 @@ export class CompetitionManager {
    * @param competitionId The competition ID
    * @returns The updated competition
    */
-  async endCompetition(competitionId: string): Promise<Competition> {
+  async endCompetition(competitionId: string) {
     const competition =
       await repositories.competitionRepository.findById(competitionId);
     if (!competition) {
@@ -269,7 +266,7 @@ export class CompetitionManager {
    * Get the currently active competition
    * @returns The active competition or null if none
    */
-  async getActiveCompetition(): Promise<Competition | null> {
+  async getActiveCompetition() {
     // First check cache for better performance
     if (this.activeCompetitionCache) {
       const competition = await repositories.competitionRepository.findById(
@@ -329,7 +326,9 @@ export class CompetitionManager {
 
         // First try to get latest price record from the database to reuse chain information
         const latestPriceRecord =
-          await repositories.priceRepository.getLatestPrice(balance.token);
+          await repositories.priceRepository.getLatestPrice(
+            balance.tokenAddress,
+          );
 
         let specificChain: SpecificChain;
         let priceResult: PriceReport | undefined = undefined;
@@ -363,7 +362,7 @@ export class CompetitionManager {
 
             // Pass both chain type and specific chain to getPrice to bypass chain detection
             const result = await this.priceTracker.getPrice(
-              balance.token,
+              balance.tokenAddress,
               latestPriceRecord.chain,
               specificChain,
             );

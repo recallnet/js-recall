@@ -163,30 +163,6 @@ export class DbManager {
   }
 
   /**
-   * Execute a query using the pool
-   */
-  public async query(text: string, params: unknown[] = []) {
-    return await this.dbConnection.query(text, params);
-  }
-
-  /**
-   * Get a client from the pool for a transaction
-   * Make sure to release the client when done
-   */
-  public async getClient(): Promise<PoolClient> {
-    return await this.dbConnection.getClient();
-  }
-
-  /**
-   * Execute a transaction
-   */
-  public async transaction<T>(
-    callback: (client: PoolClient) => Promise<T>,
-  ): Promise<T> {
-    return await this.dbConnection.transaction(callback);
-  }
-
-  /**
    * Reset the database to a clean state
    * - Truncates all tables
    * - Resets sequences

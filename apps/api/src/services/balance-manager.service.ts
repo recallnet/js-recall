@@ -139,7 +139,7 @@ export class BalanceManager {
    * @param teamId The team ID
    * @returns Array of Balance objects
    */
-  async getAllBalances(teamId: string): Promise<Balance[]> {
+  async getAllBalances(teamId: string) {
     try {
       // Get from database
       const balances =
@@ -148,7 +148,7 @@ export class BalanceManager {
       // Update cache
       const balanceMap = new Map<string, number>();
       balances.forEach((balance) => {
-        balanceMap.set(balance.token, balance.amount);
+        balanceMap.set(balance.tokenAddress, balance.amount);
       });
       this.balanceCache.set(teamId, balanceMap);
 

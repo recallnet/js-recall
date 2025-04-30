@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      drizzle-orm:
+        specifier: ^0.42.0
+        version: 0.42.0(@electric-sql/pglite@0.2.17)(@neondatabase/serverless@1.0.0)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@vercel/postgres@0.10.0(utf-8-validate@5.0.10))(better-sqlite3@11.8.1)(pg@8.15.5)(sql.js@1.13.0)
     devDependencies:
       '@changesets/changelog-github':
         specifier: ^0.5.0
@@ -38,6 +42,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@recallnet/comps-db':
+        specifier: workspace:*
+        version: link:../../packages/comps-db
       '@types/express':
         specifier: ^4.17.17
         version: 4.17.21

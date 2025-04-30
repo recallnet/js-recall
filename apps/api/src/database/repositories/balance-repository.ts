@@ -1,17 +1,28 @@
-import { PoolClient } from "pg";
+import { and, count, eq } from "drizzle-orm";
+
+import { type SelectBalance, balances } from "@recallnet/comps-db/schema";
 
 import { config } from "@/config/index.js";
 import { BaseRepository } from "@/database/base-repository.js";
-import { DatabaseRow } from "@/database/types.js";
-import { Balance, SpecificChain } from "@/types/index.js";
 
 /**
  * Balance Repository
  * Handles database operations for balances
  */
-export class BalanceRepository extends BaseRepository<Balance> {
+export class BalanceRepository extends BaseRepository {
   constructor() {
-    super("balances");
+    super();
+  }
+
+  /**
+   * Count all balances
+   */
+  async count() {
+    const res = await this.dbConn.db.select({ count: count() }).from(balances);
+    if (!res.length) {
+      throw new Error("No count result returned");
+    }
+    return res[0]!.count;
   }
 
   /**
@@ -27,24 +38,31 @@ export class BalanceRepository extends BaseRepository<Balance> {
     tokenAddress: string,
     amount: number,
     specificChain: string,
-    client?: PoolClient,
-  ): Promise<Balance> {
+  ): Promise<SelectBalance> {
     try {
-      const query = `
-        INSERT INTO balances (team_id, token_address, amount, specific_chain)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (team_id, token_address) 
-        DO UPDATE SET amount = $3, updated_at = NOW(), specific_chain = $4
-        RETURNING id, team_id, token_address, amount, created_at, updated_at, specific_chain
-      `;
+      const [result] = await this.dbConn.db
+        .insert(balances)
+        .values({
+          teamId,
+          tokenAddress,
+          amount,
+          specificChain,
+        })
+        .onConflictDoUpdate({
+          target: [balances.teamId, balances.tokenAddress],
+          set: {
+            amount,
+            updatedAt: new Date(),
+            specificChain,
+          },
+        })
+        .returning();
 
-      const values = [teamId, tokenAddress, amount, specificChain];
+      if (!result) {
+        throw new Error("Failed to save balance - no result returned");
+      }
 
-      const result = client
-        ? await client.query(query, values)
-        : await this.db.query(query, values);
-
-      return this.mapToEntity(this.toCamelCase(result.rows[0]));
+      return result;
     } catch (error) {
       console.error("[BalanceRepository] Error in saveBalance:", error);
       throw error;
@@ -55,29 +73,23 @@ export class BalanceRepository extends BaseRepository<Balance> {
    * Get a specific balance
    * @param teamId Team ID
    * @param tokenAddress Token address
-   * @param client Optional database client for transactions
    */
   async getBalance(
     teamId: string,
     tokenAddress: string,
-    client?: PoolClient,
-  ): Promise<Balance | null> {
+  ): Promise<SelectBalance | null> {
     try {
-      const query = `
-        SELECT id, team_id, token_address, amount, created_at, updated_at, specific_chain
-        FROM balances
-        WHERE team_id = $1 AND token_address = $2
-      `;
+      const result = await this.dbConn.db
+        .select()
+        .from(balances)
+        .where(
+          and(
+            eq(balances.teamId, teamId),
+            eq(balances.tokenAddress, tokenAddress),
+          ),
+        );
 
-      const values = [teamId, tokenAddress];
-
-      const result = client
-        ? await client.query(query, values)
-        : await this.db.query(query, values);
-
-      return result.rows.length > 0
-        ? this.mapToEntity(this.toCamelCase(result.rows[0]))
-        : null;
+      return result[0] || null;
     } catch (error) {
       console.error("[BalanceRepository] Error in getBalance:", error);
       throw error;
@@ -87,28 +99,13 @@ export class BalanceRepository extends BaseRepository<Balance> {
   /**
    * Get all balances for a team
    * @param teamId Team ID
-   * @param client Optional database client for transactions
    */
-  async getTeamBalances(
-    teamId: string,
-    client?: PoolClient,
-  ): Promise<Balance[]> {
+  async getTeamBalances(teamId: string): Promise<SelectBalance[]> {
     try {
-      const query = `
-        SELECT id, team_id, token_address, amount, created_at, updated_at, specific_chain
-        FROM balances
-        WHERE team_id = $1
-      `;
-
-      const values = [teamId];
-
-      const result = client
-        ? await client.query(query, values)
-        : await this.db.query(query, values);
-
-      return result.rows.map((row: DatabaseRow) =>
-        this.mapToEntity(this.toCamelCase(row)),
-      );
+      return await this.dbConn.db
+        .select()
+        .from(balances)
+        .where(eq(balances.teamId, teamId));
     } catch (error) {
       console.error("[BalanceRepository] Error in getTeamBalances:", error);
       throw error;
@@ -119,62 +116,40 @@ export class BalanceRepository extends BaseRepository<Balance> {
    * Initialize default balances for a team
    * @param teamId Team ID
    * @param initialBalances Map of token addresses to amounts
-   * @param client Optional database client for transactions
    */
   async initializeTeamBalances(
     teamId: string,
     initialBalances: Map<string, number>,
-    client?: PoolClient,
   ): Promise<void> {
     try {
-      // Use a transaction if no client is provided
-      if (!client) {
-        await this.db.transaction(async (transactionClient) => {
-          await this.initializeBalancesInTransaction(
-            teamId,
-            initialBalances,
-            transactionClient,
-          );
-        });
-      } else {
-        await this.initializeBalancesInTransaction(
-          teamId,
-          initialBalances,
-          client,
-        );
-      }
+      await this.dbConn.db.transaction(async (tx) => {
+        for (const [tokenAddress, amount] of initialBalances.entries()) {
+          const specificChain = this.getTokenSpecificChain(tokenAddress);
+
+          await tx
+            .insert(balances)
+            .values({
+              teamId,
+              tokenAddress,
+              amount,
+              specificChain,
+            })
+            .onConflictDoUpdate({
+              target: [balances.teamId, balances.tokenAddress],
+              set: {
+                amount,
+                specificChain,
+                updatedAt: new Date(),
+              },
+            });
+        }
+      });
     } catch (error) {
       console.error(
         "[BalanceRepository] Error in initializeTeamBalances:",
         error,
       );
       throw error;
-    }
-  }
-
-  /**
-   * Initialize balances within a transaction
-   * @param teamId Team ID
-   * @param initialBalances Map of token addresses to amounts
-   * @param client Database client for the transaction
-   */
-  private async initializeBalancesInTransaction(
-    teamId: string,
-    initialBalances: Map<string, number>,
-    client: PoolClient,
-  ): Promise<void> {
-    for (const [tokenAddress, amount] of initialBalances.entries()) {
-      // Determine the specific chain for this token
-      const specificChain = this.getTokenSpecificChain(tokenAddress);
-
-      const query = `
-        INSERT INTO balances (team_id, token_address, amount, specific_chain)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (team_id, token_address) 
-        DO UPDATE SET amount = $3, specific_chain = $4, updated_at = NOW()
-      `;
-
-      await client.query(query, [teamId, tokenAddress, amount, specificChain]);
     }
   }
 
@@ -208,58 +183,31 @@ export class BalanceRepository extends BaseRepository<Balance> {
    * Reset balances for a team
    * @param teamId Team ID
    * @param initialBalances Map of token addresses to amounts
-   * @param client Optional database client for transactions
    */
   async resetTeamBalances(
     teamId: string,
     initialBalances: Map<string, number>,
-    client?: PoolClient,
   ): Promise<void> {
     try {
-      // Use a transaction if no client is provided
-      if (!client) {
-        await this.db.transaction(async (transactionClient) => {
-          // First delete all current balances
-          await transactionClient.query(
-            "DELETE FROM balances WHERE team_id = $1",
-            [teamId],
-          );
-
-          // Then initialize new ones
-          await this.initializeBalancesInTransaction(
-            teamId,
-            initialBalances,
-            transactionClient,
-          );
-        });
-      } else {
+      await this.dbConn.db.transaction(async (tx) => {
         // First delete all current balances
-        await client.query("DELETE FROM balances WHERE team_id = $1", [teamId]);
+        await tx.delete(balances).where(eq(balances.teamId, teamId));
 
         // Then initialize new ones
-        await this.initializeBalancesInTransaction(
-          teamId,
-          initialBalances,
-          client,
-        );
-      }
+        for (const [tokenAddress, amount] of initialBalances.entries()) {
+          const specificChain = this.getTokenSpecificChain(tokenAddress);
+
+          await tx.insert(balances).values({
+            teamId,
+            tokenAddress,
+            amount,
+            specificChain,
+          });
+        }
+      });
     } catch (error) {
       console.error("[BalanceRepository] Error in resetTeamBalances:", error);
       throw error;
     }
-  }
-
-  /**
-   * Map database row to Balance entity
-   * @param data Row data with camelCase keys
-   */
-  protected mapToEntity(data: DatabaseRow): Balance {
-    return {
-      token: data.tokenAddress as string,
-      amount: parseFloat(String(data.amount)),
-      createdAt: new Date(data.createdAt as string | number | Date),
-      updatedAt: new Date(data.updatedAt as string | number | Date),
-      specificChain: data.specificChain as SpecificChain,
-    };
   }
 }

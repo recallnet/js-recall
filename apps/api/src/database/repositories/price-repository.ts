@@ -1,18 +1,20 @@
-import { BaseRepository } from "@/database/base-repository.js";
-import { DatabaseRow, PriceRecord } from "@/database/types.js";
-import { BlockchainType, SpecificChain } from "@/types/index.js";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 
-/**
- * Type for SQL query parameters
- */
-type SqlParams = (string | number | Date | null | undefined)[];
+import {
+  InsertPrice,
+  type SelectPrice,
+  prices,
+} from "@recallnet/comps-db/schema";
+
+import { BaseRepository } from "@/database/base-repository.js";
+import { SpecificChain } from "@/types/index.js";
 
 /**
  * Repository for price data storage and retrieval
  */
-export class PriceRepository extends BaseRepository<PriceRecord> {
+export class PriceRepository extends BaseRepository {
   constructor() {
-    super("prices");
+    super();
     console.log("[PriceRepository] Initialized");
   }
 
@@ -21,70 +23,25 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
    * @param priceData The price data to store
    * @returns The created price record
    */
-  async create(priceData: PriceRecord): Promise<PriceRecord> {
+  async create(priceData: InsertPrice): Promise<SelectPrice> {
     console.log(
       `[PriceRepository] Storing price for ${priceData.token}: $${priceData.price}${priceData.chain ? ` on chain ${priceData.chain}` : ""}${priceData.specificChain ? ` (${priceData.specificChain})` : ""}`,
     );
 
     try {
-      const query = `
-          INSERT INTO prices (token, price, timestamp, chain, specific_chain)
-          VALUES ($1, $2, $3, $4, $5)
-          RETURNING id, token, price, timestamp, chain, specific_chain
-        `;
+      const result = await this.dbConn.db
+        .insert(prices)
+        .values(priceData)
+        .returning();
 
-      const values = [
-        priceData.token,
-        priceData.price,
-        priceData.timestamp,
-        priceData.chain,
-        priceData.specificChain,
-      ];
-
-      const result = await this.db.query(query, values);
-      const row = result.rows[0];
-      if (!row) {
+      if (!result[0]) {
         throw new Error("No price record returned");
       }
-      return this.mapToEntity(this.toCamelCase(row));
+
+      return result[0];
     } catch (error) {
       console.error("[PriceRepository] Error creating price record:", error);
       throw error;
-    }
-  }
-
-  /**
-   * Check if a column exists in a table
-   * @param tableName The table name
-   * @param columnName The column name
-   * @returns True if the column exists, false otherwise
-   */
-  private async checkIfColumnExists(
-    tableName: string,
-    columnName: string,
-  ): Promise<boolean> {
-    try {
-      const query = `
-        SELECT EXISTS (
-          SELECT 1
-          FROM information_schema.columns
-          WHERE table_name = $1
-            AND column_name = $2
-        ) as column_exists;
-      `;
-
-      const result = await this.db.query(query, [tableName, columnName]);
-      const row = result.rows[0];
-      if (!row) {
-        throw new Error("No row returned");
-      }
-      return row.column_exists as boolean;
-    } catch (error) {
-      console.error(
-        `[PriceRepository] Error checking if column ${columnName} exists in table ${tableName}:`,
-        error,
-      );
-      return false;
     }
   }
 
@@ -97,62 +54,28 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
   async getLatestPrice(
     token: string,
     specificChain?: SpecificChain,
-  ): Promise<PriceRecord | null> {
+  ): Promise<SelectPrice | null> {
     console.log(
       `[PriceRepository] Getting latest price for ${token}${specificChain ? ` on ${specificChain}` : ""}`,
     );
 
     try {
-      // Check if specific_chain column exists
-      const specificChainColumnExists = await this.checkIfColumnExists(
-        "prices",
-        "specific_chain",
-      );
+      const query = this.dbConn.db
+        .select()
+        .from(prices)
+        .where(
+          specificChain
+            ? and(
+                eq(prices.token, token),
+                eq(prices.specificChain, specificChain),
+              )
+            : eq(prices.token, token),
+        )
+        .orderBy(desc(prices.timestamp))
+        .limit(1);
 
-      let query: string;
-      let values: SqlParams;
-
-      if (specificChainColumnExists && specificChain) {
-        // If we have specific chain column and a specific chain is requested
-        query = `
-          SELECT id, token, price, timestamp, chain, specific_chain
-          FROM prices
-          WHERE token = $1 AND specific_chain = $2
-          ORDER BY timestamp DESC
-          LIMIT 1
-        `;
-        values = [token, specificChain];
-      } else if (specificChainColumnExists) {
-        // If specific_chain column exists but no specific chain is requested
-        query = `
-          SELECT id, token, price, timestamp, chain, specific_chain
-          FROM prices
-          WHERE token = $1
-          ORDER BY timestamp DESC
-          LIMIT 1
-        `;
-        values = [token];
-      } else {
-        // If specific_chain column doesn't exist, use only available columns
-        query = `
-          SELECT id, token, price, timestamp, chain
-          FROM prices
-          WHERE token = $1
-          ORDER BY timestamp DESC
-          LIMIT 1
-        `;
-        values = [token];
-      }
-
-      const result = await this.db.query(query, values);
-      if (result.rows.length === 0) return null;
-
-      const row = result.rows[0];
-      if (!row) {
-        throw new Error("No row returned");
-      }
-
-      return this.mapToEntity(this.toCamelCase(row));
+      const result = await query;
+      return result[0] || null;
     } catch (error) {
       console.error("[PriceRepository] Error getting latest price:", error);
       throw error;
@@ -170,58 +93,25 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
     token: string,
     hours: number,
     specificChain?: SpecificChain,
-  ): Promise<PriceRecord[]> {
+  ): Promise<SelectPrice[]> {
     console.log(
       `[PriceRepository] Getting price history for ${token}${specificChain ? ` on ${specificChain}` : ""} (last ${hours} hours)`,
     );
 
     try {
-      // Check if specific_chain column exists
-      const specificChainColumnExists = await this.checkIfColumnExists(
-        "prices",
-        "specific_chain",
-      );
+      const query = this.dbConn.db
+        .select()
+        .from(prices)
+        .where(
+          and(
+            eq(prices.token, token),
+            sql`${prices.timestamp} > NOW() - INTERVAL '${hours} hours'`,
+            ...(specificChain ? [eq(prices.specificChain, specificChain)] : []),
+          ),
+        )
+        .orderBy(asc(prices.timestamp));
 
-      let query: string;
-      let values: SqlParams;
-
-      if (specificChainColumnExists && specificChain) {
-        // If we have specific chain column and a specific chain is requested
-        query = `
-          SELECT id, token, price, timestamp, chain, specific_chain
-          FROM prices
-          WHERE token = $1 
-            AND specific_chain = $2
-            AND timestamp > NOW() - INTERVAL '${hours} hours'
-          ORDER BY timestamp ASC
-        `;
-        values = [token, specificChain];
-      } else if (specificChainColumnExists) {
-        // If specific_chain column exists but no specific chain is requested
-        query = `
-          SELECT id, token, price, timestamp, chain, specific_chain
-          FROM prices
-          WHERE token = $1
-            AND timestamp > NOW() - INTERVAL '${hours} hours'
-          ORDER BY timestamp ASC
-        `;
-        values = [token];
-      } else {
-        // If specific_chain column doesn't exist, use only available columns
-        query = `
-          SELECT id, token, price, timestamp, chain
-          FROM prices
-          WHERE token = $1
-            AND timestamp > NOW() - INTERVAL '${hours} hours'
-          ORDER BY timestamp ASC
-        `;
-        values = [token];
-      }
-
-      const result = await this.db.query(query, values);
-      return result.rows.map((row: DatabaseRow) =>
-        this.mapToEntity(this.toCamelCase(row)),
-      );
+      return await query;
     } catch (error) {
       console.error("[PriceRepository] Error getting price history:", error);
       throw error;
@@ -241,53 +131,32 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
     specificChain?: SpecificChain,
   ): Promise<number | null> {
     try {
-      // Check if specific_chain column exists
-      const specificChainColumnExists = await this.checkIfColumnExists(
-        "prices",
-        "specific_chain",
-      );
+      const result = await this.dbConn.db
+        .select({
+          avgPrice: sql<number>`AVG(${prices.price})`,
+        })
+        .from(prices)
+        .where(
+          and(
+            eq(prices.token, token),
+            sql`${prices.timestamp} > NOW() - INTERVAL '${hours} hours'`,
+            ...(specificChain ? [eq(prices.specificChain, specificChain)] : []),
+          ),
+        );
 
-      let query: string;
-      let values: SqlParams;
-
-      if (specificChainColumnExists && specificChain) {
-        query = `
-          SELECT AVG(price) as avg_price
-          FROM prices
-          WHERE token = $1
-            AND specific_chain = $2
-            AND timestamp > NOW() - INTERVAL '${hours} hours'
-        `;
-        values = [token, specificChain];
-      } else {
-        query = `
-          SELECT AVG(price) as avg_price
-          FROM prices
-          WHERE token = $1
-            AND timestamp > NOW() - INTERVAL '${hours} hours'
-        `;
-        values = [token];
-      }
-
-      const result = await this.db.query(query, values);
-      if (!result.rows[0]?.avg_price) return null;
-
-      return parseFloat(result.rows[0].avg_price as string);
+      return result[0]?.avgPrice ?? null;
     } catch (error) {
-      console.error(
-        `[PriceRepository] Error getting average price for ${token}:`,
-        error,
-      );
-      return null;
+      console.error("[PriceRepository] Error getting average price:", error);
+      throw error;
     }
   }
 
   /**
-   * Get price change percentage for a token
+   * Get price change percentage for a token over a time period
    * @param token The token address
-   * @param hours The number of hours to compare
+   * @param hours The number of hours to look back
    * @param specificChain Optional specific chain to filter by
-   * @returns The price change percentage or null if not enough data
+   * @returns The price change percentage or null if insufficient data
    */
   async getPriceChangePercentage(
     token: string,
@@ -295,91 +164,53 @@ export class PriceRepository extends BaseRepository<PriceRecord> {
     specificChain?: SpecificChain,
   ): Promise<number | null> {
     try {
-      // First, get the latest price
-      const latestPriceRecord = await this.getLatestPrice(token, specificChain);
-      if (!latestPriceRecord) return null;
+      const result = await this.dbConn.db
+        .select({
+          firstPrice: sql<number>`FIRST_VALUE(${prices.price}) OVER (ORDER BY ${prices.timestamp} ASC)`,
+          lastPrice: sql<number>`FIRST_VALUE(${prices.price}) OVER (ORDER BY ${prices.timestamp} DESC)`,
+        })
+        .from(prices)
+        .where(
+          and(
+            eq(prices.token, token),
+            sql`${prices.timestamp} > NOW() - INTERVAL '${hours} hours'`,
+            ...(specificChain ? [eq(prices.specificChain, specificChain)] : []),
+          ),
+        )
+        .limit(1);
 
-      // Check if specific_chain column exists
-      const specificChainColumnExists = await this.checkIfColumnExists(
-        "prices",
-        "specific_chain",
-      );
-
-      let query: string;
-      let values: SqlParams;
-
-      // Then get the earliest price in the specified time period
-      if (specificChainColumnExists && specificChain) {
-        query = `
-          SELECT price
-          FROM prices
-          WHERE token = $1
-            AND specific_chain = $2
-            AND timestamp > NOW() - INTERVAL '${hours} hours'
-          ORDER BY timestamp ASC
-          LIMIT 1
-        `;
-        values = [token, specificChain];
-      } else {
-        query = `
-          SELECT price
-          FROM prices
-          WHERE token = $1
-            AND timestamp > NOW() - INTERVAL '${hours} hours'
-          ORDER BY timestamp ASC
-          LIMIT 1
-        `;
-        values = [token];
+      if (!result[0]) {
+        return null;
       }
 
-      const result = await this.db.query(query, values);
-      if (result.rows.length === 0) return null;
+      const { firstPrice, lastPrice } = result[0];
+      if (!firstPrice || !lastPrice) {
+        return null;
+      }
 
-      const earliestPrice = parseFloat(result.rows[0]!.price as string);
-      const latestPrice = latestPriceRecord.price;
-
-      // Calculate percentage change
-      return ((latestPrice - earliestPrice) / earliestPrice) * 100;
+      return ((lastPrice - firstPrice) / firstPrice) * 100;
     } catch (error) {
       console.error(
-        `[PriceRepository] Error calculating price change for ${token}:`,
+        "[PriceRepository] Error getting price change percentage:",
         error,
       );
-      return null;
-    }
-  }
-
-  /**
-   * Count the number of price records
-   * @returns The count of price records
-   */
-  async count(): Promise<number> {
-    try {
-      const query = `SELECT COUNT(*) FROM prices`;
-      const result = await this.db.query(query);
-      const row = result.rows[0];
-      if (!row) {
-        throw new Error("No row returned");
-      }
-      return parseInt(row.count as string, 10);
-    } catch (error) {
-      console.error("[PriceRepository] Error counting records:", error);
       throw error;
     }
   }
 
   /**
-   * Map database row to PriceRecord entity
-   * @param data Row data with camelCase keys
+   * Count total number of price records
    */
-  protected mapToEntity(data: DatabaseRow): PriceRecord {
-    return {
-      id: data.id as number | undefined,
-      token: data.token as string,
-      price: parseFloat(String(data.price)),
-      timestamp: new Date(data.timestamp as string | number | Date),
-      chain: data.chain as BlockchainType,
-      specificChain: data.specificChain as SpecificChain,
-    };
+  async count(): Promise<number> {
+    try {
+      const result = await this.dbConn.db
+        .select({ count: sql<number>`count(*)` })
+        .from(prices);
+
+      return result[0]?.count ?? 0;
+    } catch (error) {
+      console.error("[PriceRepository] Error in count:", error);
+      throw error;
+    }
   }
 }

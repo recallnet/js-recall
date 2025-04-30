@@ -72,6 +72,7 @@ export const competitions = pgTable(
     startDate: timestamp("start_date", { withTimezone: true }),
     endDate: timestamp("end_date", { withTimezone: true }),
     status: varchar({ length: 20 }).notNull(),
+    allowCrossChainTrading: boolean().notNull().default(false),
     createdAt: timestamp("created_at", {
       withTimezone: true,
     }).default(sql`CURRENT_TIMESTAMP`),
