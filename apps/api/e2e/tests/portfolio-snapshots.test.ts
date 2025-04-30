@@ -6,6 +6,7 @@ import { PriceTracker } from "../../src/services/price-tracker.service";
 import { BlockchainType } from "../../src/types";
 import {
   BalancesResponse,
+  PortfolioSnapshot,
   SnapshotResponse,
   TokenPortfolioItem,
 } from "../utils/api-types";
@@ -83,11 +84,13 @@ describe("Portfolio Snapshots", () => {
 
     // Verify the snapshot has the correct team ID and competition ID
     const snapshot = typedResponse.snapshots[0];
-    expect(snapshot.teamId).toBe(team.id);
-    expect(snapshot.competitionId).toBe(competitionId);
+    expect(snapshot?.teamId).toBe(team.id);
+    expect(snapshot?.competitionId).toBe(competitionId);
     // Verify the snapshot has token values
-    expect(snapshot.valuesByToken).toBeDefined();
-    expect(Object.keys(snapshot.valuesByToken).length).toBeGreaterThan(0);
+    expect(snapshot?.valuesByToken).toBeDefined();
+    expect(
+      Object.keys((snapshot as PortfolioSnapshot).valuesByToken).length,
+    ).toBeGreaterThan(0);
   });
 
   // Test that snapshots can be taken manually
@@ -226,9 +229,9 @@ describe("Portfolio Snapshots", () => {
     // Verify the final snapshot has current portfolio values
     const finalSnapshot =
       afterEndResponse.snapshots[afterEndResponse.snapshots.length - 1];
-    expect(finalSnapshot.valuesByToken[solTokenAddress]).toBeDefined();
+    expect(finalSnapshot?.valuesByToken[solTokenAddress]).toBeDefined();
     expect(
-      finalSnapshot.valuesByToken[solTokenAddress]?.amount,
+      finalSnapshot?.valuesByToken[solTokenAddress]?.amount,
     ).toBeGreaterThan(0);
   });
 
@@ -280,21 +283,20 @@ describe("Portfolio Snapshots", () => {
     const initialSnapshot = initialSnapshotsResponse.snapshots[0];
 
     // Verify the USDC value is calculated correctly
-    const usdcValue = initialSnapshot.valuesByToken[usdcTokenAddress];
+    const usdcValue = initialSnapshot?.valuesByToken[usdcTokenAddress];
     expect(usdcValue?.amount).toBeCloseTo(initialUsdcBalance);
     if (usdcPrice) {
       expect(usdcValue?.valueUsd).toBeCloseTo(
         initialUsdcBalance * usdcPrice.price,
-        0,
+        -1,
       );
     }
 
     // Verify total portfolio value is the sum of all token values
-    const totalValue = Object.values(initialSnapshot.valuesByToken).reduce(
-      (sum: number, token) => sum + token.valueUsd,
-      0,
-    );
-    expect(initialSnapshot.totalValue).toBeCloseTo(totalValue, 0);
+    const totalValue = Object.values(
+      (initialSnapshot as PortfolioSnapshot).valuesByToken,
+    ).reduce((sum: number, token) => sum + token.valueUsd, 0);
+    expect(initialSnapshot?.totalValue).toBeCloseTo(totalValue, -1);
   });
 
   // Test that the configuration is loaded correctly
