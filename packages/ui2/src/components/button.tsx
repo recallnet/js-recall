@@ -1,6 +1,6 @@
 import { type VariantProps, cva } from "class-variance-authority";
 
-import { cn } from "../lib/utils.js";
+import { cn } from "@recallnet/ui2/lib/utils";
 
 // This is just an example of a component that uses the cva utility and Tailwind CSS classes.
 
