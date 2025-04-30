@@ -8,6 +8,7 @@ export interface Competition {
   tags: string[];
   rewards: string[];
   winners?: string[];
+  date: Date;
 }
 
 export const ongoingCompetitions: Competition[] = [
@@ -18,6 +19,12 @@ export const ongoingCompetitions: Competition[] = [
     categories: ["FINANCE", "TRADING"],
     tags: [],
     rewards: [],
+    date: (() => {
+      //current date + 5 hours
+      const date = new Date();
+      date.setHours(date.getHours() + 5);
+      return date;
+    })(),
   },
 ];
 
