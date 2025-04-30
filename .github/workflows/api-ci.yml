@@ -100,8 +100,8 @@ jobs:
           TEST_MODE=true
           EOF
           
-          # Create a wrapper script to ensure proper test execution and cleanup
-          cat > run-unit-tests-with-cleanup.js << EOF
+          # Create a wrapper script to ensure proper test execution
+          cat > run-unit-tests-with-fail.cjs << EOF
           const { execSync } = require('child_process');
           
           console.log('⏳ Starting unit tests with wrapper...');
@@ -122,13 +122,13 @@ jobs:
           } catch (error) {
             console.error('⚠️ Error in unit tests:', error.message);
             
-            // Always exit with a successful code
-            process.exit(0);
+            // Properly fail the build when tests fail
+            process.exit(1);
           }
           EOF
           
           # Run the tests through the wrapper script
-          node run-unit-tests-with-cleanup.js
+          node run-unit-tests-with-fail.cjs
         env:
           NODE_ENV: test
           TEST_MODE: true
@@ -314,7 +314,7 @@ jobs:
           fi
           
           # Create a wrapper script to ensure proper test execution and cleanup
-          cat > run-tests-with-cleanup.js << EOF
+          cat > run-tests-with-fail.cjs << EOF
           const { execSync } = require('child_process');
           const { writeFileSync } = require('fs');
 
@@ -332,13 +332,13 @@ jobs:
           } catch (error) {
             console.error('⚠️ Error in tests:', error.message);
             
-            // Always exit with a successful code - we've already logged the test failures
-            process.exit(0);
+            // Properly fail the build when tests fail
+            process.exit(1);
           }
           EOF
           
-          # Run the tests through the wrapper script to ensure process termination
-          node run-tests-with-cleanup.js
+          # Run the tests through the wrapper script
+          node run-tests-with-fail.cjs
         env:
           TEST_MODE: true
           CI: true
