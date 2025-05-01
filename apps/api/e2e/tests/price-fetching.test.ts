@@ -1,4 +1,5 @@
 import axios from "axios";
+import { beforeEach, describe, expect, test } from "vitest";
 
 import config from "@/config/index.js";
 import { ApiClient } from "@/e2e/utils/api-client.js";

@@ -1,11 +1,11 @@
 import axios from "axios";
+import { beforeEach, describe, expect, test } from "vitest";
 
 import config from "@/config/index.js";
 import {
   BalancesResponse,
   PortfolioSnapshot,
   SnapshotResponse,
-  TokenPortfolioItem,
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
@@ -52,7 +52,7 @@ describe("Portfolio Snapshots", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
+    const { team } = await registerTeamAndGetClient(
       adminClient,
       "Snapshot Test Team",
     );
@@ -100,7 +100,7 @@ describe("Portfolio Snapshots", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
+    const { team } = await registerTeamAndGetClient(
       adminClient,
       "Periodic Snapshot Team",
     );
@@ -213,7 +213,7 @@ describe("Portfolio Snapshots", () => {
     const beforeEndCount = beforeEndResponse.snapshots.length;
 
     // End the competition
-    const endResult = await adminClient.endCompetition(competitionId);
+    await adminClient.endCompetition(competitionId);
     // Wait for operations to complete
     await wait(500);
 
@@ -321,7 +321,7 @@ describe("Portfolio Snapshots", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
+    const { team } = await registerTeamAndGetClient(
       adminClient,
       "Price Freshness Team",
     );
@@ -378,7 +378,7 @@ describe("Portfolio Snapshots", () => {
 
     try {
       // Mock console.log to capture messages
-      console.log = (...args: any[]) => {
+      console.log = (...args: unknown[]) => {
         const message = args.join(" ");
         logMessages.push(message);
         originalConsoleLog(...args);

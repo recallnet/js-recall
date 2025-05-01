@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DexScreenerProvider } from "@/services/providers/dexscreener.provider.js";
 import { BlockchainType } from "@/types/index.js";
@@ -30,7 +31,7 @@ describe("DexScreenerProvider", () => {
 
   beforeEach(() => {
     provider = new DexScreenerProvider();
-    jest.setTimeout(30000); // Increase timeout for API calls
+    vi.setConfig({ testTimeout: 30_000 }); // Increase timeout for API calls
   });
 
   describe("Basic functionality", () => {

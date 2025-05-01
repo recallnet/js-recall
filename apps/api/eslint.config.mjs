@@ -11,7 +11,6 @@ const config = [
       "coverage/",
       "**/*.min.js",
       "**/vendor/**",
-      "e2e/**", // Ignore e2e tests directory
       "docs/examples/**", // Ignore examples directory
     ],
   },

@@ -14,7 +14,7 @@ import {
  * Fetches and caches token prices from multiple providers
  */
 export class PriceTracker {
-  private providers: PriceSource[];
+  providers: PriceSource[];
   // private novesProvider: NovesProvider | null = null;
   private multiChainProvider: MultiChainProvider | null = null;
   private priceCache: Map<string, PriceReport>;

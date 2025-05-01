@@ -5,6 +5,7 @@
  */
 import fs from "fs";
 import path from "path";
+import { afterAll, afterEach, beforeAll, beforeEach, expect, vi } from "vitest";
 
 import { services } from "@/services/index.js";
 
@@ -20,7 +21,7 @@ const log = (message: string) => {
 };
 
 // Extend the timeout for all tests
-jest.setTimeout(60000);
+vi.setConfig({ testTimeout: 60_000 });
 
 // Global Jest setup for E2E tests
 
@@ -196,5 +197,5 @@ beforeEach(() => {
 
 afterEach(() => {
   log(`[Test] Completed test: ${expect.getState().currentTestName}`);
-  jest.resetAllMocks();
+  vi.resetAllMocks();
 });

@@ -1,6 +1,7 @@
 import axios from "axios";
+import { afterAll, beforeEach, describe, expect, test } from "vitest";
 
-import config, { features } from "@/config/index.js";
+import { features } from "@/config/index.js";
 import {
   BalancesResponse,
   SpecificChain,
@@ -18,7 +19,6 @@ import {
   startTestCompetition,
   wait,
 } from "@/e2e/utils/test-helpers.js";
-import { PriceTracker } from "@/services/price-tracker.service.js";
 import { MultiChainProvider } from "@/services/providers/multi-chain.provider.js";
 import { BlockchainType, PriceReport } from "@/types/index.js";
 
@@ -42,7 +42,6 @@ describe("Base Chain Trading", () => {
 
   // Ethereum token to test cross-chain trading restrictions
   const ETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"; // WETH on Ethereum
-  const ETH_CHAIN = "eth";
 
   // Number of tokens to distribute funds across
   const NUM_TOKENS = BASE_TOKENS.length;
@@ -119,7 +118,6 @@ describe("Base Chain Trading", () => {
 
     // Initialize services for direct calls
     const multiChainProvider = new MultiChainProvider();
-    const priceTracker = new PriceTracker();
 
     // Get the price for each token
     for (const tokenAddress of BASE_TOKENS) {
@@ -324,9 +322,6 @@ describe("Base Chain Trading", () => {
     const tradeAmount = (initialBaseUsdcBalance * 0.1).toString(); // Use 10% of balance
     console.log(`Trade amount: ${tradeAmount} USDC`);
 
-    let errorOccurred = false;
-    let errorResponse = null;
-
     try {
       const tradeResponse = await teamClient.executeTrade({
         fromToken: BASE_USDC_ADDRESS, // Base USDC
@@ -347,18 +342,16 @@ describe("Base Chain Trading", () => {
 
       // Even if no exception is thrown, the trade should not have succeeded
       expect(tradeResponse.success).toBe(false);
-      errorResponse = tradeResponse;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       // Type error as any for proper handling
       // We expect an error if cross-chain trading is disabled
-      errorOccurred = true;
       console.log("Exception caught. Error details:");
       console.log(`  Message: ${error.message || "No message"}`);
 
       if (error.response) {
         console.log(`  Status: ${error.response.status}`);
         console.log(`  Data: ${JSON.stringify(error.response.data, null, 2)}`);
-        errorResponse = error.response.data;
       }
 
       expect(error).toBeDefined();
@@ -529,6 +522,7 @@ describe("Base Chain Trading", () => {
       });
 
       expect(tradeResponse.success).toBe(false); // The test should fail here if excessive trading is allowed
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       // Type error as any for proper handling
       // We expect an error for insufficient funds

@@ -1,7 +1,7 @@
 import axios from "axios";
+import { beforeEach, describe, expect, test } from "vitest";
 
 import config from "@/config/index.js";
-import { ApiClient } from "@/e2e/utils/api-client.js";
 import {
   BalancesResponse,
   ErrorResponse,
@@ -1105,6 +1105,7 @@ describe("Trading API", () => {
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       // reason field intentionally omitted
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any); // Using 'as any' to bypass TypeScript checking
 
     // Verify the trade failed

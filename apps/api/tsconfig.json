@@ -16,6 +16,6 @@
     "emitDecoratorMetadata": true,
     "sourceMap": true
   },
-  "include": ["src/**/*.ts", "scripts/**/*.ts"],
-  "exclude": ["node_modules", "dist", "e2e"]
+  "include": ["src/**/*.ts", "scripts/**/*.ts", "e2e/**/*.ts", "sum/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
 }

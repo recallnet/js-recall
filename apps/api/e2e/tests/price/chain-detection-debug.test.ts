@@ -1,5 +1,6 @@
 import axios from "axios";
 import dotenv from "dotenv";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { ApiClient } from "@/e2e/utils/api-client.js";
 import { TokenInfoResponse } from "@/e2e/utils/api-types.js";

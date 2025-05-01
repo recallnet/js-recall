@@ -1,4 +1,5 @@
 import axios from "axios";
+import { beforeEach, describe, expect, test } from "vitest";
 
 import {
   AdminTeamsListResponse,
@@ -183,6 +184,7 @@ describe("Team API", () => {
       if (axios.isAxiosError(error) && error.response) {
         expect(error.response.status).toBe(401);
       } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         expect((error as any).status || 401).toBe(401);
       }
     }
@@ -217,7 +219,7 @@ describe("Team API", () => {
     // Verify all our teams are in the list
     for (const data of teamData) {
       const foundTeam = (teamsResponse as AdminTeamsListResponse).teams.find(
-        (t: any) => t.name === data.name && t.email === data.email,
+        (t) => t.name === data.name && t.email === data.email,
       );
       expect(foundTeam).toBeDefined();
     }
@@ -512,6 +514,7 @@ describe("Team API", () => {
         // Verify error message is helpful
         expect(error.response.data.error).toContain("may have been reset");
       } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         expect((error as any).status || 401).toBe(401);
       }
     }

@@ -41,7 +41,7 @@ export async function registerTeamAndGetClient(
   teamName?: string,
   email?: string,
   contactPerson?: string,
-): Promise<{ client: ApiClient; team: any; apiKey: string }> {
+) {
   // Ensure database is initialized
   await ensureDatabaseInitialized();
 

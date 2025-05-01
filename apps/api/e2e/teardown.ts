@@ -65,9 +65,10 @@ export default async function () {
     // attempt to close all active timers
     try {
       // NodeJS internals: this is safe but not officially supported
-      // @ts-ignore -- Using Node.js internal API
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const activeHandles = (process as any)._getActiveHandles
-        ? (process as any)._getActiveHandles()
+        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (process as any)._getActiveHandles()
         : [];
 
       if (activeHandles && activeHandles.length > 0) {
@@ -77,9 +78,12 @@ export default async function () {
 
         // Try to close database handles and sockets
         for (const handle of activeHandles) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           if (handle && typeof (handle as any).close === "function") {
             try {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               (handle as any).close();
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (err) {
               // Ignore errors during cleanup
             }
@@ -88,7 +92,12 @@ export default async function () {
       }
     } catch (handleError) {
       // Ignore errors when trying to access internal Node.js APIs
-      log("Note: Unable to access Node.js internal handles");
+      log(
+        "Note: Unable to access Node.js internal handles: " +
+          (handleError instanceof Error
+            ? handleError.message
+            : String(handleError)),
+      );
     }
   } catch (error) {
     log(

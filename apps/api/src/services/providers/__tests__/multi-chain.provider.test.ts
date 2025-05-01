@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MultiChainProvider } from "@/services/providers/multi-chain.provider.js";
 import { BlockchainType } from "@/types/index.js";
@@ -27,7 +28,7 @@ describe("MultiChainProvider", () => {
 
   beforeEach(() => {
     provider = new MultiChainProvider();
-    jest.setTimeout(30000); // Increase timeout for API calls
+    vi.setConfig({ testTimeout: 30_000 }); // Increase timeout for API calls
   });
 
   describe("Basic functionality", () => {

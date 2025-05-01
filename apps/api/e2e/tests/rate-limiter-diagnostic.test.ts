@@ -1,4 +1,5 @@
 import axios, { AxiosError } from "axios";
+import { beforeEach, describe, expect, test } from "vitest";
 
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {

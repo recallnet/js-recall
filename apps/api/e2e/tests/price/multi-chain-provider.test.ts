@@ -1,8 +1,8 @@
 // import { NovesProvider } from '../../../src/services/providers/noves.provider';
 import axios from "axios";
 import dotenv from "dotenv";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-import config from "@/config/index.js";
 import { ApiClient } from "@/e2e/utils/api-client.js";
 import { PriceResponse } from "@/e2e/utils/api-types.js";
 import { dbManager } from "@/e2e/utils/db-manager.js";
@@ -26,9 +26,6 @@ dotenv.config();
 // const apiKey = process.env.NOVES_API_KEY;
 // const runTests = !!apiKey;
 const runTests = true; // All tests should run now without API key
-
-// Set of EVM chains we'll test against
-const evmChains = config.evmChains;
 
 // Test tokens for various chains
 const testTokens = {
@@ -127,9 +124,9 @@ describe("Multi-Chain Provider Tests", () => {
     `);
 
     console.log(
-      `Does specific_chain column exist? ${result.rows[0].column_exists}`,
+      `Does specific_chain column exist? ${result.rows[0]?.column_exists}`,
     );
-    expect(result.rows[0].column_exists).toBe(true);
+    expect(result.rows[0]?.column_exists).toBe(true);
   });
 
   // Clean up test state before each test
@@ -446,7 +443,7 @@ describe("Multi-Chain Provider Tests", () => {
       const priceTracker = new PriceTracker();
 
       // Make sure the PriceTracker has the MultiChainProvider
-      const providers = (priceTracker as any).providers;
+      const providers = priceTracker.providers;
       expect(providers.length).toBe(1);
 
       // Find MultiChainProvider in the list

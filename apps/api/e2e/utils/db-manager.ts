@@ -165,7 +165,7 @@ export class DbManager {
   /**
    * Execute a query using the pool
    */
-  public async query(text: string, params: any[] = []): Promise<any> {
+  public async query(text: string, params: unknown[] = []) {
     return await this.dbConnection.query(text, params);
   }
 
@@ -274,7 +274,7 @@ export async function initializeDb(): Promise<void> {
   return dbManager.initialize();
 }
 
-export function getPool(): any {
+export function getPool() {
   // This is maintained for API compatibility, but now returns
   // the DatabaseConnection instance instead of a raw Pool
   return DatabaseConnection.getInstance();

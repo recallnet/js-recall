@@ -4,7 +4,6 @@ import { Server } from "http";
 
 // Reference to the server process
 let serverProcess: ChildProcess | null = null;
-let server: Server | null = null;
 
 // Server configuration
 const PORT = process.env.TEST_PORT || "3001";
@@ -208,6 +207,7 @@ async function waitForServerReady(
 
         return;
       }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       // Server not ready yet, retry after interval
       retries++;
