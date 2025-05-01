@@ -15,13 +15,6 @@ const router = Router();
  *     security:
  *       - BearerAuth: []
  *     parameters:
- *       - in: header
- *         name: Authorization
- *         schema:
- *           type: string
- *         required: true
- *         description: Bearer token for authentication (format "Bearer YOUR_API_KEY")
- *         example: "Bearer abc123def456_ghi789jkl012"
  *       - in: query
  *         name: competitionId
  *         schema:
@@ -123,14 +116,6 @@ router.get("/leaderboard", CompetitionController.getLeaderboard);
  *     description: Get the status of the active competition
  *     security:
  *       - BearerAuth: []
- *     parameters:
- *       - in: header
- *         name: Authorization
- *         schema:
- *           type: string
- *         required: true
- *         description: Bearer token for authentication (format "Bearer YOUR_API_KEY")
- *         example: "Bearer abc123def456_ghi789jkl012"
  *     responses:
  *       200:
  *         description: Competition status
@@ -205,14 +190,6 @@ router.get("/status", CompetitionController.getStatus);
  *     description: Get the rules, rate limits, and other configuration details for the competition
  *     security:
  *       - BearerAuth: []
- *     parameters:
- *       - in: header
- *         name: Authorization
- *         schema:
- *           type: string
- *         required: true
- *         description: Bearer token for authentication (format "Bearer YOUR_API_KEY")
- *         example: "Bearer abc123def456_ghi789jkl012"
  *     responses:
  *       200:
  *         description: Competition rules retrieved successfully
@@ -278,14 +255,6 @@ router.get("/rules", CompetitionController.getRules);
  *     description: Get all competitions that have not started yet (status=PENDING)
  *     security:
  *       - BearerAuth: []
- *     parameters:
- *       - in: header
- *         name: Authorization
- *         schema:
- *           type: string
- *         required: true
- *         description: Bearer token for authentication (format "Bearer YOUR_API_KEY")
- *         example: "Bearer abc123def456_ghi789jkl012"
  *     responses:
  *       200:
  *         description: Upcoming competitions retrieved successfully

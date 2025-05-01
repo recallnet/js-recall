@@ -14,14 +14,6 @@ const router = Router();
  *     description: Get profile information for the authenticated team
  *     security:
  *       - BearerAuth: []
- *     parameters:
- *       - in: header
- *         name: Authorization
- *         schema:
- *           type: string
- *         required: true
- *         description: Bearer token for authentication (format "Bearer YOUR_API_KEY")
- *         example: "Bearer abc123def456_ghi789jkl012"
  *     responses:
  *       200:
  *         description: Team profile
@@ -107,14 +99,6 @@ router.get("/profile", AccountController.getProfile);
  *     description: Update profile information for the authenticated team
  *     security:
  *       - BearerAuth: []
- *     parameters:
- *       - in: header
- *         name: Authorization
- *         schema:
- *           type: string
- *         required: true
- *         description: Bearer token for authentication (format "Bearer YOUR_API_KEY")
- *         example: "Bearer abc123def456_ghi789jkl012"
  *     requestBody:
  *       required: true
  *       content:
@@ -283,14 +267,6 @@ router.post("/reset-api-key", AccountController.resetApiKey);
  *     description: Get all token balances for the authenticated team
  *     security:
  *       - BearerAuth: []
- *     parameters:
- *       - in: header
- *         name: Authorization
- *         schema:
- *           type: string
- *         required: true
- *         description: Bearer token for authentication (format "Bearer YOUR_API_KEY")
- *         example: "Bearer abc123def456_ghi789jkl012"
  *     responses:
  *       200:
  *         description: Team token balances
@@ -341,14 +317,6 @@ router.get("/balances", AccountController.getBalances);
  *     description: Get portfolio valuation and token details for the authenticated team
  *     security:
  *       - BearerAuth: []
- *     parameters:
- *       - in: header
- *         name: Authorization
- *         schema:
- *           type: string
- *         required: true
- *         description: Bearer token for authentication (format "Bearer YOUR_API_KEY")
- *         example: "Bearer abc123def456_ghi789jkl012"
  *     responses:
  *       200:
  *         description: Team portfolio information
