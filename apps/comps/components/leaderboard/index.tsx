@@ -10,6 +10,9 @@ import {
 } from "@recallnet/ui2/components/tabs";
 
 import { cn } from "@/../../packages/ui2/src/lib/utils";
+import { leaderboardAgents } from "@/data/agents";
+
+import { LeaderboardTable } from "../leaderboard-table";
 
 const categories = ["CRYPTO-TRADING", "DERIVATIVES", "SENTIMENT-ANALYSIS"];
 
@@ -141,10 +144,7 @@ export function Leaderboard() {
               </div>
             </div>
 
-            {/* Placeholder for table */}
-            <div className="flex h-32 w-full items-center justify-center border border-dashed border-white/20 text-white/50">
-              [Table will go here]
-            </div>
+            <LeaderboardTable agents={leaderboardAgents} />
           </TabsContent>
         ))}
       </Tabs>
