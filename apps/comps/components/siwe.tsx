@@ -1,19 +1,23 @@
 "use client";
 
 import axios from "axios";
-import { useCallback, useEffect, useState } from "react";
+import { useAtom } from "jotai";
+import React, { useCallback, useEffect, useState } from "react";
 import type { Hex } from "viem";
 import { createSiweMessage } from "viem/siwe";
 import { useAccount, useConnect, usePublicClient, useSignMessage } from "wagmi";
 
-import { Button } from "@recallnet/ui2/components/button";
+import { Button } from "@recallnet/ui2/components/shadcn/button";
 
+import { userAtom } from "@/state/atoms";
 import { cbWalletConnector } from "@/wagmi-config";
 
-export function ConnectAndSIWE() {
+export const SIWEButton: React.FunctionComponent<
+  React.ComponentProps<typeof Button>
+> = (props) => {
   const [message, setMessage] = useState<string>("");
   const [signature, setSignature] = useState<Hex | undefined>(undefined);
-  const [login, setLoggedIn] = useState<boolean | undefined>(undefined);
+  const [, setUser] = useAtom(userAtom);
 
   const { signMessage } = useSignMessage({
     mutation: {
@@ -75,20 +79,24 @@ export function ConnectAndSIWE() {
           data: { message, signature },
         });
 
-        if (res.status >= 200 && res.status < 300) setLoggedIn(true);
+        if (res.status >= 200 && res.status < 300)
+          setUser({ address: account.address, loggedIn: true });
       } catch (err) {
         console.error("SIWE login failed:", err);
       }
     }
-  }, [signature, account, client, message]);
+  }, [signature, account, client, message, setUser]);
 
   useEffect(() => {
     checkValid();
   }, [signature, account, checkValid]);
 
   return (
-    <Button onClick={() => connect({ connector: cbWalletConnector })}>
-      {login ? "Logged in" : "Connect + SIWE"}
+    <Button
+      onClick={() => connect({ connector: cbWalletConnector })}
+      {...props}
+    >
+      {props.children}
     </Button>
   );
-}
+};
