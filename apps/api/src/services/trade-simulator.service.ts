@@ -267,7 +267,8 @@ export class TradeSimulator {
       // Calculate slippage
       const slippageResult = this.calculateSlippage(effectiveFromValueUSD);
       const slippagePercentage = slippageResult.slippagePercentage;
-      const effectiveFromValueAfterSlippage = slippageResult.effectiveValueAfterSlippage;
+      const effectiveFromValueAfterSlippage =
+        slippageResult.effectiveValueAfterSlippage;
       const toAmount = effectiveFromValueAfterSlippage / toPrice.price;
 
       // Debug logging for price calculations
@@ -277,13 +278,14 @@ export class TradeSimulator {
                 - Price: $${fromPrice.price}
                 - USD Value: $${fromValueUSD.toFixed(6)}
                 
-                ${isCrossChainTrade
-          ? `Cross-Chain Fees:
+                ${
+                  isCrossChainTrade
+                    ? `Cross-Chain Fees:
                 - Percentage Fee: ${crossChainFeePercentage.toFixed(4)}%
                 - Fixed Fee: $${crossChainFixedFeeUSD.toFixed(2)}
                 - Effective USD Value After Fees: $${effectiveFromValueUSD.toFixed(6)}`
-          : ""
-        }
+                    : ""
+                }
                 
                 Slippage:
                 - Percentage: ${slippagePercentage.toFixed(4)}%
@@ -321,9 +323,9 @@ export class TradeSimulator {
         // Add cross-chain fee information if applicable
         crossChainFee: isCrossChainTrade
           ? {
-            percentage: crossChainFeePercentage,
-            fixedFeeUSD: crossChainFixedFeeUSD,
-          }
+              percentage: crossChainFeePercentage,
+              fixedFeeUSD: crossChainFixedFeeUSD,
+            }
           : undefined,
       };
 
@@ -482,7 +484,7 @@ export class TradeSimulator {
   /**
    * Calculate cross-chain fees for trading between different blockchains
    * Public method that can be used by controllers to get fee estimates
-   * 
+   *
    * @param valueUSD The USD value being transferred
    * @param fromChain The source blockchain
    * @param toChain The destination blockchain
@@ -507,13 +509,13 @@ export class TradeSimulator {
       fromChain,
       toChain,
       fromSpecificChain,
-      toSpecificChain
+      toSpecificChain,
     );
   }
 
   /**
    * Calculate slippage for a trade based on its USD value
-   * 
+   *
    * @param valueUSD The USD value of the trade after any fees
    * @returns Slippage percentage and effective value after slippage
    */
@@ -531,7 +533,7 @@ export class TradeSimulator {
 
     return {
       slippagePercentage,
-      effectiveValueAfterSlippage
+      effectiveValueAfterSlippage,
     };
   }
 

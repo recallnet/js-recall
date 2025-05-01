@@ -68,11 +68,11 @@ export class TradeController {
       const chainOptions =
         fromChain || fromSpecificChain || toChain || toSpecificChain
           ? {
-            fromChain,
-            fromSpecificChain,
-            toChain,
-            toSpecificChain,
-          }
+              fromChain,
+              fromSpecificChain,
+              toChain,
+              toSpecificChain,
+            }
           : undefined;
 
       // Log chain options if provided
@@ -207,20 +207,24 @@ export class TradeController {
       // Calculate cross-chain fees if applicable
       if (isCrossChainTrade) {
         // Ensure we have determined chains for both tokens
-        const resolvedFromChain = fromTokenChain || services.priceTracker.determineChain(fromToken as string);
-        const resolvedToChain = toTokenChain || services.priceTracker.determineChain(toToken as string);
+        const resolvedFromChain =
+          fromTokenChain ||
+          services.priceTracker.determineChain(fromToken as string);
+        const resolvedToChain =
+          toTokenChain ||
+          services.priceTracker.determineChain(toToken as string);
 
         const feeCalculation = services.tradeSimulator.getCrossChainFees(
           fromValueUSD,
           resolvedFromChain,
           resolvedToChain,
           fromTokenSpecificChain,
-          toTokenSpecificChain
+          toTokenSpecificChain,
         );
 
         crossChainFee = {
           percentage: feeCalculation.feePercentage,
-          fixedFeeUSD: feeCalculation.fixedFeeUSD
+          fixedFeeUSD: feeCalculation.fixedFeeUSD,
         };
 
         effectiveFromValueUSD = feeCalculation.effectiveValueUSD;
@@ -234,9 +238,12 @@ export class TradeController {
       }
 
       // Calculate slippage using the service
-      const slippageResult = services.tradeSimulator.calculateSlippage(effectiveFromValueUSD);
+      const slippageResult = services.tradeSimulator.calculateSlippage(
+        effectiveFromValueUSD,
+      );
       const slippagePercentage = slippageResult.slippagePercentage;
-      const effectiveFromValueAfterSlippage = slippageResult.effectiveValueAfterSlippage;
+      const effectiveFromValueAfterSlippage =
+        slippageResult.effectiveValueAfterSlippage;
 
       // Calculate final token amount
       const toAmount = effectiveFromValueAfterSlippage / toPrice.price;
