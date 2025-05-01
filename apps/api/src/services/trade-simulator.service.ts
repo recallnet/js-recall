@@ -199,7 +199,7 @@ export class TradeSimulator {
         };
       }
 
-      // Check for cross-chain trades if not allowed
+      // Check for cross-chain trades if not allowed (this appears to be a duplicate check, keeping for safety)
       if (
         !features.ALLOW_CROSS_CHAIN_TRADING &&
         (fromTokenChain !== toTokenChain ||
@@ -234,14 +234,45 @@ export class TradeSimulator {
         };
       }
 
+      let effectiveFromValueUSD = fromValueUSD;
+      let crossChainFeePercentage = 0;
+      let crossChainFixedFeeUSD = 0;
+
+      // Check if this is a cross-chain trade and apply appropriate fees
+      const isCrossChainTrade =
+        fromTokenChain !== toTokenChain ||
+        fromTokenSpecificChain !== toTokenSpecificChain;
+
+      if (isCrossChainTrade) {
+        const { feePercentage, fixedFeeUSD, totalFeeUSD, effectiveValueUSD } =
+          this.calculateCrossChainFees(
+            fromValueUSD,
+            fromTokenChain,
+            toTokenChain,
+            fromTokenSpecificChain,
+            toTokenSpecificChain,
+          );
+
+        crossChainFeePercentage = feePercentage;
+        crossChainFixedFeeUSD = fixedFeeUSD;
+        effectiveFromValueUSD = effectiveValueUSD;
+
+        console.log(`[TradeSimulator] Cross-chain fees applied:
+                Cross-Chain Fee: ${feePercentage.toFixed(4)}% + $${fixedFeeUSD.toFixed(2)} fixed fee
+                Total Fee Amount: $${totalFeeUSD.toFixed(6)}
+                Effective Value After Cross-Chain Fees: $${effectiveValueUSD.toFixed(6)}
+        `);
+      }
+
       // Apply slippage based on trade size
-      const baseSlippage = (fromValueUSD / 10000) * 0.05; // 0.05% per $10,000 (10x lower than before)
+      const baseSlippage = (effectiveFromValueUSD / 10000) * 0.05; // 0.05% per $10,000 (10x lower than before)
       const actualSlippage = baseSlippage * (0.9 + Math.random() * 0.2); // ±10% randomness (reduced from ±20%)
       const slippagePercentage = actualSlippage * 100;
 
       // Calculate final amount with slippage
-      const effectiveFromValueUSD = fromValueUSD * (1 - actualSlippage);
-      const toAmount = effectiveFromValueUSD / toPrice.price;
+      const effectiveFromValueAfterSlippage =
+        effectiveFromValueUSD * (1 - actualSlippage);
+      const toAmount = effectiveFromValueAfterSlippage / toPrice.price;
 
       // Debug logging for price calculations
       console.log(`[TradeSimulator] Trade calculation details:
@@ -250,10 +281,19 @@ export class TradeSimulator {
                 - Price: $${fromPrice.price}
                 - USD Value: $${fromValueUSD.toFixed(6)}
                 
+                ${
+                  isCrossChainTrade
+                    ? `Cross-Chain Fees:
+                - Percentage Fee: ${crossChainFeePercentage.toFixed(4)}%
+                - Fixed Fee: $${crossChainFixedFeeUSD.toFixed(2)}
+                - Effective USD Value After Fees: $${effectiveFromValueUSD.toFixed(6)}`
+                    : ""
+                }
+                
                 Slippage:
                 - Base: ${(baseSlippage * 100).toFixed(4)}%
                 - Actual: ${slippagePercentage.toFixed(4)}%
-                - Effective USD Value: $${effectiveFromValueUSD.toFixed(6)}
+                - Effective USD Value After Slippage: $${effectiveFromValueAfterSlippage.toFixed(6)}
 
                 To Token (${toToken}):
                 - Price: $${toPrice.price}
@@ -284,6 +324,13 @@ export class TradeSimulator {
         toChain: toTokenChain,
         fromSpecificChain: fromPrice.specificChain,
         toSpecificChain: toPrice.specificChain,
+        // Add cross-chain fee information if applicable
+        crossChainFee: isCrossChainTrade
+          ? {
+              percentage: crossChainFeePercentage,
+              fixedFeeUSD: crossChainFixedFeeUSD,
+            }
+          : undefined,
       };
 
       // Store the trade in database
@@ -436,5 +483,156 @@ export class TradeSimulator {
       console.error("[TradeSimulator] Health check failed:", error);
       return false;
     }
+  }
+
+  /**
+   * Calculate cross-chain fees for trades between different blockchains
+   * This simulates the cost of bridging assets between chains and/or using CEX intermediaries
+   *
+   * @param valueUSD The USD value being transferred
+   * @param fromChain The source blockchain
+   * @param toChain The destination blockchain
+   * @param fromSpecificChain Optional specific source chain
+   * @param toSpecificChain Optional specific destination chain
+   * @returns Fee details and effective USD value after fees
+   */
+  private calculateCrossChainFees(
+    valueUSD: number,
+    fromChain: BlockchainType,
+    toChain: BlockchainType,
+    fromSpecificChain?: SpecificChain,
+    toSpecificChain?: SpecificChain,
+  ): {
+    feePercentage: number;
+    fixedFeeUSD: number;
+    totalFeeUSD: number;
+    effectiveValueUSD: number;
+  } {
+    // Base percentage fee for cross-chain transactions (0.3% base)
+    let baseFeePercentage = 0.3;
+
+    // Base fixed fee in USD (fairly conservative)
+    let baseFixedFeeUSD = 2.5;
+
+    // Different blockchain combinations have different fee structures
+
+    // 1. EVM-to-EVM transfers (different EVM chains)
+    if (
+      fromChain === "evm" &&
+      toChain === "evm" &&
+      fromSpecificChain &&
+      toSpecificChain &&
+      fromSpecificChain !== toSpecificChain
+    ) {
+      // Apply fees based on specific chains
+      // Higher gas chains get higher fees
+
+      // High gas chains: eth only - 0.15% additional fee
+      const highGasChains = ["eth"];
+
+      // Medium gas chains: arbitrum, optimism, base - 0.05% additional fee
+      const mediumGasChains = ["arbitrum", "optimism", "base"];
+
+      // Low gas chains: polygon, bsc, avalanche, linea - no additional fee
+
+      // Additional fees based on source chain
+      if (highGasChains.includes(fromSpecificChain)) {
+        baseFeePercentage += 0.15;
+        baseFixedFeeUSD += 3; // Higher fixed costs for Ethereum transactions (reduced from $5 to $3)
+      } else if (mediumGasChains.includes(fromSpecificChain)) {
+        baseFeePercentage += 0.05;
+        baseFixedFeeUSD += 1.5; // Reduced from $2 to $1.50
+      }
+
+      // Additional fees based on destination chain
+      if (highGasChains.includes(toSpecificChain)) {
+        baseFeePercentage += 0.15;
+        baseFixedFeeUSD += 3; // Reduced from $5 to $3
+      } else if (mediumGasChains.includes(toSpecificChain)) {
+        baseFeePercentage += 0.05;
+        baseFixedFeeUSD += 1.5; // Reduced from $2 to $1.50
+      }
+    }
+    // 2. SVM-to-EVM or EVM-to-SVM transfers (cross-ecosystem)
+    else if (
+      (fromChain === "svm" && toChain === "evm") ||
+      (fromChain === "evm" && toChain === "svm")
+    ) {
+      // Cross-ecosystem transfers are more expensive
+      baseFeePercentage += 0.3; // Additional 0.3% fee
+      baseFixedFeeUSD += 3; // Higher fixed cost (reduced from $5 to $3)
+
+      // Define gas classifications for specific chains
+      const mediumGasChains = ["arbitrum", "optimism", "base"];
+
+      // If transferring to or from high-gas chain (Ethereum), add more cost
+      if (fromSpecificChain === "eth" || toSpecificChain === "eth") {
+        baseFeePercentage += 0.15; // Additional 0.15% fee
+        baseFixedFeeUSD += 2.5; // Additional fixed cost (reduced from $4 to $2.50)
+      } else if (
+        mediumGasChains.includes(fromSpecificChain as SpecificChain) ||
+        mediumGasChains.includes(toSpecificChain as SpecificChain)
+      ) {
+        // Medium gas chains get a smaller additional fee
+        baseFeePercentage += 0.05;
+        baseFixedFeeUSD += 1.5; // Reduced from $2 to $1.50
+      }
+    }
+
+    // Apply scale-based fee adjustment for transaction size
+    let percentageScaleFactor = 1.0;
+    let fixedFeeScaleFactor = 1.0;
+
+    if (valueUSD > 50000) {
+      percentageScaleFactor = 0.7; // 30% discount for very large transfers
+      fixedFeeScaleFactor = 0.5; // Fixed fee reduced by half
+    } else if (valueUSD > 10000) {
+      percentageScaleFactor = 0.8; // 20% discount for large transfers
+      fixedFeeScaleFactor = 0.6; // 40% off fixed fee
+    } else if (valueUSD > 5000) {
+      percentageScaleFactor = 0.9; // 10% discount for medium transfers
+      fixedFeeScaleFactor = 0.7; // 30% off fixed fee
+    } else if (valueUSD < 100) {
+      // For small transactions, reduce fixed fees significantly
+      fixedFeeScaleFactor = Math.max(0.1, valueUSD / 100); // Fixed fee scales down to 10% for very small transactions
+    }
+
+    // Apply final fee calculation with scale factors
+    const finalFeePercentage = baseFeePercentage * percentageScaleFactor;
+    let finalFixedFeeUSD = baseFixedFeeUSD * fixedFeeScaleFactor;
+
+    // Apply small random variation to make fees more realistic (±10%)
+    const randomFactor = 0.9 + Math.random() * 0.2; // Between 0.9 and 1.1
+    const actualFeePercentage = finalFeePercentage * randomFactor;
+
+    // Calculate total fee amount
+    let percentageFeeUSD = valueUSD * (actualFeePercentage / 100);
+    let totalFeeUSD = percentageFeeUSD + finalFixedFeeUSD;
+
+    // Cap the fee at 80% of the transaction value to prevent negative balances
+    // This ensures trades are always possible, but small trades remain expensive
+    if (totalFeeUSD > valueUSD * 0.8) {
+      totalFeeUSD = valueUSD * 0.8;
+      // Adjust the percentage fee for display purposes when capped
+      percentageFeeUSD = totalFeeUSD - finalFixedFeeUSD;
+      if (percentageFeeUSD < 0) {
+        // If fixed fee would be too high, adjust both components
+        finalFixedFeeUSD = totalFeeUSD * 0.5;
+        percentageFeeUSD = totalFeeUSD * 0.5;
+      }
+    }
+
+    // Calculate effective value after fees
+    const effectiveValueUSD = valueUSD - totalFeeUSD;
+
+    // Recalculate actual percentage for display (total percentage minus fixed fee)
+    const displayFeePercentage = (percentageFeeUSD / valueUSD) * 100;
+
+    return {
+      feePercentage: displayFeePercentage,
+      fixedFeeUSD: finalFixedFeeUSD,
+      totalFeeUSD,
+      effectiveValueUSD,
+    };
   }
 }

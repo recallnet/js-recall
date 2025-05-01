@@ -129,6 +129,10 @@ export interface TradeTransaction {
   toChain: string;
   fromSpecificChain: string | null;
   toSpecificChain: string | null;
+  crossChainFee?: {
+    percentage: number;
+    fixedFeeUSD: number;
+  };
 }
 
 // Trade history response

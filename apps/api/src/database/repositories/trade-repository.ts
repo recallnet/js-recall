@@ -24,9 +24,11 @@ export class TradeRepository extends BaseRepository<Trade> {
         INSERT INTO trades (
           id, team_id, competition_id, from_token, to_token, 
           from_amount, to_amount, price, success, error, reason, timestamp,
-          from_chain, to_chain, from_specific_chain, to_specific_chain
+          from_chain, to_chain, from_specific_chain, to_specific_chain,
+          cross_chain_fee_percentage, cross_chain_fee_fixed_usd
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
+          $17, $18
         ) RETURNING *
       `;
 
@@ -47,6 +49,8 @@ export class TradeRepository extends BaseRepository<Trade> {
         trade.toChain || null,
         trade.fromSpecificChain || null,
         trade.toSpecificChain || null,
+        trade.crossChainFee?.percentage || null,
+        trade.crossChainFee?.fixedFeeUSD || null,
       ];
 
       const result = client
@@ -182,6 +186,29 @@ export class TradeRepository extends BaseRepository<Trade> {
    * @param data Row data with camelCase keys
    */
   protected mapToEntity(data: DatabaseRow): Trade {
+    // Extract cross-chain fee data if it exists
+    const crossChainFeePercentage =
+      data.crossChainFeePercentage !== null &&
+      data.crossChainFeePercentage !== undefined
+        ? parseFloat(String(data.crossChainFeePercentage))
+        : undefined;
+
+    const crossChainFixedFeeUSD =
+      data.crossChainFeeFixedUsd !== null &&
+      data.crossChainFeeFixedUsd !== undefined
+        ? parseFloat(String(data.crossChainFeeFixedUsd))
+        : undefined;
+
+    // Create CrossChainFee object if we have fee data
+    const crossChainFee =
+      crossChainFeePercentage !== undefined &&
+      crossChainFixedFeeUSD !== undefined
+        ? {
+            percentage: crossChainFeePercentage,
+            fixedFeeUSD: crossChainFixedFeeUSD,
+          }
+        : undefined;
+
     return {
       id: data.id as string,
       teamId: data.teamId as string,
@@ -200,6 +227,8 @@ export class TradeRepository extends BaseRepository<Trade> {
       toChain: data.toChain as BlockchainType,
       fromSpecificChain: data.fromSpecificChain as SpecificChain,
       toSpecificChain: data.toSpecificChain as SpecificChain,
+      // Add cross-chain fee information if available
+      crossChainFee,
     };
   }
 }

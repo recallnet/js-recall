@@ -79,7 +79,9 @@ CREATE TABLE IF NOT EXISTS trades (
   from_chain VARCHAR(10), -- General chain type for from_token (evm, svm)
   to_chain VARCHAR(10), -- General chain type for to_token (evm, svm)
   from_specific_chain VARCHAR(20), -- Specific chain for from_token (eth, polygon, base, etc.)
-  to_specific_chain VARCHAR(20) -- Specific chain for to_token (eth, polygon, base, etc.)
+  to_specific_chain VARCHAR(20), -- Specific chain for to_token (eth, polygon, base, etc.)
+  cross_chain_fee_percentage DECIMAL(10, 6), -- Percentage fee applied for cross-chain trades
+  cross_chain_fee_fixed_usd DECIMAL(10, 2) -- Fixed fee amount in USD for cross-chain trades
 );
 
 -- Create trade indexes
@@ -90,6 +92,9 @@ CREATE INDEX IF NOT EXISTS idx_trades_from_chain ON trades(from_chain);
 CREATE INDEX IF NOT EXISTS idx_trades_to_chain ON trades(to_chain);
 CREATE INDEX IF NOT EXISTS idx_trades_from_specific_chain ON trades(from_specific_chain);
 CREATE INDEX IF NOT EXISTS idx_trades_to_specific_chain ON trades(to_specific_chain);
+CREATE INDEX idx_trades_cross_chain_fee_percentage 
+ON trades (cross_chain_fee_percentage) 
+WHERE cross_chain_fee_percentage IS NOT NULL;
 
 -- Prices table
 CREATE TABLE IF NOT EXISTS prices (
