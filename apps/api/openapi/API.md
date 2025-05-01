@@ -58,12 +58,6 @@ Get team profile
 
 Get profile information for the authenticated team
 
-##### Parameters
-
-| Name          | Located in | Description                                                    | Required | Schema |
-| ------------- | ---------- | -------------------------------------------------------------- | -------- | ------ |
-| Authorization | header     | Bearer token for authentication (format "Bearer YOUR_API_KEY") | Yes      | string |
-
 ##### Responses
 
 | Code | Description                                      |
@@ -88,12 +82,6 @@ Update team profile
 ##### Description:
 
 Update profile information for the authenticated team
-
-##### Parameters
-
-| Name          | Located in | Description                                                    | Required | Schema |
-| ------------- | ---------- | -------------------------------------------------------------- | -------- | ------ |
-| Authorization | header     | Bearer token for authentication (format "Bearer YOUR_API_KEY") | Yes      | string |
 
 ##### Responses
 
@@ -155,12 +143,6 @@ Get token balances
 
 Get all token balances for the authenticated team
 
-##### Parameters
-
-| Name          | Located in | Description                                                    | Required | Schema |
-| ------------- | ---------- | -------------------------------------------------------------- | -------- | ------ |
-| Authorization | header     | Bearer token for authentication (format "Bearer YOUR_API_KEY") | Yes      | string |
-
 ##### Responses
 
 | Code | Description                                      |
@@ -186,12 +168,6 @@ Get portfolio information
 ##### Description:
 
 Get portfolio valuation and token details for the authenticated team
-
-##### Parameters
-
-| Name          | Located in | Description                                                    | Required | Schema |
-| ------------- | ---------- | -------------------------------------------------------------- | -------- | ------ |
-| Authorization | header     | Bearer token for authentication (format "Bearer YOUR_API_KEY") | Yes      | string |
 
 ##### Responses
 
@@ -619,7 +595,6 @@ Get the leaderboard for the active competition or a specific competition. Access
 
 | Name          | Located in | Description                                                               | Required | Schema |
 | ------------- | ---------- | ------------------------------------------------------------------------- | -------- | ------ |
-| Authorization | header     | Bearer token for authentication (format "Bearer YOUR_API_KEY")            | Yes      | string |
 | competitionId | query      | Optional competition ID (if not provided, the active competition is used) | No       | string |
 
 ##### Responses
@@ -651,12 +626,6 @@ Get competition status
 
 Get the status of the active competition
 
-##### Parameters
-
-| Name          | Located in | Description                                                    | Required | Schema |
-| ------------- | ---------- | -------------------------------------------------------------- | -------- | ------ |
-| Authorization | header     | Bearer token for authentication (format "Bearer YOUR_API_KEY") | Yes      | string |
-
 ##### Responses
 
 | Code | Description                                      |
@@ -682,12 +651,6 @@ Get competition rules
 ##### Description:
 
 Get the rules, rate limits, and other configuration details for the competition
-
-##### Parameters
-
-| Name          | Located in | Description                                                    | Required | Schema |
-| ------------- | ---------- | -------------------------------------------------------------- | -------- | ------ |
-| Authorization | header     | Bearer token for authentication (format "Bearer YOUR_API_KEY") | Yes      | string |
 
 ##### Responses
 
@@ -716,12 +679,6 @@ Get upcoming competitions
 ##### Description:
 
 Get all competitions that have not started yet (status=PENDING)
-
-##### Parameters
-
-| Name          | Located in | Description                                                    | Required | Schema |
-| ------------- | ---------- | -------------------------------------------------------------- | -------- | ------ |
-| Authorization | header     | Bearer token for authentication (format "Bearer YOUR_API_KEY") | Yes      | string |
 
 ##### Responses
 
@@ -789,12 +746,11 @@ Get the current price of a specified token
 
 ##### Parameters
 
-| Name          | Located in | Description                                                    | Required | Schema |
-| ------------- | ---------- | -------------------------------------------------------------- | -------- | ------ |
-| Authorization | header     | Bearer token for authentication (format "Bearer YOUR_API_KEY") | Yes      | string |
-| token         | query      | Token address                                                  | Yes      | string |
-| chain         | query      | Blockchain type of the token                                   | No       | string |
-| specificChain | query      | Specific chain for EVM tokens                                  | No       | string |
+| Name          | Located in | Description                   | Required | Schema |
+| ------------- | ---------- | ----------------------------- | -------- | ------ |
+| token         | query      | Token address                 | Yes      | string |
+| chain         | query      | Blockchain type of the token  | No       | string |
+| specificChain | query      | Specific chain for EVM tokens | No       | string |
 
 ##### Responses
 
@@ -825,12 +781,11 @@ Get detailed token information including price and specific chain
 
 ##### Parameters
 
-| Name          | Located in | Description                                                    | Required | Schema |
-| ------------- | ---------- | -------------------------------------------------------------- | -------- | ------ |
-| Authorization | header     | Bearer token for authentication (format "Bearer YOUR_API_KEY") | Yes      | string |
-| token         | query      | Token address                                                  | Yes      | string |
-| chain         | query      | Blockchain type of the token                                   | No       | string |
-| specificChain | query      | Specific chain for EVM tokens                                  | No       | string |
+| Name          | Located in | Description                   | Required | Schema |
+| ------------- | ---------- | ----------------------------- | -------- | ------ |
+| token         | query      | Token address                 | Yes      | string |
+| chain         | query      | Blockchain type of the token  | No       | string |
+| specificChain | query      | Specific chain for EVM tokens | No       | string |
 
 ##### Responses
 
@@ -882,9 +837,8 @@ Execute a trade between two tokens
 
 ##### Parameters
 
-| Name          | Located in | Description                                                    | Required | Schema |
-| ------------- | ---------- | -------------------------------------------------------------- | -------- | ------ |
-| Authorization | header     | Bearer token for authentication (format "Bearer YOUR_API_KEY") | Yes      | string |
+| Name | Located in | Description | Required | Schema |
+| ---- | ---------- | ----------- | -------- | ------ |
 
 ##### Responses
 
@@ -916,16 +870,15 @@ Get a quote for a potential trade between two tokens
 
 ##### Parameters
 
-| Name              | Located in | Description                                                    | Required | Schema |
-| ----------------- | ---------- | -------------------------------------------------------------- | -------- | ------ |
-| Authorization     | header     | Bearer token for authentication (format "Bearer YOUR_API_KEY") | Yes      | string |
-| fromToken         | query      | Token address to sell                                          | Yes      | string |
-| toToken           | query      | Token address to buy                                           | Yes      | string |
-| amount            | query      | Amount of fromToken to get quote for                           | Yes      | string |
-| fromChain         | query      | Optional blockchain type for fromToken                         | No       | string |
-| fromSpecificChain | query      | Optional specific chain for fromToken                          | No       | string |
-| toChain           | query      | Optional blockchain type for toToken                           | No       | string |
-| toSpecificChain   | query      | Optional specific chain for toToken                            | No       | string |
+| Name              | Located in | Description                            | Required | Schema |
+| ----------------- | ---------- | -------------------------------------- | -------- | ------ |
+| fromToken         | query      | Token address to sell                  | Yes      | string |
+| toToken           | query      | Token address to buy                   | Yes      | string |
+| amount            | query      | Amount of fromToken to get quote for   | Yes      | string |
+| fromChain         | query      | Optional blockchain type for fromToken | No       | string |
+| fromSpecificChain | query      | Optional specific chain for fromToken  | No       | string |
+| toChain           | query      | Optional blockchain type for toToken   | No       | string |
+| toSpecificChain   | query      | Optional specific chain for toToken    | No       | string |
 
 ##### Responses
 
