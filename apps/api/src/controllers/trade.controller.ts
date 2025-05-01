@@ -68,11 +68,11 @@ export class TradeController {
       const chainOptions =
         fromChain || fromSpecificChain || toChain || toSpecificChain
           ? {
-              fromChain,
-              fromSpecificChain,
-              toChain,
-              toSpecificChain,
-            }
+            fromChain,
+            fromSpecificChain,
+            toChain,
+            toSpecificChain,
+          }
           : undefined;
 
       // Log chain options if provided
@@ -195,14 +195,51 @@ export class TradeController {
       // Calculate the trade
       const fromValueUSD = parsedAmount * fromPrice.price;
 
-      // Apply slippage based on trade size
-      const baseSlippage = (fromValueUSD / 10000) * 0.05; // 0.05% per $10,000 (10x lower than before)
-      const actualSlippage = baseSlippage * (0.9 + Math.random() * 0.2); // ±10% randomness (reduced from ±20%)
-      const slippagePercentage = actualSlippage * 100;
+      // Check if this is a cross-chain trade
+      const isCrossChainTrade =
+        fromTokenChain !== toTokenChain ||
+        fromTokenSpecificChain !== toTokenSpecificChain;
 
-      // Calculate final amount with slippage
-      const effectiveFromValueUSD = fromValueUSD * (1 - actualSlippage);
-      const toAmount = effectiveFromValueUSD / toPrice.price;
+      // Initialize cross-chain fee information
+      let crossChainFee;
+      let effectiveFromValueUSD = fromValueUSD;
+
+      // Calculate cross-chain fees if applicable
+      if (isCrossChainTrade) {
+        // Ensure we have determined chains for both tokens
+        const resolvedFromChain = fromTokenChain || services.priceTracker.determineChain(fromToken as string);
+        const resolvedToChain = toTokenChain || services.priceTracker.determineChain(toToken as string);
+
+        const feeCalculation = services.tradeSimulator.getCrossChainFees(
+          fromValueUSD,
+          resolvedFromChain,
+          resolvedToChain,
+          fromTokenSpecificChain,
+          toTokenSpecificChain
+        );
+
+        crossChainFee = {
+          percentage: feeCalculation.feePercentage,
+          fixedFeeUSD: feeCalculation.fixedFeeUSD
+        };
+
+        effectiveFromValueUSD = feeCalculation.effectiveValueUSD;
+
+        console.log(`[TradeController] Cross-chain fees calculated for quote:
+          Percentage: ${feeCalculation.feePercentage.toFixed(4)}%
+          Fixed Fee: $${feeCalculation.fixedFeeUSD.toFixed(2)}
+          Total Fee: $${feeCalculation.totalFeeUSD.toFixed(6)}
+          Effective Value: $${feeCalculation.effectiveValueUSD.toFixed(6)}
+        `);
+      }
+
+      // Calculate slippage using the service
+      const slippageResult = services.tradeSimulator.calculateSlippage(effectiveFromValueUSD);
+      const slippagePercentage = slippageResult.slippagePercentage;
+      const effectiveFromValueAfterSlippage = slippageResult.effectiveValueAfterSlippage;
+
+      // Calculate final token amount
+      const toAmount = effectiveFromValueAfterSlippage / toPrice.price;
 
       // Return quote with chain information
       res.status(200).json({
@@ -224,6 +261,7 @@ export class TradeController {
             toTokenChain ||
             services.priceTracker.determineChain(toToken as string),
         },
+        ...(crossChainFee && { crossChainFee }),
       });
     } catch (error) {
       next(error);

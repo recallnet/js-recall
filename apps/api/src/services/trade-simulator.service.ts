@@ -264,14 +264,10 @@ export class TradeSimulator {
         `);
       }
 
-      // Apply slippage based on trade size
-      const baseSlippage = (effectiveFromValueUSD / 10000) * 0.05; // 0.05% per $10,000 (10x lower than before)
-      const actualSlippage = baseSlippage * (0.9 + Math.random() * 0.2); // ±10% randomness (reduced from ±20%)
-      const slippagePercentage = actualSlippage * 100;
-
-      // Calculate final amount with slippage
-      const effectiveFromValueAfterSlippage =
-        effectiveFromValueUSD * (1 - actualSlippage);
+      // Calculate slippage
+      const slippageResult = this.calculateSlippage(effectiveFromValueUSD);
+      const slippagePercentage = slippageResult.slippagePercentage;
+      const effectiveFromValueAfterSlippage = slippageResult.effectiveValueAfterSlippage;
       const toAmount = effectiveFromValueAfterSlippage / toPrice.price;
 
       // Debug logging for price calculations
@@ -281,19 +277,17 @@ export class TradeSimulator {
                 - Price: $${fromPrice.price}
                 - USD Value: $${fromValueUSD.toFixed(6)}
                 
-                ${
-                  isCrossChainTrade
-                    ? `Cross-Chain Fees:
+                ${isCrossChainTrade
+          ? `Cross-Chain Fees:
                 - Percentage Fee: ${crossChainFeePercentage.toFixed(4)}%
                 - Fixed Fee: $${crossChainFixedFeeUSD.toFixed(2)}
                 - Effective USD Value After Fees: $${effectiveFromValueUSD.toFixed(6)}`
-                    : ""
-                }
+          : ""
+        }
                 
                 Slippage:
-                - Base: ${(baseSlippage * 100).toFixed(4)}%
-                - Actual: ${slippagePercentage.toFixed(4)}%
-                - Effective USD Value After Slippage: $${effectiveFromValueAfterSlippage.toFixed(6)}
+                - Percentage: ${slippagePercentage.toFixed(4)}%
+                - Effective USD Value After Slippage: ${effectiveFromValueAfterSlippage.toFixed(6)}
 
                 To Token (${toToken}):
                 - Price: $${toPrice.price}
@@ -327,9 +321,9 @@ export class TradeSimulator {
         // Add cross-chain fee information if applicable
         crossChainFee: isCrossChainTrade
           ? {
-              percentage: crossChainFeePercentage,
-              fixedFeeUSD: crossChainFixedFeeUSD,
-            }
+            percentage: crossChainFeePercentage,
+            fixedFeeUSD: crossChainFixedFeeUSD,
+          }
           : undefined,
       };
 
@@ -483,6 +477,62 @@ export class TradeSimulator {
       console.error("[TradeSimulator] Health check failed:", error);
       return false;
     }
+  }
+
+  /**
+   * Calculate cross-chain fees for trading between different blockchains
+   * Public method that can be used by controllers to get fee estimates
+   * 
+   * @param valueUSD The USD value being transferred
+   * @param fromChain The source blockchain
+   * @param toChain The destination blockchain
+   * @param fromSpecificChain Optional specific source chain
+   * @param toSpecificChain Optional specific destination chain
+   * @returns Fee details and effective USD value after fees
+   */
+  getCrossChainFees(
+    valueUSD: number,
+    fromChain: BlockchainType,
+    toChain: BlockchainType,
+    fromSpecificChain?: SpecificChain,
+    toSpecificChain?: SpecificChain,
+  ): {
+    feePercentage: number;
+    fixedFeeUSD: number;
+    totalFeeUSD: number;
+    effectiveValueUSD: number;
+  } {
+    return this.calculateCrossChainFees(
+      valueUSD,
+      fromChain,
+      toChain,
+      fromSpecificChain,
+      toSpecificChain
+    );
+  }
+
+  /**
+   * Calculate slippage for a trade based on its USD value
+   * 
+   * @param valueUSD The USD value of the trade after any fees
+   * @returns Slippage percentage and effective value after slippage
+   */
+  calculateSlippage(valueUSD: number): {
+    slippagePercentage: number;
+    effectiveValueAfterSlippage: number;
+  } {
+    // Apply slippage based on trade size
+    const baseSlippage = (valueUSD / 10000) * 0.05; // 0.05% per $10,000
+    const actualSlippage = baseSlippage * (0.9 + Math.random() * 0.2); // ±10% randomness
+    const slippagePercentage = actualSlippage * 100;
+
+    // Calculate value after slippage
+    const effectiveValueAfterSlippage = valueUSD * (1 - actualSlippage);
+
+    return {
+      slippagePercentage,
+      effectiveValueAfterSlippage
+    };
   }
 
   /**

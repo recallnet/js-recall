@@ -132,6 +132,16 @@ const router: Router = Router();
  *                     toSpecificChain:
  *                       type: string
  *                       description: Specific chain for the destination token
+ *                     crossChainFee:
+ *                       type: object
+ *                       description: Cross-chain fee information if applicable (only present for cross-chain trades)
+ *                       properties:
+ *                         percentage:
+ *                           type: number
+ *                           description: Fee percentage applied to the cross-chain transaction
+ *                         fixedFeeUSD:
+ *                           type: number
+ *                           description: Fixed fee in USD applied to the cross-chain transaction
  *       400:
  *         description: Invalid input parameters
  *       401:
@@ -253,6 +263,16 @@ router.post("/execute", TradeController.executeTrade);
  *                     toChain:
  *                       type: string
  *                       description: Blockchain type of the destination token
+ *                 crossChainFee:
+ *                   type: object
+ *                   description: Cross-chain fee information if applicable (only present for cross-chain trades)
+ *                   properties:
+ *                     percentage:
+ *                       type: number
+ *                       description: Fee percentage applied to the cross-chain transaction
+ *                     fixedFeeUSD:
+ *                       type: number
+ *                       description: Fixed fee in USD applied to the cross-chain transaction
  *       400:
  *         description: Invalid input parameters
  *       401:
