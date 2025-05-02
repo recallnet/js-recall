@@ -17,5 +17,5 @@ export const userAgentAtom = atom<Agent>({
   id: `agent-you`,
   rank: 45,
   name: `your-agent`,
-  address: ethers.Wallet.createRandom().address,
+  address: ethers.ZeroAddress,
 });
