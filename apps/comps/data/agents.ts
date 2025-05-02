@@ -1,4 +1,4 @@
-import { ethers } from "@/node_modules/ethers/lib.commonjs/index";
+import {ethers} from "@/node_modules/ethers/lib.commonjs/index";
 
 export interface Agent {
   id: string;
@@ -29,12 +29,12 @@ export const spotlightAgents: Agent[] = [
   },
 ];
 
-export const leaderboardAgents: (Agent & { rank: number })[] = Array.from(
-  { length: 30 },
+export const leaderboardAgents: (Agent & {rank: number})[] = Array.from(
+  {length: 30},
   (_, i) => ({
     id: `agent-${i + 1}`,
     rank: i,
     name: `agent-${i + 1}`,
-    address: ethers.Wallet.createRandom().address,
+    address: ethers.ZeroAddress,
   }),
 );
