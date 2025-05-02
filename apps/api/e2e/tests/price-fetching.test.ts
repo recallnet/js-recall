@@ -19,6 +19,8 @@ import {
 } from "@/e2e/utils/test-helpers.js";
 import { BlockchainType } from "@/types/index.js";
 
+import { Recallcomp } from "./../../../../packages/speakeasy/dist/esm/index.js";
+
 // Define Ethereum token addresses for testing
 const ETHEREUM_TOKENS = {
   ETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH
@@ -63,16 +65,31 @@ describe("Price Fetching", () => {
   });
 
   test("should fetch prices for standard tokens", async () => {
-    // Test price for SOL using authenticated client
-    const solResponse = await client.getPrice(
-      config.specificChainTokens.svm.sol,
-    );
+
+    const recallcomp = new Recallcomp({
+      bearerAuth: adminApiKey,
+    });
+
+    const solResponse = await recallcomp.price.get({
+      token: config.specificChainTokens.svm.sol,
+      chain: "svm",
+      specificChain: "eth",
+    });
+//      {
+//      token: "So11111111111111111111111111111111111111112",
+//      chain: "svm",
+//      specificChain: "eth",
+//    })
+//    // Test price for SOL using authenticated client
+//    const solResponse = await client.getPrice(
+//      config.specificChainTokens.svm.sol,
+//    );
     expect(solResponse.success).toBe(true);
-    expect((solResponse as PriceResponse).price).toBeDefined();
-    expect(typeof (solResponse as PriceResponse).price).toBe("number");
-    expect((solResponse as PriceResponse).price).toBeGreaterThan(0);
-    expect((solResponse as PriceResponse).chain).toBe("svm");
-    console.log(`SOL price: $${(solResponse as PriceResponse).price}`);
+    expect(solResponse.price).toBeDefined();
+    expect(typeof solResponse.price).toBe("number");
+    expect(solResponse.price).toBeGreaterThan(0);
+    expect(solResponse.chain).toBe("svm");
+    console.log(`SOL price: $${solResponse.price}`);
     // Test price for USDC
     const usdcResponse = await client.getPrice(
       config.specificChainTokens.svm.usdc,

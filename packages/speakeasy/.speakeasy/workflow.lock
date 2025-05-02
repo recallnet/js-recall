@@ -1,0 +1,38 @@
+speakeasyVersion: 1.541.2
+sources:
+    Trading Simulator API:
+        sourceNamespace: trading-simulator-api
+        sourceRevisionDigest: sha256:7f8970fc04782305cb364419031a38777dd325685fdbd25ee97d97177b9c6994
+        sourceBlobDigest: sha256:71d6005e96447a8358664c85c7df989af81717057d89e190b6caea5bfac741ac
+        tags:
+            - latest
+            - 1.0.0
+targets:
+    recallcomp:
+        source: Trading Simulator API
+        sourceNamespace: trading-simulator-api
+        sourceRevisionDigest: sha256:7f8970fc04782305cb364419031a38777dd325685fdbd25ee97d97177b9c6994
+        sourceBlobDigest: sha256:71d6005e96447a8358664c85c7df989af81717057d89e190b6caea5bfac741ac
+        codeSamplesNamespace: trading-simulator-api-typescript-code-samples
+        codeSamplesRevisionDigest: sha256:871ede903253f3b59fd5c72ebfc9c14f55d0a4baa431594a4bcddd6f8900e2c2
+workflow:
+    workflowVersion: 1.0.0
+    speakeasyVersion: latest
+    sources:
+        Trading Simulator API:
+            inputs:
+                - location: ../../github/js-recall/apps/api/openapi/openapi.json
+            overlays:
+                - location: .speakeasy/speakeasy-modifications-overlay.yaml
+            registry:
+                location: registry.speakeasyapi.dev/self-lgl/recall-api/trading-simulator-api
+    targets:
+        recallcomp:
+            target: typescript
+            source: Trading Simulator API
+            codeSamples:
+                registry:
+                    location: registry.speakeasyapi.dev/self-lgl/recall-api/trading-simulator-api-typescript-code-samples
+                labelOverride:
+                    fixedValue: Typescript (SDK)
+                blocking: false

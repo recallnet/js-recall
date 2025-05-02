@@ -1,0 +1,20 @@
+workflowVersion: 1.0.0
+speakeasyVersion: latest
+sources:
+    Trading Simulator API:
+        inputs:
+            - location: ../../github/js-recall/apps/api/openapi/openapi.json
+        overlays:
+            - location: .speakeasy/speakeasy-modifications-overlay.yaml
+        registry:
+            location: registry.speakeasyapi.dev/self-lgl/recall-api/trading-simulator-api
+targets:
+    recallcomp:
+        target: typescript
+        source: Trading Simulator API
+        codeSamples:
+            registry:
+                location: registry.speakeasyapi.dev/self-lgl/recall-api/trading-simulator-api-typescript-code-samples
+            labelOverride:
+                fixedValue: Typescript (SDK)
+            blocking: false
