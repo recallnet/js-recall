@@ -1,8 +1,16 @@
 import { PoolClient } from "pg";
 
-import { Competition, CompetitionStatus, SpecificChain } from "../../types";
-import { BaseRepository } from "../base-repository";
-import { DatabaseRow, PortfolioSnapshot, PortfolioTokenValue } from "../types";
+import { BaseRepository } from "@/database/base-repository.js";
+import {
+  DatabaseRow,
+  PortfolioSnapshot,
+  PortfolioTokenValue,
+} from "@/database/types.js";
+import {
+  Competition,
+  CompetitionStatus,
+  SpecificChain,
+} from "@/types/index.js";
 
 /**
  * Competition Repository

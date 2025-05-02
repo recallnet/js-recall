@@ -1,16 +1,13 @@
 import axios from "axios";
+import { beforeEach, describe, expect, test } from "vitest";
 
-import config from "../../src/config";
-import { services } from "../../src/services";
-import { PriceTracker } from "../../src/services/price-tracker.service";
-import { BlockchainType } from "../../src/types";
+import config from "@/config/index.js";
 import {
   BalancesResponse,
   PortfolioSnapshot,
   SnapshotResponse,
-  TokenPortfolioItem,
-} from "../utils/api-types";
-import { getBaseUrl } from "../utils/server";
+} from "@/e2e/utils/api-types.js";
+import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
@@ -20,7 +17,10 @@ import {
   registerTeamAndGetClient,
   startTestCompetition,
   wait,
-} from "../utils/test-helpers";
+} from "@/e2e/utils/test-helpers.js";
+import { services } from "@/services/index.js";
+import { PriceTracker } from "@/services/price-tracker.service.js";
+import { BlockchainType } from "@/types/index.js";
 
 const reason = "portfolio-snapshots end-to-end tests";
 
@@ -52,7 +52,7 @@ describe("Portfolio Snapshots", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
+    const { team } = await registerTeamAndGetClient(
       adminClient,
       "Snapshot Test Team",
     );
@@ -100,7 +100,7 @@ describe("Portfolio Snapshots", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
+    const { team } = await registerTeamAndGetClient(
       adminClient,
       "Periodic Snapshot Team",
     );
@@ -213,7 +213,7 @@ describe("Portfolio Snapshots", () => {
     const beforeEndCount = beforeEndResponse.snapshots.length;
 
     // End the competition
-    const endResult = await adminClient.endCompetition(competitionId);
+    await adminClient.endCompetition(competitionId);
     // Wait for operations to complete
     await wait(500);
 
@@ -321,7 +321,7 @@ describe("Portfolio Snapshots", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
+    const { team } = await registerTeamAndGetClient(
       adminClient,
       "Price Freshness Team",
     );
@@ -378,7 +378,7 @@ describe("Portfolio Snapshots", () => {
 
     try {
       // Mock console.log to capture messages
-      console.log = (...args: any[]) => {
+      console.log = (...args: unknown[]) => {
         const message = args.join(" ");
         logMessages.push(message);
         originalConsoleLog(...args);

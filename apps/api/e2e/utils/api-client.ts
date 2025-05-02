@@ -29,8 +29,8 @@ import {
   TradeHistoryResponse,
   TradeResponse,
   UpcomingCompetitionsResponse,
-} from "./api-types";
-import { getBaseUrl } from "./server";
+} from "./api-types.js";
+import { getBaseUrl } from "./server.js";
 
 /**
  * API client for testing the Solana Trading Simulator
@@ -104,7 +104,7 @@ export class ApiClient {
   /**
    * Helper method to handle API errors consistently
    */
-  private handleApiError(error: any, operation: string): ErrorResponse {
+  private handleApiError(error: unknown, operation: string): ErrorResponse {
     console.error(`Failed to ${operation}:`, error);
 
     // Extract the detailed error message from the axios error response
@@ -121,7 +121,8 @@ export class ApiClient {
     }
 
     // Fallback to the generic error message
-    return { success: false, error: (error as any).message, status: 500 };
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { success: false, error: errorMessage, status: 500 };
   }
 
   /**
@@ -720,7 +721,7 @@ export class ApiClient {
   async request<T>(
     method: "get" | "post" | "put" | "delete",
     path: string,
-    data?: any,
+    data?: unknown,
   ): Promise<T | ErrorResponse> {
     try {
       let response;

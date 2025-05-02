@@ -1,10 +1,10 @@
 import * as dotenv from "dotenv";
 import * as path from "path";
 
-import { DatabaseConnection } from "../src/database";
-import { repositories } from "../src/database";
-import { services } from "../src/services";
-import { Competition, CompetitionStatus } from "../src/types";
+import { DatabaseConnection } from "@/database/connection.js";
+import { repositories } from "@/database/index.js";
+import { services } from "@/services/index.js";
+import { Competition, CompetitionStatus } from "@/types/index.js";
 
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });

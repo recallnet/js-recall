@@ -1,14 +1,14 @@
 import axios from "axios";
+import { beforeEach, describe, expect, test } from "vitest";
 
-import config from "../../src/config";
-import { BlockchainType } from "../../src/types";
-import { ApiClient } from "../utils/api-client";
+import config from "@/config/index.js";
+import { ApiClient } from "@/e2e/utils/api-client.js";
 import {
   PriceResponse,
   SpecificChain,
   TokenInfoResponse,
-} from "../utils/api-types";
-import { getBaseUrl } from "../utils/server";
+} from "@/e2e/utils/api-types.js";
+import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
@@ -16,7 +16,8 @@ import {
   cleanupTestState,
   createTestClient,
   registerTeamAndGetClient,
-} from "../utils/test-helpers";
+} from "@/e2e/utils/test-helpers.js";
+import { BlockchainType } from "@/types/index.js";
 
 // Define Ethereum token addresses for testing
 const ETHEREUM_TOKENS = {

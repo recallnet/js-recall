@@ -1,6 +1,7 @@
 import axios, { AxiosError } from "axios";
+import { beforeEach, describe, expect, test } from "vitest";
 
-import { getBaseUrl } from "../utils/server";
+import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
@@ -9,7 +10,7 @@ import {
   createTestClient,
   registerTeamAndGetClient,
   wait,
-} from "../utils/test-helpers";
+} from "@/e2e/utils/test-helpers.js";
 
 /**
  * DIAGNOSTIC TEST FOR RATE LIMITER

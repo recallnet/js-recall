@@ -1,5 +1,5 @@
-import { config } from "../config";
-import { CompetitionManager } from "./competition-manager.service";
+import { config } from "@/config/index.js";
+import { CompetitionManager } from "@/services/competition-manager.service.js";
 
 // Keep track of all scheduler timers globally (helpful for tests)
 const allSchedulerTimers = new Set<NodeJS.Timeout>();

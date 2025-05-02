@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 
-import { repositories } from "../database";
-import { ApiError } from "../middleware/errorHandler";
-import { services } from "../services";
+import { repositories } from "@/database/index.js";
+import { ApiError } from "@/middleware/errorHandler.js";
+import { services } from "@/services/index.js";
 
 /**
  * Account Controller

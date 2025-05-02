@@ -1,8 +1,9 @@
 import axios, { AxiosError } from "axios";
+import { beforeEach, describe, expect, test } from "vitest";
 
-import config from "../../src/config";
-import { BalancesResponse, ErrorResponse } from "../utils/api-types";
-import { getBaseUrl } from "../utils/server";
+import config from "@/config/index.js";
+import { BalancesResponse, ErrorResponse } from "@/e2e/utils/api-types.js";
+import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
@@ -12,7 +13,7 @@ import {
   registerTeamAndGetClient,
   startTestCompetition,
   wait,
-} from "../utils/test-helpers";
+} from "@/e2e/utils/test-helpers.js";
 
 describe("Rate Limiter Middleware", () => {
   // Clean up test state before each test
@@ -162,7 +163,7 @@ describe("Rate Limiter Middleware", () => {
       // Check if the error is a rate limit error
       if ((team2Response as ErrorResponse).status === 429) {
         console.error("Team 2 should not be rate limited at this point");
-        fail("Rate limits are not properly isolated per team");
+        throw new Error("Rate limits are not properly isolated per team");
       } else {
         throw new Error(
           `Unexpected error for team 2: ${(team2Response as ErrorResponse).error}`,
@@ -280,7 +281,7 @@ describe("Rate Limiter Middleware", () => {
         "Success: Price endpoint has different rate limit from account endpoint",
       );
     } else if ((priceResponse as ErrorResponse).status === 429) {
-      fail(
+      throw new Error(
         "Price endpoint should have a different rate limit from account endpoint",
       );
     } else {
@@ -305,11 +306,10 @@ describe("Rate Limiter Middleware", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register team
-    const {
-      client: teamClient,
-      team,
-      apiKey,
-    } = await registerTeamAndGetClient(adminClient, "Headers Rate Limit Team");
+    const { team, apiKey } = await registerTeamAndGetClient(
+      adminClient,
+      "Headers Rate Limit Team",
+    );
 
     // Start a competition
     const competitionName = `Headers Rate Limit Test ${Date.now()}`;
@@ -348,7 +348,7 @@ describe("Rate Limiter Middleware", () => {
       try {
         await axiosInstance.get(`/api/account/balances`);
         console.log(`Headers test: Request ${i + 1}/${limit} succeeded`);
-      } catch (error: any) {
+      } catch (error) {
         const axiosError = error as AxiosError;
         if (axiosError.response && axiosError.response.status === 429) {
           console.log(`Headers test: Rate limit hit at request ${i + 1}`);
@@ -358,6 +358,7 @@ describe("Rate Limiter Middleware", () => {
           expect(axiosError.response.status).toBe(429);
 
           // Safely check response data
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const responseData = axiosError.response.data as any;
           expect(responseData).toBeTruthy();
           expect(
@@ -433,7 +434,7 @@ describe("Rate Limiter Middleware", () => {
       `Making ${requestCount} requests to /health endpoint (should be exempt from rate limits)`,
     );
 
-    const responses: any[] = [];
+    const responses = [];
     for (let i = 0; i < requestCount; i++) {
       try {
         const response = await httpClient.get(`${getBaseUrl()}/health`);

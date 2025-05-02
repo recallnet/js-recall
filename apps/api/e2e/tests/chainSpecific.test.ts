@@ -1,9 +1,10 @@
 import axios from "axios";
+import { beforeEach, describe, expect, test } from "vitest";
 
-import { config } from "../../src/config";
-import { BalancesResponse } from "../utils/api-types";
-import { getPool } from "../utils/db-manager";
-import { getBaseUrl } from "../utils/server";
+import { config } from "@/config/index.js";
+import { BalancesResponse } from "@/e2e/utils/api-types.js";
+import { getPool } from "@/e2e/utils/db-manager.js";
+import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
@@ -12,7 +13,7 @@ import {
   createTestClient,
   registerTeamAndGetClient,
   startTestCompetition,
-} from "../utils/test-helpers";
+} from "@/e2e/utils/test-helpers.js";
 
 const reason = "chainSpecific end to end tests";
 
@@ -178,10 +179,10 @@ describe("Specific Chains", () => {
 
     // Verify the specificChain fields were correctly populated
     const trade = tradesResult.rows[0];
-    expect(trade.from_specific_chain).toBe("eth");
-    expect(trade.to_specific_chain).toBe("eth");
-    expect(trade.from_token).toBe(ethToken);
-    expect(trade.to_token).toBe(usdcToken);
+    expect(trade?.from_specific_chain).toBe("eth");
+    expect(trade?.to_specific_chain).toBe("eth");
+    expect(trade?.from_token).toBe(ethToken);
+    expect(trade?.to_token).toBe(usdcToken);
   });
 
   test("specificChain is correctly recorded in portfolio_token_values when taking snapshots", async () => {
@@ -190,7 +191,7 @@ describe("Specific Chains", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register a new team
-    const { client: teamClient, team } = await registerTeamAndGetClient(
+    const { team } = await registerTeamAndGetClient(
       adminClient,
       "Team Portfolio",
     );
@@ -225,7 +226,7 @@ describe("Specific Chains", () => {
     );
 
     expect(snapshotResult.rows.length).toBe(1);
-    const snapshotId = snapshotResult.rows[0].id;
+    const snapshotId = snapshotResult.rows[0]?.id;
 
     // Query the portfolio_token_values table to check if specificChain was correctly populated
     const tokenValuesResult = await pool.query(
@@ -238,7 +239,7 @@ describe("Specific Chains", () => {
 
     // Verify each token has the correct specific_chain based on config
     for (const row of tokenValuesResult.rows) {
-      const tokenAddress = row.token_address.toLowerCase();
+      const tokenAddress = (row.token_address as string).toLowerCase();
       const assignedChain = row.specific_chain;
 
       // Find which chain this token should belong to according to config

@@ -1,7 +1,7 @@
 import fs from "fs";
 import { Pool, PoolClient, QueryResult, QueryResultRow } from "pg";
 
-import { config } from "../config";
+import { config } from "@/config/index.js";
 
 /**
  * Database Connection Manager

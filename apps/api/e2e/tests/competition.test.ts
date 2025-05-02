@@ -1,7 +1,7 @@
 import axios from "axios";
+import { beforeEach, describe, expect, test } from "vitest";
 
 import {
-  ApiResponse,
   Competition,
   CompetitionRulesResponse,
   CompetitionStatusResponse,
@@ -10,9 +10,9 @@ import {
   LeaderboardResponse,
   TeamProfileResponse,
   UpcomingCompetitionsResponse,
-} from "../utils/api-types";
-import { getPool } from "../utils/db-manager";
-import { getBaseUrl } from "../utils/server";
+} from "@/e2e/utils/api-types.js";
+import { getPool } from "@/e2e/utils/db-manager.js";
+import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
@@ -23,8 +23,8 @@ import {
   registerTeamAndGetClient,
   startExistingTestCompetition,
   startTestCompetition,
-} from "../utils/test-helpers";
-import { wait } from "../utils/test-helpers";
+} from "@/e2e/utils/test-helpers.js";
+import { wait } from "@/e2e/utils/test-helpers.js";
 
 describe("Competition API", () => {
   let adminApiKey: string;
@@ -193,6 +193,7 @@ describe("Competition API", () => {
         team1.id,
         team2.id,
       ]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       expect(error.success).toBe(false);
       expect(error.error).toContain("ACTIVE");
@@ -211,12 +212,7 @@ describe("Competition API", () => {
 
     // Admin starts a competition with the team
     const competitionName = `Viewable Competition ${Date.now()}`;
-    const competitionResponse = await startTestCompetition(
-      adminClient,
-      competitionName,
-      [team.id],
-    );
-    const competitionId = competitionResponse.competition.id;
+    await startTestCompetition(adminClient, competitionName, [team.id]);
 
     // Team checks competition status
     const statusResponse =
@@ -298,11 +294,7 @@ describe("Competition API", () => {
 
     // Start a competition with only the regular team (admin is not a participant)
     const competitionName = `Admin Access Test Competition ${Date.now()}`;
-    const competitionResponse = await startTestCompetition(
-      adminClient,
-      competitionName,
-      [team.id],
-    );
+    await startTestCompetition(adminClient, competitionName, [team.id]);
 
     // Admin checks competition status
     const adminStatusResponse =
@@ -440,8 +432,8 @@ describe("Competition API", () => {
 
     // Verify team is marked as inactive in the database
     expect(dbResult.rows.length).toBe(1);
-    expect(dbResult.rows[0].active).toBe(false);
-    expect(dbResult.rows[0].deactivation_reason).toContain("Competition");
+    expect(dbResult.rows[0]?.active).toBe(false);
+    expect(dbResult.rows[0]?.deactivation_reason).toContain("Competition");
 
     // Team should no longer be able to access restricted endpoints
     try {
@@ -593,6 +585,7 @@ describe("Competition API", () => {
     // 5. Get performance reports - use helper function because the API client doesn't have this method directly
     if (startResponse.success && "competition" in startResponse) {
       const reportsUrl = `/api/admin/reports/performance?competitionId=${startResponse.competition.id}`;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const reportsResponse = await adminClient.request<any>("get", reportsUrl);
 
       if (reportsResponse.success && "competition" in reportsResponse) {

@@ -1,15 +1,15 @@
 import axios from "axios";
+import { beforeEach, describe, expect, test } from "vitest";
 
-import config from "../../src/config";
-import { BlockchainType } from "../../src/types";
+import config from "@/config/index.js";
 import {
   AdminTeamResponse,
   AdminTeamsListResponse,
   ErrorResponse,
   LeaderboardResponse,
   TeamProfileResponse,
-} from "../utils/api-types";
-import { getBaseUrl } from "../utils/server";
+} from "@/e2e/utils/api-types.js";
+import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
@@ -19,7 +19,8 @@ import {
   registerTeamAndGetClient,
   startTestCompetition,
   wait,
-} from "../utils/test-helpers";
+} from "@/e2e/utils/test-helpers.js";
+import { BlockchainType } from "@/types/index.js";
 
 describe("Team Deactivation API", () => {
   let adminApiKey: string;
@@ -53,11 +54,7 @@ describe("Team Deactivation API", () => {
     );
 
     const competitionName = `Test Competition ${Date.now()}`;
-    const competitionResponse = await startTestCompetition(
-      adminClient,
-      competitionName,
-      [team.id],
-    );
+    await startTestCompetition(adminClient, competitionName, [team.id]);
 
     // Deactivate the team
     const reason = "Violated competition rules by using external API";
@@ -78,9 +75,7 @@ describe("Team Deactivation API", () => {
     // List all teams to verify the deactivation status is persisted
     const teamsResponse =
       (await adminClient.listAllTeams()) as AdminTeamsListResponse;
-    const deactivatedTeam = teamsResponse.teams.find(
-      (t: any) => t.id === team.id,
-    );
+    const deactivatedTeam = teamsResponse.teams.find((t) => t.id === team.id);
     expect(deactivatedTeam).toBeDefined();
     expect(deactivatedTeam?.active).toBe(false);
   });
@@ -239,7 +234,7 @@ describe("Team Deactivation API", () => {
     // Verify Team Two wasn't actually deactivated
     const teamsResponse =
       (await adminClient.listAllTeams()) as AdminTeamsListResponse;
-    const teamTwoInfo = teamsResponse.teams.find((t: any) => t.id === team2.id);
+    const teamTwoInfo = teamsResponse.teams.find((t) => t.id === team2.id);
     expect(teamTwoInfo).toBeDefined();
     expect(teamTwoInfo?.active).not.toBe(false);
   });
@@ -315,9 +310,7 @@ describe("Team Deactivation API", () => {
     expect(leaderboardBefore.leaderboard).toBeDefined();
 
     // All three teams should be in the leaderboard
-    const teamIds = leaderboardBefore.leaderboard.map(
-      (entry: any) => entry.teamId,
-    );
+    const teamIds = leaderboardBefore.leaderboard.map((entry) => entry.teamId);
     expect(teamIds).toContain(team1.id);
     expect(teamIds).toContain(team2.id);
     expect(teamIds).toContain(team3.id);
@@ -338,7 +331,7 @@ describe("Team Deactivation API", () => {
 
     // Verify team3 is still in the leaderboard but marked as inactive
     const teamIdsAfter = leaderboardAfter.leaderboard.map(
-      (entry: any) => entry.teamId,
+      (entry) => entry.teamId,
     );
     expect(teamIdsAfter).toContain(team1.id);
     expect(teamIdsAfter).toContain(team2.id);
@@ -346,7 +339,7 @@ describe("Team Deactivation API", () => {
 
     // Find team3 entry and verify it's marked as inactive
     const team3Entry = leaderboardAfter.leaderboard.find(
-      (entry: any) => entry.teamId === team3.id,
+      (entry) => entry.teamId === team3.id,
     );
     expect(team3Entry).toBeDefined();
     expect(team3Entry?.active).toBe(false);
@@ -355,7 +348,7 @@ describe("Team Deactivation API", () => {
     expect(leaderboardAfter.hasInactiveTeams).toBe(true);
 
     // All teams should still have ranks
-    const ranks = leaderboardAfter.leaderboard.map((entry: any) => entry.rank);
+    const ranks = leaderboardAfter.leaderboard.map((entry) => entry.rank);
     expect(ranks.length).toBe(3); // All three teams still have ranks
 
     // Reactivate the team and verify they show up again
@@ -372,7 +365,7 @@ describe("Team Deactivation API", () => {
 
     // Verify team3 is back in the leaderboard and active
     const teamIdsFinal = leaderboardFinal.leaderboard.map(
-      (entry: any) => entry.teamId,
+      (entry) => entry.teamId,
     );
     expect(teamIdsFinal).toContain(team1.id);
     expect(teamIdsFinal).toContain(team2.id);
@@ -380,7 +373,7 @@ describe("Team Deactivation API", () => {
 
     // Find team3 entry and verify it's now active
     const team3FinalEntry = leaderboardFinal.leaderboard.find(
-      (entry: any) => entry.teamId === team3.id,
+      (entry) => entry.teamId === team3.id,
     );
     expect(team3FinalEntry).toBeDefined();
     expect(team3FinalEntry?.active).toBe(true);

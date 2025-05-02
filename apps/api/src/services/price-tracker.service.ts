@@ -1,20 +1,20 @@
-import { config } from "../config";
-import { repositories } from "../database";
-import { PriceRecord } from "../database/types";
+import { config } from "@/config/index.js";
+import { repositories } from "@/database/index.js";
+import { PriceRecord } from "@/database/types.js";
+import { MultiChainProvider } from "@/services/providers/multi-chain.provider.js";
 import {
   BlockchainType,
   PriceReport,
   PriceSource,
   SpecificChain,
-} from "../types";
-import { MultiChainProvider } from "./providers/multi-chain.provider";
+} from "@/types/index.js";
 
 /**
  * Price Tracker Service
  * Fetches and caches token prices from multiple providers
  */
 export class PriceTracker {
-  private providers: PriceSource[];
+  providers: PriceSource[];
   // private novesProvider: NovesProvider | null = null;
   private multiChainProvider: MultiChainProvider | null = null;
   private priceCache: Map<string, PriceReport>;

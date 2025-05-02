@@ -1,7 +1,8 @@
 import dotenv from "dotenv";
+import { beforeEach, describe, expect, it } from "vitest";
 
-import { BlockchainType, SpecificChain } from "../../../types";
-import { MultiChainProvider } from "../multi-chain.provider";
+import { MultiChainProvider } from "@/services/providers/multi-chain.provider.js";
+import { BlockchainType, SpecificChain } from "@/types/index.js";
 
 // Load environment variables for API access
 dotenv.config();

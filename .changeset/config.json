@@ -14,8 +14,9 @@
     "comps",
     "faucet",
     "portal",
-    "@recallnet/api",
+    "api",
     "@recallnet/ui",
+    "@recallnet/ui2",
     "@recallnet/react"
   ]
 }

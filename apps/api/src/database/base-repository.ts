@@ -1,7 +1,7 @@
 import { PoolClient } from "pg";
 
-import { DatabaseConnection } from "./connection";
-import { DatabaseRow } from "./types";
+import { DatabaseConnection } from "@/database/connection.js";
+import { DatabaseRow } from "@/database/types.js";
 
 /**
  * Base Repository

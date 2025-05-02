@@ -4,10 +4,10 @@ import * as fs from "fs";
 import * as path from "path";
 import { v4 as uuidv4 } from "uuid";
 
-import { repositories } from "../database";
-import { ApiError } from "../middleware/errorHandler";
-import { services } from "../services";
-import { CompetitionStatus } from "../types";
+import { repositories } from "@/database/index.js";
+import { ApiError } from "@/middleware/errorHandler.js";
+import { services } from "@/services/index.js";
+import { CompetitionStatus } from "@/types/index.js";
 
 /**
  * Admin Controller

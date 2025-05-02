@@ -1,12 +1,13 @@
 import * as crypto from "crypto";
 
-import { resetRateLimiters } from "../../src/middleware/rate-limiter.middleware";
-import { ApiClient } from "./api-client";
+import { resetRateLimiters } from "@/middleware/rate-limiter.middleware.js";
+
+import { ApiClient } from "./api-client.js";
 import {
   CreateCompetitionResponse,
   StartCompetitionResponse,
-} from "./api-types";
-import { dbManager } from "./db-manager";
+} from "./api-types.js";
+import { dbManager } from "./db-manager.js";
 
 // Configured test token address
 export const TEST_TOKEN_ADDRESS =
@@ -40,7 +41,7 @@ export async function registerTeamAndGetClient(
   teamName?: string,
   email?: string,
   contactPerson?: string,
-): Promise<{ client: ApiClient; team: any; apiKey: string }> {
+) {
   // Ensure database is initialized
   await ensureDatabaseInitialized();
 

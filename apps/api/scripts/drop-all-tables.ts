@@ -1,8 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
 
-import { config } from "../src/config";
-import { DatabaseConnection } from "../src/database/connection";
+import { config } from "@/config/index.js";
+import { DatabaseConnection } from "@/database/connection.js";
 
 /**
  * Script to completely drop all tables from the database

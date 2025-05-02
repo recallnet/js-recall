@@ -1,4 +1,4 @@
-import { BlockchainType, SpecificChain } from "../types";
+import { BlockchainType, SpecificChain } from "@/types/index.js";
 
 /**
  * Database Types

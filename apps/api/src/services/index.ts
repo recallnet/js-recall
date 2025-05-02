@@ -1,10 +1,10 @@
-import { BalanceManager } from "./balance-manager.service";
-import { CompetitionManager } from "./competition-manager.service";
-import { ConfigurationService } from "./configuration.service";
-import { PriceTracker } from "./price-tracker.service";
-import { SchedulerService } from "./scheduler.service";
-import { TeamManager } from "./team-manager.service";
-import { TradeSimulator } from "./trade-simulator.service";
+import { BalanceManager } from "@/services/balance-manager.service.js";
+import { CompetitionManager } from "@/services/competition-manager.service.js";
+import { ConfigurationService } from "@/services/configuration.service.js";
+import { PriceTracker } from "@/services/price-tracker.service.js";
+import { SchedulerService } from "@/services/scheduler.service.js";
+import { TeamManager } from "@/services/team-manager.service.js";
+import { TradeSimulator } from "@/services/trade-simulator.service.js";
 
 /**
  * Service Registry

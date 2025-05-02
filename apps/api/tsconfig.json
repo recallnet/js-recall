@@ -5,11 +5,17 @@
     "declarationMap": false,
     "outDir": "./dist",
     "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/scripts/*": ["./scripts/*"],
+      "@/e2e/*": ["./e2e/*"]
+    },
     "forceConsistentCasingInFileNames": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "sourceMap": true
   },
-  "include": ["src/**/*.ts", "scripts/**/*.ts"],
-  "exclude": ["node_modules", "dist", "e2e"]
+  "include": ["src/**/*.ts", "scripts/**/*.ts", "e2e/**/*.ts", "sum/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
 }

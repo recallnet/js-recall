@@ -2,9 +2,9 @@ import dotenv from "dotenv";
 import path from "path";
 import * as readline from "readline";
 
-import { config } from "../src/config";
-import { DatabaseConnection } from "../src/database/connection";
-import { DatabaseRow } from "../src/database/types";
+import { config } from "@/config/index.js";
+import { DatabaseConnection } from "@/database/connection.js";
+import { DatabaseRow } from "@/database/types.js";
 
 // Ensure environment is loaded
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });

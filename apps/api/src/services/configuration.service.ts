@@ -1,5 +1,5 @@
-import { features } from "../config";
-import { repositories } from "../database";
+import { features } from "@/config/index.js";
+import { repositories } from "@/database/index.js";
 
 /**
  * Configuration Service
