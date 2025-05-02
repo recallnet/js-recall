@@ -1,0 +1,140 @@
+{
+  "name": "@recallnet/api-sdk",
+  "version": "0.0.4",
+  "author": "Speakeasy",
+  "type": "module",
+  "bin": {
+    "mcp": "bin/mcp-server.js"
+  },
+  "tshy": {
+    "sourceDialects": [
+      "@recallnet/api-sdk/source"
+    ],
+    "exports": {
+      ".": "./src/index.ts",
+      "./package.json": "./package.json",
+      "./types": "./src/types/index.ts",
+      "./models/errors": "./src/models/errors/index.ts",
+      "./models/components": "./src/models/components/index.ts",
+      "./models/operations": "./src/models/operations/index.ts",
+      "./*.js": "./src/*.ts",
+      "./*": "./src/*.ts"
+    }
+  },
+  "sideEffects": false,
+  "scripts": {
+    "lint": "eslint --cache --max-warnings=0 src",
+    "build:mcp": "bun src/mcp-server/build.mts",
+    "build": "npm run build:mcp && tshy",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "@modelcontextprotocol/sdk": ">=1.5.0 <1.10.0",
+    "zod": ">= 3"
+  },
+  "peerDependenciesMeta": {
+    "@modelcontextprotocol/sdk": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.19.0",
+    "@modelcontextprotocol/sdk": ">=1.5.0 <1.10.0",
+    "@recallnet/eslint-config": "workspace:^",
+    "@stricli/core": "^1.1.1",
+    "@types/express": "^4.17.21",
+    "bun": "^1.2.2",
+    "bun-types": "^1.2.2",
+    "eslint": "^9.19.0",
+    "express": "^4.21.2",
+    "globals": "^15.14.0",
+    "tshy": "^2.0.0",
+    "typescript": "^5.4.5",
+    "typescript-eslint": "^8.22.0",
+    "zod": "^3.24.2"
+  },
+  "dependencies": {},
+  "exports": {
+    ".": {
+      "import": {
+        "@recallnet/api-sdk/source": "./src/index.ts",
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/commonjs/index.d.ts",
+        "default": "./dist/commonjs/index.js"
+      }
+    },
+    "./package.json": "./package.json",
+    "./types": {
+      "import": {
+        "@recallnet/api-sdk/source": "./src/types/index.ts",
+        "types": "./dist/esm/types/index.d.ts",
+        "default": "./dist/esm/types/index.js"
+      },
+      "require": {
+        "types": "./dist/commonjs/types/index.d.ts",
+        "default": "./dist/commonjs/types/index.js"
+      }
+    },
+    "./models/errors": {
+      "import": {
+        "@recallnet/api-sdk/source": "./src/models/errors/index.ts",
+        "types": "./dist/esm/models/errors/index.d.ts",
+        "default": "./dist/esm/models/errors/index.js"
+      },
+      "require": {
+        "types": "./dist/commonjs/models/errors/index.d.ts",
+        "default": "./dist/commonjs/models/errors/index.js"
+      }
+    },
+    "./models/components": {
+      "import": {
+        "@recallnet/api-sdk/source": "./src/models/components/index.ts",
+        "types": "./dist/esm/models/components/index.d.ts",
+        "default": "./dist/esm/models/components/index.js"
+      },
+      "require": {
+        "types": "./dist/commonjs/models/components/index.d.ts",
+        "default": "./dist/commonjs/models/components/index.js"
+      }
+    },
+    "./models/operations": {
+      "import": {
+        "@recallnet/api-sdk/source": "./src/models/operations/index.ts",
+        "types": "./dist/esm/models/operations/index.d.ts",
+        "default": "./dist/esm/models/operations/index.js"
+      },
+      "require": {
+        "types": "./dist/commonjs/models/operations/index.d.ts",
+        "default": "./dist/commonjs/models/operations/index.js"
+      }
+    },
+    "./*.js": {
+      "import": {
+        "@recallnet/api-sdk/source": "./src/*.ts",
+        "types": "./dist/esm/*.d.ts",
+        "default": "./dist/esm/*.js"
+      },
+      "require": {
+        "types": "./dist/commonjs/*.d.ts",
+        "default": "./dist/commonjs/*.js"
+      }
+    },
+    "./*": {
+      "import": {
+        "@recallnet/api-sdk/source": "./src/*.ts",
+        "types": "./dist/esm/*.d.ts",
+        "default": "./dist/esm/*.js"
+      },
+      "require": {
+        "types": "./dist/commonjs/*.d.ts",
+        "default": "./dist/commonjs/*.js"
+      }
+    }
+  },
+  "main": "./dist/commonjs/index.js",
+  "types": "./dist/commonjs/index.d.ts",
+  "module": "./dist/esm/index.js"
+}

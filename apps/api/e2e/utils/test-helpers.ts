@@ -1,5 +1,7 @@
 import * as crypto from "crypto";
 
+import { ApiSDK } from "@recallnet/api-sdk";
+
 import { resetRateLimiters } from "@/middleware/rate-limiter.middleware.js";
 
 import { ApiClient } from "./api-client.js";
@@ -37,33 +39,43 @@ export function createTestClient(baseUrl?: string): ApiClient {
  * Register a new team and return a client configured with its API credentials
  */
 export async function registerTeamAndGetClient(
-  adminClient: ApiClient,
+  adminApiKey: string,
   teamName?: string,
   email?: string,
   contactPerson?: string,
-  imageUrl?: string,
+  walletAddress?: string,
 ) {
   // Ensure database is initialized
   await ensureDatabaseInitialized();
 
+  const sdk = getApiSdk(adminApiKey);
   // Register a new team
-  const result = await adminClient.registerTeam(
-    teamName || `Team ${generateRandomString(8)}`,
-    email || `team-${generateRandomString(8)}@test.com`,
-    contactPerson || `Contact ${generateRandomString(8)}`,
-    undefined, // walletAddress
-    undefined, // metadata
-    imageUrl,
-  );
+  const result = await sdk.admin.postApiAdminTeamsRegister({
+    teamName: teamName || `Team ${generateRandomString(8)}`,
+    email: email || `team-${generateRandomString(8)}@test.com`,
+    contactPerson: contactPerson || `Contact ${generateRandomString(8)}`,
+    walletAddress: walletAddress || generateRandomEthAddress(),
+    metadata: {},
+  });
 
-  if (!result.success || !result.team) {
+  if (!result.success || !result.team || typeof result.team.id !== "string") {
     throw new Error("Failed to register team");
   }
 
   // Create a client with the team's API key
   const client = new ApiClient(result.team.apiKey);
-
-  return { client, team: result.team, apiKey: result.team.apiKey };
+  // TODO: work on replacing `ApiClient` instances with SDK instances everywhere
+  // TODO: the return for this function can be cleaned up when we use the sdk everywhere
+  return {
+    client,
+    team: {
+      id: result.team.id || "",
+      name: result.team.name || "",
+      email: result.team.email || "",
+      contactPerson: result.team.contactPerson || "",
+    },
+    apiKey: result.team.apiKey || "",
+  };
 }
 
 /**
@@ -194,4 +206,27 @@ export function generateRandomString(length: number): string {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return result;
+}
+
+/**
+ * Generate random hex string of specific length
+ */
+export function generateRandomEthAddress(): string {
+  const hexChars = "0123456789abcdef";
+  let result = "0x";
+  for (let i = 0; i < 40; i++) {
+    const randomIndex = Math.floor(Math.random() * hexChars.length);
+    result += hexChars[randomIndex];
+  }
+  return result;
+}
+
+/**
+ * Helper for getting an instance of the sdk for a given api key
+ */
+export function getApiSdk(apiKey: string): InstanceType<typeof ApiSDK> {
+  return new ApiSDK({
+    bearerAuth: apiKey,
+    serverIdx: 2,
+  });
 }

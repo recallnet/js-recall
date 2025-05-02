@@ -50,7 +50,7 @@ describe("Rate Limiter Diagnostics", () => {
       team: team1,
       apiKey: team1ApiKey,
     } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Rate Limit Diagnostic Team 1",
     );
     const {
@@ -58,7 +58,7 @@ describe("Rate Limiter Diagnostics", () => {
       team: team2,
       apiKey: team2ApiKey,
     } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Rate Limit Diagnostic Team 2",
     );
     console.log(

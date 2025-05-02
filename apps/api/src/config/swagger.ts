@@ -58,12 +58,16 @@ For convenience, we provide an API client that handles authentication automatica
     },
     servers: [
       {
+        url: "https://api.competitions.recall.network",
+        description: "Production server",
+      },
+      {
         url: `http://localhost:${config.server.port}`,
         description: "Local development server",
       },
       {
-        url: "https://api.example.com",
-        description: "Production server",
+        url: `http://localhost:${config.server.testPort}`,
+        description: "End to end testing server",
       },
     ],
     components: {

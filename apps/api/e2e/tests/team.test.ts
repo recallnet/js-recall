@@ -59,7 +59,12 @@ describe("Team API", () => {
       client: teamClient,
       team,
       apiKey,
-    } = await registerTeamAndGetClient(client, teamName, email, contactPerson);
+    } = await registerTeamAndGetClient(
+      adminApiKey,
+      teamName,
+      email,
+      contactPerson,
+    );
 
     expect(team).toBeDefined();
     expect(team.id).toBeDefined();
@@ -87,7 +92,7 @@ describe("Team API", () => {
     console.log(`TEST: Login result: ${loginSuccess}`);
 
     // Register a team
-    const { client: teamClient } = await registerTeamAndGetClient(client);
+    const { client: teamClient } = await registerTeamAndGetClient(adminApiKey);
 
     // Update team profile
     const newContactPerson = "Updated Contact Person";
@@ -119,7 +124,7 @@ describe("Team API", () => {
     console.log(`TEST: Login result: ${loginSuccess}`);
 
     // Register a team
-    const { client: teamClient } = await registerTeamAndGetClient(client);
+    const { client: teamClient } = await registerTeamAndGetClient(adminApiKey);
 
     // Define metadata for the update
     const metadata = {
@@ -166,7 +171,7 @@ describe("Team API", () => {
     console.log(`TEST: Login result: ${loginSuccess}`);
 
     // Register a team
-    await registerTeamAndGetClient(client);
+    await registerTeamAndGetClient(adminApiKey);
 
     // Create a client with an invalid API key
     const invalidApiKey = "invalid_key_12345";
@@ -204,7 +209,7 @@ describe("Team API", () => {
     ];
 
     for (const data of teamData) {
-      await registerTeamAndGetClient(adminClient, data.name, data.email);
+      await registerTeamAndGetClient(adminApiKey, data.name, data.email);
     }
 
     // Admin lists all teams
@@ -294,7 +299,7 @@ describe("Team API", () => {
     // Step 1: Register a team
     const teamName = `Test Team ${Date.now()}`;
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       teamName,
     );
     expect(team).toBeDefined();
@@ -373,7 +378,7 @@ describe("Team API", () => {
     // Step 1: Register a team
     const teamName = `Cache Test Team ${Date.now()}`;
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       teamName,
     );
     expect(team).toBeDefined();
@@ -476,7 +481,7 @@ describe("Team API", () => {
     // Register the team
     const { client: teamClient, apiKey: originalApiKey } =
       await registerTeamAndGetClient(
-        adminClient,
+        adminApiKey,
         teamName,
         email,
         contactPerson,

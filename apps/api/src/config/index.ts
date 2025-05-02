@@ -139,6 +139,8 @@ const parseEvmChains = (): SpecificChain[] => {
 export const config = {
   server: {
     port: parseInt(process.env.PORT || "3000", 10),
+    // TODO: these ports are going to be put into the openapi json spec, so they can't really be set at runtime, wtd?
+    testPort: 3001,
     nodeEnv: process.env.NODE_ENV || "development",
   },
   database: {

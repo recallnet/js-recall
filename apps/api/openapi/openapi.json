@@ -15,12 +15,16 @@
   },
   "servers": [
     {
+      "url": "https://api.competitions.recall.network",
+      "description": "Production server"
+    },
+    {
       "url": "http://localhost:3000",
       "description": "Local development server"
     },
     {
-      "url": "https://api.example.com",
-      "description": "Production server"
+      "url": "http://localhost:3001",
+      "description": "End to end testing server"
     }
   ],
   "components": {
@@ -2944,8 +2948,8 @@
                     "chain": {
                       "type": "string",
                       "enum": [
-                        "EVM",
-                        "SVM"
+                        "evm",
+                        "svm"
                       ],
                       "description": "Blockchain type of the token"
                     },
@@ -3069,8 +3073,8 @@
                     "chain": {
                       "type": "string",
                       "enum": [
-                        "EVM",
-                        "SVM"
+                        "evm",
+                        "svm"
                       ],
                       "description": "Blockchain type of the token"
                     },
