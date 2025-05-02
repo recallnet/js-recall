@@ -2,8 +2,8 @@
 
 import React from "react";
 
-import { CompetitionCard } from "@/components/competition-card";
-import { Competition } from "@/data/competitions";
+import { Competition } from "../data/competitions";
+import { CompetitionCard } from "./competition-card";
 
 interface StartingSoonSectionProps {
   competitions: Competition[];

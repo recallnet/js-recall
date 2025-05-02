@@ -26,7 +26,7 @@ export default function RootLayout({
         <Analytics />
         <Providers>
           <Navbar />
-          <div>{children}</div>
+          <div className="xl:px-65 lg:px-30 md:px-15 px-5">{children}</div>
         </Providers>
       </body>
     </html>

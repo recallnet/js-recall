@@ -2,8 +2,8 @@
 
 import React from "react";
 
-import { SocialLinkCard } from "@/components/social-link-card";
-import { SocialLink } from "@/data/social";
+import { SocialLink } from "../data/social";
+import { SocialLinkCard } from "./social-link-card";
 
 interface JoinSwarmSectionProps {
   socialLinks: SocialLink[];
