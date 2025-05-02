@@ -18,7 +18,6 @@ function TabsList({ className, ref, ...props }: TabsListProps) {
     />
   );
 }
-TabsList.displayName = TabsPrimitive.List.displayName;
 
 export type TabsTriggerProps = React.ComponentPropsWithRef<
   typeof TabsPrimitive.Trigger
@@ -36,7 +35,6 @@ function TabsTrigger({ className, ref, ...props }: TabsTriggerProps) {
     />
   );
 }
-TabsTrigger.displayName = TabsPrimitive.Trigger.displayName;
 
 export type TabsContentProps = React.ComponentPropsWithRef<
   typeof TabsPrimitive.Content
@@ -47,6 +45,5 @@ function TabsContent({ className, ref, ...props }: TabsContentProps) {
     <TabsPrimitive.Content ref={ref} className={cn("", className)} {...props} />
   );
 }
-TabsContent.displayName = TabsPrimitive.Content.displayName;
 
 export { Tabs, TabsList, TabsTrigger, TabsContent };
