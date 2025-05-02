@@ -50,7 +50,6 @@ npm-debug.log*
 apps/api/logs/
 apps/api/**/*.log
 apps/api/*.log
-apps/api/e2e/e2e-server.json
 
 # Misc
 .DS_Store
