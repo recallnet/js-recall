@@ -269,8 +269,18 @@ export class TradeSimulator {
             `);
 
       // Execute the trade
-      await this.balanceManager.subtractAmount(teamId, fromToken, fromAmount);
-      await this.balanceManager.addAmount(teamId, toToken, toAmount);
+      await this.balanceManager.subtractAmount(
+        teamId,
+        fromToken,
+        fromAmount,
+        fromPrice.specificChain,
+      );
+      await this.balanceManager.addAmount(
+        teamId,
+        toToken,
+        toAmount,
+        toPrice.specificChain,
+      );
 
       // Create trade record
       const trade: Trade = {

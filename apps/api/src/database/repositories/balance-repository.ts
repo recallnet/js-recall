@@ -3,7 +3,7 @@ import { PoolClient } from "pg";
 import { config } from "@/config/index.js";
 import { BaseRepository } from "@/database/base-repository.js";
 import { DatabaseRow } from "@/database/types.js";
-import { Balance } from "@/types/index.js";
+import { Balance, SpecificChain } from "@/types/index.js";
 
 /**
  * Balance Repository
@@ -19,24 +19,26 @@ export class BalanceRepository extends BaseRepository<Balance> {
    * @param teamId Team ID
    * @param tokenAddress Token address
    * @param amount Amount
+   * @param specificChain Specific chain for the token
    * @param client Optional database client for transactions
    */
   async saveBalance(
     teamId: string,
     tokenAddress: string,
     amount: number,
+    specificChain: string,
     client?: PoolClient,
   ): Promise<Balance> {
     try {
       const query = `
-        INSERT INTO balances (team_id, token_address, amount)
-        VALUES ($1, $2, $3)
+        INSERT INTO balances (team_id, token_address, amount, specific_chain)
+        VALUES ($1, $2, $3, $4)
         ON CONFLICT (team_id, token_address) 
-        DO UPDATE SET amount = $3, updated_at = NOW()
-        RETURNING id, team_id, token_address, amount, created_at, updated_at
+        DO UPDATE SET amount = $3, updated_at = NOW(), specific_chain = $4
+        RETURNING id, team_id, token_address, amount, created_at, updated_at, specific_chain
       `;
 
-      const values = [teamId, tokenAddress, amount];
+      const values = [teamId, tokenAddress, amount, specificChain];
 
       const result = client
         ? await client.query(query, values)
@@ -62,7 +64,7 @@ export class BalanceRepository extends BaseRepository<Balance> {
   ): Promise<Balance | null> {
     try {
       const query = `
-        SELECT id, team_id, token_address, amount, created_at, updated_at
+        SELECT id, team_id, token_address, amount, created_at, updated_at, specific_chain
         FROM balances
         WHERE team_id = $1 AND token_address = $2
       `;
@@ -93,7 +95,7 @@ export class BalanceRepository extends BaseRepository<Balance> {
   ): Promise<Balance[]> {
     try {
       const query = `
-        SELECT id, team_id, token_address, amount, created_at, updated_at
+        SELECT id, team_id, token_address, amount, created_at, updated_at, specific_chain
         FROM balances
         WHERE team_id = $1
       `;
@@ -255,6 +257,9 @@ export class BalanceRepository extends BaseRepository<Balance> {
     return {
       token: data.tokenAddress as string,
       amount: parseFloat(String(data.amount)),
+      createdAt: new Date(data.createdAt as string | number | Date),
+      updatedAt: new Date(data.updatedAt as string | number | Date),
+      specificChain: data.specificChain as SpecificChain,
     };
   }
 }
