@@ -77,19 +77,11 @@ async function runTest() {
       throw new Error("Admin setup failed");
     }
 
-    // Run Jest test for a specific file
+    // Run Vitest test for a specific file
     log(`\n🧪 Running test file: ${testFile}...`);
-    const jestResult = spawnSync(
+    const vitestResult = spawnSync(
       "npx",
-      [
-        "jest",
-        "-c",
-        "e2e/jest.config.js",
-        `e2e/${testFile}`,
-        "--verbose",
-        "--detectOpenHandles",
-        "--forceExit",
-      ],
+      ["vitest", "run", "--project", "e2e", `e2e/${testFile}`],
       {
         stdio: ["inherit", logStream, logStream],
         cwd: path.resolve(__dirname, ".."),
@@ -100,8 +92,8 @@ async function runTest() {
     log("\n🧹 Cleaning up server processes...");
     await killExistingServers();
 
-    if (jestResult.status !== 0) {
-      process.exit(jestResult.status || 1);
+    if (vitestResult.status !== 0) {
+      process.exit(vitestResult.status || 1);
     }
 
     log("\n✅ Test completed successfully");
