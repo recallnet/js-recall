@@ -6,8 +6,7 @@ import LogReporter from "./e2e/utils/log-reporter.js";
 export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
-    reporters: ["json", "default", new LogReporter()],
-    outputFile: "./test-output.json",
+    reporters: ["default", new LogReporter()],
     workspace: [
       {
         extends: true,
@@ -20,19 +19,23 @@ export default defineConfig({
       {
         extends: true,
         test: {
-          name: "sum",
-          root: "./",
-          dir: "./sum",
-          globalSetup: "./sum/global-setup.ts",
-        },
-      },
-      {
-        extends: true,
-        test: {
           name: "e2e",
           root: "./",
           dir: "./e2e",
           globalSetup: "./e2e/setup.ts",
+          setupFiles: "./e2e/utils/test-setup.ts",
+          testTimeout: 120_000,
+          sequence: {
+            concurrent: false,
+            shuffle: false,
+          },
+          maxConcurrency: 1,
+          pool: "threads",
+          poolOptions: {
+            threads: {
+              singleThread: true,
+            },
+          },
         },
       },
     ],

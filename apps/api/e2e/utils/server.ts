@@ -29,7 +29,7 @@ export async function startServer(): Promise<Server> {
 
       // Start the server script in a separate process
       // Use the index.ts file which is the main entry point
-      serverProcess = spawn("npx", ["ts-node", "src/index.ts"], {
+      serverProcess = spawn("npx", ["tsx", "src/index.ts"], {
         env: {
           ...process.env,
           NODE_ENV: "test",

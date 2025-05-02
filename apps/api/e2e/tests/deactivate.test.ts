@@ -53,6 +53,9 @@ describe("Team Deactivation API", () => {
       "Team to Deactivate",
     );
 
+    const competitionName = `Test Competition ${Date.now()}`;
+    await startTestCompetition(adminClient, competitionName, [team.id]);
+
     // Deactivate the team
     const reason = "Violated competition rules by using external API";
     const deactivateResponse = (await adminClient.deactivateTeam(

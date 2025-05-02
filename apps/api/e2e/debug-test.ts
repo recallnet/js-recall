@@ -51,15 +51,11 @@ async function runTest() {
 
     // Ensure test database exists and is set up
     log("\n📦 Setting up test database...");
-    const dbSetupResult = spawnSync(
-      "npx",
-      ["ts-node", "e2e/utils/setup-db.ts"],
-      {
-        env: { ...process.env, NODE_ENV: "test" },
-        stdio: ["inherit", logStream, logStream],
-        cwd: path.resolve(__dirname, ".."),
-      },
-    );
+    const dbSetupResult = spawnSync("npx", ["tsx", "e2e/utils/setup-db.ts"], {
+      env: { ...process.env, NODE_ENV: "test" },
+      stdio: ["inherit", logStream, logStream],
+      cwd: path.resolve(__dirname, ".."),
+    });
 
     if (dbSetupResult.status !== 0) {
       throw new Error("Database setup failed");
@@ -69,7 +65,7 @@ async function runTest() {
     log("\n👤 Setting up admin account...");
     const adminSetupResult = spawnSync(
       "npx",
-      ["ts-node", "e2e/utils/setup-admin.ts"],
+      ["tsx", "e2e/utils/setup-admin.ts"],
       {
         env: { ...process.env, NODE_ENV: "test" },
         stdio: ["inherit", logStream, logStream],

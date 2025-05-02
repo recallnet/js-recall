@@ -205,13 +205,14 @@ describe("Competition API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    const { client: teamClient } = await registerTeamAndGetClient(
+    const { client: teamClient, team } = await registerTeamAndGetClient(
       adminClient,
       "Team Gamma",
     );
 
     // Admin starts a competition with the team
     const competitionName = `Viewable Competition ${Date.now()}`;
+    await startTestCompetition(adminClient, competitionName, [team.id]);
 
     // Team checks competition status
     const statusResponse =
@@ -286,13 +287,14 @@ describe("Competition API", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register a regular team
-    const { client: teamClient } = await registerTeamAndGetClient(
+    const { client: teamClient, team } = await registerTeamAndGetClient(
       adminClient,
       "Regular Team",
     );
 
     // Start a competition with only the regular team (admin is not a participant)
     const competitionName = `Admin Access Test Competition ${Date.now()}`;
+    await startTestCompetition(adminClient, competitionName, [team.id]);
 
     // Admin checks competition status
     const adminStatusResponse =
