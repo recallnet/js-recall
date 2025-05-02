@@ -17,7 +17,6 @@
     "test:e2e": "vitest run --project e2e",
     "test:e2e:watch": "vitest watch --project e2e",
     "test:e2e:runner": "tsx e2e/run-tests.ts",
-    "test:e2e:debug": "tsx e2e/debug-test.ts",
     "test:multi-chain": "vitest run src/services/providers/__tests__/multi-chain.provider.test.ts",
     "test:multi-chain:e2e": "vitest run e2e/tests/price/multi-chain-provider.test.ts",
     "db:init": "tsx scripts/setup-db.ts",
