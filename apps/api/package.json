@@ -2,6 +2,7 @@
   "name": "@recallnet/api",
   "version": "1.0.0",
   "description": "Solana Trading Simulator Server for hosting trading competitions",
+  "private": true,
   "main": "dist/src/index.js",
   "scripts": {
     "lint": "eslint . --max-warnings 0",
@@ -33,8 +34,8 @@
     "setup:competition": "ts-node scripts/setup-competition.ts",
     "end:competition": "ts-node scripts/end-competition.ts",
     "comp:status": "ts-node scripts/competition-status.ts",
-    "generate-openapi": "ts-node -e \"const { swaggerSpec } = require('./src/config/swagger'); require('fs').writeFileSync('./docs/openapi.json', JSON.stringify(swaggerSpec, null, 2));\"",
-    "generate-markdown": "openapi-markdown -i ./docs/openapi.json -o ./docs/API.md",
+    "generate-openapi": "ts-node -e \"const { swaggerSpec } = require('./src/config/swagger'); require('fs').writeFileSync('./openapi/openapi.json', JSON.stringify(swaggerSpec, null, 2));\"",
+    "generate-markdown": "openapi-markdown -i ./openapi/openapi.json -o ./openapi/API.md",
     "generate-docs": "npm run generate-openapi && npm run generate-markdown"
   },
   "keywords": [

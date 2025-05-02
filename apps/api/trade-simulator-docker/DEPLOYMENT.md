@@ -466,7 +466,6 @@ Key environment variables to configure:
 
 - **Chain Configuration**:
   - `EVM_CHAINS`: Comma-separated list of supported chains
-  - `ALLOW_CROSS_CHAIN_TRADING`: Enable/disable cross-chain trading
 
 ### .env File Mounting
 

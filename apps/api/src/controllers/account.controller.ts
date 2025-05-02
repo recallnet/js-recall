@@ -328,4 +328,27 @@ export class AccountController {
       next(error);
     }
   }
+
+  /**
+   * Reset the API key for the authenticated team
+   * @param req Express request
+   * @param res Express response
+   * @param next Express next function
+   */
+  static async resetApiKey(req: Request, res: Response, next: NextFunction) {
+    try {
+      const teamId = req.teamId as string;
+
+      // Use the TeamManager service to reset the API key
+      const result = await services.teamManager.resetApiKey(teamId);
+
+      // Return the new API key
+      res.status(200).json({
+        success: true,
+        apiKey: result.apiKey,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

@@ -19,7 +19,7 @@ export default function CompetitionsPage() {
     ongoingCompetitions.length > 0 ? ongoingCompetitions[0] : null;
 
   return (
-    <div className="container mx-auto px-12 py-8">
+    <main className="container mx-auto px-12 py-8">
       {currentCompetition && (
         <OngoingCompetition competition={currentCompetition} />
       )}
@@ -37,6 +37,6 @@ export default function CompetitionsPage() {
       <JoinSwarmSection socialLinks={socialLinks} />
 
       <NewsletterSection />
-    </div>
+    </main>
   );
 }

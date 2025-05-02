@@ -15,13 +15,6 @@ const router = Router();
  *     security:
  *       - BearerAuth: []
  *     parameters:
- *       - in: header
- *         name: Authorization
- *         schema:
- *           type: string
- *         required: true
- *         description: Bearer token for authentication (format "Bearer YOUR_API_KEY")
- *         example: "Bearer abc123def456_ghi789jkl012"
  *       - in: query
  *         name: competitionId
  *         schema:
@@ -123,14 +116,6 @@ router.get("/leaderboard", CompetitionController.getLeaderboard);
  *     description: Get the status of the active competition
  *     security:
  *       - BearerAuth: []
- *     parameters:
- *       - in: header
- *         name: Authorization
- *         schema:
- *           type: string
- *         required: true
- *         description: Bearer token for authentication (format "Bearer YOUR_API_KEY")
- *         example: "Bearer abc123def456_ghi789jkl012"
  *     responses:
  *       200:
  *         description: Competition status
@@ -205,14 +190,6 @@ router.get("/status", CompetitionController.getStatus);
  *     description: Get the rules, rate limits, and other configuration details for the competition
  *     security:
  *       - BearerAuth: []
- *     parameters:
- *       - in: header
- *         name: Authorization
- *         schema:
- *           type: string
- *         required: true
- *         description: Bearer token for authentication (format "Bearer YOUR_API_KEY")
- *         example: "Bearer abc123def456_ghi789jkl012"
  *     responses:
  *       200:
  *         description: Competition rules retrieved successfully
@@ -267,5 +244,63 @@ router.get("/status", CompetitionController.getStatus);
  *         description: Server error
  */
 router.get("/rules", CompetitionController.getRules);
+
+/**
+ * @openapi
+ * /api/competition/upcoming:
+ *   get:
+ *     tags:
+ *       - Competition
+ *     summary: Get upcoming competitions
+ *     description: Get all competitions that have not started yet (status=PENDING)
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Upcoming competitions retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   description: Operation success status
+ *                 competitions:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         description: Competition ID
+ *                       name:
+ *                         type: string
+ *                         description: Competition name
+ *                       description:
+ *                         type: string
+ *                         nullable: true
+ *                         description: Competition description
+ *                       status:
+ *                         type: string
+ *                         enum: [PENDING]
+ *                         description: Competition status (always PENDING)
+ *                       allowCrossChainTrading:
+ *                         type: boolean
+ *                         description: Whether cross-chain trading is allowed
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                         description: When the competition was created
+ *                       updatedAt:
+ *                         type: string
+ *                         format: date-time
+ *                         description: When the competition was last updated
+ *       401:
+ *         description: Unauthorized - Missing or invalid authentication
+ *       500:
+ *         description: Server error
+ */
+router.get("/upcoming", CompetitionController.getUpcomingCompetitions);
 
 export default router;

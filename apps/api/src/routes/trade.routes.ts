@@ -15,12 +15,6 @@ const router: Router = Router();
  *     security:
  *       - BearerAuth: []
  *     parameters:
- *       - in: header
- *         name: Authorization
- *         schema:
- *           type: string
- *         required: true
- *         description: Bearer token for authentication (format "Bearer YOUR_API_KEY")
  *     requestBody:
  *       required: true
  *       content:
@@ -154,12 +148,6 @@ router.post("/execute", TradeController.executeTrade);
  *     security:
  *       - BearerAuth: []
  *     parameters:
- *       - in: header
- *         name: Authorization
- *         schema:
- *           type: string
- *         required: true
- *         description: Bearer token for authentication (format "Bearer YOUR_API_KEY")
  *       - in: query
  *         name: fromToken
  *         schema:

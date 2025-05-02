@@ -17,6 +17,7 @@ import {
   PriceHistoryResponse,
   PriceResponse,
   QuoteResponse,
+  ResetApiKeyResponse,
   SpecificChain,
   StartCompetitionResponse,
   TeamApiKeyResponse,
@@ -27,6 +28,7 @@ import {
   TradeExecutionParams,
   TradeHistoryResponse,
   TradeResponse,
+  UpcomingCompetitionsResponse,
 } from "./api-types";
 import { getBaseUrl } from "./server";
 
@@ -222,18 +224,34 @@ export class ApiClient {
    * Start a competition
    */
   async startCompetition(
-    name: string,
-    description: string,
-    teamIds: string[],
+    params:
+      | {
+          name: string;
+          description?: string;
+          teamIds: string[];
+          allowCrossChainTrading?: boolean;
+        }
+      | string,
+    description?: string,
+    teamIds?: string[],
   ): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
+      let requestData;
+
+      // Handle both object-based and individual parameter calls
+      if (typeof params === "object") {
+        requestData = params;
+      } else {
+        requestData = {
+          name: params,
+          description,
+          teamIds: teamIds || [],
+        };
+      }
+
       const response = await this.axiosInstance.post(
         "/api/admin/competition/start",
-        {
-          name,
-          description,
-          teamIds,
-        },
+        requestData,
       );
 
       return response.data;
@@ -248,6 +266,7 @@ export class ApiClient {
   async createCompetition(
     name: string,
     description?: string,
+    allowCrossChainTrading?: boolean,
   ): Promise<CreateCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
@@ -255,6 +274,7 @@ export class ApiClient {
         {
           name,
           description,
+          allowCrossChainTrading,
         },
       );
 
@@ -270,6 +290,7 @@ export class ApiClient {
   async startExistingCompetition(
     competitionId: string,
     teamIds: string[],
+    allowCrossChainTrading?: boolean,
   ): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
@@ -277,6 +298,7 @@ export class ApiClient {
         {
           competitionId,
           teamIds,
+          allowCrossChainTrading,
         },
       );
 
@@ -471,6 +493,22 @@ export class ApiClient {
       return response.data as CompetitionRulesResponse;
     } catch (error) {
       return this.handleApiError(error, "get competition rules");
+    }
+  }
+
+  /**
+   * Get upcoming competitions (status=PENDING)
+   */
+  async getUpcomingCompetitions(): Promise<
+    UpcomingCompetitionsResponse | ErrorResponse
+  > {
+    try {
+      const response = await this.axiosInstance.get(
+        "/api/competition/upcoming",
+      );
+      return response.data as UpcomingCompetitionsResponse;
+    } catch (error) {
+      return this.handleApiError(error, "get upcoming competitions");
     }
   }
 
@@ -753,6 +791,21 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "publicly register team");
+    }
+  }
+
+  /**
+   * Reset the team's API key
+   * @returns A promise that resolves to the reset API key response
+   */
+  async resetApiKey(): Promise<ResetApiKeyResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post(
+        "/api/account/reset-api-key",
+      );
+      return response.data as ResetApiKeyResponse;
+    } catch (error) {
+      return this.handleApiError(error, "reset API key");
     }
   }
 }

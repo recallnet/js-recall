@@ -2,11 +2,14 @@ import axios from "axios";
 
 import {
   ApiResponse,
+  Competition,
   CompetitionRulesResponse,
   CompetitionStatusResponse,
+  CreateCompetitionResponse,
   EndCompetitionResponse,
   LeaderboardResponse,
   TeamProfileResponse,
+  UpcomingCompetitionsResponse,
 } from "../utils/api-types";
 import { getPool } from "../utils/db-manager";
 import { getBaseUrl } from "../utils/server";
@@ -235,7 +238,7 @@ describe("Competition API", () => {
 
     // The team should be in the leaderboard
     const teamInLeaderboard = leaderboardResponse.leaderboard.find(
-      (entry: any) => entry.teamName === "Team Gamma",
+      (entry) => entry.teamName === "Team Gamma",
     );
     expect(teamInLeaderboard).toBeDefined();
   });
@@ -320,7 +323,7 @@ describe("Competition API", () => {
 
     // There should be one team in the leaderboard
     expect(adminLeaderboardResponse.leaderboard.length).toBe(1);
-    expect(adminLeaderboardResponse.leaderboard[0].teamName).toBe(
+    expect(adminLeaderboardResponse.leaderboard[0]?.teamName).toBe(
       "Regular Team",
     );
 
@@ -382,7 +385,7 @@ describe("Competition API", () => {
 
     // Find the team in the leaderboard
     const teamInLeaderboard = leaderboardResponse.leaderboard.find(
-      (entry: any) => entry.teamId === team.id,
+      (entry) => entry.teamId === team.id,
     );
     expect(teamInLeaderboard).toBeDefined();
     expect(teamInLeaderboard?.active).toBe(true);
@@ -449,5 +452,264 @@ describe("Competition API", () => {
       // Expect error due to inactive status
       expect(error).toBeDefined();
     }
+  });
+
+  test("creating competition with cross-chain trading parameter", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register a team
+    const { client: teamClient, team } = await registerTeamAndGetClient(
+      adminClient,
+      "Cross-Chain Test Team",
+    );
+
+    // Create and start competition with cross-chain trading enabled
+    const competitionName = `Cross-Chain Competition ${Date.now()}`;
+    const competitionResponse = await adminClient.startCompetition({
+      name: competitionName,
+      teamIds: [team.id],
+      allowCrossChainTrading: true,
+    });
+
+    expect(competitionResponse.success).toBe(true);
+
+    // Check competition status to verify it was created
+    const statusResponse = await teamClient.getCompetitionStatus();
+    expect(statusResponse.success).toBe(true);
+
+    if (statusResponse.success && statusResponse.competition) {
+      expect(statusResponse.competition.name).toBe(competitionName);
+    }
+
+    // Check competition rules to verify cross-chain trading is enabled
+    const rulesResponse = await teamClient.getRules();
+    expect(rulesResponse.success).toBe(true);
+
+    // Verify cross-chain trading setting in rules
+    if (rulesResponse.success && rulesResponse.rules) {
+      expect(rulesResponse.rules.tradingRules).toBeDefined();
+
+      // Find the cross-chain trading rule
+      const crossChainRule = rulesResponse.rules.tradingRules.find(
+        (rule: string) => rule.includes("Cross-chain trading"),
+      );
+      expect(crossChainRule).toBeDefined();
+      expect(crossChainRule).toContain("Enabled");
+    }
+
+    // Create second competition with cross-chain trading disabled
+    const secondCompetitionName = `No-Cross-Chain Competition ${Date.now()}`;
+
+    // End the first competition
+    if (competitionResponse.success && "competition" in competitionResponse) {
+      await adminClient.endCompetition(competitionResponse.competition.id);
+
+      // Start a new competition with cross-chain trading disabled
+      const secondCompetitionResponse = await adminClient.startCompetition({
+        name: secondCompetitionName,
+        teamIds: [team.id],
+        allowCrossChainTrading: false,
+      });
+
+      expect(secondCompetitionResponse.success).toBe(true);
+
+      // Check competition rules to verify cross-chain trading is disabled
+      const secondRulesResponse = await teamClient.getRules();
+      expect(secondRulesResponse.success).toBe(true);
+
+      // Verify cross-chain trading setting in rules
+      if (secondRulesResponse.success && secondRulesResponse.rules) {
+        // Find the cross-chain trading rule
+        const secondCrossChainRule =
+          secondRulesResponse.rules.tradingRules.find((rule: string) =>
+            rule.includes("Cross-chain trading"),
+          );
+        expect(secondCrossChainRule).toBeDefined();
+        expect(secondCrossChainRule).toContain("Disabled");
+      }
+    }
+  });
+
+  test("competition responses include allowCrossChainTrading property", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register a team
+    const { team } = await registerTeamAndGetClient(
+      adminClient,
+      "Response Fields Test Team",
+    );
+
+    // 1. Test creating a competition with allowCrossChainTrading=true
+    const createCompetitionName = `Create Fields Test ${Date.now()}`;
+    const createResponse = await adminClient.createCompetition(
+      createCompetitionName,
+      "Test description",
+      true,
+    );
+
+    expect(createResponse.success).toBe(true);
+    if (createResponse.success && "competition" in createResponse) {
+      expect(createResponse.competition).toBeDefined();
+      expect(createResponse.competition.allowCrossChainTrading).toBe(true);
+    }
+
+    // 2. Test starting a competition with allowCrossChainTrading=false
+    const startCompetitionName = `Start Fields Test ${Date.now()}`;
+    const startResponse = await adminClient.startCompetition({
+      name: startCompetitionName,
+      teamIds: [team.id],
+      allowCrossChainTrading: false,
+    });
+
+    expect(startResponse.success).toBe(true);
+    if (startResponse.success && "competition" in startResponse) {
+      expect(startResponse.competition).toBeDefined();
+      expect(startResponse.competition.allowCrossChainTrading).toBe(false);
+
+      // 3. Test ending a competition and check field is preserved
+      const endResponse = await adminClient.endCompetition(
+        startResponse.competition.id,
+      );
+
+      expect(endResponse.success).toBe(true);
+      if (endResponse.success && "competition" in endResponse) {
+        const competition = endResponse.competition as Competition;
+        expect(competition).toBeDefined();
+        expect(competition.allowCrossChainTrading).toBe(false);
+      }
+    }
+
+    // 4. Verify competition status endpoint also includes the property
+    const statusResponse = await adminClient.getCompetitionStatus();
+
+    if (statusResponse.success && statusResponse.competition) {
+      expect(statusResponse.competition.allowCrossChainTrading).toBeDefined();
+    }
+
+    // 5. Get performance reports - use helper function because the API client doesn't have this method directly
+    if (startResponse.success && "competition" in startResponse) {
+      const reportsUrl = `/api/admin/reports/performance?competitionId=${startResponse.competition.id}`;
+      const reportsResponse = await adminClient.request<any>("get", reportsUrl);
+
+      if (reportsResponse.success && "competition" in reportsResponse) {
+        const competition = reportsResponse.competition as Competition;
+        expect(competition.allowCrossChainTrading).toBeDefined();
+      }
+    }
+  });
+
+  test("teams can view upcoming competitions", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register a team
+    const { client: teamClient } = await registerTeamAndGetClient(
+      adminClient,
+      "Upcoming Viewer Team",
+    );
+
+    // Create several competitions in PENDING state
+    const comp1Name = `Upcoming Competition 1 ${Date.now()}`;
+    const comp2Name = `Upcoming Competition 2 ${Date.now()}`;
+    const comp3Name = `Upcoming Competition 3 ${Date.now()}`;
+
+    // Create the competitions
+    const createResponse1 = (await adminClient.createCompetition(
+      comp1Name,
+      "Test competition 1",
+      true,
+    )) as CreateCompetitionResponse;
+    const createResponse2 = (await adminClient.createCompetition(
+      comp2Name,
+      "Test competition 2",
+      false,
+    )) as CreateCompetitionResponse;
+    const createResponse3 = (await adminClient.createCompetition(
+      comp3Name,
+      "Test competition 3",
+      true,
+    )) as CreateCompetitionResponse;
+
+    // Verify all competitions were created and in PENDING state
+    expect(createResponse1.competition.status).toBe("PENDING");
+    expect(createResponse2.competition.status).toBe("PENDING");
+    expect(createResponse3.competition.status).toBe("PENDING");
+
+    // Call the new endpoint to get upcoming competitions
+    const upcomingResponse =
+      (await teamClient.getUpcomingCompetitions()) as UpcomingCompetitionsResponse;
+
+    // Verify the response
+    expect(upcomingResponse.success).toBe(true);
+    expect(upcomingResponse.competitions).toBeDefined();
+    expect(Array.isArray(upcomingResponse.competitions)).toBe(true);
+
+    // At least our 3 competitions should be there (there might be others from previous tests)
+    expect(upcomingResponse.competitions.length).toBeGreaterThanOrEqual(3);
+
+    // Verify our competitions are in the response
+    const foundComp1 = upcomingResponse.competitions.some(
+      (comp) => comp.name === comp1Name && comp.status === "PENDING",
+    );
+    const foundComp2 = upcomingResponse.competitions.some(
+      (comp) => comp.name === comp2Name && comp.status === "PENDING",
+    );
+    const foundComp3 = upcomingResponse.competitions.some(
+      (comp) => comp.name === comp3Name && comp.status === "PENDING",
+    );
+
+    expect(foundComp1).toBe(true);
+    expect(foundComp2).toBe(true);
+    expect(foundComp3).toBe(true);
+
+    // Verify each competition has all expected fields
+    upcomingResponse.competitions.forEach((comp) => {
+      expect(comp.id).toBeDefined();
+      expect(comp.name).toBeDefined();
+      expect(comp.status).toBe("PENDING");
+      expect(comp.allowCrossChainTrading).toBeDefined();
+      expect(comp.createdAt).toBeDefined();
+      expect(comp.updatedAt).toBeDefined();
+    });
+
+    // Register a team
+    const { team } = await registerTeamAndGetClient(
+      adminClient,
+      "Upcoming competitions viewer test",
+    );
+
+    // Start one of the competitions to verify it disappears from upcoming list
+    await startExistingTestCompetition(
+      adminClient,
+      createResponse1.competition.id,
+      [team.id],
+    );
+
+    // Get upcoming competitions again
+    const upcomingResponseAfterStart =
+      (await teamClient.getUpcomingCompetitions()) as UpcomingCompetitionsResponse;
+
+    // Verify the started competition is no longer in the list
+    const foundComp1AfterStart = upcomingResponseAfterStart.competitions.some(
+      (comp) => comp.id === createResponse1.competition.id,
+    );
+
+    expect(foundComp1AfterStart).toBe(false);
+
+    // But the other two should still be there
+    const foundComp2AfterStart = upcomingResponseAfterStart.competitions.some(
+      (comp) => comp.id === createResponse2.competition.id,
+    );
+    const foundComp3AfterStart = upcomingResponseAfterStart.competitions.some(
+      (comp) => comp.id === createResponse3.competition.id,
+    );
+
+    expect(foundComp2AfterStart).toBe(true);
+    expect(foundComp3AfterStart).toBe(true);
   });
 });

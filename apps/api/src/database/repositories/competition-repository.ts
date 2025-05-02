@@ -25,9 +25,9 @@ export class CompetitionRepository extends BaseRepository<Competition> {
     try {
       const query = `
         INSERT INTO competitions (
-          id, name, description, start_date, end_date, status, created_at, updated_at
+          id, name, description, start_date, end_date, status, allow_cross_chain_trading, created_at, updated_at
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8
+          $1, $2, $3, $4, $5, $6, $7, $8, $9
         ) RETURNING *
       `;
 
@@ -38,6 +38,7 @@ export class CompetitionRepository extends BaseRepository<Competition> {
         competition.startDate,
         competition.endDate,
         competition.status,
+        competition.allowCrossChainTrading,
         competition.createdAt,
         competition.updatedAt,
       ];
@@ -70,8 +71,9 @@ export class CompetitionRepository extends BaseRepository<Competition> {
           start_date = $3,
           end_date = $4,
           status = $5,
-          updated_at = $6
-        WHERE id = $7
+          allow_cross_chain_trading = $6,
+          updated_at = $7
+        WHERE id = $8
         RETURNING *
       `;
 
@@ -81,6 +83,7 @@ export class CompetitionRepository extends BaseRepository<Competition> {
         competition.startDate,
         competition.endDate,
         competition.status,
+        competition.allowCrossChainTrading,
         new Date(),
         competition.id,
       ];
@@ -496,6 +499,39 @@ export class CompetitionRepository extends BaseRepository<Competition> {
   }
 
   /**
+   * Find competitions by status
+   * @param status The competition status to filter by
+   * @param client Optional database client for transactions
+   */
+  async findByStatus(
+    status: CompetitionStatus,
+    client?: PoolClient,
+  ): Promise<Competition[]> {
+    try {
+      const query = `
+          SELECT * FROM competitions
+          WHERE status = $1
+          ORDER BY created_at DESC
+        `;
+
+      const result = client
+        ? await client.query(query, [status])
+        : await this.db.query(query, [status]);
+
+      return result.rows.map((row: DatabaseRow) => {
+        const camelRow = this.toCamelCase(row);
+        return this.mapToEntity(camelRow);
+      });
+    } catch (error) {
+      console.error(
+        `[CompetitionRepository] Error finding competitions with status ${status}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Map database row to Competition entity
    * @param data Row data with camelCase keys
    */
@@ -511,6 +547,7 @@ export class CompetitionRepository extends BaseRepository<Competition> {
         ? new Date(data.endDate as string | number | Date)
         : null,
       status: data.status as CompetitionStatus,
+      allowCrossChainTrading: data.allowCrossChainTrading as boolean,
       createdAt: new Date(data.createdAt as string | number | Date),
       updatedAt: new Date(data.updatedAt as string | number | Date),
     };

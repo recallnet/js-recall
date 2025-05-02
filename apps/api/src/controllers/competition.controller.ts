@@ -268,12 +268,13 @@ export class CompetitionController {
       // Check if user is an admin (added by auth middleware)
       const isAdmin = req.isAdmin === true;
 
+      // Get active competition
+      const activeCompetition =
+        await services.competitionManager.getActiveCompetition();
+
       // If not an admin, verify team is part of the active competition
       if (!isAdmin) {
         // Get active competition
-        const activeCompetition =
-          await services.competitionManager.getActiveCompetition();
-
         if (!activeCompetition) {
           throw new ApiError(400, "No active competition");
         }
@@ -362,6 +363,47 @@ export class CompetitionController {
             interval: `${config.portfolio.snapshotIntervalMs / 60000} minutes`,
           },
         },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get all upcoming competitions (status=PENDING)
+   * @param req AuthenticatedRequest object with team authentication information
+   * @param res Express response
+   * @param next Express next function
+   */
+  static async getUpcomingCompetitions(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      // Check if the team is authenticated
+      const teamId = req.teamId;
+
+      // If no team ID, they can't be authenticated
+      if (!teamId) {
+        throw new ApiError(
+          401,
+          "Authentication required to view upcoming competitions",
+        );
+      }
+
+      console.log(
+        `[CompetitionController] Team ${teamId} requesting upcoming competitions`,
+      );
+
+      // Get all upcoming competitions
+      const upcomingCompetitions =
+        await services.competitionManager.getUpcomingCompetitions();
+
+      // Return the competitions
+      res.status(200).json({
+        success: true,
+        competitions: upcomingCompetitions,
       });
     } catch (error) {
       next(error);

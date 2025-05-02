@@ -1,5 +1,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
+import {
+  ServerNotification,
+  ServerRequest,
+} from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 
 import RecallAPI from "../shared/api.js";
@@ -66,7 +70,7 @@ export default class RecallAgentToolkit extends McpServer {
         tool.parameters.shape,
         async (
           arg: z.infer<typeof tool.parameters>,
-          _extra: RequestHandlerExtra,
+          _extra: RequestHandlerExtra<ServerRequest, ServerNotification>,
         ) => {
           const result = await this._recall.run(tool.method, arg);
           return {
