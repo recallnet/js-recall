@@ -107,8 +107,7 @@ export function LeaderboardTable(props: {
                 <div className="flex items-center justify-end">
                   <Button
                     size="sm"
-                    variant="transparent"
-                    className="border-1 border-gray-800 p-5 text-gray-500"
+                    className="border-1 border-gray-800 bg-transparent p-5 text-gray-500"
                   >
                     PROFILE
                   </Button>
@@ -168,8 +167,7 @@ export function LeaderboardTable(props: {
                 <div className="flex items-center justify-end">
                   <Button
                     size="sm"
-                    variant="transparent"
-                    className="border-1 border-gray-800 p-5 text-gray-500"
+                    className="border-1 border-gray-800 bg-transparent p-5 text-gray-500"
                   >
                     PROFILE
                   </Button>
