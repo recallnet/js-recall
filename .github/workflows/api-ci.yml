@@ -108,7 +108,7 @@ jobs:
 
           try {
             // Run the unit tests with NODE_ENV=test
-            execSync('pnpm test -- src/**/*.test.ts', { 
+            execSync('pnpm test', { 
               stdio: 'inherit',
               env: { 
                 ...process.env,
