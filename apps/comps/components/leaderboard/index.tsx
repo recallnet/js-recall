@@ -10,14 +10,20 @@ import {
 } from "@recallnet/ui2/components/tabs";
 
 import { cn } from "@/../../packages/ui2/src/lib/utils";
-import { leaderboardAgents } from "@/data/agents";
+import { Agent, leaderboardAgents } from "@/data/agents";
 
+import AgentPodium from "../agent-podium/index";
 import { LeaderboardTable } from "../leaderboard-table";
 
 const categories = ["CRYPTO-TRADING", "DERIVATIVES", "SENTIMENT-ANALYSIS"];
 
 export function Leaderboard() {
   const [selected, setSelected] = React.useState(categories[0]);
+  const [first, second, third] = leaderboardAgents as unknown as [
+    Agent,
+    Agent,
+    Agent,
+  ];
 
   return (
     <div className="mt-20">
@@ -52,7 +58,7 @@ export function Leaderboard() {
             value={cat}
             className="flex w-full flex-col gap-6 pt-6"
           >
-            <div className="mb-10 grid grid-cols-3 divide-x-2 divide-gray-700 border-2 border-gray-700 text-center text-gray-400">
+            <div className="mb-10 grid grid-cols-1 divide-x-2 border-2 border-gray-700 text-center text-gray-400 sm:grid-cols-3 sm:divide-gray-700">
               <div className="py-4">
                 <div className="text-sm uppercase">Total Trades</div>
                 <div className="text-lg">$123.4M</div>
@@ -67,82 +73,7 @@ export function Leaderboard() {
               </div>
             </div>
 
-            <div className="h-70 grid w-full grid-cols-3">
-              <div className="grid grid-rows-5">
-                <div className="row-span-3 flex translate-y-6 flex-col justify-center text-sm text-white">
-                  {
-                    // 3rd place icon
-                  }
-                  <span className="mb-1 text-center text-4xl">🥉</span>
-                  <div className="flex flex-col items-center font-bold">
-                    <span>agent.name</span>
-                    <span className="text-base text-gray-400">ELO Score</span>
-                  </div>
-                </div>
-                <div className="from-transparent-500/80 row-span-2 flex w-full justify-around bg-gradient-to-t to-gray-800 px-5 pt-7 text-gray-300">
-                  <div className="flex flex-col items-center">
-                    <span className="mb-5">ROI</span>
-                    <div className="mb-3 h-1 w-12 bg-gray-100"></div>
-                    <div className="h-1 w-7 bg-gray-500"></div>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <span className="mb-5">TRADES</span>
-                    <div className="mb-3 h-1 w-12 bg-gray-100"></div>
-                    <div className="h-1 w-7 bg-gray-500"></div>
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-rows-6">
-                <div className="row-span-2 flex flex-col justify-center text-sm text-white">
-                  {
-                    //1st place icon
-                  }
-                  <span className="mb-1 text-center text-4xl">🥇</span>
-                  <div className="flex flex-col items-center font-bold">
-                    <span>agent.name</span>
-                    <span className="text-base text-gray-400">ELO Score</span>
-                  </div>
-                </div>
-                <div className="from-transparent-500/80 row-span-4 flex w-full justify-around bg-gradient-to-t to-gray-800 px-5 pt-7 text-gray-300">
-                  <div className="flex flex-col items-center">
-                    <span className="mb-5">ROI</span>
-                    <div className="mb-3 h-1 w-12 bg-gray-100"></div>
-                    <div className="h-1 w-7 bg-gray-500"></div>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <span className="mb-5">TRADES</span>
-                    <div className="mb-3 h-1 w-12 bg-gray-100"></div>
-                    <div className="h-1 w-7 bg-gray-500"></div>
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-rows-6">
-                <div className="row-span-3 flex translate-y-6 flex-col justify-center text-sm text-white">
-                  <span className="mb-1 text-center text-4xl">
-                    {
-                      //2nd place icon
-                    }
-                    🥈
-                  </span>
-                  <div className="flex flex-col items-center font-bold">
-                    <span>agent.name</span>
-                    <span className="text-base text-gray-400">ELO Score</span>
-                  </div>
-                </div>
-                <div className="from-transparent-500/80 row-span-3 flex w-full justify-around bg-gradient-to-t to-gray-800 px-5 pt-7 text-gray-300">
-                  <div className="flex flex-col items-center">
-                    <span className="mb-5">ROI</span>
-                    <div className="mb-3 h-1 w-12 bg-gray-100"></div>
-                    <div className="h-1 w-7 bg-gray-500"></div>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <span className="mb-5">TRADES</span>
-                    <div className="mb-3 h-1 w-12 bg-gray-100"></div>
-                    <div className="h-1 w-7 bg-gray-500"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <AgentPodium first={first} second={second} third={third} />
 
             <LeaderboardTable agents={leaderboardAgents} />
           </TabsContent>

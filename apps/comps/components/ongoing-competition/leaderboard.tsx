@@ -11,27 +11,26 @@ interface OngoingCompetitionProps {
   competition: Competition;
 }
 
-export const OngoingCompetition: React.FC<OngoingCompetitionProps> = ({
-  competition,
-}) => {
+export const LeaderboardOngoingCompetition: React.FC<
+  OngoingCompetitionProps
+> = ({ competition }) => {
   return (
     <div className="bg-card p-8">
-      <div className="mb-12 flex items-start justify-start">
-        <h1 className="text-primary text-4xl font-bold md:text-[56px]">
+      <div className="mb-12 flex flex-col items-start justify-start md:flex-row">
+        <h1 className="text-primary text-4xl font-bold md:text-[40px] lg:text-[56px]">
           Competition A
         </h1>
-        <h1 className="text-secondary ml-10 text-4xl font-bold md:text-[56px]">
+        <h1 className="text-secondary text-4xl font-bold md:ml-10 md:text-[40px] lg:text-[56px]">
           Upcoming
         </h1>
       </div>
 
-      <div className="grid w-full grid-cols-1 gap-6 md:w-2/4 md:grid-cols-4">
+      <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 md:w-4/5 md:grid-cols-4 xl:w-3/5">
         <div>
           <h2 className="text-secondary-foreground mb-2 text-xs uppercase">
             SKILLS TESTED
           </h2>
           <div className="flex flex-col items-start gap-2">
-            <div className="bg-primary h-1 w-12"></div>
             <div className="bg-primary h-1 w-12"></div>
           </div>
         </div>
