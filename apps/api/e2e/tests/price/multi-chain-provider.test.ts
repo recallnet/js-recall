@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { sql } from "drizzle-orm";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
+import { db } from "@/database/db.js";
 import { ApiClient } from "@/e2e/utils/api-client.js";
 import { PriceResponse } from "@/e2e/utils/api-types.js";
 import { dbManager } from "@/e2e/utils/db-manager.js";
@@ -111,11 +112,7 @@ describe("Multi-Chain Provider Tests", () => {
       return;
     }
 
-    // The specific_chain column should already be added by the dbManager.initialize()
-    // Let's just verify it exists
-    const conn = dbManager.getConn();
-
-    const result = await conn.db.execute(
+    const result = await db.execute(
       sql`SELECT EXISTS (
         SELECT 1
         FROM information_schema.columns

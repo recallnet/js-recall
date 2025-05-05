@@ -1,13 +1,10 @@
 import dotenv from "dotenv";
-import { reset } from "drizzle-seed";
 import path from "path";
 import * as readline from "readline/promises";
 import { pathToFileURL } from "url";
 
-import * as schema from "@recallnet/comps-db/schema";
-
 import { config } from "@/config/index.js";
-import { DatabaseConnection } from "@/database/connection.js";
+import { resetDb } from "@/database/db.js";
 
 // Ensure environment is loaded
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
@@ -84,17 +81,14 @@ const cleanDatabase = async (confirmationRequired: boolean = true) => {
     }
   }
 
-  console.log(`\nConnecting to database: ${config.database.url}...`);
-  const conn = DatabaseConnection.getInstance();
+  console.log(`\nResetting all tables: ${config.database.url}...`);
 
-  await reset(conn.db, schema);
+  await resetDb();
 
   console.log(
     `\n${colors.green}✓ All table data has been successfully deleted${colors.reset}`,
   );
 
-  // Close the connection
-  await conn.close();
   console.log(
     `\n${colors.green}✓ Database cleanup completed successfully!${colors.reset}`,
   );

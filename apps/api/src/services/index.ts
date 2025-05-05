@@ -23,7 +23,8 @@ class ServiceRegistry {
   private _scheduler: SchedulerService;
   private _configurationService: ConfigurationService;
   private _portfolioSnapshotter: PortfolioSnapshotter;
-  private constructor() {
+
+  constructor() {
     // Initialize services in dependency order
     this._balanceManager = new BalanceManager();
     this._priceTracker = new PriceTracker();
@@ -56,16 +57,6 @@ class ServiceRegistry {
     );
 
     console.log("[ServiceRegistry] All services initialized");
-  }
-
-  /**
-   * Get the singleton instance
-   */
-  public static getInstance(): ServiceRegistry {
-    if (!ServiceRegistry.instance) {
-      ServiceRegistry.instance = new ServiceRegistry();
-    }
-    return ServiceRegistry.instance;
   }
 
   // Service getters

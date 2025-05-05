@@ -1,12 +1,11 @@
 import * as dotenv from "dotenv";
 import * as path from "path";
 
-import { DatabaseConnection } from "@/database/connection.js";
 import { repositories } from "@/database/index.js";
 import { ServiceRegistry } from "@/services/index.js";
 import { CompetitionStatus } from "@/types/index.js";
 
-const services = ServiceRegistry.getInstance();
+const services = new ServiceRegistry();
 
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
@@ -336,9 +335,6 @@ async function showCompetitionStatus() {
       error instanceof Error ? error.message : error,
     );
   } finally {
-    // Close database connection
-    await DatabaseConnection.getInstance().close();
-
     // Exit the process after clean closure
     process.exit(0);
   }

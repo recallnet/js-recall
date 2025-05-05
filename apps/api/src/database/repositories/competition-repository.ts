@@ -11,6 +11,7 @@ import {
 } from "@recallnet/comps-db/schema";
 
 import { BaseRepository } from "@/database/base-repository.js";
+import { db } from "@/database/db.js";
 import { CompetitionStatus } from "@/types/index.js";
 
 /**
@@ -26,7 +27,7 @@ export class CompetitionRepository extends BaseRepository {
    * Find all competitions
    */
   async findAll() {
-    return await this.dbConn.db.query.competitions.findMany();
+    return await db.query.competitions.findMany();
   }
 
   /**
@@ -34,7 +35,7 @@ export class CompetitionRepository extends BaseRepository {
    * @param id The ID to search for
    */
   async findById(id: string) {
-    return await this.dbConn.db.query.competitions.findFirst({
+    return await db.query.competitions.findFirst({
       where: eq(competitions.id, id),
     });
   }
@@ -45,7 +46,7 @@ export class CompetitionRepository extends BaseRepository {
    */
   async create(competition: InsertCompetition) {
     try {
-      const [result] = await this.dbConn.db
+      const [result] = await db
         .insert(competitions)
         .values(competition)
         .returning();
@@ -67,7 +68,7 @@ export class CompetitionRepository extends BaseRepository {
    */
   async update(competition: InsertCompetition) {
     try {
-      const [result] = await this.dbConn.db
+      const [result] = await db
         .update(competitions)
         .set({
           name: competition.name,
@@ -98,7 +99,7 @@ export class CompetitionRepository extends BaseRepository {
    */
   async addTeamToCompetition(competitionId: string, teamId: string) {
     try {
-      await this.dbConn.db
+      await db
         .insert(competitionTeams)
         .values({
           competitionId,
@@ -121,7 +122,7 @@ export class CompetitionRepository extends BaseRepository {
    */
   async addTeams(competitionId: string, teamIds: string[]) {
     try {
-      await this.dbConn.db.transaction(async (tx) => {
+      await db.transaction(async (tx) => {
         for (const teamId of teamIds) {
           await tx
             .insert(competitionTeams)
@@ -144,7 +145,7 @@ export class CompetitionRepository extends BaseRepository {
    */
   async getTeams(competitionId: string) {
     try {
-      const result = await this.dbConn.db
+      const result = await db
         .select({ teamId: competitionTeams.teamId })
         .from(competitionTeams)
         .where(eq(competitionTeams.competitionId, competitionId));
@@ -169,7 +170,7 @@ export class CompetitionRepository extends BaseRepository {
    */
   async findActive() {
     try {
-      const [result] = await this.dbConn.db
+      const [result] = await db
         .select()
         .from(competitions)
         .where(eq(competitions.status, CompetitionStatus.ACTIVE))
@@ -188,7 +189,7 @@ export class CompetitionRepository extends BaseRepository {
    */
   async createPortfolioSnapshot(snapshot: InsertPortfolioSnapshot) {
     try {
-      const [result] = await this.dbConn.db
+      const [result] = await db
         .insert(portfolioSnapshots)
         .values(snapshot)
         .returning();
@@ -215,7 +216,7 @@ export class CompetitionRepository extends BaseRepository {
    */
   async createPortfolioTokenValue(tokenValue: InsertPortfolioTokenValue) {
     try {
-      const [result] = await this.dbConn.db
+      const [result] = await db
         .insert(portfolioTokenValues)
         .values(tokenValue)
         .returning();
@@ -242,7 +243,7 @@ export class CompetitionRepository extends BaseRepository {
    */
   async getLatestPortfolioSnapshots(competitionId: string) {
     try {
-      const subquery = this.dbConn.db
+      const subquery = db
         .select({
           teamId: portfolioSnapshots.teamId,
           maxTimestamp: sql<Date>`MAX(${portfolioSnapshots.timestamp})`.as(
@@ -254,7 +255,7 @@ export class CompetitionRepository extends BaseRepository {
         .groupBy(portfolioSnapshots.teamId)
         .as("latest_snapshots");
 
-      const result = await this.dbConn.db
+      const result = await db
         .select()
         .from(portfolioSnapshots)
         .innerJoin(
@@ -280,7 +281,7 @@ export class CompetitionRepository extends BaseRepository {
    */
   async getTeamPortfolioSnapshots(competitionId: string, teamId: string) {
     try {
-      return await this.dbConn.db
+      return await db
         .select()
         .from(portfolioSnapshots)
         .where(
@@ -302,7 +303,7 @@ export class CompetitionRepository extends BaseRepository {
    */
   async getPortfolioTokenValues(snapshotId: number) {
     try {
-      return await this.dbConn.db
+      return await db
         .select()
         .from(portfolioTokenValues)
         .where(eq(portfolioTokenValues.portfolioSnapshotId, snapshotId));
@@ -320,7 +321,7 @@ export class CompetitionRepository extends BaseRepository {
    */
   async count() {
     try {
-      const [result] = await this.dbConn.db
+      const [result] = await db
         .select({ count: sql<number>`count(*)` })
         .from(competitions);
 
@@ -337,7 +338,7 @@ export class CompetitionRepository extends BaseRepository {
    */
   async findByStatus(status: CompetitionStatus) {
     try {
-      return await this.dbConn.db
+      return await db
         .select()
         .from(competitions)
         .where(eq(competitions.status, status));

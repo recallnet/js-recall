@@ -22,11 +22,11 @@ import { ServiceRegistry } from "@/services/index.js";
 import { PriceTracker } from "@/services/price-tracker.service.js";
 import { BlockchainType } from "@/types/index.js";
 
-const services = ServiceRegistry.getInstance();
-
 const reason = "portfolio-snapshots end-to-end tests";
 
 describe("Portfolio Snapshots", () => {
+  const services = new ServiceRegistry();
+
   let adminApiKey: string;
 
   // Reset database between tests
@@ -268,8 +268,9 @@ describe("Portfolio Snapshots", () => {
       (await teamClient.getBalance()) as BalancesResponse;
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
     const initialUsdcBalance =
-      initialBalanceResponse.balances.find((b) => b.token === usdcTokenAddress)
-        ?.amount || 0;
+      initialBalanceResponse.balances.find(
+        (b) => b.tokenAddress === usdcTokenAddress,
+      )?.amount || 0;
 
     // Get token price using direct service call instead of API
     const priceTracker = new PriceTracker();

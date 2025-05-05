@@ -2,10 +2,9 @@ import * as dotenv from "dotenv";
 import * as path from "path";
 import * as readline from "readline";
 
-import { DatabaseConnection } from "@/database/connection.js";
 import { ServiceRegistry } from "@/services/index.js";
 
-const services = ServiceRegistry.getInstance();
+const services = new ServiceRegistry();
 
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
@@ -331,9 +330,6 @@ async function setupCompetition() {
     );
   } finally {
     rl.close();
-
-    // Close database connection
-    await DatabaseConnection.getInstance().close();
 
     // Exit the process after clean closure
     process.exit(0);

@@ -10,7 +10,7 @@ import { makeHealthController } from "@/controllers/health.controller.js";
 import { makePriceController } from "@/controllers/price.controller.js";
 import { makePublicController } from "@/controllers/public.controller.js";
 import { makeTradeController } from "@/controllers/trade.controller.js";
-import { migrateDb } from "@/database/index.js";
+import { migrateDb } from "@/database/db.js";
 import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
 import { authMiddleware } from "@/middleware/auth.middleware.js";
 import errorHandler from "@/middleware/errorHandler.js";
@@ -54,7 +54,7 @@ try {
   }
 }
 
-const services = ServiceRegistry.getInstance();
+const services = new ServiceRegistry();
 
 // Load competition-specific configuration settings
 await services.configurationService.loadCompetitionSettings();

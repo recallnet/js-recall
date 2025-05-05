@@ -3,6 +3,7 @@ import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { InsertPrice, prices } from "@recallnet/comps-db/schema";
 
 import { BaseRepository } from "@/database/base-repository.js";
+import { db } from "@/database/db.js";
 import { SpecificChain } from "@/types/index.js";
 
 /**
@@ -25,10 +26,7 @@ export class PriceRepository extends BaseRepository {
     );
 
     try {
-      const [result] = await this.dbConn.db
-        .insert(prices)
-        .values(priceData)
-        .returning();
+      const [result] = await db.insert(prices).values(priceData).returning();
 
       if (!result) {
         throw new Error("No price record returned");
@@ -53,7 +51,7 @@ export class PriceRepository extends BaseRepository {
     );
 
     try {
-      const [result] = await this.dbConn.db
+      const result = await db
         .select()
         .from(prices)
         .where(
@@ -66,12 +64,15 @@ export class PriceRepository extends BaseRepository {
         )
         .orderBy(desc(prices.timestamp))
         .limit(1);
-      if (!result) {
-        throw new Error("No price record returned");
+
+      if (!result || result.length === 0) {
+        return null;
       }
-      return result;
+
+      const priceRecord = result[0];
+      return priceRecord;
     } catch (error) {
-      console.error("[PriceRepository] Error getting latest price:", error);
+      console.error(`[PriceRepository] Error getting latest price:`, error);
       throw error;
     }
   }
@@ -93,7 +94,7 @@ export class PriceRepository extends BaseRepository {
     );
 
     try {
-      return await this.dbConn.db
+      return await db
         .select()
         .from(prices)
         .where(
@@ -123,7 +124,7 @@ export class PriceRepository extends BaseRepository {
     specificChain?: SpecificChain,
   ) {
     try {
-      const [result] = await this.dbConn.db
+      const [result] = await db
         .select({
           avgPrice: sql<number>`AVG(${prices.price})`,
         })
@@ -156,7 +157,7 @@ export class PriceRepository extends BaseRepository {
     specificChain?: SpecificChain,
   ) {
     try {
-      const [result] = await this.dbConn.db
+      const [result] = await db
         .select({
           firstPrice: sql<number>`FIRST_VALUE(${prices.price}) OVER (ORDER BY ${prices.timestamp} ASC)`,
           lastPrice: sql<number>`FIRST_VALUE(${prices.price}) OVER (ORDER BY ${prices.timestamp} DESC)`,
@@ -192,7 +193,7 @@ export class PriceRepository extends BaseRepository {
    */
   async count() {
     try {
-      const [result] = await this.dbConn.db
+      const [result] = await db
         .select({ count: sql<number>`count(*)` })
         .from(prices);
 

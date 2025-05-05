@@ -7,6 +7,7 @@ import {
 } from "@recallnet/comps-db/schema";
 
 import { BaseRepository } from "@/database/base-repository.js";
+import { db } from "@/database/db.js";
 
 /**
  * Team Repository
@@ -23,10 +24,7 @@ export class TeamRepository extends BaseRepository {
    */
   async create(team: InsertTeam) {
     try {
-      const [result] = await this.dbConn.db
-        .insert(teams)
-        .values(team)
-        .returning();
+      const [result] = await db.insert(teams).values(team).returning();
 
       if (!result) {
         throw new Error("Failed to create team - no result returned");
@@ -43,7 +41,7 @@ export class TeamRepository extends BaseRepository {
    * Find all teams
    */
   async findAll() {
-    return await this.dbConn.db.query.teams.findMany();
+    return await db.query.teams.findMany();
   }
 
   /**
@@ -51,7 +49,7 @@ export class TeamRepository extends BaseRepository {
    * @param id The ID to search for
    */
   async findById(id: string) {
-    return await this.dbConn.db.query.teams.findFirst({
+    return await db.query.teams.findFirst({
       where: eq(teams.id, id),
     });
   }
@@ -62,7 +60,7 @@ export class TeamRepository extends BaseRepository {
    */
   async findByEmail(email: string) {
     try {
-      const [result] = await this.dbConn.db
+      const [result] = await db
         .select()
         .from(teams)
         .where(ilike(teams.email, email))
@@ -79,9 +77,7 @@ export class TeamRepository extends BaseRepository {
    * Count all teams
    */
   async count() {
-    const [result] = await this.dbConn.db
-      .select({ count: count() })
-      .from(teams);
+    const [result] = await db.select({ count: count() }).from(teams);
     return result?.count ?? 0;
   }
 
@@ -91,7 +87,7 @@ export class TeamRepository extends BaseRepository {
    */
   async update(team: InsertTeam) {
     try {
-      const [result] = await this.dbConn.db
+      const [result] = await db
         .update(teams)
         .set({
           name: team.name,
@@ -127,7 +123,7 @@ export class TeamRepository extends BaseRepository {
    */
   async findByApiKey(apiKey: string) {
     try {
-      const [result] = await this.dbConn.db
+      const [result] = await db
         .select()
         .from(teams)
         .where(eq(teams.apiKey, apiKey));
@@ -146,7 +142,7 @@ export class TeamRepository extends BaseRepository {
    */
   async isTeamInCompetition(teamId: string, competitionId: string) {
     try {
-      const [result] = await this.dbConn.db
+      const [result] = await db
         .select({ count: count() })
         .from(competitionTeams)
         .where(
@@ -157,7 +153,7 @@ export class TeamRepository extends BaseRepository {
         )
         .limit(1);
 
-      return !!result;
+      return !!result?.count;
     } catch (error) {
       console.error("[TeamRepository] Error in isTeamInCompetition:", error);
       throw error;
@@ -171,7 +167,7 @@ export class TeamRepository extends BaseRepository {
    */
   async deactivateTeam(teamId: string, reason: string) {
     try {
-      const [result] = await this.dbConn.db
+      const [result] = await db
         .update(teams)
         .set({
           active: false,
@@ -195,7 +191,7 @@ export class TeamRepository extends BaseRepository {
    */
   async reactivateTeam(teamId: string) {
     try {
-      const [result] = await this.dbConn.db
+      const [result] = await db
         .update(teams)
         .set({
           active: true,
@@ -218,10 +214,7 @@ export class TeamRepository extends BaseRepository {
    */
   async findInactiveTeams() {
     try {
-      return await this.dbConn.db
-        .select()
-        .from(teams)
-        .where(eq(teams.active, false));
+      return await db.select().from(teams).where(eq(teams.active, false));
     } catch (error) {
       console.error("[TeamRepository] Error in findInactiveTeams:", error);
       throw error;
@@ -235,7 +228,7 @@ export class TeamRepository extends BaseRepository {
    */
   async delete(teamId: string) {
     try {
-      const [result] = await this.dbConn.db
+      const [result] = await db
         .delete(teams)
         .where(eq(teams.id, teamId))
         .returning();

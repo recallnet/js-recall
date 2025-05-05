@@ -4,6 +4,7 @@ import { balances } from "@recallnet/comps-db/schema";
 
 import { config } from "@/config/index.js";
 import { BaseRepository } from "@/database/base-repository.js";
+import { db } from "@/database/db.js";
 
 /**
  * Balance Repository
@@ -18,7 +19,7 @@ export class BalanceRepository extends BaseRepository {
    * Count all balances
    */
   async count() {
-    const res = await this.dbConn.db.select({ count: count() }).from(balances);
+    const res = await db.select({ count: count() }).from(balances);
     if (!res.length) {
       throw new Error("No count result returned");
     }
@@ -40,7 +41,7 @@ export class BalanceRepository extends BaseRepository {
     specificChain: string,
   ) {
     try {
-      const [result] = await this.dbConn.db
+      const [result] = await db
         .insert(balances)
         .values({
           teamId,
@@ -76,7 +77,7 @@ export class BalanceRepository extends BaseRepository {
    */
   async getBalance(teamId: string, tokenAddress: string) {
     try {
-      const [result] = await this.dbConn.db
+      const [result] = await db
         .select()
         .from(balances)
         .where(
@@ -99,7 +100,7 @@ export class BalanceRepository extends BaseRepository {
    */
   async getTeamBalances(teamId: string) {
     try {
-      return await this.dbConn.db
+      return await db
         .select()
         .from(balances)
         .where(eq(balances.teamId, teamId));
@@ -119,7 +120,7 @@ export class BalanceRepository extends BaseRepository {
     initialBalances: Map<string, number>,
   ) {
     try {
-      await this.dbConn.db.transaction(async (tx) => {
+      await db.transaction(async (tx) => {
         for (const [tokenAddress, amount] of initialBalances.entries()) {
           const specificChain = this.getTokenSpecificChain(tokenAddress);
 
@@ -186,7 +187,7 @@ export class BalanceRepository extends BaseRepository {
     initialBalances: Map<string, number>,
   ) {
     try {
-      await this.dbConn.db.transaction(async (tx) => {
+      await db.transaction(async (tx) => {
         // First delete all current balances
         await tx.delete(balances).where(eq(balances.teamId, teamId));
 

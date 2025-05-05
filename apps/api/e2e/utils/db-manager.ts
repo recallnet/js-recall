@@ -4,17 +4,12 @@ import path from "path";
 import { Client } from "pg";
 
 // Import production initialization code
-import { DatabaseConnection } from "@/database/connection.js";
-import { migrateDb } from "@/database/index.js";
-import { cleanDatabase } from "@/scripts/clean-db.js";
-// Use the main connection class
-import { dropAllTables } from "@/scripts/drop-all.js";
+import { db, dropAll, migrateDb, resetDb } from "@/database/db.js";
 
 /**
  * Database Manager for E2E Tests
  *
  * This utility provides a standardized way to manage database state for end-to-end tests.
- * It uses the same DatabaseConnection as the main application for consistency.
  *
  * Features:
  * - Uses the same connection pool as the application
@@ -23,7 +18,6 @@ import { dropAllTables } from "@/scripts/drop-all.js";
  */
 export class DbManager {
   private static instance: DbManager;
-  private dbConnection: DatabaseConnection;
   private initialized = false;
 
   /**
@@ -32,9 +26,6 @@ export class DbManager {
   private constructor() {
     // Load environment variables if not already loaded
     config({ path: path.resolve(__dirname, "../../.env.test") });
-
-    // Use the main application's database connection
-    this.dbConnection = DatabaseConnection.getInstance();
   }
 
   /**
@@ -45,13 +36,6 @@ export class DbManager {
       DbManager.instance = new DbManager();
     }
     return DbManager.instance;
-  }
-
-  /**
-   * Get the database connection for direct pool access
-   */
-  public getConn(): DatabaseConnection {
-    return this.dbConnection;
   }
 
   /**
@@ -126,7 +110,7 @@ export class DbManager {
 
       // Check if we can connect to the database
       try {
-        await this.dbConnection.db.execute(sql.raw("SELECT 1"));
+        await db.execute(sql.raw("SELECT 1"));
         console.log(`Connected to database successfully`);
       } catch (error) {
         console.error("Error connecting to database:", error);
@@ -136,9 +120,7 @@ export class DbManager {
       // Drop all existing tables (if any) to ensure a clean slate
       console.log("Dropping all existing tables to ensure a clean schema...");
       try {
-        // Use the imported dropAllTables function with confirmationRequired=false
-        // so it doesn't prompt for confirmation in test environment
-        await dropAllTables(false);
+        await dropAll();
         console.log("All existing tables have been dropped successfully");
       } catch (error) {
         console.warn("Error dropping tables:", error);
@@ -167,7 +149,7 @@ export class DbManager {
     if (!this.initialized) {
       throw new Error("Database not initialized. Call initialize() first.");
     }
-    await cleanDatabase(false);
+    await resetDb();
   }
 
   /**
@@ -199,17 +181,11 @@ export async function initializeDb(): Promise<void> {
   return dbManager.initialize();
 }
 
-export function getConn() {
-  // This is maintained for API compatibility, but now returns
-  // the DatabaseConnection instance instead of a raw Pool
-  return DatabaseConnection.getInstance();
-}
-
 export async function closeDb(): Promise<void> {
   return dbManager.close();
 }
 
-export async function resetDb(): Promise<void> {
+export async function resetDatabase(): Promise<void> {
   return dbManager.resetDatabase();
 }
 

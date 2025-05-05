@@ -2,6 +2,7 @@ import axios from "axios";
 import { sql } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { db } from "@/database/db.js";
 import {
   Competition,
   CompetitionRulesResponse,
@@ -12,7 +13,6 @@ import {
   TeamProfileResponse,
   UpcomingCompetitionsResponse,
 } from "@/e2e/utils/api-types.js";
-import { getConn } from "@/e2e/utils/db-manager.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
@@ -424,9 +424,7 @@ describe("Competition API", () => {
 
     // Give a small delay for deactivation to complete
     await wait(500);
-    // Directly check the database to verify the team is deactivated
-    const conn = getConn();
-    const dbResult = await conn.db.execute(
+    const dbResult = await db.execute(
       sql`SELECT active, deactivation_reason FROM teams WHERE id = ${team.id}`,
     );
 

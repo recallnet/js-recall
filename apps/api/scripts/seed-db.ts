@@ -1,14 +1,9 @@
-import { seed } from "drizzle-seed";
 import { pathToFileURL } from "url";
 
-import * as schema from "@recallnet/comps-db/schema";
+import { seedDb } from "@/database/db.js";
 
-import { DatabaseConnection } from "@/database/connection.js";
-
-const conn = DatabaseConnection.getInstance();
-
-export async function seedDb() {
-  await seed(conn.db, schema);
+export async function seed() {
+  await seedDb();
 }
 
 // Run if called directly
@@ -16,5 +11,5 @@ if (
   process.argv[1] &&
   import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
-  seedDb();
+  seed();
 }

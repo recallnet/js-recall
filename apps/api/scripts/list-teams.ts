@@ -1,10 +1,9 @@
 import * as dotenv from "dotenv";
 import * as path from "path";
 
-import { DatabaseConnection } from "@/database/connection.js";
 import { ServiceRegistry } from "@/services/index.js";
 
-const services = ServiceRegistry.getInstance();
+const services = new ServiceRegistry();
 
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
@@ -99,9 +98,6 @@ async function listAllTeams() {
       error instanceof Error ? error.message : error,
     );
   } finally {
-    // Close database connection
-    await DatabaseConnection.getInstance().close();
-
     // Exit the process after clean closure
     process.exit(0);
   }

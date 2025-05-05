@@ -3,6 +3,7 @@ import { count, desc, eq, sql } from "drizzle-orm";
 import { InsertTrade, trades } from "@recallnet/comps-db/schema";
 
 import { BaseRepository } from "@/database/base-repository.js";
+import { db } from "@/database/db.js";
 
 /**
  * Trade Repository
@@ -19,10 +20,7 @@ export class TradeRepository extends BaseRepository {
    */
   async create(trade: InsertTrade) {
     try {
-      const [result] = await this.dbConn.db
-        .insert(trades)
-        .values(trade)
-        .returning();
+      const [result] = await db.insert(trades).values(trade).returning();
 
       if (!result) {
         throw new Error("Failed to create trade - no result returned");
@@ -43,7 +41,7 @@ export class TradeRepository extends BaseRepository {
    */
   async getTeamTrades(teamId: string, limit?: number, offset?: number) {
     try {
-      const query = this.dbConn.db
+      const query = db
         .select()
         .from(trades)
         .where(eq(trades.teamId, teamId))
@@ -76,7 +74,7 @@ export class TradeRepository extends BaseRepository {
     offset?: number,
   ) {
     try {
-      const query = this.dbConn.db
+      const query = db
         .select()
         .from(trades)
         .where(eq(trades.competitionId, competitionId))
@@ -103,7 +101,7 @@ export class TradeRepository extends BaseRepository {
    */
   async countTeamTrades(teamId: string) {
     try {
-      const [result] = await this.dbConn.db
+      const [result] = await db
         .select({ count: sql<number>`count(*)` })
         .from(trades)
         .where(eq(trades.teamId, teamId));
@@ -120,9 +118,7 @@ export class TradeRepository extends BaseRepository {
    */
   async count() {
     try {
-      const [result] = await this.dbConn.db
-        .select({ count: count() })
-        .from(trades);
+      const [result] = await db.select({ count: count() }).from(trades);
 
       return result?.count ?? 0;
     } catch (error) {

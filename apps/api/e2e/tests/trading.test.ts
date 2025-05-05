@@ -28,11 +28,11 @@ import {
 import { ServiceRegistry } from "@/services/index.js";
 import { BlockchainType } from "@/types/index.js";
 
-const services = ServiceRegistry.getInstance();
-
 const reason = "trading end-to-end test";
 
 describe("Trading API", () => {
+  const services = new ServiceRegistry();
+
   let adminApiKey: string;
 
   // Clean up test state before each test
@@ -87,7 +87,7 @@ describe("Trading API", () => {
     );
     const initialUsdcBalance = parseFloat(
       (initialBalanceResponse as BalancesResponse).balances
-        .find((b) => b.token === usdcTokenAddress)
+        .find((b) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
     console.log(`Initial USDC balance: ${initialUsdcBalance}`);
@@ -98,7 +98,7 @@ describe("Trading API", () => {
     // Initial SOL balance might already exist from initial balance config
     const initialSolBalance = parseFloat(
       (initialBalanceResponse as BalancesResponse).balances
-        .find((b) => b.token === solTokenAddress)
+        .find((b) => b.tokenAddress === solTokenAddress)
         ?.amount.toString() || "0",
     );
     console.log(`Initial SOL balance: ${initialSolBalance}`);
@@ -146,7 +146,7 @@ describe("Trading API", () => {
     // USDC balance should have decreased
     const updatedUsdcBalance = parseFloat(
       (updatedBalanceResponse as BalancesResponse).balances
-        .find((b) => b.token === usdcTokenAddress)
+        .find((b) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
     console.log(
@@ -156,7 +156,7 @@ describe("Trading API", () => {
     // SOL balance should have increased
     const updatedSolBalance = parseFloat(
       (updatedBalanceResponse as BalancesResponse).balances
-        .find((b) => b.token === solTokenAddress)
+        .find((b) => b.tokenAddress === solTokenAddress)
         ?.amount.toString() || "0",
     );
     console.log(
@@ -212,7 +212,7 @@ describe("Trading API", () => {
     // USDC balance should have increased compared to after buying
     const finalUsdcBalance = parseFloat(
       (finalBalanceResponse as BalancesResponse).balances
-        .find((b) => b.token === usdcTokenAddress)
+        .find((b) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
     console.log(
@@ -222,7 +222,7 @@ describe("Trading API", () => {
     // SOL balance should have decreased compared to after buying
     const finalSolBalance = parseFloat(
       (finalBalanceResponse as BalancesResponse).balances
-        .find((b) => b.token === solTokenAddress)
+        .find((b) => b.tokenAddress === solTokenAddress)
         ?.amount.toString() || "0",
     );
     console.log(
@@ -257,7 +257,7 @@ describe("Trading API", () => {
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
     const initialUsdcBalance = parseFloat(
       (initialBalanceResponse as BalancesResponse).balances
-        .find((b) => b.token === usdcTokenAddress)
+        .find((b) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
     console.log(`Initial USDC balance: ${initialUsdcBalance}`);
@@ -269,7 +269,7 @@ describe("Trading API", () => {
     // Initial balance of the arbitrary token (likely 0)
     const initialArbitraryTokenBalance = parseFloat(
       (initialBalanceResponse as BalancesResponse).balances
-        .find((b) => b.token === arbitraryTokenAddress)
+        .find((b) => b.tokenAddress === arbitraryTokenAddress)
         ?.amount.toString() || "0",
     );
     console.log(
@@ -310,7 +310,7 @@ describe("Trading API", () => {
     // USDC balance should have decreased
     const updatedUsdcBalance = parseFloat(
       (updatedBalanceResponse as BalancesResponse).balances
-        .find((b) => b.token === usdcTokenAddress)
+        .find((b) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
     console.log(`Updated USDC balance: ${updatedUsdcBalance}`);
@@ -319,7 +319,7 @@ describe("Trading API", () => {
     // The arbitrary token balance should have increased
     const updatedArbitraryTokenBalance = parseFloat(
       (updatedBalanceResponse as BalancesResponse).balances
-        .find((b) => b.token === arbitraryTokenAddress)
+        .find((b) => b.tokenAddress === arbitraryTokenAddress)
         ?.amount.toString() || "0",
     );
     console.log(
@@ -372,7 +372,7 @@ describe("Trading API", () => {
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
     const initialUsdcBalance = parseFloat(
       (initialBalanceResponse as BalancesResponse).balances
-        .find((b) => b.token === usdcTokenAddress)
+        .find((b) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
 
@@ -521,7 +521,7 @@ describe("Trading API", () => {
 
       const balance = parseFloat(
         initialBalanceResponse.balances
-          .find((b) => b.token === tokenAddress)
+          .find((b) => b.tokenAddress === tokenAddress)
           ?.amount.toString() || "0",
       );
 
@@ -561,7 +561,7 @@ describe("Trading API", () => {
     );
     const consolidatedUsdcBalance = parseFloat(
       (balanceAfterConsolidation as BalancesResponse).balances
-        .find((b) => b.token === usdcTokenAddress)
+        .find((b) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
     console.log(`Consolidated USDC balance: ${consolidatedUsdcBalance}`);
@@ -634,7 +634,7 @@ describe("Trading API", () => {
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
     const initialUsdcBalance = parseFloat(
       (initialBalanceResponse as BalancesResponse).balances
-        .find((b) => b.token === usdcTokenAddress)
+        .find((b) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
     console.log(`Initial USDC balance: ${initialUsdcBalance}`);
@@ -646,7 +646,7 @@ describe("Trading API", () => {
     // Initial balance of the arbitrary token (likely 0)
     const initialArbitraryTokenBalance = parseFloat(
       (initialBalanceResponse as BalancesResponse).balances
-        .find((b) => b.token === arbitraryTokenAddress)
+        .find((b) => b.tokenAddress === arbitraryTokenAddress)
         ?.amount.toString() || "0",
     );
     console.log(
@@ -695,7 +695,7 @@ describe("Trading API", () => {
     // USDC balance should have decreased by 10
     const finalUsdcBalance = parseFloat(
       (finalBalanceResponse as BalancesResponse).balances
-        .find((b: TokenBalance) => b.token === usdcTokenAddress)
+        .find((b: TokenBalance) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
     console.log(`Final USDC balance: ${finalUsdcBalance}`);
@@ -703,7 +703,7 @@ describe("Trading API", () => {
     // The arbitrary token balance should have increased by the calculated amount
     const finalTokenBalance = parseFloat(
       (finalBalanceResponse as BalancesResponse).balances
-        .find((b: TokenBalance) => b.token === arbitraryTokenAddress)
+        .find((b: TokenBalance) => b.tokenAddress === arbitraryTokenAddress)
         ?.amount.toString() || "0",
     );
     console.log(`Final token balance: ${finalTokenBalance}`);
@@ -791,7 +791,7 @@ describe("Trading API", () => {
     // Check if we have any ETH balance already
     const initialEthBalance = parseFloat(
       (initialBalanceResponse as BalancesResponse).balances
-        .find((b) => b.token === ethTokenAddress)
+        .find((b) => b.tokenAddress === ethTokenAddress)
         ?.amount.toString() || "0",
     );
     console.log(`Initial ETH balance: ${initialEthBalance}`);
@@ -800,7 +800,7 @@ describe("Trading API", () => {
     const svmUsdcAddress = config.specificChainTokens.svm.usdc;
     const svmUsdcBalance = parseFloat(
       balancesResponse.balances
-        .find((b) => b.token === svmUsdcAddress)
+        .find((b) => b.tokenAddress === svmUsdcAddress)
         ?.amount.toString() || "0",
     );
 
@@ -832,7 +832,7 @@ describe("Trading API", () => {
       // ETH balance should have increased
       const updatedEthBalance = parseFloat(
         (updatedBalanceResponse as BalancesResponse).balances
-          .find((b) => b.token === ethTokenAddress)
+          .find((b) => b.tokenAddress === ethTokenAddress)
           ?.amount.toString() || "0",
       );
       console.log(`Updated ETH balance: ${updatedEthBalance}`);
@@ -888,7 +888,7 @@ describe("Trading API", () => {
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
     const initialUsdcBalance = parseFloat(
       (initialBalanceResponse as BalancesResponse).balances
-        .find((b: TokenBalance) => b.token === usdcTokenAddress)
+        .find((b: TokenBalance) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
     console.log(`Initial USDC balance: ${initialUsdcBalance}`);
@@ -899,7 +899,7 @@ describe("Trading API", () => {
     // Initial SOL balance
     const initialSolBalance = parseFloat(
       (initialBalanceResponse as BalancesResponse).balances
-        .find((b) => b.token === solTokenAddress)
+        .find((b) => b.tokenAddress === solTokenAddress)
         ?.amount.toString() || "0",
     );
     console.log(`Initial SOL balance: ${initialSolBalance}`);
@@ -939,7 +939,7 @@ describe("Trading API", () => {
     // USDC balance should have decreased
     const updatedUsdcBalance = parseFloat(
       (updatedBalanceResponse as BalancesResponse).balances
-        .find((b: TokenBalance) => b.token === usdcTokenAddress)
+        .find((b: TokenBalance) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
     console.log(`Updated USDC balance: ${updatedUsdcBalance}`);
@@ -947,7 +947,7 @@ describe("Trading API", () => {
     // SOL balance should have increased
     const updatedSolBalance = parseFloat(
       (updatedBalanceResponse as BalancesResponse).balances
-        .find((b: TokenBalance) => b.token === solTokenAddress)
+        .find((b: TokenBalance) => b.tokenAddress === solTokenAddress)
         ?.amount.toString() || "0",
     );
     console.log(`Updated SOL balance: ${updatedSolBalance}`);
@@ -1184,7 +1184,7 @@ describe("Trading API", () => {
     const balanceResponse = await teamClient.getBalance();
     const svmUsdcBalance = parseFloat(
       (balanceResponse as BalancesResponse).balances
-        .find((b) => b.token === svmUsdcAddress)
+        .find((b) => b.tokenAddress === svmUsdcAddress)
         ?.amount.toString() || "0",
     );
     const tradeAmount = Math.min(50, svmUsdcBalance * 0.1).toString();
@@ -1324,7 +1324,7 @@ describe("Trading API", () => {
     const sourceUsdcBalance = parseFloat(
       (initialBalanceResponse.success &&
         (initialBalanceResponse as BalancesResponse).balances
-          .find((b) => b.token === sourceUsdcAddress)
+          .find((b) => b.tokenAddress === sourceUsdcAddress)
           ?.amount.toString()) ||
         "0",
     );

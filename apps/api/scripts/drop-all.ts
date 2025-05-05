@@ -1,11 +1,7 @@
-import { sql } from "drizzle-orm";
-import { isPgSchema } from "drizzle-orm/pg-core";
 import { pathToFileURL } from "url";
 
-import * as schema from "@recallnet/comps-db/schema";
-
 import { config } from "@/config/index.js";
-import { DatabaseConnection } from "@/database/connection.js";
+import { dropAll } from "@/database/db.js";
 
 /**
  * Script to drop everything in the public schema, drizzle schema, and any other schemas defined in the Drizzle schema object
@@ -41,24 +37,9 @@ export async function dropAllTables(
       });
     }
 
-    console.log("Connecting to database...");
-    const conn = DatabaseConnection.getInstance();
+    console.log("Dropping all...");
 
-    const schemas = Object.values(schema)
-      .filter(isPgSchema)
-      .map((s) => {
-        return isPgSchema(s) ? s.schemaName : "";
-      });
-    await conn.db.transaction(async (tx) => {
-      if (schemas.length > 0) {
-        await tx.execute(
-          sql.raw(`drop schema if exists ${schemas.join(", ")} cascade`),
-        );
-      }
-      await tx.execute(sql.raw(`drop schema if exists public cascade`));
-      await tx.execute(sql.raw(`drop schema if exists drizzle cascade`));
-      await tx.execute(sql.raw(`create schema public`));
-    });
+    await dropAll();
 
     console.log(
       "\x1b[32m%s\x1b[0m",

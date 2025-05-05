@@ -23,7 +23,7 @@ import * as readline from "readline";
 
 import { teams } from "@recallnet/comps-db/schema";
 
-import { DatabaseConnection } from "@/database/connection.js";
+import { db } from "@/database/db.js";
 
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
@@ -126,8 +126,7 @@ async function editTeam() {
     );
 
     // Fetch the team by email
-    const conn = DatabaseConnection.getInstance();
-    const currentTeam = await conn.db.query.teams.findFirst({
+    const currentTeam = await db.query.teams.findFirst({
       where: eq(teams.email, teamEmail),
     });
 
@@ -224,7 +223,7 @@ async function editTeam() {
     // Proceed with updates
     safeLog(`\n${colors.blue}Updating team...${colors.reset}`);
 
-    const updatedTeam = await conn.db.transaction(async (tx) => {
+    const updatedTeam = await db.transaction(async (tx) => {
       // Get the latest team data since some time has passed
       const team = await tx.query.teams.findFirst({
         where: eq(teams.email, teamEmail),
@@ -276,14 +275,6 @@ async function editTeam() {
 
     // Restore original console.log before closing
     console.log = originalConsoleLog;
-
-    // Close database connection
-    try {
-      await DatabaseConnection.getInstance().close();
-      safeLog("Database connection closed.");
-    } catch (err) {
-      safeLog("Error closing database connection:", err);
-    }
 
     // Exit the process after clean closure
     process.exit(0);
