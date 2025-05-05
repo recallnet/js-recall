@@ -19,7 +19,7 @@ import {
 } from "@/e2e/utils/test-helpers.js";
 import { BlockchainType } from "@/types/index.js";
 
-import { Recallcomp } from "./../../../../packages/speakeasy/dist/esm/index.js";
+import { Recallcomp } from "@/../../packages/speakeasy/dist/esm/index.js";
 
 // Define Ethereum token addresses for testing
 const ETHEREUM_TOKENS = {
