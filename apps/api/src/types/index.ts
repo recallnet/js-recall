@@ -71,6 +71,9 @@ export function isEvmChain(chain: SpecificChain | BlockchainType): boolean {
 export interface Balance {
   token: string; // Token address
   amount: number;
+  createdAt: Date;
+  updatedAt: Date;
+  specificChain: SpecificChain;
 }
 
 /**

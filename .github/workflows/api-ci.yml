@@ -275,6 +275,11 @@ jobs:
           INITIAL_ETH_USDC_BALANCE=5000
           INITIAL_ETH_USDT_BALANCE=0
 
+          # Individual chain balances
+          INITIAL_OPTIMISM_USDC_BALANCE=200
+          INITIAL_POLYGON_USDC_BALANCE=200
+          INITIAL_ARBITRUM_USDC_BALANCE=200
+
           # Max Trade Percentage
           MAX_TRADE_PERCENTAGE=15
 
