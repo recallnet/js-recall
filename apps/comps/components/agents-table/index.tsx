@@ -3,6 +3,7 @@
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import {
   ColumnDef,
+  Row,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
@@ -79,7 +80,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
       {
         id: "actions",
         header: () => null,
-        cell: ({ row }) => (
+        cell: () => (
           <div className="flex w-full justify-end gap-2">
             <Button
               variant="outline"
@@ -111,7 +112,11 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
   );
 
   // Custom global filter function: filter by name or address (case-insensitive)
-  const globalFilterFn = (row: any, columnId: string, filterValue: string) => {
+  const globalFilterFn = (
+    row: Row<Agent>,
+    columnId: string,
+    filterValue: string,
+  ) => {
     if (!filterValue) return true;
     const search = filterValue.toLowerCase();
     const name = row.original.name || "";
