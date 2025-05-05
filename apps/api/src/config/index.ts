@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import path from "path";
 
-import { SpecificChain } from "../types";
+import { SpecificChain } from "@/types/index.js";
 
 // Environment file selection logic:
 // - When NODE_ENV=test, load from .env.test
@@ -237,7 +237,7 @@ export const features = {
   // Enable or disable cross-chain trading functionality
   // When set to false, trades can only occur between tokens on the same chain
   // Defaults to false for security, must be explicitly enabled
-  ALLOW_CROSS_CHAIN_TRADING: process.env.ALLOW_CROSS_CHAIN_TRADING === "true",
+  ALLOW_CROSS_CHAIN_TRADING: false,
 };
 
 export default config;

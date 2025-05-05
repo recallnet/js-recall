@@ -1,11 +1,10 @@
 import axios from "axios";
 import dotenv from "dotenv";
+import { beforeEach, describe, expect, it } from "vitest";
 
-import { PriceTracker } from "../../../src/services/price-tracker.service";
-import { BlockchainType } from "../../../src/types";
-import { ApiClient } from "../../utils/api-client";
-import { TokenInfoResponse } from "../../utils/api-types";
-import { getBaseUrl } from "../../utils/server";
+import { ApiClient } from "@/e2e/utils/api-client.js";
+import { TokenInfoResponse } from "@/e2e/utils/api-types.js";
+import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
@@ -13,7 +12,9 @@ import {
   cleanupTestState,
   createTestClient,
   registerTeamAndGetClient,
-} from "../../utils/test-helpers";
+} from "@/e2e/utils/test-helpers.js";
+import { PriceTracker } from "@/services/price-tracker.service.js";
+import { BlockchainType } from "@/types/index.js";
 
 // Load environment variables
 dotenv.config();
@@ -28,10 +29,6 @@ const ethereumTokens = {
   ETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH
   USDC: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 };
-
-// Skip tests if API key is not set
-const apiKey = process.env.NOVES_API_KEY;
-const runProviderTests = !!apiKey;
 
 describe("Chain Detection Debug", () => {
   // Create variables for authenticated clients
@@ -97,7 +94,7 @@ describe("Chain Detection Debug", () => {
   });
 
   // Only run provider tests if API key is available
-  (runProviderTests ? describe : describe.skip)("Direct Provider Tests", () => {
+  describe("Direct Provider Tests", () => {
     it("should fetch Ethereum price via PriceTracker", async () => {
       // Test PriceTracker (which uses providers internally)
       console.log(

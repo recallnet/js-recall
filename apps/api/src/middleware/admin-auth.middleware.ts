@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 
-import { TeamManager } from "../services/team-manager.service";
-import { extractApiKey } from "./auth-helpers";
-import { ApiError } from "./errorHandler";
+import { extractApiKey } from "@/middleware/auth-helpers.js";
+import { ApiError } from "@/middleware/errorHandler.js";
+import { TeamManager } from "@/services/team-manager.service.js";
 
 // Extend Express Request interface using module augmentation
 declare module "express" {
@@ -53,7 +53,10 @@ export const adminAuthMiddleware = (teamManager: TeamManager) => {
 
       if (!teamId) {
         console.log("[AdminAuthMiddleware] Invalid API key");
-        throw new ApiError(401, "Invalid API key");
+        throw new ApiError(
+          401,
+          "Invalid API key. This key may have been reset or is no longer associated with an active account. Please ensure you're using your most recent API key.",
+        );
       }
 
       // Get the team to check admin status

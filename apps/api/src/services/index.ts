@@ -1,9 +1,10 @@
-import { BalanceManager } from "./balance-manager.service";
-import { CompetitionManager } from "./competition-manager.service";
-import { PriceTracker } from "./price-tracker.service";
-import { SchedulerService } from "./scheduler.service";
-import { TeamManager } from "./team-manager.service";
-import { TradeSimulator } from "./trade-simulator.service";
+import { BalanceManager } from "@/services/balance-manager.service.js";
+import { CompetitionManager } from "@/services/competition-manager.service.js";
+import { ConfigurationService } from "@/services/configuration.service.js";
+import { PriceTracker } from "@/services/price-tracker.service.js";
+import { SchedulerService } from "@/services/scheduler.service.js";
+import { TeamManager } from "@/services/team-manager.service.js";
+import { TradeSimulator } from "@/services/trade-simulator.service.js";
 
 /**
  * Service Registry
@@ -19,6 +20,7 @@ class ServiceRegistry {
   private _competitionManager: CompetitionManager;
   private _teamManager: TeamManager;
   private _scheduler: SchedulerService;
+  private _configurationService: ConfigurationService;
 
   private constructor() {
     // Initialize services in dependency order
@@ -34,6 +36,9 @@ class ServiceRegistry {
       this._priceTracker,
     );
     this._teamManager = new TeamManager();
+
+    // Configuration service for dynamic settings
+    this._configurationService = new ConfigurationService();
 
     // Initialize and start the scheduler
     this._scheduler = new SchedulerService(this._competitionManager);
@@ -75,6 +80,10 @@ class ServiceRegistry {
   get scheduler(): SchedulerService {
     return this._scheduler;
   }
+
+  get configurationService(): ConfigurationService {
+    return this._configurationService;
+  }
 }
 
 // Create and export a singleton instance
@@ -87,4 +96,5 @@ export {
   TradeSimulator,
   CompetitionManager,
   TeamManager,
+  ConfigurationService,
 };

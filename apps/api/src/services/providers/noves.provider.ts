@@ -1,8 +1,8 @@
 import axios from "axios";
 
-import config from "../../config";
-import { PriceSource } from "../../types";
-import { BlockchainType, PriceReport, SpecificChain } from "../../types";
+import config from "@/config/index.js";
+import { PriceSource } from "@/types/index.js";
+import { BlockchainType, PriceReport, SpecificChain } from "@/types/index.js";
 
 /**
  * Noves price provider implementation

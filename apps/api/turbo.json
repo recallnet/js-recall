@@ -1,10 +1,11 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "extends": ["//"],
+  "extends": [
+    "//"
+  ],
   "tasks": {
     "build": {
       "env": [
-        "ALLOW_CROSS_CHAIN_TRADING",
         "ALLOW_MOCK_PRICE_HISTORY",
         "DB_CA_CERT_BASE64",
         "DB_CA_CERT_PATH",

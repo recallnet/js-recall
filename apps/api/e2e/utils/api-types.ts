@@ -150,6 +150,7 @@ export interface Competition {
   startDate: string | null;
   endDate: string | null;
   status: CompetitionStatus;
+  allowCrossChainTrading: boolean;
   createdAt: string;
   updatedAt: string;
   teamIds?: string[];
@@ -306,6 +307,12 @@ export interface StartCompetitionResponse extends ApiResponse {
   initializedTeams: string[];
 }
 
+// Upcoming competitions response
+export interface UpcomingCompetitionsResponse extends ApiResponse {
+  success: true;
+  competitions: Competition[];
+}
+
 // Competition rules response
 export interface CompetitionRulesResponse extends ApiResponse {
   success: true;
@@ -417,4 +424,11 @@ export interface TeamApiKeyResponse extends ApiResponse {
     name: string;
     apiKey: string;
   };
+}
+
+// Reset API key response
+export interface ResetApiKeyResponse extends ApiResponse {
+  success: true;
+  apiKey: string;
+  previousKey?: string;
 }

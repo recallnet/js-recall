@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { AccountController } from "../controllers/account.controller";
+import { AccountController } from "@/controllers/account.controller.js";
 
 const router = Router();
 
@@ -14,14 +14,6 @@ const router = Router();
  *     description: Get profile information for the authenticated team
  *     security:
  *       - BearerAuth: []
- *     parameters:
- *       - in: header
- *         name: Authorization
- *         schema:
- *           type: string
- *         required: true
- *         description: Bearer token for authentication (format "Bearer YOUR_API_KEY")
- *         example: "Bearer abc123def456_ghi789jkl012"
  *     responses:
  *       200:
  *         description: Team profile
@@ -107,14 +99,6 @@ router.get("/profile", AccountController.getProfile);
  *     description: Update profile information for the authenticated team
  *     security:
  *       - BearerAuth: []
- *     parameters:
- *       - in: header
- *         name: Authorization
- *         schema:
- *           type: string
- *         required: true
- *         description: Bearer token for authentication (format "Bearer YOUR_API_KEY")
- *         example: "Bearer abc123def456_ghi789jkl012"
  *     requestBody:
  *       required: true
  *       content:
@@ -233,12 +217,12 @@ router.put("/profile", AccountController.updateProfile);
 
 /**
  * @openapi
- * /api/account/balances:
- *   get:
+ * /api/account/reset-api-key:
+ *   post:
  *     tags:
  *       - Account
- *     summary: Get token balances
- *     description: Get all token balances for the authenticated team
+ *     summary: Reset team API key
+ *     description: Reset the API key for the authenticated team. This will invalidate the current API key and generate a new one.
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -249,6 +233,40 @@ router.put("/profile", AccountController.updateProfile);
  *         required: true
  *         description: Bearer token for authentication (format "Bearer YOUR_API_KEY")
  *         example: "Bearer abc123def456_ghi789jkl012"
+ *     responses:
+ *       200:
+ *         description: API key reset successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   description: Operation success status
+ *                 apiKey:
+ *                   type: string
+ *                   description: New API key to use for future requests
+ *                   example: "new123key456_xyz789abc"
+ *       401:
+ *         description: Unauthorized - Missing or invalid authentication
+ *       404:
+ *         description: Team not found
+ *       500:
+ *         description: Server error
+ */
+router.post("/reset-api-key", AccountController.resetApiKey);
+
+/**
+ * @openapi
+ * /api/account/balances:
+ *   get:
+ *     tags:
+ *       - Account
+ *     summary: Get token balances
+ *     description: Get all token balances for the authenticated team
+ *     security:
+ *       - BearerAuth: []
  *     responses:
  *       200:
  *         description: Team token balances
@@ -299,14 +317,6 @@ router.get("/balances", AccountController.getBalances);
  *     description: Get portfolio valuation and token details for the authenticated team
  *     security:
  *       - BearerAuth: []
- *     parameters:
- *       - in: header
- *         name: Authorization
- *         schema:
- *           type: string
- *         required: true
- *         description: Bearer token for authentication (format "Bearer YOUR_API_KEY")
- *         example: "Bearer abc123def456_ghi789jkl012"
  *     responses:
  *       200:
  *         description: Team portfolio information

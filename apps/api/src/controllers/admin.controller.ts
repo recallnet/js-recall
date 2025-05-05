@@ -4,10 +4,10 @@ import * as fs from "fs";
 import * as path from "path";
 import { v4 as uuidv4 } from "uuid";
 
-import { repositories } from "../database";
-import { ApiError } from "../middleware/errorHandler";
-import { services } from "../services";
-import { CompetitionStatus } from "../types";
+import { repositories } from "@/database/index.js";
+import { ApiError } from "@/middleware/errorHandler.js";
+import { services } from "@/services/index.js";
+import { CompetitionStatus } from "@/types/index.js";
 
 /**
  * Admin Controller
@@ -280,7 +280,7 @@ export class AdminController {
     next: NextFunction,
   ) {
     try {
-      const { name, description } = req.body;
+      const { name, description, allowCrossChainTrading } = req.body;
 
       // Validate required parameters
       if (!name) {
@@ -291,6 +291,7 @@ export class AdminController {
       const competition = await services.competitionManager.createCompetition(
         name,
         description,
+        allowCrossChainTrading === true, // Convert to boolean explicitly
       );
 
       // Return the created competition
@@ -314,7 +315,13 @@ export class AdminController {
     next: NextFunction,
   ) {
     try {
-      const { competitionId, name, description, teamIds } = req.body;
+      const {
+        competitionId,
+        name,
+        description,
+        teamIds,
+        allowCrossChainTrading,
+      } = req.body;
 
       // Validate required parameters
       if (!teamIds || !Array.isArray(teamIds) || teamIds.length === 0) {
@@ -353,6 +360,7 @@ export class AdminController {
         competition = await services.competitionManager.createCompetition(
           name,
           description,
+          allowCrossChainTrading === true, // Pass the cross-chain trading parameter
         );
       }
 

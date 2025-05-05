@@ -63,16 +63,6 @@ If you modify these values in the `.env.test` file, you may need to also update 
 
 > **Note**: The test suite is designed to adapt to the actual balances available. This flexible approach allows tests to pass with different balance configurations, but the values above are recommended for consistent testing behavior.
 
-### Cross-Chain Trading Tests
-
-The cross-chain trading tests depend on the `ALLOW_CROSS_CHAIN_TRADING` environment variable:
-
-```
-# Set to true to enable cross-chain trading tests
-# Set to false to skip cross-chain trading tests
-ALLOW_CROSS_CHAIN_TRADING=false
-```
-
 Tests will automatically adapt based on this setting, either executing cross-chain trades or skipping those tests.
 
 ## Running Tests

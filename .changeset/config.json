@@ -10,5 +10,13 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["faucet", "portal", "@recallnet/ui", "@recallnet/react"]
+  "ignore": [
+    "comps",
+    "faucet",
+    "portal",
+    "api",
+    "@recallnet/ui",
+    "@recallnet/ui2",
+    "@recallnet/react"
+  ]
 }

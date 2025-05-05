@@ -1,11 +1,8 @@
 import axios from "axios";
+import { beforeEach, describe, expect, test } from "vitest";
 
-import {
-  AdminTeamsListResponse,
-  ErrorResponse,
-  TeamApiKeyResponse,
-} from "../utils/api-types";
-import { getBaseUrl } from "../utils/server";
+import { ErrorResponse, TeamApiKeyResponse } from "@/e2e/utils/api-types.js";
+import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
@@ -13,7 +10,7 @@ import {
   cleanupTestState,
   createTestClient,
   registerTeamAndGetClient,
-} from "../utils/test-helpers";
+} from "@/e2e/utils/test-helpers.js";
 
 describe("API Key Retrieval", () => {
   let adminApiKey: string;
@@ -69,8 +66,7 @@ describe("API Key Retrieval", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register two teams
-    const { client: teamClient, team } =
-      await registerTeamAndGetClient(adminClient);
+    const { client: teamClient } = await registerTeamAndGetClient(adminClient);
     const { team: otherTeam } = await registerTeamAndGetClient(adminClient);
 
     // Attempt to retrieve the other team's API key using team client
@@ -84,6 +80,7 @@ describe("API Key Retrieval", () => {
       if (axios.isAxiosError(error) && error.response) {
         expect(error.response.status).toBe(401);
       } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         expect((error as any).status || 401).toBe(401);
       }
     }

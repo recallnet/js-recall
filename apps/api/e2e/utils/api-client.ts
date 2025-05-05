@@ -17,6 +17,7 @@ import {
   PriceHistoryResponse,
   PriceResponse,
   QuoteResponse,
+  ResetApiKeyResponse,
   SpecificChain,
   StartCompetitionResponse,
   TeamApiKeyResponse,
@@ -27,8 +28,9 @@ import {
   TradeExecutionParams,
   TradeHistoryResponse,
   TradeResponse,
-} from "./api-types";
-import { getBaseUrl } from "./server";
+  UpcomingCompetitionsResponse,
+} from "./api-types.js";
+import { getBaseUrl } from "./server.js";
 
 /**
  * API client for testing the Solana Trading Simulator
@@ -102,7 +104,7 @@ export class ApiClient {
   /**
    * Helper method to handle API errors consistently
    */
-  private handleApiError(error: any, operation: string): ErrorResponse {
+  private handleApiError(error: unknown, operation: string): ErrorResponse {
     console.error(`Failed to ${operation}:`, error);
 
     // Extract the detailed error message from the axios error response
@@ -119,7 +121,8 @@ export class ApiClient {
     }
 
     // Fallback to the generic error message
-    return { success: false, error: (error as any).message, status: 500 };
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { success: false, error: errorMessage, status: 500 };
   }
 
   /**
@@ -222,18 +225,34 @@ export class ApiClient {
    * Start a competition
    */
   async startCompetition(
-    name: string,
-    description: string,
-    teamIds: string[],
+    params:
+      | {
+          name: string;
+          description?: string;
+          teamIds: string[];
+          allowCrossChainTrading?: boolean;
+        }
+      | string,
+    description?: string,
+    teamIds?: string[],
   ): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
+      let requestData;
+
+      // Handle both object-based and individual parameter calls
+      if (typeof params === "object") {
+        requestData = params;
+      } else {
+        requestData = {
+          name: params,
+          description,
+          teamIds: teamIds || [],
+        };
+      }
+
       const response = await this.axiosInstance.post(
         "/api/admin/competition/start",
-        {
-          name,
-          description,
-          teamIds,
-        },
+        requestData,
       );
 
       return response.data;
@@ -248,6 +267,7 @@ export class ApiClient {
   async createCompetition(
     name: string,
     description?: string,
+    allowCrossChainTrading?: boolean,
   ): Promise<CreateCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
@@ -255,6 +275,7 @@ export class ApiClient {
         {
           name,
           description,
+          allowCrossChainTrading,
         },
       );
 
@@ -270,6 +291,7 @@ export class ApiClient {
   async startExistingCompetition(
     competitionId: string,
     teamIds: string[],
+    allowCrossChainTrading?: boolean,
   ): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
@@ -277,6 +299,7 @@ export class ApiClient {
         {
           competitionId,
           teamIds,
+          allowCrossChainTrading,
         },
       );
 
@@ -471,6 +494,22 @@ export class ApiClient {
       return response.data as CompetitionRulesResponse;
     } catch (error) {
       return this.handleApiError(error, "get competition rules");
+    }
+  }
+
+  /**
+   * Get upcoming competitions (status=PENDING)
+   */
+  async getUpcomingCompetitions(): Promise<
+    UpcomingCompetitionsResponse | ErrorResponse
+  > {
+    try {
+      const response = await this.axiosInstance.get(
+        "/api/competition/upcoming",
+      );
+      return response.data as UpcomingCompetitionsResponse;
+    } catch (error) {
+      return this.handleApiError(error, "get upcoming competitions");
     }
   }
 
@@ -682,7 +721,7 @@ export class ApiClient {
   async request<T>(
     method: "get" | "post" | "put" | "delete",
     path: string,
-    data?: any,
+    data?: unknown,
   ): Promise<T | ErrorResponse> {
     try {
       let response;
@@ -753,6 +792,21 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "publicly register team");
+    }
+  }
+
+  /**
+   * Reset the team's API key
+   * @returns A promise that resolves to the reset API key response
+   */
+  async resetApiKey(): Promise<ResetApiKeyResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post(
+        "/api/account/reset-api-key",
+      );
+      return response.data as ResetApiKeyResponse;
+    } catch (error) {
+      return this.handleApiError(error, "reset API key");
     }
   }
 }

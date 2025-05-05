@@ -1,9 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 
-import { CompetitionManager } from "../services/competition-manager.service";
-import { TeamManager } from "../services/team-manager.service";
-import { extractApiKey } from "./auth-helpers";
-import { ApiError } from "./errorHandler";
+import { extractApiKey } from "@/middleware/auth-helpers.js";
+import { ApiError } from "@/middleware/errorHandler.js";
+import { CompetitionManager } from "@/services/competition-manager.service.js";
+import { TeamManager } from "@/services/team-manager.service.js";
 
 /**
  * Authentication middleware
@@ -35,7 +35,10 @@ export const authMiddleware = (
 
       if (!teamId) {
         console.log(`[AuthMiddleware] Invalid API key`);
-        throw new ApiError(401, "Invalid API key");
+        throw new ApiError(
+          401,
+          "Invalid API key. This key may have been reset or is no longer associated with an active account. Please ensure you're using your most recent API key.",
+        );
       }
 
       console.log(

@@ -5,6 +5,7 @@ import { Metadata } from "next";
 
 import { fontMono, fontSans } from "@recallnet/fonts";
 
+import { Navbar } from "@/components/Navbar";
 import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
@@ -23,7 +24,10 @@ export default function RootLayout({
         className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased`}
       >
         <Analytics />
-        <Providers>{children}</Providers>
+        <Providers>
+          <Navbar />
+          <div className="xl:px-65 lg:px-30 md:px-15 px-5">{children}</div>
+        </Providers>
       </body>
     </html>
   );

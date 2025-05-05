@@ -1,8 +1,8 @@
-import { BalanceRepository } from "./balance-repository";
-import { CompetitionRepository } from "./competition-repository";
-import { PriceRepository } from "./price-repository";
-import { TeamRepository } from "./team-repository";
-import { TradeRepository } from "./trade-repository";
+import { BalanceRepository } from "./balance-repository.js";
+import { CompetitionRepository } from "./competition-repository.js";
+import { PriceRepository } from "./price-repository.js";
+import { TeamRepository } from "./team-repository.js";
+import { TradeRepository } from "./trade-repository.js";
 
 /**
  * Repository Registry

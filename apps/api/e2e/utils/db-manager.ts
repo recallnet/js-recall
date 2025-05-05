@@ -3,11 +3,11 @@ import path from "path";
 import { PoolClient } from "pg";
 import { Client } from "pg";
 
-// Use the main connection class
-import { dropAllTables } from "../../scripts/drop-all-tables";
-import { initializeDatabase } from "../../src/database";
 // Import production initialization code
-import { DatabaseConnection } from "../../src/database/connection";
+import { DatabaseConnection } from "@/database/connection.js";
+import { initializeDatabase } from "@/database/index.js";
+// Use the main connection class
+import { dropAllTables } from "@/scripts/drop-all-tables.js";
 
 /**
  * Database Manager for E2E Tests
@@ -165,7 +165,7 @@ export class DbManager {
   /**
    * Execute a query using the pool
    */
-  public async query(text: string, params: any[] = []): Promise<any> {
+  public async query(text: string, params: unknown[] = []) {
     return await this.dbConnection.query(text, params);
   }
 
@@ -274,7 +274,7 @@ export async function initializeDb(): Promise<void> {
   return dbManager.initialize();
 }
 
-export function getPool(): any {
+export function getPool() {
   // This is maintained for API compatibility, but now returns
   // the DatabaseConnection instance instead of a raw Pool
   return DatabaseConnection.getInstance();

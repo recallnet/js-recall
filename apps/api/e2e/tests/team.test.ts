@@ -1,14 +1,16 @@
 import axios from "axios";
+import { beforeEach, describe, expect, test } from "vitest";
 
 import {
   AdminTeamsListResponse,
   CreateCompetitionResponse,
   PriceResponse,
+  ResetApiKeyResponse,
   TeamMetadata,
   TeamProfileResponse,
   TeamRegistrationResponse,
-} from "../utils/api-types";
-import { getBaseUrl } from "../utils/server";
+} from "@/e2e/utils/api-types.js";
+import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
@@ -16,7 +18,7 @@ import {
   cleanupTestState,
   createTestClient,
   registerTeamAndGetClient,
-} from "../utils/test-helpers";
+} from "@/e2e/utils/test-helpers.js";
 
 describe("Team API", () => {
   // Clean up test state before each test
@@ -182,6 +184,7 @@ describe("Team API", () => {
       if (axios.isAxiosError(error) && error.response) {
         expect(error.response.status).toBe(401);
       } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         expect((error as any).status || 401).toBe(401);
       }
     }
@@ -216,7 +219,7 @@ describe("Team API", () => {
     // Verify all our teams are in the list
     for (const data of teamData) {
       const foundTeam = (teamsResponse as AdminTeamsListResponse).teams.find(
-        (t: any) => t.name === data.name && t.email === data.email,
+        (t) => t.name === data.name && t.email === data.email,
       );
       expect(foundTeam).toBeDefined();
     }
@@ -454,6 +457,66 @@ describe("Team API", () => {
     for (let i = 0; i < 3; i++) {
       const verifyResponse = await teamClient.getBalance();
       expect(verifyResponse.success).toBe(true);
+    }
+  });
+
+  test("team can reset their API key", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+    expect(adminLoginSuccess).toBe(true);
+
+    // Step 1: Register a new team
+    const teamName = `API Reset Team ${Date.now()}`;
+    const email = `api-reset-${Date.now()}@example.com`;
+    const contactPerson = "API Reset Contact";
+
+    // Register the team
+    const { client: teamClient, apiKey: originalApiKey } =
+      await registerTeamAndGetClient(
+        adminClient,
+        teamName,
+        email,
+        contactPerson,
+      );
+
+    // Step 2: Verify initial authentication works
+    const profileResponse = await teamClient.getProfile();
+    expect(profileResponse.success).toBe(true);
+
+    // Step 3: Reset the API key
+    const resetResponse = await teamClient.resetApiKey();
+    expect(resetResponse.success).toBe(true);
+
+    const resetApiKeyResponse = resetResponse as ResetApiKeyResponse;
+    expect(resetApiKeyResponse.apiKey).toBeDefined();
+    expect(resetApiKeyResponse.apiKey).not.toBe(originalApiKey);
+
+    // Step 4: Create a client with the new API key
+    const newApiKey = resetApiKeyResponse.apiKey;
+    const newClient = adminClient.createTeamClient(newApiKey);
+
+    // Step 5: Verify authentication with the new API key works
+    const newProfileResponse = await newClient.getProfile();
+    expect(newProfileResponse.success).toBe(true);
+
+    // Step 6: Verify the old API key no longer works and provides a helpful error message
+    const oldClient = adminClient.createTeamClient(originalApiKey);
+    try {
+      await oldClient.getProfile();
+      // Should not reach here - authentication should fail
+      expect(false).toBe(true); // Force test to fail if we get here
+    } catch (error) {
+      // Expect authentication error
+      expect(error).toBeDefined();
+      if (axios.isAxiosError(error) && error.response) {
+        expect(error.response.status).toBe(401);
+        // Verify error message is helpful
+        expect(error.response.data.error).toContain("may have been reset");
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        expect((error as any).status || 401).toBe(401);
+      }
     }
   });
 });

@@ -1,8 +1,8 @@
 import { Router } from "express";
 
-import { AdminController } from "../controllers/admin.controller";
-import { adminAuthMiddleware } from "../middleware/admin-auth.middleware";
-import { services } from "../services";
+import { AdminController } from "@/controllers/admin.controller.js";
+import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
+import { services } from "@/services/index.js";
 
 const router = Router();
 
@@ -360,6 +360,11 @@ router.delete("/teams/:teamId", AdminController.deleteTeam);
  *                 type: string
  *                 description: Competition description
  *                 example: A trading competition for the spring semester
+ *               allowCrossChainTrading:
+ *                 type: boolean
+ *                 description: Whether to allow cross-chain trading in this competition
+ *                 default: false
+ *                 example: false
  *     responses:
  *       201:
  *         description: Competition created successfully
@@ -387,6 +392,9 @@ router.delete("/teams/:teamId", AdminController.deleteTeam);
  *                       type: string
  *                       enum: [PENDING, ACTIVE, COMPLETED]
  *                       description: Competition status
+ *                     allowCrossChainTrading:
+ *                       type: boolean
+ *                       description: Whether cross-chain trading is allowed in this competition
  *                     createdAt:
  *                       type: string
  *                       format: date-time
@@ -435,6 +443,11 @@ router.post("/competition/create", AdminController.createCompetition);
  *                 items:
  *                   type: string
  *                 description: Array of team IDs to include in the competition
+ *               allowCrossChainTrading:
+ *                 type: boolean
+ *                 description: Whether to allow cross-chain trading in this competition (used when creating a new competition)
+ *                 default: false
+ *                 example: false
  *     responses:
  *       200:
  *         description: Competition started successfully
@@ -471,6 +484,9 @@ router.post("/competition/create", AdminController.createCompetition);
  *                       type: string
  *                       enum: [PENDING, ACTIVE, COMPLETED]
  *                       description: Competition status
+ *                     allowCrossChainTrading:
+ *                       type: boolean
+ *                       description: Whether cross-chain trading is allowed in this competition
  *                     teamIds:
  *                       type: array
  *                       items:
@@ -544,6 +560,9 @@ router.post("/competition/start", AdminController.startCompetition);
  *                       type: string
  *                       enum: [PENDING, ACTIVE, COMPLETED]
  *                       description: Competition status (completed)
+ *                     allowCrossChainTrading:
+ *                       type: boolean
+ *                       description: Whether cross-chain trading is allowed in this competition
  *                 leaderboard:
  *                   type: array
  *                   items:
@@ -688,6 +707,9 @@ router.get(
  *                       type: string
  *                       enum: [PENDING, ACTIVE, COMPLETED]
  *                       description: Competition status
+ *                     allowCrossChainTrading:
+ *                       type: boolean
+ *                       description: Whether cross-chain trading is allowed in this competition
  *                 leaderboard:
  *                   type: array
  *                   items:

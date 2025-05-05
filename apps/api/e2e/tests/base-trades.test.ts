@@ -1,16 +1,14 @@
 import axios from "axios";
+import { afterAll, beforeEach, describe, expect, test } from "vitest";
 
-import config, { features } from "../../src/config";
-import { PriceTracker } from "../../src/services/price-tracker.service";
-import { MultiChainProvider } from "../../src/services/providers/multi-chain.provider";
-import { BlockchainType, PriceReport } from "../../src/types";
+import { features } from "@/config/index.js";
 import {
   BalancesResponse,
   SpecificChain,
   TradeHistoryResponse,
   TradeResponse,
-} from "../utils/api-types";
-import { getBaseUrl } from "../utils/server";
+} from "@/e2e/utils/api-types.js";
+import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
@@ -20,24 +18,9 @@ import {
   registerTeamAndGetClient,
   startTestCompetition,
   wait,
-} from "../utils/test-helpers";
-
-// Log critical environment variables at test suite startup to verify which values are used
-console.log("\n========== BASE TRADES TEST ENVIRONMENT CHECK ==========");
-console.log(`Test is using these environment variables:`);
-console.log(
-  `- INITIAL_BASE_USDC_BALANCE = ${process.env.INITIAL_BASE_USDC_BALANCE}`,
-);
-console.log(
-  `- ALLOW_CROSS_CHAIN_TRADING = ${process.env.ALLOW_CROSS_CHAIN_TRADING}`,
-);
-console.log(`- Imported config from ../../src/config has initial balances:`, {
-  "evm.usdc": config.specificChainBalances?.eth?.usdc,
-  "base.usdc": config.specificChainBalances?.base?.usdc,
-});
-console.log("===========================================================\n");
-
-const reason = "base-trades end to end tests";
+} from "@/e2e/utils/test-helpers.js";
+import { MultiChainProvider } from "@/services/providers/multi-chain.provider.js";
+import { BlockchainType, PriceReport } from "@/types/index.js";
 
 describe("Base Chain Trading", () => {
   let adminApiKey: string;
@@ -59,7 +42,6 @@ describe("Base Chain Trading", () => {
 
   // Ethereum token to test cross-chain trading restrictions
   const ETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"; // WETH on Ethereum
-  const ETH_CHAIN = "eth";
 
   // Number of tokens to distribute funds across
   const NUM_TOKENS = BASE_TOKENS.length;
@@ -136,7 +118,6 @@ describe("Base Chain Trading", () => {
 
     // Initialize services for direct calls
     const multiChainProvider = new MultiChainProvider();
-    const priceTracker = new PriceTracker();
 
     // Get the price for each token
     for (const tokenAddress of BASE_TOKENS) {
@@ -181,7 +162,7 @@ describe("Base Chain Trading", () => {
         toChain: BlockchainType.EVM,
         fromSpecificChain: SpecificChain.BASE,
         toSpecificChain: SpecificChain.BASE,
-        reason,
+        reason: "Base chain trading test",
       })) as TradeResponse;
 
       console.log(
@@ -265,10 +246,10 @@ describe("Base Chain Trading", () => {
     // Verify each trade in history has correct chain parameters
     for (let i = 0; i < NUM_TOKENS; i++) {
       const trade = tradeHistoryResponse.trades[i];
-      expect(trade.fromChain).toBe(BlockchainType.EVM);
-      expect(trade.toChain).toBe(BlockchainType.EVM);
-      expect(trade.fromSpecificChain).toBe(BASE_CHAIN);
-      expect(trade.toSpecificChain).toBe(BASE_CHAIN);
+      expect(trade?.fromChain).toBe(BlockchainType.EVM);
+      expect(trade?.toChain).toBe(BlockchainType.EVM);
+      expect(trade?.fromSpecificChain).toBe(BASE_CHAIN);
+      expect(trade?.toSpecificChain).toBe(BASE_CHAIN);
     }
 
     console.log(
@@ -279,9 +260,6 @@ describe("Base Chain Trading", () => {
   test("users cannot execute cross-chain trades when ALLOW_CROSS_CHAIN_TRADING=false", async () => {
     console.log(
       "[Test] Starting test to verify cross-chain trading restrictions",
-    );
-    console.log(
-      `Environment variable ALLOW_CROSS_CHAIN_TRADING = ${process.env.ALLOW_CROSS_CHAIN_TRADING}`,
     );
     console.log(
       `Features config setting: features.ALLOW_CROSS_CHAIN_TRADING = ${features.ALLOW_CROSS_CHAIN_TRADING}`,
@@ -344,9 +322,6 @@ describe("Base Chain Trading", () => {
     const tradeAmount = (initialBaseUsdcBalance * 0.1).toString(); // Use 10% of balance
     console.log(`Trade amount: ${tradeAmount} USDC`);
 
-    let errorOccurred = false;
-    let errorResponse = null;
-
     try {
       const tradeResponse = await teamClient.executeTrade({
         fromToken: BASE_USDC_ADDRESS, // Base USDC
@@ -356,7 +331,7 @@ describe("Base Chain Trading", () => {
         toChain: BlockchainType.EVM,
         fromSpecificChain: SpecificChain.BASE,
         toSpecificChain: SpecificChain.ETH, // Different chain from fromSpecificChain
-        reason,
+        reason: "Cross-chain trade test",
       });
 
       // If we get here, the trade might have succeeded, which is unexpected if cross-chain trading is disabled
@@ -367,18 +342,16 @@ describe("Base Chain Trading", () => {
 
       // Even if no exception is thrown, the trade should not have succeeded
       expect(tradeResponse.success).toBe(false);
-      errorResponse = tradeResponse;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       // Type error as any for proper handling
       // We expect an error if cross-chain trading is disabled
-      errorOccurred = true;
       console.log("Exception caught. Error details:");
       console.log(`  Message: ${error.message || "No message"}`);
 
       if (error.response) {
         console.log(`  Status: ${error.response.status}`);
         console.log(`  Data: ${JSON.stringify(error.response.data, null, 2)}`);
-        errorResponse = error.response.data;
       }
 
       expect(error).toBeDefined();
@@ -430,8 +403,7 @@ describe("Base Chain Trading", () => {
     // 2. No USDC should be spent
     // 3. No ETH should be received
 
-    const crossChainEnabled = process.env.ALLOW_CROSS_CHAIN_TRADING === "true";
-    console.log(`Cross-chain trading enabled from env: ${crossChainEnabled}`);
+    const crossChainEnabled = features.ALLOW_CROSS_CHAIN_TRADING;
 
     if (!crossChainEnabled) {
       console.log(
@@ -524,7 +496,7 @@ describe("Base Chain Trading", () => {
     // Get token price to verify later using direct service call
     const multiChainProvider = new MultiChainProvider();
     const tokenPriceResponse = await multiChainProvider.getPrice(
-      targetToken,
+      targetToken!,
       BlockchainType.EVM,
       BASE_CHAIN,
     );
@@ -540,16 +512,17 @@ describe("Base Chain Trading", () => {
     try {
       const tradeResponse = await teamClient.executeTrade({
         fromToken: BASE_USDC_ADDRESS,
-        toToken: targetToken,
+        toToken: targetToken!,
         amount: excessiveAmount,
         fromChain: BlockchainType.EVM,
         toChain: BlockchainType.EVM,
         fromSpecificChain: SpecificChain.BASE,
         toSpecificChain: SpecificChain.BASE,
-        reason,
+        reason: "Spending limit test",
       });
 
       expect(tradeResponse.success).toBe(false); // The test should fail here if excessive trading is allowed
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       // Type error as any for proper handling
       // We expect an error for insufficient funds
@@ -577,13 +550,13 @@ describe("Base Chain Trading", () => {
     // Execute a valid trade
     const validTradeResponse = (await teamClient.executeTrade({
       fromToken: BASE_USDC_ADDRESS,
-      toToken: targetToken,
+      toToken: targetToken!,
       amount: validAmount,
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.EVM,
       fromSpecificChain: SpecificChain.BASE,
       toSpecificChain: SpecificChain.BASE,
-      reason,
+      reason: "Spending limit test",
     })) as TradeResponse;
 
     // This trade should succeed

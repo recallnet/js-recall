@@ -1,21 +1,21 @@
 import cors from "cors";
 import express from "express";
 
-import { config } from "./config";
-import { initializeDatabase } from "./database";
-import { authMiddleware } from "./middleware/auth.middleware";
-import errorHandler from "./middleware/errorHandler";
-import { rateLimiterMiddleware } from "./middleware/rate-limiter.middleware";
+import { config } from "@/config/index.js";
+import { initializeDatabase } from "@/database/index.js";
+import { authMiddleware } from "@/middleware/auth.middleware.js";
+import errorHandler from "@/middleware/errorHandler.js";
+import { rateLimiterMiddleware } from "@/middleware/rate-limiter.middleware.js";
 // Import routes
-import * as accountRoutes from "./routes/account.routes";
-import * as adminRoutes from "./routes/admin.routes";
-import * as competitionRoutes from "./routes/competition.routes";
-import * as docsRoutes from "./routes/docs.routes";
-import * as healthRoutes from "./routes/health.routes";
-import * as priceRoutes from "./routes/price.routes";
-import * as publicRoutes from "./routes/public.routes";
-import * as tradeRoutes from "./routes/trade.routes";
-import { services } from "./services";
+import * as accountRoutes from "@/routes/account.routes.js";
+import * as adminRoutes from "@/routes/admin.routes.js";
+import * as competitionRoutes from "@/routes/competition.routes.js";
+import * as docsRoutes from "@/routes/docs.routes.js";
+import * as healthRoutes from "@/routes/health.routes.js";
+import * as priceRoutes from "@/routes/price.routes.js";
+import * as publicRoutes from "@/routes/public.routes.js";
+import * as tradeRoutes from "@/routes/trade.routes.js";
+import { services } from "@/services/index.js";
 
 // Create Express app
 const app = express();
@@ -82,6 +82,10 @@ const startServer = async () => {
     await initializeDatabase();
     console.log("Database connection and schema verification completed");
     databaseInitialized = true;
+
+    // Load competition-specific configuration settings
+    await services.configurationService.loadCompetitionSettings();
+    console.log("Competition-specific configuration settings loaded");
 
     // Start snapshot scheduler
     services.scheduler.startSnapshotScheduler();

@@ -1,9 +1,9 @@
 import { PoolClient } from "pg";
 
-import { config } from "../../config";
-import { Balance } from "../../types";
-import { BaseRepository } from "../base-repository";
-import { DatabaseRow } from "../types";
+import { config } from "@/config/index.js";
+import { BaseRepository } from "@/database/base-repository.js";
+import { DatabaseRow } from "@/database/types.js";
+import { Balance } from "@/types/index.js";
 
 /**
  * Balance Repository

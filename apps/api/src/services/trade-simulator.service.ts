@@ -1,11 +1,17 @@
 import { v4 as uuidv4 } from "uuid";
 
-import { config, features } from "../config";
-import { repositories } from "../database";
-import { BlockchainType, SpecificChain, Trade, TradeResult } from "../types";
-import { BalanceManager } from "./balance-manager.service";
-import { services } from "./index";
-import { PriceTracker } from "./price-tracker.service";
+import { config, features } from "@/config/index.js";
+import { repositories } from "@/database/index.js";
+import { BalanceManager } from "@/services/balance-manager.service.js";
+import { services } from "@/services/index.js";
+import {
+  BlockchainType,
+  SpecificChain,
+  Trade,
+  TradeResult,
+} from "@/types/index.js";
+
+import { PriceTracker } from "./price-tracker.service.js";
 
 // Define an interface for chain options
 interface ChainOptions {
@@ -24,8 +30,6 @@ export class TradeSimulator {
   private priceTracker: PriceTracker;
   // Cache of recent trades for performance (teamId -> trades)
   private tradeCache: Map<string, Trade[]>;
-  // Whether to allow cross-chain trading
-  private allowCrossChainTrading: boolean;
   // Maximum trade percentage of portfolio value
   private maxTradePercentage: number;
 
@@ -33,8 +37,6 @@ export class TradeSimulator {
     this.balanceManager = balanceManager;
     this.priceTracker = priceTracker;
     this.tradeCache = new Map();
-    // Use features config instead of directly accessing environment variable
-    this.allowCrossChainTrading = features.ALLOW_CROSS_CHAIN_TRADING;
     // Get the maximum trade percentage from config
     this.maxTradePercentage = config.maxTradePercentage;
   }
@@ -165,7 +167,7 @@ export class TradeSimulator {
 
       // Check for cross-chain trades if not allowed
       if (
-        !this.allowCrossChainTrading &&
+        !features.ALLOW_CROSS_CHAIN_TRADING &&
         (fromTokenChain !== toTokenChain ||
           (fromTokenSpecificChain &&
             toTokenSpecificChain &&
@@ -205,7 +207,7 @@ export class TradeSimulator {
 
       // Check for cross-chain trades if not allowed
       if (
-        !this.allowCrossChainTrading &&
+        !features.ALLOW_CROSS_CHAIN_TRADING &&
         (fromTokenChain !== toTokenChain ||
           (fromTokenSpecificChain &&
             toTokenSpecificChain &&

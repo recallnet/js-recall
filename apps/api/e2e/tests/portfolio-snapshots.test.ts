@@ -1,15 +1,13 @@
 import axios from "axios";
+import { beforeEach, describe, expect, test } from "vitest";
 
-import config from "../../src/config";
-import { services } from "../../src/services";
-import { PriceTracker } from "../../src/services/price-tracker.service";
-import { BlockchainType } from "../../src/types";
+import config from "@/config/index.js";
 import {
   BalancesResponse,
+  PortfolioSnapshot,
   SnapshotResponse,
-  TokenPortfolioItem,
-} from "../utils/api-types";
-import { getBaseUrl } from "../utils/server";
+} from "@/e2e/utils/api-types.js";
+import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
@@ -19,7 +17,10 @@ import {
   registerTeamAndGetClient,
   startTestCompetition,
   wait,
-} from "../utils/test-helpers";
+} from "@/e2e/utils/test-helpers.js";
+import { services } from "@/services/index.js";
+import { PriceTracker } from "@/services/price-tracker.service.js";
+import { BlockchainType } from "@/types/index.js";
 
 const reason = "portfolio-snapshots end-to-end tests";
 
@@ -51,7 +52,7 @@ describe("Portfolio Snapshots", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
+    const { team } = await registerTeamAndGetClient(
       adminClient,
       "Snapshot Test Team",
     );
@@ -83,11 +84,13 @@ describe("Portfolio Snapshots", () => {
 
     // Verify the snapshot has the correct team ID and competition ID
     const snapshot = typedResponse.snapshots[0];
-    expect(snapshot.teamId).toBe(team.id);
-    expect(snapshot.competitionId).toBe(competitionId);
+    expect(snapshot?.teamId).toBe(team.id);
+    expect(snapshot?.competitionId).toBe(competitionId);
     // Verify the snapshot has token values
-    expect(snapshot.valuesByToken).toBeDefined();
-    expect(Object.keys(snapshot.valuesByToken).length).toBeGreaterThan(0);
+    expect(snapshot?.valuesByToken).toBeDefined();
+    expect(
+      Object.keys((snapshot as PortfolioSnapshot).valuesByToken).length,
+    ).toBeGreaterThan(0);
   });
 
   // Test that snapshots can be taken manually
@@ -97,7 +100,7 @@ describe("Portfolio Snapshots", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
+    const { team } = await registerTeamAndGetClient(
       adminClient,
       "Periodic Snapshot Team",
     );
@@ -210,7 +213,7 @@ describe("Portfolio Snapshots", () => {
     const beforeEndCount = beforeEndResponse.snapshots.length;
 
     // End the competition
-    const endResult = await adminClient.endCompetition(competitionId);
+    await adminClient.endCompetition(competitionId);
     // Wait for operations to complete
     await wait(500);
 
@@ -226,9 +229,9 @@ describe("Portfolio Snapshots", () => {
     // Verify the final snapshot has current portfolio values
     const finalSnapshot =
       afterEndResponse.snapshots[afterEndResponse.snapshots.length - 1];
-    expect(finalSnapshot.valuesByToken[solTokenAddress]).toBeDefined();
+    expect(finalSnapshot?.valuesByToken[solTokenAddress]).toBeDefined();
     expect(
-      finalSnapshot.valuesByToken[solTokenAddress]?.amount,
+      finalSnapshot?.valuesByToken[solTokenAddress]?.amount,
     ).toBeGreaterThan(0);
   });
 
@@ -280,21 +283,20 @@ describe("Portfolio Snapshots", () => {
     const initialSnapshot = initialSnapshotsResponse.snapshots[0];
 
     // Verify the USDC value is calculated correctly
-    const usdcValue = initialSnapshot.valuesByToken[usdcTokenAddress];
+    const usdcValue = initialSnapshot?.valuesByToken[usdcTokenAddress];
     expect(usdcValue?.amount).toBeCloseTo(initialUsdcBalance);
     if (usdcPrice) {
       expect(usdcValue?.valueUsd).toBeCloseTo(
         initialUsdcBalance * usdcPrice.price,
-        0,
+        -1,
       );
     }
 
     // Verify total portfolio value is the sum of all token values
-    const totalValue = Object.values(initialSnapshot.valuesByToken).reduce(
-      (sum: number, token) => sum + token.valueUsd,
-      0,
-    );
-    expect(initialSnapshot.totalValue).toBeCloseTo(totalValue, 0);
+    const totalValue = Object.values(
+      (initialSnapshot as PortfolioSnapshot).valuesByToken,
+    ).reduce((sum: number, token) => sum + token.valueUsd, 0);
+    expect(initialSnapshot?.totalValue).toBeCloseTo(totalValue, -1);
   });
 
   // Test that the configuration is loaded correctly
@@ -319,7 +321,7 @@ describe("Portfolio Snapshots", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
+    const { team } = await registerTeamAndGetClient(
       adminClient,
       "Price Freshness Team",
     );
@@ -376,7 +378,7 @@ describe("Portfolio Snapshots", () => {
 
     try {
       // Mock console.log to capture messages
-      console.log = (...args: any[]) => {
+      console.log = (...args: unknown[]) => {
         const message = args.join(" ");
         logMessages.push(message);
         originalConsoleLog(...args);

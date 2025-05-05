@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 
-import { repositories } from "../database";
-import { ApiError } from "../middleware/errorHandler";
-import { services } from "../services";
+import { repositories } from "@/database/index.js";
+import { ApiError } from "@/middleware/errorHandler.js";
+import { services } from "@/services/index.js";
 
 /**
  * Account Controller
@@ -323,6 +323,29 @@ export class AccountController {
         success: true,
         teamId,
         trades: sortedTrades,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Reset the API key for the authenticated team
+   * @param req Express request
+   * @param res Express response
+   * @param next Express next function
+   */
+  static async resetApiKey(req: Request, res: Response, next: NextFunction) {
+    try {
+      const teamId = req.teamId as string;
+
+      // Use the TeamManager service to reset the API key
+      const result = await services.teamManager.resetApiKey(teamId);
+
+      // Return the new API key
+      res.status(200).json({
+        success: true,
+        apiKey: result.apiKey,
       });
     } catch (error) {
       next(error);
