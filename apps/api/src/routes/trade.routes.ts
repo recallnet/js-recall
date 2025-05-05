@@ -14,7 +14,6 @@ const router: Router = Router();
  *     description: Execute a trade between two tokens
  *     security:
  *       - BearerAuth: []
- *     parameters:
  *     requestBody:
  *       required: true
  *       content:

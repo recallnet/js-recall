@@ -110,12 +110,6 @@ Reset team API key
 
 Reset the API key for the authenticated team. This will invalidate the current API key and generate a new one.
 
-##### Parameters
-
-| Name          | Located in | Description                                                    | Required | Schema |
-| ------------- | ---------- | -------------------------------------------------------------- | -------- | ------ |
-| Authorization | header     | Bearer token for authentication (format "Bearer YOUR_API_KEY") | Yes      | string |
-
 ##### Responses
 
 | Code | Description                                      |
@@ -194,12 +188,6 @@ Get trade history
 ##### Description:
 
 Get trade history for the authenticated team
-
-##### Parameters
-
-| Name          | Located in | Description                                                    | Required | Schema |
-| ------------- | ---------- | -------------------------------------------------------------- | -------- | ------ |
-| Authorization | header     | Bearer token for authentication (format "Bearer YOUR_API_KEY") | Yes      | string |
 
 ##### Responses
 
@@ -834,11 +822,6 @@ Execute a trade
 ##### Description:
 
 Execute a trade between two tokens
-
-##### Parameters
-
-| Name | Located in | Description | Required | Schema |
-| ---- | ---------- | ----------- | -------- | ------ |
 
 ##### Responses
 

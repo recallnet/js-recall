@@ -225,14 +225,6 @@ router.put("/profile", AccountController.updateProfile);
  *     description: Reset the API key for the authenticated team. This will invalidate the current API key and generate a new one.
  *     security:
  *       - BearerAuth: []
- *     parameters:
- *       - in: header
- *         name: Authorization
- *         schema:
- *           type: string
- *         required: true
- *         description: Bearer token for authentication (format "Bearer YOUR_API_KEY")
- *         example: "Bearer abc123def456_ghi789jkl012"
  *     responses:
  *       200:
  *         description: API key reset successfully
@@ -384,14 +376,6 @@ router.get("/portfolio", AccountController.getPortfolio);
  *     description: Get trade history for the authenticated team
  *     security:
  *       - BearerAuth: []
- *     parameters:
- *       - in: header
- *         name: Authorization
- *         schema:
- *           type: string
- *         required: true
- *         description: Bearer token for authentication (format "Bearer YOUR_API_KEY")
- *         example: "Bearer abc123def456_ghi789jkl012"
  *     responses:
  *       200:
  *         description: Team trade history
