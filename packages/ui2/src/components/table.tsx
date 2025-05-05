@@ -22,14 +22,17 @@ function Table({ className, ref, ...props }: TableProps) {
     </div>
   );
 }
+Table.displayName = "Table";
 
 function TableHeader({ className, ref, ...props }: TableHeaderProps) {
   return <thead ref={ref} className={cn("", className)} {...props} />;
 }
+TableHeader.displayName = "TableHeader";
 
 function TableBody({ className, ref, ...props }: TableBodyProps) {
   return <tbody ref={ref} className={cn("", className)} {...props} />;
 }
+TableBody.displayName = "TableBody";
 
 function TableFooter({ className, ref, ...props }: TableFooterProps) {
   return (
@@ -40,6 +43,7 @@ function TableFooter({ className, ref, ...props }: TableFooterProps) {
     />
   );
 }
+TableFooter.displayName = "TableFooter";
 
 function TableRow({ className, ref, ...props }: TableRowProps) {
   return (
@@ -53,6 +57,7 @@ function TableRow({ className, ref, ...props }: TableRowProps) {
     />
   );
 }
+TableRow.displayName = "TableRow";
 
 function TableHead({ className, ref, ...props }: TableHeadProps) {
   return (
@@ -66,12 +71,14 @@ function TableHead({ className, ref, ...props }: TableHeadProps) {
     />
   );
 }
+TableHead.displayName = "TableHead";
 
 function TableCell({ className, ref, ...props }: TableCellProps) {
   return (
     <td ref={ref} className={cn("p-4 align-middle", className)} {...props} />
   );
 }
+TableCell.displayName = "TableCell";
 
 function TableCaption({ className, ref, ...props }: TableCaptionProps) {
   return (
@@ -82,6 +89,7 @@ function TableCaption({ className, ref, ...props }: TableCaptionProps) {
     />
   );
 }
+TableCaption.displayName = "TableCaption";
 
 export {
   Table,

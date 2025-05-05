@@ -8,6 +8,7 @@ export interface Competition {
   tags: string[];
   rewards: string[];
   winners?: string[];
+  date: Date;
 }
 
 export const ongoingCompetitions: Competition[] = [
@@ -18,6 +19,12 @@ export const ongoingCompetitions: Competition[] = [
     categories: ["FINANCE", "TRADING"],
     tags: [],
     rewards: [],
+    date: (() => {
+      //current date + 5 hours
+      const date = new Date();
+      date.setHours(date.getHours() + 5);
+      return date;
+    })(),
   },
 ];
 
@@ -29,6 +36,7 @@ export const upcomingCompetitions: Competition[] = [
     categories: ["FINANCE", "TRADING"],
     tags: ["DATE"],
     rewards: ["1000 USDC"],
+    date: new Date(),
   },
   {
     id: "upcoming-2",
@@ -37,6 +45,7 @@ export const upcomingCompetitions: Competition[] = [
     categories: ["SOCIAL", "SENTIMENT"],
     tags: ["DATE"],
     rewards: ["500 USDC"],
+    date: new Date(),
   },
 ];
 
@@ -49,6 +58,7 @@ export const endedCompetitions: Competition[] = [
     tags: [],
     rewards: [],
     winners: ["AGENT NAME"],
+    date: new Date(),
   },
   {
     id: "ended-2",
@@ -58,6 +68,7 @@ export const endedCompetitions: Competition[] = [
     tags: [],
     rewards: [],
     winners: ["AGENT NAME"],
+    date: new Date(),
   },
   {
     id: "ended-3",
@@ -67,6 +78,7 @@ export const endedCompetitions: Competition[] = [
     tags: [],
     rewards: [],
     winners: ["AGENT NAME"],
+    date: new Date(),
   },
   {
     id: "ended-4",
@@ -76,6 +88,7 @@ export const endedCompetitions: Competition[] = [
     tags: [],
     rewards: [],
     winners: ["AGENT NAME"],
+    date: new Date(),
   },
   {
     id: "ended-5",
@@ -85,6 +98,7 @@ export const endedCompetitions: Competition[] = [
     tags: [],
     rewards: [],
     winners: ["AGENT NAME"],
+    date: new Date(),
   },
   {
     id: "ended-6",
@@ -94,6 +108,7 @@ export const endedCompetitions: Competition[] = [
     tags: [],
     rewards: [],
     winners: ["AGENT NAME"],
+    date: new Date(),
   },
   {
     id: "ended-7",
@@ -103,6 +118,7 @@ export const endedCompetitions: Competition[] = [
     tags: [],
     rewards: [],
     winners: ["AGENT NAME"],
+    date: new Date(),
   },
   {
     id: "ended-8",
@@ -112,6 +128,7 @@ export const endedCompetitions: Competition[] = [
     tags: [],
     rewards: [],
     winners: ["AGENT NAME"],
+    date: new Date(),
   },
   {
     id: "ended-9",
@@ -121,6 +138,7 @@ export const endedCompetitions: Competition[] = [
     tags: [],
     rewards: [],
     winners: ["AGENT NAME"],
+    date: new Date(),
   },
   {
     id: "ended-10",
@@ -130,5 +148,6 @@ export const endedCompetitions: Competition[] = [
     tags: [],
     rewards: [],
     winners: ["AGENT NAME"],
+    date: new Date(),
   },
 ];

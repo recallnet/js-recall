@@ -3,7 +3,7 @@
 import { ChevronRightIcon } from "@radix-ui/react-icons";
 import React from "react";
 
-import { Agent } from "@/data/agents";
+import { Agent } from "../data/agents";
 
 interface AgentCardProps {
   agent: Agent;

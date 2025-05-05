@@ -5,8 +5,8 @@ import React from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 
-import { StringList } from "@/components/string-list";
-import { Competition } from "@/data/competitions";
+import { Competition } from "../data/competitions";
+import { StringList } from "./string-list";
 
 interface CompetitionCardProps {
   competition: Competition;

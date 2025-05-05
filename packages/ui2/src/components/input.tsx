@@ -4,7 +4,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 export type InputProps = React.JSX.IntrinsicElements["input"];
 
-function Input({ className, type, ref, ...props }: InputProps) {
+const Input = function Input({ className, type, ref, ...props }: InputProps) {
   return (
     <input
       type={type}
@@ -16,6 +16,8 @@ function Input({ className, type, ref, ...props }: InputProps) {
       {...props}
     />
   );
-}
+};
+
+Input.displayName = "Input";
 
 export { Input };

@@ -4,7 +4,7 @@ import { ArrowRightIcon } from "@radix-ui/react-icons";
 import Image from "next/image";
 import React from "react";
 
-import { SocialLink } from "@/data/social";
+import { SocialLink } from "../data/social";
 
 interface SocialLinkCardProps {
   socialLink: SocialLink;
