@@ -1,8 +1,13 @@
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "url";
 
 import { config } from "@/config/index.js";
 import { DatabaseConnection } from "@/database/connection.js";
+
+// Get equivalent of __dirname in ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Script to completely drop all tables from the database
@@ -72,6 +77,6 @@ export async function dropAllTables(
 }
 
 // Run if called directly
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   dropAllTables().catch(console.error);
 }
