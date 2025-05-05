@@ -23,7 +23,7 @@ export const Navbar: React.FunctionComponent = () => {
 
   const navItems = [
     { label: "COMPETITIONS", href: "/competitions" },
-    { label: "LEADERBOARDS", href: "/leaderboards" },
+    { label: "LEADERBOARDS", href: "/leaderboard" },
   ];
 
   const handleLogout = () => {

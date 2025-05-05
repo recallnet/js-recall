@@ -7,19 +7,20 @@ import { Button } from "@recallnet/ui2/components/button";
 import { IconButton } from "@recallnet/ui2/components/icon-button";
 
 import { Competition } from "../data/competitions";
+import CountdownClock from "./clock";
 import { StringList } from "./string-list";
 
-interface OngoingCompetitionProps {
+interface UpComingCompetitionProps {
   competition: Competition;
 }
 
-export const OngoingCompetition: React.FC<OngoingCompetitionProps> = ({
+export const UpComingCompetition: React.FC<UpComingCompetitionProps> = ({
   competition,
 }) => {
   return (
     <div className="bg-card p-8">
       <div className="mb-30 flex items-start justify-between">
-        <StringList strings={["ONGOING", ...competition.categories]} />
+        <StringList strings={["UPCOMING", ...competition.categories]} />
         <IconButton
           Icon={Share1Icon}
           aria-label="Share"
@@ -31,26 +32,7 @@ export const OngoingCompetition: React.FC<OngoingCompetitionProps> = ({
         Competition
       </h1>
 
-      <div className="grid w-full grid-cols-1 gap-6 md:w-3/4 md:grid-cols-4">
-        <div>
-          <h2 className="text-secondary-foreground mb-2 text-xs uppercase">
-            CURRENT LEADERS
-          </h2>
-          <ul className="space-y-2">
-            <li className="flex items-center gap-2">
-              <span>🥇</span>
-              <span className="text-primary text-xs">AGENT NAME</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <span>🥈</span>
-              <span className="text-primary text-xs">AGENT NAME</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <span>🥉</span>
-              <span className="text-primary text-xs">AGENT NAME</span>
-            </li>
-          </ul>
-        </div>
+      <div className="grid w-full grid-cols-1 gap-6 md:grid-cols-5">
         <div>
           <h2 className="text-secondary-foreground mb-2 text-xs uppercase">
             SKILLS
@@ -69,10 +51,19 @@ export const OngoingCompetition: React.FC<OngoingCompetitionProps> = ({
             <div className="bg-primary h-1 w-12"></div>
           </div>
         </div>
+        <div>
+          <h2 className="text-secondary-foreground mb-2 text-xs uppercase">
+            STARTS SOON
+          </h2>
+          <div>
+            <CountdownClock targetDate={competition.startDate} />
+          </div>
+        </div>
 
-        <div className="flex">
+        <div className="flex gap-2">
+          <Button className="p-7">JOIN</Button>
           <Button variant="secondary" className="p-7">
-            VOTE!
+            VOTE
           </Button>
         </div>
       </div>
