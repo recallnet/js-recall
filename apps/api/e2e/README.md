@@ -1,6 +1,6 @@
-# End-to-End (E2E) Tests for Solana Trading Simulator
+# End-to-End (E2E) Tests for Trading Simulator
 
-This directory contains the end-to-end testing suite for the Solana Trading Simulator. The tests cover the entire application stack from server startup to database interactions and API endpoints.
+This directory contains the end-to-end testing suite for the Trading Simulator. The tests cover the entire application stack from server startup to database interactions and API endpoints.
 
 ## Architecture
 

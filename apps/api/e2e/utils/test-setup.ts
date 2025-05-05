@@ -126,22 +126,6 @@ beforeEach(async () => {
     }
   }
 
-  // Reset PriceTracker cache
-  if (services.priceTracker) {
-    //@ts-expect-error known private class property
-    if (services.priceTracker.priceCache instanceof Map) {
-      //@ts-expect-error known private class property
-      const count = services.priceTracker.priceCache.size;
-      if (count > 0) {
-        log(
-          `[Global Setup] Clearing ${count} entries from PriceTracker.priceCache`,
-        );
-        //@ts-expect-error known private class property
-        services.priceTracker.priceCache.clear();
-      }
-    }
-  }
-
   // Clear provider caches if they exist
   // These are typically accessed through the priceTracker service
   if (services.priceTracker) {

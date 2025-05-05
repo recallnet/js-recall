@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "private": true,
-  "description": "Solana Trading Simulator Server for hosting trading competitions",
+  "description": "Trading Simulator Server for hosting trading competitions",
   "main": "dist/src/index.js",
   "scripts": {
     "lint": "eslint . --max-warnings 0",

@@ -15,7 +15,7 @@ import path from "path";
 // Load test environment variables
 config({ path: path.resolve(__dirname, "../.env.test") });
 
-console.log("🚀 Solana Trading Simulator E2E Test Runner");
+console.log("🚀 Trading Simulator E2E Test Runner");
 console.log("===========================================");
 
 // Create a flag file to indicate full suite is running

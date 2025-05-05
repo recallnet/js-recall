@@ -123,6 +123,14 @@ export class TradeSimulator {
         );
       }
 
+      // assign the specific chain if provided
+      if (chainOptions?.fromSpecificChain) {
+        fromTokenSpecificChain = chainOptions.fromSpecificChain;
+        console.log(
+          `[TradeSimulator] Using provided specific chain for fromToken: ${fromTokenSpecificChain}`,
+        );
+      }
+
       // For the destination token
       if (chainOptions?.toChain) {
         toTokenChain = chainOptions.toChain;
@@ -134,6 +142,14 @@ export class TradeSimulator {
         toTokenChain = this.priceTracker.determineChain(toToken);
         console.log(
           `[TradeSimulator] Detected chain for toToken: ${toTokenChain}`,
+        );
+      }
+
+      // assign the specific chain if provided
+      if (chainOptions?.toSpecificChain) {
+        toTokenSpecificChain = chainOptions.toSpecificChain;
+        console.log(
+          `[TradeSimulator] Using provided specific chain for toToken: ${toTokenSpecificChain}`,
         );
       }
 
@@ -154,7 +170,7 @@ export class TradeSimulator {
         To Token (${toToken}): $${toPrice} (${toTokenChain})
     `);
 
-      if (!fromPrice || !toPrice) {
+      if (!fromPrice?.price || !toPrice?.price) {
         console.log(`[TradeSimulator] Missing price data:
             From Token Price: ${fromPrice}
             To Token Price: ${toPrice}
