@@ -193,7 +193,7 @@ const cleanDatabase = async () => {
 };
 
 // Run the script if called directly
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   cleanDatabase()
     .then(() => {
       process.exit(0);

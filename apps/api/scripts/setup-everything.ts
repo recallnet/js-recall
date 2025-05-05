@@ -264,37 +264,6 @@ async function setupEverything() {
       process.kill(-serverPid, "SIGINT");
     }
 
-    // // Step 7: Save credentials to a secure file
-    // if (adminApiKey) {
-    //   console.log('\n📦 STEP 7: Saving credentials to a secure file...');
-    //   const credentialsFolder = path.join(process.cwd(), '.credentials');
-
-    //   // Create credentials directory if it doesn't exist
-    //   if (!fs.existsSync(credentialsFolder)) {
-    //     fs.mkdirSync(credentialsFolder);
-    //   }
-
-    //   // Generate a timestamped filename
-    //   const timestamp = new Date().toISOString().replace(/[:]/g, '-').replace(/\..+/, '');
-    //   const credentialsFile = path.join(credentialsFolder, `admin_credentials_${timestamp}.json`);
-
-    //   // Write credentials to file
-    //   fs.writeFileSync(
-    //     credentialsFile,
-    //     JSON.stringify({
-    //       username: adminUsername,
-    //       email: adminEmail,
-    //       password: adminPassword,
-    //       apiKey: adminApiKey,
-    //       created: new Date().toISOString()
-    //     }, null, 2),
-    //     { mode: 0o600 } // Set permissions to read/write for owner only
-    //   );
-
-    //   console.log(`${colors.green}Credentials saved to: ${credentialsFile}${colors.reset}`);
-    //   console.log(`${colors.yellow}IMPORTANT: This file contains sensitive information. Keep it secure!${colors.reset}`);
-    // }
-
     // Final instructions
     console.log(
       "\n=============================================================",

@@ -1,8 +1,12 @@
 import * as fs from "fs";
 import * as path from "path";
-import { pathToFileURL } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
 
 import { DatabaseConnection } from "@/database/connection.js";
+
+// Get equivalent of __dirname in ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Split the SQL initialization file into sections by comments
