@@ -1,9 +1,9 @@
-import { verifyMessage } from "@wagmi/core";
-import { cookies } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
-import { SiweMessage, parseSiweMessage } from "viem/siwe";
+import {verifyMessage} from "@wagmi/core";
+import {cookies} from "next/headers";
+import {NextRequest, NextResponse} from "next/server";
+import {SiweMessage, parseSiweMessage} from "viem/siwe";
 
-import { config } from "@/wagmi-config";
+import {serverConfig} from "@/wagmi-config";
 
 const TIME_LIMIT = 24 * 3600 * 1000; // 1 day before sig expires
 
@@ -23,8 +23,8 @@ const validateMessage = async (req: NextRequest, msg: SiweMessage) => {
   }
   if (
     msg.issuedAt &&
-    new Date((msg as { issuedAt: Date }).issuedAt).getTime() <
-      Date.now() - TIME_LIMIT
+    new Date((msg as {issuedAt: Date}).issuedAt).getTime() <
+    Date.now() - TIME_LIMIT
   ) {
     throw new Error("Invalid issue date");
   }
@@ -32,19 +32,19 @@ const validateMessage = async (req: NextRequest, msg: SiweMessage) => {
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, signature } = await req.json();
+    const {message, signature} = await req.json();
 
     if (!message || !signature) {
       return NextResponse.json(
-        { error: "Missing message or signature" },
-        { status: 400 },
+        {error: "Missing message or signature"},
+        {status: 400},
       );
     }
 
     const siweMessage = parseSiweMessage(message) as SiweMessage;
     await validateMessage(req, siweMessage);
 
-    const result = await verifyMessage(config, {
+    const result = await verifyMessage(serverConfig(), {
       address: siweMessage.address as `0x${string}`,
       message: message,
       signature,
@@ -52,12 +52,12 @@ export async function POST(req: NextRequest) {
 
     if (!result) throw new Error("signature validation error");
 
-    return NextResponse.json({ ok: true, address: message.address });
+    return NextResponse.json({ok: true, address: message.address});
   } catch (err) {
     console.error("[SIWE LOGIN ERROR]", err);
     return NextResponse.json(
-      { error: "Invalid SIWE message or signature" },
-      { status: 400 },
+      {error: "Invalid SIWE message or signature"},
+      {status: 400},
     );
   }
 }

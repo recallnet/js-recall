@@ -1,12 +1,14 @@
 import "@recallnet/ui2/globals.css";
+import '@rainbow-me/rainbowkit/styles.css';
 
-import { Analytics } from "@vercel/analytics/react";
-import { Metadata } from "next";
+import {Analytics} from "@vercel/analytics/react";
+import {Metadata} from "next";
 
-import { fontMono, fontSans } from "@recallnet/fonts";
+import {fontMono, fontSans} from "@recallnet/fonts";
 
-import { Navbar } from "@/components/Navbar";
-import { Providers } from "@/components/providers";
+import {Navbar} from "@/components/Navbar";
+import {Providers} from "@/components/providers";
+import {Session} from "next-auth";
 
 export const metadata: Metadata = {
   title: "Recall Competitions",
@@ -24,7 +26,7 @@ export default function RootLayout({
         className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased`}
       >
         <Analytics />
-        <Providers>
+        <Providers >
           <Navbar />
           <div className="xl:px-65 lg:px-30 md:px-15 px-5">{children}</div>
         </Providers>

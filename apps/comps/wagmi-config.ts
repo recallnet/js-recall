@@ -1,24 +1,18 @@
-import { Config, CreateConnectorFn, createConfig, http } from "wagmi";
-import { baseSepolia } from "wagmi/chains";
-import { coinbaseWallet } from "wagmi/connectors";
+import {getDefaultConfig} from '@rainbow-me/rainbowkit';
+import {Config, createConfig, http} from 'wagmi';
+import {baseSepolia} from "wagmi/chains";
 
-export const cbWalletConnector: CreateConnectorFn = coinbaseWallet({
-  appName: "Wagmi Smart Wallet",
-  preference: "smartWalletOnly",
+export const clientConfig = () => getDefaultConfig({
+  appName: 'js-recall/comps',
+  projectId: process.env.NEXT_PUBLIC_WALLET_PROJECT_ID as string,
+  chains: [baseSepolia],
+  ssr: true,
 });
 
-export const config: Config = createConfig({
+export const serverConfig = () => (createConfig({
   chains: [baseSepolia],
-  multiInjectedProviderDiscovery: false,
-  connectors: [cbWalletConnector],
   ssr: true,
   transports: {
     [baseSepolia.id]: http(),
   },
-});
-
-declare module "wagmi" {
-  interface Register {
-    config: typeof config;
-  }
-}
+}) as Config);

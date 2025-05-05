@@ -1,27 +1,37 @@
 "use client";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {RainbowKitProvider, RainbowKitAuthenticationProvider, AuthenticationStatus} from "@rainbow-me/rainbowkit";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import * as React from "react";
-import { type ReactNode, useState } from "react";
-import { WagmiProvider } from "wagmi";
+import {type ReactNode, useState} from "react";
+import {WagmiProvider} from "wagmi";
 
-import { ThemeProvider } from "@recallnet/ui2/components/theme-provider";
+import {ThemeProvider} from "@recallnet/ui2/components/theme-provider";
 
-import { config } from "@/wagmi-config";
+import {clientConfig} from "@/wagmi-config";
+import {authAdapter} from "./siwe/auth-adapter";
 
-function WalletProvider(props: { children: ReactNode }) {
+const AUTHENTICATION_STATUS: AuthenticationStatus = 'unauthenticated'
+const CONFIG = clientConfig()
+
+function WalletProvider(props: {children: ReactNode}) {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
-    <WagmiProvider config={config}>
+    <WagmiProvider config={CONFIG}>
       <QueryClientProvider client={queryClient}>
-        {props.children}
+        <RainbowKitAuthenticationProvider
+          adapter={authAdapter}
+          status={AUTHENTICATION_STATUS}
+        >
+          <RainbowKitProvider>{props.children}</RainbowKitProvider>
+        </RainbowKitAuthenticationProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );
 }
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({children}: {children: React.ReactNode}) {
   return (
     <ThemeProvider
       attribute="class"
