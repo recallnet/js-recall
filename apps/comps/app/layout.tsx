@@ -26,8 +26,9 @@ export default function RootLayout({
       >
         <Analytics />
         <Providers >
-          <Navbar />
-          <div className="xl:px-65 lg:px-30 md:px-15 px-5">{children}</div>
+          <Navbar >
+            {children}
+          </Navbar >
         </Providers>
       </body>
     </html>

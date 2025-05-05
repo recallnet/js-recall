@@ -1,6 +1,6 @@
 "use client";
 
-import {RainbowKitProvider, RainbowKitAuthenticationProvider, AuthenticationStatus, createAuthenticationAdapter} from "@rainbow-me/rainbowkit";
+import {RainbowKitProvider, RainbowKitAuthenticationProvider, AuthenticationStatus, createAuthenticationAdapter, darkTheme} from "@rainbow-me/rainbowkit";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import React from "react";
 import {type ReactNode, useState} from "react";
@@ -76,7 +76,9 @@ function WalletProvider(props: {children: ReactNode}) {
           adapter={authAdapter}
           status={AUTHENTICATION_STATUS}
         >
-          <RainbowKitProvider>{props.children}</RainbowKitProvider>
+          <RainbowKitProvider
+            theme={darkTheme()}
+          >{props.children}</RainbowKitProvider>
         </RainbowKitAuthenticationProvider>
       </QueryClientProvider>
     </WagmiProvider>
