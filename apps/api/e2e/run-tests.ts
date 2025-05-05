@@ -4,7 +4,7 @@
  *
  * This script handles:
  * 1. Setting up the test environment
- * 2. Running Jest tests
+ * 2. Running Vitest tests
  * 3. Cleaning up afterward
  */
 import { spawnSync } from "child_process";
@@ -37,7 +37,7 @@ const log = (message: string) => {
 
 try {
   log("\n📦 Setting up test database...");
-  const dbSetupResult = spawnSync("npx", ["ts-node", "scripts/setup-db.ts"], {
+  const dbSetupResult = spawnSync("npx", ["tsx", "scripts/setup-db.ts"], {
     env: { ...process.env, NODE_ENV: "test" },
     stdio: ["inherit", logStream, logStream],
     cwd: path.resolve(__dirname, ".."),
@@ -47,19 +47,19 @@ try {
     throw new Error("Database setup failed");
   }
 
-  // Run Jest tests
+  // Run Vitest tests
   log("\n🧪 Running E2E tests...");
-  const jestResult = spawnSync(
+  const vitestResult = spawnSync(
     "npx",
-    ["jest", "-c", "e2e/jest.config.js", ...process.argv.slice(2)],
+    ["vitest", "run", "--project", "e2e", ...process.argv.slice(2)],
     {
       stdio: ["inherit", logStream, logStream],
       cwd: path.resolve(__dirname, ".."),
     },
   );
 
-  if (jestResult.status !== 0) {
-    process.exit(jestResult.status || 1);
+  if (vitestResult.status !== 0) {
+    process.exit(vitestResult.status || 1);
   }
 
   log("\n✅ E2E tests completed successfully");

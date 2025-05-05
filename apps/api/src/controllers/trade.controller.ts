@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 
-import { ApiError } from "../middleware/errorHandler";
-import { services } from "../services";
-import { BlockchainType, SpecificChain } from "../types";
+import { ApiError } from "@/middleware/errorHandler.js";
+import { services } from "@/services/index.js";
+import { BlockchainType, SpecificChain } from "@/types/index.js";
 
 /**
  * Trade Controller

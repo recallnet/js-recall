@@ -5,7 +5,7 @@ import {
   RateLimiterRes,
 } from "rate-limiter-flexible";
 
-import { ApiError } from "./errorHandler";
+import { ApiError } from "@/middleware/errorHandler.js";
 
 // Define rate limiter configurations
 const rateLimiterConfigs = {

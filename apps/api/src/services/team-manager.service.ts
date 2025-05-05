@@ -1,9 +1,9 @@
 import * as crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
 
-import { config } from "../config";
-import { repositories } from "../database";
-import { AgentMetadata, ApiAuth, Team } from "../types";
+import { config } from "@/config/index.js";
+import { repositories } from "@/database/index.js";
+import { AgentMetadata, ApiAuth, Team } from "@/types/index.js";
 
 /**
  * Team Manager Service

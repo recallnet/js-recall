@@ -1,7 +1,7 @@
-import config from "../../config";
-import { PriceReport, PriceSource } from "../../types";
-import { BlockchainType, SpecificChain } from "../../types";
-import { DexScreenerProvider } from "./dexscreener.provider";
+import config from "@/config/index.js";
+import { DexScreenerProvider } from "@/services/providers/dexscreener.provider.js";
+import { PriceReport, PriceSource } from "@/types/index.js";
+import { BlockchainType, SpecificChain } from "@/types/index.js";
 
 // Export the supported EVM chains list for use in tests
 export const supportedEvmChains: SpecificChain[] = config.evmChains;

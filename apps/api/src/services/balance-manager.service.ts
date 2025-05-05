@@ -1,6 +1,6 @@
-import { config } from "../config";
-import { repositories } from "../database";
-import { Balance, SpecificChain } from "../types";
+import { config } from "@/config/index.js";
+import { repositories } from "@/database/index.js";
+import { Balance, SpecificChain } from "@/types/index.js";
 
 /**
  * Balance Manager Service
@@ -167,11 +167,13 @@ export class BalanceManager {
    * @param teamId The team ID
    * @param tokenAddress The token address
    * @param amount The new balance amount
+   * @param specificChain The specific chain for the token
    */
   async updateBalance(
     teamId: string,
     tokenAddress: string,
     amount: number,
+    specificChain: SpecificChain,
   ): Promise<void> {
     try {
       if (amount < 0) {
@@ -183,6 +185,7 @@ export class BalanceManager {
         teamId,
         tokenAddress,
         amount,
+        specificChain,
       );
 
       // Update cache
@@ -208,14 +211,21 @@ export class BalanceManager {
    * @param teamId The team ID
    * @param tokenAddress The token address
    * @param amount The amount to add
+   * @param specificChain The specific chain for the token
    */
   async addAmount(
     teamId: string,
     tokenAddress: string,
     amount: number,
+    specificChain: SpecificChain,
   ): Promise<void> {
     const currentBalance = await this.getBalance(teamId, tokenAddress);
-    await this.updateBalance(teamId, tokenAddress, currentBalance + amount);
+    await this.updateBalance(
+      teamId,
+      tokenAddress,
+      currentBalance + amount,
+      specificChain,
+    );
   }
 
   /**
@@ -223,17 +233,24 @@ export class BalanceManager {
    * @param teamId The team ID
    * @param tokenAddress The token address
    * @param amount The amount to subtract
+   * @param specificChain The specific chain for the token
    */
   async subtractAmount(
     teamId: string,
     tokenAddress: string,
     amount: number,
+    specificChain: SpecificChain,
   ): Promise<void> {
     const currentBalance = await this.getBalance(teamId, tokenAddress);
     if (currentBalance < amount) {
       throw new Error("Insufficient balance");
     }
-    await this.updateBalance(teamId, tokenAddress, currentBalance - amount);
+    await this.updateBalance(
+      teamId,
+      tokenAddress,
+      currentBalance - amount,
+      specificChain,
+    );
   }
 
   /**

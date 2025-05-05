@@ -1,8 +1,8 @@
 import { PoolClient } from "pg";
 
-import { Team } from "../../types";
-import { BaseRepository } from "../base-repository";
-import { DatabaseRow } from "../types";
+import { BaseRepository } from "@/database/base-repository.js";
+import { DatabaseRow } from "@/database/types.js";
+import { Team } from "@/types/index.js";
 
 /**
  * Team Repository

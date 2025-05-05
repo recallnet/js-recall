@@ -20,7 +20,7 @@ import * as dotenv from "dotenv";
 import * as path from "path";
 import * as readline from "readline";
 
-import { DatabaseConnection } from "../src/database";
+import { DatabaseConnection } from "@/database/connection.js";
 
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });

@@ -1,8 +1,8 @@
 import { PoolClient } from "pg";
 
-import { BlockchainType, SpecificChain, Trade } from "../../types";
-import { BaseRepository } from "../base-repository";
-import { DatabaseRow } from "../types";
+import { BaseRepository } from "@/database/base-repository.js";
+import { DatabaseRow } from "@/database/types.js";
+import { BlockchainType, SpecificChain, Trade } from "@/types/index.js";
 
 /**
  * Trade Repository

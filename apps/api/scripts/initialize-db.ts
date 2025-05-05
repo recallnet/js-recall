@@ -1,7 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
+import { pathToFileURL } from "url";
 
-import { DatabaseConnection } from "../src/database/connection";
+import { DatabaseConnection } from "@/database/connection.js";
 
 /**
  * Split the SQL initialization file into sections by comments
@@ -116,7 +117,10 @@ export async function initializeDatabase(): Promise<void> {
 }
 
 // Run if called directly
-if (require.main === module) {
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
   initializeDatabase()
     .then(() => {
       console.log("Database initialization completed");

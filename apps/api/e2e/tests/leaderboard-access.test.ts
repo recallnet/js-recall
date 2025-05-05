@@ -1,7 +1,8 @@
 import axios from "axios";
+import { beforeEach, describe, expect, test } from "vitest";
 
-import { ErrorResponse, LeaderboardResponse } from "../utils/api-types";
-import { getBaseUrl } from "../utils/server";
+import { ErrorResponse, LeaderboardResponse } from "@/e2e/utils/api-types.js";
+import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
@@ -10,7 +11,7 @@ import {
   createTestClient,
   registerTeamAndGetClient,
   startTestCompetition,
-} from "../utils/test-helpers";
+} from "@/e2e/utils/test-helpers.js";
 
 /**
  * Leaderboard Access Control Tests

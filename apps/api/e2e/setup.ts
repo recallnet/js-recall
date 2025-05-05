@@ -9,9 +9,14 @@ import fs from "fs";
 import { Server } from "http";
 import path from "path";
 
-import { SchedulerService } from "../src/services/scheduler.service";
-import { dbManager } from "./utils/db-manager";
-import { killExistingServers, startServer, stopServer } from "./utils/server";
+import { SchedulerService } from "@/services/scheduler.service.js";
+
+import { dbManager } from "./utils/db-manager.js";
+import {
+  killExistingServers,
+  startServer,
+  stopServer,
+} from "./utils/server.js";
 
 // Store global server reference
 let server: Server;
