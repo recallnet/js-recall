@@ -2,12 +2,13 @@
 
 import React, {useState} from "react";
 import OnboardingScreen from "@/components/onboarding/screen";
+import {RegisterAgentStep} from "@/components/onboarding/register-agent";
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(0);
 
   const steps = [
-    <div key="1">Step 1 content</div>,
+    <RegisterAgentStep key='1' />,
     <div key="2">Step 2 content</div>,
     <div key="3">Step 3 content</div>,
   ];

@@ -16,6 +16,7 @@
     "docs:serve": "typedoc --watch --serve"
   },
   "dependencies": {
+    "@hookform/resolvers": "^4.0.0",
     "@radix-ui/react-icons": "^1.3.0",
     "@rainbow-me/rainbowkit": "^2.2.2",
     "@recallnet/address-utils": "workspace:*",
@@ -29,13 +30,17 @@
     "cookie": "^1.0.2",
     "date-fns": "^4.1.0",
     "ethers": "^6.13.7",
+    "formik": "^2.4.6",
     "jdenticon": "^3.3.0",
     "jotai": "^2.12.3",
     "next": "^15.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-hook-form": "^7.54.2",
     "viem": "^2.28.0",
-    "wagmi": "^2.14.8"
+    "wagmi": "^2.14.8",
+    "yup": "^1.6.1",
+    "zod": "link:@hookform/resolvers/zod"
   },
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:^",

@@ -33,7 +33,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
             />
           </Avatar>
         </Link>
-        <div className="flex flex-col items-center mt-6 w-50">
+        <div className="flex flex-col items-center mt-6 w-full">
           <span className="text-sm font-medium text-primary mb-2">GETTING STARTED</span>
           <div className="flex gap-2">
             {Array.from({length: totalSteps}).map((_, i) => (
@@ -47,7 +47,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
             ))}
           </div>
 
-          <div className="flex-1 flex items-center justify-center px-6 mt-10">
+          <div className="flex-1 flex items-center justify-center w-full">
             {steps[currentStep]}
           </div>
 
