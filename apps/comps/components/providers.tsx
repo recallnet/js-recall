@@ -1,21 +1,73 @@
 "use client";
 
-import {RainbowKitProvider, RainbowKitAuthenticationProvider, AuthenticationStatus} from "@rainbow-me/rainbowkit";
+import {RainbowKitProvider, RainbowKitAuthenticationProvider, AuthenticationStatus, createAuthenticationAdapter} from "@rainbow-me/rainbowkit";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
-import * as React from "react";
+import React from "react";
 import {type ReactNode, useState} from "react";
 import {WagmiProvider} from "wagmi";
 
 import {ThemeProvider} from "@recallnet/ui2/components/theme-provider";
 
 import {clientConfig} from "@/wagmi-config";
-import {authAdapter} from "./siwe/auth-adapter";
+import axios from "axios";
+import {useAtom} from "jotai";
+import {userAtom} from "@/state/atoms";
+import {createSiweMessage} from "viem/siwe";
 
 const AUTHENTICATION_STATUS: AuthenticationStatus = 'unauthenticated'
 const CONFIG = clientConfig()
 
 function WalletProvider(props: {children: ReactNode}) {
   const [queryClient] = useState(() => new QueryClient());
+  const [, setUser] = useAtom(userAtom);
+
+  const authAdapter = React.useMemo(() => {
+    return createAuthenticationAdapter({
+      getNonce: async () => {
+        const {data: res} = await axios<{nonce: string}>({
+          baseURL: "",
+          method: "get",
+          url: "/api/nonce",
+          headers: {
+            Accept: "application/json",
+          },
+          data: null,
+        });
+
+        return res.nonce
+      },
+      createMessage: ({nonce, address, chainId}) => {
+        return createSiweMessage({
+          domain: document.location.host,
+          address,
+          statement: 'Sign in with Ethereum to the app.',
+          uri: document.location.origin,
+          version: '1',
+          chainId,
+          nonce,
+        });
+      },
+      verify: async ({message, signature}) => {
+        const res = await axios<{ok: boolean; address: string}>({
+          baseURL: "",
+          method: "post",
+          url: "/api/login",
+          headers: {
+            Accept: "application/json",
+          },
+          data: {message, signature},
+        });
+
+        setUser({address: res.data.address, loggedIn: true})
+
+        return res.data.ok
+      },
+      signOut: async () => {
+        console.log('SIGN OUT')
+        //await fetch('/api/logout');
+      },
+    });
+  }, [setUser])
 
   return (
     <WagmiProvider config={CONFIG}>

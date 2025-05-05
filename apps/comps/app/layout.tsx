@@ -8,7 +8,6 @@ import {fontMono, fontSans} from "@recallnet/fonts";
 
 import {Navbar} from "@/components/Navbar";
 import {Providers} from "@/components/providers";
-import {Session} from "next-auth";
 
 export const metadata: Metadata = {
   title: "Recall Competitions",

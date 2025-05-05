@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     if (!result) throw new Error("signature validation error");
 
-    return NextResponse.json({ok: true, address: message.address});
+    return NextResponse.json({ok: true, address: siweMessage.address});
   } catch (err) {
     console.error("[SIWE LOGIN ERROR]", err);
     return NextResponse.json(

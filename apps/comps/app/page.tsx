@@ -3,8 +3,8 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@recallnet/ui2/components/avatar";
-import { Button } from "@recallnet/ui2/components/button";
-import { Button as ShadcnButton } from "@recallnet/ui2/components/shadcn/button";
+import {Button} from "@recallnet/ui2/components/button";
+import {Button as ShadcnButton} from "@recallnet/ui2/components/shadcn/button";
 
 export default function Page() {
   return (
