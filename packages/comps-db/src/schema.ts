@@ -35,24 +35,15 @@ export const teams = pgTable(
     }),
     createdAt: timestamp("created_at", {
       withTimezone: true,
-    }).default(sql`CURRENT_TIMESTAMP`),
+    }).defaultNow(),
     updatedAt: timestamp("updated_at", {
       withTimezone: true,
-    }).default(sql`CURRENT_TIMESTAMP`),
+    }).defaultNow(),
   },
   (table) => [
-    index("idx_teams_active").using(
-      "btree",
-      table.active.asc().nullsLast().op("bool_ops"),
-    ),
-    index("idx_teams_api_key").using(
-      "btree",
-      table.apiKey.asc().nullsLast().op("text_ops"),
-    ),
-    index("idx_teams_is_admin").using(
-      "btree",
-      table.isAdmin.asc().nullsLast().op("bool_ops"),
-    ),
+    index("idx_teams_active").on(table.active),
+    index("idx_teams_api_key").on(table.apiKey),
+    index("idx_teams_is_admin").on(table.isAdmin),
     index("idx_teams_metadata_ref_name").using(
       "btree",
       sql`(((metadata -> 'ref'::text) ->> 'name'::text))`,
@@ -72,20 +63,17 @@ export const competitions = pgTable(
     startDate: timestamp("start_date", { withTimezone: true }),
     endDate: timestamp("end_date", { withTimezone: true }),
     status: varchar({ length: 20 }).notNull(),
-    allowCrossChainTrading: boolean().notNull().default(false),
+    allowCrossChainTrading: boolean("allow_cross_chain_trading")
+      .notNull()
+      .default(false),
     createdAt: timestamp("created_at", {
       withTimezone: true,
-    }).default(sql`CURRENT_TIMESTAMP`),
+    }).defaultNow(),
     updatedAt: timestamp("updated_at", {
       withTimezone: true,
-    }).default(sql`CURRENT_TIMESTAMP`),
+    }).defaultNow(),
   },
-  (table) => [
-    index("idx_competitions_status").using(
-      "btree",
-      table.status.asc().nullsLast().op("text_ops"),
-    ),
-  ],
+  (table) => [index("idx_competitions_status").on(table.status)],
 );
 
 export const competitionTeams = pgTable(
@@ -95,7 +83,7 @@ export const competitionTeams = pgTable(
     teamId: uuid("team_id").notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
-    }).default(sql`CURRENT_TIMESTAMP`),
+    }).defaultNow(),
   },
   (table) => [
     foreignKey({
@@ -124,21 +112,15 @@ export const balances = pgTable(
     amount: numeric({ precision: 30, scale: 15, mode: "number" }).notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
-    }).default(sql`CURRENT_TIMESTAMP`),
+    }).defaultNow(),
     updatedAt: timestamp("updated_at", {
       withTimezone: true,
-    }).default(sql`CURRENT_TIMESTAMP`),
+    }).defaultNow(),
     specificChain: varchar("specific_chain", { length: 20 }),
   },
   (table) => [
-    index("idx_balances_specific_chain").using(
-      "btree",
-      table.specificChain.asc().nullsLast().op("text_ops"),
-    ),
-    index("idx_balances_team_id").using(
-      "btree",
-      table.teamId.asc().nullsLast().op("uuid_ops"),
-    ),
+    index("idx_balances_specific_chain").on(table.specificChain),
+    index("idx_balances_team_id").on(table.teamId),
     foreignKey({
       columns: [table.teamId],
       foreignColumns: [teams.id],
@@ -173,43 +155,20 @@ export const trades = pgTable(
     success: boolean().notNull(),
     error: text(),
     reason: text().notNull(),
-    timestamp: timestamp({ withTimezone: true }).default(
-      sql`CURRENT_TIMESTAMP`,
-    ),
+    timestamp: timestamp({ withTimezone: true }).defaultNow(),
     fromChain: varchar("from_chain", { length: 10 }),
     toChain: varchar("to_chain", { length: 10 }),
     fromSpecificChain: varchar("from_specific_chain", { length: 20 }),
     toSpecificChain: varchar("to_specific_chain", { length: 20 }),
   },
   (table) => [
-    index("idx_trades_competition_id").using(
-      "btree",
-      table.competitionId.asc().nullsLast().op("uuid_ops"),
-    ),
-    index("idx_trades_from_chain").using(
-      "btree",
-      table.fromChain.asc().nullsLast().op("text_ops"),
-    ),
-    index("idx_trades_from_specific_chain").using(
-      "btree",
-      table.fromSpecificChain.asc().nullsLast().op("text_ops"),
-    ),
-    index("idx_trades_team_id").using(
-      "btree",
-      table.teamId.asc().nullsLast().op("uuid_ops"),
-    ),
-    index("idx_trades_timestamp").using(
-      "btree",
-      table.timestamp.asc().nullsLast().op("timestamptz_ops"),
-    ),
-    index("idx_trades_to_chain").using(
-      "btree",
-      table.toChain.asc().nullsLast().op("text_ops"),
-    ),
-    index("idx_trades_to_specific_chain").using(
-      "btree",
-      table.toSpecificChain.asc().nullsLast().op("text_ops"),
-    ),
+    index("idx_trades_competition_id").on(table.competitionId),
+    index("idx_trades_from_chain").on(table.fromChain),
+    index("idx_trades_from_specific_chain").on(table.fromSpecificChain),
+    index("idx_trades_team_id").on(table.teamId),
+    index("idx_trades_timestamp").on(table.timestamp),
+    index("idx_trades_to_chain").on(table.toChain),
+    index("idx_trades_to_specific_chain").on(table.toSpecificChain),
     foreignKey({
       columns: [table.teamId],
       foreignColumns: [teams.id],
@@ -229,44 +188,21 @@ export const prices = pgTable(
     id: serial().primaryKey().notNull(),
     token: varchar({ length: 50 }).notNull(),
     price: numeric({ precision: 30, scale: 15, mode: "number" }).notNull(),
-    timestamp: timestamp({ withTimezone: true }).default(
-      sql`CURRENT_TIMESTAMP`,
-    ),
+    timestamp: timestamp({ withTimezone: true }).defaultNow(),
     chain: varchar({ length: 10 }),
     specificChain: varchar("specific_chain", { length: 20 }),
   },
   (table) => [
-    index("idx_prices_chain").using(
-      "btree",
-      table.chain.asc().nullsLast().op("text_ops"),
+    index("idx_prices_chain").on(table.chain),
+    index("idx_prices_specific_chain").on(table.specificChain),
+    index("idx_prices_timestamp").on(table.timestamp),
+    index("idx_prices_token").on(table.token),
+    index("idx_prices_token_chain").on(table.token, table.chain),
+    index("idx_prices_token_specific_chain").on(
+      table.token,
+      table.specificChain,
     ),
-    index("idx_prices_specific_chain").using(
-      "btree",
-      table.specificChain.asc().nullsLast().op("text_ops"),
-    ),
-    index("idx_prices_timestamp").using(
-      "btree",
-      table.timestamp.asc().nullsLast().op("timestamptz_ops"),
-    ),
-    index("idx_prices_token").using(
-      "btree",
-      table.token.asc().nullsLast().op("text_ops"),
-    ),
-    index("idx_prices_token_chain").using(
-      "btree",
-      table.token.asc().nullsLast().op("text_ops"),
-      table.chain.asc().nullsLast().op("text_ops"),
-    ),
-    index("idx_prices_token_specific_chain").using(
-      "btree",
-      table.token.asc().nullsLast().op("text_ops"),
-      table.specificChain.asc().nullsLast().op("text_ops"),
-    ),
-    index("idx_prices_token_timestamp").using(
-      "btree",
-      table.token.asc().nullsLast().op("timestamptz_ops"),
-      table.timestamp.asc().nullsLast().op("timestamptz_ops"),
-    ),
+    index("idx_prices_token_timestamp").on(table.token, table.timestamp),
   ],
 );
 
@@ -276,9 +212,7 @@ export const portfolioSnapshots = pgTable(
     id: serial().primaryKey().notNull(),
     teamId: uuid("team_id").notNull(),
     competitionId: uuid("competition_id").notNull(),
-    timestamp: timestamp({ withTimezone: true }).default(
-      sql`CURRENT_TIMESTAMP`,
-    ),
+    timestamp: timestamp({ withTimezone: true }).defaultNow(),
     totalValue: numeric("total_value", {
       precision: 30,
       scale: 15,
@@ -286,15 +220,11 @@ export const portfolioSnapshots = pgTable(
     }).notNull(),
   },
   (table) => [
-    index("idx_portfolio_snapshots_team_competition").using(
-      "btree",
-      table.teamId.asc().nullsLast().op("uuid_ops"),
-      table.competitionId.asc().nullsLast().op("uuid_ops"),
+    index("idx_portfolio_snapshots_team_competition").on(
+      table.teamId,
+      table.competitionId,
     ),
-    index("idx_portfolio_snapshots_timestamp").using(
-      "btree",
-      table.timestamp.asc().nullsLast().op("timestamptz_ops"),
-    ),
+    index("idx_portfolio_snapshots_timestamp").on(table.timestamp),
     foreignKey({
       columns: [table.teamId],
       foreignColumns: [teams.id],
@@ -324,14 +254,10 @@ export const portfolioTokenValues = pgTable(
     specificChain: varchar("specific_chain", { length: 20 }),
   },
   (table) => [
-    index("idx_portfolio_token_values_snapshot_id").using(
-      "btree",
-      table.portfolioSnapshotId.asc().nullsLast().op("int4_ops"),
+    index("idx_portfolio_token_values_snapshot_id").on(
+      table.portfolioSnapshotId,
     ),
-    index("idx_portfolio_token_values_specific_chain").using(
-      "btree",
-      table.specificChain.asc().nullsLast().op("text_ops"),
-    ),
+    index("idx_portfolio_token_values_specific_chain").on(table.specificChain),
     foreignKey({
       columns: [table.portfolioSnapshotId],
       foreignColumns: [portfolioSnapshots.id],

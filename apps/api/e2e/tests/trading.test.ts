@@ -25,8 +25,10 @@ import {
   startTestCompetition,
   wait,
 } from "@/e2e/utils/test-helpers.js";
-import { services } from "@/services/index.js";
+import { ServiceRegistry } from "@/services/index.js";
 import { BlockchainType } from "@/types/index.js";
+
+const services = ServiceRegistry.getInstance();
 
 const reason = "trading end-to-end test";
 

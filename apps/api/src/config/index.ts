@@ -142,13 +142,10 @@ export const config = {
     nodeEnv: process.env.NODE_ENV || "development",
   },
   database: {
-    host: process.env.DB_HOST || "localhost",
-    port: parseInt(process.env.DB_PORT || "5432", 10),
-    username: process.env.DB_USERNAME || "postgres",
-    password: process.env.DB_PASSWORD || "postgres",
-    database: process.env.DB_NAME || "solana_trading_simulator",
     ssl: process.env.DB_SSL === "true",
-    url: process.env.POSTGRES_URL,
+    url:
+      process.env.DATABASE_URL ||
+      "postgresql://postgres:postgres@localhost:5432/trading_simulator?ssl=true",
   },
   redis: {
     url: process.env.REDIS_URL || "redis://localhost:6379",

@@ -4,9 +4,6 @@ import {
   InsertCompetition,
   type InsertPortfolioSnapshot,
   type InsertPortfolioTokenValue,
-  type SelectCompetition,
-  type SelectPortfolioSnapshot,
-  type SelectPortfolioTokenValue,
   competitionTeams,
   competitions,
   portfolioSnapshots,
@@ -46,18 +43,18 @@ export class CompetitionRepository extends BaseRepository {
    * Create a new competition
    * @param competition Competition to create
    */
-  async create(competition: InsertCompetition): Promise<SelectCompetition> {
+  async create(competition: InsertCompetition) {
     try {
-      const result = await this.dbConn.db
+      const [result] = await this.dbConn.db
         .insert(competitions)
         .values(competition)
         .returning();
 
-      if (!result[0]) {
+      if (!result) {
         throw new Error("Failed to create competition - no result returned");
       }
 
-      return result[0];
+      return result;
     } catch (error) {
       console.error("[CompetitionRepository] Error in create:", error);
       throw error;
@@ -68,9 +65,9 @@ export class CompetitionRepository extends BaseRepository {
    * Update an existing competition
    * @param competition Competition to update
    */
-  async update(competition: InsertCompetition): Promise<SelectCompetition> {
+  async update(competition: InsertCompetition) {
     try {
-      const result = await this.dbConn.db
+      const [result] = await this.dbConn.db
         .update(competitions)
         .set({
           name: competition.name,
@@ -83,11 +80,11 @@ export class CompetitionRepository extends BaseRepository {
         .where(eq(competitions.id, competition.id))
         .returning();
 
-      if (!result[0]) {
+      if (!result) {
         throw new Error(`Competition with ID ${competition.id} not found`);
       }
 
-      return result[0];
+      return result;
     } catch (error) {
       console.error("[CompetitionRepository] Error in update:", error);
       throw error;
@@ -99,10 +96,7 @@ export class CompetitionRepository extends BaseRepository {
    * @param competitionId Competition ID
    * @param teamId Team ID to add
    */
-  async addTeamToCompetition(
-    competitionId: string,
-    teamId: string,
-  ): Promise<void> {
+  async addTeamToCompetition(competitionId: string, teamId: string) {
     try {
       await this.dbConn.db
         .insert(competitionTeams)
@@ -125,7 +119,7 @@ export class CompetitionRepository extends BaseRepository {
    * @param competitionId Competition ID
    * @param teamIds Array of team IDs
    */
-  async addTeams(competitionId: string, teamIds: string[]): Promise<void> {
+  async addTeams(competitionId: string, teamIds: string[]) {
     try {
       await this.dbConn.db.transaction(async (tx) => {
         for (const teamId of teamIds) {
@@ -148,7 +142,7 @@ export class CompetitionRepository extends BaseRepository {
    * Get teams in a competition
    * @param competitionId Competition ID
    */
-  async getTeams(competitionId: string): Promise<string[]> {
+  async getTeams(competitionId: string) {
     try {
       const result = await this.dbConn.db
         .select({ teamId: competitionTeams.teamId })
@@ -166,22 +160,22 @@ export class CompetitionRepository extends BaseRepository {
    * Alias for getTeams for better semantic naming
    * @param competitionId Competition ID
    */
-  async getCompetitionTeams(competitionId: string): Promise<string[]> {
+  async getCompetitionTeams(competitionId: string) {
     return this.getTeams(competitionId);
   }
 
   /**
    * Find active competition
    */
-  async findActive(): Promise<SelectCompetition | null> {
+  async findActive() {
     try {
-      const result = await this.dbConn.db
+      const [result] = await this.dbConn.db
         .select()
         .from(competitions)
         .where(eq(competitions.status, CompetitionStatus.ACTIVE))
         .limit(1);
 
-      return result[0] || null;
+      return result;
     } catch (error) {
       console.error("[CompetitionRepository] Error in findActive:", error);
       throw error;
@@ -192,22 +186,20 @@ export class CompetitionRepository extends BaseRepository {
    * Create a portfolio snapshot
    * @param snapshot Portfolio snapshot data
    */
-  async createPortfolioSnapshot(
-    snapshot: InsertPortfolioSnapshot,
-  ): Promise<SelectPortfolioSnapshot> {
+  async createPortfolioSnapshot(snapshot: InsertPortfolioSnapshot) {
     try {
-      const result = await this.dbConn.db
+      const [result] = await this.dbConn.db
         .insert(portfolioSnapshots)
         .values(snapshot)
         .returning();
 
-      if (!result[0]) {
+      if (!result) {
         throw new Error(
           "Failed to create portfolio snapshot - no result returned",
         );
       }
 
-      return result[0];
+      return result;
     } catch (error) {
       console.error(
         "[CompetitionRepository] Error in createPortfolioSnapshot:",
@@ -221,22 +213,20 @@ export class CompetitionRepository extends BaseRepository {
    * Create a portfolio token value
    * @param tokenValue Portfolio token value data
    */
-  async createPortfolioTokenValue(
-    tokenValue: InsertPortfolioTokenValue,
-  ): Promise<SelectPortfolioTokenValue> {
+  async createPortfolioTokenValue(tokenValue: InsertPortfolioTokenValue) {
     try {
-      const result = await this.dbConn.db
+      const [result] = await this.dbConn.db
         .insert(portfolioTokenValues)
         .values(tokenValue)
         .returning();
 
-      if (!result[0]) {
+      if (!result) {
         throw new Error(
           "Failed to create portfolio token value - no result returned",
         );
       }
 
-      return result[0];
+      return result;
     } catch (error) {
       console.error(
         "[CompetitionRepository] Error in createPortfolioTokenValue:",
@@ -250,9 +240,7 @@ export class CompetitionRepository extends BaseRepository {
    * Get latest portfolio snapshots for all teams in a competition
    * @param competitionId Competition ID
    */
-  async getLatestPortfolioSnapshots(
-    competitionId: string,
-  ): Promise<SelectPortfolioSnapshot[]> {
+  async getLatestPortfolioSnapshots(competitionId: string) {
     try {
       const subquery = this.dbConn.db
         .select({
@@ -290,10 +278,7 @@ export class CompetitionRepository extends BaseRepository {
    * @param competitionId Competition ID
    * @param teamId Team ID
    */
-  async getTeamPortfolioSnapshots(
-    competitionId: string,
-    teamId: string,
-  ): Promise<SelectPortfolioSnapshot[]> {
+  async getTeamPortfolioSnapshots(competitionId: string, teamId: string) {
     try {
       return await this.dbConn.db
         .select()
@@ -315,9 +300,7 @@ export class CompetitionRepository extends BaseRepository {
    * Get portfolio token values for a snapshot
    * @param snapshotId Snapshot ID
    */
-  async getPortfolioTokenValues(
-    snapshotId: number,
-  ): Promise<SelectPortfolioTokenValue[]> {
+  async getPortfolioTokenValues(snapshotId: number) {
     try {
       return await this.dbConn.db
         .select()
@@ -335,13 +318,13 @@ export class CompetitionRepository extends BaseRepository {
   /**
    * Count total number of competitions
    */
-  async count(): Promise<number> {
+  async count() {
     try {
-      const result = await this.dbConn.db
+      const [result] = await this.dbConn.db
         .select({ count: sql<number>`count(*)` })
         .from(competitions);
 
-      return result[0]?.count ?? 0;
+      return result?.count ?? 0;
     } catch (error) {
       console.error("[CompetitionRepository] Error in count:", error);
       throw error;
@@ -352,7 +335,7 @@ export class CompetitionRepository extends BaseRepository {
    * Find competitions by status
    * @param status Competition status
    */
-  async findByStatus(status: CompetitionStatus): Promise<SelectCompetition[]> {
+  async findByStatus(status: CompetitionStatus) {
     try {
       return await this.dbConn.db
         .select()

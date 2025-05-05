@@ -1,6 +1,5 @@
 import { config } from "@/config/index.js";
 import { repositories } from "@/database/index.js";
-import { PriceRecord } from "@/database/types.js";
 import { MultiChainProvider } from "@/services/providers/multi-chain.provider.js";
 import {
   BlockchainType,
@@ -90,7 +89,7 @@ export class PriceTracker {
     tokenAddress: string,
     blockchainType?: BlockchainType,
     specificChain?: SpecificChain,
-  ): Promise<PriceReport | null> {
+  ) {
     console.log(`[PriceTracker] Getting price for token: ${tokenAddress}`);
 
     // Determine which chain this token belongs to if not provided
@@ -197,11 +196,7 @@ export class PriceTracker {
     tokenAddress: string,
     blockchainType?: BlockchainType,
     specificChain?: SpecificChain,
-  ): Promise<{
-    price: number;
-    chain: BlockchainType;
-    specificChain: SpecificChain;
-  } | null> {
+  ) {
     console.log(
       `[PriceTracker] Getting detailed token info for: ${tokenAddress}`,
     );

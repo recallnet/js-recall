@@ -1,6 +1,6 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { count, desc, eq, sql } from "drizzle-orm";
 
-import { type SelectTrade, trades } from "@recallnet/comps-db/schema";
+import { InsertTrade, trades } from "@recallnet/comps-db/schema";
 
 import { BaseRepository } from "@/database/base-repository.js";
 
@@ -17,18 +17,18 @@ export class TradeRepository extends BaseRepository {
    * Create a new trade
    * @param trade Trade to create
    */
-  async create(trade: SelectTrade): Promise<SelectTrade> {
+  async create(trade: InsertTrade) {
     try {
-      const result = await this.dbConn.db
+      const [result] = await this.dbConn.db
         .insert(trades)
         .values(trade)
         .returning();
 
-      if (!result[0]) {
+      if (!result) {
         throw new Error("Failed to create trade - no result returned");
       }
 
-      return result[0];
+      return result;
     } catch (error) {
       console.error("[TradeRepository] Error in create:", error);
       throw error;
@@ -41,11 +41,7 @@ export class TradeRepository extends BaseRepository {
    * @param limit Optional result limit
    * @param offset Optional result offset
    */
-  async getTeamTrades(
-    teamId: string,
-    limit?: number,
-    offset?: number,
-  ): Promise<SelectTrade[]> {
+  async getTeamTrades(teamId: string, limit?: number, offset?: number) {
     try {
       const query = this.dbConn.db
         .select()
@@ -78,7 +74,7 @@ export class TradeRepository extends BaseRepository {
     competitionId: string,
     limit?: number,
     offset?: number,
-  ): Promise<SelectTrade[]> {
+  ) {
     try {
       const query = this.dbConn.db
         .select()
@@ -105,16 +101,32 @@ export class TradeRepository extends BaseRepository {
    * Count trades for a team
    * @param teamId Team ID
    */
-  async countTeamTrades(teamId: string): Promise<number> {
+  async countTeamTrades(teamId: string) {
     try {
-      const result = await this.dbConn.db
+      const [result] = await this.dbConn.db
         .select({ count: sql<number>`count(*)` })
         .from(trades)
         .where(eq(trades.teamId, teamId));
 
-      return result[0]?.count ?? 0;
+      return result?.count ?? 0;
     } catch (error) {
       console.error("[TradeRepository] Error in countTeamTrades:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Count all trades
+   */
+  async count() {
+    try {
+      const [result] = await this.dbConn.db
+        .select({ count: count() })
+        .from(trades);
+
+      return result?.count ?? 0;
+    } catch (error) {
+      console.error("[TradeRepository] Error in count:", error);
       throw error;
     }
   }

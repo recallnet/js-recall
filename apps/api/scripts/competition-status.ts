@@ -3,8 +3,10 @@ import * as path from "path";
 
 import { DatabaseConnection } from "@/database/connection.js";
 import { repositories } from "@/database/index.js";
-import { services } from "@/services/index.js";
-import { Competition, CompetitionStatus } from "@/types/index.js";
+import { ServiceRegistry } from "@/services/index.js";
+import { CompetitionStatus } from "@/types/index.js";
+
+const services = ServiceRegistry.getInstance();
 
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
@@ -90,14 +92,14 @@ async function showCompetitionStatus() {
       const pastCompetitions =
         await repositories.competitionRepository.findAll();
       const completedCompetitions = pastCompetitions.filter(
-        (c: Competition) => c.status === CompetitionStatus.COMPLETED,
+        (c) => c.status === CompetitionStatus.COMPLETED,
       );
 
       if (completedCompetitions.length > 0) {
         console.log(
           `\n${colors.blue}Previous completed competitions:${colors.reset}`,
         );
-        completedCompetitions.forEach((comp: Competition, index: number) => {
+        completedCompetitions.forEach((comp, index) => {
           const startDateValue = comp.startDate as string | Date | undefined;
           const endDateValue = comp.endDate as string | Date | undefined;
           console.log(
@@ -240,7 +242,7 @@ async function showCompetitionStatus() {
           // Sort by timestamp and get the first one (initial snapshot)
           const sortedSnapshots = snapshots.sort(
             (a, b) =>
-              new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+              (a.timestamp?.getTime() ?? 0) - (b.timestamp?.getTime() ?? 0),
           );
 
           if (sortedSnapshots.length > 0) {

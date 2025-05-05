@@ -1,40 +1,9 @@
 {
-  "id": "00000000-0000-0000-0000-000000000000",
-  "prevId": "",
+  "id": "b278ed27-95cd-410a-a65d-9eb23511b7d6",
+  "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.playing_with_neon": {
-      "name": "playing_with_neon",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "value": {
-          "name": "value",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {},
-      "policies": {},
-      "isRLSEnabled": false
-    },
     "public.balances": {
       "name": "balances",
       "schema": "",
@@ -68,14 +37,14 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "now()"
         },
         "specific_chain": {
           "name": "specific_chain",
@@ -90,10 +59,9 @@
           "columns": [
             {
               "expression": "specific_chain",
+              "isExpression": false,
               "asc": true,
-              "nulls": "last",
-              "opclass": "text_ops",
-              "isExpression": false
+              "nulls": "last"
             }
           ],
           "isUnique": false,
@@ -106,10 +74,9 @@
           "columns": [
             {
               "expression": "team_id",
+              "isExpression": false,
               "asc": true,
-              "nulls": "last",
-              "opclass": "uuid_ops",
-              "isExpression": false
+              "nulls": "last"
             }
           ],
           "isUnique": false,
@@ -123,7 +90,6 @@
           "name": "balances_team_id_fkey",
           "tableFrom": "balances",
           "tableTo": "teams",
-          "schemaTo": "public",
           "columnsFrom": [
             "team_id"
           ],
@@ -137,26 +103,26 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "balances_team_id_token_address_key": {
+          "name": "balances_team_id_token_address_key",
+          "nullsNotDistinct": false,
           "columns": [
             "team_id",
             "token_address"
-          ],
-          "nullsNotDistinct": false,
-          "name": "balances_team_id_token_address_key"
+          ]
         }
       },
-      "checkConstraints": {},
       "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.trades": {
-      "name": "trades",
+    "public.competition_teams": {
+      "name": "competition_teams",
       "schema": "",
       "columns": {
-        "id": {
-          "name": "id",
+        "competition_id": {
+          "name": "competition_id",
           "type": "uuid",
-          "primaryKey": true,
+          "primaryKey": false,
           "notNull": true
         },
         "team_id": {
@@ -165,226 +131,20 @@
           "primaryKey": false,
           "notNull": true
         },
-        "competition_id": {
-          "name": "competition_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "from_token": {
-          "name": "from_token",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "to_token": {
-          "name": "to_token",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "from_amount": {
-          "name": "from_amount",
-          "type": "numeric(30, 15)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "to_amount": {
-          "name": "to_amount",
-          "type": "numeric(30, 15)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "price": {
-          "name": "price",
-          "type": "numeric(30, 15)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "success": {
-          "name": "success",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "error": {
-          "name": "error",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "reason": {
-          "name": "reason",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "timestamp": {
-          "name": "timestamp",
+        "created_at": {
+          "name": "created_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "default": "CURRENT_TIMESTAMP"
-        },
-        "from_chain": {
-          "name": "from_chain",
-          "type": "varchar(10)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "to_chain": {
-          "name": "to_chain",
-          "type": "varchar(10)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "from_specific_chain": {
-          "name": "from_specific_chain",
-          "type": "varchar(20)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "to_specific_chain": {
-          "name": "to_specific_chain",
-          "type": "varchar(20)",
-          "primaryKey": false,
-          "notNull": false
+          "default": "now()"
         }
       },
-      "indexes": {
-        "idx_trades_competition_id": {
-          "name": "idx_trades_competition_id",
-          "columns": [
-            {
-              "expression": "competition_id",
-              "asc": true,
-              "nulls": "last",
-              "opclass": "uuid_ops",
-              "isExpression": false
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_trades_from_chain": {
-          "name": "idx_trades_from_chain",
-          "columns": [
-            {
-              "expression": "from_chain",
-              "asc": true,
-              "nulls": "last",
-              "opclass": "text_ops",
-              "isExpression": false
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_trades_from_specific_chain": {
-          "name": "idx_trades_from_specific_chain",
-          "columns": [
-            {
-              "expression": "from_specific_chain",
-              "asc": true,
-              "nulls": "last",
-              "opclass": "text_ops",
-              "isExpression": false
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_trades_team_id": {
-          "name": "idx_trades_team_id",
-          "columns": [
-            {
-              "expression": "team_id",
-              "asc": true,
-              "nulls": "last",
-              "opclass": "uuid_ops",
-              "isExpression": false
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_trades_timestamp": {
-          "name": "idx_trades_timestamp",
-          "columns": [
-            {
-              "expression": "timestamp",
-              "asc": true,
-              "nulls": "last",
-              "opclass": "timestamptz_ops",
-              "isExpression": false
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_trades_to_chain": {
-          "name": "idx_trades_to_chain",
-          "columns": [
-            {
-              "expression": "to_chain",
-              "asc": true,
-              "nulls": "last",
-              "opclass": "text_ops",
-              "isExpression": false
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_trades_to_specific_chain": {
-          "name": "idx_trades_to_specific_chain",
-          "columns": [
-            {
-              "expression": "to_specific_chain",
-              "asc": true,
-              "nulls": "last",
-              "opclass": "text_ops",
-              "isExpression": false
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
-        "trades_team_id_fkey": {
-          "name": "trades_team_id_fkey",
-          "tableFrom": "trades",
-          "tableTo": "teams",
-          "schemaTo": "public",
-          "columnsFrom": [
-            "team_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "trades_competition_id_fkey": {
-          "name": "trades_competition_id_fkey",
-          "tableFrom": "trades",
+        "competition_teams_competition_id_fkey": {
+          "name": "competition_teams_competition_id_fkey",
+          "tableFrom": "competition_teams",
           "tableTo": "competitions",
-          "schemaTo": "public",
           "columnsFrom": [
             "competition_id"
           ],
@@ -393,183 +153,106 @@
           ],
           "onDelete": "cascade",
           "onUpdate": "no action"
+        },
+        "competition_teams_team_id_fkey": {
+          "name": "competition_teams_team_id_fkey",
+          "tableFrom": "competition_teams",
+          "tableTo": "teams",
+          "columnsFrom": [
+            "team_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "competition_teams_pkey": {
+          "name": "competition_teams_pkey",
+          "columns": [
+            "competition_id",
+            "team_id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
-      "checkConstraints": {},
       "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.prices": {
-      "name": "prices",
+    "public.competitions": {
+      "name": "competitions",
       "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
-        "token": {
-          "name": "token",
-          "type": "varchar(50)",
+        "name": {
+          "name": "name",
+          "type": "varchar(100)",
           "primaryKey": false,
           "notNull": true
         },
-        "price": {
-          "name": "price",
-          "type": "numeric(30, 15)",
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "end_date": {
+          "name": "end_date",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(20)",
           "primaryKey": false,
           "notNull": true
         },
-        "timestamp": {
-          "name": "timestamp",
+        "allow_cross_chain_trading": {
+          "name": "allow_cross_chain_trading",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "now()"
         },
-        "chain": {
-          "name": "chain",
-          "type": "varchar(10)",
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false
-        },
-        "specific_chain": {
-          "name": "specific_chain",
-          "type": "varchar(20)",
-          "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "default": "now()"
         }
       },
       "indexes": {
-        "idx_prices_chain": {
-          "name": "idx_prices_chain",
+        "idx_competitions_status": {
+          "name": "idx_competitions_status",
           "columns": [
             {
-              "expression": "chain",
+              "expression": "status",
+              "isExpression": false,
               "asc": true,
-              "nulls": "last",
-              "opclass": "text_ops",
-              "isExpression": false
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_prices_specific_chain": {
-          "name": "idx_prices_specific_chain",
-          "columns": [
-            {
-              "expression": "specific_chain",
-              "asc": true,
-              "nulls": "last",
-              "opclass": "text_ops",
-              "isExpression": false
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_prices_timestamp": {
-          "name": "idx_prices_timestamp",
-          "columns": [
-            {
-              "expression": "timestamp",
-              "asc": true,
-              "nulls": "last",
-              "opclass": "timestamptz_ops",
-              "isExpression": false
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_prices_token": {
-          "name": "idx_prices_token",
-          "columns": [
-            {
-              "expression": "token",
-              "asc": true,
-              "nulls": "last",
-              "opclass": "text_ops",
-              "isExpression": false
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_prices_token_chain": {
-          "name": "idx_prices_token_chain",
-          "columns": [
-            {
-              "expression": "token",
-              "asc": true,
-              "nulls": "last",
-              "opclass": "text_ops",
-              "isExpression": false
-            },
-            {
-              "expression": "chain",
-              "asc": true,
-              "nulls": "last",
-              "opclass": "text_ops",
-              "isExpression": false
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_prices_token_specific_chain": {
-          "name": "idx_prices_token_specific_chain",
-          "columns": [
-            {
-              "expression": "token",
-              "asc": true,
-              "nulls": "last",
-              "opclass": "text_ops",
-              "isExpression": false
-            },
-            {
-              "expression": "specific_chain",
-              "asc": true,
-              "nulls": "last",
-              "opclass": "text_ops",
-              "isExpression": false
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_prices_token_timestamp": {
-          "name": "idx_prices_token_timestamp",
-          "columns": [
-            {
-              "expression": "token",
-              "asc": true,
-              "nulls": "last",
-              "opclass": "timestamptz_ops",
-              "isExpression": false
-            },
-            {
-              "expression": "timestamp",
-              "asc": true,
-              "nulls": "last",
-              "opclass": "timestamptz_ops",
-              "isExpression": false
+              "nulls": "last"
             }
           ],
           "isUnique": false,
@@ -581,8 +264,8 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {},
       "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.portfolio_snapshots": {
@@ -612,7 +295,7 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "now()"
         },
         "total_value": {
           "name": "total_value",
@@ -627,17 +310,15 @@
           "columns": [
             {
               "expression": "team_id",
+              "isExpression": false,
               "asc": true,
-              "nulls": "last",
-              "opclass": "uuid_ops",
-              "isExpression": false
+              "nulls": "last"
             },
             {
               "expression": "competition_id",
+              "isExpression": false,
               "asc": true,
-              "nulls": "last",
-              "opclass": "uuid_ops",
-              "isExpression": false
+              "nulls": "last"
             }
           ],
           "isUnique": false,
@@ -650,10 +331,9 @@
           "columns": [
             {
               "expression": "timestamp",
+              "isExpression": false,
               "asc": true,
-              "nulls": "last",
-              "opclass": "timestamptz_ops",
-              "isExpression": false
+              "nulls": "last"
             }
           ],
           "isUnique": false,
@@ -667,7 +347,6 @@
           "name": "portfolio_snapshots_team_id_fkey",
           "tableFrom": "portfolio_snapshots",
           "tableTo": "teams",
-          "schemaTo": "public",
           "columnsFrom": [
             "team_id"
           ],
@@ -681,7 +360,6 @@
           "name": "portfolio_snapshots_competition_id_fkey",
           "tableFrom": "portfolio_snapshots",
           "tableTo": "competitions",
-          "schemaTo": "public",
           "columnsFrom": [
             "competition_id"
           ],
@@ -694,8 +372,8 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {},
       "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.portfolio_token_values": {
@@ -751,10 +429,9 @@
           "columns": [
             {
               "expression": "portfolio_snapshot_id",
+              "isExpression": false,
               "asc": true,
-              "nulls": "last",
-              "opclass": "int4_ops",
-              "isExpression": false
+              "nulls": "last"
             }
           ],
           "isUnique": false,
@@ -767,10 +444,9 @@
           "columns": [
             {
               "expression": "specific_chain",
+              "isExpression": false,
               "asc": true,
-              "nulls": "last",
-              "opclass": "text_ops",
-              "isExpression": false
+              "nulls": "last"
             }
           ],
           "isUnique": false,
@@ -784,7 +460,6 @@
           "name": "portfolio_token_values_portfolio_snapshot_id_fkey",
           "tableFrom": "portfolio_token_values",
           "tableTo": "portfolio_snapshots",
-          "schemaTo": "public",
           "columnsFrom": [
             "portfolio_snapshot_id"
           ],
@@ -797,75 +472,169 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {},
       "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.competitions": {
-      "name": "competitions",
+    "public.prices": {
+      "name": "prices",
       "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "serial",
           "primaryKey": true,
           "notNull": true
         },
-        "name": {
-          "name": "name",
-          "type": "varchar(100)",
+        "token": {
+          "name": "token",
+          "type": "varchar(50)",
           "primaryKey": false,
           "notNull": true
         },
-        "description": {
-          "name": "description",
-          "type": "text",
+        "price": {
+          "name": "price",
+          "type": "numeric(30, 15)",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
-        "start_date": {
-          "name": "start_date",
+        "timestamp": {
+          "name": "timestamp",
           "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "default": "now()"
         },
-        "end_date": {
-          "name": "end_date",
-          "type": "timestamp with time zone",
+        "chain": {
+          "name": "chain",
+          "type": "varchar(10)",
           "primaryKey": false,
           "notNull": false
         },
-        "status": {
-          "name": "status",
+        "specific_chain": {
+          "name": "specific_chain",
           "type": "varchar(20)",
           "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "CURRENT_TIMESTAMP"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "CURRENT_TIMESTAMP"
+          "notNull": false
         }
       },
       "indexes": {
-        "idx_competitions_status": {
-          "name": "idx_competitions_status",
+        "idx_prices_chain": {
+          "name": "idx_prices_chain",
           "columns": [
             {
-              "expression": "status",
+              "expression": "chain",
+              "isExpression": false,
               "asc": true,
-              "nulls": "last",
-              "opclass": "text_ops",
-              "isExpression": false
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_prices_specific_chain": {
+          "name": "idx_prices_specific_chain",
+          "columns": [
+            {
+              "expression": "specific_chain",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_prices_timestamp": {
+          "name": "idx_prices_timestamp",
+          "columns": [
+            {
+              "expression": "timestamp",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_prices_token": {
+          "name": "idx_prices_token",
+          "columns": [
+            {
+              "expression": "token",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_prices_token_chain": {
+          "name": "idx_prices_token_chain",
+          "columns": [
+            {
+              "expression": "token",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "chain",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_prices_token_specific_chain": {
+          "name": "idx_prices_token_specific_chain",
+          "columns": [
+            {
+              "expression": "token",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "specific_chain",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_prices_token_timestamp": {
+          "name": "idx_prices_token_timestamp",
+          "columns": [
+            {
+              "expression": "token",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "timestamp",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
             }
           ],
           "isUnique": false,
@@ -877,8 +646,8 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {},
       "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.teams": {
@@ -964,14 +733,14 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "now()"
         }
       },
       "indexes": {
@@ -980,10 +749,9 @@
           "columns": [
             {
               "expression": "active",
+              "isExpression": false,
               "asc": true,
-              "nulls": "last",
-              "opclass": "bool_ops",
-              "isExpression": false
+              "nulls": "last"
             }
           ],
           "isUnique": false,
@@ -996,10 +764,9 @@
           "columns": [
             {
               "expression": "api_key",
+              "isExpression": false,
               "asc": true,
-              "nulls": "last",
-              "opclass": "text_ops",
-              "isExpression": false
+              "nulls": "last"
             }
           ],
           "isUnique": false,
@@ -1012,10 +779,9 @@
           "columns": [
             {
               "expression": "is_admin",
+              "isExpression": false,
               "asc": true,
-              "nulls": "last",
-              "opclass": "bool_ops",
-              "isExpression": false
+              "nulls": "last"
             }
           ],
           "isUnique": false,
@@ -1029,9 +795,8 @@
             {
               "expression": "(((metadata -> 'ref'::text) ->> 'name'::text))",
               "asc": true,
-              "nulls": "last",
-              "opclass": "text_ops",
-              "isExpression": true
+              "isExpression": true,
+              "nulls": "last"
             }
           ],
           "isUnique": false,
@@ -1044,39 +809,39 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "teams_email_key": {
+          "name": "teams_email_key",
+          "nullsNotDistinct": false,
           "columns": [
             "email"
-          ],
-          "nullsNotDistinct": false,
-          "name": "teams_email_key"
+          ]
         },
         "teams_api_key_key": {
+          "name": "teams_api_key_key",
+          "nullsNotDistinct": false,
           "columns": [
             "api_key"
-          ],
-          "nullsNotDistinct": false,
-          "name": "teams_api_key_key"
+          ]
         },
         "teams_wallet_address_key": {
+          "name": "teams_wallet_address_key",
+          "nullsNotDistinct": false,
           "columns": [
             "wallet_address"
-          ],
-          "nullsNotDistinct": false,
-          "name": "teams_wallet_address_key"
+          ]
         }
       },
-      "checkConstraints": {},
       "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.competition_teams": {
-      "name": "competition_teams",
+    "public.trades": {
+      "name": "trades",
       "schema": "",
       "columns": {
-        "competition_id": {
-          "name": "competition_id",
+        "id": {
+          "name": "id",
           "type": "uuid",
-          "primaryKey": false,
+          "primaryKey": true,
           "notNull": true
         },
         "team_id": {
@@ -1085,21 +850,217 @@
           "primaryKey": false,
           "notNull": true
         },
-        "created_at": {
-          "name": "created_at",
+        "competition_id": {
+          "name": "competition_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "from_token": {
+          "name": "from_token",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "to_token": {
+          "name": "to_token",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "from_amount": {
+          "name": "from_amount",
+          "type": "numeric(30, 15)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "to_amount": {
+          "name": "to_amount",
+          "type": "numeric(30, 15)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "price": {
+          "name": "price",
+          "type": "numeric(30, 15)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "success": {
+          "name": "success",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "error": {
+          "name": "error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timestamp": {
+          "name": "timestamp",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "now()"
+        },
+        "from_chain": {
+          "name": "from_chain",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "to_chain": {
+          "name": "to_chain",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "from_specific_chain": {
+          "name": "from_specific_chain",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "to_specific_chain": {
+          "name": "to_specific_chain",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_trades_competition_id": {
+          "name": "idx_trades_competition_id",
+          "columns": [
+            {
+              "expression": "competition_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_trades_from_chain": {
+          "name": "idx_trades_from_chain",
+          "columns": [
+            {
+              "expression": "from_chain",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_trades_from_specific_chain": {
+          "name": "idx_trades_from_specific_chain",
+          "columns": [
+            {
+              "expression": "from_specific_chain",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_trades_team_id": {
+          "name": "idx_trades_team_id",
+          "columns": [
+            {
+              "expression": "team_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_trades_timestamp": {
+          "name": "idx_trades_timestamp",
+          "columns": [
+            {
+              "expression": "timestamp",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_trades_to_chain": {
+          "name": "idx_trades_to_chain",
+          "columns": [
+            {
+              "expression": "to_chain",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_trades_to_specific_chain": {
+          "name": "idx_trades_to_specific_chain",
+          "columns": [
+            {
+              "expression": "to_specific_chain",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
-        "competition_teams_competition_id_fkey": {
-          "name": "competition_teams_competition_id_fkey",
-          "tableFrom": "competition_teams",
+        "trades_team_id_fkey": {
+          "name": "trades_team_id_fkey",
+          "tableFrom": "trades",
+          "tableTo": "teams",
+          "columnsFrom": [
+            "team_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "trades_competition_id_fkey": {
+          "name": "trades_competition_id_fkey",
+          "tableFrom": "trades",
           "tableTo": "competitions",
-          "schemaTo": "public",
           "columnsFrom": [
             "competition_id"
           ],
@@ -1108,34 +1069,12 @@
           ],
           "onDelete": "cascade",
           "onUpdate": "no action"
-        },
-        "competition_teams_team_id_fkey": {
-          "name": "competition_teams_team_id_fkey",
-          "tableFrom": "competition_teams",
-          "tableTo": "teams",
-          "schemaTo": "public",
-          "columnsFrom": [
-            "team_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "competition_teams_pkey": {
-          "name": "competition_teams_pkey",
-          "columns": [
-            "competition_id",
-            "team_id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {},
       "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     }
   },
@@ -1146,21 +1085,8 @@
   "policies": {},
   "views": {},
   "_meta": {
+    "columns": {},
     "schemas": {},
-    "tables": {},
-    "columns": {}
-  },
-  "internal": {
-    "tables": {
-      "teams": {
-        "columns": {
-          "bucket_addresses": {
-            "isArray": true,
-            "dimensions": 1,
-            "rawType": "text"
-          }
-        }
-      }
-    }
+    "tables": {}
   }
 }

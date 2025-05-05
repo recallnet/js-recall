@@ -1,6 +1,6 @@
 import { config } from "@/config/index.js";
 import { repositories } from "@/database/index.js";
-import { Balance, SpecificChain } from "@/types/index.js";
+import { SpecificChain } from "@/types/index.js";
 
 /**
  * Balance Manager Service

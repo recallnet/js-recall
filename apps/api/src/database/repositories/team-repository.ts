@@ -1,8 +1,7 @@
-import { and, eq, ilike, sql } from "drizzle-orm";
+import { and, count, eq, ilike } from "drizzle-orm";
 
 import {
   InsertTeam,
-  type SelectTeam,
   competitionTeams,
   teams,
 } from "@recallnet/comps-db/schema";
@@ -22,18 +21,18 @@ export class TeamRepository extends BaseRepository {
    * Create a new team
    * @param team Team to create
    */
-  async create(team: InsertTeam): Promise<SelectTeam> {
+  async create(team: InsertTeam) {
     try {
-      const result = await this.dbConn.db
+      const [result] = await this.dbConn.db
         .insert(teams)
         .values(team)
         .returning();
 
-      if (!result[0]) {
+      if (!result) {
         throw new Error("Failed to create team - no result returned");
       }
 
-      return result[0];
+      return result;
     } catch (error) {
       console.error("[TeamRepository] Error in create:", error);
       throw error;
@@ -43,7 +42,7 @@ export class TeamRepository extends BaseRepository {
   /**
    * Find all teams
    */
-  async findAll(): Promise<SelectTeam[]> {
+  async findAll() {
     return await this.dbConn.db.query.teams.findMany();
   }
 
@@ -51,7 +50,7 @@ export class TeamRepository extends BaseRepository {
    * Find a team by ID
    * @param id The ID to search for
    */
-  async findById(id: string): Promise<SelectTeam | undefined> {
+  async findById(id: string) {
     return await this.dbConn.db.query.teams.findFirst({
       where: eq(teams.id, id),
     });
@@ -61,15 +60,15 @@ export class TeamRepository extends BaseRepository {
    * Find a team by email
    * @param email The email to search for
    */
-  async findByEmail(email: string): Promise<SelectTeam | null> {
+  async findByEmail(email: string) {
     try {
-      const result = await this.dbConn.db
+      const [result] = await this.dbConn.db
         .select()
         .from(teams)
         .where(ilike(teams.email, email))
         .limit(1);
 
-      return result[0] || null;
+      return result;
     } catch (error) {
       console.error("[TeamRepository] Error in findByEmail:", error);
       throw error;
@@ -77,12 +76,22 @@ export class TeamRepository extends BaseRepository {
   }
 
   /**
+   * Count all teams
+   */
+  async count() {
+    const [result] = await this.dbConn.db
+      .select({ count: count() })
+      .from(teams);
+    return result?.count ?? 0;
+  }
+
+  /**
    * Update an existing team
    * @param team Team to update
    */
-  async update(team: InsertTeam): Promise<SelectTeam> {
+  async update(team: InsertTeam) {
     try {
-      const result = await this.dbConn.db
+      const [result] = await this.dbConn.db
         .update(teams)
         .set({
           name: team.name,
@@ -101,11 +110,11 @@ export class TeamRepository extends BaseRepository {
         .where(eq(teams.id, team.id))
         .returning();
 
-      if (!result[0]) {
+      if (!result) {
         throw new Error(`Team with ID ${team.id} not found`);
       }
 
-      return result[0];
+      return result;
     } catch (error) {
       console.error("[TeamRepository] Error in update:", error);
       throw error;
@@ -116,14 +125,14 @@ export class TeamRepository extends BaseRepository {
    * Find a team by API key
    * @param apiKey The API key to search for
    */
-  async findByApiKey(apiKey: string): Promise<SelectTeam | null> {
+  async findByApiKey(apiKey: string) {
     try {
-      const result = await this.dbConn.db
+      const [result] = await this.dbConn.db
         .select()
         .from(teams)
         .where(eq(teams.apiKey, apiKey));
 
-      return result[0] || null;
+      return result;
     } catch (error) {
       console.error("[TeamRepository] Error in findByApiKey:", error);
       throw error;
@@ -135,13 +144,10 @@ export class TeamRepository extends BaseRepository {
    * @param teamId Team ID
    * @param competitionId Competition ID
    */
-  async isTeamInCompetition(
-    teamId: string,
-    competitionId: string,
-  ): Promise<boolean> {
+  async isTeamInCompetition(teamId: string, competitionId: string) {
     try {
-      const result = await this.dbConn.db
-        .select({ exists: sql<boolean>`1` })
+      const [result] = await this.dbConn.db
+        .select({ count: count() })
         .from(competitionTeams)
         .where(
           and(
@@ -151,7 +157,7 @@ export class TeamRepository extends BaseRepository {
         )
         .limit(1);
 
-      return !!result[0];
+      return !!result;
     } catch (error) {
       console.error("[TeamRepository] Error in isTeamInCompetition:", error);
       throw error;
@@ -163,20 +169,9 @@ export class TeamRepository extends BaseRepository {
    * @param teamId Team ID to deactivate
    * @param reason Reason for deactivation
    */
-  async deactivateTeam(
-    teamId: string,
-    reason: string,
-  ): Promise<SelectTeam | null> {
+  async deactivateTeam(teamId: string, reason: string) {
     try {
-      // First check if team exists
-      const team = await this.dbConn.db.query.teams.findFirst({
-        where: eq(teams.id, teamId),
-      });
-      if (!team) {
-        return null;
-      }
-
-      const result = await this.dbConn.db
+      const [result] = await this.dbConn.db
         .update(teams)
         .set({
           active: false,
@@ -187,7 +182,7 @@ export class TeamRepository extends BaseRepository {
         .where(eq(teams.id, teamId))
         .returning();
 
-      return result[0] || null;
+      return result;
     } catch (error) {
       console.error("[TeamRepository] Error in deactivateTeam:", error);
       throw error;
@@ -198,9 +193,9 @@ export class TeamRepository extends BaseRepository {
    * Reactivate a team
    * @param teamId Team ID to reactivate
    */
-  async reactivateTeam(teamId: string): Promise<SelectTeam | null> {
+  async reactivateTeam(teamId: string) {
     try {
-      const result = await this.dbConn.db
+      const [result] = await this.dbConn.db
         .update(teams)
         .set({
           active: true,
@@ -211,7 +206,7 @@ export class TeamRepository extends BaseRepository {
         .where(eq(teams.id, teamId))
         .returning();
 
-      return result[0] || null;
+      return result;
     } catch (error) {
       console.error("[TeamRepository] Error in reactivateTeam:", error);
       throw error;
@@ -221,7 +216,7 @@ export class TeamRepository extends BaseRepository {
   /**
    * Find all inactive teams
    */
-  async findInactiveTeams(): Promise<SelectTeam[]> {
+  async findInactiveTeams() {
     try {
       return await this.dbConn.db
         .select()
@@ -229,6 +224,25 @@ export class TeamRepository extends BaseRepository {
         .where(eq(teams.active, false));
     } catch (error) {
       console.error("[TeamRepository] Error in findInactiveTeams:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a team by ID
+   * @param teamId The team ID to delete
+   * @returns true if team was deleted, false otherwise
+   */
+  async delete(teamId: string) {
+    try {
+      const [result] = await this.dbConn.db
+        .delete(teams)
+        .where(eq(teams.id, teamId))
+        .returning();
+
+      return !!result;
+    } catch (error) {
+      console.error("[TeamRepository] Error in delete:", error);
       throw error;
     }
   }

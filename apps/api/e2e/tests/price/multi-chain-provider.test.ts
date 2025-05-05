@@ -1,6 +1,7 @@
 // import { NovesProvider } from '../../../src/services/providers/noves.provider';
 import axios from "axios";
 import dotenv from "dotenv";
+import { sql } from "drizzle-orm";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { ApiClient } from "@/e2e/utils/api-client.js";
@@ -112,16 +113,16 @@ describe("Multi-Chain Provider Tests", () => {
 
     // The specific_chain column should already be added by the dbManager.initialize()
     // Let's just verify it exists
-    const pool = dbManager.getPool();
+    const conn = dbManager.getConn();
 
-    const result = await pool.query(`
-      SELECT EXISTS (
+    const result = await conn.db.execute(
+      sql`SELECT EXISTS (
         SELECT 1
         FROM information_schema.columns
         WHERE table_name = 'prices'
         AND column_name = 'specific_chain'
-      ) as column_exists;
-    `);
+      ) as column_exists;`,
+    );
 
     console.log(
       `Does specific_chain column exist? ${result.rows[0]?.column_exists}`,

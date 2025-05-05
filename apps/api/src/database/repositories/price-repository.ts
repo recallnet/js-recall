@@ -1,10 +1,6 @@
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 
-import {
-  InsertPrice,
-  type SelectPrice,
-  prices,
-} from "@recallnet/comps-db/schema";
+import { InsertPrice, prices } from "@recallnet/comps-db/schema";
 
 import { BaseRepository } from "@/database/base-repository.js";
 import { SpecificChain } from "@/types/index.js";
@@ -23,22 +19,22 @@ export class PriceRepository extends BaseRepository {
    * @param priceData The price data to store
    * @returns The created price record
    */
-  async create(priceData: InsertPrice): Promise<SelectPrice> {
+  async create(priceData: InsertPrice) {
     console.log(
       `[PriceRepository] Storing price for ${priceData.token}: $${priceData.price}${priceData.chain ? ` on chain ${priceData.chain}` : ""}${priceData.specificChain ? ` (${priceData.specificChain})` : ""}`,
     );
 
     try {
-      const result = await this.dbConn.db
+      const [result] = await this.dbConn.db
         .insert(prices)
         .values(priceData)
         .returning();
 
-      if (!result[0]) {
+      if (!result) {
         throw new Error("No price record returned");
       }
 
-      return result[0];
+      return result;
     } catch (error) {
       console.error("[PriceRepository] Error creating price record:", error);
       throw error;
@@ -51,16 +47,13 @@ export class PriceRepository extends BaseRepository {
    * @param specificChain Optional specific chain to filter by
    * @returns The latest price record or null if not found
    */
-  async getLatestPrice(
-    token: string,
-    specificChain?: SpecificChain,
-  ): Promise<SelectPrice | null> {
+  async getLatestPrice(token: string, specificChain?: SpecificChain) {
     console.log(
       `[PriceRepository] Getting latest price for ${token}${specificChain ? ` on ${specificChain}` : ""}`,
     );
 
     try {
-      const query = this.dbConn.db
+      const [result] = await this.dbConn.db
         .select()
         .from(prices)
         .where(
@@ -73,9 +66,10 @@ export class PriceRepository extends BaseRepository {
         )
         .orderBy(desc(prices.timestamp))
         .limit(1);
-
-      const result = await query;
-      return result[0] || null;
+      if (!result) {
+        throw new Error("No price record returned");
+      }
+      return result;
     } catch (error) {
       console.error("[PriceRepository] Error getting latest price:", error);
       throw error;
@@ -93,13 +87,13 @@ export class PriceRepository extends BaseRepository {
     token: string,
     hours: number,
     specificChain?: SpecificChain,
-  ): Promise<SelectPrice[]> {
+  ) {
     console.log(
       `[PriceRepository] Getting price history for ${token}${specificChain ? ` on ${specificChain}` : ""} (last ${hours} hours)`,
     );
 
     try {
-      const query = this.dbConn.db
+      return await this.dbConn.db
         .select()
         .from(prices)
         .where(
@@ -110,8 +104,6 @@ export class PriceRepository extends BaseRepository {
           ),
         )
         .orderBy(asc(prices.timestamp));
-
-      return await query;
     } catch (error) {
       console.error("[PriceRepository] Error getting price history:", error);
       throw error;
@@ -129,9 +121,9 @@ export class PriceRepository extends BaseRepository {
     token: string,
     hours: number,
     specificChain?: SpecificChain,
-  ): Promise<number | null> {
+  ) {
     try {
-      const result = await this.dbConn.db
+      const [result] = await this.dbConn.db
         .select({
           avgPrice: sql<number>`AVG(${prices.price})`,
         })
@@ -144,7 +136,7 @@ export class PriceRepository extends BaseRepository {
           ),
         );
 
-      return result[0]?.avgPrice ?? null;
+      return result?.avgPrice;
     } catch (error) {
       console.error("[PriceRepository] Error getting average price:", error);
       throw error;
@@ -162,9 +154,9 @@ export class PriceRepository extends BaseRepository {
     token: string,
     hours: number,
     specificChain?: SpecificChain,
-  ): Promise<number | null> {
+  ) {
     try {
-      const result = await this.dbConn.db
+      const [result] = await this.dbConn.db
         .select({
           firstPrice: sql<number>`FIRST_VALUE(${prices.price}) OVER (ORDER BY ${prices.timestamp} ASC)`,
           lastPrice: sql<number>`FIRST_VALUE(${prices.price}) OVER (ORDER BY ${prices.timestamp} DESC)`,
@@ -179,14 +171,11 @@ export class PriceRepository extends BaseRepository {
         )
         .limit(1);
 
-      if (!result[0]) {
-        return null;
+      if (!result) {
+        return undefined;
       }
 
-      const { firstPrice, lastPrice } = result[0];
-      if (!firstPrice || !lastPrice) {
-        return null;
-      }
+      const { firstPrice, lastPrice } = result;
 
       return ((lastPrice - firstPrice) / firstPrice) * 100;
     } catch (error) {
@@ -201,13 +190,13 @@ export class PriceRepository extends BaseRepository {
   /**
    * Count total number of price records
    */
-  async count(): Promise<number> {
+  async count() {
     try {
-      const result = await this.dbConn.db
+      const [result] = await this.dbConn.db
         .select({ count: sql<number>`count(*)` })
         .from(prices);
 
-      return result[0]?.count ?? 0;
+      return result?.count ?? 0;
     } catch (error) {
       console.error("[PriceRepository] Error in count:", error);
       throw error;

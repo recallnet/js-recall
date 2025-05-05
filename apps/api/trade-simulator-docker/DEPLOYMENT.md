@@ -453,8 +453,7 @@ Key environment variables to configure:
 
 - **Database Configuration**:
 
-  - `DB_USERNAME` and `DB_PASSWORD`: Credentials for PostgreSQL
-  - `DB_NAME`: Database name (default: trading_simulator)
+  - `DATABASE_URL`: Conenction string for PostgreSQL
 
 - **Security Variables**:
 

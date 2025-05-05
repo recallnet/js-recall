@@ -51,38 +51,17 @@ export class DatabaseConnection {
     })();
 
     // Check if a connection URL is provided
-    if (config.database.url) {
-      // Use connection URL which includes all connection parameters
-      const pool = new Pool({
-        connectionString: config.database.url,
-        ...sslConfig,
-      });
+    // Use connection URL which includes all connection parameters
+    const pool = new Pool({
+      connectionString: config.database.url,
+      ...sslConfig,
+    });
 
-      this.db = drizzle(pool, { schema: { ...schema, ...relations } });
+    this.db = drizzle({ client: pool, schema: { ...schema, ...relations } });
 
-      console.log(
-        "[DatabaseConnection] Connected to PostgreSQL using connection URL",
-      );
-    } else {
-      // Use individual connection parameters
-      const pool = new Pool({
-        user: config.database.username,
-        password: config.database.password,
-        host: config.database.host,
-        port: config.database.port,
-        database: config.database.database,
-        ...sslConfig,
-        max: 20, // Maximum number of clients in the pool
-        idleTimeoutMillis: 30000, // How long a client is allowed to remain idle before being closed
-        connectionTimeoutMillis: 2000, // How long to wait for a connection to become available
-      });
-
-      this.db = drizzle(pool, { schema: { ...schema, ...relations } });
-
-      console.log(
-        `[DatabaseConnection] Connected to PostgreSQL at ${config.database.host}:${config.database.port}`,
-      );
-    }
+    console.log(
+      "[DatabaseConnection] Connected to PostgreSQL using connection URL",
+    );
 
     this.db.$client.on("error", (err: Error) => {
       console.error("Unexpected error on idle client", err);

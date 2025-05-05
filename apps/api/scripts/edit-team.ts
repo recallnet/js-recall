@@ -17,8 +17,11 @@
  * 4. Close the database connection
  */
 import * as dotenv from "dotenv";
+import { eq } from "drizzle-orm";
 import * as path from "path";
 import * as readline from "readline";
+
+import { teams } from "@recallnet/comps-db/schema";
 
 import { DatabaseConnection } from "@/database/connection.js";
 
@@ -64,16 +67,6 @@ const originalConsoleLog = console.log;
 // Validate Ethereum address
 function isValidEthereumAddress(address: string): boolean {
   return /^0x[a-fA-F0-9]{40}$/.test(address);
-}
-
-// Define team interface for type safety
-interface TeamRecord {
-  id: string;
-  name: string;
-  email: string;
-  contact_person: string;
-  wallet_address?: string;
-  bucket_addresses?: string[];
 }
 
 /**
@@ -133,16 +126,14 @@ async function editTeam() {
     );
 
     // Fetch the team by email
-    const db = DatabaseConnection.getInstance();
-    const team = await db.query("SELECT * FROM teams WHERE email = $1", [
-      teamEmail,
-    ]);
+    const conn = DatabaseConnection.getInstance();
+    const currentTeam = await conn.db.query.teams.findFirst({
+      where: eq(teams.email, teamEmail),
+    });
 
-    if (!team.rows || team.rows.length === 0) {
+    if (!currentTeam) {
       throw new Error(`No team found with email: ${teamEmail}`);
     }
-
-    const currentTeam = team.rows[0] as unknown as TeamRecord;
 
     safeLog(
       `\n${colors.green}✓ Team found: ${currentTeam.name}${colors.reset}`,
@@ -154,10 +145,10 @@ async function editTeam() {
     safeLog(`Team ID: ${currentTeam.id}`);
     safeLog(`Team Name: ${currentTeam.name}`);
     safeLog(`Email: ${currentTeam.email}`);
-    safeLog(`Contact: ${currentTeam.contact_person}`);
-    safeLog(`Wallet Address: ${currentTeam.wallet_address || "Not set"}`);
+    safeLog(`Contact: ${currentTeam.contactPerson}`);
+    safeLog(`Wallet Address: ${currentTeam.walletAddress || "Not set"}`);
     safeLog(
-      `Bucket Addresses: ${currentTeam.bucket_addresses ? currentTeam.bucket_addresses.join(", ") : "None"}`,
+      `Bucket Addresses: ${currentTeam.bucketAddresses ? currentTeam.bucketAddresses.join(", ") : "None"}`,
     );
     safeLog(
       `${colors.cyan}----------------------------------------${colors.reset}`,
@@ -233,40 +224,31 @@ async function editTeam() {
     // Proceed with updates
     safeLog(`\n${colors.blue}Updating team...${colors.reset}`);
 
-    const params = [];
-    const updateFields = [];
-    let paramIndex = 1;
+    const updatedTeam = await conn.db.transaction(async (tx) => {
+      // Get the latest team data since some time has passed
+      const team = await tx.query.teams.findFirst({
+        where: eq(teams.email, teamEmail),
+      });
+      if (!team) {
+        tx.rollback();
+        return;
+      }
+      const [result] = await tx
+        .update(teams)
+        .set({
+          walletAddress,
+          bucketAddresses: bucketAddress
+            ? team.bucketAddresses
+              ? [...team.bucketAddresses, bucketAddress]
+              : [bucketAddress]
+            : undefined,
+        })
+        .where(eq(teams.id, team.id))
+        .returning();
+      return result;
+    });
 
-    if (walletAddress) {
-      updateFields.push(`wallet_address = $${paramIndex}`);
-      params.push(walletAddress);
-      paramIndex++;
-    }
-
-    if (bucketAddress) {
-      // If bucket_addresses is null, initialize as an array with the new address
-      // Otherwise, append to the existing array
-      updateFields.push(`bucket_addresses = CASE 
-        WHEN bucket_addresses IS NULL THEN ARRAY[$${paramIndex}]::TEXT[] 
-        WHEN $${paramIndex} = ANY(bucket_addresses) THEN bucket_addresses 
-        ELSE array_append(bucket_addresses, $${paramIndex}) 
-      END`);
-      params.push(bucketAddress);
-      paramIndex++;
-    }
-
-    if (updateFields.length > 0) {
-      params.push(currentTeam.id);
-      const updateQuery = `
-        UPDATE teams 
-        SET ${updateFields.join(", ")} 
-        WHERE id = $${paramIndex}
-        RETURNING *
-      `;
-
-      const result = await db.query(updateQuery, params);
-      const updatedTeam = result.rows[0] as unknown as TeamRecord;
-
+    if (updatedTeam) {
       safeLog(`\n${colors.green}✓ Team updated successfully!${colors.reset}`);
       safeLog(`\n${colors.cyan}Updated Team Details:${colors.reset}`);
       safeLog(
@@ -275,10 +257,10 @@ async function editTeam() {
       safeLog(`Team ID: ${updatedTeam.id}`);
       safeLog(`Team Name: ${updatedTeam.name}`);
       safeLog(`Email: ${updatedTeam.email}`);
-      safeLog(`Contact: ${updatedTeam.contact_person}`);
-      safeLog(`Wallet Address: ${updatedTeam.wallet_address || "Not set"}`);
+      safeLog(`Contact: ${updatedTeam.contactPerson}`);
+      safeLog(`Wallet Address: ${updatedTeam.walletAddress || "Not set"}`);
       safeLog(
-        `Bucket Addresses: ${updatedTeam.bucket_addresses ? updatedTeam.bucket_addresses.join(", ") : "None"}`,
+        `Bucket Addresses: ${updatedTeam.bucketAddresses ? updatedTeam.bucketAddresses.join(", ") : "None"}`,
       );
       safeLog(
         `${colors.cyan}----------------------------------------${colors.reset}`,

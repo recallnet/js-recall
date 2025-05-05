@@ -1,9 +1,10 @@
 import axios from "axios";
+import { sql } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { config } from "@/config/index.js";
 import { BalancesResponse, SpecificChain } from "@/e2e/utils/api-types.js";
-import { getPool } from "@/e2e/utils/db-manager.js";
+import { getConn } from "@/e2e/utils/db-manager.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
@@ -166,12 +167,11 @@ describe("Specific Chains", () => {
     expect(tradeResponse.success).toBe(true);
 
     // Get the database connection
-    const pool = getPool();
+    const conn = getConn();
 
     // Query the trades table to check if specificChain fields were correctly populated
-    const tradesResult = await pool.query(
-      "SELECT from_token, to_token, from_specific_chain, to_specific_chain FROM trades WHERE team_id = $1",
-      [team.id],
+    const tradesResult = await conn.db.execute(
+      sql`SELECT from_token, to_token, from_specific_chain, to_specific_chain FROM trades WHERE team_id = ${team.id}`,
     );
 
     // Verify we have a trade record
@@ -217,21 +217,19 @@ describe("Specific Chains", () => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Get the database connection
-    const pool = getPool();
+    const conn = getConn();
 
     // Find the most recent portfolio snapshot for this team
-    const snapshotResult = await pool.query(
-      "SELECT id FROM portfolio_snapshots WHERE team_id = $1 ORDER BY timestamp DESC LIMIT 1",
-      [team.id],
+    const snapshotResult = await conn.db.execute(
+      sql`SELECT id FROM portfolio_snapshots WHERE team_id = ${team.id} ORDER BY timestamp DESC LIMIT 1`,
     );
 
     expect(snapshotResult.rows.length).toBe(1);
     const snapshotId = snapshotResult.rows[0]?.id;
 
     // Query the portfolio_token_values table to check if specificChain was correctly populated
-    const tokenValuesResult = await pool.query(
-      "SELECT token_address, specific_chain FROM portfolio_token_values WHERE portfolio_snapshot_id = $1",
-      [snapshotId],
+    const tokenValuesResult = await conn.db.execute(
+      sql`SELECT token_address, specific_chain FROM portfolio_token_values WHERE portfolio_snapshot_id = ${snapshotId}`,
     );
 
     // Verify we have portfolio token value records
@@ -337,14 +335,13 @@ describe("Specific Chains", () => {
     }
 
     // Get the database connection
-    const pool = getPool();
+    const conn = getConn();
 
     // // Query the trades table to verify the trade was recorded correctly
-    const tradesResult = await pool.query(
-      `SELECT * 
+    const tradesResult = await conn.db.execute(
+      sql`SELECT * 
        FROM trades 
-       WHERE team_id = $1 AND to_token = $2`,
-      [team.id, targetTokenAddress],
+       WHERE team_id = ${team.id} AND to_token = ${targetTokenAddress}`,
     );
 
     // // Verify a trade record exists for this transaction
@@ -385,11 +382,10 @@ describe("Specific Chains", () => {
     expect(swapBackResponse.success).toBe(true);
 
     // Get the entrys in the trades table for this swap back
-    const swapBackResult = await pool.query(
-      `SELECT * 
+    const swapBackResult = await conn.db.execute(
+      sql`SELECT * 
        FROM trades 
-       WHERE team_id = $1 AND to_token = $2`,
-      [team.id, usdcAddress],
+       WHERE team_id = ${team.id} AND to_token = ${usdcAddress}`,
     );
     // Verify a trade record exists for this transaction
     expect(swapBackResult.rows.length).toBe(1);
@@ -458,7 +454,7 @@ describe("Specific Chains", () => {
     await startTestCompetition(adminClient, competitionName, [team.id]);
 
     // Get database connection for verification
-    const pool = getPool();
+    const conn = getConn();
 
     // Track successfully purchased tokens
     const purchasedTokens: string[] = [];
@@ -501,9 +497,8 @@ describe("Specific Chains", () => {
         );
 
         // Verify trade record in database
-        const tradeResult = await pool.query(
-          `SELECT * FROM trades WHERE team_id = $1 AND to_token = $2 ORDER BY id DESC LIMIT 1`,
-          [team.id, tokenAddress],
+        const tradeResult = await conn.db.execute(
+          sql`SELECT * FROM trades WHERE team_id = ${team.id} AND to_token = ${tokenAddress} ORDER BY id DESC LIMIT 1`,
         );
 
         expect(tradeResult.rows.length).toBe(1);

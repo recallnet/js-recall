@@ -23,8 +23,10 @@ import {
   startTestCompetition,
   wait,
 } from "@/e2e/utils/test-helpers.js";
-import { services } from "@/services/index.js";
+import { ServiceRegistry } from "@/services/index.js";
 import { BlockchainType } from "@/types/index.js";
+
+const services = ServiceRegistry.getInstance();
 
 describe("Multi-Team Competition", () => {
   let adminApiKey: string;
@@ -547,7 +549,7 @@ describe("Multi-Team Competition", () => {
       assert(team, "Team is undefined");
 
       // Force a snapshot to ensure we have current values
-      await services.competitionManager.takePortfolioSnapshots(competitionId);
+      await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
       await wait(500);
 
       // Get team's initial portfolio value
@@ -590,7 +592,7 @@ describe("Multi-Team Competition", () => {
     for (let i = 0; i < 4; i++) {
       await wait(waitTimeForPriceChanges / 4);
       console.log(`Taking snapshot ${i + 1}/4 during wait period...`);
-      await services.competitionManager.takePortfolioSnapshots(competitionId);
+      await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
     }
 
     // Step 7: Get final portfolio values
@@ -616,7 +618,7 @@ describe("Multi-Team Competition", () => {
       assert(team, "Team is undefined");
 
       // Force one final snapshot to ensure we have the latest prices
-      await services.competitionManager.takePortfolioSnapshots(competitionId);
+      await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
       await wait(500);
 
       // Get team's final portfolio value

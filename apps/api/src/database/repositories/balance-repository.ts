@@ -1,6 +1,6 @@
 import { and, count, eq } from "drizzle-orm";
 
-import { type SelectBalance, balances } from "@recallnet/comps-db/schema";
+import { balances } from "@recallnet/comps-db/schema";
 
 import { config } from "@/config/index.js";
 import { BaseRepository } from "@/database/base-repository.js";
@@ -38,7 +38,7 @@ export class BalanceRepository extends BaseRepository {
     tokenAddress: string,
     amount: number,
     specificChain: string,
-  ): Promise<SelectBalance> {
+  ) {
     try {
       const [result] = await this.dbConn.db
         .insert(balances)
@@ -74,12 +74,9 @@ export class BalanceRepository extends BaseRepository {
    * @param teamId Team ID
    * @param tokenAddress Token address
    */
-  async getBalance(
-    teamId: string,
-    tokenAddress: string,
-  ): Promise<SelectBalance | null> {
+  async getBalance(teamId: string, tokenAddress: string) {
     try {
-      const result = await this.dbConn.db
+      const [result] = await this.dbConn.db
         .select()
         .from(balances)
         .where(
@@ -89,7 +86,7 @@ export class BalanceRepository extends BaseRepository {
           ),
         );
 
-      return result[0] || null;
+      return result;
     } catch (error) {
       console.error("[BalanceRepository] Error in getBalance:", error);
       throw error;
@@ -100,7 +97,7 @@ export class BalanceRepository extends BaseRepository {
    * Get all balances for a team
    * @param teamId Team ID
    */
-  async getTeamBalances(teamId: string): Promise<SelectBalance[]> {
+  async getTeamBalances(teamId: string) {
     try {
       return await this.dbConn.db
         .select()
@@ -120,7 +117,7 @@ export class BalanceRepository extends BaseRepository {
   async initializeTeamBalances(
     teamId: string,
     initialBalances: Map<string, number>,
-  ): Promise<void> {
+  ) {
     try {
       await this.dbConn.db.transaction(async (tx) => {
         for (const [tokenAddress, amount] of initialBalances.entries()) {
@@ -187,7 +184,7 @@ export class BalanceRepository extends BaseRepository {
   async resetTeamBalances(
     teamId: string,
     initialBalances: Map<string, number>,
-  ): Promise<void> {
+  ) {
     try {
       await this.dbConn.db.transaction(async (tx) => {
         // First delete all current balances
