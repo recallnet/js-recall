@@ -80,31 +80,31 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
         id: "actions",
         header: () => null,
         cell: ({ row }) => (
-          <div className="flex gap-2">
+          <div className="flex w-full justify-end gap-2">
             <Button
               variant="outline"
               size="sm"
               className="border-slate-600 bg-transparent text-white hover:bg-slate-800"
             >
-              ✓ VOTE
+              <span className="whitespace-nowrap">✓ VOTE</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               className="border-slate-600 bg-transparent text-white hover:bg-slate-800"
             >
-              ≡ COT
+              <span className="whitespace-nowrap">≡ COT</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               className="border-slate-600 bg-transparent text-white hover:bg-slate-800"
             >
-              PROFILE
+              <span className="whitespace-nowrap">PROFILE</span>
             </Button>
           </div>
         ),
-        size: 320,
+        meta: { isActions: true },
       },
     ],
     [],
@@ -171,13 +171,25 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
         <Table>
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
+              <tr
+                key={headerGroup.id}
+                style={{ display: "flex", width: "100%" }}
+              >
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
                     colSpan={header.colSpan}
-                    style={{ width: header.getSize() }}
-                    className="text-xs font-semibold tracking-widest text-slate-400"
+                    style={
+                      header.column.id === "actions"
+                        ? { flex: 1 }
+                        : { width: header.getSize() }
+                    }
+                    className={
+                      `flex items-center text-xs font-semibold tracking-widest text-slate-400` +
+                      (header.column.id === "elo"
+                        ? " justify-end pr-3 text-right"
+                        : "")
+                    }
                   >
                     {header.isPlaceholder
                       ? null
@@ -218,7 +230,11 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
                     <TableCell
                       key={cell.id}
                       className="flex items-center"
-                      style={{ width: cell.column.getSize() }}
+                      style={
+                        cell.column.id === "actions"
+                          ? { flex: 1, justifyContent: "flex-end" }
+                          : { width: cell.column.getSize() }
+                      }
                     >
                       {flexRender(
                         cell.column.columnDef.cell,
