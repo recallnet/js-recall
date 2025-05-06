@@ -26,6 +26,10 @@ interceptConsole();
 // Create Express app
 const app = express();
 
+// Get base route prefix from environment or use default
+const API_PREFIX = process.env.API_PREFIX || "testing-grounds";
+const apiBasePath = `/${API_PREFIX}`;
+
 // Configure middleware
 app.use(cors());
 app.use(express.json());
@@ -33,10 +37,10 @@ app.use(express.urlencoded({ extended: true }));
 
 // Define protected routes
 const protectedRoutes = [
-  "/api/account",
-  "/api/trade",
-  "/api/competition",
-  "/api/price",
+  `${apiBasePath}/api/account`,
+  `${apiBasePath}/api/trade`,
+  `${apiBasePath}/api/competition`,
+  `${apiBasePath}/api/price`,
 ];
 
 // Apply authentication middleware to protected routes FIRST
@@ -50,18 +54,21 @@ app.use(
 // This ensures we can properly rate limit by team ID
 app.use(rateLimiterMiddleware);
 
-// Apply routes
-app.use("/api/account", accountRoutes.default);
-app.use("/api/trade", tradeRoutes.default);
-app.use("/api/price", priceRoutes.default);
-app.use("/api/competition", competitionRoutes.default);
-app.use("/api/admin", adminRoutes.default);
-app.use("/api/health", healthRoutes.default);
-app.use("/api/docs", docsRoutes.default);
-app.use("/api/public", publicRoutes.default);
+// Create a router for all API routes
+const apiRouter = express.Router();
+
+// Apply routes to the apiRouter
+apiRouter.use("/api/account", accountRoutes.default);
+apiRouter.use("/api/trade", tradeRoutes.default);
+apiRouter.use("/api/price", priceRoutes.default);
+apiRouter.use("/api/competition", competitionRoutes.default);
+apiRouter.use("/api/admin", adminRoutes.default);
+apiRouter.use("/api/health", healthRoutes.default);
+apiRouter.use("/api/docs", docsRoutes.default);
+apiRouter.use("/api/public", publicRoutes.default);
 
 // Legacy health check endpoint for backward compatibility
-app.get("/health", (_req, res) => {
+apiRouter.get("/health", (_req, res) => {
   res.status(200).json({
     status: "ok",
     timestamp: new Date().toISOString(),
@@ -70,9 +77,12 @@ app.get("/health", (_req, res) => {
 });
 
 // Root endpoint redirects to API documentation
-app.get("/", (_req, res) => {
-  res.redirect("/api/docs");
+apiRouter.get("/", (_req, res) => {
+  res.redirect(`${apiBasePath}/api/docs`);
 });
+
+// Mount the apiRouter under the prefix
+app.use(apiBasePath, apiRouter);
 
 // Apply error handler
 app.use(errorHandler);
@@ -116,10 +126,13 @@ const startServer = async () => {
     console.log(`\n========================================`);
     console.log(`Server is running on port ${PORT}`);
     console.log(`Environment: ${config.server.nodeEnv}`);
+    console.log(`API Prefix: ${apiBasePath}`);
     console.log(
       `Database: ${databaseInitialized ? "Connected" : "Error - Limited functionality"}`,
     );
-    console.log(`API documentation: http://localhost:${PORT}/api/docs`);
+    console.log(
+      `API documentation: http://localhost:${PORT}${apiBasePath}/api/docs`,
+    );
     console.log(`========================================\n`);
   });
 };

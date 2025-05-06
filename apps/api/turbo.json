@@ -14,6 +14,7 @@
         "DB_PASSWORD",
         "DB_PORT",
         "DB_SSL",
+        "API_PREFIX",
         "DB_USERNAME",
         "DISABLE_PARTICIPANT_LEADERBOARD_ACCESS",
         "EVM_CHAINS",

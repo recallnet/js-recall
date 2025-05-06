@@ -2,6 +2,10 @@ import swaggerJsdoc from "swagger-jsdoc";
 
 import { config } from "./index.js";
 
+// Get API prefix from environment or use default
+const API_PREFIX = process.env.API_PREFIX || "testing-grounds";
+const apiBasePath = `/${API_PREFIX}`;
+
 // Basic Swagger configuration
 const swaggerOptions: swaggerJsdoc.Options = {
   definition: {
@@ -24,7 +28,7 @@ Where "your-api-key" is the API key provided during team registration.
 **cURL Example:**
 
 \`\`\`bash
-curl -X GET "https://api.example.com/api/account/balances" \\
+curl -X GET "https://api.example.com${apiBasePath}/api/account/balances" \\
   -H "Authorization: Bearer abc123def456_ghi789jkl012" \\
   -H "Content-Type: application/json"
 \`\`\`
@@ -34,7 +38,7 @@ curl -X GET "https://api.example.com/api/account/balances" \\
 \`\`\`javascript
 const fetchData = async () => {
   const apiKey = 'abc123def456_ghi789jkl012';
-  const response = await fetch('https://api.example.com/api/account/balances', {
+  const response = await fetch('https://api.example.com${apiBasePath}/api/account/balances', {
     headers: {
       'Authorization': \`Bearer \${apiKey}\`,
       'Content-Type': 'application/json'
@@ -58,11 +62,11 @@ For convenience, we provide an API client that handles authentication automatica
     },
     servers: [
       {
-        url: `http://localhost:${config.server.port}`,
+        url: `http://localhost:${config.server.port}${apiBasePath}`,
         description: "Local development server",
       },
       {
-        url: "https://api.example.com",
+        url: `https://api.example.com${apiBasePath}`,
         description: "Production server",
       },
     ],
