@@ -18,7 +18,7 @@ import { Identicon } from "../Identicon";
 
 export const SIWEButton: React.FunctionComponent<
   React.ComponentProps<typeof Button>
-> = (props) => {
+> = () => {
   const [user, setUser] = useAtom(userAtom);
 
   const handleLogout = () => {

@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  ArrowRightIcon,
-  LockClosedIcon,
-  ReloadIcon,
-} from "@radix-ui/react-icons";
+import { ArrowRightIcon, ReloadIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
 
 import { Button } from "@recallnet/ui2/components/shadcn/button";

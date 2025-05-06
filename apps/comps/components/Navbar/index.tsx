@@ -1,19 +1,16 @@
 "use client";
 
-import { useAtom } from "jotai";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
 
-import { userAtom } from "../../state/atoms";
 import { SIWEButton } from "../siwe";
 
 export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const pathname = usePathname();
-  const [user, setUser] = useAtom(userAtom);
 
   const navItems = [
     { label: "COMPETITIONS", href: "/competitions" },
