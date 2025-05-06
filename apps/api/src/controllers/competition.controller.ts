@@ -97,35 +97,45 @@ export class CompetitionController {
       // Create map of all teams
       const teamMap = new Map(teams.map((team) => [team.id, team]));
 
-      // Track teams with inactive status
-      const inactiveTeamIds = new Set(
-        teams.filter((team) => team.active === false).map((team) => team.id),
-      );
+      // Separate active and inactive teams
+      const activeLeaderboard = [];
+      const inactiveTeams = [];
 
-      const hasInactiveTeams = inactiveTeamIds.size > 0;
-
-      // Format leaderboard with team names and active status
-      const formattedLeaderboard = leaderboard.map((entry, index) => {
+      // Process each team in the leaderboard
+      for (const entry of leaderboard) {
         const team = teamMap.get(entry.teamId);
         const isInactive = team?.active === false;
 
-        return {
-          rank: index + 1,
+        const leaderboardEntry = {
           teamId: entry.teamId,
           teamName: team ? team.name : "Unknown Team",
           portfolioValue: entry.value,
-          active: team?.active !== false,
+          active: !isInactive,
           deactivationReason: isInactive ? team?.deactivationReason : null,
         };
-      });
 
-      // Return the complete leaderboard with active/inactive flags
+        if (isInactive) {
+          // Add to inactive teams without rank
+          inactiveTeams.push(leaderboardEntry);
+        } else {
+          // Add to active leaderboard
+          activeLeaderboard.push(leaderboardEntry);
+        }
+      }
+
+      // Assign ranks to active teams
+      const rankedActiveLeaderboard = activeLeaderboard.map((entry, index) => ({
+        rank: index + 1,
+        ...entry,
+      }));
+
+      // Return the separated leaderboard
       res.status(200).json({
         success: true,
         competition,
-        leaderboard: formattedLeaderboard,
-        hasInactiveTeams,
-        inactiveTeamsFiltered: false,
+        leaderboard: rankedActiveLeaderboard,
+        inactiveTeams: inactiveTeams,
+        hasInactiveTeams: inactiveTeams.length > 0,
       });
     } catch (error) {
       next(error);

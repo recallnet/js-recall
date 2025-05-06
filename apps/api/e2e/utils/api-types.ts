@@ -166,11 +166,21 @@ export interface LeaderboardEntry {
   deactivationReason?: string;
 }
 
+// Inactive team entry (no rank assignment)
+export interface InactiveTeamEntry {
+  teamId: string;
+  teamName: string;
+  portfolioValue: number;
+  active: boolean;
+  deactivationReason: string;
+}
+
 // Competition leaderboard response
 export interface LeaderboardResponse extends ApiResponse {
   competition: Competition;
   leaderboard: LeaderboardEntry[];
-  hasInactiveTeams?: boolean;
+  inactiveTeams: InactiveTeamEntry[];
+  hasInactiveTeams: boolean;
 }
 
 // Competition status response
