@@ -77,6 +77,14 @@ export interface Balance {
 }
 
 /**
+ * Cross-chain fee information for trades between different blockchains
+ */
+export interface CrossChainFee {
+  percentage: number; // Fee percentage
+  fixedFeeUSD: number; // Fixed fee amount in USD
+}
+
+/**
  * Trade interface
  */
 export interface Trade {
@@ -98,6 +106,9 @@ export interface Trade {
   toChain: BlockchainType;
   fromSpecificChain: SpecificChain;
   toSpecificChain: SpecificChain;
+
+  // Cross-chain fee information (only for cross-chain trades)
+  crossChainFee?: CrossChainFee;
 }
 
 /**
