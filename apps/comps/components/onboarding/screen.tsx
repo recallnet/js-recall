@@ -52,9 +52,11 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
           </div>
 
         </div>
-        <button onClick={onSkip} className="text-2xl font-semibold text-white cursor-pointer">
-          Skip
-        </button>
+        {currentStep < totalSteps - 1 &&
+          <button onClick={onSkip} className="text-2xl font-semibold text-white cursor-pointer">
+            Skip
+          </button>
+        }
       </div>
     </div>
   );
