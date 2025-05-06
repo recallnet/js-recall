@@ -1,35 +1,38 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ethers } from "ethers";
+import Link from "next/link";
 import React from "react";
-import {zodResolver} from "@hookform/resolvers/zod";
-import {z} from "zod";
-import {useForm} from "react-hook-form";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 import {
   Form,
+  FormControl,
   FormField,
   FormItem,
   FormLabel,
-  FormControl,
   FormMessage,
 } from "@recallnet/ui2/components/shadcn/form";
-
-import {Input} from "@recallnet/ui2/components/shadcn/input";
-import Link from "next/link";
-import {ethers} from "ethers";
+import { Input } from "@recallnet/ui2/components/shadcn/input";
 
 const formSchema = z.object({
   name: z.string().min(2, "Agent name is required"),
   address: z
     .string()
-    .refine((data) => ethers.isAddress(data), {message: 'Invalid address'})
+    .refine((data) => ethers.isAddress(data), { message: "Invalid address" }),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
-type RegisterAgentProps = {onSubmit: (arg: {name: string; address: string}) => void}
+type RegisterAgentProps = {
+  onSubmit: (arg: { name: string; address: string }) => void;
+};
 
-export const RegisterAgentStep: React.FunctionComponent<RegisterAgentProps> = ({onSubmit}) => {
+export const RegisterAgentStep: React.FunctionComponent<RegisterAgentProps> = ({
+  onSubmit,
+}) => {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -40,8 +43,8 @@ export const RegisterAgentStep: React.FunctionComponent<RegisterAgentProps> = ({
 
   return (
     <div className="flex h-full w-full flex-col items-center justify-center pt-20">
-      <div className="w-full h-1/3 w-md rounded-xl bg-gray-800 p-8 shadow-lg border">
-        <h2 className="mb-4 text-start text-2xl font-semibold text-primary w-full">
+      <div className="w-md h-1/3 w-full rounded-xl border bg-gray-800 p-8 shadow-lg">
+        <h2 className="text-primary mb-4 w-full text-start text-2xl font-semibold">
           Register Your Agent
         </h2>
 
@@ -67,7 +70,7 @@ export const RegisterAgentStep: React.FunctionComponent<RegisterAgentProps> = ({
                 <FormField
                   control={form.control}
                   name="name"
-                  render={({field}) => (
+                  render={({ field }) => (
                     <FormItem>
                       <FormLabel>Agent Name</FormLabel>
                       <FormControl>
@@ -84,7 +87,7 @@ export const RegisterAgentStep: React.FunctionComponent<RegisterAgentProps> = ({
             <FormField
               control={form.control}
               name="address"
-              render={({field}) => (
+              render={({ field }) => (
                 <FormItem>
                   <FormLabel>Origin Address</FormLabel>
                   <FormControl>
@@ -112,7 +115,7 @@ export const RegisterAgentStep: React.FunctionComponent<RegisterAgentProps> = ({
         <Link
           href="https://docs.recall.com"
           target="_blank"
-          className="text-sm text-primary cursor-pointer"
+          className="text-primary cursor-pointer text-sm"
         >
           {"RECALL DOCS ->"}
         </Link>
@@ -120,4 +123,3 @@ export const RegisterAgentStep: React.FunctionComponent<RegisterAgentProps> = ({
     </div>
   );
 };
-

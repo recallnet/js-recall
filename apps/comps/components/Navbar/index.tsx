@@ -1,11 +1,11 @@
 "use client";
 
-import {useAtom} from "jotai";
+import { useAtom } from "jotai";
 import Link from "next/link";
-import {usePathname} from "next/navigation";
+import { usePathname } from "next/navigation";
 
-import {Avatar, AvatarImage} from "@recallnet/ui2/components/avatar";
-import {Button} from "@recallnet/ui2/components/shadcn/button";
+import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
+import { Button } from "@recallnet/ui2/components/shadcn/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,25 +13,26 @@ import {
   DropdownMenuTrigger,
 } from "@recallnet/ui2/components/shadcn/dropdown-menu";
 
-import {userAtom} from "../../state/atoms";
-import {Identicon} from "../Identicon";
-import {SIWEButton} from "../siwe";
+import { userAtom } from "../../state/atoms";
+import { Identicon } from "../Identicon";
+import { SIWEButton } from "../siwe";
 
-export const Navbar: React.FunctionComponent<{children: React.ReactNode}> = ({children}) => {
+export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const pathname = usePathname();
   const [user, setUser] = useAtom(userAtom);
 
   const navItems = [
-    {label: "COMPETITIONS", href: "/competitions"},
-    {label: "LEADERBOARDS", href: "/leaderboards"},
+    { label: "COMPETITIONS", href: "/competitions" },
+    { label: "LEADERBOARDS", href: "/leaderboards" },
   ];
 
   const handleLogout = () => {
-    setUser({loggedIn: false, address: ""});
+    setUser({ loggedIn: false, address: "" });
   };
 
-  if (pathname === '/onboarding')
-    return children
+  if (pathname === "/onboarding") return children;
 
   return (
     <>
@@ -55,10 +56,11 @@ export const Navbar: React.FunctionComponent<{children: React.ReactNode}> = ({ch
               return (
                 <Link key={item.href} href={item.href}>
                   <span
-                    className={`text-sm font-medium transition-colors ${isActive
-                      ? "text-white underline underline-offset-4"
-                      : "text-gray-400 hover:text-white"
-                      }`}
+                    className={`text-sm font-medium transition-colors ${
+                      isActive
+                        ? "text-white underline underline-offset-4"
+                        : "text-gray-400 hover:text-white"
+                    }`}
                   >
                     {item.label}
                   </span>
@@ -107,9 +109,7 @@ export const Navbar: React.FunctionComponent<{children: React.ReactNode}> = ({ch
           </div>
         )}
       </nav>
-      <div className="xl:px-65 lg:px-30 md:px-15 px-5">
-        {children}
-      </div>
+      <div className="xl:px-65 lg:px-30 md:px-15 px-5">{children}</div>
     </>
   );
 };

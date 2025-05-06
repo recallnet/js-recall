@@ -1,30 +1,36 @@
 "use client";
 
-import {RainbowKitProvider, RainbowKitAuthenticationProvider, AuthenticationStatus, createAuthenticationAdapter, darkTheme} from "@rainbow-me/rainbowkit";
-import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
-import React from "react";
-import {type ReactNode, useState} from "react";
-import {WagmiProvider} from "wagmi";
-
-import {ThemeProvider} from "@recallnet/ui2/components/theme-provider";
-
-import {clientConfig} from "@/wagmi-config";
+import {
+  AuthenticationStatus,
+  RainbowKitAuthenticationProvider,
+  RainbowKitProvider,
+  createAuthenticationAdapter,
+  darkTheme,
+} from "@rainbow-me/rainbowkit";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import axios from "axios";
-import {useAtom} from "jotai";
-import {userAtom} from "@/state/atoms";
-import {createSiweMessage} from "viem/siwe";
+import { useAtom } from "jotai";
+import React from "react";
+import { type ReactNode, useState } from "react";
+import { createSiweMessage } from "viem/siwe";
+import { WagmiProvider } from "wagmi";
 
-const AUTHENTICATION_STATUS: AuthenticationStatus = 'unauthenticated'
-const CONFIG = clientConfig()
+import { ThemeProvider } from "@recallnet/ui2/components/theme-provider";
 
-function WalletProvider(props: {children: ReactNode}) {
+import { userAtom } from "@/state/atoms";
+import { clientConfig } from "@/wagmi-config";
+
+const AUTHENTICATION_STATUS: AuthenticationStatus = "unauthenticated";
+const CONFIG = clientConfig();
+
+function WalletProvider(props: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
   const [, setUser] = useAtom(userAtom);
 
   const authAdapter = React.useMemo(() => {
     return createAuthenticationAdapter({
       getNonce: async () => {
-        const {data: res} = await axios<{nonce: string}>({
+        const { data: res } = await axios<{ nonce: string }>({
           baseURL: "",
           method: "get",
           url: "/api/nonce",
@@ -34,40 +40,40 @@ function WalletProvider(props: {children: ReactNode}) {
           data: null,
         });
 
-        return res.nonce
+        return res.nonce;
       },
-      createMessage: ({nonce, address, chainId}) => {
+      createMessage: ({ nonce, address, chainId }) => {
         return createSiweMessage({
           domain: document.location.host,
           address,
-          statement: 'Sign in with Ethereum to the app.',
+          statement: "Sign in with Ethereum to the app.",
           uri: document.location.origin,
-          version: '1',
+          version: "1",
           chainId,
           nonce,
         });
       },
-      verify: async ({message, signature}) => {
-        const res = await axios<{ok: boolean; address: string}>({
+      verify: async ({ message, signature }) => {
+        const res = await axios<{ ok: boolean; address: string }>({
           baseURL: "",
           method: "post",
           url: "/api/login",
           headers: {
             Accept: "application/json",
           },
-          data: {message, signature},
+          data: { message, signature },
         });
 
-        setUser({address: res.data.address, loggedIn: true})
+        setUser({ address: res.data.address, loggedIn: true });
 
-        return res.data.ok
+        return res.data.ok;
       },
       signOut: async () => {
-        console.log('SIGN OUT')
+        console.log("SIGN OUT");
         //await fetch('/api/logout');
       },
     });
-  }, [setUser])
+  }, [setUser]);
 
   return (
     <WagmiProvider config={CONFIG}>
@@ -76,16 +82,16 @@ function WalletProvider(props: {children: ReactNode}) {
           adapter={authAdapter}
           status={AUTHENTICATION_STATUS}
         >
-          <RainbowKitProvider
-            theme={darkTheme()}
-          >{props.children}</RainbowKitProvider>
+          <RainbowKitProvider theme={darkTheme()}>
+            {props.children}
+          </RainbowKitProvider>
         </RainbowKitAuthenticationProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );
 }
 
-export function Providers({children}: {children: React.ReactNode}) {
+export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider
       attribute="class"

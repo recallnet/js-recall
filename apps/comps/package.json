@@ -40,7 +40,7 @@
     "viem": "^2.28.0",
     "wagmi": "^2.14.8",
     "yup": "^1.6.1",
-    "zod": "link:@hookform/resolvers/zod"
+    "zod": "^3.24.4"
   },
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:^",
