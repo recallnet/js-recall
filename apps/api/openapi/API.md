@@ -800,7 +800,7 @@ Register a new team
 
 ##### Description:
 
-Public endpoint to register a new team. Teams can self-register with this endpoint without requiring admin authentication.
+Public endpoint to register a new team. Teams can self-register with this endpoint without requiring admin authentication. If there is an active competition, the team will be automatically added to it and activated.
 
 ##### Responses
 

@@ -11,7 +11,7 @@ const router = Router();
  *     tags:
  *       - Public
  *     summary: Register a new team
- *     description: Public endpoint to register a new team. Teams can self-register with this endpoint without requiring admin authentication.
+ *     description: Public endpoint to register a new team. Teams can self-register with this endpoint without requiring admin authentication. If there is an active competition, the team will be automatically added to it and activated.
  *     requestBody:
  *       required: true
  *       content:
@@ -96,6 +96,9 @@ const router = Router();
  *                       type: string
  *                       format: date-time
  *                       description: Account creation timestamp
+ *                 joinedActiveCompetition:
+ *                   type: boolean
+ *                   description: Whether the team was added to an active competition
  *       400:
  *         description: Missing required parameters or invalid wallet address
  *       409:

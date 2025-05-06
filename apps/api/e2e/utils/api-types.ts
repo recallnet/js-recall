@@ -302,6 +302,7 @@ export interface TeamRegistrationResponse extends ApiResponse {
     createdAt: string;
     updatedAt: string;
   };
+  joinedActiveCompetition?: boolean;
 }
 
 // Admin response for creating a competition

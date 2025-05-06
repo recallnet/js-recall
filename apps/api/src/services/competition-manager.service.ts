@@ -561,4 +561,56 @@ export class CompetitionManager {
       CompetitionStatus.PENDING,
     );
   }
+
+  /**
+   * Add a team to an existing competition
+   * @param competitionId The competition ID
+   * @param teamId The team ID to add
+   * @returns true if successful
+   */
+  async addTeamToCompetition(
+    competitionId: string,
+    teamId: string,
+  ): Promise<boolean> {
+    try {
+      // Verify competition exists and is active
+      const competition = await this.getCompetition(competitionId);
+      if (!competition) {
+        throw new Error(`Competition not found: ${competitionId}`);
+      }
+
+      if (competition.status !== CompetitionStatus.ACTIVE) {
+        throw new Error(`Competition is not active: ${competition.status}`);
+      }
+
+      // Reset balances
+      await this.balanceManager.resetTeamBalances(teamId);
+
+      // Register team in the competition
+      await repositories.competitionRepository.addTeamToCompetition(
+        competitionId,
+        teamId,
+      );
+
+      // Activate the team
+      await services.teamManager.reactivateTeam(teamId);
+
+      // Take portfolio snapshots
+      await this.takePortfolioSnapshots(competitionId);
+
+      // Reload competition-specific configuration settings
+      await services.configurationService.loadCompetitionSettings();
+
+      console.log(
+        `[CompetitionManager] Team ${teamId} added to competition ${competitionId}`,
+      );
+      return true;
+    } catch (error) {
+      console.error(
+        `[CompetitionManager] Error adding team ${teamId} to competition ${competitionId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
 }
