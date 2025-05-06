@@ -6,6 +6,7 @@ import {
   findActive,
   findAll,
   findById,
+  findByStatus,
   getCompetitionTeams,
   getLatestPortfolioSnapshots,
   update as updateCompetition,
@@ -342,6 +343,6 @@ export class CompetitionManager {
    * @returns Array of competitions with PENDING status
    */
   async getUpcomingCompetitions() {
-    return findAll();
+    return findByStatus(CompetitionStatus.PENDING);
   }
 }
