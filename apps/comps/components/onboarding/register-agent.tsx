@@ -16,29 +16,27 @@ import {
 
 import {Input} from "@recallnet/ui2/components/shadcn/input";
 import Link from "next/link";
+import {ethers} from "ethers";
 
-// Validation schema
 const formSchema = z.object({
-  agentName: z.string().min(2, "Agent name is required"),
-  originAddress: z
+  name: z.string().min(2, "Agent name is required"),
+  address: z
     .string()
-    .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid Ethereum address"),
+    .refine((data) => ethers.isAddress(data), {message: 'Invalid address'})
 });
 
 type FormData = z.infer<typeof formSchema>;
 
-export const RegisterAgentStep = () => {
+type RegisterAgentProps = {onSubmit: (arg: {name: string; address: string}) => void}
+
+export const RegisterAgentStep: React.FunctionComponent<RegisterAgentProps> = ({onSubmit}) => {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      agentName: "",
-      originAddress: "",
+      name: "",
+      address: "",
     },
   });
-
-  const onSubmit = (values: FormData) => {
-    console.log("Submitted:", values);
-  };
 
   return (
     <div className="flex min-h-screen w-full flex-col items-center justify-center">
@@ -68,7 +66,7 @@ export const RegisterAgentStep = () => {
 
                 <FormField
                   control={form.control}
-                  name="agentName"
+                  name="name"
                   render={({field}) => (
                     <FormItem>
                       <FormLabel>Agent Name</FormLabel>
@@ -85,7 +83,7 @@ export const RegisterAgentStep = () => {
             {/* Origin Address */}
             <FormField
               control={form.control}
-              name="originAddress"
+              name="address"
               render={({field}) => (
                 <FormItem>
                   <FormLabel>Origin Address</FormLabel>
@@ -110,7 +108,6 @@ export const RegisterAgentStep = () => {
         </Form>
       </div>
 
-      {/* Bottom Link */}
       <div className="mt-6">
         <Link
           href="https://docs.recall.com"
