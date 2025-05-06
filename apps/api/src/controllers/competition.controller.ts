@@ -1,7 +1,7 @@
 import { NextFunction, Response } from "express";
 
 import { config, features } from "@/config/index.js";
-import { repositories } from "@/database/index.js";
+import { isTeamInCompetition as isTeamInCompetitionRepo } from "@/database/repositories/team-repository.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import { AuthenticatedRequest } from "@/types/index.js";
@@ -73,11 +73,10 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // If not an admin, verify team is part of the competition
         if (!isAdmin) {
-          const isTeamInCompetition =
-            await repositories.teamRepository.isTeamInCompetition(
-              teamId,
-              competitionId,
-            );
+          const isTeamInCompetition = await isTeamInCompetitionRepo(
+            teamId,
+            competitionId,
+          );
 
           if (!isTeamInCompetition) {
             throw new ApiError(
@@ -208,11 +207,10 @@ export function makeCompetitionController(services: ServiceRegistry) {
         );
 
         // Check if the team is part of the competition
-        const isTeamInCompetition =
-          await repositories.teamRepository.isTeamInCompetition(
-            teamId,
-            activeCompetition.id,
-          );
+        const isTeamInCompetition = await isTeamInCompetitionRepo(
+          teamId,
+          activeCompetition.id,
+        );
 
         // Check if the team is an admin
         const isAdmin = req.isAdmin === true;
@@ -295,11 +293,10 @@ export function makeCompetitionController(services: ServiceRegistry) {
             throw new ApiError(400, "No active competition");
           }
 
-          const isTeamInCompetition =
-            await repositories.teamRepository.isTeamInCompetition(
-              teamId,
-              activeCompetition.id,
-            );
+          const isTeamInCompetition = await isTeamInCompetitionRepo(
+            teamId,
+            activeCompetition.id,
+          );
 
           if (!isTeamInCompetition) {
             throw new ApiError(

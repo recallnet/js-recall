@@ -1,5 +1,13 @@
 import { config } from "@/config/index.js";
-import { repositories } from "@/database/index.js";
+import {
+  createPortfolioSnapshot,
+  createPortfolioTokenValue,
+  findAll,
+  getCompetitionTeams,
+  getPortfolioTokenValues,
+  getTeamPortfolioSnapshots,
+} from "@/database/repositories/competition-repository.js";
+import { getLatestPrice } from "@/database/repositories/price-repository.js";
 import { BalanceManager, PriceTracker } from "@/services/index.js";
 import { BlockchainType, SpecificChain } from "@/types/index.js";
 
@@ -26,10 +34,7 @@ export class PortfolioSnapshotter {
     );
 
     const startTime = Date.now();
-    const teams =
-      await repositories.competitionRepository.getCompetitionTeams(
-        competitionId,
-      );
+    const teams = await getCompetitionTeams(competitionId);
     const timestamp = new Date();
     let priceLookupCount = 0;
     let dbPriceHitCount = 0;
@@ -52,10 +57,7 @@ export class PortfolioSnapshotter {
         priceLookupCount++;
 
         // First try to get latest price record from the database to reuse chain information
-        const latestPriceRecord =
-          await repositories.priceRepository.getLatestPrice(
-            balance.tokenAddress,
-          );
+        const latestPriceRecord = await getLatestPrice(balance.tokenAddress);
 
         let specificChain: string | null;
         let priceResult;
@@ -136,17 +138,16 @@ export class PortfolioSnapshotter {
       }
 
       // Create portfolio snapshot in database
-      const snapshot =
-        await repositories.competitionRepository.createPortfolioSnapshot({
-          teamId,
-          competitionId,
-          timestamp,
-          totalValue,
-        });
+      const snapshot = await createPortfolioSnapshot({
+        teamId,
+        competitionId,
+        timestamp,
+        totalValue,
+      });
 
       // Store token values
       for (const [token, data] of Object.entries(valuesByToken)) {
-        await repositories.competitionRepository.createPortfolioTokenValue({
+        await createPortfolioTokenValue({
           portfolioSnapshotId: snapshot.id,
           tokenAddress: token,
           amount: data.amount,
@@ -178,17 +179,10 @@ export class PortfolioSnapshotter {
    * @returns Array of portfolio snapshots
    */
   async getTeamPortfolioSnapshots(competitionId: string, teamId: string) {
-    const snapshots =
-      await repositories.competitionRepository.getTeamPortfolioSnapshots(
-        competitionId,
-        teamId,
-      );
+    const snapshots = await getTeamPortfolioSnapshots(competitionId, teamId);
 
     const promises = snapshots.map(async (snapshot) => {
-      const tokenValues =
-        await repositories.competitionRepository.getPortfolioTokenValues(
-          snapshot.id,
-        );
+      const tokenValues = await getPortfolioTokenValues(snapshot.id);
       const valuesByToken: Record<
         string,
         { amount: number; valueUsd: number }
@@ -216,7 +210,7 @@ export class PortfolioSnapshotter {
   async isHealthy() {
     try {
       // Simple check to see if we can connect to the database
-      await repositories.competitionRepository.count();
+      await findAll();
       return true;
     } catch (error) {
       console.error("[PortfolioSnapshotter] Health check failed:", error);

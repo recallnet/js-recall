@@ -4,7 +4,14 @@ import * as fs from "fs";
 import * as path from "path";
 import { v4 as uuidv4 } from "uuid";
 
-import { repositories } from "@/database/index.js";
+import { getCompetitionTeams } from "@/database/repositories/competition-repository.js";
+import {
+  create,
+  findAll,
+  findByEmail,
+  findById,
+  isTeamInCompetition,
+} from "@/database/repositories/team-repository.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import { CompetitionStatus } from "@/types/index.js";
@@ -25,7 +32,7 @@ export function makeAdminController(services: ServiceRegistry) {
     async setupAdmin(req: Request, res: Response, next: NextFunction) {
       try {
         // Check if any admin already exists
-        const teams = await repositories.teamRepository.findAll();
+        const teams = await findAll();
         const adminExists = teams.some((team) => team.isAdmin === true);
 
         if (adminExists) {
@@ -138,7 +145,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const encryptedApiKey = services.teamManager.encryptApiKey(apiKey);
 
         // Create admin record using team repository
-        const admin = await repositories.teamRepository.create({
+        const admin = await create({
           id: uuidv4(),
           name: username, // Use username as team name for admin
           email,
@@ -188,8 +195,7 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // First check if a team with this email already exists
-        const existingTeam =
-          await repositories.teamRepository.findByEmail(email);
+        const existingTeam = await findByEmail(email);
 
         if (existingTeam) {
           const errorMessage = `A team with email ${email} already exists`;
@@ -601,18 +607,17 @@ export function makeAdminController(services: ServiceRegistry) {
         let snapshots;
         if (teamId) {
           // Check if the team exists and is in the competition
-          const team = await repositories.teamRepository.findById(teamId);
+          const team = await findById(teamId);
           if (!team) {
             throw new ApiError(404, "Team not found");
           }
 
-          const isTeamInCompetition =
-            await repositories.teamRepository.isTeamInCompetition(
-              teamId,
-              competitionId,
-            );
+          const teamInCompetition = await isTeamInCompetition(
+            teamId,
+            competitionId,
+          );
 
-          if (!isTeamInCompetition) {
+          if (!teamInCompetition) {
             throw new ApiError(
               400,
               "Team is not participating in this competition",
@@ -627,10 +632,7 @@ export function makeAdminController(services: ServiceRegistry) {
             );
         } else {
           // Get snapshots for all teams in the competition
-          const teams =
-            await repositories.competitionRepository.getCompetitionTeams(
-              competitionId,
-            );
+          const teams = await getCompetitionTeams(competitionId);
           snapshots = [];
 
           for (const teamId of teams) {

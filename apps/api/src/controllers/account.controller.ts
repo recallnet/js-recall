@@ -1,6 +1,11 @@
 import { NextFunction, Request, Response } from "express";
 
-import { repositories } from "@/database/index.js";
+import {
+  findActive,
+  getPortfolioTokenValues,
+  getTeamPortfolioSnapshots,
+} from "@/database/repositories/competition-repository.js";
+import { getLatestPrice } from "@/database/repositories/price-repository.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 
@@ -115,10 +120,9 @@ export function makeAccountController(services: ServiceRegistry) {
         const enhancedBalances = await Promise.all(
           balances.map(async (balance) => {
             // First check if we have chain information in our database
-            const latestPriceRecord =
-              await repositories.priceRepository.getLatestPrice(
-                balance.tokenAddress,
-              );
+            const latestPriceRecord = await getLatestPrice(
+              balance.tokenAddress,
+            );
 
             // If we have complete chain info in our database, use that
             if (latestPriceRecord && latestPriceRecord.chain) {
@@ -193,17 +197,15 @@ export function makeAccountController(services: ServiceRegistry) {
         const teamId = req.teamId as string;
 
         // First, check if there's an active competition
-        const activeCompetition =
-          await repositories.competitionRepository.findActive();
+        const activeCompetition = await findActive();
 
         // Check if we have snapshot data (preferred method)
         if (activeCompetition) {
           // Try to get the latest snapshot for this team
-          const teamSnapshots =
-            await repositories.competitionRepository.getTeamPortfolioSnapshots(
-              activeCompetition.id,
-              teamId,
-            );
+          const teamSnapshots = await getTeamPortfolioSnapshots(
+            activeCompetition.id,
+            teamId,
+          );
 
           // If we have a snapshot, use it
           if (teamSnapshots.length > 0) {
@@ -211,10 +213,9 @@ export function makeAccountController(services: ServiceRegistry) {
             const latestSnapshot = teamSnapshots[teamSnapshots.length - 1]!;
 
             // Get the token values for this snapshot
-            const tokenValues =
-              await repositories.competitionRepository.getPortfolioTokenValues(
-                latestSnapshot.id,
-              );
+            const tokenValues = await getPortfolioTokenValues(
+              latestSnapshot.id,
+            );
 
             // Format the token values with additional information
             const formattedTokens = tokenValues.map((tokenValue) => {

@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 
-import { repositories } from "@/database/index.js";
+import { findByEmail } from "@/database/repositories/team-repository.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 export function makePublicController(services: ServiceRegistry) {
@@ -30,8 +30,7 @@ export function makePublicController(services: ServiceRegistry) {
         }
 
         // First check if a team with this email already exists
-        const existingTeam =
-          await repositories.teamRepository.findByEmail(email);
+        const existingTeam = await findByEmail(email);
 
         if (existingTeam) {
           const errorMessage = `A team with email ${email} already exists`;

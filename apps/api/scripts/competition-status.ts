@@ -1,7 +1,11 @@
 import * as dotenv from "dotenv";
 import * as path from "path";
 
-import { repositories } from "@/database/index.js";
+import {
+  findAll,
+  getCompetitionTeams,
+  getTeamPortfolioSnapshots,
+} from "@/database/repositories/competition-repository.js";
 import { ServiceRegistry } from "@/services/index.js";
 import { CompetitionStatus } from "@/types/index.js";
 
@@ -88,8 +92,7 @@ async function showCompetitionStatus() {
       );
 
       // Check if there are any previous competitions
-      const pastCompetitions =
-        await repositories.competitionRepository.findAll();
+      const pastCompetitions = await findAll();
       const completedCompetitions = pastCompetitions.filter(
         (c) => c.status === CompetitionStatus.COMPLETED,
       );
@@ -122,10 +125,7 @@ async function showCompetitionStatus() {
     }
 
     // Get teams participating in the competition
-    const participatingTeamIds =
-      await repositories.competitionRepository.getCompetitionTeams(
-        competition.id,
-      );
+    const participatingTeamIds = await getCompetitionTeams(competition.id);
 
     // Get all teams (for mapping IDs to names)
     const allTeams = await services.teamManager.getAllTeams(false);
@@ -232,11 +232,10 @@ async function showCompetitionStatus() {
 
       // Get the first snapshot for each team in the competition
       for (const entry of sortedLeaderboard) {
-        const snapshots =
-          await repositories.competitionRepository.getTeamPortfolioSnapshots(
-            competition.id,
-            entry.teamId,
-          );
+        const snapshots = await getTeamPortfolioSnapshots(
+          competition.id,
+          entry.teamId,
+        );
         if (snapshots.length > 0) {
           // Sort by timestamp and get the first one (initial snapshot)
           const sortedSnapshots = snapshots.sort(

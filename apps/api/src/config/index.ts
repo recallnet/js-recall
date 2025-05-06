@@ -145,7 +145,7 @@ export const config = {
     ssl: process.env.DB_SSL === "true",
     url:
       process.env.DATABASE_URL ||
-      "postgresql://postgres:postgres@localhost:5432/trading_simulator?ssl=true",
+      "postgresql://postgres:postgres@localhost:5432/trading_simulator",
   },
   redis: {
     url: process.env.REDIS_URL || "redis://localhost:6379",

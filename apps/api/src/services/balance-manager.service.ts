@@ -1,5 +1,12 @@
 import { config } from "@/config/index.js";
-import { repositories } from "@/database/index.js";
+import {
+  count,
+  getBalance,
+  getTeamBalances,
+  initializeTeamBalances,
+  resetTeamBalances,
+  saveBalance,
+} from "@/database/repositories/balance-repository.js";
 import { SpecificChain } from "@/types/index.js";
 
 /**
@@ -28,10 +35,7 @@ export class BalanceManager {
       this.addSpecificChainTokensToBalances(initialBalances);
 
       // Save to database
-      await repositories.balanceRepository.initializeTeamBalances(
-        teamId,
-        initialBalances,
-      );
+      await initializeTeamBalances(teamId, initialBalances);
 
       // Update cache
       this.balanceCache.set(teamId, initialBalances);
@@ -110,10 +114,7 @@ export class BalanceManager {
       }
 
       // Get from database
-      const balance = await repositories.balanceRepository.getBalance(
-        teamId,
-        tokenAddress,
-      );
+      const balance = await getBalance(teamId, tokenAddress);
 
       // If balance exists, update cache
       if (balance) {
@@ -142,8 +143,7 @@ export class BalanceManager {
   async getAllBalances(teamId: string) {
     try {
       // Get from database
-      const balances =
-        await repositories.balanceRepository.getTeamBalances(teamId);
+      const balances = await getTeamBalances(teamId);
 
       // Update cache
       const balanceMap = new Map<string, number>();
@@ -181,12 +181,7 @@ export class BalanceManager {
       }
 
       // Save to database
-      await repositories.balanceRepository.saveBalance(
-        teamId,
-        tokenAddress,
-        amount,
-        specificChain,
-      );
+      await saveBalance(teamId, tokenAddress, amount, specificChain);
 
       // Update cache
       if (!this.balanceCache.has(teamId)) {
@@ -265,10 +260,7 @@ export class BalanceManager {
       this.addSpecificChainTokensToBalances(initialBalances);
 
       // Reset in database
-      await repositories.balanceRepository.resetTeamBalances(
-        teamId,
-        initialBalances,
-      );
+      await resetTeamBalances(teamId, initialBalances);
 
       // Update cache
       this.balanceCache.set(teamId, initialBalances);
@@ -306,7 +298,7 @@ export class BalanceManager {
   async isHealthy(): Promise<boolean> {
     try {
       // Simple check to see if we can connect to the database
-      await repositories.balanceRepository.count();
+      await count();
       return true;
     } catch (error) {
       console.error("[BalanceManager] Health check failed:", error);

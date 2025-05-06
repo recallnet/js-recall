@@ -3,7 +3,12 @@ import { v4 as uuidv4 } from "uuid";
 import { InsertTrade, SelectTrade } from "@recallnet/comps-db/schema";
 
 import { config, features } from "@/config/index.js";
-import { repositories } from "@/database/index.js";
+import {
+  count,
+  create as createTrade,
+  getCompetitionTrades,
+  getTeamTrades,
+} from "@/database/repositories/trade-repository.js";
 import { BalanceManager } from "@/services/balance-manager.service.js";
 import { PortfolioSnapshotter } from "@/services/index.js";
 import { BlockchainType, SpecificChain } from "@/types/index.js";
@@ -319,7 +324,7 @@ export class TradeSimulator {
       };
 
       // Store the trade in database
-      const result = await repositories.tradeRepository.create(trade);
+      const result = await createTrade(trade);
 
       // Update cache
       const cachedTrades = this.tradeCache.get(teamId) || [];
@@ -387,11 +392,7 @@ export class TradeSimulator {
       }
 
       // Get from database
-      const trades = await repositories.tradeRepository.getTeamTrades(
-        teamId,
-        limit,
-        offset,
-      );
+      const trades = await getTeamTrades(teamId, limit, offset);
 
       // Update cache if fetching recent trades
       if (!offset && (!limit || limit <= 100)) {
@@ -418,11 +419,7 @@ export class TradeSimulator {
     offset?: number,
   ) {
     try {
-      return await repositories.tradeRepository.getCompetitionTrades(
-        competitionId,
-        limit,
-        offset,
-      );
+      return await getCompetitionTrades(competitionId, limit, offset);
     } catch (error) {
       console.error(
         `[TradeSimulator] Error getting competition trades:`,
@@ -458,7 +455,7 @@ export class TradeSimulator {
   async isHealthy() {
     try {
       // Simple check to see if we can connect to the database
-      await repositories.tradeRepository.count();
+      await count();
       return true;
     } catch (error) {
       console.error("[TradeSimulator] Health check failed:", error);

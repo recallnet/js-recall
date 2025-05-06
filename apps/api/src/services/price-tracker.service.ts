@@ -1,5 +1,10 @@
 import { config } from "@/config/index.js";
-import { repositories } from "@/database/index.js";
+import {
+  count as countPrices,
+  create as createPrice,
+  getLatestPrice,
+  getPriceHistory,
+} from "@/database/repositories/price-repository.js";
 import { MultiChainProvider } from "@/services/providers/multi-chain.provider.js";
 import {
   BlockchainType,
@@ -161,8 +166,7 @@ export class PriceTracker {
 
     // As a last resort, try to get the most recent price from the database
     try {
-      const lastPrice =
-        await repositories.priceRepository.getLatestPrice(tokenAddress);
+      const lastPrice = await getLatestPrice(tokenAddress);
       if (lastPrice) {
         console.log(
           `[PriceTracker] Using last stored price for ${tokenAddress}: $${lastPrice.price} (WARNING: not real-time price)`,
@@ -290,7 +294,7 @@ export class PriceTracker {
     specificChain: SpecificChain,
   ): Promise<void> {
     try {
-      await repositories.priceRepository.create({
+      await createPrice({
         token: tokenAddress,
         price,
         timestamp: new Date(),
@@ -355,10 +359,7 @@ export class PriceTracker {
       else if (timeframe === "6h") hours = 6;
 
       // Get historical data from database
-      const history = await repositories.priceRepository.getPriceHistory(
-        tokenAddress,
-        hours,
-      );
+      const history = await getPriceHistory(tokenAddress, hours);
 
       if (history && history.length > 0) {
         console.log(
@@ -444,7 +445,7 @@ export class PriceTracker {
   async isHealthy(): Promise<boolean> {
     try {
       // Check if database is accessible
-      await repositories.priceRepository.count();
+      await countPrices();
 
       // Check if provider is responsive
       if (this.multiChainProvider) {
