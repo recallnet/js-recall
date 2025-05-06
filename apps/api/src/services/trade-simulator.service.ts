@@ -168,6 +168,19 @@ export class TradeSimulator {
         };
       }
 
+      if (
+        !(fromPrice.specificChain !== null && toPrice.specificChain !== null)
+      ) {
+        console.log(`[TradeSimulator] Missing specific chain data:
+            From Token Specific Chain: ${fromPrice.specificChain}
+            To Token Specific Chain: ${toPrice.specificChain}
+        `);
+        return {
+          success: false,
+          error: "Unable to determine specific chain for tokens",
+        };
+      }
+
       // Check for cross-chain trades if not allowed
       if (
         !features.ALLOW_CROSS_CHAIN_TRADING &&
@@ -276,13 +289,13 @@ export class TradeSimulator {
         teamId,
         fromToken,
         fromAmount,
-        fromPrice.specificChain,
+        fromPrice.specificChain as SpecificChain,
       );
       await this.balanceManager.addAmount(
         teamId,
         toToken,
         toAmount,
-        toPrice.specificChain,
+        toPrice.specificChain as SpecificChain,
       );
 
       // Create trade record

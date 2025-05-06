@@ -69,7 +69,7 @@ export class PriceRepository extends BaseRepository {
         return null;
       }
 
-      const priceRecord = result[0];
+      const priceRecord = result[0]!;
       return priceRecord;
     } catch (error) {
       console.error(`[PriceRepository] Error getting latest price:`, error);

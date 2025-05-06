@@ -10,7 +10,7 @@ importers:
     dependencies:
       drizzle-orm:
         specifier: ^0.42.0
-        version: 0.42.0(@electric-sql/pglite@0.2.17)(@neondatabase/serverless@1.0.0)(@opentelemetry/api@1.9.0)(@types/pg@8.11.14)(better-sqlite3@11.8.1)(pg@8.15.5)(sql.js@1.13.0)
+        version: 0.42.0(@electric-sql/pglite@0.2.17)(@neondatabase/serverless@1.0.0)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@vercel/postgres@0.10.0(utf-8-validate@5.0.10))(better-sqlite3@11.8.1)(pg@8.15.5)(sql.js@1.13.0)
     devDependencies:
       '@changesets/changelog-github':
         specifier: ^0.5.0
@@ -68,10 +68,10 @@ importers:
         version: 1.0.1
       dotenv:
         specifier: ^16.0.3
-        version: 16.5.0
+        version: 16.4.7
       drizzle-orm:
         specifier: ^0.42.0
-        version: 0.42.0(@electric-sql/pglite@0.2.17)(@neondatabase/serverless@1.0.0)(@opentelemetry/api@1.9.0)(@types/pg@8.11.14)(better-sqlite3@11.8.1)(pg@8.15.5)(sql.js@1.13.0)
+        version: 0.42.0(@electric-sql/pglite@0.2.17)(@neondatabase/serverless@1.0.0)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@vercel/postgres@0.10.0(utf-8-validate@5.0.10))(better-sqlite3@11.8.1)(pg@8.15.5)(sql.js@1.13.0)
       express:
         specifier: ^4.18.2
         version: 4.21.2
@@ -129,7 +129,7 @@ importers:
         version: 0.31.0
       drizzle-seed:
         specifier: ^0.3.1
-        version: 0.3.1(drizzle-orm@0.42.0(@electric-sql/pglite@0.2.17)(@neondatabase/serverless@1.0.0)(@opentelemetry/api@1.9.0)(@types/pg@8.11.14)(better-sqlite3@11.8.1)(pg@8.15.5)(sql.js@1.13.0))
+        version: 0.3.1(drizzle-orm@0.42.0(@electric-sql/pglite@0.2.17)(@neondatabase/serverless@1.0.0)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@vercel/postgres@0.10.0(utf-8-validate@5.0.10))(better-sqlite3@11.8.1)(pg@8.15.5)(sql.js@1.13.0))
       openapi-markdown:
         specifier: ^1.2.3
         version: 1.2.3
@@ -13722,11 +13722,11 @@ snapshots:
       pg: 8.15.5
       sql.js: 1.13.0
 
-  drizzle-seed@0.3.1(drizzle-orm@0.42.0(@electric-sql/pglite@0.2.17)(@neondatabase/serverless@1.0.0)(@opentelemetry/api@1.9.0)(@types/pg@8.11.14)(better-sqlite3@11.8.1)(pg@8.15.5)(sql.js@1.13.0)):
+  drizzle-seed@0.3.1(drizzle-orm@0.42.0(@electric-sql/pglite@0.2.17)(@neondatabase/serverless@1.0.0)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@vercel/postgres@0.10.0(utf-8-validate@5.0.10))(better-sqlite3@11.8.1)(pg@8.15.5)(sql.js@1.13.0)):
     dependencies:
       pure-rand: 6.1.0
     optionalDependencies:
-      drizzle-orm: 0.42.0(@electric-sql/pglite@0.2.17)(@neondatabase/serverless@1.0.0)(@opentelemetry/api@1.9.0)(@types/pg@8.11.14)(better-sqlite3@11.8.1)(pg@8.15.5)(sql.js@1.13.0)
+      drizzle-orm: 0.42.0(@electric-sql/pglite@0.2.17)(@neondatabase/serverless@1.0.0)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@vercel/postgres@0.10.0(utf-8-validate@5.0.10))(better-sqlite3@11.8.1)(pg@8.15.5)(sql.js@1.13.0)
 
   dunder-proto@1.0.1:
     dependencies:
