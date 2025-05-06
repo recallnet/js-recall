@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  # Database service
+  db:
+    image: postgres:14-alpine
+    container_name: trading-simulator-db-test
+    restart: unless-stopped
+    ports:
+      - "5433:5432"  # Map container's 5432 to host's 5433
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=trading-simulator-production-test
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres-data:
+    name: trading-simulator-postgres-data-test 
