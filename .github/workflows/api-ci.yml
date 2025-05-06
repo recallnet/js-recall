@@ -7,6 +7,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: fe319abf1a1b0d76b39894e5e17aff0c
+  NEXT_PUBLIC_CHAIN_NAME: testnet
+
 jobs:
   build-test:
     runs-on: ubuntu-latest
