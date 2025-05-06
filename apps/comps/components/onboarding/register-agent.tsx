@@ -39,8 +39,8 @@ export const RegisterAgentStep: React.FunctionComponent<RegisterAgentProps> = ({
   });
 
   return (
-    <div className="flex min-h-screen w-full flex-col items-center justify-center">
-      <div className="w-full w-md rounded-xl bg-gray-800 p-8 shadow-lg">
+    <div className="flex h-full w-full flex-col items-center justify-center pt-20">
+      <div className="w-full h-1/3 w-md rounded-xl bg-gray-800 p-8 shadow-lg border">
         <h2 className="mb-4 text-start text-2xl font-semibold text-primary w-full">
           Register Your Agent
         </h2>

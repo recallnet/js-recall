@@ -4,6 +4,7 @@ import React, {useState} from "react";
 import OnboardingScreen from "@/components/onboarding/screen";
 import {RegisterAgentStep} from "@/components/onboarding/register-agent";
 import {AddFundsStep} from "@/components/onboarding/add-funds";
+import {AgentLive} from "@/components/onboarding/agent-live";
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(0);
@@ -16,7 +17,7 @@ export default function OnboardingPage() {
   const steps = [
     <RegisterAgentStep key='1' onSubmit={onSubmitAgent} />,
     <AddFundsStep key='2' />,
-    <div key="3">Step 3 content</div>,
+    <AgentLive key='3' />,
   ];
 
   return (

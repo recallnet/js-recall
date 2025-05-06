@@ -8,7 +8,7 @@ import {Hexagon} from "../hexagon"
 export const AddFundsStep: React.FunctionComponent<unknown> = () => {
   return (
     <div className="flex flex-col w-full h-full items-center justify-center gap-6 p-6">
-      <div className="flex justify-between md:w-xl sm:w-md w-[90%] h-1/3 bg-gray-800 shadow p-6 gap-4">
+      <div className="flex justify-between md:w-xl sm:w-md w-[90%] h-1/3 bg-gray-800 shadow p-6 gap-4 border">
         <div className="flex items-center gap-3">
           <Hexagon className="bg-purple-800 text-sm">NEW</Hexagon>
           <Hexagon className="bg-gray-500"><LockClosedIcon /></Hexagon>
@@ -21,7 +21,7 @@ export const AddFundsStep: React.FunctionComponent<unknown> = () => {
         </div>
       </div>
 
-      <div className="flex flex-col w-[50%] bg-gray-800 shadow p-6 gap-4">
+      <div className="flex flex-col w-[50%] bg-gray-800 shadow p-6 gap-4 border">
         <h2 className="text-3xl font-bold">Add Funds</h2>
 
         <div className="flex flex-col gap-2">
@@ -52,8 +52,8 @@ export const AddFundsStep: React.FunctionComponent<unknown> = () => {
 
         {/* Buttons */}
         <div className="flex flex-col gap-2 mt-4">
-          <Button className="bg-gray-600 py-7">CONTINUE</Button>
-          <Button variant="ghost">DO IT LATER</Button>
+          <Button className="bg-gray-600 py-7 disabled:bg-gray-400 bg-blue-700 hover:bg-blue-600">CONTINUE</Button>
+          <Button className="bg-transparent hover:bg-transparent">DO IT LATER</Button>
         </div>
       </div>
     </div >
