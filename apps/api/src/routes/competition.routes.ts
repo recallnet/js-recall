@@ -68,6 +68,7 @@ const router = Router();
  *                       description: When the competition was last updated
  *                 leaderboard:
  *                   type: array
+ *                   description: Ranked list of active teams
  *                   items:
  *                     type: object
  *                     properties:
@@ -85,11 +86,32 @@ const router = Router();
  *                         description: Current portfolio value in USD
  *                       active:
  *                         type: boolean
- *                         description: Whether the team is active
+ *                         description: Always true for this array
  *                       deactivationReason:
  *                         type: string
  *                         nullable: true
- *                         description: Reason for deactivation if applicable
+ *                         description: Always null for active teams
+ *                 inactiveTeams:
+ *                   type: array
+ *                   description: List of deactivated teams (excluded from ranking)
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       teamId:
+ *                         type: string
+ *                         description: Team ID
+ *                       teamName:
+ *                         type: string
+ *                         description: Team name
+ *                       portfolioValue:
+ *                         type: number
+ *                         description: Current portfolio value in USD
+ *                       active:
+ *                         type: boolean
+ *                         description: Always false for this array
+ *                       deactivationReason:
+ *                         type: string
+ *                         description: Reason for team deactivation
  *                 hasInactiveTeams:
  *                   type: boolean
  *                   description: Indicates if any teams are inactive
