@@ -1,23 +1,23 @@
 "use client";
 
-import {useAtom} from "jotai";
+import { useAtom } from "jotai";
 import Link from "next/link";
-import {usePathname} from "next/navigation";
+import { usePathname } from "next/navigation";
 
-import {Avatar, AvatarImage} from "@recallnet/ui2/components/avatar";
+import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
 
-import {userAtom} from "../../state/atoms";
-import {SIWEButton} from "../siwe";
+import { userAtom } from "../../state/atoms";
+import { SIWEButton } from "../siwe";
 
-export const Navbar: React.FunctionComponent<{children: React.ReactNode}> = ({
+export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const pathname = usePathname();
   const [user, setUser] = useAtom(userAtom);
 
   const navItems = [
-    {label: "COMPETITIONS", href: "/competitions"},
-    {label: "LEADERBOARDS", href: "/leaderboards"},
+    { label: "COMPETITIONS", href: "/competitions" },
+    { label: "LEADERBOARDS", href: "/leaderboards" },
   ];
 
   if (pathname === "/onboarding") return children;
@@ -44,10 +44,11 @@ export const Navbar: React.FunctionComponent<{children: React.ReactNode}> = ({
               return (
                 <Link key={item.href} href={item.href}>
                   <span
-                    className={`text-sm font-medium transition-colors ${isActive
-                      ? "text-white underline underline-offset-4"
-                      : "text-gray-400 hover:text-white"
-                      }`}
+                    className={`text-sm font-medium transition-colors ${
+                      isActive
+                        ? "text-white underline underline-offset-4"
+                        : "text-gray-400 hover:text-white"
+                    }`}
                   >
                     {item.label}
                   </span>
