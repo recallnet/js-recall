@@ -56,15 +56,16 @@ export const RegisterAgentStep: React.FunctionComponent<RegisterAgentProps> = ({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="flex justify-start gap-6">
-              <div className="flex h-40 w-40 items-center justify-center rounded bg-gray-700">
+              <div className="h-31 w-31 flex items-center justify-center rounded bg-gray-700">
                 <span className="text-gray-300">Placeholder</span>
               </div>
 
-              <div className="w-full md:w-1/2">
-                <div className="mb-4 flex gap-2">
-                  <div className="h-6 w-6 rounded-full bg-blue-500" />
-                  <div className="h-6 w-6 rounded-full bg-green-500" />
-                  <div className="h-6 w-6 rounded-full bg-red-500" />
+              <div className="flex w-full flex-col justify-between md:w-1/2">
+                <div className="mb-4 flex gap-4">
+                  <div className="h-8 w-8 rounded-full bg-blue-500" />
+                  <div className="h-8 w-8 rounded-full bg-green-500" />
+                  <div className="h-8 w-8 rounded-full bg-red-500" />
+                  <div className="h-8 w-8 rounded-full bg-purple-500" />
                 </div>
 
                 <FormField
@@ -83,7 +84,6 @@ export const RegisterAgentStep: React.FunctionComponent<RegisterAgentProps> = ({
               </div>
             </div>
 
-            {/* Origin Address */}
             <FormField
               control={form.control}
               name="address"
@@ -98,7 +98,6 @@ export const RegisterAgentStep: React.FunctionComponent<RegisterAgentProps> = ({
               )}
             />
 
-            {/* Submit */}
             <div className="pt-4">
               <button
                 type="submit"

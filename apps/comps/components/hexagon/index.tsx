@@ -12,7 +12,7 @@ export const Hexagon: React.FC<HexagonProps> = ({
   return (
     <div
       className={cn(
-        "flex h-12 w-12 items-center justify-center text-white",
+        "h-13 w-13 flex items-center justify-center text-white",
         className,
       )}
       style={{
@@ -20,10 +20,11 @@ export const Hexagon: React.FC<HexagonProps> = ({
           "polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)",
         WebkitClipPath:
           "polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)",
+        transform: "rotate(90deg)",
       }}
       {...props}
     >
-      {children}
+      <div className="rotate-[-90deg]">{children}</div>
     </div>
   );
 };
