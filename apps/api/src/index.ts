@@ -17,6 +17,12 @@ import * as publicRoutes from "@/routes/public.routes.js";
 import * as tradeRoutes from "@/routes/trade.routes.js";
 import { services } from "@/services/index.js";
 
+// Import the console interceptor instead of the logger
+import { interceptConsole } from "./utils/console-interceptor.js";
+
+// Initialize console interception immediately
+interceptConsole();
+
 // Create Express app
 const app = express();
 
