@@ -57,11 +57,7 @@ jobs:
           # Create a simplified test environment file
           cat > .env.test << EOF
           NODE_ENV=test
-          DB_HOST=localhost
-          DB_PORT=5432
-          DB_USERNAME=postgres
-          DB_PASSWORD=postgres
-          DB_NAME=trading_simulator_test
+          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/trading_simulator_test
           ROOT_ENCRYPTION_KEY=test_root_encryption_key
           EVM_CHAINS=eth,polygon,bsc,arbitrum,base,optimism,avalanche,linea
           TEST_MODE=true
@@ -197,11 +193,7 @@ jobs:
 
           cat > .env.test << EOF
           # Test Database Configuration
-          DB_HOST=$DB_HOST_VALUE
-          DB_PORT=5432
-          DB_USERNAME=postgres
-          DB_PASSWORD=postgres
-          DB_NAME=trading_simulator_test
+          DATABASE_URL=postgresql://postgres:postgres@${DB_HOST_VALUE}:5432/trading_simulator_test
 
           # Test Server Configuration
           TEST_PORT=3001
@@ -346,11 +338,7 @@ jobs:
         env:
           TEST_MODE: true
           CI: true
-          DB_HOST: ${{ steps.detect-env.outputs.db_host }}
-          DB_PORT: 5432
-          DB_USERNAME: postgres
-          DB_PASSWORD: postgres
-          DB_NAME: trading_simulator_test
+          DATABASE_URL: postgresql://postgres:postgres@${{ steps.detect-env.outputs.db_host }}:5432/trading_simulator_test
           TEST_HOST: ${{ steps.detect-env.outputs.test_host }}
           JEST_WORKER_ID: 1 # Force single worker to prevent open handles from child processes
           DB_CONNECTION_TIMEOUT: 5000
