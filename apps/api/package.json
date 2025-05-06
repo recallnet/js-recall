@@ -14,7 +14,7 @@
     "build": "tsc",
     "test": "vitest run --project unit",
     "test:watch": "vitest watch --project unit",
-    "test:e2e": "vitest run --project e2e",
+    "test:e2e": "vitest run --project e2e e2e/tests/price-fetching.test.ts:67",
     "test:e2e:watch": "vitest watch --project e2e",
     "test:e2e:runner": "tsx e2e/run-tests.ts",
     "test:multi-chain": "vitest run src/services/providers/__tests__/multi-chain.provider.test.ts",
@@ -55,6 +55,7 @@
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
     "dotenv": "^16.0.3",
+    "es6-promise": "^4.2.8",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.10.0",
@@ -62,7 +63,8 @@
     "redis": "^4.6.5",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "whatwg-fetch": "^3.6.20"
   },
   "devDependencies": {
     "@elizaos/core": "^0.25.9",
