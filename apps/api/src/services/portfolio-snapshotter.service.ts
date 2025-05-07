@@ -57,7 +57,10 @@ export class PortfolioSnapshotter {
         priceLookupCount++;
 
         // First try to get latest price record from the database to reuse chain information
-        const latestPriceRecord = await getLatestPrice(balance.tokenAddress);
+        const latestPriceRecord = await getLatestPrice(
+          balance.tokenAddress,
+          balance.specificChain as SpecificChain,
+        );
 
         let specificChain: string | null;
         let priceResult;

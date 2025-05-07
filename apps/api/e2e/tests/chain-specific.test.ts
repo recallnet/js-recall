@@ -6,7 +6,12 @@ import { portfolioSnapshots, trades } from "@recallnet/comps-db/schema";
 
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
-import { BalancesResponse, SpecificChain } from "@/e2e/utils/api-types.js";
+import {
+  BalancesResponse,
+  BlockchainType,
+  SpecificChain,
+  TradeResponse,
+} from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,

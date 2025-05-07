@@ -2,16 +2,10 @@ import { config } from "@/config/index.js";
 import {
   count as countPrices,
   create as createPrice,
-  getLatestPrice,
   getPriceHistory,
 } from "@/database/repositories/price-repository.js";
 import { MultiChainProvider } from "@/services/providers/multi-chain.provider.js";
-import {
-  BlockchainType,
-  PriceReport,
-  PriceSource,
-  SpecificChain,
-} from "@/types/index.js";
+import { BlockchainType, PriceSource, SpecificChain } from "@/types/index.js";
 
 /**
  * Price Tracker Service
