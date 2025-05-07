@@ -9,6 +9,7 @@ on:
 
 env:
   NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: fe319abf1a1b0d76b39894e5e17aff0c
+  NEXT_PUBLIC_WALLET_PROJECT_ID: 768afa89687ff9f4d0ec5a643e4ace29
   NEXT_PUBLIC_CHAIN_NAME: testnet
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
