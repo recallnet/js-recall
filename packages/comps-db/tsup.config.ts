@@ -1,12 +1,7 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: [
-    "src/index.ts",
-    "src/schema.ts",
-    "src/relations.ts",
-    "src/queries/insert.ts",
-  ],
+  entry: ["src/schema.ts", "src/relations.ts"],
   format: ["cjs", "esm"],
   dts: true,
   clean: true,
