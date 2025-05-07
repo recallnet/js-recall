@@ -1,6 +1,8 @@
 import axios from "axios";
-import { sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
+
+import { teams } from "@recallnet/comps-db/schema";
 
 import { db } from "@/database/db.js";
 import {
@@ -424,14 +426,14 @@ describe("Competition API", () => {
 
     // Give a small delay for deactivation to complete
     await wait(500);
-    const dbResult = await db.execute(
-      sql`SELECT active, deactivation_reason FROM teams WHERE id = ${team.id}`,
-    );
+    const dbResult = await db.query.teams.findFirst({
+      where: eq(teams.id, team.id),
+    });
 
     // Verify team is marked as inactive in the database
-    expect(dbResult.rows.length).toBe(1);
-    expect(dbResult.rows[0]?.active).toBe(false);
-    expect(dbResult.rows[0]?.deactivation_reason).toContain("Competition");
+    expect(dbResult).toBeDefined();
+    expect(dbResult?.active).toBe(false);
+    expect(dbResult?.deactivationReason).toContain("Competition");
 
     // Team should no longer be able to access restricted endpoints
     try {
