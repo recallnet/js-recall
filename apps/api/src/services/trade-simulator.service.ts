@@ -1,15 +1,17 @@
 import { v4 as uuidv4 } from "uuid";
 
+import { InsertTrade, SelectTrade } from "@recallnet/comps-db/schema";
+
 import { config, features } from "@/config/index.js";
-import { repositories } from "@/database/index.js";
-import { BalanceManager } from "@/services/balance-manager.service.js";
-import { services } from "@/services/index.js";
 import {
-  BlockchainType,
-  SpecificChain,
-  Trade,
-  TradeResult,
-} from "@/types/index.js";
+  count,
+  create as createTrade,
+  getCompetitionTrades,
+  getTeamTrades,
+} from "@/database/repositories/trade-repository.js";
+import { BalanceManager } from "@/services/balance-manager.service.js";
+import { PortfolioSnapshotter } from "@/services/index.js";
+import { BlockchainType, SpecificChain } from "@/types/index.js";
 
 import { PriceTracker } from "./price-tracker.service.js";
 
@@ -29,13 +31,19 @@ export class TradeSimulator {
   private balanceManager: BalanceManager;
   private priceTracker: PriceTracker;
   // Cache of recent trades for performance (teamId -> trades)
-  private tradeCache: Map<string, Trade[]>;
+  private tradeCache: Map<string, SelectTrade[]>;
   // Maximum trade percentage of portfolio value
   private maxTradePercentage: number;
+  private portfolioSnapshotter: PortfolioSnapshotter;
 
-  constructor(balanceManager: BalanceManager, priceTracker: PriceTracker) {
+  constructor(
+    balanceManager: BalanceManager,
+    priceTracker: PriceTracker,
+    portfolioSnapshotter: PortfolioSnapshotter,
+  ) {
     this.balanceManager = balanceManager;
     this.priceTracker = priceTracker;
+    this.portfolioSnapshotter = portfolioSnapshotter;
     this.tradeCache = new Map();
     // Get the maximum trade percentage from config
     this.maxTradePercentage = config.maxTradePercentage;
@@ -62,7 +70,7 @@ export class TradeSimulator {
     reason: string,
     slippageTolerance?: number,
     chainOptions?: ChainOptions,
-  ): Promise<TradeResult> {
+  ): Promise<{ success: boolean; trade?: SelectTrade; error?: string }> {
     try {
       console.log(`\n[TradeSimulator] Starting trade execution:
                 Team: ${teamId}
@@ -181,6 +189,19 @@ export class TradeSimulator {
         };
       }
 
+      if (
+        !(fromPrice.specificChain !== null && toPrice.specificChain !== null)
+      ) {
+        console.log(`[TradeSimulator] Missing specific chain data:
+            From Token Specific Chain: ${fromPrice.specificChain}
+            To Token Specific Chain: ${toPrice.specificChain}
+        `);
+        return {
+          success: false,
+          error: "Unable to determine specific chain for tokens",
+        };
+      }
+
       // Check for cross-chain trades if not allowed
       if (
         !features.ALLOW_CROSS_CHAIN_TRADING &&
@@ -289,17 +310,17 @@ export class TradeSimulator {
         teamId,
         fromToken,
         fromAmount,
-        fromPrice.specificChain,
+        fromPrice.specificChain as SpecificChain,
       );
       await this.balanceManager.addAmount(
         teamId,
         toToken,
         toAmount,
-        toPrice.specificChain,
+        toPrice.specificChain as SpecificChain,
       );
 
       // Create trade record
-      const trade: Trade = {
+      const trade: InsertTrade = {
         id: uuidv4(),
         timestamp: new Date(),
         fromToken,
@@ -319,11 +340,11 @@ export class TradeSimulator {
       };
 
       // Store the trade in database
-      await repositories.tradeRepository.create(trade);
+      const result = await createTrade(trade);
 
       // Update cache
       const cachedTrades = this.tradeCache.get(teamId) || [];
-      cachedTrades.unshift(trade); // Add to beginning of array (newest first)
+      cachedTrades.unshift(result); // Add to beginning of array (newest first)
       // Limit cache size to 100 trades per team
       if (cachedTrades.length > 100) {
         cachedTrades.pop();
@@ -338,7 +359,7 @@ export class TradeSimulator {
 
       // Trigger a portfolio snapshot after successful trade execution
       // We run this asynchronously without awaiting to avoid delaying the trade response
-      services.competitionManager
+      this.portfolioSnapshotter
         .takePortfolioSnapshots(competitionId)
         .catch((error) => {
           console.error(
@@ -351,7 +372,7 @@ export class TradeSimulator {
 
       return {
         success: true,
-        trade,
+        trade: result,
       };
     } catch (error) {
       const errorMessage =
@@ -371,11 +392,7 @@ export class TradeSimulator {
    * @param offset Optional offset for pagination
    * @returns Array of Trade objects
    */
-  async getTeamTrades(
-    teamId: string,
-    limit?: number,
-    offset?: number,
-  ): Promise<Trade[]> {
+  async getTeamTrades(teamId: string, limit?: number, offset?: number) {
     try {
       // If limit is small and we have cache, use it
       if (
@@ -391,11 +408,7 @@ export class TradeSimulator {
       }
 
       // Get from database
-      const trades = await repositories.tradeRepository.getTeamTrades(
-        teamId,
-        limit,
-        offset,
-      );
+      const trades = await getTeamTrades(teamId, limit, offset);
 
       // Update cache if fetching recent trades
       if (!offset && (!limit || limit <= 100)) {
@@ -420,13 +433,9 @@ export class TradeSimulator {
     competitionId: string,
     limit?: number,
     offset?: number,
-  ): Promise<Trade[]> {
+  ) {
     try {
-      return await repositories.tradeRepository.getCompetitionTrades(
-        competitionId,
-        limit,
-        offset,
-      );
+      return await getCompetitionTrades(competitionId, limit, offset);
     } catch (error) {
       console.error(
         `[TradeSimulator] Error getting competition trades:`,
@@ -441,12 +450,12 @@ export class TradeSimulator {
    * @param teamId The team ID
    * @returns Total portfolio value in USD
    */
-  async calculatePortfolioValue(teamId: string): Promise<number> {
+  async calculatePortfolioValue(teamId: string) {
     let totalValue = 0;
     const balances = await this.balanceManager.getAllBalances(teamId);
 
     for (const balance of balances) {
-      const price = await this.priceTracker.getPrice(balance.token);
+      const price = await this.priceTracker.getPrice(balance.tokenAddress);
       if (price) {
         totalValue += balance.amount * price.price;
       }
@@ -459,10 +468,10 @@ export class TradeSimulator {
    * Check if trade simulator is healthy
    * For system health check use
    */
-  async isHealthy(): Promise<boolean> {
+  async isHealthy() {
     try {
       // Simple check to see if we can connect to the database
-      await repositories.tradeRepository.count();
+      await count();
       return true;
     } catch (error) {
       console.error("[TradeSimulator] Health check failed:", error);

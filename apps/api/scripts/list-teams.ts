@@ -1,8 +1,9 @@
 import * as dotenv from "dotenv";
 import * as path from "path";
 
-import { DatabaseConnection } from "@/database/connection.js";
-import { services } from "@/services/index.js";
+import { ServiceRegistry } from "@/services/index.js";
+
+const services = new ServiceRegistry();
 
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
@@ -47,11 +48,13 @@ async function listAllTeams() {
     );
 
     // Sort teams by creation date (newest first)
-    teams.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    teams.sort(
+      (a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0),
+    );
 
     teams.forEach((team, i) => {
-      const created = new Date(team.createdAt).toLocaleString();
-      const updated = new Date(team.updatedAt).toLocaleString();
+      const created = team.createdAt?.toLocaleString();
+      const updated = team.updatedAt?.toLocaleString();
 
       console.log(
         `${colors.cyan}╔════════════════════════════════════════════════════════════════╗${colors.reset}`,
@@ -95,9 +98,6 @@ async function listAllTeams() {
       error instanceof Error ? error.message : error,
     );
   } finally {
-    // Close database connection
-    await DatabaseConnection.getInstance().close();
-
     // Exit the process after clean closure
     process.exit(0);
   }

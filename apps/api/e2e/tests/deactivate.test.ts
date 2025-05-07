@@ -309,7 +309,11 @@ describe("Team Deactivation API", () => {
     expect(leaderboardBefore.success).toBe(true);
     expect(leaderboardBefore.leaderboard).toBeDefined();
 
-    // All three teams should be in the leaderboard
+    // Verify inactiveTeams array exists but is empty before deactivation
+    expect(leaderboardBefore.inactiveTeams).toBeDefined();
+    expect(leaderboardBefore.inactiveTeams.length).toBe(0);
+
+    // All three teams should be in the active leaderboard
     const teamIds = leaderboardBefore.leaderboard.map((entry) => entry.teamId);
     expect(teamIds).toContain(team1.id);
     expect(teamIds).toContain(team2.id);
@@ -328,28 +332,31 @@ describe("Team Deactivation API", () => {
       (await teamClient1.getLeaderboard()) as LeaderboardResponse;
     expect(leaderboardAfter.success).toBe(true);
     expect(leaderboardAfter.leaderboard).toBeDefined();
+    expect(leaderboardAfter.inactiveTeams).toBeDefined();
 
-    // Verify team3 is still in the leaderboard but marked as inactive
-    const teamIdsAfter = leaderboardAfter.leaderboard.map(
+    // Verify team3 is now in the inactiveTeams array, not in the main leaderboard
+    // Active leaderboard should only contain team1 and team2
+    const activeTeamIds = leaderboardAfter.leaderboard.map(
       (entry) => entry.teamId,
     );
-    expect(teamIdsAfter).toContain(team1.id);
-    expect(teamIdsAfter).toContain(team2.id);
-    expect(teamIdsAfter).toContain(team3.id);
+    expect(activeTeamIds).toContain(team1.id);
+    expect(activeTeamIds).toContain(team2.id);
+    expect(activeTeamIds).not.toContain(team3.id);
 
-    // Find team3 entry and verify it's marked as inactive
-    const team3Entry = leaderboardAfter.leaderboard.find(
-      (entry) => entry.teamId === team3.id,
-    );
-    expect(team3Entry).toBeDefined();
-    expect(team3Entry?.active).toBe(false);
-    expect(team3Entry?.deactivationReason).toBe(reason);
+    // Verify inactive team array contains only team3
+    expect(leaderboardAfter.inactiveTeams.length).toBe(1);
+    const inactiveTeam = leaderboardAfter.inactiveTeams[0];
+    expect(inactiveTeam?.teamId).toBe(team3.id);
+    expect(inactiveTeam?.active).toBe(false);
+    expect(inactiveTeam?.deactivationReason).toBe(reason);
+
+    // Active teams should have ranks 1 and 2
+    const ranks = leaderboardAfter.leaderboard.map((entry) => entry.rank);
+    expect(ranks).toContain(1);
+    expect(ranks).toContain(2);
+    expect(ranks.length).toBe(2); // Only two teams should have ranks
 
     expect(leaderboardAfter.hasInactiveTeams).toBe(true);
-
-    // All teams should still have ranks
-    const ranks = leaderboardAfter.leaderboard.map((entry) => entry.rank);
-    expect(ranks.length).toBe(3); // All three teams still have ranks
 
     // Reactivate the team and verify they show up again
     await adminClient.reactivateTeam(team3.id);
@@ -362,8 +369,10 @@ describe("Team Deactivation API", () => {
       (await teamClient1.getLeaderboard()) as LeaderboardResponse;
     expect(leaderboardFinal.success).toBe(true);
     expect(leaderboardFinal.leaderboard).toBeDefined();
+    expect(leaderboardFinal.inactiveTeams).toBeDefined();
+    expect(leaderboardFinal.inactiveTeams.length).toBe(0);
 
-    // Verify team3 is back in the leaderboard and active
+    // Verify team3 is back in the active leaderboard
     const teamIdsFinal = leaderboardFinal.leaderboard.map(
       (entry) => entry.teamId,
     );
@@ -378,6 +387,7 @@ describe("Team Deactivation API", () => {
     expect(team3FinalEntry).toBeDefined();
     expect(team3FinalEntry?.active).toBe(true);
     expect(team3FinalEntry?.deactivationReason).toBeNull();
+    expect(team3FinalEntry?.rank).toBeDefined(); // Should have a rank assigned
 
     // Verify the hasInactiveTeams flag is false
     expect(leaderboardFinal.hasInactiveTeams).toBe(false);

@@ -474,18 +474,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "in": "header",
-            "name": "Authorization",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "Bearer token for authentication (format \"Bearer YOUR_API_KEY\")",
-            "example": "Bearer abc123def456_ghi789jkl012"
-          }
-        ],
         "responses": {
           "200": {
             "description": "API key reset successfully",
@@ -697,18 +685,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "header",
-            "name": "Authorization",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "Bearer token for authentication (format \"Bearer YOUR_API_KEY\")",
-            "example": "Bearer abc123def456_ghi789jkl012"
           }
         ],
         "responses": {
@@ -2086,6 +2062,7 @@
                     },
                     "leaderboard": {
                       "type": "array",
+                      "description": "Ranked list of active teams",
                       "items": {
                         "type": "object",
                         "properties": {
@@ -2107,12 +2084,41 @@
                           },
                           "active": {
                             "type": "boolean",
-                            "description": "Whether the team is active"
+                            "description": "Always true for this array"
                           },
                           "deactivationReason": {
                             "type": "string",
                             "nullable": true,
-                            "description": "Reason for deactivation if applicable"
+                            "description": "Always null for active teams"
+                          }
+                        }
+                      }
+                    },
+                    "inactiveTeams": {
+                      "type": "array",
+                      "description": "List of deactivated teams (excluded from ranking)",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "teamId": {
+                            "type": "string",
+                            "description": "Team ID"
+                          },
+                          "teamName": {
+                            "type": "string",
+                            "description": "Team name"
+                          },
+                          "portfolioValue": {
+                            "type": "number",
+                            "description": "Current portfolio value in USD"
+                          },
+                          "active": {
+                            "type": "boolean",
+                            "description": "Always false for this array"
+                          },
+                          "deactivationReason": {
+                            "type": "string",
+                            "description": "Reason for team deactivation"
                           }
                         }
                       }
@@ -2923,7 +2929,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": null,
         "requestBody": {
           "required": true,
           "content": {

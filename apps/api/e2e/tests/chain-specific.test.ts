@@ -1,14 +1,12 @@
 import axios from "axios";
+import { and, desc, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { portfolioSnapshots, trades } from "@recallnet/comps-db/schema";
+
 import { config } from "@/config/index.js";
-import {
-  BalancesResponse,
-  BlockchainType,
-  SpecificChain,
-  TradeResponse,
-} from "@/e2e/utils/api-types.js";
-import { getPool } from "@/e2e/utils/db-manager.js";
+import { db } from "@/database/db.js";
+import { BalancesResponse, SpecificChain } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
@@ -20,7 +18,7 @@ import {
   startTestCompetition,
 } from "@/e2e/utils/test-helpers.js";
 
-const reason = "chainSpecific end to end tests";
+const reason = "chain specific end to end tests";
 
 describe("Specific Chains", () => {
   let adminApiKey: string;
@@ -66,7 +64,7 @@ describe("Specific Chains", () => {
 
     // Verify each token has the correct specificChain value
     for (const balance of balancesResponse.balances) {
-      const tokenAddress = balance.token.toLowerCase();
+      const tokenAddress = balance.tokenAddress.toLowerCase();
       const assignedChain = balance.specificChain;
 
       // Verify specificChain is returned in the API response
@@ -132,15 +130,17 @@ describe("Specific Chains", () => {
     if (Array.isArray(balanceResponse.balances)) {
       // Find the tokens in the balances array using the config addresses
       const ethBalance = balanceResponse.balances.find(
-        (balance) => balance.token.toLowerCase() === ethAddress.toLowerCase(),
+        (balance) =>
+          balance.tokenAddress.toLowerCase() === ethAddress.toLowerCase(),
       );
 
       const usdcBalance = balanceResponse.balances.find(
-        (balance) => balance.token.toLowerCase() === usdcAddress.toLowerCase(),
+        (balance) =>
+          balance.tokenAddress.toLowerCase() === usdcAddress.toLowerCase(),
       );
 
-      if (ethBalance) ethToken = ethBalance.token;
-      if (usdcBalance) usdcToken = usdcBalance.token;
+      if (ethBalance) ethToken = ethBalance.tokenAddress;
+      if (usdcBalance) usdcToken = usdcBalance.tokenAddress;
 
       console.log(
         `Looking for ETH token (${ethAddress}) and USDC token (${usdcAddress})`,
@@ -170,24 +170,19 @@ describe("Specific Chains", () => {
     });
     expect(tradeResponse.success).toBe(true);
 
-    // Get the database connection
-    const pool = getPool();
-
     // Query the trades table to check if specificChain fields were correctly populated
-    const tradesResult = await pool.query(
-      "SELECT from_token, to_token, from_specific_chain, to_specific_chain FROM trades WHERE team_id = $1",
-      [team.id],
-    );
+    const trade = await db.query.trades.findFirst({
+      where: eq(trades.teamId, team.id),
+    });
 
     // Verify we have a trade record
-    expect(tradesResult.rows.length).toBe(1);
+    expect(trade).toBeDefined();
 
     // Verify the specificChain fields were correctly populated
-    const trade = tradesResult.rows[0];
-    expect(trade?.from_specific_chain).toBe("eth");
-    expect(trade?.to_specific_chain).toBe("eth");
-    expect(trade?.from_token).toBe(ethToken);
-    expect(trade?.to_token).toBe(usdcToken);
+    expect(trade?.fromSpecificChain).toBe("eth");
+    expect(trade?.toSpecificChain).toBe("eth");
+    expect(trade?.fromToken).toBe(ethToken);
+    expect(trade?.toToken).toBe(usdcToken);
   });
 
   test("specificChain is correctly recorded in portfolio_token_values when taking snapshots", async () => {
@@ -221,31 +216,22 @@ describe("Specific Chains", () => {
     // Wait briefly for snapshot to complete
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    // Get the database connection
-    const pool = getPool();
-
     // Find the most recent portfolio snapshot for this team
-    const snapshotResult = await pool.query(
-      "SELECT id FROM portfolio_snapshots WHERE team_id = $1 ORDER BY timestamp DESC LIMIT 1",
-      [team.id],
-    );
-
-    expect(snapshotResult.rows.length).toBe(1);
-    const snapshotId = snapshotResult.rows[0]?.id;
-
-    // Query the portfolio_token_values table to check if specificChain was correctly populated
-    const tokenValuesResult = await pool.query(
-      "SELECT token_address, specific_chain FROM portfolio_token_values WHERE portfolio_snapshot_id = $1",
-      [snapshotId],
-    );
+    const snapshotResult = await db.query.portfolioSnapshots.findFirst({
+      where: eq(portfolioSnapshots.teamId, team.id),
+      orderBy: desc(portfolioSnapshots.timestamp),
+      with: {
+        portfolioTokenValues: true,
+      },
+    });
 
     // Verify we have portfolio token value records
-    expect(tokenValuesResult.rows.length).toBeGreaterThan(0);
+    expect(snapshotResult?.portfolioTokenValues.length).toBeGreaterThan(0);
 
     // Verify each token has the correct specific_chain based on config
-    for (const row of tokenValuesResult.rows) {
-      const tokenAddress = (row.token_address as string).toLowerCase();
-      const assignedChain = row.specific_chain;
+    for (const tokenValue of snapshotResult?.portfolioTokenValues ?? []) {
+      const tokenAddress = tokenValue.tokenAddress.toLowerCase();
+      const assignedChain = tokenValue.specificChain;
 
       // Find which chain this token should belong to according to config
       let expectedChain = null;
@@ -328,7 +314,8 @@ describe("Specific Chains", () => {
     if (Array.isArray(updatedBalanceResponse.balances)) {
       const targetTokenBalance = updatedBalanceResponse.balances.find(
         (balance) =>
-          balance.token.toLowerCase() === targetTokenAddress.toLowerCase(),
+          balance.tokenAddress.toLowerCase() ===
+          targetTokenAddress.toLowerCase(),
       );
 
       // Verify we received some amount of the target token
@@ -341,26 +328,23 @@ describe("Specific Chains", () => {
       }
     }
 
-    // Get the database connection
-    const pool = getPool();
-
     // // Query the trades table to verify the trade was recorded correctly
-    const tradesResult = await pool.query(
-      `SELECT * 
-       FROM trades 
-       WHERE team_id = $1 AND to_token = $2`,
-      [team.id, targetTokenAddress],
-    );
+    const tradesResult = await db.query.trades.findMany({
+      where: and(
+        eq(trades.teamId, team.id),
+        eq(trades.toToken, targetTokenAddress),
+      ),
+    });
 
     // // Verify a trade record exists for this transaction
-    expect(tradesResult.rows.length).toBe(1);
+    expect(tradesResult.length).toBe(1);
 
-    const trade = tradesResult.rows[0];
-    expect(trade?.from_token).toBe(usdcAddress);
-    expect(trade?.to_token).toBe(targetTokenAddress);
-    expect(trade?.from_specific_chain).toBeDefined();
-    expect(trade?.to_specific_chain).toBeDefined();
-    expect(trade?.to_specific_chain).toBe("optimism");
+    const trade = tradesResult[0];
+    expect(trade?.fromToken).toBe(usdcAddress);
+    expect(trade?.toToken).toBe(targetTokenAddress);
+    expect(trade?.fromSpecificChain).toBeDefined();
+    expect(trade?.toSpecificChain).toBeDefined();
+    expect(trade?.toSpecificChain).toBe("optimism");
 
     // Verify that balances contain specificChain
     const balancesResponse =
@@ -383,28 +367,24 @@ describe("Specific Chains", () => {
     const swapBackResponse = await teamClient.executeTrade({
       fromToken: targetTokenAddress,
       toToken: usdcAddress,
-      amount: trade?.to_amount as string,
+      amount: trade?.toAmount.toString() ?? "0",
       reason,
     });
     // Verify the swap back was successful
     expect(swapBackResponse.success).toBe(true);
 
     // Get the entrys in the trades table for this swap back
-    const swapBackResult = await pool.query(
-      `SELECT * 
-       FROM trades 
-       WHERE team_id = $1 AND to_token = $2`,
-      [team.id, usdcAddress],
-    );
+    const swapBackResult = await db.query.trades.findFirst({
+      where: and(eq(trades.teamId, team.id), eq(trades.toToken, usdcAddress)),
+    });
     // Verify a trade record exists for this transaction
-    expect(swapBackResult.rows.length).toBe(1);
-    const swapBackTrade = swapBackResult.rows[0];
-    expect(swapBackTrade?.from_token).toBe(targetTokenAddress);
-    expect(swapBackTrade?.to_token).toBe(usdcAddress);
-    expect(swapBackTrade?.from_specific_chain).toBeDefined();
-    expect(swapBackTrade?.to_specific_chain).toBeDefined();
-    expect(swapBackTrade?.from_specific_chain).toBe("optimism");
-    expect(swapBackTrade?.to_specific_chain).toBe("optimism");
+    expect(swapBackResult).toBeDefined();
+    expect(swapBackResult?.fromToken).toBe(targetTokenAddress);
+    expect(swapBackResult?.toToken).toBe(usdcAddress);
+    expect(swapBackResult?.fromSpecificChain).toBeDefined();
+    expect(swapBackResult?.toSpecificChain).toBeDefined();
+    expect(swapBackResult?.fromSpecificChain).toBe("optimism");
+    expect(swapBackResult?.toSpecificChain).toBe("optimism");
   });
 
   // test case to purchase a bunch of random token from different chains and confirm specificChain is set in both trades and balances
@@ -462,9 +442,6 @@ describe("Specific Chains", () => {
     const competitionName = `Token Purchase Test ${Date.now()}`;
     await startTestCompetition(adminClient, competitionName, [team.id]);
 
-    // Get database connection for verification
-    const pool = getPool();
-
     // Track successfully purchased tokens
     const purchasedTokens: string[] = [];
 
@@ -506,23 +483,27 @@ describe("Specific Chains", () => {
         );
 
         // Verify trade record in database
-        const tradeResult = await pool.query(
-          `SELECT * FROM trades WHERE team_id = $1 AND to_token = $2 ORDER BY id DESC LIMIT 1`,
-          [team.id, tokenAddress],
-        );
+        const tradeResult = await db.query.trades.findMany({
+          where: and(
+            eq(trades.teamId, team.id),
+            eq(trades.toToken, tokenAddress),
+          ),
+          orderBy: desc(trades.id),
+          limit: 1,
+        });
 
-        expect(tradeResult.rows.length).toBe(1);
-        const trade = tradeResult.rows[0];
+        expect(tradeResult.length).toBe(1);
+        const trade = tradeResult[0];
 
         // Verify specificChain is recorded correctly in trades table
-        expect(trade?.from_specific_chain).toBeDefined();
-        expect(trade?.to_specific_chain).toBeDefined();
+        expect(trade?.fromSpecificChain).toBeDefined();
+        expect(trade?.toSpecificChain).toBeDefined();
 
         // Verify the to_specific_chain is what we expect
-        expect(trade?.to_specific_chain).toBe(specificChainStr);
+        expect(trade?.toSpecificChain).toBe(specificChainStr);
 
         console.log(
-          `Trade record: from_chain=${trade?.from_specific_chain}, to_chain=${trade?.to_specific_chain}`,
+          `Trade record: from_chain=${trade?.fromSpecificChain}, to_chain=${trade?.toSpecificChain}`,
         );
       } catch (error) {
         console.error(
@@ -540,7 +521,7 @@ describe("Specific Chains", () => {
     for (const tokenAddress of purchasedTokens) {
       // Find this token in the balances
       const tokenBalance = finalBalances.balances.find(
-        (b) => b.token.toLowerCase() === tokenAddress.toLowerCase(),
+        (b) => b.tokenAddress.toLowerCase() === tokenAddress.toLowerCase(),
       );
 
       // Token should exist in balances

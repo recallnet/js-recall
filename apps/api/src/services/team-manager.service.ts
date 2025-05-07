@@ -1,9 +1,21 @@
 import * as crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
 
+import { InsertTeam } from "@recallnet/comps-db/schema";
+
 import { config } from "@/config/index.js";
-import { repositories } from "@/database/index.js";
-import { AgentMetadata, ApiAuth, Team } from "@/types/index.js";
+import {
+  count,
+  create,
+  deactivateTeam,
+  deleteTeam,
+  findAll,
+  findById,
+  findInactiveTeams,
+  reactivateTeam,
+  update,
+} from "@/database/repositories/team-repository.js";
+import { AgentMetadata, ApiAuth } from "@/types/index.js";
 
 /**
  * Team Manager Service
@@ -44,7 +56,7 @@ export class TeamManager {
     contactPerson: string,
     walletAddress: string,
     metadata?: AgentMetadata,
-  ): Promise<Team> {
+  ) {
     try {
       // Validate wallet address
       if (!walletAddress) {
@@ -67,7 +79,7 @@ export class TeamManager {
       const encryptedApiKey = this.encryptApiKey(apiKey);
 
       // Create team record
-      const team: Team = {
+      const team: InsertTeam = {
         id,
         name,
         email,
@@ -80,7 +92,7 @@ export class TeamManager {
       };
 
       // Store in database
-      const savedTeam = await repositories.teamRepository.create(team);
+      const savedTeam = await create(team);
 
       // Update cache with plaintext key
       this.apiKeyCache.set(apiKey, {
@@ -111,9 +123,9 @@ export class TeamManager {
    * @param teamId The team ID
    * @returns The team or null if not found
    */
-  async getTeam(teamId: string): Promise<Team | null> {
+  async getTeam(teamId: string) {
     try {
-      return await repositories.teamRepository.findById(teamId);
+      return await findById(teamId);
     } catch (error) {
       console.error(`[TeamManager] Error retrieving team ${teamId}:`, error);
       return null;
@@ -125,18 +137,16 @@ export class TeamManager {
    * @param includeAdmins Whether to include admin accounts in the results (default: true)
    * @returns Array of teams, filtered by the includeAdmins parameter
    */
-  async getAllTeams(includeAdmins: boolean = true): Promise<Team[]> {
+  async getAllTeams(includeAdmins: boolean = true) {
     try {
-      const teams = await repositories.teamRepository.findAll();
+      const teams = await findAll();
 
       // Filter out admin teams if needed
       const filteredTeams = includeAdmins
         ? teams
         : teams.filter((team) => !team.isAdmin);
 
-      return filteredTeams.map((team) => ({
-        ...team,
-      }));
+      return filteredTeams;
     } catch (error) {
       console.error("[TeamManager] Error retrieving all teams:", error);
       return [];
@@ -149,7 +159,7 @@ export class TeamManager {
    * @returns The team ID if valid and not inactive, null otherwise
    * @throws Error if the team is inactive
    */
-  async validateApiKey(apiKey: string): Promise<string | null> {
+  async validateApiKey(apiKey: string) {
     try {
       // First check cache
       const cachedAuth = this.apiKeyCache.get(apiKey);
@@ -167,7 +177,7 @@ export class TeamManager {
       }
 
       // If not in cache, search all teams and check if any decrypted key matches
-      const teams = await repositories.teamRepository.findAll();
+      const teams = await findAll();
 
       for (const team of teams) {
         try {
@@ -311,7 +321,7 @@ export class TeamManager {
   }> {
     try {
       // Get the team
-      const team = await repositories.teamRepository.findById(teamId);
+      const team = await findById(teamId);
 
       if (!team) {
         return {
@@ -368,10 +378,10 @@ export class TeamManager {
   /**
    * Check if the system is healthy
    */
-  async isHealthy(): Promise<boolean> {
+  async isHealthy() {
     try {
-      const count = await repositories.teamRepository.count();
-      return count >= 0;
+      const res = await count();
+      return res >= 0;
     } catch (error) {
       console.error("[TeamManager] Health check failed:", error);
       return false;
@@ -383,10 +393,10 @@ export class TeamManager {
    * @param teamId The team ID to delete
    * @returns true if team was deleted, false otherwise
    */
-  async deleteTeam(teamId: string): Promise<boolean> {
+  async deleteTeam(teamId: string) {
     try {
       // Get the team to find its API key
-      const team = await repositories.teamRepository.findById(teamId);
+      const team = await findById(teamId);
 
       if (!team) {
         console.log(`[TeamManager] Team not found for deletion: ${teamId}`);
@@ -399,7 +409,7 @@ export class TeamManager {
       }
 
       // Delete the team from the database
-      const deleted = await repositories.teamRepository.delete(teamId);
+      const deleted = await deleteTeam(teamId);
 
       if (deleted) {
         console.log(
@@ -426,17 +436,14 @@ export class TeamManager {
    * @param reason Reason for deactivation
    * @returns The deactivated team or null if team not found
    */
-  async deactivateTeam(teamId: string, reason: string): Promise<Team | null> {
+  async deactivateTeam(teamId: string, reason: string) {
     try {
       console.log(
         `[TeamManager] Deactivating team: ${teamId}, Reason: ${reason}`,
       );
 
       // Call repository to deactivate the team
-      const deactivatedTeam = await repositories.teamRepository.deactivateTeam(
-        teamId,
-        reason,
-      );
+      const deactivatedTeam = await deactivateTeam(teamId, reason);
 
       if (!deactivatedTeam) {
         console.log(`[TeamManager] Team not found for deactivation: ${teamId}`);
@@ -467,13 +474,12 @@ export class TeamManager {
    * @param teamId Team ID to reactivate
    * @returns The reactivated team or null if team not found
    */
-  async reactivateTeam(teamId: string): Promise<Team | null> {
+  async reactivateTeam(teamId: string) {
     try {
       console.log(`[TeamManager] Reactivating team: ${teamId}`);
 
       // Call repository to reactivate the team
-      const reactivatedTeam =
-        await repositories.teamRepository.reactivateTeam(teamId);
+      const reactivatedTeam = await reactivateTeam(teamId);
 
       if (!reactivatedTeam) {
         console.log(`[TeamManager] Team not found for reactivation: ${teamId}`);
@@ -501,25 +507,25 @@ export class TeamManager {
    * @param team The team object with updated fields
    * @returns The updated team or null if team not found
    */
-  async updateTeam(team: Team): Promise<Team | null> {
+  async updateTeam(team: InsertTeam) {
     try {
       console.log(`[TeamManager] Updating team: ${team.id} (${team.name})`);
 
       // Check if team exists
-      const existingTeam = await repositories.teamRepository.findById(team.id);
+      const existingTeam = await findById(team.id);
       if (!existingTeam) {
         console.log(`[TeamManager] Team not found for update: ${team.id}`);
-        return null;
+        return undefined;
       }
 
       // Always set updated timestamp
       team.updatedAt = new Date();
 
       // Save to database
-      const updatedTeam = await repositories.teamRepository.update(team);
+      const updatedTeam = await update(team);
       if (!updatedTeam) {
         console.log(`[TeamManager] Failed to update team: ${team.id}`);
-        return null;
+        return undefined;
       }
 
       console.log(
@@ -538,9 +544,9 @@ export class TeamManager {
    * Get all inactive teams
    * @returns Array of inactive teams
    */
-  async getInactiveTeams(): Promise<Team[]> {
+  async getInactiveTeams() {
     try {
-      return await repositories.teamRepository.findInactiveTeams();
+      return await findInactiveTeams();
     } catch (error) {
       console.error("[TeamManager] Error retrieving inactive teams:", error);
       return [];
@@ -552,25 +558,27 @@ export class TeamManager {
    * @param teamId Team ID to check
    * @returns Object with inactive status and reason if applicable
    */
-  async isTeamInactive(
-    teamId: string,
-  ): Promise<{ isInactive: boolean; reason?: string; date?: Date }> {
+  async isTeamInactive(teamId: string): Promise<{
+    isInactive: boolean;
+    reason: string | null;
+    date: Date | null;
+  }> {
     try {
       // Check cache first
-      if (this.inactiveTeamsCache.has(teamId)) {
-        const info = this.inactiveTeamsCache.get(teamId);
+      const info = this.inactiveTeamsCache.get(teamId);
+      if (info) {
         return {
           isInactive: true,
-          reason: info?.reason,
-          date: info?.date,
+          reason: info.reason,
+          date: info.date,
         };
       }
 
       // If not in cache, check database
-      const team = await repositories.teamRepository.findById(teamId);
+      const team = await findById(teamId);
 
       if (!team) {
-        return { isInactive: false };
+        return { isInactive: false, reason: null, date: null };
       }
 
       if (team.active === false) {
@@ -587,13 +595,13 @@ export class TeamManager {
         };
       }
 
-      return { isInactive: false };
+      return { isInactive: false, reason: null, date: null };
     } catch (error) {
       console.error(
         `[TeamManager] Error checking inactive status for team ${teamId}:`,
         error,
       );
-      return { isInactive: false };
+      return { isInactive: false, reason: null, date: null };
     }
   }
 
@@ -602,15 +610,12 @@ export class TeamManager {
    * @param teamId The team ID
    * @returns Object with new API key (unencrypted for display) and updated team
    */
-  async resetApiKey(teamId: string): Promise<{
-    apiKey: string;
-    team: Team;
-  }> {
+  async resetApiKey(teamId: string) {
     try {
       console.log(`[TeamManager] Resetting API key for team: ${teamId}`);
 
       // Get the team
-      const team = await repositories.teamRepository.findById(teamId);
+      const team = await findById(teamId);
       if (!team) {
         throw new Error(`Team with ID ${teamId} not found`);
       }
@@ -626,7 +631,7 @@ export class TeamManager {
       team.updatedAt = new Date();
 
       // Save the updated team to the database
-      const updatedTeam = await repositories.teamRepository.update(team);
+      const updatedTeam = await update(team);
       if (!updatedTeam) {
         throw new Error(`Failed to update API key for team ${teamId}`);
       }

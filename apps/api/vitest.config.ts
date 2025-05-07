@@ -4,7 +4,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
-    reporters: ["verbose", "e2e/utils/log-reporter.ts"],
+    reporters: ["default", "e2e/utils/log-reporter.ts"],
     workspace: [
       {
         extends: true,

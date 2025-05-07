@@ -1,6 +1,8 @@
 import { config } from "@/config/index.js";
 import { CompetitionManager } from "@/services/competition-manager.service.js";
 
+import { PortfolioSnapshotter } from "./portfolio-snapshotter.service.js";
+
 // Keep track of all scheduler timers globally (helpful for tests)
 const allSchedulerTimers = new Set<NodeJS.Timeout>();
 
@@ -10,13 +12,18 @@ const allSchedulerTimers = new Set<NodeJS.Timeout>();
  */
 export class SchedulerService {
   private competitionManager: CompetitionManager;
+  private portfolioSnapshotter: PortfolioSnapshotter;
   private snapshotInterval: number;
   private snapshotTimer: NodeJS.Timeout | null = null;
   private isShuttingDown = false;
   private isTestMode: boolean;
 
-  constructor(competitionManager: CompetitionManager) {
+  constructor(
+    competitionManager: CompetitionManager,
+    portfolioSnapshotter: PortfolioSnapshotter,
+  ) {
     this.competitionManager = competitionManager;
+    this.portfolioSnapshotter = portfolioSnapshotter;
     // Check if we're in test mode
     this.isTestMode = process.env.TEST_MODE === "true";
 
@@ -139,7 +146,7 @@ export class SchedulerService {
       console.log(
         `[SchedulerService] Taking scheduled portfolio snapshots for competition ${activeCompetition.id}`,
       );
-      await this.competitionManager.takePortfolioSnapshots(
+      await this.portfolioSnapshotter.takePortfolioSnapshots(
         activeCompetition.id,
       );
     } catch (error) {

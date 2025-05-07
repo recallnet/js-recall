@@ -10,7 +10,7 @@ RUN npm ci
 COPY . .
 
 # Build the application
-RUN npm run build
+RUN pnpm build
 
 # Second stage: runtime
 FROM node:18-alpine
@@ -28,10 +28,7 @@ COPY --from=builder --chown=appuser:appgroup /app/package*.json ./
 COPY --from=builder --chown=appuser:appgroup /app/scripts ./scripts
 COPY --from=builder --chown=appuser:appgroup /app/src/database ./src/database
 
-# Create symlink for the SQL files to be accessible from where the compiled code expects them
-RUN cp ./src/database/init.sql ./dist/src/database/init.sql && \
-    cp ./src/database/drop-all-tables.sql ./dist/src/database/drop-all-tables.sql && \
-    chown -R appuser:appgroup ./dist
+RUN chown -R appuser:appgroup ./dist
 
 # Install production dependencies only
 RUN npm ci --only=production

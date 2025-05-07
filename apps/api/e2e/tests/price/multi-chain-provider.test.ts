@@ -103,32 +103,6 @@ describe("Multi-Chain Provider Tests", () => {
     console.log(`Test client API key: ${result.apiKey}`);
   });
 
-  // Check database schema as a test
-  it("should have the correct schema with specific_chain column", async () => {
-    if (!runTests) {
-      console.log("Skipping test - Tests disabled");
-      return;
-    }
-
-    // The specific_chain column should already be added by the dbManager.initialize()
-    // Let's just verify it exists
-    const pool = dbManager.getPool();
-
-    const result = await pool.query(`
-      SELECT EXISTS (
-        SELECT 1
-        FROM information_schema.columns
-        WHERE table_name = 'prices'
-        AND column_name = 'specific_chain'
-      ) as column_exists;
-    `);
-
-    console.log(
-      `Does specific_chain column exist? ${result.rows[0]?.column_exists}`,
-    );
-    expect(result.rows[0]?.column_exists).toBe(true);
-  });
-
   // Clean up test state before each test
   beforeEach(async () => {
     if (!runTests) {
