@@ -18,13 +18,15 @@ import {
   startTestCompetition,
   wait,
 } from "@/e2e/utils/test-helpers.js";
-import { services } from "@/services/index.js";
+import { ServiceRegistry } from "@/services/index.js";
 import { PriceTracker } from "@/services/price-tracker.service.js";
 import { BlockchainType } from "@/types/index.js";
 
 const reason = "portfolio-snapshots end-to-end tests";
 
 describe("Portfolio Snapshots", () => {
+  const services = new ServiceRegistry();
+
   let adminApiKey: string;
 
   // Reset database between tests
@@ -127,7 +129,7 @@ describe("Portfolio Snapshots", () => {
     const initialSnapshotCount = initialSnapshotsResponse.snapshots.length;
 
     // Force a snapshot directly
-    await services.competitionManager.takePortfolioSnapshots(competitionId);
+    await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
     // Wait for snapshot to be processed
     await wait(500);
 
@@ -144,7 +146,7 @@ describe("Portfolio Snapshots", () => {
     const countAfterFirstManualSnapshot = afterFirstSnapshotCount;
 
     // Force another snapshot
-    await services.competitionManager.takePortfolioSnapshots(competitionId);
+    await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
 
     // Wait for snapshot to be processed
     await wait(500);
@@ -266,8 +268,9 @@ describe("Portfolio Snapshots", () => {
       (await teamClient.getBalance()) as BalancesResponse;
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
     const initialUsdcBalance =
-      initialBalanceResponse.balances.find((b) => b.token === usdcTokenAddress)
-        ?.amount || 0;
+      initialBalanceResponse.balances.find(
+        (b) => b.tokenAddress === usdcTokenAddress,
+      )?.amount || 0;
 
     // Get token price using direct service call instead of API
     const priceTracker = new PriceTracker();
@@ -364,7 +367,7 @@ describe("Portfolio Snapshots", () => {
 
     // Take the first snapshot - this should populate the database with prices
     console.log(`[Test] Taking first snapshot to populate price database`);
-    await services.competitionManager.takePortfolioSnapshots(competitionId);
+    await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
 
     // Wait a bit, but less than the freshness threshold
     const waitTime = Math.min(freshnessThreshold / 3, 3000); // Wait 1/3 the threshold or max 3 seconds
@@ -386,7 +389,7 @@ describe("Portfolio Snapshots", () => {
 
       // Take another snapshot - this should reuse prices from the database
       console.log(`[Test] Taking second snapshot, expecting price reuse`);
-      await services.competitionManager.takePortfolioSnapshots(competitionId);
+      await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
 
       // Output all CompetitionManager logs for debugging
       console.log(`[Test] ---- Log messages from second snapshot ----`);

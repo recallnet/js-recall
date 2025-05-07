@@ -23,10 +23,12 @@ import {
   startTestCompetition,
   wait,
 } from "@/e2e/utils/test-helpers.js";
-import { services } from "@/services/index.js";
+import { ServiceRegistry } from "@/services/index.js";
 import { BlockchainType } from "@/types/index.js";
 
 describe("Multi-Team Competition", () => {
+  const services = new ServiceRegistry();
+
   let adminApiKey: string;
 
   // Number of teams to create for multi-team tests
@@ -144,12 +146,12 @@ describe("Multi-Team Competition", () => {
     // Track reference balances for key tokens
     const referenceUsdcBalance = parseFloat(
       referenceBalance
-        .find((b) => b.token === usdcTokenAddress)
+        .find((b) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
     const referenceSolBalance = parseFloat(
       referenceBalance
-        .find((b) => b.token === solTokenAddress)
+        .find((b) => b.tokenAddress === solTokenAddress)
         ?.amount.toString() || "0",
     );
 
@@ -168,7 +170,7 @@ describe("Multi-Team Competition", () => {
       // Validate USDC balance
       const teamUsdcBalance = parseFloat(
         teamBalance
-          .find((b) => b.token === usdcTokenAddress)
+          .find((b) => b.tokenAddress === usdcTokenAddress)
           ?.amount.toString() || "0",
       );
       expect(teamUsdcBalance).toBe(referenceUsdcBalance);
@@ -176,7 +178,7 @@ describe("Multi-Team Competition", () => {
       // Validate SOL balance
       const teamSolBalance = parseFloat(
         teamBalance
-          .find((b) => b.token === solTokenAddress)
+          .find((b) => b.tokenAddress === solTokenAddress)
           ?.amount.toString() || "0",
       );
       expect(teamSolBalance).toBe(referenceSolBalance);
@@ -376,7 +378,7 @@ describe("Multi-Team Competition", () => {
       // Check that the team has the expected token
       const tokenBalance = parseFloat(
         balanceResponse.balances
-          .find((b) => b.token === expectedToken)
+          .find((b) => b.tokenAddress === expectedToken)
           ?.amount.toString() || "0",
       );
       console.log(
@@ -393,7 +395,7 @@ describe("Multi-Team Competition", () => {
           const otherToken = BASE_TOKENS[j];
           const otherTokenBalance = parseFloat(
             balanceResponse.balances
-              .find((b) => b.token === otherToken)
+              .find((b) => b.tokenAddress === otherToken)
               ?.amount.toString() || "0",
           );
 
@@ -547,7 +549,7 @@ describe("Multi-Team Competition", () => {
       assert(team, "Team is undefined");
 
       // Force a snapshot to ensure we have current values
-      await services.competitionManager.takePortfolioSnapshots(competitionId);
+      await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
       await wait(500);
 
       // Get team's initial portfolio value
@@ -590,7 +592,7 @@ describe("Multi-Team Competition", () => {
     for (let i = 0; i < 4; i++) {
       await wait(waitTimeForPriceChanges / 4);
       console.log(`Taking snapshot ${i + 1}/4 during wait period...`);
-      await services.competitionManager.takePortfolioSnapshots(competitionId);
+      await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
     }
 
     // Step 7: Get final portfolio values
@@ -616,7 +618,7 @@ describe("Multi-Team Competition", () => {
       assert(team, "Team is undefined");
 
       // Force one final snapshot to ensure we have the latest prices
-      await services.competitionManager.takePortfolioSnapshots(competitionId);
+      await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
       await wait(500);
 
       // Get team's final portfolio value

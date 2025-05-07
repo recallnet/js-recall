@@ -98,7 +98,7 @@ describe("Base Chain Trading", () => {
     // Get initial Base USDC balance (dynamically from API response)
     const initialBaseUsdcBalance = parseFloat(
       initialBalanceResponse.balances
-        .find((b) => b.token === BASE_USDC_ADDRESS)
+        .find((b) => b.tokenAddress === BASE_USDC_ADDRESS)
         ?.amount.toString() || "0",
     );
     console.log(`Initial Base USDC balance: ${initialBaseUsdcBalance}`);
@@ -195,7 +195,7 @@ describe("Base Chain Trading", () => {
     for (const token of tokenData) {
       const tokenBalance = parseFloat(
         finalBalanceResponse.balances
-          .find((b) => b.token === token.address)
+          .find((b) => b.tokenAddress === token.address)
           ?.amount?.toString() || "0",
       );
       console.log(`Final ${token.address} balance: ${tokenBalance}`);
@@ -208,7 +208,7 @@ describe("Base Chain Trading", () => {
     // Add any remaining USDC
     const finalBaseUsdcBalance = parseFloat(
       finalBalanceResponse.balances
-        .find((b) => b.token === BASE_USDC_ADDRESS)
+        .find((b) => b.tokenAddress === BASE_USDC_ADDRESS)
         ?.amount?.toString() || "0",
     );
     console.log(`Final Base USDC balance: ${finalBaseUsdcBalance}`);
@@ -290,7 +290,7 @@ describe("Base Chain Trading", () => {
     // Get initial Base USDC balance
     const initialBaseUsdcBalance = parseFloat(
       initialBalanceResponse.balances
-        .find((b) => b.token === BASE_USDC_ADDRESS)
+        .find((b) => b.tokenAddress === BASE_USDC_ADDRESS)
         ?.amount.toString() || "0",
     );
     console.log(`Initial Base USDC balance: ${initialBaseUsdcBalance}`);
@@ -298,7 +298,7 @@ describe("Base Chain Trading", () => {
     // Check for any initial ETH balance (should be zero)
     const initialEthBalance = parseFloat(
       initialBalanceResponse.balances
-        .find((b) => b.token === ETH_ADDRESS)
+        .find((b) => b.tokenAddress === ETH_ADDRESS)
         ?.amount.toString() || "0",
     );
     console.log(`Initial ETH balance: ${initialEthBalance}`);
@@ -312,7 +312,7 @@ describe("Base Chain Trading", () => {
     // Make a record of all initial balances
     console.log("Initial balances:");
     initialBalanceResponse.balances.forEach((balance) => {
-      console.log(`  ${balance.token}: ${balance.amount}`);
+      console.log(`  ${balance.tokenAddress}: ${balance.amount}`);
     });
 
     // Attempt to execute a cross-chain trade (Base USDC to Ethereum ETH)
@@ -381,7 +381,7 @@ describe("Base Chain Trading", () => {
 
     const finalBaseUsdcBalance = parseFloat(
       finalBalanceResponse.balances
-        .find((b) => b.token === BASE_USDC_ADDRESS)
+        .find((b) => b.tokenAddress === BASE_USDC_ADDRESS)
         ?.amount.toString() || "0",
     );
     console.log(`Final Base USDC balance: ${finalBaseUsdcBalance}`);
@@ -392,7 +392,7 @@ describe("Base Chain Trading", () => {
     // ETH balance should remain zero
     const ethBalance = parseFloat(
       finalBalanceResponse.balances
-        .find((b) => b.token === ETH_ADDRESS)
+        .find((b) => b.tokenAddress === ETH_ADDRESS)
         ?.amount.toString() || "0",
     );
     console.log(`ETH balance: ${ethBalance}`);
@@ -484,7 +484,7 @@ describe("Base Chain Trading", () => {
     // Get initial Base USDC balance
     const initialBaseUsdcBalance = parseFloat(
       initialBalanceResponse.balances
-        .find((b) => b.token === BASE_USDC_ADDRESS)
+        .find((b) => b.tokenAddress === BASE_USDC_ADDRESS)
         ?.amount.toString() || "0",
     );
     console.log(`Initial Base USDC balance: ${initialBaseUsdcBalance}`);
@@ -573,7 +573,7 @@ describe("Base Chain Trading", () => {
     // USDC balance should be reduced by the valid trade amount
     const finalBaseUsdcBalance = parseFloat(
       finalBalanceResponse.balances
-        .find((b) => b.token === BASE_USDC_ADDRESS)
+        .find((b) => b.tokenAddress === BASE_USDC_ADDRESS)
         ?.amount.toString() || "0",
     );
     const expectedRemainingUsdc =
@@ -586,7 +586,7 @@ describe("Base Chain Trading", () => {
     // Token balance should be greater than zero
     const tokenBalance = parseFloat(
       finalBalanceResponse.balances
-        .find((b) => b.token === targetToken)
+        .find((b) => b.tokenAddress === targetToken)
         ?.amount.toString() || "0",
     );
     console.log(`Acquired ${tokenBalance} of ${targetToken}`);

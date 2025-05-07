@@ -1,5 +1,5 @@
 import { features } from "@/config/index.js";
-import { repositories } from "@/database/index.js";
+import { findActive } from "@/database/repositories/competition-repository.js";
 
 /**
  * Configuration Service
@@ -13,8 +13,7 @@ export class ConfigurationService {
   async loadCompetitionSettings(): Promise<void> {
     try {
       // Get the active competition from the database
-      const activeCompetition =
-        await repositories.competitionRepository.findActive();
+      const activeCompetition = await findActive();
 
       if (activeCompetition) {
         // Override the environment-based setting with competition-specific settings

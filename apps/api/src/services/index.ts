@@ -1,6 +1,7 @@
 import { BalanceManager } from "@/services/balance-manager.service.js";
 import { CompetitionManager } from "@/services/competition-manager.service.js";
 import { ConfigurationService } from "@/services/configuration.service.js";
+import { PortfolioSnapshotter } from "@/services/portfolio-snapshotter.service.js";
 import { PriceTracker } from "@/services/price-tracker.service.js";
 import { SchedulerService } from "@/services/scheduler.service.js";
 import { TeamManager } from "@/services/team-manager.service.js";
@@ -21,39 +22,41 @@ class ServiceRegistry {
   private _teamManager: TeamManager;
   private _scheduler: SchedulerService;
   private _configurationService: ConfigurationService;
+  private _portfolioSnapshotter: PortfolioSnapshotter;
 
-  private constructor() {
+  constructor() {
     // Initialize services in dependency order
     this._balanceManager = new BalanceManager();
     this._priceTracker = new PriceTracker();
-    this._tradeSimulator = new TradeSimulator(
+    this._portfolioSnapshotter = new PortfolioSnapshotter(
       this._balanceManager,
       this._priceTracker,
     );
-    this._competitionManager = new CompetitionManager(
+    this._tradeSimulator = new TradeSimulator(
       this._balanceManager,
-      this._tradeSimulator,
       this._priceTracker,
+      this._portfolioSnapshotter,
     );
     this._teamManager = new TeamManager();
 
     // Configuration service for dynamic settings
     this._configurationService = new ConfigurationService();
 
+    this._competitionManager = new CompetitionManager(
+      this._balanceManager,
+      this._tradeSimulator,
+      this._portfolioSnapshotter,
+      this._teamManager,
+      this._configurationService,
+    );
+
     // Initialize and start the scheduler
-    this._scheduler = new SchedulerService(this._competitionManager);
+    this._scheduler = new SchedulerService(
+      this._competitionManager,
+      this._portfolioSnapshotter,
+    );
 
     console.log("[ServiceRegistry] All services initialized");
-  }
-
-  /**
-   * Get the singleton instance
-   */
-  public static getInstance(): ServiceRegistry {
-    if (!ServiceRegistry.instance) {
-      ServiceRegistry.instance = new ServiceRegistry();
-    }
-    return ServiceRegistry.instance;
   }
 
   // Service getters
@@ -73,6 +76,10 @@ class ServiceRegistry {
     return this._competitionManager;
   }
 
+  get portfolioSnapshotter(): PortfolioSnapshotter {
+    return this._portfolioSnapshotter;
+  }
+
   get teamManager(): TeamManager {
     return this._teamManager;
   }
@@ -86,9 +93,6 @@ class ServiceRegistry {
   }
 }
 
-// Create and export a singleton instance
-export const services = ServiceRegistry.getInstance();
-
 // Export service types for convenience
 export {
   BalanceManager,
@@ -97,4 +101,6 @@ export {
   CompetitionManager,
   TeamManager,
   ConfigurationService,
+  ServiceRegistry,
+  PortfolioSnapshotter,
 };

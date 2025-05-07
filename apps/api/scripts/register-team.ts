@@ -5,10 +5,10 @@
  * It connects directly to the database and does NOT require the server to be running.
  *
  * Usage:
- *   npm run register:team
+ *   pnpm register:team
  *
  * Or with command line arguments:
- *   npm run register:team -- "Team Name" "team@email.com" "Contact Person" "0xWalletAddress"
+ *   pnpm register:team -- "Team Name" "team@email.com" "Contact Person" "0xWalletAddress"
  *
  * The script will:
  * 1. Connect to the database
@@ -21,8 +21,9 @@ import * as dotenv from "dotenv";
 import * as path from "path";
 import * as readline from "readline";
 
-import { DatabaseConnection } from "@/database/connection.js";
-import { services } from "@/services/index.js";
+import { ServiceRegistry } from "@/services/index.js";
+
+const services = new ServiceRegistry();
 
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
@@ -217,14 +218,6 @@ async function registerTeam() {
 
     // Restore original console.log before closing
     console.log = originalConsoleLog;
-
-    // Close database connection
-    try {
-      await DatabaseConnection.getInstance().close();
-      safeLog("Database connection closed.");
-    } catch (err) {
-      safeLog("Error closing database connection:", err);
-    }
 
     // Exit the process after clean closure
     process.exit(0);

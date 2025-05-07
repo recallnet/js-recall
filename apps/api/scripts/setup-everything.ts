@@ -169,20 +169,20 @@ async function setupEverything() {
 
     // Step 1: Generate secrets
     console.log("\n📦 STEP 1: Generating secrets...");
-    await runCommand("npm", ["run", "generate:secrets"]);
+    await runCommand("pnpm", ["generate:secrets"]);
 
     // Step 2: Initialize database
     console.log("\n📦 STEP 2: Initializing database...");
-    await runCommand("npm", ["run", "db:init"]);
+    await runCommand("pnpm", ["db:migrate"]);
 
     // Step 3: Build the application
     console.log("\n📦 STEP 3: Building the application...");
-    await runCommand("npm", ["run", "build"]);
+    await runCommand("pnpm", ["build"]);
 
     // Step 4: Start the server temporarily
     console.log("\n📦 STEP 4: Starting server temporarily for admin setup...");
 
-    const server = spawn("npm", ["run", "start"], {
+    const server = spawn("pnpm", ["start"], {
       detached: true,
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -226,8 +226,7 @@ async function setupEverything() {
     let adminApiKey = "";
     try {
       // Pass the collected admin credentials as command line arguments and capture output
-      const setupOutput = await runCommand("npm", [
-        "run",
+      const setupOutput = await runCommand("pnpm", [
         "setup:admin",
         "--",
         adminUsername,
@@ -289,7 +288,7 @@ async function setupEverything() {
     }
     console.log("----------------------------------------\n");
     console.log("To start the server, run:");
-    console.log("  npm run start\n");
+    console.log("  pnpm run start\n");
     console.log("You can then access the API at: http://localhost:3000");
     console.log(
       "=============================================================\n",

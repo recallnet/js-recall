@@ -83,7 +83,7 @@ fi
 
 # Run database initialization after we confirm the API is up
 echo -e "${GREEN}Initializing database...${NC}"
-if ! docker-compose -f trade-simulator-docker/docker-compose.yml exec -T app npm run db:init; then
+if ! docker-compose -f trade-simulator-docker/docker-compose.yml exec -T app pnpm db:migrate; then
     echo -e "${RED}Failed to initialize the database.${NC}"
     echo -e "${YELLOW}You can check for errors with: docker-compose -f trade-simulator-docker/docker-compose.yml logs app${NC}"
     exit 1

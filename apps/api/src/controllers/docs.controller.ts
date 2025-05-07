@@ -3,15 +3,11 @@ import swaggerUi from "swagger-ui-express";
 
 import { swaggerSpec } from "@/config/swagger.js";
 
-/**
- * Documentation Controller
- * Handles API documentation endpoints
- */
-export class DocsController {
+export function makeDocsController() {
   /**
    * Setup configuration for Swagger UI
    */
-  static readonly swaggerUiOptions = {
+  const swaggerUiOptions = {
     explorer: true,
     customCss: ".swagger-ui .topbar { display: none }",
     swaggerOptions: {
@@ -20,32 +16,36 @@ export class DocsController {
       showRequestDuration: true,
     },
   };
-
   /**
-   * Get API documentation - Serves the Swagger UI
-   * This is a placeholder method for route configuration - the actual UI is handled by swagger-ui-express
+   * Documentation Controller
+   * Handles API documentation endpoints
    */
-  static getApiDocs = swaggerUi.setup(
-    swaggerSpec,
-    DocsController.swaggerUiOptions,
-  );
+  return {
+    /**
+     * Get API documentation - Serves the Swagger UI
+     * This is a placeholder method for route configuration - the actual UI is handled by swagger-ui-express
+     */
+    getApiDocs: swaggerUi.setup(swaggerSpec, swaggerUiOptions),
 
-  /**
-   * Middleware for serving swagger-ui assets
-   */
-  static serveAssets = swaggerUi.serve;
+    /**
+     * Middleware for serving swagger-ui assets
+     */
+    serveAssets: swaggerUi.serve,
 
-  /**
-   * @param req Express request
-   * @param res Express response
-   * @param next Express next function
-   */
-  static getApiSpec(req: Request, res: Response, next: NextFunction) {
-    try {
-      res.setHeader("Content-Type", "application/json");
-      res.send(swaggerSpec);
-    } catch (error) {
-      next(error);
-    }
-  }
+    /**
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    getApiSpec(req: Request, res: Response, next: NextFunction) {
+      try {
+        res.setHeader("Content-Type", "application/json");
+        res.send(swaggerSpec);
+      } catch (error) {
+        next(error);
+      }
+    },
+  };
 }
+
+export type DocsController = ReturnType<typeof makeDocsController>;

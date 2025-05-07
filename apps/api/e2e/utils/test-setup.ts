@@ -7,9 +7,11 @@ import fs from "fs";
 import path from "path";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, vi } from "vitest";
 
-import { services } from "@/services/index.js";
+import { ServiceRegistry } from "@/services/index.js";
 
 import { dbManager } from "./db-manager.js";
+
+const services = new ServiceRegistry();
 
 // Path to log file
 const logFile = path.resolve(__dirname, "../e2e-server.log");

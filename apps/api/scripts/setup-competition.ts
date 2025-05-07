@@ -2,9 +2,9 @@ import * as dotenv from "dotenv";
 import * as path from "path";
 import * as readline from "readline";
 
-import { DatabaseConnection } from "@/database/connection.js";
-import { services } from "@/services/index.js";
-import { Team } from "@/types/index.js";
+import { ServiceRegistry } from "@/services/index.js";
+
+const services = new ServiceRegistry();
 
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
@@ -40,10 +40,13 @@ const colors = {
 /**
  * Parse selection input like "1,3,5-8" into an array of indices
  */
-function parseSelectionInput(input: string, teams: Team[]): Team[] {
+function parseSelectionInput(
+  input: string,
+  teams: Awaited<ReturnType<typeof services.teamManager.getAllTeams>>,
+) {
   try {
     const maxIndex = teams.length;
-    const result: Team[] = [];
+    const result: typeof teams = [];
     const parts = input.split(",");
 
     for (const part of parts) {
@@ -86,7 +89,7 @@ function parseSelectionInput(input: string, teams: Team[]): Team[] {
 /**
  * Display all teams with indices and allow selecting them
  */
-async function selectTeams(): Promise<Team[]> {
+async function selectTeams() {
   try {
     // Get all non-admin teams
     const teams = await services.teamManager.getAllTeams(false);
@@ -327,9 +330,6 @@ async function setupCompetition() {
     );
   } finally {
     rl.close();
-
-    // Close database connection
-    await DatabaseConnection.getInstance().close();
 
     // Exit the process after clean closure
     process.exit(0);
