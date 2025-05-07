@@ -1,4 +1,4 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, max, sql } from "drizzle-orm";
 
 import {
   InsertCompetition,
@@ -253,9 +253,7 @@ export async function getLatestPortfolioSnapshots(competitionId: string) {
     const subquery = db
       .select({
         teamId: portfolioSnapshots.teamId,
-        maxTimestamp: sql<Date>`MAX(${portfolioSnapshots.timestamp})`.as(
-          "max_timestamp",
-        ),
+        maxTimestamp: max(portfolioSnapshots.timestamp).as("max_timestamp"),
       })
       .from(portfolioSnapshots)
       .where(eq(portfolioSnapshots.competitionId, competitionId))
@@ -267,7 +265,10 @@ export async function getLatestPortfolioSnapshots(competitionId: string) {
       .from(portfolioSnapshots)
       .innerJoin(
         subquery,
-        sql`${portfolioSnapshots.teamId} = ${subquery.teamId} AND ${portfolioSnapshots.timestamp} = ${subquery.maxTimestamp}`,
+        and(
+          eq(portfolioSnapshots.teamId, subquery.teamId),
+          eq(portfolioSnapshots.timestamp, subquery.maxTimestamp),
+        ),
       )
       .where(eq(portfolioSnapshots.competitionId, competitionId));
 
@@ -295,7 +296,10 @@ export async function getTeamPortfolioSnapshots(
       .select()
       .from(portfolioSnapshots)
       .where(
-        sql`${portfolioSnapshots.competitionId} = ${competitionId} AND ${portfolioSnapshots.teamId} = ${teamId}`,
+        and(
+          eq(portfolioSnapshots.competitionId, competitionId),
+          eq(portfolioSnapshots.teamId, teamId),
+        ),
       )
       .orderBy(desc(portfolioSnapshots.timestamp));
   } catch (error) {
