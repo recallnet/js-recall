@@ -93,7 +93,7 @@ const cleanDatabase = async (confirmationRequired: boolean = true) => {
     `\n${colors.green}✓ Database cleanup completed successfully!${colors.reset}`,
   );
   console.log(
-    `\nYou can now run 'npm run db:init' to re-initialize the schema and seed data.`,
+    `\nYou can now run 'pnpm db:migrate' to re-initialize the schema and seed data.`,
   );
 };
 

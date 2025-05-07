@@ -10,7 +10,7 @@ RUN npm ci
 COPY . .
 
 # Build the application
-RUN npm run build
+RUN pnpm build
 
 # Second stage: runtime
 FROM node:18-alpine

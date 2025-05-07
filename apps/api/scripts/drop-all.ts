@@ -46,7 +46,7 @@ export async function dropAllTables(
       "✅ Everything in the public schema, drizzle schema, and any other schemas defined in the Drizzle schema object have been successfully dropped!",
     );
     console.log(
-      "You can now run 'npm run db:init' to re-initialize the database schema.",
+      "You can now run 'pnpm db:migrate' to re-initialize the database schema.",
     );
 
     if (confirmationRequired) {

@@ -308,16 +308,16 @@ You can manage teams and competitions either through CLI scripts or direct API c
 
 ```bash
 # Register a new team
-docker-compose -f trade-simulator-docker/docker-compose.yml exec app npm run register:team
+docker-compose -f trade-simulator-docker/docker-compose.yml exec app pnpm register:team
 
 # List all teams
-docker-compose -f trade-simulator-docker/docker-compose.yml exec app npm run list:teams
+docker-compose -f trade-simulator-docker/docker-compose.yml exec app pnpm list:teams
 
 # Setup a competition
-docker-compose -f trade-simulator-docker/docker-compose.yml exec app npm run setup:competition
+docker-compose -f trade-simulator-docker/docker-compose.yml exec app pnpm setup:competition
 
 # Check competition status
-docker-compose -f trade-simulator-docker/docker-compose.yml exec app npm run comp:status
+docker-compose -f trade-simulator-docker/docker-compose.yml exec app pnpm comp:status
 ```
 
 #### Using API Endpoints (Recommended)

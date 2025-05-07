@@ -5,10 +5,10 @@
  * It connects directly to the database and does NOT require the server to be running.
  *
  * Usage:
- *   npm run register:team
+ *   pnpm register:team
  *
  * Or with command line arguments:
- *   npm run register:team -- "Team Name" "team@email.com" "Contact Person" "0xWalletAddress"
+ *   pnpm register:team -- "Team Name" "team@email.com" "Contact Person" "0xWalletAddress"
  *
  * The script will:
  * 1. Connect to the database

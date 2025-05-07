@@ -167,7 +167,7 @@ The application uses a layered architecture:
 4. Run the automated setup:
 
    ```
-   npm run setup:all
+   pnpm setup:all
    ```
 
    This command will:
@@ -182,16 +182,16 @@ The application uses a layered architecture:
    Alternatively, you can run the steps separately if you need more control:
 
    ```
-   npm run generate:secrets  # Generate security secrets
-   npm run db:init           # Initialize the database with full schema
-   npm run build             # Build the application
-   npm run start             # Start the server
-   npm run setup:admin       # Set up the admin account (in a separate terminal)
+   pnpm generate:secrets  # Generate security secrets
+   pnpm db:migrate        # Initialize the database with full schema
+   pnpm build             # Build the application
+   pnpm start             # Start the server
+   pnpm setup:admin       # Set up the admin account (in a separate terminal)
    ```
 
 5. Start the development server:
    ```
-   npm run dev
+   pnpm dev
    ```
 
 The server will be available at http://localhost:3000 by default.
@@ -219,7 +219,7 @@ cp .env.example .env
 After configuring your environment, run the setup command:
 
 ```bash
-npm run setup:all
+pnpm setup:all
 ```
 
 This command will:
@@ -242,7 +242,7 @@ When registering a team or creating a competition, the server **does not** need 
 - **Register a new team as admin**:
 
   ```
-  npm run register:team
+  pnpm register:team
   ```
 
   This script will:
@@ -284,7 +284,7 @@ When registering a team or creating a competition, the server **does not** need 
 - **Edit a team**:
 
   ```
-  npm run edit:team
+  pnpm edit:team
   ```
 
   This script allows you to update existing team information:
@@ -298,7 +298,7 @@ When registering a team or creating a competition, the server **does not** need 
 - **List all teams**:
 
   ```
-  npm run list:teams
+  pnpm list:teams
   ```
 
   This script will display detailed information about all registered teams, including:
@@ -312,7 +312,7 @@ When registering a team or creating a competition, the server **does not** need 
 - **Delete a team**:
 
   ```
-  npm run delete:team
+  pnpm delete:team
   ```
 
   This script will:
@@ -327,7 +327,7 @@ When registering a team or creating a competition, the server **does not** need 
 - **Setup a competition**:
 
   ```
-  npm run setup:competition
+  pnpm setup:competition
   ```
 
   This script provides an interactive way to create and start a new trading competition:
@@ -342,7 +342,7 @@ When registering a team or creating a competition, the server **does not** need 
 - **Check competition status**:
 
   ```
-  npm run comp:status
+  pnpm comp:status
   ```
 
   This script displays comprehensive information about the active competition:
@@ -356,7 +356,7 @@ When registering a team or creating a competition, the server **does not** need 
 - **End a competition**:
 
   ```
-  npm run end:competition
+  pnpm end:competition
   ```
 
   This script helps end the currently active competition:
@@ -374,13 +374,13 @@ These utilities make it easy to manage the entire competition lifecycle from the
 After completing the setup, start the server with:
 
 ```bash
-npm run start
+pnpm start
 ```
 
 For development with hot reloading:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 The server will be available at http://localhost:3000 by default.
@@ -436,13 +436,13 @@ You can regenerate the documentation at any time using the built-in scripts:
 
 ```bash
 # Generate both OpenAPI JSON and Markdown documentation
-npm run generate-docs
+pnpm generate-docs
 
 # Generate only OpenAPI specification
-npm run generate-openapi
+pnpm generate-openapi
 
 # Generate only Markdown from existing OpenAPI spec
-npm run generate-markdown
+pnpm generate-markdown
 ```
 
 ### Authentication
@@ -1109,7 +1109,7 @@ This allows fine-grained control over initial token balances across different bl
 Generate all required security secrets with:
 
 ```bash
-npm run generate:secrets
+pnpm generate:secrets
 ```
 
 This will create the following secrets:
@@ -1122,7 +1122,7 @@ This will create the following secrets:
 Initialize the database with:
 
 ```bash
-npm run db:init
+pnpm db:migrate
 ```
 
 #### 5. Build the Application
@@ -1130,7 +1130,7 @@ npm run db:init
 Build the TypeScript application:
 
 ```bash
-npm run build
+pnpm build
 ```
 
 #### 6. Start the Server
@@ -1138,13 +1138,13 @@ npm run build
 Start the server:
 
 ```bash
-npm run start
+pnpm start
 ```
 
 For development with hot reloading:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 The server will be available at http://localhost:3000 by default.
@@ -1154,7 +1154,7 @@ The server will be available at http://localhost:3000 by default.
 In a separate terminal, set up the admin account:
 
 ```bash
-npm run setup:admin
+pnpm setup:admin
 ```
 
 This will prompt you to enter admin credentials or will generate them for you.

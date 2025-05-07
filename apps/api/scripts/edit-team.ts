@@ -5,10 +5,10 @@
  * It connects directly to the database and does NOT require the server to be running.
  *
  * Usage:
- *   npm run edit:team
+ *   pnpm edit:team
  *
  * Or with command line arguments:
- *   npm run edit:team -- "team@email.com" "0x123..." "0xabc..."
+ *   pnpm edit:team -- "team@email.com" "0x123..." "0xabc..."
  *
  * The script will:
  * 1. Connect to the database

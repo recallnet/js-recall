@@ -110,14 +110,14 @@ async function showCompetitionStatus() {
         });
 
         console.log(
-          `\n${colors.green}Use 'npm run setup:competition' to start a new competition.${colors.reset}`,
+          `\n${colors.green}Use 'pnpm setup:competition' to start a new competition.${colors.reset}`,
         );
       } else {
         console.log(
           `\n${colors.blue}No previous competitions found.${colors.reset}`,
         );
         console.log(
-          `\n${colors.green}Use 'npm run setup:competition' to start your first competition!${colors.reset}`,
+          `\n${colors.green}Use 'pnpm setup:competition' to start your first competition!${colors.reset}`,
         );
       }
 
@@ -326,7 +326,7 @@ async function showCompetitionStatus() {
     }
 
     console.log(
-      `\n${colors.green}Use 'npm run end:competition' to end this competition.${colors.reset}`,
+      `\n${colors.green}Use 'pnpm end:competition' to end this competition.${colors.reset}`,
     );
   } catch (error) {
     console.error(
