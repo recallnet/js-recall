@@ -38,6 +38,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@recallnet/api-sdk':
+        specifier: workspace:*
+        version: link:../../packages/api-sdk
       '@recallnet/comps-db':
         specifier: workspace:*
         version: link:../../packages/comps-db
@@ -67,7 +70,7 @@ importers:
         version: 16.4.7
       drizzle-orm:
         specifier: ^0.42.0
-        version: 0.42.0(@electric-sql/pglite@0.2.17)(@neondatabase/serverless@1.0.0)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@vercel/postgres@0.10.0(utf-8-validate@5.0.10))(better-sqlite3@11.8.1)(pg@8.15.5)(sql.js@1.13.0)
+        version: 0.42.0(@electric-sql/pglite@0.2.17)(@neondatabase/serverless@1.0.0)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@vercel/postgres@0.10.0(utf-8-validate@5.0.10))(better-sqlite3@11.8.1)(bun-types@1.2.12)(pg@8.15.5)(sql.js@1.13.0)
       express:
         specifier: ^4.18.2
         version: 4.21.2
@@ -128,7 +131,7 @@ importers:
         version: 0.31.0
       drizzle-seed:
         specifier: ^0.3.1
-        version: 0.3.1(drizzle-orm@0.42.0(@electric-sql/pglite@0.2.17)(@neondatabase/serverless@1.0.0)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@vercel/postgres@0.10.0(utf-8-validate@5.0.10))(better-sqlite3@11.8.1)(pg@8.15.5)(sql.js@1.13.0))
+        version: 0.3.1(drizzle-orm@0.42.0(@electric-sql/pglite@0.2.17)(@neondatabase/serverless@1.0.0)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@vercel/postgres@0.10.0(utf-8-validate@5.0.10))(better-sqlite3@11.8.1)(bun-types@1.2.12)(pg@8.15.5)(sql.js@1.13.0))
       openapi-markdown:
         specifier: ^1.2.3
         version: 1.2.3
@@ -487,6 +490,48 @@ importers:
       typescript:
         specifier: ^5.7.3
         version: 5.8.2
+
+  packages/api-sdk:
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.19.0
+        version: 9.23.0
+      '@modelcontextprotocol/sdk':
+        specifier: '>=1.5.0 <1.10.0'
+        version: 1.9.0
+      '@stricli/core':
+        specifier: ^1.1.1
+        version: 1.1.2
+      '@types/express':
+        specifier: ^4.17.21
+        version: 4.17.21
+      bun:
+        specifier: ^1.2.2
+        version: 1.2.12
+      bun-types:
+        specifier: ^1.2.2
+        version: 1.2.12
+      eslint:
+        specifier: ^9.19.0
+        version: 9.23.0(jiti@2.4.2)
+      express:
+        specifier: ^4.21.2
+        version: 4.21.2
+      globals:
+        specifier: ^15.14.0
+        version: 15.15.0
+      tshy:
+        specifier: ^2.0.0
+        version: 2.0.1
+      typescript:
+        specifier: ^5.4.5
+        version: 5.8.2
+      typescript-eslint:
+        specifier: ^8.22.0
+        version: 8.28.0(eslint@9.23.0(jiti@2.4.2))(typescript@5.8.2)
+      zod:
+        specifier: ^3.23.4
+        version: 3.24.2
 
   packages/chains:
     dependencies:
@@ -883,48 +928,6 @@ importers:
       tsup:
         specifier: ^8.3.6
         version: 8.4.0(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.3)(typescript@5.8.2)(yaml@2.7.0)
-
-  packages/speakeasy:
-    devDependencies:
-      '@eslint/js':
-        specifier: ^9.19.0
-        version: 9.23.0
-      '@modelcontextprotocol/sdk':
-        specifier: '>=1.5.0 <1.10.0'
-        version: 1.9.0
-      '@stricli/core':
-        specifier: ^1.1.1
-        version: 1.1.2
-      '@types/express':
-        specifier: ^4.17.21
-        version: 4.17.21
-      bun:
-        specifier: ^1.2.2
-        version: 1.2.12
-      bun-types:
-        specifier: ^1.2.2
-        version: 1.2.12
-      eslint:
-        specifier: ^9.19.0
-        version: 9.23.0(jiti@2.4.2)
-      express:
-        specifier: ^4.21.2
-        version: 4.21.2
-      globals:
-        specifier: ^15.14.0
-        version: 15.15.0
-      tshy:
-        specifier: ^2.0.0
-        version: 2.0.1
-      typescript:
-        specifier: ^5.4.5
-        version: 5.8.2
-      typescript-eslint:
-        specifier: ^8.22.0
-        version: 8.28.0(eslint@9.23.0(jiti@2.4.2))(typescript@5.8.2)
-      zod:
-        specifier: ^3.23.4
-        version: 3.24.2
 
   packages/typescript-config: {}
 
@@ -14058,11 +14061,11 @@ snapshots:
       pg: 8.15.5
       sql.js: 1.13.0
 
-  drizzle-seed@0.3.1(drizzle-orm@0.42.0(@electric-sql/pglite@0.2.17)(@neondatabase/serverless@1.0.0)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@vercel/postgres@0.10.0(utf-8-validate@5.0.10))(better-sqlite3@11.8.1)(pg@8.15.5)(sql.js@1.13.0)):
+  drizzle-seed@0.3.1(drizzle-orm@0.42.0(@electric-sql/pglite@0.2.17)(@neondatabase/serverless@1.0.0)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@vercel/postgres@0.10.0(utf-8-validate@5.0.10))(better-sqlite3@11.8.1)(bun-types@1.2.12)(pg@8.15.5)(sql.js@1.13.0)):
     dependencies:
       pure-rand: 6.1.0
     optionalDependencies:
-      drizzle-orm: 0.42.0(@electric-sql/pglite@0.2.17)(@neondatabase/serverless@1.0.0)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@vercel/postgres@0.10.0(utf-8-validate@5.0.10))(better-sqlite3@11.8.1)(pg@8.15.5)(sql.js@1.13.0)
+      drizzle-orm: 0.42.0(@electric-sql/pglite@0.2.17)(@neondatabase/serverless@1.0.0)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@vercel/postgres@0.10.0(utf-8-validate@5.0.10))(better-sqlite3@11.8.1)(bun-types@1.2.12)(pg@8.15.5)(sql.js@1.13.0)
 
   dunder-proto@1.0.1:
     dependencies:

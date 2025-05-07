@@ -1,0 +1,36 @@
+speakeasyVersion: 1.542.3
+sources:
+    Trading Simulator API:
+        sourceNamespace: trading-simulator-api
+        sourceRevisionDigest: sha256:7416cb1734aa60839ee020320309abd8e883877192e4394b082a842b6e811355
+        sourceBlobDigest: sha256:3e10cb703cb2cdf27b78885cd43b5822083864301e250ae371dc766e551465ca
+        tags:
+            - latest
+            - 1.0.0
+targets:
+    api-sdk:
+        source: Trading Simulator API
+        sourceNamespace: trading-simulator-api
+        sourceRevisionDigest: sha256:7416cb1734aa60839ee020320309abd8e883877192e4394b082a842b6e811355
+        sourceBlobDigest: sha256:3e10cb703cb2cdf27b78885cd43b5822083864301e250ae371dc766e551465ca
+        codeSamplesNamespace: trading-simulator-api-typescript-code-samples
+        codeSamplesRevisionDigest: sha256:30461465b9eddcbafef55cdbc56357b8f6453082ba07701cc714b104e996fcac
+workflow:
+    workflowVersion: 1.0.0
+    speakeasyVersion: latest
+    sources:
+        Trading Simulator API:
+            inputs:
+                - location: ../../../apps/api/openapi/openapi.json
+            registry:
+                location: registry.speakeasyapi.dev/textile/recall-comp-api/trading-simulator-api
+    targets:
+        api-sdk:
+            target: typescript
+            source: Trading Simulator API
+            codeSamples:
+                registry:
+                    location: registry.speakeasyapi.dev/textile/recall-comp-api/trading-simulator-api-typescript-code-samples
+                labelOverride:
+                    fixedValue: Typescript (SDK)
+                blocking: false
