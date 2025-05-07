@@ -25,7 +25,7 @@ const CONFIG = clientConfig();
 
 function WalletProvider(props: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
-  const [user, setUser] = useAtom(userAtom);
+  const [, setUser] = useAtom(userAtom);
 
   const authAdapter = React.useMemo(() => {
     return createAuthenticationAdapter({
@@ -74,7 +74,6 @@ function WalletProvider(props: { children: ReactNode }) {
       },
     });
   }, [setUser]);
-  console.log("SET FUCKING USER", user);
 
   return (
     <WagmiProvider config={CONFIG}>
