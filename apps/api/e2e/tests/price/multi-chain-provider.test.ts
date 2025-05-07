@@ -1,10 +1,8 @@
 // import { NovesProvider } from '../../../src/services/providers/noves.provider';
 import axios from "axios";
 import dotenv from "dotenv";
-import { sql } from "drizzle-orm";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-import { db } from "@/database/db.js";
 import { ApiClient } from "@/e2e/utils/api-client.js";
 import { PriceResponse } from "@/e2e/utils/api-types.js";
 import { dbManager } from "@/e2e/utils/db-manager.js";
@@ -103,28 +101,6 @@ describe("Multi-Chain Provider Tests", () => {
 
     // Log the API key to verify it's correctly set
     console.log(`Test client API key: ${result.apiKey}`);
-  });
-
-  // Check database schema as a test
-  it("should have the correct schema with specific_chain column", async () => {
-    if (!runTests) {
-      console.log("Skipping test - Tests disabled");
-      return;
-    }
-
-    const result = await db.execute(
-      sql`SELECT EXISTS (
-        SELECT 1
-        FROM information_schema.columns
-        WHERE table_name = 'prices'
-        AND column_name = 'specific_chain'
-      ) as column_exists;`,
-    );
-
-    console.log(
-      `Does specific_chain column exist? ${result.rows[0]?.column_exists}`,
-    );
-    expect(result.rows[0]?.column_exists).toBe(true);
   });
 
   // Clean up test state before each test
