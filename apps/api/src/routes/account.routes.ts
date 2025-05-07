@@ -99,39 +99,6 @@ export function configureAccountRoutes(
 
   /**
    * @openapi
-   * /api/account/reset-api-key:
-   *   post:
-   *     tags:
-   *       - Account
-   *     summary: Reset team API key
-   *     description: Reset the API key for the authenticated team. This will invalidate the current API key and generate a new one.
-   *     security:
-   *       - BearerAuth: []
-   *     responses:
-   *       200:
-   *         description: API key reset successfully
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 apiKey:
-   *                   type: string
-   *                   description: New API key to use for future requests
-   *                   example: "new123key456_xyz789abc"
-   *       401:
-   *         description: Unauthorized - Missing or invalid authentication
-   *       404:
-   *         description: Team not found
-   *       500:
-   *         description: Server error
-   */
-  router.post("/reset-api-key", controller.resetApiKey);
-  /**
-   * @openapi
    * /api/account/profile:
    *   put:
    *     tags:
@@ -266,14 +233,6 @@ export function configureAccountRoutes(
    *     description: Reset the API key for the authenticated team. This will invalidate the current API key and generate a new one.
    *     security:
    *       - BearerAuth: []
-   *     parameters:
-   *       - in: header
-   *         name: Authorization
-   *         schema:
-   *           type: string
-   *         required: true
-   *         description: Bearer token for authentication (format "Bearer YOUR_API_KEY")
-   *         example: "Bearer abc123def456_ghi789jkl012"
    *     responses:
    *       200:
    *         description: API key reset successfully
