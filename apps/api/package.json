@@ -23,7 +23,7 @@
     "db:check": "drizzle-kit check",
     "db:migrate": "drizzle-kit migrate",
     "db:clean": "tsx scripts/clean-db.ts",
-    "db:reset": "npm run db:clean && npm run db:migrate",
+    "db:reset": "pnpm db:clean && pnpm db:migrate",
     "db:drop-all": "NODE_ENV=development tsx scripts/drop-all.ts",
     "db:seed": "tsx scripts/seed-db.ts",
     "db:studio": "drizzle-kit studio",
@@ -39,7 +39,7 @@
     "comp:status": "tsx scripts/competition-status.ts",
     "generate-openapi": "tsx -e \"const { swaggerSpec } = require('./src/config/swagger'); require('fs').writeFileSync('./openapi/openapi.json', JSON.stringify(swaggerSpec, null, 2));\"",
     "generate-markdown": "openapi-markdown -i ./openapi/openapi.json -o ./openapi/API.md",
-    "generate-docs": "npm run generate-openapi && npm run generate-markdown"
+    "generate-docs": "pnpm generate-openapi && pnpm generate-markdown"
   },
   "keywords": [
     "solana",
