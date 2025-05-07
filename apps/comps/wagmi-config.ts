@@ -1,11 +1,13 @@
-import {getDefaultConfig} from "@rainbow-me/rainbowkit";
-import {Config, createConfig, http} from "wagmi";
-import {baseSepolia} from "wagmi/chains";
+import { getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { Config, createConfig, http } from "wagmi";
+import { baseSepolia } from "wagmi/chains";
 
 export const clientConfig: () => Config = () =>
   getDefaultConfig({
     appName: "js-recall/comps",
-    projectId: process.env.NEXT_PUBLIC_WALLET_PROJECT_ID || "your_walletconnect_project_id",
+    projectId:
+      process.env.NEXT_PUBLIC_WALLET_PROJECT_ID ||
+      "your_walletconnect_project_id",
     chains: [baseSepolia],
     ssr: true,
   });
