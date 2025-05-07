@@ -1,4 +1,4 @@
-import { desc, count as drizzleCount, eq, sql } from "drizzle-orm";
+import { desc, count as drizzleCount, eq } from "drizzle-orm";
 
 import { InsertTrade, trades } from "@recallnet/comps-db/schema";
 
@@ -15,7 +15,13 @@ import { db } from "@/database/db.js";
  */
 export async function create(trade: InsertTrade) {
   try {
-    const [result] = await db.insert(trades).values(trade).returning();
+    const [result] = await db
+      .insert(trades)
+      .values({
+        ...trade,
+        timestamp: trade.timestamp || new Date(),
+      })
+      .returning();
 
     if (!result) {
       throw new Error("Failed to create trade - no result returned");
@@ -101,7 +107,7 @@ export async function getCompetitionTrades(
 export async function countTeamTrades(teamId: string) {
   try {
     const [result] = await db
-      .select({ count: sql<number>`count(*)` })
+      .select({ count: drizzleCount() })
       .from(trades)
       .where(eq(trades.teamId, teamId));
 

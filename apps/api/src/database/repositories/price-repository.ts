@@ -20,7 +20,13 @@ export async function create(priceData: InsertPrice) {
   );
 
   try {
-    const [result] = await db.insert(prices).values(priceData).returning();
+    const [result] = await db
+      .insert(prices)
+      .values({
+        ...priceData,
+        timestamp: priceData.timestamp || new Date(),
+      })
+      .returning();
 
     if (!result) {
       throw new Error("No price record returned");

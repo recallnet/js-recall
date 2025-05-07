@@ -36,6 +36,7 @@ export async function saveBalance(
   specificChain: string,
 ) {
   try {
+    const now = new Date();
     const [result] = await db
       .insert(balances)
       .values({
@@ -43,6 +44,8 @@ export async function saveBalance(
         tokenAddress,
         amount,
         specificChain,
+        createdAt: now,
+        updatedAt: now,
       })
       .onConflictDoUpdate({
         target: [balances.teamId, balances.tokenAddress],
@@ -112,10 +115,10 @@ export async function initializeTeamBalances(
   initialBalances: Map<string, number>,
 ) {
   try {
+    const now = new Date();
     await db.transaction(async (tx) => {
       for (const [tokenAddress, amount] of initialBalances.entries()) {
         const specificChain = getTokenSpecificChain(tokenAddress);
-
         await tx
           .insert(balances)
           .values({
@@ -123,13 +126,15 @@ export async function initializeTeamBalances(
             tokenAddress,
             amount,
             specificChain,
+            createdAt: now,
+            updatedAt: now,
           })
           .onConflictDoUpdate({
             target: [balances.teamId, balances.tokenAddress],
             set: {
               amount,
               specificChain,
-              updatedAt: new Date(),
+              updatedAt: now,
             },
           });
       }
@@ -184,16 +189,18 @@ export async function resetTeamBalances(
       await tx.delete(balances).where(eq(balances.teamId, teamId));
 
       // Then initialize new ones
-      for (const [tokenAddress, amount] of initialBalances.entries()) {
-        const specificChain = getTokenSpecificChain(tokenAddress);
-
-        await tx.insert(balances).values({
+      const now = new Date();
+      const values = Array.from(initialBalances.entries()).map(
+        ([tokenAddress, amount]) => ({
           teamId,
           tokenAddress,
           amount,
-          specificChain,
-        });
-      }
+          specificChain: getTokenSpecificChain(tokenAddress),
+          createdAt: now,
+          updatedAt: now,
+        }),
+      );
+      await tx.insert(balances).values(values);
     });
   } catch (error) {
     console.error("[BalanceRepository] Error in resetTeamBalances:", error);

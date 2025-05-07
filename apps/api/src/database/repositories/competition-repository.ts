@@ -13,6 +13,8 @@ import {
 import { db } from "@/database/db.js";
 import { CompetitionStatus } from "@/types/index.js";
 
+import { PartialExcept } from "./types.js";
+
 /**
  * Competition Repository
  * Handles database operations for competitions
@@ -41,9 +43,14 @@ export async function findById(id: string) {
  */
 export async function create(competition: InsertCompetition) {
   try {
+    const now = new Date();
     const [result] = await db
       .insert(competitions)
-      .values(competition)
+      .values({
+        ...competition,
+        createdAt: competition.createdAt || now,
+        updatedAt: competition.updatedAt || now,
+      })
       .returning();
 
     if (!result) {
@@ -61,17 +68,15 @@ export async function create(competition: InsertCompetition) {
  * Update an existing competition
  * @param competition Competition to update
  */
-export async function update(competition: InsertCompetition) {
+export async function update(
+  competition: PartialExcept<InsertCompetition, "id">,
+) {
   try {
     const [result] = await db
       .update(competitions)
       .set({
-        name: competition.name,
-        description: competition.description,
-        startDate: competition.startDate,
-        endDate: competition.endDate,
-        status: competition.status,
-        updatedAt: new Date(),
+        ...competition,
+        updatedAt: competition.updatedAt || new Date(),
       })
       .where(eq(competitions.id, competition.id))
       .returning();
@@ -102,6 +107,7 @@ export async function addTeamToCompetition(
       .values({
         competitionId,
         teamId,
+        createdAt: new Date(),
       })
       .onConflictDoNothing();
   } catch (error) {
@@ -119,18 +125,14 @@ export async function addTeamToCompetition(
  * @param teamIds Array of team IDs
  */
 export async function addTeams(competitionId: string, teamIds: string[]) {
+  const createdAt = new Date();
+  const values = teamIds.map((teamId) => ({
+    competitionId,
+    teamId,
+    createdAt,
+  }));
   try {
-    await db.transaction(async (tx) => {
-      for (const teamId of teamIds) {
-        await tx
-          .insert(competitionTeams)
-          .values({
-            competitionId,
-            teamId,
-          })
-          .onConflictDoNothing();
-      }
-    });
+    await db.insert(competitionTeams).values(values).onConflictDoNothing();
   } catch (error) {
     console.error("[CompetitionRepository] Error in addTeams:", error);
     throw error;
@@ -191,7 +193,10 @@ export async function createPortfolioSnapshot(
   try {
     const [result] = await db
       .insert(portfolioSnapshots)
-      .values(snapshot)
+      .values({
+        ...snapshot,
+        timestamp: snapshot.timestamp || new Date(),
+      })
       .returning();
 
     if (!result) {

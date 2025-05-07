@@ -8,6 +8,8 @@ import {
 
 import { db } from "@/database/db.js";
 
+import { PartialExcept } from "./types.js";
+
 /**
  * Team Repository
  * Handles database operations for teams
@@ -19,7 +21,15 @@ import { db } from "@/database/db.js";
  */
 export async function create(team: InsertTeam) {
   try {
-    const [result] = await db.insert(teams).values(team).returning();
+    const now = new Date();
+    const [result] = await db
+      .insert(teams)
+      .values({
+        ...team,
+        createdAt: team.createdAt || now,
+        updatedAt: team.updatedAt || now,
+      })
+      .returning();
 
     if (!result) {
       throw new Error("Failed to create team - no result returned");
@@ -80,23 +90,13 @@ export async function count() {
  * Update an existing team
  * @param team Team to update
  */
-export async function update(team: InsertTeam) {
+export async function update(team: PartialExcept<InsertTeam, "id">) {
   try {
     const [result] = await db
       .update(teams)
       .set({
-        name: team.name,
-        email: team.email,
-        contactPerson: team.contactPerson,
-        apiKey: team.apiKey,
-        walletAddress: team.walletAddress,
-        bucketAddresses: team.bucketAddresses,
-        metadata: team.metadata,
-        isAdmin: team.isAdmin,
-        active: team.active,
-        deactivationReason: team.deactivationReason,
-        deactivationDate: team.deactivationDate,
-        updatedAt: new Date(),
+        ...team,
+        updatedAt: team.updatedAt || new Date(),
       })
       .where(eq(teams.id, team.id))
       .returning();
@@ -165,13 +165,14 @@ export async function isTeamInCompetition(
  */
 export async function deactivateTeam(teamId: string, reason: string) {
   try {
+    const now = new Date();
     const [result] = await db
       .update(teams)
       .set({
         active: false,
         deactivationReason: reason,
-        deactivationDate: new Date(),
-        updatedAt: new Date(),
+        deactivationDate: now,
+        updatedAt: now,
       })
       .where(eq(teams.id, teamId))
       .returning();
