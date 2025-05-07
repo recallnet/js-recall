@@ -37,7 +37,7 @@ const log = (message: string) => {
 
 try {
   log("\n📦 Setting up test database...");
-  const dbSetupResult = spawnSync("npx", ["tsx", "scripts/migrate-db.ts"], {
+  const dbSetupResult = spawnSync("pnpm", ["db:migrate"], {
     env: { ...process.env, NODE_ENV: "test" },
     stdio: ["inherit", logStream, logStream],
     cwd: path.resolve(__dirname, ".."),
