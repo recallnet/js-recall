@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, sql } from "drizzle-orm";
 
 import { InsertPrice, prices } from "@recallnet/comps-db/schema";
 
@@ -103,7 +103,7 @@ export async function getPriceHistory(
       .where(
         and(
           eq(prices.token, token),
-          sql`${prices.timestamp} > NOW() - INTERVAL '${hours} hours'`,
+          gt(prices.timestamp, sql`now() - interval '${hours} hours'`),
           ...(specificChain ? [eq(prices.specificChain, specificChain)] : []),
         ),
       )
@@ -135,7 +135,7 @@ export async function getAveragePrice(
       .where(
         and(
           eq(prices.token, token),
-          sql`${prices.timestamp} > NOW() - INTERVAL '${hours} hours'`,
+          gt(prices.timestamp, sql`now() - interval '${hours} hours'`),
           ...(specificChain ? [eq(prices.specificChain, specificChain)] : []),
         ),
       );
@@ -169,7 +169,7 @@ export async function getPriceChangePercentage(
       .where(
         and(
           eq(prices.token, token),
-          sql`${prices.timestamp} > NOW() - INTERVAL '${hours} hours'`,
+          gt(prices.timestamp, sql`now() - interval '${hours} hours'`),
           ...(specificChain ? [eq(prices.specificChain, specificChain)] : []),
         ),
       )
