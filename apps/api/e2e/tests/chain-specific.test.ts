@@ -1,8 +1,8 @@
 import axios from "axios";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { trades } from "@recallnet/comps-db/schema";
+import { portfolioSnapshots, trades } from "@recallnet/comps-db/schema";
 
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
@@ -171,19 +171,18 @@ describe("Specific Chains", () => {
     expect(tradeResponse.success).toBe(true);
 
     // Query the trades table to check if specificChain fields were correctly populated
-    const tradesResult = await db.execute(
-      sql`SELECT from_token, to_token, from_specific_chain, to_specific_chain FROM trades WHERE team_id = ${team.id}`,
-    );
+    const trade = await db.query.trades.findFirst({
+      where: eq(trades.teamId, team.id),
+    });
 
     // Verify we have a trade record
-    expect(tradesResult.rows.length).toBe(1);
+    expect(trade).toBeDefined();
 
     // Verify the specificChain fields were correctly populated
-    const trade = tradesResult.rows[0];
-    expect(trade?.from_specific_chain).toBe("eth");
-    expect(trade?.to_specific_chain).toBe("eth");
-    expect(trade?.from_token).toBe(ethToken);
-    expect(trade?.to_token).toBe(usdcToken);
+    expect(trade?.fromSpecificChain).toBe("eth");
+    expect(trade?.toSpecificChain).toBe("eth");
+    expect(trade?.fromToken).toBe(ethToken);
+    expect(trade?.toToken).toBe(usdcToken);
   });
 
   test("specificChain is correctly recorded in portfolio_token_values when taking snapshots", async () => {
@@ -218,25 +217,21 @@ describe("Specific Chains", () => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Find the most recent portfolio snapshot for this team
-    const snapshotResult = await db.execute(
-      sql`SELECT id FROM portfolio_snapshots WHERE team_id = ${team.id} ORDER BY timestamp DESC LIMIT 1`,
-    );
-
-    expect(snapshotResult.rows.length).toBe(1);
-    const snapshotId = snapshotResult.rows[0]?.id;
-
-    // Query the portfolio_token_values table to check if specificChain was correctly populated
-    const tokenValuesResult = await db.execute(
-      sql`SELECT token_address, specific_chain FROM portfolio_token_values WHERE portfolio_snapshot_id = ${snapshotId}`,
-    );
+    const snapshotResult = await db.query.portfolioSnapshots.findFirst({
+      where: eq(portfolioSnapshots.teamId, team.id),
+      orderBy: desc(portfolioSnapshots.timestamp),
+      with: {
+        portfolioTokenValues: true,
+      },
+    });
 
     // Verify we have portfolio token value records
-    expect(tokenValuesResult.rows.length).toBeGreaterThan(0);
+    expect(snapshotResult?.portfolioTokenValues.length).toBeGreaterThan(0);
 
     // Verify each token has the correct specific_chain based on config
-    for (const row of tokenValuesResult.rows) {
-      const tokenAddress = (row.token_address as string).toLowerCase();
-      const assignedChain = row.specific_chain;
+    for (const tokenValue of snapshotResult?.portfolioTokenValues ?? []) {
+      const tokenAddress = tokenValue.tokenAddress.toLowerCase();
+      const assignedChain = tokenValue.specificChain;
 
       // Find which chain this token should belong to according to config
       let expectedChain = null;
@@ -379,20 +374,17 @@ describe("Specific Chains", () => {
     expect(swapBackResponse.success).toBe(true);
 
     // Get the entrys in the trades table for this swap back
-    const swapBackResult = await db.execute(
-      sql`SELECT * 
-       FROM trades 
-       WHERE team_id = ${team.id} AND to_token = ${usdcAddress}`,
-    );
+    const swapBackResult = await db.query.trades.findFirst({
+      where: and(eq(trades.teamId, team.id), eq(trades.toToken, usdcAddress)),
+    });
     // Verify a trade record exists for this transaction
-    expect(swapBackResult.rows.length).toBe(1);
-    const swapBackTrade = swapBackResult.rows[0];
-    expect(swapBackTrade?.from_token).toBe(targetTokenAddress);
-    expect(swapBackTrade?.to_token).toBe(usdcAddress);
-    expect(swapBackTrade?.from_specific_chain).toBeDefined();
-    expect(swapBackTrade?.to_specific_chain).toBeDefined();
-    expect(swapBackTrade?.from_specific_chain).toBe("optimism");
-    expect(swapBackTrade?.to_specific_chain).toBe("optimism");
+    expect(swapBackResult).toBeDefined();
+    expect(swapBackResult?.fromToken).toBe(targetTokenAddress);
+    expect(swapBackResult?.toToken).toBe(usdcAddress);
+    expect(swapBackResult?.fromSpecificChain).toBeDefined();
+    expect(swapBackResult?.toSpecificChain).toBeDefined();
+    expect(swapBackResult?.fromSpecificChain).toBe("optimism");
+    expect(swapBackResult?.toSpecificChain).toBe("optimism");
   });
 
   // test case to purchase a bunch of random token from different chains and confirm specificChain is set in both trades and balances
