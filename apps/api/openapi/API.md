@@ -163,12 +163,6 @@ Get trade history
 
 Get trade history for the authenticated team
 
-##### Parameters
-
-| Name          | Located in | Description                                                    | Required | Schema |
-| ------------- | ---------- | -------------------------------------------------------------- | -------- | ------ |
-| Authorization | header     | Bearer token for authentication (format "Bearer YOUR_API_KEY") | Yes      | string |
-
 ##### Responses
 
 | Code | Description                                      |
