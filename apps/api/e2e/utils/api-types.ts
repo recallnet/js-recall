@@ -83,7 +83,7 @@ export interface TokenBalance {
   tokenAddress: string;
   amount: number;
   chain: BlockchainType;
-  specificChain: SpecificChain | null;
+  specificChain: SpecificChain;
 }
 
 // Balances response
