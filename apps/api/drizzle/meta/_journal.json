@@ -15,6 +15,13 @@
       "when": 1746735965686,
       "tag": "0001_lame_the_fallen",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1746742903007,
+      "tag": "0002_absurd_lester",
+      "breakpoints": true
     }
   ]
 }
