@@ -1,14 +1,23 @@
-import { Router } from "express";
+import { RequestHandler, Router } from "express";
 
 import { DocsController } from "@/controllers/docs.controller.js";
 
-const router = Router();
+export function configureDocsRoutes(
+  controller: DocsController,
+  ...middlewares: RequestHandler[]
+) {
+  const router = Router();
 
-// GET /api/docs - Serve Swagger UI
-router.use("/", DocsController.serveAssets);
-router.get("/", DocsController.getApiDocs);
+  if (middlewares.length) {
+    router.use(...middlewares);
+  }
 
-// GET /api/docs/spec - Get raw OpenAPI specification
-router.get("/spec", DocsController.getApiSpec);
+  // GET /api/docs - Serve Swagger UI
+  router.use("/", controller.serveAssets);
+  router.get("/", controller.getApiDocs);
 
-export default router;
+  // GET /api/docs/spec - Get raw OpenAPI specification
+  router.get("/spec", controller.getApiSpec);
+
+  return router;
+}

@@ -1,6 +1,9 @@
 import axios from "axios";
 import * as dotenv from "dotenv";
+import { sql } from "drizzle-orm";
 import * as path from "path";
+
+import { db } from "@/database/db.js";
 
 import { dbManager } from "./db-manager.js";
 import { getBaseUrl } from "./server.js";
@@ -22,8 +25,7 @@ async function setupAdminAccount() {
 
     // Clean up existing teams/admin accounts
     console.log("Cleaning up existing teams/admin accounts...");
-    const pool = dbManager.getPool();
-    await pool.query("TRUNCATE teams CASCADE");
+    await db.execute(sql.raw("TRUNCATE teams CASCADE"));
 
     // Use the admin setup endpoint to create a new admin account
     const baseUrl = getBaseUrl();

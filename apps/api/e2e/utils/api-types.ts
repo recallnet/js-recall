@@ -80,7 +80,7 @@ export interface TeamProfileResponse extends ApiResponse {
 
 // Token balance type
 export interface TokenBalance {
-  token: string;
+  tokenAddress: string;
   amount: number;
   chain: BlockchainType;
   specificChain: SpecificChain | null;

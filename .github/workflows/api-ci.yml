@@ -7,50 +7,13 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: fe319abf1a1b0d76b39894e5e17aff0c
+  NEXT_PUBLIC_CHAIN_NAME: testnet
+
 jobs:
-  build-test:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/api
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install Dependencies
-        run: pnpm install
-
-      - name: Build project
-        run: pnpm run build
-
   unit-tests:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/api
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -81,7 +44,11 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
+      - name: Build everything
+        run: pnpm build
+
       - name: Run unit tests
+        working-directory: apps/api
         run: |
           # List test files to ensure they're found
           echo "Found these unit test files:"
@@ -90,11 +57,7 @@ jobs:
           # Create a simplified test environment file
           cat > .env.test << EOF
           NODE_ENV=test
-          DB_HOST=localhost
-          DB_PORT=5432
-          DB_USERNAME=postgres
-          DB_PASSWORD=postgres
-          DB_NAME=trading_simulator_test
+          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/trading_simulator_test
           ROOT_ENCRYPTION_KEY=test_root_encryption_key
           EVM_CHAINS=eth,polygon,bsc,arbitrum,base,optimism,avalanche,linea
           TEST_MODE=true
@@ -136,9 +99,6 @@ jobs:
 
   e2e-tests:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/api
     services:
       postgres:
         image: postgres:14
@@ -185,8 +145,12 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
+      - name: Build everything
+        run: pnpm build
+
       - name: Detect environment and get postgres IP
         id: detect-env
+        working-directory: apps/api
         run: |
           # Default for GitHub Actions
           echo "db_host=localhost" >> $GITHUB_OUTPUT
@@ -222,17 +186,14 @@ jobs:
           fi
 
       - name: Create .env.test file
+        working-directory: apps/api
         run: |
           DB_HOST_VALUE="${{ steps.detect-env.outputs.db_host }}"
           echo "Using DB_HOST=$DB_HOST_VALUE"
 
           cat > .env.test << EOF
           # Test Database Configuration
-          DB_HOST=$DB_HOST_VALUE
-          DB_PORT=5432
-          DB_USERNAME=postgres
-          DB_PASSWORD=postgres
-          DB_NAME=trading_simulator_test
+          DATABASE_URL=postgresql://postgres:postgres@${DB_HOST_VALUE}:5432/trading_simulator_test
 
           # Test Server Configuration
           TEST_PORT=3001
@@ -295,6 +256,7 @@ jobs:
           EOF
 
       - name: Run E2E tests
+        working-directory: apps/api
         run: |
           # Show the current working directory
           echo "Current working directory: $(pwd)"
@@ -376,11 +338,7 @@ jobs:
         env:
           TEST_MODE: true
           CI: true
-          DB_HOST: ${{ steps.detect-env.outputs.db_host }}
-          DB_PORT: 5432
-          DB_USERNAME: postgres
-          DB_PASSWORD: postgres
-          DB_NAME: trading_simulator_test
+          DATABASE_URL: postgresql://postgres:postgres@${{ steps.detect-env.outputs.db_host }}:5432/trading_simulator_test
           TEST_HOST: ${{ steps.detect-env.outputs.test_host }}
           JEST_WORKER_ID: 1 # Force single worker to prevent open handles from child processes
           DB_CONNECTION_TIMEOUT: 5000

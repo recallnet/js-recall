@@ -1,6 +1,10 @@
 import { config } from "@/config/index.js";
-import { repositories } from "@/database/index.js";
-import { PriceRecord } from "@/database/types.js";
+import {
+  count as countPrices,
+  create as createPrice,
+  getLatestPrice,
+  getPriceHistory,
+} from "@/database/repositories/price-repository.js";
 import { MultiChainProvider } from "@/services/providers/multi-chain.provider.js";
 import {
   BlockchainType,
@@ -90,7 +94,7 @@ export class PriceTracker {
     tokenAddress: string,
     blockchainType?: BlockchainType,
     specificChain?: SpecificChain,
-  ): Promise<PriceReport | null> {
+  ) {
     console.log(`[PriceTracker] Getting price for token: ${tokenAddress}`);
 
     // Determine which chain this token belongs to if not provided
@@ -162,8 +166,7 @@ export class PriceTracker {
 
     // As a last resort, try to get the most recent price from the database
     try {
-      const lastPrice =
-        await repositories.priceRepository.getLatestPrice(tokenAddress);
+      const lastPrice = await getLatestPrice(tokenAddress);
       if (lastPrice) {
         console.log(
           `[PriceTracker] Using last stored price for ${tokenAddress}: $${lastPrice.price} (WARNING: not real-time price)`,
@@ -197,11 +200,7 @@ export class PriceTracker {
     tokenAddress: string,
     blockchainType?: BlockchainType,
     specificChain?: SpecificChain,
-  ): Promise<{
-    price: number;
-    chain: BlockchainType;
-    specificChain: SpecificChain;
-  } | null> {
+  ) {
     console.log(
       `[PriceTracker] Getting detailed token info for: ${tokenAddress}`,
     );
@@ -295,7 +294,7 @@ export class PriceTracker {
     specificChain: SpecificChain,
   ): Promise<void> {
     try {
-      await repositories.priceRepository.create({
+      await createPrice({
         token: tokenAddress,
         price,
         timestamp: new Date(),
@@ -360,17 +359,14 @@ export class PriceTracker {
       else if (timeframe === "6h") hours = 6;
 
       // Get historical data from database
-      const history = await repositories.priceRepository.getPriceHistory(
-        tokenAddress,
-        hours,
-      );
+      const history = await getPriceHistory(tokenAddress, hours);
 
       if (history && history.length > 0) {
         console.log(
           `[PriceTracker] Retrieved ${history.length} historical price points from database`,
         );
-        return history.map((point: PriceRecord) => ({
-          timestamp: point.timestamp.toISOString(),
+        return history.map((point) => ({
+          timestamp: point.timestamp?.toISOString() ?? "",
           price: point.price,
         }));
       }
@@ -449,7 +445,7 @@ export class PriceTracker {
   async isHealthy(): Promise<boolean> {
     try {
       // Check if database is accessible
-      await repositories.priceRepository.count();
+      await countPrices();
 
       // Check if provider is responsive
       if (this.multiChainProvider) {
