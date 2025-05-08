@@ -24,6 +24,8 @@
     "@recallnet/fonts": "workspace:*",
     "@recallnet/ui2": "workspace:*",
     "@tanstack/react-query": "^5.69.0",
+    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-virtual": "^3.13.8",
     "@vercel/analytics": "^1.5.0",
     "@wagmi/core": "^2.17.0",
     "axios": "^1.7.9",
