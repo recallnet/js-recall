@@ -9,6 +9,7 @@
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "start:with-db": "npm run db:docker:up && npm run start",
+    "db:docker:up": "docker-compose up -d",
     "start": "node dist/src/index.js",
     "clean": "rm -rf .turbo node_modules dist",
     "dev": "tsx watch src/index.ts",

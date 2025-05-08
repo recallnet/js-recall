@@ -66,7 +66,7 @@ For convenience, we provide an API client that handles authentication automatica
         description: "Local development server",
       },
       {
-        url: `https://api.example.com${apiBasePath}`,
+        url: `https://api.competitions.recall.network${apiBasePath}`,
         description: "Production server",
       },
     ],
