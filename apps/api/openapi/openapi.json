@@ -559,7 +559,6 @@
                           },
                           "specificChain": {
                             "type": "string",
-                            "nullable": true,
                             "description": "Specific chain for EVM tokens"
                           }
                         }

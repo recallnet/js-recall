@@ -131,7 +131,7 @@ export const balances = pgTable(
     updatedAt: timestamp("updated_at", {
       withTimezone: true,
     }).defaultNow(),
-    specificChain: varchar("specific_chain", { length: 20 }),
+    specificChain: varchar("specific_chain", { length: 20 }).notNull(),
   },
   (table) => [
     index("idx_balances_specific_chain").on(table.specificChain),

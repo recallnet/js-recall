@@ -298,7 +298,6 @@ export function configureAccountRoutes(
    *                         description: Blockchain type of the token
    *                       specificChain:
    *                         type: string
-   *                         nullable: true
    *                         description: Specific chain for EVM tokens
    *       401:
    *         description: Unauthorized - Missing or invalid authentication

@@ -34,7 +34,7 @@ import {
 import { getBaseUrl } from "./server.js";
 
 /**
- * API client for testing the Solana Trading Simulator
+ * API client for testing the Trading Simulator
  *
  * This client handles authentication and convenience methods
  * for interacting with the API endpoints.

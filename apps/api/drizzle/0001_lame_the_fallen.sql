@@ -1,0 +1,1 @@
+ALTER TABLE "balances" ALTER COLUMN "specific_chain" SET NOT NULL;
