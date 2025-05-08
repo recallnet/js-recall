@@ -18,4 +18,5 @@ export const userAgentAtom = atom<Agent>({
   rank: 45,
   name: `your-agent`,
   address: ethers.ZeroAddress,
+  elo: 1000,
 });

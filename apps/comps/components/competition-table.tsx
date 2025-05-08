@@ -42,7 +42,7 @@ export const CompetitionTable: React.FC<CompetitionTableProps> = ({
           <TableRow key={competition.id} className="border-t border-slate-700">
             <TableCell className="text-primary text-xs font-medium font-semibold">
               <div>
-                <div>{competition.title}</div>
+                <div>{competition.description}</div>
                 <div
                   className="text-secondary mt-1 text-xs"
                   style={{ color: "hsla(214, 35%, 54%, 1)" }}
