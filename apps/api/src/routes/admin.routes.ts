@@ -291,11 +291,12 @@ export function configureAdminRoutes(
    *                 type: string
    *                 description: Competition description
    *                 example: A trading competition for the spring semester
-   *               allowCrossChainTrading:
-   *                 type: boolean
-   *                 description: Whether to allow cross-chain trading in this competition
-   *                 default: false
-   *                 example: false
+   *               crossChainTradingType:
+   *                 type: string
+   *                 description: The type of cross-chain trading to allow in this competition
+   *                 enum: [DISALLOWALL, DISALLOWXPARENT, ALLOW]
+   *                 default: DISALLOWALL
+   *                 example: DISALLOWALL
    *     responses:
    *       201:
    *         description: Competition created successfully
@@ -323,9 +324,10 @@ export function configureAdminRoutes(
    *                       type: string
    *                       enum: [PENDING, ACTIVE, COMPLETED]
    *                       description: Competition status
-   *                     allowCrossChainTrading:
-   *                       type: boolean
-   *                       description: Whether cross-chain trading is allowed in this competition
+   *                     crossChainTradingType:
+   *                       type: string
+   *                       enum: [DISALLOWALL, DISALLOWXPARENT, ALLOW]
+   *                       description: The type of cross-chain trading allowed in this competition
    *                     createdAt:
    *                       type: string
    *                       format: date-time
@@ -374,11 +376,12 @@ export function configureAdminRoutes(
    *                 items:
    *                   type: string
    *                 description: Array of team IDs to include in the competition
-   *               allowCrossChainTrading:
-   *                 type: boolean
-   *                 description: Whether to allow cross-chain trading in this competition (used when creating a new competition)
-   *                 default: false
-   *                 example: false
+   *               crossChainTradingType:
+   *                 type: string
+   *                 description: Type of cross-chain trading to allow in this competition (used when creating a new competition)
+   *                 enum: [DISALLOWALL, DISALLOWXPARENT, ALLOW]
+   *                 default: DISALLOWALL
+   *                 example: DISALLOWALL
    *     responses:
    *       200:
    *         description: Competition started successfully
@@ -415,9 +418,10 @@ export function configureAdminRoutes(
    *                       type: string
    *                       enum: [PENDING, ACTIVE, COMPLETED]
    *                       description: Competition status
-   *                     allowCrossChainTrading:
-   *                       type: boolean
-   *                       description: Whether cross-chain trading is allowed in this competition
+   *                     crossChainTradingType:
+   *                       type: string
+   *                       enum: [DISALLOWALL, DISALLOWXPARENT, ALLOW]
+   *                       description: Type of cross-chain trading allowed in this competition
    *                     teamIds:
    *                       type: array
    *                       items:
@@ -491,9 +495,10 @@ export function configureAdminRoutes(
    *                       type: string
    *                       enum: [PENDING, ACTIVE, COMPLETED]
    *                       description: Competition status (completed)
-   *                     allowCrossChainTrading:
-   *                       type: boolean
-   *                       description: Whether cross-chain trading is allowed in this competition
+   *                     crossChainTradingType:
+   *                       type: string
+   *                       enum: [DISALLOWALL, DISALLOWXPARENT, ALLOW]
+   *                       description: Type of cross-chain trading allowed in this competition
    *                 leaderboard:
    *                   type: array
    *                   items:
@@ -638,9 +643,10 @@ export function configureAdminRoutes(
    *                       type: string
    *                       enum: [PENDING, ACTIVE, COMPLETED]
    *                       description: Competition status
-   *                     allowCrossChainTrading:
-   *                       type: boolean
-   *                       description: Whether cross-chain trading is allowed in this competition
+   *                     crossChainTradingType:
+   *                       type: string
+   *                       enum: [DISALLOWALL, DISALLOWXPARENT, ALLOW]
+   *                       description: Type of cross-chain trading allowed in this competition
    *                 leaderboard:
    *                   type: array
    *                   items:

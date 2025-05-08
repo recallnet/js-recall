@@ -187,6 +187,10 @@ export function configureCompetitionRoutes(
    *                       type: string
    *                       enum: [PENDING, ACTIVE, COMPLETED]
    *                       description: Competition status
+   *                     crossChainTradingType:
+   *                       type: string
+   *                       enum: [DISALLOWALL, DISALLOWXPARENT, ALLOW]
+   *                       description: The type of cross-chain trading allowed in this competition
    *                     createdAt:
    *                       type: string
    *                       format: date-time
@@ -315,9 +319,10 @@ export function configureCompetitionRoutes(
    *                         type: string
    *                         enum: [PENDING]
    *                         description: Competition status (always PENDING)
-   *                       allowCrossChainTrading:
-   *                         type: boolean
-   *                         description: Whether cross-chain trading is allowed
+   *                       crossChainTradingType:
+   *                         type: string
+   *                         enum: [DISALLOWALL, DISALLOWXPARENT, ALLOW]
+   *                         description: The type of cross-chain trading allowed in this competition
    *                       createdAt:
    *                         type: string
    *                         format: date-time

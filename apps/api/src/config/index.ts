@@ -234,7 +234,7 @@ export const features = {
   // Enable or disable cross-chain trading functionality
   // When set to false, trades can only occur between tokens on the same chain
   // Defaults to false for security, must be explicitly enabled
-  ALLOW_CROSS_CHAIN_TRADING: false,
+  CROSS_CHAIN_TRADING_TYPE: "DISALLOWALL",
 };
 
 export default config;

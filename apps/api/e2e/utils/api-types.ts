@@ -37,6 +37,13 @@ export enum SpecificChain {
   SVM = "svm",
 }
 
+// Cross-chain trading type enum
+export enum CrossChainTradingType {
+  DISALLOWALL = "DISALLOWALL",
+  DISALLOWXPARENT = "DISALLOWXPARENT",
+  ALLOW = "ALLOW",
+}
+
 // Competition status
 export enum CompetitionStatus {
   PENDING = "PENDING",
@@ -150,7 +157,7 @@ export interface Competition {
   startDate: string | null;
   endDate: string | null;
   status: CompetitionStatus;
-  allowCrossChainTrading: boolean;
+  crossChainTradingType: CrossChainTradingType;
   createdAt: string;
   updatedAt: string;
   teamIds?: string[];

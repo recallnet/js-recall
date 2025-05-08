@@ -16,6 +16,16 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
+// Add the enum type for cross chain trading
+export const CrossChainTradingType = {
+  DISALLOWALL: "DISALLOWALL",
+  DISALLOWXPARENT: "DISALLOWXPARENT",
+  ALLOW: "ALLOW",
+} as const;
+
+export type CrossChainTradingType =
+  (typeof CrossChainTradingType)[keyof typeof CrossChainTradingType];
+
 export const teams = pgTable(
   "teams",
   {
@@ -63,9 +73,9 @@ export const competitions = pgTable(
     startDate: timestamp("start_date", { withTimezone: true }),
     endDate: timestamp("end_date", { withTimezone: true }),
     status: varchar({ length: 20 }).notNull(),
-    allowCrossChainTrading: boolean("allow_cross_chain_trading")
+    crossChainTradingType: varchar("cross_chain_trading_type", { length: 20 })
       .notNull()
-      .default(false),
+      .default(CrossChainTradingType.DISALLOWALL),
     createdAt: timestamp("created_at", {
       withTimezone: true,
     }).defaultNow(),
@@ -73,7 +83,12 @@ export const competitions = pgTable(
       withTimezone: true,
     }).defaultNow(),
   },
-  (table) => [index("idx_competitions_status").on(table.status)],
+  (table) => [
+    index("idx_competitions_status").on(table.status),
+    index("idx_competitions_cross_chain_trading").on(
+      table.crossChainTradingType,
+    ),
+  ],
 );
 
 export const competitionTeams = pgTable(

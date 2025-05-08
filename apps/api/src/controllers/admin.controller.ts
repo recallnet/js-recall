@@ -4,6 +4,8 @@ import * as fs from "fs";
 import * as path from "path";
 import { v4 as uuidv4 } from "uuid";
 
+import { CrossChainTradingType } from "@recallnet/comps-db/schema";
+
 import { getCompetitionTeams } from "@/database/repositories/competition-repository.js";
 import {
   create,
@@ -294,7 +296,7 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async createCompetition(req: Request, res: Response, next: NextFunction) {
       try {
-        const { name, description, allowCrossChainTrading } = req.body;
+        const { name, description, crossChainTradingType } = req.body;
 
         // Validate required parameters
         if (!name) {
@@ -305,7 +307,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const competition = await services.competitionManager.createCompetition(
           name,
           description,
-          allowCrossChainTrading === true, // Convert to boolean explicitly
+          crossChainTradingType || CrossChainTradingType.DISALLOWALL, // Use the enum value
         );
 
         // Return the created competition
@@ -330,7 +332,7 @@ export function makeAdminController(services: ServiceRegistry) {
           name,
           description,
           teamIds,
-          allowCrossChainTrading,
+          crossChainTradingType,
         } = req.body;
 
         // Validate required parameters
@@ -373,7 +375,7 @@ export function makeAdminController(services: ServiceRegistry) {
           competition = await services.competitionManager.createCompetition(
             name,
             description,
-            allowCrossChainTrading === true, // Pass the cross-chain trading parameter
+            crossChainTradingType || CrossChainTradingType.DISALLOWALL, // Use the enum value
           );
         }
 
