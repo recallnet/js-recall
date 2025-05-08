@@ -1,8 +1,6 @@
 import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { ApiSDK } from "@recallnet/api-sdk";
-
 import config from "@/config/index.js";
 import { ApiClient } from "@/e2e/utils/api-client.js";
 import {
@@ -17,6 +15,7 @@ import {
   ADMIN_USERNAME,
   cleanupTestState,
   createTestClient,
+  getApiSdk,
   registerTeamAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
 import { BlockchainType } from "@/types/index.js";
@@ -67,9 +66,7 @@ describe("Price Fetching", () => {
   });
 
   test("should fetch prices for standard tokens", async () => {
-    const apiSDK = new ApiSDK({
-      bearerAuth: clientApiKey,
-    });
+    const apiSDK = getApiSdk(clientApiKey);
 
     const solResponse = await apiSDK.price.getApiPrice({
       token: encodeURIComponent(config.specificChainTokens.svm.sol),

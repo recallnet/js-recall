@@ -534,10 +534,11 @@ In some rare cases, the SDK can fail to get a response from the server or even m
 
 You can override the default server globally by passing a server index to the `serverIdx: number` optional parameter when initializing the SDK client instance. The selected server will then be used as the default on the operations that use it. This table lists the indexes associated with the available servers:
 
-| #   | Server                    | Description              |
-| --- | ------------------------- | ------------------------ |
-| 0   | `http://localhost:3000`   | Local development server |
-| 1   | `https://api.example.com` | Production server        |
+| #   | Server                                    | Description               |
+| --- | ----------------------------------------- | ------------------------- |
+| 0   | `https://api.competitions.recall.network` | Production server         |
+| 1   | `http://localhost:3000`                   | Local development server  |
+| 2   | `http://localhost:3000`                   | End to end testing server |
 
 #### Example
 
@@ -545,7 +546,7 @@ You can override the default server globally by passing a server index to the `s
 import { ApiSDK } from "@recallnet/api-sdk";
 
 const apiSDK = new ApiSDK({
-  serverIdx: 1,
+  serverIdx: 2,
   bearerAuth: process.env["APISDK_BEARER_AUTH"] ?? "",
 });
 
@@ -567,7 +568,7 @@ The default server can also be overridden globally by passing a URL to the `serv
 import { ApiSDK } from "@recallnet/api-sdk";
 
 const apiSDK = new ApiSDK({
-  serverURL: "http://localhost:3000",
+  serverURL: "https://api.competitions.recall.network",
   bearerAuth: process.env["APISDK_BEARER_AUTH"] ?? "",
 });
 

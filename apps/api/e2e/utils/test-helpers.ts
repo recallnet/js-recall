@@ -1,5 +1,7 @@
 import * as crypto from "crypto";
 
+import { ApiSDK } from "@recallnet/api-sdk";
+
 import { resetRateLimiters } from "@/middleware/rate-limiter.middleware.js";
 
 import { ApiClient } from "./api-client.js";
@@ -175,4 +177,14 @@ export function generateRandomString(length: number): string {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return result;
+}
+
+/**
+ * Helper for getting an instance of the sdk for a given api key
+ */
+export function getApiSdk(apiKey: string): InstanceType<typeof ApiSDK> {
+  return new ApiSDK({
+      bearerAuth: apiKey,
+      serverIdx: 2
+  });
 }
