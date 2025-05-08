@@ -11,7 +11,7 @@ If you encounter any bugs or have suggestions for improvements, please open an i
 - Expected and actual behavior
 - Any relevant logs, screenshots, or error messages
 - Information about your environment (e.g., operating system, software versions)
-    - For example can be collected using the `npx envinfo` command from your terminal if you have Node.js installed
+  - For example can be collected using the `npx envinfo` command from your terminal if you have Node.js installed
 
 ## Issue Triage and Upstream Fixes
 

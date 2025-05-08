@@ -1,6 +1,8 @@
 import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { ApiSDK } from "@recallnet/api-sdk";
+
 import config from "@/config/index.js";
 import { ApiClient } from "@/e2e/utils/api-client.js";
 import {
@@ -18,8 +20,6 @@ import {
   registerTeamAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
 import { BlockchainType } from "@/types/index.js";
-
-import { ApiSDK } from "@recallnet/api-sdk";
 
 // Define Ethereum token addresses for testing
 const ETHEREUM_TOKENS = {
