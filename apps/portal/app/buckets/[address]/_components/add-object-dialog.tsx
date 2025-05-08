@@ -1,15 +1,15 @@
-import {zodResolver} from "@hookform/resolvers/zod";
-import {Loader2} from "lucide-react";
-import {useRouter} from "next/navigation";
-import {useEffect, useState} from "react";
-import {useDropzone} from "react-dropzone";
-import {useForm} from "react-hook-form";
-import {Address} from "viem";
-import {useAccount} from "wagmi";
-import {z} from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useDropzone } from "react-dropzone";
+import { useForm } from "react-hook-form";
+import { Address } from "viem";
+import { useAccount } from "wagmi";
+import { z } from "zod";
 
-import {useAddFile} from "@recallnet/react/hooks/buckets";
-import {Button} from "@recallnet/ui/components/button";
+import { useAddFile } from "@recallnet/react/hooks/buckets";
+import { Button } from "@recallnet/ui/components/button";
 import {
   Dialog,
   DialogContent,
@@ -26,12 +26,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@recallnet/ui/components/shadcn/form";
-import {Input} from "@recallnet/ui/components/shadcn/input";
-import {Progress} from "@recallnet/ui/components/shadcn/progress";
-import {Switch} from "@recallnet/ui/components/shadcn/switch";
-import {Textarea} from "@recallnet/ui/components/shadcn/textarea";
-import {toast} from "@recallnet/ui/components/toast";
-import {cn} from "@recallnet/ui/lib/utils";
+import { Input } from "@recallnet/ui/components/shadcn/input";
+import { Progress } from "@recallnet/ui/components/shadcn/progress";
+import { Switch } from "@recallnet/ui/components/shadcn/switch";
+import { Textarea } from "@recallnet/ui/components/shadcn/textarea";
+import { toast } from "@recallnet/ui/components/toast";
+import { cn } from "@recallnet/ui/lib/utils";
 
 interface Props {
   open: boolean;
@@ -75,7 +75,7 @@ export default function AddObjectDialog({
   prefix,
   defaultTTLString,
 }: Props) {
-  const {address: fromAddress} = useAccount();
+  const { address: fromAddress } = useAccount();
 
   const router = useRouter();
 
@@ -88,7 +88,7 @@ export default function AddObjectDialog({
     },
   });
 
-  const {getRootProps, getInputProps, isDragActive} = useDropzone({
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
     maxFiles: 1,
     onDrop: (files) => {
       form.setValue("file", files[0]!);
@@ -104,8 +104,8 @@ export default function AddObjectDialog({
       if (typeof metadata !== "string") {
         const metaObj = {
           ...metadata,
-          ...(file.type ? {"content-type": file.type} : {}),
-          ...(file.size ? {size: `${file.size}`} : {}),
+          ...(file.type ? { "content-type": file.type } : {}),
+          ...(file.size ? { size: `${file.size}` } : {}),
         };
         form.setValue("metadata", metaObj);
       }
@@ -114,11 +114,12 @@ export default function AddObjectDialog({
 
   const [progress, setProgress] = useState<number | undefined>(undefined);
 
-  const {addFile, isPending, isSuccess, error} = useAddFile();
+  const { addFile, isPending, isSuccess, error } = useAddFile();
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     if (fromAddress === undefined) return;
-    const metadata = typeof values.metadata === "string" ? undefined : values.metadata;
+    const metadata =
+      typeof values.metadata === "string" ? undefined : values.metadata;
     addFile({
       bucket: bucketAddress,
       from: fromAddress,
@@ -155,22 +156,30 @@ export default function AddObjectDialog({
       <DialogContent className="space-y-4">
         <DialogHeader>
           <DialogTitle>Add Object</DialogTitle>
-          <DialogDescription>Add a file from your computer to the bucket.</DialogDescription>
+          <DialogDescription>
+            Add a file from your computer to the bucket.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <FormField
               control={form.control}
               name="key"
-              render={({field}) => (
+              render={({ field }) => (
                 <FormItem>
                   <div className="grid grid-cols-[min-content_auto] items-center gap-x-3 gap-y-2">
                     <FormLabel>Key</FormLabel>
                     <FormControl className="">
-                      <Input placeholder="key" {...field} disabled={isPending} />
+                      <Input
+                        placeholder="key"
+                        {...field}
+                        disabled={isPending}
+                      />
                     </FormControl>
                     <div></div>
-                    <FormDescription>Key to store the object under.</FormDescription>
+                    <FormDescription>
+                      Key to store the object under.
+                    </FormDescription>
                     <div></div>
                     <FormMessage />
                   </div>
@@ -180,7 +189,7 @@ export default function AddObjectDialog({
             <FormField
               control={form.control}
               name="overwrite"
-              render={({field}) => (
+              render={({ field }) => (
                 <FormItem>
                   <div className="flex items-center justify-between gap-2">
                     <div className="">
@@ -204,7 +213,7 @@ export default function AddObjectDialog({
             <FormField
               control={form.control}
               name="file"
-              render={({field}) => (
+              render={({ field }) => (
                 <FormItem>
                   <FormLabel>File</FormLabel>
                   <FormControl>
@@ -212,7 +221,7 @@ export default function AddObjectDialog({
                       {...getRootProps()}
                       className={cn(
                         "focus-visible:ring-ring flex flex-col items-center gap-6 border border-dashed p-6 text-center hover:cursor-pointer focus-visible:outline-none focus-visible:ring-1",
-                        isDragActive && "bg-accent"
+                        isDragActive && "bg-accent",
                       )}
                     >
                       <Input
@@ -220,7 +229,7 @@ export default function AddObjectDialog({
                         type="file"
                         disabled={isPending}
                         // {...field}
-                        {...getInputProps({onChange: field.onChange})}
+                        {...getInputProps({ onChange: field.onChange })}
                       />
                       {field.value ? (
                         <p className="text-sm">{field.value.name}</p>
@@ -228,13 +237,15 @@ export default function AddObjectDialog({
                         <p
                           className={cn(
                             "text-muted-foreground mt-0 font-mono text-sm",
-                            isDragActive && "text-accent-foreground"
+                            isDragActive && "text-accent-foreground",
                           )}
                         >
                           Drag and drop a file here, or click to select a file.
                         </p>
                       )}
-                      {(isPending || isSuccess) && <Progress value={progress} className="h-1" />}
+                      {(isPending || isSuccess) && (
+                        <Progress value={progress} className="h-1" />
+                      )}
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -244,22 +255,29 @@ export default function AddObjectDialog({
             <FormField
               control={form.control}
               name="metadata"
-              render={({field}) => (
+              render={({ field }) => (
                 <FormItem>
                   <FormLabel>Metadata</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder={JSON.stringify({key1: "value1", "...": "..."}, null, 2)}
+                      placeholder={JSON.stringify(
+                        { key1: "value1", "...": "..." },
+                        null,
+                        2,
+                      )}
                       {...field}
                       value={
-                        typeof field.value === "object" ? JSON.stringify(field.value) : field.value
+                        typeof field.value === "object"
+                          ? JSON.stringify(field.value)
+                          : field.value
                       }
                       className="min-h-28 font-mono"
                       disabled={isPending}
                     />
                   </FormControl>
                   <FormDescription>
-                    Metadata is optional and must be a JSON object with string property values.
+                    Metadata is optional and must be a JSON object with string
+                    property values.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -268,7 +286,7 @@ export default function AddObjectDialog({
             <FormField
               control={form.control}
               name="ttl"
-              render={({field}) => (
+              render={({ field }) => (
                 <FormItem>
                   <div className="grid grid-cols-[min-content_auto] items-center gap-x-3 gap-y-2">
                     <FormLabel>TTL</FormLabel>
@@ -281,7 +299,9 @@ export default function AddObjectDialog({
                       />
                     </FormControl>
                     <div></div>
-                    <FormDescription>Time to live for the object in hours.</FormDescription>
+                    <FormDescription>
+                      Time to live for the object in hours.
+                    </FormDescription>
                     <div></div>
                     <FormMessage />
                   </div>
