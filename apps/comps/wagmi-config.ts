@@ -6,7 +6,7 @@ export const clientConfig: () => Config = () =>
   getDefaultConfig({
     appName: "js-recall/comps",
     projectId:
-      process.env.NEXT_PUBLIC_WALLET_PROJECT_ID ||
+      process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ||
       "your_walletconnect_project_id",
     chains: [baseSepolia],
     ssr: true,
