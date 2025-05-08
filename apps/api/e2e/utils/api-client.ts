@@ -529,6 +529,7 @@ export class ApiClient {
   ): Promise<PriceResponse | ErrorResponse> {
     try {
       let path = `/api/price?token=${encodeURIComponent(token)}`;
+      console.log("api client path value:", path);
       if (chain) {
         path += `&chain=${encodeURIComponent(chain)}`;
       }

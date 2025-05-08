@@ -275,8 +275,8 @@ run();
 * [putApiAccountProfile](docs/sdks/account/README.md#putapiaccountprofile) - Update team profile
 * [postApiAccountResetApiKey](docs/sdks/account/README.md#postapiaccountresetapikey) - Reset team API key
 * [getApiAccountBalances](docs/sdks/account/README.md#getapiaccountbalances) - Get token balances
-* [getApiAccountPortfolio](docs/sdks/account/README.md#getapiaccountportfolio) - Get portfolio information
 * [getApiAccountTrades](docs/sdks/account/README.md#getapiaccounttrades) - Get trade history
+* [getApiAccountPortfolio](docs/sdks/account/README.md#getapiaccountportfolio) - Get portfolio information
 
 ### [admin](docs/sdks/admin/README.md)
 

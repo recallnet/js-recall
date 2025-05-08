@@ -65,8 +65,8 @@ export type GetApiPriceTokenInfoRequest = {
  * Blockchain type of the token
  */
 export const GetApiPriceTokenInfoChainResponse = {
-  Evm: "EVM",
-  Svm: "SVM",
+  Evm: "evm",
+  Svm: "svm",
 } as const;
 /**
  * Blockchain type of the token

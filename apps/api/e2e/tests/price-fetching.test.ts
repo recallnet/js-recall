@@ -38,6 +38,7 @@ describe("Price Fetching", () => {
   let adminClient: ApiClient;
   let client: ApiClient;
   let adminApiKey: string;
+  let clientApiKey: string;
 
   // Clean up test state before each test
   beforeEach(async () => {
@@ -62,63 +63,50 @@ describe("Price Fetching", () => {
     // Register a team and get an authenticated client
     const result = await registerTeamAndGetClient(adminClient);
     client = result.client;
+    clientApiKey = result.apiKey;
   });
 
   test("should fetch prices for standard tokens", async () => {
-
     const apiSDK = new ApiSDK({
-      bearerAuth: adminApiKey,
+      bearerAuth: clientApiKey,
     });
 
-    const result = await apiSDK.price.getApiPrice({
-      token: "So11111111111111111111111111111111111111112",
-      chain: "SVM",
-      specificChain: "eth",
+    const solResponse = await apiSDK.price.getApiPrice({
+      token: encodeURIComponent(config.specificChainTokens.svm.sol),
     });
 
-    // Handle the result
-    console.log(result);
+    expect(solResponse.success).toBe(true);
+    expect(solResponse.price).toBeDefined();
+    expect(typeof solResponse.price).toBe("number");
+    expect(solResponse.price).toBeGreaterThan(0);
+    expect(solResponse.chain).toBe("svm");
 
-//    const solResponse = await recallcomp.price.get({
-//      token: config.specificChainTokens.svm.sol,
-//      chain: "svm",
-//      specificChain: "eth",
-//    });
-    // Test price for SOL using authenticated client
-//    const solResponse = await client.getPrice(
-//      config.specificChainTokens.svm.sol,
-//    );
-//    expect(solResponse.success).toBe(true);
-//    expect(solResponse.price).toBeDefined();
-//    expect(typeof solResponse.price).toBe("number");
-//    expect(solResponse.price).toBeGreaterThan(0);
-//    expect(solResponse.chain).toBe("svm");
-//    console.log(`SOL price: $${solResponse.price}`);
+    console.log(`SOL price: $${solResponse.price}`);
     // Test price for USDC
-//    const usdcResponse = await client.getPrice(
-//      config.specificChainTokens.svm.usdc,
-//    );
-//    expect(usdcResponse.success).toBe(true);
-//    expect((usdcResponse as PriceResponse).price).toBeDefined();
-//    expect(typeof (usdcResponse as PriceResponse).price).toBe("number");
-//    // Allow for stablecoin price variations (0.8 to 1.2 range)
-//    expect((usdcResponse as PriceResponse).price).toBeGreaterThan(0.8);
-//    expect((usdcResponse as PriceResponse).price).toBeLessThan(1.2);
-//    expect((usdcResponse as PriceResponse).chain).toBe("svm");
-//    console.log(`USDC price: $${(usdcResponse as PriceResponse).price}`);
-//
-//    // Test price for USDT
-//    const usdtResponse = await client.getPrice(
-//      config.specificChainTokens.svm.usdt,
-//    );
-//    expect(usdtResponse.success).toBe(true);
-//    expect((usdtResponse as PriceResponse).price).toBeDefined();
-//    expect(typeof (usdtResponse as PriceResponse).price).toBe("number");
-//    // Allow for stablecoin price variations (0.8 to 1.2 range)
-//    expect((usdtResponse as PriceResponse).price).toBeGreaterThan(0.8);
-//    expect((usdtResponse as PriceResponse).price).toBeLessThan(1.2);
-//    expect((usdtResponse as PriceResponse).chain).toBe("svm");
-//    console.log(`USDT price: $${(usdtResponse as PriceResponse).price}`);
+    const usdcResponse = await apiSDK.price.getApiPrice({
+      token: encodeURIComponent(config.specificChainTokens.svm.usdc),
+    });
+    expect(usdcResponse.success).toBe(true);
+    expect((usdcResponse as PriceResponse).price).toBeDefined();
+    expect(typeof (usdcResponse as PriceResponse).price).toBe("number");
+    // Allow for stablecoin price variations (0.8 to 1.2 range)
+    expect((usdcResponse as PriceResponse).price).toBeGreaterThan(0.8);
+    expect((usdcResponse as PriceResponse).price).toBeLessThan(1.2);
+    expect((usdcResponse as PriceResponse).chain).toBe("svm");
+    console.log(`USDC price: $${(usdcResponse as PriceResponse).price}`);
+
+    // Test price for USDT
+    const usdtResponse = await apiSDK.price.getApiPrice({
+      token: encodeURIComponent(config.specificChainTokens.svm.usdt),
+    });
+    expect(usdtResponse.success).toBe(true);
+    expect((usdtResponse as PriceResponse).price).toBeDefined();
+    expect(typeof (usdtResponse as PriceResponse).price).toBe("number");
+    // Allow for stablecoin price variations (0.8 to 1.2 range)
+    expect((usdtResponse as PriceResponse).price).toBeGreaterThan(0.8);
+    expect((usdtResponse as PriceResponse).price).toBeLessThan(1.2);
+    expect((usdtResponse as PriceResponse).chain).toBe("svm");
+    console.log(`USDT price: $${(usdtResponse as PriceResponse).price}`);
   });
 
   test("should fetch price for arbitrary token if available", async () => {

@@ -53,7 +53,7 @@ export function createMCPServer(deps: {
 }) {
   const server = new McpServer({
     name: "ApiSDK",
-    version: "0.0.1",
+    version: "0.0.2",
   });
 
   const client = new ApiSDKCore({
@@ -87,8 +87,8 @@ export function createMCPServer(deps: {
   tool(tool$accountPutApiAccountProfile);
   tool(tool$accountPostApiAccountResetApiKey);
   tool(tool$accountGetApiAccountBalances);
-  tool(tool$accountGetApiAccountPortfolio);
   tool(tool$accountGetApiAccountTrades);
+  tool(tool$accountGetApiAccountPortfolio);
   tool(tool$adminPostApiAdminSetup);
   tool(tool$adminPostApiAdminTeamsRegister);
   tool(tool$adminGetApiAdminTeams);

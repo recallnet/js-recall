@@ -76,21 +76,6 @@ export class Account extends ClientSDK {
   }
 
   /**
-   * Get portfolio information
-   *
-   * @remarks
-   * Get portfolio valuation and token details for the authenticated team
-   */
-  async getApiAccountPortfolio(
-    options?: RequestOptions,
-  ): Promise<operations.GetApiAccountPortfolioResponse> {
-    return unwrapAsync(accountGetApiAccountPortfolio(
-      this,
-      options,
-    ));
-  }
-
-  /**
    * Get trade history
    *
    * @remarks
@@ -100,6 +85,21 @@ export class Account extends ClientSDK {
     options?: RequestOptions,
   ): Promise<operations.GetApiAccountTradesResponse> {
     return unwrapAsync(accountGetApiAccountTrades(
+      this,
+      options,
+    ));
+  }
+
+  /**
+   * Get portfolio information
+   *
+   * @remarks
+   * Get portfolio valuation and token details for the authenticated team
+   */
+  async getApiAccountPortfolio(
+    options?: RequestOptions,
+  ): Promise<operations.GetApiAccountPortfolioResponse> {
+    return unwrapAsync(accountGetApiAccountPortfolio(
       this,
       options,
     ));

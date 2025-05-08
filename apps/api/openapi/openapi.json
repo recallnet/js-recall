@@ -2671,8 +2671,8 @@
                     "chain": {
                       "type": "string",
                       "enum": [
-                        "EVM",
-                        "SVM"
+                        "evm",
+                        "svm"
                       ],
                       "description": "Blockchain type of the token"
                     },
@@ -2796,8 +2796,8 @@
                     "chain": {
                       "type": "string",
                       "enum": [
-                        "EVM",
-                        "SVM"
+                        "evm",
+                        "svm"
                       ],
                       "description": "Blockchain type of the token"
                     },
