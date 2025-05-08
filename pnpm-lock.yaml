@@ -9012,44 +9012,44 @@ snapshots:
 
   '@adraffy/ens-normalize@1.11.0': {}
 
-  '@ai-sdk/amazon-bedrock@1.1.6(zod@3.24.4)':
+  '@ai-sdk/amazon-bedrock@1.1.6(zod@3.24.2)':
     dependencies:
       '@ai-sdk/provider': 1.0.7
-      '@ai-sdk/provider-utils': 2.1.6(zod@3.24.4)
+      '@ai-sdk/provider-utils': 2.1.6(zod@3.24.2)
       '@aws-sdk/client-bedrock-runtime': 3.787.0
-      zod: 3.24.4
+      zod: 3.24.2
     transitivePeerDependencies:
       - aws-crt
 
-  '@ai-sdk/anthropic@1.1.6(zod@3.24.4)':
+  '@ai-sdk/anthropic@1.1.6(zod@3.24.2)':
     dependencies:
       '@ai-sdk/provider': 1.0.7
-      '@ai-sdk/provider-utils': 2.1.6(zod@3.24.4)
-      zod: 3.24.4
+      '@ai-sdk/provider-utils': 2.1.6(zod@3.24.2)
+      zod: 3.24.2
 
-  '@ai-sdk/google@1.1.0(zod@3.24.4)':
+  '@ai-sdk/google@1.1.0(zod@3.24.2)':
     dependencies:
       '@ai-sdk/provider': 1.0.4
-      '@ai-sdk/provider-utils': 2.1.0(zod@3.24.4)
-      zod: 3.24.4
+      '@ai-sdk/provider-utils': 2.1.0(zod@3.24.2)
+      zod: 3.24.2
 
-  '@ai-sdk/groq@1.1.7(zod@3.24.4)':
+  '@ai-sdk/groq@1.1.7(zod@3.24.2)':
     dependencies:
       '@ai-sdk/provider': 1.0.7
-      '@ai-sdk/provider-utils': 2.1.6(zod@3.24.4)
-      zod: 3.24.4
+      '@ai-sdk/provider-utils': 2.1.6(zod@3.24.2)
+      zod: 3.24.2
 
-  '@ai-sdk/mistral@1.1.6(zod@3.24.4)':
+  '@ai-sdk/mistral@1.1.6(zod@3.24.2)':
     dependencies:
       '@ai-sdk/provider': 1.0.7
-      '@ai-sdk/provider-utils': 2.1.6(zod@3.24.4)
-      zod: 3.24.4
+      '@ai-sdk/provider-utils': 2.1.6(zod@3.24.2)
+      zod: 3.24.2
 
-  '@ai-sdk/openai@1.1.9(zod@3.24.4)':
+  '@ai-sdk/openai@1.1.9(zod@3.24.2)':
     dependencies:
       '@ai-sdk/provider': 1.0.7
-      '@ai-sdk/provider-utils': 2.1.6(zod@3.24.4)
-      zod: 3.24.4
+      '@ai-sdk/provider-utils': 2.1.6(zod@3.24.2)
+      zod: 3.24.2
 
   '@ai-sdk/openai@1.3.9(zod@3.24.2)':
     dependencies:
@@ -9057,32 +9057,32 @@ snapshots:
       '@ai-sdk/provider-utils': 2.2.6(zod@3.24.2)
       zod: 3.24.2
 
-  '@ai-sdk/provider-utils@1.0.22(zod@3.24.4)':
+  '@ai-sdk/provider-utils@1.0.22(zod@3.24.2)':
     dependencies:
       '@ai-sdk/provider': 0.0.26
       eventsource-parser: 1.1.2
       nanoid: 3.3.11
       secure-json-parse: 2.7.0
     optionalDependencies:
-      zod: 3.24.4
+      zod: 3.24.2
 
-  '@ai-sdk/provider-utils@2.1.0(zod@3.24.4)':
+  '@ai-sdk/provider-utils@2.1.0(zod@3.24.2)':
     dependencies:
       '@ai-sdk/provider': 1.0.4
       eventsource-parser: 3.0.0
       nanoid: 3.3.11
       secure-json-parse: 2.7.0
     optionalDependencies:
-      zod: 3.24.4
+      zod: 3.24.2
 
-  '@ai-sdk/provider-utils@2.1.6(zod@3.24.4)':
+  '@ai-sdk/provider-utils@2.1.6(zod@3.24.2)':
     dependencies:
       '@ai-sdk/provider': 1.0.7
       eventsource-parser: 3.0.0
       nanoid: 3.3.11
       secure-json-parse: 2.7.0
     optionalDependencies:
-      zod: 3.24.4
+      zod: 3.24.2
 
   '@ai-sdk/provider-utils@2.2.6(zod@3.24.2)':
     dependencies:
@@ -9107,15 +9107,15 @@ snapshots:
     dependencies:
       json-schema: 0.4.0
 
-  '@ai-sdk/react@1.1.8(react@19.0.0)(zod@3.24.4)':
+  '@ai-sdk/react@1.1.8(react@19.0.0)(zod@3.24.2)':
     dependencies:
-      '@ai-sdk/provider-utils': 2.1.6(zod@3.24.4)
-      '@ai-sdk/ui-utils': 1.1.8(zod@3.24.4)
+      '@ai-sdk/provider-utils': 2.1.6(zod@3.24.2)
+      '@ai-sdk/ui-utils': 1.1.8(zod@3.24.2)
       swr: 2.3.3(react@19.0.0)
       throttleit: 2.1.0
     optionalDependencies:
       react: 19.0.0
-      zod: 3.24.4
+      zod: 3.24.2
 
   '@ai-sdk/react@1.2.8(react@19.0.0)(zod@3.24.2)':
     dependencies:
@@ -9127,13 +9127,13 @@ snapshots:
     optionalDependencies:
       zod: 3.24.2
 
-  '@ai-sdk/ui-utils@1.1.8(zod@3.24.4)':
+  '@ai-sdk/ui-utils@1.1.8(zod@3.24.2)':
     dependencies:
       '@ai-sdk/provider': 1.0.7
-      '@ai-sdk/provider-utils': 2.1.6(zod@3.24.4)
-      zod-to-json-schema: 3.24.5(zod@3.24.4)
+      '@ai-sdk/provider-utils': 2.1.6(zod@3.24.2)
+      zod-to-json-schema: 3.24.5(zod@3.24.2)
     optionalDependencies:
-      zod: 3.24.4
+      zod: 3.24.2
 
   '@ai-sdk/ui-utils@1.2.7(zod@3.24.2)':
     dependencies:
@@ -9796,17 +9796,17 @@ snapshots:
 
   '@elizaos/core@0.25.9(@types/debug@4.1.12)(@types/node@18.19.84)(bufferutil@4.0.9)(jiti@2.4.2)(lightningcss@1.29.2)(react@19.0.0)(tsx@4.19.3)(typescript@5.8.2)(utf-8-validate@5.0.10)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(yaml@2.7.0)':
     dependencies:
-      '@ai-sdk/amazon-bedrock': 1.1.6(zod@3.24.4)
-      '@ai-sdk/anthropic': 1.1.6(zod@3.24.4)
-      '@ai-sdk/google': 1.1.0(zod@3.24.4)
-      '@ai-sdk/groq': 1.1.7(zod@3.24.4)
-      '@ai-sdk/mistral': 1.1.6(zod@3.24.4)
-      '@ai-sdk/openai': 1.1.9(zod@3.24.4)
+      '@ai-sdk/amazon-bedrock': 1.1.6(zod@3.24.2)
+      '@ai-sdk/anthropic': 1.1.6(zod@3.24.2)
+      '@ai-sdk/google': 1.1.0(zod@3.24.2)
+      '@ai-sdk/groq': 1.1.7(zod@3.24.2)
+      '@ai-sdk/mistral': 1.1.6(zod@3.24.2)
+      '@ai-sdk/openai': 1.1.9(zod@3.24.2)
       '@electric-sql/pglite': 0.2.17
       '@fal-ai/client': 1.2.0
       '@supabase/supabase-js': 2.49.4(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@types/uuid': 10.0.0
-      ai: 4.1.16(react@19.0.0)(zod@3.24.4)
+      ai: 4.1.16(react@19.0.0)(zod@3.24.2)
       better-sqlite3: 11.8.1
       bignumber.js: 9.1.2
       dotenv: 16.4.5
@@ -9815,17 +9815,17 @@ snapshots:
       handlebars: 4.7.8
       js-sha1: 0.7.0
       js-tiktoken: 1.0.15
-      ollama-ai-provider: 0.16.1(zod@3.24.4)
-      openai: 4.82.0(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.24.4)
+      ollama-ai-provider: 0.16.1(zod@3.24.2)
+      openai: 4.82.0(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.24.2)
       pino: 9.6.0
       pino-pretty: 13.0.0
       sql.js: 1.13.0
       together-ai: 0.7.0
       unique-names-generator: 4.7.1
       uuid: 11.0.3
-      viem: 2.21.58(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.4)
+      viem: 2.21.58(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.2)
       vitest: 3.0.9(@types/debug@4.1.12)(@types/node@18.19.84)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)
-      zod: 3.24.4
+      zod: 3.24.2
     transitivePeerDependencies:
       - '@edge-runtime/vm'
       - '@types/debug'
@@ -13305,10 +13305,10 @@ snapshots:
 
   abbrev@1.1.1: {}
 
-  abitype@1.0.7(typescript@5.8.2)(zod@3.24.4):
+  abitype@1.0.7(typescript@5.8.2)(zod@3.24.2):
     optionalDependencies:
       typescript: 5.8.2
-      zod: 3.24.4
+      zod: 3.24.2
 
   abitype@1.0.8(typescript@5.8.2)(zod@3.24.2):
     optionalDependencies:
@@ -13363,17 +13363,17 @@ snapshots:
       clean-stack: 2.2.0
       indent-string: 4.0.0
 
-  ai@4.1.16(react@19.0.0)(zod@3.24.4):
+  ai@4.1.16(react@19.0.0)(zod@3.24.2):
     dependencies:
       '@ai-sdk/provider': 1.0.7
-      '@ai-sdk/provider-utils': 2.1.6(zod@3.24.4)
-      '@ai-sdk/react': 1.1.8(react@19.0.0)(zod@3.24.4)
-      '@ai-sdk/ui-utils': 1.1.8(zod@3.24.4)
+      '@ai-sdk/provider-utils': 2.1.6(zod@3.24.2)
+      '@ai-sdk/react': 1.1.8(react@19.0.0)(zod@3.24.2)
+      '@ai-sdk/ui-utils': 1.1.8(zod@3.24.2)
       '@opentelemetry/api': 1.9.0
       jsondiffpatch: 0.6.0
     optionalDependencies:
       react: 19.0.0
-      zod: 3.24.4
+      zod: 3.24.2
 
   ai@4.3.4(react@19.0.0)(zod@3.24.2):
     dependencies:
@@ -16140,13 +16140,13 @@ snapshots:
       node-fetch-native: 1.6.6
       ufo: 1.5.4
 
-  ollama-ai-provider@0.16.1(zod@3.24.4):
+  ollama-ai-provider@0.16.1(zod@3.24.2):
     dependencies:
       '@ai-sdk/provider': 0.0.26
-      '@ai-sdk/provider-utils': 1.0.22(zod@3.24.4)
+      '@ai-sdk/provider-utils': 1.0.22(zod@3.24.2)
       partial-json: 0.1.7
     optionalDependencies:
-      zod: 3.24.4
+      zod: 3.24.2
 
   on-exit-leak-free@0.2.0: {}
 
@@ -16170,7 +16170,7 @@ snapshots:
     dependencies:
       onnxruntime-common: 1.15.1
 
-  openai@4.82.0(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.24.4):
+  openai@4.82.0(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.24.2):
     dependencies:
       '@types/node': 18.19.84
       '@types/node-fetch': 2.6.12
@@ -16181,7 +16181,7 @@ snapshots:
       node-fetch: 2.7.0
     optionalDependencies:
       ws: 8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
-      zod: 3.24.4
+      zod: 3.24.2
     transitivePeerDependencies:
       - encoding
 
@@ -16264,14 +16264,14 @@ snapshots:
       object-keys: 1.1.1
       safe-push-apply: 1.0.0
 
-  ox@0.4.4(typescript@5.8.2)(zod@3.24.4):
+  ox@0.4.4(typescript@5.8.2)(zod@3.24.2):
     dependencies:
       '@adraffy/ens-normalize': 1.11.0
       '@noble/curves': 1.8.2
       '@noble/hashes': 1.7.2
       '@scure/bip32': 1.6.2
       '@scure/bip39': 1.5.4
-      abitype: 1.0.8(typescript@5.8.2)(zod@3.24.4)
+      abitype: 1.0.8(typescript@5.8.2)(zod@3.24.2)
       eventemitter3: 5.0.1
     optionalDependencies:
       typescript: 5.8.2
@@ -18058,15 +18058,15 @@ snapshots:
 
   vary@1.1.2: {}
 
-  viem@2.21.58(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.4):
+  viem@2.21.58(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.2):
     dependencies:
       '@noble/curves': 1.7.0
       '@noble/hashes': 1.6.1
       '@scure/bip32': 1.6.0
       '@scure/bip39': 1.5.0
-      abitype: 1.0.7(typescript@5.8.2)(zod@3.24.4)
+      abitype: 1.0.7(typescript@5.8.2)(zod@3.24.2)
       isows: 1.0.6(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
-      ox: 0.4.4(typescript@5.8.2)(zod@3.24.4)
+      ox: 0.4.4(typescript@5.8.2)(zod@3.24.2)
       webauthn-p256: 0.0.10
       ws: 8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     optionalDependencies:

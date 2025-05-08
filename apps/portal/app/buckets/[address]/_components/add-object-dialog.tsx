@@ -80,8 +80,7 @@ export default function AddObjectDialog({
   const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(formSchema as any) as any,
+    resolver: zodResolver(formSchema),
     defaultValues: {
       key: prefix,
       ttl: "" as unknown as number,
