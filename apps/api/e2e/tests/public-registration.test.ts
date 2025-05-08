@@ -1,7 +1,11 @@
 import axios from "axios";
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { teams } from "@recallnet/comps-db/schema";
+
 import config from "@/config/index.js";
+import { db } from "@/database/db.js";
 import {
   BalancesResponse,
   BlockchainType,
@@ -12,7 +16,6 @@ import {
   TeamRegistrationResponse,
   TradeResponse,
 } from "@/e2e/utils/api-types.js";
-import { getPool } from "@/e2e/utils/db-manager.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
@@ -153,7 +156,7 @@ describe("Public Registration API", () => {
     );
     const initialUsdcBalance = parseFloat(
       (initialBalanceResponse as BalancesResponse).balances
-        .find((b) => b.token === usdcTokenAddress)
+        .find((b) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
     console.log(`Initial USDC balance: ${initialUsdcBalance}`);
@@ -164,7 +167,7 @@ describe("Public Registration API", () => {
     // Initial SOL balance might already exist from initial balance config
     const initialSolBalance = parseFloat(
       (initialBalanceResponse as BalancesResponse).balances
-        .find((b) => b.token === solTokenAddress)
+        .find((b) => b.tokenAddress === solTokenAddress)
         ?.amount.toString() || "0",
     );
     console.log(`Initial SOL balance: ${initialSolBalance}`);
@@ -217,13 +220,10 @@ describe("Public Registration API", () => {
 
     const teamId = publicRegistrationResponse.team.id;
 
-    // Verify team is in the database, but not active
-    const pool = getPool();
-    const dbResult = await pool.query(
-      "SELECT active FROM teams WHERE id = $1",
-      [teamId],
-    );
-    expect(dbResult.rows.length).toBe(1);
-    expect(dbResult.rows[0]?.active).toBe(false);
+    const dbResult = await db.query.teams.findFirst({
+      where: eq(teams.id, teamId),
+    });
+    expect(dbResult).toBeDefined();
+    expect(dbResult?.active).toBe(false);
   });
 });

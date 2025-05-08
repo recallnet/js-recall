@@ -54,6 +54,27 @@ export function makePublicController(services: ServiceRegistry) {
             metadata,
           );
 
+          // Check if there's an active competition and automatically add the team to it
+          const activeCompetition =
+            await services.competitionManager.getActiveCompetition();
+
+          if (activeCompetition) {
+            console.log(
+              `[PublicController] Adding newly registered team ${team.id} to active competition ${activeCompetition.id}`,
+            );
+
+            // Use the CompetitionManager to add the team to the competition
+            // This encapsulates all the necessary steps in the service layer
+            await services.competitionManager.addTeamToCompetition(
+              activeCompetition.id,
+              team.id,
+            );
+
+            console.log(
+              `[PublicController] Team ${team.id} added to competition ${activeCompetition.id} and activated`,
+            );
+          }
+
           // Format the response to include api key and metadata for the client
           return res.status(201).json({
             success: true,
@@ -67,6 +88,7 @@ export function makePublicController(services: ServiceRegistry) {
               metadata: team.metadata,
               createdAt: team.createdAt,
             },
+            joinedActiveCompetition: !!activeCompetition,
           });
         } catch (error) {
           console.error("[PublicController] Error registering team:", error);

@@ -15,7 +15,7 @@ Where "your-api-key" is the API key provided during team registration.
 **cURL Example:**
 
 ```bash
-curl -X GET "https://api.example.com/api/account/balances" \
+curl -X GET "https://api.example.com/testing-grounds/api/account/balances" \
   -H "Authorization: Bearer abc123def456_ghi789jkl012" \
   -H "Content-Type: application/json"
 ```
@@ -25,12 +25,15 @@ curl -X GET "https://api.example.com/api/account/balances" \
 ```javascript
 const fetchData = async () => {
   const apiKey = "abc123def456_ghi789jkl012";
-  const response = await fetch("https://api.example.com/api/account/balances", {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
+  const response = await fetch(
+    "https://api.example.com/testing-grounds/api/account/balances",
+    {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
     },
-  });
+  );
 
   return await response.json();
 };
@@ -151,6 +154,38 @@ Get all token balances for the authenticated team
 | --------------- | ------ |
 | BearerAuth      |        |
 
+### /api/account/trades
+
+#### GET
+
+##### Summary:
+
+Get trade history
+
+##### Description:
+
+Get trade history for the authenticated team
+
+##### Parameters
+
+| Name          | Located in | Description                                                    | Required | Schema |
+| ------------- | ---------- | -------------------------------------------------------------- | -------- | ------ |
+| Authorization | header     | Bearer token for authentication (format "Bearer YOUR_API_KEY") | Yes      | string |
+
+##### Responses
+
+| Code | Description                                      |
+| ---- | ------------------------------------------------ |
+| 200  | Team trade history                               |
+| 401  | Unauthorized - Missing or invalid authentication |
+| 500  | Server error                                     |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
 ### /api/account/portfolio
 
 #### GET
@@ -168,32 +203,6 @@ Get portfolio valuation and token details for the authenticated team
 | Code | Description                                      |
 | ---- | ------------------------------------------------ |
 | 200  | Team portfolio information                       |
-| 401  | Unauthorized - Missing or invalid authentication |
-| 500  | Server error                                     |
-
-##### Security
-
-| Security Schema | Scopes |
-| --------------- | ------ |
-| BearerAuth      |        |
-
-### /api/account/trades
-
-#### GET
-
-##### Summary:
-
-Get trade history
-
-##### Description:
-
-Get trade history for the authenticated team
-
-##### Responses
-
-| Code | Description                                      |
-| ---- | ------------------------------------------------ |
-| 200  | Team trade history                               |
 | 401  | Unauthorized - Missing or invalid authentication |
 | 500  | Server error                                     |
 
@@ -800,7 +809,7 @@ Register a new team
 
 ##### Description:
 
-Public endpoint to register a new team. Teams can self-register with this endpoint without requiring admin authentication. If there is an active competition, the team will be automatically added to it and activated.
+Public endpoint to register a new team. Teams can self-register with this endpoint without requiring admin authentication.
 
 ##### Responses
 

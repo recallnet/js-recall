@@ -11,6 +11,7 @@ import {
   getLatestPortfolioSnapshots,
   update as updateCompetition,
 } from "@/database/repositories/competition-repository.js";
+import { reactivateTeam } from "@/database/repositories/team-repository.js";
 import {
   BalanceManager,
   ConfigurationService,
@@ -371,19 +372,16 @@ export class CompetitionManager {
       await this.balanceManager.resetTeamBalances(teamId);
 
       // Register team in the competition
-      await repositories.competitionRepository.addTeamToCompetition(
-        competitionId,
-        teamId,
-      );
+      await addTeamToCompetition(competitionId, teamId);
 
       // Activate the team
-      await services.teamManager.reactivateTeam(teamId);
+      await reactivateTeam(teamId);
 
       // Take portfolio snapshots
-      await this.takePortfolioSnapshots(competitionId);
+      await this.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
 
       // Reload competition-specific configuration settings
-      await services.configurationService.loadCompetitionSettings();
+      await this.configurationService.loadCompetitionSettings();
 
       console.log(
         `[CompetitionManager] Team ${teamId} added to competition ${competitionId}`,

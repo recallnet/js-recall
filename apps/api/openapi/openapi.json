@@ -3,7 +3,7 @@
   "info": {
     "title": "Trading Simulator API",
     "version": "1.0.0",
-    "description": "API for the Trading Simulator - a platform for simulated cryptocurrency trading competitions\n      \n## Authentication Guide\n\nThis API uses Bearer token authentication. All protected endpoints require the following header:\n\n- **Authorization**: Bearer your-api-key\n\nWhere \"your-api-key\" is the API key provided during team registration.\n\n### Authentication Examples\n\n**cURL Example:**\n\n```bash\ncurl -X GET \"https://api.example.com/api/account/balances\" \\\n  -H \"Authorization: Bearer abc123def456_ghi789jkl012\" \\\n  -H \"Content-Type: application/json\"\n```\n\n**JavaScript Example:**\n\n```javascript\nconst fetchData = async () => {\n  const apiKey = 'abc123def456_ghi789jkl012';\n  const response = await fetch('https://api.example.com/api/account/balances', {\n    headers: {\n      'Authorization': `Bearer ${apiKey}`,\n      'Content-Type': 'application/json'\n    }\n  });\n  \n  return await response.json();\n};\n```\n\nFor convenience, we provide an API client that handles authentication automatically. See `docs/examples/api-client.ts`.\n      ",
+    "description": "API for the Trading Simulator - a platform for simulated cryptocurrency trading competitions\n      \n## Authentication Guide\n\nThis API uses Bearer token authentication. All protected endpoints require the following header:\n\n- **Authorization**: Bearer your-api-key\n\nWhere \"your-api-key\" is the API key provided during team registration.\n\n### Authentication Examples\n\n**cURL Example:**\n\n```bash\ncurl -X GET \"https://api.example.com/testing-grounds/api/account/balances\" \\\n  -H \"Authorization: Bearer abc123def456_ghi789jkl012\" \\\n  -H \"Content-Type: application/json\"\n```\n\n**JavaScript Example:**\n\n```javascript\nconst fetchData = async () => {\n  const apiKey = 'abc123def456_ghi789jkl012';\n  const response = await fetch('https://api.example.com/testing-grounds/api/account/balances', {\n    headers: {\n      'Authorization': `Bearer ${apiKey}`,\n      'Content-Type': 'application/json'\n    }\n  });\n  \n  return await response.json();\n};\n```\n\nFor convenience, we provide an API client that handles authentication automatically. See `docs/examples/api-client.ts`.\n      ",
     "contact": {
       "name": "API Support",
       "email": "support@example.com"
@@ -15,11 +15,11 @@
   },
   "servers": [
     {
-      "url": "http://localhost:3000",
+      "url": "http://localhost:3000/testing-grounds",
       "description": "Local development server"
     },
     {
-      "url": "https://api.example.com",
+      "url": "https://api.example.com/testing-grounds",
       "description": "Production server"
     }
   ],
@@ -579,102 +579,6 @@
         }
       }
     },
-    "/api/account/portfolio": {
-      "get": {
-        "tags": [
-          "Account"
-        ],
-        "summary": "Get portfolio information",
-        "description": "Get portfolio valuation and token details for the authenticated team",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Team portfolio information",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "description": "Operation success status"
-                    },
-                    "teamId": {
-                      "type": "string",
-                      "description": "Team ID"
-                    },
-                    "totalValue": {
-                      "type": "number",
-                      "description": "Total portfolio value in USD"
-                    },
-                    "tokens": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "token": {
-                            "type": "string",
-                            "description": "Token address"
-                          },
-                          "amount": {
-                            "type": "number",
-                            "description": "Token balance amount"
-                          },
-                          "price": {
-                            "type": "number",
-                            "description": "Current token price in USD"
-                          },
-                          "value": {
-                            "type": "number",
-                            "description": "Total value of token holdings in USD"
-                          },
-                          "chain": {
-                            "type": "string",
-                            "enum": [
-                              "evm",
-                              "svm"
-                            ],
-                            "description": "Blockchain type of the token"
-                          },
-                          "specificChain": {
-                            "type": "string",
-                            "nullable": true,
-                            "description": "Specific chain for EVM tokens"
-                          }
-                        }
-                      }
-                    },
-                    "snapshotTime": {
-                      "type": "string",
-                      "format": "date-time",
-                      "description": "Time of the snapshot (if source is 'snapshot')"
-                    },
-                    "source": {
-                      "type": "string",
-                      "enum": [
-                        "snapshot",
-                        "live-calculation"
-                      ],
-                      "description": "Source of the portfolio data"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - Missing or invalid authentication"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        }
-      }
-    },
     "/api/account/trades": {
       "get": {
         "tags": [
@@ -775,6 +679,114 @@
                           }
                         }
                       }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Authorization",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Bearer token for authentication (format \"Bearer YOUR_API_KEY\")",
+            "example": "Bearer abc123def456_ghi789jkl012"
+          }
+        ]
+      }
+    },
+    "/api/account/portfolio": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Get portfolio information",
+        "description": "Get portfolio valuation and token details for the authenticated team",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Team portfolio information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Operation success status"
+                    },
+                    "teamId": {
+                      "type": "string",
+                      "description": "Team ID"
+                    },
+                    "totalValue": {
+                      "type": "number",
+                      "description": "Total portfolio value in USD"
+                    },
+                    "tokens": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "token": {
+                            "type": "string",
+                            "description": "Token address"
+                          },
+                          "amount": {
+                            "type": "number",
+                            "description": "Token balance amount"
+                          },
+                          "price": {
+                            "type": "number",
+                            "description": "Current token price in USD"
+                          },
+                          "value": {
+                            "type": "number",
+                            "description": "Total value of token holdings in USD"
+                          },
+                          "chain": {
+                            "type": "string",
+                            "enum": [
+                              "evm",
+                              "svm"
+                            ],
+                            "description": "Blockchain type of the token"
+                          },
+                          "specificChain": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "Specific chain for EVM tokens"
+                          }
+                        }
+                      }
+                    },
+                    "snapshotTime": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "Time of the snapshot (if source is 'snapshot')"
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "snapshot",
+                        "live-calculation"
+                      ],
+                      "description": "Source of the portfolio data"
                     }
                   }
                 }
@@ -2793,7 +2805,7 @@
           "Public"
         ],
         "summary": "Register a new team",
-        "description": "Public endpoint to register a new team. Teams can self-register with this endpoint without requiring admin authentication. If there is an active competition, the team will be automatically added to it and activated.",
+        "description": "Public endpoint to register a new team. Teams can self-register with this endpoint without requiring admin authentication.",
         "requestBody": {
           "required": true,
           "content": {
@@ -2897,12 +2909,12 @@
                           "type": "string",
                           "format": "date-time",
                           "description": "Account creation timestamp"
+                        },
+                        "joinedActiveCompetition": {
+                          "type": "boolean",
+                          "description": "Whether the team was added to an active competition"
                         }
                       }
-                    },
-                    "joinedActiveCompetition": {
-                      "type": "boolean",
-                      "description": "Whether the team was added to an active competition"
                     }
                   }
                 }

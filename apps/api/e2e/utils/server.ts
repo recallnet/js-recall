@@ -9,7 +9,7 @@ let serverProcess: ChildProcess | null = null;
 const PORT = process.env.TEST_PORT || "3001";
 // Allow configuring the host from environment (0.0.0.0 for Docker)
 const HOST = process.env.TEST_HOST || "localhost";
-const BASE_URL = `http://${HOST}:${PORT}`;
+const BASE_URL = `http://${HOST}:${PORT}/testing-grounds`;
 
 /**
  * Start the server for testing
@@ -178,13 +178,13 @@ async function waitForServerReady(
   maxRetries = 30,
   interval = 500,
 ): Promise<void> {
-  console.log(`⏳ Waiting for server to be ready at ${BASE_URL}/health...`);
+  console.log(`⏳ Waiting for server to be ready at ${BASE_URL}/api/health...`);
 
   let retries = 0;
   while (retries < maxRetries) {
     try {
       // Try to reach the health endpoint
-      const response = await axios.get(`${BASE_URL}/health`);
+      const response = await axios.get(`${BASE_URL}/api/health`);
       if (response.status === 200) {
         console.log("✅ Server is ready");
 
