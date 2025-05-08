@@ -17,6 +17,7 @@ class RecallTool extends StructuredTool {
   method: string;
   name: string;
   description: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   schema: z.ZodObject<any, any, any, any>;
 
   constructor(
