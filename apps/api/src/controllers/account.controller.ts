@@ -8,6 +8,7 @@ import {
 import { getLatestPrice } from "@/database/repositories/price-repository.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
+import { SpecificChain } from "@/types/index.js";
 
 export function makeAccountController(services: ServiceRegistry) {
   /**
@@ -122,6 +123,7 @@ export function makeAccountController(services: ServiceRegistry) {
             // First check if we have chain information in our database
             const latestPriceRecord = await getLatestPrice(
               balance.tokenAddress,
+              balance.specificChain as SpecificChain,
             );
 
             // If we have complete chain info in our database, use that

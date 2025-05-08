@@ -4,6 +4,7 @@ import { balances } from "@recallnet/comps-db/schema";
 
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
+import { SpecificChain } from "@/types/index.js";
 
 /**
  * Balance Repository
@@ -118,7 +119,9 @@ export async function initializeTeamBalances(
     const now = new Date();
     await db.transaction(async (tx) => {
       for (const [tokenAddress, amount] of initialBalances.entries()) {
-        const specificChain = getTokenSpecificChain(tokenAddress);
+        const specificChain = getTokenSpecificChain(
+          tokenAddress,
+        ) as SpecificChain;
         await tx
           .insert(balances)
           .values({
@@ -195,7 +198,7 @@ export async function resetTeamBalances(
           teamId,
           tokenAddress,
           amount,
-          specificChain: getTokenSpecificChain(tokenAddress),
+          specificChain: getTokenSpecificChain(tokenAddress) as SpecificChain,
           createdAt: now,
           updatedAt: now,
         }),

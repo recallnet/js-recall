@@ -559,107 +559,10 @@
                           },
                           "specificChain": {
                             "type": "string",
-                            "nullable": true,
                             "description": "Specific chain for EVM tokens"
                           }
                         }
                       }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - Missing or invalid authentication"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        }
-      }
-    },
-    "/api/account/portfolio": {
-      "get": {
-        "tags": [
-          "Account"
-        ],
-        "summary": "Get portfolio information",
-        "description": "Get portfolio valuation and token details for the authenticated team",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Team portfolio information",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "description": "Operation success status"
-                    },
-                    "teamId": {
-                      "type": "string",
-                      "description": "Team ID"
-                    },
-                    "totalValue": {
-                      "type": "number",
-                      "description": "Total portfolio value in USD"
-                    },
-                    "tokens": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "token": {
-                            "type": "string",
-                            "description": "Token address"
-                          },
-                          "amount": {
-                            "type": "number",
-                            "description": "Token balance amount"
-                          },
-                          "price": {
-                            "type": "number",
-                            "description": "Current token price in USD"
-                          },
-                          "value": {
-                            "type": "number",
-                            "description": "Total value of token holdings in USD"
-                          },
-                          "chain": {
-                            "type": "string",
-                            "enum": [
-                              "evm",
-                              "svm"
-                            ],
-                            "description": "Blockchain type of the token"
-                          },
-                          "specificChain": {
-                            "type": "string",
-                            "nullable": true,
-                            "description": "Specific chain for EVM tokens"
-                          }
-                        }
-                      }
-                    },
-                    "snapshotTime": {
-                      "type": "string",
-                      "format": "date-time",
-                      "description": "Time of the snapshot (if source is 'snapshot')"
-                    },
-                    "source": {
-                      "type": "string",
-                      "enum": [
-                        "snapshot",
-                        "live-calculation"
-                      ],
-                      "description": "Source of the portfolio data"
                     }
                   }
                 }
@@ -775,6 +678,114 @@
                           }
                         }
                       }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Authorization",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Bearer token for authentication (format \"Bearer YOUR_API_KEY\")",
+            "example": "Bearer abc123def456_ghi789jkl012"
+          }
+        ]
+      }
+    },
+    "/api/account/portfolio": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Get portfolio information",
+        "description": "Get portfolio valuation and token details for the authenticated team",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Team portfolio information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Operation success status"
+                    },
+                    "teamId": {
+                      "type": "string",
+                      "description": "Team ID"
+                    },
+                    "totalValue": {
+                      "type": "number",
+                      "description": "Total portfolio value in USD"
+                    },
+                    "tokens": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "token": {
+                            "type": "string",
+                            "description": "Token address"
+                          },
+                          "amount": {
+                            "type": "number",
+                            "description": "Token balance amount"
+                          },
+                          "price": {
+                            "type": "number",
+                            "description": "Current token price in USD"
+                          },
+                          "value": {
+                            "type": "number",
+                            "description": "Total value of token holdings in USD"
+                          },
+                          "chain": {
+                            "type": "string",
+                            "enum": [
+                              "evm",
+                              "svm"
+                            ],
+                            "description": "Blockchain type of the token"
+                          },
+                          "specificChain": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "Specific chain for EVM tokens"
+                          }
+                        }
+                      }
+                    },
+                    "snapshotTime": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "Time of the snapshot (if source is 'snapshot')"
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "snapshot",
+                        "live-calculation"
+                      ],
+                      "description": "Source of the portfolio data"
                     }
                   }
                 }

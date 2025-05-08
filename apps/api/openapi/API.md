@@ -151,6 +151,38 @@ Get all token balances for the authenticated team
 | --------------- | ------ |
 | BearerAuth      |        |
 
+### /api/account/trades
+
+#### GET
+
+##### Summary:
+
+Get trade history
+
+##### Description:
+
+Get trade history for the authenticated team
+
+##### Parameters
+
+| Name          | Located in | Description                                                    | Required | Schema |
+| ------------- | ---------- | -------------------------------------------------------------- | -------- | ------ |
+| Authorization | header     | Bearer token for authentication (format "Bearer YOUR_API_KEY") | Yes      | string |
+
+##### Responses
+
+| Code | Description                                      |
+| ---- | ------------------------------------------------ |
+| 200  | Team trade history                               |
+| 401  | Unauthorized - Missing or invalid authentication |
+| 500  | Server error                                     |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
 ### /api/account/portfolio
 
 #### GET
@@ -168,32 +200,6 @@ Get portfolio valuation and token details for the authenticated team
 | Code | Description                                      |
 | ---- | ------------------------------------------------ |
 | 200  | Team portfolio information                       |
-| 401  | Unauthorized - Missing or invalid authentication |
-| 500  | Server error                                     |
-
-##### Security
-
-| Security Schema | Scopes |
-| --------------- | ------ |
-| BearerAuth      |        |
-
-### /api/account/trades
-
-#### GET
-
-##### Summary:
-
-Get trade history
-
-##### Description:
-
-Get trade history for the authenticated team
-
-##### Responses
-
-| Code | Description                                      |
-| ---- | ------------------------------------------------ |
-| 200  | Team trade history                               |
 | 401  | Unauthorized - Missing or invalid authentication |
 | 500  | Server error                                     |
 

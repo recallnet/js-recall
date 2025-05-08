@@ -13,8 +13,7 @@ export const supportedEvmChains: SpecificChain[] = config.evmChains;
  * For Solana, it will delegate directly to the DexScreenerProvider.
  */
 export class MultiChainProvider implements PriceSource {
-  private readonly chainToTokenCache: Map<string, SpecificChain> = new Map();
-  private readonly CACHE_DURATION = 3600000; // 1 hour in milliseconds
+  // Add cache for token prices with composite key (tokenAddress:specificChain)
   private readonly tokenPriceCache: Map<
     string,
     {
@@ -24,6 +23,11 @@ export class MultiChainProvider implements PriceSource {
       specificChain: SpecificChain;
     }
   > = new Map();
+
+  // Track which chain a token belongs to for quicker lookups
+  private readonly chainToTokenCache: Map<string, SpecificChain> = new Map();
+
+  private readonly CACHE_DURATION = 3600000; // 1 hour in milliseconds
 
   // Use DexScreenerProvider for common functionality
   private dexScreenerProvider: DexScreenerProvider;
@@ -47,54 +51,6 @@ export class MultiChainProvider implements PriceSource {
    */
   determineChain(tokenAddress: string): BlockchainType {
     return this.dexScreenerProvider.determineChain(tokenAddress);
-  }
-
-  /**
-   * Get cached token price if available
-   */
-  private getCachedPrice(tokenAddress: string): {
-    price: number;
-    chain: BlockchainType;
-    specificChain: SpecificChain;
-  } | null {
-    const cached = this.tokenPriceCache.get(tokenAddress.toLowerCase());
-    if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
-      return {
-        price: cached.price,
-        chain: cached.chain,
-        specificChain: cached.specificChain,
-      };
-    }
-    return null;
-  }
-
-  /**
-   * Cache token price and its chain
-   */
-  private setCachedPrice(
-    tokenAddress: string,
-    chain: BlockchainType,
-    specificChain: SpecificChain,
-    price: number,
-  ): void {
-    this.tokenPriceCache.set(tokenAddress.toLowerCase(), {
-      price,
-      chain,
-      specificChain,
-      timestamp: Date.now(),
-    });
-
-    // Also cache the token-to-chain mapping for future lookups
-    if (chain === BlockchainType.EVM) {
-      this.chainToTokenCache.set(tokenAddress.toLowerCase(), specificChain);
-    }
-  }
-
-  /**
-   * Get the cached chain for a token if available
-   */
-  private getCachedChain(tokenAddress: string): SpecificChain | null {
-    return this.chainToTokenCache.get(tokenAddress.toLowerCase()) || null;
   }
 
   /**
@@ -136,17 +92,9 @@ export class MultiChainProvider implements PriceSource {
       // Normalize token address to lowercase
       const normalizedAddress = tokenAddress.toLowerCase();
 
-      // Determine blockchain type if not provided
-      const detectedChainType =
-        blockchainType || this.determineChain(normalizedAddress);
-
-      // Check price cache first
-      const cachedPrice = this.getCachedPrice(normalizedAddress);
-
+      // Check cache first
+      const cachedPrice = this.getCachedPrice(normalizedAddress, specificChain);
       if (cachedPrice !== null) {
-        console.log(
-          `[MultiChainProvider] Using cached price for ${normalizedAddress} - Chain: ${cachedPrice.specificChain}, Price: $${cachedPrice.price}`,
-        );
         return {
           token: tokenAddress,
           price: cachedPrice.price,
@@ -155,6 +103,10 @@ export class MultiChainProvider implements PriceSource {
           specificChain: cachedPrice.specificChain,
         };
       }
+
+      // Determine blockchain type if not provided
+      const detectedChainType =
+        blockchainType || this.determineChain(normalizedAddress);
 
       // For Solana tokens, delegate directly to DexScreenerProvider
       if (detectedChainType === BlockchainType.SVM) {
@@ -168,7 +120,7 @@ export class MultiChainProvider implements PriceSource {
             "svm",
           );
           if (price !== null) {
-            // Cache the result
+            // Cache the price
             this.setCachedPrice(
               normalizedAddress,
               BlockchainType.SVM,
@@ -224,7 +176,7 @@ export class MultiChainProvider implements PriceSource {
           );
 
           if (price !== null) {
-            // Cache the result with the specific chain
+            // Cache the price
             this.setCachedPrice(
               normalizedAddress,
               BlockchainType.EVM,
@@ -247,12 +199,14 @@ export class MultiChainProvider implements PriceSource {
           console.log(
             `[MultiChainProvider] No price found for ${normalizedAddress} on specified chain ${specificChain}`,
           );
-          return null; // If the specific chain didn't work, we don't try others as the user explicitly requested this chain
+          // Important: Return null here without falling back to other chains
+          return null;
         } catch (error) {
           console.log(
             `[MultiChainProvider] Error fetching price for ${normalizedAddress} on specified chain ${specificChain}:`,
             error instanceof Error ? error.message : "Unknown error",
           );
+          // Important: Return null here without falling back to other chains
           return null;
         }
       }
@@ -287,7 +241,7 @@ export class MultiChainProvider implements PriceSource {
           );
 
           if (price !== null) {
-            // Cache the result with the specific chain
+            // Cache the price
             this.setCachedPrice(
               normalizedAddress,
               BlockchainType.EVM,
@@ -340,13 +294,13 @@ export class MultiChainProvider implements PriceSource {
     specificChain: SpecificChain,
   ): Promise<boolean> {
     try {
-      // Check the blockchain type
-      const chainType = this.determineChain(tokenAddress);
-
       // Check if we already have a cached price
-      if (this.getCachedPrice(tokenAddress) !== null) {
+      if (this.getCachedPrice(tokenAddress, specificChain) !== null) {
         return true;
       }
+
+      // Check the blockchain type
+      const chainType = this.determineChain(tokenAddress);
 
       // For Solana tokens, delegate to DexScreenerProvider
       if (chainType === BlockchainType.SVM) {
@@ -354,7 +308,7 @@ export class MultiChainProvider implements PriceSource {
       }
 
       // For EVM tokens, try to get the price - if we get a value back, it's supported
-      const price = await this.getPrice(tokenAddress);
+      const price = await this.getPrice(tokenAddress, undefined, specificChain);
       return price !== null;
     } catch (error) {
       console.log(
@@ -385,15 +339,19 @@ export class MultiChainProvider implements PriceSource {
       // Normalize token address
       const normalizedAddress = tokenAddress.toLowerCase();
 
+      // Check cache first
+      const cachedPrice = this.getCachedPrice(normalizedAddress, specificChain);
+      if (cachedPrice !== null) {
+        // If the cached price is for a different specific chain, return null
+        if (specificChain && cachedPrice.specificChain !== specificChain) {
+          return null;
+        }
+        return cachedPrice;
+      }
+
       // Determine blockchain type if not provided
       const generalChain =
         blockchainType || this.determineChain(normalizedAddress);
-
-      // Check cache first
-      const cachedPrice = this.getCachedPrice(normalizedAddress);
-      if (cachedPrice !== null) {
-        return cachedPrice;
-      }
 
       // For Solana tokens, get price using DexScreenerProvider
       if (generalChain === BlockchainType.SVM) {
@@ -452,7 +410,7 @@ export class MultiChainProvider implements PriceSource {
           );
 
           if (price !== null) {
-            // Cache the result with the specific chain
+            // Cache the price
             this.setCachedPrice(
               normalizedAddress,
               BlockchainType.EVM,
@@ -507,5 +465,106 @@ export class MultiChainProvider implements PriceSource {
       );
       return null;
     }
+  }
+
+  /**
+   * Generates a cache key from token address and chain
+   */
+  private getCacheKey(
+    tokenAddress: string,
+    specificChain?: SpecificChain,
+  ): string {
+    return specificChain
+      ? `${tokenAddress.toLowerCase()}:${specificChain}`
+      : tokenAddress.toLowerCase();
+  }
+
+  /**
+   * Get cached token price if available
+   */
+  private getCachedPrice(
+    tokenAddress: string,
+    specificChain?: SpecificChain,
+  ): {
+    price: number;
+    chain: BlockchainType;
+    specificChain: SpecificChain;
+  } | null {
+    const normalizedAddress = tokenAddress.toLowerCase();
+
+    // If specificChain is provided, use the composite key
+    if (specificChain) {
+      const cacheKey = this.getCacheKey(normalizedAddress, specificChain);
+      const cached = this.tokenPriceCache.get(cacheKey);
+
+      if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+        console.log(
+          `[MultiChainProvider] Using cached price for ${normalizedAddress} on ${specificChain}: $${cached.price}`,
+        );
+        return {
+          price: cached.price,
+          chain: cached.chain,
+          specificChain: cached.specificChain,
+        };
+      }
+      return null;
+    }
+
+    // Fallback: try to find any cache entry for this token
+    // First check if we know which chain this token is on
+    const knownChain = this.getCachedChain(normalizedAddress);
+    if (knownChain) {
+      const cacheKey = this.getCacheKey(normalizedAddress, knownChain);
+      const cached = this.tokenPriceCache.get(cacheKey);
+
+      if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+        console.log(
+          `[MultiChainProvider] Using cached price for ${normalizedAddress} from known chain ${knownChain}: $${cached.price}`,
+        );
+        return {
+          price: cached.price,
+          chain: cached.chain,
+          specificChain: cached.specificChain,
+        };
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Cache token price and its chain
+   */
+  private setCachedPrice(
+    tokenAddress: string,
+    chain: BlockchainType,
+    specificChain: SpecificChain,
+    price: number,
+  ): void {
+    const normalizedAddress = tokenAddress.toLowerCase();
+    const cacheKey = this.getCacheKey(normalizedAddress, specificChain);
+
+    this.tokenPriceCache.set(cacheKey, {
+      price,
+      chain,
+      specificChain,
+      timestamp: Date.now(),
+    });
+
+    // Also cache the token-to-chain mapping for future lookups
+    if (chain === BlockchainType.EVM) {
+      this.chainToTokenCache.set(normalizedAddress, specificChain);
+    }
+
+    console.log(
+      `[MultiChainProvider] Cached price for ${normalizedAddress} on ${specificChain}: $${price}`,
+    );
+  }
+
+  /**
+   * Get the cached chain for a token if available
+   */
+  private getCachedChain(tokenAddress: string): SpecificChain | null {
+    return this.chainToTokenCache.get(tokenAddress.toLowerCase()) || null;
   }
 }
