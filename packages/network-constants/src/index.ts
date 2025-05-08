@@ -240,37 +240,12 @@ export const LOCALNET_PARENT_ERC20_ADDRESS =
   "0x4A679253410272dd5232B3Ff7cF5dbB88f295319";
 
 /**
- * BlobManager contract address for the Recall Testnet.
+ * Blobs actor address (via its masked ID address).
  */
-export const TESTNET_BLOB_MANAGER_ADDRESS =
-  "0x27594F8412bA08278b15b55C6347605Ee3b2020C";
+export const BLOBS_ACTOR_ADDRESS = "0xff00000000000000000000000000000000000042";
 
 /**
- * BlobManager contract address for the Recall Localnet.
+ * Machine (ADM) actor address (via its masked ID address).
  */
-export const LOCALNET_BLOB_MANAGER_ADDRESS =
-  "0x8ce361602B935680E8DeC218b820ff5056BeB7af";
-
-/**
- * BucketManager contract address for the Recall Testnet.
- */
-export const TESTNET_BUCKET_MANAGER_ADDRESS =
-  "0x170a22c76a2Bb7c5F1b0e7067a0ddb7C3452c8e0";
-
-/**
- * BucketManager contract address for the Recall Localnet.
- */
-export const LOCALNET_BUCKET_MANAGER_ADDRESS =
-  "0xeD1DB453C3156Ff3155a97AD217b3087D5Dc5f6E";
-
-/**
- * CreditManager contract address for the Recall Testnet.
- */
-export const TESTNET_CREDIT_MANAGER_ADDRESS =
-  "0x296042865b783D8E8Fb09F04FFAE2A66a16B85Bc";
-
-/**
- * CreditManager contract address for the Recall Localnet.
- */
-export const LOCALNET_CREDIT_MANAGER_ADDRESS =
-  "0x196dBCBb54b8ec4958c959D8949EBFE87aC2Aaaf";
+export const MACHINE_ACTOR_ADDRESS =
+  "0xff00000000000000000000000000000000000011";
