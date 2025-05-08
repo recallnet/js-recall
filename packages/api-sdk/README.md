@@ -538,7 +538,7 @@ You can override the default server globally by passing a server index to the `s
 | --- | ----------------------------------------- | ------------------------- |
 | 0   | `https://api.competitions.recall.network` | Production server         |
 | 1   | `http://localhost:3000`                   | Local development server  |
-| 2   | `http://localhost:3000`                   | End to end testing server |
+| 2   | `http://localhost:3001`                   | End to end testing server |
 
 #### Example
 

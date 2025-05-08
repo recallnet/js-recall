@@ -184,7 +184,7 @@ export function generateRandomString(length: number): string {
  */
 export function getApiSdk(apiKey: string): InstanceType<typeof ApiSDK> {
   return new ApiSDK({
-      bearerAuth: apiKey,
-      serverIdx: 2
+    bearerAuth: apiKey,
+    serverIdx: 2,
   });
 }

@@ -35,7 +35,6 @@ const BASE_TOKENS = {
 describe("Price Fetching", () => {
   // Create variables for authenticated clients
   let adminClient: ApiClient;
-  let client: ApiClient;
   let adminApiKey: string;
   let clientApiKey: string;
 
@@ -61,14 +60,13 @@ describe("Price Fetching", () => {
 
     // Register a team and get an authenticated client
     const result = await registerTeamAndGetClient(adminClient);
-    client = result.client;
     clientApiKey = result.apiKey;
   });
 
   test("should fetch prices for standard tokens", async () => {
-    const apiSDK = getApiSdk(clientApiKey);
+    const sdk = getApiSdk(clientApiKey);
 
-    const solResponse = await apiSDK.price.getApiPrice({
+    const solResponse = await sdk.price.getApiPrice({
       token: encodeURIComponent(config.specificChainTokens.svm.sol),
     });
 
@@ -80,7 +78,7 @@ describe("Price Fetching", () => {
 
     console.log(`SOL price: $${solResponse.price}`);
     // Test price for USDC
-    const usdcResponse = await apiSDK.price.getApiPrice({
+    const usdcResponse = await sdk.price.getApiPrice({
       token: encodeURIComponent(config.specificChainTokens.svm.usdc),
     });
     expect(usdcResponse.success).toBe(true);
@@ -93,7 +91,7 @@ describe("Price Fetching", () => {
     console.log(`USDC price: $${(usdcResponse as PriceResponse).price}`);
 
     // Test price for USDT
-    const usdtResponse = await apiSDK.price.getApiPrice({
+    const usdtResponse = await sdk.price.getApiPrice({
       token: encodeURIComponent(config.specificChainTokens.svm.usdt),
     });
     expect(usdtResponse.success).toBe(true);
@@ -110,9 +108,12 @@ describe("Price Fetching", () => {
     // The arbitrary token address to test with
     const arbitraryTokenAddress =
       "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R";
+    const sdk = getApiSdk(clientApiKey);
 
     // Test price for arbitrary token using authenticated client
-    const response = await client.getPrice(arbitraryTokenAddress);
+    const response = await sdk.price.getApiPrice({
+      token: arbitraryTokenAddress,
+    });
 
     console.log(
       `Arbitrary token (${arbitraryTokenAddress}) price response:`,
@@ -144,7 +145,8 @@ describe("Price Fetching", () => {
   test("should fetch prices for tokens across different chains", async () => {
     // Test SOL price (Solana chain)
     const solToken = config.specificChainTokens.svm.sol;
-    const solResponse = await client.getPrice(solToken);
+    const sdk = getApiSdk(clientApiKey);
+    const solResponse = await sdk.price.getApiPrice({ token: solToken });
     expect(solResponse.success).toBeTruthy();
     expect((solResponse as PriceResponse).price).toBeGreaterThan(0);
     expect((solResponse as PriceResponse).chain).toBe("svm");
@@ -152,7 +154,7 @@ describe("Price Fetching", () => {
 
     // Test ETH price (Ethereum chain)
     const ethToken = ETHEREUM_TOKENS.ETH;
-    const ethResponse = await client.getPrice(ethToken);
+    const ethResponse = await sdk.price.getApiPrice({ token: ethToken });
 
     // If we get a successful response with price data
     if (ethResponse.success && ethResponse.price) {
@@ -173,11 +175,11 @@ describe("Price Fetching", () => {
 
     // Test Base Chain ETH with specific chain parameter
     try {
-      const baseEthResponse = await client.getPrice(
-        BASE_TOKENS.ETH,
-        BlockchainType.EVM,
-        SpecificChain.BASE,
-      );
+      const baseEthResponse = await sdk.price.getApiPrice({
+        token: BASE_TOKENS.ETH,
+        chain: BlockchainType.EVM,
+        specificChain: SpecificChain.BASE,
+      });
 
       if (baseEthResponse.success && baseEthResponse.price) {
         expect(baseEthResponse.price).toBeGreaterThan(0);
@@ -195,8 +197,12 @@ describe("Price Fetching", () => {
   test("should fetch USDC price from both chains", async () => {
     // Test Solana USDC
     const solanaUsdcAddress = config.specificChainTokens.svm.usdc;
+    const sdk = getApiSdk(clientApiKey);
+
     try {
-      const solanaResponse = await client.getPrice(solanaUsdcAddress);
+      const solanaResponse = await sdk.price.getApiPrice({
+        token: solanaUsdcAddress,
+      });
 
       // Check if the response is successful
       if (solanaResponse.success) {
@@ -220,7 +226,9 @@ describe("Price Fetching", () => {
     // Test Ethereum USDC
     const ethereumUsdcAddress = ETHEREUM_TOKENS.USDC;
     try {
-      const ethereumResponse = await client.getPrice(ethereumUsdcAddress);
+      const ethereumResponse = await sdk.price.getApiPrice({
+        token: ethereumUsdcAddress,
+      });
 
       if (ethereumResponse.success) {
         // Allow for stablecoin price variations (0.8 to 1.2 range)
@@ -249,11 +257,11 @@ describe("Price Fetching", () => {
 
     // Test Base chain USDC with specific chain parameter
     try {
-      const baseUsdcResponse = await client.getPrice(
-        BASE_TOKENS.USDC,
-        BlockchainType.EVM,
-        SpecificChain.BASE,
-      );
+      const baseUsdcResponse = await sdk.price.getApiPrice({
+        token: BASE_TOKENS.USDC,
+        chain: BlockchainType.EVM,
+        specificChain: SpecificChain.BASE,
+      });
 
       if (baseUsdcResponse.success) {
         // Allow for stablecoin price variations (0.8 to 1.2 range)
@@ -272,9 +280,13 @@ describe("Price Fetching", () => {
 
   test("should use detailed token info endpoint correctly", async () => {
     // Test token-info endpoint for Ethereum token
+    const sdk = getApiSdk(clientApiKey);
+
     try {
       const ethToken = ETHEREUM_TOKENS.ETH;
-      const tokenInfoResponse = await client.getTokenInfo(ethToken);
+      const tokenInfoResponse = await sdk.price.getApiPriceTokenInfo({
+        token: ethToken,
+      });
 
       if (tokenInfoResponse.success) {
         expect((tokenInfoResponse as TokenInfoResponse).chain).toBe("evm");
@@ -296,11 +308,11 @@ describe("Price Fetching", () => {
     // Test token-info with specific chain parameter
     try {
       const baseToken = BASE_TOKENS.ETH;
-      const tokenInfoResponse = await client.getTokenInfo(
-        baseToken,
-        BlockchainType.EVM,
-        SpecificChain.BASE,
-      );
+      const tokenInfoResponse = await sdk.price.getApiPriceTokenInfo({
+        token: baseToken,
+        chain: BlockchainType.EVM,
+        specificChain: SpecificChain.BASE,
+      });
 
       if (tokenInfoResponse.success) {
         expect((tokenInfoResponse as TokenInfoResponse).chain).toBe("evm");
@@ -319,19 +331,27 @@ describe("Price Fetching", () => {
   });
 
   test("should detect chain from token format", async () => {
+    const sdk = getApiSdk(clientApiKey);
+
     // Test Solana token detection
     const solAddress = config.specificChainTokens.svm.sol;
-    const solResponse = await client.getPrice(solAddress);
+    const solResponse = await sdk.price.getApiPrice({
+      token: solAddress,
+    });
     expect((solResponse as PriceResponse).chain).toBe("svm");
 
     // Test Ethereum token detection
     const ethAddress = ETHEREUM_TOKENS.ETH;
-    const ethResponse = await client.getPrice(ethAddress);
+    const ethResponse = await sdk.price.getApiPrice({
+      token: ethAddress,
+    });
     expect((ethResponse as PriceResponse).chain).toBe("evm");
 
     // Test Base token detection
     const baseAddress = BASE_TOKENS.ETH;
-    const baseResponse = await client.getPrice(baseAddress);
+    const baseResponse = await sdk.price.getApiPrice({
+      token: baseAddress,
+    });
     expect((baseResponse as PriceResponse).chain).toBe("evm");
 
     console.log(`✅ All tokens correctly identified by chain type`);

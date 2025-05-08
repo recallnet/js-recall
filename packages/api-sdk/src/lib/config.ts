@@ -21,7 +21,7 @@ export const ServerList = [
   /**
    * End to end testing server
    */
-  "http://localhost:3000",
+  "http://localhost:3001",
 ] as const;
 
 export type SDKOptions = {
@@ -64,7 +64,7 @@ export function serverURLFromOptions(options: SDKOptions): URL | null {
 export const SDK_METADATA = {
   language: "typescript",
   openapiDocVersion: "1.0.0",
-  sdkVersion: "0.0.3",
+  sdkVersion: "0.0.4",
   genVersion: "2.598.21",
-  userAgent: "speakeasy-sdk/typescript 0.0.3 2.598.21 1.0.0 @recallnet/api-sdk",
+  userAgent: "speakeasy-sdk/typescript 0.0.4 2.598.21 1.0.0 @recallnet/api-sdk",
 } as const;
