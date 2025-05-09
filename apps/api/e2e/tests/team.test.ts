@@ -392,7 +392,7 @@ describe("Team API", () => {
     // Start the competition with our team
     const startCompResult = await adminClient.startExistingCompetition(
       competitionId,
-      [team.id as string],
+      [team.id],
     );
     expect(startCompResult.success).toBe(true);
 

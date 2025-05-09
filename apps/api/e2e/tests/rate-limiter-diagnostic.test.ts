@@ -75,7 +75,7 @@ describe("Rate Limiter Diagnostics", () => {
     await adminClient.startCompetition(
       `Rate Limit Diagnostic Test ${Date.now()}`,
       "Test competition for diagnosing rate limiting",
-      [team1.id as string, team2.id as string],
+      [team1.id, team2.id],
     );
     console.log("[DIAGNOSTIC] Started test competition");
 

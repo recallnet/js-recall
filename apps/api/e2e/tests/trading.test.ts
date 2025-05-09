@@ -1416,7 +1416,7 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "disallowXParent Testing Team",
     );
 

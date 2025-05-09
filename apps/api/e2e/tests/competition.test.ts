@@ -70,7 +70,7 @@ describe("Competition API", () => {
     const competitionResponse = await startTestCompetition(
       adminClient,
       competitionName,
-      [team1.id as string, team2.id as string],
+      [team1.id, team2.id],
     );
 
     // Verify competition was started
@@ -134,7 +134,7 @@ describe("Competition API", () => {
     const startResponse = await startExistingTestCompetition(
       adminClient,
       pendingCompetition.id,
-      [team1.id as string, team2.id as string],
+      [team1.id, team2.id],
     );
 
     // Verify competition was started
@@ -168,7 +168,7 @@ describe("Competition API", () => {
     const startResponse = await startTestCompetition(
       adminClient,
       competitionName,
-      [team1.id as string],
+      [team1.id],
     );
 
     const activeCompetition = startResponse.competition;
@@ -177,8 +177,8 @@ describe("Competition API", () => {
     // Try to start the same competition again
     try {
       await startExistingTestCompetition(adminClient, activeCompetition.id, [
-        team1.id as string,
-        team2.id as string,
+        team1.id,
+        team2.id,
       ]);
 
       // Should not reach this line
@@ -194,8 +194,8 @@ describe("Competition API", () => {
     // Verify through direct API call to see the actual error
     try {
       await adminClient.startExistingCompetition(activeCompetition.id, [
-        team1.id as string,
-        team2.id as string,
+        team1.id,
+        team2.id,
       ]);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
@@ -216,7 +216,7 @@ describe("Competition API", () => {
 
     // Admin starts a competition with the team
     const competitionName = `Viewable Competition ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id as string]);
+    await startTestCompetition(adminClient, competitionName, [team.id]);
 
     // Team checks competition status
     const statusResponse =
@@ -260,7 +260,7 @@ describe("Competition API", () => {
     await startTestCompetition(
       adminClient,
       `Exclusive Competition ${Date.now()}`,
-      [teamIn.id as string],
+      [teamIn.id],
     );
 
     // Team in competition checks status - should succeed
@@ -298,7 +298,7 @@ describe("Competition API", () => {
 
     // Start a competition with only the regular team (admin is not a participant)
     const competitionName = `Admin Access Test Competition ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id as string]);
+    await startTestCompetition(adminClient, competitionName, [team.id]);
 
     // Admin checks competition status
     const adminStatusResponse =
@@ -371,7 +371,7 @@ describe("Competition API", () => {
 
     // Start a competition with the team
     const competitionName = `Activation Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id as string]);
+    await startTestCompetition(adminClient, competitionName, [team.id]);
 
     // Check leaderboard to verify team is now active
     const leaderboardResponse =
@@ -409,7 +409,7 @@ describe("Competition API", () => {
     const competition = await startTestCompetition(
       adminClient,
       competitionName,
-      [team.id as string],
+      [team.id],
     );
 
     // Team should be able to access endpoints while competition is active
@@ -428,7 +428,7 @@ describe("Competition API", () => {
     // Give a small delay for deactivation to complete
     await wait(500);
     const dbResult = await db.query.teams.findFirst({
-      where: eq(teams.id as string, team.id as string),
+      where: eq(teams.id, team.id),
     });
 
     // Verify team is marked as inactive in the database
@@ -462,7 +462,7 @@ describe("Competition API", () => {
     const competitionName = `Cross-Chain Competition ${Date.now()}`;
     const competitionResponse = await adminClient.startCompetition({
       name: competitionName,
-      teamIds: [team.id as string],
+      teamIds: [team.id],
       tradingType: CrossChainTradingType.allow,
     });
 
@@ -502,7 +502,7 @@ describe("Competition API", () => {
       // Start a new competition with cross-chain trading disabled
       const secondCompetitionResponse = await adminClient.startCompetition({
         name: secondCompetitionName,
-        teamIds: [team.id as string],
+        teamIds: [team.id],
         tradingType: CrossChainTradingType.disallowAll,
       });
 
@@ -558,7 +558,7 @@ describe("Competition API", () => {
     const startCompetitionName = `Start Fields Test ${Date.now()}`;
     const startResponse = await adminClient.startCompetition({
       name: startCompetitionName,
-      teamIds: [team.id as string],
+      teamIds: [team.id],
       tradingType: CrossChainTradingType.disallowAll,
     });
 
@@ -689,7 +689,7 @@ describe("Competition API", () => {
     await startExistingTestCompetition(
       adminClient,
       createResponse1.competition.id,
-      [team.id as string],
+      [team.id],
     );
 
     // Get upcoming competitions again

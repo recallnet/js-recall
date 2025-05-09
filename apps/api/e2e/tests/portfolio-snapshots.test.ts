@@ -64,7 +64,7 @@ describe("Portfolio Snapshots", () => {
     const startResult = await startTestCompetition(
       adminClient,
       competitionName,
-      [team.id as string],
+      [team.id],
     );
 
     // Wait for operations to complete
@@ -112,7 +112,7 @@ describe("Portfolio Snapshots", () => {
     const startResult = await startTestCompetition(
       adminClient,
       competitionName,
-      [team.id as string],
+      [team.id],
     );
 
     // Get the competition ID
@@ -182,7 +182,7 @@ describe("Portfolio Snapshots", () => {
     const startResult = await startTestCompetition(
       adminClient,
       competitionName,
-      [team.id as string],
+      [team.id],
     );
 
     // Get the competition ID
@@ -254,7 +254,7 @@ describe("Portfolio Snapshots", () => {
     const startResult = await startTestCompetition(
       adminClient,
       competitionName,
-      [team.id as string],
+      [team.id],
     );
 
     // Get the competition ID
@@ -334,7 +334,7 @@ describe("Portfolio Snapshots", () => {
     const startResult = await startTestCompetition(
       adminClient,
       competitionName,
-      [team.id as string],
+      [team.id],
     );
 
     // Get the competition ID

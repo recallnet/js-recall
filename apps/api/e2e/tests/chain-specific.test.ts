@@ -58,7 +58,7 @@ describe("Specific Chains", () => {
 
     // Start a competition with the team
     const competitionName = `Specific Chain Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id as string]);
+    await startTestCompetition(adminClient, competitionName, [team.id]);
 
     // Use the team client API to get balances instead of direct DB query
     const balancesResponse =
@@ -118,7 +118,7 @@ describe("Specific Chains", () => {
 
     // Start a competition with the team
     const competitionName = `Trade Chain Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id as string]);
+    await startTestCompetition(adminClient, competitionName, [team.id]);
 
     // Get team's current balances
     const balanceResponse = (await teamClient.getBalance()) as BalancesResponse;
@@ -286,7 +286,7 @@ describe("Specific Chains", () => {
 
     // Start a competition with the team
     const competitionName = `Token Purchase Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id as string]);
+    await startTestCompetition(adminClient, competitionName, [team.id]);
 
     // Get team's current balances
     const balanceResponse = (await teamClient.getBalance()) as BalancesResponse;
@@ -562,7 +562,7 @@ describe("Specific Chains", () => {
 
     // Register a new team
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Token Purchase Test Team",
     );
 

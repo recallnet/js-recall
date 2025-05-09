@@ -53,8 +53,8 @@ describe("Rate Limiter Middleware", () => {
     // Start a competition with both teams
     const competitionName = `Rate Limit Test ${Date.now()}`;
     await startTestCompetition(adminClient, competitionName, [
-      team1.id as string,
-      team2.id as string,
+      team1.id,
+      team2.id,
     ]);
 
     // Wait for competition to initialize
@@ -187,7 +187,7 @@ describe("Rate Limiter Middleware", () => {
 
     // Start a competition
     const competitionName = `Endpoint Rate Limit Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id as string]);
+    await startTestCompetition(adminClient, competitionName, [team.id]);
 
     // Wait for competition to initialize
     await wait(500);
@@ -313,7 +313,7 @@ describe("Rate Limiter Middleware", () => {
 
     // Start a competition
     const competitionName = `Headers Rate Limit Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id as string]);
+    await startTestCompetition(adminClient, competitionName, [team.id]);
 
     // Wait for competition to initialize
     await wait(500);

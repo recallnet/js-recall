@@ -84,7 +84,7 @@ describe("Base Chain Trading", () => {
 
     // Start a competition with our team
     const competitionName = `Base Trading Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id as string]);
+    await startTestCompetition(adminClient, competitionName, [team.id]);
 
     // Wait for balances to be properly initialized
     await wait(500);
@@ -277,7 +277,7 @@ describe("Base Chain Trading", () => {
 
     // Start a competition with our team
     const competitionName = `Cross-Chain Restriction Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id as string]);
+    await startTestCompetition(adminClient, competitionName, [team.id]);
 
     // Wait for balances to be properly initialized
     await wait(500);
@@ -471,7 +471,7 @@ describe("Base Chain Trading", () => {
 
     // Start a competition with our team
     const competitionName = `Spending Limit Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id as string]);
+    await startTestCompetition(adminClient, competitionName, [team.id]);
 
     // Wait for balances to be properly initialized
     await wait(500);

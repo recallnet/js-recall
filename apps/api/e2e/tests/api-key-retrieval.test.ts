@@ -46,7 +46,7 @@ describe("API Key Retrieval", () => {
 
     // Retrieve the team's API key
     const keyResponse = (await adminClient.getTeamApiKey(
-      team.id as string,
+      team.id,
     )) as TeamApiKeyResponse;
 
     // Assert the API key was retrieved successfully
@@ -71,7 +71,7 @@ describe("API Key Retrieval", () => {
 
     // Attempt to retrieve the other team's API key using team client
     try {
-      await teamClient.getTeamApiKey(otherTeam.id as string);
+      await teamClient.getTeamApiKey(otherTeam.id);
       // Should fail - if it reaches this line, the test should fail
       expect(false).toBe(true);
     } catch (error) {

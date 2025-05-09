@@ -58,15 +58,24 @@ export async function registerTeamAndGetClient(
       metadata: {}
   });
 
-  if (!result.success || !result.team) {
+  if (!result.success || !result.team || typeof result.team.id !== "string") {
     throw new Error("Failed to register team");
   }
 
   // Create a client with the team's API key
   const client = new ApiClient(result.team.apiKey);
-  // TODO: work on replacing `ApiClient` instances with SDK instances everywhere,
-  // TODO: then this function can just return the apiKey for the new team
-  return { client, team: result.team, apiKey: result.team.apiKey };
+  // TODO: work on replacing `ApiClient` instances with SDK instances everywhere
+  // TODO: the return for this function can be cleaned up when we use the sdk everywhere
+  return {
+    client,
+    team: {
+      id: result.team.id || "",
+      name: result.team.name || "",
+      email: result.team.email || "",
+      contactPerson: result.team.contactPerson || "",
+    },
+    apiKey: result.team.apiKey || ""
+  };
 }
 
 /**
