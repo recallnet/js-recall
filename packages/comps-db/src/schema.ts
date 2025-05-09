@@ -73,7 +73,9 @@ export const competitions = pgTable(
     status: varchar({ length: 20 }).notNull(),
     crossChainTradingType: varchar("cross_chain_trading_type", { length: 20 })
       .notNull()
-      .default(CrossChainTradingType.DISALLOWALL),
+      crossChainTradingType: crossChainTradingType("cross_chain_trading_type")
+      .notNull()
+      .default("disallowAll"),
     createdAt: timestamp("created_at", {
       withTimezone: true,
     }).defaultNow(),
