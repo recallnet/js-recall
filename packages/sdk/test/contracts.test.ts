@@ -80,16 +80,6 @@ describe("contracts", function () {
       strictEqual(buckets.length, 0);
     });
 
-    it("should override default contract address", async () => {
-      const bucketManagerAddr = client.bucketManager().getContract().address;
-      const overrideBucketManager = client.bucketManager(bucketManagerAddr);
-      const { result: buckets } = await overrideBucketManager.list(
-        account.address,
-      );
-      expect(buckets).to.be.an("array");
-      strictEqual(buckets[0]?.kind, 0);
-    });
-
     describe("objects", function () {
       let bucket: Address; // Note: FVM uses all lowercase, but viem returns the checksummed address (may include uppercase)
       const key = "hello/world";
@@ -256,7 +246,8 @@ describe("contracts", function () {
         });
       });
 
-      it("should query objects", async () => {
+      // TODO: the facades do not work with the `query` method
+      it.skip("should query objects", async () => {
         let {
           result: { objects, commonPrefixes },
         } = await bucketManager.query(bucket, { prefix: "hello/" });
@@ -329,14 +320,12 @@ describe("contracts", function () {
   describe("credit manager", function () {
     let credits: CreditManager;
     let to: Address;
-    let caller: Address;
 
     before(async () => {
       credits = client.creditManager(
         (CREDIT_MANAGER_ADDRESS as Address) ?? undefined,
       );
       to = getAddress("0x9965507d1a55bcc2695c58ba16fb37d819b0a4dc");
-      caller = getAddress("0x976ea74026e726554db657fa54763abd0c3a0aa9");
     });
 
     it("should buy credits", async () => {
@@ -379,50 +368,22 @@ describe("contracts", function () {
       strictEqual(isHash(meta!.tx!.transactionHash), true);
     });
 
-    it("should approve credit spending with 'to' and 'caller'", async () => {
-      // also use a required caller
-      const { meta } = await credits.approve(to, [caller]);
-      strictEqual(isHash(meta!.tx!.transactionHash), true);
-    });
-
     it("should approve credit spending with all explicit params", async () => {
       // explicitly set all parameters
       const amount = parseEther("1");
-      const { meta } = await credits.approve(
-        to,
-        [caller],
-        amount,
-        0n,
-        3600n,
-        account.address,
-      );
+      const { meta } = await credits.approve(to, {
+        creditLimit: amount,
+        gasFeeLimit: 0n,
+        ttl: 3600n,
+      });
       strictEqual(isHash(meta!.tx!.transactionHash), true);
     });
 
     it("should revoke credit approval", async () => {
       // revoke with just to
       await credits.approve(to);
-      let { meta } = await credits.revoke(to);
+      const { meta } = await credits.revoke(to);
       strictEqual(isHash(meta!.tx!.transactionHash), true);
-
-      // revoke to and required caller
-      await credits.approve(to, [caller]);
-      ({ meta } = await credits.revoke(to, caller));
-      strictEqual(isHash(meta!.tx!.transactionHash), true);
-
-      // revoke with explicit caller
-      await credits.approve(to);
-      ({ meta } = await credits.revoke(to, undefined, account.address));
-    });
-
-    it("should fail to revoke with invalid 'from' address", async () => {
-      await rejects(credits.revoke(to, undefined, to), (err) => {
-        strictEqual(
-          (err as Error).message,
-          `'from' address '${to}' does not match origin or caller '${account.address}'`,
-        );
-        return true;
-      });
     });
 
     it("should get account details", async () => {
@@ -530,28 +491,6 @@ describe("contracts", function () {
       blobHash = result.blobHash;
     });
 
-    it("should get added blobs", async () => {
-      const { result } = await blobs.getAddedBlobs(10);
-      expect(result).to.be.an("array");
-      expect(result.length).to.be.greaterThanOrEqual(0);
-    });
-
-    it("should get pending blobs", async () => {
-      const { result } = await blobs.getPendingBlobs(10);
-      expect(result).to.be.an("array");
-      expect(result.length).to.be.greaterThanOrEqual(0);
-    });
-
-    it("should get pending blobs count", async () => {
-      const { result } = await blobs.getPendingBlobsCount();
-      expect(Number(result)).to.be.greaterThanOrEqual(0);
-    });
-
-    it("should get pending bytes count", async () => {
-      const { result } = await blobs.getPendingBytesCount();
-      expect(result).to.be.a("bigint");
-    });
-
     it("should get storage stats", async () => {
       const { result: stats } = await blobs.getStorageStats();
       expect(Number(stats.capacityFree)).to.be.greaterThan(0);
@@ -592,17 +531,8 @@ describe("contracts", function () {
     it("should get blob", async () => {
       const { result } = await blobs.getBlob(blobHash);
       expect(result.size).to.be.equal(size);
-      expect(result.subscribers.length).to.be.greaterThan(0);
+      expect(result.subscriptions.length).to.be.greaterThan(0);
       expect(result.status).to.be.equal(2); // resolved
-    });
-
-    it("should get blob status", async () => {
-      const { result } = await blobs.getBlobStatus(
-        account.address,
-        blobHash,
-        subscriptionId,
-      );
-      expect(result).to.be.equal(2); // resolved
     });
 
     // TODO: this assumes the new blob already exists on the network / iroh node

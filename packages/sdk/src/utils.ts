@@ -10,7 +10,7 @@ import {
 import { Hex, hexToBytes } from "viem";
 
 import { AddressId } from "@recallnet/fvm/address";
-import { leb128 } from "@recallnet/fvm/utils";
+import { base32ToHex as fvmBase32ToHex, leb128 } from "@recallnet/fvm/utils";
 
 // Function to encode a Uint8Array to Base64
 function bytesToBase64(bytes: Uint8Array, safeUrl: boolean = true): string {
@@ -31,6 +31,15 @@ function bytesToBase64(bytes: Uint8Array, safeUrl: boolean = true): string {
 export function hexToBase64(hex: Hex, safeUrl: boolean = true): string {
   const bytes = hexToBytes(hex);
   return bytesToBase64(bytes, safeUrl);
+}
+
+/**
+ * Convert a base32 string to a hex string
+ * @param value - The base32 string to convert
+ * @returns The hex string
+ */
+export function base32ToHex(value: string): Hex {
+  return fvmBase32ToHex(value) as Hex;
 }
 
 // Utility type to transform snake_case to camelCase

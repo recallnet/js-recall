@@ -13,7 +13,11 @@ import {
 } from "viem";
 
 import { getObjectApiUrl } from "@recallnet/chains";
-import { blobManagerAbi, blobManagerAddress } from "@recallnet/contracts";
+import {
+  iBlobsFacadeAbi,
+  iBlobsFacadeAddress,
+  iCreditFacadeAbi,
+} from "@recallnet/contracts";
 import { MIN_TTL } from "@recallnet/network-constants";
 
 import { RecallClient } from "../client.js";
@@ -24,91 +28,43 @@ import {
   isActorNotFoundError,
 } from "../errors.js";
 import { getObjectsNodeInfo } from "../provider.js";
-import { type Result } from "../utils.js";
+import { type Result, base32ToHex } from "../utils.js";
 
 // Used for getBlob()
 export type BlobInfo = ContractFunctionReturnType<
-  typeof blobManagerAbi,
+  typeof iBlobsFacadeAbi,
   AbiStateMutability,
   "getBlob"
 >;
 
-// Used for getAddedBlobs()
-export type AddedBlobs = ContractFunctionReturnType<
-  typeof blobManagerAbi,
+// Used for getSubnetStats()
+export type SubnetStats = ContractFunctionReturnType<
+  typeof iBlobsFacadeAbi,
   AbiStateMutability,
-  "getAddedBlobs"
->;
-
-// Used for getPendingBlobs()
-export type PendingBlobs = ContractFunctionReturnType<
-  typeof blobManagerAbi,
-  AbiStateMutability,
-  "getPendingBlobs"
->;
-
-// Used for getPendingBlobsCount()
-export type PendingBlobsCount = ContractFunctionReturnType<
-  typeof blobManagerAbi,
-  AbiStateMutability,
-  "getPendingBlobsCount"
->;
-
-// Used for getPendingBytesCount()
-export type PendingBytesCount = ContractFunctionReturnType<
-  typeof blobManagerAbi,
-  AbiStateMutability,
-  "getPendingBytesCount"
->;
-
-// Used for getStorageStats()
-export type StorageStats = ContractFunctionReturnType<
-  typeof blobManagerAbi,
-  AbiStateMutability,
-  "getStorageStats"
->;
-
-// Used for getBlobStatus()
-export type BlobStatus = ContractFunctionReturnType<
-  typeof blobManagerAbi,
-  AbiStateMutability,
-  "getBlobStatus"
+  "getStats"
 >;
 
 // Used for getStorageUsage()
-export type StorageUsage = ContractFunctionReturnType<
-  typeof blobManagerAbi,
-  AbiStateMutability,
-  "getStorageUsage"
->;
+export type StorageUsage = bigint;
 
-// Used for getSubnetStats()
-export type SubnetStats = ContractFunctionReturnType<
-  typeof blobManagerAbi,
-  AbiStateMutability,
-  "getSubnetStats"
+// Used for getStorageStats()
+export type StorageStats = Pick<
+  SubnetStats,
+  | "capacityFree"
+  | "capacityUsed"
+  | "numBlobs"
+  | "numResolving"
+  | "numAccounts"
+  | "bytesResolving"
+  | "numAdded"
+  | "bytesAdded"
 >;
 
 // Used for addBlob()
-type AddBlobFullParams = ContractFunctionArgs<
-  typeof blobManagerAbi,
+export type AddBlobParams = ContractFunctionArgs<
+  typeof iBlobsFacadeAbi,
   AbiStateMutability,
   "addBlob"
->;
-
-// Used for addBlob()
-export type AddBlobParams = Extract<
-  AddBlobFullParams[0],
-  {
-    sponsor: Address;
-    source: string;
-    blobHash: string;
-    metadataHash: string;
-    subscriptionId: string;
-    size: bigint;
-    ttl: bigint;
-    from: Address;
-  }
 >;
 
 export type AddBlobOptions = {
@@ -118,35 +74,28 @@ export type AddBlobOptions = {
 
 // Used for getBlob()
 export type GetBlobParams = ContractFunctionArgs<
-  typeof blobManagerAbi,
+  typeof iBlobsFacadeAbi,
   AbiStateMutability,
   "getBlob"
 >;
 
-// Used for getBlobStatus()
-export type GetBlobStatusParams = ContractFunctionArgs<
-  typeof blobManagerAbi,
-  AbiStateMutability,
-  "getBlobStatus"
->;
-
 // Used for deleteBlob()
 export type DeleteBlobParams = ContractFunctionArgs<
-  typeof blobManagerAbi,
+  typeof iBlobsFacadeAbi,
   AbiStateMutability,
   "deleteBlob"
 >;
 
 // Used for overwriteBlob()
 export type OverwriteBlobParams = ContractFunctionArgs<
-  typeof blobManagerAbi,
+  typeof iBlobsFacadeAbi,
   AbiStateMutability,
   "overwriteBlob"
 >;
 
 export class BlobManager {
   client: RecallClient;
-  contract: GetContractReturnType<typeof blobManagerAbi, Client, Address>;
+  contract: GetContractReturnType<typeof iBlobsFacadeAbi, Client, Address>;
 
   constructor(client: RecallClient, contractAddress?: Address) {
     this.client = client;
@@ -155,13 +104,13 @@ export class BlobManager {
       throw new Error("Client chain ID not found");
     }
     const deployedBlobManagerAddress = (
-      blobManagerAddress as Record<number, Address>
+      iBlobsFacadeAddress as Record<number, Address>
     )[chainId];
     if (!deployedBlobManagerAddress) {
       throw new Error(`No contract address found for chain ID ${chainId}}`);
     }
     this.contract = getContract({
-      abi: blobManagerAbi,
+      abi: iBlobsFacadeAbi,
       address: contractAddress || deployedBlobManagerAddress,
       client: {
         public: client.publicClient,
@@ -170,17 +119,20 @@ export class BlobManager {
     });
   }
 
-  getContract(): GetContractReturnType<typeof blobManagerAbi, Client, Address> {
+  getContract(): GetContractReturnType<
+    typeof iBlobsFacadeAbi,
+    Client,
+    Address
+  > {
     return this.contract;
   }
 
   // Add blob inner
-  async addBlobInner(addParams: AddBlobParams): Promise<Result> {
+  async addBlobInner(args: AddBlobParams): Promise<Result> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for adding blobs");
     }
     try {
-      const args = [addParams] satisfies AddBlobFullParams;
       const gasPrice = await this.client.publicClient.getGasPrice();
       const { request } = await this.contract.simulate.addBlob<Chain, Account>(
         args,
@@ -224,17 +176,15 @@ export class BlobManager {
     }
     const objectApiUrl = getObjectApiUrl(this.client.walletClient.chain);
     const { nodeId: source } = await getObjectsNodeInfo(objectApiUrl);
-    const from = this.client.walletClient.account.address;
-    const addParams = {
-      sponsor: options.sponsor ?? zeroAddress,
-      source,
-      blobHash,
-      metadataHash: "",
+    const addParams = [
+      options.sponsor ?? zeroAddress,
+      `0x${source}`, // Objects API returns the bytes32 value without the 0x prefix
+      base32ToHex(blobHash),
+      "0x0000000000000000000000000000000000000000000000000000000000000000", // Empty 32 bytes
       subscriptionId,
       size,
       ttl,
-      from,
-    };
+    ] satisfies AddBlobParams;
     return this.addBlobInner(addParams);
   }
 
@@ -248,12 +198,10 @@ export class BlobManager {
       throw new Error("Wallet client is not initialized for deleting blobs");
     }
     try {
-      const from = this.client.walletClient.account.address;
       const args = [
         subscriber || zeroAddress,
-        blobHash,
+        base32ToHex(blobHash),
         subscriptionId,
-        from,
       ] satisfies DeleteBlobParams;
       const gasPrice = await this.client.publicClient.getGasPrice();
       const { request } = await this.contract.simulate.deleteBlob<
@@ -287,39 +235,11 @@ export class BlobManager {
     blockNumber?: bigint,
   ): Promise<Result<BlobInfo>> {
     try {
-      const args = [blobHash] satisfies GetBlobParams;
+      const args = [base32ToHex(blobHash)] satisfies GetBlobParams;
       const result = await this.contract.read.getBlob(args, { blockNumber });
       return { result };
     } catch (error: unknown) {
       throw new UnhandledBlobError(`Failed to get blob info: ${error}`);
-    }
-  }
-
-  // Get blob status
-  async getBlobStatus(
-    subscriber: Address,
-    blobHash: string,
-    subscriptionId: string,
-    blockNumber?: bigint,
-  ): Promise<Result<BlobStatus>> {
-    try {
-      const args = [
-        subscriber,
-        blobHash,
-        subscriptionId,
-      ] satisfies GetBlobStatusParams;
-      const result = await this.contract.read.getBlobStatus(args, {
-        blockNumber,
-      });
-      return { result };
-    } catch (error: unknown) {
-      if (error instanceof ContractFunctionExecutionError) {
-        const { isActorNotFound, address } = isActorNotFoundError(error);
-        if (isActorNotFound) {
-          throw new ActorNotFound(address as Address);
-        }
-      }
-      throw new UnhandledBlobError(`Failed to get blob status: ${error}`);
     }
   }
 
@@ -334,7 +254,10 @@ export class BlobManager {
           "Wallet client is not initialized for overwriting blobs",
         );
       }
-      const params = [oldHash, addParams] satisfies OverwriteBlobParams;
+      const params = [
+        base32ToHex(oldHash),
+        ...addParams,
+      ] satisfies OverwriteBlobParams;
       const gasPrice = await this.client.publicClient.getGasPrice();
       const { request } = await this.contract.simulate.overwriteBlob<
         Chain,
@@ -367,89 +290,33 @@ export class BlobManager {
     }
     const objectApiUrl = getObjectApiUrl(this.client.walletClient.chain);
     const { nodeId: source } = await getObjectsNodeInfo(objectApiUrl);
-    const from = this.client.walletClient.account.address;
-    const params = {
-      sponsor: options.sponsor ?? zeroAddress,
-      source,
-      blobHash: newHash,
-      metadataHash: "",
+    const params = [
+      options.sponsor ?? zeroAddress,
+      `0x${source}`, // Objects API returns the bytes32 value without the 0x prefix
+      base32ToHex(newHash),
+      "0x0000000000000000000000000000000000000000000000000000000000000000", // Empty 32 bytes
       subscriptionId,
       size,
-      ttl: options.ttl ?? 0n,
-      from,
-    };
+      options.ttl ?? 0n,
+    ] satisfies AddBlobParams;
     return this.overwriteBlobInner(oldHash, params);
-  }
-
-  // Get added blobs
-  async getAddedBlobs(
-    size: number,
-    blockNumber?: bigint,
-  ): Promise<Result<AddedBlobs>> {
-    try {
-      const result = await this.contract.read.getAddedBlobs([size], {
-        blockNumber,
-      });
-      return { result };
-    } catch (error: unknown) {
-      throw new UnhandledBlobError(`Failed to get added blobs: ${error}`);
-    }
-  }
-
-  // Get pending blobs
-  async getPendingBlobs(
-    size: number,
-    blockNumber?: bigint,
-  ): Promise<Result<PendingBlobs>> {
-    try {
-      const result = await this.contract.read.getPendingBlobs([size], {
-        blockNumber,
-      });
-      return { result };
-    } catch (error: unknown) {
-      throw new UnhandledBlobError(
-        `Failed to get pending blobs count: ${error}`,
-      );
-    }
-  }
-
-  // Get pending blobs count
-  async getPendingBlobsCount(
-    blockNumber?: bigint,
-  ): Promise<Result<PendingBlobsCount>> {
-    try {
-      const result = await this.contract.read.getPendingBlobsCount({
-        blockNumber,
-      });
-      return { result };
-    } catch (error: unknown) {
-      throw new UnhandledBlobError(
-        `Failed to get pending blobs count: ${error}`,
-      );
-    }
-  }
-
-  // Get pending bytes count
-  async getPendingBytesCount(
-    blockNumber?: bigint,
-  ): Promise<Result<PendingBytesCount>> {
-    try {
-      const result = await this.contract.read.getPendingBytesCount({
-        blockNumber,
-      });
-      return { result };
-    } catch (error: unknown) {
-      throw new UnhandledBlobError(
-        `Failed to get pending bytes count: ${error}`,
-      );
-    }
   }
 
   // Get storage stats
   async getStorageStats(blockNumber?: bigint): Promise<Result<StorageStats>> {
     try {
-      const result = await this.contract.read.getStorageStats({ blockNumber });
-      return { result };
+      const result = await this.contract.read.getStats({ blockNumber });
+      const stats = {
+        capacityFree: result.capacityFree,
+        capacityUsed: result.capacityUsed,
+        numBlobs: result.numBlobs,
+        numResolving: result.numResolving,
+        numAccounts: result.numAccounts,
+        bytesResolving: result.bytesResolving,
+        numAdded: result.numAdded,
+        bytesAdded: result.bytesAdded,
+      } satisfies StorageStats;
+      return { result: stats };
     } catch (error: unknown) {
       throw new UnhandledBlobError(`Failed to get storage stats: ${error}`);
     }
@@ -459,16 +326,25 @@ export class BlobManager {
   async getStorageUsage(
     address?: Address,
     blockNumber?: bigint,
-  ): Promise<Result<StorageUsage>> {
+  ): Promise<Result<bigint>> {
     const addressArg = address || this.client.walletClient?.account?.address;
     if (!addressArg) {
       throw new Error("Address is required for getting storage usage");
     }
     try {
-      const result = await this.contract.read.getStorageUsage([addressArg], {
+      // Technically, the same contract but different interface/ABI
+      const creditContract = getContract({
+        abi: iCreditFacadeAbi,
+        address: this.getContract().address,
+        client: {
+          public: this.client.publicClient,
+          wallet: this.client.walletClient!,
+        },
+      });
+      const result = await creditContract.read.getAccount([addressArg], {
         blockNumber,
       });
-      return { result };
+      return { result: result.capacityUsed };
     } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         const { isActorNotFound, address } = isActorNotFoundError(error);
@@ -483,7 +359,7 @@ export class BlobManager {
   // Get subnet stats
   async getSubnetStats(blockNumber?: bigint): Promise<Result<SubnetStats>> {
     try {
-      const result = await this.contract.read.getSubnetStats({ blockNumber });
+      const result = await this.contract.read.getStats({ blockNumber });
       return { result };
     } catch (error: unknown) {
       throw new UnhandledBlobError(`Failed to get subnet stats: ${error}`);
