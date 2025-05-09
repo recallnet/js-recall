@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { default as axios } from "axios";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AbiStateMutability, Address, ContractFunctionArgs } from "viem";
+import { AbiStateMutability, Address, ContractFunctionArgs, Hex } from "viem";
 import {
   useAccount,
   useChainId,
@@ -196,9 +196,6 @@ export function useAddFile() {
   const [args, setArgs] = useState<AddFileArgs | undefined>(undefined);
 
   const chainId = useChainId();
-  const contractAddress =
-    bucketManagerAddress[chainId as keyof typeof bucketManagerAddress];
-
   const chain = getChain(chainId);
   const objectApiUrl = getObjectApiUrl(chain);
 
@@ -230,23 +227,23 @@ export function useAddFile() {
     if (uploadRes && args) {
       const metadata = convertMetadataToAbiParams(args.options?.metadata ?? {});
       const params = [
-        uploadRes.node_id,
+        `0x${uploadRes.node_id}`, // The response is a hex value but without the prefix (passed as bytes32)
         args.key,
-        uploadRes.hash,
-        uploadRes.metadata_hash,
+        uploadRes.hash as Hex, // TODO: convert from base32 to hex (bytes32)
+        uploadRes.metadata_hash as Hex, // TODO: convert from base32 to hex (bytes32)
         BigInt(args.file.size),
         args.options?.ttl ?? 0n,
         metadata,
         args.options?.overwrite ?? false,
-      ];
+      ] as const;
       return writeContract({
-        address: contractAddress,
+        address: args.bucket,
         abi: iBucketFacadeAbi,
         functionName: "addObject",
         args: params,
       });
     }
-  }, [args, contractAddress, uploadRes, writeContract]);
+  }, [args, uploadRes, writeContract]);
 
   const addFile = useCallback(
     (args: AddFileArgs) => {
@@ -290,12 +287,14 @@ export function useDeleteObject() {
   );
 
   const deleteObjectAsync = useCallback(
-    (bucket: Address, from: Address, key: string) =>
+    (bucket: Address, key: string) =>
       writeContractAsync({
-        ...baseConfig,
-        args: [bucket, key, from],
+        address: bucket,
+        abi: iBucketFacadeAbi,
+        functionName: "deleteObject",
+        args: [key],
       }),
-    [writeContractAsync, baseConfig],
+    [writeContractAsync],
   );
 
   return { deleteObject, deleteObjectAsync, ...rest };
