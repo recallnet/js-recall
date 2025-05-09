@@ -6,6 +6,7 @@ import {
   integer,
   jsonb,
   numeric,
+  pgEnum,
   pgTable,
   primaryKey,
   serial,
@@ -15,6 +16,12 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
+
+export const crossChainTradingType = pgEnum("cross_chain_trading_type", [
+  "disallowAll",
+  "disallowXParent",
+  "allow",
+]);
 
 export const teams = pgTable(
   "teams",
@@ -63,9 +70,9 @@ export const competitions = pgTable(
     startDate: timestamp("start_date", { withTimezone: true }),
     endDate: timestamp("end_date", { withTimezone: true }),
     status: varchar({ length: 20 }).notNull(),
-    allowCrossChainTrading: boolean("allow_cross_chain_trading")
+    crossChainTradingType: crossChainTradingType("cross_chain_trading_type")
       .notNull()
-      .default(false),
+      .default("disallowAll"),
     createdAt: timestamp("created_at", {
       withTimezone: true,
     }).defaultNow(),
@@ -73,7 +80,12 @@ export const competitions = pgTable(
       withTimezone: true,
     }).defaultNow(),
   },
-  (table) => [index("idx_competitions_status").on(table.status)],
+  (table) => [
+    index("idx_competitions_status").on(table.status),
+    index("idx_competitions_cross_chain_trading").on(
+      table.crossChainTradingType,
+    ),
+  ],
 );
 
 export const competitionTeams = pgTable(
