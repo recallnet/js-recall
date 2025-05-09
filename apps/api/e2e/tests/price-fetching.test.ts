@@ -2,7 +2,6 @@ import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import config from "@/config/index.js";
-import { ApiClient } from "@/e2e/utils/api-client.js";
 import {
   PriceResponse,
   SpecificChain,
@@ -14,7 +13,6 @@ import {
   ADMIN_PASSWORD,
   ADMIN_USERNAME,
   cleanupTestState,
-  createTestClient,
   getApiSdk,
   registerTeamAndGetClient,
 } from "@/e2e/utils/test-helpers.js";

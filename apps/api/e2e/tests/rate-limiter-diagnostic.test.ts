@@ -62,10 +62,10 @@ describe("Rate Limiter Diagnostics", () => {
       "Rate Limit Diagnostic Team 2",
     );
     console.log(
-      `[DIAGNOSTIC] Registered Team 1 ID: ${team1.id}, API Key: ${(team1ApiKey || "").substring(0, 8)}...`,
+      `[DIAGNOSTIC] Registered Team 1 ID: ${team1.id}, API Key: ${team1ApiKey.substring(0, 8)}...`,
     );
     console.log(
-      `[DIAGNOSTIC] Registered Team 2 ID: ${team2.id}, API Key: ${(team2ApiKey || "").substring(0, 8)}...`,
+      `[DIAGNOSTIC] Registered Team 2 ID: ${team2.id}, API Key: ${team2ApiKey.substring(0, 8)}...`,
     );
 
     // Verify the API keys are different
