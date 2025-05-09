@@ -42,11 +42,11 @@ describe("Rate Limiter Middleware", () => {
 
     // Register two teams
     const { client: team1Client, team: team1 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Rate Limit Team 1",
     );
     const { client: team2Client, team: team2 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Rate Limit Team 2",
     );
 
@@ -181,7 +181,7 @@ describe("Rate Limiter Middleware", () => {
 
     // Register team
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Endpoint Rate Limit Team",
     );
 
@@ -307,7 +307,7 @@ describe("Rate Limiter Middleware", () => {
 
     // Register team
     const { team, apiKey } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Headers Rate Limit Team",
     );
 

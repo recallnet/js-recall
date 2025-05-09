@@ -57,11 +57,11 @@ describe("Competition API", () => {
 
     // Register teams
     const { team: team1 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team Alpha",
     );
     const { team: team2 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team Beta",
     );
 
@@ -110,11 +110,11 @@ describe("Competition API", () => {
 
     // Register teams
     const { team: team1 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team Delta",
     );
     const { team: team2 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team Echo",
     );
 
@@ -155,11 +155,11 @@ describe("Competition API", () => {
 
     // Register teams
     const { team: team1 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team Foxtrot",
     );
     const { team: team2 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team Golf",
     );
 
@@ -210,7 +210,7 @@ describe("Competition API", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team Gamma",
     );
 
@@ -250,9 +250,9 @@ describe("Competition API", () => {
 
     // Register teams - one in the competition, one not
     const { client: teamInClient, team: teamIn } =
-      await registerTeamAndGetClient(adminClient, "Inside Team");
+      await registerTeamAndGetClient(adminApiKey, "Inside Team");
     const { client: teamOutClient } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Outside Team",
     );
 
@@ -292,7 +292,7 @@ describe("Competition API", () => {
 
     // Register a regular team
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Regular Team",
     );
 
@@ -355,7 +355,7 @@ describe("Competition API", () => {
 
     // Register a new team - should be inactive by default
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team To Activate",
     );
 
@@ -400,7 +400,7 @@ describe("Competition API", () => {
 
     // Register a new team
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team To Deactivate",
     );
 
@@ -454,7 +454,7 @@ describe("Competition API", () => {
 
     // Register a team
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Cross-Chain Test Team",
     );
 
@@ -534,7 +534,7 @@ describe("Competition API", () => {
 
     // Register a team
     const { team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Response Fields Test Team",
     );
 
@@ -611,7 +611,7 @@ describe("Competition API", () => {
 
     // Register a team
     const { client: teamClient } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Upcoming Viewer Team",
     );
 
@@ -681,7 +681,7 @@ describe("Competition API", () => {
 
     // Register a team
     const { team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Upcoming competitions viewer test",
     );
 

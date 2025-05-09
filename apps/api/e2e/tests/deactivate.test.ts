@@ -49,7 +49,7 @@ describe("Team Deactivation API", () => {
 
     // Register a team
     const { team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team to Deactivate",
     );
 
@@ -87,7 +87,7 @@ describe("Team Deactivation API", () => {
 
     // Register a team and get the client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "To Be Blocked",
     );
 
@@ -156,7 +156,7 @@ describe("Team Deactivation API", () => {
 
     // Register a team and get the client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "To Be Reactivated",
     );
 
@@ -206,11 +206,11 @@ describe("Team Deactivation API", () => {
 
     // Register two teams
     const { client: teamClient1, team: team1 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team One",
     );
     const { team: team2 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team Two",
     );
 
@@ -246,15 +246,15 @@ describe("Team Deactivation API", () => {
 
     // Register three teams for the competition
     const { client: teamClient1, team: team1 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Active Team 1",
     );
     const { client: teamClient2, team: team2 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Active Team 2",
     );
     const { client: teamClient3, team: team3 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Inactive Team",
     );
 
