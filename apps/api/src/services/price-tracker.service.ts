@@ -1,13 +1,11 @@
 import { config } from "@/config/index.js";
-import { repositories } from "@/database/index.js";
-import { PriceRecord } from "@/database/types.js";
-import { MultiChainProvider } from "@/services/providers/multi-chain.provider.js";
 import {
-  BlockchainType,
-  PriceReport,
-  PriceSource,
-  SpecificChain,
-} from "@/types/index.js";
+  count as countPrices,
+  create as createPrice,
+  getPriceHistory,
+} from "@/database/repositories/price-repository.js";
+import { MultiChainProvider } from "@/services/providers/multi-chain.provider.js";
+import { BlockchainType, PriceSource, SpecificChain } from "@/types/index.js";
 
 /**
  * Price Tracker Service
@@ -17,8 +15,6 @@ export class PriceTracker {
   providers: PriceSource[];
   // private novesProvider: NovesProvider | null = null;
   private multiChainProvider: MultiChainProvider | null = null;
-  private priceCache: Map<string, PriceReport>;
-  private readonly CACHE_DURATION = config.priceCacheDuration; // 30 seconds
 
   constructor() {
     // Initialize only the MultiChainProvider
@@ -34,8 +30,6 @@ export class PriceTracker {
     if (this.multiChainProvider) {
       this.providers.push(this.multiChainProvider);
     }
-
-    this.priceCache = new Map();
 
     console.log(
       `[PriceTracker] Initialized with ${this.providers.length} providers`,
@@ -90,7 +84,7 @@ export class PriceTracker {
     tokenAddress: string,
     blockchainType?: BlockchainType,
     specificChain?: SpecificChain,
-  ): Promise<PriceReport | null> {
+  ) {
     console.log(`[PriceTracker] Getting price for token: ${tokenAddress}`);
 
     // Determine which chain this token belongs to if not provided
@@ -99,19 +93,6 @@ export class PriceTracker {
       `[PriceTracker] ${blockchainType ? "Using provided" : "Detected"} token ${tokenAddress} on chain: ${tokenChain}`,
     );
 
-    // Check cache first
-    const cacheKey = `${tokenChain}:${tokenAddress}`;
-    const cached = this.priceCache.get(cacheKey);
-    if (
-      cached &&
-      Date.now() - new Date(cached.timestamp).getTime() < this.CACHE_DURATION
-    ) {
-      console.log(
-        `[PriceTracker] Using cached price for ${tokenAddress} on ${tokenChain}: $${cached.price}`,
-      );
-      return cached;
-    }
-
     // If no cache hit, use MultiChainProvider
     if (this.multiChainProvider) {
       try {
@@ -119,7 +100,7 @@ export class PriceTracker {
           `[PriceTracker] Using MultiChainProvider for token ${tokenAddress}`,
         );
 
-        // Get price from MultiChainProvider
+        // Get price from MultiChainProvider (which has its own cache)
         const priceResult = await this.multiChainProvider.getPrice(
           tokenAddress,
           tokenChain,
@@ -137,9 +118,6 @@ export class PriceTracker {
           console.log(
             `[PriceTracker] Got price $${price} from MultiChainProvider`,
           );
-
-          // Store price in cache
-          this.priceCache.set(cacheKey, priceResult);
 
           // Store price in database for historical record
           await this.storePrice(tokenAddress, price, chain, tokenSpecificChain);
@@ -160,29 +138,6 @@ export class PriceTracker {
 
     console.log(`[PriceTracker] No price available for ${tokenAddress}`);
 
-    // As a last resort, try to get the most recent price from the database
-    try {
-      const lastPrice =
-        await repositories.priceRepository.getLatestPrice(tokenAddress);
-      if (lastPrice) {
-        console.log(
-          `[PriceTracker] Using last stored price for ${tokenAddress}: $${lastPrice.price} (WARNING: not real-time price)`,
-        );
-        return {
-          price: lastPrice.price,
-          token: lastPrice.token,
-          chain: lastPrice.chain,
-          timestamp: lastPrice.timestamp,
-          specificChain: lastPrice.specificChain,
-        };
-      }
-    } catch (error) {
-      console.error(
-        `[PriceTracker] Error fetching last price from database:`,
-        error,
-      );
-    }
-
     return null;
   }
 
@@ -197,11 +152,7 @@ export class PriceTracker {
     tokenAddress: string,
     blockchainType?: BlockchainType,
     specificChain?: SpecificChain,
-  ): Promise<{
-    price: number;
-    chain: BlockchainType;
-    specificChain: SpecificChain;
-  } | null> {
+  ) {
     console.log(
       `[PriceTracker] Getting detailed token info for: ${tokenAddress}`,
     );
@@ -295,7 +246,7 @@ export class PriceTracker {
     specificChain: SpecificChain,
   ): Promise<void> {
     try {
-      await repositories.priceRepository.create({
+      await createPrice({
         token: tokenAddress,
         price,
         timestamp: new Date(),
@@ -360,17 +311,14 @@ export class PriceTracker {
       else if (timeframe === "6h") hours = 6;
 
       // Get historical data from database
-      const history = await repositories.priceRepository.getPriceHistory(
-        tokenAddress,
-        hours,
-      );
+      const history = await getPriceHistory(tokenAddress, hours);
 
       if (history && history.length > 0) {
         console.log(
           `[PriceTracker] Retrieved ${history.length} historical price points from database`,
         );
-        return history.map((point: PriceRecord) => ({
-          timestamp: point.timestamp.toISOString(),
+        return history.map((point) => ({
+          timestamp: point.timestamp?.toISOString() ?? "",
           price: point.price,
         }));
       }
@@ -435,21 +383,13 @@ export class PriceTracker {
   }
 
   /**
-   * Clear the price cache
-   */
-  clearCache(): void {
-    console.log(`[PriceTracker] Clearing price cache`);
-    this.priceCache.clear();
-  }
-
-  /**
    * Check if price tracker is healthy
    * For system health check use
    */
   async isHealthy(): Promise<boolean> {
     try {
       // Check if database is accessible
-      await repositories.priceRepository.count();
+      await countPrices();
 
       // Check if provider is responsive
       if (this.multiChainProvider) {

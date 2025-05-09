@@ -26,7 +26,11 @@ services:
     networks:
       - trading-simulator-network
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://0.0.0.0:${PORT:-3000}/api/health || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://0.0.0.0:${PORT:-3000}/api/health || exit 1",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -38,15 +42,17 @@ services:
     container_name: trading-simulator-db
     restart: unless-stopped
     environment:
-      - POSTGRES_USER=${DB_USERNAME:-postgres}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
-      - POSTGRES_DB=${DB_NAME:-trading_simulator}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/trading_simulator}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
       - trading-simulator-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -d ${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/trading_simulator}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5

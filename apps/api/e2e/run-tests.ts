@@ -15,7 +15,7 @@ import path from "path";
 // Load test environment variables
 config({ path: path.resolve(__dirname, "../.env.test") });
 
-console.log("🚀 Solana Trading Simulator E2E Test Runner");
+console.log("🚀 Trading Simulator E2E Test Runner");
 console.log("===========================================");
 
 // Create a flag file to indicate full suite is running
@@ -37,7 +37,7 @@ const log = (message: string) => {
 
 try {
   log("\n📦 Setting up test database...");
-  const dbSetupResult = spawnSync("npx", ["tsx", "scripts/setup-db.ts"], {
+  const dbSetupResult = spawnSync("pnpm", ["db:migrate"], {
     env: { ...process.env, NODE_ENV: "test" },
     stdio: ["inherit", logStream, logStream],
     cwd: path.resolve(__dirname, ".."),

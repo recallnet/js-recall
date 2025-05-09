@@ -10,12 +10,22 @@ import { BlockchainType, SpecificChain } from "@/types/index.js";
  */
 export class DexScreenerProvider implements PriceSource {
   private readonly API_BASE = "https://api.dexscreener.com/tokens/v1";
-  private cache: Map<string, PriceReport>;
-  private readonly CACHE_DURATION = 30000; // 30 seconds
   private lastRequestTime: number = 0;
   private readonly MIN_REQUEST_INTERVAL = 100;
   private readonly MAX_RETRIES = 3;
   private readonly RETRY_DELAY = 1000; // 1 second
+
+  // Add cache for token prices with composite key (tokenAddress:specificChain)
+  private readonly tokenPriceCache: Map<
+    string,
+    {
+      price: number;
+      timestamp: number;
+      chain: BlockchainType;
+      specificChain: SpecificChain;
+    }
+  > = new Map();
+  private readonly CACHE_DURATION = 3600000; // 1 hour in milliseconds
 
   // Mapping for DexScreener specific chain names
   private readonly chainMapping: Record<SpecificChain, string> = {
@@ -33,10 +43,6 @@ export class DexScreenerProvider implements PriceSource {
     svm: "solana",
   };
 
-  constructor() {
-    this.cache = new Map();
-  }
-
   getName(): string {
     return "DexScreener";
   }
@@ -52,37 +58,6 @@ export class DexScreenerProvider implements PriceSource {
       await this.delay(this.MIN_REQUEST_INTERVAL - timeSinceLastRequest);
     }
     this.lastRequestTime = Date.now();
-  }
-
-  private getCachedPrice(
-    tokenAddress: string,
-    chain: string,
-  ): PriceReport | null {
-    const cacheKey = `${chain}:${tokenAddress}`;
-    const cached = this.cache.get(cacheKey);
-    if (
-      cached &&
-      Date.now() - cached.timestamp.getTime() < this.CACHE_DURATION
-    ) {
-      return cached;
-    }
-    return null;
-  }
-
-  private setCachedPrice(
-    tokenAddress: string,
-    chain: BlockchainType,
-    price: number,
-    specificChain: SpecificChain,
-  ): void {
-    const cacheKey = `${chain}:${tokenAddress}`;
-    this.cache.set(cacheKey, {
-      token: tokenAddress,
-      price,
-      timestamp: new Date(),
-      chain,
-      specificChain,
-    });
   }
 
   determineChain(tokenAddress: string): BlockchainType {
@@ -330,6 +305,66 @@ export class DexScreenerProvider implements PriceSource {
   }
 
   /**
+   * Generates a cache key from token address and chain
+   */
+  private getCacheKey(
+    tokenAddress: string,
+    specificChain: SpecificChain,
+  ): string {
+    return `${tokenAddress.toLowerCase()}:${specificChain}`;
+  }
+
+  /**
+   * Get cached token price if available
+   */
+  private getCachedPrice(
+    tokenAddress: string,
+    specificChain: SpecificChain,
+  ): {
+    price: number;
+    chain: BlockchainType;
+    specificChain: SpecificChain;
+  } | null {
+    const cacheKey = this.getCacheKey(tokenAddress, specificChain);
+    const cached = this.tokenPriceCache.get(cacheKey);
+
+    if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+      console.log(
+        `[DexScreenerProvider] Using cached price for ${tokenAddress} on ${specificChain}: $${cached.price}`,
+      );
+      return {
+        price: cached.price,
+        chain: cached.chain,
+        specificChain: cached.specificChain,
+      };
+    }
+    return null;
+  }
+
+  /**
+   * Cache token price and its chain
+   */
+  private setCachedPrice(
+    tokenAddress: string,
+    chain: BlockchainType,
+    specificChain: SpecificChain,
+    price: number,
+  ): void {
+    const cacheKey = this.getCacheKey(tokenAddress, specificChain);
+
+    this.tokenPriceCache.set(cacheKey, {
+      price,
+      chain,
+      specificChain,
+      timestamp: Date.now(),
+    });
+
+    console.log(
+      `[DexScreenerProvider] Cached price for ${tokenAddress} on ${specificChain}: $${price}`,
+    );
+  }
+
+  /**
    * Get the price of a token
    */
   async getPrice(
@@ -337,6 +372,18 @@ export class DexScreenerProvider implements PriceSource {
     chain: BlockchainType,
     specificChain: SpecificChain,
   ): Promise<PriceReport | null> {
+    // Check cache first
+    const cachedPrice = this.getCachedPrice(tokenAddress, specificChain);
+    if (cachedPrice !== null) {
+      return {
+        price: cachedPrice.price,
+        token: tokenAddress,
+        timestamp: new Date(),
+        chain: cachedPrice.chain,
+        specificChain: cachedPrice.specificChain,
+      };
+    }
+
     // Determine chain if not provided
     if (!chain) {
       chain = this.determineChain(tokenAddress);
@@ -349,12 +396,6 @@ export class DexScreenerProvider implements PriceSource {
       specificChain,
     );
 
-    // Check cache first
-    const cachedPrice = this.getCachedPrice(tokenAddress, dexScreenerChain);
-    if (cachedPrice !== null) {
-      return cachedPrice;
-    }
-
     // Fetch the price
     const price = await this.fetchPrice(
       tokenAddress,
@@ -362,9 +403,10 @@ export class DexScreenerProvider implements PriceSource {
       specificChain,
     );
 
-    // Cache the result if we got a valid price
     if (price !== null) {
-      this.setCachedPrice(tokenAddress, chain, price, specificChain);
+      // Cache the price
+      this.setCachedPrice(tokenAddress, chain, specificChain, price);
+
       return {
         price,
         token: tokenAddress,
@@ -383,6 +425,11 @@ export class DexScreenerProvider implements PriceSource {
     tokenAddress: string,
     specificChain: SpecificChain,
   ): Promise<boolean> {
+    // Check cache first
+    if (this.getCachedPrice(tokenAddress, specificChain) !== null) {
+      return true;
+    }
+
     const chain = this.determineChain(tokenAddress);
 
     // Try to get a price - if successful, we support it

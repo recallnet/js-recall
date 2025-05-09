@@ -7,9 +7,11 @@ import fs from "fs";
 import path from "path";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, vi } from "vitest";
 
-import { services } from "@/services/index.js";
+import { ServiceRegistry } from "@/services/index.js";
 
 import { dbManager } from "./db-manager.js";
+
+const services = new ServiceRegistry();
 
 // Path to log file
 const logFile = path.resolve(__dirname, "../e2e-server.log");
@@ -122,22 +124,6 @@ beforeEach(async () => {
         );
         //@ts-expect-error known private class property
         services.tradeSimulator.tradeCache.clear();
-      }
-    }
-  }
-
-  // Reset PriceTracker cache
-  if (services.priceTracker) {
-    //@ts-expect-error known private class property
-    if (services.priceTracker.priceCache instanceof Map) {
-      //@ts-expect-error known private class property
-      const count = services.priceTracker.priceCache.size;
-      if (count > 0) {
-        log(
-          `[Global Setup] Clearing ${count} entries from PriceTracker.priceCache`,
-        );
-        //@ts-expect-error known private class property
-        services.priceTracker.priceCache.clear();
       }
     }
   }

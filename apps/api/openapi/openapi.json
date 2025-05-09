@@ -474,18 +474,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "in": "header",
-            "name": "Authorization",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "Bearer token for authentication (format \"Bearer YOUR_API_KEY\")",
-            "example": "Bearer abc123def456_ghi789jkl012"
-          }
-        ],
         "responses": {
           "200": {
             "description": "API key reset successfully",
@@ -571,8 +559,122 @@
                           },
                           "specificChain": {
                             "type": "string",
-                            "nullable": true,
                             "description": "Specific chain for EVM tokens"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/account/trades": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Get trade history",
+        "description": "Get trade history for the authenticated team",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Team trade history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Operation success status"
+                    },
+                    "teamId": {
+                      "type": "string",
+                      "description": "Team ID"
+                    },
+                    "trades": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Unique trade ID"
+                          },
+                          "teamId": {
+                            "type": "string",
+                            "description": "Team ID that executed the trade"
+                          },
+                          "competitionId": {
+                            "type": "string",
+                            "description": "ID of the competition this trade is part of"
+                          },
+                          "fromToken": {
+                            "type": "string",
+                            "description": "Token address that was sold"
+                          },
+                          "toToken": {
+                            "type": "string",
+                            "description": "Token address that was bought"
+                          },
+                          "fromAmount": {
+                            "type": "number",
+                            "description": "Amount of fromToken that was sold"
+                          },
+                          "toAmount": {
+                            "type": "number",
+                            "description": "Amount of toToken that was received"
+                          },
+                          "price": {
+                            "type": "number",
+                            "description": "Price at which the trade was executed"
+                          },
+                          "success": {
+                            "type": "boolean",
+                            "description": "Whether the trade was successfully completed"
+                          },
+                          "error": {
+                            "type": "string",
+                            "description": "Error message if the trade failed"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "description": "Reason provided for executing the trade"
+                          },
+                          "timestamp": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Timestamp of when the trade was executed"
+                          },
+                          "fromChain": {
+                            "type": "string",
+                            "description": "Blockchain type of the source token"
+                          },
+                          "toChain": {
+                            "type": "string",
+                            "description": "Blockchain type of the destination token"
+                          },
+                          "fromSpecificChain": {
+                            "type": "string",
+                            "description": "Specific chain for the source token"
+                          },
+                          "toSpecificChain": {
+                            "type": "string",
+                            "description": "Specific chain for the destination token"
                           }
                         }
                       }
@@ -672,133 +774,6 @@
                         "live-calculation"
                       ],
                       "description": "Source of the portfolio data"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - Missing or invalid authentication"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        }
-      }
-    },
-    "/api/account/trades": {
-      "get": {
-        "tags": [
-          "Account"
-        ],
-        "summary": "Get trade history",
-        "description": "Get trade history for the authenticated team",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "header",
-            "name": "Authorization",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "Bearer token for authentication (format \"Bearer YOUR_API_KEY\")",
-            "example": "Bearer abc123def456_ghi789jkl012"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Team trade history",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "description": "Operation success status"
-                    },
-                    "teamId": {
-                      "type": "string",
-                      "description": "Team ID"
-                    },
-                    "trades": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "description": "Unique trade ID"
-                          },
-                          "teamId": {
-                            "type": "string",
-                            "description": "Team ID that executed the trade"
-                          },
-                          "competitionId": {
-                            "type": "string",
-                            "description": "ID of the competition this trade is part of"
-                          },
-                          "fromToken": {
-                            "type": "string",
-                            "description": "Token address that was sold"
-                          },
-                          "toToken": {
-                            "type": "string",
-                            "description": "Token address that was bought"
-                          },
-                          "fromAmount": {
-                            "type": "number",
-                            "description": "Amount of fromToken that was sold"
-                          },
-                          "toAmount": {
-                            "type": "number",
-                            "description": "Amount of toToken that was received"
-                          },
-                          "price": {
-                            "type": "number",
-                            "description": "Price at which the trade was executed"
-                          },
-                          "success": {
-                            "type": "boolean",
-                            "description": "Whether the trade was successfully completed"
-                          },
-                          "error": {
-                            "type": "string",
-                            "description": "Error message if the trade failed"
-                          },
-                          "reason": {
-                            "type": "string",
-                            "description": "Reason provided for executing the trade"
-                          },
-                          "timestamp": {
-                            "type": "string",
-                            "format": "date-time",
-                            "description": "Timestamp of when the trade was executed"
-                          },
-                          "fromChain": {
-                            "type": "string",
-                            "description": "Blockchain type of the source token"
-                          },
-                          "toChain": {
-                            "type": "string",
-                            "description": "Blockchain type of the destination token"
-                          },
-                          "fromSpecificChain": {
-                            "type": "string",
-                            "description": "Specific chain for the source token"
-                          },
-                          "toSpecificChain": {
-                            "type": "string",
-                            "description": "Specific chain for the destination token"
-                          }
-                        }
-                      }
                     }
                   }
                 }
@@ -2086,6 +2061,7 @@
                     },
                     "leaderboard": {
                       "type": "array",
+                      "description": "Ranked list of active teams",
                       "items": {
                         "type": "object",
                         "properties": {
@@ -2107,12 +2083,41 @@
                           },
                           "active": {
                             "type": "boolean",
-                            "description": "Whether the team is active"
+                            "description": "Always true for this array"
                           },
                           "deactivationReason": {
                             "type": "string",
                             "nullable": true,
-                            "description": "Reason for deactivation if applicable"
+                            "description": "Always null for active teams"
+                          }
+                        }
+                      }
+                    },
+                    "inactiveTeams": {
+                      "type": "array",
+                      "description": "List of deactivated teams (excluded from ranking)",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "teamId": {
+                            "type": "string",
+                            "description": "Team ID"
+                          },
+                          "teamName": {
+                            "type": "string",
+                            "description": "Team name"
+                          },
+                          "portfolioValue": {
+                            "type": "number",
+                            "description": "Current portfolio value in USD"
+                          },
+                          "active": {
+                            "type": "boolean",
+                            "description": "Always false for this array"
+                          },
+                          "deactivationReason": {
+                            "type": "string",
+                            "description": "Reason for team deactivation"
                           }
                         }
                       }
@@ -2923,7 +2928,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": null,
         "requestBody": {
           "required": true,
           "content": {

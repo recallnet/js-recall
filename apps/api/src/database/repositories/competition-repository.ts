@@ -1,563 +1,363 @@
-import { PoolClient } from "pg";
+import { and, desc, eq, max, sql } from "drizzle-orm";
 
-import { BaseRepository } from "@/database/base-repository.js";
 import {
-  DatabaseRow,
-  PortfolioSnapshot,
-  PortfolioTokenValue,
-} from "@/database/types.js";
-import {
-  Competition,
-  CompetitionStatus,
-  SpecificChain,
-} from "@/types/index.js";
+  InsertCompetition,
+  type InsertPortfolioSnapshot,
+  type InsertPortfolioTokenValue,
+  competitionTeams,
+  competitions,
+  portfolioSnapshots,
+  portfolioTokenValues,
+} from "@recallnet/comps-db/schema";
+
+import { db } from "@/database/db.js";
+import { CompetitionStatus } from "@/types/index.js";
+
+import { PartialExcept } from "./types.js";
 
 /**
  * Competition Repository
  * Handles database operations for competitions
  */
-export class CompetitionRepository extends BaseRepository<Competition> {
-  constructor() {
-    super("competitions");
-  }
 
-  /**
-   * Create a new competition
-   * @param competition Competition to create
-   * @param client Optional database client for transactions
-   */
-  async create(
-    competition: Competition,
-    client?: PoolClient,
-  ): Promise<Competition> {
-    try {
-      const query = `
-        INSERT INTO competitions (
-          id, name, description, start_date, end_date, status, allow_cross_chain_trading, created_at, updated_at
-        ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9
-        ) RETURNING *
-      `;
+/**
+ * Find all competitions
+ */
+export async function findAll() {
+  return await db.query.competitions.findMany();
+}
 
-      const values = [
-        competition.id,
-        competition.name,
-        competition.description || null,
-        competition.startDate,
-        competition.endDate,
-        competition.status,
-        competition.allowCrossChainTrading,
-        competition.createdAt,
-        competition.updatedAt,
-      ];
+/**
+ * Find a competition by ID
+ * @param id The ID to search for
+ */
+export async function findById(id: string) {
+  return await db.query.competitions.findFirst({
+    where: eq(competitions.id, id),
+  });
+}
 
-      const result = client
-        ? await client.query(query, values)
-        : await this.db.query(query, values);
+/**
+ * Create a new competition
+ * @param competition Competition to create
+ */
+export async function create(competition: InsertCompetition) {
+  try {
+    const now = new Date();
+    const [result] = await db
+      .insert(competitions)
+      .values({
+        ...competition,
+        createdAt: competition.createdAt || now,
+        updatedAt: competition.updatedAt || now,
+      })
+      .returning();
 
-      return this.mapToEntity(this.toCamelCase(result.rows[0]));
-    } catch (error) {
-      console.error("[CompetitionRepository] Error in create:", error);
-      throw error;
+    if (!result) {
+      throw new Error("Failed to create competition - no result returned");
     }
+
+    return result;
+  } catch (error) {
+    console.error("[CompetitionRepository] Error in create:", error);
+    throw error;
   }
+}
 
-  /**
-   * Update an existing competition
-   * @param competition Competition to update
-   * @param client Optional database client for transactions
-   */
-  async update(
-    competition: Competition,
-    client?: PoolClient,
-  ): Promise<Competition> {
-    try {
-      const query = `
-        UPDATE competitions SET
-          name = $1,
-          description = $2,
-          start_date = $3,
-          end_date = $4,
-          status = $5,
-          allow_cross_chain_trading = $6,
-          updated_at = $7
-        WHERE id = $8
-        RETURNING *
-      `;
+/**
+ * Update an existing competition
+ * @param competition Competition to update
+ */
+export async function update(
+  competition: PartialExcept<InsertCompetition, "id">,
+) {
+  try {
+    const [result] = await db
+      .update(competitions)
+      .set({
+        ...competition,
+        updatedAt: competition.updatedAt || new Date(),
+      })
+      .where(eq(competitions.id, competition.id))
+      .returning();
 
-      const values = [
-        competition.name,
-        competition.description || null,
-        competition.startDate,
-        competition.endDate,
-        competition.status,
-        competition.allowCrossChainTrading,
-        new Date(),
-        competition.id,
-      ];
-
-      const result = client
-        ? await client.query(query, values)
-        : await this.db.query(query, values);
-
-      if (result.rows.length === 0) {
-        throw new Error(`Competition with ID ${competition.id} not found`);
-      }
-
-      return this.mapToEntity(this.toCamelCase(result.rows[0]));
-    } catch (error) {
-      console.error("[CompetitionRepository] Error in update:", error);
-      throw error;
+    if (!result) {
+      throw new Error(`Competition with ID ${competition.id} not found`);
     }
+
+    return result;
+  } catch (error) {
+    console.error("[CompetitionRepository] Error in update:", error);
+    throw error;
   }
+}
 
-  /**
-   * Add a single team to a competition
-   * @param competitionId Competition ID
-   * @param teamId Team ID to add
-   * @param client Optional database client for transactions
-   */
-  async addTeamToCompetition(
-    competitionId: string,
-    teamId: string,
-    client?: PoolClient,
-  ): Promise<void> {
-    try {
-      const query = `
-        INSERT INTO competition_teams (competition_id, team_id)
-        VALUES ($1, $2)
-        ON CONFLICT (competition_id, team_id) DO NOTHING
-      `;
+/**
+ * Add a single team to a competition
+ * @param competitionId Competition ID
+ * @param teamId Team ID to add
+ */
+export async function addTeamToCompetition(
+  competitionId: string,
+  teamId: string,
+) {
+  try {
+    await db
+      .insert(competitionTeams)
+      .values({
+        competitionId,
+        teamId,
+        createdAt: new Date(),
+      })
+      .onConflictDoNothing();
+  } catch (error) {
+    console.error(
+      `[CompetitionRepository] Error adding team ${teamId} to competition ${competitionId}:`,
+      error,
+    );
+    throw error;
+  }
+}
 
-      if (client) {
-        await client.query(query, [competitionId, teamId]);
-      } else {
-        await this.db.query(query, [competitionId, teamId]);
-      }
-    } catch (error) {
-      console.error(
-        `[CompetitionRepository] Error adding team ${teamId} to competition ${competitionId}:`,
-        error,
+/**
+ * Add teams to a competition
+ * @param competitionId Competition ID
+ * @param teamIds Array of team IDs
+ */
+export async function addTeams(competitionId: string, teamIds: string[]) {
+  const createdAt = new Date();
+  const values = teamIds.map((teamId) => ({
+    competitionId,
+    teamId,
+    createdAt,
+  }));
+  try {
+    await db.insert(competitionTeams).values(values).onConflictDoNothing();
+  } catch (error) {
+    console.error("[CompetitionRepository] Error in addTeams:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get teams in a competition
+ * @param competitionId Competition ID
+ */
+export async function getTeams(competitionId: string) {
+  try {
+    const result = await db
+      .select({ teamId: competitionTeams.teamId })
+      .from(competitionTeams)
+      .where(eq(competitionTeams.competitionId, competitionId));
+
+    return result.map((row) => row.teamId);
+  } catch (error) {
+    console.error("[CompetitionRepository] Error in getTeams:", error);
+    throw error;
+  }
+}
+
+/**
+ * Alias for getTeams for better semantic naming
+ * @param competitionId Competition ID
+ */
+export async function getCompetitionTeams(competitionId: string) {
+  return getTeams(competitionId);
+}
+
+/**
+ * Find active competition
+ */
+export async function findActive() {
+  try {
+    const [result] = await db
+      .select()
+      .from(competitions)
+      .where(eq(competitions.status, CompetitionStatus.ACTIVE))
+      .limit(1);
+
+    return result;
+  } catch (error) {
+    console.error("[CompetitionRepository] Error in findActive:", error);
+    throw error;
+  }
+}
+
+/**
+ * Create a portfolio snapshot
+ * @param snapshot Portfolio snapshot data
+ */
+export async function createPortfolioSnapshot(
+  snapshot: InsertPortfolioSnapshot,
+) {
+  try {
+    const [result] = await db
+      .insert(portfolioSnapshots)
+      .values({
+        ...snapshot,
+        timestamp: snapshot.timestamp || new Date(),
+      })
+      .returning();
+
+    if (!result) {
+      throw new Error(
+        "Failed to create portfolio snapshot - no result returned",
       );
-      throw error;
     }
+
+    return result;
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in createPortfolioSnapshot:",
+      error,
+    );
+    throw error;
   }
+}
 
-  /**
-   * Add teams to a competition
-   * @param competitionId Competition ID
-   * @param teamIds Array of team IDs
-   * @param client Optional database client for transactions
-   */
-  async addTeams(
-    competitionId: string,
-    teamIds: string[],
-    client?: PoolClient,
-  ): Promise<void> {
-    try {
-      // Use a transaction if no client is provided
-      if (!client) {
-        await this.db.transaction(async (transactionClient) => {
-          await this.addTeamsInTransaction(
-            competitionId,
-            teamIds,
-            transactionClient,
-          );
-        });
-      } else {
-        await this.addTeamsInTransaction(competitionId, teamIds, client);
-      }
-    } catch (error) {
-      console.error("[CompetitionRepository] Error in addTeams:", error);
-      throw error;
-    }
-  }
+/**
+ * Create a portfolio token value
+ * @param tokenValue Portfolio token value data
+ */
+export async function createPortfolioTokenValue(
+  tokenValue: InsertPortfolioTokenValue,
+) {
+  try {
+    const [result] = await db
+      .insert(portfolioTokenValues)
+      .values(tokenValue)
+      .returning();
 
-  /**
-   * Add teams to a competition within a transaction
-   * @param competitionId Competition ID
-   * @param teamIds Array of team IDs
-   * @param client Database client for the transaction
-   */
-  private async addTeamsInTransaction(
-    competitionId: string,
-    teamIds: string[],
-    client: PoolClient,
-  ): Promise<void> {
-    for (const teamId of teamIds) {
-      const query = `
-        INSERT INTO competition_teams (competition_id, team_id)
-        VALUES ($1, $2)
-        ON CONFLICT (competition_id, team_id) DO NOTHING
-      `;
-
-      await client.query(query, [competitionId, teamId]);
-    }
-  }
-
-  /**
-   * Get teams in a competition
-   * @param competitionId Competition ID
-   * @param client Optional database client for transactions
-   */
-  async getTeams(
-    competitionId: string,
-    client?: PoolClient,
-  ): Promise<string[]> {
-    try {
-      const query = `
-        SELECT team_id FROM competition_teams
-        WHERE competition_id = $1
-      `;
-
-      const result = client
-        ? await client.query(query, [competitionId])
-        : await this.db.query(query, [competitionId]);
-
-      return result.rows.map((row: { team_id: string }) => row.team_id);
-    } catch (error) {
-      console.error("[CompetitionRepository] Error in getTeams:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Alias for getTeams for better semantic naming
-   * @param competitionId Competition ID
-   */
-  async getCompetitionTeams(competitionId: string): Promise<string[]> {
-    return this.getTeams(competitionId);
-  }
-
-  /**
-   * Find active competition
-   * @param client Optional database client for transactions
-   */
-  async findActive(client?: PoolClient): Promise<Competition | null> {
-    try {
-      const query = `
-        SELECT * FROM competitions
-        WHERE status = $1
-        LIMIT 1
-      `;
-
-      const result = client
-        ? await client.query(query, [CompetitionStatus.ACTIVE])
-        : await this.db.query(query, [CompetitionStatus.ACTIVE]);
-
-      return result.rows.length > 0
-        ? this.mapToEntity(this.toCamelCase(result.rows[0]))
-        : null;
-    } catch (error) {
-      console.error("[CompetitionRepository] Error in findActive:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Create a portfolio snapshot
-   * @param snapshot The portfolio snapshot to create
-   * @param client Optional database client for transactions
-   */
-  async createPortfolioSnapshot(
-    snapshot: Omit<PortfolioSnapshot, "id">,
-    client?: PoolClient,
-  ): Promise<PortfolioSnapshot> {
-    try {
-      const query = `
-        INSERT INTO portfolio_snapshots (
-          team_id, competition_id, timestamp, total_value
-        ) VALUES (
-          $1, $2, $3, $4
-        ) RETURNING *
-      `;
-
-      const values = [
-        snapshot.teamId,
-        snapshot.competitionId,
-        snapshot.timestamp,
-        snapshot.totalValue,
-      ];
-
-      const result = client
-        ? await client.query(query, values)
-        : await this.db.query(query, values);
-
-      const row = this.toCamelCase(result.rows[0]);
-      return {
-        id: row.id as number,
-        teamId: row.teamId as string,
-        competitionId: row.competitionId as string,
-        timestamp: new Date(row.timestamp as string | number | Date),
-        totalValue: parseFloat(String(row.totalValue)),
-      };
-    } catch (error) {
-      console.error(
-        "[CompetitionRepository] Error creating portfolio snapshot:",
-        error,
+    if (!result) {
+      throw new Error(
+        "Failed to create portfolio token value - no result returned",
       );
-      throw error;
     }
+
+    return result;
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in createPortfolioTokenValue:",
+      error,
+    );
+    throw error;
   }
+}
 
-  /**
-   * Create a portfolio token value record
-   * @param tokenValue The token value to create
-   * @param client Optional database client for transactions
-   */
-  async createPortfolioTokenValue(
-    tokenValue: Omit<PortfolioTokenValue, "id">,
-    client?: PoolClient,
-  ): Promise<PortfolioTokenValue> {
-    try {
-      const query = `
-        INSERT INTO portfolio_token_values (
-          portfolio_snapshot_id, token_address, amount, value_usd, price, specific_chain
-        ) VALUES (
-          $1, $2, $3, $4, $5, $6
-        ) RETURNING *
-      `;
+/**
+ * Get latest portfolio snapshots for all teams in a competition
+ * @param competitionId Competition ID
+ */
+export async function getLatestPortfolioSnapshots(competitionId: string) {
+  try {
+    const subquery = db
+      .select({
+        teamId: portfolioSnapshots.teamId,
+        maxTimestamp: max(portfolioSnapshots.timestamp).as("max_timestamp"),
+      })
+      .from(portfolioSnapshots)
+      .where(eq(portfolioSnapshots.competitionId, competitionId))
+      .groupBy(portfolioSnapshots.teamId)
+      .as("latest_snapshots");
 
-      const values = [
-        tokenValue.portfolioSnapshotId,
-        tokenValue.tokenAddress,
-        tokenValue.amount,
-        tokenValue.valueUsd,
-        tokenValue.price,
-        tokenValue.specificChain,
-      ];
+    const result = await db
+      .select()
+      .from(portfolioSnapshots)
+      .innerJoin(
+        subquery,
+        and(
+          eq(portfolioSnapshots.teamId, subquery.teamId),
+          eq(portfolioSnapshots.timestamp, subquery.maxTimestamp),
+        ),
+      )
+      .where(eq(portfolioSnapshots.competitionId, competitionId));
 
-      const result = client
-        ? await client.query(query, values)
-        : await this.db.query(query, values);
-
-      const row = this.toCamelCase(result.rows[0]);
-      return {
-        id: row.id as number,
-        portfolioSnapshotId: row.portfolioSnapshotId as number,
-        tokenAddress: row.tokenAddress as string,
-        amount: parseFloat(String(row.amount)),
-        valueUsd: parseFloat(String(row.valueUsd)),
-        price: parseFloat(String(row.price)),
-        specificChain: row.specificChain as SpecificChain,
-      };
-    } catch (error) {
-      console.error(
-        "[CompetitionRepository] Error creating portfolio token value:",
-        error,
-      );
-      throw error;
-    }
+    return result.map((row) => row.portfolio_snapshots);
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in getLatestPortfolioSnapshots:",
+      error,
+    );
+    throw error;
   }
+}
 
-  /**
-   * Get the latest portfolio snapshots for each team in a competition
-   * @param competitionId The competition ID
-   * @param client Optional database client for transactions
-   */
-  async getLatestPortfolioSnapshots(
-    competitionId: string,
-    client?: PoolClient,
-  ): Promise<PortfolioSnapshot[]> {
-    try {
-      // This query gets the latest snapshot for each team
-      const query = `
-        WITH latest_snapshots AS (
-          SELECT 
-            team_id,
-            MAX(timestamp) as latest_timestamp
-          FROM portfolio_snapshots
-          WHERE competition_id = $1
-          GROUP BY team_id
-        )
-        SELECT ps.*
-        FROM portfolio_snapshots ps
-        JOIN latest_snapshots ls
-          ON ps.team_id = ls.team_id
-          AND ps.timestamp = ls.latest_timestamp
-        WHERE ps.competition_id = $1
-      `;
-
-      const result = client
-        ? await client.query(query, [competitionId])
-        : await this.db.query(query, [competitionId]);
-
-      return result.rows.map((row: DatabaseRow) => {
-        const camelRow = this.toCamelCase(row);
-        return {
-          id: camelRow.id as number,
-          teamId: camelRow.teamId as string,
-          competitionId: camelRow.competitionId as string,
-          timestamp: new Date(camelRow.timestamp as string | number | Date),
-          totalValue: parseFloat(String(camelRow.totalValue)),
-        };
-      });
-    } catch (error) {
-      console.error(
-        `[CompetitionRepository] Error getting latest portfolio snapshots for competition ${competitionId}:`,
-        error,
-      );
-      throw error;
-    }
+/**
+ * Get portfolio snapshots for a team in a competition
+ * @param competitionId Competition ID
+ * @param teamId Team ID
+ */
+export async function getTeamPortfolioSnapshots(
+  competitionId: string,
+  teamId: string,
+) {
+  try {
+    return await db
+      .select()
+      .from(portfolioSnapshots)
+      .where(
+        and(
+          eq(portfolioSnapshots.competitionId, competitionId),
+          eq(portfolioSnapshots.teamId, teamId),
+        ),
+      )
+      .orderBy(desc(portfolioSnapshots.timestamp));
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in getTeamPortfolioSnapshots:",
+      error,
+    );
+    throw error;
   }
+}
 
-  /**
-   * Get portfolio snapshots for a team in a competition
-   * @param competitionId The competition ID
-   * @param teamId The team ID
-   * @param client Optional database client for transactions
-   */
-  async getTeamPortfolioSnapshots(
-    competitionId: string,
-    teamId: string,
-    client?: PoolClient,
-  ): Promise<PortfolioSnapshot[]> {
-    try {
-      const query = `
-        SELECT *
-        FROM portfolio_snapshots
-        WHERE competition_id = $1 AND team_id = $2
-        ORDER BY timestamp ASC
-      `;
-
-      const result = client
-        ? await client.query(query, [competitionId, teamId])
-        : await this.db.query(query, [competitionId, teamId]);
-
-      return result.rows.map((row: DatabaseRow) => {
-        const camelRow = this.toCamelCase(row);
-        return {
-          id: camelRow.id as number,
-          teamId: camelRow.teamId as string,
-          competitionId: camelRow.competitionId as string,
-          timestamp: new Date(camelRow.timestamp as string | number | Date),
-          totalValue: parseFloat(String(camelRow.totalValue)),
-        };
-      });
-    } catch (error) {
-      console.error(
-        `[CompetitionRepository] Error getting team portfolio snapshots for team ${teamId} in competition ${competitionId}:`,
-        error,
-      );
-      throw error;
-    }
+/**
+ * Get portfolio token values for a snapshot
+ * @param snapshotId Snapshot ID
+ */
+export async function getPortfolioTokenValues(snapshotId: number) {
+  try {
+    return await db
+      .select()
+      .from(portfolioTokenValues)
+      .where(eq(portfolioTokenValues.portfolioSnapshotId, snapshotId));
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in getPortfolioTokenValues:",
+      error,
+    );
+    throw error;
   }
+}
 
-  /**
-   * Get token values for a portfolio snapshot
-   * @param snapshotId The portfolio snapshot ID
-   * @param client Optional database client for transactions
-   */
-  async getPortfolioTokenValues(
-    snapshotId: number,
-    client?: PoolClient,
-  ): Promise<PortfolioTokenValue[]> {
-    try {
-      const query = `
-        SELECT *
-        FROM portfolio_token_values
-        WHERE portfolio_snapshot_id = $1
-      `;
+/**
+ * Count total number of competitions
+ */
+export async function count() {
+  try {
+    const [result] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(competitions);
 
-      const result = client
-        ? await client.query(query, [snapshotId])
-        : await this.db.query(query, [snapshotId]);
-
-      return result.rows.map((row: DatabaseRow) => {
-        const camelRow = this.toCamelCase(row);
-        return {
-          id: camelRow.id as number,
-          portfolioSnapshotId: camelRow.portfolioSnapshotId as number,
-          tokenAddress: camelRow.tokenAddress as string,
-          amount: parseFloat(camelRow.amount as string),
-          valueUsd: parseFloat(camelRow.valueUsd as string),
-          price: parseFloat(camelRow.price as string),
-          specificChain: camelRow.specificChain as SpecificChain,
-        };
-      });
-    } catch (error) {
-      console.error(
-        `[CompetitionRepository] Error getting portfolio token values for snapshot ${snapshotId}:`,
-        error,
-      );
-      throw error;
-    }
+    return result?.count ?? 0;
+  } catch (error) {
+    console.error("[CompetitionRepository] Error in count:", error);
+    throw error;
   }
+}
 
-  /**
-   * Count the number of competitions
-   * @returns The count of competitions
-   */
-  async count(): Promise<number> {
-    try {
-      const query = `SELECT COUNT(*) FROM competitions`;
-      const result = await this.db.query(query);
-      const row = result.rows[0];
-      if (!row) {
-        throw new Error("No count returned");
-      }
-      return parseInt(row.count as string, 10);
-    } catch (error) {
-      console.error(
-        "[CompetitionRepository] Error counting competitions:",
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Find competitions by status
-   * @param status The competition status to filter by
-   * @param client Optional database client for transactions
-   */
-  async findByStatus(
-    status: CompetitionStatus,
-    client?: PoolClient,
-  ): Promise<Competition[]> {
-    try {
-      const query = `
-          SELECT * FROM competitions
-          WHERE status = $1
-          ORDER BY created_at DESC
-        `;
-
-      const result = client
-        ? await client.query(query, [status])
-        : await this.db.query(query, [status]);
-
-      return result.rows.map((row: DatabaseRow) => {
-        const camelRow = this.toCamelCase(row);
-        return this.mapToEntity(camelRow);
-      });
-    } catch (error) {
-      console.error(
-        `[CompetitionRepository] Error finding competitions with status ${status}:`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Map database row to Competition entity
-   * @param data Row data with camelCase keys
-   */
-  protected mapToEntity(data: DatabaseRow): Competition {
-    return {
-      id: data.id as string,
-      name: data.name as string,
-      description: data.description as string | undefined,
-      startDate: data.startDate
-        ? new Date(data.startDate as string | number | Date)
-        : null,
-      endDate: data.endDate
-        ? new Date(data.endDate as string | number | Date)
-        : null,
-      status: data.status as CompetitionStatus,
-      allowCrossChainTrading: data.allowCrossChainTrading as boolean,
-      createdAt: new Date(data.createdAt as string | number | Date),
-      updatedAt: new Date(data.updatedAt as string | number | Date),
-    };
+/**
+ * Find competitions by status
+ * @param status Competition status
+ */
+export async function findByStatus(status: CompetitionStatus) {
+  try {
+    return await db
+      .select()
+      .from(competitions)
+      .where(eq(competitions.status, status));
+  } catch (error) {
+    console.error("[CompetitionRepository] Error in findByStatus:", error);
+    throw error;
   }
 }

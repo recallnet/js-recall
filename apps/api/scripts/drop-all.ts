@@ -1,11 +1,10 @@
-import * as fs from "fs";
-import * as path from "path";
+import { pathToFileURL } from "url";
 
 import { config } from "@/config/index.js";
-import { DatabaseConnection } from "@/database/connection.js";
+import { dropAll } from "@/database/db.js";
 
 /**
- * Script to completely drop all tables from the database
+ * Script to drop everything in the public schema, drizzle schema, and any other schemas defined in the Drizzle schema object
  * This should be used with caution, as it will permanently delete all data
  *
  * @param confirmationRequired If true, will prompt for confirmation. If false, executes without prompt (for testing).
@@ -18,20 +17,17 @@ export async function dropAllTables(
     if (confirmationRequired) {
       console.log(
         "\x1b[31m%s\x1b[0m",
-        "⚠️  WARNING: This will DELETE ALL TABLES from your database!",
+        "⚠️  WARNING: This will DELETE everything in the public schema, drizzle schema, and any other schemas defined in the Drizzle schema object!",
       );
-      console.log(
-        "\x1b[31m%s\x1b[0m",
-        `Database: ${config.database.host}:${config.database.port}/${config.database.database}`,
-      );
+      console.log("\x1b[31m%s\x1b[0m", `Database: ${config.database.url}`);
       console.log("\x1b[31m%s\x1b[0m", "ALL DATA WILL BE PERMANENTLY LOST!");
 
       // Wait for confirmation
       await new Promise<void>((resolve) => {
-        console.log("Type 'DROP ALL TABLES' to confirm:");
+        console.log("Type 'DROP ALL' to confirm:");
         process.stdin.once("data", (data) => {
           const input = data.toString().trim();
-          if (input === "DROP ALL TABLES") {
+          if (input === "DROP ALL") {
             resolve();
           } else {
             console.log("Operation cancelled.");
@@ -41,22 +37,16 @@ export async function dropAllTables(
       });
     }
 
-    console.log("Connecting to database...");
-    const db = DatabaseConnection.getInstance();
+    console.log("Dropping all...");
 
-    // Read SQL file
-    const sqlFile = path.join(__dirname, "../src/database/drop-all-tables.sql");
-    const sql = fs.readFileSync(sqlFile, "utf8");
-
-    console.log("Dropping all tables...");
-    await db.query(sql);
+    await dropAll();
 
     console.log(
       "\x1b[32m%s\x1b[0m",
-      "✅ All tables have been successfully dropped!",
+      "✅ Everything in the public schema, drizzle schema, and any other schemas defined in the Drizzle schema object have been successfully dropped!",
     );
     console.log(
-      "You can now run 'npm run db:init' to re-initialize the database schema.",
+      "You can now run 'pnpm db:migrate' to re-initialize the database schema.",
     );
 
     if (confirmationRequired) {
@@ -72,6 +62,9 @@ export async function dropAllTables(
 }
 
 // Run if called directly
-if (require.main === module) {
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
   dropAllTables().catch(console.error);
 }

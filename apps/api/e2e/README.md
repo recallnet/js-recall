@@ -1,6 +1,6 @@
-# End-to-End (E2E) Tests for Solana Trading Simulator
+# End-to-End (E2E) Tests for Trading Simulator
 
-This directory contains the end-to-end testing suite for the Solana Trading Simulator. The tests cover the entire application stack from server startup to database interactions and API endpoints.
+This directory contains the end-to-end testing suite for the Trading Simulator. The tests cover the entire application stack from server startup to database interactions and API endpoints.
 
 ## Architecture
 
@@ -31,7 +31,7 @@ The tests are configured to use a separate `.env.test` file in the project root 
 To ensure your tests run with the correct environment:
 
 - Make sure you have a `.env.test` file in the project root
-- Run tests with `NODE_ENV=test` prefix, e.g., `NODE_ENV=test npm run test:e2e`
+- Run tests with `NODE_ENV=test` prefix, e.g., `NODE_ENV=test pnpm test:e2e`
 - The test setup will automatically load and use this file
 
 ## Required Balance Configuration
@@ -70,13 +70,13 @@ Tests will automatically adapt based on this setting, either executing cross-cha
 To run the E2E tests:
 
 ```bash
-npm run test:e2e
+pnpm test:e2e
 ```
 
 To run tests in watch mode during development:
 
 ```bash
-npm run test:e2e:watch
+pnpm test:e2e:watch
 ```
 
 ## Test Flow

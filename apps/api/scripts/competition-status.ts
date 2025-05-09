@@ -1,10 +1,15 @@
 import * as dotenv from "dotenv";
 import * as path from "path";
 
-import { DatabaseConnection } from "@/database/connection.js";
-import { repositories } from "@/database/index.js";
-import { services } from "@/services/index.js";
-import { Competition, CompetitionStatus } from "@/types/index.js";
+import {
+  findAll,
+  getCompetitionTeams,
+  getTeamPortfolioSnapshots,
+} from "@/database/repositories/competition-repository.js";
+import { ServiceRegistry } from "@/services/index.js";
+import { CompetitionStatus } from "@/types/index.js";
+
+const services = new ServiceRegistry();
 
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
@@ -87,17 +92,16 @@ async function showCompetitionStatus() {
       );
 
       // Check if there are any previous competitions
-      const pastCompetitions =
-        await repositories.competitionRepository.findAll();
+      const pastCompetitions = await findAll();
       const completedCompetitions = pastCompetitions.filter(
-        (c: Competition) => c.status === CompetitionStatus.COMPLETED,
+        (c) => c.status === CompetitionStatus.COMPLETED,
       );
 
       if (completedCompetitions.length > 0) {
         console.log(
           `\n${colors.blue}Previous completed competitions:${colors.reset}`,
         );
-        completedCompetitions.forEach((comp: Competition, index: number) => {
+        completedCompetitions.forEach((comp, index) => {
           const startDateValue = comp.startDate as string | Date | undefined;
           const endDateValue = comp.endDate as string | Date | undefined;
           console.log(
@@ -106,14 +110,14 @@ async function showCompetitionStatus() {
         });
 
         console.log(
-          `\n${colors.green}Use 'npm run setup:competition' to start a new competition.${colors.reset}`,
+          `\n${colors.green}Use 'pnpm setup:competition' to start a new competition.${colors.reset}`,
         );
       } else {
         console.log(
           `\n${colors.blue}No previous competitions found.${colors.reset}`,
         );
         console.log(
-          `\n${colors.green}Use 'npm run setup:competition' to start your first competition!${colors.reset}`,
+          `\n${colors.green}Use 'pnpm setup:competition' to start your first competition!${colors.reset}`,
         );
       }
 
@@ -121,10 +125,7 @@ async function showCompetitionStatus() {
     }
 
     // Get teams participating in the competition
-    const participatingTeamIds =
-      await repositories.competitionRepository.getCompetitionTeams(
-        competition.id,
-      );
+    const participatingTeamIds = await getCompetitionTeams(competition.id);
 
     // Get all teams (for mapping IDs to names)
     const allTeams = await services.teamManager.getAllTeams(false);
@@ -231,16 +232,15 @@ async function showCompetitionStatus() {
 
       // Get the first snapshot for each team in the competition
       for (const entry of sortedLeaderboard) {
-        const snapshots =
-          await repositories.competitionRepository.getTeamPortfolioSnapshots(
-            competition.id,
-            entry.teamId,
-          );
+        const snapshots = await getTeamPortfolioSnapshots(
+          competition.id,
+          entry.teamId,
+        );
         if (snapshots.length > 0) {
           // Sort by timestamp and get the first one (initial snapshot)
           const sortedSnapshots = snapshots.sort(
             (a, b) =>
-              new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+              (a.timestamp?.getTime() ?? 0) - (b.timestamp?.getTime() ?? 0),
           );
 
           if (sortedSnapshots.length > 0) {
@@ -326,7 +326,7 @@ async function showCompetitionStatus() {
     }
 
     console.log(
-      `\n${colors.green}Use 'npm run end:competition' to end this competition.${colors.reset}`,
+      `\n${colors.green}Use 'pnpm end:competition' to end this competition.${colors.reset}`,
     );
   } catch (error) {
     console.error(
@@ -334,9 +334,6 @@ async function showCompetitionStatus() {
       error instanceof Error ? error.message : error,
     );
   } finally {
-    // Close database connection
-    await DatabaseConnection.getInstance().close();
-
     // Exit the process after clean closure
     process.exit(0);
   }
