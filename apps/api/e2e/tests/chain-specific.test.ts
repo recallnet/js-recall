@@ -52,13 +52,13 @@ describe("Specific Chains", () => {
 
     // Register a new team
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team 1",
     );
 
     // Start a competition with the team
     const competitionName = `Specific Chain Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [team.id as string]);
 
     // Use the team client API to get balances instead of direct DB query
     const balancesResponse =
@@ -112,13 +112,13 @@ describe("Specific Chains", () => {
 
     // Register a new team
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team 2",
     );
 
     // Start a competition with the team
     const competitionName = `Trade Chain Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [team.id as string]);
 
     // Get team's current balances
     const balanceResponse = (await teamClient.getBalance()) as BalancesResponse;
@@ -197,7 +197,7 @@ describe("Specific Chains", () => {
 
     // Register a new team
     const { team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team Portfolio",
     );
 
@@ -280,13 +280,13 @@ describe("Specific Chains", () => {
 
     // Register a new team
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Token Purchase Test Team",
     );
 
     // Start a competition with the team
     const competitionName = `Token Purchase Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [team.id as string]);
 
     // Get team's current balances
     const balanceResponse = (await teamClient.getBalance()) as BalancesResponse;
@@ -439,7 +439,7 @@ describe("Specific Chains", () => {
 
     // Register a new team
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       `Token Purchase Test Team`,
     );
 

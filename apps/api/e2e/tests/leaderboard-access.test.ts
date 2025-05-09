@@ -52,13 +52,13 @@ describe("Leaderboard Access Control", () => {
 
     // Register a regular team
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Test Team",
     );
 
     // Start a competition with the team
     const competitionName = `Admin Access Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [team.id as string]);
 
     // Verify the admin can still access the leaderboard
     const adminResponse =

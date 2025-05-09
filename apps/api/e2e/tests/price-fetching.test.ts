@@ -33,8 +33,7 @@ const BASE_TOKENS = {
 };
 
 describe("Price Fetching", () => {
-  // Create variables for authenticated clients
-  let adminClient: ApiClient;
+  // Create variables for api keys
   let adminApiKey: string;
   let clientApiKey: string;
 
@@ -54,12 +53,8 @@ describe("Price Fetching", () => {
     expect(adminApiKey).toBeDefined();
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
 
-    // Setup admin client
-    adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
     // Register a team and get an authenticated client
-    const result = await registerTeamAndGetClient(adminClient);
+    const result = await registerTeamAndGetClient(adminApiKey);
     clientApiKey = result.apiKey;
   });
 

@@ -39,20 +39,24 @@ export function createTestClient(baseUrl?: string): ApiClient {
  * Register a new team and return a client configured with its API credentials
  */
 export async function registerTeamAndGetClient(
-  adminClient: ApiClient,
+  adminApiKey: string,
   teamName?: string,
   email?: string,
   contactPerson?: string,
+  walletAddress?: string
 ) {
   // Ensure database is initialized
   await ensureDatabaseInitialized();
 
+  const sdk = getApiSdk(adminApiKey);
   // Register a new team
-  const result = await adminClient.registerTeam(
-    teamName || `Team ${generateRandomString(8)}`,
-    email || `team-${generateRandomString(8)}@test.com`,
-    contactPerson || `Contact ${generateRandomString(8)}`,
-  );
+  const result = await sdk.admin.postApiAdminTeamsRegister({
+      teamName: teamName || `Team ${generateRandomString(8)}`,
+      email: email || `team-${generateRandomString(8)}@test.com`,
+      contactPerson: contactPerson || `Contact ${generateRandomString(8)}`,
+      walletAddress: walletAddress || generateRandomEthAddress(),
+      metadata: {}
+  });
 
   if (!result.success || !result.team) {
     throw new Error("Failed to register team");
@@ -60,7 +64,8 @@ export async function registerTeamAndGetClient(
 
   // Create a client with the team's API key
   const client = new ApiClient(result.team.apiKey);
-
+  // TODO: work on replacing `ApiClient` instances with SDK instances everywhere,
+  // TODO: then this function can just return the apiKey for the new team
   return { client, team: result.team, apiKey: result.team.apiKey };
 }
 
@@ -175,6 +180,19 @@ export function generateRandomString(length: number): string {
   let result = "";
   for (let i = 0; i < length; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+/**
+ * Generate random hex string of specific length
+ */
+export function generateRandomEthAddress(): string {
+  const hexChars = '0123456789abcdef';
+  let result = '0x';
+  for (let i = 0; i < 40; i++) {
+    const randomIndex = Math.floor(Math.random() * hexChars.length);
+    result += hexChars[randomIndex];
   }
   return result;
 }

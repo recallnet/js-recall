@@ -42,11 +42,11 @@ describe("API Key Retrieval", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register a new team
-    const { team, apiKey } = await registerTeamAndGetClient(adminClient);
+    const { team, apiKey } = await registerTeamAndGetClient(adminApiKey);
 
     // Retrieve the team's API key
     const keyResponse = (await adminClient.getTeamApiKey(
-      team.id,
+      team.id as string,
     )) as TeamApiKeyResponse;
 
     // Assert the API key was retrieved successfully
@@ -66,12 +66,12 @@ describe("API Key Retrieval", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register two teams
-    const { client: teamClient } = await registerTeamAndGetClient(adminClient);
-    const { team: otherTeam } = await registerTeamAndGetClient(adminClient);
+    const { client: teamClient } = await registerTeamAndGetClient(adminApiKey);
+    const { team: otherTeam } = await registerTeamAndGetClient(adminApiKey);
 
     // Attempt to retrieve the other team's API key using team client
     try {
-      await teamClient.getTeamApiKey(otherTeam.id);
+      await teamClient.getTeamApiKey(otherTeam.id as string);
       // Should fail - if it reaches this line, the test should fail
       expect(false).toBe(true);
     } catch (error) {

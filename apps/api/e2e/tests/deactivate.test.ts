@@ -49,17 +49,17 @@ describe("Team Deactivation API", () => {
 
     // Register a team
     const { team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team to Deactivate",
     );
 
     const competitionName = `Test Competition ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [team.id as string]);
 
     // Deactivate the team
     const reason = "Violated competition rules by using external API";
     const deactivateResponse = (await adminClient.deactivateTeam(
-      team.id,
+      team.id as string,
       reason,
     )) as AdminTeamResponse;
 
@@ -87,13 +87,13 @@ describe("Team Deactivation API", () => {
 
     // Register a team and get the client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "To Be Blocked",
     );
 
     // Start a competition with the team
     const competitionName = `Deactivation Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [team.id as string]);
 
     // Verify team can access API before deactivation
     const profileResponse = await teamClient.getProfile();
@@ -102,7 +102,7 @@ describe("Team Deactivation API", () => {
     // Deactivate the team
     const reason = "Testing deactivation blocking";
     const deactivateResponse = await adminClient.deactivateTeam(
-      team.id,
+      team.id as string,
       reason,
     );
     expect(deactivateResponse.success).toBe(true);
@@ -156,18 +156,18 @@ describe("Team Deactivation API", () => {
 
     // Register a team and get the client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "To Be Reactivated",
     );
 
     // Start a competition with the team
     const competitionName = `Reactivation Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [team.id as string]);
 
     // Deactivate the team
     const reason = "Temporary deactivation for testing";
     const deactivateResponse = await adminClient.deactivateTeam(
-      team.id,
+      team.id as string,
       reason,
     );
     expect(deactivateResponse.success).toBe(true);
@@ -182,7 +182,7 @@ describe("Team Deactivation API", () => {
 
     // Reactivate the team
     const reactivateResponse = (await adminClient.reactivateTeam(
-      team.id,
+      team.id as string,
     )) as AdminTeamResponse;
     expect(reactivateResponse.success).toBe(true);
     expect(reactivateResponse.team).toBeDefined();
@@ -206,24 +206,24 @@ describe("Team Deactivation API", () => {
 
     // Register two teams
     const { client: teamClient1, team: team1 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team One",
     );
     const { team: team2 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team Two",
     );
 
     // Start a competition with both teams
     const competitionName = `Non-Admin Test ${Date.now()}`;
     await startTestCompetition(adminClient, competitionName, [
-      team1.id,
-      team2.id,
+      team1.id as string,
+      team2.id as string,
     ]);
 
     // Team One tries to deactivate Team Two (should fail)
     const deactivateResponse = (await teamClient1.deactivateTeam(
-      team2.id,
+      team2.id as string,
       "Unauthorized deactivation attempt",
     )) as ErrorResponse;
 
@@ -246,24 +246,24 @@ describe("Team Deactivation API", () => {
 
     // Register three teams for the competition
     const { client: teamClient1, team: team1 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Active Team 1",
     );
     const { client: teamClient2, team: team2 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Active Team 2",
     );
     const { client: teamClient3, team: team3 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Inactive Team",
     );
 
     // Create competition with all three teams
     const competitionName = `Leaderboard Test ${Date.now()}`;
     await startTestCompetition(adminClient, competitionName, [
-      team1.id,
-      team2.id,
-      team3.id,
+      team1.id as string,
+      team2.id as string,
+      team3.id as string,
     ]);
 
     // Make some trades to differentiate portfolio values
@@ -322,7 +322,7 @@ describe("Team Deactivation API", () => {
     // Now deactivate team3
     const reason = "Deactivated for leaderboard test";
     const deactivateResponse = await adminClient.deactivateTeam(
-      team3.id,
+      team3.id as string,
       reason,
     );
     expect(deactivateResponse.success).toBe(true);
@@ -359,7 +359,7 @@ describe("Team Deactivation API", () => {
     expect(leaderboardAfter.hasInactiveTeams).toBe(true);
 
     // Reactivate the team and verify they show up again
-    await adminClient.reactivateTeam(team3.id);
+    await adminClient.reactivateTeam(team3.id as string);
 
     // Wait a moment for any cache to update
     await wait(100);

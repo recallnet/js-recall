@@ -97,7 +97,7 @@ describe("Multi-Team Competition", () => {
       const contactPerson = `Contact Person ${i + 1}`;
 
       const teamData = await registerTeamAndGetClient(
-        adminClient,
+        adminApiKey,
         teamName,
         email,
         contactPerson,
@@ -281,7 +281,7 @@ describe("Multi-Team Competition", () => {
       const contactPerson = `Contact Person ${i + 1}`;
 
       const teamData = await registerTeamAndGetClient(
-        adminClient,
+        adminApiKey,
         teamName,
         email,
         contactPerson,
@@ -460,7 +460,7 @@ describe("Multi-Team Competition", () => {
       const contactPerson = `Price Contact ${i + 1}`;
 
       const teamData = await registerTeamAndGetClient(
-        adminClient,
+        adminApiKey,
         teamName,
         email,
         contactPerson,

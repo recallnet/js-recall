@@ -50,7 +50,7 @@ describe("Rate Limiter Diagnostics", () => {
       team: team1,
       apiKey: team1ApiKey,
     } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Rate Limit Diagnostic Team 1",
     );
     const {
@@ -58,14 +58,14 @@ describe("Rate Limiter Diagnostics", () => {
       team: team2,
       apiKey: team2ApiKey,
     } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Rate Limit Diagnostic Team 2",
     );
     console.log(
-      `[DIAGNOSTIC] Registered Team 1 ID: ${team1.id}, API Key: ${team1ApiKey.substring(0, 8)}...`,
+      `[DIAGNOSTIC] Registered Team 1 ID: ${team1.id}, API Key: ${(team1ApiKey || "").substring(0, 8)}...`,
     );
     console.log(
-      `[DIAGNOSTIC] Registered Team 2 ID: ${team2.id}, API Key: ${team2ApiKey.substring(0, 8)}...`,
+      `[DIAGNOSTIC] Registered Team 2 ID: ${team2.id}, API Key: ${(team2ApiKey || "").substring(0, 8)}...`,
     );
 
     // Verify the API keys are different
@@ -75,7 +75,7 @@ describe("Rate Limiter Diagnostics", () => {
     await adminClient.startCompetition(
       `Rate Limit Diagnostic Test ${Date.now()}`,
       "Test competition for diagnosing rate limiting",
-      [team1.id, team2.id],
+      [team1.id as string, team2.id as string],
     );
     console.log("[DIAGNOSTIC] Started test competition");
 

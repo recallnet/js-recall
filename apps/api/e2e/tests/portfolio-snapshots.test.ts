@@ -55,7 +55,7 @@ describe("Portfolio Snapshots", () => {
 
     // Register team and get client
     const { team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Snapshot Test Team",
     );
 
@@ -64,7 +64,7 @@ describe("Portfolio Snapshots", () => {
     const startResult = await startTestCompetition(
       adminClient,
       competitionName,
-      [team.id],
+      [team.id as string],
     );
 
     // Wait for operations to complete
@@ -103,7 +103,7 @@ describe("Portfolio Snapshots", () => {
 
     // Register team and get client
     const { team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Periodic Snapshot Team",
     );
 
@@ -112,7 +112,7 @@ describe("Portfolio Snapshots", () => {
     const startResult = await startTestCompetition(
       adminClient,
       competitionName,
-      [team.id],
+      [team.id as string],
     );
 
     // Get the competition ID
@@ -173,7 +173,7 @@ describe("Portfolio Snapshots", () => {
 
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "End Snapshot Team",
     );
 
@@ -182,7 +182,7 @@ describe("Portfolio Snapshots", () => {
     const startResult = await startTestCompetition(
       adminClient,
       competitionName,
-      [team.id],
+      [team.id as string],
     );
 
     // Get the competition ID
@@ -245,7 +245,7 @@ describe("Portfolio Snapshots", () => {
 
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Value Calc Team",
     );
 
@@ -254,7 +254,7 @@ describe("Portfolio Snapshots", () => {
     const startResult = await startTestCompetition(
       adminClient,
       competitionName,
-      [team.id],
+      [team.id as string],
     );
 
     // Get the competition ID
@@ -325,7 +325,7 @@ describe("Portfolio Snapshots", () => {
 
     // Register team and get client
     const { team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Price Freshness Team",
     );
 
@@ -334,7 +334,7 @@ describe("Portfolio Snapshots", () => {
     const startResult = await startTestCompetition(
       adminClient,
       competitionName,
-      [team.id],
+      [team.id as string],
     );
 
     // Get the competition ID

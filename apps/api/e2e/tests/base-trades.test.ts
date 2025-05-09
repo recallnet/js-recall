@@ -78,13 +78,13 @@ describe("Base Chain Trading", () => {
 
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Base Chain Trading Team",
     );
 
     // Start a competition with our team
     const competitionName = `Base Trading Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [team.id as string]);
 
     // Wait for balances to be properly initialized
     await wait(500);
@@ -271,13 +271,13 @@ describe("Base Chain Trading", () => {
 
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Cross-Chain Restriction Team",
     );
 
     // Start a competition with our team
     const competitionName = `Cross-Chain Restriction Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [team.id as string]);
 
     // Wait for balances to be properly initialized
     await wait(500);
@@ -465,13 +465,13 @@ describe("Base Chain Trading", () => {
 
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Spending Limit Team",
     );
 
     // Start a competition with our team
     const competitionName = `Spending Limit Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [team.id as string]);
 
     // Wait for balances to be properly initialized
     await wait(500);

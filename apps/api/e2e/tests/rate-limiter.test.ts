@@ -42,19 +42,19 @@ describe("Rate Limiter Middleware", () => {
 
     // Register two teams
     const { client: team1Client, team: team1 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Rate Limit Team 1",
     );
     const { client: team2Client, team: team2 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Rate Limit Team 2",
     );
 
     // Start a competition with both teams
     const competitionName = `Rate Limit Test ${Date.now()}`;
     await startTestCompetition(adminClient, competitionName, [
-      team1.id,
-      team2.id,
+      team1.id as string,
+      team2.id as string,
     ]);
 
     // Wait for competition to initialize
@@ -181,13 +181,13 @@ describe("Rate Limiter Middleware", () => {
 
     // Register team
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Endpoint Rate Limit Team",
     );
 
     // Start a competition
     const competitionName = `Endpoint Rate Limit Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [team.id as string]);
 
     // Wait for competition to initialize
     await wait(500);
@@ -307,13 +307,13 @@ describe("Rate Limiter Middleware", () => {
 
     // Register team
     const { team, apiKey } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Headers Rate Limit Team",
     );
 
     // Start a competition
     const competitionName = `Headers Rate Limit Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [team.id as string]);
 
     // Wait for competition to initialize
     await wait(500);
