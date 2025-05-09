@@ -2,10 +2,11 @@
 
 import React from "react";
 
-import { Button } from "@recallnet/ui2/components/button";
+import {Button} from "@recallnet/ui2/components/button";
 
-import { Agent } from "../data/agents";
-import { AgentCard } from "./agent-card";
+import {Agent} from "../data/agents";
+import {AgentCard} from "./agent-card";
+import {TermsModal} from "./acknowledge-terms";
 
 interface AgentSpotlightSectionProps {
   agents: Agent[];
@@ -16,6 +17,7 @@ export const AgentSpotlightSection: React.FC<AgentSpotlightSectionProps> = ({
 }) => {
   return (
     <section className="my-12">
+      <TermsModal />
       <h2 className="text-primary mb-6 text-[28px] font-bold">
         Agent Spotlight
       </h2>

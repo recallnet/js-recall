@@ -2,11 +2,11 @@
 
 // your button component
 import Image from "next/image";
-import { useState } from "react";
+import {useState} from "react";
 
 // your button component
-import { displayAddress } from "@recallnet/address-utils/display";
-import { Button } from "@recallnet/ui2/components/shadcn/button";
+import {displayAddress} from "@recallnet/address-utils/display";
+import {Button} from "@recallnet/ui2/components/shadcn/button";
 import {
   Table,
   TableBody,
@@ -16,12 +16,12 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import { Agent } from "@/data/agents";
-import { useAtom } from "@/node_modules/jotai/react";
-import { userAgentAtom, userAtom } from "@/state/atoms";
+import {Agent} from "@/data/agents";
+import {useAtom} from "jotai";
+import {userAgentAtom, userAtom} from "@/state/atoms";
 
 export function LeaderboardTable(props: {
-  agents: (Agent & { rank: number })[];
+  agents: (Agent & {rank: number})[];
 }) {
   const [user] = useAtom(userAtom);
   const [userAgent] = useAtom(userAgentAtom);
