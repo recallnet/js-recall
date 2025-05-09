@@ -530,8 +530,8 @@ importers:
         specifier: ^8.22.0
         version: 8.28.0(eslint@9.23.0(jiti@2.4.2))(typescript@5.8.2)
       zod:
-        specifier: ^3.23.4
-        version: 3.24.2
+        specifier: ^3.24.2
+        version: 3.24.4
 
   packages/chains:
     dependencies:
@@ -4652,7 +4652,6 @@ packages:
 
   bun@1.2.12:
     resolution: {integrity: sha512-66kW1iPrYLEC3MEsmYJhcPdNwMrT6V+l0cwcI9wl1jt4a8lhBhomgM16jYnSDzBros2C/8oJ/aZY8Y9HUvLLTA==}
-    cpu: [arm64, x64, aarch64]
     os: [darwin, linux, win32]
     hasBin: true
 
