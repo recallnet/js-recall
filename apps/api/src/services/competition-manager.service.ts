@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 
-import { CrossChainTradingType } from "@recallnet/comps-db/schema";
+import { crossChainTradingType } from "@recallnet/comps-db/schema";
 
 import {
   addTeamToCompetition,
@@ -78,7 +78,7 @@ export class CompetitionManager {
   async createCompetition(
     name: string,
     description?: string,
-    crossChainTradingType: CrossChainTradingType = CrossChainTradingType.DISALLOWALL,
+    tradingType: (typeof crossChainTradingType.enumValues)[number] = "disallowAll",
   ) {
     const id = uuidv4();
     const competition = {
@@ -88,7 +88,7 @@ export class CompetitionManager {
       startDate: null,
       endDate: null,
       status: CompetitionStatus.PENDING,
-      crossChainTradingType,
+      crossChainTradingType: tradingType,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

@@ -4,7 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { v4 as uuidv4 } from "uuid";
 
-import { CrossChainTradingType } from "@recallnet/comps-db/schema";
+import { crossChainTradingType } from "@recallnet/comps-db/schema";
 
 import { getCompetitionTeams } from "@/database/repositories/competition-repository.js";
 import {
@@ -307,7 +307,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const competition = await services.competitionManager.createCompetition(
           name,
           description,
-          crossChainTradingType || CrossChainTradingType.DISALLOWALL, // Use the enum value
+          crossChainTradingType || crossChainTradingType.DISALLOWALL, // Use the enum value
         );
 
         // Return the created competition
@@ -375,7 +375,7 @@ export function makeAdminController(services: ServiceRegistry) {
           competition = await services.competitionManager.createCompetition(
             name,
             description,
-            crossChainTradingType || CrossChainTradingType.DISALLOWALL, // Use the enum value
+            crossChainTradingType || crossChainTradingType.DISALLOWALL, // Use the enum value
           );
         }
 

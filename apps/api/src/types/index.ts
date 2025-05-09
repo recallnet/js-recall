@@ -1,6 +1,6 @@
 import { Request } from "express";
 
-import { CrossChainTradingType } from "@recallnet/comps-db/schema";
+import { crossChainTradingType } from "@recallnet/comps-db/schema";
 
 /**
  * Token information interface
@@ -200,7 +200,7 @@ export interface Competition {
   startDate: Date | null;
   endDate: Date | null;
   status: CompetitionStatus;
-  crossChainTradingType: CrossChainTradingType; // Controls cross-chain trading behavior
+  crossChainTradingType: (typeof crossChainTradingType.enumValues)[number]; // Controls cross-chain trading behavior
   createdAt: Date;
   updatedAt: Date;
 }

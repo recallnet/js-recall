@@ -10,6 +10,7 @@ import {
   primaryKey,
   serial,
   text,
+  pgEnum,
   timestamp,
   unique,
   uuid,
@@ -22,8 +23,6 @@ export const crossChainTradingType = pgEnum("cross_chain_trading_type", [
   "allow",
 ]);
 
-export type CrossChainTradingType =
-  (typeof crossChainTradingType.enumValues)[number];
 export const teams = pgTable(
   "teams",
   {
@@ -71,9 +70,7 @@ export const competitions = pgTable(
     startDate: timestamp("start_date", { withTimezone: true }),
     endDate: timestamp("end_date", { withTimezone: true }),
     status: varchar({ length: 20 }).notNull(),
-    crossChainTradingType: varchar("cross_chain_trading_type", { length: 20 })
-      .notNull()
-      crossChainTradingType: crossChainTradingType("cross_chain_trading_type")
+    crossChainTradingType: crossChainTradingType("cross_chain_trading_type")
       .notNull()
       .default("disallowAll"),
     createdAt: timestamp("created_at", {
