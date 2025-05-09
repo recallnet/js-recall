@@ -141,7 +141,7 @@ export function ApprovalsTo() {
             ttl: hoursToNumBlocks(formData.ttl || 0),
           }
         : undefined;
-    approveCredit(formData.to, { from, limits });
+    approveCredit(formData.to, { limits });
   };
 
   const approvalPending =

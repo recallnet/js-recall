@@ -3,15 +3,15 @@ import { Config } from "wagmi";
 import { getChainId, readContract } from "wagmi/actions";
 
 import { getChain, getRegistrarUrl } from "@recallnet/chains";
-import { creditManagerAbi, creditManagerAddress } from "@recallnet/contracts";
+import { iCreditFacadeAbi, iCreditFacadeAddress } from "@recallnet/contracts";
 
 export async function accountExists(config: Config, address: Address) {
   try {
     const chainId = getChainId(config);
     await readContract(config, {
-      abi: creditManagerAbi,
+      abi: iCreditFacadeAbi,
       address:
-        creditManagerAddress[chainId as keyof typeof creditManagerAddress],
+        iCreditFacadeAddress[chainId as keyof typeof iCreditFacadeAddress],
       functionName: "getAccount",
       args: [address],
     });
