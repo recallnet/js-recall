@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { default as axios } from "axios";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AbiStateMutability, Address, ContractFunctionArgs, Hex } from "viem";
+import { AbiStateMutability, Address, ContractFunctionArgs } from "viem";
 import {
   useAccount,
   useChainId,
@@ -17,6 +17,8 @@ import {
   iMachineFacadeAbi,
   iMachineFacadeAddress,
 } from "@recallnet/contracts";
+
+import { base32ToHex, hexToBase32 } from "../utils/base32.js";
 
 export function useListBuckets(owner?: Address) {
   const chainId = useChainId();
@@ -106,7 +108,7 @@ export function useQueryObjects(
     BigInt(options?.limit ?? 100),
   ] satisfies QueryObjectsArgs;
 
-  return useReadContract({
+  const { data, ...rest } = useReadContract({
     address: bucket,
     abi: iBucketFacadeAbi,
     functionName: "queryObjects",
@@ -115,6 +117,22 @@ export function useQueryObjects(
       enabled: options?.enabled,
     },
   });
+
+  return {
+    data: data
+      ? {
+          ...data,
+          objects: data.objects.map((obj) => ({
+            ...obj,
+            state: {
+              ...obj.state,
+              blobHash: hexToBase32(obj.state.blobHash),
+            },
+          })),
+        }
+      : undefined,
+    ...rest,
+  };
 }
 
 export function useGetObject(
@@ -122,7 +140,7 @@ export function useGetObject(
   key: string,
   options?: { enabled?: boolean | (() => boolean) },
 ) {
-  return useReadContract({
+  const { data, ...rest } = useReadContract({
     address: bucket,
     abi: iBucketFacadeAbi,
     functionName: "getObject",
@@ -131,6 +149,17 @@ export function useGetObject(
       enabled: options?.enabled,
     },
   });
+
+  return {
+    data: data
+      ? {
+          ...data,
+          blobHash: hexToBase32(data.blobHash),
+          recoveryHash: hexToBase32(data.recoveryHash),
+        }
+      : undefined,
+    ...rest,
+  };
 }
 
 export function useCreateBucket() {
@@ -226,11 +255,13 @@ export function useAddFile() {
   useEffect(() => {
     if (uploadRes && args) {
       const metadata = convertMetadataToAbiParams(args.options?.metadata ?? {});
+      const blobHash = base32ToHex(uploadRes.hash);
+      const metadataHash = base32ToHex(uploadRes.metadata_hash);
       const params = [
-        `0x${uploadRes.node_id}`, // The response is a hex value but without the prefix (passed as bytes32)
+        `0x${uploadRes.node_id}`,
         args.key,
-        uploadRes.hash as Hex, // TODO: convert from base32 to hex (bytes32)
-        uploadRes.metadata_hash as Hex, // TODO: convert from base32 to hex (bytes32)
+        blobHash,
+        metadataHash,
         BigInt(args.file.size),
         args.options?.ttl ?? 0n,
         metadata,
