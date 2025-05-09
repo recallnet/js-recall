@@ -405,7 +405,7 @@ describe("Base Chain Trading", () => {
 
     const crossChainEnabled = features.CROSS_CHAIN_TRADING_TYPE;
 
-    if (crossChainEnabled === "DISALLOWALL") {
+    if (crossChainEnabled === "disallowAll") {
       console.log(
         "Cross-chain trading should be disabled. Verifying test conditions:",
       );

@@ -14,7 +14,7 @@ import {
 } from "@/database/repositories/team-repository.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
-import { CompetitionStatus } from "@/types/index.js";
+import { CompetitionStatus, CrossChainTradingType } from "@/types/index.js";
 
 export function makeAdminController(services: ServiceRegistry) {
   /**
@@ -305,7 +305,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const competition = await services.competitionManager.createCompetition(
           name,
           description,
-          tradingType || "disallowAll", // Use the string literal directly
+          tradingType || CrossChainTradingType.disallowAll,
         );
 
         // Return the created competition
@@ -368,7 +368,7 @@ export function makeAdminController(services: ServiceRegistry) {
           competition = await services.competitionManager.createCompetition(
             name,
             description,
-            tradingType || "disallowAll", // Use the string literal directly
+            tradingType || CrossChainTradingType.disallowAll,
           );
         }
 

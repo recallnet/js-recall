@@ -18,7 +18,7 @@ import {
   TeamManager,
   TradeSimulator,
 } from "@/services/index.js";
-import { CompetitionStatus } from "@/types/index.js";
+import { CompetitionStatus, CrossChainTradingType } from "@/types/index.js";
 
 /**
  * Competition Manager Service
@@ -76,7 +76,7 @@ export class CompetitionManager {
   async createCompetition(
     name: string,
     description?: string,
-    tradingType: "disallowAll" | "disallowXParent" | "allow" = "disallowAll",
+    tradingType: CrossChainTradingType = CrossChainTradingType.disallowAll,
   ) {
     const id = uuidv4();
     const competition = {
