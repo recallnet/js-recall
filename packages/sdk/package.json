@@ -127,7 +127,6 @@
     "@recallnet/network-constants": "workspace:*",
     "@sindresorhus/fnv1a": "^3.1.0",
     "file-type": "^19.6.0",
-    "uint8arrays": "^5.1.0",
     "viem": "^2.28.1"
   },
   "devDependencies": {
