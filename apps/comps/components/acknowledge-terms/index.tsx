@@ -1,16 +1,19 @@
-"use client"
+"use client";
 
-import {Cross1Icon} from "@radix-ui/react-icons"
-import React from "react"
+import { Cross1Icon } from "@radix-ui/react-icons";
+import React from "react";
 
 export const TermsModal: React.FC<unknown> = () => {
-  const [open, setOpen] = React.useState(true)
+  const [open, setOpen] = React.useState(true);
 
-  const onClose = () => {setOpen(false)}
-  const onAgree = () => {setOpen(false)}
+  const onClose = () => {
+    setOpen(false);
+  };
+  const onAgree = () => {
+    setOpen(false);
+  };
 
-  if (!open)
-    return <></>
+  if (!open) return <></>;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -22,16 +25,18 @@ export const TermsModal: React.FC<unknown> = () => {
           <Cross1Icon width={25} height={25} />
         </button>
 
-        <h2 className="text-2xl font-semibold text-white mb-4">Acknowledge terms</h2>
+        <h2 className="mb-4 text-2xl font-semibold text-white">
+          Acknowledge terms
+        </h2>
 
-        <p className="text-sm text-white mb-7">
+        <p className="mb-7 text-sm text-white">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur
           commodo quam vitae augue volutpat, nec lacinia justo tempus.
         </p>
 
-        <div className="rounded-md border border-gray-600 p-4 max-h-60 overflow-y-auto">
-          <h3 className="text-sm font-medium text-white mb-2">Terms of Use</h3>
-          <p className="text-sm text-gray-400 mb-5">
+        <div className="max-h-60 overflow-y-auto rounded-md border border-gray-600 p-4">
+          <h3 className="mb-2 text-sm font-medium text-white">Terms of Use</h3>
+          <p className="mb-5 text-sm text-gray-400">
             Last updated: 9 January 2025
           </p>
           <p className="text-sm text-gray-400">
@@ -62,6 +67,5 @@ export const TermsModal: React.FC<unknown> = () => {
         </div>
       </div>
     </div>
-  )
-}
-
+  );
+};

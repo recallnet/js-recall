@@ -1,16 +1,18 @@
-"use client"
+"use client";
 
-import {Hexagon} from "@/components/hexagon"
-import {Cross1Icon} from "@radix-ui/react-icons"
-import React from "react"
+import { Cross1Icon } from "@radix-ui/react-icons";
+import React from "react";
+
+import { Hexagon } from "@/components/hexagon";
 
 export const TrophieUnlocked: React.FC<unknown> = () => {
-  const [open, setOpen] = React.useState(true)
+  const [open, setOpen] = React.useState(true);
 
-  const onClose = () => {setOpen(false)}
+  const onClose = () => {
+    setOpen(false);
+  };
 
-  if (!open)
-    return <></>
+  if (!open) return <></>;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -22,41 +24,42 @@ export const TrophieUnlocked: React.FC<unknown> = () => {
           <Cross1Icon width={25} height={25} />
         </button>
 
-        <div className="flex flex-col items-center w-full mt-10">
+        <div className="mt-10 flex w-full flex-col items-center">
           <span className="text-5xl">
             {
               // party icon
             }
             🎉
           </span>
-          <span className="text-2xl text-white mb-7 font-semibold mt-3">
+          <span className="mb-7 mt-3 text-2xl font-semibold text-white">
             Success
           </span>
 
-          <p className="text-sm text-white text-center mb-7">
+          <p className="mb-7 text-center text-sm text-white">
             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur
-            commodo quam vitae augue volutpat, nec lacinia justo tempus.
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur
+            commodo quam vitae augue volutpat, nec lacinia justo tempus. Lorem
+            ipsum dolor sit amet, consectetur adipiscing elit. Curabitur
           </p>
         </div>
 
-        <div className="rounded-md border border-gray-600 p-4 max-h-60 flex justify-between items-center">
+        <div className="flex max-h-60 items-center justify-between rounded-md border border-gray-600 p-4">
           <div className="flex gap-4">
             <Hexagon className="bg-purple-800" />
             <Hexagon className="bg-purple-800" />
             <Hexagon className="bg-purple-800" />
           </div>
-          <span className="text-white text-sm text-center w-full">ALL TROPHIES UNLOCKED</span>
+          <span className="w-full text-center text-sm text-white">
+            ALL TROPHIES UNLOCKED
+          </span>
         </div>
 
         <button
           onClick={onClose}
-          className="rounded-md bg-blue-700 mt-5 px-10 py-4 text-sm font-semibold text-white hover:bg-blue-500 w-full"
+          className="mt-5 w-full rounded-md bg-blue-700 px-10 py-4 text-sm font-semibold text-white hover:bg-blue-500"
         >
           CLOSE
         </button>
       </div>
     </div>
-  )
-}
-
+  );
+};
