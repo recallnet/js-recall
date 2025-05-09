@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { default as axios } from "axios";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AbiStateMutability, Address, ContractFunctionArgs } from "viem";
+import { AbiStateMutability, Address, ContractFunctionArgs, Hex } from "viem";
 import {
   useAccount,
   useChainId,
@@ -17,8 +17,7 @@ import {
   iMachineFacadeAbi,
   iMachineFacadeAddress,
 } from "@recallnet/contracts";
-
-import { base32ToHex, hexToBase32 } from "../utils/base32.js";
+import { base32ToHex, hexToBase32 } from "@recallnet/fvm/utils";
 
 export function useListBuckets(owner?: Address) {
   const chainId = useChainId();
@@ -255,8 +254,8 @@ export function useAddFile() {
   useEffect(() => {
     if (uploadRes && args) {
       const metadata = convertMetadataToAbiParams(args.options?.metadata ?? {});
-      const blobHash = base32ToHex(uploadRes.hash);
-      const metadataHash = base32ToHex(uploadRes.metadata_hash);
+      const blobHash = base32ToHex(uploadRes.hash) as Hex;
+      const metadataHash = base32ToHex(uploadRes.metadata_hash) as Hex;
       const params = [
         `0x${uploadRes.node_id}`,
         args.key,
