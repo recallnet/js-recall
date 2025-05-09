@@ -1,6 +1,7 @@
 "use client";
 
 // your button component
+import { useAtom } from "jotai";
 import Image from "next/image";
 import { useState } from "react";
 
@@ -17,7 +18,6 @@ import {
 } from "@recallnet/ui2/components/table";
 
 import { Agent } from "@/data/agents";
-import { useAtom } from "@/node_modules/jotai/react";
 import { userAgentAtom, userAtom } from "@/state/atoms";
 
 export function LeaderboardTable(props: {
