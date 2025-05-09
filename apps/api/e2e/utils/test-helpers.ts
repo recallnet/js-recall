@@ -43,7 +43,7 @@ export async function registerTeamAndGetClient(
   teamName?: string,
   email?: string,
   contactPerson?: string,
-  walletAddress?: string
+  walletAddress?: string,
 ) {
   // Ensure database is initialized
   await ensureDatabaseInitialized();
@@ -51,11 +51,11 @@ export async function registerTeamAndGetClient(
   const sdk = getApiSdk(adminApiKey);
   // Register a new team
   const result = await sdk.admin.postApiAdminTeamsRegister({
-      teamName: teamName || `Team ${generateRandomString(8)}`,
-      email: email || `team-${generateRandomString(8)}@test.com`,
-      contactPerson: contactPerson || `Contact ${generateRandomString(8)}`,
-      walletAddress: walletAddress || generateRandomEthAddress(),
-      metadata: {}
+    teamName: teamName || `Team ${generateRandomString(8)}`,
+    email: email || `team-${generateRandomString(8)}@test.com`,
+    contactPerson: contactPerson || `Contact ${generateRandomString(8)}`,
+    walletAddress: walletAddress || generateRandomEthAddress(),
+    metadata: {},
   });
 
   if (!result.success || !result.team || typeof result.team.id !== "string") {
@@ -74,7 +74,7 @@ export async function registerTeamAndGetClient(
       email: result.team.email || "",
       contactPerson: result.team.contactPerson || "",
     },
-    apiKey: result.team.apiKey || ""
+    apiKey: result.team.apiKey || "",
   };
 }
 
@@ -197,8 +197,8 @@ export function generateRandomString(length: number): string {
  * Generate random hex string of specific length
  */
 export function generateRandomEthAddress(): string {
-  const hexChars = '0123456789abcdef';
-  let result = '0x';
+  const hexChars = "0123456789abcdef";
+  let result = "0x";
   for (let i = 0; i < 40; i++) {
     const randomIndex = Math.floor(Math.random() * hexChars.length);
     result += hexChars[randomIndex];

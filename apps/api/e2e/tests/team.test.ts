@@ -59,7 +59,12 @@ describe("Team API", () => {
       client: teamClient,
       team,
       apiKey,
-    } = await registerTeamAndGetClient(adminApiKey, teamName, email, contactPerson);
+    } = await registerTeamAndGetClient(
+      adminApiKey,
+      teamName,
+      email,
+      contactPerson,
+    );
 
     expect(team).toBeDefined();
     expect(team.id).toBeDefined();
