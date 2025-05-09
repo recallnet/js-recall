@@ -1,7 +1,5 @@
 import { Address } from "viem";
 
-import { AddressId } from "@recallnet/fvm/address";
-
 import {
   BucketNotFound,
   InvalidValue,
@@ -45,7 +43,7 @@ export function createObjectsFormData({
   formData.append("size", size.toString());
   formData.append(
     "data",
-    new File([data], "blob", {
+    new File([data as BlobPart], "blob", {
       type: contentType ?? "application/octet-stream",
     }),
   );
@@ -99,11 +97,7 @@ export async function downloadBlob(
   if (range) {
     headers.Range = `bytes=${range.start ?? ""}-${range.end ?? ""}`;
   }
-  // TODO: we should be able to use the bucket hex address directly
-  const bucketIdAddress = AddressId.fromEthAddress(bucket);
-  const url = new URL(
-    `${objectsProviderUrl}/v1/objects/${bucketIdAddress}/${key}`,
-  );
+  const url = new URL(`${objectsProviderUrl}/v1/objects/${bucket}/${key}`);
   if (blockNumber !== undefined) {
     url.searchParams.set("height", blockNumber.toString());
   }
@@ -112,7 +106,10 @@ export async function downloadBlob(
   });
   if (!response.ok) {
     const error = await response.json();
-    if (error.message.includes("actor does not exist")) {
+    if (
+      error.message.includes("actor does not exist") ||
+      error.message.includes("bucket get error")
+    ) {
       throw new BucketNotFound(bucket);
     }
     if (error.message.includes("is not available")) {
