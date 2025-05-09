@@ -1,5 +1,5 @@
 {
-  "id": "05d1f372-83fb-4109-ab98-d888430f4d62",
+  "id": "8695a85e-98d9-48c7-b232-f6118d169aef",
   "prevId": "36d82828-2014-460e-8f91-e6317e2b4c15",
   "version": "7",
   "dialect": "postgresql",
@@ -224,10 +224,11 @@
         },
         "cross_chain_trading_type": {
           "name": "cross_chain_trading_type",
-          "type": "varchar(20)",
+          "type": "cross_chain_trading_type",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": "'DISALLOWALL'"
+          "default": "'disallowAll'"
         },
         "created_at": {
           "name": "created_at",
@@ -1093,7 +1094,17 @@
       "isRLSEnabled": false
     }
   },
-  "enums": {},
+  "enums": {
+    "public.cross_chain_trading_type": {
+      "name": "cross_chain_trading_type",
+      "schema": "public",
+      "values": [
+        "disallowAll",
+        "disallowXParent",
+        "allow"
+      ]
+    }
+  },
   "schemas": {},
   "sequences": {},
   "roles": {},

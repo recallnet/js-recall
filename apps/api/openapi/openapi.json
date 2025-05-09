@@ -1271,16 +1271,16 @@
                     "description": "Competition description",
                     "example": "A trading competition for the spring semester"
                   },
-                  "crossChainTradingType": {
+                  "tradingType": {
                     "type": "string",
                     "description": "The type of cross-chain trading to allow in this competition",
                     "enum": [
-                      "DISALLOWALL",
-                      "DISALLOWXPARENT",
-                      "ALLOW"
+                      "disallowAll",
+                      "disallowXParent",
+                      "allow"
                     ],
-                    "default": "DISALLOWALL",
-                    "example": "DISALLOWALL"
+                    "default": "disallowAll",
+                    "example": "disallowAll"
                   }
                 }
               }
@@ -1326,9 +1326,9 @@
                         "crossChainTradingType": {
                           "type": "string",
                           "enum": [
-                            "DISALLOWALL",
-                            "DISALLOWXPARENT",
-                            "ALLOW"
+                            "disallowAll",
+                            "disallowXParent",
+                            "allow"
                           ],
                           "description": "The type of cross-chain trading allowed in this competition"
                         },
@@ -1399,16 +1399,16 @@
                     },
                     "description": "Array of team IDs to include in the competition"
                   },
-                  "crossChainTradingType": {
+                  "tradingType": {
                     "type": "string",
                     "description": "Type of cross-chain trading to allow in this competition (used when creating a new competition)",
                     "enum": [
-                      "DISALLOWALL",
-                      "DISALLOWXPARENT",
-                      "ALLOW"
+                      "disallowAll",
+                      "disallowXParent",
+                      "allow"
                     ],
-                    "default": "DISALLOWALL",
-                    "example": "DISALLOWALL"
+                    "default": "disallowAll",
+                    "example": "disallowAll"
                   }
                 }
               }
@@ -1465,9 +1465,9 @@
                         "crossChainTradingType": {
                           "type": "string",
                           "enum": [
-                            "DISALLOWALL",
-                            "DISALLOWXPARENT",
-                            "ALLOW"
+                            "disallowAll",
+                            "disallowXParent",
+                            "allow"
                           ],
                           "description": "Type of cross-chain trading allowed in this competition"
                         },
@@ -1580,9 +1580,9 @@
                         "crossChainTradingType": {
                           "type": "string",
                           "enum": [
-                            "DISALLOWALL",
-                            "DISALLOWXPARENT",
-                            "ALLOW"
+                            "disallowAll",
+                            "disallowXParent",
+                            "allow"
                           ],
                           "description": "Type of cross-chain trading allowed in this competition"
                         }
@@ -1790,9 +1790,9 @@
                         "crossChainTradingType": {
                           "type": "string",
                           "enum": [
-                            "DISALLOWALL",
-                            "DISALLOWXPARENT",
-                            "ALLOW"
+                            "disallowAll",
+                            "disallowXParent",
+                            "allow"
                           ],
                           "description": "Type of cross-chain trading allowed in this competition"
                         }
@@ -2259,9 +2259,9 @@
                         "crossChainTradingType": {
                           "type": "string",
                           "enum": [
-                            "DISALLOWALL",
-                            "DISALLOWXPARENT",
-                            "ALLOW"
+                            "disallowAll",
+                            "disallowXParent",
+                            "allow"
                           ],
                           "description": "The type of cross-chain trading allowed in this competition"
                         },
@@ -2445,9 +2445,9 @@
                           "crossChainTradingType": {
                             "type": "string",
                             "enum": [
-                              "DISALLOWALL",
-                              "DISALLOWXPARENT",
-                              "ALLOW"
+                              "disallowAll",
+                              "disallowXParent",
+                              "allow"
                             ],
                             "description": "The type of cross-chain trading allowed in this competition"
                           },

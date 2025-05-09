@@ -4,8 +4,6 @@ import * as fs from "fs";
 import * as path from "path";
 import { v4 as uuidv4 } from "uuid";
 
-import { crossChainTradingType } from "@recallnet/comps-db/schema";
-
 import { getCompetitionTeams } from "@/database/repositories/competition-repository.js";
 import {
   create,
@@ -296,7 +294,7 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async createCompetition(req: Request, res: Response, next: NextFunction) {
       try {
-        const { name, description, crossChainTradingType } = req.body;
+        const { name, description, tradingType } = req.body;
 
         // Validate required parameters
         if (!name) {
@@ -307,7 +305,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const competition = await services.competitionManager.createCompetition(
           name,
           description,
-          crossChainTradingType || crossChainTradingType.DISALLOWALL, // Use the enum value
+          tradingType || "disallowAll", // Use the string literal directly
         );
 
         // Return the created competition
@@ -327,13 +325,8 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async startCompetition(req: Request, res: Response, next: NextFunction) {
       try {
-        const {
-          competitionId,
-          name,
-          description,
-          teamIds,
-          crossChainTradingType,
-        } = req.body;
+        const { competitionId, name, description, teamIds, tradingType } =
+          req.body;
 
         // Validate required parameters
         if (!teamIds || !Array.isArray(teamIds) || teamIds.length === 0) {
@@ -375,7 +368,7 @@ export function makeAdminController(services: ServiceRegistry) {
           competition = await services.competitionManager.createCompetition(
             name,
             description,
-            crossChainTradingType || crossChainTradingType.DISALLOWALL, // Use the enum value
+            tradingType || "disallowAll", // Use the string literal directly
           );
         }
 

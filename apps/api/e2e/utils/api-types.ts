@@ -39,9 +39,9 @@ export enum SpecificChain {
 
 // Cross-chain trading type enum
 export enum CrossChainTradingType {
-  DISALLOWALL = "DISALLOWALL",
-  DISALLOWXPARENT = "DISALLOWXPARENT",
-  ALLOW = "ALLOW",
+  disallowAll = "disallowAll",
+  disallowXParent = "disallowXParent",
+  allow = "allow",
 }
 
 // Competition status

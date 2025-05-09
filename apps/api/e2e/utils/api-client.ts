@@ -231,7 +231,7 @@ export class ApiClient {
           name: string;
           description?: string;
           teamIds: string[];
-          crossChainTradingType?: CrossChainTradingType;
+          tradingType?: CrossChainTradingType;
         }
       | string,
     description?: string,
@@ -268,7 +268,7 @@ export class ApiClient {
   async createCompetition(
     name: string,
     description?: string,
-    crossChainTradingType?: CrossChainTradingType,
+    tradingType?: CrossChainTradingType,
   ): Promise<CreateCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
@@ -276,7 +276,7 @@ export class ApiClient {
         {
           name,
           description,
-          crossChainTradingType,
+          tradingType,
         },
       );
 

@@ -203,7 +203,7 @@ export class TradeSimulator {
       }
 
       switch (features.CROSS_CHAIN_TRADING_TYPE) {
-        case "DISALLOWXPARENT":
+        case "disallowXParent":
           // Check if the tokens are on the same chain
           if (fromTokenChain !== toTokenChain) {
             console.log(
@@ -216,7 +216,7 @@ export class TradeSimulator {
             };
           }
           break;
-        case "DISALLOWALL":
+        case "disallowAll":
           // Check if the tokens are on the same chain
           if (
             fromTokenChain !== toTokenChain ||

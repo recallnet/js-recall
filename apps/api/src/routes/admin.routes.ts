@@ -291,12 +291,12 @@ export function configureAdminRoutes(
    *                 type: string
    *                 description: Competition description
    *                 example: A trading competition for the spring semester
-   *               crossChainTradingType:
+   *               tradingType:
    *                 type: string
    *                 description: The type of cross-chain trading to allow in this competition
-   *                 enum: [DISALLOWALL, DISALLOWXPARENT, ALLOW]
-   *                 default: DISALLOWALL
-   *                 example: DISALLOWALL
+   *                 enum: [disallowAll, disallowXParent, allow]
+   *                 default: disallowAll
+   *                 example: disallowAll
    *     responses:
    *       201:
    *         description: Competition created successfully
@@ -326,7 +326,7 @@ export function configureAdminRoutes(
    *                       description: Competition status
    *                     crossChainTradingType:
    *                       type: string
-   *                       enum: [DISALLOWALL, DISALLOWXPARENT, ALLOW]
+   *                       enum: [disallowAll, disallowXParent, allow]
    *                       description: The type of cross-chain trading allowed in this competition
    *                     createdAt:
    *                       type: string
@@ -376,12 +376,12 @@ export function configureAdminRoutes(
    *                 items:
    *                   type: string
    *                 description: Array of team IDs to include in the competition
-   *               crossChainTradingType:
+   *               tradingType:
    *                 type: string
    *                 description: Type of cross-chain trading to allow in this competition (used when creating a new competition)
-   *                 enum: [DISALLOWALL, DISALLOWXPARENT, ALLOW]
-   *                 default: DISALLOWALL
-   *                 example: DISALLOWALL
+   *                 enum: [disallowAll, disallowXParent, allow]
+   *                 default: disallowAll
+   *                 example: disallowAll
    *     responses:
    *       200:
    *         description: Competition started successfully
@@ -420,7 +420,7 @@ export function configureAdminRoutes(
    *                       description: Competition status
    *                     crossChainTradingType:
    *                       type: string
-   *                       enum: [DISALLOWALL, DISALLOWXPARENT, ALLOW]
+   *                       enum: [disallowAll, disallowXParent, allow]
    *                       description: Type of cross-chain trading allowed in this competition
    *                     teamIds:
    *                       type: array
@@ -497,7 +497,7 @@ export function configureAdminRoutes(
    *                       description: Competition status (completed)
    *                     crossChainTradingType:
    *                       type: string
-   *                       enum: [DISALLOWALL, DISALLOWXPARENT, ALLOW]
+   *                       enum: [disallowAll, disallowXParent, allow]
    *                       description: Type of cross-chain trading allowed in this competition
    *                 leaderboard:
    *                   type: array
@@ -645,7 +645,7 @@ export function configureAdminRoutes(
    *                       description: Competition status
    *                     crossChainTradingType:
    *                       type: string
-   *                       enum: [DISALLOWALL, DISALLOWXPARENT, ALLOW]
+   *                       enum: [disallowAll, disallowXParent, allow]
    *                       description: Type of cross-chain trading allowed in this competition
    *                 leaderboard:
    *                   type: array

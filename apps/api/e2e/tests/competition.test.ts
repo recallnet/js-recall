@@ -463,7 +463,7 @@ describe("Competition API", () => {
     const competitionResponse = await adminClient.startCompetition({
       name: competitionName,
       teamIds: [team.id],
-      crossChainTradingType: CrossChainTradingType.ALLOW,
+      tradingType: CrossChainTradingType.allow,
     });
 
     expect(competitionResponse.success).toBe(true);
@@ -489,7 +489,7 @@ describe("Competition API", () => {
         (rule: string) => rule.includes("Cross-chain trading"),
       );
       expect(crossChainRule).toBeDefined();
-      expect(crossChainRule).toContain("Cross-chain trading type: ALLOW");
+      expect(crossChainRule).toContain("Cross-chain trading type: allow");
     }
 
     // Create second competition with cross-chain trading disabled
@@ -503,7 +503,7 @@ describe("Competition API", () => {
       const secondCompetitionResponse = await adminClient.startCompetition({
         name: secondCompetitionName,
         teamIds: [team.id],
-        crossChainTradingType: CrossChainTradingType.DISALLOWALL,
+        tradingType: CrossChainTradingType.disallowAll,
       });
 
       expect(secondCompetitionResponse.success).toBe(true);
@@ -521,7 +521,7 @@ describe("Competition API", () => {
           );
         expect(secondCrossChainRule).toBeDefined();
         expect(secondCrossChainRule).toContain(
-          "Cross-chain trading type: DISALLOWALL",
+          "Cross-chain trading type: disallowAll",
         );
       }
     }
@@ -543,14 +543,14 @@ describe("Competition API", () => {
     const createResponse = await adminClient.createCompetition(
       createCompetitionName,
       "Test description",
-      CrossChainTradingType.ALLOW,
+      CrossChainTradingType.allow,
     );
 
     expect(createResponse.success).toBe(true);
     if (createResponse.success && "competition" in createResponse) {
       expect(createResponse.competition).toBeDefined();
       expect(createResponse.competition.crossChainTradingType).toBe(
-        CrossChainTradingType.ALLOW,
+        CrossChainTradingType.allow,
       );
     }
 
@@ -559,14 +559,14 @@ describe("Competition API", () => {
     const startResponse = await adminClient.startCompetition({
       name: startCompetitionName,
       teamIds: [team.id],
-      crossChainTradingType: CrossChainTradingType.DISALLOWALL,
+      tradingType: CrossChainTradingType.disallowAll,
     });
 
     expect(startResponse.success).toBe(true);
     if (startResponse.success && "competition" in startResponse) {
       expect(startResponse.competition).toBeDefined();
       expect(startResponse.competition.crossChainTradingType).toBe(
-        CrossChainTradingType.DISALLOWALL,
+        CrossChainTradingType.disallowAll,
       );
 
       // 3. Test ending a competition and check field is preserved
@@ -579,7 +579,7 @@ describe("Competition API", () => {
         const competition = endResponse.competition as Competition;
         expect(competition).toBeDefined();
         expect(competition.crossChainTradingType).toBe(
-          CrossChainTradingType.DISALLOWALL,
+          CrossChainTradingType.disallowAll,
         );
       }
     }
@@ -624,17 +624,17 @@ describe("Competition API", () => {
     const createResponse1 = (await adminClient.createCompetition(
       comp1Name,
       "Test competition 1",
-      CrossChainTradingType.ALLOW,
+      CrossChainTradingType.allow,
     )) as CreateCompetitionResponse;
     const createResponse2 = (await adminClient.createCompetition(
       comp2Name,
       "Test competition 2",
-      CrossChainTradingType.DISALLOWALL,
+      CrossChainTradingType.disallowAll,
     )) as CreateCompetitionResponse;
     const createResponse3 = (await adminClient.createCompetition(
       comp3Name,
       "Test competition 3",
-      CrossChainTradingType.ALLOW,
+      CrossChainTradingType.allow,
     )) as CreateCompetitionResponse;
 
     // Verify all competitions were created and in PENDING state
