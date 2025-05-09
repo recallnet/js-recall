@@ -8,11 +8,17 @@ import {
   ContractFunctionExecutionError,
   ContractFunctionReturnType,
   GetContractReturnType,
+  Hex,
+  TransactionReceipt,
   getContract,
   zeroAddress,
 } from "viem";
 
-import { creditManagerAbi, creditManagerAddress } from "@recallnet/contracts";
+import {
+  iBlobsFacadeAbi,
+  iCreditFacadeAbi,
+  iCreditFacadeAddress,
+} from "@recallnet/contracts";
 
 import { RecallClient } from "../client.js";
 import {
@@ -24,16 +30,9 @@ import {
 } from "../errors.js";
 import { type Result } from "../utils.js";
 
-// Used for getBalance()
-export type CreditBalance = ContractFunctionReturnType<
-  typeof creditManagerAbi,
-  AbiStateMutability,
-  "getCreditBalance"
->;
-
 // Used for getAccount()
 export type CreditAccount = ContractFunctionReturnType<
-  typeof creditManagerAbi,
+  typeof iCreditFacadeAbi,
   AbiStateMutability,
   "getAccount"
 >;
@@ -44,57 +43,76 @@ export type CreditApproval = Pick<
 >;
 
 // Used for getCreditStats()
-export type CreditStats = ContractFunctionReturnType<
-  typeof creditManagerAbi,
-  AbiStateMutability,
-  "getCreditStats"
+export type CreditStats = Pick<
+  ContractFunctionReturnType<
+    typeof iBlobsFacadeAbi,
+    AbiStateMutability,
+    "getStats"
+  >,
+  | "balance"
+  | "creditSold"
+  | "creditCommitted"
+  | "creditDebited"
+  | "tokenCreditRate"
+  | "numAccounts"
 >;
 
 export type ApproveCreditParams = ContractFunctionArgs<
-  typeof creditManagerAbi,
+  typeof iCreditFacadeAbi,
   AbiStateMutability,
   "approveCredit"
 >;
 
+export type ApproveCreditOptions = {
+  creditLimit: bigint;
+  gasFeeLimit: bigint;
+  ttl: bigint;
+};
+
 // Used for revoke()
 export type RevokeCreditParams = ContractFunctionArgs<
-  typeof creditManagerAbi,
+  typeof iCreditFacadeAbi,
   AbiStateMutability,
   "revokeCredit"
 >;
 
 // Used for buyCredit()
 export type BuyCreditParams = ContractFunctionArgs<
-  typeof creditManagerAbi,
+  typeof iCreditFacadeAbi,
   AbiStateMutability,
   "buyCredit"
 >;
 
-// Used for getCreditBalance()
-export type GetCreditBalanceParams = ContractFunctionArgs<
-  typeof creditManagerAbi,
-  AbiStateMutability,
-  "getCreditBalance"
->;
-
 // Used for getAccount()
 export type GetAccountParams = ContractFunctionArgs<
-  typeof creditManagerAbi,
+  typeof iCreditFacadeAbi,
   AbiStateMutability,
   "getAccount"
 >;
 
 // Used for setAccountSponsor()
 export type SetAccountSponsorParams = ContractFunctionArgs<
-  typeof creditManagerAbi,
+  typeof iCreditFacadeAbi,
   AbiStateMutability,
   "setAccountSponsor"
+>;
+
+export type CreditBalance = Pick<
+  CreditAccount,
+  | "creditFree"
+  | "creditCommitted"
+  | "creditSponsor"
+  | "lastDebitEpoch"
+  | "approvalsTo"
+  | "approvalsFrom"
+  | "maxTtl"
+  | "gasAllowance"
 >;
 
 // Credit manager for buy, approving, revoking, and general credit operations
 export class CreditManager {
   client: RecallClient;
-  contract: GetContractReturnType<typeof creditManagerAbi, Client, Address>;
+  contract: GetContractReturnType<typeof iCreditFacadeAbi, Client, Address>;
 
   constructor(client: RecallClient, contractAddress?: Address) {
     this.client = client;
@@ -103,13 +121,13 @@ export class CreditManager {
       throw new Error("Client chain ID not found");
     }
     const deployedCreditManagerAddress = (
-      creditManagerAddress as Record<number, Address>
+      iCreditFacadeAddress as Record<number, Address>
     )[chainId];
     if (!deployedCreditManagerAddress) {
       throw new Error(`No contract address found for chain ID ${chainId}}`);
     }
     this.contract = getContract({
-      abi: creditManagerAbi,
+      abi: iCreditFacadeAbi,
       address: contractAddress || deployedCreditManagerAddress,
       client: {
         public: client.publicClient,
@@ -119,7 +137,7 @@ export class CreditManager {
   }
 
   getContract(): GetContractReturnType<
-    typeof creditManagerAbi,
+    typeof iCreditFacadeAbi,
     Client,
     Address
   > {
@@ -128,45 +146,61 @@ export class CreditManager {
 
   // Approve credit spending
   // TODO: maybe make the input params an object for easier optional params
-  async approve(
-    to: Address,
-    caller: Address[] = [],
-    creditLimit: bigint = 0n,
-    gasFeeLimit: bigint = 0n,
-    ttl: bigint = 0n,
-    from?: Address,
-  ): Promise<Result> {
+  async approve(to: Address, options?: ApproveCreditOptions): Promise<Result> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for approving credits");
     }
-    const fromAddress = from || this.client.walletClient.account.address;
+    let hash: Hex;
+    let tx: TransactionReceipt;
     try {
-      const args = [
-        fromAddress,
-        to,
-        caller,
-        creditLimit,
-        gasFeeLimit,
-        ttl,
-      ] satisfies ApproveCreditParams;
+      // TODO: a few things:
+      // 1. the facades don't allow you to pass a "null" `ttl` param, so we must make it
+      // required and do so by requiring "all or none" of the options. else, if only `to` is given,
+      // the FVM layer will handle null values internally.
+      // 2. the `caller` param is deprecated in `ipc`, so this should be removed in the future.
+      // 3. the overloaded type inference causes problems with the compiler, so our code here is
+      // rather duplicative. e.g., if you assign `args` a value from a ternary, the compiler
+      // will complain and won't let you coerce it to the right type.
       const gasPrice = await this.client.publicClient.getGasPrice();
-      const { request } = await this.contract.simulate.approveCredit<
-        Chain,
-        Account
-      >(args, {
-        account: this.client.walletClient.account,
-        gasPrice,
-      });
-      const hash = await this.client.walletClient.writeContract(request);
-      const tx = await this.client.publicClient.waitForTransactionReceipt({
-        hash,
-      });
+      if (options === undefined) {
+        const args = [to] satisfies ApproveCreditParams;
+        const { request } = await this.contract.simulate.approveCredit<
+          Chain,
+          Account
+        >(args, {
+          account: this.client.walletClient.account,
+          gasPrice,
+        });
+        hash = await this.client.walletClient.writeContract(request);
+        tx = await this.client.publicClient.waitForTransactionReceipt({
+          hash,
+        });
+      } else {
+        const args = [
+          to,
+          [],
+          options.creditLimit,
+          options.gasFeeLimit,
+          options.ttl,
+        ] satisfies ApproveCreditParams;
+        const { request } = await this.contract.simulate.approveCredit<
+          Chain,
+          Account
+        >(args, {
+          account: this.client.walletClient.account,
+          gasPrice,
+        });
+        hash = await this.client.walletClient.writeContract(request);
+        tx = await this.client.publicClient.waitForTransactionReceipt({
+          hash,
+        });
+      }
       return { meta: { tx }, result: {} };
     } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
         if (error.message.includes("does not match origin or caller")) {
           throw new InvalidValue(
-            `'from' address '${fromAddress}' does not match origin or caller '${this.client.walletClient.account.address}'`,
+            `address does not match origin or caller '${this.client.walletClient.account.address}'`,
           );
         }
         const { isActorNotFound, address } = isActorNotFoundError(error);
@@ -222,21 +256,12 @@ export class CreditManager {
   }
 
   // Revoke credit approval
-  async revoke(
-    to: Address,
-    requiredCaller: Address = to,
-    from?: Address,
-  ): Promise<Result> {
+  async revoke(to: Address): Promise<Result> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for revoking credits");
     }
-    const fromAddress = from || this.client.walletClient.account.address;
     try {
-      const args = [
-        fromAddress,
-        to,
-        requiredCaller,
-      ] satisfies RevokeCreditParams;
+      const args = [to] satisfies RevokeCreditParams; // TODO: remove once caller param is deprecated in `ipc`
       const gasPrice = await this.client.publicClient.getGasPrice();
       const { request } = await this.contract.simulate.revokeCredit<
         Chain,
@@ -255,7 +280,7 @@ export class CreditManager {
       if (error instanceof ContractFunctionExecutionError) {
         if (error.message.includes("does not match origin or caller")) {
           throw new InvalidValue(
-            `'from' address '${fromAddress}' does not match origin or caller '${this.client.walletClient.account.address}'`,
+            `address does not match origin or caller '${this.client.walletClient.account.address}'`,
           );
         }
         const { isActorNotFound, address } = isActorNotFoundError(error);
@@ -268,15 +293,14 @@ export class CreditManager {
   }
 
   // Set account sponsor
-  async setAccountSponsor(sponsor: Address, from?: Address): Promise<Result> {
+  async setAccountSponsor(sponsor: Address): Promise<Result> {
     if (!this.client.walletClient?.account) {
       throw new Error(
         "Wallet client is not initialized for setting account sponsor",
       );
     }
-    const fromAddress = from || this.client.walletClient.account.address;
     try {
-      const args = [fromAddress, sponsor] satisfies SetAccountSponsorParams;
+      const args = [sponsor] satisfies SetAccountSponsorParams;
       const gasPrice = await this.client.publicClient.getGasPrice();
       const { request } = await this.contract.simulate.setAccountSponsor<
         Chain,
@@ -324,7 +348,7 @@ export class CreditManager {
             capacityUsed: 0n,
             creditFree: 0n,
             creditCommitted: 0n,
-            creditSponsor: "0x0000000000000000000000000000000000000000",
+            creditSponsor: zeroAddress,
             lastDebitEpoch: 0n,
             approvalsTo: [],
             approvalsFrom: [],
@@ -376,11 +400,21 @@ export class CreditManager {
         throw new InvalidValue(
           "Must provide an address or connect a wallet client",
         );
-      const args = [forAddress] satisfies GetCreditBalanceParams;
-      const result = await this.contract.read.getCreditBalance(args, {
+      const args = [forAddress] satisfies GetAccountParams;
+      const result = await this.contract.read.getAccount(args, {
         blockNumber,
       });
-      return { result };
+      const creditBalance = {
+        creditFree: result.creditFree,
+        creditCommitted: result.creditCommitted,
+        creditSponsor: result.creditSponsor,
+        lastDebitEpoch: result.lastDebitEpoch,
+        approvalsTo: result.approvalsTo,
+        approvalsFrom: result.approvalsFrom,
+        maxTtl: result.maxTtl,
+        gasAllowance: result.gasAllowance,
+      } as CreditBalance;
+      return { result: creditBalance };
     } catch (error: unknown) {
       if (error instanceof InvalidValue) {
         throw error;
@@ -395,6 +429,7 @@ export class CreditManager {
             lastDebitEpoch: 0n,
             approvalsTo: [],
             approvalsFrom: [],
+            maxTtl: 0n,
             gasAllowance: 0n,
           } as CreditBalance;
           return { result: emptyBalance };
@@ -407,8 +442,25 @@ export class CreditManager {
   // Get credit stats
   async getCreditStats(blockNumber?: bigint): Promise<Result<CreditStats>> {
     try {
-      const result = await this.contract.read.getCreditStats({ blockNumber });
-      return { result };
+      // Technically, the same contract but different interface/ABI
+      const blobsContract = getContract({
+        abi: iBlobsFacadeAbi,
+        address: this.getContract().address,
+        client: {
+          public: this.client.publicClient,
+          wallet: this.client.walletClient!,
+        },
+      });
+      const result = await blobsContract.read.getStats({ blockNumber });
+      const creditStats = {
+        balance: result.balance,
+        creditSold: result.creditSold,
+        creditCommitted: result.creditCommitted,
+        creditDebited: result.creditDebited,
+        tokenCreditRate: result.tokenCreditRate,
+        numAccounts: result.numAccounts,
+      } as CreditStats;
+      return { result: creditStats };
     } catch (error: unknown) {
       throw new UnhandledCreditError(`Failed to get credit stats: ${error}`);
     }

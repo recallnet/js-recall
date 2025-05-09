@@ -3,9 +3,9 @@
 // https://github.com/Zondax/izari-filecoin/blob/master/src/utils/base32.ts
 // https://github.com/LinusU/base32-decode/blob/master/index.js
 
-const RFC4648 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-const RFC4648_HEX = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
-const CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+const RFC4648 = "abcdefghijklmnopqrstuvwxyz234567";
+const RFC4648_HEX = "0123456789abcdefghijklmnopqrstuv";
+const CROCKFORD = "0123456789abcdefghijklmnopqrstuv";
 
 export type base32Variant = "RFC3548" | "RFC4648" | "RFC4648-HEX" | "Crockford";
 export type base32Options = { padding: boolean };
@@ -18,7 +18,7 @@ export type base32Options = { padding: boolean };
  * @returns base32 encoded string
  */
 export function encode(
-  data: ArrayBuffer,
+  data: Uint8Array,
   variant: base32Variant = "RFC4648",
   options: base32Options = { padding: false },
 ) {
@@ -78,6 +78,7 @@ export function encode(
  */
 export function decode(input: string, variant: base32Variant = "RFC4648") {
   let alphabet: string;
+  input = input.toLowerCase();
 
   switch (variant) {
     case "RFC3548":
@@ -91,7 +92,7 @@ export function decode(input: string, variant: base32Variant = "RFC4648") {
       break;
     case "Crockford":
       alphabet = CROCKFORD;
-      input = input.toUpperCase().replace(/O/g, "0").replace(/[IL]/g, "1");
+      input = input.replace(/O/g, "0").replace(/[IL]/g, "1");
       break;
     default:
       throw new Error("Unknown base32 variant: " + variant);
@@ -112,7 +113,7 @@ export function decode(input: string, variant: base32Variant = "RFC4648") {
     }
   }
 
-  return output.buffer;
+  return output;
 }
 
 /**

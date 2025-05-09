@@ -9,7 +9,11 @@ import {
   useWriteContract,
 } from "wagmi";
 
-import { creditManagerAbi, creditManagerAddress } from "@recallnet/contracts";
+import {
+  iBlobsFacadeAbi,
+  iCreditFacadeAbi,
+  iCreditFacadeAddress,
+} from "@recallnet/contracts";
 
 import { createAccount } from "../actions/credits.js";
 
@@ -21,7 +25,7 @@ export function useCreditAccount(forAddress?: Address) {
   const address = forAddress ?? accountAddress;
 
   const contractAddress =
-    creditManagerAddress[chainId as keyof typeof creditManagerAddress];
+    iCreditFacadeAddress[chainId as keyof typeof iCreditFacadeAddress];
 
   const {
     error: createAccountError,
@@ -44,7 +48,7 @@ export function useCreditAccount(forAddress?: Address) {
     ...rest
   } = useReadContract({
     address: contractAddress,
-    abi: creditManagerAbi,
+    abi: iCreditFacadeAbi,
     functionName: "getAccount",
     args: [address!],
     query: {
@@ -87,11 +91,11 @@ export function useCreditApproval(to: Address, from?: Address) {
   const fromAddress = from ?? accountAddress;
 
   const contractAddress =
-    creditManagerAddress[chainId as keyof typeof creditManagerAddress];
+    iCreditFacadeAddress[chainId as keyof typeof iCreditFacadeAddress];
 
   return useReadContract({
     address: contractAddress,
-    abi: creditManagerAbi,
+    abi: iCreditFacadeAbi,
     functionName: "getCreditApproval",
     args: [fromAddress!, to],
     query: {
@@ -107,12 +111,12 @@ export function useCreditBalance(forAddress?: Address) {
   const address = forAddress ?? accountAddress;
 
   const contractAddress =
-    creditManagerAddress[chainId as keyof typeof creditManagerAddress];
+    iCreditFacadeAddress[chainId as keyof typeof iCreditFacadeAddress];
 
   return useReadContract({
     address: contractAddress,
-    abi: creditManagerAbi,
-    functionName: "getCreditBalance",
+    abi: iCreditFacadeAbi,
+    functionName: "getAccount",
     args: [address!],
     query: {
       enabled: !!address,
@@ -124,12 +128,12 @@ export function useCreditStats() {
   const chainId = useChainId();
 
   const contractAddress =
-    creditManagerAddress[chainId as keyof typeof creditManagerAddress];
+    iCreditFacadeAddress[chainId as keyof typeof iCreditFacadeAddress];
 
   return useReadContract({
     address: contractAddress,
-    abi: creditManagerAbi,
-    functionName: "getCreditStats",
+    abi: iBlobsFacadeAbi,
+    functionName: "getStats",
   });
 }
 
@@ -137,7 +141,7 @@ export function useApproveCredit() {
   const chainId = useChainId();
 
   const contractAddress =
-    creditManagerAddress[chainId as keyof typeof creditManagerAddress];
+    iCreditFacadeAddress[chainId as keyof typeof iCreditFacadeAddress];
 
   const { writeContract, writeContractAsync, ...rest } = useWriteContract();
 
@@ -145,7 +149,7 @@ export function useApproveCredit() {
     () =>
       ({
         address: contractAddress,
-        abi: creditManagerAbi,
+        abi: iCreditFacadeAbi,
         functionName: "approveCredit",
       }) as const,
     [contractAddress],
@@ -155,7 +159,6 @@ export function useApproveCredit() {
     (
       to: Address,
       options?: {
-        from: Address;
         limits?: {
           creditLimit: bigint;
           gasFeeLimit: bigint;
@@ -167,7 +170,6 @@ export function useApproveCredit() {
         writeContract({
           ...baseConfig,
           args: [
-            options.from,
             to,
             [],
             options.limits.creditLimit,
@@ -178,7 +180,7 @@ export function useApproveCredit() {
       } else if (options) {
         writeContract({
           ...baseConfig,
-          args: [options.from, to],
+          args: [to],
         });
       } else {
         writeContract({
@@ -194,8 +196,7 @@ export function useApproveCredit() {
     (
       to: Address,
       options?: {
-        from: Address;
-        limits?: {
+        limits: {
           creditLimit: bigint;
           gasFeeLimit: bigint;
           ttl: bigint;
@@ -206,18 +207,12 @@ export function useApproveCredit() {
         return writeContractAsync({
           ...baseConfig,
           args: [
-            options.from,
             to,
             [],
             options.limits.creditLimit,
             options.limits.gasFeeLimit,
             options.limits.ttl,
           ],
-        });
-      } else if (options) {
-        return writeContractAsync({
-          ...baseConfig,
-          args: [options.from, to],
         });
       } else {
         return writeContractAsync({
@@ -236,7 +231,7 @@ export function useBuyCredit() {
   const chainId = useChainId();
 
   const contractAddress =
-    creditManagerAddress[chainId as keyof typeof creditManagerAddress];
+    iCreditFacadeAddress[chainId as keyof typeof iCreditFacadeAddress];
 
   const { writeContract, writeContractAsync, ...rest } = useWriteContract();
 
@@ -244,7 +239,7 @@ export function useBuyCredit() {
     () =>
       ({
         address: contractAddress,
-        abi: creditManagerAbi,
+        abi: iCreditFacadeAbi,
         functionName: "buyCredit",
       }) as const,
     [contractAddress],
@@ -277,7 +272,7 @@ export function useRevokeCreditApproval() {
   const chainId = useChainId();
 
   const contractAddress =
-    creditManagerAddress[chainId as keyof typeof creditManagerAddress];
+    iCreditFacadeAddress[chainId as keyof typeof iCreditFacadeAddress];
 
   const { writeContract, writeContractAsync, ...rest } = useWriteContract();
 
@@ -285,7 +280,7 @@ export function useRevokeCreditApproval() {
     () =>
       ({
         address: contractAddress,
-        abi: creditManagerAbi,
+        abi: iCreditFacadeAbi,
         functionName: "revokeCredit",
       }) as const,
     [contractAddress],
@@ -316,7 +311,7 @@ export function useSetAccountSponsor() {
   const chainId = useChainId();
 
   const contractAddress =
-    creditManagerAddress[chainId as keyof typeof creditManagerAddress];
+    iCreditFacadeAddress[chainId as keyof typeof iCreditFacadeAddress];
 
   const { writeContract, writeContractAsync, ...rest } = useWriteContract();
 
@@ -324,26 +319,26 @@ export function useSetAccountSponsor() {
     () =>
       ({
         address: contractAddress,
-        abi: creditManagerAbi,
+        abi: iCreditFacadeAbi,
         functionName: "setAccountSponsor",
       }) as const,
     [contractAddress],
   );
 
   const setAccountSponsor = useCallback(
-    (from: Address, sponsor: Address) =>
+    (sponsor: Address) =>
       writeContract({
         ...baseConfig,
-        args: [from, sponsor],
+        args: [sponsor],
       }),
     [baseConfig, writeContract],
   );
 
   const setAccountSponsorAsync = useCallback(
-    (from: Address, sponsor: Address) =>
+    (sponsor: Address) =>
       writeContractAsync({
         ...baseConfig,
-        args: [from, sponsor],
+        args: [sponsor],
       }),
     [baseConfig, writeContractAsync],
   );
@@ -359,7 +354,7 @@ export function useDeleteAccountSponsor() {
   const chainId = useChainId();
 
   const contractAddress =
-    creditManagerAddress[chainId as keyof typeof creditManagerAddress];
+    iCreditFacadeAddress[chainId as keyof typeof iCreditFacadeAddress];
 
   const { writeContract, writeContractAsync, ...rest } = useWriteContract();
 
@@ -367,26 +362,26 @@ export function useDeleteAccountSponsor() {
     () =>
       ({
         address: contractAddress,
-        abi: creditManagerAbi,
+        abi: iCreditFacadeAbi,
         functionName: "setAccountSponsor",
       }) as const,
     [contractAddress],
   );
 
   const deleteAccountSponsor = useCallback(
-    (from: Address) =>
+    () =>
       writeContract({
         ...baseConfig,
-        args: [from, "0x0000000000000000000000000000000000000000"],
+        args: ["0x0000000000000000000000000000000000000000"],
       }),
     [baseConfig, writeContract],
   );
 
   const deleteAccountSponsorAsync = useCallback(
-    (from: Address) =>
+    () =>
       writeContractAsync({
         ...baseConfig,
-        args: [from, "0x0000000000000000000000000000000000000000"],
+        args: ["0x0000000000000000000000000000000000000000"],
       }),
     [baseConfig, writeContractAsync],
   );

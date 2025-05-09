@@ -2,7 +2,7 @@
 import { expect } from "chai";
 import { describe, it } from "mocha";
 import { readFileSync } from "node:fs";
-import * as u8a from "uint8arrays";
+import { bytesToHex, hexToBytes } from "viem";
 
 import { InvalidId, InvalidProtocolIndicator } from "../src/address/errors.js";
 import {
@@ -49,10 +49,10 @@ describe("address", function () {
               const addr = Address.fromString(string);
 
               expect(addr.toString()).to.equal(string);
-              expect(u8a.toString(addr.toBytes(), "hex")).to.equal(bytes);
+              expect(bytesToHex(addr.toBytes()).slice(2)).to.equal(bytes);
               expect(addr.getProtocol()).to.equal(protocol);
               expect(addr.getNetworkPrefix()).to.equal(network);
-              expect(u8a.toString(addr.getPayload(), "hex")).to.equal(payload);
+              expect(bytesToHex(addr.getPayload()).slice(2)).to.equal(payload);
 
               if (Address.isAddressId(addr)) {
                 expect(addr.getId()).to.equal(string.substring(2));
@@ -88,15 +88,15 @@ describe("address", function () {
           ({ string, payload, bytes, protocol, network }, index) => {
             try {
               const addr = Address.fromBytes(
-                u8a.fromString(bytes, "hex"),
+                hexToBytes(`0x${bytes}`),
                 network as NetworkPrefix,
               );
 
               expect(addr.toString()).to.equal(string);
-              expect(u8a.toString(addr.toBytes(), "hex")).to.equal(bytes);
+              expect(bytesToHex(addr.toBytes()).slice(2)).to.equal(bytes);
               expect(addr.getProtocol()).to.equal(protocol);
               expect(addr.getNetworkPrefix()).to.equal(network);
-              expect(u8a.toString(addr.getPayload(), "hex")).to.equal(payload);
+              expect(bytesToHex(addr.getPayload()).slice(2)).to.equal(payload);
 
               if (Address.isAddressId(addr))
                 expect(addr.getId()).to.equal(string.substring(2));
@@ -158,7 +158,7 @@ describe("address", function () {
         it("testnet ID", async () => {
           const addr = Address.fromString("t08666");
           expect(addr.toString()).to.equal("t08666");
-          expect(u8a.toString(addr.toBytes(), "hex")).to.equal("00da43");
+          expect(bytesToHex(addr.toBytes())).to.equal("0x00da43");
           expect(addr.getProtocol()).to.equal(ProtocolIndicator.ID);
           expect(addr.getNetworkPrefix()).to.equal(NetworkPrefix.Testnet);
           expect(Address.isAddressId(addr)).to.equal(true);
@@ -171,14 +171,14 @@ describe("address", function () {
           expect(addr.toString()).to.equal(
             "t2o4gsdesxam4qui3pnd4e54ouglffoqwecfnrdzq",
           );
-          expect(u8a.toString(addr.toBytes(), "hex")).to.equal(
-            "02770d21925703390a236f68f84ef1d432ca5742c4",
+          expect(bytesToHex(addr.toBytes())).to.equal(
+            "0x02770d21925703390a236f68f84ef1d432ca5742c4",
           );
           expect(addr.getProtocol()).to.equal(ProtocolIndicator.ACTOR);
           expect(addr.getNetworkPrefix()).to.equal(NetworkPrefix.Testnet);
           expect(Address.isAddressActor(addr)).to.equal(true);
           const addrFromBytes = Address.fromBytes(
-            u8a.fromString("02770d21925703390a236f68f84ef1d432ca5742c4", "hex"),
+            hexToBytes(`0x${"02770d21925703390a236f68f84ef1d432ca5742c4"}`),
             NetworkPrefix.Testnet,
           );
           expect(addrFromBytes.toString()).to.equal(
@@ -189,7 +189,7 @@ describe("address", function () {
         it("mainnet", async () => {
           const addr = Address.fromString("f08666");
           expect(addr.toString()).to.equal("f08666");
-          expect(u8a.toString(addr.toBytes(), "hex")).to.equal("00da43");
+          expect(bytesToHex(addr.toBytes())).to.equal("0x00da43");
           expect(addr.getProtocol()).to.equal(ProtocolIndicator.ID);
           expect(addr.getNetworkPrefix()).to.equal(NetworkPrefix.Mainnet);
           expect(Address.isAddressId(addr)).to.equal(true);
@@ -221,9 +221,7 @@ describe("address", function () {
 
           const addr = Address.fromString(addrStr);
           expect(addr.toString()).to.equal(addrStr);
-          expect(u8a.toString(addr.toBytes(), "hex")).to.equal(
-            "00ffffffffffffffff7f",
-          );
+          expect(bytesToHex(addr.toBytes())).to.equal("0x00ffffffffffffffff7f");
           expect(addr.getProtocol()).to.equal(ProtocolIndicator.ID);
           expect(addr.getNetworkPrefix()).to.equal(NetworkPrefix.Mainnet);
         });
@@ -232,22 +230,22 @@ describe("address", function () {
       describe("from bytes", () => {
         it("testnet", async () => {
           const addr = Address.fromBytes(
-            u8a.fromString("00da43", "hex"),
+            hexToBytes(`0x${"00da43"}`),
             NetworkPrefix.Testnet,
           );
           expect(addr.toString()).to.equal("t08666");
-          expect(u8a.toString(addr.toBytes(), "hex")).to.equal("00da43");
+          expect(bytesToHex(addr.toBytes())).to.equal("0x00da43");
           expect(addr.getProtocol()).to.equal(ProtocolIndicator.ID);
           expect(addr.getNetworkPrefix()).to.equal(NetworkPrefix.Testnet);
         });
 
         it("mainnet", async () => {
           const addr = Address.fromBytes(
-            u8a.fromString("00da43", "hex"),
+            hexToBytes(`0x${"00da43"}`),
             NetworkPrefix.Mainnet,
           );
           expect(addr.toString()).to.equal("f08666");
-          expect(u8a.toString(addr.toBytes(), "hex")).to.equal("00da43");
+          expect(bytesToHex(addr.toBytes())).to.equal("0x00da43");
           expect(addr.getProtocol()).to.equal(ProtocolIndicator.ID);
           expect(addr.getNetworkPrefix()).to.equal(NetworkPrefix.Mainnet);
         });
@@ -255,7 +253,7 @@ describe("address", function () {
         it("exceed max value", async () => {
           expect(() => {
             Address.fromBytes(
-              u8a.fromString("0080808080808080808001", "hex"),
+              hexToBytes(`0x${"0080808080808080808001"}`),
               NetworkPrefix.Mainnet,
             );
           }).to.throw(InvalidId);
@@ -263,13 +261,11 @@ describe("address", function () {
 
         it("max allowed value", async () => {
           const addr = Address.fromBytes(
-            u8a.fromString("00ffffffffffffffff7f", "hex"),
+            hexToBytes(`0x${"00ffffffffffffffff7f"}`),
             NetworkPrefix.Mainnet,
           );
           expect(addr.toString()).to.equal("f09223372036854775807");
-          expect(u8a.toString(addr.toBytes(), "hex")).to.equal(
-            "00ffffffffffffffff7f",
-          );
+          expect(bytesToHex(addr.toBytes())).to.equal("0x00ffffffffffffffff7f");
           expect(addr.getProtocol()).to.equal(ProtocolIndicator.ID);
           expect(addr.getNetworkPrefix()).to.equal(NetworkPrefix.Mainnet);
         });
@@ -317,7 +313,7 @@ describe("address", function () {
         expect(() => {
           new AddressDelegated(
             "10",
-            u8a.fromString("ff00000000000000000000000000000000000001", "hex"),
+            hexToBytes(`0xff00000000000000000000000000000000000001`),
             NetworkPrefix.Mainnet,
           );
         }).to.throw("masked-id eth addresses not allowed");
@@ -335,7 +331,7 @@ describe("address", function () {
         expect(() => {
           const addr = new AddressDelegated(
             "11",
-            u8a.fromString("111111", "hex"),
+            hexToBytes("0x111111"),
             NetworkPrefix.Mainnet,
           );
           FilEthAddress.fromString(addr.toString());
@@ -346,7 +342,7 @@ describe("address", function () {
         expect(() => {
           const addr = new AddressDelegated(
             "10",
-            u8a.fromString("111111", "hex"),
+            hexToBytes("0x111111"),
             NetworkPrefix.Mainnet,
           );
           FilEthAddress.fromString(addr.toString());
@@ -356,7 +352,7 @@ describe("address", function () {
       it("masked-id eth address", async () => {
         expect(() => {
           new FilEthAddress(
-            u8a.fromString("ff00000000000000000000000000000000000001", "hex"),
+            hexToBytes("0xff00000000000000000000000000000000000001"),
             NetworkPrefix.Mainnet,
           );
         }).to.throw("masked-id eth addresses not allowed");
@@ -370,8 +366,8 @@ describe("address", function () {
         expect(Address.isFilEthAddress(addr) === true);
         if (Address.isFilEthAddress(addr)) {
           expect(addr.getNamespace()).to.equal("10");
-          expect(u8a.toString(addr.getSubAddress(), "hex")).to.equal(
-            "23a7f3c5c663d71151f40c8610c01150c9660795",
+          expect(bytesToHex(addr.getSubAddress())).to.equal(
+            "0x23a7f3c5c663d71151f40c8610c01150c9660795",
           );
         }
       });

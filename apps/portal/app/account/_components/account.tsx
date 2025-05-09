@@ -133,12 +133,12 @@ export function Account() {
       });
       return;
     }
-    setAccountSponsor(address, sponsorAddress);
+    setAccountSponsor(sponsorAddress);
   };
 
   const handleDeleteSponsor = () => {
     if (!address) return;
-    deleteAccountSponsor(address);
+    deleteAccountSponsor();
   };
 
   const handleFaucet = () => {
