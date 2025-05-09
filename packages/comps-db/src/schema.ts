@@ -16,16 +16,14 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
-// Add the enum type for cross chain trading
-export const CrossChainTradingType = {
-  DISALLOWALL: "DISALLOWALL",
-  DISALLOWXPARENT: "DISALLOWXPARENT",
-  ALLOW: "ALLOW",
-} as const;
+export const crossChainTradingType = pgEnum("cross_chain_trading_type", [
+  "disallowAll",
+  "disallowXParent",
+  "allow",
+]);
 
 export type CrossChainTradingType =
-  (typeof CrossChainTradingType)[keyof typeof CrossChainTradingType];
-
+  (typeof crossChainTradingType.enumValues)[number];
 export const teams = pgTable(
   "teams",
   {
