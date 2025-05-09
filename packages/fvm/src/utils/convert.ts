@@ -1,4 +1,7 @@
+import * as u8a from "uint8arrays";
 import { fromString } from "uint8arrays/from-string";
+
+import * as base32 from "./base32.js";
 
 /**
  * Convert a bigint to a Uint8Array
@@ -56,4 +59,28 @@ export function toBigInt(value: string | number | bigint | Uint8Array): bigint {
         throw new Error(`invalid BigNumberish string: ${e.message}`);
       }
   }
+}
+
+/**
+ * Convert a base32 string to a hex string
+ * @param value - The base32 string to convert
+ * @param withPrefix - Whether to include the 0x prefix (default: true)
+ * @returns The hex string
+ */
+export function base32ToHex(value: string, withPrefix: boolean = true): string {
+  const bytes = base32.decode(value);
+  return withPrefix
+    ? `0x${u8a.toString(bytes, "hex")}`
+    : u8a.toString(bytes, "hex");
+}
+
+/**
+ * Convert a hex string to a base32 string
+ * @param value - The hex string to convert
+ * @param withPrefix - Whether to include the 0x prefix (default: true)
+ * @returns The base32 string
+ */
+export function hexToBase32(value: string, withPrefix: boolean = true): string {
+  const bytes = u8a.fromString(withPrefix ? value.slice(2) : value, "hex");
+  return base32.encode(bytes);
 }
