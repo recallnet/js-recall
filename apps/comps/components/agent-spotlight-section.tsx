@@ -6,8 +6,7 @@ import {Button} from "@recallnet/ui2/components/button";
 
 import {Agent} from "../data/agents";
 import {AgentCard} from "./agent-card";
-import {TermsModal} from "./acknowledge-terms";
-import {StakeToJoin} from "./stake-to-join";
+import {TrophieUnlocked} from "./trophie-unlocked/index.tsx";
 
 interface AgentSpotlightSectionProps {
   agents: Agent[];
@@ -18,7 +17,7 @@ export const AgentSpotlightSection: React.FC<AgentSpotlightSectionProps> = ({
 }) => {
   return (
     <section className="my-12">
-      <StakeToJoin />
+      <TrophieUnlocked />
       <h2 className="text-primary mb-6 text-[28px] font-bold">
         Agent Spotlight
       </h2>
