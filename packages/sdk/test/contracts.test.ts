@@ -247,7 +247,7 @@ describe("contracts", function () {
       });
 
       // TODO: the facades do not work with the `query` method
-      it.skip("should query objects", async () => {
+      it("should query objects", async () => {
         let {
           result: { objects, commonPrefixes },
         } = await bucketManager.query(bucket, { prefix: "hello/" });
