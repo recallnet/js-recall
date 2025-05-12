@@ -634,7 +634,7 @@ importers:
         version: 4.2.9
       viem:
         specifier: ^2.22.9
-        version: 2.28.1(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.2)
+        version: 2.28.1(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.4)
     devDependencies:
       '@recallnet/eslint-config':
         specifier: workspace:*
