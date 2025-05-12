@@ -575,7 +575,7 @@ describe("Specific Chains", () => {
     // expect(balanceResponse.success).toBe(true);
 
     // // Target token we want to purchase
-    const targetTokenAddress = "0xc7edf7b7b3667a06992508e7b156eff794a9e1c8";
+    const targetTokenAddress = "0x0b3e328455c4059eeb9e3f84b5543f74e24e7e1b";
 
     // // First try to find USDC
     const usdcAddress = config.specificChainTokens.optimism.usdc;
