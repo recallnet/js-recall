@@ -1,4 +1,4 @@
-import { ArrowLeftIcon, Share1Icon } from "@radix-ui/react-icons";
+import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
@@ -10,8 +10,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
-  TableHeader,
   TableRow,
 } from "@recallnet/ui2/components/table";
 import {
