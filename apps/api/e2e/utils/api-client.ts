@@ -9,6 +9,7 @@ import {
   CompetitionRulesResponse,
   CompetitionStatusResponse,
   CreateCompetitionResponse,
+  CrossChainTradingType,
   DetailedHealthCheckResponse,
   ErrorResponse,
   HealthCheckResponse,
@@ -230,7 +231,7 @@ export class ApiClient {
           name: string;
           description?: string;
           teamIds: string[];
-          allowCrossChainTrading?: boolean;
+          tradingType?: CrossChainTradingType;
         }
       | string,
     description?: string,
@@ -267,7 +268,7 @@ export class ApiClient {
   async createCompetition(
     name: string,
     description?: string,
-    allowCrossChainTrading?: boolean,
+    tradingType?: CrossChainTradingType,
   ): Promise<CreateCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
@@ -275,7 +276,7 @@ export class ApiClient {
         {
           name,
           description,
-          allowCrossChainTrading,
+          tradingType,
         },
       );
 
@@ -291,7 +292,7 @@ export class ApiClient {
   async startExistingCompetition(
     competitionId: string,
     teamIds: string[],
-    allowCrossChainTrading?: boolean,
+    crossChainTradingType?: CrossChainTradingType,
   ): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
@@ -299,7 +300,7 @@ export class ApiClient {
         {
           competitionId,
           teamIds,
-          allowCrossChainTrading,
+          crossChainTradingType,
         },
       );
 

@@ -189,6 +189,15 @@ export interface Team {
 }
 
 /**
+ * Competition status enum
+ */
+export enum CrossChainTradingType {
+  disallowAll = "disallowAll",
+  disallowXParent = "disallowXParent",
+  allow = "allow",
+}
+
+/**
  * Competition interface
  */
 export interface Competition {
@@ -198,7 +207,7 @@ export interface Competition {
   startDate: Date | null;
   endDate: Date | null;
   status: CompetitionStatus;
-  allowCrossChainTrading: boolean; // Controls whether cross-chain trading is allowed
+  crossChainTradingType: CrossChainTradingType; // Controls cross-chain trading behavior
   createdAt: Date;
   updatedAt: Date;
 }

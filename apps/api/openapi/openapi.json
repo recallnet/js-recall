@@ -1259,11 +1259,16 @@
                     "description": "Competition description",
                     "example": "A trading competition for the spring semester"
                   },
-                  "allowCrossChainTrading": {
-                    "type": "boolean",
-                    "description": "Whether to allow cross-chain trading in this competition",
-                    "default": false,
-                    "example": false
+                  "tradingType": {
+                    "type": "string",
+                    "description": "The type of cross-chain trading to allow in this competition",
+                    "enum": [
+                      "disallowAll",
+                      "disallowXParent",
+                      "allow"
+                    ],
+                    "default": "disallowAll",
+                    "example": "disallowAll"
                   }
                 }
               }
@@ -1306,9 +1311,14 @@
                           ],
                           "description": "Competition status"
                         },
-                        "allowCrossChainTrading": {
-                          "type": "boolean",
-                          "description": "Whether cross-chain trading is allowed in this competition"
+                        "crossChainTradingType": {
+                          "type": "string",
+                          "enum": [
+                            "disallowAll",
+                            "disallowXParent",
+                            "allow"
+                          ],
+                          "description": "The type of cross-chain trading allowed in this competition"
                         },
                         "createdAt": {
                           "type": "string",
@@ -1377,11 +1387,16 @@
                     },
                     "description": "Array of team IDs to include in the competition"
                   },
-                  "allowCrossChainTrading": {
-                    "type": "boolean",
-                    "description": "Whether to allow cross-chain trading in this competition (used when creating a new competition)",
-                    "default": false,
-                    "example": false
+                  "tradingType": {
+                    "type": "string",
+                    "description": "Type of cross-chain trading to allow in this competition (used when creating a new competition)",
+                    "enum": [
+                      "disallowAll",
+                      "disallowXParent",
+                      "allow"
+                    ],
+                    "default": "disallowAll",
+                    "example": "disallowAll"
                   }
                 }
               }
@@ -1435,9 +1450,14 @@
                           ],
                           "description": "Competition status"
                         },
-                        "allowCrossChainTrading": {
-                          "type": "boolean",
-                          "description": "Whether cross-chain trading is allowed in this competition"
+                        "crossChainTradingType": {
+                          "type": "string",
+                          "enum": [
+                            "disallowAll",
+                            "disallowXParent",
+                            "allow"
+                          ],
+                          "description": "Type of cross-chain trading allowed in this competition"
                         },
                         "teamIds": {
                           "type": "array",
@@ -1545,9 +1565,14 @@
                           ],
                           "description": "Competition status (completed)"
                         },
-                        "allowCrossChainTrading": {
-                          "type": "boolean",
-                          "description": "Whether cross-chain trading is allowed in this competition"
+                        "crossChainTradingType": {
+                          "type": "string",
+                          "enum": [
+                            "disallowAll",
+                            "disallowXParent",
+                            "allow"
+                          ],
+                          "description": "Type of cross-chain trading allowed in this competition"
                         }
                       }
                     },
@@ -1750,9 +1775,14 @@
                           ],
                           "description": "Competition status"
                         },
-                        "allowCrossChainTrading": {
-                          "type": "boolean",
-                          "description": "Whether cross-chain trading is allowed in this competition"
+                        "crossChainTradingType": {
+                          "type": "string",
+                          "enum": [
+                            "disallowAll",
+                            "disallowXParent",
+                            "allow"
+                          ],
+                          "description": "Type of cross-chain trading allowed in this competition"
                         }
                       }
                     },
@@ -2214,6 +2244,15 @@
                           ],
                           "description": "Competition status"
                         },
+                        "crossChainTradingType": {
+                          "type": "string",
+                          "enum": [
+                            "disallowAll",
+                            "disallowXParent",
+                            "allow"
+                          ],
+                          "description": "The type of cross-chain trading allowed in this competition"
+                        },
                         "createdAt": {
                           "type": "string",
                           "format": "date-time",
@@ -2391,9 +2430,14 @@
                             ],
                             "description": "Competition status (always PENDING)"
                           },
-                          "allowCrossChainTrading": {
-                            "type": "boolean",
-                            "description": "Whether cross-chain trading is allowed"
+                          "crossChainTradingType": {
+                            "type": "string",
+                            "enum": [
+                              "disallowAll",
+                              "disallowXParent",
+                              "allow"
+                            ],
+                            "description": "The type of cross-chain trading allowed in this competition"
                           },
                           "createdAt": {
                             "type": "string",

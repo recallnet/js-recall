@@ -14,7 +14,7 @@ import {
 } from "@/database/repositories/team-repository.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
-import { CompetitionStatus } from "@/types/index.js";
+import { CompetitionStatus, CrossChainTradingType } from "@/types/index.js";
 
 export function makeAdminController(services: ServiceRegistry) {
   /**
@@ -294,7 +294,7 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async createCompetition(req: Request, res: Response, next: NextFunction) {
       try {
-        const { name, description, allowCrossChainTrading } = req.body;
+        const { name, description, tradingType } = req.body;
 
         // Validate required parameters
         if (!name) {
@@ -305,7 +305,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const competition = await services.competitionManager.createCompetition(
           name,
           description,
-          allowCrossChainTrading === true, // Convert to boolean explicitly
+          tradingType || CrossChainTradingType.disallowAll,
         );
 
         // Return the created competition
@@ -325,13 +325,8 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async startCompetition(req: Request, res: Response, next: NextFunction) {
       try {
-        const {
-          competitionId,
-          name,
-          description,
-          teamIds,
-          allowCrossChainTrading,
-        } = req.body;
+        const { competitionId, name, description, teamIds, tradingType } =
+          req.body;
 
         // Validate required parameters
         if (!teamIds || !Array.isArray(teamIds) || teamIds.length === 0) {
@@ -373,7 +368,7 @@ export function makeAdminController(services: ServiceRegistry) {
           competition = await services.competitionManager.createCompetition(
             name,
             description,
-            allowCrossChainTrading === true, // Pass the cross-chain trading parameter
+            tradingType || CrossChainTradingType.disallowAll,
           );
         }
 

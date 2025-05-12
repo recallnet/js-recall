@@ -1,5 +1,6 @@
 import { features } from "@/config/index.js";
 import { findActive } from "@/database/repositories/competition-repository.js";
+import { CrossChainTradingType } from "@/types/index.js";
 
 /**
  * Configuration Service
@@ -17,16 +18,16 @@ export class ConfigurationService {
 
       if (activeCompetition) {
         // Override the environment-based setting with competition-specific settings
-        features.ALLOW_CROSS_CHAIN_TRADING =
-          activeCompetition.allowCrossChainTrading;
+        features.CROSS_CHAIN_TRADING_TYPE =
+          activeCompetition.crossChainTradingType as CrossChainTradingType;
 
         console.log(
-          `[ConfigurationService] Updated cross-chain trading setting from competition ${activeCompetition.id}: ${features.ALLOW_CROSS_CHAIN_TRADING}`,
+          `[ConfigurationService] Updated cross-chain trading setting from competition ${activeCompetition.id}: ${features.CROSS_CHAIN_TRADING_TYPE}`,
         );
       } else {
         // No active competition, keep the environment variable setting
         console.log(
-          `[ConfigurationService] No active competition, using environment setting for cross-chain trading: ${features.ALLOW_CROSS_CHAIN_TRADING}`,
+          `[ConfigurationService] No active competition, using environment setting for cross-chain trading: ${features.CROSS_CHAIN_TRADING_TYPE}`,
         );
       }
     } catch (error) {

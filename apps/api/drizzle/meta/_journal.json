@@ -15,6 +15,13 @@
       "when": 1746735965686,
       "tag": "0001_lame_the_fallen",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1746803680393,
+      "tag": "0002_exotic_wendell_vaughn",
+      "breakpoints": true
     }
   ]
 }

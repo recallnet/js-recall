@@ -202,22 +202,38 @@ export class TradeSimulator {
         };
       }
 
-      // Check for cross-chain trades if not allowed
-      if (
-        !features.ALLOW_CROSS_CHAIN_TRADING &&
-        (fromTokenChain !== toTokenChain ||
-          (fromTokenSpecificChain &&
-            toTokenSpecificChain &&
-            fromTokenSpecificChain !== toTokenSpecificChain))
-      ) {
-        console.log(
-          `[TradeSimulator] Cross-chain trading is disabled. Cannot trade between ${fromTokenChain}(${fromTokenSpecificChain || "none"}) and ${toTokenChain}(${toTokenSpecificChain || "none"})`,
-        );
-        return {
-          success: false,
-          error:
-            "Cross-chain trading is disabled. Both tokens must be on the same blockchain.",
-        };
+      switch (features.CROSS_CHAIN_TRADING_TYPE) {
+        case "disallowXParent":
+          // Check if the tokens are on the same chain
+          if (fromTokenChain !== toTokenChain) {
+            console.log(
+              `[TradeSimulator] Cross-parent chain trading is disabled. Cannot trade between ${fromTokenChain} and ${toTokenChain}`,
+            );
+            return {
+              success: false,
+              error:
+                "Cross-parent chain trading is disabled. Both tokens must be on the same parent blockchain.",
+            };
+          }
+          break;
+        case "disallowAll":
+          // Check if the tokens are on the same chain
+          if (
+            fromTokenChain !== toTokenChain ||
+            (fromTokenSpecificChain &&
+              toTokenSpecificChain &&
+              fromTokenSpecificChain !== toTokenSpecificChain)
+          ) {
+            console.log(
+              `[TradeSimulator] Cross-chain trading is disabled. Cannot trade between ${fromTokenChain}(${fromTokenSpecificChain || "none"}) and ${toTokenChain}(${toTokenSpecificChain || "none"})`,
+            );
+            return {
+              success: false,
+              error:
+                "Cross-chain trading is disabled. Both tokens must be on the same blockchain.",
+            };
+          }
+          break;
       }
 
       // Calculate the trade using USD values
@@ -239,24 +255,6 @@ export class TradeSimulator {
         return {
           success: false,
           error: "Insufficient balance",
-        };
-      }
-
-      // Check for cross-chain trades if not allowed
-      if (
-        !features.ALLOW_CROSS_CHAIN_TRADING &&
-        (fromTokenChain !== toTokenChain ||
-          (fromTokenSpecificChain &&
-            toTokenSpecificChain &&
-            fromTokenSpecificChain !== toTokenSpecificChain))
-      ) {
-        console.log(
-          `[TradeSimulator] Cross-chain trading is disabled. Cannot trade between ${fromTokenChain}(${fromTokenSpecificChain || "none"}) and ${toTokenChain}(${toTokenSpecificChain || "none"})`,
-        );
-        return {
-          success: false,
-          error:
-            "Cross-chain trading is disabled. Both tokens must be on the same blockchain.",
         };
       }
 
