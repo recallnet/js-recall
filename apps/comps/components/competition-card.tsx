@@ -30,17 +30,12 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
           />
         )}
       </div>
-      <p
-        className="text-primary mb-6 mt-4 text-ellipsis text-xl font-bold"
-        title={competition.name}
-      >
-        {competition.name}
-      </p>
+      <h1 className="mb-6 mt-4 text-xl font-bold">{competition.name}</h1>
       <div className="flex items-end justify-between">
         <div>
-          <h4 className="text-secondary-foreground mb-1 text-xs font-semibold uppercase">
+          <span className="text-secondary-foreground mb-1 text-xs font-semibold uppercase">
             REWARDS
-          </h4>
+          </span>
           {competition.rewards.length > 0 && (
             <div className="flex gap-2">
               {competition.rewards.map((reward, index) => (

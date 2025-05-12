@@ -32,7 +32,10 @@ export const UpComingCompetition: React.FC<UpComingCompetitionProps> = ({
         Competition
       </h1>
 
-      <div className="grid w-full grid-cols-1 gap-6 md:grid-cols-5">
+      <div
+        className="grid w-full gap-6 md:w-3/4"
+        style={{ gridTemplateColumns: "auto 1fr 1fr 1fr 1fr" }}
+      >
         <div>
           <h2 className="text-secondary-foreground mb-2 text-xs uppercase">
             SKILLS
