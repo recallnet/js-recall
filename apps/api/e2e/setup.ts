@@ -59,35 +59,9 @@ export async function setup() {
     (arg) => arg.includes("base-trades.test") || arg.includes("base-trades"),
   );
 
-  // More flexible matching for Vitest
-  const testNameToFind =
-    "team can execute a trade buying a token with a very small price";
-  const isSmallPriceTradeTest = (() => {
-    const hasFilePattern = args.some((arg) => arg.includes("trading.test"));
-
-    const hasTestNamePattern = args.some((arg, index) => {
-      // Normalize the argument
-      const normalizedArg = arg.toLowerCase().replace(/['"\\]/g, "");
-
-      // Check for direct inclusion
-      if (normalizedArg.includes(testNameToFind.toLowerCase())) {
-        return true;
-      }
-
-      // Check if this is a flag and the next arg has the test name
-      if (
-        (arg === "-t" || arg === "--test" || arg === "--testNamePattern") &&
-        index < args.length - 1
-      ) {
-        const nextArg = args[index + 1]?.toLowerCase().replace(/['"\\]/g, "");
-        return nextArg?.includes(testNameToFind.toLowerCase());
-      }
-
-      return false;
-    });
-
-    return hasFilePattern && hasTestNamePattern;
-  })();
+  const isSmallPriceTradeTest = args.some(
+    (arg) => arg.includes("small-prices.test") || arg.includes("small-prices"),
+  );
 
   if (envTestExists) {
     // Save original values for debugging
