@@ -1,8 +1,8 @@
 import { and, asc, desc, eq, gt, sql } from "drizzle-orm";
 
-import { InsertPrice, prices } from "@recallnet/comps-db/schema";
-
 import { db } from "@/database/db.js";
+import { prices } from "@/database/schema/trading/defs.js";
+import { InsertPrice } from "@/database/schema/trading/types.js";
 import { SpecificChain } from "@/types/index.js";
 
 /**

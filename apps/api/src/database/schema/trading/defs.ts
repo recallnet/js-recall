@@ -1,14 +1,10 @@
-import { sql } from "drizzle-orm";
 import {
   boolean,
   foreignKey,
   index,
   integer,
-  jsonb,
   numeric,
-  pgEnum,
-  pgTable,
-  primaryKey,
+  pgSchema,
   serial,
   text,
   timestamp,
@@ -17,105 +13,36 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
-export const crossChainTradingType = pgEnum("cross_chain_trading_type", [
-  "disallowAll",
-  "disallowXParent",
-  "allow",
-]);
+import { competitions, teams } from "../core/defs.js";
 
-export const teams = pgTable(
-  "teams",
-  {
-    id: uuid().primaryKey().notNull(),
-    name: varchar({ length: 100 }).notNull(),
-    email: varchar({ length: 100 }).notNull(),
-    contactPerson: varchar("contact_person", { length: 100 }).notNull(),
-    apiKey: varchar("api_key", { length: 400 }).notNull(),
-    walletAddress: varchar("wallet_address", { length: 42 }),
-    bucketAddresses: text("bucket_addresses").array(),
-    metadata: jsonb(),
-    isAdmin: boolean("is_admin").default(false),
-    active: boolean().default(false),
-    deactivationReason: text("deactivation_reason"),
-    deactivationDate: timestamp("deactivation_date", {
-      withTimezone: true,
-    }),
-    createdAt: timestamp("created_at", {
-      withTimezone: true,
-    }).defaultNow(),
-    updatedAt: timestamp("updated_at", {
-      withTimezone: true,
-    }).defaultNow(),
-  },
-  (table) => [
-    index("idx_teams_active").on(table.active),
-    index("idx_teams_api_key").on(table.apiKey),
-    index("idx_teams_is_admin").on(table.isAdmin),
-    index("idx_teams_metadata_ref_name").using(
-      "btree",
-      sql`(((metadata -> 'ref'::text) ->> 'name'::text))`,
-    ),
-    unique("teams_email_key").on(table.email),
-    unique("teams_api_key_key").on(table.apiKey),
-    unique("teams_wallet_address_key").on(table.walletAddress),
-  ],
+export const tradingComps = pgSchema("trading_comps");
+
+export const crossChainTradingType = tradingComps.enum(
+  "cross_chain_trading_type",
+  ["disallowAll", "disallowXParent", "allow"],
 );
 
-export const competitions = pgTable(
-  "competitions",
+export const tradingCompetitions = tradingComps.table(
+  "trading_competitions",
   {
-    id: uuid().primaryKey().notNull(),
-    name: varchar({ length: 100 }).notNull(),
-    description: text(),
-    startDate: timestamp("start_date", { withTimezone: true }),
-    endDate: timestamp("end_date", { withTimezone: true }),
-    status: varchar({ length: 20 }).notNull(),
+    competitionId: uuid()
+      .primaryKey()
+      .references(() => competitions.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
     crossChainTradingType: crossChainTradingType("cross_chain_trading_type")
       .notNull()
       .default("disallowAll"),
-    createdAt: timestamp("created_at", {
-      withTimezone: true,
-    }).defaultNow(),
-    updatedAt: timestamp("updated_at", {
-      withTimezone: true,
-    }).defaultNow(),
   },
   (table) => [
-    index("idx_competitions_status").on(table.status),
     index("idx_competitions_cross_chain_trading").on(
       table.crossChainTradingType,
     ),
   ],
 );
 
-export const competitionTeams = pgTable(
-  "competition_teams",
-  {
-    competitionId: uuid("competition_id").notNull(),
-    teamId: uuid("team_id").notNull(),
-    createdAt: timestamp("created_at", {
-      withTimezone: true,
-    }).defaultNow(),
-  },
-  (table) => [
-    foreignKey({
-      columns: [table.competitionId],
-      foreignColumns: [competitions.id],
-      name: "competition_teams_competition_id_fkey",
-    }).onDelete("cascade"),
-    foreignKey({
-      columns: [table.teamId],
-      foreignColumns: [teams.id],
-      name: "competition_teams_team_id_fkey",
-    }).onDelete("cascade"),
-    primaryKey({
-      columns: [table.competitionId, table.teamId],
-      name: "competition_teams_pkey",
-    }),
-  ],
-);
-
-export const balances = pgTable(
+export const balances = tradingComps.table(
   "balances",
   {
     id: serial().primaryKey().notNull(),
@@ -145,7 +72,7 @@ export const balances = pgTable(
   ],
 );
 
-export const trades = pgTable(
+export const trades = tradingComps.table(
   "trades",
   {
     id: uuid().primaryKey().notNull(),
@@ -194,7 +121,7 @@ export const trades = pgTable(
   ],
 );
 
-export const prices = pgTable(
+export const prices = tradingComps.table(
   "prices",
   {
     id: serial().primaryKey().notNull(),
@@ -218,7 +145,7 @@ export const prices = pgTable(
   ],
 );
 
-export const portfolioSnapshots = pgTable(
+export const portfolioSnapshots = tradingComps.table(
   "portfolio_snapshots",
   {
     id: serial().primaryKey().notNull(),
@@ -250,7 +177,7 @@ export const portfolioSnapshots = pgTable(
   ],
 );
 
-export const portfolioTokenValues = pgTable(
+export const portfolioTokenValues = tradingComps.table(
   "portfolio_token_values",
   {
     id: serial().primaryKey().notNull(),
@@ -277,29 +204,3 @@ export const portfolioTokenValues = pgTable(
     }).onDelete("cascade"),
   ],
 );
-
-export type SelectTeam = typeof teams.$inferSelect;
-export type InsertTeam = typeof teams.$inferInsert;
-
-export type SelectCompetition = typeof competitions.$inferSelect;
-export type InsertCompetition = typeof competitions.$inferInsert;
-
-export type SelectCompetitionTeam = typeof competitionTeams.$inferSelect;
-export type InsertCompetitionTeam = typeof competitionTeams.$inferInsert;
-
-export type SelectBalance = typeof balances.$inferSelect;
-export type InsertBalance = typeof balances.$inferInsert;
-
-export type SelectTrade = typeof trades.$inferSelect;
-export type InsertTrade = typeof trades.$inferInsert;
-
-export type SelectPrice = typeof prices.$inferSelect;
-export type InsertPrice = typeof prices.$inferInsert;
-
-export type SelectPortfolioSnapshot = typeof portfolioSnapshots.$inferSelect;
-export type InsertPortfolioSnapshot = typeof portfolioSnapshots.$inferInsert;
-
-export type SelectPortfolioTokenValue =
-  typeof portfolioTokenValues.$inferSelect;
-export type InsertPortfolioTokenValue =
-  typeof portfolioTokenValues.$inferInsert;
