@@ -40,7 +40,7 @@
   },
   "dependencies": {
     "@recallnet/network-constants": "workspace:*",
-    "viem": "^2.22.9"
+    "viem": "^2.28.1"
   },
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:*",
