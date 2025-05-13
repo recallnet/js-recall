@@ -14,7 +14,11 @@ import {
 } from "@/database/repositories/team-repository.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
-import { CompetitionStatus, CrossChainTradingType } from "@/types/index.js";
+import {
+  CompetitionStatus,
+  CrossChainTradingType,
+  TeamSearchParams,
+} from "@/types/index.js";
 
 export function makeAdminController(services: ServiceRegistry) {
   /**
@@ -503,6 +507,7 @@ export function makeAdminController(services: ServiceRegistry) {
           deactivationDate: team.deactivationDate,
           createdAt: team.createdAt,
           updatedAt: team.updatedAt,
+          metadata: team.metadata,
         }));
 
         // Return the teams
@@ -890,6 +895,69 @@ export function makeAdminController(services: ServiceRegistry) {
             name: result.team?.name || "Unknown",
             apiKey: result.apiKey,
           },
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Search for teams based on various criteria
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async searchTeams(req: Request, res: Response, next: NextFunction) {
+      try {
+        const {
+          email,
+          name,
+          walletAddress,
+          contactPerson,
+          active,
+          includeAdmins,
+        } = req.query;
+
+        // Prepare search params
+        const searchParams: TeamSearchParams = {};
+
+        if (email) searchParams.email = email as string;
+        if (name) searchParams.name = name as string;
+        if (walletAddress) searchParams.walletAddress = walletAddress as string;
+        if (contactPerson) searchParams.contactPerson = contactPerson as string;
+
+        // Convert active string query param to boolean if provided
+        if (active !== undefined) {
+          searchParams.active = active === "true" || active === "1";
+        }
+
+        // Set whether to include admin accounts
+        searchParams.includeAdmins =
+          includeAdmins === "true" || includeAdmins === "1";
+
+        // Perform search
+        const teams = await services.teamManager.searchTeams(searchParams);
+
+        // Format the response to exclude sensitive data
+        const formattedTeams = teams.map((team) => ({
+          id: team.id,
+          name: team.name,
+          email: team.email,
+          contactPerson: team.contactPerson,
+          walletAddress: team.walletAddress,
+          active: team.active,
+          deactivationReason: team.deactivationReason,
+          deactivationDate: team.deactivationDate,
+          isAdmin: team.isAdmin,
+          metadata: team.metadata,
+          createdAt: team.createdAt,
+          updatedAt: team.updatedAt,
+        }));
+
+        // Return the search results
+        res.status(200).json({
+          success: true,
+          teams: formattedTeams,
         });
       } catch (error) {
         next(error);

@@ -13,9 +13,10 @@ import {
   findById,
   findInactiveTeams,
   reactivateTeam,
+  searchTeams,
   update,
 } from "@/database/repositories/team-repository.js";
-import { AgentMetadata, ApiAuth } from "@/types/index.js";
+import { AgentMetadata, ApiAuth, TeamSearchParams } from "@/types/index.js";
 
 /**
  * Team Manager Service
@@ -668,6 +669,37 @@ export class TeamManager {
         error,
       );
       throw error;
+    }
+  }
+
+  /**
+   * Search for teams based on various attributes
+   * @param searchParams Parameters to search by (email, name, walletAddress, contactPerson, active status)
+   * @returns Array of teams matching the search criteria
+   */
+  async searchTeams(searchParams: TeamSearchParams) {
+    try {
+      console.log(
+        `[TeamManager] Searching for teams with params:`,
+        searchParams,
+      );
+
+      // Get matching teams from repository
+      const teams = await searchTeams(searchParams);
+
+      // Filter out admin teams if needed
+      const { includeAdmins = false } = searchParams;
+      const filteredTeams = includeAdmins
+        ? teams
+        : teams.filter((team) => !team.isAdmin);
+
+      console.log(
+        `[TeamManager] Found ${filteredTeams.length} teams matching search criteria`,
+      );
+      return filteredTeams;
+    } catch (error) {
+      console.error("[TeamManager] Error searching teams:", error);
+      return [];
     }
   }
 }

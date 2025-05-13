@@ -1,12 +1,10 @@
 "use client";
 
-import { useAtom } from "jotai";
 import { useEffect, useState } from "react";
+import { useAccount } from "wagmi";
 
 import { RegistrationForm } from "@/components/registration-form";
-import { SIWEButton } from "@/components/siwe-button";
-import { Team, getAllTeams } from "@/lib/api";
-import { userAtom } from "@/state/atoms";
+import { Team, getTeamByWalletAddress } from "@/lib/api";
 
 /**
  * Account page component
@@ -18,45 +16,46 @@ import { userAtom } from "@/state/atoms";
  * @returns Account page component
  */
 export default function AccountPage() {
-  const [user] = useAtom(userAtom);
-  const [isLoading, setIsLoading] = useState(false);
-  const [team, setTeam] = useState<Team | null>(null);
+  const { address } = useAccount();
+  const [isLoading, setIsLoading] = useState(true); // Start with loading true
+  const [team, setTeam] = useState<Team | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
 
   // When the user is connected with a wallet, check if they already have a team
   useEffect(() => {
+    // Define the async function to check for existing team
     async function checkForExistingTeam() {
-      if (!user.loggedIn || !user.address) return;
+      if (address) {
+        try {
+          console.log("Checking for team with wallet address:", address);
+          const matchingTeam = await getTeamByWalletAddress(address);
 
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const teams = await getAllTeams();
-        console.log("Fetched teams:", teams);
-        const matchingTeam = teams.find(
-          (t) =>
-            t.walletAddress &&
-            t.walletAddress.toLowerCase() === user.address.toLowerCase(),
-        );
-
-        if (matchingTeam) {
-          console.log("Found matching team:", matchingTeam);
-          setTeam(matchingTeam);
-        } else {
-          console.log("No matching team found for wallet:", user.address);
-          setTeam(null);
+          if (matchingTeam) {
+            console.log("Found matching team:", matchingTeam);
+            setTeam(matchingTeam);
+          } else {
+            console.log("No matching team found for wallet:", address);
+            setTeam(undefined);
+          }
+        } catch (err) {
+          console.error("Error fetching team by wallet address:", err);
+          setTeam(undefined);
+          setError("Failed to check team registration status");
+        } finally {
+          setIsLoading(false);
         }
-      } catch (err) {
-        console.error("Error fetching teams:", err);
-        setError("Failed to check for existing team registration");
-      } finally {
-        setIsLoading(false);
       }
     }
 
+    // Once connection state is settled, check for team
+    setIsLoading(true);
     checkForExistingTeam();
-  }, [user.loggedIn, user.address]);
+  }, [address]);
+
+  useEffect(() => {
+    console.log("Current team state:", team);
+    console.log("Current loading state:", isLoading);
+  }, [team, isLoading]);
 
   return (
     <div className="bg-background flex flex-1 flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
@@ -72,12 +71,12 @@ export default function AccountPage() {
           </p>
         </div>
 
-        {user.loggedIn ? (
-          isLoading ? (
-            <div className="bg-card rounded-lg border p-8 text-center shadow-sm">
-              <p>Checking registration status...</p>
-            </div>
-          ) : error ? (
+        {isLoading ? (
+          <div className="bg-card rounded-lg border p-8 text-center shadow-sm">
+            <p>Checking registration status...</p>
+          </div>
+        ) : address ? (
+          error ? (
             <div className="bg-card space-y-4 rounded-lg border p-8 text-center shadow-sm">
               <p className="text-destructive">{error}</p>
               <p>
@@ -173,9 +172,6 @@ export default function AccountPage() {
             <p className="text-lg">
               Please connect your wallet to register your team
             </p>
-            <div className="flex justify-center">
-              <SIWEButton />
-            </div>
           </div>
         )}
       </div>

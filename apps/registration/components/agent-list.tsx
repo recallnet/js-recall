@@ -30,7 +30,15 @@ export function AgentList() {
     error,
   } = useQuery({
     queryKey: ["teams"],
-    queryFn: () => getAllTeams(),
+    queryFn: async () => {
+      console.log("Fetching teams from API");
+      const result = await getAllTeams();
+      console.log("Teams API result:", result);
+      return result;
+    },
+    staleTime: 60 * 1000, // Consider data stale after 1 minute
+    refetchOnMount: true, // Refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when window gains focus
   });
 
   // Filter teams

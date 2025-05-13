@@ -8,9 +8,9 @@ import { fontMono, fontSans } from "@recallnet/fonts";
 import { RecallLogo } from "@recallnet/ui/components/logos/recall-logo";
 import { Toaster } from "@recallnet/ui/components/shadcn/sonner";
 import { ThemeToggle } from "@recallnet/ui/components/theme-toggle";
+import { Wallet } from "@recallnet/ui/components/wallet";
 
 import { Providers } from "@/components/providers";
-import { SIWEButton } from "@/components/siwe-button";
 
 import { Nav } from "./_components/nav";
 
@@ -51,7 +51,7 @@ export default function RootLayout({
                 </Link>
               </div>
               <div className="flex justify-end gap-4">
-                <SIWEButton />
+                <Wallet />
                 <ThemeToggle />
               </div>
             </div>

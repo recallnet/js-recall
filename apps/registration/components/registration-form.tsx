@@ -1,10 +1,10 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useAtom } from "jotai";
 import { CheckCircle, Copy } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useAccount } from "wagmi";
 
 import { Button } from "@recallnet/ui/components/shadcn/button";
 import {
@@ -22,7 +22,6 @@ import { Textarea } from "@recallnet/ui/components/shadcn/textarea";
 import { registerTeam } from "@/lib/api";
 import type { Team, TeamRegistrationRequest } from "@/lib/api";
 import { registrationSchema } from "@/lib/validation";
-import { userAtom } from "@/state/atoms";
 
 type RegistrationFormProps = {
   /**
@@ -43,7 +42,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
   const [registeredTeam, setRegisteredTeam] = useState<Team | null>(null);
   const [apiKeyCopied, setApiKeyCopied] = useState(false);
   const [showMetadata, setShowMetadata] = useState(true);
-  const [user] = useAtom(userAtom);
+  const { address, isConnected } = useAccount();
 
   const form = useForm<TeamRegistrationRequest>({
     resolver: zodResolver(registrationSchema),
@@ -70,10 +69,10 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
 
   // Auto-fill the wallet address field with the connected wallet address
   useEffect(() => {
-    if (user.loggedIn && user.address) {
-      form.setValue("walletAddress", user.address);
+    if (isConnected && address) {
+      form.setValue("walletAddress", address);
     }
-  }, [user.loggedIn, user.address, form]);
+  }, [isConnected, address, form]);
 
   /**
    * Handle form submission for team registration

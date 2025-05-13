@@ -19,11 +19,12 @@ export class TeamApiClient {
    */
   constructor(baseUrl: string, apiKey?: string) {
     this.apiKey = apiKey;
-    this.baseUrl = baseUrl;
+    // Normalize the base URL to ensure there's no trailing slash
+    this.baseUrl = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
 
     // Create axios instance
     this.axiosInstance = axios.create({
-      baseURL: baseUrl,
+      baseURL: this.baseUrl,
       headers: {
         "Content-Type": "application/json",
       },
@@ -74,7 +75,6 @@ export class TeamApiClient {
    */
   async getAllTeams() {
     try {
-      // The full path should include the /api prefix
       const response = await this.axiosInstance.get("/api/admin/teams");
       return response.data.teams;
     } catch (error) {
@@ -88,7 +88,6 @@ export class TeamApiClient {
   async registerTeam(data: TeamRegistrationRequest) {
     try {
       // Use a direct axios instance without the auth interceptor for this public endpoint
-      // The full path should include the /api prefix
       const response = await axios.post(
         `${this.baseUrl}/api/public/teams/register`,
         data,
@@ -101,6 +100,52 @@ export class TeamApiClient {
       return response.data.team;
     } catch (error) {
       throw this.handleApiError(error, "register team");
+    }
+  }
+
+  /**
+   * Search for teams based on various criteria (requires admin API key)
+   *
+   * @param searchParams Search parameters like email, name, walletAddress, etc.
+   * @returns Array of teams matching the criteria
+   */
+  async searchTeams(searchParams: {
+    email?: string;
+    name?: string;
+    walletAddress?: string;
+    contactPerson?: string;
+    active?: boolean;
+    includeAdmins?: boolean;
+  }) {
+    try {
+      // Convert search parameters to query string
+      const queryParams = new URLSearchParams();
+      console.log("searchParams", searchParams);
+      if (searchParams.email) queryParams.append("email", searchParams.email);
+      if (searchParams.name) queryParams.append("name", searchParams.name);
+      if (searchParams.walletAddress)
+        queryParams.append("walletAddress", searchParams.walletAddress);
+      if (searchParams.contactPerson)
+        queryParams.append("contactPerson", searchParams.contactPerson);
+
+      if (searchParams.active !== undefined) {
+        queryParams.append("active", searchParams.active.toString());
+      }
+
+      if (searchParams.includeAdmins !== undefined) {
+        queryParams.append(
+          "includeAdmins",
+          searchParams.includeAdmins.toString(),
+        );
+      }
+
+      // Make the request
+      const response = await this.axiosInstance.get(
+        `/api/admin/teams/search?${queryParams}`,
+      );
+      return response.data.teams;
+    } catch (error) {
+      throw this.handleApiError(error, "search teams");
     }
   }
 }
