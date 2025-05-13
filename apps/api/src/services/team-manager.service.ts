@@ -1,8 +1,6 @@
 import * as crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
 
-import { InsertTeam } from "@recallnet/comps-db/schema";
-
 import { config } from "@/config/index.js";
 import {
   count,
@@ -16,6 +14,7 @@ import {
   searchTeams,
   update,
 } from "@/database/repositories/team-repository.js";
+import { InsertTeam } from "@/database/schema/core/types.js";
 import { AgentMetadata, ApiAuth, TeamSearchParams } from "@/types/index.js";
 
 /**

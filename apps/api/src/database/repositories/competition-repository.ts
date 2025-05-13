@@ -1,16 +1,18 @@
-import { and, desc, eq, max, sql } from "drizzle-orm";
-
-import {
-  InsertCompetition,
-  type InsertPortfolioSnapshot,
-  type InsertPortfolioTokenValue,
-  competitionTeams,
-  competitions,
-  portfolioSnapshots,
-  portfolioTokenValues,
-} from "@recallnet/comps-db/schema";
+import { and, desc, eq, getTableColumns, max, sql } from "drizzle-orm";
 
 import { db } from "@/database/db.js";
+import { competitionTeams, competitions } from "@/database/schema/core/defs.js";
+import { InsertCompetition } from "@/database/schema/core/types.js";
+import {
+  portfolioSnapshots,
+  portfolioTokenValues,
+  tradingCompetitions,
+} from "@/database/schema/trading/defs.js";
+import { InsertTradingCompetition } from "@/database/schema/trading/types.js";
+import {
+  InsertPortfolioSnapshot,
+  InsertPortfolioTokenValue,
+} from "@/database/schema/trading/types.js";
 import { CompetitionStatus } from "@/types/index.js";
 
 import { PartialExcept } from "./types.js";
@@ -24,7 +26,16 @@ import { PartialExcept } from "./types.js";
  * Find all competitions
  */
 export async function findAll() {
-  return await db.query.competitions.findMany();
+  return await db
+    .select({
+      crossChainTradingType: tradingCompetitions.crossChainTradingType,
+      ...getTableColumns(competitions),
+    })
+    .from(tradingCompetitions)
+    .innerJoin(
+      competitions,
+      eq(tradingCompetitions.competitionId, competitions.id),
+    );
 }
 
 /**
@@ -32,19 +43,32 @@ export async function findAll() {
  * @param id The ID to search for
  */
 export async function findById(id: string) {
-  return await db.query.competitions.findFirst({
-    where: eq(competitions.id, id),
-  });
+  const [result] = await db
+    .select({
+      crossChainTradingType: tradingCompetitions.crossChainTradingType,
+      ...getTableColumns(competitions),
+    })
+    .from(tradingCompetitions)
+    .innerJoin(
+      competitions,
+      eq(tradingCompetitions.competitionId, competitions.id),
+    )
+    .where(eq(competitions.id, id))
+    .limit(1);
+  return result;
 }
 
 /**
  * Create a new competition
  * @param competition Competition to create
  */
-export async function create(competition: InsertCompetition) {
-  try {
+export async function create(
+  competition: InsertCompetition &
+    Omit<InsertTradingCompetition, "competitionId">,
+) {
+  const result = await db.transaction(async (tx) => {
     const now = new Date();
-    const [result] = await db
+    const [comp] = await tx
       .insert(competitions)
       .values({
         ...competition,
@@ -52,16 +76,16 @@ export async function create(competition: InsertCompetition) {
         updatedAt: competition.updatedAt || now,
       })
       .returning();
-
-    if (!result) {
-      throw new Error("Failed to create competition - no result returned");
-    }
-
-    return result;
-  } catch (error) {
-    console.error("[CompetitionRepository] Error in create:", error);
-    throw error;
-  }
+    const [tradingComp] = await tx
+      .insert(tradingCompetitions)
+      .values({
+        competitionId: comp!.id,
+        crossChainTradingType: competition.crossChainTradingType,
+      })
+      .returning();
+    return { ...comp!, ...tradingComp! };
+  });
+  return result;
 }
 
 /**
@@ -69,22 +93,30 @@ export async function create(competition: InsertCompetition) {
  * @param competition Competition to update
  */
 export async function update(
-  competition: PartialExcept<InsertCompetition, "id">,
+  competition: PartialExcept<InsertCompetition, "id"> &
+    Partial<Omit<InsertTradingCompetition, "competitionId">>,
 ) {
   try {
-    const [result] = await db
-      .update(competitions)
-      .set({
-        ...competition,
-        updatedAt: competition.updatedAt || new Date(),
-      })
-      .where(eq(competitions.id, competition.id))
-      .returning();
+    const result = await db.transaction(async (tx) => {
+      const [comp] = await tx
+        .update(competitions)
+        .set({
+          ...competition,
+          updatedAt: competition.updatedAt || new Date(),
+        })
+        .where(eq(competitions.id, competition.id))
+        .returning();
 
-    if (!result) {
-      throw new Error(`Competition with ID ${competition.id} not found`);
-    }
+      const [tradingComp] = await tx
+        .update(tradingCompetitions)
+        .set({
+          ...competition,
+        })
+        .where(eq(tradingCompetitions.competitionId, competition.id))
+        .returning();
 
+      return { ...comp!, ...tradingComp! };
+    });
     return result;
   } catch (error) {
     console.error("[CompetitionRepository] Error in update:", error);
@@ -171,11 +203,17 @@ export async function getCompetitionTeams(competitionId: string) {
 export async function findActive() {
   try {
     const [result] = await db
-      .select()
-      .from(competitions)
+      .select({
+        crossChainTradingType: tradingCompetitions.crossChainTradingType,
+        ...getTableColumns(competitions),
+      })
+      .from(tradingCompetitions)
+      .innerJoin(
+        competitions,
+        eq(tradingCompetitions.competitionId, competitions.id),
+      )
       .where(eq(competitions.status, CompetitionStatus.ACTIVE))
       .limit(1);
-
     return result;
   } catch (error) {
     console.error("[CompetitionRepository] Error in findActive:", error);
@@ -353,8 +391,15 @@ export async function count() {
 export async function findByStatus(status: CompetitionStatus) {
   try {
     return await db
-      .select()
-      .from(competitions)
+      .select({
+        ...getTableColumns(competitions),
+        crossChainTradingType: tradingCompetitions.crossChainTradingType,
+      })
+      .from(tradingCompetitions)
+      .innerJoin(
+        competitions,
+        eq(tradingCompetitions.competitionId, competitions.id),
+      )
       .where(eq(competitions.status, status));
   } catch (error) {
     console.error("[CompetitionRepository] Error in findByStatus:", error);

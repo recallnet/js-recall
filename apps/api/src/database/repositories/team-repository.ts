@@ -1,12 +1,8 @@
 import { and, count as drizzleCount, eq, ilike } from "drizzle-orm";
 
-import {
-  InsertTeam,
-  competitionTeams,
-  teams,
-} from "@recallnet/comps-db/schema";
-
 import { db } from "@/database/db.js";
+import { competitionTeams, teams } from "@/database/schema/core/defs.js";
+import { InsertTeam } from "@/database/schema/core/types.js";
 import { TeamSearchParams } from "@/types/index.js";
 
 import { PartialExcept } from "./types.js";
