@@ -10,67 +10,187 @@ import {
 } from "@recallnet/ui2/components/tabs";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { cn } from "@/../../packages/ui2/src/lib/utils";
-import { useAgents } from "@/hooks/useAgents";
-import { Agent } from "@/types";
+import {cn} from "@/../../packages/ui2/src/lib/utils";
 
 import AgentPodium from "../agent-podium/index";
-import { LeaderboardTable } from "../leaderboard-table";
+import {LeaderboardTable} from "../leaderboard-table";
+import axios from "axios";
+import {leaderboardAtom} from "@/state/atoms";
+import {useAtom} from "jotai";
+import {Leaderboard, LeaderboardTypes} from "@/state/types";
+import BigNumberDisplay from "../bignumber";
+import {Agent} from "@/state/types";
 
-const categories = ["CRYPTO-TRADING", "DERIVATIVES", "SENTIMENT-ANALYSIS"];
+const categories = [LeaderboardTypes.ANALYSIS, LeaderboardTypes.DERIVATIVES, LeaderboardTypes.TRADING]
 
-export function Leaderboard() {
-  const [selected, setSelected] = React.useState(categories[0]);
+export function LeaderboardSection() {
+  const [leadState, setLeaderboard] = useAtom(leaderboardAtom)
+  const [selected, setSelected] = React.useState(LeaderboardTypes.TRADING);
+  const [limit, setLimit] = React.useState(10);
+  const [offset, setOffset] = React.useState(0);
+  const leaderboard = React.useMemo(() => leadState[selected], [leadState, selected])
 
-  // Use the useAgents hook with sort=-score to get agents sorted by score in descending order
-  const { data: agentsData, isLoading } = useAgents({ sort: "-score" });
+  const loadLeaderboard = React.useCallback(async () => {
+    const {data} = await axios<Omit<Leaderboard, 'loaded'>>({
+      url: '/api/leaderboard',
+      method: 'get',
+      headers: {
+        Accept: "application/json",
+      },
+      params: {
+        type: selected,
+        limit,
+        offset
+      },
+      baseURL: ''
+    })
 
-  // Add rank to agents and get top 3 for podium
-  const agentsWithRank = React.useMemo(() => {
-    if (!agentsData?.agents) return [];
-    return agentsData.agents.map((agent, index) => ({
-      ...agent,
-      rank: index + 1,
-    }));
-  }, [agentsData]);
+    setLeaderboard(all => {
+      return {...all, [selected]: {...data, loaded: true}}
+    })
+  }, [setLeaderboard, limit, offset, selected])
 
-  // Get top 3 agents for the podium
-  const podiumAgents = React.useMemo(() => {
-    // Default placeholder agents
-    const defaultAgent: Agent = {
-      id: "placeholder",
-      name: "Agent",
-      imageUrl: "/agent-image.png",
-      metadata: { walletAddress: "" },
-    };
+  React.useEffect(() => {
+    loadLeaderboard()
+  }, [loadLeaderboard])
 
-    const first = agentsWithRank[0] || defaultAgent;
-    const second = agentsWithRank[1] || defaultAgent;
-    const third = agentsWithRank[2] || defaultAgent;
+  console.log('LEADERBOARD', leaderboard)
 
-    return { first, second, third };
-  }, [agentsWithRank]);
+  if (!leaderboard.loaded)
+    return (
+      <div>
+        <div className="border-b border-gray-800 pb-5">
+          <h1 className="text-primary font-bold text-[30px]">
+            Leaderboards
+          </h1>
+        </div>
+        <Tabs
+          defaultValue={selected}
+          className="w-full"
+          onValueChange={(value: string) => {
+            setSelected(value as LeaderboardTypes);
+          }}
+        >
+
+          {
+            categories.map((cat) => (
+              <TabsContent
+                key={cat}
+                value={cat}
+                className="flex w-full flex-col gap-6 pt-6"
+              >
+                <div className="mb-10 grid grid-cols-1 divide-x-1 border-1 border-gray-800 text-center text-gray-400 sm:grid-cols-3 divide-gray-800">
+                  <div className="p-6 flex justify-between items-center">
+                    <div className="text-sm uppercase">Total Trades</div>
+                    <div className="h-1 w-10 bg-white rounded-full" />
+                  </div>
+                  <div className="p-6 flex justify-between items-center">
+                    <div className="text-sm uppercase">Active Agents</div>
+                    <div className="h-1 w-10 bg-white rounded-full" />
+                  </div>
+                  <div className="p-6 flex justify-between items-center">
+                    <div className="text-sm uppercase">Total Volume</div>
+                    <div className="h-1 w-10 bg-white rounded-full" />
+                  </div>
+                </div>
+
+                {
+                  //<AgentPodium
+                  //className='mb-10 md:mb-1'
+                  //first={leaderboard.agents[0]}
+                  //second={leaderboard.agents[1]}
+                  //third={leaderboard.agents[2]}
+                  ///>
+                }
+              </TabsContent>
+            ))}
+
+          <h2 className="text-primary font-bold text-2xl mt-10">
+            All agents
+          </h2>
+
+          <TabsList className="mt-5 bg-transparent border-y border-gray-800 w-full h-15">
+            {categories.map((cat) => (
+              <TabsTrigger
+                key={cat}
+                value={cat}
+                className={cn(
+                  "text-sm h-full flex items-center px-5",
+                  selected == cat ? "bg-card text-primary border-t-1 border-white" : "text-gray-500",
+                )}
+              >
+                {cat}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
+          {
+            //<LeaderboardTable agents={leaderboard} />
+          }
+        </Tabs>
+      </div>
+    )
 
   return (
-    <div className="mt-20">
-      <h1 className="text-primary text-4xl font-bold md:text-[56px]">
-        Leaderboards
-      </h1>
+    <div className="mb-10">
+      <div className="border-b border-gray-800 pb-5">
+        <h1 className="text-primary font-bold text-[30px]">
+          Leaderboards
+        </h1>
+      </div>
       <Tabs
-        defaultValue={categories[0]}
+        defaultValue={selected}
         className="w-full"
         onValueChange={(value: string) => {
-          setSelected(value);
+          setSelected(value as LeaderboardTypes);
         }}
       >
-        <TabsList className="mt-5 bg-transparent">
+
+        {
+          categories.map((cat) => (
+            <TabsContent
+              key={cat}
+              value={cat}
+              className="flex w-full flex-col gap-6 pt-6"
+            >
+              <div className="mb-10 grid grid-cols-1 divide-x-1 border-1 border-gray-800 text-center text-gray-400 sm:grid-cols-3 divide-gray-800">
+                <div className="p-6 flex justify-between items-center">
+                  <div className="text-sm uppercase">Total Trades</div>
+                  <div className="text-lg text-white">{leaderboard.stats.totalTrades}</div>
+                </div>
+                <div className="p-6 flex justify-between items-center">
+                  <div className="text-sm uppercase">Active Agents</div>
+                  <div className="text-lg text-white">{leaderboard.stats.activeAgents}</div>
+                </div>
+                <div className="p-6 flex justify-between items-center">
+                  <div className="text-sm uppercase">Total Volume</div>
+                  <div className="text-lg text-white">
+                    <BigNumberDisplay value={leaderboard.stats.totalVolume} decimals={18} />
+                  </div>
+                </div>
+              </div>
+
+              <AgentPodium
+                className='mb-10 md:mb-1'
+                first={leaderboard.agents[0] as Agent}
+                second={leaderboard.agents[1] as Agent}
+                third={leaderboard.agents[2] as Agent}
+              />
+            </TabsContent>
+          ))}
+
+        <h2 className="text-primary font-bold text-2xl mt-10">
+          All agents
+        </h2>
+
+        <TabsList className="mt-5 bg-transparent border-y border-gray-800 w-full h-15">
           {categories.map((cat) => (
             <TabsTrigger
               key={cat}
               value={cat}
               className={cn(
-                "underline-offset-6 text-sm decoration-gray-600 decoration-2",
-                selected == cat ? "text-primary" : "text-gray-500",
+                "text-sm h-full flex items-center px-5",
+                selected == cat ? "bg-card text-primary border-t-1 border-white" : "text-gray-500",
               )}
             >
               {cat}
@@ -78,43 +198,7 @@ export function Leaderboard() {
           ))}
         </TabsList>
 
-        {categories.map((cat) => (
-          <TabsContent
-            key={cat}
-            value={cat}
-            className="flex w-full flex-col gap-6 pt-6"
-          >
-            <div className="mb-10 grid grid-cols-1 divide-x-2 border-2 border-gray-700 text-center text-gray-400 sm:grid-cols-3 sm:divide-gray-700">
-              <div className="py-4">
-                <div className="text-sm uppercase">Total Trades</div>
-                <div className="text-lg">$123.4M</div>
-              </div>
-              <div className="py-4">
-                <div className="text-xs uppercase">Active Agents</div>
-                <div className="text-lg">
-                  {agentsData?.metadata?.total || 0}
-                </div>
-              </div>
-              <div className="py-4">
-                <div className="text-xs uppercase">Total Volume</div>
-                <div className="text-lg">$1.2M</div>
-              </div>
-            </div>
-
-            {isLoading ? (
-              <div className="py-10 text-center">Loading...</div>
-            ) : (
-              <>
-                <AgentPodium
-                  first={podiumAgents.first}
-                  second={podiumAgents.second}
-                  third={podiumAgents.third}
-                />
-                <LeaderboardTable agents={agentsWithRank} />
-              </>
-            )}
-          </TabsContent>
-        ))}
+        <LeaderboardTable agents={leaderboard.agents} />
       </Tabs>
     </div>
   );
