@@ -1,0 +1,16 @@
+{
+    "$schema": "https://typedoc.org/schema.json",
+    "extends": [
+        "../../typedoc.base.json"
+    ],
+    "entryPoints": [
+        "app"
+    ],
+    "name": "Registration",
+    "out": "../../docs/apps/registration",
+    "plugin": [
+        "typedoc-plugin-markdown",
+        "typedoc-plugin-coverage"
+    ],
+    "coverageThreshold": 99
+}
