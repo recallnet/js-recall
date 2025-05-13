@@ -1,7 +1,7 @@
 import React from "react";
 
-import { cn } from "@/../../packages/ui2/src/lib/utils";
-import { Agent } from "@/types";
+import {cn} from "@recallnet/ui2/lib/utils";
+import {Agent} from "@/data/agents";
 
 interface AgentPodiumProps {
   first?: AgentResponse;
@@ -19,102 +19,111 @@ export const AgentPodium: React.FC<AgentPodiumProps> = ({
   loaded,
 }) => {
   return (
-    <div className={cn("grid w-full grid-cols-1 md:grid-cols-3", className)}>
-      <div className="order-2 flex flex-col justify-end md:order-1">
+    <div
+      className={cn(
+        "grid w-full grid-cols-1 md:grid-cols-3",
+        className,
+      )}
+    >
+      <div className="flex flex-col justify-end">
         <PodiumAgent
-          place={"second"}
+          place={'second'}
           agent={second}
-          loaded={loaded}
-          feats={[
-            { name: "ROI", value: "25%" },
-            { name: "Trades", value: "2.4k" },
-          ]}
+          feats={[{name: 'ROI', value: '25%'}, {name: 'Trades', value: '2.4k'}]}
         />
 
-        <div className="h-15 bg-card w-full"></div>
+        <div className="w-full h-15 bg-gray-800">
+        </div>
       </div>
-      <div className="order-1 flex flex-col justify-end md:order-2">
+      <div className="flex flex-col justify-end">
         <PodiumAgent
-          place={"first"}
+          place={'first'}
           agent={first}
-          loaded={loaded}
-          feats={[
-            { name: "ROI", value: "25%" },
-            { name: "Trades", value: "2.4k" },
-          ]}
+          feats={[{name: 'ROI', value: '25%'}, {name: 'Trades', value: '2.4k'}]}
         />
-        <div className="h-25 bg-card w-full border-x-2 border-black"></div>
+        <div className="w-full h-25 bg-gray-800 border-x-2 border-black">
+        </div>
       </div>
-      <div className="order-3 flex flex-col justify-end">
+      <div className="flex flex-col justify-end">
         <PodiumAgent
-          place={"third"}
+          place={'third'}
           agent={third}
-          loaded={loaded}
-          feats={[
-            { name: "ROI", value: "25%" },
-            { name: "Trades", value: "2.4k" },
-          ]}
+          feats={[{name: 'ROI', value: '25%'}, {name: 'Trades', value: '2.4k'}]}
         />
-        <div className="bg-card h-8 w-full"></div>
+        <div className="w-full h-8 bg-gray-800">
+        </div>
       </div>
     </div>
   );
 };
 
 type PodiumAgentProps = {
-  place: "first" | "second" | "third";
-  agent?: AgentResponse;
-  loaded?: boolean;
-  feats: [{ name: string; value: string }, { name: string; value: string }];
-};
+  place: 'first' | 'second' | 'third';
+  agent: Agent;
+  feats: [{name: string; value: string}, {name: string; value: string}]
+}
 
-const PodiumAgent: React.FunctionComponent<PodiumAgentProps> = ({
-  place,
-  agent,
-  feats,
-  loaded,
-}) => {
+const PodiumAgent: React.FunctionComponent<PodiumAgentProps> = ({place, agent, feats}) => {
+  const [icon, text] = place === 'first' ? [
+    <AwardIcon className="text-yellow-400" />, '1ST'
+  ] : place === 'second' ? [
+    <AwardIcon className="text-gray-500" />, '2ND'
+  ] : [
+    <AwardIcon className="text-red-400" />, '3RD'
+  ]
+
   return (
-    <div className="mb-5 flex flex-col items-center justify-end text-sm text-white">
-      <div className="mb-5 h-20 w-20 rounded-full">
-        {loaded ? (
-          <MirrorImage
-            width={100}
-            height={100}
-            image={agent?.imageUrl || "/default_agent.png"}
-          />
-        ) : (
-          <Skeleton className="h-20 w-20 rounded rounded-full" />
-        )}
+    <div className="flex flex-col items-center justify-end text-sm text-white mb-5">
+      <div className="h-20 w-20 rounded-full bg-gray-800 mb-8"></div>
+      <div className="flex items-center gap-2 text-gray-400">
+        <span className="mb-1 text-center text-lg">
+          {icon}
+        </span>
+        <span className="mb-1 text-center text-xs">{text}</span>
       </div>
-      <AwardIcon place={place} />
-      <div className="mb-2 flex flex-col items-center text-lg font-bold">
-        {loaded ? (
-          <span className="capitalize">{agent?.name}</span>
-        ) : (
-          <Skeleton className="w-15 h-3 rounded-full" />
-        )}
+      <div className="flex flex-col items-center font-bold mb-2 text-lg">
+        <span className="capitalize">{agent.name}</span>
       </div>
       <div className="flex justify-around">
-        <div className="flex items-center gap-2 border border-gray-800 px-3 py-2">
-          {loaded ? <span className="">{feats[0].name}</span> : <Skeleton />}
-          {loaded ? (
-            <span className="text-gray-500">{feats[0].value}</span>
-          ) : (
-            <Skeleton />
-          )}
+        <div className="flex items-center border border-gray-800 px-3 py-2 gap-2">
+          <span className="">{feats[0].name}</span>
+          <span className="text-gray-500">{feats[0].value}</span>
         </div>
-        <div className="flex items-center gap-2 border border-gray-800 px-3 py-2">
-          {loaded ? <span className="">{feats[1].name}</span> : <Skeleton />}
-          {loaded ? (
-            <span className="text-gray-500">{feats[1].value}</span>
-          ) : (
-            <Skeleton />
-          )}
+        <div className="flex items-center border border-gray-800 px-3 py-2 gap-2">
+          <span className="">{feats[1].name}</span>
+          <span className="text-gray-500">{feats[1].value}</span>
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
+
+const AwardIcon = ({
+  height = "1em",
+  strokeWidth = "2",
+  fill = "none",
+  focusable = "false",
+  ...props
+}: Omit<React.SVGProps<SVGSVGElement>, "children">) => (
+  <svg
+    role="img"
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    height={height}
+    focusable={focusable}
+    {...props}
+  >
+    <g
+      fill={fill}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={strokeWidth}
+    >
+      <path d="M6 9a6 6 0 1 0 12 0A6 6 0 1 0 6 9" />
+      <path d="m12 15l3.4 5.89l1.598-3.233l3.598.232l-3.4-5.889M6.802 12l-3.4 5.89L7 17.657l1.598 3.232l3.4-5.889" />
+    </g>
+  </svg>
+);
 
 export default AgentPodium;
