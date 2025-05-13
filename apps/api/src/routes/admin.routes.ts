@@ -799,5 +799,111 @@ export function configureAdminRoutes(
    */
   router.post("/teams/:teamId/reactivate", controller.reactivateTeam);
 
+  /**
+   * @openapi
+   * /api/admin/teams/search:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: Search for teams
+   *     description: Search for teams based on various criteria like email, name, wallet address, etc.
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: email
+   *         schema:
+   *           type: string
+   *         description: Partial match for team email
+   *       - in: query
+   *         name: name
+   *         schema:
+   *           type: string
+   *         description: Partial match for team name
+   *       - in: query
+   *         name: walletAddress
+   *         schema:
+   *           type: string
+   *         description: Partial match for wallet address
+   *       - in: query
+   *         name: contactPerson
+   *         schema:
+   *           type: string
+   *         description: Partial match for contact person name
+   *       - in: query
+   *         name: active
+   *         schema:
+   *           type: boolean
+   *         description: Filter by active status (true/false)
+   *       - in: query
+   *         name: includeAdmins
+   *         schema:
+   *           type: boolean
+   *         description: Whether to include admin accounts in results (default is false)
+   *     responses:
+   *       200:
+   *         description: List of teams matching search criteria
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 teams:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         description: Team ID
+   *                       name:
+   *                         type: string
+   *                         description: Team name
+   *                       email:
+   *                         type: string
+   *                         description: Team email
+   *                       contactPerson:
+   *                         type: string
+   *                         description: Contact person name
+   *                       walletAddress:
+   *                         type: string
+   *                         description: Ethereum wallet address
+   *                       active:
+   *                         type: boolean
+   *                         description: Whether the team is active
+   *                       deactivationReason:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Reason for deactivation if inactive
+   *                       deactivationDate:
+   *                         type: string
+   *                         format: date-time
+   *                         nullable: true
+   *                         description: Date of deactivation if inactive
+   *                       isAdmin:
+   *                         type: boolean
+   *                         description: Whether the team has admin privileges
+   *                       metadata:
+   *                         type: object
+   *                         nullable: true
+   *                         description: Optional agent metadata
+   *                       createdAt:
+   *                         type: string
+   *                         format: date-time
+   *                         description: Account creation timestamp
+   *                       updatedAt:
+   *                         type: string
+   *                         format: date-time
+   *                         description: Account update timestamp
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       500:
+   *         description: Server error
+   */
+  router.get("/teams/search", controller.searchTeams);
+
   return router;
 }
