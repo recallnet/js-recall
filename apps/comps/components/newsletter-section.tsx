@@ -19,7 +19,7 @@ export const NewsletterSection: React.FC = () => {
     <section className="my-12">
       <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <p className="text-secondary">
+          <p className="text-secondary-foreground font-sans">
             Sign up for alerts about new competitions on testnet.
           </p>
         </div>
