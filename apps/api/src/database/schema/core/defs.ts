@@ -57,6 +57,8 @@ export const competitions = pgTable(
     id: uuid().primaryKey().notNull(),
     name: varchar({ length: 100 }).notNull(),
     description: text(),
+    externalLink: text(),
+    imageUrl: text(),
     startDate: timestamp("start_date", { withTimezone: true }),
     endDate: timestamp("end_date", { withTimezone: true }),
     status: varchar({ length: 20 }).notNull(),

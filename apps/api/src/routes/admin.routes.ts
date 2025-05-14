@@ -297,6 +297,14 @@ export function configureAdminRoutes(
    *                 enum: [disallowAll, disallowXParent, allow]
    *                 default: disallowAll
    *                 example: disallowAll
+   *               externalLink:
+   *                 type: string
+   *                 description: External URL for competition details
+   *                 example: https://example.com/competition-details
+   *               imageUrl:
+   *                 type: string
+   *                 description: URL to competition image
+   *                 example: https://example.com/competition-image.jpg
    *     responses:
    *       201:
    *         description: Competition created successfully
@@ -324,6 +332,14 @@ export function configureAdminRoutes(
    *                       type: string
    *                       enum: [PENDING, ACTIVE, COMPLETED]
    *                       description: Competition status
+   *                     externalLink:
+   *                       type: string
+   *                       description: External URL for competition details
+   *                       nullable: true
+   *                     imageUrl:
+   *                       type: string
+   *                       description: URL to competition image
+   *                       nullable: true
    *                     crossChainTradingType:
    *                       type: string
    *                       enum: [disallowAll, disallowXParent, allow]
@@ -371,6 +387,14 @@ export function configureAdminRoutes(
    *                 type: string
    *                 description: Competition description (used when creating a new competition)
    *                 example: A trading competition for the spring semester
+   *               externalLink:
+   *                 type: string
+   *                 description: External URL for competition details (used when creating a new competition)
+   *                 example: https://example.com/competition-details
+   *               imageUrl:
+   *                 type: string
+   *                 description: URL to competition image (used when creating a new competition)
+   *                 example: https://example.com/competition-image.jpg
    *               teamIds:
    *                 type: array
    *                 items:
@@ -414,6 +438,14 @@ export function configureAdminRoutes(
    *                       format: date-time
    *                       nullable: true
    *                       description: Competition end date (null if not ended)
+   *                     externalLink:
+   *                       type: string
+   *                       description: External URL for competition details
+   *                       nullable: true
+   *                     imageUrl:
+   *                       type: string
+   *                       description: URL to competition image
+   *                       nullable: true
    *                     status:
    *                       type: string
    *                       enum: [PENDING, ACTIVE, COMPLETED]
@@ -491,6 +523,14 @@ export function configureAdminRoutes(
    *                       type: string
    *                       format: date-time
    *                       description: Competition end date
+   *                     externalLink:
+   *                       type: string
+   *                       description: External URL for competition details
+   *                       nullable: true
+   *                     imageUrl:
+   *                       type: string
+   *                       description: URL to competition image
+   *                       nullable: true
    *                     status:
    *                       type: string
    *                       enum: [PENDING, ACTIVE, COMPLETED]
@@ -639,6 +679,14 @@ export function configureAdminRoutes(
    *                       format: date-time
    *                       nullable: true
    *                       description: Competition end date
+   *                     externalLink:
+   *                       type: string
+   *                       description: External URL for competition details
+   *                       nullable: true
+   *                     imageUrl:
+   *                       type: string
+   *                       description: URL to competition image
+   *                       nullable: true
    *                     status:
    *                       type: string
    *                       enum: [PENDING, ACTIVE, COMPLETED]

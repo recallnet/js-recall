@@ -69,6 +69,8 @@ export async function startTestCompetition(
   adminClient: ApiClient,
   name: string,
   teamIds: string[],
+  externalLink?: string,
+  imageUrl?: string,
 ): Promise<StartCompetitionResponse> {
   // Ensure database is initialized
   await ensureDatabaseInitialized();
@@ -77,6 +79,9 @@ export async function startTestCompetition(
     name,
     `Test competition description for ${name}`,
     teamIds,
+    undefined, // tradingType
+    externalLink,
+    imageUrl,
   );
 
   if (!result.success) {
@@ -93,6 +98,8 @@ export async function createTestCompetition(
   adminClient: ApiClient,
   name: string,
   description?: string,
+  externalLink?: string,
+  imageUrl?: string,
 ): Promise<CreateCompetitionResponse> {
   // Ensure database is initialized
   await ensureDatabaseInitialized();
@@ -100,6 +107,9 @@ export async function createTestCompetition(
   const result = await adminClient.createCompetition(
     name,
     description || `Test competition description for ${name}`,
+    undefined, // tradingType
+    externalLink,
+    imageUrl,
   );
 
   if (!result.success) {
@@ -116,6 +126,8 @@ export async function startExistingTestCompetition(
   adminClient: ApiClient,
   competitionId: string,
   teamIds: string[],
+  externalLink?: string,
+  imageUrl?: string,
 ): Promise<StartCompetitionResponse> {
   // Ensure database is initialized
   await ensureDatabaseInitialized();
@@ -123,6 +135,9 @@ export async function startExistingTestCompetition(
   const result = await adminClient.startExistingCompetition(
     competitionId,
     teamIds,
+    undefined, // crossChainTradingType
+    externalLink,
+    imageUrl,
   );
 
   if (!result.success) {

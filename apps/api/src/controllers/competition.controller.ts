@@ -175,6 +175,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
                 id: activeCompetition.id,
                 name: activeCompetition.name,
                 status: activeCompetition.status,
+                externalLink: activeCompetition.externalLink,
+                imageUrl: activeCompetition.imageUrl,
               }
             : null;
 
@@ -229,6 +231,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
               name: activeCompetition.name,
               status: activeCompetition.status,
               startDate: activeCompetition.startDate,
+              externalLink: activeCompetition.externalLink,
+              imageUrl: activeCompetition.imageUrl,
             },
             message: "Your team is not participating in this competition",
           });

@@ -216,6 +216,8 @@ export interface Competition {
   id: string;
   name: string;
   description?: string;
+  externalLink?: string;
+  imageUrl?: string;
   startDate: Date | null;
   endDate: Date | null;
   status: CompetitionStatus;

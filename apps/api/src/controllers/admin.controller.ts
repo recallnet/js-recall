@@ -298,7 +298,8 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async createCompetition(req: Request, res: Response, next: NextFunction) {
       try {
-        const { name, description, tradingType } = req.body;
+        const { name, description, tradingType, externalLink, imageUrl } =
+          req.body;
 
         // Validate required parameters
         if (!name) {
@@ -310,6 +311,8 @@ export function makeAdminController(services: ServiceRegistry) {
           name,
           description,
           tradingType || CrossChainTradingType.disallowAll,
+          externalLink,
+          imageUrl,
         );
 
         // Return the created competition
@@ -329,8 +332,15 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async startCompetition(req: Request, res: Response, next: NextFunction) {
       try {
-        const { competitionId, name, description, teamIds, tradingType } =
-          req.body;
+        const {
+          competitionId,
+          name,
+          description,
+          teamIds,
+          tradingType,
+          externalLink,
+          imageUrl,
+        } = req.body;
 
         // Validate required parameters
         if (!teamIds || !Array.isArray(teamIds) || teamIds.length === 0) {
@@ -373,6 +383,8 @@ export function makeAdminController(services: ServiceRegistry) {
             name,
             description,
             tradingType || CrossChainTradingType.disallowAll,
+            externalLink,
+            imageUrl,
           );
         }
 

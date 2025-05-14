@@ -232,10 +232,15 @@ export class ApiClient {
           description?: string;
           teamIds: string[];
           tradingType?: CrossChainTradingType;
+          externalLink?: string;
+          imageUrl?: string;
         }
       | string,
     description?: string,
     teamIds?: string[],
+    tradingType?: CrossChainTradingType,
+    externalLink?: string,
+    imageUrl?: string,
   ): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
       let requestData;
@@ -248,6 +253,9 @@ export class ApiClient {
           name: params,
           description,
           teamIds: teamIds || [],
+          tradingType,
+          externalLink,
+          imageUrl,
         };
       }
 
@@ -269,6 +277,8 @@ export class ApiClient {
     name: string,
     description?: string,
     tradingType?: CrossChainTradingType,
+    externalLink?: string,
+    imageUrl?: string,
   ): Promise<CreateCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
@@ -277,6 +287,8 @@ export class ApiClient {
           name,
           description,
           tradingType,
+          externalLink,
+          imageUrl,
         },
       );
 
@@ -293,6 +305,8 @@ export class ApiClient {
     competitionId: string,
     teamIds: string[],
     crossChainTradingType?: CrossChainTradingType,
+    externalLink?: string,
+    imageUrl?: string,
   ): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
@@ -301,6 +315,8 @@ export class ApiClient {
           competitionId,
           teamIds,
           crossChainTradingType,
+          externalLink,
+          imageUrl,
         },
       );
 
