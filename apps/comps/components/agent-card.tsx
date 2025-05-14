@@ -4,7 +4,7 @@ import { ChevronRightIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
 import React from "react";
 
-import { AgentResponse } from "@/types";
+import { Agent } from "../types";
 
 interface AgentCardProps {
   agent: AgentResponse;

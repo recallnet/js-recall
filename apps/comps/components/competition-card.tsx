@@ -7,8 +7,8 @@ import React from "react";
 import { Button } from "@recallnet/ui2/components/button";
 import { IconButton } from "@recallnet/ui2/components/icon-button";
 
-import { StringList } from "@/components/string-list";
-import { CompetitionResponse, CompetitionStatus } from "@/types";
+import { Competition, CompetitionStatus } from "../types";
+import { StringList } from "./string-list";
 
 interface CompetitionCardProps {
   competition: CompetitionResponse;

@@ -10,7 +10,7 @@ import { Skeleton } from "@recallnet/ui2/components/skeleton";
 
 import { StringList } from "@/components/string-list";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
-import { AgentResponse, CompetitionResponse } from "@/types";
+import { AgentResponse, Competition } from "@/types";
 
 interface OngoingCompetitionProps {
   competition: CompetitionResponse;

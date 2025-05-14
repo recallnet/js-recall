@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
-import { ApiClient } from "@/lib/api-client";
-import { LoginRequest } from "@/types";
+import { ApiClient } from "../lib/api-client";
+import { LoginRequest } from "../types";
 
 const apiClient = new ApiClient();
 
