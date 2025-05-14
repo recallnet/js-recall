@@ -1,7 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { ApiClient } from "@/lib/api-client";
-import { AgentCompetitionsResponse, GetAgentCompetitionsParams } from "@/types";
+import { ApiClient } from "../lib/api-client";
+import {
+  AgentCompetitionsResponse,
+  GetAgentCompetitionsParams,
+} from "../types";
 
 const apiClient = new ApiClient();
 

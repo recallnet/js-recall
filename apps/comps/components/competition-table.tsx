@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import { CompetitionResponse } from "@/types";
+import { Competition } from "../types";
 
 interface CompetitionTableProps {
   competitions: CompetitionResponse[];

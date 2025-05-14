@@ -47,6 +47,7 @@ export interface CompetitionResponse {
   startDate: string;
   endDate: string;
   minStake: string;
+  staked: string;
   imageUrl: string;
   metadata: CompetitionMetadata;
   status: CompetitionStatus;
@@ -66,6 +67,4 @@ export interface CompetitionsResponse {
   competitions: CompetitionResponse[];
 }
 
-export interface Competition extends CompetitionResponse {
-  registeredAgentIds: string[];
-}
+export interface Competition extends CompetitionResponse {}

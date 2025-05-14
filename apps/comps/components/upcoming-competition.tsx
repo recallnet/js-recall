@@ -7,9 +7,9 @@ import React from "react";
 import { Button } from "@recallnet/ui2/components/button";
 import { IconButton } from "@recallnet/ui2/components/icon-button";
 
-import CountdownClock from "@/components/clock";
-import { StringList } from "@/components/string-list";
-import { CompetitionResponse } from "@/types";
+import { Competition } from "../types";
+import CountdownClock from "./clock";
+import { StringList } from "./string-list";
 
 interface UpComingCompetitionProps {
   competition: CompetitionResponse;

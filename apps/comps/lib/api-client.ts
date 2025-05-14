@@ -15,7 +15,7 @@ import {
   LoginRequest,
   LoginResponse,
   NonceResponse,
-} from "@/types";
+} from "../types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
@@ -68,9 +68,9 @@ export class ApiClient {
    * @param params - Object containing query parameters
    * @returns Formatted query string
    */
-  private formatQueryParams<T extends object>(params: T): string {
-    const validParams = Object.entries(params as Record<string, unknown>)
-      .filter(([, value]) => value !== undefined && value !== null)
+  private formatQueryParams(params: Record<string, any>): string {
+    const validParams = Object.entries(params)
+      .filter(([_, value]) => value !== undefined && value !== null)
       .map(([key, value]) => `${key}=${encodeURIComponent(String(value))}`)
       .join("&");
 
@@ -221,18 +221,18 @@ export class ApiClient {
     });
   }
 
-  // Leaderboards endpoints
+  // Leaderboard endpoints
 
   /**
-   * Get leaderboards
+   * Get leaderboard
    * @param params - Query parameters
-   * @returns Leaderboards response
+   * @returns Leaderboard response
    */
-  async getLeaderboards(
+  async getLeaderboard(
     params: GetLeaderboardParams = {},
   ): Promise<LeaderboardResponse> {
     const queryParams = this.formatQueryParams(params);
-    return this.request<LeaderboardResponse>(`/leaderboards${queryParams}`);
+    return this.request<LeaderboardResponse>(`/leaderboard${queryParams}`);
   }
 
   // Profile endpoints
@@ -241,8 +241,8 @@ export class ApiClient {
    * Get user profile
    * @returns User profile
    */
-  async getProfile(): Promise<unknown> {
-    return this.request<unknown>("/profile");
+  async getProfile(): Promise<any> {
+    return this.request<any>("/profile");
   }
 
   /**
@@ -250,8 +250,8 @@ export class ApiClient {
    * @param data - Profile data
    * @returns Updated profile
    */
-  async updateProfile(data: unknown): Promise<unknown> {
-    return this.request<unknown>("/profile", {
+  async updateProfile(data: any): Promise<any> {
+    return this.request<any>("/profile", {
       method: "PUT",
       body: JSON.stringify(data),
     });

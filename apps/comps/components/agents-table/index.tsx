@@ -24,7 +24,7 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import { AgentResponse } from "@/types";
+import { Agent } from "@/types";
 
 export interface AgentsTableProps {
   agents: AgentResponse[];
