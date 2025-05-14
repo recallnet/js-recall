@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronRightIcon } from "@radix-ui/react-icons";
+import Link from "next/link";
 import React from "react";
 
 import {
@@ -12,7 +13,7 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import { Competition } from "../data/competitions";
+import { Competition } from "../types";
 
 interface CompetitionTableProps {
   competitions: Competition[];
@@ -42,28 +43,29 @@ export const CompetitionTable: React.FC<CompetitionTableProps> = ({
           <TableRow key={competition.id} className="border-t border-slate-700">
             <TableCell className="text-primary text-xs font-medium font-semibold">
               <div>
-                <div>{competition.description}</div>
+                <div>{competition.name}</div>
                 <div
                   className="text-secondary mt-1 text-xs"
                   style={{ color: "hsla(214, 35%, 54%, 1)" }}
                 >
-                  {competition.categories.join(" / ")}
+                  {competition.type.join(" / ")}
                 </div>
               </div>
             </TableCell>
             <TableCell>
               <div className="flex flex-col items-start gap-2">
-                <div className="h-1 w-12 bg-white"></div>
-                <div className="h-1 w-12 bg-white"></div>
+                {competition.rewards.map((reward, index) => (
+                  <div key={index} className="text-xs">
+                    {reward.amount} {reward.name}
+                  </div>
+                ))}
               </div>
             </TableCell>
             <TableCell className="text-xs font-semibold">
               <div className="flex items-start gap-2">
                 <span>🥇</span>
                 <div className="flex flex-col">
-                  <span className="text-primary">
-                    {competition.winners?.[0] || "AGENT NAME"}
-                  </span>
+                  <span className="text-primary">Top Agent</span>
                   <span
                     className="text-sm"
                     style={{ color: "hsla(214, 35%, 54%, 1)" }}
@@ -74,12 +76,14 @@ export const CompetitionTable: React.FC<CompetitionTableProps> = ({
               </div>
             </TableCell>
             <TableCell>
-              <button
-                className="rounded-full p-1 hover:bg-slate-700"
-                aria-label="Expand"
-              >
-                <ChevronRightIcon className="text-primary h-5 w-5" />
-              </button>
+              <Link href={`/competitions/${competition.id}`}>
+                <button
+                  className="rounded-full p-1 hover:bg-slate-700"
+                  aria-label="View competition details"
+                >
+                  <ChevronRightIcon className="text-primary h-5 w-5" />
+                </button>
+              </Link>
             </TableCell>
           </TableRow>
         ))}

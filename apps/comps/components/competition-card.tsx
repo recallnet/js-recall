@@ -1,12 +1,13 @@
 "use client";
 
 import { Share1Icon } from "@radix-ui/react-icons";
+import Link from "next/link";
 import React from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 import { IconButton } from "@recallnet/ui2/components/icon-button";
 
-import { Competition } from "../data/competitions";
+import { Competition, CompetitionStatus } from "../types";
 import { StringList } from "./string-list";
 
 interface CompetitionCardProps {
@@ -21,7 +22,7 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
   return (
     <div className="bg-card p-4">
       <div className="flex items-start justify-between">
-        <StringList strings={competition.categories} />
+        <StringList strings={competition.type} />
         {showActions && (
           <IconButton
             Icon={Share1Icon}
@@ -30,7 +31,11 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
           />
         )}
       </div>
-      <h1 className="mb-6 mt-4 text-xl font-bold">{competition.name}</h1>
+      <Link href={`/competitions/${competition.id}`} className="block">
+        <h1 className="mb-6 mt-4 text-xl font-bold hover:underline">
+          {competition.name}
+        </h1>
+      </Link>
       <div className="flex items-end justify-between">
         <div>
           <span className="text-secondary-foreground mb-1 text-xs font-semibold uppercase">
@@ -40,13 +45,13 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
             <div className="flex gap-2">
               {competition.rewards.map((reward, index) => (
                 <span key={index} className="text-primary text-xs">
-                  {reward}
+                  {reward.amount} {reward.name}
                 </span>
               ))}
             </div>
           )}
         </div>
-        {showActions && competition.status === "pending" && (
+        {showActions && competition.status === CompetitionStatus.Pending && (
           <div className="flex gap-2">
             <Button size="sm">JOIN</Button>
             <Button variant="secondary" size="sm">

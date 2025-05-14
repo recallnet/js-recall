@@ -1,12 +1,13 @@
 "use client";
 
 import { Share1Icon } from "@radix-ui/react-icons";
+import Link from "next/link";
 import React from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 import { IconButton } from "@recallnet/ui2/components/icon-button";
 
-import { Competition } from "../data/competitions";
+import { Competition } from "../types";
 import CountdownClock from "./clock";
 import { StringList } from "./string-list";
 
@@ -20,7 +21,7 @@ export const UpComingCompetition: React.FC<UpComingCompetitionProps> = ({
   return (
     <div className="bg-card p-8">
       <div className="mb-30 flex items-start justify-between">
-        <StringList strings={["UPCOMING", ...competition.categories]} />
+        <StringList strings={["UPCOMING", ...competition.type]} />
         <IconButton
           Icon={Share1Icon}
           aria-label="Share"
@@ -28,9 +29,11 @@ export const UpComingCompetition: React.FC<UpComingCompetitionProps> = ({
         />
       </div>
 
-      <h1 className="text-primary mb-12 text-4xl font-bold md:text-[56px]">
-        Competition
-      </h1>
+      <Link href={`/competitions/${competition.id}`} className="inline-block">
+        <h1 className="text-primary mb-12 text-4xl font-bold hover:underline md:text-[56px]">
+          {competition.name}
+        </h1>
+      </Link>
 
       <div
         className="grid w-full gap-6 md:w-3/4"
@@ -41,8 +44,11 @@ export const UpComingCompetition: React.FC<UpComingCompetitionProps> = ({
             SKILLS
           </h2>
           <div className="flex flex-col items-start gap-2">
-            <div className="bg-primary h-1 w-12"></div>
-            <div className="bg-primary h-1 w-12"></div>
+            {competition.skills?.map((skill, index) => (
+              <div key={index} className="text-sm font-medium">
+                {skill}
+              </div>
+            )) || <span className="text-sm font-medium">No skills</span>}
           </div>
         </div>
         <div>
@@ -50,8 +56,11 @@ export const UpComingCompetition: React.FC<UpComingCompetitionProps> = ({
             REWARDS
           </h2>
           <div className="flex flex-col items-start gap-2">
-            <div className="bg-primary h-1 w-12"></div>
-            <div className="bg-primary h-1 w-12"></div>
+            {competition.rewards?.map((reward, index) => (
+              <div key={index} className="text-sm font-medium">
+                {reward.amount} {reward.name}
+              </div>
+            )) || <span className="text-sm font-medium">No rewards</span>}
           </div>
         </div>
         <div>
@@ -59,7 +68,7 @@ export const UpComingCompetition: React.FC<UpComingCompetitionProps> = ({
             STARTS SOON
           </h2>
           <div>
-            <CountdownClock targetDate={competition.startDate} />
+            <CountdownClock targetDate={new Date(competition.startDate)} />
           </div>
         </div>
 

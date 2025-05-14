@@ -9,7 +9,7 @@ import {
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
 
-import { Competition } from "../data/competitions";
+import { Competition } from "../types";
 import { CompetitionTable } from "./competition-table";
 
 interface RecentlyEndedSectionProps {
@@ -25,8 +25,8 @@ export const RecentlyEndedSection: React.FC<RecentlyEndedSectionProps> = ({
     activeTab === "all"
       ? competitions
       : competitions.filter((comp) =>
-          comp.categories.some(
-            (cat) => cat.toLowerCase() === activeTab.toLowerCase(),
+          comp.type.some(
+            (type) => type.toLowerCase() === activeTab.toLowerCase(),
           ),
         );
 

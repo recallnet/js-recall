@@ -4,7 +4,7 @@ import React from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 
-import { Agent } from "../data/agents";
+import { Agent } from "../types";
 import { AgentCard } from "./agent-card";
 
 interface AgentSpotlightSectionProps {

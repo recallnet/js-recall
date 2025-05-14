@@ -2,7 +2,7 @@
 
 import React from "react";
 
-import { Competition } from "../data/competitions";
+import { Competition } from "../types";
 import { CompetitionCard } from "./competition-card";
 
 interface StartingSoonSectionProps {

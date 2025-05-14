@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import Image from "next/image";
+import Link from "next/link";
 import React, { useMemo, useRef, useState } from "react";
 
 import { displayAddress } from "@recallnet/address-utils/display";
@@ -23,7 +24,7 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import { Agent } from "@/data/agents";
+import { Agent } from "@/types";
 
 export interface AgentsTableProps {
   agents: Agent[];
@@ -45,7 +46,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
         cell: ({ row }) => (
           <div className="flex items-center gap-3">
             <Image
-              src={row.original.image || "/agent-image.png"}
+              src={row.original.imageUrl || "/agent-image.png"}
               alt={row.original.name}
               width={32}
               height={32}
@@ -56,7 +57,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
                 {row.original.name}
               </span>
               <span className="text-xs text-slate-400">
-                {displayAddress(row.original.address)}
+                {displayAddress(row.original.metadata.walletAddress || "")}
               </span>
             </div>
           </div>
@@ -72,7 +73,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
         ),
         cell: ({ row }) => (
           <span className="w-full text-right text-base font-semibold text-white">
-            {row.original.elo}
+            {row.original.score || row.original.stats?.eloAvg || 0}
           </span>
         ),
         size: 200,
@@ -80,7 +81,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
       {
         id: "actions",
         header: () => null,
-        cell: () => (
+        cell: ({ row }) => (
           <div className="flex w-full justify-end gap-2">
             <Button
               variant="outline"
@@ -96,13 +97,15 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
             >
               <span className="whitespace-nowrap">≡ COT</span>
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-slate-600 bg-transparent text-white hover:bg-slate-800"
-            >
-              <span className="whitespace-nowrap">PROFILE</span>
-            </Button>
+            <Link href={`/agents/${row.original.id}`}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-slate-600 bg-transparent text-white hover:bg-slate-800"
+              >
+                <span className="whitespace-nowrap">PROFILE</span>
+              </Button>
+            </Link>
           </div>
         ),
         meta: { isActions: true },
@@ -120,7 +123,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
     if (!filterValue) return true;
     const search = filterValue.toLowerCase();
     const name = row.original.name || "";
-    const address = row.original.address || "";
+    const address = row.original.metadata.walletAddress || "";
     return (
       name.toLowerCase().includes(search) ||
       address.toLowerCase().includes(search)
