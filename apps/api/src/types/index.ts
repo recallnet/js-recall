@@ -189,6 +189,18 @@ export interface Team {
 }
 
 /**
+ * Team search parameters interface
+ */
+export interface TeamSearchParams {
+  email?: string;
+  name?: string;
+  walletAddress?: string;
+  contactPerson?: string;
+  active?: boolean;
+  includeAdmins?: boolean;
+}
+
+/**
  * Competition status enum
  */
 export enum CrossChainTradingType {

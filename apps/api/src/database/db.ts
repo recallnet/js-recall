@@ -8,10 +8,8 @@ import path from "path";
 import { Pool } from "pg";
 import { fileURLToPath } from "url";
 
-import * as relations from "@recallnet/comps-db/relations";
-import * as schema from "@recallnet/comps-db/schema";
-
 import { config } from "@/config/index.js";
+import schema from "@/database/schema/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -58,7 +56,7 @@ const pool = new Pool({
 
 export const db = drizzle({
   client: pool,
-  schema: { ...schema, ...relations },
+  schema,
 });
 
 console.log(

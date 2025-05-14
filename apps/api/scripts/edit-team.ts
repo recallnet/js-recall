@@ -21,9 +21,8 @@ import { eq } from "drizzle-orm";
 import * as path from "path";
 import * as readline from "readline";
 
-import { teams } from "@recallnet/comps-db/schema";
-
 import { db } from "@/database/db.js";
+import { teams } from "@/database/schema/core/defs.js";
 
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });

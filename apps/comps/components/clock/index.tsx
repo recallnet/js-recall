@@ -56,7 +56,7 @@ export const CountdownClock: React.FC<CountdownClockProps> = ({
   }
 
   return (
-    <span className={cn("font-mono text-2xl text-white", className)}>
+    <span className={cn("text-2xl text-white", className)}>
       {addLeadingZeros(timeLeft.hours)}:{addLeadingZeros(timeLeft.minutes)}:
       {addLeadingZeros(timeLeft.seconds)}
     </span>

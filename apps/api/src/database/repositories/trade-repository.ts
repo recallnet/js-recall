@@ -1,8 +1,8 @@
 import { desc, count as drizzleCount, eq } from "drizzle-orm";
 
-import { InsertTrade, trades } from "@recallnet/comps-db/schema";
-
 import { db } from "@/database/db.js";
+import { trades } from "@/database/schema/trading/defs.js";
+import { InsertTrade } from "@/database/schema/trading/types.js";
 
 /**
  * Trade Repository

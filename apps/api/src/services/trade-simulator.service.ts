@@ -1,7 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
 
-import { InsertTrade, SelectTrade } from "@recallnet/comps-db/schema";
-
 import { config, features } from "@/config/index.js";
 import {
   count,
@@ -9,6 +7,7 @@ import {
   getCompetitionTrades,
   getTeamTrades,
 } from "@/database/repositories/trade-repository.js";
+import { InsertTrade, SelectTrade } from "@/database/schema/trading/types.js";
 import { BalanceManager } from "@/services/balance-manager.service.js";
 import { PortfolioSnapshotter } from "@/services/index.js";
 import { BlockchainType, SpecificChain } from "@/types/index.js";

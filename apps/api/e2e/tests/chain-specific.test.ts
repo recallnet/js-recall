@@ -2,10 +2,9 @@ import axios from "axios";
 import { and, desc, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { portfolioSnapshots, trades } from "@recallnet/comps-db/schema";
-
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
+import { portfolioSnapshots, trades } from "@/database/schema/trading/defs.js";
 import {
   BalancesResponse,
   BlockchainType,

@@ -810,4 +810,42 @@ export class ApiClient {
       return this.handleApiError(error, "reset API key");
     }
   }
+
+  /**
+   * Search teams by various criteria (admin only)
+   * @param searchParams Search parameters (email, name, walletAddress, contactPerson, active, includeAdmins)
+   */
+  async searchTeams(searchParams: {
+    email?: string;
+    name?: string;
+    walletAddress?: string;
+    contactPerson?: string;
+    active?: boolean;
+    includeAdmins?: boolean;
+  }): Promise<AdminTeamsListResponse | ErrorResponse> {
+    try {
+      // Convert search parameters to query string
+      const queryParams = new URLSearchParams();
+
+      if (searchParams.email) queryParams.append("email", searchParams.email);
+      if (searchParams.name) queryParams.append("name", searchParams.name);
+      if (searchParams.walletAddress)
+        queryParams.append("walletAddress", searchParams.walletAddress);
+      if (searchParams.contactPerson)
+        queryParams.append("contactPerson", searchParams.contactPerson);
+      if (searchParams.active !== undefined)
+        queryParams.append("active", searchParams.active.toString());
+      if (searchParams.includeAdmins !== undefined)
+        queryParams.append(
+          "includeAdmins",
+          searchParams.includeAdmins.toString(),
+        );
+
+      const url = `/api/admin/teams/search?${queryParams.toString()}`;
+
+      return this.request<AdminTeamsListResponse>("get", url);
+    } catch (error) {
+      return this.handleApiError(error, "search teams");
+    }
+  }
 }

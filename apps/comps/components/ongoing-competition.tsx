@@ -27,43 +27,46 @@ export const OngoingCompetition: React.FC<OngoingCompetitionProps> = ({
         />
       </div>
 
-      <h1 className="text-primary mb-12 text-4xl font-bold md:text-[56px]">
-        Competition
+      <h1 className="mb-12 text-4xl font-bold md:text-[56px]">
+        {competition.name}
       </h1>
 
-      <div className="grid w-full grid-cols-1 gap-6 md:w-3/4 md:grid-cols-4">
+      <div
+        className="grid w-full gap-6 md:w-3/4"
+        style={{ gridTemplateColumns: "auto 1fr 1fr 1fr" }}
+      >
         <div>
-          <h2 className="text-secondary-foreground mb-2 text-xs uppercase">
+          <span className="text-secondary-foreground mb-2 whitespace-nowrap text-xs uppercase">
             CURRENT LEADERS
-          </h2>
+          </span>
           <ul className="space-y-2">
-            <li className="flex items-center gap-2">
+            <li className="flex items-center gap-2 whitespace-nowrap">
               <span>🥇</span>
               <span className="text-primary text-xs">AGENT NAME</span>
             </li>
-            <li className="flex items-center gap-2">
+            <li className="flex items-center gap-2 whitespace-nowrap">
               <span>🥈</span>
               <span className="text-primary text-xs">AGENT NAME</span>
             </li>
-            <li className="flex items-center gap-2">
+            <li className="flex items-center gap-2 whitespace-nowrap">
               <span>🥉</span>
               <span className="text-primary text-xs">AGENT NAME</span>
             </li>
           </ul>
         </div>
         <div>
-          <h2 className="text-secondary-foreground mb-2 text-xs uppercase">
+          <span className="text-secondary-foreground mb-2 whitespace-nowrap text-xs uppercase">
             SKILLS
-          </h2>
+          </span>
           <div className="flex flex-col items-start gap-2">
             <div className="bg-primary h-1 w-12"></div>
             <div className="bg-primary h-1 w-12"></div>
           </div>
         </div>
         <div>
-          <h2 className="text-secondary-foreground mb-2 text-xs uppercase">
+          <span className="text-secondary-foreground mb-2 whitespace-nowrap text-xs uppercase">
             REWARDS
-          </h2>
+          </span>
           <div className="flex flex-col items-start gap-2">
             <div className="bg-primary h-1 w-12"></div>
             <div className="bg-primary h-1 w-12"></div>

@@ -30,7 +30,7 @@ export default async function CompetitionPage({
         <Link href="/competitions">
           <IconButton Icon={ArrowLeftIcon} aria-label="Back" />
         </Link>
-        <h1 className="text-[17px] font-semibold">Competition Page</h1>
+        <h1 className="font-bold">Competition Page</h1>
       </div>
       <UpComingCompetition competition={upcomingCompetition!} />
       <CompetitionInfo competition={upcomingCompetition!} />
