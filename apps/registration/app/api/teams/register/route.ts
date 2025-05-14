@@ -1,7 +1,34 @@
+import jwt from "jsonwebtoken";
 import { NextRequest, NextResponse } from "next/server";
 
 import { TeamApiClient } from "@/lib/api-client";
 import { registrationSchema } from "@/lib/validation";
+
+/**
+ * Secret key for JWT verification
+ * Must match the key used in the auth routes
+ */
+const JWT_SECRET =
+  process.env.JWT_SECRET || "your-secret-key-change-in-production";
+
+/**
+ * Verify JWT token from cookie
+ *
+ * @param token The JWT token to verify
+ * @returns The decoded token payload or null if invalid
+ */
+function verifyToken(token: string) {
+  try {
+    return jwt.verify(token, JWT_SECRET) as {
+      wallet: string;
+      teamId?: string;
+      isAdmin: boolean;
+    };
+  } catch (error) {
+    console.error("Error verifying token:", error);
+    return null;
+  }
+}
 
 /**
  * POST handler for team registration
@@ -25,6 +52,43 @@ export async function POST(request: NextRequest) {
           details: validationResult.error.format(),
         },
         { status: 400 },
+      );
+    }
+
+    // Get the auth token from the cookie
+    const authToken = request.cookies.get("auth-token")?.value;
+
+    if (!authToken) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Authentication required",
+        },
+        { status: 401 },
+      );
+    }
+
+    // Verify the token and get authenticated wallet
+    const userData = verifyToken(authToken);
+
+    if (!userData) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid authentication token",
+        },
+        { status: 401 },
+      );
+    }
+
+    // Compare the wallet address in the form with the authenticated wallet
+    if (userData.wallet.toLowerCase() !== body.walletAddress.toLowerCase()) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Wallet address must match the connected wallet",
+        },
+        { status: 403 },
       );
     }
 

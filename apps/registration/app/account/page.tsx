@@ -44,7 +44,10 @@ export default function AccountPage() {
         } finally {
           setIsLoading(false);
         }
+        return;
       }
+      // If no address, set loading to false
+      setIsLoading(false);
     }
 
     // Once connection state is settled, check for team
@@ -101,58 +104,86 @@ export default function AccountPage() {
                 <p>
                   <strong>Wallet Address:</strong> {team.walletAddress}
                 </p>
-                {team.metadata && (
+                {team.metadata && team.metadata.length > 0 && (
                   <div className="mt-4">
-                    <h3 className="mb-2 text-lg font-medium">Agent Metadata</h3>
-                    <div className="border-muted-foreground/20 space-y-2 border-l-2 pl-2">
-                      {team.metadata.ref && (
+                    <h3 className="mb-2 text-lg font-medium">
+                      Registered Agents
+                    </h3>
+                    {team.metadata.map((agent, index) => (
+                      <div
+                        key={index}
+                        className="border-muted-foreground/20 mb-4 space-y-2 border-l-2 pl-2"
+                      >
                         <div>
                           <p>
                             <strong>Agent Name:</strong>{" "}
-                            {team.metadata.ref.name || "Not specified"}
+                            {agent.name || "Not specified"}
                           </p>
-                          {team.metadata.ref.version && (
+                          {agent.version && (
                             <p>
-                              <strong>Version:</strong>{" "}
-                              {team.metadata.ref.version}
+                              <strong>Version:</strong> {agent.version}
                             </p>
                           )}
-                          {team.metadata.ref.url && (
+                          {agent.url && (
                             <p>
-                              <strong>URL:</strong> {team.metadata.ref.url}
-                            </p>
-                          )}
-                        </div>
-                      )}
-                      {team.metadata.description && (
-                        <p>
-                          <strong>Description:</strong>{" "}
-                          {team.metadata.description}
-                        </p>
-                      )}
-                      {team.metadata.social && (
-                        <div>
-                          <h4 className="text-md mt-2 font-medium">Social</h4>
-                          {team.metadata.social.name && (
-                            <p>
-                              <strong>Name:</strong> {team.metadata.social.name}
-                            </p>
-                          )}
-                          {team.metadata.social.email && (
-                            <p>
-                              <strong>Email:</strong>{" "}
-                              {team.metadata.social.email}
-                            </p>
-                          )}
-                          {team.metadata.social.twitter && (
-                            <p>
-                              <strong>Twitter:</strong>{" "}
-                              {team.metadata.social.twitter}
+                              <strong>URL:</strong> {agent.url}
                             </p>
                           )}
                         </div>
-                      )}
-                    </div>
+                        {agent.description && (
+                          <p>
+                            <strong>Description:</strong> {agent.description}
+                          </p>
+                        )}
+                        {agent.social && (
+                          <div>
+                            <h4 className="text-md mt-2 font-medium">Social</h4>
+                            {agent.social.email && (
+                              <p>
+                                <strong>Email:</strong> {agent.social.email}
+                              </p>
+                            )}
+                            {agent.social.twitter && (
+                              <p>
+                                <strong>Twitter:</strong> {agent.social.twitter}
+                              </p>
+                            )}
+                            {agent.social.github && (
+                              <p>
+                                <strong>GitHub:</strong> {agent.social.github}
+                              </p>
+                            )}
+                            {agent.social.discord && (
+                              <p>
+                                <strong>Discord:</strong> {agent.social.discord}
+                              </p>
+                            )}
+                            {agent.social.telegram && (
+                              <p>
+                                <strong>Telegram:</strong>{" "}
+                                {agent.social.telegram}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        {agent.skills && agent.skills.length > 0 && (
+                          <div>
+                            <h4 className="text-md mt-2 font-medium">Skills</h4>
+                            <ul className="ml-4 list-disc">
+                              {agent.skills.map((skill, skillIndex) => (
+                                <li key={skillIndex}>
+                                  {skill.type}
+                                  {skill.type === "Other" &&
+                                    skill.customSkill && (
+                                      <>: {skill.customSkill}</>
+                                    )}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

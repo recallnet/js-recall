@@ -3,6 +3,60 @@
  */
 
 /**
+ * Agent skills enum
+ */
+export enum AgentSkillType {
+  CryptoTrading = "Crypto trading",
+  TraditionalInvesting = "Traditional investing",
+  SportsBetting = "Sports betting",
+  PredictionMarket = "Prediction market",
+  SocialAndChat = "Social and chat",
+  ArtAndVideoCreation = "Art & Video creation",
+  ProgrammingCoding = "Programming / coding",
+  DeepResearchDesci = "Deep research / Desci",
+  Other = "Other",
+}
+
+/**
+ * Agent skill with support for custom skills
+ */
+export interface AgentSkill {
+  /** Type of skill */
+  type?: AgentSkillType;
+  /** Custom skill description (only when type is Other) */
+  customSkill?: string;
+}
+
+/**
+ * Agent interface
+ */
+export interface Agent {
+  /** Agent name */
+  name?: string;
+  /** Agent version */
+  version?: string;
+  /** Agent URL */
+  url?: string;
+  /** Agent description */
+  description?: string;
+  /** Agent skills */
+  skills?: AgentSkill[];
+  /** Agent social media information */
+  social?: {
+    /** Twitter handle */
+    twitter?: string;
+    /** Email address */
+    email?: string;
+    /** GitHub username or URL */
+    github?: string;
+    /** Discord handle or server */
+    discord?: string;
+    /** Telegram handle */
+    telegram?: string;
+  };
+}
+
+/**
  * Team registration request interface
  */
 export interface TeamRegistrationRequest {
@@ -12,22 +66,10 @@ export interface TeamRegistrationRequest {
   email: string;
   /** Name of the contact person */
   contactPerson: string;
-  /** (Optional) Ethereum wallet address (must start with 0x) */
-  walletAddress?: string;
-  /** Optional metadata about the team's agent */
-  metadata?: {
-    ref?: {
-      name?: string;
-      version?: string;
-      url?: string;
-    };
-    description?: string;
-    social?: {
-      name?: string;
-      email?: string;
-      twitter?: string;
-    };
-  };
+  /** Ethereum wallet address (must start with 0x) */
+  walletAddress: string;
+  /** Array of agents associated with the team */
+  metadata?: Agent[];
 }
 
 /**
@@ -44,14 +86,22 @@ export interface Team {
   contactPerson: string;
   /** Ethereum wallet address */
   walletAddress: string;
+  /** Whether the team is active */
+  active: boolean;
   /** API key (only returned during registration) */
   apiKey?: string;
-  /** Optional agent metadata */
-  metadata?: TeamRegistrationRequest["metadata"];
+  /** Metadata uses agents array */
+  metadata?: Agent[];
   /** Account creation timestamp */
   createdAt: string;
   /** Account update timestamp */
   updatedAt?: string;
+  /** Optional deactivation date */
+  deactivationDate?: string | null;
+  /** Optional deactivation reason */
+  deactivationReason?: string | null;
+  /** Whether the team is an admin */
+  isAdmin?: boolean;
 }
 
 /**

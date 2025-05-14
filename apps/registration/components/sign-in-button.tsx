@@ -2,7 +2,6 @@
 
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
 import { useAccount } from "wagmi";
 
 import { Button } from "@recallnet/ui/components/shadcn/button";
@@ -17,31 +16,29 @@ import { useAuthContext } from "@/components/auth-provider";
 export function SignInButton() {
   const { openConnectModal } = useConnectModal();
   const { isConnected } = useAccount();
-  const { isAuthenticated, signIn, isLoading, error } = useAuthContext();
-  const [isSigningIn, setIsSigningIn] = useState(false);
+  const { isAuthenticated, signIn, isLoading, error, isSigningIn } =
+    useAuthContext();
+  // No longer need local signing state as we use the one from auth context
+
+  console.log("Button render state:", {
+    isLoading,
+    isSigningIn,
+    isAuthenticated,
+  });
 
   const handleSignIn = async () => {
     if (!isConnected) {
+      // Open connect modal if not connected
       openConnectModal?.();
       return;
     }
 
-    try {
-      setIsSigningIn(true);
-      await signIn();
-    } finally {
-      setIsSigningIn(false);
-    }
+    console.log("Starting sign-in from button");
+    await signIn();
+    console.log("Sign-in completed from button");
   };
 
-  if (isAuthenticated) {
-    return (
-      <Button variant="outline" disabled>
-        Signed In
-      </Button>
-    );
-  }
-
+  // Button is loading if either global loading state or signing state is true
   const isButtonLoading = isLoading || isSigningIn;
 
   return (
