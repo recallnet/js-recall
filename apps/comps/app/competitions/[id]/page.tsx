@@ -1,35 +1,26 @@
 "use client";
 
-import { ArrowLeftIcon } from "@radix-ui/react-icons";
-import { useDebounce } from "@uidotdev/usehooks";
+import {ArrowLeftIcon} from "@radix-ui/react-icons";
 import Link from "next/link";
 import React from "react";
 
-import { IconButton } from "@recallnet/ui2/components/icon-button";
+import {IconButton} from "@recallnet/ui2/components/icon-button";
 
-import { AgentsTable } from "@/components/agents-table";
-import { CompetitionInfo } from "@/components/competition-info";
-import { JoinSwarmSection } from "@/components/join-swarm-section";
-import { NewsletterSection } from "@/components/newsletter-section";
-import { UpComingCompetition } from "@/components/upcoming-competition";
-import { socialLinks } from "@/data/social";
-import { useCompetition } from "@/hooks/useCompetition";
-import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
-import { AgentResponse } from "@/types";
+import {AgentsTable} from "@/components/agents-table";
+import {CompetitionInfo} from "@/components/competition-info";
+import {JoinSwarmSection} from "@/components/join-swarm-section";
+import {NewsletterSection} from "@/components/newsletter-section";
+import {UpComingCompetition} from "@/components/upcoming-competition";
+import {socialLinks} from "@/data/social";
+import {useCompetition} from "@/hooks/useCompetition";
+import {useCompetitionAgents} from "@/hooks/useCompetitionAgents";
 
 export default function CompetitionPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{id: string}>;
 }) {
-  const { id } = React.use(params);
-  const [agentsFilter, setAgentsFilter] = React.useState("");
-  const [agentsSort, setAgentsSort] = React.useState("");
-  const [agentsLimit] = React.useState(10);
-  const [agentsOffset, setAgentsOffset] = React.useState(0);
-  const [allAgents, setAllAgents] = React.useState<AgentResponse[]>([]);
-  const debouncedFilterTerm = useDebounce(agentsFilter, 300);
-
+  const {id} = React.use(params);
   const {
     data: competition,
     isLoading: isLoadingCompetition,

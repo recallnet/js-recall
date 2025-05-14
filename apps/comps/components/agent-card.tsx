@@ -1,16 +1,16 @@
 "use client";
 
-import { ChevronRightIcon } from "@radix-ui/react-icons";
+import {ChevronRightIcon} from "@radix-ui/react-icons";
 import Link from "next/link";
 import React from "react";
 
-import { Agent } from "../types";
+import {Agent} from "../types";
 
 interface AgentCardProps {
   agent: AgentResponse;
 }
 
-export const AgentCard: React.FC<AgentCardProps> = ({ agent }) => {
+export const AgentCard: React.FC<AgentCardProps> = ({agent}) => {
   return (
     <div className="bg-card flex h-52 items-end justify-between p-6">
       <h3 className="text-primary text-lg font-bold">{agent.name}</h3>

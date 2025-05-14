@@ -2,7 +2,7 @@
 
 import React from "react";
 
-import {Leaderboard} from "@/components/leaderboard/index";
+import {LeaderboardSection} from "@/components/leaderboard/index";
 import {RegisterAgentBlock} from "@/components/register-agent-block";
 
 import {JoinSwarmSection} from "../../components/join-swarm-section";
@@ -12,7 +12,7 @@ import {socialLinks} from "../../data/social";
 export default function LeaderboardPage() {
   return (
     <div className="container mx-auto px-12 py-8">
-      <Leaderboard />
+      <LeaderboardSection />
 
       <JoinSwarmSection socialLinks={socialLinks} />
 
