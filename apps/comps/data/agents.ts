@@ -1,37 +1,26 @@
 import {Agent} from "@/state/types";
 import {ethers} from "ethers";
 
-export const spotlightAgents: Agent[] = [
-  {
-    id: "agent-1",
-    name: "AGENT 1",
-    address: ethers.ZeroAddress,
-    rank: 100,
-    elo: 1000,
-  },
-  {
-    id: "agent-2",
-    name: "AGENT 2",
-    address: ethers.ZeroAddress,
-    rank: 101,
-    elo: 1000,
-  },
-  {
-    id: "agent-3",
-    name: "AGENT 3",
-    address: ethers.ZeroAddress,
-    rank: 102,
-    elo: 1000,
-  },
-];
-
-export const leaderboardAgents: (Agent & {rank: number})[] = Array.from(
-  {length: 30},
+export const spotlightAgents: Agent[] = Array.from(
+  {length: 10},
   (_, i) => ({
     id: `agent-${i + 1}`,
-    rank: i,
     name: `agent-${i + 1}`,
-    address: ethers.ZeroAddress,
-    elo: 1000,
+    imageUrl: '/default_agent.png',
+    score: i * 20,
+    rank: i,
+    stats: {
+      eloAvg: i * 100 + 1000,
+      bestPlacement: {
+        competitionId: '1',
+        position: 1,
+        participants: 100
+      }
+    },
+    metadata: {
+      walletAddress: ethers.ZeroAddress,
+      roi: 0.55 * i,
+      trades: Math.floor(Math.random() * 1000)
+    }
   }),
 );
