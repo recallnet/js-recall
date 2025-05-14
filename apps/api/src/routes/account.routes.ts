@@ -84,6 +84,10 @@ export function configureAccountRoutes(
    *                       type: string
    *                       format: date-time
    *                       description: Team creation timestamp
+   *                     imageUrl:
+   *                       type: string
+   *                       description: URL to the team's image
+   *                       nullable: true
    *                     updatedAt:
    *                       type: string
    *                       format: date-time
@@ -148,6 +152,9 @@ export function configureAccountRoutes(
    *                       twitter:
    *                         type: string
    *                         description: Twitter handle
+   *               imageUrl:
+   *                 type: string
+   *                 description: URL to the team's image
    *     responses:
    *       200:
    *         description: Updated team profile
@@ -206,6 +213,9 @@ export function configureAccountRoutes(
    *                             twitter:
    *                               type: string
    *                               description: Twitter handle
+   *                     imageUrl:
+   *                       type: string
+   *                       description: URL to the team's image
    *                     createdAt:
    *                       type: string
    *                       format: date-time
