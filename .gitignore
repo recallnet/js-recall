@@ -54,3 +54,4 @@ apps/api/*.log
 # Misc
 .DS_Store
 *.pem
+.idea/

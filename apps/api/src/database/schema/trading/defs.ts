@@ -15,6 +15,32 @@ import {
 
 import { competitions, teams } from "../core/defs.js";
 
+/**
+ * Shared postgres type for an ethereum address.
+ * Note: default length 50 to not introduce any migrations.
+ */
+function ethereumAddress(name?: string, length: number = 50) {
+  if (name) {
+    return varchar(name, { length: length });
+  } else {
+    return varchar({ length: length });
+  }
+}
+
+/**
+ * Shared postgres type for a token amount.
+ * Note: Using too small of precision and scale. Should be changed, but left as it is to not introduce any migrations.
+ *
+ * @param name - Name of the database column
+ */
+function tokenAmount(name?: string) {
+  if (name) {
+    return numeric(name, { precision: 30, scale: 15, mode: "number" });
+  } else {
+    return numeric({ precision: 30, scale: 15, mode: "number" });
+  }
+}
+
 export const tradingComps = pgSchema("trading_comps");
 
 export const crossChainTradingType = tradingComps.enum(
@@ -47,8 +73,8 @@ export const balances = tradingComps.table(
   {
     id: serial().primaryKey().notNull(),
     teamId: uuid("team_id").notNull(),
-    tokenAddress: varchar("token_address", { length: 50 }).notNull(),
-    amount: numeric({ precision: 30, scale: 15, mode: "number" }).notNull(),
+    tokenAddress: ethereumAddress("token_address").notNull(),
+    amount: tokenAmount().notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
     }).defaultNow(),
@@ -78,19 +104,11 @@ export const trades = tradingComps.table(
     id: uuid().primaryKey().notNull(),
     teamId: uuid("team_id").notNull(),
     competitionId: uuid("competition_id").notNull(),
-    fromToken: varchar("from_token", { length: 50 }).notNull(),
-    toToken: varchar("to_token", { length: 50 }).notNull(),
-    fromAmount: numeric("from_amount", {
-      precision: 30,
-      scale: 15,
-      mode: "number",
-    }).notNull(),
-    toAmount: numeric("to_amount", {
-      precision: 30,
-      scale: 15,
-      mode: "number",
-    }).notNull(),
-    price: numeric({ precision: 30, scale: 15, mode: "number" }).notNull(),
+    fromToken: ethereumAddress("from_token").notNull(),
+    toToken: ethereumAddress("to_token").notNull(),
+    fromAmount: tokenAmount("from_amount").notNull(),
+    toAmount: tokenAmount("to_amount").notNull(),
+    price: tokenAmount().notNull(),
     success: boolean().notNull(),
     error: text(),
     reason: text().notNull(),
@@ -125,8 +143,8 @@ export const prices = tradingComps.table(
   "prices",
   {
     id: serial().primaryKey().notNull(),
-    token: varchar({ length: 50 }).notNull(),
-    price: numeric({ precision: 30, scale: 15, mode: "number" }).notNull(),
+    token: ethereumAddress().notNull(),
+    price: tokenAmount().notNull(),
     timestamp: timestamp({ withTimezone: true }).defaultNow(),
     chain: varchar({ length: 10 }),
     specificChain: varchar("specific_chain", { length: 20 }),
@@ -152,11 +170,7 @@ export const portfolioSnapshots = tradingComps.table(
     teamId: uuid("team_id").notNull(),
     competitionId: uuid("competition_id").notNull(),
     timestamp: timestamp({ withTimezone: true }).defaultNow(),
-    totalValue: numeric("total_value", {
-      precision: 30,
-      scale: 15,
-      mode: "number",
-    }).notNull(),
+    totalValue: tokenAmount("total_value").notNull(),
   },
   (table) => [
     index("idx_portfolio_snapshots_team_competition").on(
@@ -182,14 +196,10 @@ export const portfolioTokenValues = tradingComps.table(
   {
     id: serial().primaryKey().notNull(),
     portfolioSnapshotId: integer("portfolio_snapshot_id").notNull(),
-    tokenAddress: varchar("token_address", { length: 50 }).notNull(),
-    amount: numeric({ precision: 30, scale: 15, mode: "number" }).notNull(),
-    valueUsd: numeric("value_usd", {
-      precision: 30,
-      scale: 15,
-      mode: "number",
-    }).notNull(),
-    price: numeric({ precision: 30, scale: 15, mode: "number" }).notNull(),
+    tokenAddress: ethereumAddress("token_address").notNull(),
+    amount: tokenAmount().notNull(),
+    valueUsd: tokenAmount("value_usd").notNull(),
+    price: tokenAmount().notNull(),
     specificChain: varchar("specific_chain", { length: 20 }),
   },
   (table) => [
@@ -202,5 +212,43 @@ export const portfolioTokenValues = tradingComps.table(
       foreignColumns: [portfolioSnapshots.id],
       name: "portfolio_token_values_portfolio_snapshot_id_fkey",
     }).onDelete("cascade"),
+  ],
+);
+
+export const votesAvailable = tradingComps.table(
+  "votes_available",
+  {
+    address: ethereumAddress("address").notNull().primaryKey(),
+    epoch: numeric(),
+    amount: tokenAmount().notNull(),
+    createdAt: timestamp({ withTimezone: false }).defaultNow(),
+    updatedAt: timestamp({ withTimezone: false }).defaultNow(),
+  },
+  (table) => [
+    index("idx_votes_available_address").on(table.address),
+    index("idx_votes_available_address_epoch").on(table.address, table.epoch),
+    index("idx_votes_available_epoch").on(table.epoch),
+  ],
+);
+
+export const votesPerformed = tradingComps.table(
+  "votes_performed",
+  {
+    address: ethereumAddress("address").notNull().primaryKey(),
+    amount: tokenAmount().notNull(),
+    epoch: numeric(),
+    destination: ethereumAddress("destination").notNull(),
+    createdAt: timestamp({ withTimezone: false }).defaultNow(),
+    updatedAt: timestamp({ withTimezone: false }).defaultNow(),
+  },
+  (table) => [
+    index("idx_votes_performed_address").on(table.address),
+    index("idx_votes_performed_address_epoch").on(table.address, table.amount),
+    index("idx_votes_performed_destination").on(table.destination),
+    index("idx_votes_performed_destination_epoch").on(
+      table.destination,
+      table.epoch,
+    ),
+    index("idx_votes_performed_epoch").on(table.epoch),
   ],
 );
