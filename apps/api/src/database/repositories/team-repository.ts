@@ -7,7 +7,6 @@ import {
 } from "@recallnet/comps-db/schema";
 
 import { db } from "@/database/db.js";
-import { TeamSearchParams } from "@/types/index.js";
 
 import { PartialExcept } from "./types.js";
 
@@ -236,56 +235,6 @@ export async function deleteTeam(teamId: string) {
     return !!result;
   } catch (error) {
     console.error("[TeamRepository] Error in delete:", error);
-    throw error;
-  }
-}
-
-/**
- * Search for teams by various attributes
- * @param searchParams Object containing search parameters
- * @returns Array of teams matching the search criteria
- */
-export async function searchTeams(searchParams: TeamSearchParams) {
-  try {
-    const conditions = [];
-
-    // Add filters for each provided parameter
-    if (searchParams.email) {
-      conditions.push(ilike(teams.email, `%${searchParams.email}%`));
-    }
-
-    if (searchParams.name) {
-      conditions.push(ilike(teams.name, `%${searchParams.name}%`));
-    }
-
-    if (searchParams.walletAddress) {
-      conditions.push(
-        ilike(teams.walletAddress, `%${searchParams.walletAddress}%`),
-      );
-    }
-
-    if (searchParams.contactPerson) {
-      conditions.push(
-        ilike(teams.contactPerson, `%${searchParams.contactPerson}%`),
-      );
-    }
-
-    if (searchParams.active !== undefined) {
-      conditions.push(eq(teams.active, searchParams.active));
-    }
-
-    // If no search parameters were provided, return all teams
-    if (conditions.length === 0) {
-      return await db.query.teams.findMany();
-    }
-
-    // Combine all conditions with AND operator
-    return await db
-      .select()
-      .from(teams)
-      .where(and(...conditions));
-  } catch (error) {
-    console.error("[TeamRepository] Error in searchTeams:", error);
     throw error;
   }
 }
