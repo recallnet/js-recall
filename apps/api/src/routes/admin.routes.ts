@@ -67,6 +67,10 @@ export function configureAdminRoutes(
    *                       "twitter": "hey_kso"
    *                     }
    *                   }
+   *               imageUrl:
+   *                 type: string
+   *                 description: URL to the team's image
+   *                 example: "https://example.com/team-image.jpg"
    *     responses:
    *       201:
    *         description: Team registered successfully
@@ -100,6 +104,10 @@ export function configureAdminRoutes(
    *                       type: string
    *                       description: API key for the team to use with Bearer authentication. Admin should securely provide this to the team.
    *                       example: abc123def456_ghi789jkl012
+   *                     imageUrl:
+   *                       type: string
+   *                       description: URL to the team's image
+   *                       nullable: true
    *                     metadata:
    *                       type: object
    *                       description: Optional agent metadata if provided
@@ -162,6 +170,10 @@ export function configureAdminRoutes(
    *                         type: string
    *                         format: date-time
    *                         description: Account update timestamp
+   *                       imageUrl:
+   *                         type: string
+   *                         description: URL to the team's image
+   *                         nullable: true
    *       401:
    *         description: Unauthorized - Admin authentication required
    *       500:
@@ -931,6 +943,10 @@ export function configureAdminRoutes(
    *                         format: date-time
    *                         nullable: true
    *                         description: Date of deactivation if inactive
+   *                       imageUrl:
+   *                         type: string
+   *                         description: URL to the team's image
+   *                         nullable: true
    *                       isAdmin:
    *                         type: boolean
    *                         description: Whether the team has admin privileges

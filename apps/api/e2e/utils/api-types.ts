@@ -80,6 +80,7 @@ export interface TeamProfileResponse extends ApiResponse {
     email: string;
     contactPerson: string;
     metadata?: TeamMetadata;
+    imageUrl?: string;
     createdAt: string;
     updatedAt: string;
   };
@@ -270,6 +271,7 @@ export interface AdminTeamResponse extends ApiResponse {
     apiKey?: string;
     walletAddress?: string;
     bucketAddress?: string[];
+    imageUrl?: string;
     isAdmin: boolean;
     active: boolean;
     deactivationReason?: string;
@@ -288,6 +290,7 @@ export interface AdminTeamsListResponse extends ApiResponse {
     email: string;
     contactPerson: string;
     walletAddress?: string;
+    imageUrl?: string;
     isAdmin: boolean;
     active: boolean;
     createdAt: string;
@@ -304,6 +307,7 @@ export interface TeamRegistrationResponse extends ApiResponse {
     email: string;
     contactPerson: string;
     metadata?: TeamMetadata;
+    imageUrl?: string;
     apiKey: string;
     walletAddress: string;
     isAdmin: boolean;

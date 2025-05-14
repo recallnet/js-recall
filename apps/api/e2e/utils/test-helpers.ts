@@ -41,6 +41,7 @@ export async function registerTeamAndGetClient(
   teamName?: string,
   email?: string,
   contactPerson?: string,
+  imageUrl?: string,
 ) {
   // Ensure database is initialized
   await ensureDatabaseInitialized();
@@ -50,6 +51,9 @@ export async function registerTeamAndGetClient(
     teamName || `Team ${generateRandomString(8)}`,
     email || `team-${generateRandomString(8)}@test.com`,
     contactPerson || `Contact ${generateRandomString(8)}`,
+    undefined, // walletAddress
+    undefined, // metadata
+    imageUrl,
   );
 
   if (!result.success || !result.team) {

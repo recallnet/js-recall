@@ -263,6 +263,11 @@
                           "format": "date-time",
                           "description": "Team creation timestamp"
                         },
+                        "imageUrl": {
+                          "type": "string",
+                          "description": "URL to the team's image",
+                          "nullable": true
+                        },
                         "updatedAt": {
                           "type": "string",
                           "format": "date-time",
@@ -351,6 +356,10 @@
                         }
                       }
                     }
+                  },
+                  "imageUrl": {
+                    "type": "string",
+                    "description": "URL to the team's image"
                   }
                 }
               }
@@ -432,6 +441,10 @@
                               }
                             }
                           }
+                        },
+                        "imageUrl": {
+                          "type": "string",
+                          "description": "URL to the team's image"
                         },
                         "createdAt": {
                           "type": "string",
@@ -947,6 +960,11 @@
                         "twitter": "hey_kso"
                       }
                     }
+                  },
+                  "imageUrl": {
+                    "type": "string",
+                    "description": "URL to the team's image",
+                    "example": "https://example.com/team-image.jpg"
                   }
                 }
               }
@@ -992,6 +1010,11 @@
                           "type": "string",
                           "description": "API key for the team to use with Bearer authentication. Admin should securely provide this to the team.",
                           "example": "abc123def456_ghi789jkl012"
+                        },
+                        "imageUrl": {
+                          "type": "string",
+                          "description": "URL to the team's image",
+                          "nullable": true
                         },
                         "metadata": {
                           "type": "object",
@@ -1075,6 +1098,11 @@
                             "type": "string",
                             "format": "date-time",
                             "description": "Account update timestamp"
+                          },
+                          "imageUrl": {
+                            "type": "string",
+                            "description": "URL to the team's image",
+                            "nullable": true
                           }
                         }
                       }
@@ -2180,6 +2208,11 @@
                             "nullable": true,
                             "description": "Date of deactivation if inactive"
                           },
+                          "imageUrl": {
+                            "type": "string",
+                            "description": "URL to the team's image",
+                            "nullable": true
+                          },
                           "isAdmin": {
                             "type": "boolean",
                             "description": "Whether the team has admin privileges"
@@ -3126,6 +3159,11 @@
                         "twitter": "hey_kso"
                       }
                     }
+                  },
+                  "imageUrl": {
+                    "type": "string",
+                    "description": "URL to the team's image",
+                    "example": "https://example.com/team-image.jpg"
                   }
                 }
               }
@@ -3175,6 +3213,11 @@
                         "metadata": {
                           "type": "object",
                           "description": "Optional agent metadata if provided"
+                        },
+                        "imageUrl": {
+                          "type": "string",
+                          "description": "URL to the team's image",
+                          "nullable": true
                         },
                         "createdAt": {
                           "type": "string",

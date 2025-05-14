@@ -64,6 +64,10 @@ export function configurePublicRoutes(
    *                       "twitter": "hey_kso"
    *                     }
    *                   }
+   *               imageUrl:
+   *                 type: string
+   *                 description: URL to the team's image
+   *                 example: "https://example.com/team-image.jpg"
    *     responses:
    *       201:
    *         description: Team registered successfully
@@ -100,6 +104,10 @@ export function configurePublicRoutes(
    *                     metadata:
    *                       type: object
    *                       description: Optional agent metadata if provided
+   *                     imageUrl:
+   *                       type: string
+   *                       description: URL to the team's image
+   *                       nullable: true
    *                     createdAt:
    *                       type: string
    *                       format: date-time

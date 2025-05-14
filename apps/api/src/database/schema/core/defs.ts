@@ -23,6 +23,7 @@ export const teams = pgTable(
     apiKey: varchar("api_key", { length: 400 }).notNull(),
     walletAddress: varchar("wallet_address", { length: 42 }),
     bucketAddresses: text("bucket_addresses").array(),
+    imageUrl: text(),
     metadata: jsonb(),
     isAdmin: boolean("is_admin").default(false),
     active: boolean().default(false),

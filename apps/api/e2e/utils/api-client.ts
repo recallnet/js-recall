@@ -193,6 +193,7 @@ export class ApiClient {
    * @param contactPerson Contact person name
    * @param walletAddress Optional Ethereum wallet address (random valid address will be generated if not provided)
    * @param metadata Optional metadata for the team agent
+   * @param imageUrl Optional image URL for the team
    */
   async registerTeam(
     name: string,
@@ -200,6 +201,7 @@ export class ApiClient {
     contactPerson: string,
     walletAddress?: string,
     metadata?: TeamMetadata,
+    imageUrl?: string,
   ): Promise<TeamRegistrationResponse | ErrorResponse> {
     try {
       // Generate a random Ethereum address if one isn't provided
@@ -213,6 +215,7 @@ export class ApiClient {
           contactPerson,
           walletAddress: address,
           metadata,
+          imageUrl,
         },
       );
 
@@ -347,10 +350,12 @@ export class ApiClient {
 
   /**
    * Update team profile
+   * @param profileData Profile data to update including contactPerson, metadata, and imageUrl
    */
   async updateProfile(profileData: {
     contactPerson?: string;
     metadata?: TeamMetadata;
+    imageUrl?: string;
   }): Promise<TeamProfileResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.put(
@@ -783,6 +788,7 @@ export class ApiClient {
    * @param contactPerson Contact person name
    * @param walletAddress Optional Ethereum wallet address (random valid address will be generated if not provided)
    * @param metadata Optional metadata for the team agent
+   * @param imageUrl Optional image URL for the team
    */
   async publicRegisterTeam(
     name: string,
@@ -790,6 +796,7 @@ export class ApiClient {
     contactPerson: string,
     walletAddress?: string,
     metadata?: TeamMetadata,
+    imageUrl?: string,
   ): Promise<TeamRegistrationResponse | ErrorResponse> {
     try {
       // Generate a random Ethereum address if one isn't provided
@@ -803,6 +810,7 @@ export class ApiClient {
           contactPerson,
           walletAddress: address,
           metadata,
+          imageUrl,
         },
       );
 

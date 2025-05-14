@@ -42,6 +42,7 @@ export function makeAccountController(services: ServiceRegistry) {
             email: team.email,
             contactPerson: team.contactPerson,
             metadata: team.metadata,
+            imageUrl: team.imageUrl,
             createdAt: team.createdAt,
             updatedAt: team.updatedAt,
           },
@@ -60,7 +61,7 @@ export function makeAccountController(services: ServiceRegistry) {
     async updateProfile(req: Request, res: Response, next: NextFunction) {
       try {
         const teamId = req.teamId as string;
-        const { contactPerson, metadata } = req.body;
+        const { contactPerson, metadata, imageUrl } = req.body;
 
         // Get the team using the service
         const team = await services.teamManager.getTeam(teamId);
@@ -79,6 +80,11 @@ export function makeAccountController(services: ServiceRegistry) {
           team.metadata = metadata;
         }
 
+        // Update imageUrl if provided
+        if (imageUrl !== undefined) {
+          team.imageUrl = imageUrl;
+        }
+
         // Use the TeamManager service instead of directly updating the repository
         const updatedTeam = await services.teamManager.updateTeam(team);
 
@@ -95,6 +101,7 @@ export function makeAccountController(services: ServiceRegistry) {
             email: updatedTeam.email,
             contactPerson: updatedTeam.contactPerson,
             metadata: updatedTeam.metadata,
+            imageUrl: updatedTeam.imageUrl,
             createdAt: updatedTeam.createdAt,
             updatedAt: updatedTeam.updatedAt,
           },

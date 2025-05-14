@@ -15,6 +15,13 @@
       "when": 1747236911784,
       "tag": "0001_living_tomorrow_man",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1747243123319,
+      "tag": "0002_next_amazoness",
+      "breakpoints": true
     }
   ]
 }

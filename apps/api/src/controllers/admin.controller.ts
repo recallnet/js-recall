@@ -186,8 +186,14 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async registerTeam(req: Request, res: Response, next: NextFunction) {
       try {
-        const { teamName, email, contactPerson, walletAddress, metadata } =
-          req.body;
+        const {
+          teamName,
+          email,
+          contactPerson,
+          walletAddress,
+          metadata,
+          imageUrl,
+        } = req.body;
 
         // Validate required parameters
         if (!teamName || !email || !contactPerson || !walletAddress) {
@@ -211,16 +217,17 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         try {
-          // Register the team with optional metadata
+          // Request team registration through the team manager service
           const team = await services.teamManager.registerTeam(
             teamName,
             email,
             contactPerson,
             walletAddress,
             metadata,
+            imageUrl,
           );
 
-          // Format the response to include api key and metadata for the client
+          // Return success with created team
           return res.status(201).json({
             success: true,
             team: {
@@ -231,6 +238,7 @@ export function makeAdminController(services: ServiceRegistry) {
               walletAddress: team.walletAddress,
               apiKey: team.apiKey,
               metadata: team.metadata,
+              imageUrl: team.imageUrl,
               createdAt: team.createdAt,
             },
           });
@@ -517,6 +525,7 @@ export function makeAdminController(services: ServiceRegistry) {
           active: team.active,
           deactivationReason: team.deactivationReason,
           deactivationDate: team.deactivationDate,
+          imageUrl: team.imageUrl,
           createdAt: team.createdAt,
           updatedAt: team.updatedAt,
         }));
@@ -856,6 +865,7 @@ export function makeAdminController(services: ServiceRegistry) {
           active: team.active,
           deactivationReason: team.deactivationReason,
           deactivationDate: team.deactivationDate,
+          imageUrl: team.imageUrl,
           createdAt: team.createdAt,
           updatedAt: team.updatedAt,
           isAdmin: team.isAdmin,
@@ -961,6 +971,7 @@ export function makeAdminController(services: ServiceRegistry) {
           deactivationDate: team.deactivationDate,
           isAdmin: team.isAdmin,
           metadata: team.metadata,
+          imageUrl: team.imageUrl,
           createdAt: team.createdAt,
           updatedAt: team.updatedAt,
         }));
