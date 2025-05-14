@@ -20,11 +20,10 @@ import {leaderboardAtom} from "@/state/atoms";
 import {useAtom} from "jotai";
 import {Leaderboard, LeaderboardTypes} from "@/state/types";
 import BigNumberDisplay from "../bignumber";
-import {Agent} from "@/state/types";
 
 const categories = [LeaderboardTypes.ANALYSIS, LeaderboardTypes.DERIVATIVES, LeaderboardTypes.TRADING]
 
-export function LeaderboardSection() {
+export function Leaderboard() {
   const [leadState, setLeaderboard] = useAtom(leaderboardAtom)
   const [selected, setSelected] = React.useState(LeaderboardTypes.TRADING);
   const [limit, setLimit] = React.useState(10);
@@ -173,9 +172,9 @@ export function LeaderboardSection() {
 
               <AgentPodium
                 className='mb-10 md:mb-1'
-                first={leaderboard.agents[0] as Agent}
-                second={leaderboard.agents[1] as Agent}
-                third={leaderboard.agents[2] as Agent}
+                first={leaderboard.agents[0]}
+                second={leaderboard.agents[1]}
+                third={leaderboard.agents[2]}
               />
             </TabsContent>
           ))}

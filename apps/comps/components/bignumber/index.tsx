@@ -1,7 +1,8 @@
-import React from "react";
+import React from 'react';
+import BigNumber from 'bignumber.js';
 
 interface BigNumberDisplayProps {
-  value: string | bigint;
+  value: string | BigNumber;
   decimals: number;
   displayDecimals?: number;
   compact?: boolean;
@@ -14,36 +15,27 @@ export const BigNumberDisplay: React.FC<BigNumberDisplayProps> = ({
   compact = true,
 }) => {
   try {
-    const bigIntValue = typeof value === "bigint" ? value : BigInt(value);
-    const scale = 10n ** BigInt(decimals);
-    const integerPart = bigIntValue / scale;
-    const remainder = bigIntValue % scale;
-
-    // Create a decimal by manually building it
-    const remainderStr = remainder
-      .toString()
-      .padStart(decimals, "0")
-      .slice(0, displayDecimals);
-    const floatStr = `${integerPart.toString()}.${remainderStr}`;
-    const numberValue = parseFloat(floatStr);
+    const bigNum = new BigNumber(value);
+    const actualValue = bigNum.dividedBy(new BigNumber(10).pow(decimals));
+    const numberValue = actualValue.toNumber();
 
     const formatterOptions: Intl.NumberFormatOptions = {};
 
     if (compact) {
-      formatterOptions.notation = "compact";
-      formatterOptions.compactDisplay = "short";
+      formatterOptions.notation = 'compact';
+      formatterOptions.compactDisplay = 'short';
     }
 
     if (displayDecimals !== undefined) {
       formatterOptions.maximumFractionDigits = displayDecimals;
     }
 
-    const formatter = new Intl.NumberFormat("en", formatterOptions);
+    const formatter = new Intl.NumberFormat('en', formatterOptions);
     const formattedValue = formatter.format(numberValue);
 
     return <span>{formattedValue}</span>;
   } catch (error) {
-    console.error("Error formatting BigInt:", error);
+    console.error('Error formatting BigNumber:', error);
     return <span>Error</span>;
   }
 };

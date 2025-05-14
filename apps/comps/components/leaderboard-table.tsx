@@ -1,12 +1,10 @@
 "use client";
 
-import { useAtom } from "jotai";
 import Image from "next/image";
-import { FaRegThumbsUp } from "react-icons/fa";
 
-import { displayAddress } from "@recallnet/address-utils/display";
-import { Button } from "@recallnet/ui2/components/shadcn/button";
-import { Skeleton } from "@recallnet/ui2/components/skeleton";
+import {FaRegThumbsUp} from "react-icons/fa";
+import {displayAddress} from "@recallnet/address-utils/display";
+import {Button} from "@recallnet/ui2/components/shadcn/button";
 import {
   Table,
   TableBody,
@@ -16,50 +14,30 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import { userAgentAtom, userAtom } from "@/state/atoms";
-import { Agent } from "@/types";
-
+import {useAtom} from "@/node_modules/jotai/react";
+import {userAgentAtom, userAtom} from "@/state/atoms";
+import {Agent} from "@/state/types";
 import AwardIcon from "./agent-podium/award-icon";
+import BigNumberDisplay from "./bignumber";
 
-const emptyAgent: (i: number) => LeaderboardAgent = (i: number) => ({
-  id: i.toString(),
-  rank: i + 1,
-  imageUrl: "",
-  name: "",
-  metadata: {},
-  skills: [],
-  apiKey: "",
-  registeredCompetitionIds: [],
-  userId: undefined,
-  stats: undefined,
-  trophies: undefined,
-  hasUnclaimedRewards: false,
-  score: 0,
-  rewards: undefined,
-});
-
-export function LeaderboardTable({
-  agents,
-  onExtend,
-  loaded,
-}: {
-  agents: LeaderboardAgent[];
-  onExtend: () => void;
-  loaded?: boolean;
+export function LeaderboardTable({agents}: {
+  agents: (Agent & {rank: number})[];
 }) {
   const [user] = useAtom(userAtom);
   const [userAgent] = useAtom(userAgentAtom);
-  const toRender = loaded
-    ? agents
-    : new Array(10).fill(0).map((_, i) => emptyAgent(i));
 
   return (
     <div className="w-full overflow-x-scroll">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="md:w-120 px-0 text-left">
-              RANK / NAME
+            <TableHead className="px-0 text-left md:w-120">RANK / NAME</TableHead>
+            <TableHead>Elo score</TableHead>
+            <TableHead>
+              ROI
+            </TableHead>
+            <TableHead>
+              Trades
             </TableHead>
             <TableHead>Elo score</TableHead>
             <TableHead>ROI</TableHead>
@@ -73,73 +51,17 @@ export function LeaderboardTable({
             <TableRow key={userAgent.id} className="h-25 bg-card">
               <TableCell className="w-50">
                 <div className="flex items-center justify-start">
-                  {userAgent.rank <= 3 ? (
-                    <AwardIcon
-                      className="mr-5"
-                      place={
-                        ["first", "second", "third"][
-                          userAgent.rank - 1
-                        ] as "first"
-                      }
-                    />
-                  ) : (
-                    <div className="mr-10 bg-gray-900 px-[8px] py-[4px] text-sm text-gray-300">
-                      {userAgent.rank}
-                    </div>
-                  )}
+                  {userAgent.rank <= 2 ?
+                    <AwardIcon className="mr-5" place={['first', 'second', 'third'][userAgent.rank] as 'first'} />
+                    :
+                    <div className="text-sm text-gray-300 mr-10 bg-gray-900 py-[4px] px-[8px]">{userAgent.rank}</div>
+                  }
                   <div className="flex items-center gap-5">
                     <Image
                       src={userAgent.imageUrl || "/agent-image.png"}
                       alt="avatar"
                       width={35}
                       height={35}
-                    />
-                    <div className="text-sm">
-                      <div className="font-medium leading-none text-white">
-                        {userAgent.name}
-                      </div>
-                      <span className="whitespace-nowrap text-xs text-gray-400">
-                        {displayAddress(
-                          userAgent.metadata.walletAddress || "",
-                          {
-                            numChars: 5,
-                            separator: " . . . ",
-                          },
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </TableCell>
-
-              <TableCell className="text-center">
-                {userAgent.score || 0}
-              </TableCell>
-
-              <TableCell className="text-center">
-                {`${userAgent.metadata.roi?.toFixed(2) || 0}%`}
-              </TableCell>
-
-              <TableCell className="text-center">
-                {userAgent.metadata.trades}
-              </TableCell>
-
-              <TableCell className="text-end text-lg text-gray-500">
-                <FaRegThumbsUp />
-              </TableCell>
-            </TableRow>
-          )}
-
-          {toRender.map((agent) => (
-            <TableRow key={agent.id} className="h-25">
-              <TableCell className="w-50">
-                <div className="flex items-center justify-start">
-                  {agent.rank <= 3 ? (
-                    <AwardIcon
-                      className="mr-5"
-                      place={
-                        ["first", "second", "third"][agent.rank - 1] as "first"
-                      }
                     />
                   ) : (
                     <div className="mr-10 bg-gray-900 px-[8px] py-[4px] text-sm text-gray-300">
@@ -158,53 +80,84 @@ export function LeaderboardTable({
                       <Skeleton className="h-8 w-8 rounded-full" />
                     )}
                     <div className="text-sm">
-                      {loaded ? (
-                        <div className="font-medium leading-none text-white">
-                          {agent.name}
-                        </div>
-                      ) : (
-                        <Skeleton className="h-2 w-20 rounded-full" />
-                      )}
-                      {loaded ? (
-                        <span className="whitespace-nowrap text-xs text-gray-400">
-                          {displayAddress(agent.metadata.walletAddress || "", {
-                            numChars: 5,
-                            separator: " . . . ",
-                          })}
-                        </span>
-                      ) : (
-                        <Skeleton className="w-30 mt-2 h-2 rounded-full" />
-                      )}
+                      <div className="font-medium leading-none text-white">
+                        {userAgent.name}
+                      </div>
+                      <span className="whitespace-nowrap text-xs text-gray-400">
+                        {displayAddress(userAgent.metadata.walletAddress, {
+                          numChars: 5,
+                          separator: " . . . ",
+                        })}
+                      </span>
                     </div>
                   </div>
                 </div>
               </TableCell>
 
               <TableCell className="text-center">
-                {loaded ? (
-                  agent.score
-                ) : (
-                  <Skeleton className="h-2 w-10 rounded-full" />
-                )}
+                {userAgent.stats.eloAvg}
               </TableCell>
 
               <TableCell className="text-center">
-                {loaded ? (
-                  <>{`${agent.metadata.roi?.toFixed(2) || "0"}%`}</>
-                ) : (
-                  <Skeleton className="h-2 w-10 rounded-full" />
-                )}
+                <BigNumberDisplay value={userAgent.metadata.roi.toString()} decimals={0} />
+                %
               </TableCell>
 
               <TableCell className="text-center">
-                {loaded ? (
-                  agent.metadata.trades
-                ) : (
-                  <Skeleton className="h-2 w-10 rounded-full" />
-                )}
+                {userAgent.metadata.trades}
               </TableCell>
 
-              <TableCell className="text-end text-lg text-gray-500">
+              <TableCell className="text-gray-500 text-lg text-end">
+                <FaRegThumbsUp />
+              </TableCell>
+            </TableRow>
+          )}
+
+          {agents.map((agent) => (
+            <TableRow key={agent.id} className="h-25">
+              <TableCell className="w-50">
+                <div className="flex items-center justify-start">
+                  {agent.rank <= 2 ?
+                    <AwardIcon className="mr-5" place={['first', 'second', 'third'][agent.rank] as 'first'} />
+                    :
+                    <div className="text-sm text-gray-300 mr-10 bg-gray-900 py-[4px] px-[8px]">{agent.rank}</div>
+                  }
+                  <div className="flex items-center gap-5">
+                    <Image
+                      src={agent.imageUrl || "/agent-image.png"}
+                      alt="avatar"
+                      width={35}
+                      height={35}
+                    />
+                    <div className="text-sm">
+                      <div className="font-medium leading-none text-white">
+                        {agent.name}
+                      </div>
+                      <span className="whitespace-nowrap text-xs text-gray-400">
+                        {displayAddress(agent.metadata.walletAddress, {
+                          numChars: 5,
+                          separator: " . . . ",
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </TableCell>
+
+              <TableCell className="text-center">
+                {agent.stats.eloAvg}
+              </TableCell>
+
+              <TableCell className="text-center">
+                <BigNumberDisplay value={agent.metadata.roi.toString()} decimals={0} />
+                %
+              </TableCell>
+
+              <TableCell className="text-center">
+                {agent.metadata.trades}
+              </TableCell>
+
+              <TableCell className="text-gray-500 text-lg text-end">
                 <FaRegThumbsUp />
               </TableCell>
             </TableRow>
@@ -212,7 +165,11 @@ export function LeaderboardTable({
         </TableBody>
       </Table>
 
-      <Button onClick={onExtend} className="mt-4 w-full" variant="outline">
+      <Button
+        //onClick={() => setVisibleCount((prev) => prev + 10)}
+        className="mt-4 w-full"
+        variant="outline"
+      >
         SHOW MORE
       </Button>
     </div>
