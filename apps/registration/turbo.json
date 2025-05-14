@@ -7,7 +7,9 @@
     "build": {
       "env": [
         "API_URL",
-        "ADMIN_API_KEY"
+        "ADMIN_API_KEY",
+        "JWT_SECRET",
+        "NODE_ENV"
       ]
     }
   }

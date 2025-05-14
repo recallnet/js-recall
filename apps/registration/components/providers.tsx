@@ -9,6 +9,7 @@ import { WagmiProvider } from "wagmi";
 
 import { ThemeProvider } from "@recallnet/ui/components/theme-provider";
 
+import { AuthProvider } from "@/components/auth-provider";
 import { config } from "@/lib/wagmi-config";
 
 const queryClient = new QueryClient();
@@ -21,6 +22,7 @@ const queryClient = new QueryClient();
  * - QueryClientProvider for data fetching
  * - RainbowKitProvider for wallet UI
  * - ThemeProvider for theming support
+ * - AuthProvider for authentication
  *
  * @param props Component props
  * @returns Provider-wrapped children
@@ -42,7 +44,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             disableTransitionOnChange
             enableColorScheme
           >
-            {children}
+            <AuthProvider>{children}</AuthProvider>
           </ThemeProvider>
         </RainbowKitProvider>
       </QueryClientProvider>

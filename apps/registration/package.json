@@ -38,9 +38,13 @@
     "devDependencies": {
         "@recallnet/eslint-config": "workspace:^",
         "@recallnet/typescript-config": "workspace:*",
+        "@types/jsonwebtoken": "^9.0.9",
         "@types/node": "^20",
         "@types/react": "^19.0.0",
         "@types/react-dom": "^19.0.0",
+        "ethers": "^6.13.7",
+        "jose": "^6.0.11",
+        "jsonwebtoken": "^9.0.2",
         "typedoc": "^0.28.1",
         "typedoc-plugin-coverage": "^3.4.1",
         "typedoc-plugin-markdown": "^4.6.0",
