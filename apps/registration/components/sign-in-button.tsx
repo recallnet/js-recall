@@ -2,6 +2,7 @@
 
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { Loader2 } from "lucide-react";
+import { CSSProperties } from "react";
 import { useAccount } from "wagmi";
 
 import { Button } from "@recallnet/ui/components/shadcn/button";
@@ -13,7 +14,7 @@ import { useAuthContext } from "@/components/auth-provider";
  *
  * Handles the sign-in flow with the wallet
  */
-export function SignInButton() {
+export function SignInButton({ className = "", useCustomStyling = false }) {
   const { openConnectModal } = useConnectModal();
   const { isConnected } = useAccount();
   const { isAuthenticated, signIn, isLoading, error, isSigningIn } =
@@ -24,6 +25,7 @@ export function SignInButton() {
     isLoading,
     isSigningIn,
     isAuthenticated,
+    error,
   });
 
   const handleSignIn = async () => {
@@ -41,9 +43,39 @@ export function SignInButton() {
   // Button is loading if either global loading state or signing state is true
   const isButtonLoading = isLoading || isSigningIn;
 
+  // Custom styling option for the homepage
+  const customButtonStyle: CSSProperties = useCustomStyling
+    ? {
+        width: "100%",
+        padding: "1.25rem 0",
+        backgroundColor: "#0057AD",
+        borderRadius: "0",
+        fontSize: "0.875rem",
+        fontFamily: "'Trim Mono', monospace",
+        fontWeight: 600,
+        textTransform: "uppercase" as const,
+        letterSpacing: "0.1em",
+      }
+    : {};
+
+  const customButtonClass = useCustomStyling
+    ? "w-full py-5 bg-[#0057AD] hover:bg-[#0066cc] transition-colors rounded-none text-sm font-semibold uppercase tracking-wider"
+    : "";
+
+  const customErrorClass = useCustomStyling
+    ? "text-center text-red-500 text-sm mt-2 font-['Trim_Mono',monospace]"
+    : "text-destructive text-sm";
+
   return (
-    <div className="space-y-2">
-      <Button onClick={handleSignIn} disabled={isButtonLoading}>
+    <div
+      className={`${useCustomStyling ? "w-full" : "space-y-2"} ${className}`}
+    >
+      <Button
+        onClick={handleSignIn}
+        disabled={isButtonLoading}
+        className={customButtonClass}
+        style={customButtonStyle}
+      >
         {isButtonLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -56,7 +88,7 @@ export function SignInButton() {
         )}
       </Button>
 
-      {error && <p className="text-destructive text-sm">{error}</p>}
+      {error && <p className={customErrorClass}>{error}</p>}
     </div>
   );
 }

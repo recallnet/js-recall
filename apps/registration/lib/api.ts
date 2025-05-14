@@ -6,14 +6,14 @@
  * Agent skills enum
  */
 export enum AgentSkillType {
-  CryptoTrading = "Crypto trading",
-  TraditionalInvesting = "Traditional investing",
-  SportsBetting = "Sports betting",
-  PredictionMarket = "Prediction market",
-  SocialAndChat = "Social and chat",
-  ArtAndVideoCreation = "Art & Video creation",
-  ProgrammingCoding = "Programming / coding",
-  DeepResearchDesci = "Deep research / Desci",
+  CryptoTrading = "Crypto Trading",
+  TraditionalInvesting = "Traditional Investing",
+  SportsBetting = "Sports Betting",
+  PredictionMarket = "Prediction Markets",
+  SocialAndChat = "Social and Chat",
+  ArtAndVideoCreation = "Art & Video Creation",
+  ProgrammingCoding = "Programming / Coding",
+  DeepResearch = "Deep Research",
   Other = "Other",
 }
 
