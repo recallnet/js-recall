@@ -632,9 +632,9 @@ importers:
       cborg:
         specifier: ^4.2.6
         version: 4.2.9
-      uint8arrays:
-        specifier: ^5.1.0
-        version: 5.1.0
+      viem:
+        specifier: ^2.22.9
+        version: 2.28.1(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.4)
     devDependencies:
       '@recallnet/eslint-config':
         specifier: workspace:*
@@ -745,6 +745,9 @@ importers:
       '@recallnet/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@recallnet/fvm':
+        specifier: workspace:*
+        version: link:../fvm
       '@tanstack/react-query':
         specifier: ^5.64.2
         version: 5.69.0(react@19.0.0)
@@ -800,9 +803,6 @@ importers:
       file-type:
         specifier: ^19.6.0
         version: 19.6.0
-      uint8arrays:
-        specifier: ^5.1.0
-        version: 5.1.0
       viem:
         specifier: ^2.28.1
         version: 2.28.1(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.4)
@@ -6647,9 +6647,6 @@ packages:
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
-  multiformats@13.3.2:
-    resolution: {integrity: sha512-qbB0CQDt3QKfiAzZ5ZYjLFOs+zW43vA4uyM8g27PeEuXZybUOFyjrVdP93HPBHMoglibwfkdVwbzfUq8qGcH6g==}
-
   multiformats@9.9.0:
     resolution: {integrity: sha512-HoMUjhH9T8DDBNT+6xzkrd9ga/XiBI4xLr58LJACwK6G3HTOPeMz4nB4KJs33L2BelrIJa7P0VuNaVF3hMYfjg==}
 
@@ -8380,9 +8377,6 @@ packages:
 
   uint8arrays@3.1.0:
     resolution: {integrity: sha512-ei5rfKtoRO8OyOIor2Rz5fhzjThwIHJZ3uyDPnDHTXbP0aMQ1RN/6AI5B5d9dBxJOU+BvOAk7ZQ1xphsX8Lrog==}
-
-  uint8arrays@5.1.0:
-    resolution: {integrity: sha512-vA6nFepEmlSKkMBnLBaUMVvAC4G3CTmO58C12y4sq6WPDOR7mOFYOi7GlrQ4djeSbP6JG9Pv9tJDM97PedRSww==}
 
   unbox-primitive@1.1.0:
     resolution: {integrity: sha512-nWJ91DjeOkej/TA8pXQ3myruKpKEYgqvpw9lz4OPHj/NWFNluYrjbz9j01CJ8yKQd2g4jFoOkINCTW2I5LEEyw==}
@@ -15848,8 +15842,6 @@ snapshots:
 
   ms@2.1.3: {}
 
-  multiformats@13.3.2: {}
-
   multiformats@9.9.0: {}
 
   mustache@4.2.0: {}
@@ -17787,10 +17779,6 @@ snapshots:
   uint8arrays@3.1.0:
     dependencies:
       multiformats: 9.9.0
-
-  uint8arrays@5.1.0:
-    dependencies:
-      multiformats: 13.3.2
 
   unbox-primitive@1.1.0:
     dependencies:

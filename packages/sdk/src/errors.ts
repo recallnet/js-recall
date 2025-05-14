@@ -118,6 +118,12 @@ export function isActorNotFoundError(error: Error): ActorNotFoundResult {
   };
 }
 
+// Check if the error message is an empty result error (e.g., calling a contract or method that
+// don't exist), and include the hex address if it is
+export function isEmptyResponseError(error: Error): boolean {
+  return error.message.includes(`returned no data ("0x")`);
+}
+
 export class ActorNotFound extends Error {
   constructor(address: Address) {
     super(

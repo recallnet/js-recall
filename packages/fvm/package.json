@@ -62,7 +62,7 @@
   "dependencies": {
     "blakejs": "^1.2.1",
     "cborg": "^4.2.6",
-    "uint8arrays": "^5.1.0"
+    "viem": "^2.22.9"
   },
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:*",

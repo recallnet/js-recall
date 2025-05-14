@@ -1,9 +1,6 @@
 // Forked & converted to use `bigint` & `Uint8Array`
 // Source: https://github.com/Zondax/izari-filecoin/blob/master/src/address/index.ts
-import { compare as u8aCompare } from "uint8arrays/compare";
-import { concat as u8aConcat } from "uint8arrays/concat";
-import { fromString as u8aFromString } from "uint8arrays/from-string";
-import { toString as u8aToString } from "uint8arrays/to-string";
+import { Hex, bytesToHex, concatBytes, hexToBytes } from "viem";
 
 import {
   ACTOR_ID_ETHEREUM_MASK,
@@ -28,7 +25,7 @@ import {
   decode as base32Decode,
   encode as base32Encode,
 } from "../utils/base32.js";
-import { bigintToUint8Array } from "../utils/convert.js";
+import { bigintToUint8Array, compareUint8Arrays } from "../utils/convert.js";
 import { unsigned } from "../utils/leb128/index.js";
 import {
   InvalidChecksumAddress,
@@ -186,11 +183,10 @@ export abstract class Address {
     let addr: Uint8Array;
 
     if (typeof ethAddr === "string") {
-      const tmp = ethAddr.startsWith("0x") ? ethAddr.substring(2) : ethAddr;
-      if (tmp.length % 2 !== 0) {
+      if (ethAddr.length % 2 !== 0 || !ethAddr.startsWith("0x")) {
         throw new Error("invalid eth address");
       }
-      addr = u8aFromString(tmp.toLowerCase(), "hex");
+      addr = hexToBytes(ethAddr as Hex);
     } else {
       addr = ethAddr;
     }
@@ -199,9 +195,7 @@ export abstract class Address {
       let i = ACTOR_ID_ETHEREUM_MASK_LEN;
       while (addr[i] == 0) i += 1;
 
-      const payload = unsigned.encode(
-        "0x" + u8aToString(addr.subarray(i), "hex"),
-      );
+      const payload = unsigned.encode(bytesToHex(addr.subarray(i)));
       return new AddressId(payload, networkPrefix);
     }
 
@@ -291,7 +285,7 @@ export class AddressBls extends Address {
    * @returns bls address in bytes format
    */
   toBytes = (): Uint8Array =>
-    u8aConcat([new Uint8Array([this.protocol]), this.payload]);
+    concatBytes([new Uint8Array([this.protocol]), this.payload]);
 
   /**
    * Allows to get the string format of this address
@@ -302,7 +296,7 @@ export class AddressBls extends Address {
     return (
       this.networkPrefix +
       this.protocol.toString() +
-      base32Encode(u8aConcat([this.payload, checksum])).toLowerCase()
+      base32Encode(concatBytes([this.payload, checksum])).toLowerCase()
     );
   };
 
@@ -331,8 +325,8 @@ export class AddressBls extends Address {
     const checksum = decodedData.subarray(-4);
 
     const newAddress = new AddressBls(payload, networkPrefix);
-    const addressChecksum = u8aToString(newAddress.getChecksum(), "hex");
-    const originalChecksum = u8aToString(checksum, "hex");
+    const addressChecksum = bytesToHex(newAddress.getChecksum());
+    const originalChecksum = bytesToHex(checksum);
     if (addressChecksum !== originalChecksum)
       throw new InvalidChecksumAddress(addressChecksum, originalChecksum);
 
@@ -391,7 +385,7 @@ export class AddressId extends Address {
       payloadBuff = unsigned.encode(payload);
     } else {
       payloadBuff = unsigned.encode(unsigned.decode(payload));
-      if (u8aCompare(payloadBuff, payload) !== 0) {
+      if (compareUint8Arrays(payloadBuff, payload) !== 0) {
         throw new Error("invalid leb128 encoded payload");
       }
     }
@@ -408,7 +402,7 @@ export class AddressId extends Address {
    * @returns id address in bytes format
    */
   toBytes = (): Uint8Array => {
-    return u8aConcat([new Uint8Array([this.protocol]), this.payload]);
+    return concatBytes([new Uint8Array([this.protocol]), this.payload]);
   };
 
   /**
@@ -478,7 +472,8 @@ export class AddressId extends Address {
     const decodedPayload = bigintToUint8Array(unsigned.decode(this.payload));
     buf.set(decodedPayload, ETH_ADDRESS_LEN - decodedPayload.byteLength);
 
-    return `${hexPrefix ? "0x" : ""}${u8aToString(buf, "hex")}`;
+    const hex = bytesToHex(buf);
+    return hexPrefix ? hex : hex.slice(2);
   };
 }
 
@@ -513,7 +508,7 @@ export class AddressSecp256k1 extends Address {
    * @returns secp256k1 address in bytes format
    */
   toBytes = (): Uint8Array =>
-    u8aConcat([new Uint8Array([this.protocol]), this.payload]);
+    concatBytes([new Uint8Array([this.protocol]), this.payload]);
 
   /**
    * Allows to get the string format of this address
@@ -524,7 +519,7 @@ export class AddressSecp256k1 extends Address {
     return (
       this.networkPrefix +
       this.protocol.toString() +
-      base32Encode(u8aConcat([this.payload, checksum])).toLowerCase()
+      base32Encode(concatBytes([this.payload, checksum])).toLowerCase()
     );
   };
 
@@ -553,8 +548,8 @@ export class AddressSecp256k1 extends Address {
     const checksum = decodedData.subarray(-4);
 
     const newAddress = new AddressSecp256k1(payload, networkPrefix);
-    const addressChecksum = u8aToString(newAddress.getChecksum(), "hex");
-    const originalChecksum = u8aToString(checksum, "hex");
+    const addressChecksum = bytesToHex(newAddress.getChecksum());
+    const originalChecksum = bytesToHex(checksum);
     if (addressChecksum !== originalChecksum)
       throw new InvalidChecksumAddress(addressChecksum, originalChecksum);
 
@@ -613,7 +608,7 @@ export class AddressActor extends Address {
    * @returns actor address in bytes format
    */
   toBytes = (): Uint8Array =>
-    u8aConcat([new Uint8Array([this.protocol]), this.payload]);
+    concatBytes([new Uint8Array([this.protocol]), this.payload]);
 
   /**
    * Allows to get the string format of this address
@@ -624,7 +619,7 @@ export class AddressActor extends Address {
     return (
       this.networkPrefix +
       this.protocol.toString() +
-      base32Encode(u8aConcat([this.payload, checksum])).toLowerCase()
+      base32Encode(concatBytes([this.payload, checksum])).toLowerCase()
     );
   };
 
@@ -652,8 +647,8 @@ export class AddressActor extends Address {
     const checksum = decodedData.subarray(-4);
 
     const newAddress = new AddressActor(payload, networkPrefix);
-    const addressChecksum = u8aToString(newAddress.getChecksum(), "hex");
-    const originalChecksum = u8aToString(checksum, "hex");
+    const addressChecksum = bytesToHex(newAddress.getChecksum());
+    const originalChecksum = bytesToHex(checksum);
     if (addressChecksum !== originalChecksum)
       throw new InvalidChecksumAddress(addressChecksum, originalChecksum);
 
@@ -751,7 +746,7 @@ export class AddressDelegated extends Address {
     const namespaceBytes = unsigned.encode(this.namespace);
     const protocolBytes = unsigned.encode(this.protocol);
 
-    return u8aConcat([protocolBytes, namespaceBytes, this.subAddress]);
+    return concatBytes([protocolBytes, namespaceBytes, this.subAddress]);
   };
 
   /**
@@ -766,7 +761,7 @@ export class AddressDelegated extends Address {
       this.protocol.toString() +
       this.namespace +
       "f" +
-      base32Encode(u8aConcat([this.subAddress, checksum])).toLowerCase()
+      base32Encode(concatBytes([this.subAddress, checksum])).toLowerCase()
     );
   };
 
@@ -800,8 +795,8 @@ export class AddressDelegated extends Address {
       networkPrefix,
     );
 
-    const addressChecksum = u8aToString(newAddress.getChecksum(), "hex");
-    const originalChecksum = u8aToString(checksum, "hex");
+    const addressChecksum = bytesToHex(newAddress.getChecksum());
+    const originalChecksum = bytesToHex(checksum);
     if (addressChecksum !== originalChecksum)
       throw new InvalidChecksumAddress(addressChecksum, originalChecksum);
 
@@ -893,6 +888,8 @@ export class FilEthAddress extends AddressDelegated {
    * @param hexPrefix - add the 0x prefix or not. Defaults to true.
    * @returns ethereum address in hex string format
    */
-  toEthAddressHex = (hexPrefix = true): string =>
-    `${hexPrefix ? "0x" : ""}${u8aToString(this.subAddress, "hex")}`;
+  toEthAddressHex = (hexPrefix = true): string => {
+    const hex = bytesToHex(this.subAddress);
+    return hexPrefix ? hex : hex.slice(2);
+  };
 }

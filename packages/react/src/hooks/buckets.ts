@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { default as axios } from "axios";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AbiStateMutability, Address, ContractFunctionArgs } from "viem";
+import { AbiStateMutability, Address, ContractFunctionArgs, Hex } from "viem";
 import {
   useAccount,
   useChainId,
@@ -12,19 +12,24 @@ import {
 } from "wagmi";
 
 import { getChain, getObjectApiUrl } from "@recallnet/chains";
-import { bucketManagerAbi, bucketManagerAddress } from "@recallnet/contracts";
+import {
+  iBucketFacadeAbi,
+  iMachineFacadeAbi,
+  iMachineFacadeAddress,
+} from "@recallnet/contracts";
+import { base32ToHex, hexToBase32 } from "@recallnet/fvm/utils";
 
 export function useListBuckets(owner?: Address) {
   const chainId = useChainId();
   const { address } = useAccount();
   const contractAddress =
-    bucketManagerAddress[chainId as keyof typeof bucketManagerAddress];
+    iMachineFacadeAddress[chainId as keyof typeof iMachineFacadeAddress];
 
   const arg = owner ?? address;
 
   return useReadContract({
     address: contractAddress,
-    abi: bucketManagerAbi,
+    abi: iMachineFacadeAbi,
     functionName: "listBuckets",
     args: [arg!],
     query: {
@@ -34,7 +39,7 @@ export function useListBuckets(owner?: Address) {
 }
 
 export type QueryObjectsArgs = ContractFunctionArgs<
-  typeof bucketManagerAbi,
+  typeof iBucketFacadeAbi,
   AbiStateMutability,
   "queryObjects"
 >;
@@ -48,10 +53,6 @@ export function useInfiniteQueryObjects(
     enabled?: boolean | (() => boolean);
   },
 ) {
-  const chainId = useChainId();
-  const contractAddress =
-    bucketManagerAddress[chainId as keyof typeof bucketManagerAddress];
-
   const prefix = options?.prefix ?? "";
   const delimiter = options?.delimiter ?? "/";
 
@@ -59,7 +60,6 @@ export function useInfiniteQueryObjects(
     cacheKey: `queryObjectsResults_${bucket}_${prefix}`,
     contracts(pageParam) {
       const args = [
-        bucket,
         prefix,
         delimiter,
         pageParam,
@@ -67,8 +67,8 @@ export function useInfiniteQueryObjects(
       ] satisfies QueryObjectsArgs;
       return [
         {
-          address: contractAddress,
-          abi: bucketManagerAbi,
+          address: bucket,
+          abi: iBucketFacadeAbi,
           functionName: "queryObjects",
           args: args,
         },
@@ -100,27 +100,38 @@ export function useQueryObjects(
     enabled?: boolean | (() => boolean);
   },
 ) {
-  const chainId = useChainId();
-  const contractAddress =
-    bucketManagerAddress[chainId as keyof typeof bucketManagerAddress];
-
   const args = [
-    bucket,
     options?.prefix ?? "",
     options?.delimiter ?? "/",
     options?.startKey ?? "",
     BigInt(options?.limit ?? 100),
   ] satisfies QueryObjectsArgs;
 
-  return useReadContract({
-    address: contractAddress,
-    abi: bucketManagerAbi,
+  const { data, ...rest } = useReadContract({
+    address: bucket,
+    abi: iBucketFacadeAbi,
     functionName: "queryObjects",
     args: args,
     query: {
       enabled: options?.enabled,
     },
   });
+
+  return {
+    data: data
+      ? {
+          ...data,
+          objects: data.objects.map((obj) => ({
+            ...obj,
+            state: {
+              ...obj.state,
+              blobHash: hexToBase32(obj.state.blobHash),
+            },
+          })),
+        }
+      : undefined,
+    ...rest,
+  };
 }
 
 export function useGetObject(
@@ -128,25 +139,32 @@ export function useGetObject(
   key: string,
   options?: { enabled?: boolean | (() => boolean) },
 ) {
-  const chainId = useChainId();
-  const contractAddress =
-    bucketManagerAddress[chainId as keyof typeof bucketManagerAddress];
-
-  return useReadContract({
-    address: contractAddress,
-    abi: bucketManagerAbi,
+  const { data, ...rest } = useReadContract({
+    address: bucket,
+    abi: iBucketFacadeAbi,
     functionName: "getObject",
-    args: [bucket, key],
+    args: [key],
     query: {
       enabled: options?.enabled,
     },
   });
+
+  return {
+    data: data
+      ? {
+          ...data,
+          blobHash: hexToBase32(data.blobHash),
+          recoveryHash: hexToBase32(data.recoveryHash),
+        }
+      : undefined,
+    ...rest,
+  };
 }
 
 export function useCreateBucket() {
   const chainId = useChainId();
   const contractAddress =
-    bucketManagerAddress[chainId as keyof typeof bucketManagerAddress];
+    iMachineFacadeAddress[chainId as keyof typeof iMachineFacadeAddress];
 
   const { writeContract, writeContractAsync, ...rest } = useWriteContract();
 
@@ -154,7 +172,7 @@ export function useCreateBucket() {
     () =>
       ({
         address: contractAddress,
-        abi: bucketManagerAbi,
+        abi: iMachineFacadeAbi,
         functionName: "createBucket",
       }) as const,
     [contractAddress],
@@ -206,9 +224,6 @@ export function useAddFile() {
   const [args, setArgs] = useState<AddFileArgs | undefined>(undefined);
 
   const chainId = useChainId();
-  const contractAddress =
-    bucketManagerAddress[chainId as keyof typeof bucketManagerAddress];
-
   const chain = getChain(chainId);
   const objectApiUrl = getObjectApiUrl(chain);
 
@@ -239,25 +254,26 @@ export function useAddFile() {
   useEffect(() => {
     if (uploadRes && args) {
       const metadata = convertMetadataToAbiParams(args.options?.metadata ?? {});
-      const params = {
-        source: uploadRes.node_id,
-        key: args.key,
-        blobHash: uploadRes.hash,
-        recoveryHash: uploadRes.metadata_hash,
-        size: BigInt(args.file.size),
-        ttl: args.options?.ttl ?? 0n,
+      const blobHash = base32ToHex(uploadRes.hash) as Hex;
+      const metadataHash = base32ToHex(uploadRes.metadata_hash) as Hex;
+      const params = [
+        `0x${uploadRes.node_id}`,
+        args.key,
+        blobHash,
+        metadataHash,
+        BigInt(args.file.size),
+        args.options?.ttl ?? 0n,
         metadata,
-        overwrite: args.options?.overwrite ?? false,
-        from: args.from,
-      };
+        args.options?.overwrite ?? false,
+      ] as const;
       return writeContract({
-        address: contractAddress,
-        abi: bucketManagerAbi,
+        address: args.bucket,
+        abi: iBucketFacadeAbi,
         functionName: "addObject",
-        args: [args.bucket, params],
+        args: params,
       });
     }
-  }, [args, contractAddress, uploadRes, writeContract]);
+  }, [args, uploadRes, writeContract]);
 
   const addFile = useCallback(
     (args: AddFileArgs) => {
@@ -287,38 +303,28 @@ export function useAddFile() {
 }
 
 export function useDeleteObject() {
-  const chainId = useChainId();
-  const contractAddress =
-    bucketManagerAddress[chainId as keyof typeof bucketManagerAddress];
-
   const { writeContract, writeContractAsync, ...rest } = useWriteContract();
 
-  const baseConfig = useMemo(
-    () =>
-      ({
-        address: contractAddress,
-        abi: bucketManagerAbi,
-        functionName: "deleteObject",
-      }) as const,
-    [contractAddress],
-  );
-
   const deleteObject = useCallback(
-    (bucket: Address, from: Address, key: string) =>
+    (bucket: Address, key: string) =>
       writeContract({
-        ...baseConfig,
-        args: [bucket, key, from],
+        address: bucket,
+        abi: iBucketFacadeAbi,
+        functionName: "deleteObject",
+        args: [key],
       }),
-    [writeContract, baseConfig],
+    [writeContract],
   );
 
   const deleteObjectAsync = useCallback(
-    (bucket: Address, from: Address, key: string) =>
+    (bucket: Address, key: string) =>
       writeContractAsync({
-        ...baseConfig,
-        args: [bucket, key, from],
+        address: bucket,
+        abi: iBucketFacadeAbi,
+        functionName: "deleteObject",
+        args: [key],
       }),
-    [writeContractAsync, baseConfig],
+    [writeContractAsync],
   );
 
   return { deleteObject, deleteObjectAsync, ...rest };
