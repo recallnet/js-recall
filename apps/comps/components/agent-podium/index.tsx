@@ -1,7 +1,9 @@
 import React from "react";
+import Image from "next/image";
 
 import {cn} from "@recallnet/ui2/lib/utils";
-import {Agent} from "@/data/agents";
+import {Agent} from "@/state/types";
+import AwardIcon from "./award-icon";
 
 interface AgentPodiumProps {
   first: AgentResponse;
@@ -30,7 +32,7 @@ export const AgentPodium: React.FC<AgentPodiumProps> = ({
           feats={[{name: 'ROI', value: '25%'}, {name: 'Trades', value: '2.4k'}]}
         />
 
-        <div className="w-full h-15 bg-gray-800">
+        <div className="w-full h-15 bg-card">
         </div>
       </div>
       <div className="flex flex-col justify-end">
@@ -39,7 +41,7 @@ export const AgentPodium: React.FC<AgentPodiumProps> = ({
           agent={first}
           feats={[{name: 'ROI', value: '25%'}, {name: 'Trades', value: '2.4k'}]}
         />
-        <div className="w-full h-25 bg-gray-800 border-x-2 border-black">
+        <div className="w-full h-25 bg-card border-x-2 border-black">
         </div>
       </div>
       <div className="flex flex-col justify-end">
@@ -48,7 +50,7 @@ export const AgentPodium: React.FC<AgentPodiumProps> = ({
           agent={third}
           feats={[{name: 'ROI', value: '25%'}, {name: 'Trades', value: '2.4k'}]}
         />
-        <div className="w-full h-8 bg-gray-800">
+        <div className="w-full h-8 bg-card">
         </div>
       </div>
     </div>
@@ -62,23 +64,36 @@ type PodiumAgentProps = {
 }
 
 const PodiumAgent: React.FunctionComponent<PodiumAgentProps> = ({place, agent, feats}) => {
-  const [icon, text] = place === 'first' ? [
-    <AwardIcon className="text-yellow-400" />, '1ST'
-  ] : place === 'second' ? [
-    <AwardIcon className="text-gray-500" />, '2ND'
-  ] : [
-    <AwardIcon className="text-red-400" />, '3RD'
-  ]
 
   return (
     <div className="flex flex-col items-center justify-end text-sm text-white mb-5">
-      <div className="h-20 w-20 rounded-full bg-gray-800 mb-8"></div>
-      <div className="flex items-center gap-2 text-gray-400">
-        <span className="mb-1 text-center text-lg">
-          {icon}
-        </span>
-        <span className="mb-1 text-center text-xs">{text}</span>
+      <div className="h-20 w-20 rounded-full mb-5">
+        <Image
+          src={agent.imageUrl || "/default_agent.png"}
+          alt="avatar"
+          width={100}
+          height={100}
+        />
+        <div
+          className="overflow-hidden"
+          style={{height: 50}}
+        >
+          <Image
+            src={agent.imageUrl || "/default_agent.png"}
+            alt="avatar"
+            width={100}
+            height={100}
+            className="block scale-y-[-1] opacity-40 blur-[3px]"
+            style={{
+              maskImage:
+                "linear-gradient(to top, black 0%, black 10%, transparent 60%, transparent 100%)",
+              WebkitMaskImage:
+                "linear-gradient(to top, black 0%, black 10%, transparent 60%, transparent 100%)",
+            }}
+          />
+        </div>
       </div>
+      <AwardIcon place={place} />
       <div className="flex flex-col items-center font-bold mb-2 text-lg">
         <span className="capitalize">{agent.name}</span>
       </div>
@@ -95,33 +110,5 @@ const PodiumAgent: React.FunctionComponent<PodiumAgentProps> = ({place, agent, f
     </div>
   )
 }
-
-const AwardIcon = ({
-  height = "1em",
-  strokeWidth = "2",
-  fill = "none",
-  focusable = "false",
-  ...props
-}: Omit<React.SVGProps<SVGSVGElement>, "children">) => (
-  <svg
-    role="img"
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    height={height}
-    focusable={focusable}
-    {...props}
-  >
-    <g
-      fill={fill}
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={strokeWidth}
-    >
-      <path d="M6 9a6 6 0 1 0 12 0A6 6 0 1 0 6 9" />
-      <path d="m12 15l3.4 5.89l1.598-3.233l3.598.232l-3.4-5.889M6.802 12l-3.4 5.89L7 17.657l1.598 3.232l3.4-5.889" />
-    </g>
-  </svg>
-);
 
 export default AgentPodium;

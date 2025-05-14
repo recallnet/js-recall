@@ -1,12 +1,10 @@
 "use client";
 
-// your button component
 import Image from "next/image";
-import { useState } from "react";
 
-// your button component
-import { displayAddress } from "@recallnet/address-utils/display";
-import { Button } from "@recallnet/ui2/components/shadcn/button";
+import {FaRegThumbsUp} from "react-icons/fa";
+import {displayAddress} from "@recallnet/address-utils/display";
+import {Button} from "@recallnet/ui2/components/shadcn/button";
 import {
   Table,
   TableBody,
@@ -16,34 +14,30 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import { useAtom } from "@/node_modules/jotai/react";
-import { userAgentAtom, userAtom } from "@/state/atoms";
-import { Agent } from "@/types";
+import {useAtom} from "@/node_modules/jotai/react";
+import {userAgentAtom, userAtom} from "@/state/atoms";
+import {Agent} from "@/state/types";
+import AwardIcon from "./agent-podium/award-icon";
+import BigNumberDisplay from "./bignumber";
 
-export function LeaderboardTable(props: {
-  agents: (AgentResponse & { rank: number })[];
+export function LeaderboardTable({agents}: {
+  agents: (Agent & {rank: number})[];
 }) {
   const [user] = useAtom(userAtom);
   const [userAgent] = useAtom(userAgentAtom);
-  const [visibleCount, setVisibleCount] = useState(10);
-  const visibleAgents = props.agents.slice(0, visibleCount);
 
   return (
     <div className="w-full">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="px-0 text-left">RANK / NAME</TableHead>
-            <TableHead>ELO SCORE</TableHead>
+            <TableHead className="px-0 text-left md:w-120">RANK / NAME</TableHead>
+            <TableHead>Elo score</TableHead>
             <TableHead>
-              <div className="flex justify-center">
-                <div className="h-1 w-16 rounded bg-gray-500" />
-              </div>
+              ROI
             </TableHead>
             <TableHead>
-              <div className="flex justify-center">
-                <div className="h-1 w-16 rounded bg-gray-500" />
-              </div>
+              Trades
             </TableHead>
             <TableHead className="w-40"></TableHead>
           </TableRow>
@@ -53,89 +47,25 @@ export function LeaderboardTable(props: {
           {user.loggedIn || (
             <TableRow key={userAgent.id} className="h-25 bg-card">
               <TableCell className="w-50">
-                <div className="flex items-center justify-start gap-7">
-                  <div className="text-sm text-gray-300">{userAgent.rank}</div>
+                <div className="flex items-center justify-start">
+                  {userAgent.rank <= 2 ?
+                    <AwardIcon className="mr-5" place={['first', 'second', 'third'][userAgent.rank] as 'first'} />
+                    :
+                    <div className="text-sm text-gray-300 mr-10 bg-gray-900 py-[4px] px-[8px]">{userAgent.rank}</div>
+                  }
                   <div className="flex items-center gap-5">
                     <Image
                       src={userAgent.imageUrl || "/agent-image.png"}
                       alt="avatar"
-                      width={30}
-                      height={30}
-                    />
-                    <div className="text-sm">
-                      <div className="flex items-center justify-between font-medium leading-none text-white">
-                        <span className="whitespace-nowrap">
-                          {userAgent.name}
-                        </span>
-                        <div className="ml-5 flex w-10 justify-center rounded-[5px] bg-sky-700 py-1">
-                          YOU
-                        </div>
-                      </div>
-                      <span className="whitespace-nowrap text-xs text-gray-400">
-                        {displayAddress(
-                          userAgent.metadata.walletAddress || "",
-                          {
-                            numChars: 5,
-                            separator: " . . . ",
-                          },
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </TableCell>
-
-              <TableCell>
-                <div className="flex flex-col items-center justify-start gap-2">
-                  <div className="h-1 w-16 rounded bg-gray-500" />
-                  <div className="h-1 w-10 rounded bg-gray-500" />
-                </div>
-              </TableCell>
-
-              <TableCell>
-                <div className="flex flex-col items-center justify-start gap-2">
-                  <div className="h-1 w-16 rounded bg-gray-500" />
-                  <div className="h-1 w-10 rounded bg-gray-500" />
-                </div>
-              </TableCell>
-
-              <TableCell>
-                <div className="flex flex-col items-center justify-start gap-2">
-                  <div className="h-1 w-16 rounded bg-gray-500" />
-                  <div className="h-1 w-10 rounded bg-gray-500" />
-                </div>
-              </TableCell>
-
-              <TableCell>
-                <div className="flex items-center justify-end">
-                  <Button
-                    size="sm"
-                    className="border-1 border-gray-800 bg-transparent p-5 text-gray-500"
-                  >
-                    PROFILE
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          )}
-          {visibleAgents.map((agent) => (
-            <TableRow key={agent.id} className="h-25">
-              <TableCell className="w-50">
-                <div className="flex items-center justify-start gap-7">
-                  <div className="text-sm text-gray-300">{agent.rank}</div>
-                  <div className="flex items-center gap-5">
-                    <Image
-                      src={agent.imageUrl || "/agent-image.png"}
-                      alt="avatar"
-                      width={20}
-                      height={20}
+                      width={35}
+                      height={35}
                     />
                     <div className="text-sm">
                       <div className="font-medium leading-none text-white">
-                        {agent.name}
+                        {userAgent.name}
                       </div>
                       <span className="whitespace-nowrap text-xs text-gray-400">
-                        {displayAddress(agent.metadata.walletAddress || "", {
+                        {displayAddress(userAgent.metadata.walletAddress, {
                           numChars: 5,
                           separator: " . . . ",
                         })}
@@ -145,51 +75,84 @@ export function LeaderboardTable(props: {
                 </div>
               </TableCell>
 
-              <TableCell>
-                <div className="flex flex-col items-center justify-start gap-2">
-                  <div className="h-1 w-16 rounded bg-gray-500" />
-                  <div className="h-1 w-10 rounded bg-gray-500" />
+              <TableCell className="text-center">
+                {userAgent.stats.eloAvg}
+              </TableCell>
+
+              <TableCell className="text-center">
+                <BigNumberDisplay value={userAgent.metadata.roi.toString()} decimals={0} />
+                %
+              </TableCell>
+
+              <TableCell className="text-center">
+                {userAgent.metadata.trades}
+              </TableCell>
+
+              <TableCell className="text-gray-500 text-lg text-end">
+                <FaRegThumbsUp />
+              </TableCell>
+            </TableRow>
+          )}
+
+          {agents.map((agent) => (
+            <TableRow key={agent.id} className="h-25">
+              <TableCell className="w-50">
+                <div className="flex items-center justify-start">
+                  {agent.rank <= 2 ?
+                    <AwardIcon className="mr-5" place={['first', 'second', 'third'][agent.rank] as 'first'} />
+                    :
+                    <div className="text-sm text-gray-300 mr-10 bg-gray-900 py-[4px] px-[8px]">{agent.rank}</div>
+                  }
+                  <div className="flex items-center gap-5">
+                    <Image
+                      src={agent.imageUrl || "/agent-image.png"}
+                      alt="avatar"
+                      width={35}
+                      height={35}
+                    />
+                    <div className="text-sm">
+                      <div className="font-medium leading-none text-white">
+                        {agent.name}
+                      </div>
+                      <span className="whitespace-nowrap text-xs text-gray-400">
+                        {displayAddress(agent.metadata.walletAddress, {
+                          numChars: 5,
+                          separator: " . . . ",
+                        })}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </TableCell>
 
-              <TableCell>
-                <div className="flex flex-col items-center justify-start gap-2">
-                  <div className="h-1 w-16 rounded bg-gray-500" />
-                  <div className="h-1 w-10 rounded bg-gray-500" />
-                </div>
+              <TableCell className="text-center">
+                {agent.stats.eloAvg}
               </TableCell>
 
-              <TableCell>
-                <div className="flex flex-col items-center justify-start gap-2">
-                  <div className="h-1 w-16 rounded bg-gray-500" />
-                  <div className="h-1 w-10 rounded bg-gray-500" />
-                </div>
+              <TableCell className="text-center">
+                <BigNumberDisplay value={agent.metadata.roi.toString()} decimals={0} />
+                %
               </TableCell>
 
-              <TableCell>
-                <div className="flex items-center justify-end">
-                  <Button
-                    size="sm"
-                    className="border-1 border-gray-800 bg-transparent p-5 text-gray-500"
-                  >
-                    PROFILE
-                  </Button>
-                </div>
+              <TableCell className="text-center">
+                {agent.metadata.trades}
+              </TableCell>
+
+              <TableCell className="text-gray-500 text-lg text-end">
+                <FaRegThumbsUp />
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
 
-      {visibleCount < props.agents.length && (
-        <Button
-          onClick={() => setVisibleCount((prev) => prev + 10)}
-          className="mt-4 w-full"
-          variant="outline"
-        >
-          SHOW MORE
-        </Button>
-      )}
+      <Button
+        //onClick={() => setVisibleCount((prev) => prev + 10)}
+        className="mt-4 w-full"
+        variant="outline"
+      >
+        SHOW MORE
+      </Button>
     </div>
   );
 }
