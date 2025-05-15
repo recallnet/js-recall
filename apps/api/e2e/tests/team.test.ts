@@ -16,8 +16,9 @@ import {
   ADMIN_PASSWORD,
   ADMIN_USERNAME,
   cleanupTestState,
-  createTestClient, generateRandomEthAddress,
-  registerTeamAndGetClient
+  createTestClient,
+  generateRandomEthAddress,
+  registerTeamAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
 
 describe("Team API", () => {

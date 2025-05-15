@@ -44,7 +44,7 @@ export async function registerTeamAndGetClient(
   email?: string,
   contactPerson?: string,
   walletAddress?: string,
-  imageUrl?: string
+  imageUrl?: string,
 ) {
   // Ensure database is initialized
   await ensureDatabaseInitialized();
