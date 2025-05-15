@@ -8,7 +8,6 @@ import { makeCompetitionController } from "@/controllers/competition.controller.
 import { makeDocsController } from "@/controllers/docs.controller.js";
 import { makeHealthController } from "@/controllers/health.controller.js";
 import { makePriceController } from "@/controllers/price.controller.js";
-import { makePublicController } from "@/controllers/public.controller.js";
 import { makeTradeController } from "@/controllers/trade.controller.js";
 import { migrateDb } from "@/database/db.js";
 import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
@@ -21,7 +20,6 @@ import { configureCompetitionRoutes } from "@/routes/competition.routes.js";
 import { configureDocsRoutes } from "@/routes/docs.routes.js";
 import { configureHealthRoutes } from "@/routes/health.routes.js";
 import { configurePriceRoutes } from "@/routes/price.routes.js";
-import { configurePublicRoutes } from "@/routes/public.routes.js";
 import { configureTradeRoutes } from "@/routes/trade.routes.js";
 import { ServiceRegistry } from "@/services/index.js";
 
@@ -52,7 +50,7 @@ try {
   if (process.env.NODE_ENV === "production") {
     console.warn(
       "WARNING: Starting server without successful database initialization. " +
-        "Some functionality may be limited until database connection is restored.",
+      "Some functionality may be limited until database connection is restored.",
     );
   } else {
     console.error(
@@ -107,7 +105,6 @@ const competitionController = makeCompetitionController(services);
 const docsController = makeDocsController();
 const healthController = makeHealthController();
 const priceController = makePriceController(services);
-const publicController = makePublicController(services);
 const tradeController = makeTradeController(services);
 
 const accountRoutes = configureAccountRoutes(accountController);
@@ -117,19 +114,17 @@ const competitionRoutes = configureCompetitionRoutes(competitionController);
 const docsRoutes = configureDocsRoutes(docsController);
 const healthRoutes = configureHealthRoutes(healthController);
 const priceRoutes = configurePriceRoutes(priceController);
-const publicRoutes = configurePublicRoutes(publicController);
 const tradeRoutes = configureTradeRoutes(tradeController);
 
 // Apply routes
-apiRouter.use("/api/account", accountRoutes);
-apiRouter.use("/api/trade", tradeRoutes);
-apiRouter.use("/api/price", priceRoutes);
-apiRouter.use("/api/competition", competitionRoutes);
-apiRouter.use("/api/admin/setup", adminSetupRoutes);
-apiRouter.use("/api/admin", adminRoutes);
-apiRouter.use("/api/health", healthRoutes);
-apiRouter.use("/api/docs", docsRoutes);
-apiRouter.use("/api/public", publicRoutes);
+app.use("/api/account", accountRoutes);
+app.use("/api/trade", tradeRoutes);
+app.use("/api/price", priceRoutes);
+app.use("/api/competition", competitionRoutes);
+app.use("/api/admin/setup", adminSetupRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/health", healthRoutes);
+app.use("/api/docs", docsRoutes);
 
 // Legacy health check endpoint for backward compatibility
 apiRouter.get("/health", (_req, res) => {
