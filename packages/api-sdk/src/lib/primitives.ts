@@ -26,8 +26,8 @@ export type Remap<Inp, Mapping extends { [k in keyof Inp]?: string | null }> = {
   [k in keyof Inp as Mapping[k] extends string /* if we have a string mapping for this key then use it */
     ? Mapping[k]
     : Mapping[k] extends null /* if the mapping is to `null` then drop the key */
-      ? never
-      : k /* otherwise keep the key as-is */]: Inp[k];
+    ? never
+    : k /* otherwise keep the key as-is */]: Inp[k];
 };
 
 /**

@@ -10,6 +10,7 @@ export * from "./getapiaccounttrades.js";
 export * from "./getapiadmincompetitioncompetitionidsnapshots.js";
 export * from "./getapiadminreportsperformance.js";
 export * from "./getapiadminteams.js";
+export * from "./getapiadminteamssearch.js";
 export * from "./getapiadminteamsteamidkey.js";
 export * from "./getapicompetitionleaderboard.js";
 export * from "./getapicompetitionrules.js";

@@ -1,12 +1,12 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: 020b4bb5f26c3d4cdb5b9e5ea3a98b08
+  docChecksum: 499e3eb5dcbd958b4fbb177c31e3255d
   docVersion: 1.0.0
-  speakeasyVersion: 1.543.1
-  generationVersion: 2.598.21
-  releaseVersion: 0.0.4
-  configChecksum: cf9d53ff13bb2396b4991f8c1d914e28
+  speakeasyVersion: 1.545.0
+  generationVersion: 2.599.0
+  releaseVersion: 0.0.5
+  configChecksum: 5f35133c054cccb038e3bcdf4723efea
 features:
   typescript:
     additionalDependencies: 0.1.0
@@ -19,7 +19,7 @@ features:
     globalSecurity: 2.82.13
     globalSecurityCallbacks: 0.1.0
     globalSecurityFlattening: 0.1.0
-    globalServerURLs: 2.82.4
+    globalServerURLs: 2.82.5
     mcpServer: 0.9.2
     nullables: 0.1.1
     responseFormat: 0.2.3
@@ -56,11 +56,16 @@ generatedFiles:
   - docs/models/operations/getapiadmincompetitioncompetitionidsnapshotsrequest.md
   - docs/models/operations/getapiadmincompetitioncompetitionidsnapshotsresponse.md
   - docs/models/operations/getapiadminreportsperformancecompetition.md
+  - docs/models/operations/getapiadminreportsperformancecrosschaintradingtype.md
   - docs/models/operations/getapiadminreportsperformanceleaderboard.md
   - docs/models/operations/getapiadminreportsperformancerequest.md
   - docs/models/operations/getapiadminreportsperformanceresponse.md
   - docs/models/operations/getapiadminreportsperformancestatus.md
   - docs/models/operations/getapiadminteamsresponse.md
+  - docs/models/operations/getapiadminteamssearchmetadata.md
+  - docs/models/operations/getapiadminteamssearchrequest.md
+  - docs/models/operations/getapiadminteamssearchresponse.md
+  - docs/models/operations/getapiadminteamssearchteam.md
   - docs/models/operations/getapiadminteamsteam.md
   - docs/models/operations/getapiadminteamsteamidkeyrequest.md
   - docs/models/operations/getapiadminteamsteamidkeyresponse.md
@@ -72,9 +77,11 @@ generatedFiles:
   - docs/models/operations/getapicompetitionleaderboardstatus.md
   - docs/models/operations/getapicompetitionrulesresponse.md
   - docs/models/operations/getapicompetitionstatuscompetition.md
+  - docs/models/operations/getapicompetitionstatuscrosschaintradingtype.md
   - docs/models/operations/getapicompetitionstatusresponse.md
   - docs/models/operations/getapicompetitionstatusstatus.md
   - docs/models/operations/getapicompetitionupcomingcompetition.md
+  - docs/models/operations/getapicompetitionupcomingcrosschaintradingtype.md
   - docs/models/operations/getapicompetitionupcomingresponse.md
   - docs/models/operations/getapicompetitionupcomingstatus.md
   - docs/models/operations/getapihealthdetailedresponse.md
@@ -95,18 +102,23 @@ generatedFiles:
   - docs/models/operations/portfoliosnapshots.md
   - docs/models/operations/postapiaccountresetapikeyresponse.md
   - docs/models/operations/postapiadmincompetitioncreatecompetition.md
+  - docs/models/operations/postapiadmincompetitioncreatecrosschaintradingtype.md
   - docs/models/operations/postapiadmincompetitioncreaterequest.md
   - docs/models/operations/postapiadmincompetitioncreateresponse.md
   - docs/models/operations/postapiadmincompetitioncreatestatus.md
+  - docs/models/operations/postapiadmincompetitioncreatetradingtype.md
   - docs/models/operations/postapiadmincompetitionendcompetition.md
+  - docs/models/operations/postapiadmincompetitionendcrosschaintradingtype.md
   - docs/models/operations/postapiadmincompetitionendleaderboard.md
   - docs/models/operations/postapiadmincompetitionendrequest.md
   - docs/models/operations/postapiadmincompetitionendresponse.md
   - docs/models/operations/postapiadmincompetitionendstatus.md
   - docs/models/operations/postapiadmincompetitionstartcompetition.md
+  - docs/models/operations/postapiadmincompetitionstartcrosschaintradingtype.md
   - docs/models/operations/postapiadmincompetitionstartrequest.md
   - docs/models/operations/postapiadmincompetitionstartresponse.md
   - docs/models/operations/postapiadmincompetitionstartstatus.md
+  - docs/models/operations/postapiadmincompetitionstarttradingtype.md
   - docs/models/operations/postapiadminsetuprequest.md
   - docs/models/operations/postapiadminsetupresponse.md
   - docs/models/operations/postapiadminteamsregistermetadatarequest.md
@@ -167,6 +179,7 @@ generatedFiles:
   - src/funcs/adminGetApiAdminCompetitionCompetitionIdSnapshots.ts
   - src/funcs/adminGetApiAdminReportsPerformance.ts
   - src/funcs/adminGetApiAdminTeams.ts
+  - src/funcs/adminGetApiAdminTeamsSearch.ts
   - src/funcs/adminGetApiAdminTeamsTeamIdKey.ts
   - src/funcs/adminPostApiAdminCompetitionCreate.ts
   - src/funcs/adminPostApiAdminCompetitionEnd.ts
@@ -229,6 +242,7 @@ generatedFiles:
   - src/mcp-server/tools/adminGetApiAdminCompetitionCompetitionIdSnapshots.ts
   - src/mcp-server/tools/adminGetApiAdminReportsPerformance.ts
   - src/mcp-server/tools/adminGetApiAdminTeams.ts
+  - src/mcp-server/tools/adminGetApiAdminTeamsSearch.ts
   - src/mcp-server/tools/adminGetApiAdminTeamsTeamIdKey.ts
   - src/mcp-server/tools/adminPostApiAdminCompetitionCreate.ts
   - src/mcp-server/tools/adminPostApiAdminCompetitionEnd.ts
@@ -263,6 +277,7 @@ generatedFiles:
   - src/models/operations/getapiadmincompetitioncompetitionidsnapshots.ts
   - src/models/operations/getapiadminreportsperformance.ts
   - src/models/operations/getapiadminteams.ts
+  - src/models/operations/getapiadminteamssearch.ts
   - src/models/operations/getapiadminteamsteamidkey.ts
   - src/models/operations/getapicompetitionleaderboard.ts
   - src/models/operations/getapicompetitionrules.ts
@@ -375,14 +390,14 @@ examples:
   post_/api/admin/competition/create:
     speakeasy-default-post-/api/admin/competition/create:
       requestBody:
-        application/json: {"name": "Spring 2023 Trading Competition", "description": "A trading competition for the spring semester", "allowCrossChainTrading": false}
+        application/json: {"name": "Spring 2023 Trading Competition", "description": "A trading competition for the spring semester", "tradingType": "disallowAll"}
       responses:
         "201":
           application/json: {}
   post_/api/admin/competition/start:
     speakeasy-default-post-/api/admin/competition/start:
       requestBody:
-        application/json: {"name": "Spring 2023 Trading Competition", "description": "A trading competition for the spring semester", "teamIds": ["<value>", "<value>"], "allowCrossChainTrading": false}
+        application/json: {"name": "Spring 2023 Trading Competition", "description": "A trading competition for the spring semester", "teamIds": ["<value>", "<value>"], "tradingType": "disallowAll"}
       responses:
         "200":
           application/json: {}
@@ -497,5 +512,10 @@ examples:
           fromSpecificChain: "mainnet"
           toChain: "svm"
           toSpecificChain: "mainnet"
+  get_/api/admin/teams/search:
+    speakeasy-default-get-/api/admin/teams/search:
+      responses:
+        "200":
+          application/json: {}
 examplesVersion: 1.0.1
 generatedTests: {}
