@@ -1,0 +1,521 @@
+lockVersion: 2.0.0
+id: e923f7a3-3252-4ef0-9997-307b6bd8549a
+management:
+  docChecksum: 8d60d2e935f3e96d0a9204ec3a4415c7
+  docVersion: 1.0.0
+  speakeasyVersion: 1.545.0
+  generationVersion: 2.599.0
+  releaseVersion: 0.0.6
+  configChecksum: e41b2ae1c672a11853a8c7f8d93e1e89
+features:
+  typescript:
+    additionalDependencies: 0.1.0
+    constsAndDefaults: 0.1.11
+    core: 3.21.7
+    defaultEnabledRetries: 0.1.0
+    devContainers: 2.90.0
+    enumUnions: 0.1.0
+    envVarSecurityUsage: 0.1.2
+    globalSecurity: 2.82.13
+    globalSecurityCallbacks: 0.1.0
+    globalSecurityFlattening: 0.1.0
+    globalServerURLs: 2.82.5
+    mcpServer: 0.9.2
+    nullables: 0.1.1
+    responseFormat: 0.2.3
+    retries: 2.83.0
+    sdkHooks: 0.2.0
+generatedFiles:
+  - .devcontainer/README.md
+  - .devcontainer/devcontainer.json
+  - .devcontainer/setup.sh
+  - .gitattributes
+  - .npmignore
+  - FUNCTIONS.md
+  - RUNTIMES.md
+  - USAGE.md
+  - docs/lib/utils/retryconfig.md
+  - docs/models/components/security.md
+  - docs/models/errors/errort.md
+  - docs/models/operations/admin.md
+  - docs/models/operations/availablechains.md
+  - docs/models/operations/balance.md
+  - docs/models/operations/chains.md
+  - docs/models/operations/deleteapiadminteamsteamidrequest.md
+  - docs/models/operations/deleteapiadminteamsteamidresponse.md
+  - docs/models/operations/getapiaccountbalanceschain.md
+  - docs/models/operations/getapiaccountbalancesresponse.md
+  - docs/models/operations/getapiaccountportfoliochain.md
+  - docs/models/operations/getapiaccountportfolioresponse.md
+  - docs/models/operations/getapiaccountprofilemetadata.md
+  - docs/models/operations/getapiaccountprofileref.md
+  - docs/models/operations/getapiaccountprofileresponse.md
+  - docs/models/operations/getapiaccountprofilesocial.md
+  - docs/models/operations/getapiaccountprofileteam.md
+  - docs/models/operations/getapiaccounttradesresponse.md
+  - docs/models/operations/getapiadmincompetitioncompetitionidsnapshotsrequest.md
+  - docs/models/operations/getapiadmincompetitioncompetitionidsnapshotsresponse.md
+  - docs/models/operations/getapiadminreportsperformancecompetition.md
+  - docs/models/operations/getapiadminreportsperformancecrosschaintradingtype.md
+  - docs/models/operations/getapiadminreportsperformanceleaderboard.md
+  - docs/models/operations/getapiadminreportsperformancerequest.md
+  - docs/models/operations/getapiadminreportsperformanceresponse.md
+  - docs/models/operations/getapiadminreportsperformancestatus.md
+  - docs/models/operations/getapiadminteamsresponse.md
+  - docs/models/operations/getapiadminteamssearchmetadata.md
+  - docs/models/operations/getapiadminteamssearchrequest.md
+  - docs/models/operations/getapiadminteamssearchresponse.md
+  - docs/models/operations/getapiadminteamssearchteam.md
+  - docs/models/operations/getapiadminteamsteam.md
+  - docs/models/operations/getapiadminteamsteamidkeyrequest.md
+  - docs/models/operations/getapiadminteamsteamidkeyresponse.md
+  - docs/models/operations/getapiadminteamsteamidkeyteam.md
+  - docs/models/operations/getapicompetitionleaderboardcompetition.md
+  - docs/models/operations/getapicompetitionleaderboardleaderboard.md
+  - docs/models/operations/getapicompetitionleaderboardrequest.md
+  - docs/models/operations/getapicompetitionleaderboardresponse.md
+  - docs/models/operations/getapicompetitionleaderboardstatus.md
+  - docs/models/operations/getapicompetitionrulesresponse.md
+  - docs/models/operations/getapicompetitionstatuscompetition.md
+  - docs/models/operations/getapicompetitionstatuscrosschaintradingtype.md
+  - docs/models/operations/getapicompetitionstatusresponse.md
+  - docs/models/operations/getapicompetitionstatusstatus.md
+  - docs/models/operations/getapicompetitionupcomingcompetition.md
+  - docs/models/operations/getapicompetitionupcomingcrosschaintradingtype.md
+  - docs/models/operations/getapicompetitionupcomingresponse.md
+  - docs/models/operations/getapicompetitionupcomingstatus.md
+  - docs/models/operations/getapihealthdetailedresponse.md
+  - docs/models/operations/getapihealthresponse.md
+  - docs/models/operations/getapipricechainresponse.md
+  - docs/models/operations/getapipricequeryparamchain.md
+  - docs/models/operations/getapipricerequest.md
+  - docs/models/operations/getapipriceresponse.md
+  - docs/models/operations/getapipricespecificchain.md
+  - docs/models/operations/getapipricetokeninfochainresponse.md
+  - docs/models/operations/getapipricetokeninfoqueryparamchain.md
+  - docs/models/operations/getapipricetokeninforequest.md
+  - docs/models/operations/getapipricetokeninforesponse.md
+  - docs/models/operations/getapipricetokeninfospecificchain.md
+  - docs/models/operations/getapitradequoterequest.md
+  - docs/models/operations/getapitradequoteresponse.md
+  - docs/models/operations/inactiveteam.md
+  - docs/models/operations/portfoliosnapshots.md
+  - docs/models/operations/postapiaccountresetapikeyresponse.md
+  - docs/models/operations/postapiadmincompetitioncreatecompetition.md
+  - docs/models/operations/postapiadmincompetitioncreatecrosschaintradingtype.md
+  - docs/models/operations/postapiadmincompetitioncreaterequest.md
+  - docs/models/operations/postapiadmincompetitioncreateresponse.md
+  - docs/models/operations/postapiadmincompetitioncreatestatus.md
+  - docs/models/operations/postapiadmincompetitioncreatetradingtype.md
+  - docs/models/operations/postapiadmincompetitionendcompetition.md
+  - docs/models/operations/postapiadmincompetitionendcrosschaintradingtype.md
+  - docs/models/operations/postapiadmincompetitionendleaderboard.md
+  - docs/models/operations/postapiadmincompetitionendrequest.md
+  - docs/models/operations/postapiadmincompetitionendresponse.md
+  - docs/models/operations/postapiadmincompetitionendstatus.md
+  - docs/models/operations/postapiadmincompetitionstartcompetition.md
+  - docs/models/operations/postapiadmincompetitionstartcrosschaintradingtype.md
+  - docs/models/operations/postapiadmincompetitionstartrequest.md
+  - docs/models/operations/postapiadmincompetitionstartresponse.md
+  - docs/models/operations/postapiadmincompetitionstartstatus.md
+  - docs/models/operations/postapiadmincompetitionstarttradingtype.md
+  - docs/models/operations/postapiadminsetuprequest.md
+  - docs/models/operations/postapiadminsetupresponse.md
+  - docs/models/operations/postapiadminteamsregistermetadatarequest.md
+  - docs/models/operations/postapiadminteamsregistermetadataresponse.md
+  - docs/models/operations/postapiadminteamsregisterrequest.md
+  - docs/models/operations/postapiadminteamsregisterresponse.md
+  - docs/models/operations/postapiadminteamsregisterteam.md
+  - docs/models/operations/postapiadminteamsteamiddeactivaterequest.md
+  - docs/models/operations/postapiadminteamsteamiddeactivaterequestbody.md
+  - docs/models/operations/postapiadminteamsteamiddeactivateresponse.md
+  - docs/models/operations/postapiadminteamsteamiddeactivateteam.md
+  - docs/models/operations/postapiadminteamsteamidreactivaterequest.md
+  - docs/models/operations/postapiadminteamsteamidreactivateresponse.md
+  - docs/models/operations/postapiadminteamsteamidreactivateteam.md
+  - docs/models/operations/postapipublicteamsregistermetadatarequest.md
+  - docs/models/operations/postapipublicteamsregistermetadataresponse.md
+  - docs/models/operations/postapipublicteamsregisterrequest.md
+  - docs/models/operations/postapipublicteamsregisterresponse.md
+  - docs/models/operations/postapipublicteamsregisterteam.md
+  - docs/models/operations/postapitradeexecuterequest.md
+  - docs/models/operations/postapitradeexecuteresponse.md
+  - docs/models/operations/prices.md
+  - docs/models/operations/putapiaccountprofilemetadatarequest.md
+  - docs/models/operations/putapiaccountprofilemetadataresponse.md
+  - docs/models/operations/putapiaccountprofilerefresponse.md
+  - docs/models/operations/putapiaccountprofilerequest.md
+  - docs/models/operations/putapiaccountprofileresponse.md
+  - docs/models/operations/putapiaccountprofilesocialresponse.md
+  - docs/models/operations/putapiaccountprofileteam.md
+  - docs/models/operations/refrequest.md
+  - docs/models/operations/rules.md
+  - docs/models/operations/services.md
+  - docs/models/operations/snapshot.md
+  - docs/models/operations/socialrequest.md
+  - docs/models/operations/source.md
+  - docs/models/operations/token.md
+  - docs/models/operations/trade.md
+  - docs/models/operations/transaction.md
+  - docs/sdks/account/README.md
+  - docs/sdks/admin/README.md
+  - docs/sdks/apisdk/README.md
+  - docs/sdks/competition/README.md
+  - docs/sdks/health/README.md
+  - docs/sdks/price/README.md
+  - docs/sdks/public/README.md
+  - docs/sdks/trade/README.md
+  - eslint.config.mjs
+  - jsr.json
+  - package.json
+  - src/core.ts
+  - src/funcs/accountGetApiAccountBalances.ts
+  - src/funcs/accountGetApiAccountPortfolio.ts
+  - src/funcs/accountGetApiAccountProfile.ts
+  - src/funcs/accountGetApiAccountTrades.ts
+  - src/funcs/accountPostApiAccountResetApiKey.ts
+  - src/funcs/accountPutApiAccountProfile.ts
+  - src/funcs/adminDeleteApiAdminTeamsTeamId.ts
+  - src/funcs/adminGetApiAdminCompetitionCompetitionIdSnapshots.ts
+  - src/funcs/adminGetApiAdminReportsPerformance.ts
+  - src/funcs/adminGetApiAdminTeams.ts
+  - src/funcs/adminGetApiAdminTeamsSearch.ts
+  - src/funcs/adminGetApiAdminTeamsTeamIdKey.ts
+  - src/funcs/adminPostApiAdminCompetitionCreate.ts
+  - src/funcs/adminPostApiAdminCompetitionEnd.ts
+  - src/funcs/adminPostApiAdminCompetitionStart.ts
+  - src/funcs/adminPostApiAdminSetup.ts
+  - src/funcs/adminPostApiAdminTeamsRegister.ts
+  - src/funcs/adminPostApiAdminTeamsTeamIdDeactivate.ts
+  - src/funcs/adminPostApiAdminTeamsTeamIdReactivate.ts
+  - src/funcs/competitionGetApiCompetitionLeaderboard.ts
+  - src/funcs/competitionGetApiCompetitionRules.ts
+  - src/funcs/competitionGetApiCompetitionStatus.ts
+  - src/funcs/competitionGetApiCompetitionUpcoming.ts
+  - src/funcs/healthGetApiHealth.ts
+  - src/funcs/healthGetApiHealthDetailed.ts
+  - src/funcs/priceGetApiPrice.ts
+  - src/funcs/priceGetApiPriceTokenInfo.ts
+  - src/funcs/publicPostApiPublicTeamsRegister.ts
+  - src/funcs/tradeGetApiTradeQuote.ts
+  - src/funcs/tradePostApiTradeExecute.ts
+  - src/hooks/hooks.ts
+  - src/hooks/index.ts
+  - src/hooks/types.ts
+  - src/index.ts
+  - src/lib/base64.ts
+  - src/lib/config.ts
+  - src/lib/dlv.ts
+  - src/lib/encodings.ts
+  - src/lib/env.ts
+  - src/lib/files.ts
+  - src/lib/http.ts
+  - src/lib/is-plain-object.ts
+  - src/lib/logger.ts
+  - src/lib/matchers.ts
+  - src/lib/primitives.ts
+  - src/lib/retries.ts
+  - src/lib/schemas.ts
+  - src/lib/sdks.ts
+  - src/lib/security.ts
+  - src/lib/url.ts
+  - src/mcp-server/build.mts
+  - src/mcp-server/cli.ts
+  - src/mcp-server/cli/start/command.ts
+  - src/mcp-server/cli/start/impl.ts
+  - src/mcp-server/console-logger.ts
+  - src/mcp-server/extensions.ts
+  - src/mcp-server/mcp-server.ts
+  - src/mcp-server/prompts.ts
+  - src/mcp-server/resources.ts
+  - src/mcp-server/scopes.ts
+  - src/mcp-server/server.ts
+  - src/mcp-server/shared.ts
+  - src/mcp-server/tools.ts
+  - src/mcp-server/tools/accountGetApiAccountBalances.ts
+  - src/mcp-server/tools/accountGetApiAccountPortfolio.ts
+  - src/mcp-server/tools/accountGetApiAccountProfile.ts
+  - src/mcp-server/tools/accountGetApiAccountTrades.ts
+  - src/mcp-server/tools/accountPostApiAccountResetApiKey.ts
+  - src/mcp-server/tools/accountPutApiAccountProfile.ts
+  - src/mcp-server/tools/adminDeleteApiAdminTeamsTeamId.ts
+  - src/mcp-server/tools/adminGetApiAdminCompetitionCompetitionIdSnapshots.ts
+  - src/mcp-server/tools/adminGetApiAdminReportsPerformance.ts
+  - src/mcp-server/tools/adminGetApiAdminTeams.ts
+  - src/mcp-server/tools/adminGetApiAdminTeamsSearch.ts
+  - src/mcp-server/tools/adminGetApiAdminTeamsTeamIdKey.ts
+  - src/mcp-server/tools/adminPostApiAdminCompetitionCreate.ts
+  - src/mcp-server/tools/adminPostApiAdminCompetitionEnd.ts
+  - src/mcp-server/tools/adminPostApiAdminCompetitionStart.ts
+  - src/mcp-server/tools/adminPostApiAdminSetup.ts
+  - src/mcp-server/tools/adminPostApiAdminTeamsRegister.ts
+  - src/mcp-server/tools/adminPostApiAdminTeamsTeamIdDeactivate.ts
+  - src/mcp-server/tools/adminPostApiAdminTeamsTeamIdReactivate.ts
+  - src/mcp-server/tools/competitionGetApiCompetitionLeaderboard.ts
+  - src/mcp-server/tools/competitionGetApiCompetitionRules.ts
+  - src/mcp-server/tools/competitionGetApiCompetitionStatus.ts
+  - src/mcp-server/tools/competitionGetApiCompetitionUpcoming.ts
+  - src/mcp-server/tools/healthGetApiHealth.ts
+  - src/mcp-server/tools/healthGetApiHealthDetailed.ts
+  - src/mcp-server/tools/priceGetApiPrice.ts
+  - src/mcp-server/tools/priceGetApiPriceTokenInfo.ts
+  - src/mcp-server/tools/publicPostApiPublicTeamsRegister.ts
+  - src/mcp-server/tools/tradeGetApiTradeQuote.ts
+  - src/mcp-server/tools/tradePostApiTradeExecute.ts
+  - src/models/components/index.ts
+  - src/models/components/security.ts
+  - src/models/errors/apierror.ts
+  - src/models/errors/error.ts
+  - src/models/errors/httpclienterrors.ts
+  - src/models/errors/index.ts
+  - src/models/errors/sdkvalidationerror.ts
+  - src/models/operations/deleteapiadminteamsteamid.ts
+  - src/models/operations/getapiaccountbalances.ts
+  - src/models/operations/getapiaccountportfolio.ts
+  - src/models/operations/getapiaccountprofile.ts
+  - src/models/operations/getapiaccounttrades.ts
+  - src/models/operations/getapiadmincompetitioncompetitionidsnapshots.ts
+  - src/models/operations/getapiadminreportsperformance.ts
+  - src/models/operations/getapiadminteams.ts
+  - src/models/operations/getapiadminteamssearch.ts
+  - src/models/operations/getapiadminteamsteamidkey.ts
+  - src/models/operations/getapicompetitionleaderboard.ts
+  - src/models/operations/getapicompetitionrules.ts
+  - src/models/operations/getapicompetitionstatus.ts
+  - src/models/operations/getapicompetitionupcoming.ts
+  - src/models/operations/getapihealth.ts
+  - src/models/operations/getapihealthdetailed.ts
+  - src/models/operations/getapiprice.ts
+  - src/models/operations/getapipricetokeninfo.ts
+  - src/models/operations/getapitradequote.ts
+  - src/models/operations/index.ts
+  - src/models/operations/postapiaccountresetapikey.ts
+  - src/models/operations/postapiadmincompetitioncreate.ts
+  - src/models/operations/postapiadmincompetitionend.ts
+  - src/models/operations/postapiadmincompetitionstart.ts
+  - src/models/operations/postapiadminsetup.ts
+  - src/models/operations/postapiadminteamsregister.ts
+  - src/models/operations/postapiadminteamsteamiddeactivate.ts
+  - src/models/operations/postapiadminteamsteamidreactivate.ts
+  - src/models/operations/postapipublicteamsregister.ts
+  - src/models/operations/postapitradeexecute.ts
+  - src/models/operations/putapiaccountprofile.ts
+  - src/sdk/account.ts
+  - src/sdk/admin.ts
+  - src/sdk/competition.ts
+  - src/sdk/health.ts
+  - src/sdk/index.ts
+  - src/sdk/price.ts
+  - src/sdk/public.ts
+  - src/sdk/sdk.ts
+  - src/sdk/trade.ts
+  - src/types/async.ts
+  - src/types/blobs.ts
+  - src/types/constdatetime.ts
+  - src/types/enums.ts
+  - src/types/fp.ts
+  - src/types/index.ts
+  - src/types/operations.ts
+  - src/types/rfcdate.ts
+  - src/types/streams.ts
+  - tsconfig.json
+examples:
+  get_/api/account/profile:
+    speakeasy-default-get-/api/account/profile:
+      responses:
+        "200":
+          application/json: {}
+  put_/api/account/profile:
+    speakeasy-default-put-/api/account/profile:
+      requestBody:
+        application/json: {}
+      responses:
+        "200":
+          application/json: {}
+  post_/api/account/reset-api-key:
+    speakeasy-default-post-/api/account/reset-api-key:
+      responses:
+        "200":
+          application/json: {"apiKey": "new123key456_xyz789abc"}
+  get_/api/account/balances:
+    speakeasy-default-get-/api/account/balances:
+      responses:
+        "200":
+          application/json: {}
+  get_/api/account/portfolio:
+    speakeasy-default-get-/api/account/portfolio:
+      responses:
+        "200":
+          application/json: {}
+  get_/api/account/trades:
+    speakeasy-default-get-/api/account/trades:
+      responses:
+        "200":
+          application/json: {}
+  post_/api/admin/setup:
+    speakeasy-default-post-/api/admin/setup:
+      requestBody:
+        application/json: {"username": "admin", "password": "password123", "email": "admin@example.com"}
+      responses:
+        "201":
+          application/json: {}
+  post_/api/admin/teams/register:
+    speakeasy-default-post-/api/admin/teams/register:
+      requestBody:
+        application/json: {"teamName": "Team Alpha", "email": "team@example.com", "contactPerson": "John Doe", "walletAddress": "1.0392900530713021e+47", "imageUrl": "https://example.com/team-image.jpg"}
+      responses:
+        "201":
+          application/json: {"team": {"apiKey": "abc123def456_ghi789jkl012"}}
+  get_/api/admin/teams:
+    speakeasy-default-get-/api/admin/teams:
+      responses:
+        "200":
+          application/json: {}
+  get_/api/admin/teams/{teamId}/key:
+    speakeasy-default-get-/api/admin/teams/{team-id}/key:
+      parameters:
+        path:
+          teamId: "<id>"
+      responses:
+        "200":
+          application/json: {}
+  delete_/api/admin/teams/{teamId}:
+    speakeasy-default-delete-/api/admin/teams/{team-id}:
+      parameters:
+        path:
+          teamId: "<id>"
+      responses:
+        "200":
+          application/json: {}
+  post_/api/admin/competition/create:
+    speakeasy-default-post-/api/admin/competition/create:
+      requestBody:
+        application/json: {"name": "Spring 2023 Trading Competition", "description": "A trading competition for the spring semester", "tradingType": "disallowAll", "externalLink": "https://example.com/competition-details", "imageUrl": "https://example.com/competition-image.jpg"}
+      responses:
+        "201":
+          application/json: {}
+  post_/api/admin/competition/start:
+    speakeasy-default-post-/api/admin/competition/start:
+      requestBody:
+        application/json: {"name": "Spring 2023 Trading Competition", "description": "A trading competition for the spring semester", "externalLink": "https://example.com/competition-details", "imageUrl": "https://example.com/competition-image.jpg", "teamIds": ["<value>", "<value>"], "tradingType": "disallowAll"}
+      responses:
+        "200":
+          application/json: {}
+  post_/api/admin/competition/end:
+    speakeasy-default-post-/api/admin/competition/end:
+      requestBody:
+        application/json: {"competitionId": "<id>"}
+      responses:
+        "200":
+          application/json: {}
+  get_/api/admin/competition/{competitionId}/snapshots:
+    speakeasy-default-get-/api/admin/competition/{competition-id}/snapshots:
+      parameters:
+        path:
+          competitionId: "<id>"
+        query: {}
+      responses:
+        "200":
+          application/json: {}
+  get_/api/admin/reports/performance:
+    speakeasy-default-get-/api/admin/reports/performance:
+      parameters:
+        query:
+          competitionId: "<id>"
+      responses:
+        "200":
+          application/json: {}
+  post_/api/admin/teams/{teamId}/deactivate:
+    speakeasy-default-post-/api/admin/teams/{team-id}/deactivate:
+      parameters:
+        path:
+          teamId: "<id>"
+      requestBody:
+        application/json: {"reason": "Violated competition rules by using external API"}
+      responses:
+        "200":
+          application/json: {}
+  post_/api/admin/teams/{teamId}/reactivate:
+    speakeasy-default-post-/api/admin/teams/{team-id}/reactivate:
+      parameters:
+        path:
+          teamId: "<id>"
+      responses:
+        "200":
+          application/json: {}
+  get_/api/competition/leaderboard:
+    speakeasy-default-get-/api/competition/leaderboard:
+      responses:
+        "200":
+          application/json: {}
+  get_/api/competition/status:
+    speakeasy-default-get-/api/competition/status:
+      responses:
+        "200":
+          application/json: {}
+  get_/api/competition/rules:
+    speakeasy-default-get-/api/competition/rules:
+      responses:
+        "200":
+          application/json: {}
+  get_/api/competition/upcoming:
+    speakeasy-default-get-/api/competition/upcoming:
+      responses:
+        "200":
+          application/json: {}
+  get_/api/health:
+    speakeasy-default-get-/api/health:
+      responses:
+        "200":
+          application/json: {"status": "ok"}
+  get_/api/health/detailed:
+    speakeasy-default-get-/api/health/detailed:
+      responses:
+        "200":
+          application/json: {"status": "ok", "services": {"priceTracker": "ok", "balanceManager": "ok", "tradeSimulator": "ok", "competitionManager": "ok", "teamManager": "ok"}}
+  get_/api/price:
+    "":
+      parameters:
+        query:
+          token: "So11111111111111111111111111111111111111112"
+          chain: "svm"
+          specificChain: "eth"
+  get_/api/price/token-info:
+    "":
+      parameters:
+        query:
+          token: "So11111111111111111111111111111111111111112"
+          chain: "svm"
+          specificChain: "eth"
+  post_/api/public/teams/register:
+    speakeasy-default-post-/api/public/teams/register:
+      requestBody:
+        application/json: {"teamName": "Team Alpha", "email": "team@example.com", "contactPerson": "John Doe", "walletAddress": "1.0392900530713021e+47", "imageUrl": "https://example.com/team-image.jpg"}
+      responses:
+        "201":
+          application/json: {"team": {"apiKey": "abc123def456_ghi789jkl012"}}
+  post_/api/trade/execute:
+    speakeasy-default-post-/api/trade/execute:
+      requestBody:
+        application/json: {"fromToken": "So11111111111111111111111111111111111111112", "toToken": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", "amount": "1.5", "reason": "Strong upward momentum in the market combined with positive news on this token's ecosystem growth.", "slippageTolerance": "0.5", "fromChain": "svm", "fromSpecificChain": "mainnet", "toChain": "svm", "toSpecificChain": "mainnet"}
+      responses:
+        "200":
+          application/json: {}
+  get_/api/trade/quote:
+    "":
+      parameters:
+        query:
+          fromToken: "So11111111111111111111111111111111111111112"
+          toToken: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+          amount: "1.5"
+          fromChain: "svm"
+          fromSpecificChain: "mainnet"
+          toChain: "svm"
+          toSpecificChain: "mainnet"
+  get_/api/admin/teams/search:
+    speakeasy-default-get-/api/admin/teams/search:
+      responses:
+        "200":
+          application/json: {}
+examplesVersion: 1.0.1
+generatedTests: {}

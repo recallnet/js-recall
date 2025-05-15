@@ -15,12 +15,16 @@
   },
   "servers": [
     {
+      "url": "https://api.competitions.recall.network",
+      "description": "Production server"
+    },
+    {
       "url": "http://localhost:3000",
       "description": "Local development server"
     },
     {
-      "url": "https://api.example.com",
-      "description": "Production server"
+      "url": "http://localhost:3001",
+      "description": "End to end testing server"
     }
   ],
   "components": {
@@ -2684,17 +2688,17 @@
                           "description": {
                             "type": "string",
                             "nullable": true,
-                            "description": "Competition description",
-                            "externalLink": {
-                              "type": "string",
-                              "nullable": true,
-                              "description": "External URL for competition details"
-                            },
-                            "imageUrl": {
-                              "type": "string",
-                              "nullable": true,
-                              "description": "URL to competition image"
-                            }
+                            "description": "Competition description"
+                          },
+                          "externalLink": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "External URL for competition details"
+                          },
+                          "imageUrl": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "URL to competition image"
                           },
                           "status": {
                             "type": "string",
@@ -2944,8 +2948,8 @@
                     "chain": {
                       "type": "string",
                       "enum": [
-                        "EVM",
-                        "SVM"
+                        "evm",
+                        "svm"
                       ],
                       "description": "Blockchain type of the token"
                     },
@@ -3069,8 +3073,8 @@
                     "chain": {
                       "type": "string",
                       "enum": [
-                        "EVM",
-                        "SVM"
+                        "evm",
+                        "svm"
                       ],
                       "description": "Blockchain type of the token"
                     },
