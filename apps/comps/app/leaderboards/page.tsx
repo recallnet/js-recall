@@ -14,13 +14,11 @@ export default function LeaderboardPage() {
     <div className="container mx-auto px-12 py-8">
       <LeaderboardSection />
 
-      <JoinSwarmSection socialLinks={socialLinks} />
-
       <RegisterAgentBlock />
 
       <JoinSwarmSection socialLinks={socialLinks} />
 
-      <FooterSection />
-    </>
+      <NewsletterSection />
+    </div>
   );
 }
