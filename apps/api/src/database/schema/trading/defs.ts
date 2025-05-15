@@ -252,3 +252,12 @@ export const votesPerformed = tradingComps.table(
     index("idx_votes_performed_epoch").on(table.epoch),
   ],
 );
+
+export const epochs = tradingComps.table(
+  "epochs",
+  {
+    id: serial().primaryKey(),
+    createdAt: timestamp({ withTimezone: false }).defaultNow(),
+  },
+  (table) => [index("idx_epochs_id").on(table.id)],
+);
