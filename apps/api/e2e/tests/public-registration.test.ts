@@ -2,10 +2,9 @@ import axios from "axios";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { teams } from "@recallnet/comps-db/schema";
-
 import config from "@/config/index.js";
 import { db } from "@/database/db.js";
+import { teams } from "@/database/schema/core/defs.js";
 import {
   BalancesResponse,
   BlockchainType,
