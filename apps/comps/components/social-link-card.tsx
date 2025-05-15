@@ -1,12 +1,11 @@
 "use client";
 
-import { ArrowRightIcon } from "@radix-ui/react-icons";
+import {ArrowRightIcon} from "@radix-ui/react-icons";
 import Image from "next/image";
 import React from "react";
+import {Card} from "@recallnet/ui2/components/shadcn/card";
 
-import Card from "@recallnet/ui2/components/shadcn/card";
-
-import { SocialLink } from "@/data/social";
+import {SocialLink} from "../data/social";
 
 interface SocialLinkCardProps {
   socialLink: SocialLink;
@@ -16,16 +15,12 @@ export const SocialLinkCard: React.FC<SocialLinkCardProps> = ({
   socialLink,
 }) => {
   return (
-    <Card
-      corner="bottom-left"
-      cropSize={30}
-      className={`bg-${socialLink.bg} h-45 max-w-80 flex-col p-6`}
-    >
+    <Card cropSize={35} corner='bottom-left'>
       <a
         href={socialLink.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex h-full w-full flex-col justify-between"
+        className={`bg-${socialLink.bgColor || "card"} hover:bg-card max-w-65 flex h-36 flex-col justify-between rounded-md p-6`}
       >
         <div className="text-primary flex h-8 w-8 items-center justify-center">
           <Image

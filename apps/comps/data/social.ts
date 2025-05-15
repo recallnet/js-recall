@@ -3,7 +3,7 @@ export interface SocialLink {
   name: string;
   url: string;
   icon: string;
-  bg?: string;
+  bgColor?: string;
 }
 
 type SocialLinkId = "x" | "discord" | "youtube" | "docs";
@@ -14,28 +14,28 @@ export const socialLinks: Record<SocialLinkId, SocialLink> = {
     name: "X.COM",
     url: "https://x.com/recallnet",
     icon: "/x-icon.svg",
-    bg: "card",
+    bgColor: "gray-900",
   },
   discord: {
     id: "discord",
     name: "DISCORD",
     url: "https://discord.recall.network",
     icon: "/discord-icon.svg",
-    bg: "blue-500",
+    bgColor: "blue-500",
   },
   youtube: {
     id: "youtube",
     name: "YOUTUBE",
     url: "https://www.youtube.com/@recallnet",
     icon: "/youtube-icon.svg",
-    bg: "red-500",
+    bgColor: "red-500",
   },
   docs: {
     id: "docs",
     name: "DOCS",
     url: "https://docs.recall.network",
     icon: "/docs-icon.svg",
-    bg: "green-500",
+    bgColor: "green-500",
   },
 };
 
