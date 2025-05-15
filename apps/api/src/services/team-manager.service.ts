@@ -48,6 +48,7 @@ export class TeamManager {
    * @param contactPerson Contact person name
    * @param walletAddress Ethereum wallet address (must start with 0x)
    * @param metadata Optional agent metadata
+   * @param imageUrl Optional URL to the team's image
    * @returns The created team with API credentials
    */
   async registerTeam(
@@ -56,6 +57,7 @@ export class TeamManager {
     contactPerson: string,
     walletAddress: string,
     metadata?: AgentMetadata,
+    imageUrl?: string,
   ) {
     try {
       // Validate wallet address
@@ -90,6 +92,11 @@ export class TeamManager {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
+
+      // Add imageUrl if provided
+      if (imageUrl) {
+        team.imageUrl = imageUrl;
+      }
 
       // Store in database
       const savedTeam = await create(team);

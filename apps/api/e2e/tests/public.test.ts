@@ -209,4 +209,67 @@ describe("Public API", () => {
     expect(errorResponse.status).toBe(409);
     expect(errorResponse.error).toContain("already exists");
   });
+
+  test("public team registration with imageUrl works correctly", async () => {
+    // Create a test client (no auth needed for public endpoints)
+    const client = createTestClient();
+
+    // Generate unique team information
+    const teamName = `Public Team ${generateRandomString(8)}`;
+    const email = `public-team-${generateRandomString(8)}@test.com`;
+    const contactPerson = `Public Contact ${generateRandomString(8)}`;
+    const walletAddress = generateValidEthAddress();
+    const imageUrl = "https://example.com/team-image.jpg";
+
+    // Register the team using the public endpoint with imageUrl
+    const registerResponse = await client.publicRegisterTeam(
+      teamName,
+      email,
+      contactPerson,
+      walletAddress,
+      undefined, // no metadata
+      imageUrl,
+    );
+
+    // Verify response
+    expect(registerResponse.success).toBe(true);
+
+    // Type guard to ensure we have a successful registration response
+    if (!registerResponse.success) {
+      throw new Error(
+        "Registration failed: " + (registerResponse as ErrorResponse).error,
+      );
+    }
+
+    // Cast to proper type
+    const response = registerResponse as TeamRegistrationResponse;
+
+    // Check team data including imageUrl
+    expect(response.team).toBeDefined();
+    expect(response.team.id).toBeDefined();
+    expect(response.team.name).toBe(teamName);
+    expect(response.team.email).toBe(email);
+    expect(response.team.contactPerson).toBe(contactPerson);
+    expect(response.team.walletAddress).toBe(walletAddress);
+    expect(response.team.apiKey).toBeDefined();
+    expect(response.team.imageUrl).toBe(imageUrl);
+
+    // Verify team can authenticate and the imageUrl is preserved
+    const teamClient = client.createTeamClient(response.team.apiKey);
+    const profileResponse = await teamClient.getProfile();
+
+    expect(profileResponse.success).toBe(true);
+
+    // Type guard for the profile response
+    if (!profileResponse.success) {
+      throw new Error(
+        "Profile fetch failed: " + (profileResponse as ErrorResponse).error,
+      );
+    }
+
+    const teamProfile = profileResponse as TeamProfileResponse;
+    expect(teamProfile.team).toBeDefined();
+    expect(teamProfile.team.id).toBe(response.team.id);
+    expect(teamProfile.team.imageUrl).toBe(imageUrl);
+  });
 });
