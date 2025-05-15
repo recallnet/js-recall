@@ -16,8 +16,8 @@ import {
   ADMIN_PASSWORD,
   ADMIN_USERNAME,
   cleanupTestState,
-  createTestClient,
-  registerTeamAndGetClient,
+  createTestClient, generateRandomEthAddress,
+  registerTeamAndGetClient
 } from "@/e2e/utils/test-helpers.js";
 
 describe("Team API", () => {
@@ -537,6 +537,7 @@ describe("Team API", () => {
     const teamName = `Image Test Team ${Date.now()}`;
     const email = `image-test-${Date.now()}@example.com`;
     const contactPerson = "Image Test Contact";
+    const walletAddress = generateRandomEthAddress();
     const initialImageUrl = "https://example.com/team-image-initial.jpg";
 
     // Register the team with an initial image URL
@@ -545,6 +546,7 @@ describe("Team API", () => {
       teamName,
       email,
       contactPerson,
+      walletAddress,
       initialImageUrl,
     );
 

@@ -44,6 +44,7 @@ export async function registerTeamAndGetClient(
   email?: string,
   contactPerson?: string,
   walletAddress?: string,
+  imageUrl?: string
 ) {
   // Ensure database is initialized
   await ensureDatabaseInitialized();
@@ -55,6 +56,7 @@ export async function registerTeamAndGetClient(
     email: email || `team-${generateRandomString(8)}@test.com`,
     contactPerson: contactPerson || `Contact ${generateRandomString(8)}`,
     walletAddress: walletAddress || generateRandomEthAddress(),
+    imageUrl,
     metadata: {},
   });
 
@@ -73,8 +75,8 @@ export async function registerTeamAndGetClient(
       name: result.team.name || "",
       email: result.team.email || "",
       contactPerson: result.team.contactPerson || "",
-      metadata: result.team.metadata || {},
-      imageUrl: "",
+      metadata: null, // TODO: this is a workaround for the inconsistency between the open api spec and actual data returned from routes
+      imageUrl: result.team.imageUrl || null,
     },
     apiKey: result.team.apiKey || "",
   };
