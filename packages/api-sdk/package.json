@@ -1,6 +1,6 @@
 {
   "name": "@recallnet/api-sdk",
-  "version": "0.0.6",
+  "version": "0.0.0",
   "author": "Speakeasy",
   "type": "module",
   "bin": {
