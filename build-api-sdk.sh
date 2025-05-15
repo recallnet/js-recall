@@ -6,3 +6,5 @@ cd packages/api-sdk
 npm run build
 speakeasy run
 cd ../..
+
+pnpm format

@@ -15,10 +15,11 @@ Developer-friendly & type-safe Typescript SDK specifically catered to leverage _
 > This SDK is not yet ready for production use. To complete setup please follow the steps outlined in your [workspace](https://app.speakeasy.com/org/textile/recall-comp-api). Delete this section before > publishing to a package manager.
 
 <!-- Start Summary [summary] -->
+
 ## Summary
 
 Trading Simulator API: API for the Trading Simulator - a platform for simulated cryptocurrency trading competitions
-      
+
 ## Authentication Guide
 
 This API uses Bearer token authentication. All protected endpoints require the following header:
@@ -41,49 +42,53 @@ curl -X GET "https://api.example.com/api/account/balances" \
 
 ```javascript
 const fetchData = async () => {
-  const apiKey = 'abc123def456_ghi789jkl012';
-  const response = await fetch('https://api.example.com/api/account/balances', {
+  const apiKey = "abc123def456_ghi789jkl012";
+  const response = await fetch("https://api.example.com/api/account/balances", {
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    }
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
   });
-  
+
   return await response.json();
 };
 ```
 
 For convenience, we provide an API client that handles authentication automatically. See `docs/examples/api-client.ts`.
+
 <!-- End Summary [summary] -->
 
 <!-- Start Table of Contents [toc] -->
+
 ## Table of Contents
+
 <!-- $toc-max-depth=2 -->
-* [@recallnet/api-sdk](#recallnetapi-sdk)
-  * [Authentication Guide](#authentication-guide)
-  * [SDK Installation](#sdk-installation)
-  * [Requirements](#requirements)
-  * [SDK Example Usage](#sdk-example-usage)
-  * [Authentication](#authentication)
-  * [Available Resources and Operations](#available-resources-and-operations)
-  * [Standalone functions](#standalone-functions)
-  * [Retries](#retries)
-  * [Error Handling](#error-handling)
-  * [Server Selection](#server-selection)
-  * [Custom HTTP Client](#custom-http-client)
-  * [Debugging](#debugging)
-* [Development](#development)
-  * [Maturity](#maturity)
-  * [Contributions](#contributions)
+
+- [@recallnet/api-sdk](#recallnetapi-sdk)
+  - [Authentication Guide](#authentication-guide)
+  - [SDK Installation](#sdk-installation)
+  - [Requirements](#requirements)
+  - [SDK Example Usage](#sdk-example-usage)
+  - [Authentication](#authentication)
+  - [Available Resources and Operations](#available-resources-and-operations)
+  - [Standalone functions](#standalone-functions)
+  - [Retries](#retries)
+  - [Error Handling](#error-handling)
+  - [Server Selection](#server-selection)
+  - [Custom HTTP Client](#custom-http-client)
+  - [Debugging](#debugging)
+- [Development](#development)
+  - [Maturity](#maturity)
+  - [Contributions](#contributions)
 
 <!-- End Table of Contents [toc] -->
 
 <!-- Start SDK Installation [installation] -->
+
 ## SDK Installation
 
 > [!TIP]
 > To finish publishing your SDK to npm and others you must [run your first generation action](https://www.speakeasy.com/docs/github-setup#step-by-step-guide).
-
 
 The SDK can be installed with either [npm](https://www.npmjs.com/), [pnpm](https://pnpm.io/), [bun](https://bun.sh/) or [yarn](https://classic.yarnpkg.com/en/) package managers.
 
@@ -117,7 +122,6 @@ yarn add <UNSET> zod
 > [!NOTE]
 > This package is published with CommonJS and ES Modules (ESM) support.
 
-
 ### Model Context Protocol (MCP) Server
 
 This SDK is also an installable MCP server where the various SDK methods are
@@ -136,10 +140,14 @@ Add the following server definition to your `claude_desktop_config.json` file:
     "ApiSDK": {
       "command": "npx",
       "args": [
-        "-y", "--package", "@recallnet/api-sdk",
+        "-y",
+        "--package",
+        "@recallnet/api-sdk",
         "--",
-        "mcp", "start",
-        "--bearer-auth", "..."
+        "mcp",
+        "start",
+        "--bearer-auth",
+        "..."
       ]
     }
   }
@@ -159,10 +167,14 @@ Create a `.cursor/mcp.json` file in your project root with the following content
     "ApiSDK": {
       "command": "npx",
       "args": [
-        "-y", "--package", "@recallnet/api-sdk",
+        "-y",
+        "--package",
+        "@recallnet/api-sdk",
         "--",
-        "mcp", "start",
-        "--bearer-auth", "..."
+        "mcp",
+        "start",
+        "--bearer-auth",
+        "..."
       ]
     }
   }
@@ -181,15 +193,12 @@ chmod +x mcp-server
 
 If the repo is a private repo you must add your Github PAT to download a release `-H "Authorization: Bearer {GITHUB_PAT}"`.
 
-
 ```json
 {
   "mcpServers": {
     "Todos": {
       "command": "./DOWNLOAD/PATH/mcp-server",
-      "args": [
-        "start"
-      ]
+      "args": ["start"]
     }
   }
 }
@@ -200,15 +209,19 @@ For a full list of server arguments, run:
 ```sh
 npx -y --package @recallnet/api-sdk -- mcp start --help
 ```
+
 <!-- End SDK Installation [installation] -->
 
 <!-- Start Requirements [requirements] -->
+
 ## Requirements
 
 For supported JavaScript runtimes, please consult [RUNTIMES.md](RUNTIMES.md).
+
 <!-- End Requirements [requirements] -->
 
 <!-- Start SDK Example Usage [usage] -->
+
 ## SDK Example Usage
 
 ### Example
@@ -228,11 +241,12 @@ async function run() {
 }
 
 run();
-
 ```
+
 <!-- End SDK Example Usage [usage] -->
 
 <!-- Start Authentication [security] -->
+
 ## Authentication
 
 ### Per-Client Security Schemes
@@ -244,6 +258,7 @@ This SDK supports the following security scheme globally:
 | `bearerAuth` | http | HTTP Bearer | `APISDK_BEARER_AUTH` |
 
 To authenticate with the API the `bearerAuth` parameter must be set when initializing the SDK client instance. For example:
+
 ```typescript
 import { ApiSDK } from "@recallnet/api-sdk";
 
@@ -259,11 +274,12 @@ async function run() {
 }
 
 run();
-
 ```
+
 <!-- End Authentication [security] -->
 
 <!-- Start Available Resources and Operations [operations] -->
+
 ## Available Resources and Operations
 
 <details open>
@@ -271,60 +287,60 @@ run();
 
 ### [account](docs/sdks/account/README.md)
 
-* [getApiAccountProfile](docs/sdks/account/README.md#getapiaccountprofile) - Get team profile
-* [putApiAccountProfile](docs/sdks/account/README.md#putapiaccountprofile) - Update team profile
-* [postApiAccountResetApiKey](docs/sdks/account/README.md#postapiaccountresetapikey) - Reset team API key
-* [getApiAccountBalances](docs/sdks/account/README.md#getapiaccountbalances) - Get token balances
-* [getApiAccountTrades](docs/sdks/account/README.md#getapiaccounttrades) - Get trade history
-* [getApiAccountPortfolio](docs/sdks/account/README.md#getapiaccountportfolio) - Get portfolio information
+- [getApiAccountProfile](docs/sdks/account/README.md#getapiaccountprofile) - Get team profile
+- [putApiAccountProfile](docs/sdks/account/README.md#putapiaccountprofile) - Update team profile
+- [postApiAccountResetApiKey](docs/sdks/account/README.md#postapiaccountresetapikey) - Reset team API key
+- [getApiAccountBalances](docs/sdks/account/README.md#getapiaccountbalances) - Get token balances
+- [getApiAccountTrades](docs/sdks/account/README.md#getapiaccounttrades) - Get trade history
+- [getApiAccountPortfolio](docs/sdks/account/README.md#getapiaccountportfolio) - Get portfolio information
 
 ### [admin](docs/sdks/admin/README.md)
 
-* [postApiAdminSetup](docs/sdks/admin/README.md#postapiadminsetup) - Set up initial admin account
-* [postApiAdminTeamsRegister](docs/sdks/admin/README.md#postapiadminteamsregister) - Register a new team
-* [getApiAdminTeams](docs/sdks/admin/README.md#getapiadminteams) - List all teams
-* [getApiAdminTeamsTeamIdKey](docs/sdks/admin/README.md#getapiadminteamsteamidkey) - Get a team's API key
-* [deleteApiAdminTeamsTeamId](docs/sdks/admin/README.md#deleteapiadminteamsteamid) - Delete a team
-* [postApiAdminCompetitionCreate](docs/sdks/admin/README.md#postapiadmincompetitioncreate) - Create a competition
-* [postApiAdminCompetitionStart](docs/sdks/admin/README.md#postapiadmincompetitionstart) - Start a competition
-* [postApiAdminCompetitionEnd](docs/sdks/admin/README.md#postapiadmincompetitionend) - End a competition
-* [getApiAdminCompetitionCompetitionIdSnapshots](docs/sdks/admin/README.md#getapiadmincompetitioncompetitionidsnapshots) - Get competition snapshots
-* [getApiAdminReportsPerformance](docs/sdks/admin/README.md#getapiadminreportsperformance) - Get performance reports
-* [postApiAdminTeamsTeamIdDeactivate](docs/sdks/admin/README.md#postapiadminteamsteamiddeactivate) - Deactivate a team
-* [postApiAdminTeamsTeamIdReactivate](docs/sdks/admin/README.md#postapiadminteamsteamidreactivate) - Reactivate a team
-* [getApiAdminTeamsSearch](docs/sdks/admin/README.md#getapiadminteamssearch) - Search for teams
-
+- [postApiAdminSetup](docs/sdks/admin/README.md#postapiadminsetup) - Set up initial admin account
+- [postApiAdminTeamsRegister](docs/sdks/admin/README.md#postapiadminteamsregister) - Register a new team
+- [getApiAdminTeams](docs/sdks/admin/README.md#getapiadminteams) - List all teams
+- [getApiAdminTeamsTeamIdKey](docs/sdks/admin/README.md#getapiadminteamsteamidkey) - Get a team's API key
+- [deleteApiAdminTeamsTeamId](docs/sdks/admin/README.md#deleteapiadminteamsteamid) - Delete a team
+- [postApiAdminCompetitionCreate](docs/sdks/admin/README.md#postapiadmincompetitioncreate) - Create a competition
+- [postApiAdminCompetitionStart](docs/sdks/admin/README.md#postapiadmincompetitionstart) - Start a competition
+- [postApiAdminCompetitionEnd](docs/sdks/admin/README.md#postapiadmincompetitionend) - End a competition
+- [getApiAdminCompetitionCompetitionIdSnapshots](docs/sdks/admin/README.md#getapiadmincompetitioncompetitionidsnapshots) - Get competition snapshots
+- [getApiAdminReportsPerformance](docs/sdks/admin/README.md#getapiadminreportsperformance) - Get performance reports
+- [postApiAdminTeamsTeamIdDeactivate](docs/sdks/admin/README.md#postapiadminteamsteamiddeactivate) - Deactivate a team
+- [postApiAdminTeamsTeamIdReactivate](docs/sdks/admin/README.md#postapiadminteamsteamidreactivate) - Reactivate a team
+- [getApiAdminTeamsSearch](docs/sdks/admin/README.md#getapiadminteamssearch) - Search for teams
 
 ### [competition](docs/sdks/competition/README.md)
 
-* [getApiCompetitionLeaderboard](docs/sdks/competition/README.md#getapicompetitionleaderboard) - Get competition leaderboard
-* [getApiCompetitionStatus](docs/sdks/competition/README.md#getapicompetitionstatus) - Get competition status
-* [getApiCompetitionRules](docs/sdks/competition/README.md#getapicompetitionrules) - Get competition rules
-* [getApiCompetitionUpcoming](docs/sdks/competition/README.md#getapicompetitionupcoming) - Get upcoming competitions
+- [getApiCompetitionLeaderboard](docs/sdks/competition/README.md#getapicompetitionleaderboard) - Get competition leaderboard
+- [getApiCompetitionStatus](docs/sdks/competition/README.md#getapicompetitionstatus) - Get competition status
+- [getApiCompetitionRules](docs/sdks/competition/README.md#getapicompetitionrules) - Get competition rules
+- [getApiCompetitionUpcoming](docs/sdks/competition/README.md#getapicompetitionupcoming) - Get upcoming competitions
 
 ### [health](docs/sdks/health/README.md)
 
-* [getApiHealth](docs/sdks/health/README.md#getapihealth) - Basic health check
-* [getApiHealthDetailed](docs/sdks/health/README.md#getapihealthdetailed) - Detailed health check
+- [getApiHealth](docs/sdks/health/README.md#getapihealth) - Basic health check
+- [getApiHealthDetailed](docs/sdks/health/README.md#getapihealthdetailed) - Detailed health check
 
 ### [price](docs/sdks/price/README.md)
 
-* [getApiPrice](docs/sdks/price/README.md#getapiprice) - Get price for a token
-* [getApiPriceTokenInfo](docs/sdks/price/README.md#getapipricetokeninfo) - Get detailed token information
+- [getApiPrice](docs/sdks/price/README.md#getapiprice) - Get price for a token
+- [getApiPriceTokenInfo](docs/sdks/price/README.md#getapipricetokeninfo) - Get detailed token information
 
 ### [public](docs/sdks/public/README.md)
 
-* [postApiPublicTeamsRegister](docs/sdks/public/README.md#postapipublicteamsregister) - Register a new team
+- [postApiPublicTeamsRegister](docs/sdks/public/README.md#postapipublicteamsregister) - Register a new team
 
 ### [trade](docs/sdks/trade/README.md)
 
-* [postApiTradeExecute](docs/sdks/trade/README.md#postapitradeexecute) - Execute a trade
-* [getApiTradeQuote](docs/sdks/trade/README.md#getapitradequote) - Get a quote for a trade
+- [postApiTradeExecute](docs/sdks/trade/README.md#postapitradeexecute) - Execute a trade
+- [getApiTradeQuote](docs/sdks/trade/README.md#getapitradequote) - Get a quote for a trade
 
 </details>
 <!-- End Available Resources and Operations [operations] -->
 
 <!-- Start Standalone functions [standalone-funcs] -->
+
 ## Standalone functions
 
 All the methods listed above are available as standalone functions. These
@@ -374,11 +390,13 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 <!-- End Standalone functions [standalone-funcs] -->
 
 <!-- Start Retries [retries] -->
+
 ## Retries
 
-Some of the endpoints in this SDK support retries.  If you use the SDK without any configuration, it will fall back to the default retry strategy provided by the API.  However, the default retry strategy can be overridden on a per-operation basis, or across the entire SDK.
+Some of the endpoints in this SDK support retries. If you use the SDK without any configuration, it will fall back to the default retry strategy provided by the API. However, the default retry strategy can be overridden on a per-operation basis, or across the entire SDK.
 
 To change the default retry strategy for a single API call, simply provide a retryConfig object to the call:
+
 ```typescript
 import { ApiSDK } from "@recallnet/api-sdk";
 
@@ -405,10 +423,10 @@ async function run() {
 }
 
 run();
-
 ```
 
 If you'd like to override the default retry strategy for all operations that support retries, you can provide a retryConfig at SDK initialization:
+
 ```typescript
 import { ApiSDK } from "@recallnet/api-sdk";
 
@@ -434,14 +452,15 @@ async function run() {
 }
 
 run();
-
 ```
+
 <!-- End Retries [retries] -->
 
 <!-- Start Error Handling [errors] -->
+
 ## Error Handling
 
-Some methods specify known errors which can be thrown. All the known errors are enumerated in the `models/errors/errors.ts` module. The known errors for a method are documented under the *Errors* tables in SDK docs. For example, the `getApiPrice` method may throw the following errors:
+Some methods specify known errors which can be thrown. All the known errors are enumerated in the `models/errors/errors.ts` module. The known errors for a method are documented under the _Errors_ tables in SDK docs. For example, the `getApiPrice` method may throw the following errors:
 
 | Error Type      | Status Code | Content Type     |
 | --------------- | ----------- | ---------------- |
@@ -472,14 +491,14 @@ async function run() {
   } catch (err) {
     switch (true) {
       // The server response does not match the expected SDK schema
-      case (err instanceof SDKValidationError): {
+      case err instanceof SDKValidationError: {
         // Pretty-print will provide a human-readable multi-line error message
         console.error(err.pretty());
         // Raw value may also be inspected
         console.error(err.rawValue);
         return;
       }
-      case (err instanceof ErrorT): {
+      case err instanceof ErrorT: {
         // Handle err.data$: ErrorTData
         console.error(err);
         return;
@@ -493,23 +512,24 @@ async function run() {
 }
 
 run();
-
 ```
 
 Validation errors can also occur when either method arguments or data returned from the server do not match the expected format. The `SDKValidationError` that is thrown as a result will capture the raw value that failed validation in an attribute called `rawValue`. Additionally, a `pretty()` method is available on this error that can be used to log a nicely formatted multi-line string since validation errors can list many issues and the plain error string may be difficult read when debugging.
 
 In some rare cases, the SDK can fail to get a response from the server or even make the request due to unexpected circumstances such as network conditions. These types of errors are captured in the `models/errors/httpclienterrors.ts` module:
 
-| HTTP Client Error                                    | Description                                          |
-| ---------------------------------------------------- | ---------------------------------------------------- |
-| RequestAbortedError                                  | HTTP request was aborted by the client               |
-| RequestTimeoutError                                  | HTTP request timed out due to an AbortSignal signal  |
-| ConnectionError                                      | HTTP client was unable to make a request to a server |
-| InvalidRequestError                                  | Any input used to create a request is invalid        |
-| UnexpectedClientError                                | Unrecognised or unexpected error                     |
+| HTTP Client Error     | Description                                          |
+| --------------------- | ---------------------------------------------------- |
+| RequestAbortedError   | HTTP request was aborted by the client               |
+| RequestTimeoutError   | HTTP request timed out due to an AbortSignal signal  |
+| ConnectionError       | HTTP client was unable to make a request to a server |
+| InvalidRequestError   | Any input used to create a request is invalid        |
+| UnexpectedClientError | Unrecognised or unexpected error                     |
+
 <!-- End Error Handling [errors] -->
 
 <!-- Start Server Selection [server] -->
+
 ## Server Selection
 
 ### Select Server by Index
@@ -540,12 +560,12 @@ async function run() {
 }
 
 run();
-
 ```
 
 ### Override Server URL Per-Client
 
 The default server can also be overridden globally by passing a URL to the `serverURL: string` optional parameter when initializing the SDK client instance. For example:
+
 ```typescript
 import { ApiSDK } from "@recallnet/api-sdk";
 
@@ -562,11 +582,12 @@ async function run() {
 }
 
 run();
-
 ```
+
 <!-- End Server Selection [server] -->
 
 <!-- Start Custom HTTP Client [http-client] -->
+
 ## Custom HTTP Client
 
 The TypeScript SDK makes API calls using an `HTTPClient` that wraps the native
@@ -591,12 +612,12 @@ const httpClient = new HTTPClient({
   // fetcher takes a function that has the same signature as native `fetch`.
   fetcher: (request) => {
     return fetch(request);
-  }
+  },
 });
 
 httpClient.addHook("beforeRequest", (request) => {
   const nextRequest = new Request(request, {
-    signal: request.signal || AbortSignal.timeout(5000)
+    signal: request.signal || AbortSignal.timeout(5000),
   });
 
   nextRequest.headers.set("x-custom-header", "custom value");
@@ -613,9 +634,11 @@ httpClient.addHook("requestError", (error, request) => {
 
 const sdk = new ApiSDK({ httpClient });
 ```
+
 <!-- End Custom HTTP Client [http-client] -->
 
 <!-- Start Debugging [debug] -->
+
 ## Debugging
 
 You can setup your SDK to emit debug logs for SDK requests and responses.
@@ -632,6 +655,7 @@ const sdk = new ApiSDK({ debugLogger: console });
 ```
 
 You can also enable a default debug logger by setting an environment variable `APISDK_DEBUG` to true.
+
 <!-- End Debugging [debug] -->
 
 <!-- Placeholder for Future Speakeasy SDK Sections -->
