@@ -52,6 +52,14 @@ export type GetApiCompetitionStatusCompetition = {
    */
   description?: string | null | undefined;
   /**
+   * External URL for competition details
+   */
+  externalLink?: string | null | undefined;
+  /**
+   * URL to competition image
+   */
+  imageUrl?: string | null | undefined;
+  /**
    * Competition start date
    */
   startDate?: Date | undefined;
@@ -155,6 +163,8 @@ export const GetApiCompetitionStatusCompetition$inboundSchema: z.ZodType<
   id: z.string().optional(),
   name: z.string().optional(),
   description: z.nullable(z.string()).optional(),
+  externalLink: z.nullable(z.string()).optional(),
+  imageUrl: z.nullable(z.string()).optional(),
   startDate: z
     .string()
     .datetime({ offset: true })
@@ -188,6 +198,8 @@ export type GetApiCompetitionStatusCompetition$Outbound = {
   id?: string | undefined;
   name?: string | undefined;
   description?: string | null | undefined;
+  externalLink?: string | null | undefined;
+  imageUrl?: string | null | undefined;
   startDate?: string | undefined;
   endDate?: string | null | undefined;
   status?: string | undefined;
@@ -205,6 +217,8 @@ export const GetApiCompetitionStatusCompetition$outboundSchema: z.ZodType<
   id: z.string().optional(),
   name: z.string().optional(),
   description: z.nullable(z.string()).optional(),
+  externalLink: z.nullable(z.string()).optional(),
+  imageUrl: z.nullable(z.string()).optional(),
   startDate: z
     .date()
     .transform((v) => v.toISOString())

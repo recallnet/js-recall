@@ -58,6 +58,10 @@ export type PutApiAccountProfileRequest = {
    * Optional agent metadata
    */
   metadata?: PutApiAccountProfileMetadataRequest | undefined;
+  /**
+   * URL to the team's image
+   */
+  imageUrl?: string | undefined;
 };
 
 export type PutApiAccountProfileRefResponse = {
@@ -123,6 +127,10 @@ export type PutApiAccountProfileTeam = {
    * Optional agent metadata
    */
   metadata?: PutApiAccountProfileMetadataResponse | null | undefined;
+  /**
+   * URL to the team's image
+   */
+  imageUrl?: string | undefined;
   /**
    * Team creation timestamp
    */
@@ -331,12 +339,14 @@ export const PutApiAccountProfileRequest$inboundSchema: z.ZodType<
   metadata: z
     .lazy(() => PutApiAccountProfileMetadataRequest$inboundSchema)
     .optional(),
+  imageUrl: z.string().optional(),
 });
 
 /** @internal */
 export type PutApiAccountProfileRequest$Outbound = {
   contactPerson?: string | undefined;
   metadata?: PutApiAccountProfileMetadataRequest$Outbound | undefined;
+  imageUrl?: string | undefined;
 };
 
 /** @internal */
@@ -349,6 +359,7 @@ export const PutApiAccountProfileRequest$outboundSchema: z.ZodType<
   metadata: z
     .lazy(() => PutApiAccountProfileMetadataRequest$outboundSchema)
     .optional(),
+  imageUrl: z.string().optional(),
 });
 
 /**
@@ -592,6 +603,7 @@ export const PutApiAccountProfileTeam$inboundSchema: z.ZodType<
   metadata: z
     .nullable(z.lazy(() => PutApiAccountProfileMetadataResponse$inboundSchema))
     .optional(),
+  imageUrl: z.string().optional(),
   createdAt: z
     .string()
     .datetime({ offset: true })
@@ -611,6 +623,7 @@ export type PutApiAccountProfileTeam$Outbound = {
   email?: string | undefined;
   contactPerson?: string | undefined;
   metadata?: PutApiAccountProfileMetadataResponse$Outbound | null | undefined;
+  imageUrl?: string | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
 };
@@ -628,6 +641,7 @@ export const PutApiAccountProfileTeam$outboundSchema: z.ZodType<
   metadata: z
     .nullable(z.lazy(() => PutApiAccountProfileMetadataResponse$outboundSchema))
     .optional(),
+  imageUrl: z.string().optional(),
   createdAt: z
     .date()
     .transform((v) => v.toISOString())

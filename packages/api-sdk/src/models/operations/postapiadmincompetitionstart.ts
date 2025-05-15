@@ -37,6 +37,14 @@ export type PostApiAdminCompetitionStartRequest = {
    */
   description?: string | undefined;
   /**
+   * External URL for competition details (used when creating a new competition)
+   */
+  externalLink?: string | undefined;
+  /**
+   * URL to competition image (used when creating a new competition)
+   */
+  imageUrl?: string | undefined;
+  /**
    * Array of team IDs to include in the competition
    */
   teamIds: Array<string>;
@@ -98,6 +106,14 @@ export type PostApiAdminCompetitionStartCompetition = {
    */
   endDate?: Date | null | undefined;
   /**
+   * External URL for competition details
+   */
+  externalLink?: string | null | undefined;
+  /**
+   * URL to competition image
+   */
+  imageUrl?: string | null | undefined;
+  /**
    * Competition status
    */
   status?: PostApiAdminCompetitionStartStatus | undefined;
@@ -156,6 +172,8 @@ export const PostApiAdminCompetitionStartRequest$inboundSchema: z.ZodType<
   competitionId: z.string().optional(),
   name: z.string().optional(),
   description: z.string().optional(),
+  externalLink: z.string().optional(),
+  imageUrl: z.string().optional(),
   teamIds: z.array(z.string()),
   tradingType:
     PostApiAdminCompetitionStartTradingType$inboundSchema.default(
@@ -168,6 +186,8 @@ export type PostApiAdminCompetitionStartRequest$Outbound = {
   competitionId?: string | undefined;
   name?: string | undefined;
   description?: string | undefined;
+  externalLink?: string | undefined;
+  imageUrl?: string | undefined;
   teamIds: Array<string>;
   tradingType: string;
 };
@@ -181,6 +201,8 @@ export const PostApiAdminCompetitionStartRequest$outboundSchema: z.ZodType<
   competitionId: z.string().optional(),
   name: z.string().optional(),
   description: z.string().optional(),
+  externalLink: z.string().optional(),
+  imageUrl: z.string().optional(),
   teamIds: z.array(z.string()),
   tradingType:
     PostApiAdminCompetitionStartTradingType$outboundSchema.default(
@@ -291,6 +313,8 @@ export const PostApiAdminCompetitionStartCompetition$inboundSchema: z.ZodType<
         .transform((v) => new Date(v)),
     )
     .optional(),
+  externalLink: z.nullable(z.string()).optional(),
+  imageUrl: z.nullable(z.string()).optional(),
   status: PostApiAdminCompetitionStartStatus$inboundSchema.optional(),
   crossChainTradingType:
     PostApiAdminCompetitionStartCrossChainTradingType$inboundSchema.optional(),
@@ -304,6 +328,8 @@ export type PostApiAdminCompetitionStartCompetition$Outbound = {
   description?: string | undefined;
   startDate?: string | undefined;
   endDate?: string | null | undefined;
+  externalLink?: string | null | undefined;
+  imageUrl?: string | null | undefined;
   status?: string | undefined;
   crossChainTradingType?: string | undefined;
   teamIds?: Array<string> | undefined;
@@ -323,6 +349,8 @@ export const PostApiAdminCompetitionStartCompetition$outboundSchema: z.ZodType<
     .transform((v) => v.toISOString())
     .optional(),
   endDate: z.nullable(z.date().transform((v) => v.toISOString())).optional(),
+  externalLink: z.nullable(z.string()).optional(),
+  imageUrl: z.nullable(z.string()).optional(),
   status: PostApiAdminCompetitionStartStatus$outboundSchema.optional(),
   crossChainTradingType:
     PostApiAdminCompetitionStartCrossChainTradingType$outboundSchema.optional(),

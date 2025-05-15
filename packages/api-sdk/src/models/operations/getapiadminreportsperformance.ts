@@ -67,6 +67,14 @@ export type GetApiAdminReportsPerformanceCompetition = {
    */
   endDate?: Date | null | undefined;
   /**
+   * External URL for competition details
+   */
+  externalLink?: string | null | undefined;
+  /**
+   * URL to competition image
+   */
+  imageUrl?: string | null | undefined;
+  /**
    * Competition status
    */
   status?: GetApiAdminReportsPerformanceStatus | undefined;
@@ -236,6 +244,8 @@ export const GetApiAdminReportsPerformanceCompetition$inboundSchema: z.ZodType<
         .transform((v) => new Date(v)),
     )
     .optional(),
+  externalLink: z.nullable(z.string()).optional(),
+  imageUrl: z.nullable(z.string()).optional(),
   status: GetApiAdminReportsPerformanceStatus$inboundSchema.optional(),
   crossChainTradingType:
     GetApiAdminReportsPerformanceCrossChainTradingType$inboundSchema.optional(),
@@ -248,6 +258,8 @@ export type GetApiAdminReportsPerformanceCompetition$Outbound = {
   description?: string | undefined;
   startDate?: string | undefined;
   endDate?: string | null | undefined;
+  externalLink?: string | null | undefined;
+  imageUrl?: string | null | undefined;
   status?: string | undefined;
   crossChainTradingType?: string | undefined;
 };
@@ -266,6 +278,8 @@ export const GetApiAdminReportsPerformanceCompetition$outboundSchema: z.ZodType<
     .transform((v) => v.toISOString())
     .optional(),
   endDate: z.nullable(z.date().transform((v) => v.toISOString())).optional(),
+  externalLink: z.nullable(z.string()).optional(),
+  imageUrl: z.nullable(z.string()).optional(),
   status: GetApiAdminReportsPerformanceStatus$outboundSchema.optional(),
   crossChainTradingType:
     GetApiAdminReportsPerformanceCrossChainTradingType$outboundSchema.optional(),

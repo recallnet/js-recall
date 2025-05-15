@@ -32,6 +32,10 @@ export type GetApiAdminTeamsTeam = {
    * Account update timestamp
    */
   updatedAt?: Date | undefined;
+  /**
+   * URL to the team's image
+   */
+  imageUrl?: string | null | undefined;
 };
 
 /**
@@ -65,6 +69,7 @@ export const GetApiAdminTeamsTeam$inboundSchema: z.ZodType<
     .datetime({ offset: true })
     .transform((v) => new Date(v))
     .optional(),
+  imageUrl: z.nullable(z.string()).optional(),
 });
 
 /** @internal */
@@ -75,6 +80,7 @@ export type GetApiAdminTeamsTeam$Outbound = {
   contactPerson?: string | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
+  imageUrl?: string | null | undefined;
 };
 
 /** @internal */
@@ -95,6 +101,7 @@ export const GetApiAdminTeamsTeam$outboundSchema: z.ZodType<
     .date()
     .transform((v) => v.toISOString())
     .optional(),
+  imageUrl: z.nullable(z.string()).optional(),
 });
 
 /**

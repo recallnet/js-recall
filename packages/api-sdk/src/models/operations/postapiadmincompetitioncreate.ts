@@ -36,6 +36,14 @@ export type PostApiAdminCompetitionCreateRequest = {
    * The type of cross-chain trading to allow in this competition
    */
   tradingType?: PostApiAdminCompetitionCreateTradingType | undefined;
+  /**
+   * External URL for competition details
+   */
+  externalLink?: string | undefined;
+  /**
+   * URL to competition image
+   */
+  imageUrl?: string | undefined;
 };
 
 /**
@@ -85,6 +93,14 @@ export type PostApiAdminCompetitionCreateCompetition = {
    * Competition status
    */
   status?: PostApiAdminCompetitionCreateStatus | undefined;
+  /**
+   * External URL for competition details
+   */
+  externalLink?: string | null | undefined;
+  /**
+   * URL to competition image
+   */
+  imageUrl?: string | null | undefined;
   /**
    * The type of cross-chain trading allowed in this competition
    */
@@ -143,6 +159,8 @@ export const PostApiAdminCompetitionCreateRequest$inboundSchema: z.ZodType<
     PostApiAdminCompetitionCreateTradingType$inboundSchema.default(
       "disallowAll",
     ),
+  externalLink: z.string().optional(),
+  imageUrl: z.string().optional(),
 });
 
 /** @internal */
@@ -150,6 +168,8 @@ export type PostApiAdminCompetitionCreateRequest$Outbound = {
   name: string;
   description?: string | undefined;
   tradingType: string;
+  externalLink?: string | undefined;
+  imageUrl?: string | undefined;
 };
 
 /** @internal */
@@ -164,6 +184,8 @@ export const PostApiAdminCompetitionCreateRequest$outboundSchema: z.ZodType<
     PostApiAdminCompetitionCreateTradingType$outboundSchema.default(
       "disallowAll",
     ),
+  externalLink: z.string().optional(),
+  imageUrl: z.string().optional(),
 });
 
 /**
@@ -258,6 +280,8 @@ export const PostApiAdminCompetitionCreateCompetition$inboundSchema: z.ZodType<
   name: z.string().optional(),
   description: z.string().optional(),
   status: PostApiAdminCompetitionCreateStatus$inboundSchema.optional(),
+  externalLink: z.nullable(z.string()).optional(),
+  imageUrl: z.nullable(z.string()).optional(),
   crossChainTradingType:
     PostApiAdminCompetitionCreateCrossChainTradingType$inboundSchema.optional(),
   createdAt: z
@@ -273,6 +297,8 @@ export type PostApiAdminCompetitionCreateCompetition$Outbound = {
   name?: string | undefined;
   description?: string | undefined;
   status?: string | undefined;
+  externalLink?: string | null | undefined;
+  imageUrl?: string | null | undefined;
   crossChainTradingType?: string | undefined;
   createdAt?: string | undefined;
 };
@@ -287,6 +313,8 @@ export const PostApiAdminCompetitionCreateCompetition$outboundSchema: z.ZodType<
   name: z.string().optional(),
   description: z.string().optional(),
   status: PostApiAdminCompetitionCreateStatus$outboundSchema.optional(),
+  externalLink: z.nullable(z.string()).optional(),
+  imageUrl: z.nullable(z.string()).optional(),
   crossChainTradingType:
     PostApiAdminCompetitionCreateCrossChainTradingType$outboundSchema.optional(),
   createdAt: z

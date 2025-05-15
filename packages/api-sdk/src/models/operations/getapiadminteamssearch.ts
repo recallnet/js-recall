@@ -73,6 +73,10 @@ export type GetApiAdminTeamsSearchTeam = {
    */
   deactivationDate?: Date | null | undefined;
   /**
+   * URL to the team's image
+   */
+  imageUrl?: string | null | undefined;
+  /**
    * Whether the team has admin privileges
    */
   isAdmin?: boolean | undefined;
@@ -243,6 +247,7 @@ export const GetApiAdminTeamsSearchTeam$inboundSchema: z.ZodType<
         .transform((v) => new Date(v)),
     )
     .optional(),
+  imageUrl: z.nullable(z.string()).optional(),
   isAdmin: z.boolean().optional(),
   metadata: z
     .nullable(z.lazy(() => GetApiAdminTeamsSearchMetadata$inboundSchema))
@@ -269,6 +274,7 @@ export type GetApiAdminTeamsSearchTeam$Outbound = {
   active?: boolean | undefined;
   deactivationReason?: string | null | undefined;
   deactivationDate?: string | null | undefined;
+  imageUrl?: string | null | undefined;
   isAdmin?: boolean | undefined;
   metadata?: GetApiAdminTeamsSearchMetadata$Outbound | null | undefined;
   createdAt?: string | undefined;
@@ -291,6 +297,7 @@ export const GetApiAdminTeamsSearchTeam$outboundSchema: z.ZodType<
   deactivationDate: z
     .nullable(z.date().transform((v) => v.toISOString()))
     .optional(),
+  imageUrl: z.nullable(z.string()).optional(),
   isAdmin: z.boolean().optional(),
   metadata: z
     .nullable(z.lazy(() => GetApiAdminTeamsSearchMetadata$outboundSchema))

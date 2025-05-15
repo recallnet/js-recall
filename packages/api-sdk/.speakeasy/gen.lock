@@ -1,12 +1,12 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: 499e3eb5dcbd958b4fbb177c31e3255d
+  docChecksum: 8d60d2e935f3e96d0a9204ec3a4415c7
   docVersion: 1.0.0
   speakeasyVersion: 1.545.0
   generationVersion: 2.599.0
-  releaseVersion: 0.0.5
-  configChecksum: 5f35133c054cccb038e3bcdf4723efea
+  releaseVersion: 0.0.6
+  configChecksum: e41b2ae1c672a11853a8c7f8d93e1e89
 features:
   typescript:
     additionalDependencies: 0.1.0
@@ -362,7 +362,7 @@ examples:
   post_/api/admin/teams/register:
     speakeasy-default-post-/api/admin/teams/register:
       requestBody:
-        application/json: {"teamName": "Team Alpha", "email": "team@example.com", "contactPerson": "John Doe", "walletAddress": "1.0392900530713021e+47"}
+        application/json: {"teamName": "Team Alpha", "email": "team@example.com", "contactPerson": "John Doe", "walletAddress": "1.0392900530713021e+47", "imageUrl": "https://example.com/team-image.jpg"}
       responses:
         "201":
           application/json: {"team": {"apiKey": "abc123def456_ghi789jkl012"}}
@@ -390,14 +390,14 @@ examples:
   post_/api/admin/competition/create:
     speakeasy-default-post-/api/admin/competition/create:
       requestBody:
-        application/json: {"name": "Spring 2023 Trading Competition", "description": "A trading competition for the spring semester", "tradingType": "disallowAll"}
+        application/json: {"name": "Spring 2023 Trading Competition", "description": "A trading competition for the spring semester", "tradingType": "disallowAll", "externalLink": "https://example.com/competition-details", "imageUrl": "https://example.com/competition-image.jpg"}
       responses:
         "201":
           application/json: {}
   post_/api/admin/competition/start:
     speakeasy-default-post-/api/admin/competition/start:
       requestBody:
-        application/json: {"name": "Spring 2023 Trading Competition", "description": "A trading competition for the spring semester", "teamIds": ["<value>", "<value>"], "tradingType": "disallowAll"}
+        application/json: {"name": "Spring 2023 Trading Competition", "description": "A trading competition for the spring semester", "externalLink": "https://example.com/competition-details", "imageUrl": "https://example.com/competition-image.jpg", "teamIds": ["<value>", "<value>"], "tradingType": "disallowAll"}
       responses:
         "200":
           application/json: {}
@@ -490,7 +490,7 @@ examples:
   post_/api/public/teams/register:
     speakeasy-default-post-/api/public/teams/register:
       requestBody:
-        application/json: {"teamName": "Team Alpha", "email": "team@example.com", "contactPerson": "John Doe", "walletAddress": "1.0392900530713021e+47"}
+        application/json: {"teamName": "Team Alpha", "email": "team@example.com", "contactPerson": "John Doe", "walletAddress": "1.0392900530713021e+47", "imageUrl": "https://example.com/team-image.jpg"}
       responses:
         "201":
           application/json: {"team": {"apiKey": "abc123def456_ghi789jkl012"}}

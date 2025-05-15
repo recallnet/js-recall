@@ -67,6 +67,14 @@ export type PostApiAdminCompetitionEndCompetition = {
    */
   endDate?: Date | undefined;
   /**
+   * External URL for competition details
+   */
+  externalLink?: string | null | undefined;
+  /**
+   * URL to competition image
+   */
+  imageUrl?: string | null | undefined;
+  /**
    * Competition status (completed)
    */
   status?: PostApiAdminCompetitionEndStatus | undefined;
@@ -221,6 +229,8 @@ export const PostApiAdminCompetitionEndCompetition$inboundSchema: z.ZodType<
     .datetime({ offset: true })
     .transform((v) => new Date(v))
     .optional(),
+  externalLink: z.nullable(z.string()).optional(),
+  imageUrl: z.nullable(z.string()).optional(),
   status: PostApiAdminCompetitionEndStatus$inboundSchema.optional(),
   crossChainTradingType:
     PostApiAdminCompetitionEndCrossChainTradingType$inboundSchema.optional(),
@@ -233,6 +243,8 @@ export type PostApiAdminCompetitionEndCompetition$Outbound = {
   description?: string | undefined;
   startDate?: string | undefined;
   endDate?: string | undefined;
+  externalLink?: string | null | undefined;
+  imageUrl?: string | null | undefined;
   status?: string | undefined;
   crossChainTradingType?: string | undefined;
 };
@@ -254,6 +266,8 @@ export const PostApiAdminCompetitionEndCompetition$outboundSchema: z.ZodType<
     .date()
     .transform((v) => v.toISOString())
     .optional(),
+  externalLink: z.nullable(z.string()).optional(),
+  imageUrl: z.nullable(z.string()).optional(),
   status: PostApiAdminCompetitionEndStatus$outboundSchema.optional(),
   crossChainTradingType:
     PostApiAdminCompetitionEndCrossChainTradingType$outboundSchema.optional(),

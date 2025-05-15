@@ -33,6 +33,10 @@ export type PostApiAdminTeamsRegisterRequest = {
    * Optional metadata about the team's agent
    */
   metadata?: PostApiAdminTeamsRegisterMetadataRequest | undefined;
+  /**
+   * URL to the team's image
+   */
+  imageUrl?: string | undefined;
 };
 
 /**
@@ -65,6 +69,10 @@ export type PostApiAdminTeamsRegisterTeam = {
    * API key for the team to use with Bearer authentication. Admin should securely provide this to the team.
    */
   apiKey?: string | undefined;
+  /**
+   * URL to the team's image
+   */
+  imageUrl?: string | null | undefined;
   /**
    * Optional agent metadata if provided
    */
@@ -157,6 +165,7 @@ export const PostApiAdminTeamsRegisterRequest$inboundSchema: z.ZodType<
   metadata: z
     .lazy(() => PostApiAdminTeamsRegisterMetadataRequest$inboundSchema)
     .optional(),
+  imageUrl: z.string().optional(),
 });
 
 /** @internal */
@@ -166,6 +175,7 @@ export type PostApiAdminTeamsRegisterRequest$Outbound = {
   contactPerson: string;
   walletAddress: string;
   metadata?: PostApiAdminTeamsRegisterMetadataRequest$Outbound | undefined;
+  imageUrl?: string | undefined;
 };
 
 /** @internal */
@@ -181,6 +191,7 @@ export const PostApiAdminTeamsRegisterRequest$outboundSchema: z.ZodType<
   metadata: z
     .lazy(() => PostApiAdminTeamsRegisterMetadataRequest$outboundSchema)
     .optional(),
+  imageUrl: z.string().optional(),
 });
 
 /**
@@ -286,6 +297,7 @@ export const PostApiAdminTeamsRegisterTeam$inboundSchema: z.ZodType<
   contactPerson: z.string().optional(),
   walletAddress: z.string().optional(),
   apiKey: z.string().optional(),
+  imageUrl: z.nullable(z.string()).optional(),
   metadata: z
     .lazy(() => PostApiAdminTeamsRegisterMetadataResponse$inboundSchema)
     .optional(),
@@ -304,6 +316,7 @@ export type PostApiAdminTeamsRegisterTeam$Outbound = {
   contactPerson?: string | undefined;
   walletAddress?: string | undefined;
   apiKey?: string | undefined;
+  imageUrl?: string | null | undefined;
   metadata?: PostApiAdminTeamsRegisterMetadataResponse$Outbound | undefined;
   createdAt?: string | undefined;
 };
@@ -320,6 +333,7 @@ export const PostApiAdminTeamsRegisterTeam$outboundSchema: z.ZodType<
   contactPerson: z.string().optional(),
   walletAddress: z.string().optional(),
   apiKey: z.string().optional(),
+  imageUrl: z.nullable(z.string()).optional(),
   metadata: z
     .lazy(() => PostApiAdminTeamsRegisterMetadataResponse$outboundSchema)
     .optional(),

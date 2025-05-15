@@ -75,6 +75,10 @@ export type GetApiAccountProfileTeam = {
    */
   createdAt?: Date | undefined;
   /**
+   * URL to the team's image
+   */
+  imageUrl?: string | null | undefined;
+  /**
    * Team last update timestamp
    */
   updatedAt?: Date | undefined;
@@ -291,6 +295,7 @@ export const GetApiAccountProfileTeam$inboundSchema: z.ZodType<
     .datetime({ offset: true })
     .transform((v) => new Date(v))
     .optional(),
+  imageUrl: z.nullable(z.string()).optional(),
   updatedAt: z
     .string()
     .datetime({ offset: true })
@@ -306,6 +311,7 @@ export type GetApiAccountProfileTeam$Outbound = {
   contactPerson?: string | undefined;
   metadata?: GetApiAccountProfileMetadata$Outbound | null | undefined;
   createdAt?: string | undefined;
+  imageUrl?: string | null | undefined;
   updatedAt?: string | undefined;
 };
 
@@ -326,6 +332,7 @@ export const GetApiAccountProfileTeam$outboundSchema: z.ZodType<
     .date()
     .transform((v) => v.toISOString())
     .optional(),
+  imageUrl: z.nullable(z.string()).optional(),
   updatedAt: z
     .date()
     .transform((v) => v.toISOString())

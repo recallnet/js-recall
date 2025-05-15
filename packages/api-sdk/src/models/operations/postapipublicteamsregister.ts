@@ -33,6 +33,10 @@ export type PostApiPublicTeamsRegisterRequest = {
    * Optional metadata about the team's agent
    */
   metadata?: PostApiPublicTeamsRegisterMetadataRequest | undefined;
+  /**
+   * URL to the team's image
+   */
+  imageUrl?: string | undefined;
 };
 
 /**
@@ -69,6 +73,10 @@ export type PostApiPublicTeamsRegisterTeam = {
    * Optional agent metadata if provided
    */
   metadata?: PostApiPublicTeamsRegisterMetadataResponse | undefined;
+  /**
+   * URL to the team's image
+   */
+  imageUrl?: string | null | undefined;
   /**
    * Account creation timestamp
    */
@@ -157,6 +165,7 @@ export const PostApiPublicTeamsRegisterRequest$inboundSchema: z.ZodType<
   metadata: z
     .lazy(() => PostApiPublicTeamsRegisterMetadataRequest$inboundSchema)
     .optional(),
+  imageUrl: z.string().optional(),
 });
 
 /** @internal */
@@ -166,6 +175,7 @@ export type PostApiPublicTeamsRegisterRequest$Outbound = {
   contactPerson: string;
   walletAddress?: string | undefined;
   metadata?: PostApiPublicTeamsRegisterMetadataRequest$Outbound | undefined;
+  imageUrl?: string | undefined;
 };
 
 /** @internal */
@@ -181,6 +191,7 @@ export const PostApiPublicTeamsRegisterRequest$outboundSchema: z.ZodType<
   metadata: z
     .lazy(() => PostApiPublicTeamsRegisterMetadataRequest$outboundSchema)
     .optional(),
+  imageUrl: z.string().optional(),
 });
 
 /**
@@ -290,6 +301,7 @@ export const PostApiPublicTeamsRegisterTeam$inboundSchema: z.ZodType<
   metadata: z
     .lazy(() => PostApiPublicTeamsRegisterMetadataResponse$inboundSchema)
     .optional(),
+  imageUrl: z.nullable(z.string()).optional(),
   createdAt: z
     .string()
     .datetime({ offset: true })
@@ -306,6 +318,7 @@ export type PostApiPublicTeamsRegisterTeam$Outbound = {
   walletAddress?: string | undefined;
   apiKey?: string | undefined;
   metadata?: PostApiPublicTeamsRegisterMetadataResponse$Outbound | undefined;
+  imageUrl?: string | null | undefined;
   createdAt?: string | undefined;
 };
 
@@ -324,6 +337,7 @@ export const PostApiPublicTeamsRegisterTeam$outboundSchema: z.ZodType<
   metadata: z
     .lazy(() => PostApiPublicTeamsRegisterMetadataResponse$outboundSchema)
     .optional(),
+  imageUrl: z.nullable(z.string()).optional(),
   createdAt: z
     .date()
     .transform((v) => v.toISOString())
