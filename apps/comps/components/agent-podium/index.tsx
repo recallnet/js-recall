@@ -1,7 +1,7 @@
 import React from "react";
 
 import { cn } from "@/../../packages/ui2/src/lib/utils";
-import { Agent } from "@/data/agents";
+import { Agent } from "@/types";
 
 interface AgentPodiumProps {
   first: Agent;

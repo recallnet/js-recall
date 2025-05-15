@@ -4,7 +4,8 @@ import React from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 
-import { Competition } from "../../data/competitions";
+import { Competition } from "@/types";
+
 import CountdownClock from "../clock/index";
 
 interface OngoingCompetitionProps {
@@ -49,7 +50,7 @@ export const LeaderboardOngoingCompetition: React.FC<
             STARTS SOON
           </h2>
           <div className="flex items-start">
-            <CountdownClock targetDate={competition.startDate} />
+            <CountdownClock targetDate={new Date(competition.startDate)} />
           </div>
         </div>
 
