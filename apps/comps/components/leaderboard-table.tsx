@@ -17,7 +17,7 @@ import {
 } from "@recallnet/ui2/components/table";
 
 import { userAgentAtom, userAtom } from "@/state/atoms";
-import { LeaderboardAgent } from "@/types/agent";
+import { Agent } from "@/types";
 
 import AwardIcon from "./agent-podium/award-icon";
 

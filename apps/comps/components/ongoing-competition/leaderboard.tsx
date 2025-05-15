@@ -4,8 +4,9 @@ import React from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 
-import CountdownClock from "@/components/clock";
-import { CompetitionResponse } from "@/types";
+import { Competition } from "@/types";
+
+import CountdownClock from "../clock/index";
 
 interface OngoingCompetitionProps {
   competition: CompetitionResponse;

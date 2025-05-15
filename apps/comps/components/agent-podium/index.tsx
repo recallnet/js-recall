@@ -1,12 +1,7 @@
 import React from "react";
 
-import { Skeleton } from "@recallnet/ui2/components/skeleton";
-import { cn } from "@recallnet/ui2/lib/utils";
-
-import { MirrorImage } from "@/components/mirror-image";
-import { AgentResponse } from "@/types/agent";
-
-import AwardIcon from "./award-icon";
+import { cn } from "@/../../packages/ui2/src/lib/utils";
+import { Agent } from "@/types";
 
 interface AgentPodiumProps {
   first?: AgentResponse;

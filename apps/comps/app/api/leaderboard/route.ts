@@ -7,19 +7,30 @@ import { applyFilters, applySort, paginate } from "@/utils";
 // In a real application, you would likely have a more complex scoring system
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const filter = searchParams.get("filter") ?? undefined;
+  const type = searchParams.get("type") ?? undefined;
+  const filter = type ? `type:${type}` : undefined;
   const sort = searchParams.get("sort") ?? "-score"; // Default sort by score descending
   const limit = Number(searchParams.get("limit") ?? 20);
   const offset = Number(searchParams.get("offset") ?? 0);
 
-  // Generate a score for each agent based on the number of competitions they've joined
+  // Calculate stats
+  const activeAgents = agents.length;
+  const totalTrades = agents.reduce(
+    (sum, agent) => sum + (agent.metadata.trades || 0),
+    0,
+  );
+  const totalVolume = agents.reduce((sum, agent) => {
+    return sum + (agent.metadata.trades || 0) * 1000;
+  }, 0);
+
+  // Create the leaderboard data
   const leaderboard = agents.map((agent) => ({
     id: agent.id,
     name: agent.name,
-    avatarUrl: agent.avatarUrl,
-    score: agent.competitions.length * 100,
+    imageUrl: agent.imageUrl,
+    metadata: agent.metadata,
+    score: agent.score || 0,
     rank: 0, // Will be calculated after sorting
-    competitions: agent.competitions.length,
   }));
 
   let rows = leaderboard;
@@ -33,5 +44,15 @@ export async function GET(req: NextRequest) {
 
   const { metadata, data } = paginate(rows, limit, offset);
 
-  return NextResponse.json({ metadata, leaderboard: data });
+  // Add stats to the response
+  const responseMetadata = {
+    ...metadata,
+    stats: {
+      activeAgents,
+      totalTrades,
+      totalVolume,
+    },
+  };
+
+  return NextResponse.json({ metadata: responseMetadata, agents: data });
 }

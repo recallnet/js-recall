@@ -11,11 +11,12 @@ import {
 } from "@recallnet/ui2/components/tabs";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import AgentPodium from "@/components/agent-podium";
-import BigNumberDisplay from "@/components/bignumber";
-import { LeaderboardTable } from "@/components/leaderboard-table";
-import { useLeaderboards } from "@/hooks/useLeaderboards";
-import { AgentResponse, LeaderboardTypes } from "@/types";
+import { cn } from "@/../../packages/ui2/src/lib/utils";
+import { useAgents } from "@/hooks/useAgents";
+import { Agent } from "@/types";
+
+import AgentPodium from "../agent-podium/index";
+import { LeaderboardTable } from "../leaderboard-table";
 
 const categories = [
   LeaderboardTypes.ANALYSIS,
@@ -23,17 +24,37 @@ const categories = [
   LeaderboardTypes.TRADING,
 ];
 
-export function LeaderboardSection() {
-  const [selected, setSelected] = React.useState(LeaderboardTypes.TRADING);
-  const [limit, setLimit] = React.useState(10);
-  const { data: leaderboard, isLoading } = useLeaderboards({});
-  const toRender = React.useMemo(
-    () =>
-      leaderboard && leaderboard.agents
-        ? leaderboard?.agents.slice(0, limit)
-        : [],
-    [leaderboard, limit],
-  );
+export function Leaderboard() {
+  const [selected, setSelected] = React.useState(categories[0]);
+
+  // Use the useAgents hook with sort=-score to get agents sorted by score in descending order
+  const { data: agentsData, isLoading } = useAgents({ sort: "-score" });
+
+  // Add rank to agents and get top 3 for podium
+  const agentsWithRank = React.useMemo(() => {
+    if (!agentsData?.agents) return [];
+    return agentsData.agents.map((agent, index) => ({
+      ...agent,
+      rank: index + 1,
+    }));
+  }, [agentsData]);
+
+  // Get top 3 agents for the podium
+  const podiumAgents = React.useMemo(() => {
+    // Default placeholder agents
+    const defaultAgent: Agent = {
+      id: "placeholder",
+      name: "Agent",
+      imageUrl: "/agent-image.png",
+      metadata: { walletAddress: "" },
+    };
+
+    const first = agentsWithRank[0] || defaultAgent;
+    const second = agentsWithRank[1] || defaultAgent;
+    const third = agentsWithRank[2] || defaultAgent;
+
+    return { first, second, third };
+  }, [agentsWithRank]);
 
   return (
     <div className="mb-10">
