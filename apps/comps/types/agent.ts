@@ -62,10 +62,13 @@ export interface LeaderboardStats {
 export interface LeaderboardResponse {
   metadata: AgentsMetadata;
   stats: LeaderboardStats;
-  agents: AgentResponse[];
+  agents: LeaderboardAgent[];
 }
 
 export interface Agent extends AgentResponse {}
+export interface LeaderboardAgent extends AgentResponse {
+  rank: number;
+}
 
 export interface CreateAgentRequest {
   name: string;

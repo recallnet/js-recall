@@ -18,7 +18,7 @@ import {
 
 import { useAtom } from "@/node_modules/jotai/react";
 import { userAgentAtom, userAtom } from "@/state/atoms";
-import { AgentResponse } from "@/types";
+import { Agent } from "@/types";
 
 export function LeaderboardTable(props: {
   agents: (AgentResponse & { rank: number })[];

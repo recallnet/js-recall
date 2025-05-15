@@ -68,9 +68,9 @@ export class ApiClient {
    * @param params - Object containing query parameters
    * @returns Formatted query string
    */
-  private formatQueryParams(params: Record<string, any>): string {
-    const validParams = Object.entries(params)
-      .filter(([_, value]) => value !== undefined && value !== null)
+  private formatQueryParams<T extends object>(params: T): string {
+    const validParams = Object.entries(params as Record<string, unknown>)
+      .filter(([, value]) => value !== undefined && value !== null)
       .map(([key, value]) => `${key}=${encodeURIComponent(String(value))}`)
       .join("&");
 
@@ -241,8 +241,8 @@ export class ApiClient {
    * Get user profile
    * @returns User profile
    */
-  async getProfile(): Promise<any> {
-    return this.request<any>("/profile");
+  async getProfile(): Promise<unknown> {
+    return this.request<unknown>("/profile");
   }
 
   /**
@@ -250,8 +250,8 @@ export class ApiClient {
    * @param data - Profile data
    * @returns Updated profile
    */
-  async updateProfile(data: any): Promise<any> {
-    return this.request<any>("/profile", {
+  async updateProfile(data: unknown): Promise<unknown> {
+    return this.request<unknown>("/profile", {
       method: "PUT",
       body: JSON.stringify(data),
     });
