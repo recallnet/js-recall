@@ -6,8 +6,8 @@ import {LeaderboardSection} from "@/components/leaderboard/index";
 import {RegisterAgentBlock} from "@/components/register-agent-block";
 
 import {JoinSwarmSection} from "../../components/join-swarm-section";
-import {NewsletterSection} from "../../components/newsletter-section";
 import {socialLinks} from "../../data/social";
+import {FooterSection} from "@/components/footer-section";
 
 export default function LeaderboardPage() {
   return (
@@ -18,7 +18,8 @@ export default function LeaderboardPage() {
 
       <JoinSwarmSection socialLinks={socialLinks} />
 
-      <NewsletterSection />
+      <FooterSection />
+
     </div>
   );
 }
