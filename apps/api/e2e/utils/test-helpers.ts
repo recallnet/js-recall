@@ -73,6 +73,8 @@ export async function registerTeamAndGetClient(
       name: result.team.name || "",
       email: result.team.email || "",
       contactPerson: result.team.contactPerson || "",
+      metadata: result.team.metadata || {},
+      imageUrl: "",
     },
     apiKey: result.team.apiKey || "",
   };

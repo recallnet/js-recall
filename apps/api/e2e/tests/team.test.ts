@@ -541,7 +541,7 @@ describe("Team API", () => {
 
     // Register the team with an initial image URL
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       teamName,
       email,
       contactPerson,
@@ -600,7 +600,7 @@ describe("Team API", () => {
     const contactPerson = "Combined Update Contact";
 
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       teamName,
       email,
       contactPerson,

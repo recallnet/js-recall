@@ -721,7 +721,7 @@ describe("Competition API", () => {
 
     // Register a team
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Link and Image Test Team",
     );
 
