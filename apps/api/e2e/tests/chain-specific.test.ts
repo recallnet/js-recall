@@ -2,11 +2,15 @@ import axios from "axios";
 import { and, desc, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { portfolioSnapshots, trades } from "@recallnet/comps-db/schema";
-
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
-import { BalancesResponse, SpecificChain } from "@/e2e/utils/api-types.js";
+import { portfolioSnapshots, trades } from "@/database/schema/trading/defs.js";
+import {
+  BalancesResponse,
+  BlockchainType,
+  SpecificChain,
+  TradeResponse,
+} from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
@@ -548,5 +552,65 @@ describe("Specific Chains", () => {
     console.log(
       `Successfully verified specificChain for ${purchasedTokens.length} tokens`,
     );
+  });
+
+  test("swap fails if trading pair is not found", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register a new team
+    const { client: teamClient, team } = await registerTeamAndGetClient(
+      adminClient,
+      "Token Purchase Test Team",
+    );
+
+    // Start a competition with the team
+    const competitionName = `Token Purchase Test ${Date.now()}`;
+    await startTestCompetition(adminClient, competitionName, [team.id]);
+
+    // // Get team's current balances
+    // const balanceResponse = (await teamClient.getBalance()) as BalancesResponse;
+    // expect(balanceResponse.success).toBe(true);
+
+    // // Target token we want to purchase
+    const targetTokenAddress = "0x0b3e328455c4059eeb9e3f84b5543f74e24e7e1b";
+
+    // // First try to find USDC
+    const usdcAddress = config.specificChainTokens.optimism.usdc;
+
+    // // Execute the trade from source token to target token
+    const tradeResponse = (await teamClient.executeTrade({
+      fromToken: usdcAddress,
+      toToken: targetTokenAddress,
+      amount: "100",
+      reason,
+    })) as TradeResponse;
+
+    // Verify the trade was successful
+    expect(tradeResponse.transaction.toSpecificChain).toBe("base");
+
+    // Execute the trade again but specify optimism (even though the token is on base)
+    const tradeResponseTwo = (await teamClient.executeTrade({
+      fromToken: usdcAddress,
+      toToken: targetTokenAddress,
+      fromSpecificChain: "optimism" as SpecificChain,
+      toSpecificChain: "optimism" as SpecificChain,
+      amount: "100",
+      reason,
+    })) as TradeResponse;
+
+    // Verify the trade failed
+    expect(tradeResponseTwo.success).toBe(false);
+
+    // // test getting price of target token
+    const priceResponse = await teamClient.getPrice(
+      targetTokenAddress,
+      BlockchainType.EVM,
+      "optimism" as SpecificChain,
+    );
+
+    // // Verify price is not found for this token on the wrong chain
+    expect(priceResponse.success).toBe(false);
   });
 });

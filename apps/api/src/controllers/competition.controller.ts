@@ -175,6 +175,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
                 id: activeCompetition.id,
                 name: activeCompetition.name,
                 status: activeCompetition.status,
+                externalLink: activeCompetition.externalLink,
+                imageUrl: activeCompetition.imageUrl,
               }
             : null;
 
@@ -229,6 +231,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
               name: activeCompetition.name,
               status: activeCompetition.status,
               startDate: activeCompetition.startDate,
+              externalLink: activeCompetition.externalLink,
+              imageUrl: activeCompetition.imageUrl,
             },
             message: "Your team is not participating in this competition",
           });
@@ -355,7 +359,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
               `Maximum single trade: ${config.maxTradePercentage}% of team's total portfolio value`,
               "No shorting allowed (trades limited to available balance)",
               "Slippage is applied to all trades based on trade size",
-              `Cross-chain trading: ${features.ALLOW_CROSS_CHAIN_TRADING ? "Enabled" : "Disabled"}`,
+              `Cross-chain trading type: ${features.CROSS_CHAIN_TRADING_TYPE}`,
               "Transaction fees are not simulated",
             ],
             rateLimits: [

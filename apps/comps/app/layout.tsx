@@ -1,3 +1,4 @@
+import "@rainbow-me/rainbowkit/styles.css";
 import "@recallnet/ui2/globals.css";
 
 import { Analytics } from "@vercel/analytics/react";
@@ -20,13 +21,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased`}
-      >
+      <body className={`${fontSans.variable} ${fontMono.variable} antialiased`}>
         <Analytics />
         <Providers>
-          <Navbar />
-          <div className="xl:px-65 lg:px-30 md:px-15 px-5">{children}</div>
+          <Navbar>{children}</Navbar>
         </Providers>
       </body>
     </html>

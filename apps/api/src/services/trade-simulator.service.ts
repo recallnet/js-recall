@@ -1,7 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
 
-import { InsertTrade, SelectTrade } from "@recallnet/comps-db/schema";
-
 import { config, features } from "@/config/index.js";
 import {
   count,
@@ -9,6 +7,7 @@ import {
   getCompetitionTrades,
   getTeamTrades,
 } from "@/database/repositories/trade-repository.js";
+import { InsertTrade, SelectTrade } from "@/database/schema/trading/types.js";
 import { BalanceManager } from "@/services/balance-manager.service.js";
 import { PortfolioSnapshotter } from "@/services/index.js";
 import { BlockchainType, SpecificChain } from "@/types/index.js";
@@ -131,6 +130,14 @@ export class TradeSimulator {
         );
       }
 
+      // assign the specific chain if provided
+      if (chainOptions?.fromSpecificChain) {
+        fromTokenSpecificChain = chainOptions.fromSpecificChain;
+        console.log(
+          `[TradeSimulator] Using provided specific chain for fromToken: ${fromTokenSpecificChain}`,
+        );
+      }
+
       // For the destination token
       if (chainOptions?.toChain) {
         toTokenChain = chainOptions.toChain;
@@ -142,6 +149,14 @@ export class TradeSimulator {
         toTokenChain = this.priceTracker.determineChain(toToken);
         console.log(
           `[TradeSimulator] Detected chain for toToken: ${toTokenChain}`,
+        );
+      }
+
+      // assign the specific chain if provided
+      if (chainOptions?.toSpecificChain) {
+        toTokenSpecificChain = chainOptions.toSpecificChain;
+        console.log(
+          `[TradeSimulator] Using provided specific chain for toToken: ${toTokenSpecificChain}`,
         );
       }
 
@@ -162,7 +177,7 @@ export class TradeSimulator {
         To Token (${toToken}): $${toPrice} (${toTokenChain})
     `);
 
-      if (!fromPrice || !toPrice) {
+      if (!fromPrice?.price || !toPrice?.price) {
         console.log(`[TradeSimulator] Missing price data:
             From Token Price: ${fromPrice}
             To Token Price: ${toPrice}
@@ -186,22 +201,38 @@ export class TradeSimulator {
         };
       }
 
-      // Check for cross-chain trades if not allowed
-      if (
-        !features.ALLOW_CROSS_CHAIN_TRADING &&
-        (fromTokenChain !== toTokenChain ||
-          (fromTokenSpecificChain &&
-            toTokenSpecificChain &&
-            fromTokenSpecificChain !== toTokenSpecificChain))
-      ) {
-        console.log(
-          `[TradeSimulator] Cross-chain trading is disabled. Cannot trade between ${fromTokenChain}(${fromTokenSpecificChain || "none"}) and ${toTokenChain}(${toTokenSpecificChain || "none"})`,
-        );
-        return {
-          success: false,
-          error:
-            "Cross-chain trading is disabled. Both tokens must be on the same blockchain.",
-        };
+      switch (features.CROSS_CHAIN_TRADING_TYPE) {
+        case "disallowXParent":
+          // Check if the tokens are on the same chain
+          if (fromTokenChain !== toTokenChain) {
+            console.log(
+              `[TradeSimulator] Cross-parent chain trading is disabled. Cannot trade between ${fromTokenChain} and ${toTokenChain}`,
+            );
+            return {
+              success: false,
+              error:
+                "Cross-parent chain trading is disabled. Both tokens must be on the same parent blockchain.",
+            };
+          }
+          break;
+        case "disallowAll":
+          // Check if the tokens are on the same chain
+          if (
+            fromTokenChain !== toTokenChain ||
+            (fromTokenSpecificChain &&
+              toTokenSpecificChain &&
+              fromTokenSpecificChain !== toTokenSpecificChain)
+          ) {
+            console.log(
+              `[TradeSimulator] Cross-chain trading is disabled. Cannot trade between ${fromTokenChain}(${fromTokenSpecificChain || "none"}) and ${toTokenChain}(${toTokenSpecificChain || "none"})`,
+            );
+            return {
+              success: false,
+              error:
+                "Cross-chain trading is disabled. Both tokens must be on the same blockchain.",
+            };
+          }
+          break;
       }
 
       // Calculate the trade using USD values
@@ -223,24 +254,6 @@ export class TradeSimulator {
         return {
           success: false,
           error: "Insufficient balance",
-        };
-      }
-
-      // Check for cross-chain trades if not allowed
-      if (
-        !features.ALLOW_CROSS_CHAIN_TRADING &&
-        (fromTokenChain !== toTokenChain ||
-          (fromTokenSpecificChain &&
-            toTokenSpecificChain &&
-            fromTokenSpecificChain !== toTokenSpecificChain))
-      ) {
-        console.log(
-          `[TradeSimulator] Cross-chain trading is disabled. Cannot trade between ${fromTokenChain}(${fromTokenSpecificChain || "none"}) and ${toTokenChain}(${toTokenSpecificChain || "none"})`,
-        );
-        return {
-          success: false,
-          error:
-            "Cross-chain trading is disabled. Both tokens must be on the same blockchain.",
         };
       }
 

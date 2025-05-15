@@ -1,6 +1,6 @@
 {
   "name": "@recallnet/mcp",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "license": "MIT OR Apache-2.0",
   "publishConfig": {
     "access": "public"
@@ -28,7 +28,7 @@
     "@recallnet/agent-toolkit": "workspace:*",
     "chalk": "^5.4.1",
     "minimist": "^1.2.8",
-    "zod": "^3.24.1"
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:*",

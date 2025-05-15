@@ -928,14 +928,23 @@ When enabled, participants will receive a 403 Forbidden response with the messag
 
 ## Cross-Chain Trading Configuration
 
-The trading simulator supports two modes of operation for cross-chain trading, now configurable at the competition level:
+The trading simulator supports three modes of operation for cross-chain trading, configurable at the competition level:
 
-### Allowed Cross-Chain Trading
+### Cross-Chain Trading Types
 
-With cross-chain trading enabled for a competition, users can:
+The system offers three different cross-chain trading configurations:
 
-- Trade between tokens on different blockchain types (e.g., Solana SOL to Ethereum ETH)
-- Execute trades between any supported chains (e.g., Polygon USDC to Base ETH)
+1. **allow** - Full cross-chain trading enabled
+2. **disallowAll** - All cross-chain trading is disabled (default)
+3. **disallowXParent** - Same-parent chain trading allowed, cross-parent chain trading blocked
+
+#### allow: Full Cross-Chain Trading
+
+With the `allow` setting, users can:
+
+- Trade between tokens on any supported chains
+- Execute trades between different blockchain types (e.g., Solana SOL to Ethereum ETH)
+- Trade between EVM chains (e.g., Polygon USDC to Base ETH)
 - Maintain a diversified portfolio across multiple blockchains
 
 This mode is ideal for:
@@ -944,9 +953,9 @@ This mode is ideal for:
 - Teaching cross-chain trading strategies
 - Simulating real-world DeFi trading environments where bridges enable cross-chain transfers
 
-### Restricted Same-Chain Trading (Default)
+#### disallowAll: Restricted Same-Chain Trading (Default)
 
-By default, competitions are created with cross-chain trading disabled. In this mode, the system will:
+By default, competitions are created with the `disallowAll` setting. In this mode, the system will:
 
 - Reject trades where the source and destination tokens are on different chains
 - Return an error message indicating that cross-chain trading is disabled
@@ -958,22 +967,44 @@ This mode is useful for:
 - Simulating environments without cross-chain bridges
 - Focusing participants on chain-specific trading strategies
 
+#### disallowXParent: Parent-Chain Restricted Trading
+
+With the `disallowXParent` setting, the system will:
+
+- Allow trading between tokens on chains with the same parent type (e.g., Ethereum to Base, which are both EVM chains)
+- Reject trades between different parent chains (e.g., EVM to SVM)
+- Return a specific error message when attempting to trade across parent chains
+
+This mode is useful for:
+
+- Teaching trading across EVM chains while prohibiting trades to completely different blockchain architectures
+- Creating a more realistic trading environment with limited cross-chain capabilities
+- Simulating real-world restrictions between fundamentally different blockchain architectures
+
 ### Implementation
 
-When creating or starting a new competition through the admin interface, you can specify the `allowCrossChainTrading` parameter:
+When creating or starting a new competition through the admin interface, you can specify the `crossChainTradingType` parameter:
 
 ```javascript
-// Creating a competition with cross-chain trading enabled
+// Creating a competition with full cross-chain trading enabled
 await adminClient.startCompetition({
   name: "Cross-Chain Trading Competition",
   teamIds: ["team1", "team2"],
-  allowCrossChainTrading: true,
+  crossChainTradingType: "allow",
 });
 
 // Creating a competition with cross-chain trading disabled (default)
 await adminClient.startCompetition({
   name: "Single-Chain Trading Competition",
   teamIds: ["team3", "team4"],
+  // Defaults to disallowAll if not specified
+});
+
+// Creating a competition with parent-chain restricted trading
+await adminClient.startCompetition({
+  name: "Semi-Restricted Trading Competition",
+  teamIds: ["team5", "team6"],
+  crossChainTradingType: "disallowXParent",
 });
 ```
 
@@ -983,7 +1014,7 @@ The cross-chain trading setting is stored with the competition and applied whene
 
 When executing trades with explicit chain parameters, the system's behavior will depend on the competition's cross-chain trading setting:
 
-#### With Cross-Chain Trading Allowed:
+#### With Full Cross-Chain Trading (allow):
 
 ```javascript
 // Example 1: Cross-chain trade from Solana to Ethereum - ACCEPTED
@@ -1007,46 +1038,61 @@ When executing trades with explicit chain parameters, the system's behavior will
   "fromSpecificChain": "polygon",
   "toSpecificChain": "base"
 }
-
-// Example 3: Same-chain trade on Base - ACCEPTED
-{
-  "fromToken": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC on Base
-  "toToken": "0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b",   // TOSHI on Base
-  "amount": "50",
-  "fromChain": "evm",
-  "toChain": "evm",  // Same as fromChain, will be accepted
-  "fromSpecificChain": "base",
-  "toSpecificChain": "base"
-}
 ```
 
-#### DEFAULT - With Cross-Chain Trading Disabled:
+#### With Parent-Chain Restricted Trading (disallowXParent):
 
 ```javascript
-// This cross-chain trade will be REJECTED with an error
+// Example 1: Cross-parent-chain trade from Solana to Ethereum - REJECTED
 {
   "fromToken": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC on Solana
   "toToken": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",    // WETH on Ethereum
   "amount": "50",
   "fromChain": "svm",
-  "toChain": "evm",  // Different from fromChain, will be rejected
+  "toChain": "evm",  // Different parent chain, will be rejected
   "fromSpecificChain": "svm",
   "toSpecificChain": "eth"
 }
 
-// This same-chain trade will be ACCEPTED
+// Example 2: Same-parent-chain trade from Polygon to Base - ACCEPTED
+{
+  "fromToken": "0x0000000000000000000000000000000000001010", // MATIC on Polygon
+  "toToken": "0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b",   // TOSHI on Base
+  "amount": "50",
+  "fromChain": "evm",
+  "toChain": "evm",  // Same parent chain (both EVM), will be accepted
+  "fromSpecificChain": "polygon",
+  "toSpecificChain": "base"
+}
+```
+
+#### DEFAULT - With No Cross-Chain Trading (disallowAll):
+
+```javascript
+// Example 1: Cross-chain trade - REJECTED
+{
+  "fromToken": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC on Solana
+  "toToken": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",    // WETH on Ethereum
+  "amount": "50",
+  "fromChain": "svm",
+  "toChain": "evm",  // Different chain, will be rejected
+  "fromSpecificChain": "svm",
+  "toSpecificChain": "eth"
+}
+
+// Example 2: Same-chain trade on Base - ACCEPTED
 {
   "fromToken": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC on Base
   "toToken": "0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b",   // TOSHI on Base
   "amount": "50",
   "fromChain": "evm",
-  "toChain": "evm",  // Same as fromChain, will be accepted
+  "toChain": "evm",  // Same chain type is not enough - specific chains must match
   "fromSpecificChain": "base",
-  "toSpecificChain": "base"
+  "toSpecificChain": "base"  // Same specific chain, will be accepted
 }
 ```
 
-This approach allows you to control whether trades can cross between different blockchains at the competition level, while still using explicit chain parameters to avoid chain detection overhead.
+This flexible approach allows you to configure cross-chain trading capabilities at a granular level, depending on the competition's requirements and teaching objectives.
 
 ### Manual Setup
 

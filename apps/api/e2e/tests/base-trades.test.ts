@@ -257,12 +257,12 @@ describe("Base Chain Trading", () => {
     );
   });
 
-  test("users cannot execute cross-chain trades when ALLOW_CROSS_CHAIN_TRADING=false", async () => {
+  test("users cannot execute cross-chain trades when CROSS_CHAIN_TRADING_TYPE=DISALLOWALL", async () => {
     console.log(
       "[Test] Starting test to verify cross-chain trading restrictions",
     );
     console.log(
-      `Features config setting: features.ALLOW_CROSS_CHAIN_TRADING = ${features.ALLOW_CROSS_CHAIN_TRADING}`,
+      `Features config setting: features.CROSS_CHAIN_TRADING_TYPE = ${features.CROSS_CHAIN_TRADING_TYPE}`,
     );
 
     // Setup admin client
@@ -403,9 +403,9 @@ describe("Base Chain Trading", () => {
     // 2. No USDC should be spent
     // 3. No ETH should be received
 
-    const crossChainEnabled = features.ALLOW_CROSS_CHAIN_TRADING;
+    const crossChainEnabled = features.CROSS_CHAIN_TRADING_TYPE;
 
-    if (!crossChainEnabled) {
+    if (crossChainEnabled === "disallowAll") {
       console.log(
         "Cross-chain trading should be disabled. Verifying test conditions:",
       );

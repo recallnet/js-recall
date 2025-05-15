@@ -14,7 +14,11 @@ import {
 } from "@/database/repositories/team-repository.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
-import { CompetitionStatus } from "@/types/index.js";
+import {
+  CompetitionStatus,
+  CrossChainTradingType,
+  TeamSearchParams,
+} from "@/types/index.js";
 
 export function makeAdminController(services: ServiceRegistry) {
   /**
@@ -182,8 +186,14 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async registerTeam(req: Request, res: Response, next: NextFunction) {
       try {
-        const { teamName, email, contactPerson, walletAddress, metadata } =
-          req.body;
+        const {
+          teamName,
+          email,
+          contactPerson,
+          walletAddress,
+          metadata,
+          imageUrl,
+        } = req.body;
 
         // Validate required parameters
         if (!teamName || !email || !contactPerson || !walletAddress) {
@@ -207,16 +217,17 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         try {
-          // Register the team with optional metadata
+          // Request team registration through the team manager service
           const team = await services.teamManager.registerTeam(
             teamName,
             email,
             contactPerson,
             walletAddress,
             metadata,
+            imageUrl,
           );
 
-          // Format the response to include api key and metadata for the client
+          // Return success with created team
           return res.status(201).json({
             success: true,
             team: {
@@ -227,6 +238,7 @@ export function makeAdminController(services: ServiceRegistry) {
               walletAddress: team.walletAddress,
               apiKey: team.apiKey,
               metadata: team.metadata,
+              imageUrl: team.imageUrl,
               createdAt: team.createdAt,
             },
           });
@@ -294,7 +306,8 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async createCompetition(req: Request, res: Response, next: NextFunction) {
       try {
-        const { name, description, allowCrossChainTrading } = req.body;
+        const { name, description, tradingType, externalLink, imageUrl } =
+          req.body;
 
         // Validate required parameters
         if (!name) {
@@ -305,7 +318,9 @@ export function makeAdminController(services: ServiceRegistry) {
         const competition = await services.competitionManager.createCompetition(
           name,
           description,
-          allowCrossChainTrading === true, // Convert to boolean explicitly
+          tradingType || CrossChainTradingType.disallowAll,
+          externalLink,
+          imageUrl,
         );
 
         // Return the created competition
@@ -330,7 +345,9 @@ export function makeAdminController(services: ServiceRegistry) {
           name,
           description,
           teamIds,
-          allowCrossChainTrading,
+          tradingType,
+          externalLink,
+          imageUrl,
         } = req.body;
 
         // Validate required parameters
@@ -373,7 +390,9 @@ export function makeAdminController(services: ServiceRegistry) {
           competition = await services.competitionManager.createCompetition(
             name,
             description,
-            allowCrossChainTrading === true, // Pass the cross-chain trading parameter
+            tradingType || CrossChainTradingType.disallowAll,
+            externalLink,
+            imageUrl,
           );
         }
 
@@ -506,6 +525,7 @@ export function makeAdminController(services: ServiceRegistry) {
           active: team.active,
           deactivationReason: team.deactivationReason,
           deactivationDate: team.deactivationDate,
+          imageUrl: team.imageUrl,
           createdAt: team.createdAt,
           updatedAt: team.updatedAt,
         }));
@@ -845,6 +865,7 @@ export function makeAdminController(services: ServiceRegistry) {
           active: team.active,
           deactivationReason: team.deactivationReason,
           deactivationDate: team.deactivationDate,
+          imageUrl: team.imageUrl,
           createdAt: team.createdAt,
           updatedAt: team.updatedAt,
           isAdmin: team.isAdmin,
@@ -895,6 +916,70 @@ export function makeAdminController(services: ServiceRegistry) {
             name: result.team?.name || "Unknown",
             apiKey: result.apiKey,
           },
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Search for teams based on various criteria
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async searchTeams(req: Request, res: Response, next: NextFunction) {
+      try {
+        const {
+          email,
+          name,
+          walletAddress,
+          contactPerson,
+          active,
+          includeAdmins,
+        } = req.query;
+
+        // Prepare search params
+        const searchParams: TeamSearchParams = {};
+
+        if (email) searchParams.email = email as string;
+        if (name) searchParams.name = name as string;
+        if (walletAddress) searchParams.walletAddress = walletAddress as string;
+        if (contactPerson) searchParams.contactPerson = contactPerson as string;
+
+        // Convert active string query param to boolean if provided
+        if (active !== undefined) {
+          searchParams.active = active === "true" || active === "1";
+        }
+
+        // Set whether to include admin accounts
+        searchParams.includeAdmins =
+          includeAdmins === "true" || includeAdmins === "1";
+
+        // Perform search
+        const teams = await services.teamManager.searchTeams(searchParams);
+
+        // Format the response to exclude sensitive data
+        const formattedTeams = teams.map((team) => ({
+          id: team.id,
+          name: team.name,
+          email: team.email,
+          contactPerson: team.contactPerson,
+          walletAddress: team.walletAddress,
+          active: team.active,
+          deactivationReason: team.deactivationReason,
+          deactivationDate: team.deactivationDate,
+          isAdmin: team.isAdmin,
+          metadata: team.metadata,
+          imageUrl: team.imageUrl,
+          createdAt: team.createdAt,
+          updatedAt: team.updatedAt,
+        }));
+
+        // Return the search results
+        res.status(200).json({
+          success: true,
+          teams: formattedTeams,
         });
       } catch (error) {
         next(error);

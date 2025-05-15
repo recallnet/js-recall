@@ -228,7 +228,6 @@ async function setupEverything() {
       // Pass the collected admin credentials as command line arguments and capture output
       const setupOutput = await runCommand("pnpm", [
         "setup:admin",
-        "--",
         adminUsername,
         adminPassword,
         adminEmail,

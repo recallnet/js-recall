@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { SiweMessage, parseSiweMessage } from "viem/siwe";
 
-import { config } from "@/wagmi-config";
+import { serverConfig } from "@/wagmi-config";
 
 const TIME_LIMIT = 24 * 3600 * 1000; // 1 day before sig expires
 
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     const siweMessage = parseSiweMessage(message) as SiweMessage;
     await validateMessage(req, siweMessage);
 
-    const result = await verifyMessage(config, {
+    const result = await verifyMessage(serverConfig(), {
       address: siweMessage.address as `0x${string}`,
       message: message,
       signature,
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     if (!result) throw new Error("signature validation error");
 
-    return NextResponse.json({ ok: true, address: message.address });
+    return NextResponse.json({ ok: true, address: siweMessage.address });
   } catch (err) {
     console.error("[SIWE LOGIN ERROR]", err);
     return NextResponse.json(

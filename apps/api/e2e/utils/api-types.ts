@@ -37,6 +37,13 @@ export enum SpecificChain {
   SVM = "svm",
 }
 
+// Cross-chain trading type enum
+export enum CrossChainTradingType {
+  disallowAll = "disallowAll",
+  disallowXParent = "disallowXParent",
+  allow = "allow",
+}
+
 // Competition status
 export enum CompetitionStatus {
   PENDING = "PENDING",
@@ -73,6 +80,7 @@ export interface TeamProfileResponse extends ApiResponse {
     email: string;
     contactPerson: string;
     metadata?: TeamMetadata;
+    imageUrl?: string;
     createdAt: string;
     updatedAt: string;
   };
@@ -83,7 +91,7 @@ export interface TokenBalance {
   tokenAddress: string;
   amount: number;
   chain: BlockchainType;
-  specificChain: SpecificChain | null;
+  specificChain: SpecificChain;
 }
 
 // Balances response
@@ -147,10 +155,12 @@ export interface Competition {
   id: string;
   name: string;
   description: string | null;
+  externalLink: string | null;
+  imageUrl: string | null;
   startDate: string | null;
   endDate: string | null;
   status: CompetitionStatus;
-  allowCrossChainTrading: boolean;
+  crossChainTradingType: CrossChainTradingType;
   createdAt: string;
   updatedAt: string;
   teamIds?: string[];
@@ -261,6 +271,7 @@ export interface AdminTeamResponse extends ApiResponse {
     apiKey?: string;
     walletAddress?: string;
     bucketAddress?: string[];
+    imageUrl?: string;
     isAdmin: boolean;
     active: boolean;
     deactivationReason?: string;
@@ -279,6 +290,7 @@ export interface AdminTeamsListResponse extends ApiResponse {
     email: string;
     contactPerson: string;
     walletAddress?: string;
+    imageUrl?: string;
     isAdmin: boolean;
     active: boolean;
     createdAt: string;
@@ -295,6 +307,7 @@ export interface TeamRegistrationResponse extends ApiResponse {
     email: string;
     contactPerson: string;
     metadata?: TeamMetadata;
+    imageUrl?: string;
     apiKey: string;
     walletAddress: string;
     isAdmin: boolean;

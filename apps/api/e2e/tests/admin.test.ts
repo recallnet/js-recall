@@ -315,4 +315,151 @@ describe("Admin API", () => {
     const deleteResult = await adminClient.deleteTeam(registerResult.team.id);
     expect(deleteResult.success).toBe(true);
   });
+
+  test("should search for teams based on various criteria", async () => {
+    // Setup admin client with the API key
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create teams with distinct attributes to test the search functionality
+    const timestamp = Date.now();
+
+    // Team 1: Standard active team
+    const team1Name = `Search Team Alpha ${timestamp}`;
+    const team1Email = `search-alpha-${timestamp}@test.com`;
+    const team1Contact = "John Smith";
+    const team1Result = (await adminClient.registerTeam(
+      team1Name,
+      team1Email,
+      team1Contact,
+    )) as TeamRegistrationResponse;
+    expect(team1Result.success).toBe(true);
+
+    // Team 2: Standard active team with different name pattern
+    const team2Name = `Testing Team Beta ${timestamp}`;
+    const team2Email = `beta-${timestamp}@example.com`;
+    const team2Contact = "Jane Doe";
+    const team2Result = (await adminClient.registerTeam(
+      team2Name,
+      team2Email,
+      team2Contact,
+    )) as TeamRegistrationResponse;
+    expect(team2Result.success).toBe(true);
+
+    // Team 3: Create and then deactivate
+    const team3Name = `Search Team Inactive ${timestamp}`;
+    const team3Email = `inactive-${timestamp}@test.com`;
+    const team3Contact = "Bob Inactive";
+    const team3Result = (await adminClient.registerTeam(
+      team3Name,
+      team3Email,
+      team3Contact,
+    )) as TeamRegistrationResponse;
+    expect(team3Result.success).toBe(true);
+
+    // TEST CASE 1: Search by name substring (should find team 1 and team 3)
+    const nameSearchResult = (await adminClient.searchTeams({
+      name: "Search Team",
+    })) as AdminTeamsListResponse;
+
+    expect(nameSearchResult.success).toBe(true);
+    expect(nameSearchResult.teams.length).toBe(2);
+    expect(nameSearchResult.teams.some((t) => t.name === team1Name)).toBe(true);
+    expect(nameSearchResult.teams.some((t) => t.name === team3Name)).toBe(true);
+    expect(nameSearchResult.teams.some((t) => t.name === team2Name)).toBe(
+      false,
+    );
+
+    // TEST CASE 2: Search by email domain
+    const emailSearchResult = (await adminClient.searchTeams({
+      email: "example.com",
+    })) as AdminTeamsListResponse;
+
+    expect(emailSearchResult.success).toBe(true);
+    expect(emailSearchResult.teams.length).toBe(1);
+    expect(emailSearchResult.teams[0]?.email).toBe(team2Email);
+
+    // TEST CASE 3: Search by active status - all teams should be inactive by default
+    const activeSearchResult = (await adminClient.searchTeams({
+      active: false,
+    })) as AdminTeamsListResponse;
+
+    expect(activeSearchResult.success).toBe(true);
+    // All three teams we created should be found as inactive
+    expect(
+      activeSearchResult.teams.some((t) => t.id === team1Result.team.id),
+    ).toBe(true);
+    expect(
+      activeSearchResult.teams.some((t) => t.id === team2Result.team.id),
+    ).toBe(true);
+    expect(
+      activeSearchResult.teams.some((t) => t.id === team3Result.team.id),
+    ).toBe(true);
+
+    // TEST CASE 4: Search for active teams - should find none of our test teams
+    const noActiveTeamsResult = (await adminClient.searchTeams({
+      active: true,
+    })) as AdminTeamsListResponse;
+
+    expect(noActiveTeamsResult.success).toBe(true);
+    // None of our test teams should be active
+    expect(
+      noActiveTeamsResult.teams.some((t) => t.id === team1Result.team.id),
+    ).toBe(false);
+    expect(
+      noActiveTeamsResult.teams.some((t) => t.id === team2Result.team.id),
+    ).toBe(false);
+    expect(
+      noActiveTeamsResult.teams.some((t) => t.id === team3Result.team.id),
+    ).toBe(false);
+
+    // TEST CASE 5: Search by contact person
+    const contactSearchResult = (await adminClient.searchTeams({
+      contactPerson: "Jane",
+    })) as AdminTeamsListResponse;
+
+    expect(contactSearchResult.success).toBe(true);
+    expect(contactSearchResult.teams.length).toBe(1);
+    expect(contactSearchResult.teams[0]?.id).toBe(team2Result.team.id);
+
+    // TEST CASE 6: Combined search (name and active status)
+    const combinedSearchResult = (await adminClient.searchTeams({
+      name: "Search Team",
+      active: false,
+    })) as AdminTeamsListResponse;
+
+    expect(combinedSearchResult.success).toBe(true);
+    expect(combinedSearchResult.teams.length).toBe(2);
+    expect(
+      combinedSearchResult.teams.some((t) => t.id === team1Result.team.id),
+    ).toBe(true);
+    expect(
+      combinedSearchResult.teams.some((t) => t.id === team3Result.team.id),
+    ).toBe(true);
+
+    // TEST CASE 7: Search by wallet address
+    // Extract wallet address from the first team
+    const walletAddress = team1Result.team.walletAddress;
+    expect(walletAddress).toBeTruthy();
+
+    // Search using a portion of the wallet address (e.g., first 10 characters after 0x)
+    const partialWalletAddress = walletAddress.substring(0, 12); // 0x + first 10 chars
+    console.log(
+      `Searching for teams with partial wallet address: ${partialWalletAddress}`,
+    );
+
+    const walletSearchResult = (await adminClient.searchTeams({
+      walletAddress: partialWalletAddress,
+    })) as AdminTeamsListResponse;
+
+    expect(walletSearchResult.success).toBe(true);
+    expect(walletSearchResult.teams.length).toBe(1);
+    expect(walletSearchResult.teams[0]?.id).toBe(team1Result.team.id);
+    expect(walletSearchResult.teams[0]?.walletAddress).toBe(walletAddress);
+
+    // Clean up - delete the teams we created
+    await adminClient.deleteTeam(team1Result.team.id);
+    await adminClient.deleteTeam(team2Result.team.id);
+    await adminClient.deleteTeam(team3Result.team.id);
+  });
 });

@@ -49,7 +49,7 @@ export const LeaderboardOngoingCompetition: React.FC<
             STARTS SOON
           </h2>
           <div className="flex items-start">
-            <CountdownClock targetDate={competition.date} />
+            <CountdownClock targetDate={competition.startDate} />
           </div>
         </div>
 

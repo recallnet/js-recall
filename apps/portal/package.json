@@ -17,10 +17,10 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^4.0.0",
-    "@rainbow-me/rainbowkit": "^2.2.2",
+    "@rainbow-me/rainbowkit": "^2.2.4",
     "@recallnet/address-utils": "workspace:*",
-    "@recallnet/conversions": "workspace:*",
     "@recallnet/chains": "workspace:*",
+    "@recallnet/conversions": "workspace:*",
     "@recallnet/fonts": "workspace:*",
     "@recallnet/react": "workspace:*",
     "@recallnet/ui": "workspace:*",
@@ -35,9 +35,9 @@
     "react-dropzone": "^14.3.5",
     "react-hook-form": "^7.54.2",
     "react-time-ago": "^7.3.3",
-    "viem": "2.x",
-    "wagmi": "^2.14.8",
-    "zod": "^3.24.1"
+    "viem": "^2.28.1",
+    "wagmi": "^2.15.2",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:^",
@@ -45,10 +45,10 @@
     "@types/node": "^20",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "typescript": "^5.7.3",
     "typedoc": "^0.28.1",
     "typedoc-plugin-coverage": "^3.4.1",
     "typedoc-plugin-markdown": "^4.6.0",
+    "typescript": "^5.7.3",
     "vitest": "^3.0.9"
   }
 }

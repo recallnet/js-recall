@@ -9,6 +9,7 @@ import {
   CompetitionRulesResponse,
   CompetitionStatusResponse,
   CreateCompetitionResponse,
+  CrossChainTradingType,
   DetailedHealthCheckResponse,
   ErrorResponse,
   HealthCheckResponse,
@@ -33,7 +34,7 @@ import {
 import { getBaseUrl } from "./server.js";
 
 /**
- * API client for testing the Solana Trading Simulator
+ * API client for testing the Trading Simulator
  *
  * This client handles authentication and convenience methods
  * for interacting with the API endpoints.
@@ -192,6 +193,7 @@ export class ApiClient {
    * @param contactPerson Contact person name
    * @param walletAddress Optional Ethereum wallet address (random valid address will be generated if not provided)
    * @param metadata Optional metadata for the team agent
+   * @param imageUrl Optional image URL for the team
    */
   async registerTeam(
     name: string,
@@ -199,6 +201,7 @@ export class ApiClient {
     contactPerson: string,
     walletAddress?: string,
     metadata?: TeamMetadata,
+    imageUrl?: string,
   ): Promise<TeamRegistrationResponse | ErrorResponse> {
     try {
       // Generate a random Ethereum address if one isn't provided
@@ -212,6 +215,7 @@ export class ApiClient {
           contactPerson,
           walletAddress: address,
           metadata,
+          imageUrl,
         },
       );
 
@@ -230,11 +234,16 @@ export class ApiClient {
           name: string;
           description?: string;
           teamIds: string[];
-          allowCrossChainTrading?: boolean;
+          tradingType?: CrossChainTradingType;
+          externalLink?: string;
+          imageUrl?: string;
         }
       | string,
     description?: string,
     teamIds?: string[],
+    tradingType?: CrossChainTradingType,
+    externalLink?: string,
+    imageUrl?: string,
   ): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
       let requestData;
@@ -247,6 +256,9 @@ export class ApiClient {
           name: params,
           description,
           teamIds: teamIds || [],
+          tradingType,
+          externalLink,
+          imageUrl,
         };
       }
 
@@ -267,7 +279,9 @@ export class ApiClient {
   async createCompetition(
     name: string,
     description?: string,
-    allowCrossChainTrading?: boolean,
+    tradingType?: CrossChainTradingType,
+    externalLink?: string,
+    imageUrl?: string,
   ): Promise<CreateCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
@@ -275,7 +289,9 @@ export class ApiClient {
         {
           name,
           description,
-          allowCrossChainTrading,
+          tradingType,
+          externalLink,
+          imageUrl,
         },
       );
 
@@ -291,7 +307,9 @@ export class ApiClient {
   async startExistingCompetition(
     competitionId: string,
     teamIds: string[],
-    allowCrossChainTrading?: boolean,
+    crossChainTradingType?: CrossChainTradingType,
+    externalLink?: string,
+    imageUrl?: string,
   ): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
@@ -299,7 +317,9 @@ export class ApiClient {
         {
           competitionId,
           teamIds,
-          allowCrossChainTrading,
+          crossChainTradingType,
+          externalLink,
+          imageUrl,
         },
       );
 
@@ -330,10 +350,12 @@ export class ApiClient {
 
   /**
    * Update team profile
+   * @param profileData Profile data to update including contactPerson, metadata, and imageUrl
    */
   async updateProfile(profileData: {
     contactPerson?: string;
     metadata?: TeamMetadata;
+    imageUrl?: string;
   }): Promise<TeamProfileResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.put(
@@ -766,6 +788,7 @@ export class ApiClient {
    * @param contactPerson Contact person name
    * @param walletAddress Optional Ethereum wallet address (random valid address will be generated if not provided)
    * @param metadata Optional metadata for the team agent
+   * @param imageUrl Optional image URL for the team
    */
   async publicRegisterTeam(
     name: string,
@@ -773,6 +796,7 @@ export class ApiClient {
     contactPerson: string,
     walletAddress?: string,
     metadata?: TeamMetadata,
+    imageUrl?: string,
   ): Promise<TeamRegistrationResponse | ErrorResponse> {
     try {
       // Generate a random Ethereum address if one isn't provided
@@ -786,6 +810,7 @@ export class ApiClient {
           contactPerson,
           walletAddress: address,
           metadata,
+          imageUrl,
         },
       );
 
@@ -807,6 +832,44 @@ export class ApiClient {
       return response.data as ResetApiKeyResponse;
     } catch (error) {
       return this.handleApiError(error, "reset API key");
+    }
+  }
+
+  /**
+   * Search teams by various criteria (admin only)
+   * @param searchParams Search parameters (email, name, walletAddress, contactPerson, active, includeAdmins)
+   */
+  async searchTeams(searchParams: {
+    email?: string;
+    name?: string;
+    walletAddress?: string;
+    contactPerson?: string;
+    active?: boolean;
+    includeAdmins?: boolean;
+  }): Promise<AdminTeamsListResponse | ErrorResponse> {
+    try {
+      // Convert search parameters to query string
+      const queryParams = new URLSearchParams();
+
+      if (searchParams.email) queryParams.append("email", searchParams.email);
+      if (searchParams.name) queryParams.append("name", searchParams.name);
+      if (searchParams.walletAddress)
+        queryParams.append("walletAddress", searchParams.walletAddress);
+      if (searchParams.contactPerson)
+        queryParams.append("contactPerson", searchParams.contactPerson);
+      if (searchParams.active !== undefined)
+        queryParams.append("active", searchParams.active.toString());
+      if (searchParams.includeAdmins !== undefined)
+        queryParams.append(
+          "includeAdmins",
+          searchParams.includeAdmins.toString(),
+        );
+
+      const url = `/api/admin/teams/search?${queryParams.toString()}`;
+
+      return this.request<AdminTeamsListResponse>("get", url);
+    } catch (error) {
+      return this.handleApiError(error, "search teams");
     }
   }
 }

@@ -166,12 +166,6 @@ Get trade history
 
 Get trade history for the authenticated team
 
-##### Parameters
-
-| Name          | Located in | Description                                                    | Required | Schema |
-| ------------- | ---------- | -------------------------------------------------------------- | -------- | ------ |
-| Authorization | header     | Bearer token for authentication (format "Bearer YOUR_API_KEY") | Yes      | string |
-
 ##### Responses
 
 | Code | Description                                      |
@@ -568,6 +562,43 @@ Reactivate a previously deactivated team, allowing them to participate in the co
 | 400  | Team is already active                       |
 | 401  | Unauthorized - Admin authentication required |
 | 404  | Team not found                               |
+| 500  | Server error                                 |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+### /api/admin/teams/search
+
+#### GET
+
+##### Summary:
+
+Search for teams
+
+##### Description:
+
+Search for teams based on various criteria like email, name, wallet address, etc.
+
+##### Parameters
+
+| Name          | Located in | Description                                                     | Required | Schema  |
+| ------------- | ---------- | --------------------------------------------------------------- | -------- | ------- |
+| email         | query      | Partial match for team email                                    | No       | string  |
+| name          | query      | Partial match for team name                                     | No       | string  |
+| walletAddress | query      | Partial match for wallet address                                | No       | string  |
+| contactPerson | query      | Partial match for contact person name                           | No       | string  |
+| active        | query      | Filter by active status (true/false)                            | No       | boolean |
+| includeAdmins | query      | Whether to include admin accounts in results (default is false) | No       | boolean |
+
+##### Responses
+
+| Code | Description                                  |
+| ---- | -------------------------------------------- |
+| 200  | List of teams matching search criteria       |
+| 401  | Unauthorized - Admin authentication required |
 | 500  | Server error                                 |
 
 ##### Security

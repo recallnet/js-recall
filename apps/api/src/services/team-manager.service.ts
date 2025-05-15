@@ -1,8 +1,6 @@
 import * as crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
 
-import { InsertTeam } from "@recallnet/comps-db/schema";
-
 import { config } from "@/config/index.js";
 import {
   count,
@@ -13,9 +11,11 @@ import {
   findById,
   findInactiveTeams,
   reactivateTeam,
+  searchTeams,
   update,
 } from "@/database/repositories/team-repository.js";
-import { AgentMetadata, ApiAuth } from "@/types/index.js";
+import { InsertTeam } from "@/database/schema/core/types.js";
+import { AgentMetadata, ApiAuth, TeamSearchParams } from "@/types/index.js";
 
 /**
  * Team Manager Service
@@ -48,6 +48,7 @@ export class TeamManager {
    * @param contactPerson Contact person name
    * @param walletAddress Ethereum wallet address (must start with 0x)
    * @param metadata Optional agent metadata
+   * @param imageUrl Optional URL to the team's image
    * @returns The created team with API credentials
    */
   async registerTeam(
@@ -56,6 +57,7 @@ export class TeamManager {
     contactPerson: string,
     walletAddress: string,
     metadata?: AgentMetadata,
+    imageUrl?: string,
   ) {
     try {
       // Validate wallet address
@@ -90,6 +92,11 @@ export class TeamManager {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
+
+      // Add imageUrl if provided
+      if (imageUrl) {
+        team.imageUrl = imageUrl;
+      }
 
       // Store in database
       const savedTeam = await create(team);
@@ -668,6 +675,37 @@ export class TeamManager {
         error,
       );
       throw error;
+    }
+  }
+
+  /**
+   * Search for teams based on various attributes
+   * @param searchParams Parameters to search by (email, name, walletAddress, contactPerson, active status)
+   * @returns Array of teams matching the search criteria
+   */
+  async searchTeams(searchParams: TeamSearchParams) {
+    try {
+      console.log(
+        `[TeamManager] Searching for teams with params:`,
+        searchParams,
+      );
+
+      // Get matching teams from repository
+      const teams = await searchTeams(searchParams);
+
+      // Filter out admin teams if needed
+      const { includeAdmins = false } = searchParams;
+      const filteredTeams = includeAdmins
+        ? teams
+        : teams.filter((team) => !team.isAdmin);
+
+      console.log(
+        `[TeamManager] Found ${filteredTeams.length} teams matching search criteria`,
+      );
+      return filteredTeams;
+    } catch (error) {
+      console.error("[TeamManager] Error searching teams:", error);
+      return [];
     }
   }
 }

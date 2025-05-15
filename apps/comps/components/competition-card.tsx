@@ -4,6 +4,7 @@ import { Share1Icon } from "@radix-ui/react-icons";
 import React from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
+import { IconButton } from "@recallnet/ui2/components/icon-button";
 
 import { Competition } from "../data/competitions";
 import { StringList } from "./string-list";
@@ -22,22 +23,19 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
       <div className="flex items-start justify-between">
         <StringList strings={competition.categories} />
         {showActions && (
-          <button
+          <IconButton
+            Icon={Share1Icon}
             aria-label="Share"
-            className="rounded-full p-2 hover:bg-slate-700"
-          >
-            <Share1Icon className="text-primary h-5 w-5" />
-          </button>
+            iconClassName="text-primary"
+          />
         )}
       </div>
-      <h3 className="text-primary mb-6 mt-4 text-xl font-bold">
-        {competition.title}
-      </h3>
+      <h1 className="mb-6 mt-4 text-xl font-bold">{competition.name}</h1>
       <div className="flex items-end justify-between">
         <div>
-          <h4 className="text-secondary-foreground mb-1 text-xs font-semibold uppercase">
+          <span className="text-secondary-foreground mb-1 text-xs font-semibold uppercase">
             REWARDS
-          </h4>
+          </span>
           {competition.rewards.length > 0 && (
             <div className="flex gap-2">
               {competition.rewards.map((reward, index) => (
@@ -48,7 +46,7 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
             </div>
           )}
         </div>
-        {showActions && competition.type === "STARTING_SOON" && (
+        {showActions && competition.status === "pending" && (
           <div className="flex gap-2">
             <Button size="sm">JOIN</Button>
             <Button variant="secondary" size="sm">

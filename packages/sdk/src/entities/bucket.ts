@@ -9,15 +9,17 @@ import {
   ContractFunctionReturnType,
   GetContractReturnType,
   GetEventArgs,
+  Hex,
   getContract,
 } from "viem";
 
 import { getObjectApiUrl } from "@recallnet/chains";
 import {
-  bucketManagerAbi,
-  bucketManagerAddress,
+  iBucketFacadeAbi,
   iMachineFacadeAbi,
+  iMachineFacadeAddress,
 } from "@recallnet/contracts";
+import { hexToBase32 } from "@recallnet/fvm/utils";
 import {
   MAX_OBJECT_SIZE,
   MAX_QUERY_LIMIT,
@@ -35,6 +37,7 @@ import {
   OutOfGasError,
   UnhandledBucketError,
   isActorNotFoundError,
+  isEmptyResponseError,
 } from "../errors.js";
 import {
   callObjectsApiAddObject,
@@ -47,7 +50,7 @@ import {
   convertMetadataToAbiParams,
   parseEventFromTransaction,
 } from "../utils.js";
-import { FileHandler, createFileHandler } from "../utils.js";
+import { FileHandler, base32ToHex, createFileHandler } from "../utils.js";
 
 // Used for add()
 export type AddOptions = {
@@ -58,22 +61,21 @@ export type AddOptions = {
 
 // Used for get()
 export type ObjectValueRaw = ContractFunctionReturnType<
-  typeof bucketManagerAbi,
+  typeof iBucketFacadeAbi,
   AbiStateMutability,
   "getObject"
 >;
 
 // Converts metadata Solidity struct to normal javascript object
-export type ObjectValue = Pick<
-  ObjectValueRaw,
-  "blobHash" | "recoveryHash" | "size" | "expiry"
-> & {
+export type ObjectValue = Pick<ObjectValueRaw, "size" | "expiry"> & {
+  blobHash: string; // Use base32 string value instead of bytes32
+  recoveryHash: string; // Use base32 string value instead of bytes32
   metadata: Record<string, unknown>;
 };
 
 // Used for list()
 export type ListResultRaw = ContractFunctionReturnType<
-  typeof bucketManagerAbi,
+  typeof iMachineFacadeAbi,
   AbiStateMutability,
   "listBuckets"
 >;
@@ -89,16 +91,9 @@ export type ListResult = ListResultBucket[];
 
 // Used for query()
 export type QueryResultRaw = ContractFunctionReturnType<
-  typeof bucketManagerAbi,
-  "view",
-  "queryObjects",
-  [
-    bucket: `0x${string}`,
-    prefix: string,
-    delimiter: string,
-    startKey: string,
-    limit: bigint,
-  ]
+  typeof iBucketFacadeAbi,
+  AbiStateMutability,
+  "queryObjects"
 >;
 
 // Object value in query response (converted `metadata` to normal javascript object)
@@ -147,7 +142,7 @@ export type CreateBucketResult = {
 // Used for create()
 export type CreateBucketParams = Extract<
   ContractFunctionArgs<
-    typeof bucketManagerAbi,
+    typeof iMachineFacadeAbi,
     AbiStateMutability,
     "createBucket"
   >,
@@ -156,55 +151,58 @@ export type CreateBucketParams = Extract<
 
 // Used for get()
 export type GetObjectParams = ContractFunctionArgs<
-  typeof bucketManagerAbi,
+  typeof iBucketFacadeAbi,
   AbiStateMutability,
   "getObject"
 >;
 
 // Used for delete()
 export type DeleteObjectParams = ContractFunctionArgs<
-  typeof bucketManagerAbi,
+  typeof iBucketFacadeAbi,
   AbiStateMutability,
   "deleteObject"
 >;
 
 // Used for query()
 export type QueryObjectsParams = ContractFunctionArgs<
-  typeof bucketManagerAbi,
+  typeof iBucketFacadeAbi,
   AbiStateMutability,
   "queryObjects"
 >;
 
 // Used for add()
 type AddObjectFullParams = ContractFunctionArgs<
-  typeof bucketManagerAbi,
+  typeof iBucketFacadeAbi,
   AbiStateMutability,
   "addObject"
 >;
 
-// Used for add()
-export type AddObjectParams = Extract<
-  AddObjectFullParams[1],
-  {
-    source: string;
-    key: string;
-    blobHash: string;
-    recoveryHash: string;
-    size: bigint;
-    ttl: bigint;
-    metadata: readonly {
+// Extract the full params variation with all fields
+type AddObjectParams = Extract<
+  AddObjectFullParams,
+  readonly [
+    Hex,
+    string,
+    Hex,
+    Hex,
+    bigint,
+    bigint,
+    readonly {
       key: string;
       value: string;
-    }[];
-    overwrite: boolean;
-    from: Address;
-  }
+    }[],
+    boolean,
+  ]
 >;
 
 export class BucketManager {
   private fileHandler: FileHandler;
   client: RecallClient;
-  contract: GetContractReturnType<typeof bucketManagerAbi, Client, Address>;
+  factoryContract: GetContractReturnType<
+    typeof iMachineFacadeAbi,
+    Client,
+    Address
+  >;
 
   constructor(client: RecallClient, contractAddress?: Address) {
     this.client = client;
@@ -213,13 +211,13 @@ export class BucketManager {
       throw new Error("Client chain ID not found");
     }
     const deployedBucketManagerAddress = (
-      bucketManagerAddress as Record<number, Address>
+      iMachineFacadeAddress as Record<number, Address>
     )[chainId];
     if (!deployedBucketManagerAddress) {
       throw new Error(`No contract address found for chain ID ${chainId}}`);
     }
-    this.contract = getContract({
-      abi: bucketManagerAbi,
+    this.factoryContract = getContract({
+      abi: iMachineFacadeAbi,
       address: contractAddress || deployedBucketManagerAddress,
       client: {
         public: client.publicClient,
@@ -231,12 +229,24 @@ export class BucketManager {
     this.fileHandler = createFileHandler();
   }
 
-  getContract(): GetContractReturnType<
-    typeof bucketManagerAbi,
+  // Get the machine (ADM) contract for creating or listing buckets
+  getFactoryContract(): GetContractReturnType<
+    typeof iMachineFacadeAbi,
     Client,
     Address
   > {
-    return this.contract;
+    return this.factoryContract;
+  }
+
+  // Get an instance of the bucket contract for adding, deleting, and querying objects
+  getBucketContract(
+    address: Address,
+  ): GetContractReturnType<typeof iBucketFacadeAbi, Client, Address> {
+    return getContract({
+      abi: iBucketFacadeAbi,
+      address,
+      client: this.client.publicClient,
+    });
   }
 
   // Create a bucket
@@ -256,14 +266,14 @@ export class BucketManager {
         metadata ? convertMetadataToAbiParams(metadata) : [],
       ] satisfies CreateBucketParams;
       const gasPrice = await this.client.publicClient.getGasPrice();
-      const { request } = await this.contract.simulate.createBucket<
+      const { request } = await this.factoryContract.simulate.createBucket<
         Chain,
         Account
       >(args, {
         account: this.client.walletClient.account,
         gasPrice,
       });
-      const hash = await this.contract.write.createBucket(request);
+      const hash = await this.factoryContract.write.createBucket(request);
       const tx = await this.client.publicClient.waitForTransactionReceipt({
         hash,
       });
@@ -302,7 +312,7 @@ export class BucketManager {
     }
 
     try {
-      const listResult = await this.contract.read.listBuckets(
+      const listResult = await this.factoryContract.read.listBuckets(
         [effectiveOwner],
         {
           blockNumber,
@@ -327,18 +337,16 @@ export class BucketManager {
   // Add an object to a bucket inner
   private async executeAdd(
     bucket: Address,
-    addParams: AddObjectParams,
+    args: AddObjectParams,
   ): Promise<Result> {
     if (!this.client.walletClient?.account) {
       throw new Error("Wallet client is not initialized for adding an object");
     }
     try {
-      const args = [bucket, addParams] satisfies AddObjectFullParams;
       const gasPrice = await this.client.publicClient.getGasPrice();
-      const { request } = await this.contract.simulate.addObject<
-        Chain,
-        Account
-      >(args, {
+      const { request } = await this.getBucketContract(
+        bucket,
+      ).simulate.addObject<Chain, Account>(args, {
         account: this.client.walletClient.account,
         gasPrice,
       });
@@ -394,18 +402,16 @@ export class BucketManager {
       size,
       contentType,
     );
-    const from = this.client.walletClient.account.address;
-    const addParams = {
-      source,
+    const addParams = [
+      `0x${source}`,
       key,
-      blobHash: hash,
-      recoveryHash: metadataHash,
+      base32ToHex(hash),
+      base32ToHex(metadataHash),
       size,
       ttl,
       metadata,
-      overwrite: options?.overwrite ?? false,
-      from,
-    } as AddObjectParams;
+      options?.overwrite ?? false,
+    ] satisfies AddObjectParams;
     return await this.executeAdd(bucket, addParams);
   }
 
@@ -415,13 +421,11 @@ export class BucketManager {
       throw new Error("Wallet client is not initialized for adding an object");
     }
     try {
-      const from = this.client.walletClient.account.address;
-      const args = [bucket, key, from] satisfies DeleteObjectParams;
+      const args = [key] satisfies DeleteObjectParams;
       const gasPrice = await this.client.publicClient.getGasPrice();
-      const { request } = await this.contract.simulate.deleteObject<
-        Chain,
-        Account
-      >(args, {
+      const { request } = await this.getBucketContract(
+        bucket,
+      ).simulate.deleteObject<Chain, Account>(args, {
         account: this.client.walletClient.account,
         gasPrice,
       });
@@ -453,16 +457,20 @@ export class BucketManager {
     blockNumber?: bigint,
   ): Promise<Result<ObjectValue>> {
     try {
-      const args = [bucket, key] satisfies GetObjectParams;
-      const getResult = await this.contract.read.getObject(args, {
-        blockNumber,
-      });
-      if (!getResult.blobHash) {
+      const args = [key] satisfies GetObjectParams;
+      const getResult = await this.getBucketContract(bucket).read.getObject(
+        args,
+        {
+          blockNumber,
+        },
+      );
+      // If the blob hash is 0x00...0, the object doesn't exist
+      if (Number(getResult.blobHash) === 0) {
         throw new ObjectNotFound(bucket, key);
       }
       const result = {
-        blobHash: getResult.blobHash,
-        recoveryHash: getResult.recoveryHash,
+        blobHash: hexToBase32(getResult.blobHash),
+        recoveryHash: hexToBase32(getResult.recoveryHash),
         size: getResult.size,
         expiry: getResult.expiry,
         metadata: convertAbiMetadataToObject(getResult.metadata),
@@ -471,7 +479,10 @@ export class BucketManager {
     } catch (error: unknown) {
       if (error instanceof ObjectNotFound) {
         throw error;
-      } else if (error instanceof ContractFunctionExecutionError) {
+      }
+      if (error instanceof ContractFunctionExecutionError) {
+        if (error.message.includes(`returned no data ("0x")`))
+          throw new BucketNotFound(bucket);
         // TODO: We're optimistically assuming an error means the bucket doesn't exist
         // 00: t0134 (method 3844450837) -- contract reverted (33)
         // 01: t0134 (method 6) -- contract reverted (33)
@@ -622,14 +633,13 @@ export class BucketManager {
   ): Promise<Result<QueryResult>> {
     try {
       const args = [
-        bucket,
         options?.prefix ?? "",
         options?.delimiter ?? "/",
         options?.startKey ?? "",
         BigInt(options?.limit ?? MAX_QUERY_LIMIT),
       ] satisfies QueryObjectsParams;
       const { objects, commonPrefixes, nextKey } =
-        (await this.contract.read.queryObjects(args, {
+        (await this.getBucketContract(bucket).read.queryObjects(args, {
           blockNumber: options?.blockNumber,
         })) as QueryResultRaw;
       const result = {
@@ -648,6 +658,8 @@ export class BucketManager {
       return { result };
     } catch (error: unknown) {
       if (error instanceof ContractFunctionExecutionError) {
+        if (isEmptyResponseError(error)) throw new BucketNotFound(bucket);
+        // TODO: since we've migrated to facades over wrappers, is this still needed?
         if (error.message.includes("contract reverted")) {
           const isOutOfGasError =
             error.message.includes("wasm `unreachable` instruction executed") ||

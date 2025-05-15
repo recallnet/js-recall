@@ -1,8 +1,8 @@
 import { and, asc, desc, eq, gt, sql } from "drizzle-orm";
 
-import { InsertPrice, prices } from "@recallnet/comps-db/schema";
-
 import { db } from "@/database/db.js";
+import { prices } from "@/database/schema/trading/defs.js";
+import { InsertPrice } from "@/database/schema/trading/types.js";
 import { SpecificChain } from "@/types/index.js";
 
 /**
@@ -42,12 +42,12 @@ export async function create(priceData: InsertPrice) {
 /**
  * Get the latest price for a token
  * @param token The token address
- * @param specificChain Optional specific chain to filter by
+ * @param specificChain Specific chain to filter by
  * @returns The latest price record or null if not found
  */
 export async function getLatestPrice(
   token: string,
-  specificChain?: SpecificChain,
+  specificChain: SpecificChain,
 ) {
   console.log(
     `[PriceRepository] Getting latest price for ${token}${specificChain ? ` on ${specificChain}` : ""}`,
@@ -58,12 +58,7 @@ export async function getLatestPrice(
       .select()
       .from(prices)
       .where(
-        specificChain
-          ? and(
-              eq(prices.token, token),
-              eq(prices.specificChain, specificChain),
-            )
-          : eq(prices.token, token),
+        and(eq(prices.token, token), eq(prices.specificChain, specificChain)),
       )
       .orderBy(desc(prices.timestamp))
       .limit(1);

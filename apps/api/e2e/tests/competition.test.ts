@@ -2,14 +2,14 @@ import axios from "axios";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { teams } from "@recallnet/comps-db/schema";
-
 import { db } from "@/database/db.js";
+import { teams } from "@/database/schema/core/defs.js";
 import {
   Competition,
   CompetitionRulesResponse,
   CompetitionStatusResponse,
   CreateCompetitionResponse,
+  CrossChainTradingType,
   EndCompetitionResponse,
   LeaderboardResponse,
   TeamProfileResponse,
@@ -462,7 +462,7 @@ describe("Competition API", () => {
     const competitionResponse = await adminClient.startCompetition({
       name: competitionName,
       teamIds: [team.id],
-      allowCrossChainTrading: true,
+      tradingType: CrossChainTradingType.allow,
     });
 
     expect(competitionResponse.success).toBe(true);
@@ -488,7 +488,7 @@ describe("Competition API", () => {
         (rule: string) => rule.includes("Cross-chain trading"),
       );
       expect(crossChainRule).toBeDefined();
-      expect(crossChainRule).toContain("Enabled");
+      expect(crossChainRule).toContain("Cross-chain trading type: allow");
     }
 
     // Create second competition with cross-chain trading disabled
@@ -502,7 +502,7 @@ describe("Competition API", () => {
       const secondCompetitionResponse = await adminClient.startCompetition({
         name: secondCompetitionName,
         teamIds: [team.id],
-        allowCrossChainTrading: false,
+        tradingType: CrossChainTradingType.disallowAll,
       });
 
       expect(secondCompetitionResponse.success).toBe(true);
@@ -519,12 +519,14 @@ describe("Competition API", () => {
             rule.includes("Cross-chain trading"),
           );
         expect(secondCrossChainRule).toBeDefined();
-        expect(secondCrossChainRule).toContain("Disabled");
+        expect(secondCrossChainRule).toContain(
+          "Cross-chain trading type: disallowAll",
+        );
       }
     }
   });
 
-  test("competition responses include allowCrossChainTrading property", async () => {
+  test("competition responses include crosschaintradingtype property", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -540,13 +542,15 @@ describe("Competition API", () => {
     const createResponse = await adminClient.createCompetition(
       createCompetitionName,
       "Test description",
-      true,
+      CrossChainTradingType.allow,
     );
 
     expect(createResponse.success).toBe(true);
     if (createResponse.success && "competition" in createResponse) {
       expect(createResponse.competition).toBeDefined();
-      expect(createResponse.competition.allowCrossChainTrading).toBe(true);
+      expect(createResponse.competition.crossChainTradingType).toBe(
+        CrossChainTradingType.allow,
+      );
     }
 
     // 2. Test starting a competition with allowCrossChainTrading=false
@@ -554,13 +558,15 @@ describe("Competition API", () => {
     const startResponse = await adminClient.startCompetition({
       name: startCompetitionName,
       teamIds: [team.id],
-      allowCrossChainTrading: false,
+      tradingType: CrossChainTradingType.disallowAll,
     });
 
     expect(startResponse.success).toBe(true);
     if (startResponse.success && "competition" in startResponse) {
       expect(startResponse.competition).toBeDefined();
-      expect(startResponse.competition.allowCrossChainTrading).toBe(false);
+      expect(startResponse.competition.crossChainTradingType).toBe(
+        CrossChainTradingType.disallowAll,
+      );
 
       // 3. Test ending a competition and check field is preserved
       const endResponse = await adminClient.endCompetition(
@@ -571,7 +577,9 @@ describe("Competition API", () => {
       if (endResponse.success && "competition" in endResponse) {
         const competition = endResponse.competition as Competition;
         expect(competition).toBeDefined();
-        expect(competition.allowCrossChainTrading).toBe(false);
+        expect(competition.crossChainTradingType).toBe(
+          CrossChainTradingType.disallowAll,
+        );
       }
     }
 
@@ -579,7 +587,7 @@ describe("Competition API", () => {
     const statusResponse = await adminClient.getCompetitionStatus();
 
     if (statusResponse.success && statusResponse.competition) {
-      expect(statusResponse.competition.allowCrossChainTrading).toBeDefined();
+      expect(statusResponse.competition.crossChainTradingType).toBeDefined();
     }
 
     // 5. Get performance reports - use helper function because the API client doesn't have this method directly
@@ -590,7 +598,7 @@ describe("Competition API", () => {
 
       if (reportsResponse.success && "competition" in reportsResponse) {
         const competition = reportsResponse.competition as Competition;
-        expect(competition.allowCrossChainTrading).toBeDefined();
+        expect(competition.crossChainTradingType).toBeDefined();
       }
     }
   });
@@ -615,17 +623,17 @@ describe("Competition API", () => {
     const createResponse1 = (await adminClient.createCompetition(
       comp1Name,
       "Test competition 1",
-      true,
+      CrossChainTradingType.allow,
     )) as CreateCompetitionResponse;
     const createResponse2 = (await adminClient.createCompetition(
       comp2Name,
       "Test competition 2",
-      false,
+      CrossChainTradingType.disallowAll,
     )) as CreateCompetitionResponse;
     const createResponse3 = (await adminClient.createCompetition(
       comp3Name,
       "Test competition 3",
-      true,
+      CrossChainTradingType.allow,
     )) as CreateCompetitionResponse;
 
     // Verify all competitions were created and in PENDING state
@@ -665,7 +673,7 @@ describe("Competition API", () => {
       expect(comp.id).toBeDefined();
       expect(comp.name).toBeDefined();
       expect(comp.status).toBe("PENDING");
-      expect(comp.allowCrossChainTrading).toBeDefined();
+      expect(comp.crossChainTradingType).toBeDefined();
       expect(comp.createdAt).toBeDefined();
       expect(comp.updatedAt).toBeDefined();
     });
@@ -704,5 +712,104 @@ describe("Competition API", () => {
 
     expect(foundComp2AfterStart).toBe(true);
     expect(foundComp3AfterStart).toBe(true);
+  });
+
+  test("competitions include externalLink and imageUrl fields", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register a team
+    const { client: teamClient, team } = await registerTeamAndGetClient(
+      adminClient,
+      "Link and Image Test Team",
+    );
+
+    // Test data for new fields
+    const externalLink = "https://example.com/competition-details";
+    const imageUrl = "https://example.com/competition-image.jpg";
+
+    // 1. Test creating a competition with externalLink and imageUrl
+    const createCompetitionName = `Create with Links Test ${Date.now()}`;
+    const createResponse = await createTestCompetition(
+      adminClient,
+      createCompetitionName,
+      "Test description with links",
+      externalLink,
+      imageUrl,
+    );
+
+    // Verify the fields are in the creation response
+    expect(createResponse.success).toBe(true);
+    expect(createResponse.competition.externalLink).toBe(externalLink);
+    expect(createResponse.competition.imageUrl).toBe(imageUrl);
+
+    // 2. Test starting a competition with externalLink and imageUrl
+    const startCompetitionName = `Start with Links Test ${Date.now()}`;
+    const startResponse = await startTestCompetition(
+      adminClient,
+      startCompetitionName,
+      [team.id],
+      externalLink,
+      imageUrl,
+    );
+
+    // Verify the fields are in the start competition response
+    expect(startResponse.success).toBe(true);
+    expect(startResponse.competition.externalLink).toBe(externalLink);
+    expect(startResponse.competition.imageUrl).toBe(imageUrl);
+
+    // 3. Verify the fields are in the competition status response for participating teams
+    const teamStatusResponse =
+      (await teamClient.getCompetitionStatus()) as CompetitionStatusResponse;
+    expect(teamStatusResponse.success).toBe(true);
+    expect(teamStatusResponse.active).toBe(true);
+
+    if (teamStatusResponse.success && teamStatusResponse.competition) {
+      expect(teamStatusResponse.competition.externalLink).toBe(externalLink);
+      expect(teamStatusResponse.competition.imageUrl).toBe(imageUrl);
+    }
+
+    // 4. Verify the fields are in the competition leaderboard response
+    const leaderboardResponse = await teamClient.getLeaderboard();
+    expect(leaderboardResponse.success).toBe(true);
+
+    if (leaderboardResponse.success && "competition" in leaderboardResponse) {
+      expect(leaderboardResponse.competition.externalLink).toBe(externalLink);
+      expect(leaderboardResponse.competition.imageUrl).toBe(imageUrl);
+    }
+
+    // 5. Verify the fields are in the upcoming competitions endpoint for pending competitions
+    // First, end the active competition
+    if (startResponse.success) {
+      await adminClient.endCompetition(startResponse.competition.id);
+    }
+
+    // Get upcoming competitions
+    const upcomingResponse = await teamClient.getUpcomingCompetitions();
+
+    if (upcomingResponse.success && "competitions" in upcomingResponse) {
+      // Find our created but not started competition
+      const pendingCompetition = upcomingResponse.competitions.find(
+        (comp) => comp.id === createResponse.competition.id,
+      );
+
+      expect(pendingCompetition).toBeDefined();
+      if (pendingCompetition) {
+        expect(pendingCompetition.externalLink).toBe(externalLink);
+        expect(pendingCompetition.imageUrl).toBe(imageUrl);
+      }
+    }
+
+    const startExistingResponse = await startExistingTestCompetition(
+      adminClient,
+      createResponse.competition.id,
+      [team.id],
+    );
+
+    // Verify the original fields are in the response
+    expect(startExistingResponse.success).toBe(true);
+    expect(startExistingResponse.competition.externalLink).toBe(externalLink);
+    expect(startExistingResponse.competition.imageUrl).toBe(imageUrl);
   });
 });

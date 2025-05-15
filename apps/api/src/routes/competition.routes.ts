@@ -53,6 +53,14 @@ export function configureCompetitionRoutes(
    *                       type: string
    *                       nullable: true
    *                       description: Competition description
+   *                     externalLink:
+   *                       type: string
+   *                       nullable: true
+   *                       description: External URL for competition details
+   *                     imageUrl:
+   *                       type: string
+   *                       nullable: true
+   *                       description: URL to competition image
    *                     startDate:
    *                       type: string
    *                       format: date-time
@@ -174,6 +182,14 @@ export function configureCompetitionRoutes(
    *                       type: string
    *                       nullable: true
    *                       description: Competition description
+   *                     externalLink:
+   *                       type: string
+   *                       nullable: true
+   *                       description: External URL for competition details
+   *                     imageUrl:
+   *                       type: string
+   *                       nullable: true
+   *                       description: URL to competition image
    *                     startDate:
    *                       type: string
    *                       format: date-time
@@ -187,6 +203,10 @@ export function configureCompetitionRoutes(
    *                       type: string
    *                       enum: [PENDING, ACTIVE, COMPLETED]
    *                       description: Competition status
+   *                     crossChainTradingType:
+   *                       type: string
+   *                       enum: [disallowAll, disallowXParent, allow]
+   *                       description: The type of cross-chain trading allowed in this competition
    *                     createdAt:
    *                       type: string
    *                       format: date-time
@@ -311,13 +331,22 @@ export function configureCompetitionRoutes(
    *                         type: string
    *                         nullable: true
    *                         description: Competition description
+   *                         externalLink:
+   *                           type: string
+   *                           nullable: true
+   *                           description: External URL for competition details
+   *                         imageUrl:
+   *                           type: string
+   *                           nullable: true
+   *                           description: URL to competition image
    *                       status:
    *                         type: string
    *                         enum: [PENDING]
    *                         description: Competition status (always PENDING)
-   *                       allowCrossChainTrading:
-   *                         type: boolean
-   *                         description: Whether cross-chain trading is allowed
+   *                       crossChainTradingType:
+   *                         type: string
+   *                         enum: [disallowAll, disallowXParent, allow]
+   *                         description: The type of cross-chain trading allowed in this competition
    *                       createdAt:
    *                         type: string
    *                         format: date-time

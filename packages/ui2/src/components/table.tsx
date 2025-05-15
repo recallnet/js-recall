@@ -13,7 +13,7 @@ export type TableCaptionProps = React.JSX.IntrinsicElements["caption"];
 
 function Table({ className, ref, ...props }: TableProps) {
   return (
-    <div className="w-full overflow-auto">
+    <div className="w-full">
       <table
         ref={ref}
         className={cn("w-full caption-bottom text-sm", className)}
@@ -50,7 +50,7 @@ function TableRow({ className, ref, ...props }: TableRowProps) {
     <tr
       ref={ref}
       className={cn(
-        "hover:bg-accent/50 data-[state=selected]:bg-muted border-b transition-colors",
+        "hover:bg-accent/50 data-[state=selected]:bg-muted border-t transition-colors",
         className,
       )}
       {...props}

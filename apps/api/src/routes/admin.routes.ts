@@ -67,6 +67,10 @@ export function configureAdminRoutes(
    *                       "twitter": "hey_kso"
    *                     }
    *                   }
+   *               imageUrl:
+   *                 type: string
+   *                 description: URL to the team's image
+   *                 example: "https://example.com/team-image.jpg"
    *     responses:
    *       201:
    *         description: Team registered successfully
@@ -100,6 +104,10 @@ export function configureAdminRoutes(
    *                       type: string
    *                       description: API key for the team to use with Bearer authentication. Admin should securely provide this to the team.
    *                       example: abc123def456_ghi789jkl012
+   *                     imageUrl:
+   *                       type: string
+   *                       description: URL to the team's image
+   *                       nullable: true
    *                     metadata:
    *                       type: object
    *                       description: Optional agent metadata if provided
@@ -162,6 +170,10 @@ export function configureAdminRoutes(
    *                         type: string
    *                         format: date-time
    *                         description: Account update timestamp
+   *                       imageUrl:
+   *                         type: string
+   *                         description: URL to the team's image
+   *                         nullable: true
    *       401:
    *         description: Unauthorized - Admin authentication required
    *       500:
@@ -291,11 +303,20 @@ export function configureAdminRoutes(
    *                 type: string
    *                 description: Competition description
    *                 example: A trading competition for the spring semester
-   *               allowCrossChainTrading:
-   *                 type: boolean
-   *                 description: Whether to allow cross-chain trading in this competition
-   *                 default: false
-   *                 example: false
+   *               tradingType:
+   *                 type: string
+   *                 description: The type of cross-chain trading to allow in this competition
+   *                 enum: [disallowAll, disallowXParent, allow]
+   *                 default: disallowAll
+   *                 example: disallowAll
+   *               externalLink:
+   *                 type: string
+   *                 description: External URL for competition details
+   *                 example: https://example.com/competition-details
+   *               imageUrl:
+   *                 type: string
+   *                 description: URL to competition image
+   *                 example: https://example.com/competition-image.jpg
    *     responses:
    *       201:
    *         description: Competition created successfully
@@ -323,9 +344,18 @@ export function configureAdminRoutes(
    *                       type: string
    *                       enum: [PENDING, ACTIVE, COMPLETED]
    *                       description: Competition status
-   *                     allowCrossChainTrading:
-   *                       type: boolean
-   *                       description: Whether cross-chain trading is allowed in this competition
+   *                     externalLink:
+   *                       type: string
+   *                       description: External URL for competition details
+   *                       nullable: true
+   *                     imageUrl:
+   *                       type: string
+   *                       description: URL to competition image
+   *                       nullable: true
+   *                     crossChainTradingType:
+   *                       type: string
+   *                       enum: [disallowAll, disallowXParent, allow]
+   *                       description: The type of cross-chain trading allowed in this competition
    *                     createdAt:
    *                       type: string
    *                       format: date-time
@@ -369,16 +399,25 @@ export function configureAdminRoutes(
    *                 type: string
    *                 description: Competition description (used when creating a new competition)
    *                 example: A trading competition for the spring semester
+   *               externalLink:
+   *                 type: string
+   *                 description: External URL for competition details (used when creating a new competition)
+   *                 example: https://example.com/competition-details
+   *               imageUrl:
+   *                 type: string
+   *                 description: URL to competition image (used when creating a new competition)
+   *                 example: https://example.com/competition-image.jpg
    *               teamIds:
    *                 type: array
    *                 items:
    *                   type: string
    *                 description: Array of team IDs to include in the competition
-   *               allowCrossChainTrading:
-   *                 type: boolean
-   *                 description: Whether to allow cross-chain trading in this competition (used when creating a new competition)
-   *                 default: false
-   *                 example: false
+   *               tradingType:
+   *                 type: string
+   *                 description: Type of cross-chain trading to allow in this competition (used when creating a new competition)
+   *                 enum: [disallowAll, disallowXParent, allow]
+   *                 default: disallowAll
+   *                 example: disallowAll
    *     responses:
    *       200:
    *         description: Competition started successfully
@@ -411,13 +450,22 @@ export function configureAdminRoutes(
    *                       format: date-time
    *                       nullable: true
    *                       description: Competition end date (null if not ended)
+   *                     externalLink:
+   *                       type: string
+   *                       description: External URL for competition details
+   *                       nullable: true
+   *                     imageUrl:
+   *                       type: string
+   *                       description: URL to competition image
+   *                       nullable: true
    *                     status:
    *                       type: string
    *                       enum: [PENDING, ACTIVE, COMPLETED]
    *                       description: Competition status
-   *                     allowCrossChainTrading:
-   *                       type: boolean
-   *                       description: Whether cross-chain trading is allowed in this competition
+   *                     crossChainTradingType:
+   *                       type: string
+   *                       enum: [disallowAll, disallowXParent, allow]
+   *                       description: Type of cross-chain trading allowed in this competition
    *                     teamIds:
    *                       type: array
    *                       items:
@@ -487,13 +535,22 @@ export function configureAdminRoutes(
    *                       type: string
    *                       format: date-time
    *                       description: Competition end date
+   *                     externalLink:
+   *                       type: string
+   *                       description: External URL for competition details
+   *                       nullable: true
+   *                     imageUrl:
+   *                       type: string
+   *                       description: URL to competition image
+   *                       nullable: true
    *                     status:
    *                       type: string
    *                       enum: [PENDING, ACTIVE, COMPLETED]
    *                       description: Competition status (completed)
-   *                     allowCrossChainTrading:
-   *                       type: boolean
-   *                       description: Whether cross-chain trading is allowed in this competition
+   *                     crossChainTradingType:
+   *                       type: string
+   *                       enum: [disallowAll, disallowXParent, allow]
+   *                       description: Type of cross-chain trading allowed in this competition
    *                 leaderboard:
    *                   type: array
    *                   items:
@@ -634,13 +691,22 @@ export function configureAdminRoutes(
    *                       format: date-time
    *                       nullable: true
    *                       description: Competition end date
+   *                     externalLink:
+   *                       type: string
+   *                       description: External URL for competition details
+   *                       nullable: true
+   *                     imageUrl:
+   *                       type: string
+   *                       description: URL to competition image
+   *                       nullable: true
    *                     status:
    *                       type: string
    *                       enum: [PENDING, ACTIVE, COMPLETED]
    *                       description: Competition status
-   *                     allowCrossChainTrading:
-   *                       type: boolean
-   *                       description: Whether cross-chain trading is allowed in this competition
+   *                     crossChainTradingType:
+   *                       type: string
+   *                       enum: [disallowAll, disallowXParent, allow]
+   *                       description: Type of cross-chain trading allowed in this competition
    *                 leaderboard:
    *                   type: array
    *                   items:
@@ -792,6 +858,116 @@ export function configureAdminRoutes(
    *         description: Server error
    */
   router.post("/teams/:teamId/reactivate", controller.reactivateTeam);
+
+  /**
+   * @openapi
+   * /api/admin/teams/search:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: Search for teams
+   *     description: Search for teams based on various criteria like email, name, wallet address, etc.
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: email
+   *         schema:
+   *           type: string
+   *         description: Partial match for team email
+   *       - in: query
+   *         name: name
+   *         schema:
+   *           type: string
+   *         description: Partial match for team name
+   *       - in: query
+   *         name: walletAddress
+   *         schema:
+   *           type: string
+   *         description: Partial match for wallet address
+   *       - in: query
+   *         name: contactPerson
+   *         schema:
+   *           type: string
+   *         description: Partial match for contact person name
+   *       - in: query
+   *         name: active
+   *         schema:
+   *           type: boolean
+   *         description: Filter by active status (true/false)
+   *       - in: query
+   *         name: includeAdmins
+   *         schema:
+   *           type: boolean
+   *         description: Whether to include admin accounts in results (default is false)
+   *     responses:
+   *       200:
+   *         description: List of teams matching search criteria
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 teams:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         description: Team ID
+   *                       name:
+   *                         type: string
+   *                         description: Team name
+   *                       email:
+   *                         type: string
+   *                         description: Team email
+   *                       contactPerson:
+   *                         type: string
+   *                         description: Contact person name
+   *                       walletAddress:
+   *                         type: string
+   *                         description: Ethereum wallet address
+   *                       active:
+   *                         type: boolean
+   *                         description: Whether the team is active
+   *                       deactivationReason:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Reason for deactivation if inactive
+   *                       deactivationDate:
+   *                         type: string
+   *                         format: date-time
+   *                         nullable: true
+   *                         description: Date of deactivation if inactive
+   *                       imageUrl:
+   *                         type: string
+   *                         description: URL to the team's image
+   *                         nullable: true
+   *                       isAdmin:
+   *                         type: boolean
+   *                         description: Whether the team has admin privileges
+   *                       metadata:
+   *                         type: object
+   *                         nullable: true
+   *                         description: Optional agent metadata
+   *                       createdAt:
+   *                         type: string
+   *                         format: date-time
+   *                         description: Account creation timestamp
+   *                       updatedAt:
+   *                         type: string
+   *                         format: date-time
+   *                         description: Account update timestamp
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       500:
+   *         description: Server error
+   */
+  router.get("/teams/search", controller.searchTeams);
 
   return router;
 }

@@ -1,7 +1,6 @@
 // Forked & converted to use `bigint` & `Uint8Array`
 // Source: https://github.com/Zondax/izari-filecoin/blob/master/src/address/utils.ts
 import blake from "blakejs";
-import { compare } from "uint8arrays/compare";
 
 import {
   ACTOR_ID_ETHEREUM_MASK,
@@ -10,6 +9,7 @@ import {
   Network,
   NetworkPrefix,
 } from "../artifacts/address.js";
+import { compareUint8Arrays } from "./convert.js";
 
 /**
  * Calculates the checksum of a given payload according to filecoin specifications
@@ -84,6 +84,7 @@ export const isMaskedIdEthAddress = (ethAddr: Uint8Array) => {
 
   return (
     ethAddr.length === ETH_ADDRESS_LEN &&
-    compare(idMask, ethAddr.slice(0, ACTOR_ID_ETHEREUM_MASK_LEN)) === 0
+    compareUint8Arrays(idMask, ethAddr.slice(0, ACTOR_ID_ETHEREUM_MASK_LEN)) ===
+      0
   );
 };
