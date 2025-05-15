@@ -40,7 +40,6 @@ import { tool$healthGetApiHealth } from "./tools/healthGetApiHealth.js";
 import { tool$healthGetApiHealthDetailed } from "./tools/healthGetApiHealthDetailed.js";
 import { tool$priceGetApiPrice } from "./tools/priceGetApiPrice.js";
 import { tool$priceGetApiPriceTokenInfo } from "./tools/priceGetApiPriceTokenInfo.js";
-import { tool$publicPostApiPublicTeamsRegister } from "./tools/publicPostApiPublicTeamsRegister.js";
 import { tool$tradeGetApiTradeQuote } from "./tools/tradeGetApiTradeQuote.js";
 import { tool$tradePostApiTradeExecute } from "./tools/tradePostApiTradeExecute.js";
 
@@ -54,7 +53,7 @@ export function createMCPServer(deps: {
 }) {
   const server = new McpServer({
     name: "ApiSDK",
-    version: "0.0.6",
+    version: "0.0.0",
   });
 
   const client = new ApiSDKCore({
@@ -111,7 +110,6 @@ export function createMCPServer(deps: {
   tool(tool$healthGetApiHealthDetailed);
   tool(tool$priceGetApiPrice);
   tool(tool$priceGetApiPriceTokenInfo);
-  tool(tool$publicPostApiPublicTeamsRegister);
   tool(tool$tradePostApiTradeExecute);
   tool(tool$tradeGetApiTradeQuote);
 
