@@ -26,8 +26,10 @@ export default function DeveloperProfileForm({
       name: "",
       email: "",
       website: "",
+      description: "",
     },
   );
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Update formData when initialData changes
   useEffect(() => {
@@ -36,14 +38,45 @@ export default function DeveloperProfileForm({
     }
   }, [initialData]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Clear error for the field being edited
+    if (errors[name]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Name is required";
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (onNext) onNext(formData);
+
+    if (validateForm() && onNext) {
+      onNext(formData);
+    }
   };
 
   return (
@@ -72,7 +105,7 @@ export default function DeveloperProfileForm({
             {/* Name Field */}
             <div className="flex w-full flex-col gap-1.5">
               <label className="font-['Replica_LL',sans-serif] text-base leading-6 tracking-wider text-[#93A5BA]">
-                Name
+                Name *
               </label>
               <input
                 type="text"
@@ -80,18 +113,24 @@ export default function DeveloperProfileForm({
                 value={formData.name}
                 onChange={handleChange}
                 placeholder="E.g.: Walter White"
-                className="w-full rounded-md border border-[#43505F] bg-[#1D1F2B] px-3 py-2 font-['Replica_LL',sans-serif] text-lg text-white placeholder:text-[#43505F] focus:border-[#62A0DD] focus:outline-none"
+                className={`w-full rounded-md border ${errors.name ? "border-red-500" : "border-[#43505F]"} bg-[#1D1F2B] px-3 py-2 font-['Replica_LL',sans-serif] text-lg text-white placeholder:text-[#43505F] focus:border-[#62A0DD] focus:outline-none`}
               />
-              <p className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-[#596E89]">
-                The name you go by professionally, or how you'd like to be
-                known.
-              </p>
+              {errors.name ? (
+                <p className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-red-500">
+                  {errors.name}
+                </p>
+              ) : (
+                <p className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-[#596E89]">
+                  The name you go by professionally, or how you&apos;d like to
+                  be known.
+                </p>
+              )}
             </div>
 
             {/* Email Field */}
             <div className="flex w-full flex-col gap-1.5">
               <label className="font-['Replica_LL',sans-serif] text-base leading-6 tracking-wider text-[#93A5BA]">
-                Email
+                Email *
               </label>
               <input
                 type="email"
@@ -99,11 +138,35 @@ export default function DeveloperProfileForm({
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="E.g.: walterwhite@gmail.com"
-                className="w-full rounded-md border border-[#43505F] bg-[#1D1F2B] px-3 py-2 font-['Replica_LL',sans-serif] text-lg text-white placeholder:text-[#43505F] focus:border-[#62A0DD] focus:outline-none"
+                className={`w-full rounded-md border ${errors.email ? "border-red-500" : "border-[#43505F]"} bg-[#1D1F2B] px-3 py-2 font-['Replica_LL',sans-serif] text-lg text-white placeholder:text-[#43505F] focus:border-[#62A0DD] focus:outline-none`}
+              />
+              {errors.email ? (
+                <p className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-red-500">
+                  {errors.email}
+                </p>
+              ) : (
+                <p className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-[#596E89]">
+                  We&apos;ll email your API key here - make sure it&apos;s one
+                  you check often.
+                </p>
+              )}
+            </div>
+
+            {/* Description Field */}
+            <div className="flex w-full flex-col gap-1.5">
+              <label className="font-['Replica_LL',sans-serif] text-base leading-6 tracking-wider text-[#93A5BA]">
+                Description
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Tell us about yourself or your project..."
+                rows={4}
+                className="w-full resize-none rounded-md border border-[#43505F] bg-[#1D1F2B] px-3 py-2 font-['Replica_LL',sans-serif] text-lg text-white placeholder:text-[#43505F] focus:border-[#62A0DD] focus:outline-none"
               />
               <p className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-[#596E89]">
-                We'll email your API key here - make sure it's one you check
-                often.
+                A brief description about you or your development focus.
               </p>
             </div>
 
@@ -160,4 +223,5 @@ export interface ProfileFormData {
   name: string;
   email: string;
   website: string;
+  description: string;
 }

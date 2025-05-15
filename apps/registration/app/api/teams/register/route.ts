@@ -32,7 +32,7 @@ function verifyToken(token: string) {
 
 /**
  * POST handler for team registration
- * This endpoint uses the public registration API and doesn't require an API key
+ * This endpoint uses the admin-restricted registration API and requires an admin API key
  *
  * @param request Next.js request object
  * @returns JSON response with registration result
@@ -92,8 +92,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Access API URL directly from environment variables
+    // Access API URL and admin API key from environment variables
     const apiUrl = process.env.API_URL;
+    const adminApiKey = process.env.ADMIN_API_KEY;
+
     if (!apiUrl) {
       return NextResponse.json(
         {
@@ -104,8 +106,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create API client without API key for public endpoint
-    const apiClient = new TeamApiClient(apiUrl);
+    if (!adminApiKey) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Missing ADMIN_API_KEY in environment variables",
+        },
+        { status: 500 },
+      );
+    }
+
+    // Create API client with admin API key
+    const apiClient = new TeamApiClient(apiUrl, adminApiKey);
 
     // Call the registration endpoint
     const team = await apiClient.registerTeam({

@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from "axios";
 
-import { TeamRegistrationRequest } from "./api";
+import { Agent, TeamRegistrationRequest } from "./api";
 
 /**
  * Team API client for server-side operations
@@ -83,19 +83,14 @@ export class TeamApiClient {
   }
 
   /**
-   * Register a new team (public endpoint, no API key required)
+   * Register a new team (requires admin API key)
    */
   async registerTeam(data: TeamRegistrationRequest) {
     try {
-      // Use a direct axios instance without the auth interceptor for this public endpoint
-      const response = await axios.post(
-        `${this.baseUrl}/api/public/teams/register`,
+      // Use the authenticated axiosInstance to call the admin-restricted endpoint
+      const response = await this.axiosInstance.post(
+        `/api/admin/teams/register`,
         data,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
       );
       return response.data.team;
     } catch (error) {
@@ -146,6 +141,62 @@ export class TeamApiClient {
       return response.data.teams;
     } catch (error) {
       throw this.handleApiError(error, "search teams");
+    }
+  }
+
+  /**
+   * Get a team's API key (requires admin API key)
+   *
+   * @param teamId The ID of the team whose API key should be retrieved
+   * @returns Object containing team details and API key
+   */
+  async getTeamApiKey(
+    teamId: string,
+  ): Promise<{ id: string; name: string; apiKey: string }> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/admin/teams/${teamId}/key`,
+      );
+      return response.data.team;
+    } catch (error) {
+      throw this.handleApiError(error, "get team API key");
+    }
+  }
+
+  /**
+   * Get upcoming competitions (competitions with status=PENDING)
+   *
+   * @returns Array of upcoming competitions
+   */
+  async getUpcomingCompetitions() {
+    try {
+      const response = await this.axiosInstance.get(
+        "/api/competition/upcoming",
+      );
+      return response.data.competitions;
+    } catch (error) {
+      throw this.handleApiError(error, "get upcoming competitions");
+    }
+  }
+
+  /**
+   * Update team profile including metadata (agents)
+   *
+   * @param profileData The updated profile data
+   * @returns Updated team data
+   */
+  async updateTeamProfile(profileData: {
+    contactPerson?: string;
+    metadata?: Agent[];
+    imageUrl?: string;
+  }) {
+    try {
+      const endpoint = `/api/account/profile`;
+
+      const response = await this.axiosInstance.put(endpoint, profileData);
+      return response.data.team;
+    } catch (error) {
+      throw this.handleApiError(error, "update team profile");
     }
   }
 }

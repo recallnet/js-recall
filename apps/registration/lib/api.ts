@@ -35,6 +35,8 @@ export interface Agent {
   name?: string;
   /** Agent version */
   version?: string;
+  /** Agent avatar URL */
+  imageUrl?: string;
   /** Agent URL */
   url?: string;
   /** Agent description */
@@ -64,6 +66,8 @@ export interface TeamRegistrationRequest {
   teamName: string;
   /** Team email address */
   email: string;
+  /** Description */
+  description?: string;
   /** Name of the contact person */
   contactPerson: string;
   /** Ethereum wallet address (must start with 0x) */
@@ -82,6 +86,8 @@ export interface Team {
   name: string;
   /** Team email */
   email: string;
+  /** Description */
+  description?: string;
   /** Contact person name */
   contactPerson: string;
   /** Ethereum wallet address */
@@ -102,6 +108,18 @@ export interface Team {
   deactivationReason?: string | null;
   /** Whether the team is an admin */
   isAdmin?: boolean;
+}
+
+/**
+ * Team API key response interface
+ */
+export interface TeamApiKeyResponse {
+  /** Team ID */
+  id: string;
+  /** Team name */
+  name: string;
+  /** API key */
+  apiKey: string;
 }
 
 /**
@@ -210,6 +228,103 @@ export async function getTeamByWalletAddress(
       `Error fetching team by wallet address ${walletAddress}:`,
       error,
     );
+    return null;
+  }
+}
+
+/**
+ * Competition interface based on the API specification
+ */
+export interface Competition {
+  /** Competition ID */
+  id: string;
+  /** Competition name */
+  name: string;
+  /** Competition description (optional) */
+  description?: string;
+  /** External link for competition details (optional) */
+  externalLink?: string;
+  /** URL to competition image (optional) */
+  imageUrl?: string;
+  /** Competition status */
+  status: "PENDING" | "ACTIVE" | "CLOSED";
+  /** Type of cross-chain trading allowed in this competition */
+  crossChainTradingType: "disallowAll" | "disallowXParent" | "allow";
+  /** When the competition was created */
+  createdAt: string;
+  /** When the competition was last updated */
+  updatedAt: string;
+}
+
+/**
+ * Get all upcoming competitions (status=PENDING)
+ *
+ * @returns Array of upcoming competitions
+ */
+export async function getUpcomingCompetitions(): Promise<Competition[]> {
+  try {
+    const response = await fetch("/api/competitions/upcoming", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      console.error(
+        data.error ||
+          `Failed to fetch upcoming competitions with status: ${response.status}`,
+      );
+      return []; // Return empty array instead of throwing error
+    }
+
+    return data.competitions;
+  } catch (error) {
+    console.error("Error fetching upcoming competitions:", error);
+    return []; // Return empty array for any other errors
+  }
+}
+
+/**
+ * Update team profile, including the option to add or remove agents from metadata
+ *
+ * @param updateData - Data to update the team profile
+ * @param apiKey - The team's API key for authentication
+ * @returns The updated team data
+ */
+export async function updateTeamProfile(
+  updateData: {
+    contactPerson?: string;
+    metadata?: Agent[];
+    imageUrl?: string;
+  },
+  apiKey: string,
+): Promise<Team | null> {
+  try {
+    const response = await fetch("/api/team/update-profile", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(updateData),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      console.error(
+        data.error ||
+          `Failed to update profile with status: ${response.status}`,
+      );
+      return null;
+    }
+
+    return data.team;
+  } catch (error) {
+    console.error("Error updating team profile:", error);
     return null;
   }
 }

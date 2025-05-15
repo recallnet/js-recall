@@ -51,6 +51,12 @@ export async function GET(request: NextRequest) {
       const teams = await client.searchTeams(searchParams);
 
       if (teams && teams.length > 0) {
+        // get the id of the first team
+        const teamId = teams[0].id;
+        // fetch the api key for the team
+        const apiKey = await client.getTeamApiKey(teamId);
+        // Add the api key to the team object
+        teams[0].apiKey = apiKey.apiKey;
         // Return the first matching team
         return NextResponse.json({ success: true, team: teams[0] });
       } else {

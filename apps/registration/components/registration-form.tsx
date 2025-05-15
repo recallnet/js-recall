@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle, Copy, Plus, Trash } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
-import { useAccount } from "wagmi";
 
 import { Button } from "@recallnet/ui/components/shadcn/button";
 import {

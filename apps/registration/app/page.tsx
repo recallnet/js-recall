@@ -2,8 +2,8 @@
 
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 
 import { Button } from "@recallnet/ui/components/shadcn/button";
@@ -15,7 +15,9 @@ import { useAuthContext } from "@/components/auth-provider";
 import DeveloperProfileForm, {
   ProfileFormData,
 } from "@/components/developer-profile-form";
+import RegistrationSuccess from "@/components/registration-success";
 import { SignInButton } from "@/components/sign-in-button";
+import { getTeamByWalletAddress } from "@/lib/api";
 
 /**
  * Homepage component for the registration application
@@ -24,18 +26,22 @@ import { SignInButton } from "@/components/sign-in-button";
  */
 export default function Home() {
   const { address } = useAccount();
-  const { isAuthenticated, isLoading } = useAuthContext();
+  const { isAuthenticated, isLoading: authLoading, wallet } = useAuthContext();
+  const router = useRouter();
+  const [isCheckingProfile, setIsCheckingProfile] = useState(false);
+  const [hasProfile, setHasProfile] = useState(false);
   const [registrationStep, setRegistrationStep] = useState<
-    "welcome" | "profile" | "agent"
+    "welcome" | "profile" | "agent" | "success"
   >("welcome");
   const [profileData, setProfileData] = useState<ProfileFormData>({
     name: "",
     email: "",
     website: "",
+    description: "",
   });
   const [agentData, setAgentData] = useState<AgentFormData>({
     name: "",
-    primarySkill: "",
+    selectedSkills: [],
     customSkill: "",
     repoUrl: "",
     description: "",
@@ -43,6 +49,28 @@ export default function Home() {
     twitter: "",
     telegram: "",
   });
+
+  // Check if the user already has a profile when they connect their wallet
+  useEffect(() => {
+    const checkExistingProfile = async () => {
+      if (wallet && isAuthenticated && !authLoading) {
+        try {
+          setIsCheckingProfile(true);
+          const team = await getTeamByWalletAddress(wallet);
+
+          if (team) {
+            setHasProfile(true);
+          }
+        } catch (error) {
+          console.error("Error checking for existing profile:", error);
+        } finally {
+          setIsCheckingProfile(false);
+        }
+      }
+    };
+
+    checkExistingProfile();
+  }, [wallet, isAuthenticated, authLoading, router]);
 
   // Handle next button from profile form
   const handleProfileNext = (data: ProfileFormData) => {
@@ -60,8 +88,18 @@ export default function Home() {
   const handleAgentNext = (data: AgentFormData) => {
     console.log("Agent data:", data);
     setAgentData(data);
-    // Here you would typically save both profile and agent data and proceed to next step
-    // For now, we'll just log it
+
+    // Process the complete registration data
+    const registrationData = {
+      profile: profileData,
+      agent: data,
+    };
+
+    console.log("Complete registration data:", registrationData);
+
+    // The API call is now handled in the AgentRegistrationForm component
+    // Here we just move to the success screen
+    setRegistrationStep("success");
   };
 
   // Handle back button from agent form
@@ -72,17 +110,26 @@ export default function Home() {
   // Handle skip button from agent form
   const handleAgentSkip = () => {
     console.log("Agent registration skipped");
-    // Here you would typically save profile data only and proceed to next step
-    // For now, we'll just log it
+
+    // Process just the profile data
+    const registrationData = {
+      profile: profileData,
+      agent: null,
+    };
+
+    console.log("Registration data (without agent):", registrationData);
+
+    // Move to the success screen
+    setRegistrationStep("success");
   };
 
   // Get the appropriate button based on auth state
   const getAuthButton = () => {
     if (!address) {
-      return <SignInButton useCustomStyling={true} />;
+      return <SignInButton />;
     }
 
-    if (isLoading) {
+    if (authLoading || isCheckingProfile) {
       return (
         <Button
           className="w-full rounded-none bg-[#0057AD] py-5 transition-colors hover:bg-[#0066cc]"
@@ -97,18 +144,34 @@ export default function Home() {
     }
 
     if (!isAuthenticated) {
-      return <SignInButton useCustomStyling={true} />;
+      return <SignInButton />;
     }
 
     return (
-      <Button
-        onClick={() => setRegistrationStep("profile")}
-        className="w-full rounded-none bg-[#0057AD] py-5 transition-colors hover:bg-[#0066cc]"
-      >
-        <span className="font-['Trim_Mono',monospace] text-sm font-semibold uppercase tracking-wider text-[#E9EDF1]">
-          Complete Your Profile
-        </span>
-      </Button>
+      <>
+        {hasProfile ? (
+          <Button
+            onClick={() => router.push("/account")}
+            className="w-full rounded-none bg-[#0057AD] py-5 transition-colors hover:bg-[#0066cc]"
+          >
+            <span className="font-['Trim_Mono',monospace] text-sm font-semibold uppercase tracking-wider text-[#E9EDF1]">
+              Account
+            </span>
+          </Button>
+        ) : (
+          <Button
+            onClick={() => setRegistrationStep("profile")}
+            className="w-full rounded-none bg-[#0057AD] py-5 transition-colors hover:bg-[#0066cc]"
+          >
+            <span className="font-['Trim_Mono',monospace] text-sm font-semibold uppercase tracking-wider text-[#E9EDF1]">
+              Complete Your Profile
+            </span>
+          </Button>
+        )}
+        <div className="mt-4">
+          <SignInButton />
+        </div>
+      </>
     );
   };
 
@@ -126,10 +189,13 @@ export default function Home() {
         ) : isAuthenticated && registrationStep === "agent" ? (
           <AgentRegistrationForm
             initialData={agentData}
+            profileData={profileData}
             onBack={handleAgentBack}
             onNext={handleAgentNext}
             onSkip={handleAgentSkip}
           />
+        ) : isAuthenticated && registrationStep === "success" ? (
+          <RegistrationSuccess userName={profileData.name} />
         ) : (
           <>
             {/* Hero image - improved centering */}

@@ -2,79 +2,66 @@
 
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { Loader2 } from "lucide-react";
-import { CSSProperties } from "react";
-import { useAccount } from "wagmi";
+import { useState } from "react";
+import { useAccount, useDisconnect } from "wagmi";
 
 import { Button } from "@recallnet/ui/components/shadcn/button";
 
 import { useAuthContext } from "@/components/auth-provider";
+import { logout } from "@/lib/auth";
 
 /**
  * SignIn button component
  *
  * Handles the sign-in flow with the wallet
  */
-export function SignInButton({ className = "", useCustomStyling = false }) {
+export function SignInButton() {
   const { openConnectModal } = useConnectModal();
+  const { disconnect } = useDisconnect();
   const { isConnected } = useAccount();
-  const { isAuthenticated, signIn, isLoading, error, isSigningIn } =
-    useAuthContext();
-  // No longer need local signing state as we use the one from auth context
-
-  console.log("Button render state:", {
-    isLoading,
-    isSigningIn,
-    isAuthenticated,
-    error,
-  });
+  const { isAuthenticated, signIn, isLoading, error } = useAuthContext();
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
   const handleSignIn = async () => {
     if (!isConnected) {
-      // Open connect modal if not connected
       openConnectModal?.();
+      setIsSigningIn(true);
       return;
     }
 
-    console.log("Starting sign-in from button");
-    await signIn();
-    console.log("Sign-in completed from button");
+    try {
+      setIsSigningIn(true);
+      await signIn();
+    } finally {
+      setIsSigningIn(false);
+    }
   };
 
-  // Button is loading if either global loading state or signing state is true
+  if (isAuthenticated) {
+    return (
+      <Button
+        variant="outline"
+        onClick={async () => {
+          await logout();
+          disconnect();
+        }}
+        className="w-full rounded-none border border-[#303846] bg-transparent py-5 transition-colors hover:bg-[#0e1218]"
+      >
+        <span className="font-['Trim_Mono',monospace] text-sm font-semibold uppercase tracking-wider text-[#596E89]">
+          Log Out
+        </span>
+      </Button>
+    );
+  }
+
   const isButtonLoading = isLoading || isSigningIn;
 
-  // Custom styling option for the homepage
-  const customButtonStyle: CSSProperties = useCustomStyling
-    ? {
-        width: "100%",
-        padding: "1.25rem 0",
-        backgroundColor: "#0057AD",
-        borderRadius: "0",
-        fontSize: "0.875rem",
-        fontFamily: "'Trim Mono', monospace",
-        fontWeight: 600,
-        textTransform: "uppercase" as const,
-        letterSpacing: "0.1em",
-      }
-    : {};
-
-  const customButtonClass = useCustomStyling
-    ? "w-full py-5 bg-[#0057AD] hover:bg-[#0066cc] transition-colors rounded-none text-sm font-semibold uppercase tracking-wider"
-    : "";
-
-  const customErrorClass = useCustomStyling
-    ? "text-center text-red-500 text-sm mt-2 font-['Trim_Mono',monospace]"
-    : "text-destructive text-sm";
-
   return (
-    <div
-      className={`${useCustomStyling ? "w-full" : "space-y-2"} ${className}`}
-    >
+    <div className="space-y-2">
       <Button
         onClick={handleSignIn}
         disabled={isButtonLoading}
-        className={customButtonClass}
-        style={customButtonStyle}
+        className="w-full rounded-none bg-[#0057AD] py-5 transition-colors hover:bg-[#0066cc]"
       >
         {isButtonLoading ? (
           <>
@@ -82,13 +69,17 @@ export function SignInButton({ className = "", useCustomStyling = false }) {
             {isConnected ? "Signing In..." : "Connecting..."}
           </>
         ) : isConnected ? (
-          "Sign In"
+          <span className="font-['Trim_Mono',monospace] text-sm font-semibold uppercase tracking-wider text-[#E9EDF1]">
+            Sign In
+          </span>
         ) : (
-          "Connect Wallet"
+          <span className="font-['Trim_Mono',monospace] text-sm font-semibold uppercase tracking-wider text-[#E9EDF1]">
+            Connect Wallet
+          </span>
         )}
       </Button>
 
-      {error && <p className={customErrorClass}>{error}</p>}
+      {error && <p className="text-destructive text-sm">{error}</p>}
     </div>
   );
 }
