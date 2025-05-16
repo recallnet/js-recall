@@ -830,27 +830,6 @@ Get detailed token information including price and specific chain
 | --------------- | ------ |
 | BearerAuth      |        |
 
-### /api/public/teams/register
-
-#### POST
-
-##### Summary:
-
-Register a new team
-
-##### Description:
-
-Public endpoint to register a new team. Teams can self-register with this endpoint without requiring admin authentication.
-
-##### Responses
-
-| Code | Description                                           |
-| ---- | ----------------------------------------------------- |
-| 201  | Team registered successfully                          |
-| 400  | Missing required parameters or invalid wallet address |
-| 409  | Team with this email or wallet address already exists |
-| 500  | Server error                                          |
-
 ### /api/trade/execute
 
 #### POST

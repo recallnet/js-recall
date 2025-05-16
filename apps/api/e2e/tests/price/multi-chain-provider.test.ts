@@ -96,7 +96,7 @@ describe("Multi-Chain Provider Tests", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register a team and get an authenticated client
-    const result = await registerTeamAndGetClient(adminClient);
+    const result = await registerTeamAndGetClient(adminApiKey);
     client = result.client;
 
     // Log the API key to verify it's correctly set
