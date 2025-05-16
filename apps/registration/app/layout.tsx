@@ -8,8 +8,7 @@ import { fontMono, fontSans } from "@recallnet/fonts";
 import { Toaster } from "@recallnet/ui/components/shadcn/sonner";
 
 import { Providers } from "@/components/providers";
-
-import { authOptions } from "./api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 
 export const metadata: Metadata = {
   title: "Recall Agent Registration",

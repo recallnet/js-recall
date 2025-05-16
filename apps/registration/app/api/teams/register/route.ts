@@ -2,9 +2,8 @@ import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 import { TeamApiClient } from "@/lib/api-client";
+import { authOptions } from "@/lib/auth";
 import { registrationSchema } from "@/lib/validation";
-
-import { authOptions } from "../../auth/[...nextauth]/route";
 
 /**
  * POST handler for team registration
