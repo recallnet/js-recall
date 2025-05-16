@@ -1,12 +1,12 @@
-import {NextRequest, NextResponse} from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-import {agents} from "@/data-mock/fixtures";
-import {applyFilters, applySort, paginate} from "@/utils";
+import { agents } from "@/data-mock/fixtures";
+import { applyFilters, applySort, paginate } from "@/utils";
 
 // This is a simplified leaderboard implementation
 // In a real application, you would likely have a more complex scoring system
 export async function GET(req: NextRequest) {
-  const {searchParams} = new URL(req.url);
+  const { searchParams } = new URL(req.url);
   const type = searchParams.get("type") ?? undefined;
   const filter = type ? `type:${type}` : undefined;
   const sort = searchParams.get("sort") ?? "-score"; // Default sort by score descending
@@ -30,7 +30,8 @@ export async function GET(req: NextRequest) {
     imageUrl: agent.imageUrl,
     metadata: agent.metadata,
     score: agent.score || 0,
-    rank: 0, // Will be calculated after sorting
+    rank: 0,
+    stats: agent.stats,
   }));
 
   let rows = leaderboard;
@@ -42,17 +43,15 @@ export async function GET(req: NextRequest) {
     entry.rank = index + 1;
   });
 
-  const {metadata, data} = paginate(rows, limit, offset);
+  const { metadata, data } = paginate(rows, limit, offset);
 
-  // Add stats to the response
-  const responseMetadata = {
-    ...metadata,
+  return NextResponse.json({
+    metadata,
     stats: {
       activeAgents,
       totalTrades,
       totalVolume,
     },
-  };
-
-  return NextResponse.json({metadata: responseMetadata, agents: data});
+    agents: data,
+  });
 }

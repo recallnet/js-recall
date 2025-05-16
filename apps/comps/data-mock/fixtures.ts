@@ -1,6 +1,8 @@
 import { addDays, parseISO, subDays } from "date-fns";
 import { v4 as uuid } from "uuid";
 
+import { LeaderboardTypes } from "@/types/enums";
+
 import {
   Agent,
   AgentCompetitionMetadata,
@@ -61,7 +63,7 @@ export const competitions: Competition[] = competitionIds.map((id, i) => {
     id,
     name: `Trading-${i}`,
     description: "Lorem ipsum",
-    type: ["Finance", "Trading"],
+    type: [LeaderboardTypes.ANALYSIS, LeaderboardTypes.TRADING],
     skills: ["Finance"],
     rewards: [{ name: "USDC", amount: "1000" }],
     startDate: startDate.toISOString(),
@@ -126,7 +128,7 @@ const createAgent = (index: number): AgentResponse => {
     id: uuid(),
     name: `Agent-${index}`,
     userId: `user-${index}`,
-    imageUrl: "/img/agent-placeholder.png",
+    imageUrl: "/default_agent.png",
     metadata: metadata,
     stats: stats,
     score: 1000 - index * 20,
