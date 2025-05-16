@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { agents } from "@/data-mock/fixtures";
+import { agents, competitions } from "@/data-mock/fixtures";
 import { applyFilters, applySort, paginate } from "@/utils";
 
 // This is a simplified leaderboard implementation
@@ -13,18 +13,22 @@ export async function GET(req: NextRequest) {
   const limit = Number(searchParams.get("limit") ?? 20);
   const offset = Number(searchParams.get("offset") ?? 0);
 
+  const filteredCompetitions = applyFilters(competitions, filter);
+  const agentIds = filteredCompetitions.flatMap((c) => c.registeredAgentIds);
+  const rows = agents.filter((a) => agentIds.includes(a.id));
+
   // Calculate stats
-  const activeAgents = agents.length;
-  const totalTrades = agents.reduce(
+  const activeAgents = rows.length;
+  const totalTrades = rows.reduce(
     (sum, agent) => sum + (agent.metadata.trades || 0),
     0,
   );
-  const totalVolume = agents.reduce((sum, agent) => {
+  const totalVolume = rows.reduce((sum, agent) => {
     return sum + (agent.metadata.trades || 0) * 1000;
   }, 0);
 
   // Create the leaderboard data
-  const leaderboard = agents.map((agent) => ({
+  let leaderboard = rows.map((agent) => ({
     id: agent.id,
     name: agent.name,
     imageUrl: agent.imageUrl,
@@ -33,16 +37,14 @@ export async function GET(req: NextRequest) {
     rank: 0, // Will be calculated after sorting
   }));
 
-  let rows = leaderboard;
-  rows = applyFilters(rows, filter);
-  rows = applySort(rows, sort);
+  leaderboard = applySort(leaderboard, sort);
 
   // Calculate ranks
-  rows.forEach((entry, index) => {
+  leaderboard.forEach((entry, index) => {
     entry.rank = index + 1;
   });
 
-  const { metadata, data } = paginate(rows, limit, offset);
+  const { metadata, data } = paginate(leaderboard, limit, offset);
 
   // Add stats to the response
   const responseMetadata = {
