@@ -67,9 +67,8 @@ describe("Public Registration API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register a team so we can use it when creating a competition
     // Register a team
-    const { client: baseClient } = await registerTeamAndGetClient(adminClient);
+    const { client: baseClient } = await registerTeamAndGetClient(adminApiKey);
 
     const teamProfile = (await baseClient.getProfile()) as TeamProfileResponse;
 
