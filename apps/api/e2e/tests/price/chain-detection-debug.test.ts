@@ -58,7 +58,7 @@ describe("Chain Detection Debug", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register a team and get an authenticated client
-    const result = await registerTeamAndGetClient(adminClient);
+    const result = await registerTeamAndGetClient(adminApiKey);
     client = result.client;
 
     // Initialize price tracker

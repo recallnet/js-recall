@@ -2792,17 +2792,17 @@
                           "description": {
                             "type": "string",
                             "nullable": true,
-                            "description": "Competition description",
-                            "externalLink": {
-                              "type": "string",
-                              "nullable": true,
-                              "description": "External URL for competition details"
-                            },
-                            "imageUrl": {
-                              "type": "string",
-                              "nullable": true,
-                              "description": "URL to competition image"
-                            }
+                            "description": "Competition description"
+                          },
+                          "externalLink": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "External URL for competition details"
+                          },
+                          "imageUrl": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "URL to competition image"
                           },
                           "status": {
                             "type": "string",
@@ -3052,8 +3052,8 @@
                     "chain": {
                       "type": "string",
                       "enum": [
-                        "EVM",
-                        "SVM"
+                        "evm",
+                        "svm"
                       ],
                       "description": "Blockchain type of the token"
                     },
@@ -3177,8 +3177,8 @@
                     "chain": {
                       "type": "string",
                       "enum": [
-                        "EVM",
-                        "SVM"
+                        "evm",
+                        "svm"
                       ],
                       "description": "Blockchain type of the token"
                     },
