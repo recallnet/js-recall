@@ -3,23 +3,19 @@ import { foundry } from "@wagmi/cli/plugins";
 import { Abi } from "viem";
 
 import {
+  BLOBS_ACTOR_ADDRESS,
   DEVNET_CHAIN_ID,
   DEVNET_GATEWAY_MANAGER_FACET_ADDRESS,
   DEVNET_SUBNET_GETTER_FACET_ADDRESS,
-  LOCALNET_BLOB_MANAGER_ADDRESS,
-  LOCALNET_BUCKET_MANAGER_ADDRESS,
   LOCALNET_CHAIN_ID,
-  LOCALNET_CREDIT_MANAGER_ADDRESS,
   LOCALNET_GATEWAY_MANAGER_FACET_ADDRESS,
   LOCALNET_PARENT_CHAIN_ID,
   LOCALNET_PARENT_ERC20_ADDRESS,
   LOCALNET_PARENT_GATEWAY_MANAGER_FACET_ADDRESS,
   LOCALNET_PARENT_SUBNET_GETTER_FACET_ADDRESS,
   LOCALNET_SUBNET_GETTER_FACET_ADDRESS,
-  TESTNET_BLOB_MANAGER_ADDRESS,
-  TESTNET_BUCKET_MANAGER_ADDRESS,
+  MACHINE_ACTOR_ADDRESS,
   TESTNET_CHAIN_ID,
-  TESTNET_CREDIT_MANAGER_ADDRESS,
   TESTNET_GATEWAY_MANAGER_FACET_ADDRESS,
   TESTNET_PARENT_CHAIN_ID,
   TESTNET_PARENT_ERC20_ADDRESS,
@@ -545,23 +541,23 @@ export default defineConfig({
     foundry({
       project: "./contracts",
       include: [
-        "BlobManager.sol/BlobManager.json",
-        "BucketManager.sol/BucketManager.json",
-        "CreditManager.sol/CreditManager.json",
+        "IBlobsFacade.sol/IBlobsFacade.json",
+        "IBucketFacade.sol/IBucketFacade.json",
+        "ICreditFacade.sol/ICreditFacade.json",
         "IMachineFacade.sol/IMachineFacade.json",
       ],
       deployments: {
-        BlobManager: {
-          [TESTNET_CHAIN_ID]: TESTNET_BLOB_MANAGER_ADDRESS,
-          [LOCALNET_CHAIN_ID]: LOCALNET_BLOB_MANAGER_ADDRESS,
+        IBlobsFacade: {
+          [TESTNET_CHAIN_ID]: BLOBS_ACTOR_ADDRESS,
+          [LOCALNET_CHAIN_ID]: BLOBS_ACTOR_ADDRESS,
         },
-        BucketManager: {
-          [TESTNET_CHAIN_ID]: TESTNET_BUCKET_MANAGER_ADDRESS,
-          [LOCALNET_CHAIN_ID]: LOCALNET_BUCKET_MANAGER_ADDRESS,
+        ICreditFacade: {
+          [TESTNET_CHAIN_ID]: BLOBS_ACTOR_ADDRESS,
+          [LOCALNET_CHAIN_ID]: BLOBS_ACTOR_ADDRESS,
         },
-        CreditManager: {
-          [TESTNET_CHAIN_ID]: TESTNET_CREDIT_MANAGER_ADDRESS,
-          [LOCALNET_CHAIN_ID]: LOCALNET_CREDIT_MANAGER_ADDRESS,
+        IMachineFacade: {
+          [TESTNET_CHAIN_ID]: MACHINE_ACTOR_ADDRESS,
+          [LOCALNET_CHAIN_ID]: MACHINE_ACTOR_ADDRESS,
         },
       },
     }),

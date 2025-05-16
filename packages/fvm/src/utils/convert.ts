@@ -1,4 +1,6 @@
-import { fromString } from "uint8arrays/from-string";
+import { Hex, bytesToHex, hexToBytes } from "viem";
+
+import * as base32 from "./base32.js";
 
 /**
  * Convert a bigint to a Uint8Array
@@ -18,7 +20,7 @@ export function bigintToUint8Array(
   if (hex.length % 2 === 1) hex = `0${hex}`;
   if (pad) hex = `00${hex}`;
 
-  return fromString(hex, "hex");
+  return hexToBytes(`0x${hex}`);
 }
 
 /**
@@ -56,4 +58,60 @@ export function toBigInt(value: string | number | bigint | Uint8Array): bigint {
         throw new Error(`invalid BigNumberish string: ${e.message}`);
       }
   }
+}
+
+/**
+ * Convert a base32 string to a hex string
+ * @param value - The base32 string to convert
+ * @param withPrefix - Whether to include the 0x prefix (default: true)
+ * @returns The hex string
+ */
+export function base32ToHex(value: string, withPrefix: boolean = true): string {
+  const bytes = base32.decode(value);
+  const hex = bytesToHex(bytes);
+  return withPrefix ? hex : hex.slice(2);
+}
+
+/**
+ * Convert a hex string to a base32 string
+ * @param value - The hex string to convert
+ * @param withPrefix - Whether to include the 0x prefix (default: true)
+ * @returns The base32 string
+ */
+export function hexToBase32(value: string, withPrefix: boolean = true): string {
+  const bytes = hexToBytes(withPrefix ? (value as Hex) : `0x${value}`);
+  return base32.encode(bytes);
+}
+
+/**
+ * Compare two Uint8Arrays
+ * @param a - The first Uint8Array
+ * @param b - The second Uint8Array
+ * @returns The result of the comparison
+ */
+export function compareUint8Arrays(a: Uint8Array, b: Uint8Array): number {
+  const minLength = Math.min(a.length, b.length);
+
+  for (let i = 0; i < minLength; i++) {
+    const aByte = a[i]!;
+    const bByte = b[i]!;
+
+    if (aByte < bByte) {
+      return -1;
+    }
+
+    if (aByte > bByte) {
+      return 1;
+    }
+  }
+
+  if (a.length > b.length) {
+    return 1;
+  }
+
+  if (a.length < b.length) {
+    return -1;
+  }
+
+  return 0;
 }
