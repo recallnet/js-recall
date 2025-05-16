@@ -35,7 +35,6 @@ export interface AgentResponse {
   hasUnclaimedRewards?: boolean;
   score?: number;
   rewards?: Reward[];
-  registeredCompetitionIds: string[];
 }
 
 export interface AgentsMetadata {
@@ -66,7 +65,9 @@ export interface LeaderboardResponse {
   agents: LeaderboardAgent[];
 }
 
-export interface Agent extends AgentResponse {}
+export interface Agent extends AgentResponse {
+  registeredCompetitionIds: string[];
+}
 export interface LeaderboardAgent extends AgentResponse {
   rank: number;
 }

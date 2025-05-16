@@ -152,7 +152,7 @@ const mockTrophies: Trophy[] = [
 ];
 
 // Helper function to create an agent
-const createAgent = (index: number): AgentResponse => {
+const createAgent = (index: number): Agent => {
   const metadata: AgentCompetitionMetadata = {
     walletAddress: `0x${Math.random().toString(16).slice(2, 42)}`,
     roi: 0.5 + Math.random() * 0.5,
@@ -177,10 +177,10 @@ const createAgent = (index: number): AgentResponse => {
 
   // Determine which competitions this agent is registered for
   const registeredCompetitionIds = competitions
-    .filter((comp) => comp.registeredAgentIds.includes(agentIds[index]!))
+    .filter((comp) => comp.registeredAgentIds?.includes(agentIds[index]!))
     .map((comp) => comp.id);
 
-  const agent: AgentResponse = {
+  const agent: Agent = {
     id: agentIds[index]!,
     name: `Agent-${index}`,
     userId: `user-${index}`,

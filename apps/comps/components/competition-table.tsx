@@ -13,10 +13,10 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import { Competition } from "../types";
+import { CompetitionResponse } from "../types";
 
 interface CompetitionTableProps {
-  competitions: Competition[];
+  competitions: CompetitionResponse[];
 }
 
 export const CompetitionTable: React.FC<CompetitionTableProps> = ({

@@ -2,11 +2,11 @@
 
 import React from "react";
 
-import { Competition } from "../types";
+import { CompetitionResponse } from "../types";
 import { CompetitionCard } from "./competition-card";
 
 interface StartingSoonSectionProps {
-  competitions: Competition[];
+  competitions: CompetitionResponse[];
 }
 
 export const StartingSoonSection: React.FC<StartingSoonSectionProps> = ({

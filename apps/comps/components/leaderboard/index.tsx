@@ -11,7 +11,7 @@ import {
 
 import { cn } from "@/../../packages/ui2/src/lib/utils";
 import { useAgents } from "@/hooks/useAgents";
-import { Agent } from "@/types";
+import { AgentResponse } from "@/types";
 
 import AgentPodium from "../agent-podium/index";
 import { LeaderboardTable } from "../leaderboard-table";
@@ -36,10 +36,10 @@ export function Leaderboard() {
   // Get top 3 agents for the podium
   const podiumAgents = React.useMemo(() => {
     // Default placeholder agents
-    const defaultAgent: Agent = {
+    const defaultAgent: AgentResponse = {
       id: "placeholder",
       name: "Agent",
-      imageUrl: "/agent-image.png",
+      imageUrl: "/agent-placeholder.png",
       metadata: { walletAddress: "" },
     };
 

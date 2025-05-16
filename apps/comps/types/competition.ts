@@ -53,7 +53,6 @@ export interface CompetitionResponse {
   registeredAgents: number;
   agentStatus: AgentStatus[];
   summary?: TradingCompetitionSummary;
-  registeredAgentIds: string[];
 }
 
 export interface CompetitionsMetadata {
@@ -67,4 +66,6 @@ export interface CompetitionsResponse {
   competitions: CompetitionResponse[];
 }
 
-export interface Competition extends CompetitionResponse {}
+export interface Competition extends CompetitionResponse {
+  registeredAgentIds: string[];
+}

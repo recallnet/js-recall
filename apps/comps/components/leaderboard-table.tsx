@@ -18,10 +18,10 @@ import {
 
 import { useAtom } from "@/node_modules/jotai/react";
 import { userAgentAtom, userAtom } from "@/state/atoms";
-import { Agent } from "@/types";
+import { AgentResponse } from "@/types";
 
 export function LeaderboardTable(props: {
-  agents: (Agent & { rank: number })[];
+  agents: (AgentResponse & { rank: number })[];
 }) {
   const [user] = useAtom(userAtom);
   const [userAgent] = useAtom(userAgentAtom);
