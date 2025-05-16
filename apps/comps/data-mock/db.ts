@@ -1,5 +1,5 @@
-import { Agent, Competition } from "../types";
-import { agents, competitions } from "./fixtures";
+import { agents, competitions } from "@/data-mock/fixtures";
+import { Agent, Competition } from "@/types";
 
 // Competition helpers
 export const findCompetition = (id: string): Competition | undefined => {

@@ -1,17 +1,15 @@
-import { addDays, parseISO, subDays } from "date-fns";
-import { v4 as uuid } from "uuid";
+import { addDays, subDays } from "date-fns";
 
 import {
   Agent,
   AgentCompetitionMetadata,
-  AgentResponse,
   AgentStats,
   AgentStatus,
   BestPlacement,
   Competition,
   CompetitionStatus,
   Trophy,
-} from "../types";
+} from "@/types";
 
 // Generate fixed UUIDs for competitions and agents
 const competitionIds = [

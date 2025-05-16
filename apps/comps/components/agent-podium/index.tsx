@@ -1,6 +1,7 @@
 import React from "react";
 
-import { cn } from "@/../../packages/ui2/src/lib/utils";
+import { cn } from "@recallnet/ui2/lib/utils";
+
 import { AgentResponse } from "@/types";
 
 interface AgentPodiumProps {

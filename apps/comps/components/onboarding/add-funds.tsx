@@ -5,7 +5,7 @@ import Link from "next/link";
 
 import { Button } from "@recallnet/ui2/components/shadcn/button";
 
-import { AchievementCard } from "../achievement-card/index";
+import { AchievementCard } from "@/components/achievement-card";
 
 export const AddFundsStep: React.FunctionComponent<unknown> = () => {
   return (

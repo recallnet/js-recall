@@ -4,8 +4,8 @@ import React from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 
-import { AgentResponse } from "../types";
-import { AgentCard } from "./agent-card";
+import { AgentCard } from "@/components/agent-card";
+import { AgentResponse } from "@/types";
 
 interface AgentSpotlightSectionProps {
   agents: AgentResponse[];

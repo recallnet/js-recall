@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
 
-import { SIWEButton } from "../siwe";
+import { SIWEButton } from "@/components/siwe";
 
 export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
   children,

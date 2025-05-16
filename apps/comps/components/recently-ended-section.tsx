@@ -9,8 +9,8 @@ import {
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
 
-import { CompetitionResponse } from "../types";
-import { CompetitionTable } from "./competition-table";
+import { CompetitionTable } from "@/components/competition-table";
+import { CompetitionResponse } from "@/types";
 
 interface RecentlyEndedSectionProps {
   competitions: CompetitionResponse[];

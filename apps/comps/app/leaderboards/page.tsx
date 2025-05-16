@@ -7,10 +7,9 @@ import { Leaderboard } from "@/components/leaderboard";
 import { NewsletterSection } from "@/components/newsletter-section";
 import { LeaderboardOngoingCompetition } from "@/components/ongoing-competition/leaderboard";
 import { RegisterAgentBlock } from "@/components/register-agent-block";
-
-import { socialLinks } from "../../data/social";
-import { useCompetitions } from "../../hooks/useCompetitions";
-import { CompetitionStatus } from "../../types";
+import { socialLinks } from "@/data/social";
+import { useCompetitions } from "@/hooks/useCompetitions";
+import { CompetitionStatus } from "@/types";
 
 export default function LeaderboardPage() {
   const { data: competitionsData } = useCompetitions({

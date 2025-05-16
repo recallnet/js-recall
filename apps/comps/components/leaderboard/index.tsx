@@ -8,13 +8,12 @@ import {
   TabsList,
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import { cn } from "@/../../packages/ui2/src/lib/utils";
+import { AgentPodium } from "@/components/agent-podium";
+import { LeaderboardTable } from "@/components/leaderboard-table";
 import { useAgents } from "@/hooks/useAgents";
 import { AgentResponse } from "@/types";
-
-import AgentPodium from "../agent-podium/index";
-import { LeaderboardTable } from "../leaderboard-table";
 
 const categories = ["CRYPTO-TRADING", "DERIVATIVES", "SENTIMENT-ANALYSIS"];
 
