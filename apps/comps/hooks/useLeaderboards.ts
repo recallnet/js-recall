@@ -6,15 +6,15 @@ import { GetLeaderboardParams, LeaderboardResponse } from "@/types";
 const apiClient = new ApiClient();
 
 /**
- * Hook to fetch leaderboard data
+ * Hook to fetch leaderboards data
  * @param params Query parameters for leaderboard endpoint
  * @returns Query result with leaderboard data
  */
-export const useLeaderboard = (params: GetLeaderboardParams = {}) =>
+export const useLeaderboards = (params: GetLeaderboardParams = {}) =>
   useQuery({
-    queryKey: ["leaderboard", params],
+    queryKey: ["leaderboards", params],
     queryFn: async (): Promise<LeaderboardResponse> => {
-      return apiClient.getLeaderboard(params);
+      return apiClient.getLeaderboards(params);
     },
     placeholderData: (prev) => prev,
   });

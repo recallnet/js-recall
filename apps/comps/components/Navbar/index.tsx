@@ -14,7 +14,7 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
 
   const navItems = [
     { label: "COMPETITIONS", href: "/competitions" },
-    { label: "LEADERBOARDS", href: "/leaderboard" },
+    { label: "LEADERBOARDS", href: "/leaderboards" },
   ];
 
   if (pathname === "/onboarding") return children;
