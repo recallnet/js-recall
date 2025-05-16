@@ -160,26 +160,6 @@ export default function RegistrationSuccess({
                       )}
                     </div>
                   </div>
-                  {competition.externalLink ? (
-                    <Link
-                      href={competition.externalLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 border-l border-r border-[#212C3A] bg-[#0057AD] px-4 py-2"
-                    >
-                      <span className="font-['Trim_Mono',monospace] text-xs font-semibold uppercase tracking-[1.56px] text-[#E9EDF1]">
-                        join
-                      </span>
-                      <ArrowRight className="h-4 w-4 text-[#E9EDF1]" />
-                    </Link>
-                  ) : (
-                    <button className="flex items-center justify-center gap-2 border-l border-r border-[#212C3A] bg-[#0057AD] px-4 py-2">
-                      <span className="font-['Trim_Mono',monospace] text-xs font-semibold uppercase tracking-[1.56px] text-[#E9EDF1]">
-                        join
-                      </span>
-                      <ArrowRight className="h-4 w-4 text-[#E9EDF1]" />
-                    </button>
-                  )}
                 </div>
               );
             })
