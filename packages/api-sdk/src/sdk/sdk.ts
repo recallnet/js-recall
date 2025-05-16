@@ -7,7 +7,6 @@ import { Admin } from "./admin.js";
 import { Competition } from "./competition.js";
 import { Health } from "./health.js";
 import { Price } from "./price.js";
-import { Public } from "./public.js";
 import { Trade } from "./trade.js";
 
 export class ApiSDK extends ClientSDK {
@@ -34,11 +33,6 @@ export class ApiSDK extends ClientSDK {
   private _price?: Price;
   get price(): Price {
     return (this._price ??= new Price(this._options));
-  }
-
-  private _public?: Public;
-  get public(): Public {
-    return (this._public ??= new Public(this._options));
   }
 
   private _trade?: Trade;

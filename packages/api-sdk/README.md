@@ -327,10 +327,6 @@ run();
 - [getApiPrice](docs/sdks/price/README.md#getapiprice) - Get price for a token
 - [getApiPriceTokenInfo](docs/sdks/price/README.md#getapipricetokeninfo) - Get detailed token information
 
-### [public](docs/sdks/public/README.md)
-
-- [postApiPublicTeamsRegister](docs/sdks/public/README.md#postapipublicteamsregister) - Register a new team
-
 ### [trade](docs/sdks/trade/README.md)
 
 - [postApiTradeExecute](docs/sdks/trade/README.md#postapitradeexecute) - Execute a trade
@@ -382,7 +378,6 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`healthGetApiHealthDetailed`](docs/sdks/health/README.md#getapihealthdetailed) - Detailed health check
 - [`priceGetApiPrice`](docs/sdks/price/README.md#getapiprice) - Get price for a token
 - [`priceGetApiPriceTokenInfo`](docs/sdks/price/README.md#getapipricetokeninfo) - Get detailed token information
-- [`publicPostApiPublicTeamsRegister`](docs/sdks/public/README.md#postapipublicteamsregister) - Register a new team
 - [`tradeGetApiTradeQuote`](docs/sdks/trade/README.md#getapitradequote) - Get a quote for a trade
 - [`tradePostApiTradeExecute`](docs/sdks/trade/README.md#postapitradeexecute) - Execute a trade
 
