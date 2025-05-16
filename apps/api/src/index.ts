@@ -24,7 +24,6 @@ import { configureTradeRoutes } from "@/routes/trade.routes.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 import { configureAdminSetupRoutes } from "./routes/admin-setup.routes.js";
-// Import the console interceptor instead of the logger
 import { interceptConsole } from "./utils/console-interceptor.js";
 
 // Initialize console interception immediately
@@ -36,6 +35,7 @@ const app = express();
 const PORT = config.server.port;
 let databaseInitialized = false;
 
+// Set up API prefix configuration
 const API_PREFIX = process.env.API_PREFIX || "testing-grounds";
 const apiBasePath = `/${API_PREFIX}`;
 
@@ -50,7 +50,7 @@ try {
   if (process.env.NODE_ENV === "production") {
     console.warn(
       "WARNING: Starting server without successful database initialization. " +
-      "Some functionality may be limited until database connection is restored.",
+        "Some functionality may be limited until database connection is restored.",
     );
   } else {
     console.error(
@@ -70,21 +70,16 @@ console.log("Competition-specific configuration settings loaded");
 services.scheduler.startSnapshotScheduler();
 console.log("Portfolio snapshot scheduler started");
 
-// Configure middleware
+// Configure global middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Create a router for all API routes
+// Create the API router
 const apiRouter = express.Router();
 
-// Define protected routes
-const protectedRoutes = [
-  "/api/account",
-  "/api/trade",
-  "/api/competition",
-  "/api/price",
-];
+// Define protected routes (without /api prefix since it's implied by the router mount path)
+const protectedRoutes = ["/account", "/trade", "/competition", "/price"];
 
 // Apply authentication middleware to protected routes FIRST
 // This ensures req.teamId is set before rate limiting
@@ -99,6 +94,7 @@ apiRouter.use(rateLimiterMiddleware);
 
 const adminMiddleware = adminAuthMiddleware(services.teamManager);
 
+// Initialize controllers
 const accountController = makeAccountController(services);
 const adminController = makeAdminController(services);
 const competitionController = makeCompetitionController(services);
@@ -107,6 +103,7 @@ const healthController = makeHealthController();
 const priceController = makePriceController(services);
 const tradeController = makeTradeController(services);
 
+// Configure route handlers
 const accountRoutes = configureAccountRoutes(accountController);
 const adminRoutes = configureAdminRoutes(adminController, adminMiddleware);
 const adminSetupRoutes = configureAdminSetupRoutes(adminController);
@@ -116,18 +113,18 @@ const healthRoutes = configureHealthRoutes(healthController);
 const priceRoutes = configurePriceRoutes(priceController);
 const tradeRoutes = configureTradeRoutes(tradeController);
 
-// Apply routes
-app.use("/api/account", accountRoutes);
-app.use("/api/trade", tradeRoutes);
-app.use("/api/price", priceRoutes);
-app.use("/api/competition", competitionRoutes);
-app.use("/api/admin/setup", adminSetupRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/health", healthRoutes);
-app.use("/api/docs", docsRoutes);
+// Apply routes to the API router (without duplicate /api prefix)
+apiRouter.use("/account", accountRoutes);
+apiRouter.use("/trade", tradeRoutes);
+apiRouter.use("/price", priceRoutes);
+apiRouter.use("/competition", competitionRoutes);
+apiRouter.use("/admin/setup", adminSetupRoutes);
+apiRouter.use("/admin", adminRoutes);
+apiRouter.use("/health", healthRoutes);
+apiRouter.use("/docs", docsRoutes);
 
 // Legacy health check endpoint for backward compatibility
-apiRouter.get("/health", (_req, res) => {
+apiRouter.get("/health-check", (_req, res) => {
   res.status(200).json({
     status: "ok",
     timestamp: new Date().toISOString(),
@@ -135,15 +132,34 @@ apiRouter.get("/health", (_req, res) => {
   });
 });
 
-// Root endpoint redirects to API documentation
+// Root API endpoint redirects to API documentation
 apiRouter.get("/", (_req, res) => {
   res.redirect(`${apiBasePath}/api/docs`);
 });
 
-// Mount the apiRouter under the prefix
-app.use(apiBasePath, apiRouter);
+// Mount the API router with the api prefix
+app.use(`${apiBasePath}/api`, apiRouter);
 
-// Apply error handler
+// Root endpoint redirects to prefixed API documentation
+app.get(`${apiBasePath}`, (_req, res) => {
+  res.redirect(`${apiBasePath}/api/docs`);
+});
+
+// Also handle the default root route
+app.get("/", (_req, res) => {
+  res.redirect(`${apiBasePath}/api/docs`);
+});
+
+// Support legacy direct health check without prefix
+app.get("/health", (_req, res) => {
+  res.status(200).json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    version: "1.0.0",
+  });
+});
+
+// Apply error handler to the whole app
 app.use(errorHandler);
 
 // Start HTTP server
@@ -154,6 +170,9 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(
     `Database: ${databaseInitialized ? "Connected" : "Error - Limited functionality"}`,
   );
-  console.log(`API documentation: http://localhost:${PORT}/api/docs`);
+  console.log(`API Base Path: ${apiBasePath}/api`);
+  console.log(
+    `API documentation: http://localhost:${PORT}${apiBasePath}/api/docs`,
+  );
   console.log(`========================================\n`);
 });
