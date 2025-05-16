@@ -123,10 +123,11 @@ export default function AgentRegistrationForm({
         return;
       }
 
-      if (!formData.avatar.trim()) {
-        setError("Agent avatar is required when providing agent details.");
-        return;
-      }
+      // Remove this validation check to make avatar optional
+      // if (!formData.avatar.trim()) {
+      //   setError("Agent avatar is required when providing agent details.");
+      //   return;
+      // }
     }
 
     // Validate custom skill if "Other" is selected
