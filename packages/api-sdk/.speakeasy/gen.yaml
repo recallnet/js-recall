@@ -24,8 +24,9 @@ typescript:
     dependencies: {}
     devDependencies: {}
     peerDependencies: {}
-  additionalPackageJSON: {}
-  author: Speakeasy
+  additionalPackageJSON:
+    private: true
+  author: Recall Contributors
   clientServerStatusCodesAsErrors: true
   defaultErrorName: APIError
   enableCustomCodeRegions: false
