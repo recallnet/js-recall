@@ -14,19 +14,30 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
+import { Skeleton } from "@/../../packages/ui2/src/components/skeleton";
 import { useAtom } from "@/node_modules/jotai/react";
 import { userAgentAtom, userAtom } from "@/state/atoms";
-import { Agent } from "@/types/agent";
+import { Agent, LeaderboardAgent } from "@/types/agent";
 
 import AwardIcon from "./agent-podium/award-icon";
 import BigNumberDisplay from "./bignumber/index";
 
+const emptyAgent: LeaderboardAgent = {
+  id: "",
+  rank: 0,
+  imageUrl: "",
+  name: "",
+  metadata: {},
+};
+
 export function LeaderboardTable({
   agents,
   onExtend,
+  loaded,
 }: {
   agents: (Agent & { rank: number })[];
   onExtend: () => void;
+  loaded?: boolean;
 }) {
   const [user] = useAtom(userAtom);
   const [userAgent] = useAtom(userAgentAtom);
@@ -110,7 +121,10 @@ export function LeaderboardTable({
             </TableRow>
           )}
 
-          {agents.map((agent) => (
+          {(loaded
+            ? agents
+            : new Array(10).fill(0).map((_, i) => emptyAgent)
+          ).map((agent) => (
             <TableRow key={agent.id} className="h-25">
               <TableCell className="w-50">
                 <div className="flex items-center justify-start">
@@ -127,41 +141,67 @@ export function LeaderboardTable({
                     </div>
                   )}
                   <div className="flex items-center gap-5">
-                    <Image
-                      src={agent.imageUrl || "/agent-image.png"}
-                      alt="avatar"
-                      width={35}
-                      height={35}
-                    />
+                    {loaded ? (
+                      <Image
+                        src={agent.imageUrl || "/agent-image.png"}
+                        alt="avatar"
+                        width={35}
+                        height={35}
+                      />
+                    ) : (
+                      <Skeleton className="h-8 w-8 rounded-full" />
+                    )}
                     <div className="text-sm">
-                      <div className="font-medium leading-none text-white">
-                        {agent.name}
-                      </div>
-                      <span className="whitespace-nowrap text-xs text-gray-400">
-                        {displayAddress(agent.metadata.walletAddress || "", {
-                          numChars: 5,
-                          separator: " . . . ",
-                        })}
-                      </span>
+                      {loaded ? (
+                        <div className="font-medium leading-none text-white">
+                          {agent.name}
+                        </div>
+                      ) : (
+                        <Skeleton className="h-2 w-20 rounded-full" />
+                      )}
+                      {loaded ? (
+                        <span className="whitespace-nowrap text-xs text-gray-400">
+                          {displayAddress(agent.metadata.walletAddress || "", {
+                            numChars: 5,
+                            separator: " . . . ",
+                          })}
+                        </span>
+                      ) : (
+                        <Skeleton className="w-30 mt-2 h-2 rounded-full" />
+                      )}
                     </div>
                   </div>
                 </div>
               </TableCell>
 
               <TableCell className="text-center">
-                {agent.stats?.eloAvg}
+                {loaded ? (
+                  agent.stats?.eloAvg
+                ) : (
+                  <Skeleton className="h-2 w-10 rounded-full" />
+                )}
               </TableCell>
 
               <TableCell className="text-center">
-                <BigNumberDisplay
-                  value={agent.metadata.roi?.toString() || ""}
-                  decimals={0}
-                />
-                %
+                {loaded ? (
+                  <>
+                    <BigNumberDisplay
+                      value={agent.metadata.roi?.toString() || ""}
+                      decimals={0}
+                    />
+                    %
+                  </>
+                ) : (
+                  <Skeleton className="h-2 w-10 rounded-full" />
+                )}
               </TableCell>
 
               <TableCell className="text-center">
-                {agent.metadata.trades}
+                {loaded ? (
+                  agent.metadata.trades
+                ) : (
+                  <Skeleton className="h-2 w-10 rounded-full" />
+                )}
               </TableCell>
 
               <TableCell className="text-end text-lg text-gray-500">
