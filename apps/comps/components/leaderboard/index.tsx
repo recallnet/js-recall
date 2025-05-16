@@ -13,6 +13,7 @@ import {
 } from "@recallnet/ui2/components/tabs";
 import { cn } from "@recallnet/ui2/lib/utils";
 
+import { Skeleton } from "@/../../packages/ui2/src/components/skeleton";
 import { cn } from "@/../../packages/ui2/src/lib/utils";
 import { leaderboardAtom } from "@/state/atoms";
 import { Agent, LeaderboardResponse, LeaderboardTypes } from "@/types";
@@ -50,7 +51,7 @@ export function LeaderboardSection() {
       baseURL: "",
     });
 
-    setLeaderboard((all) => {
+    setLeaderboard((all: Record<string, LeaderboardResponse>) => {
       return { ...all, [selected]: { ...data, loaded: true } };
     });
   }, [setLeaderboard, limit, selected]);
@@ -58,77 +59,6 @@ export function LeaderboardSection() {
   React.useEffect(() => {
     loadLeaderboard();
   }, [loadLeaderboard]);
-
-  if (!leaderboard.loaded)
-    return (
-      <div>
-        <div className="border-b border-gray-800 pb-5">
-          <h1 className="text-primary text-[30px] font-bold">Leaderboards</h1>
-        </div>
-        <Tabs
-          defaultValue={selected}
-          className="w-full"
-          onValueChange={(value: string) => {
-            setSelected(value as LeaderboardTypes);
-          }}
-        >
-          {categories.map((cat) => (
-            <TabsContent
-              key={cat}
-              value={cat}
-              className="flex w-full flex-col gap-6 pt-6"
-            >
-              <div className="divide-x-1 border-1 mb-10 grid grid-cols-1 divide-gray-800 border-gray-800 text-center text-gray-400 sm:grid-cols-3">
-                <div className="flex items-center justify-between p-6">
-                  <div className="text-sm uppercase">Total Trades</div>
-                  <div className="h-1 w-10 rounded-full bg-white" />
-                </div>
-                <div className="flex items-center justify-between p-6">
-                  <div className="text-sm uppercase">Active Agents</div>
-                  <div className="h-1 w-10 rounded-full bg-white" />
-                </div>
-                <div className="flex items-center justify-between p-6">
-                  <div className="text-sm uppercase">Total Volume</div>
-                  <div className="h-1 w-10 rounded-full bg-white" />
-                </div>
-              </div>
-
-              {
-                //<AgentPodium
-                //className='mb-10 md:mb-1'
-                //first={leaderboard.agents[0]}
-                //second={leaderboard.agents[1]}
-                //third={leaderboard.agents[2]}
-                ///>
-              }
-            </TabsContent>
-          ))}
-
-          <h2 className="text-primary mt-10 text-2xl font-bold">All agents</h2>
-
-          <TabsList className="h-15 mt-5 w-full border-y border-gray-800 bg-transparent">
-            {categories.map((cat) => (
-              <TabsTrigger
-                key={cat}
-                value={cat}
-                className={cn(
-                  "flex h-full items-center px-5 text-sm",
-                  selected == cat
-                    ? "bg-card text-primary border-t-1 border-white"
-                    : "text-gray-500",
-                )}
-              >
-                {cat}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          {
-            //<LeaderboardTable agents={leaderboard} />
-          }
-        </Tabs>
-      </div>
-    );
 
   return (
     <div className="mb-10">
@@ -151,33 +81,53 @@ export function LeaderboardSection() {
             <div className="divide-x-1 border-1 mb-10 grid grid-cols-1 divide-gray-800 border-gray-800 text-center text-gray-400 sm:grid-cols-3">
               <div className="flex items-center justify-between p-6">
                 <div className="text-sm uppercase">Total Trades</div>
-                <div className="text-lg text-white">
-                  {leaderboard.stats.totalTrades}
-                </div>
+                {leaderboard.loaded ? (
+                  <div className="text-lg text-white">
+                    {leaderboard.stats.totalTrades}
+                  </div>
+                ) : (
+                  <Skeleton />
+                )}
               </div>
               <div className="flex items-center justify-between p-6">
                 <div className="text-sm uppercase">Active Agents</div>
-                <div className="text-lg text-white">
-                  {leaderboard.stats.activeAgents}
-                </div>
+                {leaderboard.loaded ? (
+                  <div className="text-lg text-white">
+                    {leaderboard.stats.activeAgents}
+                  </div>
+                ) : (
+                  <Skeleton />
+                )}
               </div>
               <div className="flex items-center justify-between p-6">
                 <div className="text-sm uppercase">Total Volume</div>
-                <div className="text-lg text-white">
-                  <BigNumberDisplay
-                    value={leaderboard.stats.totalVolume.toString()}
-                    decimals={0}
-                  />
-                </div>
+                {leaderboard.loaded ? (
+                  <div className="text-lg text-white">
+                    <BigNumberDisplay
+                      value={leaderboard.stats.totalVolume.toString()}
+                      decimals={0}
+                    />
+                  </div>
+                ) : (
+                  <Skeleton />
+                )}
               </div>
             </div>
 
-            <AgentPodium
-              className="mb-10 md:mb-1"
-              first={leaderboard.agents[0] as Agent}
-              second={leaderboard.agents[1] as Agent}
-              third={leaderboard.agents[2] as Agent}
-            />
+            {leaderboard.loaded ? (
+              <AgentPodium
+                className="mb-10 md:mb-1"
+                first={leaderboard.agents[0] as Agent}
+                second={leaderboard.agents[1] as Agent}
+                third={leaderboard.agents[2] as Agent}
+                loaded={leaderboard.loaded}
+              />
+            ) : (
+              <AgentPodium
+                className="mb-10 md:mb-1"
+                loaded={leaderboard.loaded}
+              />
+            )}
           </TabsContent>
         ))}
 
@@ -200,10 +150,18 @@ export function LeaderboardSection() {
           ))}
         </TabsList>
 
-        <LeaderboardTable
-          onExtend={() => setLimit((prev) => prev + 10)}
-          agents={leaderboard.agents}
-        />
+        {leaderboard.loaded ? (
+          <LeaderboardTable
+            onExtend={() => setLimit((prev) => prev + 10)}
+            agents={leaderboard.agents}
+            loaded
+          />
+        ) : (
+          <LeaderboardTable
+            onExtend={() => setLimit((prev) => prev + 10)}
+            agents={[]}
+          />
+        )}
       </Tabs>
     </div>
   );
