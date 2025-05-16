@@ -35,6 +35,7 @@ export interface AgentResponse {
   hasUnclaimedRewards?: boolean;
   score?: number;
   rewards?: Reward[];
+  registeredCompetitionIds: string[];
 }
 
 export interface AgentsMetadata {

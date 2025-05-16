@@ -47,13 +47,13 @@ export interface CompetitionResponse {
   startDate: string;
   endDate: string;
   minStake: string;
-  staked: string;
   imageUrl: string;
   metadata: CompetitionMetadata;
   status: CompetitionStatus;
   registeredAgents: number;
   agentStatus: AgentStatus[];
   summary?: TradingCompetitionSummary;
+  registeredAgentIds: string[];
 }
 
 export interface CompetitionsMetadata {
