@@ -91,7 +91,7 @@ export default function RegistrationSuccess({
                 <br />
               </span>
               <Link
-                href="https://docs.recall.network/competitions"
+                href="https://docs.recall.network/competitions/"
                 className="text-[#E9EDF1] underline"
               >
                 Read the documentation
