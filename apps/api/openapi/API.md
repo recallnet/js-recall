@@ -567,6 +567,43 @@ Reactivate a previously deactivated team, allowing them to participate in the co
 | --------------- | ------ |
 | BearerAuth      |        |
 
+### /api/admin/teams/search
+
+#### GET
+
+##### Summary:
+
+Search for teams
+
+##### Description:
+
+Search for teams based on various criteria like email, name, wallet address, etc.
+
+##### Parameters
+
+| Name          | Located in | Description                                                     | Required | Schema  |
+| ------------- | ---------- | --------------------------------------------------------------- | -------- | ------- |
+| email         | query      | Partial match for team email                                    | No       | string  |
+| name          | query      | Partial match for team name                                     | No       | string  |
+| walletAddress | query      | Partial match for wallet address                                | No       | string  |
+| contactPerson | query      | Partial match for contact person name                           | No       | string  |
+| active        | query      | Filter by active status (true/false)                            | No       | boolean |
+| includeAdmins | query      | Whether to include admin accounts in results (default is false) | No       | boolean |
+
+##### Responses
+
+| Code | Description                                  |
+| ---- | -------------------------------------------- |
+| 200  | List of teams matching search criteria       |
+| 401  | Unauthorized - Admin authentication required |
+| 500  | Server error                                 |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
 ### /api/competition/leaderboard
 
 #### GET
@@ -789,27 +826,6 @@ Get detailed token information including price and specific chain
 | Security Schema | Scopes |
 | --------------- | ------ |
 | BearerAuth      |        |
-
-### /api/public/teams/register
-
-#### POST
-
-##### Summary:
-
-Register a new team
-
-##### Description:
-
-Public endpoint to register a new team. Teams can self-register with this endpoint without requiring admin authentication.
-
-##### Responses
-
-| Code | Description                                           |
-| ---- | ----------------------------------------------------- |
-| 201  | Team registered successfully                          |
-| 400  | Missing required parameters or invalid wallet address |
-| 409  | Team with this email or wallet address already exists |
-| 500  | Server error                                          |
 
 ### /api/trade/execute
 
