@@ -16,12 +16,12 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import { Agent } from "@/data/agents";
 import { useAtom } from "@/node_modules/jotai/react";
 import { userAgentAtom, userAtom } from "@/state/atoms";
+import { AgentResponse } from "@/types";
 
 export function LeaderboardTable(props: {
-  agents: (Agent & { rank: number })[];
+  agents: (AgentResponse & { rank: number })[];
 }) {
   const [user] = useAtom(userAtom);
   const [userAgent] = useAtom(userAgentAtom);
@@ -57,7 +57,7 @@ export function LeaderboardTable(props: {
                   <div className="text-sm text-gray-300">{userAgent.rank}</div>
                   <div className="flex items-center gap-5">
                     <Image
-                      src={userAgent.image || "/agent-image.png"}
+                      src={userAgent.imageUrl || "/agent-image.png"}
                       alt="avatar"
                       width={30}
                       height={30}
@@ -72,10 +72,13 @@ export function LeaderboardTable(props: {
                         </div>
                       </div>
                       <span className="whitespace-nowrap text-xs text-gray-400">
-                        {displayAddress(userAgent.address, {
-                          numChars: 5,
-                          separator: " . . . ",
-                        })}
+                        {displayAddress(
+                          userAgent.metadata.walletAddress || "",
+                          {
+                            numChars: 5,
+                            separator: " . . . ",
+                          },
+                        )}
                       </span>
                     </div>
                   </div>
@@ -122,7 +125,7 @@ export function LeaderboardTable(props: {
                   <div className="text-sm text-gray-300">{agent.rank}</div>
                   <div className="flex items-center gap-5">
                     <Image
-                      src={agent.image || "/agent-image.png"}
+                      src={agent.imageUrl || "/agent-image.png"}
                       alt="avatar"
                       width={20}
                       height={20}
@@ -132,7 +135,7 @@ export function LeaderboardTable(props: {
                         {agent.name}
                       </div>
                       <span className="whitespace-nowrap text-xs text-gray-400">
-                        {displayAddress(agent.address, {
+                        {displayAddress(agent.metadata.walletAddress || "", {
                           numChars: 5,
                           separator: " . . . ",
                         })}

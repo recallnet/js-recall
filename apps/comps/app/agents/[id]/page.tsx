@@ -1,7 +1,9 @@
+"use client";
+
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import Image from "next/image";
 import Link from "next/link";
-import React from "react";
+import React, { useMemo } from "react";
 
 import { displayAddress } from "@recallnet/address-utils/display";
 import { Button } from "@recallnet/ui2/components/button";
@@ -19,59 +21,63 @@ import {
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
 
-import { leaderboardAgents } from "@/data/agents";
-import {
-  Competition,
-  endedCompetitions,
-  ongoingCompetitions,
-  upcomingCompetitions,
-} from "@/data/competitions";
+import { useAgent } from "@/hooks/useAgent";
+import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
+import { CompetitionResponse, CompetitionStatus } from "@/types";
 
-type AgentCompetition = Competition & {
+type AgentCompetition = CompetitionResponse & {
   placement: string;
   roi: string;
   trades: number;
   elo: number;
-  skills: string[];
-  trophies: number;
 };
 
-export default async function AgentPage({
+export default function AgentPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
-  const agent = leaderboardAgents.find((agent) => agent.id === id);
-  if (!agent) return <div className="py-20 text-center">Agent not found</div>;
+  const { id } = React.use(params);
+  const {
+    data: agent,
+    isLoading: isLoadingAgent,
+    error: agentError,
+  } = useAgent(id);
+  const { data: agentCompetitionsData, isLoading: isLoadingCompetitions } =
+    useAgentCompetitions(id);
 
-  // Mocked data for skills, trophies, and competitions
-  const skills = [
-    { name: "Yield Farmer", count: 31 },
-    { name: "Arbitrage Bot", count: 11 },
-  ];
-  const trophies = [
-    { date: "22/05", isNew: true },
-    { date: "20/05" },
-    { date: "15/05" },
-    { date: "10/05" },
-  ];
-  // Filter competitions for this agent (mock logic)
-  const agentCompetitions: AgentCompetition[] = [
-    ...ongoingCompetitions,
-    ...upcomingCompetitions,
-    ...endedCompetitions,
-  ].map((comp, i) => ({
-    ...comp,
-    placement: i === 0 ? "1/1,234" : `${i + 1}/1,234`,
-    roi: "00.00%",
-    trades: 123,
-    elo: agent.elo,
-    skills: skills.map((s) => s.name),
-    trophies: i < trophies.length ? 1 : 0,
-    rewards: ["100 USDC"],
-    status: comp.status,
-  }));
+  // Format competitions data
+  const competitions = useMemo(() => {
+    if (!agentCompetitionsData?.competitions || !agent) return [];
+
+    return agentCompetitionsData.competitions.map((comp) => {
+      // Find the agent's status in this competition
+      const agentStatus = comp.agentStatus.find(
+        (status) => status.agentId === id,
+      );
+
+      return {
+        ...comp,
+        placement: agentStatus
+          ? `${agentStatus.position}/${comp.registeredAgents}`
+          : "N/A",
+        roi:
+          agentStatus?.metadata?.roi !== undefined
+            ? `${(agentStatus.metadata.roi * 100).toFixed(2)}%`
+            : "0.00%",
+        trades: agentStatus?.metadata?.trades || 0,
+        elo: agent.stats?.eloAvg || 0,
+      };
+    });
+  }, [agentCompetitionsData, agent, id]);
+
+  if (isLoadingAgent || isLoadingCompetitions)
+    return <div className="py-20 text-center">Loading agent data...</div>;
+  if (agentError || !agent)
+    return <div className="py-20 text-center">Agent not found</div>;
+
+  const skills = agent.stats?.provenSkills || [];
+  const trophies = agent.trophies || [];
 
   return (
     <div className="container mx-auto max-w-4xl px-2 md:px-8 lg:px-12">
@@ -88,14 +94,16 @@ export default async function AgentPage({
         <div className="flex w-full flex-1 flex-col gap-2">
           <div className="flex flex-col gap-2">
             <Image
-              src={agent.image || "/agent-image.png"}
+              src={agent.imageUrl || "/agent-image.png"}
               alt={agent.name}
               width={80}
               height={80}
               className="border-border bg-background rounded-lg border"
             />
             <span className="text-primary-foreground text-xs">
-              {displayAddress(agent.address)}
+              {agent.metadata.walletAddress
+                ? displayAddress(agent.metadata.walletAddress)
+                : "No address"}
             </span>
             <h1 className="text-primary-foreground text-4xl font-bold">
               {agent.name}
@@ -104,10 +112,10 @@ export default async function AgentPage({
           <div className="mt-2 flex w-full flex-wrap gap-7">
             <div className="flex flex-col items-start">
               <span className="text-primary-foreground w-full text-left text-xs font-semibold uppercase">
-                Overall ELO Rating
+                ELO Rating
               </span>
               <span className="text-primary-foreground w-full text-left text-lg font-bold">
-                {agent.elo}
+                {agent.stats?.eloAvg || 0}
               </span>
             </div>
             <div className="flex flex-col items-start">
@@ -115,7 +123,9 @@ export default async function AgentPage({
                 Best Placement
               </span>
               <span className="text-primary-foreground w-full text-left text-lg font-bold">
-                🥇 1/1,234
+                {agent.stats?.bestPlacement
+                  ? `🥇 ${agent.stats.bestPlacement.position}/${agent.stats.bestPlacement.participants}`
+                  : "No placement"}
               </span>
             </div>
             <div className="flex flex-col items-start">
@@ -123,7 +133,7 @@ export default async function AgentPage({
                 Completed Comps
               </span>
               <span className="text-primary-foreground w-full text-left text-lg font-bold">
-                10
+                {agent.stats?.completedCompetitions || 0}
               </span>
             </div>
             <div className="flex flex-col items-start">
@@ -131,12 +141,12 @@ export default async function AgentPage({
                 Proven Skills
               </span>
               <div className="mt-1 flex flex-wrap gap-2">
-                {skills.map((skill) => (
+                {skills.map((skill, index) => (
                   <span
-                    key={skill.name}
+                    key={index}
                     className="border-primary-foreground rounded border px-2 py-1 text-xs text-white"
                   >
-                    {skill.name} {skill.count}v
+                    {skill}
                   </span>
                 ))}
               </div>
@@ -154,21 +164,20 @@ export default async function AgentPage({
       <div className="mb-8">
         <h2 className="text-primary mb-2 text-lg font-semibold">Trophies</h2>
         <div className="flex flex-wrap gap-4">
-          {trophies.map((trophy, i) => (
-            <div key={i} className="relative flex flex-col items-center">
-              {trophy.isNew && (
-                <span className="bg-destructive text-destructive-foreground absolute left-0 px-2 py-0.5 text-xs">
-                  NEW
+          {trophies.length > 0 ? (
+            trophies.map((trophy, i) => (
+              <div key={i} className="relative flex flex-col items-center">
+                <div className="bg-muted border-border flex h-14 w-14 items-center justify-center rounded-lg border-2">
+                  <span className="text-2xl">🏆</span>
+                </div>
+                <span className="text-secondary-foreground mt-1 text-xs font-semibold">
+                  {trophy.name}
                 </span>
-              )}
-              <div className="bg-muted border-border flex h-14 w-14 items-center justify-center rounded-lg border-2">
-                <span className="text-2xl">🏆</span>
               </div>
-              <span className="text-secondary-foreground mt-1 text-xs font-semibold">
-                {trophy.date}
-              </span>
-            </div>
-          ))}
+            ))
+          ) : (
+            <div className="text-secondary-foreground">No trophies yet</div>
+          )}
         </div>
       </div>
 
@@ -185,27 +194,33 @@ export default async function AgentPage({
             <TabsTrigger value="complete">Complete</TabsTrigger>
           </TabsList>
           <TabsContent value="all">
-            <CompetitionTable competitions={agentCompetitions} />
+            <CompetitionTable
+              competitions={competitions}
+              trophiesCount={agent.trophies?.length || 0}
+            />
           </TabsContent>
           <TabsContent value="ongoing">
             <CompetitionTable
-              competitions={agentCompetitions.filter(
-                (c) => c.status === "active",
+              competitions={competitions.filter(
+                (c) => c.status === CompetitionStatus.Active,
               )}
+              trophiesCount={agent.trophies?.length || 0}
             />
           </TabsContent>
           <TabsContent value="upcoming">
             <CompetitionTable
-              competitions={agentCompetitions.filter(
-                (c) => c.status === "pending",
+              competitions={competitions.filter(
+                (c) => c.status === CompetitionStatus.Pending,
               )}
+              trophiesCount={agent.trophies?.length || 0}
             />
           </TabsContent>
           <TabsContent value="complete">
             <CompetitionTable
-              competitions={agentCompetitions.filter(
-                (c) => c.status === "completed",
+              competitions={competitions.filter(
+                (c) => c.status === CompetitionStatus.Ended,
               )}
+              trophiesCount={agent.trophies?.length || 0}
             />
           </TabsContent>
         </Tabs>
@@ -217,62 +232,80 @@ export default async function AgentPage({
 // Helper CompetitionTable for agent competitions
 function CompetitionTable({
   competitions,
+  trophiesCount,
 }: {
   competitions: AgentCompetition[];
+  trophiesCount: number;
 }) {
   return (
     <div className="">
       <Table>
         <TableBody>
-          {competitions.map((comp, i) => (
-            <TableRow key={i}>
-              <TableCell className="align-top">
-                <CompetitionLabel title={comp.status} value={comp.name} />
-              </TableCell>
-              <TableCell className="align-top">
-                <div className="flex flex-col gap-2">
-                  <CompetitionLabel title="ROI" value={comp.roi} />
-                  <CompetitionLabel title="Placement" value={comp.placement} />
-                </div>
-              </TableCell>
-              <TableCell className="align-top">
-                <div className="flex flex-col gap-2">
-                  <CompetitionLabel title="Trades" value={comp.trades} />
+          {competitions.length > 0 ? (
+            competitions.map((comp, i) => (
+              <TableRow key={i}>
+                <TableCell className="align-top">
+                  <CompetitionLabel title={comp.status} value={comp.name} />
+                </TableCell>
+                <TableCell className="align-top">
+                  <div className="flex flex-col gap-2">
+                    <CompetitionLabel title="ROI" value={comp.roi} />
+                    <CompetitionLabel
+                      title="Placement"
+                      value={comp.placement}
+                    />
+                  </div>
+                </TableCell>
+                <TableCell className="align-top">
+                  <div className="flex flex-col gap-2">
+                    <CompetitionLabel title="Trades" value={comp.trades} />
+                    <CompetitionLabel
+                      title="Skills"
+                      value={comp.skills.join(", ")}
+                    />
+                  </div>
+                </TableCell>
+                <TableCell className="align-top">
+                  <div className="flex flex-col gap-2">
+                    <CompetitionLabel title="ELO" value={comp.elo} />
+                    <CompetitionLabel title="Trophies" value={trophiesCount} />
+                  </div>
+                </TableCell>
+                <TableCell className="align-top">
                   <CompetitionLabel
-                    title="Skills"
-                    value={comp.skills.join(", ")}
+                    title="Rewards"
+                    value={comp.rewards
+                      .map((r) => `${r.amount} ${r.name}`)
+                      .join(", ")}
                   />
-                </div>
-              </TableCell>
-              <TableCell className="align-top">
-                <div className="flex flex-col gap-2">
-                  <CompetitionLabel title="ELO" value={comp.elo} />
-                  <CompetitionLabel title="Trophies" value={comp.trophies} />
-                </div>
-              </TableCell>
-              <TableCell className="align-top">
-                <CompetitionLabel title="Rewards" value={comp.rewards} />
-              </TableCell>
-              <TableCell className="align-top">
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="hover:bg-muted whitespace-nowrap"
-                  >
-                    ≡ COT
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="hover:bg-muted whitespace-nowrap"
-                  >
-                    ✓ VOTE
-                  </Button>
-                </div>
+                </TableCell>
+                <TableCell className="align-top">
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="hover:bg-muted whitespace-nowrap"
+                    >
+                      ≡ COT
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="hover:bg-muted whitespace-nowrap"
+                    >
+                      ✓ VOTE
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center">
+                No competitions found
               </TableCell>
             </TableRow>
-          ))}
+          )}
         </TableBody>
       </Table>
       {competitions.length > 4 && (

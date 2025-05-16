@@ -1,12 +1,13 @@
 import React from "react";
 
-import { cn } from "@/../../packages/ui2/src/lib/utils";
-import { Agent } from "@/data/agents";
+import { cn } from "@recallnet/ui2/lib/utils";
+
+import { AgentResponse } from "@/types";
 
 interface AgentPodiumProps {
-  first: Agent;
-  second: Agent;
-  third: Agent;
+  first: AgentResponse;
+  second: AgentResponse;
+  third: AgentResponse;
   className?: string;
 }
 

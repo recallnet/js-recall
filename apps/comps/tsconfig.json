@@ -7,6 +7,9 @@
     "moduleResolution": "bundler",
     "paths": {
       "@/*": ["./*"],
+      "@/types": ["types/index.ts"],
+      "@/utils/*": ["utils/*"],
+      "@/data-mock/*": ["data-mock/*"],
       "@recallnet/ui2/*": ["../../packages/ui2/src/*"]
     },
     "plugins": [
