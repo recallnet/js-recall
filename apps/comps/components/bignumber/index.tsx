@@ -1,5 +1,5 @@
-import React from 'react';
-import BigNumber from 'bignumber.js';
+import BigNumber from "bignumber.js";
+import React from "react";
 
 interface BigNumberDisplayProps {
   value: string | BigNumber;
@@ -22,20 +22,20 @@ export const BigNumberDisplay: React.FC<BigNumberDisplayProps> = ({
     const formatterOptions: Intl.NumberFormatOptions = {};
 
     if (compact) {
-      formatterOptions.notation = 'compact';
-      formatterOptions.compactDisplay = 'short';
+      formatterOptions.notation = "compact";
+      formatterOptions.compactDisplay = "short";
     }
 
     if (displayDecimals !== undefined) {
       formatterOptions.maximumFractionDigits = displayDecimals;
     }
 
-    const formatter = new Intl.NumberFormat('en', formatterOptions);
+    const formatter = new Intl.NumberFormat("en", formatterOptions);
     const formattedValue = formatter.format(numberValue);
 
     return <span>{formattedValue}</span>;
   } catch (error) {
-    console.error('Error formatting BigNumber:', error);
+    console.error("Error formatting BigNumber:", error);
     return <span>Error</span>;
   }
 };

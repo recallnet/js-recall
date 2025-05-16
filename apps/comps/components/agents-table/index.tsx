@@ -1,6 +1,6 @@
 "use client";
 
-import {MagnifyingGlassIcon} from "@radix-ui/react-icons";
+import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import {
   ColumnDef,
   SortingState,
@@ -9,14 +9,14 @@ import {
   getFilteredRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import {useVirtualizer} from "@tanstack/react-virtual";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import Image from "next/image";
 import Link from "next/link";
-import React, {useMemo, useRef, useState} from "react";
+import React, { useMemo, useRef, useState } from "react";
 
-import {displayAddress} from "@recallnet/address-utils/display";
-import {Button} from "@recallnet/ui2/components/button";
-import {Input} from "@recallnet/ui2/components/input";
+import { displayAddress } from "@recallnet/address-utils/display";
+import { Button } from "@recallnet/ui2/components/button";
+import { Input } from "@recallnet/ui2/components/input";
 import {
   Table,
   TableBody,
@@ -24,7 +24,7 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import {Agent} from "@/types";
+import { Agent } from "@/types";
 
 export interface AgentsTableProps {
   agents: AgentResponse[];
@@ -35,7 +35,7 @@ export interface AgentsTableProps {
   metadata?: AgentsMetadata;
 }
 
-export const AgentsTable: React.FC<AgentsTableProps> = ({agents}) => {
+export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -49,7 +49,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({agents}) => {
             AGENT
           </span>
         ),
-        cell: ({row}) => (
+        cell: ({ row }) => (
           <div className="flex items-center gap-3">
             <Image
               src={row.original.imageUrl || "/agent-image.png"}
@@ -79,7 +79,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({agents}) => {
             OVERALL ELO SCORE
           </span>
         ),
-        cell: ({row}) => (
+        cell: ({ row }) => (
           <span className="w-full text-right text-base font-semibold text-white">
             {row.original.score || row.original.stats?.eloAvg || 0}
           </span>
@@ -90,7 +90,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({agents}) => {
       {
         id: "actions",
         header: () => null,
-        cell: ({row}) => (
+        cell: ({ row }) => (
           <div className="flex w-full justify-end gap-2">
             {/* <Button
               variant="outline"
@@ -117,7 +117,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({agents}) => {
             </Link>
           </div>
         ),
-        meta: {isActions: true},
+        meta: { isActions: true },
       },
     ],
     [],
@@ -186,7 +186,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({agents}) => {
             {table.getHeaderGroups().map((headerGroup) => (
               <tr
                 key={headerGroup.id}
-                style={{display: "flex", width: "100%"}}
+                style={{ display: "flex", width: "100%" }}
               >
                 {headerGroup.headers.map((header) => (
                   <th
@@ -194,8 +194,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({agents}) => {
                     colSpan={header.colSpan}
                     style={
                       header.column.id === "actions"
-                        ? {flex: 1}
-                        : {width: header.getSize()}
+                        ? { flex: 1 }
+                        : { width: header.getSize() }
                     }
                     className={
                       `flex items-center text-xs font-semibold tracking-widest text-slate-400` +
@@ -211,9 +211,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({agents}) => {
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
                   </th>
                 ))}
               </tr>
@@ -249,8 +249,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({agents}) => {
                       className="flex items-center"
                       style={
                         cell.column.id === "actions"
-                          ? {flex: 1, justifyContent: "flex-end"}
-                          : {width: cell.column.getSize()}
+                          ? { flex: 1, justifyContent: "flex-end" }
+                          : { width: cell.column.getSize() }
                       }
                     >
                       {flexRender(

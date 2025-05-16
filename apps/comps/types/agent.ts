@@ -4,6 +4,11 @@ import {
   Reward,
 } from "./competition";
 
+export interface User {
+  address: string;
+  loggedIn: boolean;
+}
+
 export interface BestPlacement {
   competitionId: string;
   position: number;
