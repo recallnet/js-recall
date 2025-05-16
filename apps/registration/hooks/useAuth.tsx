@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 
 import {
@@ -26,51 +26,8 @@ export function useAuth() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [autoSignInAttempted, setAutoSignInAttempted] = useState(false);
 
-  // Keep track of the previously connected wallet to detect changes
-  const previousWalletRef = useRef<string | null | undefined>(null);
 
-  // Reset auto sign-in flag when wallet changes
-  useEffect(() => {
-    // If address changed, reset autoSignInAttempted
-    if (address !== previousWalletRef.current) {
-      setAutoSignInAttempted(false);
-      previousWalletRef.current = address;
-    }
-  }, [address]);
-
-  // Auto-sign in when wallet connects
-  useEffect(() => {
-    async function attemptAutoSignIn() {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const status = await getAuthStatus();
-
-        setIsAuthenticated(status.isAuthenticated);
-        setWallet(status.wallet);
-        setTeamId(status.teamId);
-        setIsAdmin(status.isAdmin);
-      } catch (err) {
-        console.error("Error checking auth status:", err);
-        setError("Failed to check authentication status");
-        setIsAuthenticated(false);
-      } finally {
-        setIsLoading(false);
-      }
-
-      // Trigger sign-in if we have an address, not authenticated, and haven't attempted yet
-      if (address && !isAuthenticated && !autoSignInAttempted) {
-        setAutoSignInAttempted(true);
-        await signIn();
-      }
-    }
-
-    attemptAutoSignIn();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [address, autoSignInAttempted, isAuthenticated]);
 
   // Function to check authentication status
   const checkAuthStatus = useCallback(async () => {
@@ -79,6 +36,7 @@ export function useAuth() {
       setError(null);
 
       const status = await getAuthStatus();
+      console.log("Auth status:", status);  
 
       setIsAuthenticated(status.isAuthenticated);
       setWallet(status.wallet);
@@ -93,6 +51,11 @@ export function useAuth() {
     }
   }, []);
 
+    // Check authentication status on initial load and when address changes
+    useEffect(() => {
+        checkAuthStatus();
+      }, [address, checkAuthStatus]);
+
   // Function to handle sign-in
   const signIn = useCallback(async () => {
     if (!address) {
@@ -103,6 +66,7 @@ export function useAuth() {
     try {
       setIsLoading(true);
       setError(null);
+      console.log("Signing in with address:", address);
 
       // Get a nonce
       const nonce = await getNonce();
@@ -117,6 +81,8 @@ export function useAuth() {
       // Sign the message
       const signature = await signMessageAsync({ message });
 
+      console.log("Signature:", signature);
+
       // Authenticate with the signature
       const result = await authenticateWithSignature(
         address,
@@ -126,6 +92,7 @@ export function useAuth() {
 
       if (result.success) {
         setIsAuthenticated(true);
+        console.log("Authentication successful:", result);
         setWallet(result.wallet);
         setTeamId(result.teamId);
 
@@ -158,7 +125,6 @@ export function useAuth() {
         setWallet(null);
         setTeamId(null);
         setIsAdmin(false);
-        // Don't reset autoSignInAttempted here, it will be reset when wallet changes
         return true;
       } else {
         setError("Logout failed");
@@ -183,6 +149,5 @@ export function useAuth() {
     signIn,
     logout,
     checkAuthStatus,
-    autoSignInAttempted,
   };
 }

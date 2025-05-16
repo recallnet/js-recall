@@ -18,20 +18,19 @@ import { logout } from "@/lib/auth";
 export function SignInButton() {
   const { openConnectModal } = useConnectModal();
   const { disconnect } = useDisconnect();
+
   const { isConnected } = useAccount();
-  const { isAuthenticated, signIn, isLoading, error } = useAuthContext();
+  const { isAuthenticated, isLoading, error } = useAuthContext();
   const [isSigningIn, setIsSigningIn] = useState(false);
 
   const handleSignIn = async () => {
     if (!isConnected) {
       openConnectModal?.();
-      setIsSigningIn(true);
       return;
     }
 
     try {
       setIsSigningIn(true);
-      await signIn();
     } finally {
       setIsSigningIn(false);
     }
