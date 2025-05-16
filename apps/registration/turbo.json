@@ -12,6 +12,7 @@
         "NEXTAUTH_URL",
         "NEXTAUTH_SECRET",
         "VERCEL_URL",
+        "LOOPS_API_KEY",
         "NODE_ENV"
       ]
     }

@@ -328,3 +328,31 @@ export async function updateTeamProfile(
     return null;
   }
 }
+
+/**
+ * Update user information in Loops
+ *
+ * @param email User's email
+ * @param name User's name
+ * @returns Success status
+ */
+export async function updateLoopsContact(
+  email: string,
+  name: string,
+): Promise<boolean> {
+  try {
+    const response = await fetch("/api/loops-update", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, name }),
+    });
+
+    const data = await response.json();
+    return data.success;
+  } catch (error) {
+    console.error("Error updating Loops contact:", error);
+    return false;
+  }
+}

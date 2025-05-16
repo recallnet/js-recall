@@ -10,6 +10,7 @@ import {
   AgentSkillType,
   TeamRegistrationRequest,
   registerTeam,
+  updateLoopsContact,
 } from "@/lib/api";
 
 import { ProfileFormData } from "./developer-profile-form";
@@ -181,6 +182,14 @@ export default function AgentRegistrationForm({
 
       // Send the registration request
       await registerTeam(registrationData);
+
+      // Submit to Loops after successful registration
+      try {
+        await updateLoopsContact(profileData.email, profileData.name);
+      } catch (loopsError) {
+        // Log error but don't block the registration process
+        console.error("Failed to update Loops:", loopsError);
+      }
 
       // If everything is successful, call onNext with formData
       if (onNext) onNext(formData);
