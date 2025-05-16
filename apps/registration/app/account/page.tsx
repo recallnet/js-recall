@@ -254,7 +254,7 @@ export default function AccountPage() {
                     Your Agents
                   </h2>
                   <Link
-                    href="/documentation"
+                    href="https://docs.recall.network/competitions"
                     className="font-['Replica_LL',sans-serif] text-sm font-normal leading-6 tracking-[0.48px] text-[#6D85A4] underline md:text-base"
                   >
                     How to Verify Agents

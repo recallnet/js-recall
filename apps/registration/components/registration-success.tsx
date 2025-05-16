@@ -2,6 +2,9 @@
 
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+
+import { Competition, getUpcomingCompetitions } from "@/lib/api";
 
 /**
  * RegistrationSuccess component
@@ -20,30 +23,25 @@ export default function RegistrationSuccess({
     ? userName.split(" ")[0] // Use first name only
     : "there"; // Fallback when no name is provided
 
-  // Sample competition data - in a real app, this would be fetched from an API
-  const competitions = [
-    {
-      id: "1",
-      name: "Trading Competition",
-      startDate: "June 15, 2023",
-      mainSkill: "Crypto Trading",
-      color: "#38A430",
-    },
-    {
-      id: "2",
-      name: "AI Assistant Challenge",
-      startDate: "July 1, 2023",
-      mainSkill: "Programming / Coding",
-      color: "#318F2A",
-    },
-    {
-      id: "3",
-      name: "Research Agent Contest",
-      startDate: "July 15, 2023",
-      mainSkill: "Deep Research",
-      color: "#143B11",
-    },
-  ];
+  const [competitions, setCompetitions] = useState<Competition[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch upcoming competitions
+  useEffect(() => {
+    async function fetchCompetitions() {
+      try {
+        setIsLoading(true);
+        const upcomingCompetitions = await getUpcomingCompetitions();
+        setCompetitions(upcomingCompetitions);
+      } catch (err) {
+        console.error("Error fetching upcoming competitions:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchCompetitions();
+  }, []);
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-[#050507] py-8">
@@ -92,7 +90,10 @@ export default function RegistrationSuccess({
                 Check your inbox for your API key and a quickstart guide.
                 <br />
               </span>
-              <Link href="/documentation" className="text-[#E9EDF1] underline">
+              <Link
+                href="https://docs.recall.network/competitions"
+                className="text-[#E9EDF1] underline"
+              >
                 Read the documentation
               </Link>
               <span className="text-[#596E89]">
@@ -106,41 +107,97 @@ export default function RegistrationSuccess({
           </div>
 
           {/* Competition Cards */}
-          {competitions.map((competition) => (
-            <div
-              key={competition.id}
-              className="flex w-full items-center gap-4 rounded-sm border border-[#43505F] bg-[#11121A] p-3"
-            >
-              <div
-                className="h-[100px] w-[100px] flex-shrink-0"
-                style={{ backgroundColor: competition.color }}
-              ></div>
-              <div className="flex flex-1 flex-col gap-2">
-                <h3 className="font-['Replica_LL',sans-serif] text-base font-bold leading-6 text-[#E9EDF1]">
-                  {competition.name}
-                </h3>
-                <div className="flex items-center gap-4">
-                  <span className="font-['Trim_Mono',monospace] text-xs font-semibold uppercase tracking-[1.56px] text-[#6D85A4]">
-                    {competition.startDate}
-                  </span>
-                  <span className="font-['Trim_Mono',monospace] text-xs font-semibold uppercase tracking-[1.56px] text-[#6D85A4]">
-                    {competition.mainSkill}
-                  </span>
-                </div>
-              </div>
-              <button className="flex items-center justify-center gap-2 border-l border-r border-[#212C3A] bg-[#0057AD] px-4 py-2">
-                <span className="font-['Trim_Mono',monospace] text-xs font-semibold uppercase tracking-[1.56px] text-[#E9EDF1]">
-                  join
-                </span>
-                <ArrowRight className="h-4 w-4 text-[#E9EDF1]" />
-              </button>
+          {isLoading ? (
+            <div className="flex w-full items-center justify-center py-4">
+              <div className="text-[#596E89]">Loading competitions...</div>
             </div>
-          ))}
+          ) : competitions.length > 0 ? (
+            competitions.map((competition, index) => {
+              // Determine competition color based on index
+              const colors = [
+                "#38A430",
+                "#318F2A",
+                "#143B11",
+                "#0B5A38",
+                "#0D7A4F",
+              ];
+              const color = colors[index % colors.length];
+
+              return (
+                <div
+                  key={competition.id}
+                  className="flex w-full items-center gap-4 rounded-sm border border-[#43505F] bg-[#11121A] p-3"
+                >
+                  <div
+                    className="h-[100px] w-[100px] flex-shrink-0"
+                    style={{
+                      backgroundColor: competition.imageUrl
+                        ? "transparent"
+                        : color,
+                    }}
+                  >
+                    {competition.imageUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={competition.imageUrl}
+                        alt={competition.name}
+                        className="h-full w-full object-cover"
+                      />
+                    )}
+                  </div>
+                  <div className="flex flex-1 flex-col gap-2">
+                    <h3 className="font-['Replica_LL',sans-serif] text-base font-bold leading-6 text-[#E9EDF1]">
+                      {competition.name}
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-4">
+                      <span className="font-['Trim_Mono',monospace] text-xs font-semibold uppercase tracking-[1.56px] text-[#6D85A4]">
+                        {competition.status}
+                      </span>
+                      {competition.description && (
+                        <span className="max-w-[250px] truncate font-['Trim_Mono',monospace] text-xs font-semibold tracking-[1.56px] text-[#6D85A4]">
+                          {competition.description}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {competition.externalLink ? (
+                    <Link
+                      href={competition.externalLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 border-l border-r border-[#212C3A] bg-[#0057AD] px-4 py-2"
+                    >
+                      <span className="font-['Trim_Mono',monospace] text-xs font-semibold uppercase tracking-[1.56px] text-[#E9EDF1]">
+                        join
+                      </span>
+                      <ArrowRight className="h-4 w-4 text-[#E9EDF1]" />
+                    </Link>
+                  ) : (
+                    <button className="flex items-center justify-center gap-2 border-l border-r border-[#212C3A] bg-[#0057AD] px-4 py-2">
+                      <span className="font-['Trim_Mono',monospace] text-xs font-semibold uppercase tracking-[1.56px] text-[#E9EDF1]">
+                        join
+                      </span>
+                      <ArrowRight className="h-4 w-4 text-[#E9EDF1]" />
+                    </button>
+                  )}
+                </div>
+              );
+            })
+          ) : (
+            <div className="flex w-full items-center justify-center rounded-sm border border-[#43505F] bg-[#11121A] p-6">
+              <div className="text-[#596E89]">
+                No upcoming competitions available at this time.
+              </div>
+            </div>
+          )}
 
           {/* Footer */}
           <p className="w-full font-['Replica_LL',sans-serif] text-lg leading-[27px] tracking-[0.54px] text-[#596E89]">
             Need help? Reach out on our{" "}
-            <Link href="/discord" className="text-[#E9EDF1] underline">
+            <Link
+              href="https://discord.com/invite/recallnet"
+              className="text-[#E9EDF1] underline"
+            >
               Discord community
             </Link>
             .
