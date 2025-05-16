@@ -1,18 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import {usePathname} from "next/navigation";
+import { usePathname } from "next/navigation";
 
-import {Avatar, AvatarImage} from "@recallnet/ui2/components/avatar";
+import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
 
-import {SIWEButton} from "../siwe";
+import { SIWEButton } from "../siwe";
 
-export const Navbar: React.FunctionComponent<{children: React.ReactNode}> = ({children}) => {
+export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const pathname = usePathname();
 
   const navItems = [
-    {label: "COMPETITIONS", href: "/competitions"},
-    {label: "LEADERBOARDS", href: "/leaderboard"},
+    { label: "COMPETITIONS", href: "/competitions" },
+    { label: "LEADERBOARDS", href: "/leaderboard" },
   ];
 
   if (pathname === "/onboarding") return children;
@@ -24,7 +26,11 @@ export const Navbar: React.FunctionComponent<{children: React.ReactNode}> = ({ch
           <Link href="/" className="flex items-center">
             <Avatar className="h-12 w-12">
               {" "}
-              <AvatarImage src="/favicon-32x32.png" alt="recallnet" className="w-12" />
+              <AvatarImage
+                src="/favicon-32x32.png"
+                alt="recallnet"
+                className="w-12"
+              />
             </Avatar>
           </Link>
 
@@ -35,10 +41,11 @@ export const Navbar: React.FunctionComponent<{children: React.ReactNode}> = ({ch
               return (
                 <Link key={item.href} href={item.href}>
                   <span
-                    className={`text-sm font-medium transition-colors ${isActive
+                    className={`text-sm font-medium transition-colors ${
+                      isActive
                         ? "text-white underline underline-offset-4"
                         : "text-gray-400 hover:text-white"
-                      }`}
+                    }`}
                   >
                     {item.label}
                   </span>

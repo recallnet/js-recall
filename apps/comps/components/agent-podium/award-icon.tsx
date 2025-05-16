@@ -1,8 +1,10 @@
-import React from 'react'
-import {cn} from "@recallnet/ui2/lib/utils";
+import React from "react";
 
-interface AwardIconProps extends Omit<React.SVGProps<SVGSVGElement>, "children"> {
-  place: 'first' | 'second' | 'third'
+import { cn } from "@recallnet/ui2/lib/utils";
+
+interface AwardIconProps
+  extends Omit<React.SVGProps<SVGSVGElement>, "children"> {
+  place: "first" | "second" | "third";
 }
 
 export const AwardIcon: React.FunctionComponent<AwardIconProps> = ({
@@ -14,15 +16,19 @@ export const AwardIcon: React.FunctionComponent<AwardIconProps> = ({
   className,
   ...props
 }) => {
-  const text = place === 'first' ? '1ST' : place === 'second' ? '2ND' : '3RD'
+  const text = place === "first" ? "1ST" : place === "second" ? "2ND" : "3RD";
 
   return (
     <div
-      className={cn("flex items-center text-gray-400 font-semibold", className, {
-        'text-yellow-400': place === 'first',
-        'text-gray-400': place === 'second',
-        'text-red-400': place === 'third',
-      })}
+      className={cn(
+        "flex items-center font-semibold text-gray-400",
+        className,
+        {
+          "text-yellow-400": place === "first",
+          "text-gray-400": place === "second",
+          "text-red-400": place === "third",
+        },
+      )}
     >
       <span className="mb-1 text-center text-lg">
         <svg
@@ -47,7 +53,7 @@ export const AwardIcon: React.FunctionComponent<AwardIconProps> = ({
       </span>
       <span className="mb-1 text-center text-xs">{text}</span>
     </div>
-  )
+  );
 };
 
-export default AwardIcon
+export default AwardIcon;
