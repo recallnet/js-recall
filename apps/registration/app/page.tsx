@@ -4,19 +4,18 @@ import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useAccount } from "wagmi";
 
 import { Button } from "@recallnet/ui/components/shadcn/button";
 
 import AgentRegistrationForm, {
   AgentFormData,
 } from "@/components/agent-registration-form";
-import { useAuthContext } from "@/components/auth-provider";
 import DeveloperProfileForm, {
   ProfileFormData,
 } from "@/components/developer-profile-form";
 import RegistrationSuccess from "@/components/registration-success";
 import { SignInButton } from "@/components/sign-in-button";
+import { useAuthState } from "@/hooks/auth-state";
 import { getTeamByWalletAddress } from "@/lib/api";
 
 /**
@@ -25,8 +24,7 @@ import { getTeamByWalletAddress } from "@/lib/api";
  * @returns The homepage with registration information and links
  */
 export default function Home() {
-  const { address } = useAccount();
-  const { isAuthenticated, isLoading: authLoading, wallet } = useAuthContext();
+  const { isAuthenticated, isLoading, address } = useAuthState();
   const router = useRouter();
   const [isCheckingProfile, setIsCheckingProfile] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
@@ -53,10 +51,10 @@ export default function Home() {
   // Check if the user already has a profile when they connect their wallet
   useEffect(() => {
     const checkExistingProfile = async () => {
-      if (wallet && isAuthenticated && !authLoading) {
+      if (address && isAuthenticated && !isLoading) {
         try {
           setIsCheckingProfile(true);
-          const team = await getTeamByWalletAddress(wallet);
+          const team = await getTeamByWalletAddress(address);
 
           if (team) {
             setHasProfile(true);
@@ -70,7 +68,7 @@ export default function Home() {
     };
 
     checkExistingProfile();
-  }, [wallet, isAuthenticated, authLoading, router]);
+  }, [address, isAuthenticated, isLoading, router]);
 
   // Handle next button from profile form
   const handleProfileNext = (data: ProfileFormData) => {
@@ -129,7 +127,7 @@ export default function Home() {
       return <SignInButton />;
     }
 
-    if (authLoading || isCheckingProfile) {
+    if (isLoading || isCheckingProfile) {
       return (
         <Button
           className="w-full rounded-none bg-[#0057AD] py-5 transition-colors hover:bg-[#0066cc]"

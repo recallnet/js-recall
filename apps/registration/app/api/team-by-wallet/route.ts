@@ -40,9 +40,23 @@ export async function GET(request: NextRequest) {
     const adminApiKey = process.env.ADMIN_API_KEY;
 
     // Set up server-side client with admin API key if available
-    const client = adminApiKey
-      ? new TeamApiClient(apiUrl, adminApiKey)
-      : new TeamApiClient(apiUrl);
+    const client = new TeamApiClient(apiUrl, adminApiKey);
+    // test if the client is working
+    try {
+      await client.getAllTeams();
+    } catch (error) {
+      console.error("Error testing API client:", error);
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to test API client",
+        },
+        { status: 500 },
+      );
+    }
 
     // Make the API request to search for teams
     try {

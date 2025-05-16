@@ -18,7 +18,7 @@ import {
 import { Input } from "@recallnet/ui/components/shadcn/input";
 import { Textarea } from "@recallnet/ui/components/shadcn/textarea";
 
-import { useAuthContext } from "@/components/auth-provider";
+import { useAuthState } from "@/hooks/auth-state";
 import { AgentSkillType, registerTeam } from "@/lib/api";
 import type { Team, TeamRegistrationRequest } from "@/lib/api";
 import { registrationSchema } from "@/lib/validation";
@@ -42,7 +42,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
   const [registeredTeam, setRegisteredTeam] = useState<Team | null>(null);
   const [apiKeyCopied, setApiKeyCopied] = useState(false);
   const [showAgentForm, setShowAgentForm] = useState(true);
-  const { wallet } = useAuthContext();
+  const { address } = useAuthState();
 
   const form = useForm<TeamRegistrationRequest>({
     resolver: zodResolver(registrationSchema),
@@ -78,11 +78,11 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
 
   // Auto-fill the wallet address field with the connected wallet address
   useEffect(() => {
-    if (wallet) {
-      console.log("Connected wallet:", wallet);
-      form.setValue("walletAddress", wallet);
+    if (address) {
+      console.log("Connected wallet:", address);
+      form.setValue("walletAddress", address);
     }
-  }, [wallet, form]);
+  }, [address, form]);
 
   /**
    * Adds a new agent to the form
@@ -651,14 +651,14 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
         </div>
 
         <div className="flex flex-col items-center pt-4">
-          {!wallet && (
+          {!address && (
             <div className="mb-4 text-center text-orange-500">
               Please connect and authenticate your wallet to register
             </div>
           )}
           <Button
             type="submit"
-            disabled={isSubmitting || !wallet}
+            disabled={isSubmitting || !address}
             className="px-8"
           >
             {isSubmitting ? "Registering..." : "Register Team"}

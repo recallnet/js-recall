@@ -4,11 +4,10 @@ import { Check, Clipboard, ExternalLink, Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useAccount } from "wagmi";
 
 import AgentAddForm from "@/components/agent-add-form";
-import { useAuthContext } from "@/components/auth-provider";
 import RecallLogo from "@/components/recall-logo";
+import { useAuthState } from "@/hooks/auth-state";
 import {
   Competition,
   Team,
@@ -24,9 +23,8 @@ import {
  * @returns Account page component
  */
 export default function AccountPage() {
-  const { address } = useAccount();
   const [isLoading, setIsLoading] = useState(true);
-  const { wallet } = useAuthContext();
+  const { address } = useAuthState();
   const [team, setTeam] = useState<Team | null>(null);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -37,10 +35,10 @@ export default function AccountPage() {
   // When the user is connected with a wallet, check if they already have a team
   useEffect(() => {
     async function checkForExistingTeam() {
-      if (wallet) {
+      if (address) {
         try {
           setIsLoading(true);
-          const matchingTeam = await getTeamByWalletAddress(wallet);
+          const matchingTeam = await getTeamByWalletAddress(address);
 
           if (matchingTeam) {
             console.log("Found matching team:", matchingTeam);
@@ -62,7 +60,7 @@ export default function AccountPage() {
     }
 
     checkForExistingTeam();
-  }, [wallet, router]);
+  }, [address, router]);
 
   // Fetch upcoming competitions
   useEffect(() => {

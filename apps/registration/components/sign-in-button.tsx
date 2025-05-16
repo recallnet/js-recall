@@ -2,26 +2,49 @@
 
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
-import { useAccount, useDisconnect } from "wagmi";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { useDisconnect } from "wagmi";
 
 import { Button } from "@recallnet/ui/components/shadcn/button";
 
-import { useAuthContext } from "@/components/auth-provider";
-import { logout } from "@/lib/auth";
+import { useAuthState } from "@/hooks/auth-state";
 
 /**
  * SignIn button component
  *
  * Handles the sign-in flow with the wallet
+ * Uses RainbowKit SIWE + NextAuth for authentication
  */
 export function SignInButton() {
   const { openConnectModal } = useConnectModal();
   const { disconnect } = useDisconnect();
+  const {
+    isAuthenticated,
+    isLoading,
+    isConnected,
+    address,
+    triggerSignIn,
+    logout,
+  } = useAuthState();
+  const { status } = useSession();
 
-  const { isConnected } = useAccount();
-  const { isAuthenticated, isLoading, error } = useAuthContext();
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
+
+  useEffect(() => {
+    // If the user is authenticated, we can show the address
+  }, [status]);
+
+  const handleConnect = () => {
+    // If already connected but not authenticated, trigger SIWE
+    if (isConnected && !isAuthenticated) {
+      handleSignIn();
+    } else {
+      // Otherwise open connect modal which will trigger SIWE automatically
+      openConnectModal?.();
+    }
+  };
 
   const handleSignIn = async () => {
     if (!isConnected) {
@@ -31,45 +54,64 @@ export function SignInButton() {
 
     try {
       setIsSigningIn(true);
+      await triggerSignIn();
     } finally {
       setIsSigningIn(false);
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      setIsSigningOut(true);
+      await logout();
+      disconnect();
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
+
+  // Show the authenticated state
   if (isAuthenticated) {
     return (
       <Button
         variant="outline"
-        onClick={async () => {
-          await logout();
-          disconnect();
-        }}
+        onClick={handleLogout}
+        disabled={isSigningOut}
         className="w-full rounded-none border border-[#303846] bg-transparent py-5 transition-colors hover:bg-[#0e1218]"
       >
-        <span className="font-['Trim_Mono',monospace] text-sm font-semibold uppercase tracking-wider text-[#596E89]">
-          Log Out
-        </span>
+        {isSigningOut ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Logging Out...
+          </>
+        ) : (
+          <span className="font-['Trim_Mono',monospace] text-sm font-semibold uppercase tracking-wider text-[#596E89]">
+            Log Out {address ? `(${address.substring(0, 6)}...)` : ""}
+          </span>
+        )}
       </Button>
     );
   }
 
-  const isButtonLoading = isLoading || isSigningIn;
+  // Loading state - next-auth is checking auth status
+  const buttonLoading = isLoading || isSigningIn;
 
+  // Connect or sign in button based on wallet connection state
   return (
     <div className="space-y-2">
       <Button
-        onClick={handleSignIn}
-        disabled={isButtonLoading}
+        onClick={handleConnect}
+        disabled={buttonLoading}
         className="w-full rounded-none bg-[#0057AD] py-5 transition-colors hover:bg-[#0066cc]"
       >
-        {isButtonLoading ? (
+        {buttonLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            {isConnected ? "Signing In..." : "Connecting..."}
+            {isSigningIn ? "Signing In..." : "Loading..."}
           </>
         ) : isConnected ? (
           <span className="font-['Trim_Mono',monospace] text-sm font-semibold uppercase tracking-wider text-[#E9EDF1]">
-            Sign In
+            Sign In with Wallet
           </span>
         ) : (
           <span className="font-['Trim_Mono',monospace] text-sm font-semibold uppercase tracking-wider text-[#E9EDF1]">
@@ -77,8 +119,6 @@ export function SignInButton() {
           </span>
         )}
       </Button>
-
-      {error && <p className="text-destructive text-sm">{error}</p>}
     </div>
   );
 }

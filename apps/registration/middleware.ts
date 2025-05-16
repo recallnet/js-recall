@@ -1,9 +1,6 @@
-import jwt from "jsonwebtoken";
+import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-
-// Secret key for JWT verification
-const JWT_SECRET = process.env.JWT_SECRET;
 
 // Routes that require authentication
 const PROTECTED_ROUTES = ["/api/protected/"];
@@ -12,62 +9,54 @@ const PROTECTED_ROUTES = ["/api/protected/"];
 const AUTH_PUBLIC_ROUTES = ["/login"];
 
 /**
- * Middleware to check JWT authentication for protected routes
- *
- * @param request The incoming request
- * @returns The response or redirect
+ * Middleware to check authentication for protected routes
+ * Uses NextAuth for authentication
  */
-export function middleware(request: NextRequest) {
-  if (!JWT_SECRET) {
-    throw new Error("JWT_SECRET is not defined");
-  }
-  // Get the auth token from the cookie
-  const authToken = request.cookies.get("auth-token")?.value;
-  const isProtectedRoute = PROTECTED_ROUTES.some((route) =>
-    request.nextUrl.pathname.startsWith(route),
-  );
-  const isAuthPublicRoute = AUTH_PUBLIC_ROUTES.some((route) =>
-    request.nextUrl.pathname.startsWith(route),
-  );
+export default withAuth(
+  function middleware(req) {
+    const { pathname } = req.nextUrl;
+    const token = req.nextauth?.token;
 
-  // For protected routes, check if the user is authenticated
-  if (isProtectedRoute) {
-    if (!authToken) {
-      // Redirect to login page if not authenticated
-      const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
-      return NextResponse.redirect(loginUrl);
+    // For protected routes, check if the user is authenticated
+    const isProtectedRoute = PROTECTED_ROUTES.some((route) =>
+      pathname.startsWith(route),
+    );
+
+    // For public auth routes, redirect if already authenticated
+    const isAuthPublicRoute = AUTH_PUBLIC_ROUTES.some((route) =>
+      pathname.startsWith(route),
+    );
+
+    // If authenticated and trying to access auth routes (login), redirect to dashboard
+    if (token && isAuthPublicRoute) {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
-    try {
-      // Verify the token
-      jwt.verify(authToken, JWT_SECRET);
-      // Continue with the request
-      return NextResponse.next();
-    } catch (error) {
-      // Token is invalid, redirect to login
-      const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-  }
+    // Continue for all other paths
+    return NextResponse.next();
+  },
+  {
+    callbacks: {
+      // Only run this middleware on the specified paths
+      authorized: ({ token, req }) => {
+        const { pathname } = req.nextUrl;
 
-  // For login/register pages, redirect to dashboard if already authenticated
-  if (isAuthPublicRoute && authToken) {
-    try {
-      // Verify the token
-      jwt.verify(authToken, JWT_SECRET);
-      // If valid, redirect to dashboard
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    } catch (error) {
-      // If token is invalid, continue with the request
-      return NextResponse.next();
-    }
-  }
+        // Check if the route needs protection
+        const isProtectedRoute = PROTECTED_ROUTES.some((route) =>
+          pathname.startsWith(route),
+        );
 
-  // For all other routes, continue with the request
-  return NextResponse.next();
-}
+        // For protected routes, require authentication
+        if (isProtectedRoute) {
+          return !!token;
+        }
+
+        // For all other routes, allow access regardless of auth status
+        return true;
+      },
+    },
+  },
+);
 
 /**
  * Configure middleware to run on specific paths

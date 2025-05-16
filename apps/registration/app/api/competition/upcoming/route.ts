@@ -5,10 +5,14 @@ import { TeamApiClient } from "@/lib/api-client";
 /**
  * GET handler for fetching upcoming competitions
  *
+ * @param request Next.js request object
  * @returns JSON response with upcoming competitions
  */
 export async function GET() {
   try {
+    // Get env api key
+    const apiKey = process.env.ADMIN_API_KEY;
+
     // Access API URL from environment variables
     const apiUrl = process.env.API_URL;
     if (!apiUrl) {
@@ -21,13 +25,8 @@ export async function GET() {
       );
     }
 
-    // Get admin API key from environment if needed
-    const adminApiKey = process.env.ADMIN_API_KEY;
-
-    // Set up server-side client with admin API key if available
-    const client = adminApiKey
-      ? new TeamApiClient(apiUrl, adminApiKey)
-      : new TeamApiClient(apiUrl);
+    // Set up server-side client with the team's API key from the request
+    const client = new TeamApiClient(apiUrl, apiKey);
 
     // Make the API request to get upcoming competitions
     try {

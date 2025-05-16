@@ -202,7 +202,7 @@ export async function getTeamByWalletAddress(
 
     // Use our Next.js API route instead of directly accessing the admin endpoint
     const queryParams = new URLSearchParams({
-      address: formattedAddress,
+      address: formattedAddress.toLowerCase(),
     });
 
     const response = await fetch(`/api/team-by-wallet?${queryParams}`, {
@@ -263,7 +263,7 @@ export interface Competition {
  */
 export async function getUpcomingCompetitions(): Promise<Competition[]> {
   try {
-    const response = await fetch("/api/competitions/upcoming", {
+    const response = await fetch("/api/competition/upcoming", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

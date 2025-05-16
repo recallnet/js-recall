@@ -1,36 +1,18 @@
 "use client";
 
-import { ReactNode, createContext, useContext, useMemo } from "react";
-
-import { useAuth } from "@/hooks/useAuth";
-
-type AuthContextType = ReturnType<typeof useAuth>;
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
 /**
- * Authentication Provider component
- *
- * Provides authentication context to the application
+ * @deprecated This component is now removed.
+ * We're using NextAuth + RainbowKit SIWE directly with the session from useSession.
  */
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const auth = useAuth();
-
-  // Memoize the context value to prevent unnecessary re-renders
-  const value = useMemo(() => auth, [auth]);
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
 }
 
 /**
- * Hook to use the auth context
+ * @deprecated Use useAuthState from @/hooks/auth-state or NextAuth's useSession directly
  */
 export function useAuthContext() {
-  const context = useContext(AuthContext);
-
-  if (context === undefined) {
-    throw new Error("useAuthContext must be used within an AuthProvider");
-  }
-
-  return context;
+  throw new Error(
+    "useAuthContext is deprecated. Please use useAuthState from @/hooks/auth-state or NextAuth's useSession directly",
+  );
 }

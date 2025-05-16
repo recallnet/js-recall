@@ -1,34 +1,10 @@
-import jwt from "jsonwebtoken";
+import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 import { TeamApiClient } from "@/lib/api-client";
 import { registrationSchema } from "@/lib/validation";
 
-/**
- * Secret key for JWT verification
- * Must match the key used in the auth routes
- */
-const JWT_SECRET =
-  process.env.JWT_SECRET || "your-secret-key-change-in-production";
-
-/**
- * Verify JWT token from cookie
- *
- * @param token The JWT token to verify
- * @returns The decoded token payload or null if invalid
- */
-function verifyToken(token: string) {
-  try {
-    return jwt.verify(token, JWT_SECRET) as {
-      wallet: string;
-      teamId?: string;
-      isAdmin: boolean;
-    };
-  } catch (error) {
-    console.error("Error verifying token:", error);
-    return null;
-  }
-}
+import { authOptions } from "../../auth/[...nextauth]/route";
 
 /**
  * POST handler for team registration
@@ -55,10 +31,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get the auth token from the cookie
-    const authToken = request.cookies.get("auth-token")?.value;
+    // Get the auth session using NextAuth
+    const session = await getServerSession(authOptions);
 
-    if (!authToken) {
+    // Check if the user is authenticated
+    if (!session || !session.user || !session.user.address) {
       return NextResponse.json(
         {
           success: false,
@@ -68,21 +45,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify the token and get authenticated wallet
-    const userData = verifyToken(authToken);
-
-    if (!userData) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid authentication token",
-        },
-        { status: 401 },
-      );
-    }
-
     // Compare the wallet address in the form with the authenticated wallet
-    if (userData.wallet.toLowerCase() !== body.walletAddress.toLowerCase()) {
+    if (
+      session.user.address.toLowerCase() !== body.walletAddress.toLowerCase()
+    ) {
       return NextResponse.json(
         {
           success: false,

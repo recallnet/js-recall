@@ -170,6 +170,7 @@ export class TeamApiClient {
    */
   async getUpcomingCompetitions() {
     try {
+      console.log("getUpcomingCompetitions");
       const response = await this.axiosInstance.get(
         "/api/competition/upcoming",
       );

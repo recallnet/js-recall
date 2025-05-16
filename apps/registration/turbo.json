@@ -9,6 +9,9 @@
         "API_URL",
         "ADMIN_API_KEY",
         "JWT_SECRET",
+        "NEXTAUTH_URL",
+        "NEXTAUTH_SECRET",
+        "VERCEL_URL",
         "NODE_ENV"
       ]
     }
