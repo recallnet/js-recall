@@ -15,6 +15,13 @@
       "when": 1747326065815,
       "tag": "0001_sparkling_domino",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1747505760840,
+      "tag": "0002_fair_stryfe",
+      "breakpoints": true
     }
   ]
 }

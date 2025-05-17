@@ -231,6 +231,7 @@ describe("Trading API", () => {
     );
     expect(finalSolBalance).toBeLessThan(updatedSolBalance);
   });
+
   test("team can execute a trade with an arbitrary token address", async () => {
     // Setup admin client
     const adminClient = createTestClient();
@@ -1532,4 +1533,115 @@ describe("Trading API", () => {
       "EVM-to-SVM trade failed as expected with disallowXParent setting",
     );
   });
+
+
+
+
+  test("team can execute trades with very small value tokens", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register team and get client
+    const { client: teamClient, team } = await registerTeamAndGetClient(
+      adminApiKey,
+      "Small Value Trading Team",
+    );
+
+    // Start a competition with our team
+    const competitionName = `Small Value Trading Test ${Date.now()}`;
+    await startTestCompetition(adminClient, competitionName, [team.id]);
+
+    // Wait for balances to be properly initialized
+    await wait(500);
+
+    // Check initial balance
+    const initialBalanceResponse = await teamClient.getBalance();
+    expect(initialBalanceResponse.success).toBe(true);
+
+    // Initial USDC balance should be the starting amount (e.g., 10000)
+    const usdcTokenAddress = config.specificChainTokens.svm.usdc;
+
+    //const smallValueTokenAddress = "0x6e15a54b5ecac17e58dadeddbe8506a7560252f9";
+    const smallValueTokenAddress = "0x133700007e5700007e5700007357000031337000";
+
+    const initialUsdcBalance = parseFloat(
+      (initialBalanceResponse as BalancesResponse).balances
+        .find((b: TokenBalance) => b.tokenAddress === usdcTokenAddress)
+        ?.amount.toString() || "0",
+    );
+    console.log(`Initial USDC balance: ${initialUsdcBalance}`);
+    expect(initialUsdcBalance).toBeGreaterThan(0);
+
+    // Initial SOL balance
+    const initialSmallTBalance = parseFloat(
+      (initialBalanceResponse as BalancesResponse).balances
+        .find((b) => b.tokenAddress === smallValueTokenAddress)
+        ?.amount.toString() || "0",
+    );
+    console.log(`Initial SOL balance: ${initialSmallTBalance}`);
+
+    // The amount to trade
+    const tradeAmount = 50;
+
+    // Execute a buy trade with explicit Solana chain parameters
+    console.log("Executing trade with explicit Solana chain parameters");
+    const buyTradeResponse = await teamClient.executeTrade({
+      fromToken: usdcTokenAddress,
+      toToken: smallValueTokenAddress,
+      amount: tradeAmount.toString(),
+      fromChain: BlockchainType.SVM,
+      toChain: BlockchainType.SVM,
+      fromSpecificChain: SpecificChain.SVM,
+      toSpecificChain: SpecificChain.SVM,
+      reason,
+    });
+
+    console.log(`Buy trade response: ${JSON.stringify(buyTradeResponse)}`);
+    expect(buyTradeResponse.success).toBe(true);
+    expect((buyTradeResponse as TradeResponse).transaction).toBeDefined();
+
+    // Verify chain fields in the transaction
+    expect((buyTradeResponse as TradeResponse).transaction.fromChain).toBe(
+      BlockchainType.SVM,
+    );
+    expect((buyTradeResponse as TradeResponse).transaction.toChain).toBe(
+      BlockchainType.SVM,
+    );
+
+    // Wait for the trade to process
+    await wait(500);
+
+    // Check updated balance
+    const updatedBalanceResponse = await teamClient.getBalance();
+    expect(updatedBalanceResponse.success).toBe(true);
+    // USDC balance should have decreased
+    const updatedUsdcBalance = parseFloat(
+      (updatedBalanceResponse as BalancesResponse).balances
+        .find((b: TokenBalance) => b.tokenAddress === usdcTokenAddress)
+        ?.amount.toString() || "0",
+    );
+    console.log(`Updated USDC balance: ${updatedUsdcBalance}`);
+    expect(updatedUsdcBalance).toBeLessThan(initialUsdcBalance);
+    // SOL balance should have increased
+    const updatedSmallTBalance = parseFloat(
+      (updatedBalanceResponse as BalancesResponse).balances
+        .find((b: TokenBalance) => b.tokenAddress === smallValueTokenAddress)
+        ?.amount.toString() || "0",
+    );
+    console.log(`Updated SOL balance: ${updatedSmallTBalance}`);
+    expect(updatedSmallTBalance).toBeGreaterThan(initialSmallTBalance);
+
+    // Get trade history and verify chain info is preserved
+    const tradeHistoryResponse = await teamClient.getTradeHistory();
+    expect(tradeHistoryResponse.success).toBe(true);
+    // Get the most recent trade
+    const lastTrade = (tradeHistoryResponse as TradeHistoryResponse).trades[0];
+
+    // Verify chain fields in the trade history
+    expect(lastTrade?.fromChain).toBe(BlockchainType.SVM);
+    expect(lastTrade?.toChain).toBe(BlockchainType.SVM);
+
+  });
+
 });
