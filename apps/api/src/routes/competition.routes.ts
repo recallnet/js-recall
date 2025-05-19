@@ -53,14 +53,6 @@ export function configureCompetitionRoutes(
    *                       type: string
    *                       nullable: true
    *                       description: Competition description
-   *                     externalLink:
-   *                       type: string
-   *                       nullable: true
-   *                       description: External URL for competition details
-   *                     imageUrl:
-   *                       type: string
-   *                       nullable: true
-   *                       description: URL to competition image
    *                     startDate:
    *                       type: string
    *                       format: date-time
@@ -182,14 +174,6 @@ export function configureCompetitionRoutes(
    *                       type: string
    *                       nullable: true
    *                       description: Competition description
-   *                     externalLink:
-   *                       type: string
-   *                       nullable: true
-   *                       description: External URL for competition details
-   *                     imageUrl:
-   *                       type: string
-   *                       nullable: true
-   *                       description: URL to competition image
    *                     startDate:
    *                       type: string
    *                       format: date-time
@@ -331,14 +315,6 @@ export function configureCompetitionRoutes(
    *                         type: string
    *                         nullable: true
    *                         description: Competition description
-   *                         externalLink:
-   *                           type: string
-   *                           nullable: true
-   *                           description: External URL for competition details
-   *                         imageUrl:
-   *                           type: string
-   *                           nullable: true
-   *                           description: URL to competition image
    *                       status:
    *                         type: string
    *                         enum: [PENDING]

@@ -17,14 +17,8 @@ export function makePublicController(services: ServiceRegistry) {
      */
     async registerTeam(req: Request, res: Response, next: NextFunction) {
       try {
-        const {
-          teamName,
-          email,
-          contactPerson,
-          walletAddress,
-          metadata,
-          imageUrl,
-        } = req.body;
+        const { teamName, email, contactPerson, walletAddress, metadata } =
+          req.body;
 
         // Validate required parameters
         if (!teamName || !email || !contactPerson || !walletAddress) {
@@ -58,7 +52,6 @@ export function makePublicController(services: ServiceRegistry) {
             contactPerson,
             walletAddress,
             metadata,
-            imageUrl,
           );
 
           // Format the response to include api key and metadata for the client
@@ -72,7 +65,6 @@ export function makePublicController(services: ServiceRegistry) {
               walletAddress: team.walletAddress,
               apiKey: team.apiKey,
               metadata: team.metadata,
-              imageUrl: team.imageUrl,
               createdAt: team.createdAt,
             },
           });
