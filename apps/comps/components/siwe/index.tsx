@@ -13,15 +13,21 @@ import {
 } from "@recallnet/ui2/components/shadcn/dropdown-menu";
 
 import { Identicon } from "@/components/Identicon";
+import { useLogout } from "@/hooks/useAuth";
 import { userAtom } from "@/state/atoms";
 
 export const SIWEButton: React.FunctionComponent<
   React.ComponentProps<typeof Button>
 > = () => {
   const [user, setUser] = useAtom(userAtom);
+  const { mutate: logout } = useLogout();
 
   const handleLogout = () => {
-    setUser({ loggedIn: false, address: "" });
+    logout(undefined, {
+      onSuccess: () => {
+        setUser({ loggedIn: false, address: "" });
+      },
+    });
   };
 
   return (
