@@ -15,6 +15,7 @@
     "faucet",
     "portal",
     "api",
+    "registration",
     "@recallnet/ui",
     "@recallnet/ui2",
     "@recallnet/react",
