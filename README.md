@@ -1,5 +1,6 @@
 # `js-recall`
-asdf
+
+asdfasf
 [![License](https://img.shields.io/github/license/recallnet/js-recall.svg)](./LICENSE)
 [![standard-readme compliant](https://img.shields.io/badge/standard--readme-OK-green.svg)](https://github.com/RichardLitt/standard-readme)
 
@@ -12,8 +13,24 @@ asdf
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Usage](#usage)
+  - [Applications](#applications)
+  - [Core Packages](#core-packages)
 - [Development](#development)
+  - [Common Commands](#common-commands)
+  - [Version Management](#version-management)
+  - [Development Environment](#development-environment)
+  - [IDE Support](#ide-support)
 - [Development with Cursor](#development-with-cursor)
+  - [Agent Mode Configuration](#agent-mode-configuration)
+  - [Required Documentation Context](#required-documentation-context)
+  - [Best Practices](#best-practices)
+  - [Tips](#tips)
+  - [Example Agent Prompts](#example-agent-prompts)
+    - [Issue Analysis and Spec Creation](#issue-analysis-and-spec-creation)
+    - [Code Review and Documentation](#code-review-and-documentation)
+    - [Development Planning](#development-planning)
+    - [Codebase Navigation](#codebase-navigation)
+    - [Testing and Quality](#testing-and-quality)
 - [Contributing](#contributing)
 - [License](#license)
 
