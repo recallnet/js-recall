@@ -200,4 +200,56 @@ export class TeamApiClient {
       throw this.handleApiError(error, "update team profile");
     }
   }
+
+  /**
+   * Get team's trade history
+   *
+   * @param filters Optional filters for the trades query
+   * @returns Trade history data
+   */
+  async getTeamTrades(filters?: {
+    fromToken?: string;
+    toToken?: string;
+    fromChain?: string;
+    toChain?: string;
+    fromSpecificChain?: string;
+    toSpecificChain?: string;
+    limit?: number;
+    offset?: number;
+  }) {
+    try {
+      // Convert filters to query parameters if provided
+      let endpoint = "/api/account/trades";
+      if (filters) {
+        const queryParams = new URLSearchParams();
+
+        // Add each filter to query params if defined
+        if (filters.fromToken)
+          queryParams.append("fromToken", filters.fromToken);
+        if (filters.toToken) queryParams.append("toToken", filters.toToken);
+        if (filters.fromChain)
+          queryParams.append("fromChain", filters.fromChain);
+        if (filters.toChain) queryParams.append("toChain", filters.toChain);
+        if (filters.fromSpecificChain)
+          queryParams.append("fromSpecificChain", filters.fromSpecificChain);
+        if (filters.toSpecificChain)
+          queryParams.append("toSpecificChain", filters.toSpecificChain);
+        if (filters.limit !== undefined)
+          queryParams.append("limit", filters.limit.toString());
+        if (filters.offset !== undefined)
+          queryParams.append("offset", filters.offset.toString());
+
+        // Add query string to endpoint if we have parameters
+        const queryString = queryParams.toString();
+        if (queryString) {
+          endpoint += `?${queryString}`;
+        }
+      }
+
+      const response = await this.axiosInstance.get(endpoint);
+      return response.data;
+    } catch (error) {
+      throw this.handleApiError(error, "get team trade history");
+    }
+  }
 }

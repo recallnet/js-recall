@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Clipboard, ExternalLink, Plus, Search } from "lucide-react";
+import { Check, Clipboard, ExternalLink, Plus, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -11,7 +11,9 @@ import { useAuthState } from "@/hooks/auth-state";
 import {
   Competition,
   Team,
+  Trade,
   getTeamByWalletAddress,
+  getTeamTrades,
   getUpcomingCompetitions,
 } from "@/lib/api";
 
@@ -31,6 +33,8 @@ export default function AccountPage() {
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [apiKeyCopied, setApiKeyCopied] = useState(false);
   const [showAddAgentForm, setShowAddAgentForm] = useState(false);
+  const [trades, setTrades] = useState<Trade[]>([]);
+  const [isLoadingTrades, setIsLoadingTrades] = useState(false);
 
   // When the user is connected with a wallet, check if they already have a team
   useEffect(() => {
@@ -75,6 +79,27 @@ export default function AccountPage() {
 
     fetchCompetitions();
   }, []);
+
+  // Fetch trades when team is loaded
+  useEffect(() => {
+    async function fetchTrades() {
+      if (team?.apiKey) {
+        try {
+          setIsLoadingTrades(true);
+          const tradesData = await getTeamTrades(team.apiKey, { limit: 10 });
+          if (tradesData) {
+            setTrades(tradesData.trades);
+          }
+        } catch (err) {
+          console.error("Error fetching trades:", err);
+        } finally {
+          setIsLoadingTrades(false);
+        }
+      }
+    }
+
+    fetchTrades();
+  }, [team?.apiKey]);
 
   const copyApiKey = () => {
     if (!team?.apiKey) return;
@@ -236,6 +261,7 @@ export default function AccountPage() {
                 </div>
               </div>
 
+              {/* Wallet Address Row */}
               <div className="flex flex-col py-3 sm:flex-row sm:items-center">
                 <div className="w-32 font-['Trim_Mono',monospace] text-lg font-semibold leading-[27px] tracking-[0.54px] text-white">
                   Wallet
@@ -244,6 +270,50 @@ export default function AccountPage() {
                   {team.walletAddress}
                 </div>
               </div>
+
+              {/* Verification Status */}
+              <div className="flex flex-col py-3 sm:flex-row sm:items-center">
+                <div className="w-32 font-['Trim_Mono',monospace] text-lg font-semibold leading-[27px] tracking-[0.54px] text-white">
+                  Verified
+                </div>
+                <div className="flex items-center gap-2 font-['Trim_Mono',monospace] text-lg font-light leading-[27px] tracking-[0.54px]">
+                  {isLoadingTrades ? (
+                    <div className="flex items-center text-[#6D85A4]">
+                      Loading...
+                    </div>
+                  ) : trades.length > 0 ? (
+                    <div className="flex items-center text-[#318F2A]">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#B8DFB5]">
+                        <Check size={16} className="text-[#318F2A]" />
+                      </div>
+                      <span className="ml-2">Verified</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center text-[#D03A44]">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#F8D0D3]">
+                        <X size={16} className="text-[#D03A44]" />
+                      </div>
+                      <span className="ml-2">Not Verified</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Verification Explainer */}
+              {!isLoadingTrades && trades.length === 0 && (
+                <div className="mb-3 ml-32 mt-[-5px] font-['Replica_LL',sans-serif] text-sm text-[#93A5BA]">
+                  To get verified, execute at least one trade.{" "}
+                  <Link
+                    href="https://docs.recall.network/competitions/guides/mcp"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#62A0DD] hover:underline"
+                  >
+                    Refer to the docs for more information
+                  </Link>
+                  .
+                </div>
+              )}
             </div>
 
             {/* Agents section */}
@@ -253,12 +323,6 @@ export default function AccountPage() {
                   <h2 className="font-['Trim_Mono',monospace] text-xl font-semibold leading-[31.2px] text-white md:text-2xl">
                     Your Agents
                   </h2>
-                  <Link
-                    href="https://docs.recall.network/competitions"
-                    className="font-['Replica_LL',sans-serif] text-sm font-normal leading-6 tracking-[0.48px] text-[#6D85A4] underline md:text-base"
-                  >
-                    How to Verify Agents
-                  </Link>
                 </div>
                 <button
                   onClick={() => setShowAddAgentForm(true)}

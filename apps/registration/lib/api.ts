@@ -56,6 +56,46 @@ export interface Agent {
     /** Telegram handle */
     telegram?: string;
   };
+  /** Agent wallet address */
+  walletAddress?: string;
+}
+
+/**
+ * Trade history interface
+ */
+export interface Trade {
+  /** Unique trade ID */
+  id: string;
+  /** Team ID that executed the trade */
+  teamId: string;
+  /** ID of the competition this trade is part of */
+  competitionId: string;
+  /** Token address that was sold */
+  fromToken: string;
+  /** Token address that was bought */
+  toToken: string;
+  /** Amount of fromToken that was sold */
+  fromAmount: number;
+  /** Amount of toToken that was received */
+  toAmount: number;
+  /** Price at which the trade was executed */
+  price: number;
+  /** Whether the trade was successfully completed */
+  success: boolean;
+  /** Error message if the trade failed */
+  error?: string;
+  /** Reason provided for executing the trade */
+  reason?: string;
+  /** Timestamp of when the trade was executed */
+  timestamp: string;
+  /** Blockchain type of the source token */
+  fromChain?: string;
+  /** Blockchain type of the destination token */
+  toChain?: string;
+  /** Specific chain for the source token */
+  fromSpecificChain?: string;
+  /** Specific chain for the destination token */
+  toSpecificChain?: string;
 }
 
 /**
@@ -325,6 +365,78 @@ export async function updateTeamProfile(
     return data.team;
   } catch (error) {
     console.error("Error updating team profile:", error);
+    return null;
+  }
+}
+
+/**
+ * Get trade history for the authenticated team
+ *
+ * @param apiKey - The team's API key for authentication
+ * @param filters - Optional filters for the trades query
+ * @returns Team's trade history data or null if failed
+ */
+export async function getTeamTrades(
+  apiKey: string,
+  filters?: {
+    fromToken?: string;
+    toToken?: string;
+    fromChain?: string;
+    toChain?: string;
+    fromSpecificChain?: string;
+    toSpecificChain?: string;
+    limit?: number;
+    offset?: number;
+  },
+): Promise<{ teamId: string; trades: Trade[] } | null> {
+  try {
+    // Convert filters to query parameters if provided
+    const queryParams = new URLSearchParams();
+    if (filters) {
+      if (filters.fromToken) queryParams.append("fromToken", filters.fromToken);
+      if (filters.toToken) queryParams.append("toToken", filters.toToken);
+      if (filters.fromChain) queryParams.append("fromChain", filters.fromChain);
+      if (filters.toChain) queryParams.append("toChain", filters.toChain);
+      if (filters.fromSpecificChain)
+        queryParams.append("fromSpecificChain", filters.fromSpecificChain);
+      if (filters.toSpecificChain)
+        queryParams.append("toSpecificChain", filters.toSpecificChain);
+      if (filters.limit !== undefined)
+        queryParams.append("limit", filters.limit.toString());
+      if (filters.offset !== undefined)
+        queryParams.append("offset", filters.offset.toString());
+    }
+
+    // Construct the URL with query parameters
+    let url = "/api/team/trades";
+    const queryString = queryParams.toString();
+    if (queryString) {
+      url += `?${queryString}`;
+    }
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      console.error(
+        data.error || `Failed to fetch trades with status: ${response.status}`,
+      );
+      return null;
+    }
+
+    return {
+      teamId: data.teamId,
+      trades: data.trades,
+    };
+  } catch (error) {
+    console.error("Error fetching team trades:", error);
     return null;
   }
 }
