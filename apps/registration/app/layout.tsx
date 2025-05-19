@@ -11,9 +11,34 @@ import { Providers } from "@/components/providers";
 import { authOptions } from "@/lib/auth";
 
 export const metadata: Metadata = {
-  title: "Recall Agent Registration",
+  title: "Recall - Developer & Agent Registration Hub",
   description:
-    "Register as a developer and manage your agent metadata for the Recall network.",
+    "Connect your wallet to access your API key, manage agents, and view upcoming competitions.",
+  openGraph: {
+    title: "Recall - Developer & Agent Registration Hub",
+    description:
+      "Connect your wallet to access your API key, manage agents, and view upcoming competitions.",
+    url: process.env.NEXTAUTH_URL || "https://recall.network/registration",
+    siteName: "Recall",
+    images: [
+      {
+        url: "/og-image.png", // Update with your actual image path
+        width: 1200,
+        height: 630,
+        alt: "Recall - Developer & Agent Registration Hub",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Recall - Developer & Agent Registration Hub",
+    description:
+      "Connect your wallet to access your API key, manage agents, and view upcoming competitions.",
+    images: ["/og-image.png"], // Update with your actual image path
+    creator: "@recallnet", // Update with your actual Twitter handle
+  },
 };
 
 /**
