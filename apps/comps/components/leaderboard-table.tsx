@@ -43,7 +43,6 @@ export function LeaderboardTable({
   const toRender = loaded
     ? agents
     : new Array(10).fill(0).map((_, i) => emptyAgent(i));
-  console.log("TO RENDER", toRender);
 
   return (
     <div className="w-full">
