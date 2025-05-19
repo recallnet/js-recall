@@ -13,7 +13,7 @@ import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
 import { AgentResponse, Competition } from "@/types";
 
 interface OngoingCompetitionProps {
-  competition: CompetitionResponse;
+  competition: Competition;
 }
 
 export const OngoingCompetition: React.FC<OngoingCompetitionProps> = ({

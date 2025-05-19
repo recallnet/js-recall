@@ -6,7 +6,7 @@ import { Competition } from "../types";
 import { CompetitionCard } from "./competition-card";
 
 interface StartingSoonSectionProps {
-  competitions: CompetitionResponse[];
+  competitions: Competition[];
 }
 
 export const StartingSoonSection: React.FC<StartingSoonSectionProps> = ({

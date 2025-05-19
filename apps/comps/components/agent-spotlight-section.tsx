@@ -8,7 +8,7 @@ import { Agent } from "../types";
 import { AgentCard } from "./agent-card";
 
 interface AgentSpotlightSectionProps {
-  agents: AgentResponse[];
+  agents: Agent[];
 }
 
 export const AgentSpotlightSection: React.FC<AgentSpotlightSectionProps> = ({

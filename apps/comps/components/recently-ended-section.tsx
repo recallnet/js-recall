@@ -13,7 +13,7 @@ import { Competition } from "../types";
 import { CompetitionTable } from "./competition-table";
 
 interface RecentlyEndedSectionProps {
-  competitions: CompetitionResponse[];
+  competitions: Competition;
 }
 
 export const RecentlyEndedSection: React.FC<RecentlyEndedSectionProps> = ({

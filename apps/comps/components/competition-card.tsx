@@ -11,7 +11,7 @@ import { Competition, CompetitionStatus } from "../types";
 import { StringList } from "./string-list";
 
 interface CompetitionCardProps {
-  competition: CompetitionResponse;
+  competition: Competition;
   showActions?: boolean;
 }
 

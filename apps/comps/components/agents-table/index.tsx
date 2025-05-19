@@ -27,14 +27,14 @@ import {
 import { Agent } from "@/types";
 
 export interface AgentsTableProps {
-  agents: AgentResponse[];
+  agents: Agent[];
 }
 
 export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [globalFilter, setGlobalFilter] = useState("");
 
-  const columns = useMemo<ColumnDef<AgentResponse>[]>(
+  const columns = useMemo<ColumnDef<Agent>[]>(
     () => [
       {
         id: "agent",
@@ -116,7 +116,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
 
   // Custom global filter function: filter by name or address (case-insensitive)
   const globalFilterFn = (
-    row: Row<AgentResponse>,
+    row: Row<Agent>,
     columnId: string,
     filterValue: string,
   ) => {

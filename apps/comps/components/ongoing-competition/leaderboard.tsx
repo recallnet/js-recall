@@ -9,7 +9,7 @@ import { Competition } from "@/types";
 import CountdownClock from "../clock/index";
 
 interface OngoingCompetitionProps {
-  competition: CompetitionResponse;
+  competition: Competition;
 }
 
 export const LeaderboardOngoingCompetition: React.FC<

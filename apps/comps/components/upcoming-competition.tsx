@@ -12,7 +12,7 @@ import CountdownClock from "./clock";
 import { StringList } from "./string-list";
 
 interface UpComingCompetitionProps {
-  competition: CompetitionResponse;
+  competition: Competition;
 }
 
 export const UpComingCompetition: React.FC<UpComingCompetitionProps> = ({

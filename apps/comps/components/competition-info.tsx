@@ -7,7 +7,7 @@ import React, { useState } from "react";
 import { Competition } from "../types";
 
 export interface CompetitionInfoProps {
-  competition: CompetitionResponse;
+  competition: Competition;
 }
 
 export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
