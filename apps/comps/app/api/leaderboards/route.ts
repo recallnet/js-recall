@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { agents, competitions } from "@/data-mock/fixtures";
+import { Competition } from "@/types/competition";
 import { applyFilters, applySort, paginate } from "@/utils";
 
 // This is a simplified leaderboard implementation
@@ -14,7 +15,9 @@ export async function GET(req: NextRequest) {
   const offset = Number(searchParams.get("offset") ?? 0);
 
   const filteredCompetitions = applyFilters(competitions, filter);
-  const agentIds = filteredCompetitions.flatMap((c) => c.registeredAgentIds);
+  const agentIds = filteredCompetitions.flatMap(
+    (c: Competition) => [] as string[],
+  );
   const rows = agents.filter((a) => agentIds.includes(a.id));
 
   // Calculate stats

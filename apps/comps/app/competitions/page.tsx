@@ -2,6 +2,8 @@
 
 import React from "react";
 
+import { Competition } from "@/types/competition";
+
 import { AgentSpotlightSection } from "../../components/agent-spotlight-section";
 import { JoinSwarmSection } from "../../components/join-swarm-section";
 import { NewsletterSection } from "../../components/newsletter-section";
@@ -28,7 +30,7 @@ export default function CompetitionsPage() {
       (comp) => comp.status === CompetitionStatus.Pending,
     ) || [];
 
-  const endedCompetitions =
+  const endedCompetitions: Competition[] =
     competitionsData?.competitions?.filter(
       (comp) => comp.status === CompetitionStatus.Ended,
     ) || [];
