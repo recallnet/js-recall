@@ -1,7 +1,7 @@
 "use client";
 
 import axios from "axios";
-import { useAtom } from "jotai";
+import {useAtom} from "jotai";
 import React from "react";
 
 import {
@@ -10,16 +10,16 @@ import {
   TabsList,
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { Skeleton } from "@/../../packages/ui2/src/components/skeleton";
-import { cn } from "@/../../packages/ui2/src/lib/utils";
-import { leaderboardAtom } from "@/state/atoms";
-import { Agent, LeaderboardResponse, LeaderboardTypes } from "@/types";
+import {Skeleton} from "@recallnet/ui2/components/skeleton";
+import {leaderboardAtom} from "@/state/atoms";
+import {Agent, LeaderboardResponse, LeaderboardTypes} from "@/types";
 
 import AgentPodium from "../agent-podium/index";
 import BigNumberDisplay from "../bignumber";
-import { LeaderboardTable } from "../leaderboard-table";
+import {LeaderboardTable} from "../leaderboard-table";
+import {useLeaderboards} from "@/hooks/useLeaderboards";
 
 const categories = [
   LeaderboardTypes.ANALYSIS,
@@ -31,33 +31,7 @@ export function LeaderboardSection() {
   const [leadState, setLeaderboard] = useAtom(leaderboardAtom);
   const [selected, setSelected] = React.useState(LeaderboardTypes.TRADING);
   const [limit, setLimit] = React.useState(10);
-  const leaderboard = React.useMemo(
-    () => leadState[selected],
-    [leadState, selected],
-  );
-
-  const loadLeaderboard = React.useCallback(async () => {
-    const { data } = await axios<Omit<LeaderboardResponse, "loaded">>({
-      url: "/api/leaderboard",
-      method: "get",
-      headers: {
-        Accept: "application/json",
-      },
-      params: {
-        limit,
-        offset: 0,
-      },
-      baseURL: "",
-    });
-
-    setLeaderboard((all: Record<string, LeaderboardResponse>) => {
-      return { ...all, [selected]: { ...data, loaded: true } };
-    });
-  }, [setLeaderboard, limit, selected]);
-
-  React.useEffect(() => {
-    loadLeaderboard();
-  }, [loadLeaderboard]);
+  const {data: leaderboard, isLoading} = useLeaderboards({limit, offset: 0})
 
   return (
     <div className="mb-10">
@@ -80,51 +54,51 @@ export function LeaderboardSection() {
             <div className="divide-x-1 border-1 mb-10 grid grid-cols-1 divide-gray-800 border-gray-800 text-center text-gray-400 sm:grid-cols-3">
               <div className="flex items-center justify-between p-6">
                 <div className="text-sm uppercase">Total Trades</div>
-                {leaderboard.loaded ? (
+                {isLoading ? (
+                  <Skeleton />
+                ) : (
                   <div className="text-lg text-white">
                     {leaderboard.stats.totalTrades}
                   </div>
-                ) : (
-                  <Skeleton />
                 )}
               </div>
               <div className="flex items-center justify-between p-6">
                 <div className="text-sm uppercase">Active Agents</div>
-                {leaderboard.loaded ? (
-                  <div className="text-lg text-white">
-                    {leaderboard.stats.activeAgents}
-                  </div>
-                ) : (
+                {isLoading ? (
                   <Skeleton />
+                ) : (
+                  <div className="text-lg text-white">
+                    {leaderboard?.stats.activeAgents}
+                  </div>
                 )}
               </div>
               <div className="flex items-center justify-between p-6">
                 <div className="text-sm uppercase">Total Volume</div>
-                {leaderboard.loaded ? (
+                {isLoading ? (
+                  <Skeleton />
+                ) : (
                   <div className="text-lg text-white">
                     <BigNumberDisplay
-                      value={leaderboard.stats.totalVolume.toString()}
+                      value={leaderboard?.stats.totalVolume.toString() || ""}
                       decimals={0}
                     />
                   </div>
-                ) : (
-                  <Skeleton />
                 )}
               </div>
             </div>
 
-            {leaderboard.loaded ? (
+            {isLoading ? (
               <AgentPodium
                 className="mb-10 md:mb-1"
-                first={leaderboard.agents[0] as Agent}
-                second={leaderboard.agents[1] as Agent}
-                third={leaderboard.agents[2] as Agent}
-                loaded={leaderboard.loaded}
+                loaded={!isLoading}
               />
             ) : (
               <AgentPodium
                 className="mb-10 md:mb-1"
-                loaded={leaderboard.loaded}
+                first={leaderboard?.agents[0] as Agent}
+                second={leaderboard?.agents[1] as Agent}
+                third={leaderboard?.agents[2] as Agent}
+                loaded={!isLoading}
               />
             )}
           </TabsContent>
@@ -149,16 +123,16 @@ export function LeaderboardSection() {
           ))}
         </TabsList>
 
-        {leaderboard.loaded ? (
+        {isLoading ? (
           <LeaderboardTable
             onExtend={() => setLimit((prev) => prev + 10)}
-            agents={leaderboard.agents}
-            loaded
+            agents={[]}
           />
         ) : (
           <LeaderboardTable
             onExtend={() => setLimit((prev) => prev + 10)}
-            agents={[]}
+            agents={leaderboard?.agents || []}
+            loaded
           />
         )}
       </Tabs>
