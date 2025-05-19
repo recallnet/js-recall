@@ -46,15 +46,13 @@ export async function GET(req: NextRequest) {
 
   const { metadata, data } = paginate(leaderboard, limit, offset);
 
-  // Add stats to the response
-  const responseMetadata = {
-    ...metadata,
+  return NextResponse.json({
+    metadata,
     stats: {
       activeAgents,
       totalTrades,
       totalVolume,
     },
-  };
-
-  return NextResponse.json({ metadata: responseMetadata, agents: data });
+    agents: data,
+  });
 }

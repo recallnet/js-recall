@@ -61,7 +61,7 @@ export function LeaderboardSection() {
                   <Skeleton />
                 ) : (
                   <div className="text-lg text-white">
-                    {leaderboard?.metadata.stats?.totalTrades}
+                    {leaderboard?.stats?.totalTrades}
                   </div>
                 )}
               </div>
@@ -71,7 +71,7 @@ export function LeaderboardSection() {
                   <Skeleton />
                 ) : (
                   <div className="text-lg text-white">
-                    {leaderboard?.metadata.stats?.activeAgents}
+                    {leaderboard?.stats?.activeAgents}
                   </div>
                 )}
               </div>
@@ -82,7 +82,7 @@ export function LeaderboardSection() {
                 ) : (
                   <div className="text-lg text-white">
                     <BigNumberDisplay
-                      value={leaderboard?.metadata.stats?.totalVolume}
+                      value={leaderboard?.stats?.totalVolume}
                       decimals={0}
                     />
                   </div>
