@@ -52,7 +52,19 @@ export async function POST(req: NextRequest) {
 
     if (!result) throw new Error("signature validation error");
 
-    return NextResponse.json({ ok: true, address: siweMessage.address });
+    const response = NextResponse.json({
+      userId: siweMessage.address,
+      wallet: siweMessage.address,
+    });
+
+    response.cookies.set("wallet_address", siweMessage.address, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: TIME_LIMIT / 1000, // Convert to seconds
+    });
+
+    return response;
   } catch (err) {
     console.error("[SIWE LOGIN ERROR]", err);
     return NextResponse.json(
