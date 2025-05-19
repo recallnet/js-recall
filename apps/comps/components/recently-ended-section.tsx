@@ -9,12 +9,11 @@ import {
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
 
-import { Competition } from "@/types/competition";
-
-import { CompetitionTable } from "./competition-table";
+import { CompetitionTable } from "@/components/competition-table";
+import { CompetitionResponse } from "@/types";
 
 interface RecentlyEndedSectionProps {
-  competitions: Competition[];
+  competitions: CompetitionResponse[];
 }
 
 export const RecentlyEndedSection: React.FC<RecentlyEndedSectionProps> = ({

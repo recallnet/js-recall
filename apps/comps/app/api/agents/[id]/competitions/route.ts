@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { findAgent } from "@/data-mock/db";
-import { competitions } from "@/data-mock/fixtures";
+import { findAgent, findCompetitionsByAgent } from "@/data-mock/db";
 import { applyFilters, applySort, paginate } from "@/utils";
 
 export async function GET(
@@ -20,7 +19,7 @@ export async function GET(
     return NextResponse.json({ error: "Agent not found" }, { status: 404 });
   }
 
-  let rows = competitions;
+  let rows = findCompetitionsByAgent(id);
   rows = applyFilters(rows, filter);
   rows = applySort(rows, sort);
   const { metadata, data } = paginate(rows, limit, offset);

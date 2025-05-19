@@ -15,7 +15,7 @@ import {
   LoginRequest,
   LoginResponse,
   NonceResponse,
-} from "../types";
+} from "@/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
@@ -221,18 +221,18 @@ export class ApiClient {
     });
   }
 
-  // Leaderboard endpoints
+  // Leaderboards endpoints
 
   /**
-   * Get leaderboard
+   * Get leaderboards
    * @param params - Query parameters
-   * @returns Leaderboard response
+   * @returns Leaderboards response
    */
-  async getLeaderboard(
+  async getLeaderboards(
     params: GetLeaderboardParams = {},
   ): Promise<LeaderboardResponse> {
     const queryParams = this.formatQueryParams(params);
-    return this.request<LeaderboardResponse>(`/leaderboard${queryParams}`);
+    return this.request<LeaderboardResponse>(`/leaderboards${queryParams}`);
   }
 
   // Profile endpoints

@@ -4,12 +4,11 @@ import React from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 
-import { Competition } from "@/types";
-
-import CountdownClock from "../clock/index";
+import CountdownClock from "@/components/clock/index";
+import { CompetitionResponse } from "@/types";
 
 interface OngoingCompetitionProps {
-  competition: Competition;
+  competition: CompetitionResponse;
 }
 
 export const LeaderboardOngoingCompetition: React.FC<

@@ -5,10 +5,9 @@ import {
   LeaderboardAgent,
   LeaderboardResponse,
   LeaderboardTypes,
-  User,
 } from "@/types";
 
-export const userAtom = atom<User>({
+export const userAtom = atom<{ address: string; loggedIn: boolean }>({
   address: "",
   loggedIn: false,
 });

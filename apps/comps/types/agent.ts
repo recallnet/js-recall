@@ -4,11 +4,6 @@ import {
   Reward,
 } from "./competition";
 
-export interface User {
-  address: string;
-  loggedIn: boolean;
-}
-
 export interface BestPlacement {
   competitionId: string;
   position: number;
@@ -70,7 +65,9 @@ export interface LeaderboardResponse {
   agents: LeaderboardAgent[];
 }
 
-export interface Agent extends AgentResponse {}
+export interface Agent extends AgentResponse {
+  registeredCompetitionIds: string[];
+}
 export interface LeaderboardAgent extends AgentResponse {
   rank: number;
 }

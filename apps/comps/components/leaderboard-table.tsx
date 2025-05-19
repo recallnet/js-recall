@@ -17,7 +17,7 @@ import {
 import { Skeleton } from "@/../../packages/ui2/src/components/skeleton";
 import { useAtom } from "@/node_modules/jotai/react";
 import { userAgentAtom, userAtom } from "@/state/atoms";
-import { Agent, LeaderboardAgent } from "@/types/agent";
+import { Agent, AgentResponse, LeaderboardAgent } from "@/types/agent";
 
 import AwardIcon from "./agent-podium/award-icon";
 import BigNumberDisplay from "./bignumber/index";
@@ -35,7 +35,7 @@ export function LeaderboardTable({
   onExtend,
   loaded,
 }: {
-  agents: (Agent & { rank: number })[];
+  agents: LeaderboardAgent[];
   onExtend: () => void;
   loaded?: boolean;
 }) {

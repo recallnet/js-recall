@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   const offset = Number(searchParams.get("offset") ?? 0);
 
   const filteredCompetitions = applyFilters(competitions, filter);
-  const agentIds = filteredCompetitions.flatMap(() => [] as string[]);
+  const agentIds = filteredCompetitions.flatMap((c) => c.registeredAgentIds);
   const rows = agents.filter((a) => agentIds.includes(a.id));
 
   // Calculate stats

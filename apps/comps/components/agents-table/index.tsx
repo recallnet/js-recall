@@ -24,17 +24,17 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import { Agent } from "@/types";
+import { AgentResponse } from "@/types";
 
 export interface AgentsTableProps {
-  agents: Agent[];
+  agents: AgentResponse[];
 }
 
 export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [globalFilter, setGlobalFilter] = useState("");
 
-  const columns = useMemo<ColumnDef<Agent>[]>(
+  const columns = useMemo<ColumnDef<AgentResponse>[]>(
     () => [
       {
         id: "agent",
@@ -116,7 +116,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
 
   // Custom global filter function: filter by name or address (case-insensitive)
   const globalFilterFn = (
-    row: Row<Agent>,
+    row: Row<AgentResponse>,
     columnId: string,
     filterValue: string,
   ) => {

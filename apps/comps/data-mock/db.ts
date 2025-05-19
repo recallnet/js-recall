@@ -1,5 +1,5 @@
-import { Agent, Competition } from "../types";
-import { agents, competitions } from "./fixtures";
+import { agents, competitions } from "@/data-mock/fixtures";
+import { Agent, Competition } from "@/types";
 
 // Competition helpers
 export const findCompetition = (id: string): Competition | undefined => {
@@ -99,11 +99,15 @@ export const filterAgents = (filter?: Record<string, string>): Agent[] => {
 };
 
 export const findAgentsByCompetition = (competitionId: string): Agent[] => {
-  // In the updated schema, we don't directly store competitions in the agent
-  // Instead, we would need to query the API for this relationship
-  // For mock purposes, we'll return a random subset of agents
-  const randomCount = Math.floor(Math.random() * 5) + 1;
-  return agents.slice(0, randomCount);
+  return agents.filter((agent) =>
+    agent.registeredCompetitionIds?.includes(competitionId),
+  );
+};
+
+export const findCompetitionsByAgent = (agentId: string): Competition[] => {
+  return competitions.filter((competition) =>
+    competition.registeredAgentIds?.includes(agentId),
+  );
 };
 
 export const addAgent = (agent: Agent): Agent => {

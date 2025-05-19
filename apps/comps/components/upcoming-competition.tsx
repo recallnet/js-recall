@@ -7,12 +7,12 @@ import React from "react";
 import { Button } from "@recallnet/ui2/components/button";
 import { IconButton } from "@recallnet/ui2/components/icon-button";
 
-import { Competition } from "../types";
-import CountdownClock from "./clock";
-import { StringList } from "./string-list";
+import CountdownClock from "@/components/clock";
+import { StringList } from "@/components/string-list";
+import { CompetitionResponse } from "@/types";
 
 interface UpComingCompetitionProps {
-  competition: Competition;
+  competition: CompetitionResponse;
 }
 
 export const UpComingCompetition: React.FC<UpComingCompetitionProps> = ({
