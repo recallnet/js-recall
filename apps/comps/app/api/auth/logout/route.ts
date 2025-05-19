@@ -6,7 +6,7 @@ export async function POST() {
   // Clear the wallet address cookie
   response.cookies.set("wallet_address", "", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: true,
     sameSite: "lax",
     maxAge: 0, // Expire immediately
   });

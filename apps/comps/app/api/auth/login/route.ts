@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     response.cookies.set("wallet_address", siweMessage.address, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: true,
       sameSite: "lax",
       maxAge: TIME_LIMIT / 1000, // Convert to seconds
     });
