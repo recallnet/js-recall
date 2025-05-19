@@ -167,13 +167,7 @@ export class TradeSimulator {
         fromTokenSpecificChain,
       );
 
-      const toPrice = toToken === "0x133700007e5700007e5700007357000031337000" ? {
-        "token": "0x6e15a54b5ecac17e58dadeddbe8506a7560252f9",
-        "price": 2.938e-27,
-        "timestamp": "2025-05-01T13:39:06.633Z",
-        "chain": "svm",
-        "specificChain": "svm"
-      } : await this.priceTracker.getPrice(
+      const toPrice = await this.priceTracker.getPrice(
         toToken,
         toTokenChain,
         toTokenSpecificChain,
