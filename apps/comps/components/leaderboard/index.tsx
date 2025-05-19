@@ -1,7 +1,5 @@
 "use client";
 
-import axios from "axios";
-import { useAtom } from "jotai";
 import React from "react";
 
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
@@ -14,8 +12,7 @@ import {
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useLeaderboards } from "@/hooks/useLeaderboards";
-import { leaderboardAtom } from "@/state/atoms";
-import { Agent, LeaderboardResponse, LeaderboardTypes } from "@/types";
+import { Agent, LeaderboardTypes } from "@/types";
 
 import AgentPodium from "../agent-podium/index";
 import BigNumberDisplay from "../bignumber";
@@ -28,7 +25,6 @@ const categories = [
 ];
 
 export function LeaderboardSection() {
-  const [leadState, setLeaderboard] = useAtom(leaderboardAtom);
   const [selected, setSelected] = React.useState(LeaderboardTypes.TRADING);
   const [limit, setLimit] = React.useState(10);
   const { data: leaderboard, isLoading } = useLeaderboards({
@@ -61,7 +57,7 @@ export function LeaderboardSection() {
                   <Skeleton />
                 ) : (
                   <div className="text-lg text-white">
-                    {leaderboard.stats.totalTrades}
+                    {leaderboard?.stats.totalTrades}
                   </div>
                 )}
               </div>

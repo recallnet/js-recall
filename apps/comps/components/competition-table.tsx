@@ -16,7 +16,7 @@ import {
 import { Competition } from "../types";
 
 interface CompetitionTableProps {
-  competitions: CompetitionResponse[];
+  competitions: Competition[];
 }
 
 export const CompetitionTable: React.FC<CompetitionTableProps> = ({

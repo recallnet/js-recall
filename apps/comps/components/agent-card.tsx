@@ -7,7 +7,7 @@ import React from "react";
 import { Agent } from "../types";
 
 interface AgentCardProps {
-  agent: AgentResponse;
+  agent: Agent;
 }
 
 export const AgentCard: React.FC<AgentCardProps> = ({ agent }) => {

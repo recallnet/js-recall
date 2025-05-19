@@ -27,19 +27,14 @@ import {
 import { Agent } from "@/types";
 
 export interface AgentsTableProps {
-  agents: AgentResponse[];
-  onFilterChange: (filter: string) => void;
-  onSortChange: (sort: string) => void;
-  onLoadMore: () => void;
-  hasMore: boolean;
-  metadata?: AgentsMetadata;
+  agents: Agent[];
 }
 
 export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
 
-  const columns = useMemo<ColumnDef<AgentResponse>[]>(
+  const columns = useMemo<ColumnDef<Agent>[]>(
     () => [
       {
         id: "name",
@@ -122,6 +117,22 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
     ],
     [],
   );
+
+  // Custom global filter function: filter by name or address (case-insensitive)
+  const globalFilterFn = (
+    row: Row<Agent>,
+    columnId: string,
+    filterValue: string,
+  ) => {
+    if (!filterValue) return true;
+    const search = filterValue.toLowerCase();
+    const name = row.original.name || "";
+    const address = row.original.metadata.walletAddress || "";
+    return (
+      name.toLowerCase().includes(search) ||
+      address.toLowerCase().includes(search)
+    );
+  };
 
   const table = useReactTable({
     data: agents,
