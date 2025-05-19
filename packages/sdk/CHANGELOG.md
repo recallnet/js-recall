@@ -1,5 +1,17 @@
 # @recallnet/sdk
 
+## 0.0.12
+
+### Patch Changes
+
+- [#296](https://github.com/recallnet/js-recall/pull/296) [`3c11c11`](https://github.com/recallnet/js-recall/commit/3c11c1177a6ff725a85f58cde2e6d0365ca125d2) Thanks [@dtbuchholz](https://github.com/dtbuchholz)! - updates & changes for testnet v0.1.7, which includes deprecating wrapper contracts and moving to facade interfaces
+
+- Updated dependencies [[`3c11c11`](https://github.com/recallnet/js-recall/commit/3c11c1177a6ff725a85f58cde2e6d0365ca125d2)]:
+  - @recallnet/network-constants@0.0.9
+  - @recallnet/contracts@0.0.6
+  - @recallnet/fvm@0.0.2
+  - @recallnet/chains@0.0.10
+
 ## 0.0.11
 
 ### Patch Changes

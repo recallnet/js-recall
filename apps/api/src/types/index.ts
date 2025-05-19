@@ -180,6 +180,7 @@ export interface Team {
   walletAddress: string;
   bucket_addresses?: string[];
   metadata?: AgentMetadata; // Agent-specific metadata
+  imageUrl?: string; // URL to team's image
   isAdmin?: boolean;
   active?: boolean;
   deactivationReason?: string;
@@ -216,6 +217,8 @@ export interface Competition {
   id: string;
   name: string;
   description?: string;
+  externalLink?: string;
+  imageUrl?: string;
   startDate: Date | null;
   endDate: Date | null;
   status: CompetitionStatus;

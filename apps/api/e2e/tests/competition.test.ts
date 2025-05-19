@@ -56,11 +56,11 @@ describe("Competition API", () => {
 
     // Register teams
     const { team: team1 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team Alpha",
     );
     const { team: team2 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team Beta",
     );
 
@@ -109,11 +109,11 @@ describe("Competition API", () => {
 
     // Register teams
     const { team: team1 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team Delta",
     );
     const { team: team2 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team Echo",
     );
 
@@ -154,11 +154,11 @@ describe("Competition API", () => {
 
     // Register teams
     const { team: team1 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team Foxtrot",
     );
     const { team: team2 } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team Golf",
     );
 
@@ -209,7 +209,7 @@ describe("Competition API", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team Gamma",
     );
 
@@ -249,9 +249,9 @@ describe("Competition API", () => {
 
     // Register teams - one in the competition, one not
     const { client: teamInClient, team: teamIn } =
-      await registerTeamAndGetClient(adminClient, "Inside Team");
+      await registerTeamAndGetClient(adminApiKey, "Inside Team");
     const { client: teamOutClient } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Outside Team",
     );
 
@@ -291,7 +291,7 @@ describe("Competition API", () => {
 
     // Register a regular team
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Regular Team",
     );
 
@@ -354,7 +354,7 @@ describe("Competition API", () => {
 
     // Register a new team - should be inactive by default
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team To Activate",
     );
 
@@ -399,7 +399,7 @@ describe("Competition API", () => {
 
     // Register a new team
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Team To Deactivate",
     );
 
@@ -453,7 +453,7 @@ describe("Competition API", () => {
 
     // Register a team
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Cross-Chain Test Team",
     );
 
@@ -533,7 +533,7 @@ describe("Competition API", () => {
 
     // Register a team
     const { team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Response Fields Test Team",
     );
 
@@ -610,7 +610,7 @@ describe("Competition API", () => {
 
     // Register a team
     const { client: teamClient } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Upcoming Viewer Team",
     );
 
@@ -680,7 +680,7 @@ describe("Competition API", () => {
 
     // Register a team
     const { team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Upcoming competitions viewer test",
     );
 
@@ -712,5 +712,104 @@ describe("Competition API", () => {
 
     expect(foundComp2AfterStart).toBe(true);
     expect(foundComp3AfterStart).toBe(true);
+  });
+
+  test("competitions include externalLink and imageUrl fields", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register a team
+    const { client: teamClient, team } = await registerTeamAndGetClient(
+      adminApiKey,
+      "Link and Image Test Team",
+    );
+
+    // Test data for new fields
+    const externalLink = "https://example.com/competition-details";
+    const imageUrl = "https://example.com/competition-image.jpg";
+
+    // 1. Test creating a competition with externalLink and imageUrl
+    const createCompetitionName = `Create with Links Test ${Date.now()}`;
+    const createResponse = await createTestCompetition(
+      adminClient,
+      createCompetitionName,
+      "Test description with links",
+      externalLink,
+      imageUrl,
+    );
+
+    // Verify the fields are in the creation response
+    expect(createResponse.success).toBe(true);
+    expect(createResponse.competition.externalLink).toBe(externalLink);
+    expect(createResponse.competition.imageUrl).toBe(imageUrl);
+
+    // 2. Test starting a competition with externalLink and imageUrl
+    const startCompetitionName = `Start with Links Test ${Date.now()}`;
+    const startResponse = await startTestCompetition(
+      adminClient,
+      startCompetitionName,
+      [team.id],
+      externalLink,
+      imageUrl,
+    );
+
+    // Verify the fields are in the start competition response
+    expect(startResponse.success).toBe(true);
+    expect(startResponse.competition.externalLink).toBe(externalLink);
+    expect(startResponse.competition.imageUrl).toBe(imageUrl);
+
+    // 3. Verify the fields are in the competition status response for participating teams
+    const teamStatusResponse =
+      (await teamClient.getCompetitionStatus()) as CompetitionStatusResponse;
+    expect(teamStatusResponse.success).toBe(true);
+    expect(teamStatusResponse.active).toBe(true);
+
+    if (teamStatusResponse.success && teamStatusResponse.competition) {
+      expect(teamStatusResponse.competition.externalLink).toBe(externalLink);
+      expect(teamStatusResponse.competition.imageUrl).toBe(imageUrl);
+    }
+
+    // 4. Verify the fields are in the competition leaderboard response
+    const leaderboardResponse = await teamClient.getLeaderboard();
+    expect(leaderboardResponse.success).toBe(true);
+
+    if (leaderboardResponse.success && "competition" in leaderboardResponse) {
+      expect(leaderboardResponse.competition.externalLink).toBe(externalLink);
+      expect(leaderboardResponse.competition.imageUrl).toBe(imageUrl);
+    }
+
+    // 5. Verify the fields are in the upcoming competitions endpoint for pending competitions
+    // First, end the active competition
+    if (startResponse.success) {
+      await adminClient.endCompetition(startResponse.competition.id);
+    }
+
+    // Get upcoming competitions
+    const upcomingResponse = await teamClient.getUpcomingCompetitions();
+
+    if (upcomingResponse.success && "competitions" in upcomingResponse) {
+      // Find our created but not started competition
+      const pendingCompetition = upcomingResponse.competitions.find(
+        (comp) => comp.id === createResponse.competition.id,
+      );
+
+      expect(pendingCompetition).toBeDefined();
+      if (pendingCompetition) {
+        expect(pendingCompetition.externalLink).toBe(externalLink);
+        expect(pendingCompetition.imageUrl).toBe(imageUrl);
+      }
+    }
+
+    const startExistingResponse = await startExistingTestCompetition(
+      adminClient,
+      createResponse.competition.id,
+      [team.id],
+    );
+
+    // Verify the original fields are in the response
+    expect(startExistingResponse.success).toBe(true);
+    expect(startExistingResponse.competition.externalLink).toBe(externalLink);
+    expect(startExistingResponse.competition.imageUrl).toBe(imageUrl);
   });
 });

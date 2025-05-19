@@ -69,6 +69,6 @@ export function encode(num: number | string | bigint): Uint8Array {
  * @returns decoded string
  */
 export function decode(buffer: Uint8Array): string {
-  const stream = new Stream(buffer);
+  const stream = new Stream(buffer as Uint8Array<ArrayBuffer>);
   return read(stream);
 }

@@ -78,7 +78,7 @@ describe("Base Chain Trading", () => {
 
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Base Chain Trading Team",
     );
 
@@ -271,7 +271,7 @@ describe("Base Chain Trading", () => {
 
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Cross-Chain Restriction Team",
     );
 
@@ -465,7 +465,7 @@ describe("Base Chain Trading", () => {
 
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       "Spending Limit Team",
     );
 

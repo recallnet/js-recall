@@ -2,7 +2,7 @@
 
 import { Button } from "@recallnet/ui2/components/shadcn/button";
 
-import { AchievementCard } from "../achievement-card/index";
+import { AchievementCard } from "@/components/achievement-card";
 
 export const AgentLive: React.FunctionComponent<unknown> = () => {
   return (

@@ -1,5 +1,5 @@
 {
-  "id": "547128b2-698e-46c8-a54c-affbab84edc4",
+  "id": "5eddff4f-7a7d-46c4-9124-a80970d65d2f",
   "prevId": "6b3bde16-0f61-4306-a389-15c6c423ce5c",
   "version": "7",
   "dialect": "postgresql",
@@ -93,14 +93,14 @@
           "primaryKey": false,
           "notNull": false
         },
-        "externalLink": {
-          "name": "externalLink",
+        "external_link": {
+          "name": "external_link",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "imageUrl": {
-          "name": "imageUrl",
+        "image_url": {
+          "name": "image_url",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -205,6 +205,12 @@
         "bucket_addresses": {
           "name": "bucket_addresses",
           "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "image_url": {
+          "name": "image_url",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },

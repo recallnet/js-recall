@@ -17,6 +17,7 @@
     "api",
     "@recallnet/ui",
     "@recallnet/ui2",
-    "@recallnet/react"
+    "@recallnet/react",
+    "@recallnet/api-sdk"
   ]
 }

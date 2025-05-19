@@ -4,21 +4,22 @@ import { ArrowRightIcon } from "@radix-ui/react-icons";
 import { format } from "date-fns";
 import React, { useState } from "react";
 
-import { Competition } from "../data/competitions";
+import { CompetitionResponse } from "@/types";
 
 export interface CompetitionInfoProps {
-  competition: Competition;
+  competition: CompetitionResponse;
 }
 
 export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
   competition,
 }) => {
   const [expanded, setExpanded] = useState(false);
-  // Hardcoded participants for now
-  const participants = 1234;
 
-  const startDate = format(competition.startDate, "MMMM do, yyyy h:mm a");
-  const endDate = format(competition.endDate, "MMMM do, yyyy h:mm a");
+  const startDate = format(
+    new Date(competition.startDate),
+    "MMMM do, yyyy h:mm a",
+  );
+  const endDate = format(new Date(competition.endDate), "MMMM do, yyyy h:mm a");
 
   const SHORT_DESC_LENGTH = 120;
   const isLong = competition.description.length > SHORT_DESC_LENGTH;
@@ -36,7 +37,9 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
             <span className="mb-1 text-sm uppercase tracking-widest text-slate-300">
               PARTICIPANTS
             </span>
-            <span className="text-sm font-bold">{participants}</span>
+            <span className="text-sm font-bold">
+              {competition.registeredAgents}
+            </span>
           </div>
           {/* DATES */}
           <div className="flex flex-col items-center justify-center py-6 md:py-8">
@@ -44,16 +47,10 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
               DATES
             </span>
             <span className="text-sm">
-              Starts:{" "}
-              <time dateTime={competition.startDate.toISOString()}>
-                {startDate}
-              </time>
+              Starts: <time dateTime={competition.startDate}>{startDate}</time>
             </span>
             <span className="text-sm">
-              Ends:{" "}
-              <time dateTime={competition.endDate.toISOString()}>
-                {endDate}
-              </time>
+              Ends: <time dateTime={competition.endDate}>{endDate}</time>
             </span>
           </div>
           {/* MIN. STAKED */}
@@ -62,8 +59,7 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
               MIN. STAKED
             </span>
             <span className="text-sm font-bold">
-              {competition.minStaked}{" "}
-              <span className="font-normal">RECALL</span>
+              {competition.minStake} <span className="font-normal">RECALL</span>
             </span>
           </div>
         </div>

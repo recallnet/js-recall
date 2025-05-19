@@ -12,9 +12,8 @@ import {
   DropdownMenuTrigger,
 } from "@recallnet/ui2/components/shadcn/dropdown-menu";
 
+import { Identicon } from "@/components/Identicon";
 import { userAtom } from "@/state/atoms";
-
-import { Identicon } from "../Identicon";
 
 export const SIWEButton: React.FunctionComponent<
   React.ComponentProps<typeof Button>

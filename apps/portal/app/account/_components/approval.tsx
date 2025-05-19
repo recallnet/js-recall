@@ -3,11 +3,7 @@
 import TimeAgo from "javascript-time-ago";
 import { Copy, Handshake, Loader2, Trash, Wallet } from "lucide-react";
 import { useEffect } from "react";
-import {
-  useAccount,
-  useBlockNumber,
-  useWaitForTransactionReceipt,
-} from "wagmi";
+import { useBlockNumber, useWaitForTransactionReceipt } from "wagmi";
 
 import { displayAddress } from "@recallnet/address-utils/display";
 import {
@@ -49,8 +45,6 @@ interface Props {
 const timeAgo = new TimeAgo("en-US");
 
 export function Approval({ type, creditSponsor, approval }: Props) {
-  const { address } = useAccount();
-
   const { refetch: refetchCreditAccount } = useCreditAccount();
 
   const { data: blockNumber } = useBlockNumber();
@@ -101,8 +95,7 @@ export function Approval({ type, creditSponsor, approval }: Props) {
   };
 
   const handleSetSponsor = () => {
-    if (!address) return;
-    setAccountSponsor(address, approval.addr);
+    setAccountSponsor(approval.addr);
   };
 
   const creditUsedDisplay = attoCreditsToGbMonths(approval.approval.creditUsed);

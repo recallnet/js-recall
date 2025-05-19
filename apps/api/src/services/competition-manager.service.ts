@@ -71,18 +71,24 @@ export class CompetitionManager {
    * @param name Competition name
    * @param description Optional description
    * @param tradingType Type of cross-chain trading to allow (defaults to disallowAll)
+   * @param externalLink Optional URL for external competition details
+   * @param imageUrl Optional URL to the competition image
    * @returns The created competition
    */
   async createCompetition(
     name: string,
     description?: string,
     tradingType: CrossChainTradingType = CrossChainTradingType.disallowAll,
+    externalLink?: string,
+    imageUrl?: string,
   ) {
     const id = uuidv4();
     const competition = {
       id,
       name,
       description,
+      externalLink,
+      imageUrl,
       startDate: null,
       endDate: null,
       status: CompetitionStatus.PENDING,

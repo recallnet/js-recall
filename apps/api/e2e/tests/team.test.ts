@@ -17,6 +17,7 @@ import {
   ADMIN_USERNAME,
   cleanupTestState,
   createTestClient,
+  generateRandomEthAddress,
   registerTeamAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
 
@@ -59,7 +60,12 @@ describe("Team API", () => {
       client: teamClient,
       team,
       apiKey,
-    } = await registerTeamAndGetClient(client, teamName, email, contactPerson);
+    } = await registerTeamAndGetClient(
+      adminApiKey,
+      teamName,
+      email,
+      contactPerson,
+    );
 
     expect(team).toBeDefined();
     expect(team.id).toBeDefined();
@@ -87,7 +93,7 @@ describe("Team API", () => {
     console.log(`TEST: Login result: ${loginSuccess}`);
 
     // Register a team
-    const { client: teamClient } = await registerTeamAndGetClient(client);
+    const { client: teamClient } = await registerTeamAndGetClient(adminApiKey);
 
     // Update team profile
     const newContactPerson = "Updated Contact Person";
@@ -119,7 +125,7 @@ describe("Team API", () => {
     console.log(`TEST: Login result: ${loginSuccess}`);
 
     // Register a team
-    const { client: teamClient } = await registerTeamAndGetClient(client);
+    const { client: teamClient } = await registerTeamAndGetClient(adminApiKey);
 
     // Define metadata for the update
     const metadata = {
@@ -166,7 +172,7 @@ describe("Team API", () => {
     console.log(`TEST: Login result: ${loginSuccess}`);
 
     // Register a team
-    await registerTeamAndGetClient(client);
+    await registerTeamAndGetClient(adminApiKey);
 
     // Create a client with an invalid API key
     const invalidApiKey = "invalid_key_12345";
@@ -204,7 +210,7 @@ describe("Team API", () => {
     ];
 
     for (const data of teamData) {
-      await registerTeamAndGetClient(adminClient, data.name, data.email);
+      await registerTeamAndGetClient(adminApiKey, data.name, data.email);
     }
 
     // Admin lists all teams
@@ -294,7 +300,7 @@ describe("Team API", () => {
     // Step 1: Register a team
     const teamName = `Test Team ${Date.now()}`;
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       teamName,
     );
     expect(team).toBeDefined();
@@ -373,11 +379,13 @@ describe("Team API", () => {
     // Step 1: Register a team
     const teamName = `Cache Test Team ${Date.now()}`;
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminClient,
+      adminApiKey,
       teamName,
     );
     expect(team).toBeDefined();
     expect(team.id).toBeDefined();
+    expect(team.imageUrl).toBeNull(); // No initial imageUrl (database returns null, not undefined)
+    expect(team.metadata).toBeNull(); // No initial metadata (database returns null, not undefined)
 
     // Step 2: Create and start a competition with the team
     const compName = `Cache Test Competition ${Date.now()}`;
@@ -474,7 +482,7 @@ describe("Team API", () => {
     // Register the team
     const { client: teamClient, apiKey: originalApiKey } =
       await registerTeamAndGetClient(
-        adminClient,
+        adminApiKey,
         teamName,
         email,
         contactPerson,
@@ -518,5 +526,142 @@ describe("Team API", () => {
         expect((error as any).status || 401).toBe(401);
       }
     }
+  });
+
+  test("teams can set and update imageUrl", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+    expect(adminLoginSuccess).toBe(true);
+
+    // Step 1: Register a team with initial imageUrl
+    const teamName = `Image Test Team ${Date.now()}`;
+    const email = `image-test-${Date.now()}@example.com`;
+    const contactPerson = "Image Test Contact";
+    const walletAddress = generateRandomEthAddress();
+    const initialImageUrl = "https://example.com/team-image-initial.jpg";
+
+    // Register the team with an initial image URL
+    const { client: teamClient, team } = await registerTeamAndGetClient(
+      adminApiKey,
+      teamName,
+      email,
+      contactPerson,
+      walletAddress,
+      initialImageUrl,
+    );
+
+    expect(team).toBeDefined();
+    expect(team.id).toBeDefined();
+    expect(team.imageUrl).toBe(initialImageUrl);
+
+    // Step 2: Verify the imageUrl is included in the profile
+    const profileResponse = await teamClient.getProfile();
+    expect(profileResponse.success).toBe(true);
+    expect((profileResponse as TeamProfileResponse).team.imageUrl).toBe(
+      initialImageUrl,
+    );
+
+    // Step 3: Update the team's imageUrl
+    const updatedImageUrl = "https://example.com/team-image-updated.jpg";
+    const updateResponse = await teamClient.updateProfile({
+      imageUrl: updatedImageUrl,
+    });
+
+    expect(updateResponse.success).toBe(true);
+    expect((updateResponse as TeamProfileResponse).team.imageUrl).toBe(
+      updatedImageUrl,
+    );
+
+    // Step 4: Verify changes persisted
+    const updatedProfileResponse = await teamClient.getProfile();
+    expect(updatedProfileResponse.success).toBe(true);
+    expect((updatedProfileResponse as TeamProfileResponse).team.imageUrl).toBe(
+      updatedImageUrl,
+    );
+
+    // Step 5: Verify admin can see the updated imageUrl in team listings
+    const teamsResponse = await adminClient.listAllTeams();
+    expect(teamsResponse.success).toBe(true);
+
+    const foundTeam = (teamsResponse as AdminTeamsListResponse).teams.find(
+      (t) => t.id === team.id,
+    );
+    expect(foundTeam).toBeDefined();
+    expect(foundTeam?.imageUrl).toBe(updatedImageUrl);
+  });
+
+  test("teams can update both metadata and imageUrl in a single request", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+    expect(adminLoginSuccess).toBe(true);
+
+    // Register a team without initial metadata or imageUrl
+    const teamName = `Combined Update Team ${Date.now()}`;
+    const email = `combined-update-${Date.now()}@example.com`;
+    const contactPerson = "Combined Update Contact";
+
+    const { client: teamClient, team } = await registerTeamAndGetClient(
+      adminApiKey,
+      teamName,
+      email,
+      contactPerson,
+    );
+
+    expect(team).toBeDefined();
+    expect(team.id).toBeDefined();
+    expect(team.imageUrl).toBeNull(); // No initial imageUrl (database returns null, not undefined)
+    expect(team.metadata).toBeNull(); // No initial metadata (database returns null, not undefined)
+
+    // Define new values for both fields
+    const newMetadata: TeamMetadata = {
+      ref: {
+        name: "CombinedBot",
+        version: "1.0.0",
+      },
+      description: "Testing combined updates",
+      social: {
+        name: "Combined Team",
+        email: "combined@test.com",
+        twitter: "@combinedbot",
+      },
+    };
+    const newImageUrl = "https://example.com/combined-update-image.jpg";
+
+    // Update both fields in a single request
+    const updateResponse = await teamClient.updateProfile({
+      metadata: newMetadata,
+      imageUrl: newImageUrl,
+    });
+
+    expect(updateResponse.success).toBe(true);
+    expect((updateResponse as TeamProfileResponse).team.metadata).toEqual(
+      newMetadata,
+    );
+    expect((updateResponse as TeamProfileResponse).team.imageUrl).toBe(
+      newImageUrl,
+    );
+
+    // Verify changes persisted
+    const profileResponse = await teamClient.getProfile();
+    expect(profileResponse.success).toBe(true);
+
+    const updatedProfile = (profileResponse as TeamProfileResponse).team;
+    expect(updatedProfile.metadata).toEqual(newMetadata);
+    expect(updatedProfile.imageUrl).toBe(newImageUrl);
+
+    // Verify admin can see both updated fields
+    const searchResponse = await adminClient.searchTeams({
+      email: email,
+    });
+
+    expect(searchResponse.success).toBe(true);
+    const foundTeam = (searchResponse as AdminTeamsListResponse).teams.find(
+      (t) => t.email === email,
+    );
+
+    expect(foundTeam).toBeDefined();
+    expect(foundTeam?.imageUrl).toBe(newImageUrl);
   });
 });

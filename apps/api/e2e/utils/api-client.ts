@@ -193,6 +193,7 @@ export class ApiClient {
    * @param contactPerson Contact person name
    * @param walletAddress Optional Ethereum wallet address (random valid address will be generated if not provided)
    * @param metadata Optional metadata for the team agent
+   * @param imageUrl Optional image URL for the team
    */
   async registerTeam(
     name: string,
@@ -200,6 +201,7 @@ export class ApiClient {
     contactPerson: string,
     walletAddress?: string,
     metadata?: TeamMetadata,
+    imageUrl?: string,
   ): Promise<TeamRegistrationResponse | ErrorResponse> {
     try {
       // Generate a random Ethereum address if one isn't provided
@@ -213,6 +215,7 @@ export class ApiClient {
           contactPerson,
           walletAddress: address,
           metadata,
+          imageUrl,
         },
       );
 
@@ -232,10 +235,15 @@ export class ApiClient {
           description?: string;
           teamIds: string[];
           tradingType?: CrossChainTradingType;
+          externalLink?: string;
+          imageUrl?: string;
         }
       | string,
     description?: string,
     teamIds?: string[],
+    tradingType?: CrossChainTradingType,
+    externalLink?: string,
+    imageUrl?: string,
   ): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
       let requestData;
@@ -248,6 +256,9 @@ export class ApiClient {
           name: params,
           description,
           teamIds: teamIds || [],
+          tradingType,
+          externalLink,
+          imageUrl,
         };
       }
 
@@ -269,6 +280,8 @@ export class ApiClient {
     name: string,
     description?: string,
     tradingType?: CrossChainTradingType,
+    externalLink?: string,
+    imageUrl?: string,
   ): Promise<CreateCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
@@ -277,6 +290,8 @@ export class ApiClient {
           name,
           description,
           tradingType,
+          externalLink,
+          imageUrl,
         },
       );
 
@@ -293,6 +308,8 @@ export class ApiClient {
     competitionId: string,
     teamIds: string[],
     crossChainTradingType?: CrossChainTradingType,
+    externalLink?: string,
+    imageUrl?: string,
   ): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
@@ -301,6 +318,8 @@ export class ApiClient {
           competitionId,
           teamIds,
           crossChainTradingType,
+          externalLink,
+          imageUrl,
         },
       );
 
@@ -331,10 +350,12 @@ export class ApiClient {
 
   /**
    * Update team profile
+   * @param profileData Profile data to update including contactPerson, metadata, and imageUrl
    */
   async updateProfile(profileData: {
     contactPerson?: string;
     metadata?: TeamMetadata;
+    imageUrl?: string;
   }): Promise<TeamProfileResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.put(
@@ -767,6 +788,7 @@ export class ApiClient {
    * @param contactPerson Contact person name
    * @param walletAddress Optional Ethereum wallet address (random valid address will be generated if not provided)
    * @param metadata Optional metadata for the team agent
+   * @param imageUrl Optional image URL for the team
    */
   async publicRegisterTeam(
     name: string,
@@ -774,6 +796,7 @@ export class ApiClient {
     contactPerson: string,
     walletAddress?: string,
     metadata?: TeamMetadata,
+    imageUrl?: string,
   ): Promise<TeamRegistrationResponse | ErrorResponse> {
     try {
       // Generate a random Ethereum address if one isn't provided
@@ -787,6 +810,7 @@ export class ApiClient {
           contactPerson,
           walletAddress: address,
           metadata,
+          imageUrl,
         },
       );
 

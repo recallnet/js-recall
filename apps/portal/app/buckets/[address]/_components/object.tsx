@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Address } from "viem";
 import {
-  useAccount,
   useBlockNumber,
   useChainId,
   useWaitForTransactionReceipt,
@@ -39,8 +38,6 @@ export default function Object({
   delimiter,
 }: Props) {
   const router = useRouter();
-
-  const { address: fromAddress } = useAccount();
 
   const chainId = useChainId();
 
@@ -89,8 +86,7 @@ export default function Object({
   }, [objectError, deleteError, deleteReceiptError]);
 
   const handleDelete = () => {
-    if (fromAddress === undefined) return;
-    deleteObject(bucketAddress, fromAddress, path);
+    deleteObject(bucketAddress, path);
   };
 
   const objectApiUrl = getObjectApiUrl(getChain(chainId));
