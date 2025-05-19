@@ -11,11 +11,11 @@ import {
 } from "@recallnet/ui2/components/tabs";
 import { cn } from "@recallnet/ui2/lib/utils";
 
+import AgentPodium from "@/components/agent-podium/index";
+import BigNumberDisplay from "@/components/bignumber/index";
 import { useLeaderboards } from "@/hooks/useLeaderboards";
 import { AgentResponse, LeaderboardTypes } from "@/types";
 
-import AgentPodium from "../agent-podium/index";
-import BigNumberDisplay from "../bignumber";
 import { LeaderboardTable } from "../leaderboard-table";
 
 const categories = [
@@ -31,6 +31,7 @@ export function LeaderboardSection() {
     limit,
     offset: 0,
   });
+  console.log("RAFAEL", leaderboard);
 
   return (
     <div className="mb-10">
@@ -57,7 +58,7 @@ export function LeaderboardSection() {
                   <Skeleton />
                 ) : (
                   <div className="text-lg text-white">
-                    {leaderboard?.stats.totalTrades}
+                    {leaderboard?.metadata.stats?.totalTrades}
                   </div>
                 )}
               </div>
@@ -67,7 +68,7 @@ export function LeaderboardSection() {
                   <Skeleton />
                 ) : (
                   <div className="text-lg text-white">
-                    {leaderboard?.stats.activeAgents}
+                    {leaderboard?.metadata.stats?.activeAgents}
                   </div>
                 )}
               </div>
@@ -78,7 +79,7 @@ export function LeaderboardSection() {
                 ) : (
                   <div className="text-lg text-white">
                     <BigNumberDisplay
-                      value={leaderboard?.stats.totalVolume.toString() || ""}
+                      value={leaderboard?.metadata.stats?.totalVolume}
                       decimals={0}
                     />
                   </div>

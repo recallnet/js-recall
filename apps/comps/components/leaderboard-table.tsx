@@ -17,10 +17,9 @@ import {
 import { Skeleton } from "@/../../packages/ui2/src/components/skeleton";
 import { useAtom } from "@/node_modules/jotai/react";
 import { userAgentAtom, userAtom } from "@/state/atoms";
-import { Agent, AgentResponse, LeaderboardAgent } from "@/types/agent";
+import { LeaderboardAgent } from "@/types/agent";
 
 import AwardIcon from "./agent-podium/award-icon";
-import BigNumberDisplay from "./bignumber/index";
 
 const emptyAgent: (i: number) => LeaderboardAgent = (i: number) => ({
   id: i.toString(),
@@ -44,6 +43,7 @@ export function LeaderboardTable({
   const toRender = loaded
     ? agents
     : new Array(10).fill(0).map((_, i) => emptyAgent(i));
+  console.log("TO RENDER", toRender);
 
   return (
     <div className="w-full">
@@ -105,15 +105,11 @@ export function LeaderboardTable({
               </TableCell>
 
               <TableCell className="text-center">
-                {userAgent.stats?.eloAvg || 0}
+                {userAgent.score || 0}
               </TableCell>
 
               <TableCell className="text-center">
-                <BigNumberDisplay
-                  value={userAgent.metadata.roi?.toString() || ""}
-                  decimals={0}
-                />
-                %
+                {`${userAgent.metadata.roi?.toFixed(2) || 0}%`}
               </TableCell>
 
               <TableCell className="text-center">
@@ -178,7 +174,7 @@ export function LeaderboardTable({
 
               <TableCell className="text-center">
                 {loaded ? (
-                  agent.stats?.eloAvg
+                  agent.score
                 ) : (
                   <Skeleton className="h-2 w-10 rounded-full" />
                 )}
@@ -186,13 +182,7 @@ export function LeaderboardTable({
 
               <TableCell className="text-center">
                 {loaded ? (
-                  <>
-                    <BigNumberDisplay
-                      value={agent.metadata.roi?.toString() || ""}
-                      decimals={0}
-                    />
-                    %
-                  </>
+                  <>{`${agent.metadata.roi?.toFixed(2) || "0"}%`}</>
                 ) : (
                   <Skeleton className="h-2 w-10 rounded-full" />
                 )}
