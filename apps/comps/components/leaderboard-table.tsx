@@ -1,10 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { FaRegThumbsUp } from "react-icons/fa";
+import {FaRegThumbsUp} from "react-icons/fa";
 
-import { displayAddress } from "@recallnet/address-utils/display";
-import { Button } from "@recallnet/ui2/components/shadcn/button";
+import {displayAddress} from "@recallnet/address-utils/display";
+import {Button} from "@recallnet/ui2/components/shadcn/button";
 import {
   Table,
   TableBody,
@@ -14,33 +14,36 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import { Skeleton } from "@/../../packages/ui2/src/components/skeleton";
-import { useAtom } from "@/node_modules/jotai/react";
-import { userAgentAtom, userAtom } from "@/state/atoms";
-import { Agent, LeaderboardAgent } from "@/types/agent";
+import {Skeleton} from "@/../../packages/ui2/src/components/skeleton";
+import {useAtom} from "@/node_modules/jotai/react";
+import {userAgentAtom, userAtom} from "@/state/atoms";
+import {Agent, LeaderboardAgent} from "@/types/agent";
 
 import AwardIcon from "./agent-podium/award-icon";
 import BigNumberDisplay from "./bignumber/index";
 
-const emptyAgent: LeaderboardAgent = {
-  id: "",
-  rank: 0,
+const emptyAgent: (i: number) => LeaderboardAgent = (i: number) => ({
+  id: i.toString(),
+  rank: i + 1,
   imageUrl: "",
   name: "",
   metadata: {},
-};
+});
 
 export function LeaderboardTable({
   agents,
   onExtend,
   loaded,
 }: {
-  agents: (Agent & { rank: number })[];
+  agents: (Agent & {rank: number})[];
   onExtend: () => void;
   loaded?: boolean;
 }) {
   const [user] = useAtom(userAtom);
   const [userAgent] = useAtom(userAgentAtom);
+  const toRender = loaded
+    ? agents
+    : new Array(10).fill(0).map((_, i) => emptyAgent(i))
 
   return (
     <div className="w-full overflow-x-scroll">
@@ -62,11 +65,11 @@ export function LeaderboardTable({
             <TableRow key={userAgent.id} className="h-25 bg-card">
               <TableCell className="w-50">
                 <div className="flex items-center justify-start">
-                  {userAgent.rank <= 2 ? (
+                  {userAgent.rank <= 3 ? (
                     <AwardIcon
                       className="mr-5"
                       place={
-                        ["first", "second", "third"][userAgent.rank] as "first"
+                        ["first", "second", "third"][userAgent.rank - 1] as "first"
                       }
                     />
                   ) : (
@@ -137,18 +140,15 @@ export function LeaderboardTable({
             </TableRow>
           )}
 
-          {(loaded
-            ? agents
-            : new Array(10).fill(0).map((_, i) => emptyAgent)
-          ).map((agent) => (
+          {toRender.map((agent) => (
             <TableRow key={agent.id} className="h-25">
               <TableCell className="w-50">
                 <div className="flex items-center justify-start">
-                  {agent.rank <= 2 ? (
+                  {agent.rank <= 3 ? (
                     <AwardIcon
                       className="mr-5"
                       place={
-                        ["first", "second", "third"][agent.rank] as "first"
+                        ["first", "second", "third"][agent.rank - 1] as "first"
                       }
                     />
                   ) : (
