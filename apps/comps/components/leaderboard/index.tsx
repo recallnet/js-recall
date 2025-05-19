@@ -82,7 +82,7 @@ export function LeaderboardSection() {
                 ) : (
                   <div className="text-lg text-white">
                     <BigNumberDisplay
-                      value={leaderboard?.stats?.totalVolume}
+                      value={leaderboard?.stats?.totalVolume.toString() || "0"}
                       decimals={0}
                     />
                   </div>

@@ -31,9 +31,7 @@ export const NewsletterSection: React.FC = () => {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // This would be where you'd handle the actual submission
+  const handleSubmit = () => {
     console.log("Subscribing email:", email);
     setEmail("");
   };
