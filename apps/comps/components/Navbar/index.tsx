@@ -1,20 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import {usePathname} from "next/navigation";
+import { usePathname } from "next/navigation";
 
-import {Avatar, AvatarImage} from "@recallnet/ui2/components/avatar";
+import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
 
-import {SIWEButton} from "../siwe";
+import { SIWEButton } from "../siwe";
 
-export const Navbar: React.FunctionComponent<{children: React.ReactNode}> = ({
+export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const pathname = usePathname();
 
   const navItems = [
-    {label: "COMPETITIONS", href: "/competitions"},
-    {label: "LEADERBOARDS", href: "/leaderboards"},
+    { label: "COMPETITIONS", href: "/competitions" },
+    { label: "LEADERBOARDS", href: "/leaderboards" },
   ];
 
   if (pathname === "/onboarding") return children;
@@ -41,10 +41,11 @@ export const Navbar: React.FunctionComponent<{children: React.ReactNode}> = ({
               return (
                 <Link key={item.href} href={item.href}>
                   <span
-                    className={`text-sm font-medium transition-colors ${isActive
+                    className={`text-sm font-medium transition-colors ${
+                      isActive
                         ? "text-white underline underline-offset-4"
                         : "text-gray-400 hover:text-white"
-                      }`}
+                    }`}
                   >
                     {item.label}
                   </span>

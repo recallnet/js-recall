@@ -1,10 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import {FaRegThumbsUp} from "react-icons/fa";
+import { FaRegThumbsUp } from "react-icons/fa";
 
-import {displayAddress} from "@recallnet/address-utils/display";
-import {Button} from "@recallnet/ui2/components/shadcn/button";
+import { displayAddress } from "@recallnet/address-utils/display";
+import { Button } from "@recallnet/ui2/components/shadcn/button";
 import {
   Table,
   TableBody,
@@ -14,10 +14,10 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import {Skeleton} from "@/../../packages/ui2/src/components/skeleton";
-import {useAtom} from "@/node_modules/jotai/react";
-import {userAgentAtom, userAtom} from "@/state/atoms";
-import {Agent, LeaderboardAgent} from "@/types/agent";
+import { Skeleton } from "@/../../packages/ui2/src/components/skeleton";
+import { useAtom } from "@/node_modules/jotai/react";
+import { userAgentAtom, userAtom } from "@/state/atoms";
+import { Agent, LeaderboardAgent } from "@/types/agent";
 
 import AwardIcon from "./agent-podium/award-icon";
 import BigNumberDisplay from "./bignumber/index";
@@ -35,7 +35,7 @@ export function LeaderboardTable({
   onExtend,
   loaded,
 }: {
-  agents: (Agent & {rank: number})[];
+  agents: (Agent & { rank: number })[];
   onExtend: () => void;
   loaded?: boolean;
 }) {
@@ -43,7 +43,7 @@ export function LeaderboardTable({
   const [userAgent] = useAtom(userAgentAtom);
   const toRender = loaded
     ? agents
-    : new Array(10).fill(0).map((_, i) => emptyAgent(i))
+    : new Array(10).fill(0).map((_, i) => emptyAgent(i));
 
   return (
     <div className="w-full">
@@ -69,7 +69,9 @@ export function LeaderboardTable({
                     <AwardIcon
                       className="mr-5"
                       place={
-                        ["first", "second", "third"][userAgent.rank - 1] as "first"
+                        ["first", "second", "third"][
+                          userAgent.rank - 1
+                        ] as "first"
                       }
                     />
                   ) : (
