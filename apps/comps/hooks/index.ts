@@ -4,7 +4,7 @@ export * from "./useCompetitions";
 export * from "./useCompetition";
 export * from "./useCompetitionAgents";
 export * from "./useAgentCompetitions";
-export * from "./useLeaderboard";
+export * from "./useLeaderboards";
 export * from "./useJoinCompetition";
 export * from "./useLeaveCompetition";
 export * from "./useCreateAgent";
