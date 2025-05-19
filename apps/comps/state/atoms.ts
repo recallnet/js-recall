@@ -1,4 +1,5 @@
 import { atom } from "jotai";
+import { atomWithStorage } from "jotai/utils";
 
 import { ethers } from "@/node_modules/ethers/lib.commonjs/index";
 import { LeaderboardAgent } from "@/types/agent";
@@ -8,7 +9,7 @@ type User = {
   loggedIn: boolean;
 };
 
-export const userAtom = atom({
+export const userAtom = atomWithStorage<User>("user", {
   address: "",
   loggedIn: false,
 });

@@ -8,15 +8,15 @@ import {
   darkTheme,
 } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import axios from "axios";
 import { useAtom } from "jotai";
 import React from "react";
 import { type ReactNode, useState } from "react";
-import { createSiweMessage } from "viem/siwe";
+import { createSiweMessage, parseSiweMessage } from "viem/siwe";
 import { WagmiProvider } from "wagmi";
 
 import { ThemeProvider } from "@recallnet/ui2/components/theme-provider";
 
+import { useLogin, useLogout, useNonce } from "@/hooks/useAuth";
 import { userAtom } from "@/state/atoms";
 import { clientConfig } from "@/wagmi-config";
 
@@ -24,23 +24,15 @@ const AUTHENTICATION_STATUS: AuthenticationStatus = "unauthenticated";
 const CONFIG = clientConfig();
 
 function WalletProvider(props: { children: ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
   const [, setUser] = useAtom(userAtom);
+  const { data: nonceData } = useNonce();
+  const { mutateAsync: login } = useLogin();
+  const { mutateAsync: logout } = useLogout();
 
   const authAdapter = React.useMemo(() => {
     return createAuthenticationAdapter({
       getNonce: async () => {
-        const { data: res } = await axios<{ nonce: string }>({
-          baseURL: "",
-          method: "get",
-          url: "/api/nonce",
-          headers: {
-            Accept: "application/json",
-          },
-          data: null,
-        });
-
-        return res.nonce;
+        return nonceData?.nonce ?? "";
       },
       createMessage: ({ nonce, address, chainId }) => {
         return createSiweMessage({
@@ -54,44 +46,44 @@ function WalletProvider(props: { children: ReactNode }) {
         });
       },
       verify: async ({ message, signature }) => {
-        const res = await axios<{ ok: boolean; address: string }>({
-          baseURL: "",
-          method: "post",
-          url: "/api/login",
-          headers: {
-            Accept: "application/json",
-          },
-          data: { message, signature },
+        const siweMessage = parseSiweMessage(message);
+        if (!siweMessage.address) {
+          throw new Error("No address found in SIWE message");
+        }
+
+        const res = await login({
+          message,
+          signature,
+          wallet: siweMessage.address,
         });
 
-        setUser({ address: res.data.address, loggedIn: true });
+        setUser({ address: res.wallet, loggedIn: true });
 
-        return res.data.ok;
+        return true;
       },
       signOut: async () => {
-        console.log("SIGN OUT");
-        //await fetch('/api/logout');
+        await logout();
       },
     });
-  }, [setUser]);
+  }, [setUser, nonceData, login, logout]);
 
   return (
     <WagmiProvider config={CONFIG}>
-      <QueryClientProvider client={queryClient}>
-        <RainbowKitAuthenticationProvider
-          adapter={authAdapter}
-          status={AUTHENTICATION_STATUS}
-        >
-          <RainbowKitProvider theme={darkTheme()}>
-            {props.children}
-          </RainbowKitProvider>
-        </RainbowKitAuthenticationProvider>
-      </QueryClientProvider>
+      <RainbowKitAuthenticationProvider
+        adapter={authAdapter}
+        status={AUTHENTICATION_STATUS}
+      >
+        <RainbowKitProvider theme={darkTheme()}>
+          {props.children}
+        </RainbowKitProvider>
+      </RainbowKitAuthenticationProvider>
     </WagmiProvider>
   );
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const [queryClient] = useState(() => new QueryClient());
+
   return (
     <ThemeProvider
       attribute="class"
@@ -100,7 +92,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
       enableColorScheme
     >
-      <WalletProvider>{children}</WalletProvider>
+      <QueryClientProvider client={queryClient}>
+        <WalletProvider>{children}</WalletProvider>
+      </QueryClientProvider>
     </ThemeProvider>
   );
 }

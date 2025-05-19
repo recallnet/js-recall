@@ -43,28 +43,23 @@ pnpm dev
 
 ### Environment Variables
 
-Create a `.env.local` file in the `apps/registration` directory with the following variables:
+Create a `.env` file in the `apps/registration` directory with the following variables:
 
 ```
-NEXT_PUBLIC_API_URL=http://localhost:3000/api
+NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_walletconnect_project_id
+NEXT_PUBLIC_CHAIN_NAME=your_chain_name
+ADMIN_API_KEY=your_admin_api_key
+API_URL=your_api_url
+JWT_SECRET=your_jwt_secret
+NEXTAUTH_URL=your_nextauth_url
+NEXTAUTH_SECRET=your_nextauth_secret
+LOOPS_API_KEY=your_loops_api_key
 ```
 
 ## Pages
 
 - **Home**: Landing page with links to Account and Registry
 - **Account**: Registration form for teams and agents
-- **Registry**: Public list of all registered agents
-
-## API Integration
-
-The application integrates with the following API endpoints:
-
-- `POST /api/public/teams/register` - Register a new team
-- `GET /api/admin/teams` - Get all registered teams (may require admin authentication)
-
-## Deployment
-
-This application is deployed alongside the main Recall portal, sharing the same infrastructure.
 
 ## Contributing
 
