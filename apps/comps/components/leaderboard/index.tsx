@@ -33,9 +33,8 @@ export function LeaderboardSection() {
       leaderboard && leaderboard.agents
         ? leaderboard?.agents.slice(0, limit)
         : [],
-    [leaderboard?.agents, limit],
+    [leaderboard, limit],
   );
-  console.log("RAFAEL", leaderboard, limit);
 
   return (
     <div className="mb-10">
