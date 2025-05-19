@@ -174,8 +174,12 @@ export class TradeSimulator {
       );
 
       console.log("[TradeSimulator] Got prices:");
-      console.log(`  From Token (${fromToken}): ${JSON.stringify(fromPrice, null, 4)} (${fromTokenChain})`);
-      console.log(`  To Token (${toToken}): ${JSON.stringify(toPrice, null, 4)} (${toTokenChain})`);
+      console.log(
+        `  From Token (${fromToken}): ${JSON.stringify(fromPrice, null, 4)} (${fromTokenChain})`,
+      );
+      console.log(
+        `  To Token (${toToken}): ${JSON.stringify(toPrice, null, 4)} (${toTokenChain})`,
+      );
 
       if (!fromPrice?.price || !toPrice?.price) {
         console.log(`[TradeSimulator] Missing price data:
