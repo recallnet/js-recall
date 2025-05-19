@@ -50,7 +50,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@recallnet/api-sdk": "workspace:*",
     "@types/express": "^4.17.17",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^18.15.0",

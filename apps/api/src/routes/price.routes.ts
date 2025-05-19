@@ -66,7 +66,7 @@ export function configurePriceRoutes(
    *                   description: Token address
    *                 chain:
    *                   type: string
-   *                   enum: [evm, svm]
+   *                   enum: [EVM, SVM]
    *                   description: Blockchain type of the token
    *                 specificChain:
    *                   type: string
@@ -143,7 +143,7 @@ export function configurePriceRoutes(
    *                   description: Token address
    *                 chain:
    *                   type: string
-   *                   enum: [evm, svm]
+   *                   enum: [EVM, SVM]
    *                   description: Blockchain type of the token
    *                 specificChain:
    *                   type: string

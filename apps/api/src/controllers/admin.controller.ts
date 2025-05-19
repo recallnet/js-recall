@@ -186,14 +186,8 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async registerTeam(req: Request, res: Response, next: NextFunction) {
       try {
-        const {
-          teamName,
-          email,
-          contactPerson,
-          walletAddress,
-          metadata,
-          imageUrl,
-        } = req.body;
+        const { teamName, email, contactPerson, walletAddress, metadata } =
+          req.body;
 
         // Validate required parameters
         if (!teamName || !email || !contactPerson || !walletAddress) {
@@ -217,17 +211,16 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         try {
-          // Request team registration through the team manager service
+          // Register the team with optional metadata
           const team = await services.teamManager.registerTeam(
             teamName,
             email,
             contactPerson,
             walletAddress,
             metadata,
-            imageUrl,
           );
 
-          // Return success with created team
+          // Format the response to include api key and metadata for the client
           return res.status(201).json({
             success: true,
             team: {
@@ -238,7 +231,6 @@ export function makeAdminController(services: ServiceRegistry) {
               walletAddress: team.walletAddress,
               apiKey: team.apiKey,
               metadata: team.metadata,
-              imageUrl: team.imageUrl,
               createdAt: team.createdAt,
             },
           });
@@ -306,8 +298,7 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async createCompetition(req: Request, res: Response, next: NextFunction) {
       try {
-        const { name, description, tradingType, externalLink, imageUrl } =
-          req.body;
+        const { name, description, tradingType } = req.body;
 
         // Validate required parameters
         if (!name) {
@@ -319,8 +310,6 @@ export function makeAdminController(services: ServiceRegistry) {
           name,
           description,
           tradingType || CrossChainTradingType.disallowAll,
-          externalLink,
-          imageUrl,
         );
 
         // Return the created competition
@@ -340,15 +329,8 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async startCompetition(req: Request, res: Response, next: NextFunction) {
       try {
-        const {
-          competitionId,
-          name,
-          description,
-          teamIds,
-          tradingType,
-          externalLink,
-          imageUrl,
-        } = req.body;
+        const { competitionId, name, description, teamIds, tradingType } =
+          req.body;
 
         // Validate required parameters
         if (!teamIds || !Array.isArray(teamIds) || teamIds.length === 0) {
@@ -391,8 +373,6 @@ export function makeAdminController(services: ServiceRegistry) {
             name,
             description,
             tradingType || CrossChainTradingType.disallowAll,
-            externalLink,
-            imageUrl,
           );
         }
 
@@ -525,7 +505,6 @@ export function makeAdminController(services: ServiceRegistry) {
           active: team.active,
           deactivationReason: team.deactivationReason,
           deactivationDate: team.deactivationDate,
-          imageUrl: team.imageUrl,
           createdAt: team.createdAt,
           updatedAt: team.updatedAt,
         }));
@@ -865,7 +844,6 @@ export function makeAdminController(services: ServiceRegistry) {
           active: team.active,
           deactivationReason: team.deactivationReason,
           deactivationDate: team.deactivationDate,
-          imageUrl: team.imageUrl,
           createdAt: team.createdAt,
           updatedAt: team.updatedAt,
           isAdmin: team.isAdmin,
@@ -971,7 +949,6 @@ export function makeAdminController(services: ServiceRegistry) {
           deactivationDate: team.deactivationDate,
           isAdmin: team.isAdmin,
           metadata: team.metadata,
-          imageUrl: team.imageUrl,
           createdAt: team.createdAt,
           updatedAt: team.updatedAt,
         }));

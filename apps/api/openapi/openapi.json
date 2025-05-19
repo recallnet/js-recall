@@ -15,16 +15,12 @@
   },
   "servers": [
     {
-      "url": "https://api.competitions.recall.network",
-      "description": "Production server"
-    },
-    {
       "url": "http://localhost:3000",
       "description": "Local development server"
     },
     {
-      "url": "http://localhost:3001",
-      "description": "End to end testing server"
+      "url": "https://api.example.com",
+      "description": "Production server"
     }
   ],
   "components": {
@@ -267,11 +263,6 @@
                           "format": "date-time",
                           "description": "Team creation timestamp"
                         },
-                        "imageUrl": {
-                          "type": "string",
-                          "description": "URL to the team's image",
-                          "nullable": true
-                        },
                         "updatedAt": {
                           "type": "string",
                           "format": "date-time",
@@ -360,10 +351,6 @@
                         }
                       }
                     }
-                  },
-                  "imageUrl": {
-                    "type": "string",
-                    "description": "URL to the team's image"
                   }
                 }
               }
@@ -445,10 +432,6 @@
                               }
                             }
                           }
-                        },
-                        "imageUrl": {
-                          "type": "string",
-                          "description": "URL to the team's image"
                         },
                         "createdAt": {
                           "type": "string",
@@ -964,11 +947,6 @@
                         "twitter": "hey_kso"
                       }
                     }
-                  },
-                  "imageUrl": {
-                    "type": "string",
-                    "description": "URL to the team's image",
-                    "example": "https://example.com/team-image.jpg"
                   }
                 }
               }
@@ -1014,11 +992,6 @@
                           "type": "string",
                           "description": "API key for the team to use with Bearer authentication. Admin should securely provide this to the team.",
                           "example": "abc123def456_ghi789jkl012"
-                        },
-                        "imageUrl": {
-                          "type": "string",
-                          "description": "URL to the team's image",
-                          "nullable": true
                         },
                         "metadata": {
                           "type": "object",
@@ -1102,11 +1075,6 @@
                             "type": "string",
                             "format": "date-time",
                             "description": "Account update timestamp"
-                          },
-                          "imageUrl": {
-                            "type": "string",
-                            "description": "URL to the team's image",
-                            "nullable": true
                           }
                         }
                       }
@@ -1301,16 +1269,6 @@
                     ],
                     "default": "disallowAll",
                     "example": "disallowAll"
-                  },
-                  "externalLink": {
-                    "type": "string",
-                    "description": "External URL for competition details",
-                    "example": "https://example.com/competition-details"
-                  },
-                  "imageUrl": {
-                    "type": "string",
-                    "description": "URL to competition image",
-                    "example": "https://example.com/competition-image.jpg"
                   }
                 }
               }
@@ -1352,16 +1310,6 @@
                             "COMPLETED"
                           ],
                           "description": "Competition status"
-                        },
-                        "externalLink": {
-                          "type": "string",
-                          "description": "External URL for competition details",
-                          "nullable": true
-                        },
-                        "imageUrl": {
-                          "type": "string",
-                          "description": "URL to competition image",
-                          "nullable": true
                         },
                         "crossChainTradingType": {
                           "type": "string",
@@ -1432,16 +1380,6 @@
                     "description": "Competition description (used when creating a new competition)",
                     "example": "A trading competition for the spring semester"
                   },
-                  "externalLink": {
-                    "type": "string",
-                    "description": "External URL for competition details (used when creating a new competition)",
-                    "example": "https://example.com/competition-details"
-                  },
-                  "imageUrl": {
-                    "type": "string",
-                    "description": "URL to competition image (used when creating a new competition)",
-                    "example": "https://example.com/competition-image.jpg"
-                  },
                   "teamIds": {
                     "type": "array",
                     "items": {
@@ -1502,16 +1440,6 @@
                           "format": "date-time",
                           "nullable": true,
                           "description": "Competition end date (null if not ended)"
-                        },
-                        "externalLink": {
-                          "type": "string",
-                          "description": "External URL for competition details",
-                          "nullable": true
-                        },
-                        "imageUrl": {
-                          "type": "string",
-                          "description": "URL to competition image",
-                          "nullable": true
                         },
                         "status": {
                           "type": "string",
@@ -1627,16 +1555,6 @@
                           "type": "string",
                           "format": "date-time",
                           "description": "Competition end date"
-                        },
-                        "externalLink": {
-                          "type": "string",
-                          "description": "External URL for competition details",
-                          "nullable": true
-                        },
-                        "imageUrl": {
-                          "type": "string",
-                          "description": "URL to competition image",
-                          "nullable": true
                         },
                         "status": {
                           "type": "string",
@@ -1847,16 +1765,6 @@
                           "format": "date-time",
                           "nullable": true,
                           "description": "Competition end date"
-                        },
-                        "externalLink": {
-                          "type": "string",
-                          "description": "External URL for competition details",
-                          "nullable": true
-                        },
-                        "imageUrl": {
-                          "type": "string",
-                          "description": "URL to competition image",
-                          "nullable": true
                         },
                         "status": {
                           "type": "string",
@@ -2098,161 +2006,6 @@
         }
       }
     },
-    "/api/admin/teams/search": {
-      "get": {
-        "tags": [
-          "Admin"
-        ],
-        "summary": "Search for teams",
-        "description": "Search for teams based on various criteria like email, name, wallet address, etc.",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "query",
-            "name": "email",
-            "schema": {
-              "type": "string"
-            },
-            "description": "Partial match for team email"
-          },
-          {
-            "in": "query",
-            "name": "name",
-            "schema": {
-              "type": "string"
-            },
-            "description": "Partial match for team name"
-          },
-          {
-            "in": "query",
-            "name": "walletAddress",
-            "schema": {
-              "type": "string"
-            },
-            "description": "Partial match for wallet address"
-          },
-          {
-            "in": "query",
-            "name": "contactPerson",
-            "schema": {
-              "type": "string"
-            },
-            "description": "Partial match for contact person name"
-          },
-          {
-            "in": "query",
-            "name": "active",
-            "schema": {
-              "type": "boolean"
-            },
-            "description": "Filter by active status (true/false)"
-          },
-          {
-            "in": "query",
-            "name": "includeAdmins",
-            "schema": {
-              "type": "boolean"
-            },
-            "description": "Whether to include admin accounts in results (default is false)"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "List of teams matching search criteria",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "description": "Operation success status"
-                    },
-                    "teams": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "description": "Team ID"
-                          },
-                          "name": {
-                            "type": "string",
-                            "description": "Team name"
-                          },
-                          "email": {
-                            "type": "string",
-                            "description": "Team email"
-                          },
-                          "contactPerson": {
-                            "type": "string",
-                            "description": "Contact person name"
-                          },
-                          "walletAddress": {
-                            "type": "string",
-                            "description": "Ethereum wallet address"
-                          },
-                          "active": {
-                            "type": "boolean",
-                            "description": "Whether the team is active"
-                          },
-                          "deactivationReason": {
-                            "type": "string",
-                            "nullable": true,
-                            "description": "Reason for deactivation if inactive"
-                          },
-                          "deactivationDate": {
-                            "type": "string",
-                            "format": "date-time",
-                            "nullable": true,
-                            "description": "Date of deactivation if inactive"
-                          },
-                          "imageUrl": {
-                            "type": "string",
-                            "description": "URL to the team's image",
-                            "nullable": true
-                          },
-                          "isAdmin": {
-                            "type": "boolean",
-                            "description": "Whether the team has admin privileges"
-                          },
-                          "metadata": {
-                            "type": "object",
-                            "nullable": true,
-                            "description": "Optional agent metadata"
-                          },
-                          "createdAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "description": "Account creation timestamp"
-                          },
-                          "updatedAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "description": "Account update timestamp"
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - Admin authentication required"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        }
-      }
-    },
     "/api/competition/leaderboard": {
       "get": {
         "tags": [
@@ -2303,16 +2056,6 @@
                           "type": "string",
                           "nullable": true,
                           "description": "Competition description"
-                        },
-                        "externalLink": {
-                          "type": "string",
-                          "nullable": true,
-                          "description": "External URL for competition details"
-                        },
-                        "imageUrl": {
-                          "type": "string",
-                          "nullable": true,
-                          "description": "URL to competition image"
                         },
                         "startDate": {
                           "type": "string",
@@ -2480,16 +2223,6 @@
                           "type": "string",
                           "nullable": true,
                           "description": "Competition description"
-                        },
-                        "externalLink": {
-                          "type": "string",
-                          "nullable": true,
-                          "description": "External URL for competition details"
-                        },
-                        "imageUrl": {
-                          "type": "string",
-                          "nullable": true,
-                          "description": "URL to competition image"
                         },
                         "startDate": {
                           "type": "string",
@@ -2689,16 +2422,6 @@
                             "type": "string",
                             "nullable": true,
                             "description": "Competition description"
-                          },
-                          "externalLink": {
-                            "type": "string",
-                            "nullable": true,
-                            "description": "External URL for competition details"
-                          },
-                          "imageUrl": {
-                            "type": "string",
-                            "nullable": true,
-                            "description": "URL to competition image"
                           },
                           "status": {
                             "type": "string",
@@ -2948,8 +2671,8 @@
                     "chain": {
                       "type": "string",
                       "enum": [
-                        "evm",
-                        "svm"
+                        "EVM",
+                        "SVM"
                       ],
                       "description": "Blockchain type of the token"
                     },
@@ -3073,8 +2796,8 @@
                     "chain": {
                       "type": "string",
                       "enum": [
-                        "evm",
-                        "svm"
+                        "EVM",
+                        "SVM"
                       ],
                       "description": "Blockchain type of the token"
                     },
@@ -3100,6 +2823,136 @@
           },
           "401": {
             "description": "Unauthorized - Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/public/teams/register": {
+      "post": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "Register a new team",
+        "description": "Public endpoint to register a new team. Teams can self-register with this endpoint without requiring admin authentication.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "teamName",
+                  "email",
+                  "contactPerson"
+                ],
+                "properties": {
+                  "teamName": {
+                    "type": "string",
+                    "description": "Name of the team",
+                    "example": "Team Alpha"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Team email address",
+                    "example": "team@example.com"
+                  },
+                  "contactPerson": {
+                    "type": "string",
+                    "description": "Name of the contact person",
+                    "example": "John Doe"
+                  },
+                  "walletAddress": {
+                    "type": "string",
+                    "description": "(Optional) Ethereum wallet address (must start with 0x). If not provided, one will be auto-generated.",
+                    "example": 1.0392900530713021e+47
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "description": "Optional metadata about the team's agent",
+                    "example": {
+                      "ref": {
+                        "name": "ksobot",
+                        "version": "1.0.0",
+                        "url": "github.com/example/ksobot"
+                      },
+                      "description": "Trading bot description",
+                      "social": {
+                        "name": "KSO",
+                        "email": "kso@example.com",
+                        "twitter": "hey_kso"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Team registered successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Operation success status"
+                    },
+                    "team": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Team ID"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Team name"
+                        },
+                        "email": {
+                          "type": "string",
+                          "description": "Team email"
+                        },
+                        "contactPerson": {
+                          "type": "string",
+                          "description": "Contact person name"
+                        },
+                        "walletAddress": {
+                          "type": "string",
+                          "description": "Ethereum wallet address"
+                        },
+                        "apiKey": {
+                          "type": "string",
+                          "description": "API key for the team to use with Bearer authentication",
+                          "example": "abc123def456_ghi789jkl012"
+                        },
+                        "metadata": {
+                          "type": "object",
+                          "description": "Optional agent metadata if provided"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "Account creation timestamp"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing required parameters or invalid wallet address"
+          },
+          "409": {
+            "description": "Team with this email or wallet address already exists"
           },
           "500": {
             "description": "Server error"

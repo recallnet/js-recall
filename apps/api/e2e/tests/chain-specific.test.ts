@@ -51,7 +51,7 @@ describe("Specific Chains", () => {
 
     // Register a new team
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
+      adminClient,
       "Team 1",
     );
 
@@ -111,7 +111,7 @@ describe("Specific Chains", () => {
 
     // Register a new team
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
+      adminClient,
       "Team 2",
     );
 
@@ -196,7 +196,7 @@ describe("Specific Chains", () => {
 
     // Register a new team
     const { team } = await registerTeamAndGetClient(
-      adminApiKey,
+      adminClient,
       "Team Portfolio",
     );
 
@@ -279,7 +279,7 @@ describe("Specific Chains", () => {
 
     // Register a new team
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
+      adminClient,
       "Token Purchase Test Team",
     );
 
@@ -438,7 +438,7 @@ describe("Specific Chains", () => {
 
     // Register a new team
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
+      adminClient,
       `Token Purchase Test Team`,
     );
 
@@ -561,7 +561,7 @@ describe("Specific Chains", () => {
 
     // Register a new team
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
+      adminClient,
       "Token Purchase Test Team",
     );
 

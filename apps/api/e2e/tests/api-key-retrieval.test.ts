@@ -42,7 +42,7 @@ describe("API Key Retrieval", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register a new team
-    const { team, apiKey } = await registerTeamAndGetClient(adminApiKey);
+    const { team, apiKey } = await registerTeamAndGetClient(adminClient);
 
     // Retrieve the team's API key
     const keyResponse = (await adminClient.getTeamApiKey(
@@ -66,8 +66,8 @@ describe("API Key Retrieval", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register two teams
-    const { client: teamClient } = await registerTeamAndGetClient(adminApiKey);
-    const { team: otherTeam } = await registerTeamAndGetClient(adminApiKey);
+    const { client: teamClient } = await registerTeamAndGetClient(adminClient);
+    const { team: otherTeam } = await registerTeamAndGetClient(adminClient);
 
     // Attempt to retrieve the other team's API key using team client
     try {

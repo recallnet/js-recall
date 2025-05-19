@@ -52,7 +52,7 @@ describe("Leaderboard Access Control", () => {
 
     // Register a regular team
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
+      adminClient,
       "Test Team",
     );
 

@@ -60,7 +60,7 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
+      adminClient,
       "Trading Team",
     );
 
@@ -238,7 +238,7 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
+      adminClient,
       "Arbitrary Token Team",
     );
 
@@ -357,7 +357,7 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
+      adminClient,
       "Invalid Trading Team",
     );
 
@@ -480,7 +480,7 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
+      adminClient,
       "Max Trade Limit Team",
     );
 
@@ -615,7 +615,7 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
+      adminClient,
       "Price Calculation Team",
     );
 
@@ -735,7 +735,7 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
+      adminClient,
       "Ethereum Token Team",
     );
 
@@ -870,7 +870,7 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
+      adminClient,
       "Chain-Specific Trading Team",
     );
 
@@ -1010,7 +1010,7 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
+      adminClient,
       "Reason Verification Team",
     );
 
@@ -1085,7 +1085,7 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
+      adminClient,
       "Reason Required Team",
     );
 
@@ -1138,7 +1138,7 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
+      adminClient,
       "Cross-Chain Settings Team",
     );
 
@@ -1305,7 +1305,7 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
+      adminClient,
       "EVM-to-EVM Cross-Chain Team",
     );
 
@@ -1416,7 +1416,7 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
+      adminClient,
       "disallowXParent Testing Team",
     );
 

@@ -55,7 +55,7 @@ describe("Portfolio Snapshots", () => {
 
     // Register team and get client
     const { team } = await registerTeamAndGetClient(
-      adminApiKey,
+      adminClient,
       "Snapshot Test Team",
     );
 
@@ -103,7 +103,7 @@ describe("Portfolio Snapshots", () => {
 
     // Register team and get client
     const { team } = await registerTeamAndGetClient(
-      adminApiKey,
+      adminClient,
       "Periodic Snapshot Team",
     );
 
@@ -173,7 +173,7 @@ describe("Portfolio Snapshots", () => {
 
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
+      adminClient,
       "End Snapshot Team",
     );
 
@@ -245,7 +245,7 @@ describe("Portfolio Snapshots", () => {
 
     // Register team and get client
     const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
+      adminClient,
       "Value Calc Team",
     );
 
@@ -325,7 +325,7 @@ describe("Portfolio Snapshots", () => {
 
     // Register team and get client
     const { team } = await registerTeamAndGetClient(
-      adminApiKey,
+      adminClient,
       "Price Freshness Team",
     );
 
