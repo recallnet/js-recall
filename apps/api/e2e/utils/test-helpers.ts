@@ -1,9 +1,12 @@
 import * as crypto from "crypto";
+import sinon from "sinon";
 
 import { ApiSDK } from "@recallnet/api-sdk";
 
 import { resetRateLimiters } from "@/middleware/rate-limiter.middleware.js";
-
+import { PriceTracker } from "@/services/price-tracker.service.js";
+import { BlockchainType, PriceReport, SpecificChain as SpecificChainType } from "@/types/index.js";
+import { SpecificChain } from "@/e2e/utils/api-types.js";
 import { ApiClient } from "./api-client.js";
 import {
   CreateCompetitionResponse,
@@ -190,6 +193,25 @@ export async function cleanupTestState(): Promise<void> {
   resetRateLimiters();
 
   return dbManager.cleanupTestState();
+}
+
+export function createPriceStub(tokenAddress: string, response: PriceReport, priceTracker: PriceTracker) {
+  const stub = sinon.stub(priceTracker, "getPrice");
+
+  stub.callsFake(async function (
+    token: string,
+    tokenChain?: BlockchainType,
+    tokenSpecificChain?: SpecificChainType
+  ) {
+    console.log("\n\nCALLING STUB\n\n");
+    if (token === tokenAddress) {
+      return Promise.resolve(response);
+    }
+
+    return await stub.wrappedMethod.call(stub.wrappedMethod, token, tokenChain, tokenSpecificChain);
+  });
+
+  return stub;
 }
 
 /**

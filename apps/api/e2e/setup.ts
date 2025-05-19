@@ -8,9 +8,13 @@ import { config } from "dotenv";
 import fs from "fs";
 import { Server } from "http";
 import path from "path";
+import { ChildProcess} from "child_process";
 
 import { SchedulerService } from "@/services/scheduler.service.js";
-
+import {
+  BlockchainType,
+  SpecificChain,
+} from "@/e2e/utils/api-types.js";
 import { dbManager } from "./utils/db-manager.js";
 import {
   killExistingServers,
@@ -19,7 +23,7 @@ import {
 } from "./utils/server.js";
 
 // Store global server reference
-let server: Server;
+let server: { server: Server; childProcess: ChildProcess; };
 
 // Path to log file
 const logFile = path.resolve(__dirname, "e2e-server.log");
@@ -50,6 +54,11 @@ export async function setup() {
       arg.includes("leaderboard-access.test") ||
       arg.includes("leaderboard-access"),
   );
+console.log("\n\n\n\n\n");
+console.log("setup args:", args);
+console.log("\n\n\n\n\n");
+
+const isSmallPriceTest = true; // TODO: detect based on args
 
   const isTradingTest = args.some(
     (arg) => arg.includes("trading.test") || arg.includes("trading"),
@@ -160,6 +169,26 @@ export async function setup() {
     log("🌐 Starting server...");
     server = await startServer();
 
+    if (isSmallPriceTest) {
+      console.log("\n\n\n\n\n\n");
+      console.log("is smal price test", server.childProcess);
+
+      if (typeof server.childProcess?.send === "function") {
+        console.log("child process send is a function");
+        server.childProcess.send({
+          instruction: "mock.getPrice",
+          returnData: {
+            "token": "0x133700007e5700007e5700007357000031337000", // TODO: dry this out
+            "price": 2.938e-27,
+            "timestamp": new Date(),
+            "chain": BlockchainType.SVM,
+            "specificChain": SpecificChain.SVM
+          }
+        });
+      }
+      console.log("\n\n\n\n\n\n");
+    }
+
     log("✅ Test environment ready");
   } catch (error) {
     log(
@@ -182,7 +211,8 @@ export async function teardown() {
     // Stop server
     if (server) {
       log("🛑 Stopping server...");
-      await stopServer(server);
+      if (typeof server.childProcess?.send === "function") server.childProcess?.send({ instruction: "mock.reset" });
+      await stopServer(server.server);
     }
 
     // As a safety measure, kill any remaining server processes
@@ -217,6 +247,8 @@ export async function teardown() {
     throw error;
   }
 }
+
+
 
 // Setup and teardown for Jest Global Setup
 export default async function () {

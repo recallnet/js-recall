@@ -85,6 +85,7 @@ export class PriceTracker {
     blockchainType?: BlockchainType,
     specificChain?: SpecificChain,
   ) {
+    console.log("\n\nCALLING ORIGINAL\n\n");
     console.log(`[PriceTracker] Getting price for token: ${tokenAddress}`);
 
     // Determine which chain this token belongs to if not provided

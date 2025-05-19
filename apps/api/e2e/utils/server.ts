@@ -1,5 +1,5 @@
 import axios from "axios";
-import { ChildProcess, spawn } from "child_process";
+import { ChildProcess, spawn, spawnSync, fork } from "child_process";
 import { Server } from "http";
 
 // Reference to the server process
@@ -16,7 +16,7 @@ const BASE_URL = `http://${HOST}:${PORT}`;
  *
  * @returns A promise that resolves to the HTTP server instance
  */
-export async function startServer(): Promise<Server> {
+export async function startServer(): Promise<{ server: Server; childProcess: ChildProcess; }> {
   // First try to kill any existing servers on the test port
   await killExistingServers();
 
@@ -27,9 +27,11 @@ export async function startServer(): Promise<Server> {
 
       console.log(`Starting test server on ${testHost}:${testPort}...`);
 
+      const npxPath = spawnSync("which", ["npx"]).stdout.toString().trim();
+  console.log(npxPath);
       // Start the server script in a separate process
       // Use the index.ts file which is the main entry point
-      serverProcess = spawn("npx", ["tsx", "src/index.ts"], {
+      serverProcess = fork(npxPath, ["tsx", "src/index.ts"], {
         env: {
           ...process.env,
           NODE_ENV: "test",
@@ -40,7 +42,10 @@ export async function startServer(): Promise<Server> {
         stdio: "inherit",
         detached: true,
       });
-
+      console.log("\n\n\n\n\n\n");
+      console.log("sverprocess:", serverProcess);
+      console.log("sverprocess:", serverProcess.send);
+      console.log("\n\n\n\n\n\n");
       // Create a mock server object that we can use to track and shut down the server
       const mockServer = {
         close: (callback: () => void) => {
@@ -67,7 +72,7 @@ export async function startServer(): Promise<Server> {
       waitForServerReady(30, 500) // 30 retries, 500ms interval = 15 seconds max
         .then(() => {
           console.log(`Server started and ready on ${testHost}:${testPort}`);
-          resolve(mockServer);
+          resolve({ server: mockServer, childProcess: serverProcess as ChildProcess });
         })
         .catch((error) => {
           console.error("Server failed to start:", error);

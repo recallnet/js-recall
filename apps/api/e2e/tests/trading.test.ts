@@ -22,6 +22,7 @@ import {
   ADMIN_PASSWORD,
   ADMIN_USERNAME,
   cleanupTestState,
+  createPriceStub,
   createTestClient,
   registerTeamAndGetClient,
   startTestCompetition,

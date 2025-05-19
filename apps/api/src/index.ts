@@ -105,6 +105,57 @@ const healthRoutes = configureHealthRoutes(healthController);
 const priceRoutes = configurePriceRoutes(priceController);
 const tradeRoutes = configureTradeRoutes(tradeController);
 
+if (process.env.TEST_MODE === "true") {
+  console.log("\n\n\n\n\n\n\n");
+  console.log("is test mode on, starting test mock listeners");
+  console.log("\n\n\n\n\n\n\n");
+
+  process.on("message", function (message: any) {
+    try {
+      if (message?.instruction === "mock.getPrice") {
+        applyChildProcessGetPriceMock({
+          allServices: services,
+          returnData: message?.returnData
+        });
+      }
+      if (message?.instruction === "mock.reset") {
+        resetChildProcessServicesMocks()
+      }
+    } catch (err: any) {
+      console.error("mocking failed:", err);
+    }
+  });
+
+  const { resetChildProcessServicesMocks, applyChildProcessGetPriceMock } = await (async function () {
+    const sinon = await import("sinon");
+
+    const applyChildProcessGetPriceMock = function (options: any) {
+      const stub = sinon.stub(options.allServices.priceTracker, "getPrice");
+
+      stub.callsFake(async function (
+        token: any,
+        tokenChain?: any,
+        tokenSpecificChain?: any
+      ) {
+        console.log("\n\nCALLING STUB\n\n");
+        if (token === options.tokenAddress) {
+          return Promise.resolve(options.returnData);
+        }
+
+        return await stub.wrappedMethod.call(stub.wrappedMethod, token, tokenChain, tokenSpecificChain);
+      });
+    };
+
+    const resetChildProcessServicesMocks = function () {
+      sinon.reset();
+    };
+
+    return { resetChildProcessServicesMocks, applyChildProcessGetPriceMock }
+  })();
+
+}
+
+
 // Apply routes
 app.use("/api/account", accountRoutes);
 app.use("/api/trade", tradeRoutes);

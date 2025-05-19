@@ -148,7 +148,7 @@ export const portfolioSnapshots = tradingComps.table(
     teamId: uuid("team_id").notNull(),
     competitionId: uuid("competition_id").notNull(),
     timestamp: timestamp({ withTimezone: true }).defaultNow(),
-    // TODO: are units of this number usdc? if so, the precision and scale are good here. if not, need to remove.
+    // TODO: are units of this number usdc? if so, the precision and scale are probably good here. if not, need to remove.
     totalValue: numeric("total_value", {
       precision: 30,
       scale: 15,

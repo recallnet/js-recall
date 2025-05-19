@@ -6,6 +6,7 @@
 import fs from "fs";
 import path from "path";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, vi } from "vitest";
+import { populateGlobal } from "vitest/environments";
 
 import { ServiceRegistry } from "@/services/index.js";
 
