@@ -1,4 +1,5 @@
-#! /usr/bin/bash
+#!/usr/bin/env bash
+
 set -eu
 
 cd apps/api
