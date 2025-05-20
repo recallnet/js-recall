@@ -1,7 +1,11 @@
 import axios from "axios";
+import { v4 as uuidv4 } from "uuid";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import config from "@/config/index.js";
+import { db } from "@/database/db.js";
+import { trades as tradesDef } from "@/database/schema/trading/defs.js";
+import { InsertTrade } from "@/database/schema/trading/types.js";
 import {
   BalancesResponse,
   BlockchainType,
@@ -1532,5 +1536,62 @@ describe("Trading API", () => {
     console.log(
       "EVM-to-SVM trade failed as expected with disallowXParent setting",
     );
+  });
+
+  test("small numbers can be inserted into database", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register team and get client
+    const { team } = await registerTeamAndGetClient(
+      adminApiKey,
+      "Reason Required Team",
+    );
+
+    // Start a competition with our team
+    const competitionName = `Reason Required Test ${Date.now()}`;
+    const competition = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [team.id],
+    );
+
+    // Wait for balances to be properly initialized
+    await wait(500);
+
+    const smallValue = 2.938e-27;
+
+    const trade: InsertTrade = {
+      id: uuidv4(),
+      timestamp: new Date(),
+      fromToken: config.specificChainTokens.svm.usdc,
+      toToken: config.specificChainTokens.svm.sol,
+      fromAmount: smallValue,
+      toAmount: smallValue,
+      price: smallValue, // make sure exchange rate value can be very small
+      success: true,
+      teamId: team.id,
+      competitionId: competition.competition.id,
+      reason: "testing small numbers",
+      fromChain: BlockchainType.EVM,
+      toChain: BlockchainType.SVM,
+      fromSpecificChain: SpecificChain.ETH,
+      toSpecificChain: SpecificChain.SVM,
+    };
+
+    const [result] = await db
+      .insert(tradesDef)
+      .values({
+        ...trade,
+        timestamp: trade.timestamp || new Date(),
+      })
+      .returning();
+
+    expect(result).toBeDefined();
+    expect(result?.success).toBe(true);
+    expect(result?.fromAmount).toBe(smallValue);
+    expect(result?.toAmount).toBe(smallValue);
+    expect(result?.price).toBe(smallValue);
   });
 });
