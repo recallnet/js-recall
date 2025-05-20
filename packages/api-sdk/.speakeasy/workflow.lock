@@ -1,4 +1,4 @@
-speakeasyVersion: 1.545.0
+speakeasyVersion: 1.546.1
 sources:
     Trading Simulator API:
         sourceNamespace: trading-simulator-api

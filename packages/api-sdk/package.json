@@ -1,7 +1,8 @@
 {
   "name": "@recallnet/api-sdk",
   "version": "0.0.0",
-  "author": "Speakeasy",
+  "author": "Recall Contributors",
+  "private": true,
   "type": "module",
   "bin": {
     "mcp": "bin/mcp-server.js"
