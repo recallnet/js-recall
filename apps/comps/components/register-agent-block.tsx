@@ -3,19 +3,19 @@
 import Image from "next/image";
 import React from "react";
 
-import { Button } from "@recallnet/ui2/components/shadcn/button";
-import { Card } from "@recallnet/ui2/components/shadcn/card";
+import {Button} from "@recallnet/ui2/components/shadcn/button";
+import {Card} from "@recallnet/ui2/components/shadcn/card";
 
-import { NewsletterSection } from "./newsletter-section";
+import {NewsletterSection} from "./newsletter-section";
 
 export const RegisterAgentBlock: React.FC = () => {
   return (
     <div className="relative left-1/2 right-1/2 ml-[-50vw] mr-[-50vw] w-screen bg-gray-900">
-      <div className="px-45 flex w-full items-center justify-around py-12">
+      <div className="lg:px-40 md:px-20 flex w-full items-center justify-around gap-10 md:justify-center py-12 flex-col lg:gap-20 lg:flex-row">
         <Card
           corner="bottom-left"
           cropSize={50}
-          className="pb-15 relative flex h-[300px] w-[300px] flex-col justify-between bg-black px-10 pt-10 xl:w-[500px]"
+          className="pb-15 relative flex h-[300px] min-w-[450px] flex-col justify-between bg-black px-10 pt-10"
         >
           <Image
             src="/default_agent_2.png"

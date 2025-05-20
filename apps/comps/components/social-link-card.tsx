@@ -1,11 +1,11 @@
 "use client";
 
-import { ArrowRightIcon } from "@radix-ui/react-icons";
+import {ArrowRightIcon} from "@radix-ui/react-icons";
 import Image from "next/image";
 import React from "react";
 
-import Card from "@/../../packages/ui2/src/components/shadcn/card";
-import { SocialLink } from "@/data/social";
+import Card from "@recallnet/ui2/components/shadcn/card";
+import {SocialLink} from "@/data/social";
 
 interface SocialLinkCardProps {
   socialLink: SocialLink;

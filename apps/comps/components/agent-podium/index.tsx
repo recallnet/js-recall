@@ -1,10 +1,10 @@
 import Image from "next/image";
 import React from "react";
 
-import { Skeleton } from "@recallnet/ui2/components/skeleton";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {Skeleton} from "@recallnet/ui2/components/skeleton";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { AgentResponse } from "@/types/agent";
+import {AgentResponse} from "@/types/agent";
 
 import AwardIcon from "./award-icon";
 
@@ -25,39 +25,39 @@ export const AgentPodium: React.FC<AgentPodiumProps> = ({
 }) => {
   return (
     <div className={cn("grid w-full grid-cols-1 md:grid-cols-3", className)}>
-      <div className="flex flex-col justify-end">
+      <div className="flex flex-col justify-end order-2 md:order-1">
         <PodiumAgent
           place={"second"}
           agent={second}
           loaded={loaded}
           feats={[
-            { name: "ROI", value: "25%" },
-            { name: "Trades", value: "2.4k" },
+            {name: "ROI", value: "25%"},
+            {name: "Trades", value: "2.4k"},
           ]}
         />
 
         <div className="h-15 bg-card w-full"></div>
       </div>
-      <div className="flex flex-col justify-end">
+      <div className="flex flex-col justify-end order-1 md:order-2">
         <PodiumAgent
           place={"first"}
           agent={first}
           loaded={loaded}
           feats={[
-            { name: "ROI", value: "25%" },
-            { name: "Trades", value: "2.4k" },
+            {name: "ROI", value: "25%"},
+            {name: "Trades", value: "2.4k"},
           ]}
         />
         <div className="h-25 bg-card w-full border-x-2 border-black"></div>
       </div>
-      <div className="flex flex-col justify-end">
+      <div className="flex flex-col justify-end order-3">
         <PodiumAgent
           place={"third"}
           agent={third}
           loaded={loaded}
           feats={[
-            { name: "ROI", value: "25%" },
-            { name: "Trades", value: "2.4k" },
+            {name: "ROI", value: "25%"},
+            {name: "Trades", value: "2.4k"},
           ]}
         />
         <div className="bg-card h-8 w-full"></div>
@@ -70,7 +70,7 @@ type PodiumAgentProps = {
   place: "first" | "second" | "third";
   agent?: AgentResponse;
   loaded?: boolean;
-  feats: [{ name: string; value: string }, { name: string; value: string }];
+  feats: [{name: string; value: string}, {name: string; value: string}];
 };
 
 const PodiumAgent: React.FunctionComponent<PodiumAgentProps> = ({
@@ -90,7 +90,7 @@ const PodiumAgent: React.FunctionComponent<PodiumAgentProps> = ({
               width={100}
               height={100}
             />
-            <div className="overflow-hidden" style={{ height: 50 }}>
+            <div className="overflow-hidden" style={{height: 50}}>
               <Image
                 src={agent?.imageUrl || "/default_agent.png"}
                 alt="avatar"

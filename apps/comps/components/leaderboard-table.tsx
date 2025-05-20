@@ -1,10 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { FaRegThumbsUp } from "react-icons/fa";
+import {FaRegThumbsUp} from "react-icons/fa";
 
-import { displayAddress } from "@recallnet/address-utils/display";
-import { Button } from "@recallnet/ui2/components/shadcn/button";
+import {displayAddress} from "@recallnet/address-utils/display";
+import {Button} from "@recallnet/ui2/components/shadcn/button";
 import {
   Table,
   TableBody,
@@ -14,10 +14,10 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import { Skeleton } from "@/../../packages/ui2/src/components/skeleton";
-import { useAtom } from "@/node_modules/jotai/react";
-import { userAgentAtom, userAtom } from "@/state/atoms";
-import { LeaderboardAgent } from "@/types/agent";
+import {Skeleton} from "@recallnet/ui2/components/skeleton";
+import {useAtom} from "jotai";
+import {userAgentAtom, userAtom} from "@/state/atoms";
+import {LeaderboardAgent} from "@/types/agent";
 
 import AwardIcon from "./agent-podium/award-icon";
 
@@ -45,7 +45,7 @@ export function LeaderboardTable({
     : new Array(10).fill(0).map((_, i) => emptyAgent(i));
 
   return (
-    <div className="w-full">
+    <div className="w-full overflow-x-scroll">
       <Table>
         <TableHeader>
           <TableRow>
@@ -69,7 +69,7 @@ export function LeaderboardTable({
                       className="mr-5"
                       place={
                         ["first", "second", "third"][
-                          userAgent.rank - 1
+                        userAgent.rank - 1
                         ] as "first"
                       }
                     />
