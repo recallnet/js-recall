@@ -304,6 +304,10 @@ export interface Competition {
   createdAt: string;
   /** When the competition was last updated */
   updatedAt: string;
+  /** When the competition starts (optional) */
+  startDate?: string;
+  /** When the competition ends (optional) */
+  endDate?: string;
 }
 
 /**

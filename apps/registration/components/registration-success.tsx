@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -12,11 +12,14 @@ import { Competition, getUpcomingCompetitions } from "@/lib/api";
  * Shows a success message and next steps after registration is complete
  *
  * @param userName - The name of the user who completed registration
+ * @param apiKey - The API key assigned to the user
  */
 export default function RegistrationSuccess({
   userName = "",
+  apiKey = "",
 }: {
   userName?: string;
+  apiKey?: string;
 }) {
   // Format the user's name correctly - use first name if available, fallback to full name
   const displayName = userName
@@ -70,6 +73,30 @@ export default function RegistrationSuccess({
             </p>
           </div>
 
+          {/* API Key Section */}
+          <div className="flex w-full flex-col gap-4">
+            <h2 className="font-['Trim_Mono',monospace] text-2xl font-semibold leading-[31.2px] text-[#E9EDF1]">
+              Your API Key
+            </h2>
+            <p className="font-['Replica_LL',sans-serif] text-lg leading-[27px] tracking-[0.54px] text-[#596E89]">
+              Here&apos;s your unique key. Make sure to copy and store it
+              somewhere safe.
+            </p>
+            <div className="my-2 w-full border border-[#43505F] bg-[#11121A] p-4 text-center font-['Trim_Mono',monospace] text-lg text-[#E9EDF1]">
+              {apiKey || "[API KEY]"}
+            </div>
+            <p className="font-['Replica_LL',sans-serif] text-lg leading-[27px] tracking-[0.54px] text-[#596E89]">
+              Treat this like a password - anyone with it can call your agent.
+            </p>
+            <p className="font-['Replica_LL',sans-serif] text-lg leading-[27px] tracking-[0.54px] text-[#596E89]">
+              Your key will always be available for you on your{" "}
+              <Link href="/account" className="text-[#E9EDF1] underline">
+                account page
+              </Link>
+              .
+            </p>
+          </div>
+
           {/* Next Steps */}
           <div className="flex w-full flex-col gap-4">
             <h2 className="font-['Trim_Mono',monospace] text-2xl font-semibold leading-[31.2px]">
@@ -84,9 +111,7 @@ export default function RegistrationSuccess({
                 You&apos;re not fully set up{" "}
               </span>
               <span className="text-[#596E89]">
-                until you get your API key and make your first call. To do that:
-                <br />
-                <br />
+                until you make your first call.{" "}
               </span>
               <Link
                 href="https://docs.recall.network/competitions/guides/register#verifying-your-account"
@@ -96,12 +121,11 @@ export default function RegistrationSuccess({
               </Link>
               <span className="text-[#596E89]">
                 {" "}
-                to see how to connect and make your first trade using your API
-                key.
-                <br />
-                <br />
-                Doing so will make you eligible for our upcoming competitions:
+                to see how to connect and make your first call.
               </span>
+            </div>
+            <div className="font-['Replica_LL',sans-serif] text-lg leading-[27px] tracking-[0.54px] text-[#596E89]">
+              After that, you can sign up to one of the competitions below:
             </div>
           </div>
 
@@ -204,17 +228,6 @@ export default function RegistrationSuccess({
             </Link>
             .
           </p>
-
-          {/* Account Navigation Button */}
-          <Link
-            href="/account"
-            className="flex w-full items-center justify-center gap-2 bg-[#0057AD] px-6 py-4 transition-colors hover:bg-[#0064C7]"
-          >
-            <span className="font-['Trim_Mono',monospace] text-sm font-semibold uppercase tracking-wider text-[#E9EDF1]">
-              Go to Account
-            </span>
-            <ArrowRight className="h-4 w-4 text-[#E9EDF1]" />
-          </Link>
         </div>
       </div>
     </div>

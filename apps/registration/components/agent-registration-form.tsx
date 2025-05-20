@@ -49,6 +49,7 @@ export default function AgentRegistrationForm({
       avatar: "",
       twitter: "",
       telegram: "",
+      apiKey: "",
     },
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -188,7 +189,7 @@ export default function AgentRegistrationForm({
       console.log("Submitting registration data:", registrationData);
 
       // Send the registration request
-      await registerTeam(registrationData);
+      const team = await registerTeam(registrationData);
 
       // Submit to Loops after successful registration
       try {
@@ -198,8 +199,8 @@ export default function AgentRegistrationForm({
         console.error("Failed to update Loops:", loopsError);
       }
 
-      // If everything is successful, call onNext with formData
-      if (onNext) onNext(formData);
+      // If everything is successful, call onNext with formData and the apiKey
+      if (onNext) onNext({ ...formData, apiKey: team.apiKey });
     } catch (err) {
       console.error("Registration failed:", err);
       setError(
@@ -526,4 +527,5 @@ export interface AgentFormData {
   avatar: string;
   twitter: string;
   telegram: string;
+  apiKey?: string;
 }
