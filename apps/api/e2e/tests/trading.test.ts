@@ -1332,7 +1332,7 @@ describe("Trading API", () => {
         (initialBalanceResponse as BalancesResponse).balances
           .find((b) => b.tokenAddress === sourceUsdcAddress)
           ?.amount.toString()) ||
-      "0",
+        "0",
     );
 
     // If we don't have any balance, we'll need to skip this test
