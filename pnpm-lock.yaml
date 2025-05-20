@@ -95,6 +95,9 @@ importers:
       uuid:
         specifier: ^9.0.0
         version: 9.0.1
+      zod:
+        specifier: ^3.25.7
+        version: 3.25.7
     devDependencies:
       '@elizaos/core':
         specifier: ^0.25.9

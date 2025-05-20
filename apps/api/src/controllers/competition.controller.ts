@@ -1,6 +1,7 @@
 import { NextFunction, Response } from "express";
 
 import { config, features } from "@/config/index.js";
+import { ensureReqTeam } from "@/controllers/heplers.js";
 import { isTeamInCompetition as isTeamInCompetitionRepo } from "@/database/repositories/team-repository.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
@@ -43,16 +44,9 @@ export function makeCompetitionController(services: ServiceRegistry) {
           throw new ApiError(404, "Competition not found");
         }
 
-        // Check if the team is part of the competition
-        const teamId = req.teamId;
 
         // If no team ID, they can't be in the competition
-        if (!teamId) {
-          throw new ApiError(
-            401,
-            "Authentication required to view leaderboard",
-          );
-        }
+        const teamId = ensureReqTeam(req, "Authentication required to view leaderboard");
 
         // Check if user is an admin (added by auth middleware)
         const isAdmin = req.isAdmin === true;
@@ -273,15 +267,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
     ) {
       try {
         // Check if the team is authenticated
-        const teamId = req.teamId;
-
-        // If no team ID, they can't be authenticated
-        if (!teamId) {
-          throw new ApiError(
-            401,
-            "Authentication required to view competition rules",
-          );
-        }
+        const teamId = ensureReqTeam(req, "Authentication required to view competition rules");
 
         // Check if user is an admin (added by auth middleware)
         const isAdmin = req.isAdmin === true;
@@ -399,18 +385,10 @@ export function makeCompetitionController(services: ServiceRegistry) {
     ) {
       try {
         // Check if the team is authenticated
-        const teamId = req.teamId;
-
-        // If no team ID, they can't be authenticated
-        if (!teamId) {
-          throw new ApiError(
-            401,
-            "Authentication required to view upcoming competitions",
-          );
-        }
+        ensureReqTeam(req, "Authentication required to view upcoming competitions");
 
         console.log(
-          `[CompetitionController] Team ${teamId} requesting upcoming competitions`,
+          `[CompetitionController] Team ${req.teamId} requesting upcoming competitions`,
         );
 
         // Get all upcoming competitions

@@ -388,19 +388,28 @@ export async function count() {
  * Find competitions by status
  * @param status Competition status
  */
-export async function findByStatus(status: CompetitionStatus) {
+export async function findByStatus(status: CompetitionStatus, params: QueryParams) {
   try {
-    return await db
+    let query = db
       .select({
-        ...getTableColumns(competitions),
         crossChainTradingType: tradingCompetitions.crossChainTradingType,
+        ...getTableColumns(competitions),
       })
       .from(tradingCompetitions)
       .innerJoin(
         competitions,
         eq(tradingCompetitions.competitionId, competitions.id),
       )
-      .where(eq(competitions.status, status));
+      .where(eq(competitions.status, status))
+      .limit(params.limit)
+      .offset(params.offset);
+
+    if (params.sort) {
+      query = query.orderBy(getSort(params.sort));
+    }
+
+    const [result] = await query;
+    return result;
   } catch (error) {
     console.error("[CompetitionRepository] Error in findByStatus:", error);
     throw error;
