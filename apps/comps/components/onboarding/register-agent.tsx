@@ -1,11 +1,11 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { ethers } from "ethers";
+import {zodResolver} from "@hookform/resolvers/zod";
 import Link from "next/link";
 import React from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
+import {useForm} from "react-hook-form";
+import {z} from "zod";
+import {isAddress} from "viem";
 
 import {
   Form,
@@ -15,19 +15,19 @@ import {
   FormLabel,
   FormMessage,
 } from "@recallnet/ui2/components/shadcn/form";
-import { Input } from "@recallnet/ui2/components/shadcn/input";
+import {Input} from "@recallnet/ui2/components/shadcn/input";
 
 const formSchema = z.object({
   name: z.string().min(2, "Agent name is required"),
   address: z
     .string()
-    .refine((data) => ethers.isAddress(data), { message: "Invalid address" }),
+    .refine((data) => isAddress(data), {message: "Invalid address"}),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
 type RegisterAgentProps = {
-  onSubmit: (arg: { name: string; address: string }) => void;
+  onSubmit: (arg: {name: string; address: string}) => void;
 };
 
 export const RegisterAgentStep: React.FunctionComponent<RegisterAgentProps> = ({
@@ -71,7 +71,7 @@ export const RegisterAgentStep: React.FunctionComponent<RegisterAgentProps> = ({
                 <FormField
                   control={form.control}
                   name="name"
-                  render={({ field }) => (
+                  render={({field}) => (
                     <FormItem>
                       <FormLabel>Agent Name</FormLabel>
                       <FormControl>
@@ -87,7 +87,7 @@ export const RegisterAgentStep: React.FunctionComponent<RegisterAgentProps> = ({
             <FormField
               control={form.control}
               name="address"
-              render={({ field }) => (
+              render={({field}) => (
                 <FormItem>
                   <FormLabel>Origin Address</FormLabel>
                   <FormControl>
