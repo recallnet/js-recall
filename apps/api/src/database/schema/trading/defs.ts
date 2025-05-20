@@ -87,6 +87,9 @@ export const trades = tradingComps.table(
       mode: "number",
     }).notNull(),
     price: numeric({ mode: "number" }).notNull(),
+    tradeAmountUsd: numeric("trade_amount_usd", {
+      mode: "number",
+    }).notNull(),
     success: boolean().notNull(),
     error: text(),
     reason: text().notNull(),

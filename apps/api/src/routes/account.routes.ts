@@ -378,6 +378,9 @@ export function configureAccountRoutes(
    *                       reason:
    *                         type: string
    *                         description: Reason provided for executing the trade
+   *                       tradeAmountUsd:
+   *                         type: number
+   *                         description: The USD value of the trade at execution time
    *                       timestamp:
    *                         type: string
    *                         format: date-time

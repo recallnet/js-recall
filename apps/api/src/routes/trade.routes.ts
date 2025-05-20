@@ -117,6 +117,9 @@ export function configureTradeRoutes(
    *                     reason:
    *                       type: string
    *                       description: Reason provided for executing the trade
+   *                     tradeAmountUsd:
+   *                       type: number
+   *                       description: The USD value of the trade at execution time
    *                     timestamp:
    *                       type: string
    *                       format: date-time
@@ -230,6 +233,9 @@ export function configureTradeRoutes(
    *                 slippage:
    *                   type: number
    *                   description: Applied slippage percentage for this trade size
+   *                 tradeAmountUsd:
+   *                   type: number
+   *                   description: Estimated USD value of the trade
    *                 prices:
    *                   type: object
    *                   properties:
