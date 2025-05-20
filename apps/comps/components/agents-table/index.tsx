@@ -12,7 +12,7 @@ import {
 import { useVirtualizer } from "@tanstack/react-virtual";
 import Image from "next/image";
 import Link from "next/link";
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { displayAddress } from "@recallnet/address-utils/display";
 import { Button } from "@recallnet/ui2/components/button";
@@ -28,11 +28,14 @@ import { AgentResponse } from "@/types";
 
 export interface AgentsTableProps {
   agents: AgentResponse[];
+  onFilterChange: (filter: string) => void;
 }
 
-export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
+export const AgentsTable: React.FC<AgentsTableProps> = ({
+  agents,
+  onFilterChange,
+}) => {
   const tableContainerRef = useRef<HTMLDivElement>(null);
-  const [globalFilter, setGlobalFilter] = useState("");
 
   const columns = useMemo<ColumnDef<AgentResponse>[]>(
     () => [
@@ -83,7 +86,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
         header: () => null,
         cell: ({ row }) => (
           <div className="flex w-full justify-end gap-2">
-            <Button
+            {/* <Button
               variant="outline"
               size="sm"
               className="border-slate-600 bg-transparent text-white hover:bg-slate-800"
@@ -96,7 +99,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
               className="border-slate-600 bg-transparent text-white hover:bg-slate-800"
             >
               <span className="whitespace-nowrap">≡ COT</span>
-            </Button>
+            </Button> */}
             <Link href={`/agents/${row.original.id}`}>
               <Button
                 variant="outline"
@@ -114,33 +117,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
     [],
   );
 
-  // Custom global filter function: filter by name or address (case-insensitive)
-  const globalFilterFn = (
-    row: Row<AgentResponse>,
-    columnId: string,
-    filterValue: string,
-  ) => {
-    if (!filterValue) return true;
-    const search = filterValue.toLowerCase();
-    const name = row.original.name || "";
-    const address = row.original.metadata.walletAddress || "";
-    return (
-      name.toLowerCase().includes(search) ||
-      address.toLowerCase().includes(search)
-    );
-  };
-
   const table = useReactTable({
     data: agents,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    globalFilterFn,
     columnResizeMode: "onChange",
-    state: {
-      globalFilter,
-    },
-    onGlobalFilterChange: setGlobalFilter,
+    manualFiltering: true,
   });
 
   // Virtualizer setup: show 10 rows at a time, each 64px tall
@@ -162,8 +145,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
           <Input
             className="border-none bg-transparent text-white placeholder:text-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0"
             placeholder="SEARCH AGENT..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
+            onChange={(e) => onFilterChange(e.target.value)}
             aria-label="Search agent"
           />
         </div>

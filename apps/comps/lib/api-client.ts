@@ -70,7 +70,9 @@ export class ApiClient {
    */
   private formatQueryParams<T extends object>(params: T): string {
     const validParams = Object.entries(params as Record<string, unknown>)
-      .filter(([, value]) => value !== undefined && value !== null)
+      .filter(
+        ([, value]) => value !== undefined && value !== null && value !== "",
+      )
       .map(([key, value]) => `${key}=${encodeURIComponent(String(value))}`)
       .join("&");
 
