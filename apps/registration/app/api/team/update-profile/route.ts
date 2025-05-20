@@ -48,7 +48,10 @@ export async function PUT(request: NextRequest) {
     const { contactPerson, metadata, imageUrl } = updateData;
     const validUpdateData: {
       contactPerson?: string;
-      metadata?: Agent[];
+      metadata?: {
+        agents?: Agent[];
+        userTelegram?: string;
+      };
       imageUrl?: string;
     } = {};
 

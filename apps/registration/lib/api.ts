@@ -112,8 +112,13 @@ export interface TeamRegistrationRequest {
   contactPerson: string;
   /** Ethereum wallet address (must start with 0x) */
   walletAddress: string;
-  /** Array of agents associated with the team */
-  metadata?: Agent[];
+  /** Metadata for the team */
+  metadata?: {
+    /** Array of agents associated with the team */
+    agents?: Agent[];
+    /** User's Telegram handle */
+    userTelegram?: string;
+  };
 }
 
 /**
@@ -136,8 +141,13 @@ export interface Team {
   active: boolean;
   /** API key (only returned during registration) */
   apiKey?: string;
-  /** Metadata uses agents array */
-  metadata?: Agent[];
+  /** Metadata for the team */
+  metadata?: {
+    /** Array of agents associated with the team */
+    agents?: Agent[];
+    /** User's Telegram handle */
+    userTelegram?: string;
+  };
   /** Account creation timestamp */
   createdAt: string;
   /** Account update timestamp */
@@ -337,7 +347,10 @@ export async function getUpcomingCompetitions(): Promise<Competition[]> {
 export async function updateTeamProfile(
   updateData: {
     contactPerson?: string;
-    metadata?: Agent[];
+    metadata?: {
+      agents?: Agent[];
+      userTelegram?: string;
+    };
     imageUrl?: string;
   },
   apiKey: string,

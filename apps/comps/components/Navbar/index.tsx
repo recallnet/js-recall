@@ -59,7 +59,9 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
           JOIN / SIGN IN
         </SIWEButton>
       </nav>
-      <div className="xl:px-65 lg:px-30 md:px-15 px-5">{children}</div>
+      <div className="xl:px-35 lg:px-30 md:px-15 flex justify-center px-5">
+        {children}
+      </div>
     </>
   );
 };

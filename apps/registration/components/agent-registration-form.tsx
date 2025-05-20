@@ -150,6 +150,9 @@ export default function AgentRegistrationForm({
         contactPerson: profileData.name,
         walletAddress: address,
         description: profileData.description,
+        metadata: {
+          userTelegram: profileData.telegram || undefined,
+        },
       };
 
       // Only add agent metadata if the user has provided a name
@@ -175,7 +178,11 @@ export default function AgentRegistrationForm({
           },
         };
 
-        registrationData.metadata = [agent];
+        // Add the agent to the metadata.agents array
+        if (!registrationData.metadata) {
+          registrationData.metadata = {};
+        }
+        registrationData.metadata.agents = [agent];
       }
 
       console.log("Submitting registration data:", registrationData);
