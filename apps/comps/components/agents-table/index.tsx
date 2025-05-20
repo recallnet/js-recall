@@ -24,18 +24,24 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import { AgentResponse } from "@/types";
+import { AgentResponse, AgentsMetadata } from "@/types";
 
 export interface AgentsTableProps {
   agents: AgentResponse[];
   onFilterChange: (filter: string) => void;
   onSortChange: (sort: string) => void;
+  onLoadMore: () => void;
+  hasMore: boolean;
+  metadata?: AgentsMetadata;
 }
 
 export const AgentsTable: React.FC<AgentsTableProps> = ({
   agents,
   onFilterChange,
   onSortChange,
+  onLoadMore,
+  hasMore,
+  metadata,
 }) => {
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -162,7 +168,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     <div className="mt-12 w-full">
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-2xl font-bold text-white">
-          Participants ({agents.length})
+          Participants ({metadata?.total ?? agents.length})
         </h2>
         <div className="mb-4 flex items-center gap-2 rounded bg-slate-900 px-3 py-2">
           <MagnifyingGlassIcon className="mr-2 h-4 w-4 text-slate-400" />
@@ -272,6 +278,18 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           </TableBody>
         </Table>
       </div>
+      {hasMore && (
+        <div className="mt-4 flex justify-center">
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-slate-600 bg-transparent text-white hover:bg-slate-800"
+            onClick={onLoadMore}
+          >
+            Show More
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

@@ -15,6 +15,7 @@ import { UpComingCompetition } from "@/components/upcoming-competition";
 import { socialLinks } from "@/data/social";
 import { useCompetition } from "@/hooks/useCompetition";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
+import { AgentResponse } from "@/types";
 
 export default function CompetitionPage({
   params,
@@ -24,6 +25,9 @@ export default function CompetitionPage({
   const { id } = React.use(params);
   const [agentsFilter, setAgentsFilter] = React.useState("");
   const [agentsSort, setAgentsSort] = React.useState("");
+  const [agentsLimit] = React.useState(10);
+  const [agentsOffset, setAgentsOffset] = React.useState(0);
+  const [allAgents, setAllAgents] = React.useState<AgentResponse[]>([]);
   const debouncedFilterTerm = useDebounce(agentsFilter, 300);
 
   const {
@@ -38,7 +42,15 @@ export default function CompetitionPage({
   } = useCompetitionAgents(id, {
     filter: debouncedFilterTerm,
     sort: agentsSort,
+    limit: agentsLimit,
+    offset: agentsOffset,
   });
+
+  React.useEffect(() => {
+    if (agentsData?.agents) {
+      setAllAgents((prev) => [...prev, ...agentsData.agents]);
+    }
+  }, [agentsData?.agents]);
 
   const isLoading = isLoadingCompetition || isLoadingAgents;
   const error = competitionError;
@@ -64,8 +76,6 @@ export default function CompetitionPage({
     );
   }
 
-  const agents = agentsData?.agents || [];
-
   return (
     <div className="container mx-auto px-12">
       <div className="flex items-center gap-4 py-8">
@@ -89,9 +99,14 @@ export default function CompetitionPage({
         </div>
       ) : (
         <AgentsTable
-          agents={agents}
+          agents={allAgents}
           onFilterChange={setAgentsFilter}
           onSortChange={setAgentsSort}
+          onLoadMore={() => {
+            setAgentsOffset((prev) => prev + agentsLimit);
+          }}
+          hasMore={(agentsData?.metadata?.total ?? 0) > allAgents.length}
+          metadata={agentsData?.metadata}
         />
       )}
       <JoinSwarmSection socialLinks={socialLinks} />
