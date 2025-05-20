@@ -6,7 +6,7 @@ import React from "react";
 import { Button } from "@recallnet/ui2/components/shadcn/button";
 import { Card } from "@recallnet/ui2/components/shadcn/card";
 
-import { NewsletterSection } from "./newsletter-section";
+import { NewsletterSection } from "@/components/newsletter-section";
 
 export const RegisterAgentBlock: React.FC = () => {
   return (
