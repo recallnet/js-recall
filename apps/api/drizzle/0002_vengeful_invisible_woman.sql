@@ -1,0 +1,1 @@
+ALTER TABLE "trading_comps"."trades" ADD COLUMN "trade_amount_usd" numeric(30, 15) NOT NULL;

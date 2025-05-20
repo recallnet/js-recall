@@ -325,6 +325,7 @@ export class TradeSimulator {
         fromAmount,
         toAmount,
         price: toAmount / fromAmount, // Exchange rate
+        tradeAmountUsd: fromValueUSD, // Store the USD value of the trade
         success: true,
         teamId,
         competitionId,

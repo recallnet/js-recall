@@ -1532,4 +1532,108 @@ describe("Trading API", () => {
       "EVM-to-SVM trade failed as expected with disallowXParent setting",
     );
   });
+
+  test("trade amount USD is calculated and returned correctly", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register team and get client
+    const { client: teamClient, team } = await registerTeamAndGetClient(
+      adminApiKey,
+      "USD Amount Test Team",
+    );
+
+    // Start a competition with our team
+    const competitionName = `USD Amount Test ${Date.now()}`;
+    await startTestCompetition(adminClient, competitionName, [team.id]);
+
+    // Wait for balances to be properly initialized
+    await wait(500);
+
+    // Get tokens to trade
+    const usdcTokenAddress = config.specificChainTokens.svm.usdc;
+    const solTokenAddress = config.specificChainTokens.svm.sol;
+
+    // Get the current price of SOL to calculate expected USD value
+    const priceResponse = await teamClient.getPrice(solTokenAddress);
+    expect(priceResponse.success).toBe(true);
+    const solPrice = (priceResponse as PriceResponse).price;
+    expect(solPrice).toBeGreaterThan(0);
+    console.log(`Current SOL price: $${solPrice}`);
+
+    // Define trade amount
+    const tradeAmount = 100; // 100 USDC
+    const expectedUsdValue = tradeAmount; // Since we're trading from USDC, the USD value should be ~tradeAmount
+
+    // Execute a trade
+    const tradeResponse = await teamClient.executeTrade({
+      fromToken: usdcTokenAddress,
+      toToken: solTokenAddress,
+      amount: tradeAmount.toString(),
+      fromChain: BlockchainType.SVM,
+      toChain: BlockchainType.SVM,
+      reason: "Testing tradeAmountUsd field",
+    });
+
+    // Verify the trade executed successfully
+    expect(tradeResponse.success).toBe(true);
+
+    // Verify tradeAmountUsd is included in the trade response and approximately correct
+    expect(
+      (tradeResponse as TradeResponse).transaction.tradeAmountUsd,
+    ).toBeDefined();
+    const actualUsdValue = (tradeResponse as TradeResponse).transaction
+      .tradeAmountUsd;
+    console.log(`Trade amount USD: $${actualUsdValue}`);
+
+    // Verify that the USD value is approximately correct (allow for small variations)
+    expect(actualUsdValue).toBeCloseTo(expectedUsdValue, 0); // Using precision 0 to allow for some variation
+
+    // Wait for trade to be processed
+    await wait(500);
+
+    // Verify tradeAmountUsd also appears in trade history
+    const tradeHistoryResponse = await teamClient.getTradeHistory();
+    expect(tradeHistoryResponse.success).toBe(true);
+
+    // Get the most recent trade (should be the one we just executed)
+    const lastTrade = (tradeHistoryResponse as TradeHistoryResponse).trades[0];
+
+    // Verify tradeAmountUsd is included in trade history and matches the trade response
+    expect(lastTrade).toBeDefined();
+    if (lastTrade) {
+      expect(lastTrade.tradeAmountUsd).toBeDefined();
+      expect(lastTrade.tradeAmountUsd as number).toBeCloseTo(
+        actualUsdValue!,
+        1,
+      );
+    }
+
+    // Execute another trade with different token to verify tradeAmountUsd is calculated correctly
+    const reverseTradeAmount = 10; // 10 SOL
+    const reverseExpectedUsdValue = reverseTradeAmount * (solPrice ?? 0);
+
+    const reverseTradeResponse = await teamClient.executeTrade({
+      fromToken: solTokenAddress,
+      toToken: usdcTokenAddress,
+      amount: reverseTradeAmount.toString(),
+      fromChain: BlockchainType.SVM,
+      toChain: BlockchainType.SVM,
+      reason: "Testing reverse tradeAmountUsd calculation",
+    });
+
+    // Verify the reverse trade executed successfully
+    expect(reverseTradeResponse.success).toBe(true);
+
+    // Verify tradeAmountUsd is correctly calculated for the reverse trade
+    const reverseActualUsdValue = (reverseTradeResponse as TradeResponse)
+      .transaction.tradeAmountUsd;
+    console.log(
+      `Reverse trade amount USD: $${reverseActualUsdValue} (expected ~$${reverseExpectedUsdValue})`,
+    );
+
+    // Verify USD value is approximately correct, allowing for some variation due to price fluctuations
+    expect(reverseActualUsdValue).toBeCloseTo(reverseExpectedUsdValue, 0);
+  });
 });
