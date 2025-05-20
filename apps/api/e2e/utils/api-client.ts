@@ -531,7 +531,7 @@ export class ApiClient {
   > {
     try {
       const response = await this.axiosInstance.get(
-        "/api/competition/upcoming",
+        "/api/competitions?status=pending&sort=startDate",
       );
       return response.data as UpcomingCompetitionsResponse;
     } catch (error) {

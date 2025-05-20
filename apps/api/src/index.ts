@@ -122,7 +122,8 @@ app.use("/api/account", accountRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/trade", tradeRoutes);
 app.use("/api/price", priceRoutes);
-app.use("/api/competition", competitionRoutes);
+app.use("/api/competition", competitionRoutes); // depreciated
+app.use("/api/competitions", competitionsRoutes);
 app.use("/api/admin/setup", adminSetupRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/health", healthRoutes);
