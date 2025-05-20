@@ -3,7 +3,7 @@
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import {
   ColumnDef,
-  Row,
+  SortingState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
@@ -12,7 +12,7 @@ import {
 import { useVirtualizer } from "@tanstack/react-virtual";
 import Image from "next/image";
 import Link from "next/link";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 
 import { displayAddress } from "@recallnet/address-utils/display";
 import { Button } from "@recallnet/ui2/components/button";
@@ -29,18 +29,22 @@ import { AgentResponse } from "@/types";
 export interface AgentsTableProps {
   agents: AgentResponse[];
   onFilterChange: (filter: string) => void;
+  onSortChange: (sort: string) => void;
 }
 
 export const AgentsTable: React.FC<AgentsTableProps> = ({
   agents,
   onFilterChange,
+  onSortChange,
 }) => {
   const tableContainerRef = useRef<HTMLDivElement>(null);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   const columns = useMemo<ColumnDef<AgentResponse>[]>(
     () => [
       {
-        id: "agent",
+        id: "name",
+        accessorKey: "name",
         header: () => (
           <span className="text-xs font-semibold tracking-widest text-slate-400">
             AGENT
@@ -66,9 +70,11 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           </div>
         ),
         size: 350,
+        enableSorting: true,
       },
       {
-        id: "elo",
+        id: "score",
+        accessorKey: "score",
         header: () => (
           <span className="text-xs font-semibold tracking-widest text-slate-400">
             OVERALL ELO SCORE
@@ -80,6 +86,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           </span>
         ),
         size: 200,
+        enableSorting: true,
       },
       {
         id: "actions",
@@ -124,6 +131,23 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     getFilteredRowModel: getFilteredRowModel(),
     columnResizeMode: "onChange",
     manualFiltering: true,
+    manualSorting: true,
+    enableSorting: true,
+    state: {
+      sorting,
+    },
+    onSortingChange: (updater) => {
+      const newSorting =
+        typeof updater === "function" ? updater(sorting) : updater;
+      setSorting(newSorting);
+
+      // Convert sorting state to server-side sort format
+      const sortString = newSorting
+        .map((sort) => `${sort.desc ? "-" : ""}${sort.id}`)
+        .join(",");
+
+      onSortChange(sortString);
+    },
   });
 
   // Virtualizer setup: show 10 rows at a time, each 64px tall
@@ -176,10 +200,14 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                     }
                     className={
                       `flex items-center text-xs font-semibold tracking-widest text-slate-400` +
-                      (header.column.id === "elo"
+                      (header.column.id === "score"
                         ? " justify-end pr-3 text-right"
+                        : "") +
+                      (header.column.getCanSort()
+                        ? " cursor-pointer select-none"
                         : "")
                     }
+                    onClick={header.column.getToggleSortingHandler()}
                   >
                     {header.isPlaceholder
                       ? null
@@ -187,6 +215,12 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                           header.column.columnDef.header,
                           header.getContext(),
                         )}
+                    {header.column.getCanSort()
+                      ? {
+                          asc: " 🔼",
+                          desc: " 🔽",
+                        }[header.column.getIsSorted() as string]
+                      : null}
                   </th>
                 ))}
               </tr>

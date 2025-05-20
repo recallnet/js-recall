@@ -23,6 +23,7 @@ export default function CompetitionPage({
 }) {
   const { id } = React.use(params);
   const [agentsFilter, setAgentsFilter] = React.useState("");
+  const [agentsSort, setAgentsSort] = React.useState("");
   const debouncedFilterTerm = useDebounce(agentsFilter, 300);
 
   const {
@@ -34,7 +35,10 @@ export default function CompetitionPage({
     data: agentsData,
     isLoading: isLoadingAgents,
     error: agentsError,
-  } = useCompetitionAgents(id, { filter: debouncedFilterTerm });
+  } = useCompetitionAgents(id, {
+    filter: debouncedFilterTerm,
+    sort: agentsSort,
+  });
 
   const isLoading = isLoadingCompetition || isLoadingAgents;
   const error = competitionError;
@@ -84,7 +88,11 @@ export default function CompetitionPage({
           </p>
         </div>
       ) : (
-        <AgentsTable agents={agents} onFilterChange={setAgentsFilter} />
+        <AgentsTable
+          agents={agents}
+          onFilterChange={setAgentsFilter}
+          onSortChange={setAgentsSort}
+        />
       )}
       <JoinSwarmSection socialLinks={socialLinks} />
       <NewsletterSection />
