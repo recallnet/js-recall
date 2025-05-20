@@ -1,12 +1,12 @@
 "use client";
 
-import {zodResolver} from "@hookform/resolvers/zod";
-import React, {useState} from "react";
-import {useForm} from "react-hook-form";
-import {z} from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
-import {Button} from "@recallnet/ui2/components/button";
-import {Card} from "@recallnet/ui2/components/shadcn/card";
+import { Button } from "@recallnet/ui2/components/button";
+import { Card } from "@recallnet/ui2/components/shadcn/card";
 import {
   Form,
   FormControl,
@@ -14,7 +14,7 @@ import {
   FormItem,
   FormMessage,
 } from "@recallnet/ui2/components/shadcn/form";
-import {Input} from "@recallnet/ui2/components/shadcn/input";
+import { Input } from "@recallnet/ui2/components/shadcn/input";
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -40,12 +40,12 @@ export const NewsletterSection: React.FC = () => {
     <Card
       corner="bottom-left"
       cropSize={50}
-      className="flex items-center justify-center bg-gray-600 h-[300px] w-[450px]"
+      className="flex h-[300px] w-[450px] items-center justify-center bg-gray-600"
     >
       <Card
         corner="bottom-left"
         cropSize={50}
-        className="pb-15 relative flex flex-col justify-between bg-gray-900 px-10 pt-10 h-[298px] w-[448px]"
+        className="pb-15 relative flex h-[298px] w-[448px] flex-col justify-between bg-gray-900 px-10 pt-10"
       >
         <h2 className="text-3xl font-semibold text-white">
           Never miss a competition
@@ -58,7 +58,7 @@ export const NewsletterSection: React.FC = () => {
             <FormField
               control={form.control}
               name="email"
-              render={({field}) => (
+              render={({ field }) => (
                 <FormItem>
                   <FormControl>
                     <div className="flex flex-col gap-5">

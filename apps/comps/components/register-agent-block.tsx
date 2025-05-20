@@ -3,15 +3,15 @@
 import Image from "next/image";
 import React from "react";
 
-import {Button} from "@recallnet/ui2/components/shadcn/button";
-import {Card} from "@recallnet/ui2/components/shadcn/card";
+import { Button } from "@recallnet/ui2/components/shadcn/button";
+import { Card } from "@recallnet/ui2/components/shadcn/card";
 
-import {NewsletterSection} from "./newsletter-section";
+import { NewsletterSection } from "./newsletter-section";
 
 export const RegisterAgentBlock: React.FC = () => {
   return (
     <div className="relative left-1/2 right-1/2 ml-[-50vw] mr-[-50vw] w-screen bg-gray-900">
-      <div className="lg:px-40 md:px-20 flex w-full items-center justify-around gap-10 md:justify-center py-12 flex-col lg:gap-20 lg:flex-row">
+      <div className="flex w-full flex-col items-center justify-around gap-10 py-12 md:justify-center md:px-20 lg:flex-row lg:gap-20 lg:px-40">
         <Card
           corner="bottom-left"
           cropSize={50}
