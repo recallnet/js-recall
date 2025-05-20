@@ -1,7 +1,7 @@
 import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
+import { zeroAddress } from "viem";
 
-import { ethers } from "@/node_modules/ethers/lib.commonjs/index";
 import { LeaderboardAgent } from "@/types/agent";
 
 type User = {
@@ -19,7 +19,7 @@ export const userAgentAtom = atom<LeaderboardAgent>({
   name: "",
   imageUrl: "",
   metadata: {
-    walletAddress: ethers.ZeroAddress,
+    walletAddress: zeroAddress,
   },
   rank: 0,
 });

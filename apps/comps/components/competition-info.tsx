@@ -4,7 +4,7 @@ import { ArrowRightIcon } from "@radix-ui/react-icons";
 import { format } from "date-fns";
 import React, { useState } from "react";
 
-import { CompetitionResponse } from "@/types";
+import { CompetitionResponse } from "@/types/competition";
 
 export interface CompetitionInfoProps {
   competition: CompetitionResponse;
