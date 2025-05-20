@@ -27,6 +27,7 @@ export default function DeveloperProfileForm({
       email: "",
       website: "",
       description: "",
+      telegram: "",
     },
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -188,6 +189,24 @@ export default function DeveloperProfileForm({
               </p>
             </div>
 
+            {/* Telegram Field */}
+            <div className="flex w-full flex-col gap-1.5">
+              <label className="font-['Replica_LL',sans-serif] text-base leading-6 tracking-wider text-[#93A5BA]">
+                Telegram (optional)
+              </label>
+              <input
+                type="text"
+                name="telegram"
+                value={formData.telegram}
+                onChange={handleChange}
+                placeholder="E.g.: @username"
+                className="w-full rounded-md border border-[#43505F] bg-[#1D1F2B] px-3 py-2 font-['Replica_LL',sans-serif] text-lg text-white placeholder:text-[#43505F] focus:border-[#62A0DD] focus:outline-none"
+              />
+              <p className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-[#596E89]">
+                Your Telegram username for communication about competitions.
+              </p>
+            </div>
+
             {/* Action Buttons */}
             <div className="mt-4 flex w-full flex-col items-center gap-4">
               <div className="flex w-full">
@@ -224,4 +243,5 @@ export interface ProfileFormData {
   email: string;
   website: string;
   description: string;
+  telegram: string;
 }

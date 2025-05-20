@@ -134,10 +134,15 @@ export default function AgentAddForm({
         },
       };
 
-      // Create an updated metadata array with the new agent
-      const updatedMetadata = team.metadata
-        ? [...team.metadata, newAgent]
-        : [newAgent];
+      // Create an updated metadata structure with the new agent
+      const updatedMetadata = {
+        // Preserve existing user telegram if present
+        userTelegram: team.metadata?.userTelegram,
+        // Add the new agent to the existing agents or create a new array
+        agents: team.metadata?.agents
+          ? [...team.metadata.agents, newAgent]
+          : [newAgent],
+      };
 
       // Update the team profile with the new agent
       const updatedTeam = await updateTeamProfile(

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -123,44 +123,67 @@ export default function RegistrationSuccess({
               ];
               const color = colors[index % colors.length];
 
+              // Wrapper component to handle external links
+              const CompetitionWrapper = ({
+                children,
+              }: {
+                children: React.ReactNode;
+              }) => {
+                if (competition.externalLink) {
+                  return (
+                    <Link
+                      href={competition.externalLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group relative block w-full transition-colors hover:bg-[#1D202E]"
+                    >
+                      {children}
+                      <div className="absolute bottom-2 right-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                        <ExternalLink size={16} className="text-[#6D85A4]" />
+                      </div>
+                    </Link>
+                  );
+                }
+                return <>{children}</>;
+              };
+
               return (
-                <div
-                  key={competition.id}
-                  className="flex w-full items-center gap-4 rounded-sm border border-[#43505F] bg-[#11121A] p-3"
-                >
-                  <div
-                    className="h-[100px] w-[100px] flex-shrink-0"
-                    style={{
-                      backgroundColor: competition.imageUrl
-                        ? "transparent"
-                        : color,
-                    }}
-                  >
-                    {competition.imageUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={competition.imageUrl}
-                        alt={competition.name}
-                        className="h-full w-full object-cover"
-                      />
-                    )}
-                  </div>
-                  <div className="flex flex-1 flex-col gap-2">
-                    <h3 className="font-['Replica_LL',sans-serif] text-base font-bold leading-6 text-[#E9EDF1]">
-                      {competition.name}
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-4">
-                      <span className="font-['Trim_Mono',monospace] text-xs font-semibold uppercase tracking-[1.56px] text-[#6D85A4]">
-                        {competition.status}
-                      </span>
-                      {competition.description && (
-                        <span className="max-w-[250px] truncate font-['Trim_Mono',monospace] text-xs font-semibold tracking-[1.56px] text-[#6D85A4]">
-                          {competition.description}
-                        </span>
+                <CompetitionWrapper key={competition.id}>
+                  <div className="flex w-full items-center gap-4 rounded-sm border border-[#43505F] bg-[#11121A] p-3">
+                    <div
+                      className="h-[100px] w-[100px] flex-shrink-0"
+                      style={{
+                        backgroundColor: competition.imageUrl
+                          ? "transparent"
+                          : color,
+                      }}
+                    >
+                      {competition.imageUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={competition.imageUrl}
+                          alt={competition.name}
+                          className="h-full w-full object-cover"
+                        />
                       )}
                     </div>
+                    <div className="flex flex-1 flex-col gap-2">
+                      <h3 className="font-['Replica_LL',sans-serif] text-base font-bold leading-6 text-[#E9EDF1]">
+                        {competition.name}
+                      </h3>
+                      <div className="flex flex-wrap items-center gap-4">
+                        <span className="font-['Trim_Mono',monospace] text-xs font-semibold uppercase tracking-[1.56px] text-[#6D85A4]">
+                          {competition.status}
+                        </span>
+                        {competition.description && (
+                          <span className="max-w-[250px] truncate font-['Trim_Mono',monospace] text-xs font-semibold tracking-[1.56px] text-[#6D85A4]">
+                            {competition.description}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </CompetitionWrapper>
               );
             })
           ) : (

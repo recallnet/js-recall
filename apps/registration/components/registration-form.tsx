@@ -51,29 +51,32 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
       email: "",
       contactPerson: "",
       walletAddress: "",
-      metadata: [
-        {
-          name: "",
-          version: "",
-          url: "",
-          description: "",
-          social: {
-            email: "",
-            twitter: "",
-            github: "",
-            discord: "",
-            telegram: "",
+      metadata: {
+        agents: [
+          {
+            name: "",
+            version: "",
+            url: "",
+            description: "",
+            social: {
+              email: "",
+              twitter: "",
+              github: "",
+              discord: "",
+              telegram: "",
+            },
+            skills: [],
           },
-          skills: [],
-        },
-      ],
+        ],
+        userTelegram: "",
+      },
     },
   });
 
   // Set up field array for agents
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "metadata",
+    name: "metadata.agents",
   });
 
   // Auto-fill the wallet address field with the connected wallet address
@@ -116,56 +119,63 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
       const cleanedData = { ...data };
 
       // Remove empty strings from agents
-      if (cleanedData.metadata && cleanedData.metadata.length > 0) {
-        cleanedData.metadata = cleanedData.metadata.map((agent) => {
-          const cleanedAgent = { ...agent };
+      if (
+        cleanedData.metadata &&
+        cleanedData.metadata.agents &&
+        cleanedData.metadata.agents.length > 0
+      ) {
+        cleanedData.metadata.agents = cleanedData.metadata.agents.map(
+          (agent) => {
+            const cleanedAgent = { ...agent };
 
-          // Remove empty strings from agent fields
-          if (cleanedAgent.name === "") delete cleanedAgent.name;
-          if (cleanedAgent.version === "") delete cleanedAgent.version;
-          if (cleanedAgent.url === "") delete cleanedAgent.url;
-          if (cleanedAgent.description === "") delete cleanedAgent.description;
+            // Remove empty strings from agent fields
+            if (cleanedAgent.name === "") delete cleanedAgent.name;
+            if (cleanedAgent.version === "") delete cleanedAgent.version;
+            if (cleanedAgent.url === "") delete cleanedAgent.url;
+            if (cleanedAgent.description === "")
+              delete cleanedAgent.description;
 
-          // Handle social properties
-          if (cleanedAgent.social) {
-            const social = { ...cleanedAgent.social };
+            // Handle social properties
+            if (cleanedAgent.social) {
+              const social = { ...cleanedAgent.social };
 
-            if (social.email === "") delete social.email;
-            if (social.twitter === "") delete social.twitter;
-            if (social.github === "") delete social.github;
-            if (social.discord === "") delete social.discord;
-            if (social.telegram === "") delete social.telegram;
+              if (social.email === "") delete social.email;
+              if (social.twitter === "") delete social.twitter;
+              if (social.github === "") delete social.github;
+              if (social.discord === "") delete social.discord;
+              if (social.telegram === "") delete social.telegram;
 
-            if (Object.keys(social).length === 0) {
-              delete cleanedAgent.social;
-            } else {
-              cleanedAgent.social = social;
+              if (Object.keys(social).length === 0) {
+                delete cleanedAgent.social;
+              } else {
+                cleanedAgent.social = social;
+              }
             }
-          }
 
-          // Filter out any skills that have empty custom skills
-          if (cleanedAgent.skills && cleanedAgent.skills.length > 0) {
-            cleanedAgent.skills = cleanedAgent.skills.filter(
-              (skill) =>
-                skill.type !== AgentSkillType.Other ||
-                (skill.customSkill && skill.customSkill.trim() !== ""),
-            );
+            // Filter out any skills that have empty custom skills
+            if (cleanedAgent.skills && cleanedAgent.skills.length > 0) {
+              cleanedAgent.skills = cleanedAgent.skills.filter(
+                (skill) =>
+                  skill.type !== AgentSkillType.Other ||
+                  (skill.customSkill && skill.customSkill.trim() !== ""),
+              );
 
-            if (cleanedAgent.skills.length === 0) {
-              delete cleanedAgent.skills;
+              if (cleanedAgent.skills.length === 0) {
+                delete cleanedAgent.skills;
+              }
             }
-          }
 
-          return cleanedAgent;
-        });
+            return cleanedAgent;
+          },
+        );
 
         // Filter out completely empty agents
-        cleanedData.metadata = cleanedData.metadata.filter(
+        cleanedData.metadata.agents = cleanedData.metadata.agents.filter(
           (agent) => Object.keys(agent).length > 0,
         );
 
-        if (cleanedData.metadata.length === 0) {
-          delete cleanedData.metadata;
+        if (cleanedData.metadata.agents.length === 0) {
+          delete cleanedData.metadata.agents;
         }
       }
 
@@ -383,7 +393,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
 
                   <FormField
                     control={form.control}
-                    name={`metadata.${index}.name`}
+                    name={`metadata.agents.${index}.name`}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Agent Name</FormLabel>
@@ -398,7 +408,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <FormField
                       control={form.control}
-                      name={`metadata.${index}.version`}
+                      name={`metadata.agents.${index}.version`}
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Version</FormLabel>
@@ -412,7 +422,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
 
                     <FormField
                       control={form.control}
-                      name={`metadata.${index}.url`}
+                      name={`metadata.agents.${index}.url`}
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>URL</FormLabel>
@@ -430,7 +440,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
 
                   <FormField
                     control={form.control}
-                    name={`metadata.${index}.description`}
+                    name={`metadata.agents.${index}.description`}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Description</FormLabel>
@@ -459,29 +469,33 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                             id={`skill-${index}-${skillIndex}`}
                             checked={
                               form
-                                .getValues(`metadata.${index}.skills`)
+                                .getValues(`metadata.agents.${index}.skills`)
                                 ?.some((s) => s.type === skillType) || false
                             }
                             onChange={(e) => {
                               const currentSkills =
-                                form.getValues(`metadata.${index}.skills`) ||
-                                [];
+                                form.getValues(
+                                  `metadata.agents.${index}.skills`,
+                                ) || [];
                               if (e.target.checked) {
                                 // Add skill
-                                form.setValue(`metadata.${index}.skills`, [
-                                  ...currentSkills,
-                                  {
-                                    type: skillType,
-                                    customSkill:
-                                      skillType === AgentSkillType.Other
-                                        ? ""
-                                        : undefined,
-                                  },
-                                ]);
+                                form.setValue(
+                                  `metadata.agents.${index}.skills`,
+                                  [
+                                    ...currentSkills,
+                                    {
+                                      type: skillType,
+                                      customSkill:
+                                        skillType === AgentSkillType.Other
+                                          ? ""
+                                          : undefined,
+                                    },
+                                  ],
+                                );
                               } else {
                                 // Remove skill
                                 form.setValue(
-                                  `metadata.${index}.skills`,
+                                  `metadata.agents.${index}.skills`,
                                   currentSkills.filter(
                                     (s) => s.type !== skillType,
                                   ),
@@ -499,7 +513,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
 
                           {skillType === AgentSkillType.Other &&
                             form
-                              .getValues(`metadata.${index}.skills`)
+                              .getValues(`metadata.agents.${index}.skills`)
                               ?.some(
                                 (s) => s.type === AgentSkillType.Other,
                               ) && (
@@ -507,7 +521,9 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                                 placeholder="Specify your custom skill"
                                 value={
                                   form
-                                    .getValues(`metadata.${index}.skills`)
+                                    .getValues(
+                                      `metadata.agents.${index}.skills`,
+                                    )
                                     ?.find(
                                       (s) => s.type === AgentSkillType.Other,
                                     )?.customSkill || ""
@@ -515,7 +531,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                                 onChange={(e) => {
                                   const currentSkills =
                                     form.getValues(
-                                      `metadata.${index}.skills`,
+                                      `metadata.agents.${index}.skills`,
                                     ) || [];
                                   const otherSkillIndex =
                                     currentSkills.findIndex(
@@ -528,7 +544,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                                       customSkill: e.target.value,
                                     };
                                     form.setValue(
-                                      `metadata.${index}.skills`,
+                                      `metadata.agents.${index}.skills`,
                                       updatedSkills,
                                     );
                                   }
@@ -547,7 +563,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <FormField
                           control={form.control}
-                          name={`metadata.${index}.social.email`}
+                          name={`metadata.agents.${index}.social.email`}
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Public Email</FormLabel>
@@ -565,7 +581,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
 
                         <FormField
                           control={form.control}
-                          name={`metadata.${index}.social.twitter`}
+                          name={`metadata.agents.${index}.social.twitter`}
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Twitter</FormLabel>
@@ -584,7 +600,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <FormField
                           control={form.control}
-                          name={`metadata.${index}.social.github`}
+                          name={`metadata.agents.${index}.social.github`}
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>GitHub</FormLabel>
@@ -601,7 +617,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
 
                         <FormField
                           control={form.control}
-                          name={`metadata.${index}.social.discord`}
+                          name={`metadata.agents.${index}.social.discord`}
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Discord</FormLabel>
@@ -619,7 +635,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
 
                       <FormField
                         control={form.control}
-                        name={`metadata.${index}.social.telegram`}
+                        name={`metadata.agents.${index}.social.telegram`}
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Telegram</FormLabel>
