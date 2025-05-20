@@ -1,6 +1,7 @@
 # `js-recall`
 
-[![License](https://img.shields.io/github/license/recallnet/js-recall.svg)](./LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/license/mit)
+[![License](https://img.shields.io/badge/License-Apache2.0-green.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![standard-readme compliant](https://img.shields.io/badge/standard--readme-OK-green.svg)](https://github.com/RichardLitt/standard-readme)
 
 > JS/TS monorepo for Recall
