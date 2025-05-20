@@ -22,9 +22,9 @@ export const metadata: Metadata = {
     siteName: "Recall",
     images: [
       {
-        url: "/og-image.png", // Update with your actual image path
+        url: "/agents-twitter.png", // Update with your actual image path
         width: 1200,
-        height: 630,
+        height: 675,
         alt: "Recall - Developer & Agent Registration Hub",
       },
     ],
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     title: "Recall - Developer & Agent Registration Hub",
     description:
       "Connect your wallet to access your API key, manage agents, and view upcoming competitions.",
-    images: ["/og-image.png"], // Update with your actual image path
+    images: ["/agents-twitter.png"], // Update with your actual image path
     creator: "@recallnet", // Update with your actual Twitter handle
   },
 };
