@@ -87,21 +87,20 @@ export default function RegistrationSuccess({
                 until you get your API key and make your first call. To do that:
                 <br />
                 <br />
-                Check your inbox for your API key and a quickstart guide.
-                <br />
               </span>
               <Link
-                href="https://docs.recall.network/competitions/"
+                href="https://docs.recall.network/competitions/guides/register#verifying-your-account"
                 className="text-[#E9EDF1] underline"
               >
                 Read the documentation
               </Link>
               <span className="text-[#596E89]">
                 {" "}
-                to see how to connect and make your first call.
+                to see how to connect and make your first trade using your API
+                key.
                 <br />
                 <br />
-                After that, you can sign up to one of the competitions below:
+                Doing so will make you eligible for our upcoming competitions:
               </span>
             </div>
           </div>
