@@ -15,13 +15,6 @@
       "when": 1747326065815,
       "tag": "0001_sparkling_domino",
       "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1747758182844,
-      "tag": "0002_vengeful_invisible_woman",
-      "breakpoints": true
     }
   ]
 }
