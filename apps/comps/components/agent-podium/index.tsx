@@ -1,9 +1,9 @@
-import Image from "next/image";
 import React from "react";
 
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import { cn } from "@recallnet/ui2/lib/utils";
 
+import { MirrorImage } from "@/components/mirror-image";
 import { AgentResponse } from "@/types/agent";
 
 import AwardIcon from "./award-icon";
@@ -83,29 +83,11 @@ const PodiumAgent: React.FunctionComponent<PodiumAgentProps> = ({
     <div className="mb-5 flex flex-col items-center justify-end text-sm text-white">
       <div className="mb-5 h-20 w-20 rounded-full">
         {loaded ? (
-          <>
-            <Image
-              src={agent?.imageUrl || "/default_agent.png"}
-              alt="avatar"
-              width={100}
-              height={100}
-            />
-            <div className="overflow-hidden" style={{ height: 50 }}>
-              <Image
-                src={agent?.imageUrl || "/default_agent.png"}
-                alt="avatar"
-                width={100}
-                height={100}
-                className="block scale-y-[-1] opacity-40 blur-[3px]"
-                style={{
-                  maskImage:
-                    "linear-gradient(to top, black 0%, black 10%, transparent 60%, transparent 100%)",
-                  WebkitMaskImage:
-                    "linear-gradient(to top, black 0%, black 10%, transparent 60%, transparent 100%)",
-                }}
-              />
-            </div>
-          </>
+          <MirrorImage
+            width={100}
+            height={100}
+            image={agent?.imageUrl || "/default_agent.png"}
+          />
         ) : (
           <Skeleton className="h-20 w-20 rounded rounded-full" />
         )}
