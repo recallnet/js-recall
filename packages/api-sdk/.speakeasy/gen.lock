@@ -1,17 +1,17 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: 8d60d2e935f3e96d0a9204ec3a4415c7
+  docChecksum: 3018adb496a15dcab54678795101126b
   docVersion: 1.0.0
-  speakeasyVersion: 1.545.0
-  generationVersion: 2.599.0
-  releaseVersion: 0.0.6
-  configChecksum: e41b2ae1c672a11853a8c7f8d93e1e89
+  speakeasyVersion: 1.546.1
+  generationVersion: 2.604.2
+  releaseVersion: 0.0.0
+  configChecksum: 759247ef98645d35b2730bbe0f50f910
 features:
   typescript:
     additionalDependencies: 0.1.0
     constsAndDefaults: 0.1.11
-    core: 3.21.7
+    core: 3.21.8
     defaultEnabledRetries: 0.1.0
     devContainers: 2.90.0
     enumUnions: 0.1.0
@@ -133,11 +133,6 @@ generatedFiles:
   - docs/models/operations/postapiadminteamsteamidreactivaterequest.md
   - docs/models/operations/postapiadminteamsteamidreactivateresponse.md
   - docs/models/operations/postapiadminteamsteamidreactivateteam.md
-  - docs/models/operations/postapipublicteamsregistermetadatarequest.md
-  - docs/models/operations/postapipublicteamsregistermetadataresponse.md
-  - docs/models/operations/postapipublicteamsregisterrequest.md
-  - docs/models/operations/postapipublicteamsregisterresponse.md
-  - docs/models/operations/postapipublicteamsregisterteam.md
   - docs/models/operations/postapitradeexecuterequest.md
   - docs/models/operations/postapitradeexecuteresponse.md
   - docs/models/operations/prices.md
@@ -163,7 +158,6 @@ generatedFiles:
   - docs/sdks/competition/README.md
   - docs/sdks/health/README.md
   - docs/sdks/price/README.md
-  - docs/sdks/public/README.md
   - docs/sdks/trade/README.md
   - eslint.config.mjs
   - jsr.json
@@ -196,7 +190,6 @@ generatedFiles:
   - src/funcs/healthGetApiHealthDetailed.ts
   - src/funcs/priceGetApiPrice.ts
   - src/funcs/priceGetApiPriceTokenInfo.ts
-  - src/funcs/publicPostApiPublicTeamsRegister.ts
   - src/funcs/tradeGetApiTradeQuote.ts
   - src/funcs/tradePostApiTradeExecute.ts
   - src/hooks/hooks.ts
@@ -259,7 +252,6 @@ generatedFiles:
   - src/mcp-server/tools/healthGetApiHealthDetailed.ts
   - src/mcp-server/tools/priceGetApiPrice.ts
   - src/mcp-server/tools/priceGetApiPriceTokenInfo.ts
-  - src/mcp-server/tools/publicPostApiPublicTeamsRegister.ts
   - src/mcp-server/tools/tradeGetApiTradeQuote.ts
   - src/mcp-server/tools/tradePostApiTradeExecute.ts
   - src/models/components/index.ts
@@ -297,7 +289,6 @@ generatedFiles:
   - src/models/operations/postapiadminteamsregister.ts
   - src/models/operations/postapiadminteamsteamiddeactivate.ts
   - src/models/operations/postapiadminteamsteamidreactivate.ts
-  - src/models/operations/postapipublicteamsregister.ts
   - src/models/operations/postapitradeexecute.ts
   - src/models/operations/putapiaccountprofile.ts
   - src/sdk/account.ts
@@ -306,7 +297,6 @@ generatedFiles:
   - src/sdk/health.ts
   - src/sdk/index.ts
   - src/sdk/price.ts
-  - src/sdk/public.ts
   - src/sdk/sdk.ts
   - src/sdk/trade.ts
   - src/types/async.ts
@@ -342,13 +332,13 @@ examples:
       responses:
         "200":
           application/json: {}
-  get_/api/account/portfolio:
-    speakeasy-default-get-/api/account/portfolio:
+  get_/api/account/trades:
+    speakeasy-default-get-/api/account/trades:
       responses:
         "200":
           application/json: {}
-  get_/api/account/trades:
-    speakeasy-default-get-/api/account/trades:
+  get_/api/account/portfolio:
+    speakeasy-default-get-/api/account/portfolio:
       responses:
         "200":
           application/json: {}
@@ -397,7 +387,7 @@ examples:
   post_/api/admin/competition/start:
     speakeasy-default-post-/api/admin/competition/start:
       requestBody:
-        application/json: {"name": "Spring 2023 Trading Competition", "description": "A trading competition for the spring semester", "externalLink": "https://example.com/competition-details", "imageUrl": "https://example.com/competition-image.jpg", "teamIds": ["<value>", "<value>"], "tradingType": "disallowAll"}
+        application/json: {"name": "Spring 2023 Trading Competition", "description": "A trading competition for the spring semester", "externalLink": "https://example.com/competition-details", "imageUrl": "https://example.com/competition-image.jpg", "teamIds": ["<value 1>", "<value 2>"], "tradingType": "disallowAll"}
       responses:
         "200":
           application/json: {}
@@ -440,6 +430,11 @@ examples:
       parameters:
         path:
           teamId: "<id>"
+      responses:
+        "200":
+          application/json: {}
+  get_/api/admin/teams/search:
+    speakeasy-default-get-/api/admin/teams/search:
       responses:
         "200":
           application/json: {}
@@ -487,13 +482,6 @@ examples:
           token: "So11111111111111111111111111111111111111112"
           chain: "svm"
           specificChain: "eth"
-  post_/api/public/teams/register:
-    speakeasy-default-post-/api/public/teams/register:
-      requestBody:
-        application/json: {"teamName": "Team Alpha", "email": "team@example.com", "contactPerson": "John Doe", "walletAddress": "1.0392900530713021e+47", "imageUrl": "https://example.com/team-image.jpg"}
-      responses:
-        "201":
-          application/json: {"team": {"apiKey": "abc123def456_ghi789jkl012"}}
   post_/api/trade/execute:
     speakeasy-default-post-/api/trade/execute:
       requestBody:
@@ -512,10 +500,5 @@ examples:
           fromSpecificChain: "mainnet"
           toChain: "svm"
           toSpecificChain: "mainnet"
-  get_/api/admin/teams/search:
-    speakeasy-default-get-/api/admin/teams/search:
-      responses:
-        "200":
-          application/json: {}
-examplesVersion: 1.0.1
+examplesVersion: 1.0.2
 generatedTests: {}

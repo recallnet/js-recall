@@ -29,6 +29,5 @@ export * from "./postapiadminsetup.js";
 export * from "./postapiadminteamsregister.js";
 export * from "./postapiadminteamsteamiddeactivate.js";
 export * from "./postapiadminteamsteamidreactivate.js";
-export * from "./postapipublicteamsregister.js";
 export * from "./postapitradeexecute.js";
 export * from "./putapiaccountprofile.js";

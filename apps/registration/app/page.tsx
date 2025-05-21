@@ -36,6 +36,7 @@ export default function Home() {
     email: "",
     website: "",
     description: "",
+    telegram: "",
   });
   const [agentData, setAgentData] = useState<AgentFormData>({
     name: "",
@@ -193,7 +194,10 @@ export default function Home() {
             onSkip={handleAgentSkip}
           />
         ) : isAuthenticated && registrationStep === "success" ? (
-          <RegistrationSuccess userName={profileData.name} />
+          <RegistrationSuccess
+            userName={profileData.name}
+            apiKey={agentData.apiKey}
+          />
         ) : (
           <>
             {/* Hero image - improved centering */}

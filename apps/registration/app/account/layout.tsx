@@ -10,9 +10,9 @@ export const metadata: Metadata = {
     url: `${process.env.NEXTAUTH_URL || "https://recall.network/registration"}/account`,
     images: [
       {
-        url: "/og-image.png",
+        url: "/agents-twitter.png",
         width: 1200,
-        height: 630,
+        height: 675,
         alt: "Recall Developer Account",
       },
     ],
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     title: "Account - Recall Developer Hub",
     description:
       "Manage your Recall account, API keys, and agent registrations.",
-    images: ["/og-image.png"],
+    images: ["/agents-twitter.png"],
   },
 };
 

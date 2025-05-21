@@ -188,7 +188,10 @@ export class TeamApiClient {
    */
   async updateTeamProfile(profileData: {
     contactPerson?: string;
-    metadata?: Agent[];
+    metadata?: {
+      agents?: Agent[];
+      userTelegram?: string;
+    };
     imageUrl?: string;
   }) {
     try {

@@ -2,39 +2,23 @@
 
 import React from "react";
 
-import { JoinSwarmSection } from "@/components/join-swarm-section";
-import { Leaderboard } from "@/components/leaderboard";
-import { NewsletterSection } from "@/components/newsletter-section";
-import { LeaderboardOngoingCompetition } from "@/components/ongoing-competition/leaderboard";
+import { FooterSection } from "@/components/footer-section";
+import { LeaderboardSection } from "@/components/leaderboard/index";
 import { RegisterAgentBlock } from "@/components/register-agent-block";
-import { socialLinks } from "@/data/social";
-import { useCompetitions } from "@/hooks/useCompetitions";
-import { CompetitionStatus } from "@/types";
+
+import { JoinSwarmSection } from "../../components/join-swarm-section";
+import { socialLinks } from "../../data/social";
 
 export default function LeaderboardPage() {
-  const { data: competitionsData } = useCompetitions({
-    status: CompetitionStatus.Active,
-  });
-
-  // Get current active competition if available
-  const currentCompetition =
-    competitionsData?.competitions && competitionsData.competitions.length > 0
-      ? competitionsData.competitions[0]
-      : null;
-
   return (
-    <div className="container mx-auto px-12 py-8">
-      {currentCompetition && (
-        <LeaderboardOngoingCompetition competition={currentCompetition} />
-      )}
-
-      <Leaderboard />
-
-      <JoinSwarmSection socialLinks={socialLinks} />
+    <div className="container max-w-[1600px] py-8 md:px-12">
+      <LeaderboardSection />
 
       <RegisterAgentBlock />
 
-      <NewsletterSection />
+      <JoinSwarmSection socialLinks={socialLinks} />
+
+      <FooterSection />
     </div>
   );
 }

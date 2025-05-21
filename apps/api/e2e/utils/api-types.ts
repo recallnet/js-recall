@@ -132,6 +132,7 @@ export interface TradeTransaction {
   success: boolean;
   error?: string;
   reason: string;
+  tradeAmountUsd?: number;
   timestamp: string;
   fromChain: string;
   toChain: string;

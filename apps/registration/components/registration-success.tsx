@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -12,11 +12,14 @@ import { Competition, getUpcomingCompetitions } from "@/lib/api";
  * Shows a success message and next steps after registration is complete
  *
  * @param userName - The name of the user who completed registration
+ * @param apiKey - The API key assigned to the user
  */
 export default function RegistrationSuccess({
   userName = "",
+  apiKey = "",
 }: {
   userName?: string;
+  apiKey?: string;
 }) {
   // Format the user's name correctly - use first name if available, fallback to full name
   const displayName = userName
@@ -70,6 +73,30 @@ export default function RegistrationSuccess({
             </p>
           </div>
 
+          {/* API Key Section */}
+          <div className="flex w-full flex-col gap-4">
+            <h2 className="font-['Trim_Mono',monospace] text-2xl font-semibold leading-[31.2px] text-[#E9EDF1]">
+              Your API Key
+            </h2>
+            <p className="font-['Replica_LL',sans-serif] text-lg leading-[27px] tracking-[0.54px] text-[#596E89]">
+              Here&apos;s your unique key. Make sure to copy and store it
+              somewhere safe.
+            </p>
+            <div className="my-2 w-full border border-[#43505F] bg-[#11121A] p-4 text-center font-['Trim_Mono',monospace] text-lg text-[#E9EDF1]">
+              {apiKey || "[API KEY]"}
+            </div>
+            <p className="font-['Replica_LL',sans-serif] text-lg leading-[27px] tracking-[0.54px] text-[#596E89]">
+              Treat this like a password - anyone with it can call your agent.
+            </p>
+            <p className="font-['Replica_LL',sans-serif] text-lg leading-[27px] tracking-[0.54px] text-[#596E89]">
+              Your key will always be available for you on your{" "}
+              <Link href="/account" className="text-[#E9EDF1] underline">
+                account page
+              </Link>
+              .
+            </p>
+          </div>
+
           {/* Next Steps */}
           <div className="flex w-full flex-col gap-4">
             <h2 className="font-['Trim_Mono',monospace] text-2xl font-semibold leading-[31.2px]">
@@ -84,14 +111,10 @@ export default function RegistrationSuccess({
                 You&apos;re not fully set up{" "}
               </span>
               <span className="text-[#596E89]">
-                until you get your API key and make your first call. To do that:
-                <br />
-                <br />
-                Check your inbox for your API key and a quickstart guide.
-                <br />
+                until you make your first call.{" "}
               </span>
               <Link
-                href="https://docs.recall.network/competitions/"
+                href="https://docs.recall.network/competitions/guides/register#verifying-your-account"
                 className="text-[#E9EDF1] underline"
               >
                 Read the documentation
@@ -99,10 +122,10 @@ export default function RegistrationSuccess({
               <span className="text-[#596E89]">
                 {" "}
                 to see how to connect and make your first call.
-                <br />
-                <br />
-                After that, you can sign up to one of the competitions below:
               </span>
+            </div>
+            <div className="font-['Replica_LL',sans-serif] text-lg leading-[27px] tracking-[0.54px] text-[#596E89]">
+              After that, you can sign up to one of the competitions below:
             </div>
           </div>
 
@@ -123,44 +146,67 @@ export default function RegistrationSuccess({
               ];
               const color = colors[index % colors.length];
 
+              // Wrapper component to handle external links
+              const CompetitionWrapper = ({
+                children,
+              }: {
+                children: React.ReactNode;
+              }) => {
+                if (competition.externalLink) {
+                  return (
+                    <Link
+                      href={competition.externalLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group relative block w-full transition-colors hover:bg-[#1D202E]"
+                    >
+                      {children}
+                      <div className="absolute bottom-2 right-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                        <ExternalLink size={16} className="text-[#6D85A4]" />
+                      </div>
+                    </Link>
+                  );
+                }
+                return <>{children}</>;
+              };
+
               return (
-                <div
-                  key={competition.id}
-                  className="flex w-full items-center gap-4 rounded-sm border border-[#43505F] bg-[#11121A] p-3"
-                >
-                  <div
-                    className="h-[100px] w-[100px] flex-shrink-0"
-                    style={{
-                      backgroundColor: competition.imageUrl
-                        ? "transparent"
-                        : color,
-                    }}
-                  >
-                    {competition.imageUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={competition.imageUrl}
-                        alt={competition.name}
-                        className="h-full w-full object-cover"
-                      />
-                    )}
-                  </div>
-                  <div className="flex flex-1 flex-col gap-2">
-                    <h3 className="font-['Replica_LL',sans-serif] text-base font-bold leading-6 text-[#E9EDF1]">
-                      {competition.name}
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-4">
-                      <span className="font-['Trim_Mono',monospace] text-xs font-semibold uppercase tracking-[1.56px] text-[#6D85A4]">
-                        {competition.status}
-                      </span>
-                      {competition.description && (
-                        <span className="max-w-[250px] truncate font-['Trim_Mono',monospace] text-xs font-semibold tracking-[1.56px] text-[#6D85A4]">
-                          {competition.description}
-                        </span>
+                <CompetitionWrapper key={competition.id}>
+                  <div className="flex w-full items-center gap-4 rounded-sm border border-[#43505F] bg-[#11121A] p-3">
+                    <div
+                      className="h-[100px] w-[100px] flex-shrink-0"
+                      style={{
+                        backgroundColor: competition.imageUrl
+                          ? "transparent"
+                          : color,
+                      }}
+                    >
+                      {competition.imageUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={competition.imageUrl}
+                          alt={competition.name}
+                          className="h-full w-full object-cover"
+                        />
                       )}
                     </div>
+                    <div className="flex flex-1 flex-col gap-2">
+                      <h3 className="font-['Replica_LL',sans-serif] text-base font-bold leading-6 text-[#E9EDF1]">
+                        {competition.name}
+                      </h3>
+                      <div className="flex flex-wrap items-center gap-4">
+                        <span className="font-['Trim_Mono',monospace] text-xs font-semibold uppercase tracking-[1.56px] text-[#6D85A4]">
+                          {competition.status}
+                        </span>
+                        {competition.description && (
+                          <span className="max-w-[250px] truncate font-['Trim_Mono',monospace] text-xs font-semibold tracking-[1.56px] text-[#6D85A4]">
+                            {competition.description}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </CompetitionWrapper>
               );
             })
           ) : (
@@ -182,17 +228,6 @@ export default function RegistrationSuccess({
             </Link>
             .
           </p>
-
-          {/* Account Navigation Button */}
-          <Link
-            href="/account"
-            className="flex w-full items-center justify-center gap-2 bg-[#0057AD] px-6 py-4 transition-colors hover:bg-[#0064C7]"
-          >
-            <span className="font-['Trim_Mono',monospace] text-sm font-semibold uppercase tracking-wider text-[#E9EDF1]">
-              Go to Account
-            </span>
-            <ArrowRight className="h-4 w-4 text-[#E9EDF1]" />
-          </Link>
         </div>
       </div>
     </div>

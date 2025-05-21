@@ -166,16 +166,20 @@ export class TradeSimulator {
         fromTokenChain,
         fromTokenSpecificChain,
       );
+
       const toPrice = await this.priceTracker.getPrice(
         toToken,
         toTokenChain,
         toTokenSpecificChain,
       );
 
-      console.log(`[TradeSimulator] Got prices:
-        From Token (${fromToken}): $${fromPrice} (${fromTokenChain})
-        To Token (${toToken}): $${toPrice} (${toTokenChain})
-    `);
+      console.log("[TradeSimulator] Got prices:");
+      console.log(
+        `  From Token (${fromToken}): ${JSON.stringify(fromPrice, null, 4)} (${fromTokenChain})`,
+      );
+      console.log(
+        `  To Token (${toToken}): ${JSON.stringify(toPrice, null, 4)} (${toTokenChain})`,
+      );
 
       if (!fromPrice?.price || !toPrice?.price) {
         console.log(`[TradeSimulator] Missing price data:
@@ -325,6 +329,7 @@ export class TradeSimulator {
         fromAmount,
         toAmount,
         price: toAmount / fromAmount, // Exchange rate
+        tradeAmountUsd: fromValueUSD, // Store the USD value of the trade
         success: true,
         teamId,
         competitionId,

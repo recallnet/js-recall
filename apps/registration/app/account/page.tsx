@@ -252,6 +252,18 @@ export default function AccountPage() {
                 </div>
               </div>
 
+              {/* Telegram Row - Only shown if available */}
+              {team.metadata?.userTelegram && (
+                <div className="flex flex-col py-3 sm:flex-row sm:items-center">
+                  <div className="w-32 font-['Trim_Mono',monospace] text-lg font-semibold leading-[27px] tracking-[0.54px] text-white">
+                    Telegram
+                  </div>
+                  <div className="break-all font-['Trim_Mono',monospace] text-lg font-light leading-[27px] tracking-[0.54px] text-[#6D85A4] sm:break-normal">
+                    {team.metadata.userTelegram}
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-col py-3 sm:flex-row sm:items-center">
                 <div className="w-32 font-['Trim_Mono',monospace] text-lg font-semibold leading-[27px] tracking-[0.54px] text-white">
                   Website
@@ -351,8 +363,8 @@ export default function AccountPage() {
 
               {/* Agents list */}
               <div className="flex flex-col gap-6">
-                {team.metadata && team.metadata.length > 0 ? (
-                  team.metadata.map((agent, index) => {
+                {team.metadata?.agents && team.metadata.agents.length > 0 ? (
+                  team.metadata.agents.map((agent, index) => {
                     // Determine agent color based on index
                     const colors = ["#62A0DD", "#0064C7", "#003D7A"];
                     const color = colors[index % colors.length];

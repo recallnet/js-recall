@@ -213,6 +213,7 @@ export function makeTradeController(services: ServiceRegistry) {
           toAmount,
           exchangeRate: toAmount / parsedAmount,
           slippage: slippagePercentage,
+          tradeAmountUsd: fromValueUSD,
           prices: {
             fromToken: fromPrice,
             toToken: toPrice,
