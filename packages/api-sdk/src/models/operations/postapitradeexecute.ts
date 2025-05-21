@@ -92,6 +92,10 @@ export type Transaction = {
    */
   reason?: string | undefined;
   /**
+   * The USD value of the trade at execution time
+   */
+  tradeAmountUsd?: number | undefined;
+  /**
    * Timestamp of when the trade was executed
    */
   timestamp?: Date | undefined;
@@ -219,6 +223,7 @@ export const Transaction$inboundSchema: z.ZodType<
   success: z.boolean().optional(),
   error: z.string().optional(),
   reason: z.string().optional(),
+  tradeAmountUsd: z.number().optional(),
   timestamp: z
     .string()
     .datetime({ offset: true })
@@ -243,6 +248,7 @@ export type Transaction$Outbound = {
   success?: boolean | undefined;
   error?: string | undefined;
   reason?: string | undefined;
+  tradeAmountUsd?: number | undefined;
   timestamp?: string | undefined;
   fromChain?: string | undefined;
   toChain?: string | undefined;
@@ -267,6 +273,7 @@ export const Transaction$outboundSchema: z.ZodType<
   success: z.boolean().optional(),
   error: z.string().optional(),
   reason: z.string().optional(),
+  tradeAmountUsd: z.number().optional(),
   timestamp: z
     .date()
     .transform((v) => v.toISOString())

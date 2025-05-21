@@ -54,6 +54,3 @@ apps/api/*.log
 # Misc
 .DS_Store
 *.pem
-
-# Speakeasy package lockfile
-packages/api-sdk/package-lock.json

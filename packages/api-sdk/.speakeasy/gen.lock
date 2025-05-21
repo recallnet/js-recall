@@ -1,17 +1,17 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: 3018adb496a15dcab54678795101126b
+  docChecksum: 9e3c55ff02d570bf4e75c352d9a1da3f
   docVersion: 1.0.0
-  speakeasyVersion: 1.546.1
-  generationVersion: 2.604.2
+  speakeasyVersion: 1.548.4
+  generationVersion: 2.605.6
   releaseVersion: 0.0.0
-  configChecksum: 759247ef98645d35b2730bbe0f50f910
+  configChecksum: c256f3fd322e91ec340406f8a7d288c2
 features:
   typescript:
     additionalDependencies: 0.1.0
     constsAndDefaults: 0.1.11
-    core: 3.21.8
+    core: 3.21.9
     defaultEnabledRetries: 0.1.0
     devContainers: 2.90.0
     enumUnions: 0.1.0
@@ -352,7 +352,7 @@ examples:
   post_/api/admin/teams/register:
     speakeasy-default-post-/api/admin/teams/register:
       requestBody:
-        application/json: {"teamName": "Team Alpha", "email": "team@example.com", "contactPerson": "John Doe", "walletAddress": "1.0392900530713021e+47", "imageUrl": "https://example.com/team-image.jpg"}
+        application/json: {"teamName": "Team Alpha", "email": "team@example.com", "contactPerson": "John Doe", "walletAddress": "1.0392900530713021e+47", "metadata": {}, "imageUrl": "https://example.com/team-image.jpg"}
       responses:
         "201":
           application/json: {"team": {"apiKey": "abc123def456_ghi789jkl012"}}
@@ -475,6 +475,11 @@ examples:
           token: "So11111111111111111111111111111111111111112"
           chain: "svm"
           specificChain: "eth"
+      responses:
+        "200":
+          application/json: {}
+        "400":
+          application/json: {}
   get_/api/price/token-info:
     "":
       parameters:
@@ -482,6 +487,11 @@ examples:
           token: "So11111111111111111111111111111111111111112"
           chain: "svm"
           specificChain: "eth"
+      responses:
+        "200":
+          application/json: {}
+        "400":
+          application/json: {}
   post_/api/trade/execute:
     speakeasy-default-post-/api/trade/execute:
       requestBody:
@@ -500,5 +510,8 @@ examples:
           fromSpecificChain: "mainnet"
           toChain: "svm"
           toSpecificChain: "mainnet"
+      responses:
+        "200":
+          application/json: {}
 examplesVersion: 1.0.2
 generatedTests: {}
