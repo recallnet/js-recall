@@ -113,6 +113,7 @@ export function configureTradeRoutes(
    *                       description: Whether the trade was successfully completed
    *                     error:
    *                       type: string
+   *                       nullable: true
    *                       description: Error message if the trade failed
    *                     reason:
    *                       type: string
