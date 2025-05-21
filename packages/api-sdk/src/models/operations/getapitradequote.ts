@@ -88,6 +88,10 @@ export type GetApiTradeQuoteResponse = {
    * Applied slippage percentage for this trade size
    */
   slippage?: number | undefined;
+  /**
+   * Estimated USD value of the trade
+   */
+  tradeAmountUsd?: number | undefined;
   prices?: Prices | undefined;
   chains?: Chains | undefined;
 };
@@ -276,6 +280,7 @@ export const GetApiTradeQuoteResponse$inboundSchema: z.ZodType<
   toAmount: z.number().optional(),
   exchangeRate: z.number().optional(),
   slippage: z.number().optional(),
+  tradeAmountUsd: z.number().optional(),
   prices: z.lazy(() => Prices$inboundSchema).optional(),
   chains: z.lazy(() => Chains$inboundSchema).optional(),
 });
@@ -288,6 +293,7 @@ export type GetApiTradeQuoteResponse$Outbound = {
   toAmount?: number | undefined;
   exchangeRate?: number | undefined;
   slippage?: number | undefined;
+  tradeAmountUsd?: number | undefined;
   prices?: Prices$Outbound | undefined;
   chains?: Chains$Outbound | undefined;
 };
@@ -304,6 +310,7 @@ export const GetApiTradeQuoteResponse$outboundSchema: z.ZodType<
   toAmount: z.number().optional(),
   exchangeRate: z.number().optional(),
   slippage: z.number().optional(),
+  tradeAmountUsd: z.number().optional(),
   prices: z.lazy(() => Prices$outboundSchema).optional(),
   chains: z.lazy(() => Chains$outboundSchema).optional(),
 });
