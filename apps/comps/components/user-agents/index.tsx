@@ -19,20 +19,39 @@ import MirrorImage from "../mirror-image";
 export default function UserAgentsSection() {
   // for now using this hook, later must be user agents
   const { data: a, isLoading } = useLeaderboards();
-  const data = { ...a, agents: a?.agents.slice(0, 5) };
+  const data = { ...a, agents: a?.agents.slice(0, 3) };
+  const nAgents = data?.agents?.length || 0;
   let agentList = <NoAgents />;
 
-  if (isLoading || (data?.agents?.length > 0 && data?.agents?.length <= 3))
+  if (isLoading || (nAgents > 0 && nAgents <= 3))
     agentList = (
-      <div className="mt-8 flex w-full justify-around gap-10">
-        {data?.agents?.map((agent, i) => (
-          <AgentCard key={i} agent={agent} isLoading={isLoading} />
-        ))}
-        <AgentsSummary best="1st of 2054" completedComps={10} highest={2400} />
+      <div
+        className={cn(`mt-8 flex w-full items-center justify-around gap-8`, {
+          "flex-col sm:flex-row": nAgents == 1,
+          "flex-col lg:flex-row": nAgents == 2,
+          "flex-col 2xl:flex-row": nAgents >= 3,
+        })}
+      >
+        <div
+          className={cn("flex gap-8", {
+            "flex-col sm:flex-row": nAgents == 2,
+            "flex-col lg:flex-row": nAgents >= 3,
+          })}
+        >
+          {data?.agents?.map((agent, i) => (
+            <AgentCard key={i} agent={agent} isLoading={isLoading} />
+          ))}
+        </div>
+        <AgentsSummary
+          nAgents={nAgents}
+          best="1st of 2054"
+          completedComps={10}
+          highest={2400}
+        />
       </div>
     );
 
-  if (isLoading || data?.agents.length >= 4)
+  if (isLoading || nAgents >= 4)
     agentList = (
       <div className="mt-8 flex w-full flex-col gap-10">
         <div className="flex justify-around gap-10 overflow-x-auto">
@@ -41,7 +60,7 @@ export default function UserAgentsSection() {
           ))}
         </div>
         <AgentsSummary
-          horizontal
+          nAgents={nAgents}
           best="1st of 2054"
           completedComps={10}
           highest={2400}
@@ -93,23 +112,29 @@ const NoAgents = () => {
 
 const AgentsSummary: React.FunctionComponent<{
   className?: string;
-  horizontal?: boolean;
+  nAgents?: number;
   best: string;
   completedComps: number;
   highest: number;
-}> = ({ best, completedComps, highest, className, horizontal }) => {
+}> = ({ best, nAgents = 0, completedComps, highest, className }) => {
+  const borderRules = "sm:border-l-1";
+
   return (
     <div
       className={cn(
         className,
-        "flex w-full justify-around border border-gray-700",
-        horizontal ? "" : "flex-col",
+        "flex w-full flex-col justify-around border border-gray-700 sm:flex-row",
+        {
+          "2xl:flex-col": nAgents >= 3,
+          "lg:flex-col": nAgents == 2,
+          "sm:flex-col": nAgents == 1,
+        },
       )}
     >
       <div
         className={cn(
-          "flex w-full flex-col items-start gap-2 border-gray-700 p-8",
-          horizontal ? "border-l-1" : "border-b-1",
+          "border-b-1 flex w-full flex-col items-start gap-2 border-gray-700 p-8",
+          borderRules,
         )}
       >
         <span className="uppercase text-gray-500">BEST PLACE M ENT</span>
@@ -120,8 +145,8 @@ const AgentsSummary: React.FunctionComponent<{
       </div>
       <div
         className={cn(
-          "flex w-full flex-col items-start gap-2 border-gray-700 p-8",
-          horizontal ? "border-l-1" : "border-b-1",
+          "border-b-1 flex w-full flex-col items-start gap-2 border-gray-700 p-8",
+          borderRules,
         )}
       >
         <span className="uppercase text-gray-500">completed comps</span>
@@ -131,8 +156,8 @@ const AgentsSummary: React.FunctionComponent<{
       </div>
       <div
         className={cn(
-          "flex w-full flex-col items-start gap-2 border-gray-700 p-8",
-          horizontal ? "border-l-1" : "border-b-1",
+          "border-b-1 flex w-full flex-col items-start gap-2 border-gray-700 p-8",
+          borderRules,
         )}
       >
         <span className="uppercase text-gray-500">highest p&l</span>
@@ -149,7 +174,7 @@ const AgentCard: React.FunctionComponent<{
   agent: AgentResponse;
   isLoading: boolean;
 }> = ({ className, agent, isLoading }) => {
-  const size = "min-w-70 h-95";
+  const size = "min-w-70 max-w-80 md:max-w-70 h-95";
 
   if (isLoading) return <Skeleton className={size} />;
 
