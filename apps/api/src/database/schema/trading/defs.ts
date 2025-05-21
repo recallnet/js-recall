@@ -11,6 +11,7 @@ import {
   unique,
   uuid,
   varchar,
+  customType,
 } from "drizzle-orm/pg-core";
 
 import { competitions, teams } from "../core/defs.js";
@@ -40,6 +41,12 @@ function tokenAmount(name?: string) {
     return numeric({ precision: 30, scale: 15, mode: "number" });
   }
 }
+
+const bytea = customType<{ data: Buffer; notNull: false; default: false }>({
+  dataType() {
+    return "bytea";
+  },
+});
 
 export const tradingComps = pgSchema("trading_comps");
 
@@ -260,4 +267,50 @@ export const epochs = tradingComps.table(
     createdAt: timestamp({ withTimezone: false }).defaultNow(),
   },
   (table) => [index("idx_epochs_id").on(table.id)],
+);
+
+// Define rewards table for storing reward information
+export const rewards = tradingComps.table(
+  'rewards',
+  {
+    id: serial('id').primaryKey().notNull(),
+    epoch_id: integer('epoch_id').notNull(),
+    address: text('address').notNull(),
+    amount: numeric('amount').notNull(),
+    leaf_hash: bytea('leaf_hash').notNull(),
+    claimed: boolean('claimed').default(false).notNull(),
+    created_at: timestamp("created_at", { withTimezone: false }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: false }).defaultNow().notNull(),
+  },
+  (table) => [index('idx_rewards_epoch_id').on(table.epoch_id)],
+);
+
+// Define rewards_tree table for storing all nodes of a merkle tree
+export const rewardsTree = tradingComps.table(
+  'rewards_tree',
+  {
+    id: serial('id').primaryKey().notNull(),
+    epoch_id: integer('epoch_id').notNull(),
+    level: integer('level').notNull(),
+    idx: integer('idx').notNull(),
+    hash: bytea('hash').notNull(),
+    created_at: timestamp("created_at", { withTimezone: false }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('idx_rewards_tree_level_hash').on(table.level, table.hash),
+    index('idx_rewards_tree_level_idx').on(table.level, table.idx),
+  ]
+);
+
+// Define rewards_roots table for storing root hashes
+export const rewardsRoots = tradingComps.table(
+  'rewards_roots',
+  {
+    id: serial('id').primaryKey().notNull(),
+    epoch_id: integer('epoch_id').notNull(),
+    root_hash: bytea('root_hash').notNull(),
+    tx: text('tx').notNull(),
+    created_at: timestamp("created_at", { withTimezone: false }).defaultNow().notNull(),
+  },
+  (table) => [index('idx_rewards_roots_epoch_id').on(table.epoch_id)]
 );
