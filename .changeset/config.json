@@ -2,7 +2,9 @@
   "$schema": "https://unpkg.com/@changesets/config@3.0.5/schema.json",
   "changelog": [
     "@changesets/changelog-github",
-    { "repo": "recallnet/js-recall" }
+    {
+      "repo": "recallnet/js-recall"
+    }
   ],
   "commit": false,
   "fixed": [],
@@ -15,6 +17,7 @@
     "faucet",
     "portal",
     "api",
+    "@recallnet/api-mcp",
     "registration",
     "@recallnet/ui",
     "@recallnet/ui2",

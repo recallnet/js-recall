@@ -2,9 +2,7 @@
   "name": "@recallnet/api-mcp",
   "version": "0.0.1",
   "license": "MIT OR Apache-2.0",
-  "publishConfig": {
-    "access": "public"
-  },
+  "private": true,
   "description": "Recall Model Context Protocol (MCP) server and command line tool for the competitions API",
   "repository": {
     "type": "git",

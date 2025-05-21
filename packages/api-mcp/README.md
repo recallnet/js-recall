@@ -6,45 +6,39 @@ A Model Context Protocol (MCP) server implementation for the Recall API.
 
 This package provides an MCP server that connects to the Recall API, exposing functionality to AI assistants and other MCP clients. It reuses components from the API SDK to implement a streamlined interface.
 
-## Features
+## Usage
 
-- Model Context Protocol (MCP) compliant server
-- Stdio transport for CLI tool integration
-- API authentication via bearer token
-- Focused set of tools for user operations (admin operations excluded)
+_Note_: This package has not been published to NPM yet. All of the instructions below will be applicable once it is.
 
-## Installation
+Run the package with npx. You'll need to provide your Recall competitions API key together with the correct server URL:
 
-```sh
-# Install from npm
-pnpm add @recallnet/api-mcp
-
-# Or use directly via npx
+```bash
+export API_KEY=your-api-key
+export API_SERVER_URL=competitions-server-url
 npx @recallnet/api-mcp
 ```
 
-### Using with GitHub Repository
+### Configure for Cursor or Claude Desktop
 
-You can also run the MCP server directly from GitHub without installing it:
+#### Adding to Cursor
 
-```sh
-# Using npx with GitHub repository
-npx -y github:recallnet/js-recall#main/packages/api-mcp
-```
+To add this MCP server to Cursor:
 
-### Configuring in Claude/AI Studio/MCP-compatible Tools
-
-Add this MCP server to your MCP configuration:
+1. In Cursor, go to _Settings > Cursor Settings > MCP_.
+2. Click "Add New Global MCP Server" to open the server JSON configuration in the editor (i.e., the `~/.cursor/mcp.json` file in your home directory).
+3. Add the following configuration:
 
 ```json
 {
   "mcpServers": {
-    "recallnet-api-mcp": {
+    "api-mcp": {
+      "name": "Recall API MCP",
+      "type": "command",
       "command": "npx",
-      "args": ["-y", "github:recallnet/js-recall#main/packages/api-mcp"],
+      "args": ["-y", "@recallnet/api-mcp"],
       "env": {
         "API_KEY": "your-api-key",
-        "API_SERVER_URL": "https://api.recall.example",
+        "API_SERVER_URL": "competitions-server-url",
         "LOG_LEVEL": "info"
       }
     }
@@ -52,53 +46,45 @@ Add this MCP server to your MCP configuration:
 }
 ```
 
-## Usage
+4. Save the configuration file and, if needed, refresh the MCP server in _Settings > Cursor Settings > MCP_ (it's in the top right corner of each MCP server).
 
-### Environment Variables
+#### Adding to Claude Desktop
 
-The MCP server can be configured using environment variables:
+To add this MCP server to Claude Desktop:
 
-```sh
-# API connection settings
-export API_SERVER_URL="https://api.recall.example"
-export API_KEY="your-api-key"
+1. Locate your Claude Desktop configuration file at:
 
-# Log level (debug, info, warn, error)
-export LOG_LEVEL="debug"
-```
+   - On macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+   - On Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+   - On Linux: `~/.config/Claude/claude_desktop_config.json`
 
-Environment variables can be used alongside command-line arguments. Command-line arguments take precedence over environment variables.
+2. Create or edit the `claude_desktop_config.json` file with the following content:
 
-### Command Line
+   ```json
+   {
+     "mcpServers": {
+       "api-mcp": {
+         "name": "Recall API MCP",
+         "type": "command",
+         "command": "npx",
+         "args": ["-y", "@recallnet/api-mcp"],
+         "env": {
+           "API_KEY": "your-api-key",
+           "API_SERVER_URL": "competitions-server-url",
+           "LOG_LEVEL": "info"
+         }
+       }
+     }
+   }
+   ```
 
-```sh
-# Run the MCP server
-npx @recallnet/api-mcp
+3. Save the configuration file and restart Claude Desktop.
 
-# Provide API authentication
-npx @recallnet/api-mcp --bearer-auth YOUR_AUTH_TOKEN
+If you encounter issues with Claude Desktop, check the logs at:
 
-# Set log level
-npx @recallnet/api-mcp --log-level debug
-
-# Specify a custom server URL
-npx @recallnet/api-mcp --server-url https://api.recall.example
-```
-
-### Programmatic Usage
-
-```typescript
-import { startServer } from "@recallnet/api-mcp/dist/server.js";
-import { createConsoleLogger } from "@recallnet/api-sdk/mcp-server/console-logger.js";
-
-const logger = createConsoleLogger("info");
-
-await startServer({
-  bearerAuth: "YOUR_AUTH_TOKEN",
-  serverURL: "https://api.recall.example",
-  logger,
-});
-```
+- On macOS: `~/Library/Logs/Claude/`
+- On Windows: `%USERPROFILE%\AppData\Local\Claude\Logs\`
+- On Linux: `~/.local/share/Claude/logs/`
 
 ## Available Tools
 
