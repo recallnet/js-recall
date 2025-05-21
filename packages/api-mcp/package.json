@@ -11,15 +11,10 @@
   },
   "homepage": "https://github.com/recallnet/js-recall/tree/main/packages/api-mcp#readme",
   "type": "module",
-  "main": "dist/index.js",
   "bin": "dist/index.js",
-  "files": [
-    "dist"
-  ],
   "scripts": {
     "dev": "tsc --watch",
     "build": "tsup && shx chmod +x dist/*.js",
-    "prepare": "npm run build",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
