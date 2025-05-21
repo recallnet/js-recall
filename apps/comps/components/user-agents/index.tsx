@@ -12,6 +12,7 @@ import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useLeaderboards } from "@/hooks";
+import { AgentResponse } from "@/types";
 
 import BigNumberDisplay from "../bignumber";
 import MirrorImage from "../mirror-image";
@@ -188,7 +189,7 @@ const AgentCard: React.FunctionComponent<{
       )}
     >
       <span className="text-gray-400">
-        {displayAddress(agent.metadata.walletAddress)}
+        {displayAddress(agent.metadata.walletAddress || "")}
       </span>
       <MirrorImage
         className="mb-10"
