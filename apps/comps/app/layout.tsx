@@ -6,7 +6,7 @@ import { Metadata } from "next";
 
 import { fontMono, fontSans } from "@recallnet/fonts";
 
-import { Navbar } from "@/components/Navbar";
+import { Navbar } from "@/components/navbar";
 import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
