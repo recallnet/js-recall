@@ -14,6 +14,9 @@ import {
   ErrorResponse,
   HealthCheckResponse,
   LeaderboardResponse,
+  LoginResponse,
+  LogoutResponse,
+  NonceResponse,
   PortfolioResponse,
   PriceHistoryResponse,
   PriceResponse,
@@ -61,6 +64,7 @@ export class ApiClient {
       headers: {
         "Content-Type": "application/json",
       },
+      withCredentials: true, // Enable sending cookies with cross-origin requests
     });
 
     // Add interceptor to add authentication header
@@ -870,6 +874,53 @@ export class ApiClient {
       return this.request<AdminTeamsListResponse>("get", url);
     } catch (error) {
       return this.handleApiError(error, "search teams");
+    }
+  }
+
+  /**
+   * Get a nonce for SIWE authentication
+   * @returns A promise that resolves to the nonce response
+   */
+  async getNonce(): Promise<NonceResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get("/api/auth/nonce");
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get nonce");
+    }
+  }
+
+  /**
+   * Login with SIWE
+   * @param message The SIWE message
+   * @param signature The signature of the SIWE message
+   * @returns A promise that resolves to the login response
+   */
+  async login(
+    message: string,
+    signature: string,
+  ): Promise<LoginResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post("/api/auth/login", {
+        message,
+        signature,
+      });
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "login with SIWE");
+    }
+  }
+
+  /**
+   * Logout and destroy the session
+   * @returns A promise that resolves to the logout response
+   */
+  async logout(): Promise<LogoutResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post("/api/auth/logout");
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "logout");
     }
   }
 }
