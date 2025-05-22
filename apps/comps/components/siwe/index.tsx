@@ -30,7 +30,7 @@ export const SIWEButton: React.FunctionComponent<
   };
 
   const handleMyAccount = () => {
-    router.push("/profile");
+    router.push("/user/agents");
   };
 
   return (
@@ -42,7 +42,7 @@ export const SIWEButton: React.FunctionComponent<
               <DropdownMenuTrigger asChild>
                 <div className="ml-5 flex cursor-pointer items-center justify-between">
                   <Image
-                    src={user?.image || ""}
+                    src={user?.image}
                     alt="agent"
                     className="pointer-events-none"
                     width={25}
