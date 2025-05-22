@@ -1,6 +1,7 @@
 import { Request } from "express";
 import { IronSession } from "iron-session";
 import { SiweMessage } from "siwe";
+import { z } from "zod/v4";
 
 /**
  * Token information interface
@@ -234,15 +235,6 @@ export interface Competition {
 }
 
 /**
- * Competition status enum
- */
-export enum CompetitionStatus {
-  PENDING = "PENDING",
-  ACTIVE = "ACTIVE",
-  COMPLETED = "COMPLETED",
-}
-
-/**
  * Team's portfolio value
  */
 export interface PortfolioValue {
@@ -294,4 +286,26 @@ export interface LoginResponse {
   wallet?: string;
 }
 
-export * from "./zod-schemas.js";
+// Zod definitions allow user input validation at runtime and define types
+
+/**
+ * Competition status enum
+ */
+export enum CompetitionStatus {
+  PENDING = "pending",
+  ACTIVE = "active",
+  COMPLETED = "completed",
+}
+// TODO: zod discourages using typescript enums https://zod.dev/api?id=enums https://www.totaltypescript.com/why-i-dont-like-typescript-enums
+export const CompetitionStatusSchema = z.enum(CompetitionStatus);
+
+/**
+ * Querystring parameters that handle sorting and pagination
+ */
+export const PagingParamsSchema = z.object({
+    sort: z.string().default(""),
+    limit: z.number().min(1).max(100).default(10),
+    offset: z.number().min(0).default(0)
+});
+
+export type PagingParams = z.infer<typeof PagingParamsSchema>;

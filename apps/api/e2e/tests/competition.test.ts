@@ -76,7 +76,7 @@ describe("Competition API", () => {
     const competition = competitionResponse.competition;
     expect(competition).toBeDefined();
     expect(competition.name).toBe(competitionName);
-    expect(competition.status).toBe("ACTIVE");
+    expect(competition.status).toBe("active");
     expect(competition.teamIds).toContain(team1.id);
     expect(competition.teamIds).toContain(team2.id);
   });
@@ -97,7 +97,7 @@ describe("Competition API", () => {
     const competition = competitionResponse.competition;
     expect(competition).toBeDefined();
     expect(competition.name).toBe(competitionName);
-    expect(competition.status).toBe("PENDING");
+    expect(competition.status).toBe("pending");
     expect(competition.startDate).toBeNull();
     expect(competition.endDate).toBeNull();
   });
@@ -127,7 +127,7 @@ describe("Competition API", () => {
     // Verify competition was created in PENDING state
     const pendingCompetition = createResponse.competition;
     expect(pendingCompetition).toBeDefined();
-    expect(pendingCompetition.status).toBe("PENDING");
+    expect(pendingCompetition.status).toBe("pending");
 
     // Now start the existing competition
     const startResponse = await startExistingTestCompetition(
@@ -141,7 +141,7 @@ describe("Competition API", () => {
     expect(activeCompetition).toBeDefined();
     expect(activeCompetition.id).toBe(pendingCompetition.id);
     expect(activeCompetition.name).toBe(competitionName);
-    expect(activeCompetition.status).toBe("ACTIVE");
+    expect(activeCompetition.status).toBe("active");
     expect(activeCompetition.startDate).toBeDefined();
     expect(activeCompetition.teamIds).toContain(team1.id);
     expect(activeCompetition.teamIds).toContain(team2.id);
@@ -171,7 +171,7 @@ describe("Competition API", () => {
     );
 
     const activeCompetition = startResponse.competition;
-    expect(activeCompetition.status).toBe("ACTIVE");
+    expect(activeCompetition.status).toBe("active");
 
     // Try to start the same competition again
     try {
@@ -199,7 +199,7 @@ describe("Competition API", () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       expect(error.success).toBe(false);
-      expect(error.error).toContain("ACTIVE");
+      expect(error.error).toContain("active");
     }
   });
 
@@ -223,7 +223,7 @@ describe("Competition API", () => {
     expect(statusResponse.success).toBe(true);
     expect(statusResponse.competition).toBeDefined();
     expect(statusResponse.competition?.name).toBe(competitionName);
-    expect(statusResponse.competition?.status).toBe("ACTIVE");
+    expect(statusResponse.competition?.status).toBe("active");
 
     // Team checks leaderboard
     const leaderboardResponse =
@@ -306,7 +306,7 @@ describe("Competition API", () => {
     expect(adminStatusResponse.active).toBe(true);
     expect(adminStatusResponse.competition).toBeDefined();
     expect(adminStatusResponse.competition?.name).toBe(competitionName);
-    expect(adminStatusResponse.competition?.status).toBe("ACTIVE");
+    expect(adminStatusResponse.competition?.status).toBe("active");
 
     // Admin checks leaderboard
     const adminLeaderboardResponse =
@@ -422,7 +422,7 @@ describe("Competition API", () => {
       competition.competition.id,
     )) as EndCompetitionResponse;
     expect(endResponse.success).toBe(true);
-    expect(endResponse.competition.status).toBe("COMPLETED");
+    expect(endResponse.competition.status).toBe("completed");
 
     // Give a small delay for deactivation to complete
     await wait(500);
@@ -637,14 +637,16 @@ describe("Competition API", () => {
     )) as CreateCompetitionResponse;
 
     // Verify all competitions were created and in PENDING state
-    expect(createResponse1.competition.status).toBe("PENDING");
-    expect(createResponse2.competition.status).toBe("PENDING");
-    expect(createResponse3.competition.status).toBe("PENDING");
+    expect(createResponse1.competition.status).toBe("pending");
+    expect(createResponse2.competition.status).toBe("pending");
+    expect(createResponse3.competition.status).toBe("pending");
 
     // Call the new endpoint to get upcoming competitions
     const upcomingResponse =
       (await teamClient.getUpcomingCompetitions()) as UpcomingCompetitionsResponse;
-
+console.log("\n\n\n\n");
+console.log("upcoming response: ", upcomingResponse);
+console.log("\n\n\n\n");
     // Verify the response
     expect(upcomingResponse.success).toBe(true);
     expect(upcomingResponse.competitions).toBeDefined();
@@ -655,13 +657,13 @@ describe("Competition API", () => {
 
     // Verify our competitions are in the response
     const foundComp1 = upcomingResponse.competitions.some(
-      (comp) => comp.name === comp1Name && comp.status === "PENDING",
+      (comp) => comp.name === comp1Name && comp.status === "pending",
     );
     const foundComp2 = upcomingResponse.competitions.some(
-      (comp) => comp.name === comp2Name && comp.status === "PENDING",
+      (comp) => comp.name === comp2Name && comp.status === "pending",
     );
     const foundComp3 = upcomingResponse.competitions.some(
-      (comp) => comp.name === comp3Name && comp.status === "PENDING",
+      (comp) => comp.name === comp3Name && comp.status === "pending",
     );
 
     expect(foundComp1).toBe(true);
@@ -672,7 +674,7 @@ describe("Competition API", () => {
     upcomingResponse.competitions.forEach((comp) => {
       expect(comp.id).toBeDefined();
       expect(comp.name).toBeDefined();
-      expect(comp.status).toBe("PENDING");
+      expect(comp.status).toBe("pending");
       expect(comp.crossChainTradingType).toBeDefined();
       expect(comp.createdAt).toBeDefined();
       expect(comp.updatedAt).toBeDefined();

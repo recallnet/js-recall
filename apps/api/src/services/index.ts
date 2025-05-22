@@ -1,7 +1,7 @@
 import { AuthService } from "@/services/auth.service.js";
 import { BalanceManager } from "@/services/balance-manager.service.js";
 import { CompetitionManager } from "@/services/competition-manager.service.js";
-import { CompetitionsManager } from "@/services/competition-manager.service.js";
+import { CompetitionsManager } from "@/services/competitions-manager.service.js";
 import { ConfigurationService } from "@/services/configuration.service.js";
 import { PortfolioSnapshotter } from "@/services/portfolio-snapshotter.service.js";
 import { PriceTracker } from "@/services/price-tracker.service.js";
@@ -93,7 +93,7 @@ class ServiceRegistry {
     return this._competitionManager;
   }
 
-  get competitionsManager(): CompetitionManager {
+  get competitionsManager(): CompetitionsManager {
     return this._competitionsManager;
   }
 

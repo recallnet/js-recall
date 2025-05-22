@@ -6,6 +6,7 @@ import { makeAccountController } from "@/controllers/account.controller.js";
 import { makeAdminController } from "@/controllers/admin.controller.js";
 import { makeAuthController } from "@/controllers/auth.controller.js";
 import { makeCompetitionController } from "@/controllers/competition.controller.js";
+import { makeCompetitionsController } from "@/controllers/competitions.controller.js";
 import { makeDocsController } from "@/controllers/docs.controller.js";
 import { makeHealthController } from "@/controllers/health.controller.js";
 import { makePriceController } from "@/controllers/price.controller.js";
@@ -21,6 +22,7 @@ import { configureAdminSetupRoutes } from "@/routes/admin-setup.routes.js";
 import { configureAdminRoutes } from "@/routes/admin.routes.js";
 import { configureAuthRoutes } from "@/routes/auth.routes.js";
 import { configureCompetitionRoutes } from "@/routes/competition.routes.js";
+import { configureCompetitionsRoutes } from "@/routes/competitions.routes.js";
 import { configureDocsRoutes } from "@/routes/docs.routes.js";
 import { configureHealthRoutes } from "@/routes/health.routes.js";
 import { configurePriceRoutes } from "@/routes/price.routes.js";
@@ -81,6 +83,7 @@ const protectedRoutes = [
   "/api/account",
   "/api/trade",
   "/api/competition",
+  "/api/competitions",
   "/api/price",
 ];
 
@@ -102,6 +105,7 @@ const accountController = makeAccountController(services);
 const adminController = makeAdminController(services);
 const authController = makeAuthController(services);
 const competitionController = makeCompetitionController(services);
+const competitionsController = makeCompetitionsController(services);
 const docsController = makeDocsController();
 const healthController = makeHealthController();
 const priceController = makePriceController(services);
@@ -112,6 +116,7 @@ const adminRoutes = configureAdminRoutes(adminController, adminMiddleware);
 const adminSetupRoutes = configureAdminSetupRoutes(adminController);
 const authRoutes = configureAuthRoutes(authController, siweSessionMiddleware);
 const competitionRoutes = configureCompetitionRoutes(competitionController);
+const competitionsRoutes = configureCompetitionsRoutes(competitionsController);
 const docsRoutes = configureDocsRoutes(docsController);
 const healthRoutes = configureHealthRoutes(healthController);
 const priceRoutes = configurePriceRoutes(priceController);
