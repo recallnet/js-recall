@@ -86,7 +86,7 @@ export type Transaction = {
   /**
    * Error message if the trade failed
    */
-  error?: string | undefined;
+  error?: string | null | undefined;
   /**
    * Reason provided for executing the trade
    */
@@ -221,7 +221,7 @@ export const Transaction$inboundSchema: z.ZodType<
   toAmount: z.number().optional(),
   price: z.number().optional(),
   success: z.boolean().optional(),
-  error: z.string().optional(),
+  error: z.nullable(z.string()).optional(),
   reason: z.string().optional(),
   tradeAmountUsd: z.number().optional(),
   timestamp: z
@@ -246,7 +246,7 @@ export type Transaction$Outbound = {
   toAmount?: number | undefined;
   price?: number | undefined;
   success?: boolean | undefined;
-  error?: string | undefined;
+  error?: string | null | undefined;
   reason?: string | undefined;
   tradeAmountUsd?: number | undefined;
   timestamp?: string | undefined;
@@ -271,7 +271,7 @@ export const Transaction$outboundSchema: z.ZodType<
   toAmount: z.number().optional(),
   price: z.number().optional(),
   success: z.boolean().optional(),
-  error: z.string().optional(),
+  error: z.nullable(z.string()).optional(),
   reason: z.string().optional(),
   tradeAmountUsd: z.number().optional(),
   timestamp: z

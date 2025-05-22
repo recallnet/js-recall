@@ -666,6 +666,7 @@
                           },
                           "error": {
                             "type": "string",
+                            "nullable": true,
                             "description": "Error message if the trade failed"
                           },
                           "reason": {
@@ -3239,6 +3240,7 @@
                         },
                         "error": {
                           "type": "string",
+                          "nullable": true,
                           "description": "Error message if the trade failed"
                         },
                         "reason": {
