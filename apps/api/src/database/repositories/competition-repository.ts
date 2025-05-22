@@ -1,4 +1,4 @@
-import { and, desc, eq, getTableColumns, max, sql } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, max, sql } from "drizzle-orm";
 
 import { db } from "@/database/db.js";
 import { competitionTeams, competitions } from "@/database/schema/core/defs.js";
@@ -13,7 +13,7 @@ import {
   InsertPortfolioSnapshot,
   InsertPortfolioTokenValue,
 } from "@/database/schema/trading/types.js";
-import { CompetitionStatus } from "@/types/index.js";
+import { CompetitionStatus, PagingParams } from "@/types/index.js";
 
 import { PartialExcept } from "./types.js";
 
@@ -384,13 +384,31 @@ export async function count() {
   }
 }
 
+function getSort(sortString: string) {
+  const parts = sortString.split(",");
+
+  if (parts.length > 3) {
+    throw new Error("compound sorting with more than 3 fields not allowed");
+  }
+
+  return parts.map(function (part: string) {
+    if (part.startsWith("-")) {
+      part = part.slice(1);
+      return desc(tradingCompetitions[part] as any);
+    }
+
+    return asc(tradingCompetitions[part] as any);
+  });
+}
+
 /**
  * Find competitions by status
  * @param status Competition status
  */
-export async function findByStatus(status: CompetitionStatus, params: QueryParams) {
+export async function findByStatus(status: CompetitionStatus, params: PagingParams) {
   try {
-    let query = db
+    // TODO: fix types
+    let query: any = db
       .select({
         crossChainTradingType: tradingCompetitions.crossChainTradingType,
         ...getTableColumns(competitions),
@@ -400,16 +418,17 @@ export async function findByStatus(status: CompetitionStatus, params: QueryParam
         competitions,
         eq(tradingCompetitions.competitionId, competitions.id),
       )
-      .where(eq(competitions.status, status))
+      .where(eq(competitions.status, status));
+
+    if (params.sort) {
+      query = query.orderBy(params.sort);
+    }
+
+    query = query
       .limit(params.limit)
       .offset(params.offset);
 
-    if (params.sort) {
-      query = query.orderBy(getSort(params.sort));
-    }
-
-    const [result] = await query;
-    return result;
+    return  await query;
   } catch (error) {
     console.error("[CompetitionRepository] Error in findByStatus:", error);
     throw error;

@@ -1,9 +1,9 @@
 import { RequestHandler, Router } from "express";
 
-import { CompetitionController } from "@/controllers/competition.controller.js";
+import { CompetitionsController } from "@/controllers/competitions.controller.js";
 
 export function configureCompetitionsRoutes(
-  controller: CompetitionController,
+  controller: CompetitionsController,
   ...middlewares: RequestHandler[]
 ) {
   const router = Router();

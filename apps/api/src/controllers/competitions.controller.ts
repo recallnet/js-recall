@@ -38,7 +38,7 @@ export function makeCompetitionsController(services: ServiceRegistry) {
         // Return the competitions
         res.status(200).json({
           success: true,
-          competitions: upcomingCompetitions,
+          competitions: competitions,
         });
       } catch (error) {
         next(error);

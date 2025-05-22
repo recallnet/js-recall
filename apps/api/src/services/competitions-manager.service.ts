@@ -18,7 +18,8 @@ import {
   TeamManager,
   TradeSimulator,
 } from "@/services/index.js";
-import { AuthenticatedRequest, CompetitionStatus, CrossChainTradingType } from "@/types/index.js";
+import { AuthenticatedRequest, CompetitionStatusSchema, PagingParamsSchema, CrossChainTradingType } from "@/types/index.js";
+import {  } from "@/types/zod-schemas.js";
 
 /**
  * Competitions Manager Service
@@ -50,8 +51,8 @@ export class CompetitionsManager {
    * Load the active competition from the database
    * This is used at startup to restore the active competition state
    */
-  private async getCompetition(req: AuthenticatedRequest) {
-
+  async getCompetitions(req: AuthenticatedRequest) {
+    return await findByStatus(CompetitionStatusSchema.parse(req.query.status), PagingParamsSchema.parse(req.query));
   }
 
 }

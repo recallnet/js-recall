@@ -14,7 +14,7 @@
     "build": "tsc && tsc-alias && copyfiles -u 0 './drizzle/**/*.{sql,json}' dist",
     "test": "vitest run --project unit",
     "test:watch": "vitest watch --project unit",
-    "test:e2e": "vitest run --project e2e",
+    "test:e2e": "vitest run --project e2e e2e/tests/competition.test.ts:606",
     "test:e2e:watch": "vitest watch --project e2e",
     "test:e2e:runner": "tsx e2e/run-tests.ts",
     "test:multi-chain": "vitest run src/services/providers/__tests__/multi-chain.provider.test.ts",
