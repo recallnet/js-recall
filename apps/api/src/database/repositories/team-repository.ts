@@ -1,4 +1,4 @@
-import { and, count as drizzleCount, eq, ilike } from "drizzle-orm";
+import { and, count as drizzleCount, eq, ilike, sql } from "drizzle-orm";
 
 import { db } from "@/database/db.js";
 import { competitionTeams, teams } from "@/database/schema/core/defs.js";
@@ -83,11 +83,14 @@ export async function findByWalletAddress(
   walletAddress: string,
 ): Promise<SelectTeam | undefined> {
   try {
-    const [result] = await db
-      .select()
-      .from(teams)
-      .where(eq(teams.walletAddress, walletAddress))
-      .limit(1);
+    const result = await db.query.teams.findFirst({
+      where: eq(
+        // TODO: once our tables store addresses in lowercase, we can remove the sql/lower call;
+        // this function has some small performance impacts until we make that change
+        sql`lower(${teams.walletAddress})`,
+        walletAddress.toLowerCase(),
+      ),
+    });
 
     return result;
   } catch (error) {
