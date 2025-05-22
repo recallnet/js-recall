@@ -35,7 +35,7 @@ export class AuthService {
       session.nonce = undefined;
 
       // Attempt to find the team that matches the verified wallet address & store session data
-      let team = await findByWalletAddress(siweData.address);
+      const team = await findByWalletAddress(siweData.address);
       const teamId = team?.id;
       const wallet = siweData.address;
       session.siwe = siweData;

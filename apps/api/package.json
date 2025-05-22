@@ -85,6 +85,7 @@
     "copyfiles": "^2.4.1",
     "drizzle-kit": "^0.31.1",
     "drizzle-seed": "^0.3.1",
+    "eslint": "^9.27.0",
     "openapi-markdown": "^1.2.3",
     "tsc-alias": "^1.8.16",
     "tsx": "^4.19.3",
