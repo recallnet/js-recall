@@ -1,15 +1,5 @@
-import { v4 as uuidv4 } from "uuid";
-
 import {
-  addTeamToCompetition,
-  create as createCompetition,
-  findActive,
-  findAll,
-  findById,
   findByStatus,
-  getCompetitionTeams,
-  getLatestPortfolioSnapshots,
-  update as updateCompetition,
 } from "@/database/repositories/competition-repository.js";
 import {
   BalanceManager,
@@ -18,8 +8,11 @@ import {
   TeamManager,
   TradeSimulator,
 } from "@/services/index.js";
-import { AuthenticatedRequest, CompetitionStatusSchema, PagingParamsSchema, CrossChainTradingType } from "@/types/index.js";
-import {  } from "@/types/zod-schemas.js";
+import {
+  AuthenticatedRequest,
+  CompetitionStatusSchema,
+  PagingParamsSchema,
+} from "@/types/index.js";
 
 /**
  * Competitions Manager Service
@@ -52,7 +45,9 @@ export class CompetitionsManager {
    * This is used at startup to restore the active competition state
    */
   async getCompetitions(req: AuthenticatedRequest) {
-    return await findByStatus(CompetitionStatusSchema.parse(req.query.status), PagingParamsSchema.parse(req.query));
+    return await findByStatus(
+      CompetitionStatusSchema.parse(req.query.status),
+      PagingParamsSchema.parse(req.query),
+    );
   }
-
 }

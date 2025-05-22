@@ -44,9 +44,11 @@ export function makeCompetitionController(services: ServiceRegistry) {
           throw new ApiError(404, "Competition not found");
         }
 
-
         // If no team ID, they can't be in the competition
-        const teamId = ensureReqTeam(req, "Authentication required to view leaderboard");
+        const teamId = ensureReqTeam(
+          req,
+          "Authentication required to view leaderboard",
+        );
 
         // Check if user is an admin (added by auth middleware)
         const isAdmin = req.isAdmin === true;
@@ -267,7 +269,10 @@ export function makeCompetitionController(services: ServiceRegistry) {
     ) {
       try {
         // Check if the team is authenticated
-        const teamId = ensureReqTeam(req, "Authentication required to view competition rules");
+        const teamId = ensureReqTeam(
+          req,
+          "Authentication required to view competition rules",
+        );
 
         // Check if user is an admin (added by auth middleware)
         const isAdmin = req.isAdmin === true;
@@ -385,10 +390,13 @@ export function makeCompetitionController(services: ServiceRegistry) {
     ) {
       try {
         // Check if the team is authenticated
-        ensureReqTeam(req, "Authentication required to view upcoming competitions");
+        const teamId = ensureReqTeam(
+          req,
+          "Authentication required to view upcoming competitions",
+        );
 
         console.log(
-          `[CompetitionController] Team ${req.teamId} requesting upcoming competitions`,
+          `[CompetitionController] Team ${teamId} requesting upcoming competitions`,
         );
 
         // Get all upcoming competitions

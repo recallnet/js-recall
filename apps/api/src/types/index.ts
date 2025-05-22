@@ -303,9 +303,9 @@ export const CompetitionStatusSchema = z.enum(CompetitionStatus);
  * Querystring parameters that handle sorting and pagination
  */
 export const PagingParamsSchema = z.object({
-    sort: z.string().default(""),
-    limit: z.number().min(1).max(100).default(10),
-    offset: z.number().min(0).default(0)
+  sort: z.string().default(""),
+  limit: z.number().min(1).max(100).default(10),
+  offset: z.number().min(0).default(0),
 });
 
 export type PagingParams = z.infer<typeof PagingParamsSchema>;
