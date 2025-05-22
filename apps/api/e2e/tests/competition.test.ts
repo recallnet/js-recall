@@ -681,8 +681,9 @@ describe("Competition API", () => {
     expect(upcomingResponseAfterStart.competitions.length).toBe(2);
 
     // Get active competitions
-    const activeResponse =
-      (await teamClient.getCompetitions("active")) as UpcomingCompetitionsResponse;
+    const activeResponse = (await teamClient.getCompetitions(
+      "active",
+    )) as UpcomingCompetitionsResponse;
 
     expect(activeResponse.competitions.length).toBe(1);
   });
@@ -726,8 +727,10 @@ describe("Competition API", () => {
     );
 
     // Call the new endpoint to get competitions sorted by start date ascending
-    const ascResponse =
-      (await teamClient.getCompetitions("pending", "createdAt")) as UpcomingCompetitionsResponse;
+    const ascResponse = (await teamClient.getCompetitions(
+      "pending",
+      "createdAt",
+    )) as UpcomingCompetitionsResponse;
 
     // Verify the response
     expect(ascResponse.success).toBe(true);
@@ -738,8 +741,10 @@ describe("Competition API", () => {
     expect(ascResponse.competitions[2]?.name).toBe(comp3Name);
 
     // Call the new endpoint to get competitions sorted by start date descending NOTE: the '-' at the beginning of the sort value
-    const descResponse =
-      (await teamClient.getCompetitions("pending", "-createdAt")) as UpcomingCompetitionsResponse;
+    const descResponse = (await teamClient.getCompetitions(
+      "pending",
+      "-createdAt",
+    )) as UpcomingCompetitionsResponse;
 
     // Verify the response
     expect(descResponse.success).toBe(true);

@@ -39,6 +39,7 @@ import { tool$competitionGetApiCompetitionLeaderboard } from "./tools/competitio
 import { tool$competitionGetApiCompetitionRules } from "./tools/competitionGetApiCompetitionRules.js";
 import { tool$competitionGetApiCompetitionStatus } from "./tools/competitionGetApiCompetitionStatus.js";
 import { tool$competitionGetApiCompetitionUpcoming } from "./tools/competitionGetApiCompetitionUpcoming.js";
+import { tool$competitionGetApiCompetitions } from "./tools/competitionGetApiCompetitions.js";
 import { tool$healthGetApiHealth } from "./tools/healthGetApiHealth.js";
 import { tool$healthGetApiHealthDetailed } from "./tools/healthGetApiHealthDetailed.js";
 import { tool$priceGetApiPrice } from "./tools/priceGetApiPrice.js";
@@ -112,6 +113,7 @@ export function createMCPServer(deps: {
   tool(tool$competitionGetApiCompetitionStatus);
   tool(tool$competitionGetApiCompetitionRules);
   tool(tool$competitionGetApiCompetitionUpcoming);
+  tool(tool$competitionGetApiCompetitions);
   tool(tool$healthGetApiHealth);
   tool(tool$healthGetApiHealthDetailed);
   tool(tool$priceGetApiPrice);

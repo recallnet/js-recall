@@ -5,6 +5,7 @@ import { competitionGetApiCompetitionLeaderboard } from "../funcs/competitionGet
 import { competitionGetApiCompetitionRules } from "../funcs/competitionGetApiCompetitionRules.js";
 import { competitionGetApiCompetitionStatus } from "../funcs/competitionGetApiCompetitionStatus.js";
 import { competitionGetApiCompetitionUpcoming } from "../funcs/competitionGetApiCompetitionUpcoming.js";
+import { competitionGetApiCompetitions } from "../funcs/competitionGetApiCompetitions.js";
 import { ClientSDK, RequestOptions } from "../lib/sdks.js";
 import * as operations from "../models/operations/index.js";
 import { unwrapAsync } from "../types/fp.js";
@@ -59,5 +60,18 @@ export class Competition extends ClientSDK {
     options?: RequestOptions,
   ): Promise<operations.GetApiCompetitionUpcomingResponse> {
     return unwrapAsync(competitionGetApiCompetitionUpcoming(this, options));
+  }
+
+  /**
+   * Get upcoming competitions
+   *
+   * @remarks
+   * Get all competitions
+   */
+  async getApiCompetitions(
+    request: operations.GetApiCompetitionsRequest,
+    options?: RequestOptions,
+  ): Promise<operations.GetApiCompetitionsResponse> {
+    return unwrapAsync(competitionGetApiCompetitions(this, request, options));
   }
 }
