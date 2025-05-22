@@ -4,6 +4,7 @@ import express from "express";
 import { config } from "@/config/index.js";
 import { makeAccountController } from "@/controllers/account.controller.js";
 import { makeAdminController } from "@/controllers/admin.controller.js";
+import { makeAuthController } from "@/controllers/auth.controller.js";
 import { makeCompetitionController } from "@/controllers/competition.controller.js";
 import { makeDocsController } from "@/controllers/docs.controller.js";
 import { makeHealthController } from "@/controllers/health.controller.js";
@@ -14,16 +15,17 @@ import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
 import { authMiddleware } from "@/middleware/auth.middleware.js";
 import errorHandler from "@/middleware/errorHandler.js";
 import { rateLimiterMiddleware } from "@/middleware/rate-limiter.middleware.js";
+import { siweSessionMiddleware } from "@/middleware/siwe.middleware.js";
 import { configureAccountRoutes } from "@/routes/account.routes.js";
+import { configureAdminSetupRoutes } from "@/routes/admin-setup.routes.js";
 import { configureAdminRoutes } from "@/routes/admin.routes.js";
+import { configureAuthRoutes } from "@/routes/auth.routes.js";
 import { configureCompetitionRoutes } from "@/routes/competition.routes.js";
 import { configureDocsRoutes } from "@/routes/docs.routes.js";
 import { configureHealthRoutes } from "@/routes/health.routes.js";
 import { configurePriceRoutes } from "@/routes/price.routes.js";
 import { configureTradeRoutes } from "@/routes/trade.routes.js";
 import { ServiceRegistry } from "@/services/index.js";
-
-import { configureAdminSetupRoutes } from "./routes/admin-setup.routes.js";
 
 // Create Express app
 const app = express();
@@ -63,7 +65,14 @@ services.scheduler.startSnapshotScheduler();
 console.log("Portfolio snapshot scheduler started");
 
 // Configure middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: config.app.url,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -79,6 +88,7 @@ const protectedRoutes = [
 // This ensures req.teamId is set before rate limiting
 app.use(
   protectedRoutes,
+  siweSessionMiddleware, // Apply SIWE session middleware first to populate req.session
   authMiddleware(services.teamManager, services.competitionManager),
 );
 
@@ -90,6 +100,7 @@ const adminMiddleware = adminAuthMiddleware(services.teamManager);
 
 const accountController = makeAccountController(services);
 const adminController = makeAdminController(services);
+const authController = makeAuthController(services);
 const competitionController = makeCompetitionController(services);
 const docsController = makeDocsController();
 const healthController = makeHealthController();
@@ -99,6 +110,7 @@ const tradeController = makeTradeController(services);
 const accountRoutes = configureAccountRoutes(accountController);
 const adminRoutes = configureAdminRoutes(adminController, adminMiddleware);
 const adminSetupRoutes = configureAdminSetupRoutes(adminController);
+const authRoutes = configureAuthRoutes(authController, siweSessionMiddleware);
 const competitionRoutes = configureCompetitionRoutes(competitionController);
 const docsRoutes = configureDocsRoutes(docsController);
 const healthRoutes = configureHealthRoutes(healthController);
@@ -107,6 +119,7 @@ const tradeRoutes = configureTradeRoutes(tradeController);
 
 // Apply routes
 app.use("/api/account", accountRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/api/trade", tradeRoutes);
 app.use("/api/price", priceRoutes);
 app.use("/api/competition", competitionRoutes);

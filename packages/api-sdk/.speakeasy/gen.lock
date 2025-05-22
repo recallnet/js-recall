@@ -1,12 +1,12 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: e2507cd8eddbe9c93d2258220af98e47
+  docChecksum: 9c5e316e8f8ed5ba37300afdcce0ab51
   docVersion: 1.0.0
   speakeasyVersion: 1.548.4
   generationVersion: 2.605.6
-  releaseVersion: 0.0.1
-  configChecksum: 2f964709647d4c3a544d92b3817963e2
+  releaseVersion: 0.0.2
+  configChecksum: 68d236aefb5642671ae14fb1d30b0438
 features:
   typescript:
     additionalDependencies: 0.1.0
@@ -37,6 +37,10 @@ generatedFiles:
   - docs/lib/utils/retryconfig.md
   - docs/models/components/security.md
   - docs/models/errors/errort.md
+  - docs/models/errors/getapiauthnonceinternalservererror.md
+  - docs/models/errors/postapiauthlogininternalservererror.md
+  - docs/models/errors/postapiauthlogoutinternalservererror.md
+  - docs/models/errors/unauthorizederror.md
   - docs/models/operations/admin.md
   - docs/models/operations/availablechains.md
   - docs/models/operations/balance.md
@@ -70,6 +74,7 @@ generatedFiles:
   - docs/models/operations/getapiadminteamsteamidkeyrequest.md
   - docs/models/operations/getapiadminteamsteamidkeyresponse.md
   - docs/models/operations/getapiadminteamsteamidkeyteam.md
+  - docs/models/operations/getapiauthnonceresponse.md
   - docs/models/operations/getapicompetitionleaderboardcompetition.md
   - docs/models/operations/getapicompetitionleaderboardleaderboard.md
   - docs/models/operations/getapicompetitionleaderboardrequest.md
@@ -133,6 +138,9 @@ generatedFiles:
   - docs/models/operations/postapiadminteamsteamidreactivaterequest.md
   - docs/models/operations/postapiadminteamsteamidreactivateresponse.md
   - docs/models/operations/postapiadminteamsteamidreactivateteam.md
+  - docs/models/operations/postapiauthloginrequest.md
+  - docs/models/operations/postapiauthloginresponse.md
+  - docs/models/operations/postapiauthlogoutresponse.md
   - docs/models/operations/postapitradeexecuterequest.md
   - docs/models/operations/postapitradeexecuteresponse.md
   - docs/models/operations/prices.md
@@ -155,6 +163,7 @@ generatedFiles:
   - docs/sdks/account/README.md
   - docs/sdks/admin/README.md
   - docs/sdks/apisdk/README.md
+  - docs/sdks/auth/README.md
   - docs/sdks/competition/README.md
   - docs/sdks/health/README.md
   - docs/sdks/price/README.md
@@ -182,6 +191,9 @@ generatedFiles:
   - src/funcs/adminPostApiAdminTeamsRegister.ts
   - src/funcs/adminPostApiAdminTeamsTeamIdDeactivate.ts
   - src/funcs/adminPostApiAdminTeamsTeamIdReactivate.ts
+  - src/funcs/authGetApiAuthNonce.ts
+  - src/funcs/authPostApiAuthLogin.ts
+  - src/funcs/authPostApiAuthLogout.ts
   - src/funcs/competitionGetApiCompetitionLeaderboard.ts
   - src/funcs/competitionGetApiCompetitionRules.ts
   - src/funcs/competitionGetApiCompetitionStatus.ts
@@ -244,6 +256,9 @@ generatedFiles:
   - src/mcp-server/tools/adminPostApiAdminTeamsRegister.ts
   - src/mcp-server/tools/adminPostApiAdminTeamsTeamIdDeactivate.ts
   - src/mcp-server/tools/adminPostApiAdminTeamsTeamIdReactivate.ts
+  - src/mcp-server/tools/authGetApiAuthNonce.ts
+  - src/mcp-server/tools/authPostApiAuthLogin.ts
+  - src/mcp-server/tools/authPostApiAuthLogout.ts
   - src/mcp-server/tools/competitionGetApiCompetitionLeaderboard.ts
   - src/mcp-server/tools/competitionGetApiCompetitionRules.ts
   - src/mcp-server/tools/competitionGetApiCompetitionStatus.ts
@@ -258,8 +273,11 @@ generatedFiles:
   - src/models/components/security.ts
   - src/models/errors/apierror.ts
   - src/models/errors/error.ts
+  - src/models/errors/getapiauthnonce.ts
   - src/models/errors/httpclienterrors.ts
   - src/models/errors/index.ts
+  - src/models/errors/postapiauthlogin.ts
+  - src/models/errors/postapiauthlogout.ts
   - src/models/errors/sdkvalidationerror.ts
   - src/models/operations/deleteapiadminteamsteamid.ts
   - src/models/operations/getapiaccountbalances.ts
@@ -271,6 +289,7 @@ generatedFiles:
   - src/models/operations/getapiadminteams.ts
   - src/models/operations/getapiadminteamssearch.ts
   - src/models/operations/getapiadminteamsteamidkey.ts
+  - src/models/operations/getapiauthnonce.ts
   - src/models/operations/getapicompetitionleaderboard.ts
   - src/models/operations/getapicompetitionrules.ts
   - src/models/operations/getapicompetitionstatus.ts
@@ -289,10 +308,13 @@ generatedFiles:
   - src/models/operations/postapiadminteamsregister.ts
   - src/models/operations/postapiadminteamsteamiddeactivate.ts
   - src/models/operations/postapiadminteamsteamidreactivate.ts
+  - src/models/operations/postapiauthlogin.ts
+  - src/models/operations/postapiauthlogout.ts
   - src/models/operations/postapitradeexecute.ts
   - src/models/operations/putapiaccountprofile.ts
   - src/sdk/account.ts
   - src/sdk/admin.ts
+  - src/sdk/auth.ts
   - src/sdk/competition.ts
   - src/sdk/health.ts
   - src/sdk/index.ts
@@ -512,6 +534,31 @@ examples:
           toSpecificChain: "mainnet"
       responses:
         "200":
+          application/json: {}
+  get_/api/auth/nonce:
+    speakeasy-default-get-/api/auth/nonce:
+      responses:
+        "200":
+          application/json: {"nonce": "8J0eXAiOiJ..."}
+        "500":
+          application/json: {}
+  post_/api/auth/login:
+    speakeasy-default-post-/api/auth/login:
+      requestBody:
+        application/json: {"message": "service.example.com wants you to sign in with your Ethereum account:\n0x123...\n\nI accept the ServiceOrg Terms of Service: https://service.example.com/tos\n\nURI: https://service.example.com/login\nVersion: 1\nChain ID: 1\nNonce: 8J0eXAiOiJ...\nIssued At: 2023-01-01T00:00:00.000Z", "signature": "0x123abc..."}
+      responses:
+        "200":
+          application/json: {"teamId": "team_123abc", "wallet": "0x123..."}
+        "401":
+          application/json: {"error": "Unauthorized: signature validation issues"}
+        "500":
+          application/json: {}
+  post_/api/auth/logout:
+    speakeasy-default-post-/api/auth/logout:
+      responses:
+        "200":
+          application/json: {"message": "Logged out successfully"}
+        "500":
           application/json: {}
 examplesVersion: 1.0.2
 generatedTests: {}

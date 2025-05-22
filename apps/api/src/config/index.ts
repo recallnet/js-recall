@@ -143,6 +143,16 @@ export const config = {
     testPort: 3001,
     nodeEnv: process.env.NODE_ENV || "development",
   },
+  // Frontend app configuration for interfacing with the server
+  app: {
+    url: process.env.FRONTEND_URL || "http://localhost:3001", // TODO: resolve frontend/backend default ports
+    domain: process.env.DOMAIN,
+    cookieName: process.env.COOKIE_NAME || "session",
+    sessionPassword:
+      process.env.ROOT_ENCRYPTION_KEY ||
+      "default_encryption_key_do_not_use_in_production",
+    sessionTtl: parseInt(process.env.SESSION_TTL || "7200", 10),
+  },
   database: {
     ssl: process.env.DB_SSL === "true",
     url:

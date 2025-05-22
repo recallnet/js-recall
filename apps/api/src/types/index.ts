@@ -1,4 +1,6 @@
 import { Request } from "express";
+import { IronSession } from "iron-session";
+import { SiweMessage } from "siwe";
 
 /**
  * Token information interface
@@ -259,10 +261,31 @@ export interface ApiAuth {
  * Extended Request interface for authenticated requests
  */
 export interface AuthenticatedRequest extends Request {
+  session?: IronSession<SessionData>;
   teamId?: string;
+  wallet?: string;
   isAdmin?: boolean;
   admin?: {
     id: string;
     name: string;
   };
+}
+
+/**
+ * Session data interface
+ */
+export interface SessionData {
+  nonce?: string;
+  siwe?: SiweMessage;
+  teamId?: string;
+  wallet?: string;
+}
+
+/**
+ * Login response upon successful SIWE authentication
+ */
+export interface LoginResponse {
+  success: boolean;
+  teamId?: string;
+  wallet?: string;
 }

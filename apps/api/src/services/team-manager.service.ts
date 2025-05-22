@@ -9,6 +9,7 @@ import {
   deleteTeam,
   findAll,
   findById,
+  findByWalletAddress,
   findInactiveTeams,
   reactivateTeam,
   searchTeams,
@@ -706,6 +707,23 @@ export class TeamManager {
     } catch (error) {
       console.error("[TeamManager] Error searching teams:", error);
       return [];
+    }
+  }
+
+  /**
+   * Get a team by wallet address
+   * @param walletAddress The wallet address to search for
+   * @returns The team or null if not found
+   */
+  async getTeamByWalletAddress(walletAddress: string) {
+    try {
+      return await findByWalletAddress(walletAddress);
+    } catch (error) {
+      console.error(
+        "[TeamManager] Error getting team by wallet address:",
+        error,
+      );
+      throw error;
     }
   }
 }

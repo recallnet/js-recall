@@ -456,3 +456,29 @@ export interface ResetApiKeyResponse extends ApiResponse {
   apiKey: string;
   previousKey?: string;
 }
+
+/**
+ * SIWE authentication types
+ */
+
+/**
+ * Response from the nonce endpoint
+ */
+export interface NonceResponse {
+  nonce: string;
+}
+
+/**
+ * Response from the login endpoint
+ */
+export interface LoginResponse {
+  teamId?: string;
+  wallet: string;
+}
+
+/**
+ * Response from the logout endpoint
+ */
+export interface LogoutResponse {
+  message: string;
+}

@@ -32,6 +32,9 @@ import { tool$adminPostApiAdminSetup } from "./tools/adminPostApiAdminSetup.js";
 import { tool$adminPostApiAdminTeamsRegister } from "./tools/adminPostApiAdminTeamsRegister.js";
 import { tool$adminPostApiAdminTeamsTeamIdDeactivate } from "./tools/adminPostApiAdminTeamsTeamIdDeactivate.js";
 import { tool$adminPostApiAdminTeamsTeamIdReactivate } from "./tools/adminPostApiAdminTeamsTeamIdReactivate.js";
+import { tool$authGetApiAuthNonce } from "./tools/authGetApiAuthNonce.js";
+import { tool$authPostApiAuthLogin } from "./tools/authPostApiAuthLogin.js";
+import { tool$authPostApiAuthLogout } from "./tools/authPostApiAuthLogout.js";
 import { tool$competitionGetApiCompetitionLeaderboard } from "./tools/competitionGetApiCompetitionLeaderboard.js";
 import { tool$competitionGetApiCompetitionRules } from "./tools/competitionGetApiCompetitionRules.js";
 import { tool$competitionGetApiCompetitionStatus } from "./tools/competitionGetApiCompetitionStatus.js";
@@ -53,7 +56,7 @@ export function createMCPServer(deps: {
 }) {
   const server = new McpServer({
     name: "ApiSDK",
-    version: "0.0.1",
+    version: "0.0.2",
   });
 
   const client = new ApiSDKCore({
@@ -102,6 +105,9 @@ export function createMCPServer(deps: {
   tool(tool$adminPostApiAdminTeamsTeamIdDeactivate);
   tool(tool$adminPostApiAdminTeamsTeamIdReactivate);
   tool(tool$adminGetApiAdminTeamsSearch);
+  tool(tool$authGetApiAuthNonce);
+  tool(tool$authPostApiAuthLogin);
+  tool(tool$authPostApiAuthLogout);
   tool(tool$competitionGetApiCompetitionLeaderboard);
   tool(tool$competitionGetApiCompetitionStatus);
   tool(tool$competitionGetApiCompetitionRules);

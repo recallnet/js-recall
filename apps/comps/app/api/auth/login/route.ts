@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       wallet: siweMessage.address,
     });
 
-    response.cookies.set("wallet_address", siweMessage.address, {
+    response.cookies.set("wallet", siweMessage.address, {
       httpOnly: true,
       secure: true,
       sameSite: "lax",
