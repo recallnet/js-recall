@@ -1,3 +1,4 @@
+import { AuthService } from "@/services/auth.service.js";
 import { BalanceManager } from "@/services/balance-manager.service.js";
 import { CompetitionManager } from "@/services/competition-manager.service.js";
 import { ConfigurationService } from "@/services/configuration.service.js";
@@ -15,6 +16,7 @@ class ServiceRegistry {
   private static instance: ServiceRegistry;
 
   // Services
+  private _authService: AuthService;
   private _balanceManager: BalanceManager;
   private _priceTracker: PriceTracker;
   private _tradeSimulator: TradeSimulator;
@@ -26,6 +28,7 @@ class ServiceRegistry {
 
   constructor() {
     // Initialize services in dependency order
+    this._authService = new AuthService();
     this._balanceManager = new BalanceManager();
     this._priceTracker = new PriceTracker();
     this._portfolioSnapshotter = new PortfolioSnapshotter(
@@ -60,6 +63,10 @@ class ServiceRegistry {
   }
 
   // Service getters
+  get authService(): AuthService {
+    return this._authService;
+  }
+
   get balanceManager(): BalanceManager {
     return this._balanceManager;
   }
@@ -95,6 +102,7 @@ class ServiceRegistry {
 
 // Export service types for convenience
 export {
+  AuthService,
   BalanceManager,
   PriceTracker,
   TradeSimulator,

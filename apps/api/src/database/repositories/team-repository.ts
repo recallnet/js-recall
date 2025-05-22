@@ -2,7 +2,7 @@ import { and, count as drizzleCount, eq, ilike } from "drizzle-orm";
 
 import { db } from "@/database/db.js";
 import { competitionTeams, teams } from "@/database/schema/core/defs.js";
-import { InsertTeam } from "@/database/schema/core/types.js";
+import { InsertTeam, SelectTeam } from "@/database/schema/core/types.js";
 import { TeamSearchParams } from "@/types/index.js";
 
 import { PartialExcept } from "./types.js";
@@ -71,6 +71,27 @@ export async function findByEmail(email: string) {
     return result;
   } catch (error) {
     console.error("[TeamRepository] Error in findByEmail:", error);
+    throw error;
+  }
+}
+
+/**
+ * Find a team by wallet address
+ * @param walletAddress The wallet address to search for
+ */
+export async function findByWalletAddress(
+  walletAddress: string,
+): Promise<SelectTeam | undefined> {
+  try {
+    const [result] = await db
+      .select()
+      .from(teams)
+      .where(eq(teams.walletAddress, walletAddress))
+      .limit(1);
+
+    return result;
+  } catch (error) {
+    console.error("[TeamRepository] Error in findByWalletAddress:", error);
     throw error;
   }
 }

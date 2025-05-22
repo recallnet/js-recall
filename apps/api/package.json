@@ -61,10 +61,12 @@
     "dotenv": "^16.0.3",
     "drizzle-orm": "^0.43.1",
     "express": "^4.18.2",
+    "iron-session": "^8.0.4",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.10.0",
     "rate-limiter-flexible": "^2.4.1",
     "redis": "^4.6.5",
+    "siwe": "^3.0.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "uuid": "^9.0.0"
