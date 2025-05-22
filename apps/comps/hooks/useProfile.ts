@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiClient } from "@/lib/api-client";
+import { ProfileResponse } from "@/types";
 
 const apiClient = new ApiClient();
 
@@ -11,7 +12,7 @@ const apiClient = new ApiClient();
 export const useProfile = () => {
   return useQuery({
     queryKey: ["profile"],
-    queryFn: async () => {
+    queryFn: async (): Promise<ProfileResponse> => {
       return apiClient.getProfile();
     },
   });
