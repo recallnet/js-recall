@@ -11,7 +11,7 @@ import Card from "@recallnet/ui2/components/shadcn/card";
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { useLeaderboards } from "@/hooks";
+import { useProfile } from "@/hooks";
 import { AgentResponse } from "@/types";
 
 import BigNumberDisplay from "../bignumber";
@@ -19,31 +19,38 @@ import MirrorImage from "../mirror-image";
 
 export default function UserAgentsSection() {
   // for now using this hook, later must be user agents
-  const { data: a, isLoading } = useLeaderboards();
-  const data = { ...a, agents: a?.agents.slice(0, 3) };
-  const nAgents = data?.agents?.length || 0;
+  const { data, isLoading } = useProfile();
+  const nAgents = isLoading ? 2 : data?.agents?.length || 0;
   let agentList = <NoAgents />;
 
   if (isLoading || (nAgents > 0 && nAgents <= 3))
     agentList = (
       <div
-        className={cn(`mt-8 flex w-full items-center justify-around gap-8`, {
-          "flex-col sm:flex-row": nAgents == 1,
-          "flex-col lg:flex-row": nAgents == 2,
-          "flex-col 2xl:flex-row": nAgents >= 3,
-        })}
+        className={cn(
+          `mt-8 flex w-full flex-col items-center justify-around gap-8`,
+          {
+            "sm:flex-row": nAgents == 1,
+            "lg:flex-row": nAgents == 2,
+            "2xl:flex-row": nAgents >= 3,
+          },
+        )}
       >
         <div
-          className={cn("flex gap-8", {
-            "flex-col sm:flex-row": nAgents == 2,
-            "flex-col lg:flex-row": nAgents >= 3,
+          className={cn("flex flex-col gap-8", {
+            "sm:flex-row": nAgents == 2,
+            "lg:flex-row": nAgents >= 3,
           })}
         >
-          {data?.agents?.map((agent, i) => (
-            <AgentCard key={i} agent={agent} isLoading={isLoading} />
-          ))}
+          {isLoading
+            ? new Array(nAgents)
+                .fill(0)
+                .map((_, i) => <AgentCard key={i} agent={i} isLoading />)
+            : data?.agents?.map((agent, i) => (
+                <AgentCard key={i} agent={agent} isLoading={false} />
+              ))}
         </div>
         <AgentsSummary
+          isLoading={isLoading}
           nAgents={nAgents}
           best="1st of 2054"
           completedComps={10}
@@ -52,7 +59,7 @@ export default function UserAgentsSection() {
       </div>
     );
 
-  if (isLoading || nAgents >= 4)
+  if (nAgents >= 4)
     agentList = (
       <div className="mt-8 flex w-full flex-col gap-10">
         <div className="flex justify-around gap-10 overflow-x-auto">
@@ -61,6 +68,7 @@ export default function UserAgentsSection() {
           ))}
         </div>
         <AgentsSummary
+          isLoading={isLoading}
           nAgents={nAgents}
           best="1st of 2054"
           completedComps={10}
@@ -114,10 +122,11 @@ const NoAgents = () => {
 const AgentsSummary: React.FunctionComponent<{
   className?: string;
   nAgents?: number;
+  isLoading?: boolean;
   best: string;
   completedComps: number;
   highest: number;
-}> = ({ best, nAgents = 0, completedComps, highest, className }) => {
+}> = ({ best, nAgents = 0, isLoading, completedComps, highest, className }) => {
   const borderRules = "sm:border-l-1";
 
   return (
@@ -126,6 +135,7 @@ const AgentsSummary: React.FunctionComponent<{
         className,
         "flex w-full flex-col justify-around border border-gray-700 sm:flex-row",
         {
+          "lg:h-95 sm:flex-row": isLoading,
           "2xl:flex-col": nAgents >= 3,
           "lg:flex-col": nAgents == 2,
           "sm:flex-col": nAgents == 1,
@@ -138,10 +148,20 @@ const AgentsSummary: React.FunctionComponent<{
           borderRules,
         )}
       >
-        <span className="uppercase text-gray-500">BEST PLACE M ENT</span>
+        {isLoading ? (
+          <Skeleton className="w-30 h-2" />
+        ) : (
+          <span className="uppercase text-gray-500">BEST PLACE M ENT</span>
+        )}
         <div className="flex items-center gap-3 text-2xl font-semibold">
-          <FaTrophy className="text-yellow-500" />
-          <span className="text-white">{best}</span>
+          {isLoading ? (
+            <Skeleton className="w-30 mt-2 h-5" />
+          ) : (
+            <>
+              <FaTrophy className="text-yellow-500" />
+              <span className="text-white">{best}</span>
+            </>
+          )}
         </div>
       </div>
       <div
@@ -150,31 +170,57 @@ const AgentsSummary: React.FunctionComponent<{
           borderRules,
         )}
       >
-        <span className="uppercase text-gray-500">completed comps</span>
-        <span className="text-2xl font-semibold text-white">
-          {completedComps}
-        </span>
+        {isLoading ? (
+          <>
+            <Skeleton className="w-30 h-2" />
+            <Skeleton className="w-30 mt-2 h-5" />
+          </>
+        ) : (
+          <>
+            <span className="uppercase text-gray-500">completed comps</span>
+            <span className="text-2xl font-semibold text-white">
+              {completedComps}
+            </span>
+          </>
+        )}
       </div>
       <div
         className={cn(
-          "border-b-1 flex w-full flex-col items-start gap-2 border-gray-700 p-8",
+          "flex w-full flex-col items-start gap-2 border-gray-700 p-8",
           borderRules,
         )}
       >
-        <span className="uppercase text-gray-500">highest p&l</span>
-        <span className="text-2xl font-semibold">
-          $<BigNumberDisplay value={highest.toString()} decimals={0} />
-        </span>
+        {isLoading ? (
+          <>
+            <Skeleton className="w-30 h-2" />
+            <Skeleton className="w-30 mt-2 h-5" />
+          </>
+        ) : (
+          <>
+            <span className="uppercase text-gray-500">highest p&l</span>
+            <span className="text-2xl font-semibold">
+              $<BigNumberDisplay value={highest.toString()} decimals={0} />
+            </span>
+          </>
+        )}
       </div>
     </div>
   );
 };
 
-const AgentCard: React.FunctionComponent<{
-  className?: string;
-  agent: AgentResponse;
-  isLoading: boolean;
-}> = ({ className, agent, isLoading }) => {
+type AgentCardProps =
+  | {
+      className?: string;
+      agent: AgentResponse;
+      isLoading: false;
+    }
+  | { className?: string; isLoading: true; agent: number };
+
+const AgentCard: React.FunctionComponent<AgentCardProps> = ({
+  className,
+  agent,
+  isLoading,
+}) => {
   const size = "min-w-70 max-w-80 md:max-w-70 h-95";
 
   if (isLoading) return <Skeleton className={size} />;

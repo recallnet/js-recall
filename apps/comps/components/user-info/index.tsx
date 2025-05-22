@@ -4,41 +4,48 @@ import Image from "next/image";
 import React, { useState } from "react";
 import { FaPenToSquare } from "react-icons/fa6";
 
+import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import { cn } from "@recallnet/ui2/lib/utils";
 
+import { useProfile } from "@/hooks/useProfile";
+
 export default function UserInfoSection() {
-  const [user, setUser] = useState({
-    name: "User 1",
-    email: "sample@developer.com",
-    image: "/default_user.png",
-    website: "https://maximumdev.com/github",
-  });
+  const { data: user, isLoading } = useProfile();
 
   const [editField, setEditField] = useState<"email" | "website" | null>(null);
   const [inputValues, setInputValues] = useState({
-    email: user.email,
-    website: user.website,
+    email: user?.email,
+    website: user?.website,
   });
 
   const handleSave = (field: "email" | "website") => {
-    setUser((prev) => ({ ...prev, [field]: inputValues[field] }));
+    console.log(field);
+    //setUser((prev) => ({...prev, [field]: inputValues[field]}));
     setEditField(null);
   };
 
   return (
     <div className="h-70 flex w-full border border-gray-500">
-      <Image
-        src={user.image}
-        alt="agent"
-        className="pointer-events-none hidden h-full sm:block"
-        width={350}
-        height={350}
-      />
+      {isLoading || !user?.image ? (
+        <Skeleton className="w-[350px]" />
+      ) : (
+        <Image
+          src={user?.image}
+          alt="agent"
+          className="pointer-events-none hidden h-full sm:block"
+          width={350}
+          height={350}
+        />
+      )}
       <div className="flex w-full flex-col items-start justify-center gap-5 p-4">
-        <div className="flex items-center gap-3">
-          <h2 className="text-4xl font-bold">{user.name}</h2>
-          <BadgeCheckIcon className="text-green-500" />
-        </div>
+        {isLoading ? (
+          <Skeleton className="h-9 w-60 rounded" />
+        ) : (
+          <div className="flex items-center gap-3">
+            <h2 className="text-4xl font-bold">{user?.name}</h2>
+            <BadgeCheckIcon className="text-green-500" />
+          </div>
+        )}
 
         {/* Email row */}
         <div className="flex w-full items-center gap-4 text-gray-500">
@@ -60,13 +67,15 @@ export default function UserInfoSection() {
                 Save
               </button>
             </>
+          ) : isLoading ? (
+            <Skeleton className="h-2 w-60 rounded" />
           ) : (
             <>
               <FaPenToSquare
                 className="h-5 w-5 cursor-pointer"
                 onClick={() => setEditField("email")}
               />
-              <span className="ml-8">{user.email}</span>
+              <span className="ml-8">{user?.email}</span>
             </>
           )}
         </div>
@@ -91,13 +100,15 @@ export default function UserInfoSection() {
                 Save
               </button>
             </>
+          ) : isLoading ? (
+            <Skeleton className="h-2 w-60 rounded" />
           ) : (
             <>
               <FaPenToSquare
                 className="h-5 w-5 cursor-pointer"
                 onClick={() => setEditField("website")}
               />
-              <span className="ml-8">{user.website}</span>
+              <span className="ml-8">{user?.website}</span>
             </>
           )}
         </div>
