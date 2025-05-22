@@ -15,6 +15,7 @@ import {
   LoginRequest,
   LoginResponse,
   NonceResponse,
+  ProfileResponse,
 } from "@/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
@@ -241,8 +242,8 @@ export class ApiClient {
    * Get user profile
    * @returns User profile
    */
-  async getProfile(): Promise<unknown> {
-    return this.request<unknown>("/profile");
+  async getProfile(): Promise<ProfileResponse> {
+    return this.request<ProfileResponse>("/profile");
   }
 
   /**
