@@ -644,9 +644,9 @@ describe("Competition API", () => {
     // Call the new endpoint to get upcoming competitions
     const upcomingResponse =
       (await teamClient.getUpcomingCompetitions()) as UpcomingCompetitionsResponse;
-console.log("\n\n\n\n");
-console.log("upcoming response: ", upcomingResponse);
-console.log("\n\n\n\n");
+    console.log("\n\n\n\n");
+    console.log("upcoming response: ", upcomingResponse);
+    console.log("\n\n\n\n");
     // Verify the response
     expect(upcomingResponse.success).toBe(true);
     expect(upcomingResponse.competitions).toBeDefined();

@@ -349,6 +349,10 @@ export class CompetitionManager {
    * @returns Array of competitions with PENDING status
    */
   async getUpcomingCompetitions() {
-    return findByStatus(CompetitionStatus.PENDING, {sort: "", limit: 100, offset: 0});
+    return findByStatus(CompetitionStatus.PENDING, {
+      sort: "",
+      limit: 100,
+      offset: 0,
+    });
   }
 }
