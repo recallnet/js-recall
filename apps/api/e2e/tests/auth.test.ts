@@ -50,7 +50,7 @@ describe("SIWE Authentication", () => {
     expect(loginSuccess).toBe(true);
   });
 
-  it("should complete the full SIWE authentication flow", async () => {
+  it("should complete full SIWE auth flow with api-sdk", async () => {
     // Register a team
     const teamName = `Team ${Date.now()}`;
     const email = `team${Date.now()}@example.com`;
@@ -108,7 +108,7 @@ describe("SIWE Authentication", () => {
     );
   });
 
-  it("should allow access to protected endpoints after SIWE login", async () => {
+  it("should complete full SIWE auth flow with custom api client", async () => {
     // Register a team with our test wallet address
     const teamResult = await adminClient.registerTeam(
       "SIWE Test Team",
@@ -143,9 +143,7 @@ describe("SIWE Authentication", () => {
     expect(loginData.wallet.toLowerCase()).toBe(
       testWalletAddress.toLowerCase(),
     );
-    // teamId is optional according to the LoginResponse interface, so we don't require it
-    // uncomment if teamId association is expected to work in the future
-    // expect(loginData.teamId).toBeDefined();
+    expect(loginData.teamId).toBeDefined();
 
     // For this test, we'll just verify logout works properly
     // since the protected endpoint access depends on session configuration
