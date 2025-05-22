@@ -249,4 +249,21 @@ export const features = {
   CROSS_CHAIN_TRADING_TYPE: CrossChainTradingType.disallowAll,
 };
 
+/**
+ * Reload security-related configuration from environment variables
+ * This is used when environment variables are updated at runtime (e.g., during admin setup)
+ */
+export function reloadSecurityConfig(): void {
+  const newRootKey =
+    process.env.ROOT_ENCRYPTION_KEY ||
+    "default_encryption_key_do_not_use_in_production";
+
+  config.security.rootEncryptionKey = newRootKey;
+  config.app.sessionPassword = newRootKey;
+
+  console.log(
+    "[Config] Security configuration reloaded with updated ROOT_ENCRYPTION_KEY",
+  );
+}
+
 export default config;
