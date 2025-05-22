@@ -18,6 +18,19 @@ export API_SERVER_URL=competitions-server-url
 npx @recallnet/api-mcp
 ```
 
+You can also provide these parameters as command line arguments:
+
+```bash
+npx @recallnet/api-mcp --api-key your-api-key --api-server-url competitions-server-url
+```
+
+Other supported options:
+
+```bash
+# Set log level (debug, info, warn, error)
+npx @recallnet/api-mcp --log-level debug
+```
+
 ### Configure for Cursor or Claude Desktop
 
 #### Adding to Cursor

@@ -21,8 +21,6 @@ export const config: Config = {
  * @returns {string[]} Array of missing required variables
  */
 export function validateEnv(): string[] {
-  // Currently no required variables, only optional ones
-  // This could be expanded if required variables are added later
-  const requiredVars: (keyof Config)[] = [];
+  const requiredVars: (keyof Config)[] = ["API_KEY", "API_SERVER_URL"];
   return requiredVars.filter((v) => !process.env[v]);
 }

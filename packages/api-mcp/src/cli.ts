@@ -19,14 +19,14 @@ export async function run(): Promise<void> {
   }
 
   const argv = minimist(process.argv.slice(2), {
-    string: ["server-url", "log-level", "bearer-auth"],
+    string: ["api-server-url", "log-level", "api-key"],
     default: {
       "log-level": config.LOG_LEVEL,
     },
     alias: {
-      u: "server-url",
+      u: "api-server-url",
       l: "log-level",
-      t: "bearer-auth",
+      k: "api-key",
     },
   });
 
@@ -34,8 +34,8 @@ export async function run(): Promise<void> {
 
   // Command line arguments take precedence over environment variables
   const options = {
-    bearerAuth: argv["bearer-auth"] || config.API_KEY,
-    serverURL: argv["server-url"] || config.API_SERVER_URL,
+    bearerAuth: argv["api-key"] || config.API_KEY,
+    serverURL: argv["api-server-url"] || config.API_SERVER_URL,
     logger,
   };
 
