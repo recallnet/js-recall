@@ -55,13 +55,7 @@ class ServiceRegistry {
       this._configurationService,
     );
 
-    this._competitionsManager = new CompetitionsManager(
-      this._balanceManager,
-      this._tradeSimulator,
-      this._portfolioSnapshotter,
-      this._teamManager,
-      this._configurationService,
-    );
+    this._competitionsManager = new CompetitionsManager();
 
     // Initialize and start the scheduler
     this._scheduler = new SchedulerService(

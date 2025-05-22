@@ -42,6 +42,7 @@ const competitionOrderByFields: Record<string, AnyColumn> = {
   imageUrl: competitions.imageUrl,
   startDate: competitions.startDate,
   endDate: competitions.endDate,
+  createdAt: competitions.createdAt
 };
 
 /**
@@ -415,7 +416,6 @@ export async function findByStatus(
   params: PagingParams,
 ) {
   try {
-    // TODO: fix types
     let query = db
       .select({
         crossChainTradingType: tradingCompetitions.crossChainTradingType,
