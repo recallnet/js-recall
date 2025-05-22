@@ -529,13 +529,25 @@ export class ApiClient {
   async getUpcomingCompetitions(): Promise<
     UpcomingCompetitionsResponse | ErrorResponse
   > {
+    return this.getCompetitions("pending");
+  }
+
+  /**
+   * Get competitions with given status
+   */
+  async getCompetitions(status: string, sort?: string): Promise<
+    UpcomingCompetitionsResponse | ErrorResponse
+  > {
     try {
-      const response = await this.axiosInstance.get(
-        "/api/competitions?status=pending&sort=startDate",
-      );
+      let url = `/api/competitions?status=${status}`;
+      if (typeof sort === "string") {
+        url += `&sort=${sort}`;
+      }
+
+      const response = await this.axiosInstance.get(url);
       return response.data as UpcomingCompetitionsResponse;
     } catch (error) {
-      return this.handleApiError(error, "get upcoming competitions");
+      return this.handleApiError(error, `get competitions: sort=${sort}, status=${status}`);
     }
   }
 

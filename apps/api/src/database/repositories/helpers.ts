@@ -21,21 +21,17 @@ export function getSort<T extends PgSelect>(
       throw new Error("cannot build sort with undefined");
     }
 
-    if (part.startsWith("-")) {
-      part = part.slice(1);
-      const orderBy = orderByOptions[part];
-      if (typeof orderBy === "undefined") {
-        throw new Error(`cannot sort by field: '${part}'`);
-      }
-      query = query.orderBy(desc(orderBy));
-    }
+    const isDesc = part.startsWith("-");
+    const column = isDesc ? part = part.slice(1) : part;
 
-    const orderBy = orderByOptions[part];
+    const orderBy = orderByOptions[column];
     if (typeof orderBy === "undefined") {
       throw new Error(`cannot sort by field: '${part}'`);
     }
 
-    query = query.orderBy(asc(orderBy));
+    query = isDesc
+      ? query.orderBy(desc(orderBy))
+      : query.orderBy(asc(orderBy));
   }
 
   return query;
