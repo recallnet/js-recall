@@ -85,12 +85,12 @@
     "drizzle-kit": "^0.31.1",
     "drizzle-seed": "^0.3.1",
     "eslint": "^9.27.0",
-    "ethers": "^6.13.7",
     "openapi-markdown": "^1.2.3",
     "siwe": "^3.0.0",
     "tsc-alias": "^1.8.16",
     "tsx": "^4.19.3",
     "typescript": "^5.7.3",
+    "viem": "^2.28.1",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.0.9"
   }
