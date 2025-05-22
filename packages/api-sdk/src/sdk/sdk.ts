@@ -4,6 +4,7 @@
 import { ClientSDK } from "../lib/sdks.js";
 import { Account } from "./account.js";
 import { Admin } from "./admin.js";
+import { Auth } from "./auth.js";
 import { Competition } from "./competition.js";
 import { Health } from "./health.js";
 import { Price } from "./price.js";
@@ -18,6 +19,11 @@ export class ApiSDK extends ClientSDK {
   private _admin?: Admin;
   get admin(): Admin {
     return (this._admin ??= new Admin(this._options));
+  }
+
+  private _auth?: Auth;
+  get auth(): Auth {
+    return (this._auth ??= new Auth(this._options));
   }
 
   private _competition?: Competition;

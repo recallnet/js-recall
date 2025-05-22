@@ -310,6 +310,12 @@ run();
 - [postApiAdminTeamsTeamIdReactivate](docs/sdks/admin/README.md#postapiadminteamsteamidreactivate) - Reactivate a team
 - [getApiAdminTeamsSearch](docs/sdks/admin/README.md#getapiadminteamssearch) - Search for teams
 
+### [auth](docs/sdks/auth/README.md)
+
+- [getApiAuthNonce](docs/sdks/auth/README.md#getapiauthnonce) - Get a random nonce for SIWE authentication
+- [postApiAuthLogin](docs/sdks/auth/README.md#postapiauthlogin) - Verify SIWE signature and create a session
+- [postApiAuthLogout](docs/sdks/auth/README.md#postapiauthlogout) - Logout the current user by destroying the session
+
 ### [competition](docs/sdks/competition/README.md)
 
 - [getApiCompetitionLeaderboard](docs/sdks/competition/README.md#getapicompetitionleaderboard) - Get competition leaderboard
@@ -370,6 +376,9 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`adminPostApiAdminTeamsRegister`](docs/sdks/admin/README.md#postapiadminteamsregister) - Register a new team
 - [`adminPostApiAdminTeamsTeamIdDeactivate`](docs/sdks/admin/README.md#postapiadminteamsteamiddeactivate) - Deactivate a team
 - [`adminPostApiAdminTeamsTeamIdReactivate`](docs/sdks/admin/README.md#postapiadminteamsteamidreactivate) - Reactivate a team
+- [`authGetApiAuthNonce`](docs/sdks/auth/README.md#getapiauthnonce) - Get a random nonce for SIWE authentication
+- [`authPostApiAuthLogin`](docs/sdks/auth/README.md#postapiauthlogin) - Verify SIWE signature and create a session
+- [`authPostApiAuthLogout`](docs/sdks/auth/README.md#postapiauthlogout) - Logout the current user by destroying the session
 - [`competitionGetApiCompetitionLeaderboard`](docs/sdks/competition/README.md#getapicompetitionleaderboard) - Get competition leaderboard
 - [`competitionGetApiCompetitionRules`](docs/sdks/competition/README.md#getapicompetitionrules) - Get competition rules
 - [`competitionGetApiCompetitionStatus`](docs/sdks/competition/README.md#getapicompetitionstatus) - Get competition status
@@ -455,18 +464,21 @@ run();
 
 ## Error Handling
 
-Some methods specify known errors which can be thrown. All the known errors are enumerated in the `models/errors/errors.ts` module. The known errors for a method are documented under the _Errors_ tables in SDK docs. For example, the `getApiPrice` method may throw the following errors:
+Some methods specify known errors which can be thrown. All the known errors are enumerated in the `models/errors/errors.ts` module. The known errors for a method are documented under the _Errors_ tables in SDK docs. For example, the `getApiAuthNonce` method may throw the following errors:
 
-| Error Type      | Status Code | Content Type     |
-| --------------- | ----------- | ---------------- |
-| errors.ErrorT   | 400         | application/json |
-| errors.APIError | 4XX, 5XX    | \*/\*            |
+| Error Type                                | Status Code | Content Type     |
+| ----------------------------------------- | ----------- | ---------------- |
+| errors.GetApiAuthNonceInternalServerError | 500         | application/json |
+| errors.APIError                           | 4XX, 5XX    | \*/\*            |
 
 If the method throws an error and it is not captured by the known errors, it will default to throwing a `APIError`.
 
 ```typescript
 import { ApiSDK } from "@recallnet/api-sdk";
-import { ErrorT, SDKValidationError } from "@recallnet/api-sdk/models/errors";
+import {
+  GetApiAuthNonceInternalServerError,
+  SDKValidationError,
+} from "@recallnet/api-sdk/models/errors";
 
 const apiSDK = new ApiSDK({
   bearerAuth: process.env["APISDK_BEARER_AUTH"] ?? "",
@@ -475,11 +487,7 @@ const apiSDK = new ApiSDK({
 async function run() {
   let result;
   try {
-    result = await apiSDK.price.getApiPrice({
-      token: "So11111111111111111111111111111111111111112",
-      chain: "svm",
-      specificChain: "eth",
-    });
+    result = await apiSDK.auth.getApiAuthNonce();
 
     // Handle the result
     console.log(result);
@@ -493,8 +501,8 @@ async function run() {
         console.error(err.rawValue);
         return;
       }
-      case err instanceof ErrorT: {
-        // Handle err.data$: ErrorTData
+      case err instanceof GetApiAuthNonceInternalServerError: {
+        // Handle err.data$: GetApiAuthNonceInternalServerErrorData
         console.error(err);
         return;
       }

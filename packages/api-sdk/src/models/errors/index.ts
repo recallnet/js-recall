@@ -4,5 +4,8 @@
 
 export * from "./apierror.js";
 export * from "./error.js";
+export * from "./getapiauthnonce.js";
 export * from "./httpclienterrors.js";
+export * from "./postapiauthlogin.js";
+export * from "./postapiauthlogout.js";
 export * from "./sdkvalidationerror.js";
