@@ -39,6 +39,7 @@ export default function CompetitionPage({
     data: agentsData,
     isLoading: isLoadingAgents,
     error: agentsError,
+    isFetching: isFetchingAgents,
   } = useCompetitionAgents(id, {
     filter: debouncedFilterTerm,
     sort: agentsSort,
@@ -47,10 +48,18 @@ export default function CompetitionPage({
   });
 
   React.useEffect(() => {
-    if (agentsData?.agents) {
+    setAgentsOffset(0);
+  }, [debouncedFilterTerm, agentsSort]);
+
+  React.useEffect(() => {
+    if (!agentsData?.agents || isFetchingAgents) return;
+
+    if (agentsOffset === 0) {
+      setAllAgents(agentsData.agents);
+    } else {
       setAllAgents((prev) => [...prev, ...agentsData.agents]);
     }
-  }, [agentsData?.agents]);
+  }, [agentsData?.agents, isFetchingAgents, agentsOffset]);
 
   const isLoading = isLoadingCompetition || isLoadingAgents;
   const error = competitionError;
