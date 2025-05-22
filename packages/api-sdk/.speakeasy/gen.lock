@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: e18f75eb1fbff054505861779b195dbe
+  docChecksum: 3ff2d0f8e1b14e22ac36129b70278c18
   docVersion: 1.0.0
   speakeasyVersion: 1.550.0
   generationVersion: 2.610.0
@@ -81,6 +81,11 @@ generatedFiles:
   - docs/models/operations/getapicompetitionleaderboardresponse.md
   - docs/models/operations/getapicompetitionleaderboardstatus.md
   - docs/models/operations/getapicompetitionrulesresponse.md
+  - docs/models/operations/getapicompetitionscompetition.md
+  - docs/models/operations/getapicompetitionscrosschaintradingtype.md
+  - docs/models/operations/getapicompetitionsrequest.md
+  - docs/models/operations/getapicompetitionsresponse.md
+  - docs/models/operations/getapicompetitionsstatus.md
   - docs/models/operations/getapicompetitionstatuscompetition.md
   - docs/models/operations/getapicompetitionstatuscrosschaintradingtype.md
   - docs/models/operations/getapicompetitionstatusresponse.md
@@ -157,7 +162,6 @@ generatedFiles:
   - docs/models/operations/snapshot.md
   - docs/models/operations/socialrequest.md
   - docs/models/operations/source.md
-  - docs/models/operations/symbols.md
   - docs/models/operations/token.md
   - docs/models/operations/trade.md
   - docs/models/operations/transaction.md
@@ -199,6 +203,7 @@ generatedFiles:
   - src/funcs/competitionGetApiCompetitionRules.ts
   - src/funcs/competitionGetApiCompetitionStatus.ts
   - src/funcs/competitionGetApiCompetitionUpcoming.ts
+  - src/funcs/competitionGetApiCompetitions.ts
   - src/funcs/healthGetApiHealth.ts
   - src/funcs/healthGetApiHealthDetailed.ts
   - src/funcs/priceGetApiPrice.ts
@@ -264,6 +269,7 @@ generatedFiles:
   - src/mcp-server/tools/competitionGetApiCompetitionRules.ts
   - src/mcp-server/tools/competitionGetApiCompetitionStatus.ts
   - src/mcp-server/tools/competitionGetApiCompetitionUpcoming.ts
+  - src/mcp-server/tools/competitionGetApiCompetitions.ts
   - src/mcp-server/tools/healthGetApiHealth.ts
   - src/mcp-server/tools/healthGetApiHealthDetailed.ts
   - src/mcp-server/tools/priceGetApiPrice.ts
@@ -293,6 +299,7 @@ generatedFiles:
   - src/models/operations/getapiauthnonce.ts
   - src/models/operations/getapicompetitionleaderboard.ts
   - src/models/operations/getapicompetitionrules.ts
+  - src/models/operations/getapicompetitions.ts
   - src/models/operations/getapicompetitionstatus.ts
   - src/models/operations/getapicompetitionupcoming.ts
   - src/models/operations/getapihealth.ts
@@ -560,6 +567,11 @@ examples:
         "200":
           application/json: {"message": "Logged out successfully"}
         "500":
+          application/json: {}
+  get_/api/competitions:
+    speakeasy-default-get-/api/competitions:
+      responses:
+        "200":
           application/json: {}
 examplesVersion: 1.0.2
 generatedTests: {}

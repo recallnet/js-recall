@@ -535,9 +535,10 @@ export class ApiClient {
   /**
    * Get competitions with given status
    */
-  async getCompetitions(status: string, sort?: string): Promise<
-    UpcomingCompetitionsResponse | ErrorResponse
-  > {
+  async getCompetitions(
+    status: string,
+    sort?: string,
+  ): Promise<UpcomingCompetitionsResponse | ErrorResponse> {
     try {
       let url = `/api/competitions?status=${status}`;
       if (typeof sort === "string") {
@@ -547,7 +548,10 @@ export class ApiClient {
       const response = await this.axiosInstance.get(url);
       return response.data as UpcomingCompetitionsResponse;
     } catch (error) {
-      return this.handleApiError(error, `get competitions: sort=${sort}, status=${status}`);
+      return this.handleApiError(
+        error,
+        `get competitions: sort=${sort}, status=${status}`,
+      );
     }
   }
 

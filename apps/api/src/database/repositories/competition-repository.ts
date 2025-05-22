@@ -42,7 +42,7 @@ const competitionOrderByFields: Record<string, AnyColumn> = {
   imageUrl: competitions.imageUrl,
   startDate: competitions.startDate,
   endDate: competitions.endDate,
-  createdAt: competitions.createdAt
+  createdAt: competitions.createdAt,
 };
 
 /**

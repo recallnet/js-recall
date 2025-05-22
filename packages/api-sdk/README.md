@@ -322,6 +322,7 @@ run();
 - [getApiCompetitionStatus](docs/sdks/competition/README.md#getapicompetitionstatus) - Get competition status
 - [getApiCompetitionRules](docs/sdks/competition/README.md#getapicompetitionrules) - Get competition rules
 - [getApiCompetitionUpcoming](docs/sdks/competition/README.md#getapicompetitionupcoming) - Get upcoming competitions
+- [getApiCompetitions](docs/sdks/competition/README.md#getapicompetitions) - Get upcoming competitions
 
 ### [health](docs/sdks/health/README.md)
 
@@ -381,6 +382,7 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`authPostApiAuthLogout`](docs/sdks/auth/README.md#postapiauthlogout) - Logout the current user by destroying the session
 - [`competitionGetApiCompetitionLeaderboard`](docs/sdks/competition/README.md#getapicompetitionleaderboard) - Get competition leaderboard
 - [`competitionGetApiCompetitionRules`](docs/sdks/competition/README.md#getapicompetitionrules) - Get competition rules
+- [`competitionGetApiCompetitions`](docs/sdks/competition/README.md#getapicompetitions) - Get upcoming competitions
 - [`competitionGetApiCompetitionStatus`](docs/sdks/competition/README.md#getapicompetitionstatus) - Get competition status
 - [`competitionGetApiCompetitionUpcoming`](docs/sdks/competition/README.md#getapicompetitionupcoming) - Get upcoming competitions
 - [`healthGetApiHealth`](docs/sdks/health/README.md#getapihealth) - Basic health check

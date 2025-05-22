@@ -1,6 +1,4 @@
-import {
-  findByStatus,
-} from "@/database/repositories/competition-repository.js";
+import { findByStatus } from "@/database/repositories/competition-repository.js";
 import {
   BalanceManager,
   ConfigurationService,

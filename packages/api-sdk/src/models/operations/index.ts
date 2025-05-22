@@ -15,6 +15,7 @@ export * from "./getapiadminteamsteamidkey.js";
 export * from "./getapiauthnonce.js";
 export * from "./getapicompetitionleaderboard.js";
 export * from "./getapicompetitionrules.js";
+export * from "./getapicompetitions.js";
 export * from "./getapicompetitionstatus.js";
 export * from "./getapicompetitionupcoming.js";
 export * from "./getapihealth.js";
