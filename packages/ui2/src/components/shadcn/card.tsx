@@ -13,6 +13,7 @@ export const Card: React.FC<CardProps> = ({
   corner = "top-right",
   cropSize = 16,
   children,
+  style,
   ...props
 }) => {
   const clipPaths: Record<Corner, string> = {
@@ -28,6 +29,7 @@ export const Card: React.FC<CardProps> = ({
       style={{
         clipPath: clipPaths[corner],
         WebkitClipPath: clipPaths[corner],
+        ...style
       }}
       {...props}
     >
@@ -38,3 +40,54 @@ export const Card: React.FC<CardProps> = ({
 
 export default Card;
 
+interface BorderCardProps extends Omit<CardProps, "width" | "height"> {
+  width: number;
+  height: number;
+  xlWidth?: number;
+  xlHeight?: number;
+  mdWidth?: number;
+  mdHeight?: number;
+  borderColor: string; // e.g., "gray-600"
+  inset?: number;
+  children?: React.ReactNode;
+}
+
+export const BorderCard: React.FC<BorderCardProps> = ({
+  width,
+  height,
+  xlWidth,
+  xlHeight,
+  mdWidth,
+  mdHeight,
+  borderColor,
+  inset = 2,
+  children,
+  className,
+  ...rest
+}) => {
+  const outerStyle: React.CSSProperties = {
+    width,
+    height,
+  };
+
+  const innerStyle: React.CSSProperties = {
+    width: width - inset,
+    height: height - inset,
+  };
+
+  return (
+    <Card
+      className={cn("flex items-center justify-center", `bg-${borderColor}`)}
+      style={outerStyle}
+      {...rest}
+    >
+      <Card
+        className={cn("relative", className)}
+        style={innerStyle}
+        {...rest}
+      >
+        {children}
+      </Card>
+    </Card>
+  );
+};

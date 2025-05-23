@@ -1,4 +1,5 @@
 import CompeteSection from "@/components/main-page/compete-section";
+import DiscoverSection from "@/components/main-page/discover-section";
 import HeroSection from "@/components/main-page/hero-section";
 
 export default function Page() {
@@ -6,6 +7,7 @@ export default function Page() {
     <div className="flex flex-col items-center">
       <HeroSection />
       <CompeteSection />
+      <DiscoverSection />
     </div>
   );
 }
