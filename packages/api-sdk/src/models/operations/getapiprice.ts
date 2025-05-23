@@ -100,6 +100,10 @@ export type GetApiPriceResponse = {
    */
   specificChain?: string | null | undefined;
   /**
+   * Token symbol
+   */
+  symbol?: string | undefined;
+  /**
    * Timestamp when the price was fetched
    */
   timestamp?: Date | undefined;
@@ -239,6 +243,7 @@ export const GetApiPriceResponse$inboundSchema: z.ZodType<
   token: z.string().optional(),
   chain: GetApiPriceChainResponse$inboundSchema.optional(),
   specificChain: z.nullable(z.string()).optional(),
+  symbol: z.string().optional(),
   timestamp: z
     .string()
     .datetime({ offset: true })
@@ -253,6 +258,7 @@ export type GetApiPriceResponse$Outbound = {
   token?: string | undefined;
   chain?: string | undefined;
   specificChain?: string | null | undefined;
+  symbol?: string | undefined;
   timestamp?: string | undefined;
 };
 
@@ -267,6 +273,7 @@ export const GetApiPriceResponse$outboundSchema: z.ZodType<
   token: z.string().optional(),
   chain: GetApiPriceChainResponse$outboundSchema.optional(),
   specificChain: z.nullable(z.string()).optional(),
+  symbol: z.string().optional(),
   timestamp: z
     .date()
     .transform((v) => v.toISOString())

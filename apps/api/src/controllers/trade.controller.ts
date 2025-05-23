@@ -215,8 +215,12 @@ export function makeTradeController(services: ServiceRegistry) {
           slippage: slippagePercentage,
           tradeAmountUsd: fromValueUSD,
           prices: {
-            fromToken: fromPrice,
-            toToken: toPrice,
+            fromToken: fromPrice.price,
+            toToken: toPrice.price,
+          },
+          symbols: {
+            fromTokenSymbol: fromPrice.symbol,
+            toTokenSymbol: toPrice.symbol,
           },
           chains: {
             fromChain:

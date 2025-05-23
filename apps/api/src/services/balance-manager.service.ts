@@ -29,7 +29,10 @@ export class BalanceManager {
     console.log(`[BalanceManager] Initializing balances for team ${teamId}`);
 
     try {
-      const initialBalances = new Map<string, number>();
+      const initialBalances = new Map<
+        string,
+        { amount: number; symbol: string }
+      >();
 
       // Add specific chain token balances (more granular)
       this.addSpecificChainTokensToBalances(initialBalances);
@@ -38,7 +41,11 @@ export class BalanceManager {
       await initializeTeamBalances(teamId, initialBalances);
 
       // Update cache
-      this.balanceCache.set(teamId, initialBalances);
+      const balanceMap = new Map<string, number>();
+      initialBalances.forEach(({ amount }, tokenAddress) => {
+        balanceMap.set(tokenAddress, amount);
+      });
+      this.balanceCache.set(teamId, balanceMap);
     } catch (error) {
       console.error(
         `[BalanceManager] Error initializing balances for team ${teamId}:`,
@@ -53,7 +60,7 @@ export class BalanceManager {
    * @param balances The balances map to update
    */
   private addSpecificChainTokensToBalances(
-    balances: Map<string, number>,
+    balances: Map<string, { amount: number; symbol: string }>,
   ): void {
     const specificChainBalances = config.specificChainBalances;
     const specificChainTokens = config.specificChainTokens;
@@ -80,15 +87,15 @@ export class BalanceManager {
         const chainTokens = specificChainTokens[specificChain];
 
         // Add each configured token for this specific chain
-        Object.entries(tokenBalances).forEach(([symbol, balance]) => {
+        Object.entries(tokenBalances).forEach(([symbol, amount]) => {
           // Type assertion for the symbol access
           const tokenAddress = chainTokens[symbol as keyof typeof chainTokens];
 
-          if (tokenAddress && balance > 0) {
+          if (tokenAddress && amount > 0) {
             console.log(
-              `[BalanceManager] Setting initial balance for specific chain ${chain} ${symbol}: ${balance}`,
+              `[BalanceManager] Setting initial balance for specific chain ${chain} ${symbol}: ${amount}`,
             );
-            balances.set(tokenAddress, balance);
+            balances.set(tokenAddress, { amount, symbol });
           }
         });
       } else {
@@ -168,12 +175,14 @@ export class BalanceManager {
    * @param tokenAddress The token address
    * @param amount The new balance amount
    * @param specificChain The specific chain for the token
+   * @param symbol The token symbol
    */
   async updateBalance(
     teamId: string,
     tokenAddress: string,
     amount: number,
     specificChain: SpecificChain,
+    symbol: string,
   ): Promise<void> {
     try {
       if (amount < 0) {
@@ -181,7 +190,7 @@ export class BalanceManager {
       }
 
       // Save to database
-      await saveBalance(teamId, tokenAddress, amount, specificChain);
+      await saveBalance(teamId, tokenAddress, amount, specificChain, symbol);
 
       // Update cache
       if (!this.balanceCache.has(teamId)) {
@@ -190,7 +199,7 @@ export class BalanceManager {
       this.balanceCache.get(teamId)?.set(tokenAddress, amount);
 
       console.log(
-        `[BalanceManager] Updated balance for team ${teamId}, token ${tokenAddress}: ${amount}`,
+        `[BalanceManager] Updated balance for team ${teamId}, token ${tokenAddress} (${symbol}): ${amount}`,
       );
     } catch (error) {
       console.error(
@@ -207,20 +216,32 @@ export class BalanceManager {
    * @param tokenAddress The token address
    * @param amount The amount to add
    * @param specificChain The specific chain for the token
+   * @param symbol The token symbol
    */
   async addAmount(
     teamId: string,
     tokenAddress: string,
     amount: number,
     specificChain: SpecificChain,
+    symbol: string,
   ): Promise<void> {
-    const currentBalance = await this.getBalance(teamId, tokenAddress);
-    await this.updateBalance(
-      teamId,
-      tokenAddress,
-      currentBalance + amount,
-      specificChain,
-    );
+    try {
+      const currentBalance = await this.getBalance(teamId, tokenAddress);
+      const newBalance = currentBalance + amount;
+      await this.updateBalance(
+        teamId,
+        tokenAddress,
+        newBalance,
+        specificChain,
+        symbol,
+      );
+    } catch (error) {
+      console.error(
+        `[BalanceManager] Error adding amount for team ${teamId}, token ${tokenAddress}:`,
+        error,
+      );
+      throw error;
+    }
   }
 
   /**
@@ -229,23 +250,39 @@ export class BalanceManager {
    * @param tokenAddress The token address
    * @param amount The amount to subtract
    * @param specificChain The specific chain for the token
+   * @param symbol The token symbol
    */
   async subtractAmount(
     teamId: string,
     tokenAddress: string,
     amount: number,
     specificChain: SpecificChain,
+    symbol: string,
   ): Promise<void> {
-    const currentBalance = await this.getBalance(teamId, tokenAddress);
-    if (currentBalance < amount) {
-      throw new Error("Insufficient balance");
+    try {
+      const currentBalance = await this.getBalance(teamId, tokenAddress);
+      const newBalance = currentBalance - amount;
+
+      if (newBalance < 0) {
+        throw new Error(
+          `Insufficient balance. Current: ${currentBalance}, Requested: ${amount}`,
+        );
+      }
+
+      await this.updateBalance(
+        teamId,
+        tokenAddress,
+        newBalance,
+        specificChain,
+        symbol,
+      );
+    } catch (error) {
+      console.error(
+        `[BalanceManager] Error subtracting amount for team ${teamId}, token ${tokenAddress}:`,
+        error,
+      );
+      throw error;
     }
-    await this.updateBalance(
-      teamId,
-      tokenAddress,
-      currentBalance - amount,
-      specificChain,
-    );
   }
 
   /**
@@ -254,7 +291,12 @@ export class BalanceManager {
    */
   async resetTeamBalances(teamId: string): Promise<void> {
     try {
-      const initialBalances = new Map<string, number>();
+      console.log(`[BalanceManager] Resetting balances for team ${teamId}`);
+
+      const initialBalances = new Map<
+        string,
+        { amount: number; symbol: string }
+      >();
 
       // Add specific chain token balances (more granular)
       this.addSpecificChainTokensToBalances(initialBalances);
@@ -263,9 +305,15 @@ export class BalanceManager {
       await resetTeamBalances(teamId, initialBalances);
 
       // Update cache
-      this.balanceCache.set(teamId, initialBalances);
+      const balanceMap = new Map<string, number>();
+      initialBalances.forEach(({ amount }, tokenAddress) => {
+        balanceMap.set(tokenAddress, amount);
+      });
+      this.balanceCache.set(teamId, balanceMap);
 
-      console.log(`[BalanceManager] Reset balances for team ${teamId}`);
+      console.log(
+        `[BalanceManager] Successfully reset balances for team ${teamId}`,
+      );
     } catch (error) {
       console.error(
         `[BalanceManager] Error resetting balances for team ${teamId}:`,

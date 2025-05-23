@@ -179,6 +179,7 @@ export function makePriceController(services: ServiceRegistry) {
           token,
           chain: blockchainType,
           specificChain: tokenInfo.specificChain,
+          symbol: tokenInfo.symbol,
         });
       } catch (error) {
         next(error);

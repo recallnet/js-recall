@@ -39,6 +39,10 @@ export type Balance = {
    * Specific chain for EVM tokens
    */
   specificChain?: string | undefined;
+  /**
+   * Token symbol
+   */
+  symbol?: string | undefined;
 };
 
 /**
@@ -84,6 +88,7 @@ export const Balance$inboundSchema: z.ZodType<Balance, z.ZodTypeDef, unknown> =
     amount: z.number().optional(),
     chain: GetApiAccountBalancesChain$inboundSchema.optional(),
     specificChain: z.string().optional(),
+    symbol: z.string().optional(),
   });
 
 /** @internal */
@@ -92,6 +97,7 @@ export type Balance$Outbound = {
   amount?: number | undefined;
   chain?: string | undefined;
   specificChain?: string | undefined;
+  symbol?: string | undefined;
 };
 
 /** @internal */
@@ -104,6 +110,7 @@ export const Balance$outboundSchema: z.ZodType<
   amount: z.number().optional(),
   chain: GetApiAccountBalancesChain$outboundSchema.optional(),
   specificChain: z.string().optional(),
+  symbol: z.string().optional(),
 });
 
 /**

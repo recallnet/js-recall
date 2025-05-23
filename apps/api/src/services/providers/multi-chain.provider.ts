@@ -18,6 +18,7 @@ export class MultiChainProvider implements PriceSource {
     string,
     {
       price: number;
+      symbol: string;
       timestamp: number;
       chain: BlockchainType;
       specificChain: SpecificChain;
@@ -59,14 +60,22 @@ export class MultiChainProvider implements PriceSource {
   async getPriceForSpecificEVMChain(
     tokenAddress: string,
     specificChain: SpecificChain,
-  ): Promise<number | null> {
+  ): Promise<{
+    price: number;
+    symbol: string;
+  } | null> {
     try {
       const price = await this.dexScreenerProvider.getPrice(
         tokenAddress,
         BlockchainType.EVM,
         specificChain,
       );
-      return price !== null ? price.price : null;
+      return price !== null
+        ? {
+            price: price.price,
+            symbol: price.symbol,
+          }
+        : null;
     } catch (error) {
       console.log(
         `[MultiChainProvider] Error fetching price for ${tokenAddress} on ${specificChain}:`,
@@ -98,6 +107,7 @@ export class MultiChainProvider implements PriceSource {
         return {
           token: tokenAddress,
           price: cachedPrice.price,
+          symbol: cachedPrice.symbol,
           timestamp: new Date(),
           chain: cachedPrice.chain,
           specificChain: cachedPrice.specificChain,
@@ -126,6 +136,7 @@ export class MultiChainProvider implements PriceSource {
               BlockchainType.SVM,
               "svm",
               price.price,
+              price.symbol,
             );
 
             console.log(
@@ -134,6 +145,7 @@ export class MultiChainProvider implements PriceSource {
             return {
               token: tokenAddress,
               price: price.price,
+              symbol: price.symbol,
               timestamp: new Date(),
               chain: BlockchainType.SVM,
               specificChain: "svm",
@@ -181,7 +193,8 @@ export class MultiChainProvider implements PriceSource {
               normalizedAddress,
               BlockchainType.EVM,
               specificChain,
-              price,
+              price.price,
+              price.symbol,
             );
 
             console.log(
@@ -189,7 +202,8 @@ export class MultiChainProvider implements PriceSource {
             );
             return {
               token: tokenAddress,
-              price,
+              price: price.price,
+              symbol: price.symbol,
               timestamp: new Date(),
               chain: BlockchainType.EVM,
               specificChain,
@@ -246,7 +260,8 @@ export class MultiChainProvider implements PriceSource {
               normalizedAddress,
               BlockchainType.EVM,
               chain,
-              price,
+              price.price,
+              price.symbol,
             );
 
             console.log(
@@ -254,7 +269,8 @@ export class MultiChainProvider implements PriceSource {
             );
             return {
               token: tokenAddress,
-              price,
+              price: price.price,
+              symbol: price.symbol,
               timestamp: new Date(),
               chain: BlockchainType.EVM,
               specificChain: chain,
@@ -334,6 +350,7 @@ export class MultiChainProvider implements PriceSource {
     price: number;
     chain: BlockchainType;
     specificChain: SpecificChain;
+    symbol: string;
   } | null> {
     try {
       // Normalize token address
@@ -369,6 +386,7 @@ export class MultiChainProvider implements PriceSource {
               BlockchainType.SVM,
               "svm",
               price.price,
+              price.symbol,
             );
 
             console.log(
@@ -376,6 +394,7 @@ export class MultiChainProvider implements PriceSource {
             );
             return {
               price: price.price,
+              symbol: price.symbol,
               chain: BlockchainType.SVM,
               specificChain: "svm",
             };
@@ -415,7 +434,8 @@ export class MultiChainProvider implements PriceSource {
               normalizedAddress,
               BlockchainType.EVM,
               specificChain,
-              price,
+              price.price,
+              price.symbol,
             );
 
             console.log(
@@ -423,7 +443,8 @@ export class MultiChainProvider implements PriceSource {
             );
 
             return {
-              price,
+              price: price.price,
+              symbol: price.symbol,
               chain: generalChain,
               specificChain,
             };
@@ -452,6 +473,7 @@ export class MultiChainProvider implements PriceSource {
       if (price !== null) {
         return {
           price: price.price,
+          symbol: price.symbol,
           chain: price.chain,
           specificChain: price.specificChain,
         };
@@ -487,6 +509,7 @@ export class MultiChainProvider implements PriceSource {
     specificChain?: SpecificChain,
   ): {
     price: number;
+    symbol: string;
     chain: BlockchainType;
     specificChain: SpecificChain;
   } | null {
@@ -503,6 +526,7 @@ export class MultiChainProvider implements PriceSource {
         );
         return {
           price: cached.price,
+          symbol: cached.symbol,
           chain: cached.chain,
           specificChain: cached.specificChain,
         };
@@ -523,6 +547,7 @@ export class MultiChainProvider implements PriceSource {
         );
         return {
           price: cached.price,
+          symbol: cached.symbol,
           chain: cached.chain,
           specificChain: cached.specificChain,
         };
@@ -540,12 +565,14 @@ export class MultiChainProvider implements PriceSource {
     chain: BlockchainType,
     specificChain: SpecificChain,
     price: number,
+    symbol: string,
   ): void {
     const normalizedAddress = tokenAddress.toLowerCase();
     const cacheKey = this.getCacheKey(normalizedAddress, specificChain);
 
     this.tokenPriceCache.set(cacheKey, {
       price,
+      symbol,
       chain,
       specificChain,
       timestamp: Date.now(),

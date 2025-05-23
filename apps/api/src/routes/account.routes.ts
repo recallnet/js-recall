@@ -309,6 +309,9 @@ export function configureAccountRoutes(
    *                       specificChain:
    *                         type: string
    *                         description: Specific chain for EVM tokens
+   *                       symbol:
+   *                         type: string
+   *                         description: Token symbol
    *       401:
    *         description: Unauthorized - Missing or invalid authentication
    *       500:
@@ -398,6 +401,9 @@ export function configureAccountRoutes(
    *                       toSpecificChain:
    *                         type: string
    *                         description: Specific chain for the destination token
+   *                       toTokenSymbol:
+   *                         type: string
+   *                         description: Symbol of the destination token
    *       401:
    *         description: Unauthorized - Missing or invalid authentication
    *       500:
@@ -457,6 +463,9 @@ export function configureAccountRoutes(
    *                         type: string
    *                         nullable: true
    *                         description: Specific chain for EVM tokens
+   *                       symbol:
+   *                         type: string
+   *                         description: Token symbol
    *                 snapshotTime:
    *                   type: string
    *                   format: date-time

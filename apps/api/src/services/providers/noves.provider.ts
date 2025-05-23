@@ -215,6 +215,7 @@ export class NovesProvider implements PriceSource {
         return {
           token: normalizedAddress,
           price: cachedResult.price,
+          symbol: "",
           timestamp: new Date(),
           chain: tokenChain,
           specificChain: cachedResult.specificChain || finalSpecificChain,
@@ -232,6 +233,7 @@ export class NovesProvider implements PriceSource {
           return {
             token: normalizedAddress,
             price,
+            symbol: "",
             timestamp: new Date(),
             chain: BlockchainType.SVM,
             specificChain: "svm",
@@ -257,6 +259,7 @@ export class NovesProvider implements PriceSource {
           return {
             token: normalizedAddress,
             price,
+            symbol: "",
             timestamp: new Date(),
             chain: tokenChain,
             specificChain,
@@ -277,6 +280,7 @@ export class NovesProvider implements PriceSource {
         return {
           token: normalizedAddress,
           price: chainResult.price,
+          symbol: "",
           timestamp: new Date(),
           chain: tokenChain,
           specificChain: chainResult.specificChain,

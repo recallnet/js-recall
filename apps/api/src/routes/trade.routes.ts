@@ -137,6 +137,9 @@ export function configureTradeRoutes(
    *                     toSpecificChain:
    *                       type: string
    *                       description: Specific chain for the destination token
+   *                     toTokenSymbol:
+   *                       type: string
+   *                       description: Symbol of the destination token
    *       400:
    *         description: Invalid input parameters
    *       401:
@@ -246,6 +249,15 @@ export function configureTradeRoutes(
    *                     toToken:
    *                       type: number
    *                       description: Price of the destination token in USD
+   *                 symbols:
+   *                   type: object
+   *                   properties:
+   *                     fromTokenSymbol:
+   *                       type: string
+   *                       description: Symbol of the source token
+   *                     toTokenSymbol:
+   *                       type: string
+   *                       description: Symbol of the destination token
    *                 chains:
    *                   type: object
    *                   properties:
