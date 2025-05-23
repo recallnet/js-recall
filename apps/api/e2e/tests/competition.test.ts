@@ -688,7 +688,33 @@ describe("Competition API", () => {
     expect(activeResponse.competitions.length).toBe(1);
   });
 
-  test.skip("viewing competitions with invalid querystring values returns 400", async () => {});
+  test("viewing competitions with invalid querystring values returns 400", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register a team
+    const { client: teamClient } = await registerTeamAndGetClient(
+      adminApiKey,
+      "Upcoming Viewer Team",
+    );
+
+    // Create the competitions
+    await adminClient.createCompetition(
+      `Upcoming Competition ${Date.now()}`,
+      "Test competition 1",
+      CrossChainTradingType.allow,
+    );
+
+    // Call the new endpoint to get competitions sorted by start date ascending
+    const ascResponse = (await teamClient.getCompetitions(
+      "pending",
+      "foo",
+    )) as UpcomingCompetitionsResponse;
+
+    expect(ascResponse.success).toBe(false);
+    expect(ascResponse.status).toBe(400);
+  });
 
   test("teams can view sorted competitions", async () => {
     // Setup admin client

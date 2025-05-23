@@ -1,6 +1,8 @@
 import { AnyColumn, asc, desc } from "drizzle-orm";
 import { PgSelect } from "drizzle-orm/pg-core";
 
+import { ApiError } from "@/middleware/errorHandler.js";
+
 export function getSort<T extends PgSelect>(
   query: T,
   sortString: string,
@@ -12,13 +14,16 @@ export function getSort<T extends PgSelect>(
     throw new Error("cannot sort by undefined");
   }
   if (parts.length > 3) {
-    throw new Error("compound sorting with more than 3 fields not allowed");
+    throw new ApiError(
+      400,
+      "compound sorting with more than 3 fields not allowed",
+    );
   }
 
   for (let i = 0; i < parts.length; i++) {
     let part = parts[i];
     if (typeof part !== "string") {
-      throw new Error("cannot build sort with undefined");
+      throw new ApiError(400, "cannot build sort with undefined");
     }
 
     const isDesc = part.startsWith("-");
@@ -26,7 +31,7 @@ export function getSort<T extends PgSelect>(
 
     const orderBy = orderByOptions[column];
     if (typeof orderBy === "undefined") {
-      throw new Error(`cannot sort by field: '${part}'`);
+      throw new ApiError(400, `cannot sort by field: '${part}'`);
     }
 
     query = isDesc ? query.orderBy(desc(orderBy)) : query.orderBy(asc(orderBy));
