@@ -1,12 +1,12 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: 3ff2d0f8e1b14e22ac36129b70278c18
+  docChecksum: 3aba9dc2d9f8b6aba69f0a4b42c860a9
   docVersion: 1.0.0
   speakeasyVersion: 1.550.0
   generationVersion: 2.610.0
-  releaseVersion: 0.0.4
-  configChecksum: 96e24324b1fdf253c28851806469d444
+  releaseVersion: 0.0.5
+  configChecksum: 4e803ffccc8768052367b37fc045ea26
 features:
   typescript:
     additionalDependencies: 0.1.0
@@ -162,6 +162,7 @@ generatedFiles:
   - docs/models/operations/snapshot.md
   - docs/models/operations/socialrequest.md
   - docs/models/operations/source.md
+  - docs/models/operations/symbols.md
   - docs/models/operations/token.md
   - docs/models/operations/trade.md
   - docs/models/operations/transaction.md
