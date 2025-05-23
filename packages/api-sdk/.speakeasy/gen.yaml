@@ -19,10 +19,11 @@ generation:
     oAuth2ClientCredentialsEnabled: false
     oAuth2PasswordEnabled: false
 typescript:
-  version: 0.0.4
+  version: 0.0.5
   additionalDependencies:
     dependencies: {}
-    devDependencies: {}
+    devDependencies:
+      typescript: ^5.7.3
     peerDependencies: {}
   additionalPackageJSON:
     private: true

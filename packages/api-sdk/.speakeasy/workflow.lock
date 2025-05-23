@@ -2,7 +2,7 @@ speakeasyVersion: 1.550.0
 sources:
     Trading Simulator API:
         sourceNamespace: trading-simulator-api
-        sourceRevisionDigest: sha256:49b591bc5a1c847f90661096aa474fd462869c358f8dec2a67f2a262156a0b5f
+        sourceRevisionDigest: sha256:4f6ba09bab280ad42125094f2fffb116d7db17e0740156d840329075a4f4b416
         sourceBlobDigest: sha256:363b5714ea4bb3d23b1448851febb28b8d44946123fc031b20f30436994b59c8
         tags:
             - latest
@@ -11,10 +11,10 @@ targets:
     api-sdk:
         source: Trading Simulator API
         sourceNamespace: trading-simulator-api
-        sourceRevisionDigest: sha256:49b591bc5a1c847f90661096aa474fd462869c358f8dec2a67f2a262156a0b5f
+        sourceRevisionDigest: sha256:4f6ba09bab280ad42125094f2fffb116d7db17e0740156d840329075a4f4b416
         sourceBlobDigest: sha256:363b5714ea4bb3d23b1448851febb28b8d44946123fc031b20f30436994b59c8
         codeSamplesNamespace: trading-simulator-api-typescript-code-samples
-        codeSamplesRevisionDigest: sha256:d6dff076c3cb3d02d80b6fa1391dedb9212c764a1175603375d1126d62852691
+        codeSamplesRevisionDigest: sha256:d55d2ddfef2a1db9b8133a9e19642b38e50faecbfd8557c70de80c30b3c37609
 workflow:
     workflowVersion: 1.0.0
     speakeasyVersion: latest
