@@ -1,12 +1,5 @@
 import { findByStatus } from "@/database/repositories/competition-repository.js";
 import {
-  BalanceManager,
-  ConfigurationService,
-  PortfolioSnapshotter,
-  TeamManager,
-  TradeSimulator,
-} from "@/services/index.js";
-import {
   AuthenticatedRequest,
   CompetitionStatusSchema,
   PagingParamsSchema,
