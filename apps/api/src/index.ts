@@ -20,7 +20,7 @@ import { configureAccountRoutes } from "@/routes/account.routes.js";
 import { configureAdminSetupRoutes } from "@/routes/admin-setup.routes.js";
 import { configureAdminRoutes } from "@/routes/admin.routes.js";
 import { configureAuthRoutes } from "@/routes/auth.routes.js";
-import { configureCompetitionRoutes } from "@/routes/competition.routes.js";
+import { configureCompetitionsRoutes } from "@/routes/competitions.routes.js";
 import { configureDocsRoutes } from "@/routes/docs.routes.js";
 import { configureHealthRoutes } from "@/routes/health.routes.js";
 import { configurePriceRoutes } from "@/routes/price.routes.js";
@@ -81,6 +81,7 @@ const protectedRoutes = [
   "/api/account",
   "/api/trade",
   "/api/competition",
+  "/api/competitions",
   "/api/price",
 ];
 
@@ -111,7 +112,7 @@ const accountRoutes = configureAccountRoutes(accountController);
 const adminRoutes = configureAdminRoutes(adminController, adminMiddleware);
 const adminSetupRoutes = configureAdminSetupRoutes(adminController);
 const authRoutes = configureAuthRoutes(authController, siweSessionMiddleware);
-const competitionRoutes = configureCompetitionRoutes(competitionController);
+const competitionsRoutes = configureCompetitionsRoutes(competitionController);
 const docsRoutes = configureDocsRoutes(docsController);
 const healthRoutes = configureHealthRoutes(healthController);
 const priceRoutes = configurePriceRoutes(priceController);
@@ -122,7 +123,7 @@ app.use("/api/account", accountRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/trade", tradeRoutes);
 app.use("/api/price", priceRoutes);
-app.use("/api/competition", competitionRoutes);
+app.use("/api/competitions", competitionsRoutes);
 app.use("/api/admin/setup", adminSetupRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/health", healthRoutes);

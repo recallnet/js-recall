@@ -46,9 +46,9 @@ export enum CrossChainTradingType {
 
 // Competition status
 export enum CompetitionStatus {
-  PENDING = "PENDING",
-  ACTIVE = "ACTIVE",
-  COMPLETED = "COMPLETED",
+  PENDING = "pending",
+  ACTIVE = "active",
+  COMPLETED = "completed",
 }
 
 // Portfolio source

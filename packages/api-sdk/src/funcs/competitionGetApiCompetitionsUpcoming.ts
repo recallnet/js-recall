@@ -26,12 +26,12 @@ import { Result } from "../types/fp.js";
  * @remarks
  * Get all competitions that have not started yet (status=PENDING)
  */
-export function competitionGetApiCompetitionUpcoming(
+export function competitionGetApiCompetitionsUpcoming(
   client: ApiSDKCore,
   options?: RequestOptions,
 ): APIPromise<
   Result<
-    operations.GetApiCompetitionUpcomingResponse,
+    operations.GetApiCompetitionsUpcomingResponse,
     | APIError
     | SDKValidationError
     | UnexpectedClientError
@@ -50,7 +50,7 @@ async function $do(
 ): Promise<
   [
     Result<
-      operations.GetApiCompetitionUpcomingResponse,
+      operations.GetApiCompetitionsUpcomingResponse,
       | APIError
       | SDKValidationError
       | UnexpectedClientError
@@ -62,7 +62,7 @@ async function $do(
     APICall,
   ]
 > {
-  const path = pathToFunc("/api/competition/upcoming")();
+  const path = pathToFunc("/api/competitions/upcoming")();
 
   const headers = new Headers(
     compactMap({
@@ -76,7 +76,7 @@ async function $do(
 
   const context = {
     baseURL: options?.serverURL ?? client._baseURL ?? "",
-    operationID: "get_/api/competition/upcoming",
+    operationID: "get_/api/competitions/upcoming",
     oAuth2Scopes: [],
 
     resolvedSecurity: requestSecurity,
@@ -116,7 +116,7 @@ async function $do(
   const response = doResult.value;
 
   const [result] = await M.match<
-    operations.GetApiCompetitionUpcomingResponse,
+    operations.GetApiCompetitionsUpcomingResponse,
     | APIError
     | SDKValidationError
     | UnexpectedClientError
@@ -125,7 +125,7 @@ async function $do(
     | RequestTimeoutError
     | ConnectionError
   >(
-    M.json(200, operations.GetApiCompetitionUpcomingResponse$inboundSchema),
+    M.json(200, operations.GetApiCompetitionsUpcomingResponse$inboundSchema),
     M.fail([401, "4XX"]),
     M.fail([500, "5XX"]),
   )(response);

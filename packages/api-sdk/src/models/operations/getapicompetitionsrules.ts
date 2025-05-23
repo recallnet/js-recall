@@ -45,7 +45,7 @@ export type Rules = {
 /**
  * Competition rules retrieved successfully
  */
-export type GetApiCompetitionRulesResponse = {
+export type GetApiCompetitionsRulesResponse = {
   /**
    * Operation success status
    */
@@ -226,8 +226,8 @@ export function rulesFromJSON(
 }
 
 /** @internal */
-export const GetApiCompetitionRulesResponse$inboundSchema: z.ZodType<
-  GetApiCompetitionRulesResponse,
+export const GetApiCompetitionsRulesResponse$inboundSchema: z.ZodType<
+  GetApiCompetitionsRulesResponse,
   z.ZodTypeDef,
   unknown
 > = z.object({
@@ -236,16 +236,16 @@ export const GetApiCompetitionRulesResponse$inboundSchema: z.ZodType<
 });
 
 /** @internal */
-export type GetApiCompetitionRulesResponse$Outbound = {
+export type GetApiCompetitionsRulesResponse$Outbound = {
   success?: boolean | undefined;
   rules?: Rules$Outbound | undefined;
 };
 
 /** @internal */
-export const GetApiCompetitionRulesResponse$outboundSchema: z.ZodType<
-  GetApiCompetitionRulesResponse$Outbound,
+export const GetApiCompetitionsRulesResponse$outboundSchema: z.ZodType<
+  GetApiCompetitionsRulesResponse$Outbound,
   z.ZodTypeDef,
-  GetApiCompetitionRulesResponse
+  GetApiCompetitionsRulesResponse
 > = z.object({
   success: z.boolean().optional(),
   rules: z.lazy(() => Rules$outboundSchema).optional(),
@@ -255,31 +255,31 @@ export const GetApiCompetitionRulesResponse$outboundSchema: z.ZodType<
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace GetApiCompetitionRulesResponse$ {
-  /** @deprecated use `GetApiCompetitionRulesResponse$inboundSchema` instead. */
-  export const inboundSchema = GetApiCompetitionRulesResponse$inboundSchema;
-  /** @deprecated use `GetApiCompetitionRulesResponse$outboundSchema` instead. */
-  export const outboundSchema = GetApiCompetitionRulesResponse$outboundSchema;
-  /** @deprecated use `GetApiCompetitionRulesResponse$Outbound` instead. */
-  export type Outbound = GetApiCompetitionRulesResponse$Outbound;
+export namespace GetApiCompetitionsRulesResponse$ {
+  /** @deprecated use `GetApiCompetitionsRulesResponse$inboundSchema` instead. */
+  export const inboundSchema = GetApiCompetitionsRulesResponse$inboundSchema;
+  /** @deprecated use `GetApiCompetitionsRulesResponse$outboundSchema` instead. */
+  export const outboundSchema = GetApiCompetitionsRulesResponse$outboundSchema;
+  /** @deprecated use `GetApiCompetitionsRulesResponse$Outbound` instead. */
+  export type Outbound = GetApiCompetitionsRulesResponse$Outbound;
 }
 
-export function getApiCompetitionRulesResponseToJSON(
-  getApiCompetitionRulesResponse: GetApiCompetitionRulesResponse,
+export function getApiCompetitionsRulesResponseToJSON(
+  getApiCompetitionsRulesResponse: GetApiCompetitionsRulesResponse,
 ): string {
   return JSON.stringify(
-    GetApiCompetitionRulesResponse$outboundSchema.parse(
-      getApiCompetitionRulesResponse,
+    GetApiCompetitionsRulesResponse$outboundSchema.parse(
+      getApiCompetitionsRulesResponse,
     ),
   );
 }
 
-export function getApiCompetitionRulesResponseFromJSON(
+export function getApiCompetitionsRulesResponseFromJSON(
   jsonString: string,
-): SafeParseResult<GetApiCompetitionRulesResponse, SDKValidationError> {
+): SafeParseResult<GetApiCompetitionsRulesResponse, SDKValidationError> {
   return safeParse(
     jsonString,
-    (x) => GetApiCompetitionRulesResponse$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'GetApiCompetitionRulesResponse' from JSON`,
+    (x) => GetApiCompetitionsRulesResponse$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetApiCompetitionsRulesResponse' from JSON`,
   );
 }

@@ -21,17 +21,17 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * Get competition rules
+ * Get competition status
  *
  * @remarks
- * Get the rules, rate limits, and other configuration details for the competition
+ * Get the status of the active competition
  */
-export function competitionGetApiCompetitionRules(
+export function competitionGetApiCompetitionsStatus(
   client: ApiSDKCore,
   options?: RequestOptions,
 ): APIPromise<
   Result<
-    operations.GetApiCompetitionRulesResponse,
+    operations.GetApiCompetitionsStatusResponse,
     | APIError
     | SDKValidationError
     | UnexpectedClientError
@@ -50,7 +50,7 @@ async function $do(
 ): Promise<
   [
     Result<
-      operations.GetApiCompetitionRulesResponse,
+      operations.GetApiCompetitionsStatusResponse,
       | APIError
       | SDKValidationError
       | UnexpectedClientError
@@ -62,7 +62,7 @@ async function $do(
     APICall,
   ]
 > {
-  const path = pathToFunc("/api/competition/rules")();
+  const path = pathToFunc("/api/competitions/status")();
 
   const headers = new Headers(
     compactMap({
@@ -76,7 +76,7 @@ async function $do(
 
   const context = {
     baseURL: options?.serverURL ?? client._baseURL ?? "",
-    operationID: "get_/api/competition/rules",
+    operationID: "get_/api/competitions/status",
     oAuth2Scopes: [],
 
     resolvedSecurity: requestSecurity,
@@ -106,7 +106,7 @@ async function $do(
 
   const doResult = await client._do(req, {
     context,
-    errorCodes: ["400", "401", "403", "4XX", "500", "5XX"],
+    errorCodes: ["401", "4XX", "500", "5XX"],
     retryConfig: context.retryConfig,
     retryCodes: context.retryCodes,
   });
@@ -116,7 +116,7 @@ async function $do(
   const response = doResult.value;
 
   const [result] = await M.match<
-    operations.GetApiCompetitionRulesResponse,
+    operations.GetApiCompetitionsStatusResponse,
     | APIError
     | SDKValidationError
     | UnexpectedClientError
@@ -125,8 +125,8 @@ async function $do(
     | RequestTimeoutError
     | ConnectionError
   >(
-    M.json(200, operations.GetApiCompetitionRulesResponse$inboundSchema),
-    M.fail([400, 401, 403, "4XX"]),
+    M.json(200, operations.GetApiCompetitionsStatusResponse$inboundSchema),
+    M.fail([401, "4XX"]),
     M.fail([500, "5XX"]),
   )(response);
   if (!result.ok) {

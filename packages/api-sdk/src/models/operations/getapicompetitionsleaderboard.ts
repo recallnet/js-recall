@@ -8,7 +8,7 @@ import { ClosedEnum } from "../../types/enums.js";
 import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 
-export type GetApiCompetitionLeaderboardRequest = {
+export type GetApiCompetitionsLeaderboardRequest = {
   /**
    * Optional competition ID (if not provided, the active competition is used)
    */
@@ -18,7 +18,7 @@ export type GetApiCompetitionLeaderboardRequest = {
 /**
  * Competition status
  */
-export const GetApiCompetitionLeaderboardStatus = {
+export const GetApiCompetitionsLeaderboardStatus = {
   Pending: "PENDING",
   Active: "ACTIVE",
   Completed: "COMPLETED",
@@ -26,11 +26,11 @@ export const GetApiCompetitionLeaderboardStatus = {
 /**
  * Competition status
  */
-export type GetApiCompetitionLeaderboardStatus = ClosedEnum<
-  typeof GetApiCompetitionLeaderboardStatus
+export type GetApiCompetitionsLeaderboardStatus = ClosedEnum<
+  typeof GetApiCompetitionsLeaderboardStatus
 >;
 
-export type GetApiCompetitionLeaderboardCompetition = {
+export type GetApiCompetitionsLeaderboardCompetition = {
   /**
    * Competition ID
    */
@@ -62,7 +62,7 @@ export type GetApiCompetitionLeaderboardCompetition = {
   /**
    * Competition status
    */
-  status?: GetApiCompetitionLeaderboardStatus | undefined;
+  status?: GetApiCompetitionsLeaderboardStatus | undefined;
   /**
    * When the competition was created
    */
@@ -73,7 +73,7 @@ export type GetApiCompetitionLeaderboardCompetition = {
   updatedAt?: Date | undefined;
 };
 
-export type GetApiCompetitionLeaderboardLeaderboard = {
+export type GetApiCompetitionsLeaderboardLeaderboard = {
   /**
    * Team rank on the leaderboard
    */
@@ -126,16 +126,16 @@ export type InactiveTeam = {
 /**
  * Competition leaderboard
  */
-export type GetApiCompetitionLeaderboardResponse = {
+export type GetApiCompetitionsLeaderboardResponse = {
   /**
    * Operation success status
    */
   success?: boolean | undefined;
-  competition?: GetApiCompetitionLeaderboardCompetition | undefined;
+  competition?: GetApiCompetitionsLeaderboardCompetition | undefined;
   /**
    * Ranked list of active teams
    */
-  leaderboard?: Array<GetApiCompetitionLeaderboardLeaderboard> | undefined;
+  leaderboard?: Array<GetApiCompetitionsLeaderboardLeaderboard> | undefined;
   /**
    * List of deactivated teams (excluded from ranking)
    */
@@ -147,8 +147,8 @@ export type GetApiCompetitionLeaderboardResponse = {
 };
 
 /** @internal */
-export const GetApiCompetitionLeaderboardRequest$inboundSchema: z.ZodType<
-  GetApiCompetitionLeaderboardRequest,
+export const GetApiCompetitionsLeaderboardRequest$inboundSchema: z.ZodType<
+  GetApiCompetitionsLeaderboardRequest,
   z.ZodTypeDef,
   unknown
 > = z.object({
@@ -156,15 +156,15 @@ export const GetApiCompetitionLeaderboardRequest$inboundSchema: z.ZodType<
 });
 
 /** @internal */
-export type GetApiCompetitionLeaderboardRequest$Outbound = {
+export type GetApiCompetitionsLeaderboardRequest$Outbound = {
   competitionId?: string | undefined;
 };
 
 /** @internal */
-export const GetApiCompetitionLeaderboardRequest$outboundSchema: z.ZodType<
-  GetApiCompetitionLeaderboardRequest$Outbound,
+export const GetApiCompetitionsLeaderboardRequest$outboundSchema: z.ZodType<
+  GetApiCompetitionsLeaderboardRequest$Outbound,
   z.ZodTypeDef,
-  GetApiCompetitionLeaderboardRequest
+  GetApiCompetitionsLeaderboardRequest
 > = z.object({
   competitionId: z.string().optional(),
 });
@@ -173,63 +173,64 @@ export const GetApiCompetitionLeaderboardRequest$outboundSchema: z.ZodType<
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace GetApiCompetitionLeaderboardRequest$ {
-  /** @deprecated use `GetApiCompetitionLeaderboardRequest$inboundSchema` instead. */
+export namespace GetApiCompetitionsLeaderboardRequest$ {
+  /** @deprecated use `GetApiCompetitionsLeaderboardRequest$inboundSchema` instead. */
   export const inboundSchema =
-    GetApiCompetitionLeaderboardRequest$inboundSchema;
-  /** @deprecated use `GetApiCompetitionLeaderboardRequest$outboundSchema` instead. */
+    GetApiCompetitionsLeaderboardRequest$inboundSchema;
+  /** @deprecated use `GetApiCompetitionsLeaderboardRequest$outboundSchema` instead. */
   export const outboundSchema =
-    GetApiCompetitionLeaderboardRequest$outboundSchema;
-  /** @deprecated use `GetApiCompetitionLeaderboardRequest$Outbound` instead. */
-  export type Outbound = GetApiCompetitionLeaderboardRequest$Outbound;
+    GetApiCompetitionsLeaderboardRequest$outboundSchema;
+  /** @deprecated use `GetApiCompetitionsLeaderboardRequest$Outbound` instead. */
+  export type Outbound = GetApiCompetitionsLeaderboardRequest$Outbound;
 }
 
-export function getApiCompetitionLeaderboardRequestToJSON(
-  getApiCompetitionLeaderboardRequest: GetApiCompetitionLeaderboardRequest,
+export function getApiCompetitionsLeaderboardRequestToJSON(
+  getApiCompetitionsLeaderboardRequest: GetApiCompetitionsLeaderboardRequest,
 ): string {
   return JSON.stringify(
-    GetApiCompetitionLeaderboardRequest$outboundSchema.parse(
-      getApiCompetitionLeaderboardRequest,
+    GetApiCompetitionsLeaderboardRequest$outboundSchema.parse(
+      getApiCompetitionsLeaderboardRequest,
     ),
   );
 }
 
-export function getApiCompetitionLeaderboardRequestFromJSON(
+export function getApiCompetitionsLeaderboardRequestFromJSON(
   jsonString: string,
-): SafeParseResult<GetApiCompetitionLeaderboardRequest, SDKValidationError> {
+): SafeParseResult<GetApiCompetitionsLeaderboardRequest, SDKValidationError> {
   return safeParse(
     jsonString,
     (x) =>
-      GetApiCompetitionLeaderboardRequest$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'GetApiCompetitionLeaderboardRequest' from JSON`,
+      GetApiCompetitionsLeaderboardRequest$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetApiCompetitionsLeaderboardRequest' from JSON`,
   );
 }
 
 /** @internal */
-export const GetApiCompetitionLeaderboardStatus$inboundSchema: z.ZodNativeEnum<
-  typeof GetApiCompetitionLeaderboardStatus
-> = z.nativeEnum(GetApiCompetitionLeaderboardStatus);
+export const GetApiCompetitionsLeaderboardStatus$inboundSchema: z.ZodNativeEnum<
+  typeof GetApiCompetitionsLeaderboardStatus
+> = z.nativeEnum(GetApiCompetitionsLeaderboardStatus);
 
 /** @internal */
-export const GetApiCompetitionLeaderboardStatus$outboundSchema: z.ZodNativeEnum<
-  typeof GetApiCompetitionLeaderboardStatus
-> = GetApiCompetitionLeaderboardStatus$inboundSchema;
+export const GetApiCompetitionsLeaderboardStatus$outboundSchema: z.ZodNativeEnum<
+  typeof GetApiCompetitionsLeaderboardStatus
+> = GetApiCompetitionsLeaderboardStatus$inboundSchema;
 
 /**
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace GetApiCompetitionLeaderboardStatus$ {
-  /** @deprecated use `GetApiCompetitionLeaderboardStatus$inboundSchema` instead. */
-  export const inboundSchema = GetApiCompetitionLeaderboardStatus$inboundSchema;
-  /** @deprecated use `GetApiCompetitionLeaderboardStatus$outboundSchema` instead. */
+export namespace GetApiCompetitionsLeaderboardStatus$ {
+  /** @deprecated use `GetApiCompetitionsLeaderboardStatus$inboundSchema` instead. */
+  export const inboundSchema =
+    GetApiCompetitionsLeaderboardStatus$inboundSchema;
+  /** @deprecated use `GetApiCompetitionsLeaderboardStatus$outboundSchema` instead. */
   export const outboundSchema =
-    GetApiCompetitionLeaderboardStatus$outboundSchema;
+    GetApiCompetitionsLeaderboardStatus$outboundSchema;
 }
 
 /** @internal */
-export const GetApiCompetitionLeaderboardCompetition$inboundSchema: z.ZodType<
-  GetApiCompetitionLeaderboardCompetition,
+export const GetApiCompetitionsLeaderboardCompetition$inboundSchema: z.ZodType<
+  GetApiCompetitionsLeaderboardCompetition,
   z.ZodTypeDef,
   unknown
 > = z.object({
@@ -251,7 +252,7 @@ export const GetApiCompetitionLeaderboardCompetition$inboundSchema: z.ZodType<
         .transform((v) => new Date(v)),
     )
     .optional(),
-  status: GetApiCompetitionLeaderboardStatus$inboundSchema.optional(),
+  status: GetApiCompetitionsLeaderboardStatus$inboundSchema.optional(),
   createdAt: z
     .string()
     .datetime({ offset: true })
@@ -265,7 +266,7 @@ export const GetApiCompetitionLeaderboardCompetition$inboundSchema: z.ZodType<
 });
 
 /** @internal */
-export type GetApiCompetitionLeaderboardCompetition$Outbound = {
+export type GetApiCompetitionsLeaderboardCompetition$Outbound = {
   id?: string | undefined;
   name?: string | undefined;
   description?: string | null | undefined;
@@ -279,10 +280,10 @@ export type GetApiCompetitionLeaderboardCompetition$Outbound = {
 };
 
 /** @internal */
-export const GetApiCompetitionLeaderboardCompetition$outboundSchema: z.ZodType<
-  GetApiCompetitionLeaderboardCompetition$Outbound,
+export const GetApiCompetitionsLeaderboardCompetition$outboundSchema: z.ZodType<
+  GetApiCompetitionsLeaderboardCompetition$Outbound,
   z.ZodTypeDef,
-  GetApiCompetitionLeaderboardCompetition
+  GetApiCompetitionsLeaderboardCompetition
 > = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
@@ -294,7 +295,7 @@ export const GetApiCompetitionLeaderboardCompetition$outboundSchema: z.ZodType<
     .transform((v) => v.toISOString())
     .optional(),
   endDate: z.nullable(z.date().transform((v) => v.toISOString())).optional(),
-  status: GetApiCompetitionLeaderboardStatus$outboundSchema.optional(),
+  status: GetApiCompetitionsLeaderboardStatus$outboundSchema.optional(),
   createdAt: z
     .date()
     .transform((v) => v.toISOString())
@@ -309,46 +310,46 @@ export const GetApiCompetitionLeaderboardCompetition$outboundSchema: z.ZodType<
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace GetApiCompetitionLeaderboardCompetition$ {
-  /** @deprecated use `GetApiCompetitionLeaderboardCompetition$inboundSchema` instead. */
+export namespace GetApiCompetitionsLeaderboardCompetition$ {
+  /** @deprecated use `GetApiCompetitionsLeaderboardCompetition$inboundSchema` instead. */
   export const inboundSchema =
-    GetApiCompetitionLeaderboardCompetition$inboundSchema;
-  /** @deprecated use `GetApiCompetitionLeaderboardCompetition$outboundSchema` instead. */
+    GetApiCompetitionsLeaderboardCompetition$inboundSchema;
+  /** @deprecated use `GetApiCompetitionsLeaderboardCompetition$outboundSchema` instead. */
   export const outboundSchema =
-    GetApiCompetitionLeaderboardCompetition$outboundSchema;
-  /** @deprecated use `GetApiCompetitionLeaderboardCompetition$Outbound` instead. */
-  export type Outbound = GetApiCompetitionLeaderboardCompetition$Outbound;
+    GetApiCompetitionsLeaderboardCompetition$outboundSchema;
+  /** @deprecated use `GetApiCompetitionsLeaderboardCompetition$Outbound` instead. */
+  export type Outbound = GetApiCompetitionsLeaderboardCompetition$Outbound;
 }
 
-export function getApiCompetitionLeaderboardCompetitionToJSON(
-  getApiCompetitionLeaderboardCompetition: GetApiCompetitionLeaderboardCompetition,
+export function getApiCompetitionsLeaderboardCompetitionToJSON(
+  getApiCompetitionsLeaderboardCompetition: GetApiCompetitionsLeaderboardCompetition,
 ): string {
   return JSON.stringify(
-    GetApiCompetitionLeaderboardCompetition$outboundSchema.parse(
-      getApiCompetitionLeaderboardCompetition,
+    GetApiCompetitionsLeaderboardCompetition$outboundSchema.parse(
+      getApiCompetitionsLeaderboardCompetition,
     ),
   );
 }
 
-export function getApiCompetitionLeaderboardCompetitionFromJSON(
+export function getApiCompetitionsLeaderboardCompetitionFromJSON(
   jsonString: string,
 ): SafeParseResult<
-  GetApiCompetitionLeaderboardCompetition,
+  GetApiCompetitionsLeaderboardCompetition,
   SDKValidationError
 > {
   return safeParse(
     jsonString,
     (x) =>
-      GetApiCompetitionLeaderboardCompetition$inboundSchema.parse(
+      GetApiCompetitionsLeaderboardCompetition$inboundSchema.parse(
         JSON.parse(x),
       ),
-    `Failed to parse 'GetApiCompetitionLeaderboardCompetition' from JSON`,
+    `Failed to parse 'GetApiCompetitionsLeaderboardCompetition' from JSON`,
   );
 }
 
 /** @internal */
-export const GetApiCompetitionLeaderboardLeaderboard$inboundSchema: z.ZodType<
-  GetApiCompetitionLeaderboardLeaderboard,
+export const GetApiCompetitionsLeaderboardLeaderboard$inboundSchema: z.ZodType<
+  GetApiCompetitionsLeaderboardLeaderboard,
   z.ZodTypeDef,
   unknown
 > = z.object({
@@ -361,7 +362,7 @@ export const GetApiCompetitionLeaderboardLeaderboard$inboundSchema: z.ZodType<
 });
 
 /** @internal */
-export type GetApiCompetitionLeaderboardLeaderboard$Outbound = {
+export type GetApiCompetitionsLeaderboardLeaderboard$Outbound = {
   rank?: number | undefined;
   teamId?: string | undefined;
   teamName?: string | undefined;
@@ -371,10 +372,10 @@ export type GetApiCompetitionLeaderboardLeaderboard$Outbound = {
 };
 
 /** @internal */
-export const GetApiCompetitionLeaderboardLeaderboard$outboundSchema: z.ZodType<
-  GetApiCompetitionLeaderboardLeaderboard$Outbound,
+export const GetApiCompetitionsLeaderboardLeaderboard$outboundSchema: z.ZodType<
+  GetApiCompetitionsLeaderboardLeaderboard$Outbound,
   z.ZodTypeDef,
-  GetApiCompetitionLeaderboardLeaderboard
+  GetApiCompetitionsLeaderboardLeaderboard
 > = z.object({
   rank: z.number().int().optional(),
   teamId: z.string().optional(),
@@ -388,40 +389,40 @@ export const GetApiCompetitionLeaderboardLeaderboard$outboundSchema: z.ZodType<
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace GetApiCompetitionLeaderboardLeaderboard$ {
-  /** @deprecated use `GetApiCompetitionLeaderboardLeaderboard$inboundSchema` instead. */
+export namespace GetApiCompetitionsLeaderboardLeaderboard$ {
+  /** @deprecated use `GetApiCompetitionsLeaderboardLeaderboard$inboundSchema` instead. */
   export const inboundSchema =
-    GetApiCompetitionLeaderboardLeaderboard$inboundSchema;
-  /** @deprecated use `GetApiCompetitionLeaderboardLeaderboard$outboundSchema` instead. */
+    GetApiCompetitionsLeaderboardLeaderboard$inboundSchema;
+  /** @deprecated use `GetApiCompetitionsLeaderboardLeaderboard$outboundSchema` instead. */
   export const outboundSchema =
-    GetApiCompetitionLeaderboardLeaderboard$outboundSchema;
-  /** @deprecated use `GetApiCompetitionLeaderboardLeaderboard$Outbound` instead. */
-  export type Outbound = GetApiCompetitionLeaderboardLeaderboard$Outbound;
+    GetApiCompetitionsLeaderboardLeaderboard$outboundSchema;
+  /** @deprecated use `GetApiCompetitionsLeaderboardLeaderboard$Outbound` instead. */
+  export type Outbound = GetApiCompetitionsLeaderboardLeaderboard$Outbound;
 }
 
-export function getApiCompetitionLeaderboardLeaderboardToJSON(
-  getApiCompetitionLeaderboardLeaderboard: GetApiCompetitionLeaderboardLeaderboard,
+export function getApiCompetitionsLeaderboardLeaderboardToJSON(
+  getApiCompetitionsLeaderboardLeaderboard: GetApiCompetitionsLeaderboardLeaderboard,
 ): string {
   return JSON.stringify(
-    GetApiCompetitionLeaderboardLeaderboard$outboundSchema.parse(
-      getApiCompetitionLeaderboardLeaderboard,
+    GetApiCompetitionsLeaderboardLeaderboard$outboundSchema.parse(
+      getApiCompetitionsLeaderboardLeaderboard,
     ),
   );
 }
 
-export function getApiCompetitionLeaderboardLeaderboardFromJSON(
+export function getApiCompetitionsLeaderboardLeaderboardFromJSON(
   jsonString: string,
 ): SafeParseResult<
-  GetApiCompetitionLeaderboardLeaderboard,
+  GetApiCompetitionsLeaderboardLeaderboard,
   SDKValidationError
 > {
   return safeParse(
     jsonString,
     (x) =>
-      GetApiCompetitionLeaderboardLeaderboard$inboundSchema.parse(
+      GetApiCompetitionsLeaderboardLeaderboard$inboundSchema.parse(
         JSON.parse(x),
       ),
-    `Failed to parse 'GetApiCompetitionLeaderboardLeaderboard' from JSON`,
+    `Failed to parse 'GetApiCompetitionsLeaderboardLeaderboard' from JSON`,
   );
 }
 
@@ -488,45 +489,47 @@ export function inactiveTeamFromJSON(
 }
 
 /** @internal */
-export const GetApiCompetitionLeaderboardResponse$inboundSchema: z.ZodType<
-  GetApiCompetitionLeaderboardResponse,
+export const GetApiCompetitionsLeaderboardResponse$inboundSchema: z.ZodType<
+  GetApiCompetitionsLeaderboardResponse,
   z.ZodTypeDef,
   unknown
 > = z.object({
   success: z.boolean().optional(),
   competition: z
-    .lazy(() => GetApiCompetitionLeaderboardCompetition$inboundSchema)
+    .lazy(() => GetApiCompetitionsLeaderboardCompetition$inboundSchema)
     .optional(),
   leaderboard: z
-    .array(z.lazy(() => GetApiCompetitionLeaderboardLeaderboard$inboundSchema))
+    .array(z.lazy(() => GetApiCompetitionsLeaderboardLeaderboard$inboundSchema))
     .optional(),
   inactiveTeams: z.array(z.lazy(() => InactiveTeam$inboundSchema)).optional(),
   hasInactiveTeams: z.boolean().optional(),
 });
 
 /** @internal */
-export type GetApiCompetitionLeaderboardResponse$Outbound = {
+export type GetApiCompetitionsLeaderboardResponse$Outbound = {
   success?: boolean | undefined;
-  competition?: GetApiCompetitionLeaderboardCompetition$Outbound | undefined;
+  competition?: GetApiCompetitionsLeaderboardCompetition$Outbound | undefined;
   leaderboard?:
-    | Array<GetApiCompetitionLeaderboardLeaderboard$Outbound>
+    | Array<GetApiCompetitionsLeaderboardLeaderboard$Outbound>
     | undefined;
   inactiveTeams?: Array<InactiveTeam$Outbound> | undefined;
   hasInactiveTeams?: boolean | undefined;
 };
 
 /** @internal */
-export const GetApiCompetitionLeaderboardResponse$outboundSchema: z.ZodType<
-  GetApiCompetitionLeaderboardResponse$Outbound,
+export const GetApiCompetitionsLeaderboardResponse$outboundSchema: z.ZodType<
+  GetApiCompetitionsLeaderboardResponse$Outbound,
   z.ZodTypeDef,
-  GetApiCompetitionLeaderboardResponse
+  GetApiCompetitionsLeaderboardResponse
 > = z.object({
   success: z.boolean().optional(),
   competition: z
-    .lazy(() => GetApiCompetitionLeaderboardCompetition$outboundSchema)
+    .lazy(() => GetApiCompetitionsLeaderboardCompetition$outboundSchema)
     .optional(),
   leaderboard: z
-    .array(z.lazy(() => GetApiCompetitionLeaderboardLeaderboard$outboundSchema))
+    .array(
+      z.lazy(() => GetApiCompetitionsLeaderboardLeaderboard$outboundSchema),
+    )
     .optional(),
   inactiveTeams: z.array(z.lazy(() => InactiveTeam$outboundSchema)).optional(),
   hasInactiveTeams: z.boolean().optional(),
@@ -536,34 +539,34 @@ export const GetApiCompetitionLeaderboardResponse$outboundSchema: z.ZodType<
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace GetApiCompetitionLeaderboardResponse$ {
-  /** @deprecated use `GetApiCompetitionLeaderboardResponse$inboundSchema` instead. */
+export namespace GetApiCompetitionsLeaderboardResponse$ {
+  /** @deprecated use `GetApiCompetitionsLeaderboardResponse$inboundSchema` instead. */
   export const inboundSchema =
-    GetApiCompetitionLeaderboardResponse$inboundSchema;
-  /** @deprecated use `GetApiCompetitionLeaderboardResponse$outboundSchema` instead. */
+    GetApiCompetitionsLeaderboardResponse$inboundSchema;
+  /** @deprecated use `GetApiCompetitionsLeaderboardResponse$outboundSchema` instead. */
   export const outboundSchema =
-    GetApiCompetitionLeaderboardResponse$outboundSchema;
-  /** @deprecated use `GetApiCompetitionLeaderboardResponse$Outbound` instead. */
-  export type Outbound = GetApiCompetitionLeaderboardResponse$Outbound;
+    GetApiCompetitionsLeaderboardResponse$outboundSchema;
+  /** @deprecated use `GetApiCompetitionsLeaderboardResponse$Outbound` instead. */
+  export type Outbound = GetApiCompetitionsLeaderboardResponse$Outbound;
 }
 
-export function getApiCompetitionLeaderboardResponseToJSON(
-  getApiCompetitionLeaderboardResponse: GetApiCompetitionLeaderboardResponse,
+export function getApiCompetitionsLeaderboardResponseToJSON(
+  getApiCompetitionsLeaderboardResponse: GetApiCompetitionsLeaderboardResponse,
 ): string {
   return JSON.stringify(
-    GetApiCompetitionLeaderboardResponse$outboundSchema.parse(
-      getApiCompetitionLeaderboardResponse,
+    GetApiCompetitionsLeaderboardResponse$outboundSchema.parse(
+      getApiCompetitionsLeaderboardResponse,
     ),
   );
 }
 
-export function getApiCompetitionLeaderboardResponseFromJSON(
+export function getApiCompetitionsLeaderboardResponseFromJSON(
   jsonString: string,
-): SafeParseResult<GetApiCompetitionLeaderboardResponse, SDKValidationError> {
+): SafeParseResult<GetApiCompetitionsLeaderboardResponse, SDKValidationError> {
   return safeParse(
     jsonString,
     (x) =>
-      GetApiCompetitionLeaderboardResponse$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'GetApiCompetitionLeaderboardResponse' from JSON`,
+      GetApiCompetitionsLeaderboardResponse$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetApiCompetitionsLeaderboardResponse' from JSON`,
   );
 }
