@@ -255,7 +255,7 @@ export async function createPortfolioSnapshot(
 
 /**
  * Create a portfolio token value
- * @param tokenValue Portfolio token value data
+ * @param tokenValue Portfolio token value data including amount, price, symbol, and specific chain
  */
 export async function createPortfolioTokenValue(
   tokenValue: InsertPortfolioTokenValue,

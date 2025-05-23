@@ -155,7 +155,7 @@ export class PriceTracker {
    * @param tokenAddress The token address to get info for
    * @param blockchainType Optional blockchain type override (EVM or SVM)
    * @param specificChain Optional specific chain override (eth, polygon, etc.)
-   * @returns Object containing token price and chain information or null
+   * @returns Object containing token price, symbol, and chain information or null
    */
   async getTokenInfo(
     tokenAddress: string,
@@ -250,6 +250,7 @@ export class PriceTracker {
    * Store price data in the database
    * @param tokenAddress The token address
    * @param price The price in USD
+   * @param symbol The token symbol
    * @param chain The blockchain type (optional)
    * @param specificChain The specific chain (optional)
    */

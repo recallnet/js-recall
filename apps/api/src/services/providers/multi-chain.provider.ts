@@ -56,6 +56,9 @@ export class MultiChainProvider implements PriceSource {
 
   /**
    * Get price for a specific EVM chain using DexScreener
+   * @param tokenAddress The token address to get price for
+   * @param specificChain The specific EVM chain to query
+   * @returns Object containing price and symbol information, or null if not found
    */
   async getPriceForSpecificEVMChain(
     tokenAddress: string,
@@ -336,11 +339,11 @@ export class MultiChainProvider implements PriceSource {
   }
 
   /**
-   * Get detailed information about a token including which chain it's on
+   * Get token information including current price and chain detection
    * @param tokenAddress Token address
    * @param blockchainType Optional blockchain type (EVM or SVM)
    * @param specificChain Optional specific chain to check directly (bypasses chain detection)
-   * @returns Object containing price and chain information or null if not found
+   * @returns Object containing price, symbol, and chain information or null if not found
    */
   async getTokenInfo(
     tokenAddress: string,

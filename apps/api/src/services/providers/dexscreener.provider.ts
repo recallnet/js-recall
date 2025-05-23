@@ -141,6 +141,10 @@ export class DexScreenerProvider implements PriceSource {
 
   /**
    * Fetch token price from DexScreener API
+   * @param tokenAddress The token address to fetch price for
+   * @param dexScreenerChain The DexScreener chain identifier
+   * @param specificChain The specific chain identifier
+   * @returns Object containing price and symbol information, or null if not found
    */
   private async fetchPrice(
     tokenAddress: string,
