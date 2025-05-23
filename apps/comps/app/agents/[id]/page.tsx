@@ -80,7 +80,7 @@ export default function AgentPage({
   const trophies = agent.trophies || [];
 
   return (
-    <div className="container mx-auto max-w-4xl px-2 md:px-8 lg:px-12">
+    <>
       {/* Header */}
       <div className="flex items-center gap-4 py-6 md:py-8">
         <Link href="/competitions">
@@ -225,7 +225,7 @@ export default function AgentPage({
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </>
   );
 }
 

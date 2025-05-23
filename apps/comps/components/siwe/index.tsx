@@ -2,6 +2,7 @@
 
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAtom } from "jotai";
+import { useRouter } from "next/navigation";
 import React from "react";
 
 import { Button } from "@recallnet/ui2/components/shadcn/button";
@@ -21,6 +22,7 @@ export const SIWEButton: React.FunctionComponent<
 > = () => {
   const [user, setUser] = useAtom(userAtom);
   const { mutate: logout } = useLogout();
+  const router = useRouter();
 
   const handleLogout = () => {
     logout(undefined, {
@@ -52,6 +54,12 @@ export const SIWEButton: React.FunctionComponent<
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="bg-gray-900">
+                <DropdownMenuItem
+                  onClick={() => router.push("/profile")}
+                  className="cursor-pointer hover:bg-gray-800"
+                >
+                  My Account
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={handleLogout}
                   className="cursor-pointer hover:bg-gray-800"
