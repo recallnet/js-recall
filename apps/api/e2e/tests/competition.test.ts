@@ -710,7 +710,7 @@ describe("Competition API", () => {
     const ascResponse = (await teamClient.getCompetitions(
       "pending",
       "foo",
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     )) as any;
 
     expect(ascResponse.success).toBe(false);
