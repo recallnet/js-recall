@@ -707,10 +707,10 @@ describe("Competition API", () => {
     );
 
     // Call the new endpoint to get competitions sorted by start date ascending
-    const ascResponse = (await teamClient.getCompetitions(
+    const ascResponse = await teamClient.getCompetitions(
       "pending",
       "foo",
-    )) as UpcomingCompetitionsResponse;
+    ) as any;
 
     expect(ascResponse.success).toBe(false);
     expect(ascResponse.status).toBe(400);
