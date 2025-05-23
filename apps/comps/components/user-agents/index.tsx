@@ -11,16 +11,22 @@ import Card from "@recallnet/ui2/components/shadcn/card";
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { useProfile } from "@/hooks";
-import { AgentResponse } from "@/types";
+import { AgentResponse, ProfileResponse } from "@/types";
 
 import BigNumberDisplay from "../bignumber";
 import MirrorImage from "../mirror-image";
 
-export default function UserAgentsSection() {
+interface UserAgentsSectionProps {
+  user: ProfileResponse;
+  isLoading: boolean;
+}
+
+export default function UserAgentsSection({
+  user,
+  isLoading,
+}: UserAgentsSectionProps) {
   // for now using this hook, later must be user agents
-  const { data, isLoading } = useProfile();
-  const nAgents = isLoading ? 2 : data?.agents?.length || 0;
+  const nAgents = isLoading ? 2 : user?.agents?.length || 0;
   let agentList = <NoAgents />;
 
   if (isLoading || (nAgents > 0 && nAgents <= 3))
@@ -45,7 +51,7 @@ export default function UserAgentsSection() {
             ? new Array(nAgents)
                 .fill(0)
                 .map((_, i) => <AgentCard key={i} agent={i} isLoading />)
-            : data?.agents?.map((agent, i) => (
+            : user?.agents?.map((agent, i) => (
                 <AgentCard key={i} agent={agent} isLoading={false} />
               ))}
         </div>
@@ -63,7 +69,7 @@ export default function UserAgentsSection() {
     agentList = (
       <div className="mt-8 flex w-full flex-col gap-10">
         <div className="flex justify-around gap-10 overflow-x-auto">
-          {data?.agents?.map((agent, i) => (
+          {user?.agents?.map((agent, i) => (
             <AgentCard key={i} agent={agent} isLoading={isLoading} />
           ))}
         </div>
@@ -83,7 +89,7 @@ export default function UserAgentsSection() {
         <div className="flex items-center gap-2">
           <CaretDownIcon className="text-gray-500" width={35} height={35} />
           <span className="text-2xl font-bold text-white">Your Agents</span>
-          <span className="text-xl text-gray-400">(1)</span>
+          <span className="text-xl text-gray-400">({nAgents})</span>
         </div>
         <Button className="bg-sky-700 px-8 py-5 text-white hover:bg-sky-600">
           {"+ ADD AGENT"}
@@ -99,10 +105,10 @@ const NoAgents = () => {
     <div className="relative w-full">
       <div className="md:px-50 2xl:px-100 flex w-full flex-col items-center px-10 pt-10 text-center sm:px-20">
         <span className="font-semibold text-white">
-          {"You don’t have any agents yet"}
+          {"You don't have any agents yet"}
         </span>
         <span className="text-gray-500">
-          {`Kick things off by creating your very first AI agent. It’llstart competing and climbing the leaderboard in no time!`}
+          {`Kick things off by creating your very first AI agent. It'llstart competing and climbing the leaderboard in no time!`}
         </span>
         <Button className="mt-6 w-40 bg-sky-700 px-8 py-5 text-white hover:bg-blue-600">
           {"+ ADD AGENT"}
@@ -111,7 +117,7 @@ const NoAgents = () => {
       <Image
         src="/default_agent_2.png"
         alt="agent"
-        className="pointer-events-none absolute left-[60px] top-[-90px] z-0 object-contain opacity-20 sm:opacity-35"
+        className="pointer-events-none absolute left-[60px] top-[-70px] z-0 object-contain opacity-20 sm:opacity-35"
         width={350}
         height={350}
       />
@@ -208,13 +214,11 @@ const AgentsSummary: React.FunctionComponent<{
   );
 };
 
-type AgentCardProps =
-  | {
-      className?: string;
-      agent: AgentResponse;
-      isLoading: false;
-    }
-  | { className?: string; isLoading: true; agent: number };
+type AgentCardProps = {
+  className?: string;
+  agent: AgentResponse | number;
+  isLoading: boolean;
+};
 
 const AgentCard: React.FunctionComponent<AgentCardProps> = ({
   className,
@@ -223,7 +227,8 @@ const AgentCard: React.FunctionComponent<AgentCardProps> = ({
 }) => {
   const size = "min-w-70 max-w-80 md:max-w-70 h-95";
 
-  if (isLoading) return <Skeleton className={size} />;
+  if (isLoading || typeof agent === "number")
+    return <Skeleton className={size} />;
 
   return (
     <Card

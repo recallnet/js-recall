@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiClient } from "@/lib/api-client";
-import { ProfileResponse } from "@/types";
+import { ProfileResponse, UpdateProfileRequest } from "@/types/profile";
 
 const apiClient = new ApiClient();
 
@@ -26,7 +26,7 @@ export const useUpdateProfile = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: UpdateProfileRequest) => {
       return apiClient.updateProfile(data);
     },
     onSuccess: () => {

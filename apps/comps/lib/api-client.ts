@@ -16,6 +16,7 @@ import {
   LoginResponse,
   NonceResponse,
   ProfileResponse,
+  UpdateProfileRequest,
 } from "@/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
@@ -53,6 +54,9 @@ export class ApiClient {
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        window.location.href = "/competitions";
+      }
       const error = await response.json().catch(() => ({
         message: "An unknown error occurred",
       }));
@@ -253,8 +257,8 @@ export class ApiClient {
    * @param data - Profile data
    * @returns Updated profile
    */
-  async updateProfile(data: unknown): Promise<unknown> {
-    return this.request<unknown>("/profile", {
+  async updateProfile(data: UpdateProfileRequest): Promise<ProfileResponse> {
+    return this.request<ProfileResponse>("/profile", {
       method: "PUT",
       body: JSON.stringify(data),
     });
