@@ -5,7 +5,11 @@ import { ensureReqTeam } from "@/controllers/heplers.js";
 import { isTeamInCompetition as isTeamInCompetitionRepo } from "@/database/repositories/team-repository.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
-import { AuthenticatedRequest } from "@/types/index.js";
+import {
+  AuthenticatedRequest,
+  CompetitionStatusSchema,
+  PagingParamsSchema,
+} from "@/types/index.js";
 
 export function makeCompetitionController(services: ServiceRegistry) {
   /**
@@ -407,6 +411,43 @@ export function makeCompetitionController(services: ServiceRegistry) {
         res.status(200).json({
           success: true,
           competitions: upcomingCompetitions,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get competitions
+     * @param req AuthenticatedRequest object with team authentication information
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getCompetitions(
+      req: AuthenticatedRequest,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        // Check if the team is authenticated
+        ensureReqTeam(req, "Authentication required to view competitions");
+
+        console.log(
+          `[CompetitionController] Team ${req.teamId} requesting competitions`,
+        );
+
+        // Get all upcoming competitions
+        const status = CompetitionStatusSchema.parse(req.query.status);
+        const pagingParams = PagingParamsSchema.parse(req.query);
+        const competitions = await services.competitionManager.getCompetitions(
+          status,
+          pagingParams,
+        );
+
+        // Return the competitions
+        res.status(200).json({
+          success: true,
+          competitions: competitions,
         });
       } catch (error) {
         next(error);

@@ -8,10 +8,11 @@ import { tool$accountGetApiAccountProfile } from "@recallnet/api-sdk/mcp-server/
 import { tool$accountGetApiAccountTrades } from "@recallnet/api-sdk/mcp-server/tools/accountGetApiAccountTrades.js";
 import { tool$accountPostApiAccountResetApiKey } from "@recallnet/api-sdk/mcp-server/tools/accountPostApiAccountResetApiKey.js";
 import { tool$accountPutApiAccountProfile } from "@recallnet/api-sdk/mcp-server/tools/accountPutApiAccountProfile.js";
-import { tool$competitionGetApiCompetitionLeaderboard } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionLeaderboard.js";
-import { tool$competitionGetApiCompetitionRules } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionRules.js";
-import { tool$competitionGetApiCompetitionStatus } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionStatus.js";
-import { tool$competitionGetApiCompetitionUpcoming } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionUpcoming.js";
+import { tool$competitionGetApiCompetitions } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitions.js";
+import { tool$competitionGetApiCompetitionsLeaderboard } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionsLeaderboard.js";
+import { tool$competitionGetApiCompetitionsRules } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionsRules.js";
+import { tool$competitionGetApiCompetitionsStatus } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionsStatus.js";
+import { tool$competitionGetApiCompetitionsUpcoming } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionsUpcoming.js";
 import { tool$healthGetApiHealth } from "@recallnet/api-sdk/mcp-server/tools/healthGetApiHealth.js";
 import { tool$healthGetApiHealthDetailed } from "@recallnet/api-sdk/mcp-server/tools/healthGetApiHealthDetailed.js";
 import { tool$priceGetApiPrice } from "@recallnet/api-sdk/mcp-server/tools/priceGetApiPrice.js";
@@ -32,10 +33,11 @@ const USER_TOOLS = [
   tool$accountGetApiAccountPortfolio,
 
   // Competition tools
-  tool$competitionGetApiCompetitionLeaderboard,
-  tool$competitionGetApiCompetitionStatus,
-  tool$competitionGetApiCompetitionRules,
-  tool$competitionGetApiCompetitionUpcoming,
+  tool$competitionGetApiCompetitions,
+  tool$competitionGetApiCompetitionsLeaderboard,
+  tool$competitionGetApiCompetitionsStatus,
+  tool$competitionGetApiCompetitionsRules,
+  tool$competitionGetApiCompetitionsUpcoming,
 
   // Health check tools
   tool$healthGetApiHealth,

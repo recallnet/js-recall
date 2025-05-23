@@ -11,7 +11,7 @@ import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 /**
  * Competition status
  */
-export const GetApiCompetitionStatusStatus = {
+export const GetApiCompetitionsStatusStatus = {
   Pending: "PENDING",
   Active: "ACTIVE",
   Completed: "COMPLETED",
@@ -19,14 +19,14 @@ export const GetApiCompetitionStatusStatus = {
 /**
  * Competition status
  */
-export type GetApiCompetitionStatusStatus = ClosedEnum<
-  typeof GetApiCompetitionStatusStatus
+export type GetApiCompetitionsStatusStatus = ClosedEnum<
+  typeof GetApiCompetitionsStatusStatus
 >;
 
 /**
  * The type of cross-chain trading allowed in this competition
  */
-export const GetApiCompetitionStatusCrossChainTradingType = {
+export const GetApiCompetitionsStatusCrossChainTradingType = {
   DisallowAll: "disallowAll",
   DisallowXParent: "disallowXParent",
   Allow: "allow",
@@ -34,11 +34,11 @@ export const GetApiCompetitionStatusCrossChainTradingType = {
 /**
  * The type of cross-chain trading allowed in this competition
  */
-export type GetApiCompetitionStatusCrossChainTradingType = ClosedEnum<
-  typeof GetApiCompetitionStatusCrossChainTradingType
+export type GetApiCompetitionsStatusCrossChainTradingType = ClosedEnum<
+  typeof GetApiCompetitionsStatusCrossChainTradingType
 >;
 
-export type GetApiCompetitionStatusCompetition = {
+export type GetApiCompetitionsStatusCompetition = {
   /**
    * Competition ID
    */
@@ -70,12 +70,12 @@ export type GetApiCompetitionStatusCompetition = {
   /**
    * Competition status
    */
-  status?: GetApiCompetitionStatusStatus | undefined;
+  status?: GetApiCompetitionsStatusStatus | undefined;
   /**
    * The type of cross-chain trading allowed in this competition
    */
   crossChainTradingType?:
-    | GetApiCompetitionStatusCrossChainTradingType
+    | GetApiCompetitionsStatusCrossChainTradingType
     | undefined;
   /**
    * When the competition was created
@@ -90,7 +90,7 @@ export type GetApiCompetitionStatusCompetition = {
 /**
  * Competition status
  */
-export type GetApiCompetitionStatusResponse = {
+export type GetApiCompetitionsStatusResponse = {
   /**
    * Operation success status
    */
@@ -99,7 +99,7 @@ export type GetApiCompetitionStatusResponse = {
    * Whether there is an active competition
    */
   active?: boolean | undefined;
-  competition?: GetApiCompetitionStatusCompetition | null | undefined;
+  competition?: GetApiCompetitionsStatusCompetition | null | undefined;
   /**
    * Additional information about the competition status
    */
@@ -111,52 +111,52 @@ export type GetApiCompetitionStatusResponse = {
 };
 
 /** @internal */
-export const GetApiCompetitionStatusStatus$inboundSchema: z.ZodNativeEnum<
-  typeof GetApiCompetitionStatusStatus
-> = z.nativeEnum(GetApiCompetitionStatusStatus);
+export const GetApiCompetitionsStatusStatus$inboundSchema: z.ZodNativeEnum<
+  typeof GetApiCompetitionsStatusStatus
+> = z.nativeEnum(GetApiCompetitionsStatusStatus);
 
 /** @internal */
-export const GetApiCompetitionStatusStatus$outboundSchema: z.ZodNativeEnum<
-  typeof GetApiCompetitionStatusStatus
-> = GetApiCompetitionStatusStatus$inboundSchema;
+export const GetApiCompetitionsStatusStatus$outboundSchema: z.ZodNativeEnum<
+  typeof GetApiCompetitionsStatusStatus
+> = GetApiCompetitionsStatusStatus$inboundSchema;
 
 /**
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace GetApiCompetitionStatusStatus$ {
-  /** @deprecated use `GetApiCompetitionStatusStatus$inboundSchema` instead. */
-  export const inboundSchema = GetApiCompetitionStatusStatus$inboundSchema;
-  /** @deprecated use `GetApiCompetitionStatusStatus$outboundSchema` instead. */
-  export const outboundSchema = GetApiCompetitionStatusStatus$outboundSchema;
+export namespace GetApiCompetitionsStatusStatus$ {
+  /** @deprecated use `GetApiCompetitionsStatusStatus$inboundSchema` instead. */
+  export const inboundSchema = GetApiCompetitionsStatusStatus$inboundSchema;
+  /** @deprecated use `GetApiCompetitionsStatusStatus$outboundSchema` instead. */
+  export const outboundSchema = GetApiCompetitionsStatusStatus$outboundSchema;
 }
 
 /** @internal */
-export const GetApiCompetitionStatusCrossChainTradingType$inboundSchema: z.ZodNativeEnum<
-  typeof GetApiCompetitionStatusCrossChainTradingType
-> = z.nativeEnum(GetApiCompetitionStatusCrossChainTradingType);
+export const GetApiCompetitionsStatusCrossChainTradingType$inboundSchema: z.ZodNativeEnum<
+  typeof GetApiCompetitionsStatusCrossChainTradingType
+> = z.nativeEnum(GetApiCompetitionsStatusCrossChainTradingType);
 
 /** @internal */
-export const GetApiCompetitionStatusCrossChainTradingType$outboundSchema: z.ZodNativeEnum<
-  typeof GetApiCompetitionStatusCrossChainTradingType
-> = GetApiCompetitionStatusCrossChainTradingType$inboundSchema;
+export const GetApiCompetitionsStatusCrossChainTradingType$outboundSchema: z.ZodNativeEnum<
+  typeof GetApiCompetitionsStatusCrossChainTradingType
+> = GetApiCompetitionsStatusCrossChainTradingType$inboundSchema;
 
 /**
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace GetApiCompetitionStatusCrossChainTradingType$ {
-  /** @deprecated use `GetApiCompetitionStatusCrossChainTradingType$inboundSchema` instead. */
+export namespace GetApiCompetitionsStatusCrossChainTradingType$ {
+  /** @deprecated use `GetApiCompetitionsStatusCrossChainTradingType$inboundSchema` instead. */
   export const inboundSchema =
-    GetApiCompetitionStatusCrossChainTradingType$inboundSchema;
-  /** @deprecated use `GetApiCompetitionStatusCrossChainTradingType$outboundSchema` instead. */
+    GetApiCompetitionsStatusCrossChainTradingType$inboundSchema;
+  /** @deprecated use `GetApiCompetitionsStatusCrossChainTradingType$outboundSchema` instead. */
   export const outboundSchema =
-    GetApiCompetitionStatusCrossChainTradingType$outboundSchema;
+    GetApiCompetitionsStatusCrossChainTradingType$outboundSchema;
 }
 
 /** @internal */
-export const GetApiCompetitionStatusCompetition$inboundSchema: z.ZodType<
-  GetApiCompetitionStatusCompetition,
+export const GetApiCompetitionsStatusCompetition$inboundSchema: z.ZodType<
+  GetApiCompetitionsStatusCompetition,
   z.ZodTypeDef,
   unknown
 > = z.object({
@@ -178,9 +178,9 @@ export const GetApiCompetitionStatusCompetition$inboundSchema: z.ZodType<
         .transform((v) => new Date(v)),
     )
     .optional(),
-  status: GetApiCompetitionStatusStatus$inboundSchema.optional(),
+  status: GetApiCompetitionsStatusStatus$inboundSchema.optional(),
   crossChainTradingType:
-    GetApiCompetitionStatusCrossChainTradingType$inboundSchema.optional(),
+    GetApiCompetitionsStatusCrossChainTradingType$inboundSchema.optional(),
   createdAt: z
     .string()
     .datetime({ offset: true })
@@ -194,7 +194,7 @@ export const GetApiCompetitionStatusCompetition$inboundSchema: z.ZodType<
 });
 
 /** @internal */
-export type GetApiCompetitionStatusCompetition$Outbound = {
+export type GetApiCompetitionsStatusCompetition$Outbound = {
   id?: string | undefined;
   name?: string | undefined;
   description?: string | null | undefined;
@@ -209,10 +209,10 @@ export type GetApiCompetitionStatusCompetition$Outbound = {
 };
 
 /** @internal */
-export const GetApiCompetitionStatusCompetition$outboundSchema: z.ZodType<
-  GetApiCompetitionStatusCompetition$Outbound,
+export const GetApiCompetitionsStatusCompetition$outboundSchema: z.ZodType<
+  GetApiCompetitionsStatusCompetition$Outbound,
   z.ZodTypeDef,
-  GetApiCompetitionStatusCompetition
+  GetApiCompetitionsStatusCompetition
 > = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
@@ -224,9 +224,9 @@ export const GetApiCompetitionStatusCompetition$outboundSchema: z.ZodType<
     .transform((v) => v.toISOString())
     .optional(),
   endDate: z.nullable(z.date().transform((v) => v.toISOString())).optional(),
-  status: GetApiCompetitionStatusStatus$outboundSchema.optional(),
+  status: GetApiCompetitionsStatusStatus$outboundSchema.optional(),
   crossChainTradingType:
-    GetApiCompetitionStatusCrossChainTradingType$outboundSchema.optional(),
+    GetApiCompetitionsStatusCrossChainTradingType$outboundSchema.optional(),
   createdAt: z
     .date()
     .transform((v) => v.toISOString())
@@ -241,71 +241,72 @@ export const GetApiCompetitionStatusCompetition$outboundSchema: z.ZodType<
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace GetApiCompetitionStatusCompetition$ {
-  /** @deprecated use `GetApiCompetitionStatusCompetition$inboundSchema` instead. */
-  export const inboundSchema = GetApiCompetitionStatusCompetition$inboundSchema;
-  /** @deprecated use `GetApiCompetitionStatusCompetition$outboundSchema` instead. */
+export namespace GetApiCompetitionsStatusCompetition$ {
+  /** @deprecated use `GetApiCompetitionsStatusCompetition$inboundSchema` instead. */
+  export const inboundSchema =
+    GetApiCompetitionsStatusCompetition$inboundSchema;
+  /** @deprecated use `GetApiCompetitionsStatusCompetition$outboundSchema` instead. */
   export const outboundSchema =
-    GetApiCompetitionStatusCompetition$outboundSchema;
-  /** @deprecated use `GetApiCompetitionStatusCompetition$Outbound` instead. */
-  export type Outbound = GetApiCompetitionStatusCompetition$Outbound;
+    GetApiCompetitionsStatusCompetition$outboundSchema;
+  /** @deprecated use `GetApiCompetitionsStatusCompetition$Outbound` instead. */
+  export type Outbound = GetApiCompetitionsStatusCompetition$Outbound;
 }
 
-export function getApiCompetitionStatusCompetitionToJSON(
-  getApiCompetitionStatusCompetition: GetApiCompetitionStatusCompetition,
+export function getApiCompetitionsStatusCompetitionToJSON(
+  getApiCompetitionsStatusCompetition: GetApiCompetitionsStatusCompetition,
 ): string {
   return JSON.stringify(
-    GetApiCompetitionStatusCompetition$outboundSchema.parse(
-      getApiCompetitionStatusCompetition,
+    GetApiCompetitionsStatusCompetition$outboundSchema.parse(
+      getApiCompetitionsStatusCompetition,
     ),
   );
 }
 
-export function getApiCompetitionStatusCompetitionFromJSON(
+export function getApiCompetitionsStatusCompetitionFromJSON(
   jsonString: string,
-): SafeParseResult<GetApiCompetitionStatusCompetition, SDKValidationError> {
+): SafeParseResult<GetApiCompetitionsStatusCompetition, SDKValidationError> {
   return safeParse(
     jsonString,
     (x) =>
-      GetApiCompetitionStatusCompetition$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'GetApiCompetitionStatusCompetition' from JSON`,
+      GetApiCompetitionsStatusCompetition$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetApiCompetitionsStatusCompetition' from JSON`,
   );
 }
 
 /** @internal */
-export const GetApiCompetitionStatusResponse$inboundSchema: z.ZodType<
-  GetApiCompetitionStatusResponse,
+export const GetApiCompetitionsStatusResponse$inboundSchema: z.ZodType<
+  GetApiCompetitionsStatusResponse,
   z.ZodTypeDef,
   unknown
 > = z.object({
   success: z.boolean().optional(),
   active: z.boolean().optional(),
   competition: z
-    .nullable(z.lazy(() => GetApiCompetitionStatusCompetition$inboundSchema))
+    .nullable(z.lazy(() => GetApiCompetitionsStatusCompetition$inboundSchema))
     .optional(),
   message: z.nullable(z.string()).optional(),
   participating: z.nullable(z.boolean()).optional(),
 });
 
 /** @internal */
-export type GetApiCompetitionStatusResponse$Outbound = {
+export type GetApiCompetitionsStatusResponse$Outbound = {
   success?: boolean | undefined;
   active?: boolean | undefined;
-  competition?: GetApiCompetitionStatusCompetition$Outbound | null | undefined;
+  competition?: GetApiCompetitionsStatusCompetition$Outbound | null | undefined;
   message?: string | null | undefined;
   participating?: boolean | null | undefined;
 };
 
 /** @internal */
-export const GetApiCompetitionStatusResponse$outboundSchema: z.ZodType<
-  GetApiCompetitionStatusResponse$Outbound,
+export const GetApiCompetitionsStatusResponse$outboundSchema: z.ZodType<
+  GetApiCompetitionsStatusResponse$Outbound,
   z.ZodTypeDef,
-  GetApiCompetitionStatusResponse
+  GetApiCompetitionsStatusResponse
 > = z.object({
   success: z.boolean().optional(),
   active: z.boolean().optional(),
   competition: z
-    .nullable(z.lazy(() => GetApiCompetitionStatusCompetition$outboundSchema))
+    .nullable(z.lazy(() => GetApiCompetitionsStatusCompetition$outboundSchema))
     .optional(),
   message: z.nullable(z.string()).optional(),
   participating: z.nullable(z.boolean()).optional(),
@@ -315,31 +316,31 @@ export const GetApiCompetitionStatusResponse$outboundSchema: z.ZodType<
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace GetApiCompetitionStatusResponse$ {
-  /** @deprecated use `GetApiCompetitionStatusResponse$inboundSchema` instead. */
-  export const inboundSchema = GetApiCompetitionStatusResponse$inboundSchema;
-  /** @deprecated use `GetApiCompetitionStatusResponse$outboundSchema` instead. */
-  export const outboundSchema = GetApiCompetitionStatusResponse$outboundSchema;
-  /** @deprecated use `GetApiCompetitionStatusResponse$Outbound` instead. */
-  export type Outbound = GetApiCompetitionStatusResponse$Outbound;
+export namespace GetApiCompetitionsStatusResponse$ {
+  /** @deprecated use `GetApiCompetitionsStatusResponse$inboundSchema` instead. */
+  export const inboundSchema = GetApiCompetitionsStatusResponse$inboundSchema;
+  /** @deprecated use `GetApiCompetitionsStatusResponse$outboundSchema` instead. */
+  export const outboundSchema = GetApiCompetitionsStatusResponse$outboundSchema;
+  /** @deprecated use `GetApiCompetitionsStatusResponse$Outbound` instead. */
+  export type Outbound = GetApiCompetitionsStatusResponse$Outbound;
 }
 
-export function getApiCompetitionStatusResponseToJSON(
-  getApiCompetitionStatusResponse: GetApiCompetitionStatusResponse,
+export function getApiCompetitionsStatusResponseToJSON(
+  getApiCompetitionsStatusResponse: GetApiCompetitionsStatusResponse,
 ): string {
   return JSON.stringify(
-    GetApiCompetitionStatusResponse$outboundSchema.parse(
-      getApiCompetitionStatusResponse,
+    GetApiCompetitionsStatusResponse$outboundSchema.parse(
+      getApiCompetitionsStatusResponse,
     ),
   );
 }
 
-export function getApiCompetitionStatusResponseFromJSON(
+export function getApiCompetitionsStatusResponseFromJSON(
   jsonString: string,
-): SafeParseResult<GetApiCompetitionStatusResponse, SDKValidationError> {
+): SafeParseResult<GetApiCompetitionsStatusResponse, SDKValidationError> {
   return safeParse(
     jsonString,
-    (x) => GetApiCompetitionStatusResponse$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'GetApiCompetitionStatusResponse' from JSON`,
+    (x) => GetApiCompetitionsStatusResponse$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetApiCompetitionsStatusResponse' from JSON`,
   );
 }

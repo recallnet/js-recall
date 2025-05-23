@@ -318,11 +318,11 @@ run();
 
 ### [competition](docs/sdks/competition/README.md)
 
-- [getApiCompetitionLeaderboard](docs/sdks/competition/README.md#getapicompetitionleaderboard) - Get competition leaderboard
-- [getApiCompetitionStatus](docs/sdks/competition/README.md#getapicompetitionstatus) - Get competition status
-- [getApiCompetitionRules](docs/sdks/competition/README.md#getapicompetitionrules) - Get competition rules
-- [getApiCompetitionUpcoming](docs/sdks/competition/README.md#getapicompetitionupcoming) - Get upcoming competitions
 - [getApiCompetitions](docs/sdks/competition/README.md#getapicompetitions) - Get upcoming competitions
+- [getApiCompetitionsLeaderboard](docs/sdks/competition/README.md#getapicompetitionsleaderboard) - Get competition leaderboard
+- [getApiCompetitionsStatus](docs/sdks/competition/README.md#getapicompetitionsstatus) - Get competition status
+- [getApiCompetitionsRules](docs/sdks/competition/README.md#getapicompetitionsrules) - Get competition rules
+- [getApiCompetitionsUpcoming](docs/sdks/competition/README.md#getapicompetitionsupcoming) - Get upcoming competitions
 
 ### [health](docs/sdks/health/README.md)
 
@@ -380,11 +380,11 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`authGetApiAuthNonce`](docs/sdks/auth/README.md#getapiauthnonce) - Get a random nonce for SIWE authentication
 - [`authPostApiAuthLogin`](docs/sdks/auth/README.md#postapiauthlogin) - Verify SIWE signature and create a session
 - [`authPostApiAuthLogout`](docs/sdks/auth/README.md#postapiauthlogout) - Logout the current user by destroying the session
-- [`competitionGetApiCompetitionLeaderboard`](docs/sdks/competition/README.md#getapicompetitionleaderboard) - Get competition leaderboard
-- [`competitionGetApiCompetitionRules`](docs/sdks/competition/README.md#getapicompetitionrules) - Get competition rules
 - [`competitionGetApiCompetitions`](docs/sdks/competition/README.md#getapicompetitions) - Get upcoming competitions
-- [`competitionGetApiCompetitionStatus`](docs/sdks/competition/README.md#getapicompetitionstatus) - Get competition status
-- [`competitionGetApiCompetitionUpcoming`](docs/sdks/competition/README.md#getapicompetitionupcoming) - Get upcoming competitions
+- [`competitionGetApiCompetitionsLeaderboard`](docs/sdks/competition/README.md#getapicompetitionsleaderboard) - Get competition leaderboard
+- [`competitionGetApiCompetitionsRules`](docs/sdks/competition/README.md#getapicompetitionsrules) - Get competition rules
+- [`competitionGetApiCompetitionsStatus`](docs/sdks/competition/README.md#getapicompetitionsstatus) - Get competition status
+- [`competitionGetApiCompetitionsUpcoming`](docs/sdks/competition/README.md#getapicompetitionsupcoming) - Get upcoming competitions
 - [`healthGetApiHealth`](docs/sdks/health/README.md#getapihealth) - Basic health check
 - [`healthGetApiHealthDetailed`](docs/sdks/health/README.md#getapihealthdetailed) - Detailed health check
 - [`priceGetApiPrice`](docs/sdks/price/README.md#getapiprice) - Get price for a token

@@ -1,7 +1,6 @@
 import { AuthService } from "@/services/auth.service.js";
 import { BalanceManager } from "@/services/balance-manager.service.js";
 import { CompetitionManager } from "@/services/competition-manager.service.js";
-import { CompetitionsManager } from "@/services/competitions-manager.service.js";
 import { ConfigurationService } from "@/services/configuration.service.js";
 import { PortfolioSnapshotter } from "@/services/portfolio-snapshotter.service.js";
 import { PriceTracker } from "@/services/price-tracker.service.js";
@@ -22,7 +21,6 @@ class ServiceRegistry {
   private _priceTracker: PriceTracker;
   private _tradeSimulator: TradeSimulator;
   private _competitionManager: CompetitionManager;
-  private _competitionsManager: CompetitionsManager;
   private _teamManager: TeamManager;
   private _scheduler: SchedulerService;
   private _configurationService: ConfigurationService;
@@ -55,8 +53,6 @@ class ServiceRegistry {
       this._configurationService,
     );
 
-    this._competitionsManager = new CompetitionsManager();
-
     // Initialize and start the scheduler
     this._scheduler = new SchedulerService(
       this._competitionManager,
@@ -87,10 +83,6 @@ class ServiceRegistry {
     return this._competitionManager;
   }
 
-  get competitionsManager(): CompetitionsManager {
-    return this._competitionsManager;
-  }
-
   get portfolioSnapshotter(): PortfolioSnapshotter {
     return this._portfolioSnapshotter;
   }
@@ -115,7 +107,6 @@ export {
   PriceTracker,
   TradeSimulator,
   CompetitionManager,
-  CompetitionsManager,
   TeamManager,
   ConfigurationService,
   ServiceRegistry,
