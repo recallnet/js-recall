@@ -6,7 +6,9 @@ declare global {
   namespace Express {
     interface Request {
       session?: IronSession<SessionData>;
-      teamId?: string;
+      agentId?: string;
+      userId?: string;
+      adminId?: string;
       wallet?: string;
       isAdmin?: boolean;
       admin?: {

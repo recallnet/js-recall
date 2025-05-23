@@ -93,7 +93,7 @@ export interface Trade {
   tradeAmountUsd: number;
   toTokenSymbol: string;
   success: boolean;
-  teamId: string;
+  agentId: string;
   competitionId: string;
   reason: string;
   error?: string;
@@ -148,7 +148,7 @@ export interface AccountState {
 }
 
 /**
- * Social media information for a team's agent
+ * Social media information for an agent
  */
 export interface AgentSocial {
   name?: string;
@@ -157,12 +157,37 @@ export interface AgentSocial {
 }
 
 /**
- * Reference information for a team's agent
+ * Reference information for an agent
  */
 export interface AgentRef {
   name: string;
   version: string;
   url?: string;
+}
+
+/**
+ * User's metadata interface
+ */
+export interface UserMetadata {
+  preferences?: {
+    notifications?: boolean;
+    theme?: "light" | "dark";
+  };
+  settings?: Record<string, unknown>;
+  custom?: Record<string, unknown>;
+}
+
+/**
+ * Admin's metadata interface
+ */
+export interface AdminMetadata {
+  permissions?: string[];
+  lastPasswordChange?: string;
+  suspensionReason?: string;
+  suspensionDate?: string;
+  reactivationDate?: string;
+  settings?: Record<string, unknown>;
+  custom?: Record<string, unknown>;
 }
 
 /**
@@ -208,6 +233,85 @@ export interface TeamSearchParams {
 }
 
 /**
+ * User search parameters interface
+ */
+export interface UserSearchParams {
+  email?: string;
+  name?: string;
+  walletAddress?: string;
+  status?: "active" | "suspended" | "deleted";
+}
+
+/**
+ * Agent search parameters interface
+ */
+export interface AgentSearchParams {
+  name?: string;
+  ownerId?: string;
+  status?: "active" | "suspended" | "deleted";
+}
+
+/**
+ * Admin search parameters interface
+ */
+export interface AdminSearchParams {
+  username?: string;
+  email?: string;
+  name?: string;
+  status?: "active" | "suspended";
+}
+
+/**
+ * User interface
+ */
+export interface User {
+  id: string;
+  walletAddress: string;
+  name?: string;
+  email?: string;
+  imageUrl?: string;
+  metadata?: UserMetadata;
+  status: "active" | "suspended" | "deleted";
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Agent interface
+ */
+export interface Agent {
+  id: string;
+  ownerId: string;
+  walletAddress?: string;
+  name: string;
+  description?: string;
+  imageUrl?: string;
+  apiKey: string;
+  metadata?: AgentMetadata;
+  status: "active" | "suspended" | "deleted";
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Admin interface
+ */
+export interface Admin {
+  id: string;
+  username: string;
+  email: string;
+  passwordHash: string;
+  apiKey?: string;
+  name?: string;
+  imageUrl?: string;
+  metadata?: AdminMetadata;
+  status: "active" | "suspended";
+  lastLoginAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
  * Competition status enum
  */
 export enum CrossChainTradingType {
@@ -243,10 +347,10 @@ export enum CompetitionStatus {
 }
 
 /**
- * Team's portfolio value
+ * Agent's portfolio value
  */
 export interface PortfolioValue {
-  teamId: string;
+  agentId: string;
   competitionId: string;
   timestamp: Date;
   totalValue: number;
@@ -257,7 +361,7 @@ export interface PortfolioValue {
  * API Key authentication information
  */
 export interface ApiAuth {
-  teamId: string;
+  agentId: string;
   key: string;
 }
 
@@ -266,7 +370,9 @@ export interface ApiAuth {
  */
 export interface AuthenticatedRequest extends Request {
   session?: IronSession<SessionData>;
-  teamId?: string;
+  agentId?: string;
+  userId?: string;
+  adminId?: string;
   wallet?: string;
   isAdmin?: boolean;
   admin?: {
@@ -281,7 +387,9 @@ export interface AuthenticatedRequest extends Request {
 export interface SessionData {
   nonce?: string;
   siwe?: SiweMessage;
-  teamId?: string;
+  agentId?: string;
+  userId?: string;
+  adminId?: string;
   wallet?: string;
 }
 
@@ -290,6 +398,7 @@ export interface SessionData {
  */
 export interface LoginResponse {
   success: boolean;
-  teamId?: string;
+  agentId?: string;
+  userId?: string;
   wallet?: string;
 }

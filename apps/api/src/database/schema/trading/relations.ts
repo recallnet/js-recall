@@ -1,6 +1,6 @@
 import { relations } from "drizzle-orm/relations";
 
-import { competitions, teams } from "../core/defs.js";
+import { agents, competitions } from "../core/defs.js";
 import {
   balances,
   portfolioSnapshots,
@@ -20,16 +20,16 @@ export const tradingCompetitionsRelations = relations(
 );
 
 export const balancesRelations = relations(balances, ({ one }) => ({
-  team: one(teams, {
-    fields: [balances.teamId],
-    references: [teams.id],
+  agent: one(agents, {
+    fields: [balances.agentId],
+    references: [agents.id],
   }),
 }));
 
 export const tradesRelations = relations(trades, ({ one }) => ({
-  team: one(teams, {
-    fields: [trades.teamId],
-    references: [teams.id],
+  agent: one(agents, {
+    fields: [trades.agentId],
+    references: [agents.id],
   }),
   competition: one(competitions, {
     fields: [trades.competitionId],
@@ -40,9 +40,9 @@ export const tradesRelations = relations(trades, ({ one }) => ({
 export const portfolioSnapshotsRelations = relations(
   portfolioSnapshots,
   ({ one, many }) => ({
-    team: one(teams, {
-      fields: [portfolioSnapshots.teamId],
-      references: [teams.id],
+    agent: one(agents, {
+      fields: [portfolioSnapshots.agentId],
+      references: [agents.id],
     }),
     competition: one(competitions, {
       fields: [portfolioSnapshots.competitionId],
