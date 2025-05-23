@@ -1,8 +1,6 @@
 import { NextFunction, Response } from "express";
 
-import { config, features } from "@/config/index.js";
 import { ensureReqTeam } from "@/controllers/heplers.js";
-import { isTeamInCompetition as isTeamInCompetitionRepo } from "@/database/repositories/team-repository.js";
 import { ServiceRegistry } from "@/services/index.js";
 import { AuthenticatedRequest } from "@/types/index.js";
 
