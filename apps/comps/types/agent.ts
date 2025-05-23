@@ -24,7 +24,7 @@ export interface Trophy {
   description?: string;
 }
 
-export interface AgentResponse {
+export interface Agent {
   id: string;
   name: string;
   userId?: string;
@@ -32,9 +32,12 @@ export interface AgentResponse {
   metadata: AgentCompetitionMetadata;
   stats?: AgentStats;
   trophies?: Trophy[];
+  skills: string[];
   hasUnclaimedRewards?: boolean;
   score?: number;
   rewards?: Reward[];
+  apiKey: string;
+  registeredCompetitionIds: string[];
 }
 
 export interface AgentsMetadata {
@@ -65,8 +68,18 @@ export interface LeaderboardResponse {
   agents: LeaderboardAgent[];
 }
 
-export interface Agent extends AgentResponse {
-  registeredCompetitionIds: string[];
+export interface AgentResponse extends Agent {
+  id: string;
+  name: string;
+  userId?: string;
+  imageUrl: string;
+  metadata: AgentCompetitionMetadata;
+  stats?: AgentStats;
+  trophies?: Trophy[];
+  skills: string[];
+  hasUnclaimedRewards?: boolean;
+  score?: number;
+  rewards?: Reward[];
 }
 export interface LeaderboardAgent extends AgentResponse {
   rank: number;
@@ -74,12 +87,18 @@ export interface LeaderboardAgent extends AgentResponse {
 
 export interface CreateAgentRequest {
   name: string;
-  imageUrl: string;
+  imageUrl?: string;
   walletAddress: string;
-  signature: string;
-  message: string;
+  skills: string[];
+  description?: string;
+  email?: string;
+  repositoryUrl?: string;
+  metadata: {
+    [key: string]: string;
+  };
 }
 
 export interface CreateAgentResponse {
   agentId: string;
+  apiKey: string;
 }

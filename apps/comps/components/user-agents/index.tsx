@@ -2,6 +2,7 @@
 
 import { CaretDownIcon } from "@radix-ui/react-icons";
 import Image from "next/image";
+import Link from "next/link";
 import React from "react";
 import { FaAward, FaTrophy } from "react-icons/fa";
 
@@ -58,9 +59,9 @@ export default function UserAgentsSection({
         <AgentsSummary
           isLoading={isLoading}
           nAgents={nAgents}
-          best="1st of 2054"
-          completedComps={10}
-          highest={2400}
+          best="-"
+          completedComps={0}
+          highest={0}
         />
       </div>
     );
@@ -91,9 +92,11 @@ export default function UserAgentsSection({
           <span className="text-2xl font-bold text-white">Your Agents</span>
           <span className="text-xl text-gray-400">({nAgents})</span>
         </div>
-        <Button className="bg-sky-700 px-8 py-5 text-white hover:bg-sky-600">
-          {"+ ADD AGENT"}
-        </Button>
+        <Link href="/create-agent">
+          <Button className="bg-sky-700 px-8 py-5 text-white hover:bg-sky-600">
+            {"+ ADD AGENT"}
+          </Button>
+        </Link>
       </div>
       {agentList}
     </div>
@@ -110,9 +113,11 @@ const NoAgents = () => {
         <span className="text-gray-500">
           {`Kick things off by creating your very first AI agent. It'llstart competing and climbing the leaderboard in no time!`}
         </span>
-        <Button className="mt-6 w-40 bg-sky-700 px-8 py-5 text-white hover:bg-blue-600">
-          {"+ ADD AGENT"}
-        </Button>
+        <Link href="/create-agent">
+          <Button className="mt-6 w-40 bg-sky-700 px-8 py-5 text-white hover:bg-blue-600">
+            {"+ ADD AGENT"}
+          </Button>
+        </Link>
       </div>
       <Image
         src="/default_agent_2.png"
@@ -157,7 +162,7 @@ const AgentsSummary: React.FunctionComponent<{
         {isLoading ? (
           <Skeleton className="w-30 h-2" />
         ) : (
-          <span className="uppercase text-gray-500">BEST PLACE M ENT</span>
+          <span className="uppercase text-gray-500">BEST PLACEMENT</span>
         )}
         <div className="flex items-center gap-3 text-2xl font-semibold">
           {isLoading ? (
@@ -220,7 +225,7 @@ type AgentCardProps = {
   isLoading: boolean;
 };
 
-const AgentCard: React.FunctionComponent<AgentCardProps> = ({
+export const AgentCard: React.FunctionComponent<AgentCardProps> = ({
   className,
   agent,
   isLoading,
@@ -249,17 +254,17 @@ const AgentCard: React.FunctionComponent<AgentCardProps> = ({
         image="/default_agent.png"
       />
       <div className="flex w-full items-center justify-center gap-3 text-sm text-gray-400">
-        <FaAward /> <span>{agent.score}</span>
+        <FaAward /> <span>{agent.score || "-"}</span>
       </div>
       <span className="text-center text-2xl font-bold text-gray-400">
         {agent.name}
       </span>
       <div className="flex justify-center gap-3 text-gray-400">
         <div className="text-nowrap rounded border border-gray-700 p-2">
-          ROI {agent.metadata.roi?.toFixed(0)}%
+          ROI {agent.metadata.roi?.toFixed(0) || "-"}
         </div>
         <div className="text-nowrap rounded border border-gray-700 p-2">
-          Trades {agent.metadata.trades}%
+          Trades {agent.metadata.trades || "-"}
         </div>
       </div>
     </Card>

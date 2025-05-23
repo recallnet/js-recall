@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { competitions } from "@/data-mock/fixtures";
+import { store } from "@/data-mock/db";
 import { applyFilters, applySort, paginate } from "@/utils";
 
 export async function GET(req: NextRequest) {
@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   const limit = Number(searchParams.get("limit") ?? 20);
   const offset = Number(searchParams.get("offset") ?? 0);
 
-  let rows = competitions;
+  let rows = store.competitions;
   rows = applyFilters(rows, filter);
   rows = applySort(rows, sort);
   const { metadata, data } = paginate(rows, limit, offset);

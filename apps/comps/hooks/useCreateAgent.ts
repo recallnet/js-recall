@@ -18,6 +18,7 @@ export const useCreateAgent = () => {
     },
     onSuccess: () => {
       // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
       queryClient.invalidateQueries({ queryKey: ["agents"] });
       queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
     },

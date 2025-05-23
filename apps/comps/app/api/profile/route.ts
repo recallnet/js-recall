@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+import { store } from "@/data-mock/db";
 import { ProfileResponse } from "@/types/profile";
 
 // In-memory storage for user profiles
@@ -19,6 +20,11 @@ export async function GET() {
     userId: walletAddress,
     isVerified: true,
   };
+
+  userProfile.agents = store.agents.filter(
+    (agent) => agent.userId === walletAddress,
+  );
+  console.log({ agents: store.agents });
 
   return NextResponse.json(userProfile);
 }

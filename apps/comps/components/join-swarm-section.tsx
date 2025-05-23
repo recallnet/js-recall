@@ -6,7 +6,7 @@ import { SocialLink } from "../data/social";
 import { SocialLinkCard } from "./social-link-card";
 
 interface JoinSwarmSectionProps {
-  socialLinks: SocialLink[];
+  socialLinks: Record<string, SocialLink>;
 }
 
 export const JoinSwarmSection: React.FC<JoinSwarmSectionProps> = ({
@@ -19,7 +19,7 @@ export const JoinSwarmSection: React.FC<JoinSwarmSectionProps> = ({
 
         <div className="mb-5 h-1 w-full border-b-2 border-gray-200"></div>
         <div className="grid grid-cols-1 gap-4 border md:grid-cols-2 lg:grid-cols-4">
-          {socialLinks.map((link) => (
+          {Object.values(socialLinks).map((link) => (
             <SocialLinkCard key={link.id} socialLink={link} />
           ))}
         </div>
