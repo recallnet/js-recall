@@ -3,9 +3,9 @@ import {
   createPortfolioSnapshot,
   createPortfolioTokenValue,
   findAll,
-  getCompetitionTeams,
+  getAgentPortfolioSnapshots,
+  getCompetitionAgents,
   getPortfolioTokenValues,
-  getTeamPortfolioSnapshots,
 } from "@/database/repositories/competition-repository.js";
 import { getLatestPrice } from "@/database/repositories/price-repository.js";
 import { BalanceManager, PriceTracker } from "@/services/index.js";
@@ -25,7 +25,7 @@ export class PortfolioSnapshotter {
   }
 
   /**
-   * Take portfolio snapshots for all teams in a competition
+   * Take portfolio snapshots for all agents in a competition
    * @param competitionId The competition ID
    */
   async takePortfolioSnapshots(competitionId: string) {
@@ -34,14 +34,14 @@ export class PortfolioSnapshotter {
     );
 
     const startTime = Date.now();
-    const teams = await getCompetitionTeams(competitionId);
+    const agents = await getCompetitionAgents(competitionId);
     const timestamp = new Date();
     let priceLookupCount = 0;
     let dbPriceHitCount = 0;
     let reusedPriceCount = 0;
 
-    for (const teamId of teams) {
-      const balances = await this.balanceManager.getAllBalances(teamId);
+    for (const agentId of agents) {
+      const balances = await this.balanceManager.getAllBalances(agentId);
       const valuesByToken: Record<
         string,
         {
@@ -145,7 +145,7 @@ export class PortfolioSnapshotter {
 
       // Create portfolio snapshot in database
       const snapshot = await createPortfolioSnapshot({
-        teamId,
+        agentId,
         competitionId,
         timestamp,
         totalValue,
@@ -169,7 +169,7 @@ export class PortfolioSnapshotter {
     const duration = endTime - startTime;
 
     console.log(
-      `[PortfolioSnapshotter] Completed portfolio snapshots for ${teams.length} teams in ${duration}ms`,
+      `[PortfolioSnapshotter] Completed portfolio snapshots for ${agents.length} agents in ${duration}ms`,
     );
     console.log(
       `[PortfolioSnapshotter] Price lookup stats: Total: ${priceLookupCount}, DB hits: ${dbPriceHitCount}, Hit rate: ${((dbPriceHitCount / priceLookupCount) * 100).toFixed(2)}%`,
@@ -180,13 +180,13 @@ export class PortfolioSnapshotter {
   }
 
   /**
-   * Get portfolio snapshots for a team in a competition
+   * Get portfolio snapshots for an agent in a competition
    * @param competitionId The competition ID
-   * @param teamId The team ID
+   * @param agentId The agent ID
    * @returns Array of portfolio snapshots
    */
-  async getTeamPortfolioSnapshots(competitionId: string, teamId: string) {
-    const snapshots = await getTeamPortfolioSnapshots(competitionId, teamId);
+  async getAgentPortfolioSnapshots(competitionId: string, agentId: string) {
+    const snapshots = await getAgentPortfolioSnapshots(competitionId, agentId);
 
     const promises = snapshots.map(async (snapshot) => {
       const tokenValues = await getPortfolioTokenValues(snapshot.id);

@@ -4,8 +4,8 @@ import { config, features } from "@/config/index.js";
 import {
   count,
   create as createTrade,
+  getAgentTrades,
   getCompetitionTrades,
-  getTeamTrades,
 } from "@/database/repositories/trade-repository.js";
 import { InsertTrade, SelectTrade } from "@/database/schema/trading/types.js";
 import { BalanceManager } from "@/services/balance-manager.service.js";
@@ -29,7 +29,7 @@ interface ChainOptions {
 export class TradeSimulator {
   private balanceManager: BalanceManager;
   private priceTracker: PriceTracker;
-  // Cache of recent trades for performance (teamId -> trades)
+  // Cache of recent trades for performance (agentId -> trades)
   private tradeCache: Map<string, SelectTrade[]>;
   // Maximum trade percentage of portfolio value
   private maxTradePercentage: number;
@@ -50,7 +50,7 @@ export class TradeSimulator {
 
   /**
    * Execute a trade between two tokens
-   * @param teamId The team ID
+   * @param agentId The agent ID
    * @param competitionId The competition ID
    * @param fromToken The source token address
    * @param toToken The destination token address
@@ -61,7 +61,7 @@ export class TradeSimulator {
    * @returns TradeResult object with success status and trade details
    */
   async executeTrade(
-    teamId: string,
+    agentId: string,
     competitionId: string,
     fromToken: string,
     toToken: string,
@@ -72,7 +72,7 @@ export class TradeSimulator {
   ): Promise<{ success: boolean; trade?: SelectTrade; error?: string }> {
     try {
       console.log(`\n[TradeSimulator] Starting trade execution:
-                Team: ${teamId}
+                Agent: ${agentId}
                 Competition: ${competitionId}
                 From Token: ${fromToken}
                 To Token: ${toToken}
@@ -244,7 +244,7 @@ export class TradeSimulator {
 
       // Validate balances
       const currentBalance = await this.balanceManager.getBalance(
-        teamId,
+        agentId,
         fromToken,
       );
       console.log(
@@ -262,7 +262,7 @@ export class TradeSimulator {
       }
 
       // Calculate portfolio value to check maximum trade size (configurable percentage of portfolio)
-      const portfolioValue = await this.calculatePortfolioValue(teamId);
+      const portfolioValue = await this.calculatePortfolioValue(agentId);
       const maxTradeValue = portfolioValue * (this.maxTradePercentage / 100);
       console.log(
         `[TradeSimulator] Portfolio value: $${portfolioValue}, Max trade value: $${maxTradeValue}, Attempted trade value: $${fromValueUSD}`,
@@ -308,14 +308,14 @@ export class TradeSimulator {
 
       // Execute the trade
       await this.balanceManager.subtractAmount(
-        teamId,
+        agentId,
         fromToken,
         fromAmount,
         fromPrice.specificChain as SpecificChain,
         fromPrice.symbol,
       );
       await this.balanceManager.addAmount(
-        teamId,
+        agentId,
         toToken,
         toAmount,
         toPrice.specificChain as SpecificChain,
@@ -334,7 +334,7 @@ export class TradeSimulator {
         toTokenSymbol: toPrice.symbol,
         tradeAmountUsd: fromValueUSD, // Store the USD value of the trade
         success: true,
-        teamId,
+        agentId,
         competitionId,
         reason,
         // Add chain information to the trade record
@@ -348,18 +348,18 @@ export class TradeSimulator {
       const result = await createTrade(trade);
 
       // Update cache
-      const cachedTrades = this.tradeCache.get(teamId) || [];
+      const cachedTrades = this.tradeCache.get(agentId) || [];
       cachedTrades.unshift(result); // Add to beginning of array (newest first)
-      // Limit cache size to 100 trades per team
+      // Limit cache size to 100 trades per agent
       if (cachedTrades.length > 100) {
         cachedTrades.pop();
       }
-      this.tradeCache.set(teamId, cachedTrades);
+      this.tradeCache.set(agentId, cachedTrades);
 
       console.log(`[TradeSimulator] Trade executed successfully:
                 Initial ${fromToken} Balance: ${currentBalance}
-                New ${fromToken} Balance: ${await this.balanceManager.getBalance(teamId, fromToken)}
-                New ${toToken} Balance: ${await this.balanceManager.getBalance(teamId, toToken)}
+                New ${fromToken} Balance: ${await this.balanceManager.getBalance(agentId, fromToken)}
+                New ${toToken} Balance: ${await this.balanceManager.getBalance(agentId, toToken)}
             `);
 
       // Trigger a portfolio snapshot after successful trade execution
@@ -391,38 +391,38 @@ export class TradeSimulator {
   }
 
   /**
-   * Get all trades for a team
-   * @param teamId The team ID
+   * Get all trades for an agent
+   * @param agentId The agent ID
    * @param limit Optional number of trades to return
    * @param offset Optional offset for pagination
    * @returns Array of Trade objects
    */
-  async getTeamTrades(teamId: string, limit?: number, offset?: number) {
+  async getAgentTrades(agentId: string, limit?: number, offset?: number) {
     try {
       // If limit is small and we have cache, use it
       if (
         limit &&
         limit <= 100 &&
         offset === undefined &&
-        this.tradeCache.has(teamId)
+        this.tradeCache.has(agentId)
       ) {
-        const cachedTrades = this.tradeCache.get(teamId) || [];
+        const cachedTrades = this.tradeCache.get(agentId) || [];
         if (cachedTrades.length >= limit) {
           return cachedTrades.slice(0, limit);
         }
       }
 
       // Get from database
-      const trades = await getTeamTrades(teamId, limit, offset);
+      const trades = await getAgentTrades(agentId, limit, offset);
 
       // Update cache if fetching recent trades
       if (!offset && (!limit || limit <= 100)) {
-        this.tradeCache.set(teamId, [...trades]);
+        this.tradeCache.set(agentId, [...trades]);
       }
 
       return trades;
     } catch (error) {
-      console.error(`[TradeSimulator] Error getting team trades:`, error);
+      console.error(`[TradeSimulator] Error getting agent trades:`, error);
       return [];
     }
   }
@@ -451,13 +451,13 @@ export class TradeSimulator {
   }
 
   /**
-   * Calculate a team's portfolio value in USD
-   * @param teamId The team ID
+   * Calculate an agent's portfolio value in USD
+   * @param agentId The agent ID
    * @returns Total portfolio value in USD
    */
-  async calculatePortfolioValue(teamId: string) {
+  async calculatePortfolioValue(agentId: string) {
     let totalValue = 0;
-    const balances = await this.balanceManager.getAllBalances(teamId);
+    const balances = await this.balanceManager.getAllBalances(agentId);
 
     for (const balance of balances) {
       const price = await this.priceTracker.getPrice(balance.tokenAddress);

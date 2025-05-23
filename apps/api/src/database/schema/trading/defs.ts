@@ -13,7 +13,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
-import { competitions, teams } from "../core/defs.js";
+import { agents, competitions } from "../core/defs.js";
 
 export const tradingComps = pgSchema("trading_comps");
 
@@ -46,7 +46,7 @@ export const balances = tradingComps.table(
   "balances",
   {
     id: serial().primaryKey().notNull(),
-    teamId: uuid("team_id").notNull(),
+    agentId: uuid("agent_id").notNull(),
     tokenAddress: varchar("token_address", { length: 50 }).notNull(),
     amount: numeric({ mode: "number" }).notNull(),
     createdAt: timestamp("created_at", {
@@ -60,14 +60,14 @@ export const balances = tradingComps.table(
   },
   (table) => [
     index("idx_balances_specific_chain").on(table.specificChain),
-    index("idx_balances_team_id").on(table.teamId),
+    index("idx_balances_agent_id").on(table.agentId),
     foreignKey({
-      columns: [table.teamId],
-      foreignColumns: [teams.id],
-      name: "balances_team_id_fkey",
+      columns: [table.agentId],
+      foreignColumns: [agents.id],
+      name: "balances_agent_id_fkey",
     }).onDelete("cascade"),
-    unique("balances_team_id_token_address_key").on(
-      table.teamId,
+    unique("balances_agent_id_token_address_key").on(
+      table.agentId,
       table.tokenAddress,
     ),
   ],
@@ -77,7 +77,7 @@ export const trades = tradingComps.table(
   "trades",
   {
     id: uuid().primaryKey().notNull(),
-    teamId: uuid("team_id").notNull(),
+    agentId: uuid("agent_id").notNull(),
     competitionId: uuid("competition_id").notNull(),
     fromToken: varchar("from_token", { length: 50 }).notNull(),
     toToken: varchar("to_token", { length: 50 }).notNull(),
@@ -105,14 +105,14 @@ export const trades = tradingComps.table(
     index("idx_trades_competition_id").on(table.competitionId),
     index("idx_trades_from_chain").on(table.fromChain),
     index("idx_trades_from_specific_chain").on(table.fromSpecificChain),
-    index("idx_trades_team_id").on(table.teamId),
+    index("idx_trades_agent_id").on(table.agentId),
     index("idx_trades_timestamp").on(table.timestamp),
     index("idx_trades_to_chain").on(table.toChain),
     index("idx_trades_to_specific_chain").on(table.toSpecificChain),
     foreignKey({
-      columns: [table.teamId],
-      foreignColumns: [teams.id],
-      name: "trades_team_id_fkey",
+      columns: [table.agentId],
+      foreignColumns: [agents.id],
+      name: "trades_agent_id_fkey",
     }).onDelete("cascade"),
     foreignKey({
       columns: [table.competitionId],
@@ -151,7 +151,7 @@ export const portfolioSnapshots = tradingComps.table(
   "portfolio_snapshots",
   {
     id: serial().primaryKey().notNull(),
-    teamId: uuid("team_id").notNull(),
+    agentId: uuid("agent_id").notNull(),
     competitionId: uuid("competition_id").notNull(),
     timestamp: timestamp({ withTimezone: true }).defaultNow(),
     // TODO: are units of this number usdc? if so, the precision and scale are good here. if not, need to remove.
@@ -162,15 +162,15 @@ export const portfolioSnapshots = tradingComps.table(
     }).notNull(),
   },
   (table) => [
-    index("idx_portfolio_snapshots_team_competition").on(
-      table.teamId,
+    index("idx_portfolio_snapshots_agent_competition").on(
+      table.agentId,
       table.competitionId,
     ),
     index("idx_portfolio_snapshots_timestamp").on(table.timestamp),
     foreignKey({
-      columns: [table.teamId],
-      foreignColumns: [teams.id],
-      name: "portfolio_snapshots_team_id_fkey",
+      columns: [table.agentId],
+      foreignColumns: [agents.id],
+      name: "portfolio_snapshots_agent_id_fkey",
     }).onDelete("cascade"),
     foreignKey({
       columns: [table.competitionId],

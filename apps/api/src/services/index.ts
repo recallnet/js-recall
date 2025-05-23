@@ -1,3 +1,5 @@
+import { AdminManager } from "@/services/admin-manager.service.js";
+import { AgentManager } from "@/services/agent-manager.service.js";
 import { AuthService } from "@/services/auth.service.js";
 import { BalanceManager } from "@/services/balance-manager.service.js";
 import { CompetitionManager } from "@/services/competition-manager.service.js";
@@ -7,6 +9,7 @@ import { PriceTracker } from "@/services/price-tracker.service.js";
 import { SchedulerService } from "@/services/scheduler.service.js";
 import { TeamManager } from "@/services/team-manager.service.js";
 import { TradeSimulator } from "@/services/trade-simulator.service.js";
+import { UserManager } from "@/services/user-manager.service.js";
 
 /**
  * Service Registry
@@ -22,6 +25,9 @@ class ServiceRegistry {
   private _tradeSimulator: TradeSimulator;
   private _competitionManager: CompetitionManager;
   private _teamManager: TeamManager;
+  private _userManager: UserManager;
+  private _agentManager: AgentManager;
+  private _adminManager: AdminManager;
   private _scheduler: SchedulerService;
   private _configurationService: ConfigurationService;
   private _portfolioSnapshotter: PortfolioSnapshotter;
@@ -40,6 +46,13 @@ class ServiceRegistry {
       this._priceTracker,
       this._portfolioSnapshotter,
     );
+
+    // Initialize user and agent managers (new architecture)
+    this._userManager = new UserManager();
+    this._agentManager = new AgentManager();
+    this._adminManager = new AdminManager();
+
+    // Initialize team manager (legacy - will be deprecated)
     this._teamManager = new TeamManager();
 
     // Configuration service for dynamic settings
@@ -49,7 +62,7 @@ class ServiceRegistry {
       this._balanceManager,
       this._tradeSimulator,
       this._portfolioSnapshotter,
-      this._teamManager,
+      this._agentManager,
       this._configurationService,
     );
 
@@ -91,6 +104,18 @@ class ServiceRegistry {
     return this._teamManager;
   }
 
+  get userManager(): UserManager {
+    return this._userManager;
+  }
+
+  get agentManager(): AgentManager {
+    return this._agentManager;
+  }
+
+  get adminManager(): AdminManager {
+    return this._adminManager;
+  }
+
   get scheduler(): SchedulerService {
     return this._scheduler;
   }
@@ -108,6 +133,9 @@ export {
   TradeSimulator,
   CompetitionManager,
   TeamManager,
+  UserManager,
+  AgentManager,
+  AdminManager,
   ConfigurationService,
   ServiceRegistry,
   PortfolioSnapshotter,
