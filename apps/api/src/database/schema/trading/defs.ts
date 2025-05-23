@@ -56,6 +56,7 @@ export const balances = tradingComps.table(
       withTimezone: true,
     }).defaultNow(),
     specificChain: varchar("specific_chain", { length: 20 }).notNull(),
+    symbol: varchar("symbol", { length: 20 }).notNull(),
   },
   (table) => [
     index("idx_balances_specific_chain").on(table.specificChain),
@@ -90,6 +91,7 @@ export const trades = tradingComps.table(
     tradeAmountUsd: numeric("trade_amount_usd", {
       mode: "number",
     }).notNull(),
+    toTokenSymbol: varchar("to_token_symbol", { length: 20 }).notNull(),
     success: boolean().notNull(),
     error: text(),
     reason: text().notNull(),
@@ -129,6 +131,7 @@ export const prices = tradingComps.table(
     timestamp: timestamp({ withTimezone: true }).defaultNow(),
     chain: varchar({ length: 10 }),
     specificChain: varchar("specific_chain", { length: 20 }),
+    symbol: varchar("symbol", { length: 20 }).notNull(),
   },
   (table) => [
     index("idx_prices_chain").on(table.chain),
@@ -191,6 +194,7 @@ export const portfolioTokenValues = tradingComps.table(
     }).notNull(),
     price: numeric({ mode: "number" }).notNull(),
     specificChain: varchar("specific_chain", { length: 20 }),
+    symbol: varchar("symbol", { length: 20 }).notNull(),
   },
   (table) => [
     index("idx_portfolio_token_values_snapshot_id").on(

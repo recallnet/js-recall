@@ -20,6 +20,7 @@ export class DexScreenerProvider implements PriceSource {
     string,
     {
       price: number;
+      symbol: string;
       timestamp: number;
       chain: BlockchainType;
       specificChain: SpecificChain;
@@ -140,12 +141,16 @@ export class DexScreenerProvider implements PriceSource {
 
   /**
    * Fetch token price from DexScreener API
+   * @param tokenAddress The token address to fetch price for
+   * @param dexScreenerChain The DexScreener chain identifier
+   * @param specificChain The specific chain identifier
+   * @returns Object containing price and symbol information, or null if not found
    */
   private async fetchPrice(
     tokenAddress: string,
     dexScreenerChain: string,
     specificChain: SpecificChain,
-  ): Promise<number | null> {
+  ): Promise<{ price: number; symbol: string } | null> {
     // Try to get a better pairing for the token
     const pairTokens = this.getBestPairForPrice(tokenAddress, specificChain);
 
@@ -194,7 +199,10 @@ export class DexScreenerProvider implements PriceSource {
               console.log(
                 `[DexScreenerProvider] Found price for ${tokenAddress} as base token: $${tokenAsPair.priceUsd}`,
               );
-              return parseFloat(tokenAsPair.priceUsd);
+              return {
+                price: parseFloat(tokenAsPair.priceUsd),
+                symbol: tokenAsPair.baseToken?.symbol || "",
+              };
             }
           } else {
             // For stablecoins, we need more careful handling
@@ -247,7 +255,10 @@ export class DexScreenerProvider implements PriceSource {
                 console.log(
                   `[DexScreenerProvider] Found stablecoin ${tokenAddress} as base token: $${stablecoinPair.priceUsd}`,
                 );
-                return parseFloat(stablecoinPair.priceUsd);
+                return {
+                  price: parseFloat(stablecoinPair.priceUsd),
+                  symbol: stablecoinPair.baseToken?.symbol || "",
+                };
               } else {
                 // For stablecoins that are quote tokens, we need to calculate the inverse price
                 // Most stablecoin/stablecoin pairs are approximately 1:1
@@ -263,11 +274,17 @@ export class DexScreenerProvider implements PriceSource {
                   console.log(
                     `[DexScreenerProvider] Calculated inverse price for stablecoin as quote token: $${inversePrice}`,
                   );
-                  return inversePrice;
+                  return {
+                    price: inversePrice,
+                    symbol: stablecoinPair.quoteToken?.symbol || "",
+                  };
                 }
 
                 // Fallback to approximate price if we can't calculate the inverse
-                return 1.0;
+                return {
+                  price: 1.0,
+                  symbol: stablecoinPair.quoteToken?.symbol || "",
+                };
               }
             }
           }
@@ -322,6 +339,7 @@ export class DexScreenerProvider implements PriceSource {
     specificChain: SpecificChain,
   ): {
     price: number;
+    symbol: string;
     chain: BlockchainType;
     specificChain: SpecificChain;
   } | null {
@@ -334,6 +352,7 @@ export class DexScreenerProvider implements PriceSource {
       );
       return {
         price: cached.price,
+        symbol: cached.symbol,
         chain: cached.chain,
         specificChain: cached.specificChain,
       };
@@ -349,11 +368,13 @@ export class DexScreenerProvider implements PriceSource {
     chain: BlockchainType,
     specificChain: SpecificChain,
     price: number,
+    symbol: string,
   ): void {
     const cacheKey = this.getCacheKey(tokenAddress, specificChain);
 
     this.tokenPriceCache.set(cacheKey, {
       price,
+      symbol,
       chain,
       specificChain,
       timestamp: Date.now(),
@@ -377,6 +398,7 @@ export class DexScreenerProvider implements PriceSource {
     if (cachedPrice !== null) {
       return {
         price: cachedPrice.price,
+        symbol: cachedPrice.symbol,
         token: tokenAddress,
         timestamp: new Date(),
         chain: cachedPrice.chain,
@@ -405,10 +427,17 @@ export class DexScreenerProvider implements PriceSource {
 
     if (price !== null) {
       // Cache the price
-      this.setCachedPrice(tokenAddress, chain, specificChain, price);
+      this.setCachedPrice(
+        tokenAddress,
+        chain,
+        specificChain,
+        price.price,
+        price.symbol,
+      );
 
       return {
-        price,
+        price: price.price,
+        symbol: price.symbol,
         token: tokenAddress,
         timestamp: new Date(),
         chain,

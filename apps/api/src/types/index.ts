@@ -76,6 +76,7 @@ export interface Balance {
   createdAt: Date;
   updatedAt: Date;
   specificChain: SpecificChain;
+  symbol: string; // Token symbol
 }
 
 /**
@@ -89,6 +90,8 @@ export interface Trade {
   fromAmount: number;
   toAmount: number;
   price: number;
+  tradeAmountUsd: number;
+  toTokenSymbol: string;
   success: boolean;
   teamId: string;
   competitionId: string;
@@ -124,6 +127,7 @@ export interface PriceReport {
   timestamp: Date;
   chain: BlockchainType;
   specificChain: SpecificChain;
+  symbol: string;
 }
 
 /**

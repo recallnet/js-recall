@@ -83,6 +83,7 @@ export class RaydiumProvider implements PriceSource {
         return {
           token: tokenAddress,
           price: cachedPrice,
+          symbol: "",
           timestamp: new Date(),
           chain,
           specificChain,
@@ -101,6 +102,7 @@ export class RaydiumProvider implements PriceSource {
             return {
               token: tokenAddress,
               price,
+              symbol: "",
               timestamp: new Date(),
               chain,
               specificChain,
@@ -114,6 +116,7 @@ export class RaydiumProvider implements PriceSource {
           return {
             token: tokenAddress,
             price: fallbackPrice,
+            symbol: "",
             timestamp: new Date(),
             chain,
             specificChain,
@@ -128,6 +131,7 @@ export class RaydiumProvider implements PriceSource {
           return {
             token: tokenAddress,
             price: fallbackPrice,
+            symbol: "",
             timestamp: new Date(),
             chain,
             specificChain,
@@ -143,6 +147,7 @@ export class RaydiumProvider implements PriceSource {
       return {
         token: tokenAddress,
         price,
+        symbol: "",
         timestamp: new Date(),
         chain,
         specificChain,

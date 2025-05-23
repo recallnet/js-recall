@@ -13,6 +13,7 @@ import {
   ErrorResponse,
   PortfolioResponse,
   PriceResponse,
+  QuoteResponse,
   SpecificChain,
   StartCompetitionResponse,
   TokenBalance,
@@ -1570,6 +1571,7 @@ describe("Trading API", () => {
       fromAmount: smallValue,
       toAmount: smallValue,
       price: smallValue, // make sure exchange rate value can be very small
+      toTokenSymbol: "NA",
       success: true,
       teamId: team.id,
       tradeAmountUsd: smallValue,
@@ -1697,5 +1699,212 @@ describe("Trading API", () => {
 
     // Verify USD value is approximately correct, allowing for some variation due to price fluctuations
     expect(reverseActualUsdValue).toBeCloseTo(reverseExpectedUsdValue, 0);
+  });
+
+  test("symbol information is returned in all trading-related responses", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register team and get client
+    const { client: teamClient, team } = await registerTeamAndGetClient(
+      adminApiKey,
+      "Symbol Verification Team",
+    );
+
+    // Start a competition with our team
+    const competitionName = `Symbol Verification Test ${Date.now()}`;
+    await startTestCompetition(adminClient, competitionName, [team.id]);
+
+    // Wait for balances to be properly initialized
+    await wait(500);
+
+    // Get tokens to trade - use tokens we know have symbols
+    const usdcTokenAddress = config.specificChainTokens.svm.usdc;
+    const solTokenAddress = config.specificChainTokens.svm.sol;
+
+    // 1. Verify symbols are returned in initial balance response
+    console.log("1. Checking symbols in initial balance response...");
+    const initialBalanceResponse = await teamClient.getBalance();
+    expect(initialBalanceResponse.success).toBe(true);
+
+    const balancesResponse = initialBalanceResponse as BalancesResponse;
+    const usdcBalance = balancesResponse.balances.find(
+      (b) => b.tokenAddress === usdcTokenAddress,
+    );
+    const solBalance = balancesResponse.balances.find(
+      (b) => b.tokenAddress === solTokenAddress,
+    );
+
+    // Verify symbol fields exist and are not empty
+    if (usdcBalance) {
+      expect(usdcBalance.symbol).toBeDefined();
+      expect(typeof usdcBalance.symbol).toBe("string");
+      expect(usdcBalance.symbol.length).toBeGreaterThan(0);
+      console.log(`USDC symbol in balance: "${usdcBalance.symbol}"`);
+    }
+
+    if (solBalance) {
+      expect(solBalance.symbol).toBeDefined();
+      expect(typeof solBalance.symbol).toBe("string");
+      expect(solBalance.symbol.length).toBeGreaterThan(0);
+      console.log(`SOL symbol in balance: "${solBalance.symbol}"`);
+    }
+
+    // 2. Get a trade quote and verify symbols are included
+    console.log("2. Checking symbols in trade quote response...");
+    const quoteResponse = await teamClient.getQuote(
+      usdcTokenAddress,
+      solTokenAddress,
+      "100",
+    );
+
+    // Check if it's an error response
+    expect(quoteResponse).toBeDefined();
+    expect("error" in quoteResponse).toBe(false); // Should not be an error response
+
+    // Cast to QuoteResponse since we've verified it's not an error
+    const quote = quoteResponse as QuoteResponse;
+    expect(quote.fromToken).toBe(usdcTokenAddress);
+    expect(quote.toToken).toBe(solTokenAddress);
+    expect(quote.symbols).toBeDefined();
+    expect(quote.symbols.fromTokenSymbol).toBeDefined();
+    expect(quote.symbols.toTokenSymbol).toBeDefined();
+    expect(typeof quote.symbols.fromTokenSymbol).toBe("string");
+    expect(typeof quote.symbols.toTokenSymbol).toBe("string");
+    expect(quote.symbols.fromTokenSymbol.length).toBeGreaterThan(0);
+    expect(quote.symbols.toTokenSymbol.length).toBeGreaterThan(0);
+
+    console.log(`Quote fromTokenSymbol: "${quote.symbols.fromTokenSymbol}"`);
+    console.log(`Quote toTokenSymbol: "${quote.symbols.toTokenSymbol}"`);
+
+    // 3. Execute a trade and verify symbols in trade execution response
+    console.log("3. Executing trade and checking symbols in response...");
+    const tradeResponse = await teamClient.executeTrade({
+      fromToken: usdcTokenAddress,
+      toToken: solTokenAddress,
+      amount: "50",
+      fromChain: BlockchainType.SVM,
+      toChain: BlockchainType.SVM,
+      reason: "Testing symbol fields in trade execution",
+    });
+
+    expect(tradeResponse.success).toBe(true);
+    if (tradeResponse.success) {
+      const transaction = (tradeResponse as TradeResponse).transaction;
+
+      // Verify toTokenSymbol is included (we only store toTokenSymbol in the database)
+      expect(transaction.toTokenSymbol).toBeDefined();
+      expect(typeof transaction.toTokenSymbol).toBe("string");
+      expect(transaction.toTokenSymbol.length).toBeGreaterThan(0);
+      console.log(
+        `Trade execution toTokenSymbol: "${transaction.toTokenSymbol}"`,
+      );
+    }
+
+    // Wait for trade to be processed
+    await wait(500);
+
+    // 4. Verify symbols are returned in updated balance response
+    console.log("4. Checking symbols in updated balance response...");
+    const updatedBalanceResponse = await teamClient.getBalance();
+    expect(updatedBalanceResponse.success).toBe(true);
+
+    const updatedBalancesResponse = updatedBalanceResponse as BalancesResponse;
+    const updatedUsdcBalance = updatedBalancesResponse.balances.find(
+      (b) => b.tokenAddress === usdcTokenAddress,
+    );
+    const updatedSolBalance = updatedBalancesResponse.balances.find(
+      (b) => b.tokenAddress === solTokenAddress,
+    );
+
+    // Verify symbols are still present and correct
+    if (updatedUsdcBalance) {
+      expect(updatedUsdcBalance.symbol).toBeDefined();
+      expect(typeof updatedUsdcBalance.symbol).toBe("string");
+      expect(updatedUsdcBalance.symbol.length).toBeGreaterThan(0);
+      console.log(`Updated USDC symbol: "${updatedUsdcBalance.symbol}"`);
+    }
+
+    if (updatedSolBalance) {
+      expect(updatedSolBalance.symbol).toBeDefined();
+      expect(typeof updatedSolBalance.symbol).toBe("string");
+      expect(updatedSolBalance.symbol.length).toBeGreaterThan(0);
+      console.log(`Updated SOL symbol: "${updatedSolBalance.symbol}"`);
+    }
+
+    // 5. Verify symbols in trade history
+    console.log("5. Checking symbols in trade history response...");
+    const tradeHistoryResponse = await teamClient.getTradeHistory();
+    expect(tradeHistoryResponse.success).toBe(true);
+
+    if (tradeHistoryResponse.success) {
+      const tradeHistory = tradeHistoryResponse as TradeHistoryResponse;
+      expect(tradeHistory.trades.length).toBeGreaterThan(0);
+
+      const lastTrade = tradeHistory.trades[0];
+      expect(lastTrade).toBeDefined();
+
+      if (lastTrade) {
+        expect(lastTrade.toTokenSymbol).toBeDefined();
+        expect(typeof lastTrade.toTokenSymbol).toBe("string");
+        expect(lastTrade.toTokenSymbol.length).toBeGreaterThan(0);
+        console.log(
+          `Trade history toTokenSymbol: "${lastTrade.toTokenSymbol}"`,
+        );
+      }
+    }
+
+    // 6. Verify symbols in portfolio response
+    console.log("6. Checking symbols in portfolio response...");
+    const portfolioResponse = await teamClient.getPortfolio();
+    expect(portfolioResponse.success).toBe(true);
+
+    if (portfolioResponse.success) {
+      const portfolio = portfolioResponse as PortfolioResponse;
+      expect(portfolio.tokens).toBeDefined();
+      expect(portfolio.tokens.length).toBeGreaterThan(0);
+
+      // Check each token in the portfolio has a symbol
+      portfolio.tokens.forEach((token, index) => {
+        expect(token.symbol).toBeDefined();
+        expect(typeof token.symbol).toBe("string");
+        expect(token.symbol.length).toBeGreaterThan(0);
+        console.log(
+          `Portfolio token ${index} symbol: "${token.symbol}" for address ${token.token}`,
+        );
+      });
+    }
+
+    // 7. Verify symbols match between responses
+    console.log("7. Verifying symbol consistency across responses...");
+    if (
+      !("error" in quoteResponse) &&
+      tradeResponse.success &&
+      portfolioResponse.success
+    ) {
+      const quote = quoteResponse as QuoteResponse;
+      const tradeTransaction = (tradeResponse as TradeResponse).transaction;
+      const portfolio = portfolioResponse as PortfolioResponse;
+
+      // Find SOL token in portfolio (the toToken from our trade)
+      const solTokenInPortfolio = portfolio.tokens.find(
+        (t) => t.token === solTokenAddress,
+      );
+
+      if (solTokenInPortfolio) {
+        // Verify the toTokenSymbol from quote matches what's in the portfolio
+        expect(quote.symbols.toTokenSymbol).toBe(solTokenInPortfolio.symbol);
+
+        // Verify the toTokenSymbol from trade execution matches what's in the portfolio
+        expect(tradeTransaction.toTokenSymbol).toBe(solTokenInPortfolio.symbol);
+
+        console.log(
+          `Symbol consistency verified: "${quote.symbols.toTokenSymbol}" across all responses`,
+        );
+      }
+    }
+
+    console.log("✅ All symbol verification tests passed!");
   });
 });

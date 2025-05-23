@@ -604,6 +604,64 @@ Search for teams based on various criteria like email, name, wallet address, etc
 | --------------- | ------ |
 | BearerAuth      |        |
 
+### /api/auth/nonce
+
+#### GET
+
+##### Summary:
+
+Get a random nonce for SIWE authentication
+
+##### Description:
+
+Generates a new nonce and stores it in the session for SIWE message verification
+
+##### Responses
+
+| Code | Description                        |
+| ---- | ---------------------------------- |
+| 200  | A new nonce generated successfully |
+| 500  | Internal server error              |
+
+### /api/auth/login
+
+#### POST
+
+##### Summary:
+
+Verify SIWE signature and create a session
+
+##### Description:
+
+Verifies the SIWE message and signature, creates a session, and returns team info
+
+##### Responses
+
+| Code | Description                                |
+| ---- | ------------------------------------------ |
+| 200  | Authentication successful, session created |
+| 401  | Authentication failed                      |
+| 500  | Internal server error                      |
+
+### /api/auth/logout
+
+#### POST
+
+##### Summary:
+
+Logout the current user by destroying the session
+
+##### Description:
+
+Clears the session data and destroys the session cookie
+
+##### Responses
+
+| Code | Description           |
+| ---- | --------------------- |
+| 200  | Logout successful     |
+| 500  | Internal server error |
+
 ### /api/competition/leaderboard
 
 #### GET
