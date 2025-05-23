@@ -30,7 +30,7 @@ export const SIWEButton: React.FunctionComponent<
   };
 
   const handleMyAccount = () => {
-    router.push("/user/agents");
+    router.push("/profile");
   };
 
   return (
