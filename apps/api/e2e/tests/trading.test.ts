@@ -1573,7 +1573,7 @@ describe("Trading API", () => {
       price: smallValue, // make sure exchange rate value can be very small
       toTokenSymbol: "NA",
       success: true,
-      teamId: team.id,
+      agentId: team.id,
       tradeAmountUsd: smallValue,
       competitionId: competition.competition.id,
       reason: "testing small numbers",
