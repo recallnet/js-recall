@@ -18,7 +18,7 @@ export function makePriceController(services: ServiceRegistry) {
      */
     async getPrice(req: Request, res: Response, next: NextFunction) {
       try {
-        const teamId = req.teamId as string;
+        const agentId = req.agentId as string;
         const {
           token,
           chain: requestedChain,
@@ -30,7 +30,7 @@ export function makePriceController(services: ServiceRegistry) {
         }
 
         console.log(
-          `[PriceController] Getting price for token ${token} requested by team ${teamId}`,
+          `[PriceController] Getting price for token ${token} requested by team ${agentId}`,
         );
 
         // Determine the blockchain type for this token, using the requested chain if provided
@@ -108,7 +108,7 @@ export function makePriceController(services: ServiceRegistry) {
      */
     async getTokenInfo(req: Request, res: Response, next: NextFunction) {
       try {
-        const teamId = req.teamId as string;
+        const agentId = req.agentId as string;
         const {
           token,
           chain: requestedChain,
@@ -120,7 +120,7 @@ export function makePriceController(services: ServiceRegistry) {
         }
 
         console.log(
-          `[PriceController] Getting token info for ${token} requested by team ${teamId}`,
+          `[PriceController] Getting token info for ${token} requested by team ${agentId}`,
         );
 
         // Determine blockchain type using the requested chain if provided

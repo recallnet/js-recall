@@ -74,8 +74,8 @@ export const rateLimiterMiddleware = async (
       return next();
     }
 
-    // Get team ID from request (set by auth middleware)
-    const teamId = req.teamId || "anonymous";
+    // Get agent ID from request (set by auth middleware)
+    const teamId = req.agentId || "anonymous";
 
     // For debugging in development and testing
     const isDev =
