@@ -20,7 +20,7 @@ import {
   ADMIN_USERNAME,
   cleanupTestState,
   createTestClient,
-  registerTeamAndGetClient,
+  registerUserAndAgentAndGetClient,
 } from "../utils/test-helpers.js";
 
 describe("SIWE Authentication", () => {
@@ -52,21 +52,18 @@ describe("SIWE Authentication", () => {
 
   it("should complete full SIWE auth flow with api-sdk", async () => {
     // Register a team
-    const teamName = `Team ${Date.now()}`;
-    const email = `team${Date.now()}@example.com`;
-    const contactPerson = "Test Contact";
+    const userName = `User ${Date.now()}`;
+    const agentName = `Agent ${Date.now()}`;
 
-    const { team, apiKey } = await registerTeamAndGetClient(
+    const { user, agent, apiKey } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      teamName,
-      email,
-      contactPerson,
-    );
-    expect(team).toBeDefined();
-    expect(team.id).toBeDefined();
-    expect(team.name).toBe(teamName);
-    expect(team.email).toBe(email);
-    expect(team.contactPerson).toBe(contactPerson);
+      userName,
+      agentName,
+    });
+    expect(user).toBeDefined();
+    expect(user.id).toBeDefined();
+    expect(user.name).toBe(userName);
+    expect(agent.name).toBe(agentName);
     expect(apiKey).toBeDefined();
 
     // Create a session client (without API key)
@@ -110,11 +107,10 @@ describe("SIWE Authentication", () => {
 
   it("should complete full SIWE auth flow with custom api client", async () => {
     // Register a team with our test wallet address
-    const teamResult = await adminClient.registerTeam(
-      "SIWE Test Team",
-      "siwe_test@example.com",
-      "Test User",
+    const teamResult = await adminClient.registerUser(
       testWalletAddress,
+      "SIWE Test User",
+      "siwe_test@example.com",
     );
 
     expect(teamResult).not.toHaveProperty("error");
@@ -143,7 +139,7 @@ describe("SIWE Authentication", () => {
     expect(loginData.wallet.toLowerCase()).toBe(
       testWalletAddress.toLowerCase(),
     );
-    expect(loginData.teamId).toBeDefined();
+    expect(loginData.userId).toBeDefined();
 
     // For this test, we'll just verify logout works properly
     // since the protected endpoint access depends on session configuration
