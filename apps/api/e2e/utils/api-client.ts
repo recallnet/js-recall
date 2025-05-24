@@ -191,60 +191,91 @@ export class ApiClient {
   }
 
   /**
-   * Register a new team (admin only)
-   * @param name Team name
-   * @param email Team email
-   * @param contactPerson Contact person name
-   * @param walletAddress Optional Ethereum wallet address (random valid address will be generated if not provided)
-   * @param metadata Optional metadata for the team agent
-   * @param imageUrl Optional image URL for the team
+   * Register a new user and optionally create their first agent (admin only)
+   * @param walletAddress Ethereum wallet address for the user
+   * @param name User's display name
+   * @param email User email address
+   * @param userImageUrl Optional image URL for the user
+   * @param agentName Optional name for the user's first agent
+   * @param agentDescription Optional description for the agent
+   * @param agentImageUrl Optional image URL for the agent
+   * @param agentMetadata Optional metadata for the agent
+   */
+  async registerUser(
+    walletAddress: string,
+    name?: string,
+    email?: string,
+    userImageUrl?: string,
+    agentName?: string,
+    agentDescription?: string,
+    agentImageUrl?: string,
+    agentMetadata?: Record<string, unknown>,
+  ): Promise<any | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post("/api/admin/users", {
+        walletAddress,
+        name,
+        email,
+        userImageUrl,
+        agentName,
+        agentDescription,
+        agentImageUrl,
+        agentMetadata,
+      });
+
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "register user");
+    }
+  }
+
+  /**
+   * Register a new team (admin only) - DEPRECATED
+   * This method now creates a user and agent for backward compatibility
+   * @deprecated Use registerUser instead
    */
   async registerTeam(
     name: string,
     email: string,
     contactPerson: string,
     walletAddress?: string,
-    metadata?: TeamMetadata,
+    metadata?: any,
     imageUrl?: string,
-  ): Promise<TeamRegistrationResponse | ErrorResponse> {
-    try {
-      // Generate a random Ethereum address if one isn't provided
-      const address = walletAddress || this.generateRandomEthAddress();
+  ): Promise<any | ErrorResponse> {
+    console.warn("registerTeam is deprecated. Use registerUser instead.");
 
-      const response = await this.axiosInstance.post(
-        "/api/admin/teams/register",
-        {
-          teamName: name,
-          email,
-          contactPerson,
-          walletAddress: address,
-          metadata,
-          imageUrl,
-        },
-      );
+    // Generate a random Ethereum address if one isn't provided
+    const address = walletAddress || this.generateRandomEthAddress();
 
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "register team");
-    }
+    // Use the new user registration endpoint
+    return this.registerUser(
+      address,
+      contactPerson, // Use contactPerson as user name
+      email,
+      undefined, // userImageUrl
+      name, // Use team name as agent name
+      `Agent for ${name}`, // agentDescription
+      imageUrl, // agentImageUrl
+      metadata, // agentMetadata
+    );
   }
 
   /**
-   * Start a competition
+   * Start a competition with agents
    */
   async startCompetition(
     params:
       | {
           name: string;
           description?: string;
-          teamIds: string[];
+          agentIds: string[];
           tradingType?: CrossChainTradingType;
           externalLink?: string;
           imageUrl?: string;
         }
       | string,
     description?: string,
-    teamIds?: string[],
+    agentIds?: string[],
     tradingType?: CrossChainTradingType,
     externalLink?: string,
     imageUrl?: string,
@@ -259,7 +290,7 @@ export class ApiClient {
         requestData = {
           name: params,
           description,
-          teamIds: teamIds || [],
+          agentIds: agentIds || [],
           tradingType,
           externalLink,
           imageUrl,
@@ -306,11 +337,11 @@ export class ApiClient {
   }
 
   /**
-   * Start an existing competition
+   * Start an existing competition with agents
    */
   async startExistingCompetition(
     competitionId: string,
-    teamIds: string[],
+    agentIds: string[],
     crossChainTradingType?: CrossChainTradingType,
     externalLink?: string,
     imageUrl?: string,
@@ -320,7 +351,7 @@ export class ApiClient {
         "/api/admin/competition/start",
         {
           competitionId,
-          teamIds,
+          agentIds,
           crossChainTradingType,
           externalLink,
           imageUrl,
@@ -373,37 +404,147 @@ export class ApiClient {
   }
 
   /**
-   * List all teams (admin only)
+   * List all agents (admin only)
    */
-  async listAllTeams(): Promise<AdminTeamsListResponse | ErrorResponse> {
+  async listAllAgents(): Promise<any | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/admin/teams");
+      const response = await this.axiosInstance.get("/api/admin/agents");
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, "list teams");
+      return this.handleApiError(error, "list agents");
     }
   }
 
   /**
-   * Alias for listAllTeams for better readability in tests
+   * List all teams (admin only) - DEPRECATED
+   * @deprecated Use listAllAgents instead
+   */
+  async listAllTeams(): Promise<AdminTeamsListResponse | ErrorResponse> {
+    console.warn("listAllTeams is deprecated. Use listAllAgents instead.");
+    return this.listAllAgents();
+  }
+
+  /**
+   * Alias for listAllAgents for better readability in tests
+   */
+  async listAgents(): Promise<any | ErrorResponse> {
+    return this.listAllAgents();
+  }
+
+  /**
+   * Alias for listAllTeams for backward compatibility
+   * @deprecated Use listAgents instead
    */
   async listTeams(): Promise<AdminTeamsListResponse | ErrorResponse> {
     return this.listAllTeams();
   }
 
   /**
-   * Delete a team (admin only)
-   * @param teamId ID of the team to delete
+   * Delete an agent (admin only)
+   * @param agentId ID of the agent to delete
    */
-  async deleteTeam(teamId: string): Promise<ApiResponse | ErrorResponse> {
+  async deleteAgent(agentId: string): Promise<ApiResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.delete(
-        `/api/admin/teams/${teamId}`,
+        `/api/admin/agents/${agentId}`,
       );
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, "delete team");
+      return this.handleApiError(error, "delete agent");
     }
+  }
+
+  /**
+   * Delete a team (admin only) - DEPRECATED
+   * @deprecated Use deleteAgent instead
+   */
+  async deleteTeam(teamId: string): Promise<ApiResponse | ErrorResponse> {
+    console.warn("deleteTeam is deprecated. Use deleteAgent instead.");
+    return this.deleteAgent(teamId);
+  }
+
+  /**
+   * Deactivate an agent (admin only)
+   * @param agentId ID of the agent to deactivate
+   * @param reason Reason for deactivation
+   */
+  async deactivateAgent(
+    agentId: string,
+    reason: string,
+  ): Promise<any | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post(
+        `/api/admin/agents/${agentId}/deactivate`,
+        { reason },
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "deactivate agent");
+    }
+  }
+
+  /**
+   * Deactivate a team (admin only) - DEPRECATED
+   * @deprecated Use deactivateAgent instead
+   */
+  async deactivateTeam(
+    teamId: string,
+    reason: string,
+  ): Promise<AdminTeamResponse | ErrorResponse> {
+    console.warn("deactivateTeam is deprecated. Use deactivateAgent instead.");
+    return this.deactivateAgent(teamId, reason);
+  }
+
+  /**
+   * Reactivate an agent (admin only)
+   * @param agentId ID of the agent to reactivate
+   */
+  async reactivateAgent(agentId: string): Promise<any | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post(
+        `/api/admin/agents/${agentId}/reactivate`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "reactivate agent");
+    }
+  }
+
+  /**
+   * Reactivate a team (admin only) - DEPRECATED
+   * @deprecated Use reactivateAgent instead
+   */
+  async reactivateTeam(
+    teamId: string,
+  ): Promise<AdminTeamResponse | ErrorResponse> {
+    console.warn("reactivateTeam is deprecated. Use reactivateAgent instead.");
+    return this.reactivateAgent(teamId);
+  }
+
+  /**
+   * Get an agent's API key (admin only)
+   * @param agentId ID of the agent
+   */
+  async getAgentApiKey(agentId: string): Promise<any | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/admin/agents/${agentId}/key`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get agent API key");
+    }
+  }
+
+  /**
+   * Get a team's API key (admin only) - DEPRECATED
+   * @deprecated Use getAgentApiKey instead
+   */
+  async getTeamApiKey(
+    teamId: string,
+  ): Promise<TeamApiKeyResponse | ErrorResponse> {
+    console.warn("getTeamApiKey is deprecated. Use getAgentApiKey instead.");
+    return this.getAgentApiKey(teamId);
   }
 
   /**
@@ -676,45 +817,6 @@ export class ApiClient {
   }
 
   /**
-   * Deactivate a team (admin only)
-   * @param teamId ID of the team to deactivate
-   * @param reason Reason for deactivation
-   */
-  async deactivateTeam(
-    teamId: string,
-    reason: string,
-  ): Promise<AdminTeamResponse | ErrorResponse> {
-    try {
-      const response = await this.axiosInstance.post(
-        `/api/admin/teams/${teamId}/deactivate`,
-        {
-          reason,
-        },
-      );
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "deactivate team");
-    }
-  }
-
-  /**
-   * Reactivate a team (admin only)
-   * @param teamId ID of the team to reactivate
-   */
-  async reactivateTeam(
-    teamId: string,
-  ): Promise<AdminTeamResponse | ErrorResponse> {
-    try {
-      const response = await this.axiosInstance.post(
-        `/api/admin/teams/${teamId}/reactivate`,
-      );
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "reactivate team");
-    }
-  }
-
-  /**
    * Get basic system health status
    */
   async getHealthStatus(): Promise<HealthCheckResponse | ErrorResponse> {
@@ -767,23 +869,6 @@ export class ApiClient {
       return response.data as T;
     } catch (error) {
       return this.handleApiError(error, `${method} ${path}`);
-    }
-  }
-
-  /**
-   * Get a team's API key (admin only)
-   * @param teamId The ID of the team
-   */
-  async getTeamApiKey(
-    teamId: string,
-  ): Promise<TeamApiKeyResponse | ErrorResponse> {
-    try {
-      const response = await this.axiosInstance.get(
-        `/api/admin/teams/${teamId}/key`,
-      );
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "get team API key");
     }
   }
 

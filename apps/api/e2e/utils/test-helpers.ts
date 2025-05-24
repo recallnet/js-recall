@@ -36,7 +36,76 @@ export function createTestClient(baseUrl?: string): ApiClient {
 }
 
 /**
- * Register a new team and return a client configured with its API credentials
+ * Register a new user and agent, and return a client configured with the agent's API credentials
+ */
+export async function registerUserAndAgentAndGetClient(
+  adminApiKey: string,
+  agentName?: string,
+  userEmail?: string,
+  userName?: string,
+  walletAddress?: string,
+  agentDescription?: string,
+  agentImageUrl?: string,
+  userImageUrl?: string,
+  agentMetadata?: Record<string, unknown>,
+) {
+  // Ensure database is initialized
+  await ensureDatabaseInitialized();
+
+  const sdk = getApiSdk(adminApiKey);
+
+  // Register a new user with optional agent creation
+  const result = await sdk.admin.postApiAdminUsers({
+    walletAddress: walletAddress || generateRandomEthAddress(),
+    name: userName || `User ${generateRandomString(8)}`,
+    email: userEmail || `user-${generateRandomString(8)}@test.com`,
+    userImageUrl,
+    agentName: agentName || `Agent ${generateRandomString(8)}`,
+    agentDescription:
+      agentDescription || `Test agent for ${agentName || "testing"}`,
+    agentImageUrl,
+    agentMetadata,
+  });
+
+  if (
+    !result.success ||
+    !result.user ||
+    !result.agent ||
+    typeof result.agent.id !== "string"
+  ) {
+    throw new Error("Failed to register user and agent");
+  }
+
+  // Create a client with the agent's API key
+  const client = new ApiClient(result.agent.apiKey);
+
+  return {
+    client,
+    user: {
+      id: result.user.id || "",
+      walletAddress: result.user.walletAddress || "",
+      name: result.user.name || "",
+      email: result.user.email || "",
+      imageUrl: result.user.imageUrl || null,
+      status: result.user.status || "active",
+      createdAt: result.user.createdAt || new Date().toISOString(),
+    },
+    agent: {
+      id: result.agent.id || "",
+      ownerId: result.agent.ownerId || "",
+      name: result.agent.name || "",
+      description: result.agent.description || "",
+      imageUrl: result.agent.imageUrl || null,
+      status: result.agent.status || "active",
+      createdAt: result.agent.createdAt || new Date().toISOString(),
+    },
+    apiKey: result.agent.apiKey || "",
+  };
+}
+
+/**
+ * Legacy function name for backward compatibility
+ * @deprecated Use registerUserAndAgentAndGetClient instead
  */
 export async function registerTeamAndGetClient(
   adminApiKey: string,
@@ -46,49 +115,44 @@ export async function registerTeamAndGetClient(
   walletAddress?: string,
   imageUrl?: string,
 ) {
-  // Ensure database is initialized
-  await ensureDatabaseInitialized();
+  console.warn(
+    "registerTeamAndGetClient is deprecated. Use registerUserAndAgentAndGetClient instead.",
+  );
 
-  const sdk = getApiSdk(adminApiKey);
-  // Register a new team
-  const result = await sdk.admin.postApiAdminTeamsRegister({
-    teamName: teamName || `Team ${generateRandomString(8)}`,
-    email: email || `team-${generateRandomString(8)}@test.com`,
-    contactPerson: contactPerson || `Contact ${generateRandomString(8)}`,
-    walletAddress: walletAddress || generateRandomEthAddress(),
-    imageUrl,
-    metadata: {},
-  });
+  const result = await registerUserAndAgentAndGetClient(
+    adminApiKey,
+    teamName, // agentName
+    email, // userEmail
+    contactPerson, // userName
+    walletAddress,
+    undefined, // agentDescription
+    imageUrl, // agentImageUrl
+    undefined, // userImageUrl
+    {}, // agentMetadata
+  );
 
-  if (!result.success || !result.team || typeof result.team.id !== "string") {
-    throw new Error("Failed to register team");
-  }
-
-  // Create a client with the team's API key
-  const client = new ApiClient(result.team.apiKey);
-  // TODO: work on replacing `ApiClient` instances with SDK instances everywhere
-  // TODO: the return for this function can be cleaned up when we use the sdk everywhere
+  // Return in the old format for backward compatibility
   return {
-    client,
+    client: result.client,
     team: {
-      id: result.team.id || "",
-      name: result.team.name || "",
-      email: result.team.email || "",
-      contactPerson: result.team.contactPerson || "",
-      metadata: null, // TODO: this is a workaround for the inconsistency between the open api spec and actual data returned from routes
-      imageUrl: result.team.imageUrl || null,
+      id: result.agent.id, // Use agent ID as team ID for compatibility
+      name: result.agent.name,
+      email: result.user.email,
+      contactPerson: result.user.name,
+      metadata: null,
+      imageUrl: result.agent.imageUrl,
     },
-    apiKey: result.team.apiKey || "",
+    apiKey: result.apiKey,
   };
 }
 
 /**
- * Start a competition with given teams
+ * Start a competition with given agents
  */
 export async function startTestCompetition(
   adminClient: ApiClient,
   name: string,
-  teamIds: string[],
+  agentIds: string[],
   externalLink?: string,
   imageUrl?: string,
 ): Promise<StartCompetitionResponse> {
@@ -98,7 +162,7 @@ export async function startTestCompetition(
   const result = await adminClient.startCompetition(
     name,
     `Test competition description for ${name}`,
-    teamIds,
+    agentIds,
     undefined, // tradingType
     externalLink,
     imageUrl,
@@ -140,12 +204,12 @@ export async function createTestCompetition(
 }
 
 /**
- * Start an existing competition with given teams
+ * Start an existing competition with given agents
  */
 export async function startExistingTestCompetition(
   adminClient: ApiClient,
   competitionId: string,
-  teamIds: string[],
+  agentIds: string[],
   externalLink?: string,
   imageUrl?: string,
 ): Promise<StartCompetitionResponse> {
@@ -154,7 +218,7 @@ export async function startExistingTestCompetition(
 
   const result = await adminClient.startExistingCompetition(
     competitionId,
-    teamIds,
+    agentIds,
     undefined, // crossChainTradingType
     externalLink,
     imageUrl,
