@@ -15,70 +15,56 @@ import {
   UserSearchParams,
 } from "@/types/index.js";
 
-interface UserRegistrationResponse {
+// TODO: unify interfaces since these enforce "null" values vs `@/types/index.js` that uses undefined
+// Also, types aren't really used anywhere else, so we should probably remove them?
+interface Agent {
+  id: string;
+  ownerId: string;
+  walletAddress: string | null;
+  name: string;
+  description: string | null;
+  imageUrl: string | null;
+  apiKey: string;
+  metadata: unknown;
+  status: "active" | "suspended" | "deleted";
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface User {
+  id: string;
+  walletAddress: string;
+  name: string | null;
+  email: string | null;
+  imageUrl: string | null;
+  metadata: unknown;
+  status: "active" | "suspended" | "deleted";
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface AdminUserRegistrationResponse {
   success: boolean;
-  user: {
-    id: string;
-    walletAddress: string;
-    name: string | null;
-    email: string | null;
-    imageUrl: string | null;
-    status: string;
-    createdAt: Date;
-  };
-  agent?: {
-    id: string;
-    ownerId: string;
-    name: string;
-    description: string | null;
-    imageUrl: string | null;
-    apiKey: string;
-    metadata?: unknown;
-    status: string;
-    createdAt: Date;
-  };
+  user: User;
+  agent?: Agent;
   agentError?: string;
 }
 
-interface AgentRegistrationResponse {
+interface AdminAgentRegistrationResponse {
   success: boolean;
-  agent: {
-    id: string;
-    ownerId: string;
-    name: string;
-    description: string | null;
-    imageUrl: string | null;
-    apiKey: string;
-    metadata?: unknown;
-    status: string;
-    createdAt: Date;
-  };
+  agent: Agent;
   agentError?: string;
 }
 
-interface SearchResults {
-  users: Array<{
-    type: "user";
-    id: string;
-    walletAddress: string;
-    name: string | null;
-    email: string | null;
-    status: string;
-    imageUrl: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-  }>;
-  agents: Array<{
-    type: "agent";
-    id: string;
-    ownerId: string;
-    name: string;
-    description: string | null;
-    status: string;
-    imageUrl: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-  }>;
+interface AdminSearchResults {
+  users: User[];
+  agents: Omit<Agent, "apiKey">[];
+}
+
+export interface AdminSearchUsersAndAgentsResponse {
+  success: boolean;
+  searchType: string;
+  results: AdminSearchResults;
 }
 
 export function makeAdminController(services: ServiceRegistry) {
@@ -316,6 +302,7 @@ export function makeAdminController(services: ServiceRegistry) {
                   imageUrl: user.imageUrl,
                   status: user.status,
                   createdAt: user.createdAt,
+                  updatedAt: user.updatedAt,
                 },
                 agentError:
                   agentError instanceof Error
@@ -326,7 +313,7 @@ export function makeAdminController(services: ServiceRegistry) {
           }
 
           // Return success with created user and agent
-          const response: UserRegistrationResponse = {
+          const response: AdminUserRegistrationResponse = {
             success: true,
             user: {
               id: user.id,
@@ -334,8 +321,10 @@ export function makeAdminController(services: ServiceRegistry) {
               name: user.name,
               email: user.email,
               imageUrl: user.imageUrl,
-              status: user.status,
+              metadata: user.metadata,
+              status: user.status as "active" | "suspended" | "deleted",
               createdAt: user.createdAt,
+              updatedAt: user.updatedAt,
             },
           };
 
@@ -343,13 +332,15 @@ export function makeAdminController(services: ServiceRegistry) {
             response.agent = {
               id: agent.id,
               ownerId: agent.ownerId,
+              walletAddress: agent.walletAddress,
               name: agent.name,
               description: agent.description,
               imageUrl: agent.imageUrl,
               apiKey: agent.apiKey,
               metadata: agent.metadata,
-              status: agent.status,
+              status: agent.status as "active" | "suspended" | "deleted",
               createdAt: agent.createdAt,
+              updatedAt: agent.updatedAt,
             };
           }
 
@@ -445,9 +436,12 @@ export function makeAdminController(services: ServiceRegistry) {
             imageUrl,
             metadata,
           );
-          const response: AgentRegistrationResponse = {
+          const response: AdminAgentRegistrationResponse = {
             success: true,
-            agent,
+            agent: {
+              ...agent,
+              status: agent.status as "active" | "suspended" | "deleted",
+            },
           };
 
           return res.status(201).json(response);
@@ -851,7 +845,7 @@ export function makeAdminController(services: ServiceRegistry) {
         } = req.query;
 
         const searchTypeFilter = (searchType as string) || "both";
-        const results: SearchResults = {
+        const results: AdminSearchResults = {
           users: [],
           agents: [],
         };
@@ -879,8 +873,9 @@ export function makeAdminController(services: ServiceRegistry) {
             walletAddress: user.walletAddress,
             name: user.name,
             email: user.email,
-            status: user.status,
+            status: user.status as "active" | "suspended" | "deleted",
             imageUrl: user.imageUrl,
+            metadata: user.metadata,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
           }));
@@ -904,10 +899,12 @@ export function makeAdminController(services: ServiceRegistry) {
             type: "agent",
             id: agent.id,
             ownerId: agent.ownerId,
+            walletAddress: agent.walletAddress,
             name: agent.name,
             description: agent.description,
-            status: agent.status,
+            status: agent.status as "active" | "suspended" | "deleted",
             imageUrl: agent.imageUrl,
+            metadata: agent.metadata,
             createdAt: agent.createdAt,
             updatedAt: agent.updatedAt,
           }));
@@ -1177,10 +1174,12 @@ export function makeAdminController(services: ServiceRegistry) {
         const formattedAgent = {
           id: agent.id,
           ownerId: agent.ownerId,
+          walletAddress: agent.walletAddress,
           name: agent.name,
           description: agent.description,
-          status: agent.status,
+          status: agent.status as "active" | "suspended" | "deleted",
           imageUrl: agent.imageUrl,
+          metadata: agent.metadata,
           createdAt: agent.createdAt,
           updatedAt: agent.updatedAt,
         };

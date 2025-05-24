@@ -42,6 +42,7 @@ export function makeAgentController(services: ServiceRegistry) {
         }
 
         // Return the agent profile with owner information
+        // TODO: we can clean this up with better types that help omit the api key
         res.status(200).json({
           success: true,
           agent: {
@@ -62,6 +63,10 @@ export function makeAgentController(services: ServiceRegistry) {
             name: owner.name,
             email: owner.email,
             imageUrl: owner.imageUrl,
+            metadata: owner.metadata,
+            status: owner.status,
+            createdAt: owner.createdAt,
+            updatedAt: owner.updatedAt,
           },
         });
       } catch (error) {
