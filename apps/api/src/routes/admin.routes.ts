@@ -122,7 +122,7 @@ export function configureAdminRoutes(
    *           schema:
    *             type: object
    *             required:
-   *               - teamIds
+   *               - agentIds
    *             properties:
    *               competitionId:
    *                 type: string
@@ -143,11 +143,11 @@ export function configureAdminRoutes(
    *                 type: string
    *                 description: URL to competition image (used when creating a new competition)
    *                 example: https://example.com/competition-image.jpg
-   *               teamIds:
+   *               agentIds:
    *                 type: array
    *                 items:
    *                   type: string
-   *                 description: Array of team IDs to include in the competition
+   *                 description: Array of agent IDs to include in the competition
    *               tradingType:
    *                 type: string
    *                 description: Type of cross-chain trading to allow in this competition (used when creating a new competition)
@@ -202,11 +202,16 @@ export function configureAdminRoutes(
    *                       type: string
    *                       enum: [disallowAll, disallowXParent, allow]
    *                       description: Type of cross-chain trading allowed in this competition
-   *                     teamIds:
+   *                     agentIds:
    *                       type: array
    *                       items:
    *                         type: string
-   *                       description: Team IDs participating in the competition
+   *                       description: Agent IDs participating in the competition
+   *                 initializedAgents:
+   *                   type: array
+   *                   items:
+   *                     type: string
+   *                   description: Agent IDs that were successfully initialized for the competition
    *       400:
    *         description: Missing required parameters
    *       401:
@@ -292,9 +297,9 @@ export function configureAdminRoutes(
    *                   items:
    *                     type: object
    *                     properties:
-   *                       teamId:
+   *                       agentId:
    *                         type: string
-   *                         description: Team ID
+   *                         description: Agent ID
    *                       value:
    *                         type: number
    *                         description: Final portfolio value
@@ -316,7 +321,7 @@ export function configureAdminRoutes(
    *     tags:
    *       - Admin
    *     summary: Get competition snapshots
-   *     description: Get portfolio snapshots for a competition, optionally filtered by team
+   *     description: Get portfolio snapshots for a competition, optionally filtered by agent
    *     security:
    *       - BearerAuth: []
    *     parameters:
@@ -327,11 +332,11 @@ export function configureAdminRoutes(
    *         required: true
    *         description: ID of the competition
    *       - in: query
-   *         name: teamId
+   *         name: agentId
    *         schema:
    *           type: string
    *         required: false
-   *         description: Optional team ID to filter snapshots
+   *         description: Optional agent ID to filter snapshots
    *     responses:
    *       200:
    *         description: Competition snapshots
@@ -354,9 +359,9 @@ export function configureAdminRoutes(
    *                       competitionId:
    *                         type: string
    *                         description: Competition ID
-   *                       teamId:
+   *                       agentId:
    *                         type: string
-   *                         description: Team ID
+   *                         description: Agent ID
    *                       totalValue:
    *                         type: number
    *                         description: Total portfolio value at snapshot time
@@ -365,11 +370,11 @@ export function configureAdminRoutes(
    *                         format: date-time
    *                         description: Snapshot timestamp
    *       400:
-   *         description: Missing competitionId or team not in competition
+   *         description: Missing competitionId or agent not in competition
    *       401:
    *         description: Unauthorized - Admin authentication required
    *       404:
-   *         description: Competition or team not found
+   *         description: Competition or agent not found
    *       500:
    *         description: Server error
    */
@@ -445,18 +450,19 @@ export function configureAdminRoutes(
    *                       description: Type of cross-chain trading allowed in this competition
    *                 leaderboard:
    *                   type: array
+   *                   description: Ranked list of active agents
    *                   items:
    *                     type: object
    *                     properties:
    *                       rank:
    *                         type: integer
-   *                         description: Team rank on the leaderboard
-   *                       teamId:
+   *                         description: Agent rank on the leaderboard
+   *                       agentId:
    *                         type: string
-   *                         description: Team ID
-   *                       teamName:
+   *                         description: Agent ID
+   *                       agentName:
    *                         type: string
-   *                         description: Team name
+   *                         description: Agent name
    *                       portfolioValue:
    *                         type: number
    *                         description: Portfolio value

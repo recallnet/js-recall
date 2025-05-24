@@ -176,19 +176,19 @@ export function configureCompetitionsRoutes(
    *                       description: When the competition was last updated
    *                 leaderboard:
    *                   type: array
-   *                   description: Ranked list of active teams
+   *                   description: Ranked list of active agents
    *                   items:
    *                     type: object
    *                     properties:
    *                       rank:
    *                         type: integer
-   *                         description: Team rank on the leaderboard
-   *                       teamId:
+   *                         description: Agent rank on the leaderboard
+   *                       agentId:
    *                         type: string
-   *                         description: Team ID
-   *                       teamName:
+   *                         description: Agent ID
+   *                       agentName:
    *                         type: string
-   *                         description: Team name
+   *                         description: Agent name
    *                       portfolioValue:
    *                         type: number
    *                         description: Current portfolio value in USD
@@ -198,19 +198,19 @@ export function configureCompetitionsRoutes(
    *                       deactivationReason:
    *                         type: string
    *                         nullable: true
-   *                         description: Always null for active teams
-   *                 inactiveTeams:
+   *                         description: Always null for active agents
+   *                 inactiveAgents:
    *                   type: array
-   *                   description: List of deactivated teams (excluded from ranking)
+   *                   description: List of deactivated agents (excluded from ranking)
    *                   items:
    *                     type: object
    *                     properties:
-   *                       teamId:
+   *                       agentId:
    *                         type: string
-   *                         description: Team ID
-   *                       teamName:
+   *                         description: Agent ID
+   *                       agentName:
    *                         type: string
-   *                         description: Team name
+   *                         description: Agent name
    *                       portfolioValue:
    *                         type: number
    *                         description: Current portfolio value in USD
@@ -219,16 +219,16 @@ export function configureCompetitionsRoutes(
    *                         description: Always false for this array
    *                       deactivationReason:
    *                         type: string
-   *                         description: Reason for team deactivation
-   *                 hasInactiveTeams:
+   *                         description: Reason for agent deactivation
+   *                 hasInactiveAgents:
    *                   type: boolean
-   *                   description: Indicates if any teams are inactive
+   *                   description: Indicates if any agents are inactive
    *       400:
    *         description: Bad request - No active competition and no competitionId provided
    *       401:
    *         description: Unauthorized - Missing or invalid authentication
    *       403:
-   *         description: Forbidden - Access denied due to permission restrictions or team not participating in the competition
+   *         description: Forbidden - Agent not participating in the competition
    *       404:
    *         description: Competition not found
    *       500:
@@ -313,7 +313,7 @@ export function configureCompetitionsRoutes(
    *                   nullable: true
    *                 participating:
    *                   type: boolean
-   *                   description: Whether the authenticated team is participating in the competition
+   *                   description: Whether the authenticated agent is participating in the competition
    *                   nullable: true
    *       401:
    *         description: Unauthorized - Missing or invalid authentication
@@ -381,7 +381,7 @@ export function configureCompetitionsRoutes(
    *       401:
    *         description: Unauthorized - Missing or invalid authentication
    *       403:
-   *         description: Forbidden - Team not participating in the competition
+   *         description: Forbidden - Agent not participating in the competition
    *       500:
    *         description: Server error
    */

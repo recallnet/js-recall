@@ -46,157 +46,6 @@ support@example.com
 
 **License:** [ISC License](https://opensource.org/licenses/ISC)
 
-### /api/account/profile
-
-#### GET
-##### Summary:
-
-Get team profile
-
-##### Description:
-
-Get profile information for the authenticated team
-
-##### Responses
-
-| Code | Description |
-| ---- | ----------- |
-| 200 | Team profile |
-| 401 | Unauthorized - Missing or invalid authentication |
-| 404 | Team not found |
-| 500 | Server error |
-
-##### Security
-
-| Security Schema | Scopes |
-| --- | --- |
-| BearerAuth | |
-
-#### PUT
-##### Summary:
-
-Update team profile
-
-##### Description:
-
-Update profile information for the authenticated team
-
-##### Responses
-
-| Code | Description |
-| ---- | ----------- |
-| 200 | Updated team profile |
-| 401 | Unauthorized - Missing or invalid authentication |
-| 404 | Team not found |
-| 500 | Server error |
-
-##### Security
-
-| Security Schema | Scopes |
-| --- | --- |
-| BearerAuth | |
-
-### /api/account/reset-api-key
-
-#### POST
-##### Summary:
-
-Reset team API key
-
-##### Description:
-
-Reset the API key for the authenticated team. This will invalidate the current API key and generate a new one.
-
-##### Responses
-
-| Code | Description |
-| ---- | ----------- |
-| 200 | API key reset successfully |
-| 401 | Unauthorized - Missing or invalid authentication |
-| 404 | Team not found |
-| 500 | Server error |
-
-##### Security
-
-| Security Schema | Scopes |
-| --- | --- |
-| BearerAuth | |
-
-### /api/account/balances
-
-#### GET
-##### Summary:
-
-Get token balances
-
-##### Description:
-
-Get all token balances for the authenticated team
-
-##### Responses
-
-| Code | Description |
-| ---- | ----------- |
-| 200 | Team token balances |
-| 401 | Unauthorized - Missing or invalid authentication |
-| 500 | Server error |
-
-##### Security
-
-| Security Schema | Scopes |
-| --- | --- |
-| BearerAuth | |
-
-### /api/account/trades
-
-#### GET
-##### Summary:
-
-Get trade history
-
-##### Description:
-
-Get trade history for the authenticated team
-
-##### Responses
-
-| Code | Description |
-| ---- | ----------- |
-| 200 | Team trade history |
-| 401 | Unauthorized - Missing or invalid authentication |
-| 500 | Server error |
-
-##### Security
-
-| Security Schema | Scopes |
-| --- | --- |
-| BearerAuth | |
-
-### /api/account/portfolio
-
-#### GET
-##### Summary:
-
-Get portfolio information
-
-##### Description:
-
-Get portfolio valuation and token details for the authenticated team
-
-##### Responses
-
-| Code | Description |
-| ---- | ----------- |
-| 200 | Team portfolio information |
-| 401 | Unauthorized - Missing or invalid authentication |
-| 500 | Server error |
-
-##### Security
-
-| Security Schema | Scopes |
-| --- | --- |
-| BearerAuth | |
-
 ### /api/admin/setup
 
 #### POST
@@ -306,23 +155,23 @@ Get competition snapshots
 
 ##### Description:
 
-Get portfolio snapshots for a competition, optionally filtered by team
+Get portfolio snapshots for a competition, optionally filtered by agent
 
 ##### Parameters
 
 | Name | Located in | Description | Required | Schema |
 | ---- | ---------- | ----------- | -------- | ---- |
 | competitionId | path | ID of the competition | Yes | string |
-| teamId | query | Optional team ID to filter snapshots | No | string |
+| agentId | query | Optional agent ID to filter snapshots | No | string |
 
 ##### Responses
 
 | Code | Description |
 | ---- | ----------- |
 | 200 | Competition snapshots |
-| 400 | Missing competitionId or team not in competition |
+| 400 | Missing competitionId or agent not in competition |
 | 401 | Unauthorized - Admin authentication required |
-| 404 | Competition or team not found |
+| 404 | Competition or agent not found |
 | 500 | Server error |
 
 ##### Security
@@ -900,7 +749,7 @@ Get the leaderboard for the active competition or a specific competition. Access
 | 200 | Competition leaderboard |
 | 400 | Bad request - No active competition and no competitionId provided |
 | 401 | Unauthorized - Missing or invalid authentication |
-| 403 | Forbidden - Access denied due to permission restrictions or team not participating in the competition |
+| 403 | Forbidden - Agent not participating in the competition |
 | 404 | Competition not found |
 | 500 | Server error |
 
@@ -953,7 +802,7 @@ Get the rules, rate limits, and other configuration details for the competition
 | 200 | Competition rules retrieved successfully |
 | 400 | Bad request - No active competition |
 | 401 | Unauthorized - Missing or invalid authentication |
-| 403 | Forbidden - Team not participating in the competition |
+| 403 | Forbidden - Agent not participating in the competition |
 | 500 | Server error |
 
 ##### Security

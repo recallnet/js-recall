@@ -5,6 +5,7 @@ import {
   AdminAgentsListResponse,
   AdminUserResponse,
   AdminUsersListResponse,
+  Agent,
   AgentApiKeyResponse,
   AgentMetadata,
   AgentProfileResponse,
@@ -212,7 +213,7 @@ export class ApiClient {
     agentName?: string,
     agentDescription?: string,
     agentImageUrl?: string,
-    agentMetadata?: Record<string, unknown>,
+    agentMetadata?: AgentMetadata,
   ): Promise<UserRegistrationResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post("/api/admin/users", {
@@ -368,14 +369,13 @@ export class ApiClient {
   }
 
   /**
-   * Update an agent profile
-   * @param profileData Profile data to update including name, metadata, and imageUrl
+   * Update a user profile
+   * @param profileData Profile data to update including name and imageUrl only (users have limited self-service editing)
    */
   async updateUserProfile(profileData: {
     name?: string;
-    metadata?: AgentMetadata;
     imageUrl?: string;
-  }): Promise<AgentProfileResponse | ErrorResponse> {
+  }): Promise<UserProfileResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.put(
         "/api/user/profile",
@@ -383,17 +383,17 @@ export class ApiClient {
       );
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, "update profile");
+      return this.handleApiError(error, "update user profile");
     }
   }
 
   /**
    * Update an agent profile
-   * @param profileData Profile data to update including name, metadata, and imageUrl
+   * @param profileData Profile data to update including name, description, and imageUrl only (agents have limited self-service editing)
    */
   async updateAgentProfile(profileData: {
     name?: string;
-    metadata?: AgentMetadata;
+    description?: string;
     imageUrl?: string;
   }): Promise<AgentProfileResponse | ErrorResponse> {
     try {
@@ -403,7 +403,7 @@ export class ApiClient {
       );
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, "update profile");
+      return this.handleApiError(error, "update agent profile");
     }
   }
 
@@ -535,11 +535,26 @@ export class ApiClient {
   }
 
   /**
+   * Get specific agent details (admin only)
+   * @param agentId ID of the agent to retrieve
+   */
+  async getAgent(agentId: string): Promise<AdminAgentResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/admin/agents/${agentId}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get admin agent");
+    }
+  }
+
+  /**
    * Get account balances
    */
   async getBalance(): Promise<BalancesResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/account/balances");
+      const response = await this.axiosInstance.get("/api/agent/balances");
       return response.data as BalancesResponse;
     } catch (error) {
       return this.handleApiError(error, "get balances");
@@ -550,7 +565,7 @@ export class ApiClient {
    */
   async getPortfolio(): Promise<PortfolioResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/account/portfolio");
+      const response = await this.axiosInstance.get("/api/agent/portfolio");
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get portfolio");
@@ -562,7 +577,7 @@ export class ApiClient {
    */
   async getTradeHistory(): Promise<TradeHistoryResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/account/trades");
+      const response = await this.axiosInstance.get("/api/agent/trades");
       return response.data as TradeHistoryResponse;
     } catch (error) {
       return this.handleApiError(error, "get trade history");
@@ -866,7 +881,7 @@ export class ApiClient {
   async resetApiKey(): Promise<ResetApiKeyResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
-        "/api/account/reset-api-key",
+        "/api/agent/reset-api-key",
       );
       return response.data as ResetApiKeyResponse;
     } catch (error) {
@@ -979,6 +994,68 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "logout");
+    }
+  }
+
+  /**
+   * Create a new agent for the authenticated user
+   * @param name Agent name (required, must be unique for this user)
+   * @param description Optional agent description
+   * @param imageUrl Optional agent image URL
+   * @param metadata Optional agent metadata
+   */
+  async createAgent(
+    name: string,
+    description?: string,
+    imageUrl?: string,
+    metadata?: Record<string, unknown>,
+  ): Promise<AgentProfileResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post("/api/user/agents", {
+        name,
+        description,
+        imageUrl,
+        metadata,
+      });
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "create agent");
+    }
+  }
+
+  /**
+   * Get all agents owned by the authenticated user
+   */
+  async getUserAgents(): Promise<
+    | {
+        success: boolean;
+        userId: string;
+        agents: Agent[];
+      }
+    | ErrorResponse
+  > {
+    try {
+      const response = await this.axiosInstance.get("/api/user/agents");
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get user agents");
+    }
+  }
+
+  /**
+   * Get details of a specific agent owned by the authenticated user
+   * @param agentId ID of the agent to retrieve
+   */
+  async getUserAgent(
+    agentId: string,
+  ): Promise<AgentProfileResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/user/agents/${agentId}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get user agent");
     }
   }
 }
