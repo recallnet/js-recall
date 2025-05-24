@@ -919,363 +919,6 @@
         }
       }
     },
-    "/api/admin/teams/register": {
-      "post": {
-        "tags": [
-          "Admin"
-        ],
-        "summary": "Register a new team",
-        "description": "Admin-only endpoint to register a new team. Admins create team accounts and distribute the generated API keys to team members. Teams cannot register themselves.",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "teamName",
-                  "email",
-                  "contactPerson",
-                  "walletAddress"
-                ],
-                "properties": {
-                  "teamName": {
-                    "type": "string",
-                    "description": "Name of the team",
-                    "example": "Team Alpha"
-                  },
-                  "email": {
-                    "type": "string",
-                    "format": "email",
-                    "description": "Team email address",
-                    "example": "team@example.com"
-                  },
-                  "contactPerson": {
-                    "type": "string",
-                    "description": "Name of the contact person",
-                    "example": "John Doe"
-                  },
-                  "walletAddress": {
-                    "type": "string",
-                    "description": "Ethereum wallet address (must start with 0x)",
-                    "example": 1.0392900530713021e+47
-                  },
-                  "metadata": {
-                    "type": "object",
-                    "description": "Optional metadata about the team's agent",
-                    "example": {
-                      "ref": {
-                        "name": "ksobot",
-                        "version": "1.0.0",
-                        "url": "github.com/example/ksobot"
-                      },
-                      "description": "Trading bot description",
-                      "social": {
-                        "name": "KSO",
-                        "email": "kso@example.com",
-                        "twitter": "hey_kso"
-                      }
-                    }
-                  },
-                  "imageUrl": {
-                    "type": "string",
-                    "description": "URL to the team's image",
-                    "example": "https://example.com/team-image.jpg"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Team registered successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "description": "Operation success status"
-                    },
-                    "team": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "description": "Team ID"
-                        },
-                        "name": {
-                          "type": "string",
-                          "description": "Team name"
-                        },
-                        "email": {
-                          "type": "string",
-                          "description": "Team email"
-                        },
-                        "contactPerson": {
-                          "type": "string",
-                          "description": "Contact person name"
-                        },
-                        "walletAddress": {
-                          "type": "string",
-                          "description": "Ethereum wallet address"
-                        },
-                        "apiKey": {
-                          "type": "string",
-                          "description": "API key for the team to use with Bearer authentication. Admin should securely provide this to the team.",
-                          "example": "abc123def456_ghi789jkl012"
-                        },
-                        "imageUrl": {
-                          "type": "string",
-                          "description": "URL to the team's image",
-                          "nullable": true
-                        },
-                        "metadata": {
-                          "type": "object",
-                          "description": "Optional agent metadata if provided"
-                        },
-                        "createdAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "description": "Account creation timestamp"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Missing required parameters or invalid wallet address"
-          },
-          "409": {
-            "description": "Team with this email or wallet address already exists"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        }
-      }
-    },
-    "/api/admin/teams": {
-      "get": {
-        "tags": [
-          "Admin"
-        ],
-        "summary": "List all teams",
-        "description": "Get a list of all non-admin teams",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "List of teams",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "description": "Operation success status"
-                    },
-                    "teams": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "description": "Team ID"
-                          },
-                          "name": {
-                            "type": "string",
-                            "description": "Team name"
-                          },
-                          "email": {
-                            "type": "string",
-                            "description": "Team email"
-                          },
-                          "contactPerson": {
-                            "type": "string",
-                            "description": "Contact person name"
-                          },
-                          "createdAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "description": "Account creation timestamp"
-                          },
-                          "updatedAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "description": "Account update timestamp"
-                          },
-                          "imageUrl": {
-                            "type": "string",
-                            "description": "URL to the team's image",
-                            "nullable": true
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - Admin authentication required"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        }
-      }
-    },
-    "/api/admin/teams/{teamId}/key": {
-      "get": {
-        "tags": [
-          "Admin"
-        ],
-        "summary": "Get a team's API key",
-        "description": "Retrieves the original API key for a team. Use this when teams lose or misplace their API key.",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "teamId",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "ID of the team"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "API key retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "description": "Operation success status"
-                    },
-                    "team": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "description": "Team ID"
-                        },
-                        "name": {
-                          "type": "string",
-                          "description": "Team name"
-                        },
-                        "apiKey": {
-                          "type": "string",
-                          "description": "The team's API key"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - Admin authentication required"
-          },
-          "403": {
-            "description": "Cannot retrieve API key for admin accounts"
-          },
-          "404": {
-            "description": "Team not found"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        }
-      }
-    },
-    "/api/admin/teams/{teamId}": {
-      "delete": {
-        "tags": [
-          "Admin"
-        ],
-        "summary": "Delete a team",
-        "description": "Permanently delete a team and all associated data",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "teamId",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "ID of the team to delete"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Team deleted successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "description": "Operation success status"
-                    },
-                    "message": {
-                      "type": "string",
-                      "description": "Success message"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Team ID is required"
-          },
-          "401": {
-            "description": "Unauthorized - Admin authentication required"
-          },
-          "403": {
-            "description": "Cannot delete admin accounts"
-          },
-          "404": {
-            "description": "Team not found"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        }
-      }
-    },
     "/api/admin/competition/create": {
       "post": {
         "tags": [
@@ -1419,7 +1062,7 @@
           "Admin"
         ],
         "summary": "Start a competition",
-        "description": "Start a new or existing competition with specified teams. If competitionId is provided, it will start an existing competition. Otherwise, it will create and start a new one.",
+        "description": "Start a new or existing competition with specified agents. If competitionId is provided, it will start an existing competition. Otherwise, it will create and start a new one.",
         "security": [
           {
             "BearerAuth": []
@@ -1939,27 +1582,16 @@
         }
       }
     },
-    "/api/admin/teams/{teamId}/deactivate": {
+    "/api/admin/users": {
       "post": {
         "tags": [
           "Admin"
         ],
-        "summary": "Deactivate a team",
-        "description": "Deactivate a team from the competition. The team will no longer be able to perform any actions.",
+        "summary": "Register a new user",
+        "description": "Admin-only endpoint to register a new user and optionally create their first agent. Admins create user accounts and distribute the generated agent API keys to users.",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "teamId",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "ID of the team to deactivate"
           }
         ],
         "requestBody": {
@@ -1969,13 +1601,61 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "reason"
+                  "walletAddress"
                 ],
                 "properties": {
-                  "reason": {
+                  "walletAddress": {
                     "type": "string",
-                    "description": "Reason for deactivation",
-                    "example": "Violated competition rules by using external API"
+                    "description": "Ethereum wallet address (must start with 0x)",
+                    "example": 1.0392900530713021e+47
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "User's display name",
+                    "example": "John Doe"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "User email address",
+                    "example": "user@example.com"
+                  },
+                  "userImageUrl": {
+                    "type": "string",
+                    "description": "URL to the user's profile image",
+                    "example": "https://example.com/user-image.jpg"
+                  },
+                  "agentName": {
+                    "type": "string",
+                    "description": "Name for the user's first agent (optional)",
+                    "example": "Trading Bot Alpha"
+                  },
+                  "agentDescription": {
+                    "type": "string",
+                    "description": "Description of the agent (optional)",
+                    "example": "High-frequency trading bot specializing in DeFi"
+                  },
+                  "agentImageUrl": {
+                    "type": "string",
+                    "description": "URL to the agent's image (optional)",
+                    "example": "https://example.com/agent-image.jpg"
+                  },
+                  "agentMetadata": {
+                    "type": "object",
+                    "description": "Optional metadata about the agent",
+                    "example": {
+                      "ref": {
+                        "name": "ksobot",
+                        "version": "1.0.0",
+                        "url": "github.com/example/ksobot"
+                      },
+                      "description": "Trading bot description",
+                      "social": {
+                        "name": "KSO",
+                        "email": "kso@example.com",
+                        "twitter": "hey_kso"
+                      }
+                    }
                   }
                 }
               }
@@ -1983,8 +1663,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Team deactivated successfully",
+          "201": {
+            "description": "User registered successfully",
             "content": {
               "application/json": {
                 "schema": {
@@ -1994,106 +1674,88 @@
                       "type": "boolean",
                       "description": "Operation success status"
                     },
-                    "team": {
+                    "user": {
                       "type": "object",
                       "properties": {
                         "id": {
                           "type": "string",
-                          "description": "Team ID"
+                          "description": "User ID"
+                        },
+                        "walletAddress": {
+                          "type": "string",
+                          "description": "User wallet address"
                         },
                         "name": {
                           "type": "string",
-                          "description": "Team name"
+                          "description": "User name"
                         },
-                        "active": {
-                          "type": "boolean",
-                          "description": "Active status (will be false)"
-                        },
-                        "deactivationReason": {
+                        "email": {
                           "type": "string",
-                          "description": "Reason for deactivation"
+                          "description": "User email"
                         },
-                        "deactivationDate": {
+                        "imageUrl": {
+                          "type": "string",
+                          "description": "URL to user's image",
+                          "nullable": true
+                        },
+                        "status": {
+                          "type": "string",
+                          "description": "User status"
+                        },
+                        "createdAt": {
                           "type": "string",
                           "format": "date-time",
-                          "description": "Date of deactivation"
+                          "description": "Account creation timestamp"
                         }
                       }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Missing required parameters"
-          },
-          "401": {
-            "description": "Unauthorized - Admin authentication required"
-          },
-          "403": {
-            "description": "Cannot deactivate admin accounts"
-          },
-          "404": {
-            "description": "Team not found"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        }
-      }
-    },
-    "/api/admin/teams/{teamId}/reactivate": {
-      "post": {
-        "tags": [
-          "Admin"
-        ],
-        "summary": "Reactivate a team",
-        "description": "Reactivate a previously deactivated team, allowing them to participate in the competition again.",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "teamId",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "ID of the team to reactivate"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Team reactivated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "description": "Operation success status"
                     },
-                    "team": {
+                    "agent": {
                       "type": "object",
+                      "nullable": true,
+                      "description": "Created agent (if agentName was provided)",
                       "properties": {
                         "id": {
                           "type": "string",
-                          "description": "Team ID"
+                          "description": "Agent ID"
+                        },
+                        "ownerId": {
+                          "type": "string",
+                          "description": "Agent owner ID"
                         },
                         "name": {
                           "type": "string",
-                          "description": "Team name"
+                          "description": "Agent name"
                         },
-                        "active": {
-                          "type": "boolean",
-                          "description": "Active status (will be true)"
+                        "description": {
+                          "type": "string",
+                          "description": "Agent description",
+                          "nullable": true
+                        },
+                        "imageUrl": {
+                          "type": "string",
+                          "description": "URL to agent's image",
+                          "nullable": true
+                        },
+                        "apiKey": {
+                          "type": "string",
+                          "description": "API key for the agent to use with Bearer authentication. Admin should securely provide this to the user.",
+                          "example": "abc123def456_ghi789jkl012"
+                        },
+                        "status": {
+                          "type": "string",
+                          "description": "Agent status"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "Agent creation timestamp"
                         }
                       }
+                    },
+                    "agentError": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Error message if agent creation failed"
                     }
                   }
                 }
@@ -2101,85 +1763,30 @@
             }
           },
           "400": {
-            "description": "Team is already active"
+            "description": "Missing required parameters or invalid wallet address"
           },
-          "401": {
-            "description": "Unauthorized - Admin authentication required"
-          },
-          "404": {
-            "description": "Team not found"
+          "409": {
+            "description": "User with this wallet address already exists"
           },
           "500": {
             "description": "Server error"
           }
         }
-      }
-    },
-    "/api/admin/teams/search": {
+      },
       "get": {
         "tags": [
           "Admin"
         ],
-        "summary": "Search for teams",
-        "description": "Search for teams based on various criteria like email, name, wallet address, etc.",
+        "summary": "List all users",
+        "description": "Get a list of all users in the system",
         "security": [
           {
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "in": "query",
-            "name": "email",
-            "schema": {
-              "type": "string"
-            },
-            "description": "Partial match for team email"
-          },
-          {
-            "in": "query",
-            "name": "name",
-            "schema": {
-              "type": "string"
-            },
-            "description": "Partial match for team name"
-          },
-          {
-            "in": "query",
-            "name": "walletAddress",
-            "schema": {
-              "type": "string"
-            },
-            "description": "Partial match for wallet address"
-          },
-          {
-            "in": "query",
-            "name": "contactPerson",
-            "schema": {
-              "type": "string"
-            },
-            "description": "Partial match for contact person name"
-          },
-          {
-            "in": "query",
-            "name": "active",
-            "schema": {
-              "type": "boolean"
-            },
-            "description": "Filter by active status (true/false)"
-          },
-          {
-            "in": "query",
-            "name": "includeAdmins",
-            "schema": {
-              "type": "boolean"
-            },
-            "description": "Whether to include admin accounts in results (default is false)"
-          }
-        ],
         "responses": {
           "200": {
-            "description": "List of teams matching search criteria",
+            "description": "List of users",
             "content": {
               "application/json": {
                 "schema": {
@@ -2189,59 +1796,35 @@
                       "type": "boolean",
                       "description": "Operation success status"
                     },
-                    "teams": {
+                    "users": {
                       "type": "array",
                       "items": {
                         "type": "object",
                         "properties": {
                           "id": {
                             "type": "string",
-                            "description": "Team ID"
-                          },
-                          "name": {
-                            "type": "string",
-                            "description": "Team name"
-                          },
-                          "email": {
-                            "type": "string",
-                            "description": "Team email"
-                          },
-                          "contactPerson": {
-                            "type": "string",
-                            "description": "Contact person name"
+                            "description": "User ID"
                           },
                           "walletAddress": {
                             "type": "string",
-                            "description": "Ethereum wallet address"
+                            "description": "User wallet address"
                           },
-                          "active": {
-                            "type": "boolean",
-                            "description": "Whether the team is active"
-                          },
-                          "deactivationReason": {
+                          "name": {
                             "type": "string",
-                            "nullable": true,
-                            "description": "Reason for deactivation if inactive"
+                            "description": "User name"
                           },
-                          "deactivationDate": {
+                          "email": {
                             "type": "string",
-                            "format": "date-time",
-                            "nullable": true,
-                            "description": "Date of deactivation if inactive"
+                            "description": "User email"
+                          },
+                          "status": {
+                            "type": "string",
+                            "description": "User status"
                           },
                           "imageUrl": {
                             "type": "string",
-                            "description": "URL to the team's image",
+                            "description": "URL to the user's image",
                             "nullable": true
-                          },
-                          "isAdmin": {
-                            "type": "boolean",
-                            "description": "Whether the team has admin privileges"
-                          },
-                          "metadata": {
-                            "type": "object",
-                            "nullable": true,
-                            "description": "Optional agent metadata"
                           },
                           "createdAt": {
                             "type": "string",
@@ -2266,6 +1849,1182 @@
           },
           "500": {
             "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/admin/agents": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List all agents",
+        "description": "Get a list of all agents in the system",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of agents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Operation success status"
+                    },
+                    "agents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Agent ID"
+                          },
+                          "ownerId": {
+                            "type": "string",
+                            "description": "Agent owner ID"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Agent name"
+                          },
+                          "description": {
+                            "type": "string",
+                            "description": "Agent description",
+                            "nullable": true
+                          },
+                          "status": {
+                            "type": "string",
+                            "description": "Agent status"
+                          },
+                          "imageUrl": {
+                            "type": "string",
+                            "description": "URL to the agent's image",
+                            "nullable": true
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Agent creation timestamp"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Agent update timestamp"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Admin authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/admin/agents/{agentId}/key": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get an agent's API key",
+        "description": "Retrieves the original API key for an agent. Use this when agents lose or misplace their API key.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agentId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "ID of the agent"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "API key retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Operation success status"
+                    },
+                    "agent": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Agent ID"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Agent name"
+                        },
+                        "apiKey": {
+                          "type": "string",
+                          "description": "The agent's API key"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Admin authentication required"
+          },
+          "404": {
+            "description": "Agent not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/admin/agents/{agentId}": {
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Delete an agent",
+        "description": "Permanently delete an agent and all associated data",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agentId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "ID of the agent to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Operation success status"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Success message"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Agent ID is required"
+          },
+          "401": {
+            "description": "Unauthorized - Admin authentication required"
+          },
+          "404": {
+            "description": "Agent not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get agent details",
+        "description": "Get detailed information about a specific agent",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agentId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "ID of the agent"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent details retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Operation success status"
+                    },
+                    "agent": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Agent ID"
+                        },
+                        "ownerId": {
+                          "type": "string",
+                          "description": "Agent owner ID"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Agent name"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "Agent description",
+                          "nullable": true
+                        },
+                        "status": {
+                          "type": "string",
+                          "description": "Agent status"
+                        },
+                        "imageUrl": {
+                          "type": "string",
+                          "description": "URL to the agent's image",
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "Agent creation timestamp"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "Agent update timestamp"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Agent ID is required"
+          },
+          "401": {
+            "description": "Unauthorized - Admin authentication required"
+          },
+          "404": {
+            "description": "Agent not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/admin/agents/{agentId}/deactivate": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Deactivate an agent",
+        "description": "Deactivate an agent from the system. The agent will no longer be able to perform any actions.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agentId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "ID of the agent to deactivate"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "description": "Reason for deactivation",
+                    "example": "Violated competition rules by using external API"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Agent deactivated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Operation success status"
+                    },
+                    "agent": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Agent ID"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Agent name"
+                        },
+                        "status": {
+                          "type": "string",
+                          "description": "Agent status (will be inactive)"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing required parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Admin authentication required"
+          },
+          "404": {
+            "description": "Agent not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/admin/agents/{agentId}/reactivate": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Reactivate an agent",
+        "description": "Reactivate a previously deactivated agent",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agentId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "ID of the agent to reactivate"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent reactivated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Operation success status"
+                    },
+                    "agent": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Agent ID"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Agent name"
+                        },
+                        "status": {
+                          "type": "string",
+                          "description": "Agent status (will be active)"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Agent ID is required or agent is already active"
+          },
+          "401": {
+            "description": "Unauthorized - Admin authentication required"
+          },
+          "404": {
+            "description": "Agent not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/admin/search": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Search users and agents",
+        "description": "Search for users and agents based on various criteria",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "email",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Partial match for email address (users only)"
+          },
+          {
+            "in": "query",
+            "name": "name",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Partial match for name"
+          },
+          {
+            "in": "query",
+            "name": "walletAddress",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Partial match for wallet address (users only)"
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "suspended",
+                "deleted"
+              ]
+            },
+            "description": "Filter by status"
+          },
+          {
+            "in": "query",
+            "name": "searchType",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "users",
+                "agents",
+                "both"
+              ],
+              "default": "both"
+            },
+            "description": "Type of entities to search"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Operation success status"
+                    },
+                    "searchType": {
+                      "type": "string",
+                      "description": "Type of search performed"
+                    },
+                    "results": {
+                      "type": "object",
+                      "properties": {
+                        "users": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "user"
+                              },
+                              "id": {
+                                "type": "string"
+                              },
+                              "walletAddress": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "email": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "status": {
+                                "type": "string"
+                              },
+                              "imageUrl": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "updatedAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            }
+                          }
+                        },
+                        "agents": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "agent"
+                              },
+                              "id": {
+                                "type": "string"
+                              },
+                              "ownerId": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "description": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "status": {
+                                "type": "string"
+                              },
+                              "imageUrl": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "updatedAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Admin authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/agent/profile": {
+      "get": {
+        "summary": "Get authenticated agent profile",
+        "description": "Retrieve the profile information for the currently authenticated agent and its owner",
+        "tags": [
+          "Agent"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent profile retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "agent": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "ownerId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "walletAddress": {
+                          "type": "string",
+                          "example": "0x1234567890abcdef1234567890abcdef12345678"
+                        },
+                        "name": {
+                          "type": "string",
+                          "example": "Trading Bot Alpha"
+                        },
+                        "description": {
+                          "type": "string",
+                          "example": "AI agent focusing on DeFi yield farming"
+                        },
+                        "imageUrl": {
+                          "type": "string",
+                          "example": "https://example.com/bot-avatar.jpg"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "suspended",
+                            "deleted"
+                          ]
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    },
+                    "owner": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "walletAddress": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "imageUrl": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Agent not authenticated"
+          },
+          "404": {
+            "description": "Agent or owner not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update authenticated agent profile",
+        "description": "Update the profile information for the currently authenticated agent (limited fields)",
+        "tags": [
+          "Agent"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Agent's display name",
+                    "example": "Trading Bot Beta"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Agent description",
+                    "example": "Updated description of trading strategy"
+                  },
+                  "imageUrl": {
+                    "type": "string",
+                    "description": "URL to agent's profile image",
+                    "example": "https://example.com/new-bot-avatar.jpg"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Agent profile updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "agent": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "ownerId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "walletAddress": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "imageUrl": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid fields provided (agents can only update name, description, and imageUrl)"
+          },
+          "401": {
+            "description": "Agent not authenticated"
+          },
+          "404": {
+            "description": "Agent not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/agent/balances": {
+      "get": {
+        "summary": "Get agent balances",
+        "description": "Retrieve all token balances for the authenticated agent",
+        "tags": [
+          "Agent"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Balances retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "agentId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "balances": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "tokenAddress": {
+                            "type": "string",
+                            "example": "0x1234567890abcdef1234567890abcdef12345678"
+                          },
+                          "amount": {
+                            "type": "number",
+                            "example": 100.5
+                          },
+                          "symbol": {
+                            "type": "string",
+                            "example": "USDC"
+                          },
+                          "chain": {
+                            "type": "string",
+                            "enum": [
+                              "evm",
+                              "svm"
+                            ]
+                          },
+                          "specificChain": {
+                            "type": "string",
+                            "example": "svm"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Agent not authenticated"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/agent/portfolio": {
+      "get": {
+        "summary": "Get agent portfolio",
+        "description": "Retrieve portfolio information including total value and token breakdown for the authenticated agent",
+        "tags": [
+          "Agent"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Portfolio retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "agentId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "totalValue": {
+                      "type": "number",
+                      "description": "Total portfolio value in USD",
+                      "example": 1250.75
+                    },
+                    "tokens": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "token": {
+                            "type": "string",
+                            "description": "Token address",
+                            "example": "0x1234567890abcdef1234567890abcdef12345678"
+                          },
+                          "amount": {
+                            "type": "number",
+                            "description": "Token amount",
+                            "example": 100.5
+                          },
+                          "price": {
+                            "type": "number",
+                            "description": "Token price in USD",
+                            "example": 1
+                          },
+                          "value": {
+                            "type": "number",
+                            "description": "Token value in USD",
+                            "example": 100.5
+                          },
+                          "chain": {
+                            "type": "string",
+                            "enum": [
+                              "evm",
+                              "svm"
+                            ]
+                          },
+                          "specificChain": {
+                            "type": "string",
+                            "example": "svm"
+                          },
+                          "symbol": {
+                            "type": "string",
+                            "example": "USDC"
+                          }
+                        }
+                      }
+                    },
+                    "source": {
+                      "type": "string",
+                      "description": "Data source (snapshot or live-calculation)",
+                      "enum": [
+                        "snapshot",
+                        "live-calculation"
+                      ]
+                    },
+                    "snapshotTime": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "Time of snapshot (only present if source is snapshot)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Agent not authenticated"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/agent/trades": {
+      "get": {
+        "summary": "Get agent trade history",
+        "description": "Retrieve the trading history for the authenticated agent",
+        "tags": [
+          "Agent"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trade history retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "agentId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "trades": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "agentId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "competitionId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "fromToken": {
+                            "type": "string",
+                            "description": "Source token address"
+                          },
+                          "toToken": {
+                            "type": "string",
+                            "description": "Destination token address"
+                          },
+                          "fromAmount": {
+                            "type": "number",
+                            "description": "Amount traded from source token"
+                          },
+                          "toAmount": {
+                            "type": "number",
+                            "description": "Amount received in destination token"
+                          },
+                          "fromPrice": {
+                            "type": "number",
+                            "description": "Price of source token at trade time"
+                          },
+                          "toPrice": {
+                            "type": "number",
+                            "description": "Price of destination token at trade time"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "description": "Reason for the trade"
+                          },
+                          "timestamp": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "When the trade was executed"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Agent not authenticated"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/agent/reset-api-key": {
+      "post": {
+        "summary": "Reset agent API key",
+        "description": "Generate a new API key for the authenticated agent (invalidates the current key)",
+        "tags": [
+          "Agent"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "API key reset successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "apiKey": {
+                      "type": "string",
+                      "description": "The new API key (store this securely)",
+                      "example": "1234567890abcdef_fedcba0987654321"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Agent not authenticated"
+          },
+          "500": {
+            "description": "Internal server error"
           }
         }
       }
@@ -3812,6 +4571,488 @@
           },
           "500": {
             "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/user/profile": {
+      "get": {
+        "summary": "Get authenticated user profile",
+        "description": "Retrieve the profile information for the currently authenticated user",
+        "tags": [
+          "User"
+        ],
+        "security": [
+          {
+            "SIWESession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User profile retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "walletAddress": {
+                          "type": "string",
+                          "example": "0x1234567890abcdef1234567890abcdef12345678"
+                        },
+                        "name": {
+                          "type": "string",
+                          "example": "John Doe"
+                        },
+                        "email": {
+                          "type": "string",
+                          "example": "john@example.com"
+                        },
+                        "imageUrl": {
+                          "type": "string",
+                          "example": "https://example.com/avatar.jpg"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "suspended",
+                            "deleted"
+                          ]
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "User not authenticated"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update authenticated user profile",
+        "description": "Update the profile information for the currently authenticated user (limited fields)",
+        "tags": [
+          "User"
+        ],
+        "security": [
+          {
+            "SIWESession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "User's display name",
+                    "example": "John Doe"
+                  },
+                  "imageUrl": {
+                    "type": "string",
+                    "description": "URL to user's profile image",
+                    "example": "https://example.com/avatar.jpg"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "walletAddress": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "imageUrl": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid fields provided (users can only update name and imageUrl)"
+          },
+          "401": {
+            "description": "User not authenticated"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/user/agents": {
+      "post": {
+        "summary": "Create a new agent",
+        "description": "Create a new agent for the authenticated user",
+        "tags": [
+          "User"
+        ],
+        "security": [
+          {
+            "SIWESession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Agent name (must be unique for this user)",
+                    "example": "Trading Bot Alpha"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Optional agent description",
+                    "example": "An AI agent that focuses on DeFi yield farming"
+                  },
+                  "imageUrl": {
+                    "type": "string",
+                    "description": "Optional URL to agent's profile image",
+                    "example": "https://example.com/bot-avatar.jpg"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "description": "Optional metadata for the agent",
+                    "example": {
+                      "strategy": "yield-farming",
+                      "risk": "medium"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Agent created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "agent": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "ownerId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "imageUrl": {
+                          "type": "string"
+                        },
+                        "apiKey": {
+                          "type": "string",
+                          "description": "The API key for this agent (store this securely)",
+                          "example": "1234567890abcdef_fedcba0987654321"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "suspended",
+                            "deleted"
+                          ]
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (name is required)"
+          },
+          "401": {
+            "description": "User not authenticated"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "get": {
+        "summary": "Get user's agents",
+        "description": "Retrieve all agents owned by the authenticated user",
+        "tags": [
+          "User"
+        ],
+        "security": [
+          {
+            "SIWESession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agents retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "userId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "agents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "ownerId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "imageUrl": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "suspended",
+                              "deleted"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "User not authenticated"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/user/agents/{agentId}": {
+      "get": {
+        "summary": "Get specific agent details",
+        "description": "Retrieve details of a specific agent owned by the authenticated user",
+        "tags": [
+          "User"
+        ],
+        "security": [
+          {
+            "SIWESession": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agentId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The ID of the agent to retrieve"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent details retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "agent": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "ownerId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "imageUrl": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "suspended",
+                            "deleted"
+                          ]
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Agent ID is required"
+          },
+          "401": {
+            "description": "User not authenticated"
+          },
+          "403": {
+            "description": "Access denied (user doesn't own this agent)"
+          },
+          "404": {
+            "description": "Agent not found"
+          },
+          "500": {
+            "description": "Internal server error"
           }
         }
       }
