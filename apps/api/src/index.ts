@@ -2,7 +2,6 @@ import cors from "cors";
 import express from "express";
 
 import { config } from "@/config/index.js";
-import { makeAccountController } from "@/controllers/account.controller.js";
 import { makeAdminController } from "@/controllers/admin.controller.js";
 import { makeAgentController } from "@/controllers/agent.controller.js";
 import { makeAuthController } from "@/controllers/auth.controller.js";
@@ -18,7 +17,6 @@ import { authMiddleware } from "@/middleware/auth.middleware.js";
 import errorHandler from "@/middleware/errorHandler.js";
 import { rateLimiterMiddleware } from "@/middleware/rate-limiter.middleware.js";
 import { siweSessionMiddleware } from "@/middleware/siwe.middleware.js";
-import { configureAccountRoutes } from "@/routes/account.routes.js";
 import { configureAdminSetupRoutes } from "@/routes/admin-setup.routes.js";
 import { configureAdminRoutes } from "@/routes/admin.routes.js";
 import { configureAgentRoutes } from "@/routes/agent.routes.js";
@@ -138,7 +136,6 @@ app.use(rateLimiterMiddleware);
 
 const adminMiddleware = adminAuthMiddleware(services.adminManager);
 
-const accountController = makeAccountController(services);
 const adminController = makeAdminController(services);
 const authController = makeAuthController(services);
 const competitionController = makeCompetitionController(services);
@@ -149,7 +146,6 @@ const tradeController = makeTradeController(services);
 const userController = makeUserController(services);
 const agentController = makeAgentController(services);
 
-const accountRoutes = configureAccountRoutes(accountController);
 const adminRoutes = configureAdminRoutes(adminController, adminMiddleware);
 const adminSetupRoutes = configureAdminSetupRoutes(adminController);
 const authRoutes = configureAuthRoutes(authController, siweSessionMiddleware);
@@ -162,7 +158,6 @@ const userRoutes = configureUserRoutes(userController);
 const agentRoutes = configureAgentRoutes(agentController);
 
 // Apply routes
-app.use("/api/account", accountRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/trade", tradeRoutes);
 app.use("/api/price", priceRoutes);

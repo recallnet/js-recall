@@ -16,7 +16,7 @@ import {
 } from "@/types/index.js";
 
 interface UserRegistrationResponse {
-  success: true;
+  success: boolean;
   user: {
     id: string;
     walletAddress: string;
@@ -33,6 +33,23 @@ interface UserRegistrationResponse {
     description: string | null;
     imageUrl: string | null;
     apiKey: string;
+    metadata?: unknown;
+    status: string;
+    createdAt: Date;
+  };
+  agentError?: string;
+}
+
+interface AgentRegistrationResponse {
+  success: boolean;
+  agent: {
+    id: string;
+    ownerId: string;
+    name: string;
+    description: string | null;
+    imageUrl: string | null;
+    apiKey: string;
+    metadata?: unknown;
     status: string;
     createdAt: Date;
   };
@@ -280,8 +297,8 @@ export function makeAdminController(services: ServiceRegistry) {
                 user.id,
                 agentName,
                 agentDescription,
-                agentMetadata,
                 agentImageUrl,
+                agentMetadata,
               );
             } catch (agentError) {
               console.error(
@@ -330,6 +347,7 @@ export function makeAdminController(services: ServiceRegistry) {
               description: agent.description,
               imageUrl: agent.imageUrl,
               apiKey: agent.apiKey,
+              metadata: agent.metadata,
               status: agent.status,
               createdAt: agent.createdAt,
             };
@@ -369,6 +387,103 @@ export function makeAdminController(services: ServiceRegistry) {
               error instanceof Error
                 ? error.message
                 : "Unknown error registering user",
+          });
+        }
+      } catch (error) {
+        console.error(
+          "[AdminController] Uncaught error in registerUser:",
+          error,
+        );
+        next(error);
+      }
+    },
+
+    /**
+     * Register a new agent
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async registerAgent(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { userId, walletAddress, name, description, imageUrl, metadata } =
+          req.body;
+
+        // Validate required parameters
+        if (!walletAddress || !userId) {
+          return res.status(400).json({
+            success: false,
+            error: "Missing required parameter: walletAddress or userId",
+          });
+        }
+
+        // Check if a user with this wallet address already exists
+        const existingUser = userId
+          ? await services.userManager.getUser(userId)
+          : await services.userManager.getUserByWalletAddress(walletAddress);
+
+        if (existingUser) {
+          const errorMessage = `A user with wallet address ${
+            userId ? userId : walletAddress
+          } already exists`;
+          console.log(
+            "[AdminController] Duplicate wallet address error:",
+            errorMessage,
+          );
+          return res.status(409).json({
+            success: false,
+            error: errorMessage,
+          });
+        }
+
+        try {
+          // Create the agent
+          const agent = await services.agentManager.createAgent(
+            userId,
+            name,
+            description,
+            imageUrl,
+            metadata,
+          );
+          const response: AgentRegistrationResponse = {
+            success: true,
+            agent,
+          };
+
+          return res.status(201).json(response);
+        } catch (error) {
+          console.error("[AdminController] Error registering agent:", error);
+
+          // Check if this is a duplicate wallet address error that somehow got here
+          if (
+            error instanceof Error &&
+            error.message.includes("already exists")
+          ) {
+            return res.status(409).json({
+              success: false,
+              error: error.message,
+            });
+          }
+
+          // Check if this is an invalid wallet address error
+          if (
+            error instanceof Error &&
+            (error.message.includes("Wallet address is required") ||
+              error.message.includes("Invalid Ethereum address"))
+          ) {
+            return res.status(400).json({
+              success: false,
+              error: error.message,
+            });
+          }
+
+          // Handle other errors
+          return res.status(500).json({
+            success: false,
+            error:
+              error instanceof Error
+                ? error.message
+                : "Unknown error registering agent",
           });
         }
       } catch (error) {

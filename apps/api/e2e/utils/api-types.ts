@@ -110,7 +110,7 @@ export interface Agent {
 export interface UserRegistrationResponse extends ApiResponse {
   success: true;
   user: User;
-  agent: Agent;
+  agent?: Agent;
 }
 
 // User profile response

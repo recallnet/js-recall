@@ -21,7 +21,7 @@ import {
   registerTeamAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
 
-describe("Team API", () => {
+describe("Agent API", () => {
   // Clean up test state before each test
   let adminApiKey: string;
 

@@ -173,6 +173,7 @@ export function makeUserController(services: ServiceRegistry) {
             name: agent.name,
             description: agent.description,
             imageUrl: agent.imageUrl,
+            metadata: agent.metadata,
             apiKey: agent.apiKey, // Include API key for user to use
             status: agent.status,
             createdAt: agent.createdAt,
@@ -204,6 +205,7 @@ export function makeUserController(services: ServiceRegistry) {
           name: agent.name,
           description: agent.description,
           imageUrl: agent.imageUrl,
+          metadata: agent.metadata,
           status: agent.status,
           createdAt: agent.createdAt,
           updatedAt: agent.updatedAt,
@@ -256,6 +258,7 @@ export function makeUserController(services: ServiceRegistry) {
             name: agent.name,
             description: agent.description,
             imageUrl: agent.imageUrl,
+            metadata: agent.metadata,
             status: agent.status,
             createdAt: agent.createdAt,
             updatedAt: agent.updatedAt,

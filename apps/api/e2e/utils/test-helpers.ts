@@ -104,49 +104,6 @@ export async function registerUserAndAgentAndGetClient(
 }
 
 /**
- * Legacy function name for backward compatibility
- * @deprecated Use registerUserAndAgentAndGetClient instead
- */
-export async function registerTeamAndGetClient(
-  adminApiKey: string,
-  teamName?: string,
-  email?: string,
-  contactPerson?: string,
-  walletAddress?: string,
-  imageUrl?: string,
-) {
-  console.warn(
-    "registerTeamAndGetClient is deprecated. Use registerUserAndAgentAndGetClient instead.",
-  );
-
-  const result = await registerUserAndAgentAndGetClient(
-    adminApiKey,
-    teamName, // agentName
-    email, // userEmail
-    contactPerson, // userName
-    walletAddress,
-    undefined, // agentDescription
-    imageUrl, // agentImageUrl
-    undefined, // userImageUrl
-    {}, // agentMetadata
-  );
-
-  // Return in the old format for backward compatibility
-  return {
-    client: result.client,
-    team: {
-      id: result.agent.id, // Use agent ID as team ID for compatibility
-      name: result.agent.name,
-      email: result.user.email,
-      contactPerson: result.user.name,
-      metadata: null,
-      imageUrl: result.agent.imageUrl,
-    },
-    apiKey: result.apiKey,
-  };
-}
-
-/**
  * Start a competition with given agents
  */
 export async function startTestCompetition(

@@ -38,8 +38,8 @@ export class AgentManager {
    * @param ownerId User ID who owns this agent
    * @param name Agent name
    * @param description Agent description
-   * @param metadata Optional agent metadata
    * @param imageUrl Optional URL to the agent's image
+   * @param metadata Optional agent metadata
    * @param walletAddress Optional Ethereum wallet address
    * @returns The created agent with API credentials
    */
@@ -47,8 +47,8 @@ export class AgentManager {
     ownerId: string,
     name: string,
     description?: string,
-    metadata?: AgentMetadata,
     imageUrl?: string,
+    metadata?: AgentMetadata,
     walletAddress?: string,
   ) {
     try {
@@ -74,17 +74,13 @@ export class AgentManager {
         ownerId,
         name,
         description,
+        imageUrl,
         apiKey: encryptedApiKey, // Store encrypted key in database
         walletAddress,
         metadata, // Add the optional metadata
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-
-      // Add imageUrl if provided
-      if (imageUrl) {
-        agent.imageUrl = imageUrl;
-      }
 
       // Store in database
       const savedAgent = await create(agent);
