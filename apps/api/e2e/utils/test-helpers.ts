@@ -38,17 +38,27 @@ export function createTestClient(baseUrl?: string): ApiClient {
 /**
  * Register a new user and agent, and return a client configured with the agent's API credentials
  */
-export async function registerUserAndAgentAndGetClient(
-  adminApiKey: string,
-  agentName?: string,
-  userEmail?: string,
-  userName?: string,
-  walletAddress?: string,
-  agentDescription?: string,
-  agentImageUrl?: string,
-  userImageUrl?: string,
-  agentMetadata?: Record<string, unknown>,
-) {
+export async function registerUserAndAgentAndGetClient({
+  adminApiKey,
+  walletAddress,
+  userName,
+  userEmail,
+  agentName,
+  agentDescription,
+  agentImageUrl,
+  agentMetadata,
+  userImageUrl,
+}: {
+  adminApiKey: string;
+  walletAddress?: string;
+  userName?: string;
+  userEmail?: string;
+  agentName?: string;
+  agentDescription?: string;
+  agentImageUrl?: string;
+  agentMetadata?: Record<string, unknown>;
+  userImageUrl?: string;
+}) {
   // Ensure database is initialized
   await ensureDatabaseInitialized();
 

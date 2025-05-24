@@ -65,7 +65,10 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient(adminApiKey, "Trading Team");
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Trading Agent",
+      });
 
     // Start a competition with our team
     const competitionName = `Trading Test ${Date.now()}`;
@@ -242,10 +245,10 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient(
+      await registerUserAndAgentAndGetClient({
         adminApiKey,
-        "Arbitrary Token Team",
-      );
+        agentName: "Arbitrary Token Agent",
+      });
 
     // Start a competition with our team
     const competitionName = `Arbitrary Token Test ${Date.now()}`;
@@ -362,10 +365,10 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient(
+      await registerUserAndAgentAndGetClient({
         adminApiKey,
-        "Invalid Trading Team",
-      );
+        agentName: "Invalid Trading Agent",
+      });
 
     // Start a competition with our team
     await startTestCompetition(
@@ -486,10 +489,10 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient(
+      await registerUserAndAgentAndGetClient({
         adminApiKey,
-        "Max Trade Limit Team",
-      );
+        agentName: "Max Trade Limit Agent",
+      });
 
     // Start a competition with our team
     await startTestCompetition(
@@ -622,10 +625,10 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient(
+      await registerUserAndAgentAndGetClient({
         adminApiKey,
-        "Price Calculation Team",
-      );
+        agentName: "Price Calculation Agent",
+      });
 
     // Start a competition with our team
     const competitionName = `Price Calculation Test ${Date.now()}`;
@@ -743,10 +746,10 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient(
+      await registerUserAndAgentAndGetClient({
         adminApiKey,
-        "Ethereum Token Team",
-      );
+        agentName: "Ethereum Token Agent",
+      });
 
     // Start a competition with our team
     const competitionName = `Ethereum Token Test ${Date.now()}`;
@@ -879,10 +882,10 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient(
+      await registerUserAndAgentAndGetClient({
         adminApiKey,
-        "Chain-Specific Trading Team",
-      );
+        agentName: "Chain-Specific Trading Agent",
+      });
 
     // Start a competition with our team
     const competitionName = `Chain-Specific Trading Test ${Date.now()}`;
@@ -1020,10 +1023,10 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient(
+      await registerUserAndAgentAndGetClient({
         adminApiKey,
-        "Reason Verification Team",
-      );
+        agentName: "Reason Verification Agent",
+      });
 
     // Start a competition with our team
     const competitionName = `Reason Verification Test ${Date.now()}`;
@@ -1096,10 +1099,10 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient(
+      await registerUserAndAgentAndGetClient({
         adminApiKey,
-        "Reason Required Team",
-      );
+        agentName: "Reason Required Agent",
+      });
 
     // Start a competition with our team
     const competitionName = `Reason Required Test ${Date.now()}`;
@@ -1150,10 +1153,10 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient(
+      await registerUserAndAgentAndGetClient({
         adminApiKey,
-        "Cross-Chain Settings Team",
-      );
+        agentName: "Cross-Chain Settings Agent",
+      });
 
     // Get token addresses for testing
     const svmUsdcAddress = config.specificChainTokens.svm.usdc;
@@ -1318,10 +1321,10 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient(
+      await registerUserAndAgentAndGetClient({
         adminApiKey,
-        "EVM-to-EVM Cross-Chain Team",
-      );
+        agentName: "EVM-to-EVM Cross-Chain Agent",
+      });
 
     // Start a competition with cross-chain trading DISABLED first
     const competitionName = `EVM-EVM Cross-Chain Test ${Date.now()}`;
@@ -1430,10 +1433,10 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient(
+      await registerUserAndAgentAndGetClient({
         adminApiKey,
-        "disallowXParent Testing Team",
-      );
+        agentName: "disallowXParent Testing Agent",
+      });
 
     // Start a competition with disallowXParent cross-chain trading setting
     const competitionName = `disallowXParent Test ${Date.now()}`;
@@ -1554,10 +1557,10 @@ describe("Trading API", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register team and get client
-    const { agent } = await registerUserAndAgentAndGetClient(
+    const { agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Reason Required Team",
-    );
+      agentName: "Reason Required Agent",
+    });
 
     // Start a competition with our team
     const competitionName = `Reason Required Test ${Date.now()}`;
@@ -1613,10 +1616,10 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient(
+      await registerUserAndAgentAndGetClient({
         adminApiKey,
-        "USD Amount Test Team",
-      );
+        agentName: "USD Amount Test Agent",
+      });
 
     // Start a competition with our team
     const competitionName = `USD Amount Test ${Date.now()}`;
@@ -1718,10 +1721,10 @@ describe("Trading API", () => {
 
     // Register team and get client
     const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient(
+      await registerUserAndAgentAndGetClient({
         adminApiKey,
-        "Symbol Verification Team",
-      );
+        agentName: "Symbol Verification Agent",
+      });
 
     // Start a competition with our team
     const competitionName = `Symbol Verification Test ${Date.now()}`;
@@ -1926,7 +1929,10 @@ describe("Trading API", () => {
 
     // Register user and agent, get client
     const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient(adminApiKey, "Trading Agent");
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Trading Agent",
+      });
 
     // Start a competition with our agent
     const competitionName = `Trading Test ${Date.now()}`;
