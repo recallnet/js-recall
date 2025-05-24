@@ -31,6 +31,7 @@
     "setup:admin": "tsx scripts/setup-admin.ts",
     "setup:all": "tsx scripts/setup-everything.ts",
     "register:agent": "tsx scripts/register-agent.ts",
+    "register:user": "tsx scripts/register-user.ts",
     "edit:agent": "tsx scripts/edit-agent.ts",
     "edit:user": "tsx scripts/edit-user.ts",
     "delete:agent": "tsx scripts/delete-agent.ts",

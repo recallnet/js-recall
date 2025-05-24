@@ -1,14 +1,14 @@
 /**
- * Agent Registration Script
+ * User + Agent Registration Script
  *
- * This script registers a new agent in the Trading Simulator.
+ * This script registers a new user and agent in the Trading Simulator.
  * It connects directly to the database and does NOT require the server to be running.
  *
  * Usage:
  *   pnpm register:agent
  *
  * Or with command line arguments:
- *   pnpm register:agent -- "Agent Name" "0xOwnersWalletAddress"
+ *   pnpm register:user -- "0xWalletAddress" "User Name" "Agent Name"
  *
  * The script will:
  * 1. Connect to the database
@@ -80,36 +80,29 @@ async function registerAgent() {
       `${colors.magenta}╔════════════════════════════════════════════════════════════════╗${colors.reset}`,
     );
     safeLog(
-      `${colors.magenta}║                      REGISTER NEW AGENT                      ║${colors.reset}`,
+      `${colors.magenta}║                    REGISTER NEW USER + AGENT                   ║${colors.reset}`,
     );
     safeLog(
       `${colors.magenta}╚════════════════════════════════════════════════════════════════╝${colors.reset}`,
     );
 
     safeLog(
-      `\n${colors.cyan}This script will register a new agent in the Trading Simulator.${colors.reset}`,
+      `\n${colors.cyan}This script will register a new user and agent in the Trading Simulator.${colors.reset}`,
     );
     safeLog(
-      `${colors.cyan}You'll need to provide the owner's wallet address, and agent name.${colors.reset}`,
+      `${colors.cyan}You'll need to provide the owner's wallet address, user name, and agent name.${colors.reset}`,
     );
     safeLog(
       `${colors.yellow}--------------------------------------------------------------${colors.reset}\n`,
     );
 
     // Get team details from command line arguments or prompt for them
-    let agentName = process.argv[2];
-    let walletAddress = process.argv[3];
+    let walletAddress = process.argv[2];
+    let userName = process.argv[3];
+    let agentName = process.argv[4];
 
     // Temporarily restore console.log for input
     console.log = originalConsoleLog;
-
-    // Collect all input upfront before database operations
-    if (!agentName) {
-      agentName = await prompt("Enter agent name: ");
-      if (!agentName) {
-        throw new Error("Agent name is required");
-      }
-    }
 
     if (!walletAddress) {
       walletAddress = await prompt("Enter wallet address (0x...): ");
@@ -128,11 +121,24 @@ async function registerAgent() {
       );
     }
 
+    if (!agentName) {
+      agentName = await prompt("Enter agent name: ");
+      if (!agentName) {
+        throw new Error("Agent name is required");
+      }
+    }
+
+    // Collect all input upfront before database operations
+    if (!userName) {
+      userName = await prompt("Enter user name (optional): ");
+    }
+
     safeLog(
-      `\n${colors.yellow}Registering agent with the following details:${colors.reset}`,
+      `\n${colors.yellow}Registering user and agent with the following details:${colors.reset}`,
     );
+    safeLog(`- User Name: ${userName}`);
+    safeLog(`- User's Wallet Address: ${walletAddress}`);
     safeLog(`- Agent Name: ${agentName}`);
-    safeLog(`- Owner's Wallet Address: ${walletAddress}`);
 
     const confirmRegistration = await prompt(
       `${colors.yellow}Proceed with registration? (y/n): ${colors.reset}`,
@@ -151,16 +157,14 @@ async function registerAgent() {
       }
     };
 
-    safeLog(`\n${colors.blue}Registering agent...${colors.reset}`);
+    safeLog(`\n${colors.blue}Registering user and agent...${colors.reset}`);
 
-    // Register the team using the updated TeamManager service method
-    const owner =
-      await services.userManager.getUserByWalletAddress(walletAddress);
-    if (!owner) {
-      throw new Error("Owner not found");
-    }
-
-    const agent = await services.agentManager.createAgent(owner.id, agentName);
+    // Register the user and agent using the updated UserManager and AgentManager service methods
+    const user = await services.userManager.registerUser(
+      walletAddress,
+      userName,
+    );
+    const agent = await services.agentManager.createAgent(user.id, agentName);
 
     safeLog(`\n${colors.green}✓ Agent registered successfully!${colors.reset}`);
     safeLog(`\n${colors.cyan}Agent Details:${colors.reset}`);
@@ -169,8 +173,8 @@ async function registerAgent() {
     );
     safeLog(`Agent ID: ${agent.id}`);
     safeLog(`Agent Name: ${agent.name}`);
-    safeLog(`Owner ID: ${owner.id}`);
-    safeLog(`Owner Wallet Address: ${owner.walletAddress}`);
+    safeLog(`User ID: ${user.id}`);
+    safeLog(`User Wallet Address: ${user.walletAddress}`);
     safeLog(
       `${colors.cyan}----------------------------------------${colors.reset}`,
     );
