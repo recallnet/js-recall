@@ -1,11 +1,395 @@
 {
-  "id": "6b3bde16-0f61-4306-a389-15c6c423ce5c",
+  "id": "a84fa2b4-2840-450b-bc53-d2f65c09224e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.competition_teams": {
-      "name": "competition_teams",
+    "public.admins": {
+      "name": "admins",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "username": {
+          "name": "username",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "api_key": {
+          "name": "api_key",
+          "type": "varchar(400)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "image_url": {
+          "name": "image_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "last_login_at": {
+          "name": "last_login_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_admins_username": {
+          "name": "idx_admins_username",
+          "columns": [
+            {
+              "expression": "username",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_admins_email": {
+          "name": "idx_admins_email",
+          "columns": [
+            {
+              "expression": "email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_admins_api_key": {
+          "name": "idx_admins_api_key",
+          "columns": [
+            {
+              "expression": "api_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_admins_status": {
+          "name": "idx_admins_status",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "admins_username_unique": {
+          "name": "admins_username_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "username"
+          ]
+        },
+        "admins_email_unique": {
+          "name": "admins_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        },
+        "admins_api_key_unique": {
+          "name": "admins_api_key_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "api_key"
+          ]
+        },
+        "admins_username_key": {
+          "name": "admins_username_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "username"
+          ]
+        },
+        "admins_email_key": {
+          "name": "admins_email_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        },
+        "admins_api_key_key": {
+          "name": "admins_api_key_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "api_key"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.agents": {
+      "name": "agents",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "wallet_address": {
+          "name": "wallet_address",
+          "type": "varchar(42)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "image_url": {
+          "name": "image_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "api_key": {
+          "name": "api_key",
+          "type": "varchar(400)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "deactivation_reason": {
+          "name": "deactivation_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deactivation_date": {
+          "name": "deactivation_date",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_agents_owner_id": {
+          "name": "idx_agents_owner_id",
+          "columns": [
+            {
+              "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_agents_status": {
+          "name": "idx_agents_status",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_agents_wallet_address": {
+          "name": "idx_agents_wallet_address",
+          "columns": [
+            {
+              "expression": "wallet_address",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_agents_api_key": {
+          "name": "idx_agents_api_key",
+          "columns": [
+            {
+              "expression": "api_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "agents_owner_id_fkey": {
+          "name": "agents_owner_id_fkey",
+          "tableFrom": "agents",
+          "tableTo": "users",
+          "columnsFrom": [
+            "owner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "agents_owner_id_name_key": {
+          "name": "agents_owner_id_name_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "owner_id",
+            "name"
+          ]
+        },
+        "agents_api_key_key": {
+          "name": "agents_api_key_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "api_key"
+          ]
+        },
+        "agents_wallet_address_key": {
+          "name": "agents_wallet_address_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "wallet_address"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.competition_agents": {
+      "name": "competition_agents",
       "schema": "",
       "columns": {
         "competition_id": {
@@ -14,8 +398,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "team_id": {
-          "name": "team_id",
+        "agent_id": {
+          "name": "agent_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
@@ -30,9 +414,9 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "competition_teams_competition_id_fkey": {
-          "name": "competition_teams_competition_id_fkey",
-          "tableFrom": "competition_teams",
+        "competition_agents_competition_id_fkey": {
+          "name": "competition_agents_competition_id_fkey",
+          "tableFrom": "competition_agents",
           "tableTo": "competitions",
           "columnsFrom": [
             "competition_id"
@@ -43,12 +427,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "competition_teams_team_id_fkey": {
-          "name": "competition_teams_team_id_fkey",
-          "tableFrom": "competition_teams",
-          "tableTo": "teams",
+        "competition_agents_agent_id_fkey": {
+          "name": "competition_agents_agent_id_fkey",
+          "tableFrom": "competition_agents",
+          "tableTo": "agents",
           "columnsFrom": [
-            "team_id"
+            "agent_id"
           ],
           "columnsTo": [
             "id"
@@ -58,11 +442,11 @@
         }
       },
       "compositePrimaryKeys": {
-        "competition_teams_pkey": {
-          "name": "competition_teams_pkey",
+        "competition_agents_pkey": {
+          "name": "competition_agents_pkey",
           "columns": [
             "competition_id",
-            "team_id"
+            "agent_id"
           ]
         }
       },
@@ -89,6 +473,18 @@
         },
         "description": {
           "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "external_link": {
+          "name": "external_link",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "image_url": {
+          "name": "image_url",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -150,8 +546,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.teams": {
-      "name": "teams",
+    "public.users": {
+      "name": "users",
       "schema": "",
       "columns": {
         "id": {
@@ -160,39 +556,27 @@
           "primaryKey": true,
           "notNull": true
         },
+        "wallet_address": {
+          "name": "wallet_address",
+          "type": "varchar(42)",
+          "primaryKey": false,
+          "notNull": true
+        },
         "name": {
           "name": "name",
           "type": "varchar(100)",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "email": {
           "name": "email",
           "type": "varchar(100)",
           "primaryKey": false,
-          "notNull": true
-        },
-        "contact_person": {
-          "name": "contact_person",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "api_key": {
-          "name": "api_key",
-          "type": "varchar(400)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "wallet_address": {
-          "name": "wallet_address",
-          "type": "varchar(42)",
-          "primaryKey": false,
           "notNull": false
         },
-        "bucket_addresses": {
-          "name": "bucket_addresses",
-          "type": "text[]",
+        "image_url": {
+          "name": "image_url",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -202,53 +586,34 @@
           "primaryKey": false,
           "notNull": false
         },
-        "is_admin": {
-          "name": "is_admin",
-          "type": "boolean",
+        "status": {
+          "name": "status",
+          "type": "varchar(20)",
           "primaryKey": false,
-          "notNull": false,
-          "default": false
-        },
-        "active": {
-          "name": "active",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": false
-        },
-        "deactivation_reason": {
-          "name": "deactivation_reason",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deactivation_date": {
-          "name": "deactivation_date",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": "'active'"
         },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "default": "now()"
         }
       },
       "indexes": {
-        "idx_teams_active": {
-          "name": "idx_teams_active",
+        "idx_users_wallet_address": {
+          "name": "idx_users_wallet_address",
           "columns": [
             {
-              "expression": "active",
+              "expression": "wallet_address",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -259,43 +624,13 @@
           "method": "btree",
           "with": {}
         },
-        "idx_teams_api_key": {
-          "name": "idx_teams_api_key",
+        "idx_users_status": {
+          "name": "idx_users_status",
           "columns": [
             {
-              "expression": "api_key",
+              "expression": "status",
               "isExpression": false,
               "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_teams_is_admin": {
-          "name": "idx_teams_is_admin",
-          "columns": [
-            {
-              "expression": "is_admin",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_teams_metadata_ref_name": {
-          "name": "idx_teams_metadata_ref_name",
-          "columns": [
-            {
-              "expression": "(((metadata -> 'ref'::text) ->> 'name'::text))",
-              "asc": true,
-              "isExpression": true,
               "nulls": "last"
             }
           ],
@@ -308,22 +643,15 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "teams_email_key": {
-          "name": "teams_email_key",
+        "users_wallet_address_unique": {
+          "name": "users_wallet_address_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "email"
+            "wallet_address"
           ]
         },
-        "teams_api_key_key": {
-          "name": "teams_api_key_key",
-          "nullsNotDistinct": false,
-          "columns": [
-            "api_key"
-          ]
-        },
-        "teams_wallet_address_key": {
-          "name": "teams_wallet_address_key",
+        "users_wallet_address_key": {
+          "name": "users_wallet_address_key",
           "nullsNotDistinct": false,
           "columns": [
             "wallet_address"
@@ -344,8 +672,8 @@
           "primaryKey": true,
           "notNull": true
         },
-        "team_id": {
-          "name": "team_id",
+        "agent_id": {
+          "name": "agent_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
@@ -358,7 +686,7 @@
         },
         "amount": {
           "name": "amount",
-          "type": "numeric(30, 15)",
+          "type": "numeric",
           "primaryKey": false,
           "notNull": true
         },
@@ -381,6 +709,12 @@
           "type": "varchar(20)",
           "primaryKey": false,
           "notNull": true
+        },
+        "symbol": {
+          "name": "symbol",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
         }
       },
       "indexes": {
@@ -399,11 +733,11 @@
           "method": "btree",
           "with": {}
         },
-        "idx_balances_team_id": {
-          "name": "idx_balances_team_id",
+        "idx_balances_agent_id": {
+          "name": "idx_balances_agent_id",
           "columns": [
             {
-              "expression": "team_id",
+              "expression": "agent_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -416,12 +750,12 @@
         }
       },
       "foreignKeys": {
-        "balances_team_id_fkey": {
-          "name": "balances_team_id_fkey",
+        "balances_agent_id_fkey": {
+          "name": "balances_agent_id_fkey",
           "tableFrom": "balances",
-          "tableTo": "teams",
+          "tableTo": "agents",
           "columnsFrom": [
-            "team_id"
+            "agent_id"
           ],
           "columnsTo": [
             "id"
@@ -432,11 +766,11 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "balances_team_id_token_address_key": {
-          "name": "balances_team_id_token_address_key",
+        "balances_agent_id_token_address_key": {
+          "name": "balances_agent_id_token_address_key",
           "nullsNotDistinct": false,
           "columns": [
-            "team_id",
+            "agent_id",
             "token_address"
           ]
         }
@@ -455,8 +789,8 @@
           "primaryKey": true,
           "notNull": true
         },
-        "team_id": {
-          "name": "team_id",
+        "agent_id": {
+          "name": "agent_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
@@ -482,11 +816,11 @@
         }
       },
       "indexes": {
-        "idx_portfolio_snapshots_team_competition": {
-          "name": "idx_portfolio_snapshots_team_competition",
+        "idx_portfolio_snapshots_agent_competition": {
+          "name": "idx_portfolio_snapshots_agent_competition",
           "columns": [
             {
-              "expression": "team_id",
+              "expression": "agent_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -520,12 +854,12 @@
         }
       },
       "foreignKeys": {
-        "portfolio_snapshots_team_id_fkey": {
-          "name": "portfolio_snapshots_team_id_fkey",
+        "portfolio_snapshots_agent_id_fkey": {
+          "name": "portfolio_snapshots_agent_id_fkey",
           "tableFrom": "portfolio_snapshots",
-          "tableTo": "teams",
+          "tableTo": "agents",
           "columnsFrom": [
-            "team_id"
+            "agent_id"
           ],
           "columnsTo": [
             "id"
@@ -577,7 +911,7 @@
         },
         "amount": {
           "name": "amount",
-          "type": "numeric(30, 15)",
+          "type": "numeric",
           "primaryKey": false,
           "notNull": true
         },
@@ -589,7 +923,7 @@
         },
         "price": {
           "name": "price",
-          "type": "numeric(30, 15)",
+          "type": "numeric",
           "primaryKey": false,
           "notNull": true
         },
@@ -598,6 +932,12 @@
           "type": "varchar(20)",
           "primaryKey": false,
           "notNull": false
+        },
+        "symbol": {
+          "name": "symbol",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
         }
       },
       "indexes": {
@@ -672,7 +1012,7 @@
         },
         "price": {
           "name": "price",
-          "type": "numeric(30, 15)",
+          "type": "numeric",
           "primaryKey": false,
           "notNull": true
         },
@@ -694,6 +1034,12 @@
           "type": "varchar(20)",
           "primaryKey": false,
           "notNull": false
+        },
+        "symbol": {
+          "name": "symbol",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
         }
       },
       "indexes": {
@@ -838,8 +1184,8 @@
           "primaryKey": true,
           "notNull": true
         },
-        "team_id": {
-          "name": "team_id",
+        "agent_id": {
+          "name": "agent_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
@@ -864,19 +1210,31 @@
         },
         "from_amount": {
           "name": "from_amount",
-          "type": "numeric(30, 15)",
+          "type": "numeric",
           "primaryKey": false,
           "notNull": true
         },
         "to_amount": {
           "name": "to_amount",
-          "type": "numeric(30, 15)",
+          "type": "numeric",
           "primaryKey": false,
           "notNull": true
         },
         "price": {
           "name": "price",
-          "type": "numeric(30, 15)",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "trade_amount_usd": {
+          "name": "trade_amount_usd",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "to_token_symbol": {
+          "name": "to_token_symbol",
+          "type": "varchar(20)",
           "primaryKey": false,
           "notNull": true
         },
@@ -976,11 +1334,11 @@
           "method": "btree",
           "with": {}
         },
-        "idx_trades_team_id": {
-          "name": "idx_trades_team_id",
+        "idx_trades_agent_id": {
+          "name": "idx_trades_agent_id",
           "columns": [
             {
-              "expression": "team_id",
+              "expression": "agent_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1038,12 +1396,12 @@
         }
       },
       "foreignKeys": {
-        "trades_team_id_fkey": {
-          "name": "trades_team_id_fkey",
+        "trades_agent_id_fkey": {
+          "name": "trades_agent_id_fkey",
           "tableFrom": "trades",
-          "tableTo": "teams",
+          "tableTo": "agents",
           "columnsFrom": [
-            "team_id"
+            "agent_id"
           ],
           "columnsTo": [
             "id"
