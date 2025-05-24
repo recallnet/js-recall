@@ -122,7 +122,7 @@ export function configureAdminRoutes(
    *       500:
    *         description: Server error
    */
-  router.post("/teams/register", controller.registerTeam);
+  // router.post("/teams/register", controller.registerTeam); // REMOVED - replaced with POST /users
 
   /**
    * @openapi
@@ -179,7 +179,7 @@ export function configureAdminRoutes(
    *       500:
    *         description: Server error
    */
-  router.get("/teams", controller.listAllTeams);
+  // router.get("/teams", controller.listAllTeams); // REMOVED - replaced with GET /agents
 
   /**
    * @openapi
@@ -967,7 +967,671 @@ export function configureAdminRoutes(
    *       500:
    *         description: Server error
    */
-  router.get("/teams/search", controller.searchTeams);
+  // router.get("/teams/search", controller.searchTeams); // REMOVED - replaced with GET /search
+
+  /**
+   * @openapi
+   * /api/admin/users:
+   *   post:
+   *     tags:
+   *       - Admin
+   *     summary: Register a new user
+   *     description: Admin-only endpoint to register a new user and optionally create their first agent. Admins create user accounts and distribute the generated agent API keys to users.
+   *     security:
+   *       - BearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - walletAddress
+   *             properties:
+   *               walletAddress:
+   *                 type: string
+   *                 description: Ethereum wallet address (must start with 0x)
+   *                 example: 0x1234567890123456789012345678901234567890
+   *               name:
+   *                 type: string
+   *                 description: User's display name
+   *                 example: John Doe
+   *               email:
+   *                 type: string
+   *                 format: email
+   *                 description: User email address
+   *                 example: user@example.com
+   *               userImageUrl:
+   *                 type: string
+   *                 description: URL to the user's profile image
+   *                 example: "https://example.com/user-image.jpg"
+   *               agentName:
+   *                 type: string
+   *                 description: Name for the user's first agent (optional)
+   *                 example: Trading Bot Alpha
+   *               agentDescription:
+   *                 type: string
+   *                 description: Description of the agent (optional)
+   *                 example: High-frequency trading bot specializing in DeFi
+   *               agentImageUrl:
+   *                 type: string
+   *                 description: URL to the agent's image (optional)
+   *                 example: "https://example.com/agent-image.jpg"
+   *               agentMetadata:
+   *                 type: object
+   *                 description: Optional metadata about the agent
+   *                 example: {
+   *                     "ref": {
+   *                       "name": "ksobot",
+   *                       "version": "1.0.0",
+   *                       "url": "github.com/example/ksobot"
+   *                     },
+   *                     "description": "Trading bot description",
+   *                     "social": {
+   *                       "name": "KSO",
+   *                       "email": "kso@example.com",
+   *                       "twitter": "hey_kso"
+   *                     }
+   *                   }
+   *     responses:
+   *       201:
+   *         description: User registered successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 user:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                       description: User ID
+   *                     walletAddress:
+   *                       type: string
+   *                       description: User wallet address
+   *                     name:
+   *                       type: string
+   *                       description: User name
+   *                     email:
+   *                       type: string
+   *                       description: User email
+   *                     imageUrl:
+   *                       type: string
+   *                       description: URL to user's image
+   *                       nullable: true
+   *                     status:
+   *                       type: string
+   *                       description: User status
+   *                     createdAt:
+   *                       type: string
+   *                       format: date-time
+   *                       description: Account creation timestamp
+   *                 agent:
+   *                   type: object
+   *                   nullable: true
+   *                   description: Created agent (if agentName was provided)
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                       description: Agent ID
+   *                     ownerId:
+   *                       type: string
+   *                       description: Agent owner ID
+   *                     name:
+   *                       type: string
+   *                       description: Agent name
+   *                     description:
+   *                       type: string
+   *                       description: Agent description
+   *                       nullable: true
+   *                     imageUrl:
+   *                       type: string
+   *                       description: URL to agent's image
+   *                       nullable: true
+   *                     apiKey:
+   *                       type: string
+   *                       description: API key for the agent to use with Bearer authentication. Admin should securely provide this to the user.
+   *                       example: abc123def456_ghi789jkl012
+   *                     status:
+   *                       type: string
+   *                       description: Agent status
+   *                     createdAt:
+   *                       type: string
+   *                       format: date-time
+   *                       description: Agent creation timestamp
+   *                 agentError:
+   *                   type: string
+   *                   nullable: true
+   *                   description: Error message if agent creation failed
+   *       400:
+   *         description: Missing required parameters or invalid wallet address
+   *       409:
+   *         description: User with this wallet address already exists
+   *       500:
+   *         description: Server error
+   */
+  router.post("/users", controller.registerUser);
+
+  /**
+   * @openapi
+   * /api/admin/users:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: List all users
+   *     description: Get a list of all users in the system
+   *     security:
+   *       - BearerAuth: []
+   *     responses:
+   *       200:
+   *         description: List of users
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 users:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         description: User ID
+   *                       walletAddress:
+   *                         type: string
+   *                         description: User wallet address
+   *                       name:
+   *                         type: string
+   *                         description: User name
+   *                       email:
+   *                         type: string
+   *                         description: User email
+   *                       status:
+   *                         type: string
+   *                         description: User status
+   *                       imageUrl:
+   *                         type: string
+   *                         description: URL to the user's image
+   *                         nullable: true
+   *                       createdAt:
+   *                         type: string
+   *                         format: date-time
+   *                         description: Account creation timestamp
+   *                       updatedAt:
+   *                         type: string
+   *                         format: date-time
+   *                         description: Account update timestamp
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       500:
+   *         description: Server error
+   */
+  router.get("/users", controller.listAllUsers);
+
+  /**
+   * @openapi
+   * /api/admin/agents:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: List all agents
+   *     description: Get a list of all agents in the system
+   *     security:
+   *       - BearerAuth: []
+   *     responses:
+   *       200:
+   *         description: List of agents
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 agents:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         description: Agent ID
+   *                       ownerId:
+   *                         type: string
+   *                         description: Agent owner ID
+   *                       name:
+   *                         type: string
+   *                         description: Agent name
+   *                       description:
+   *                         type: string
+   *                         description: Agent description
+   *                         nullable: true
+   *                       status:
+   *                         type: string
+   *                         description: Agent status
+   *                       imageUrl:
+   *                         type: string
+   *                         description: URL to the agent's image
+   *                         nullable: true
+   *                       createdAt:
+   *                         type: string
+   *                         format: date-time
+   *                         description: Agent creation timestamp
+   *                       updatedAt:
+   *                         type: string
+   *                         format: date-time
+   *                         description: Agent update timestamp
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       500:
+   *         description: Server error
+   */
+  router.get("/agents", controller.listAllAgents);
+
+  /**
+   * @openapi
+   * /api/admin/agents/{agentId}/key:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: Get an agent's API key
+   *     description: Retrieves the original API key for an agent. Use this when agents lose or misplace their API key.
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: agentId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: ID of the agent
+   *     responses:
+   *       200:
+   *         description: API key retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 agent:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                       description: Agent ID
+   *                     name:
+   *                       type: string
+   *                       description: Agent name
+   *                     apiKey:
+   *                       type: string
+   *                       description: The agent's API key
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       404:
+   *         description: Agent not found
+   *       500:
+   *         description: Server error
+   */
+  router.get("/agents/:agentId/key", controller.getAgentApiKey);
+
+  /**
+   * @openapi
+   * /api/admin/agents/{agentId}:
+   *   delete:
+   *     tags:
+   *       - Admin
+   *     summary: Delete an agent
+   *     description: Permanently delete an agent and all associated data
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: agentId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: ID of the agent to delete
+   *     responses:
+   *       200:
+   *         description: Agent deleted successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 message:
+   *                   type: string
+   *                   description: Success message
+   *       400:
+   *         description: Agent ID is required
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       404:
+   *         description: Agent not found
+   *       500:
+   *         description: Server error
+   */
+  router.delete("/agents/:agentId", controller.deleteAgent);
+
+  /**
+   * @openapi
+   * /api/admin/agents/{agentId}/deactivate:
+   *   post:
+   *     tags:
+   *       - Admin
+   *     summary: Deactivate an agent
+   *     description: Deactivate an agent from the system. The agent will no longer be able to perform any actions.
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: agentId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: ID of the agent to deactivate
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - reason
+   *             properties:
+   *               reason:
+   *                 type: string
+   *                 description: Reason for deactivation
+   *                 example: Violated competition rules by using external API
+   *     responses:
+   *       200:
+   *         description: Agent deactivated successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 agent:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                       description: Agent ID
+   *                     name:
+   *                       type: string
+   *                       description: Agent name
+   *                     status:
+   *                       type: string
+   *                       description: Agent status (will be inactive)
+   *       400:
+   *         description: Missing required parameters
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       404:
+   *         description: Agent not found
+   *       500:
+   *         description: Server error
+   */
+  router.post("/agents/:agentId/deactivate", controller.deactivateAgent);
+
+  /**
+   * @openapi
+   * /api/admin/agents/{agentId}/reactivate:
+   *   post:
+   *     tags:
+   *       - Admin
+   *     summary: Reactivate an agent
+   *     description: Reactivate a previously deactivated agent
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: agentId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: ID of the agent to reactivate
+   *     responses:
+   *       200:
+   *         description: Agent reactivated successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 agent:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                       description: Agent ID
+   *                     name:
+   *                       type: string
+   *                       description: Agent name
+   *                     status:
+   *                       type: string
+   *                       description: Agent status (will be active)
+   *       400:
+   *         description: Agent ID is required or agent is already active
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       404:
+   *         description: Agent not found
+   *       500:
+   *         description: Server error
+   */
+  router.post("/agents/:agentId/reactivate", controller.reactivateAgent);
+
+  /**
+   * @openapi
+   * /api/admin/agents/{agentId}:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: Get agent details
+   *     description: Get detailed information about a specific agent
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: agentId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: ID of the agent
+   *     responses:
+   *       200:
+   *         description: Agent details retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 agent:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                       description: Agent ID
+   *                     ownerId:
+   *                       type: string
+   *                       description: Agent owner ID
+   *                     name:
+   *                       type: string
+   *                       description: Agent name
+   *                     description:
+   *                       type: string
+   *                       description: Agent description
+   *                       nullable: true
+   *                     status:
+   *                       type: string
+   *                       description: Agent status
+   *                     imageUrl:
+   *                       type: string
+   *                       description: URL to the agent's image
+   *                       nullable: true
+   *                     createdAt:
+   *                       type: string
+   *                       format: date-time
+   *                       description: Agent creation timestamp
+   *                     updatedAt:
+   *                       type: string
+   *                       format: date-time
+   *                       description: Agent update timestamp
+   *       400:
+   *         description: Agent ID is required
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       404:
+   *         description: Agent not found
+   *       500:
+   *         description: Server error
+   */
+  router.get("/agents/:agentId", controller.getAgent);
+
+  /**
+   * @openapi
+   * /api/admin/search:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: Search users and agents
+   *     description: Search for users and agents based on various criteria
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: email
+   *         schema:
+   *           type: string
+   *         description: Partial match for email address (users only)
+   *       - in: query
+   *         name: name
+   *         schema:
+   *           type: string
+   *         description: Partial match for name
+   *       - in: query
+   *         name: walletAddress
+   *         schema:
+   *           type: string
+   *         description: Partial match for wallet address (users only)
+   *       - in: query
+   *         name: status
+   *         schema:
+   *           type: string
+   *           enum: [active, suspended, deleted]
+   *         description: Filter by status
+   *       - in: query
+   *         name: searchType
+   *         schema:
+   *           type: string
+   *           enum: [users, agents, both]
+   *           default: both
+   *         description: Type of entities to search
+   *     responses:
+   *       200:
+   *         description: Search results
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 searchType:
+   *                   type: string
+   *                   description: Type of search performed
+   *                 results:
+   *                   type: object
+   *                   properties:
+   *                     users:
+   *                       type: array
+   *                       items:
+   *                         type: object
+   *                         properties:
+   *                           type:
+   *                             type: string
+   *                             example: user
+   *                           id:
+   *                             type: string
+   *                           walletAddress:
+   *                             type: string
+   *                           name:
+   *                             type: string
+   *                             nullable: true
+   *                           email:
+   *                             type: string
+   *                             nullable: true
+   *                           status:
+   *                             type: string
+   *                           imageUrl:
+   *                             type: string
+   *                             nullable: true
+   *                           createdAt:
+   *                             type: string
+   *                             format: date-time
+   *                           updatedAt:
+   *                             type: string
+   *                             format: date-time
+   *                     agents:
+   *                       type: array
+   *                       items:
+   *                         type: object
+   *                         properties:
+   *                           type:
+   *                             type: string
+   *                             example: agent
+   *                           id:
+   *                             type: string
+   *                           ownerId:
+   *                             type: string
+   *                           name:
+   *                             type: string
+   *                           description:
+   *                             type: string
+   *                             nullable: true
+   *                           status:
+   *                             type: string
+   *                           imageUrl:
+   *                             type: string
+   *                             nullable: true
+   *                           createdAt:
+   *                             type: string
+   *                             format: date-time
+   *                           updatedAt:
+   *                             type: string
+   *                             format: date-time
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       500:
+   *         description: Server error
+   */
+  router.get("/search", controller.searchUsersAndAgents);
 
   return router;
 }

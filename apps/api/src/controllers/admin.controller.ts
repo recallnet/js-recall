@@ -425,17 +425,17 @@ export function makeAdminController(services: ServiceRegistry) {
           competitionId,
           name,
           description,
-          teamIds,
+          agentIds,
           tradingType,
           externalLink,
           imageUrl,
         } = req.body;
 
         // Validate required parameters
-        if (!teamIds || !Array.isArray(teamIds) || teamIds.length === 0) {
+        if (!agentIds || !Array.isArray(agentIds) || agentIds.length === 0) {
           throw new ApiError(
             400,
-            "Missing required parameter: teamIds (array)",
+            "Missing required parameter: agentIds (array)",
           );
         }
 
@@ -481,7 +481,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const startedCompetition =
           await services.competitionManager.startCompetition(
             competition.id,
-            teamIds,
+            agentIds,
           );
 
         // Return the started competition
@@ -489,7 +489,7 @@ export function makeAdminController(services: ServiceRegistry) {
           success: true,
           competition: {
             ...startedCompetition,
-            teamIds,
+            agentIds,
           },
         });
       } catch (error) {
@@ -1105,6 +1105,317 @@ export function makeAdminController(services: ServiceRegistry) {
           success: true,
           searchType: searchTypeFilter,
           results,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * List all agents
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async listAllAgents(req: Request, res: Response, next: NextFunction) {
+      try {
+        // Get all agents from the database
+        const agents = await services.agentManager.getAllAgents();
+
+        // Format the agents for the response
+        const formattedAgents = agents.map((agent) => ({
+          id: agent.id,
+          ownerId: agent.ownerId,
+          name: agent.name,
+          description: agent.description,
+          status: agent.status,
+          imageUrl: agent.imageUrl,
+          createdAt: agent.createdAt,
+          updatedAt: agent.updatedAt,
+        }));
+
+        // Return the agents
+        res.status(200).json({
+          success: true,
+          agents: formattedAgents,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Delete an agent
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async deleteAgent(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { agentId } = req.params;
+
+        if (!agentId) {
+          return res.status(400).json({
+            success: false,
+            error: "Agent ID is required",
+          });
+        }
+
+        // Get the agent first to check if it exists
+        const agent = await services.agentManager.getAgent(agentId);
+
+        if (!agent) {
+          return res.status(404).json({
+            success: false,
+            error: "Agent not found",
+          });
+        }
+
+        // Delete the agent
+        const deleted = await services.agentManager.deleteAgent(agentId);
+
+        if (deleted) {
+          return res.status(200).json({
+            success: true,
+            message: "Agent successfully deleted",
+          });
+        } else {
+          return res.status(500).json({
+            success: false,
+            error: "Failed to delete agent",
+          });
+        }
+      } catch (error) {
+        console.error("[AdminController] Error deleting agent:", error);
+        next(error);
+      }
+    },
+
+    /**
+     * Deactivate an agent
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async deactivateAgent(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { agentId } = req.params;
+        const { reason } = req.body;
+
+        // Validate required parameters
+        if (!agentId) {
+          return res.status(400).json({
+            success: false,
+            error: "Agent ID is required",
+          });
+        }
+
+        if (!reason) {
+          return res.status(400).json({
+            success: false,
+            error: "Reason for deactivation is required",
+          });
+        }
+
+        // Get the agent first to check if it exists
+        const agent = await services.agentManager.getAgent(agentId);
+
+        if (!agent) {
+          return res.status(404).json({
+            success: false,
+            error: "Agent not found",
+          });
+        }
+
+        // Check if agent is already inactive
+        if (agent.status !== "active") {
+          return res.status(400).json({
+            success: false,
+            error: "Agent is already inactive",
+            agent: {
+              id: agent.id,
+              name: agent.name,
+              status: agent.status,
+            },
+          });
+        }
+
+        // Deactivate the agent
+        const deactivatedAgent = await services.agentManager.deactivateAgent(
+          agentId,
+          reason,
+        );
+
+        if (!deactivatedAgent) {
+          return res.status(500).json({
+            success: false,
+            error: "Failed to deactivate agent",
+          });
+        }
+
+        // Return the updated agent info
+        res.status(200).json({
+          success: true,
+          agent: {
+            id: deactivatedAgent.id,
+            name: deactivatedAgent.name,
+            status: deactivatedAgent.status,
+          },
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Reactivate an agent
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async reactivateAgent(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { agentId } = req.params;
+
+        // Validate required parameters
+        if (!agentId) {
+          return res.status(400).json({
+            success: false,
+            error: "Agent ID is required",
+          });
+        }
+
+        // Get the agent first to check if it exists and is actually inactive
+        const agent = await services.agentManager.getAgent(agentId);
+
+        if (!agent) {
+          return res.status(404).json({
+            success: false,
+            error: "Agent not found",
+          });
+        }
+
+        // Check if agent is already active
+        if (agent.status === "active") {
+          return res.status(400).json({
+            success: false,
+            error: "Agent is already active",
+            agent: {
+              id: agent.id,
+              name: agent.name,
+              status: agent.status,
+            },
+          });
+        }
+
+        // Reactivate the agent
+        const reactivatedAgent =
+          await services.agentManager.reactivateAgent(agentId);
+
+        if (!reactivatedAgent) {
+          return res.status(500).json({
+            success: false,
+            error: "Failed to reactivate agent",
+          });
+        }
+
+        // Return the updated agent info
+        res.status(200).json({
+          success: true,
+          agent: {
+            id: reactivatedAgent.id,
+            name: reactivatedAgent.name,
+            status: reactivatedAgent.status,
+          },
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get an agent by ID
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getAgent(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { agentId } = req.params;
+
+        if (!agentId) {
+          return res.status(400).json({
+            success: false,
+            error: "Agent ID is required",
+          });
+        }
+
+        // Get the agent
+        const agent = await services.agentManager.getAgent(agentId);
+
+        if (!agent) {
+          return res.status(404).json({
+            success: false,
+            error: "Agent not found",
+          });
+        }
+
+        // Format the response
+        const formattedAgent = {
+          id: agent.id,
+          ownerId: agent.ownerId,
+          name: agent.name,
+          description: agent.description,
+          status: agent.status,
+          imageUrl: agent.imageUrl,
+          createdAt: agent.createdAt,
+          updatedAt: agent.updatedAt,
+        };
+
+        // Return the agent
+        res.status(200).json({
+          success: true,
+          agent: formattedAgent,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get an agent's API key
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getAgentApiKey(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { agentId } = req.params;
+
+        if (!agentId) {
+          throw new ApiError(400, "Agent ID is required");
+        }
+
+        // Get the decrypted API key using the agent manager
+        const result =
+          await services.agentManager.getDecryptedApiKeyById(agentId);
+
+        if (!result.success) {
+          // If there was an error, use the error code and message from the service
+          throw new ApiError(
+            result.errorCode || 500,
+            result.errorMessage || "Unknown error",
+          );
+        }
+
+        // Return the agent with the decrypted API key
+        res.status(200).json({
+          success: true,
+          agent: {
+            id: result.agent?.id || agentId,
+            name: result.agent?.name || "Unknown",
+            apiKey: result.apiKey,
+          },
         });
       } catch (error) {
         next(error);
