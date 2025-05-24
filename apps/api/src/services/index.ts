@@ -7,7 +7,6 @@ import { ConfigurationService } from "@/services/configuration.service.js";
 import { PortfolioSnapshotter } from "@/services/portfolio-snapshotter.service.js";
 import { PriceTracker } from "@/services/price-tracker.service.js";
 import { SchedulerService } from "@/services/scheduler.service.js";
-import { TeamManager } from "@/services/team-manager.service.js";
 import { TradeSimulator } from "@/services/trade-simulator.service.js";
 import { UserManager } from "@/services/user-manager.service.js";
 
@@ -24,7 +23,6 @@ class ServiceRegistry {
   private _priceTracker: PriceTracker;
   private _tradeSimulator: TradeSimulator;
   private _competitionManager: CompetitionManager;
-  private _teamManager: TeamManager;
   private _userManager: UserManager;
   private _agentManager: AgentManager;
   private _adminManager: AdminManager;
@@ -52,9 +50,6 @@ class ServiceRegistry {
     this._agentManager = new AgentManager();
     this._adminManager = new AdminManager();
 
-    // Initialize team manager (legacy - will be deprecated)
-    this._teamManager = new TeamManager();
-
     // Configuration service for dynamic settings
     this._configurationService = new ConfigurationService();
 
@@ -73,6 +68,13 @@ class ServiceRegistry {
     );
 
     console.log("[ServiceRegistry] All services initialized");
+  }
+
+  public static getInstance(): ServiceRegistry {
+    if (!ServiceRegistry.instance) {
+      ServiceRegistry.instance = new ServiceRegistry();
+    }
+    return ServiceRegistry.instance;
   }
 
   // Service getters
@@ -98,10 +100,6 @@ class ServiceRegistry {
 
   get portfolioSnapshotter(): PortfolioSnapshotter {
     return this._portfolioSnapshotter;
-  }
-
-  get teamManager(): TeamManager {
-    return this._teamManager;
   }
 
   get userManager(): UserManager {
@@ -132,7 +130,6 @@ export {
   PriceTracker,
   TradeSimulator,
   CompetitionManager,
-  TeamManager,
   UserManager,
   AgentManager,
   AdminManager,
@@ -140,3 +137,5 @@ export {
   ServiceRegistry,
   PortfolioSnapshotter,
 };
+
+export default ServiceRegistry;
