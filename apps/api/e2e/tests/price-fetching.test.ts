@@ -14,7 +14,7 @@ import {
   ADMIN_USERNAME,
   cleanupTestState,
   getApiSdk,
-  registerTeamAndGetClient,
+  registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
 import { BlockchainType } from "@/types/index.js";
 
@@ -51,8 +51,10 @@ describe("Price Fetching", () => {
     expect(adminApiKey).toBeDefined();
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
 
-    // Register a team and get an authenticated client
-    const result = await registerTeamAndGetClient(adminApiKey);
+    // Register a user/agent and get an authenticated client
+    const result = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+    });
     clientApiKey = result.apiKey;
   });
 

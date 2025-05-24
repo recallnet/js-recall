@@ -27,7 +27,7 @@ describe("SIWE Authentication", () => {
   const baseUrl = getBaseUrl();
   const domain = new URL(baseUrl).hostname || "localhost";
 
-  // Admin client for creating teams
+  // Admin client for creating users/agents
   let adminClient: ApiClient;
   let adminApiKey: string;
 
@@ -51,7 +51,7 @@ describe("SIWE Authentication", () => {
   });
 
   it("should complete full SIWE auth flow with api-sdk", async () => {
-    // Register a team
+    // Register a user/agent
     const userName = `User ${Date.now()}`;
     const agentName = `Agent ${Date.now()}`;
 
@@ -106,15 +106,15 @@ describe("SIWE Authentication", () => {
   });
 
   it("should complete full SIWE auth flow with custom api client", async () => {
-    // Register a team with our test wallet address
-    const teamResult = await adminClient.registerUser(
+    // Register a user/agent with our test wallet address
+    const result = await adminClient.registerUser(
       testWalletAddress,
       "SIWE Test User",
       "siwe_test@example.com",
     );
 
-    expect(teamResult).not.toHaveProperty("error");
-    expect(teamResult).toHaveProperty("success", true);
+    expect(result).not.toHaveProperty("error");
+    expect(result).toHaveProperty("success", true);
 
     // Create a session client (without API key)
     const sessionClient = new ApiClient(undefined, baseUrl);

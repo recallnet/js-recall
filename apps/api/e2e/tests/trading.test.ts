@@ -58,19 +58,19 @@ describe("Trading API", () => {
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
-  test("team can execute a trade and verify balance updates", async () => {
+  test("agent can execute a trade and verify balance updates", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
+    // Register agent and get client
     const { client: agentClient, agent } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Trading Agent",
       });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Trading Test ${Date.now()}`;
     (await adminClient.startCompetition({
       name: competitionName,
@@ -238,19 +238,19 @@ describe("Trading API", () => {
     expect(finalSolBalance).toBeLessThan(updatedSolBalance);
   });
 
-  test("team can execute a trade with an arbitrary token address", async () => {
+  test("agent can execute a trade with an arbitrary token address", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
+    // Register agent and get client
     const { client: agentClient, agent } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Arbitrary Token Agent",
       });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Arbitrary Token Test ${Date.now()}`;
     await startTestCompetition(adminClient, competitionName, [agent.id]);
 
@@ -358,19 +358,19 @@ describe("Trading API", () => {
     ); // Allow for small rounding differences
   });
 
-  test("team cannot execute invalid trades", async () => {
+  test("agent cannot execute invalid trades", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
+    // Register agent and get client
     const { client: agentClient, agent } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Invalid Trading Agent",
       });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     await startTestCompetition(
       adminClient,
       `Invalid Trading Test ${Date.now()}`,
@@ -487,14 +487,14 @@ describe("Trading API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
+    // Register agent and get client
     const { client: agentClient, agent } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Max Trade Limit Agent",
       });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     await startTestCompetition(
       adminClient,
       `Max Trade Limit Test ${Date.now()}`,
@@ -513,7 +513,7 @@ describe("Trading API", () => {
     // First, check if we have any SOL or other tokens and sell them to consolidate into USDC
     const tokenAddressesBefore = Object.keys(initialBalanceResponse.balances);
     console.log(
-      `Team initial balances: ${JSON.stringify(initialBalanceResponse.balances)}`,
+      `Agent initial balances: ${JSON.stringify(initialBalanceResponse.balances)}`,
     );
 
     // Consolidate all non-USDC SVM tokens into USDC
@@ -618,19 +618,19 @@ describe("Trading API", () => {
     );
   });
 
-  test("team can fetch price and execute a calculated trade", async () => {
+  test("agent can fetch price and execute a calculated trade", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
+    // Register agent and get client
     const { client: agentClient, agent } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Price Calculation Agent",
       });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Price Calculation Test ${Date.now()}`;
     await startTestCompetition(adminClient, competitionName, [agent.id]);
 
@@ -739,19 +739,19 @@ describe("Trading API", () => {
     expect(lastTrade?.toAmount).toBeCloseTo(expectedTokenAmount, 1);
   });
 
-  test("team can trade with Ethereum tokens", async () => {
+  test("agent can trade with Ethereum tokens", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
+    // Register agent and get client
     const { client: agentClient, agent } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Ethereum Token Agent",
       });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Ethereum Token Test ${Date.now()}`;
     (await adminClient.startCompetition({
       name: competitionName,
@@ -875,19 +875,19 @@ describe("Trading API", () => {
     }
   });
 
-  test("team can execute trades with explicit chain parameters", async () => {
+  test("agent can execute trades with explicit chain parameters", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
+    // Register agent and get client
     const { client: agentClient, agent } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Chain-Specific Trading Agent",
       });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Chain-Specific Trading Test ${Date.now()}`;
     await startTestCompetition(adminClient, competitionName, [agent.id]);
 
@@ -1016,19 +1016,19 @@ describe("Trading API", () => {
     }
   });
 
-  test("team can execute a trade and verify reason field is returned in responses", async () => {
+  test("agent can execute a trade and verify reason field is returned in responses", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
+    // Register agent and get client
     const { client: agentClient, agent } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Reason Verification Agent",
       });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Reason Verification Test ${Date.now()}`;
     await startTestCompetition(adminClient, competitionName, [agent.id]);
 
@@ -1092,19 +1092,19 @@ describe("Trading API", () => {
     );
   });
 
-  test("team cannot execute a trade without a reason field", async () => {
+  test("agent cannot execute a trade without a reason field", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
+    // Register agent and get client
     const { client: agentClient, agent } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Reason Required Agent",
       });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Reason Required Test ${Date.now()}`;
     await startTestCompetition(adminClient, competitionName, [agent.id]);
 
@@ -1151,7 +1151,7 @@ describe("Trading API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
+    // Register agent and get client
     const { client: agentClient, agent } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
@@ -1319,7 +1319,7 @@ describe("Trading API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
+    // Register agent and get client
     const { client: agentClient, agent } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
@@ -1337,7 +1337,7 @@ describe("Trading API", () => {
     expect(competitionResponse.success).toBe(true);
     await wait(500);
 
-    // Verify the team has some balance on the source chain
+    // Verify the agent has some balance on the source chain
     const initialBalanceResponse = await agentClient.getBalance();
     const sourceUsdcBalance = parseFloat(
       (initialBalanceResponse.success &&
@@ -1431,7 +1431,7 @@ describe("Trading API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
+    // Register agent and get client
     const { client: agentClient, agent } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
@@ -1556,13 +1556,13 @@ describe("Trading API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
+    // Register agent and get client
     const { agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
       agentName: "Reason Required Agent",
     });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Reason Required Test ${Date.now()}`;
     const competition = await startTestCompetition(
       adminClient,
@@ -1614,14 +1614,14 @@ describe("Trading API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
+    // Register agent and get client
     const { client: agentClient, agent } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "USD Amount Test Agent",
       });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `USD Amount Test ${Date.now()}`;
     await startTestCompetition(adminClient, competitionName, [agent.id]);
 
@@ -1719,14 +1719,14 @@ describe("Trading API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
+    // Register agent and get client
     const { client: agentClient, agent } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Symbol Verification Agent",
       });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Symbol Verification Test ${Date.now()}`;
     await startTestCompetition(adminClient, competitionName, [agent.id]);
 

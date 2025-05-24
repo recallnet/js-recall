@@ -15,7 +15,7 @@ import {
   ADMIN_USERNAME,
   cleanupTestState,
   createTestClient,
-  registerTeamAndGetClient,
+  registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
 } from "@/e2e/utils/test-helpers.js";
@@ -67,7 +67,7 @@ describe("Base Chain Trading", () => {
     await cleanupTestState();
   });
 
-  test("team can trade Base tokens with explicit chain parameters", async () => {
+  test("agent can trade Base tokens with explicit chain parameters", async () => {
     console.log(
       "[Test] Starting Base chain trading test with explicit chain parameters",
     );
@@ -76,22 +76,22 @@ describe("Base Chain Trading", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
+    // Register user/agent and get client
+    const { client, agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Base Chain Trading Team",
-    );
+      agentName: "Base Chain Trading Agent",
+    });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Base Trading Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [agent.id]);
 
     // Wait for balances to be properly initialized
     await wait(500);
 
     // Check initial balance
     const initialBalanceResponse =
-      (await teamClient.getBalance()) as BalancesResponse;
+      (await client.getBalance()) as BalancesResponse;
     expect(initialBalanceResponse.success).toBe(true);
     expect(initialBalanceResponse.balances).toBeDefined();
 
@@ -154,7 +154,7 @@ describe("Base Chain Trading", () => {
       );
 
       // Use the API endpoint with explicit from/to token addresses
-      const tradeResponse = (await teamClient.executeTrade({
+      const tradeResponse = (await client.executeTrade({
         fromToken: BASE_USDC_ADDRESS, // Explicitly use Base USDC address
         toToken: token.address, // Target token to buy
         amount: spendPerToken.toString(),
@@ -186,7 +186,7 @@ describe("Base Chain Trading", () => {
 
     // Check final balance
     const finalBalanceResponse =
-      (await teamClient.getBalance()) as BalancesResponse;
+      (await client.getBalance()) as BalancesResponse;
     expect(finalBalanceResponse.success).toBe(true);
 
     // Calculate total portfolio value after trades
@@ -236,7 +236,7 @@ describe("Base Chain Trading", () => {
 
     // Get trade history and verify all trades were recorded with correct chain info
     const tradeHistoryResponse =
-      (await teamClient.getTradeHistory()) as TradeHistoryResponse;
+      (await client.getTradeHistory()) as TradeHistoryResponse;
     expect(tradeHistoryResponse.success).toBe(true);
     expect(tradeHistoryResponse.trades).toBeInstanceOf(Array);
     expect(tradeHistoryResponse.trades.length).toBeGreaterThanOrEqual(
@@ -269,22 +269,22 @@ describe("Base Chain Trading", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
+    // Register user/agent and get client
+    const { client, agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Cross-Chain Restriction Team",
-    );
+      agentName: "Cross-Chain Restriction Agent",
+    });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Cross-Chain Restriction Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [agent.id]);
 
     // Wait for balances to be properly initialized
     await wait(500);
 
     // Check initial balance
     const initialBalanceResponse =
-      (await teamClient.getBalance()) as BalancesResponse;
+      (await client.getBalance()) as BalancesResponse;
     expect(initialBalanceResponse.success).toBe(true);
     expect(initialBalanceResponse.balances).toBeDefined();
     // Get initial Base USDC balance
@@ -323,7 +323,7 @@ describe("Base Chain Trading", () => {
     console.log(`Trade amount: ${tradeAmount} USDC`);
 
     try {
-      const tradeResponse = await teamClient.executeTrade({
+      const tradeResponse = await client.executeTrade({
         fromToken: BASE_USDC_ADDRESS, // Base USDC
         toToken: ETH_ADDRESS, // Ethereum ETH
         amount: tradeAmount,
@@ -370,7 +370,7 @@ describe("Base Chain Trading", () => {
 
     // Check final balances
     const finalBalanceResponse =
-      (await teamClient.getBalance()) as BalancesResponse;
+      (await client.getBalance()) as BalancesResponse;
     expect(finalBalanceResponse.success).toBe(true);
 
     // Log all final balances
@@ -418,7 +418,7 @@ describe("Base Chain Trading", () => {
 
         // Get trade history to see what transaction occurred
         const tradeHistory =
-          (await teamClient.getTradeHistory()) as TradeHistoryResponse;
+          (await client.getTradeHistory()) as TradeHistoryResponse;
         console.log(
           "Recent trades:",
           JSON.stringify(tradeHistory.trades.slice(0, 3), null, 2),
@@ -441,7 +441,7 @@ describe("Base Chain Trading", () => {
 
         // Get trade history to see what transaction occurred
         const tradeHistory =
-          (await teamClient.getTradeHistory()) as TradeHistoryResponse;
+          (await client.getTradeHistory()) as TradeHistoryResponse;
         console.log(
           "Recent trades:",
           JSON.stringify(tradeHistory.trades.slice(0, 3), null, 2),
@@ -463,22 +463,22 @@ describe("Base Chain Trading", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
+    // Register user/agent and get client
+    const { client, agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Spending Limit Team",
-    );
+      agentName: "Spending Limit Agent",
+    });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Spending Limit Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [agent.id]);
 
     // Wait for balances to be properly initialized
     await wait(500);
 
     // Check initial balance
     const initialBalanceResponse =
-      (await teamClient.getBalance()) as BalancesResponse;
+      (await client.getBalance()) as BalancesResponse;
     expect(initialBalanceResponse.success).toBe(true);
     expect(initialBalanceResponse.balances).toBeDefined();
     // Get initial Base USDC balance
@@ -510,7 +510,7 @@ describe("Base Chain Trading", () => {
     );
 
     try {
-      const tradeResponse = await teamClient.executeTrade({
+      const tradeResponse = await client.executeTrade({
         fromToken: BASE_USDC_ADDRESS,
         toToken: targetToken!,
         amount: excessiveAmount,
@@ -548,7 +548,7 @@ describe("Base Chain Trading", () => {
     const validAmount = (initialBaseUsdcBalance * 0.5).toString(); // 50% of balance
 
     // Execute a valid trade
-    const validTradeResponse = (await teamClient.executeTrade({
+    const validTradeResponse = (await client.executeTrade({
       fromToken: BASE_USDC_ADDRESS,
       toToken: targetToken!,
       amount: validAmount,
@@ -568,7 +568,7 @@ describe("Base Chain Trading", () => {
 
     // Check final balances
     const finalBalanceResponse =
-      (await teamClient.getBalance()) as BalancesResponse;
+      (await client.getBalance()) as BalancesResponse;
     expect(finalBalanceResponse.success).toBe(true);
     // USDC balance should be reduced by the valid trade amount
     const finalBaseUsdcBalance = parseFloat(

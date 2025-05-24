@@ -9,7 +9,7 @@ import {
   ADMIN_USERNAME,
   cleanupTestState,
   createTestClient,
-  registerTeamAndGetClient,
+  registerUserAndAgentAndGetClient,
   startTestCompetition,
 } from "@/e2e/utils/test-helpers.js";
 
@@ -50,15 +50,15 @@ describe("Leaderboard Access Control", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register a regular team
-    const { client: teamClient, team } = await registerTeamAndGetClient(
+    // Register a regular user/agent
+    const { client, agent: agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Test Team",
-    );
+      agentName: "Test Agent",
+    });
 
-    // Start a competition with the team
+    // Start a competition with the agent
     const competitionName = `Admin Access Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [agent.id]);
 
     // Verify the admin can still access the leaderboard
     const adminResponse =
@@ -67,9 +67,9 @@ describe("Leaderboard Access Control", () => {
     expect(adminResponse.leaderboard).toBeDefined();
     console.log("Admin successfully accessed leaderboard when toggle is true");
 
-    // Team should not be able to access leaderboard
+    // Agent should not be able to access leaderboard
     try {
-      const result = (await teamClient.getLeaderboard()) as
+      const result = (await client.getLeaderboard()) as
         | ErrorResponse
         | LeaderboardResponse;
       // If we get here with a success response, the access control is not working as expected

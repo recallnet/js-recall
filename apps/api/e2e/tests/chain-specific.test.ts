@@ -18,7 +18,7 @@ import {
   ADMIN_USERNAME,
   cleanupTestState,
   createTestClient,
-  registerTeamAndGetClient,
+  registerUserAndAgentAndGetClient,
   startTestCompetition,
 } from "@/e2e/utils/test-helpers.js";
 
@@ -44,24 +44,23 @@ describe("Specific Chains", () => {
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
-  test("specificChain is correctly entered into balances when team is initialized in competition", async () => {
+  test("specificChain is correctly entered into balances when agent is initialized in competition", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register a new team
-    const { client: teamClient, team } = await registerTeamAndGetClient(
+    // Register a new user/agent
+    const { client, agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Team 1",
-    );
+      agentName: "Agent 1",
+    });
 
-    // Start a competition with the team
+    // Start a competition with the agent
     const competitionName = `Specific Chain Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [agent.id]);
 
-    // Use the team client API to get balances instead of direct DB query
-    const balancesResponse =
-      (await teamClient.getBalance()) as BalancesResponse;
+    // Use the agent client API to get balances instead of direct DB query
+    const balancesResponse = (await client.getBalance()) as BalancesResponse;
     expect(balancesResponse.success).toBe(true);
     expect(Array.isArray(balancesResponse.balances)).toBe(true);
     expect(balancesResponse.balances.length).toBeGreaterThan(0);
@@ -109,18 +108,18 @@ describe("Specific Chains", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register a new team
-    const { client: teamClient, team } = await registerTeamAndGetClient(
+    // Register a new user/agent
+    const { client, agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Team 2",
-    );
+      agentName: "Agent 2",
+    });
 
-    // Start a competition with the team
+    // Start a competition with the agent
     const competitionName = `Trade Chain Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [agent.id]);
 
-    // Get team's current balances
-    const balanceResponse = (await teamClient.getBalance()) as BalancesResponse;
+    // Get agent's current balances
+    const balanceResponse = (await client.getBalance()) as BalancesResponse;
     expect(balanceResponse.success).toBe(true);
 
     // Find ETH and USDC tokens for a trade using config addresses
@@ -166,7 +165,7 @@ describe("Specific Chains", () => {
 
     // Execute a trade from ETH to USDC
     const tradeAmount = "0.01"; // Trade a small amount of ETH
-    const tradeResponse = await teamClient.executeTrade({
+    const tradeResponse = await client.executeTrade({
       fromToken: ethToken,
       toToken: usdcToken,
       amount: tradeAmount,
@@ -176,7 +175,7 @@ describe("Specific Chains", () => {
 
     // Query the trades table to check if specificChain fields were correctly populated
     const trade = await db.query.trades.findFirst({
-      where: eq(trades.teamId, team.id),
+      where: eq(trades.agentId, agent.id),
     });
 
     // Verify we have a trade record
@@ -194,18 +193,18 @@ describe("Specific Chains", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register a new team
-    const { team } = await registerTeamAndGetClient(
+    // Register a new user/agent
+    const { agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Team Portfolio",
-    );
+      agentName: "Agent Portfolio",
+    });
 
-    // Start a competition with the team
+    // Start a competition with the agent
     const competitionName = `Portfolio Chain Test ${Date.now()}`;
     const competition = await startTestCompetition(
       adminClient,
       competitionName,
-      [team.id],
+      [agent.id],
     );
 
     // Get the competition ID
@@ -220,9 +219,9 @@ describe("Specific Chains", () => {
     // Wait briefly for snapshot to complete
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    // Find the most recent portfolio snapshot for this team
+    // Find the most recent portfolio snapshot for this agent
     const snapshotResult = await db.query.portfolioSnapshots.findFirst({
-      where: eq(portfolioSnapshots.teamId, team.id),
+      where: eq(portfolioSnapshots.agentId, agent.id),
       orderBy: desc(portfolioSnapshots.timestamp),
       with: {
         portfolioTokenValues: true,
@@ -277,18 +276,18 @@ describe("Specific Chains", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register a new team
-    const { client: teamClient, team } = await registerTeamAndGetClient(
+    // Register a new user/agent
+    const { client, agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Token Purchase Test Team",
-    );
+      agentName: "Token Purchase Test Agent",
+    });
 
-    // Start a competition with the team
+    // Start a competition with the agent
     const competitionName = `Token Purchase Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [agent.id]);
 
-    // Get team's current balances
-    const balanceResponse = (await teamClient.getBalance()) as BalancesResponse;
+    // Get agent's current balances
+    const balanceResponse = (await client.getBalance()) as BalancesResponse;
     expect(balanceResponse.success).toBe(true);
 
     // Target token we want to purchase
@@ -298,7 +297,7 @@ describe("Specific Chains", () => {
     const usdcAddress = config.specificChainTokens.optimism.usdc;
 
     // Execute the trade from source token to target token
-    const tradeResponse = await teamClient.executeTrade({
+    const tradeResponse = await client.executeTrade({
       fromToken: usdcAddress,
       toToken: targetTokenAddress,
       amount: "100",
@@ -311,7 +310,7 @@ describe("Specific Chains", () => {
 
     // Get updated balances to verify we received the target token
     const updatedBalanceResponse =
-      (await teamClient.getBalance()) as BalancesResponse;
+      (await client.getBalance()) as BalancesResponse;
     expect(updatedBalanceResponse.success).toBe(true);
 
     // Find the target token in the updated balances
@@ -335,7 +334,7 @@ describe("Specific Chains", () => {
     // // Query the trades table to verify the trade was recorded correctly
     const tradesResult = await db.query.trades.findMany({
       where: and(
-        eq(trades.teamId, team.id),
+        eq(trades.agentId, agent.id),
         eq(trades.toToken, targetTokenAddress),
       ),
     });
@@ -351,8 +350,7 @@ describe("Specific Chains", () => {
     expect(trade?.toSpecificChain).toBe("optimism");
 
     // Verify that balances contain specificChain
-    const balancesResponse =
-      (await teamClient.getBalance()) as BalancesResponse;
+    const balancesResponse = (await client.getBalance()) as BalancesResponse;
     expect(balancesResponse.success).toBe(true);
     expect(Array.isArray(balancesResponse.balances)).toBe(true);
     expect(balancesResponse.balances.length).toBeGreaterThan(0);
@@ -368,7 +366,7 @@ describe("Specific Chains", () => {
     }
 
     // Swap back to USDC
-    const swapBackResponse = await teamClient.executeTrade({
+    const swapBackResponse = await client.executeTrade({
       fromToken: targetTokenAddress,
       toToken: usdcAddress,
       amount: trade?.toAmount.toString() ?? "0",
@@ -379,7 +377,7 @@ describe("Specific Chains", () => {
 
     // Get the entrys in the trades table for this swap back
     const swapBackResult = await db.query.trades.findFirst({
-      where: and(eq(trades.teamId, team.id), eq(trades.toToken, usdcAddress)),
+      where: and(eq(trades.agentId, agent.id), eq(trades.toToken, usdcAddress)),
     });
     // Verify a trade record exists for this transaction
     expect(swapBackResult).toBeDefined();
@@ -436,24 +434,23 @@ describe("Specific Chains", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register a new team
-    const { client: teamClient, team } = await registerTeamAndGetClient(
+    // Register a new user/agent
+    const { client, agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      `Token Purchase Test Team`,
-    );
+      agentName: "Token Purchase Test Agent",
+    });
 
-    // Start a competition with the team
+    // Start a competition with the agent
     const competitionName = `Token Purchase Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [agent.id]);
 
     // Track successfully purchased tokens
     const purchasedTokens: string[] = [];
 
     for (const token of tokens) {
       try {
-        // Get team's current balances
-        const balanceResponse =
-          (await teamClient.getBalance()) as BalancesResponse;
+        // Get agent's current balances
+        const balanceResponse = (await client.getBalance()) as BalancesResponse;
         expect(balanceResponse.success).toBe(true);
 
         const specificChain = token.specificChain;
@@ -469,7 +466,7 @@ describe("Specific Chains", () => {
         expect(tokenAddress).toBeDefined();
 
         // Execute the trade
-        const tradeResponse = await teamClient.executeTrade({
+        const tradeResponse = await client.executeTrade({
           fromToken: usdcAddress,
           toToken: tokenAddress,
           amount: "100",
@@ -489,7 +486,7 @@ describe("Specific Chains", () => {
         // Verify trade record in database
         const tradeResult = await db.query.trades.findMany({
           where: and(
-            eq(trades.teamId, team.id),
+            eq(trades.agentId, agent.id),
             eq(trades.toToken, tokenAddress),
           ),
           orderBy: desc(trades.id),
@@ -517,7 +514,7 @@ describe("Specific Chains", () => {
     }
 
     // Verify that balances contain specificChain for all purchased tokens
-    const finalBalances = (await teamClient.getBalance()) as BalancesResponse;
+    const finalBalances = (await client.getBalance()) as BalancesResponse;
     expect(finalBalances.success).toBe(true);
     expect(Array.isArray(finalBalances.balances)).toBe(true);
 
@@ -559,19 +556,19 @@ describe("Specific Chains", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register a new team
-    const { client: teamClient, team } = await registerTeamAndGetClient(
+    // Register a new agent
+    const { client, agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Token Purchase Test Team",
-    );
+      agentName: "Token Purchase Test Agent",
+    });
 
-    // Start a competition with the team
+    // Start a competition with the agent
     const competitionName = `Token Purchase Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [agent.id]);
 
-    // // Get team's current balances
-    // const balanceResponse = (await teamClient.getBalance()) as BalancesResponse;
-    // expect(balanceResponse.success).toBe(true);
+    // Get agent's current balances
+    const balanceResponse = (await client.getBalance()) as BalancesResponse;
+    expect(balanceResponse.success).toBe(true);
 
     // // Target token we want to purchase
     const targetTokenAddress = "0x0b3e328455c4059eeb9e3f84b5543f74e24e7e1b";
@@ -580,7 +577,7 @@ describe("Specific Chains", () => {
     const usdcAddress = config.specificChainTokens.optimism.usdc;
 
     // // Execute the trade from source token to target token
-    const tradeResponse = (await teamClient.executeTrade({
+    const tradeResponse = (await client.executeTrade({
       fromToken: usdcAddress,
       toToken: targetTokenAddress,
       amount: "100",
@@ -591,7 +588,7 @@ describe("Specific Chains", () => {
     expect(tradeResponse.transaction.toSpecificChain).toBe("base");
 
     // Execute the trade again but specify optimism (even though the token is on base)
-    const tradeResponseTwo = (await teamClient.executeTrade({
+    const tradeResponseTwo = (await client.executeTrade({
       fromToken: usdcAddress,
       toToken: targetTokenAddress,
       fromSpecificChain: "optimism" as SpecificChain,
@@ -604,7 +601,7 @@ describe("Specific Chains", () => {
     expect(tradeResponseTwo.success).toBe(false);
 
     // // test getting price of target token
-    const priceResponse = await teamClient.getPrice(
+    const priceResponse = await client.getPrice(
       targetTokenAddress,
       BlockchainType.EVM,
       "optimism" as SpecificChain,
