@@ -1,19 +1,19 @@
 /**
- * Team Edit Script
+ * User Edit Script
  *
- * This script allows admins to edit existing team information in the Trading Simulator.
+ * This script allows admins to edit existing user information in the Trading Simulator.
  * It connects directly to the database and does NOT require the server to be running.
  *
  * Usage:
- *   pnpm edit:team
+ *   pnpm edit:user
  *
  * Or with command line arguments:
- *   pnpm edit:team -- "team@email.com" "0x123..." "0xabc..."
+ *   pnpm edit:user -- "0x123..."
  *
  * The script will:
  * 1. Connect to the database
- * 2. Find the team by email
- * 3. Update the team's wallet address and/or bucket addresses
+ * 2. Find the user by wallet address
+ * 3. Update the user's wallet address
  * 4. Close the database connection
  */
 import * as dotenv from "dotenv";
@@ -22,7 +22,7 @@ import * as path from "path";
 import * as readline from "readline";
 
 import { db } from "@/database/db.js";
-import { teams } from "@/database/schema/core/defs.js";
+import { users } from "@/database/schema/core/defs.js";
 
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
@@ -69,9 +69,9 @@ function isValidEthereumAddress(address: string): boolean {
 }
 
 /**
- * Edit an existing team
+ * Edit an existing user
  */
-async function editTeam() {
+async function editUser() {
   try {
     // Banner with clear visual separation
     safeLog("\n\n");
@@ -79,35 +79,35 @@ async function editTeam() {
       `${colors.magenta}╔════════════════════════════════════════════════════════════════╗${colors.reset}`,
     );
     safeLog(
-      `${colors.magenta}║                          EDIT TEAM                             ║${colors.reset}`,
+      `${colors.magenta}║                          EDIT USER                             ║${colors.reset}`,
     );
     safeLog(
       `${colors.magenta}╚════════════════════════════════════════════════════════════════╝${colors.reset}`,
     );
 
     safeLog(
-      `\n${colors.cyan}This script allows you to edit team information in the Trading Simulator.${colors.reset}`,
+      `\n${colors.cyan}This script allows you to edit user information in the Trading Simulator.${colors.reset}`,
     );
     safeLog(
-      `${colors.cyan}You can update the team's wallet address and bucket addresses.${colors.reset}`,
+      `${colors.cyan}You can update the user's wallet address.${colors.reset}`,
     );
     safeLog(
       `${colors.yellow}--------------------------------------------------------------${colors.reset}\n`,
     );
 
-    // Get team details from command line arguments or prompt for them
-    let teamEmail = process.argv[2];
-    let walletAddress = process.argv[3];
-    let bucketAddress = process.argv[4];
+    // Get user details from command line arguments or prompt for them
+    let walletAddress = process.argv[2];
 
     // Temporarily restore console.log for input
     console.log = originalConsoleLog;
 
     // Collect all input upfront before database operations
-    if (!teamEmail) {
-      teamEmail = await prompt("Enter team email to find the team:");
-      if (!teamEmail) {
-        throw new Error("Team email is required");
+    if (!walletAddress) {
+      walletAddress = await prompt(
+        "Enter user wallet address to find the user:",
+      );
+      if (!walletAddress) {
+        throw new Error("User wallet address is required");
       }
     }
 
@@ -119,35 +119,31 @@ async function editTeam() {
       }
     };
 
-    // Find the team first
+    // Find the user first
     safeLog(
-      `\n${colors.blue}Finding team with email: ${teamEmail}...${colors.reset}`,
+      `\n${colors.blue}Finding user with wallet address: ${walletAddress}...${colors.reset}`,
     );
 
-    // Fetch the team by email
-    const currentTeam = await db.query.teams.findFirst({
-      where: eq(teams.email, teamEmail),
+    // Fetch the user by wallet address
+    const currentUser = await db.query.users.findFirst({
+      where: eq(users.walletAddress, walletAddress),
     });
 
-    if (!currentTeam) {
-      throw new Error(`No team found with email: ${teamEmail}`);
+    if (!currentUser) {
+      throw new Error(`No user found with wallet address: ${walletAddress}`);
     }
 
     safeLog(
-      `\n${colors.green}✓ Team found: ${currentTeam.name}${colors.reset}`,
+      `\n${colors.green}✓ User found: ${currentUser.name}${colors.reset}`,
     );
-    safeLog(`\n${colors.cyan}Current Team Details:${colors.reset}`);
+    safeLog(`\n${colors.cyan}Current User Details:${colors.reset}`);
     safeLog(
       `${colors.cyan}----------------------------------------${colors.reset}`,
     );
-    safeLog(`Team ID: ${currentTeam.id}`);
-    safeLog(`Team Name: ${currentTeam.name}`);
-    safeLog(`Email: ${currentTeam.email}`);
-    safeLog(`Contact: ${currentTeam.contactPerson}`);
-    safeLog(`Wallet Address: ${currentTeam.walletAddress || "Not set"}`);
-    safeLog(
-      `Bucket Addresses: ${currentTeam.bucketAddresses ? currentTeam.bucketAddresses.join(", ") : "None"}`,
-    );
+    safeLog(`User ID: ${currentUser.id}`);
+    safeLog(`User Name: ${currentUser.name}`);
+    safeLog(`Email: ${currentUser.email}`);
+    safeLog(`Wallet Address: ${currentUser.walletAddress || "Not set"}`);
     safeLog(
       `${colors.cyan}----------------------------------------${colors.reset}`,
     );
@@ -173,28 +169,7 @@ async function editTeam() {
       }
     }
 
-    const updateBucket =
-      !bucketAddress &&
-      (await prompt(`Do you want to add a bucket address? (y/n):`));
-
-    if (
-      (updateBucket &&
-        typeof updateBucket === "string" &&
-        updateBucket.toLowerCase() === "y") ||
-      bucketAddress
-    ) {
-      if (!bucketAddress) {
-        bucketAddress = await prompt("Enter bucket address to add (0x...): ");
-      }
-
-      if (bucketAddress && !isValidEthereumAddress(bucketAddress)) {
-        throw new Error(
-          "Invalid bucket address format. Must be 0x followed by 40 hex characters.",
-        );
-      }
-    }
-
-    if (!walletAddress && !bucketAddress) {
+    if (!walletAddress) {
       safeLog(
         `\n${colors.yellow}No changes requested. Operation cancelled.${colors.reset}`,
       );
@@ -205,9 +180,6 @@ async function editTeam() {
     safeLog(`\n${colors.yellow}Changes to be applied:${colors.reset}`);
     if (walletAddress) {
       safeLog(`- Wallet Address: ${walletAddress}`);
-    }
-    if (bucketAddress) {
-      safeLog(`- Add Bucket Address: ${bucketAddress}`);
     }
 
     const confirmUpdate = await prompt(
@@ -220,53 +192,44 @@ async function editTeam() {
     }
 
     // Proceed with updates
-    safeLog(`\n${colors.blue}Updating team...${colors.reset}`);
+    safeLog(`\n${colors.blue}Updating user...${colors.reset}`);
 
-    const updatedTeam = await db.transaction(async (tx) => {
-      // Get the latest team data since some time has passed
-      const team = await tx.query.teams.findFirst({
-        where: eq(teams.email, teamEmail),
+    const updatedUser = await db.transaction(async (tx) => {
+      // Get the latest user data since some time has passed
+      const user = await tx.query.users.findFirst({
+        where: eq(users.walletAddress, walletAddress),
       });
-      if (!team) {
+      if (!user) {
         tx.rollback();
         return;
       }
       const [result] = await tx
-        .update(teams)
+        .update(users)
         .set({
           walletAddress,
-          bucketAddresses: bucketAddress
-            ? team.bucketAddresses
-              ? [...team.bucketAddresses, bucketAddress]
-              : [bucketAddress]
-            : undefined,
         })
-        .where(eq(teams.id, team.id))
+        .where(eq(users.id, user.id))
         .returning();
       return result;
     });
 
-    if (updatedTeam) {
-      safeLog(`\n${colors.green}✓ Team updated successfully!${colors.reset}`);
-      safeLog(`\n${colors.cyan}Updated Team Details:${colors.reset}`);
+    if (updatedUser) {
+      safeLog(`\n${colors.green}✓ User updated successfully!${colors.reset}`);
+      safeLog(`\n${colors.cyan}Updated User Details:${colors.reset}`);
       safeLog(
         `${colors.cyan}----------------------------------------${colors.reset}`,
       );
-      safeLog(`Team ID: ${updatedTeam.id}`);
-      safeLog(`Team Name: ${updatedTeam.name}`);
-      safeLog(`Email: ${updatedTeam.email}`);
-      safeLog(`Contact: ${updatedTeam.contactPerson}`);
-      safeLog(`Wallet Address: ${updatedTeam.walletAddress || "Not set"}`);
-      safeLog(
-        `Bucket Addresses: ${updatedTeam.bucketAddresses ? updatedTeam.bucketAddresses.join(", ") : "None"}`,
-      );
+      safeLog(`User ID: ${updatedUser.id}`);
+      safeLog(`User Name: ${updatedUser.name}`);
+      safeLog(`Email: ${updatedUser.email}`);
+      safeLog(`Wallet Address: ${updatedUser.walletAddress || "Not set"}`);
       safeLog(
         `${colors.cyan}----------------------------------------${colors.reset}`,
       );
     }
   } catch (error) {
     safeLog(
-      `\n${colors.red}Error updating team:${colors.reset}`,
+      `\n${colors.red}Error updating user:${colors.reset}`,
       error instanceof Error ? error.message : error,
     );
   } finally {
@@ -281,4 +244,4 @@ async function editTeam() {
 }
 
 // Run the edit function
-editTeam();
+editUser();

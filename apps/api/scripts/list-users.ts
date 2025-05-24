@@ -34,9 +34,9 @@ async function listAllTeams() {
       `${colors.cyan}╚════════════════════════════════════════════════════════════════╝${colors.reset}`,
     );
 
-    const teams = await services.teamManager.getAllTeams(false);
+    const users = await services.userManager.getAllUsers();
 
-    if (teams.length === 0) {
+    if (users.length === 0) {
       console.log(
         `\n${colors.yellow}No teams found in the database.${colors.reset}`,
       );
@@ -44,17 +44,17 @@ async function listAllTeams() {
     }
 
     console.log(
-      `\n${colors.green}Found ${teams.length} registered team(s):${colors.reset}\n`,
+      `\n${colors.green}Found ${users.length} registered user(s):${colors.reset}\n`,
     );
 
     // Sort teams by creation date (newest first)
-    teams.sort(
+    users.sort(
       (a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0),
     );
 
-    teams.forEach((team, i) => {
-      const created = team.createdAt?.toLocaleString();
-      const updated = team.updatedAt?.toLocaleString();
+    users.forEach((user, i) => {
+      const created = user.createdAt?.toLocaleString();
+      const updated = user.updatedAt?.toLocaleString();
 
       console.log(
         `${colors.cyan}╔════════════════════════════════════════════════════════════════╗${colors.reset}`,
@@ -66,19 +66,13 @@ async function listAllTeams() {
         `${colors.cyan}╠════════════════════════════════════════════════════════════════╣${colors.reset}`,
       );
       console.log(
-        `${colors.cyan}║${colors.reset} ID:             ${colors.yellow}${team.id}${colors.reset}`,
+        `${colors.cyan}║${colors.reset} ID:             ${colors.yellow}${user.id}${colors.reset}`,
       );
       console.log(
-        `${colors.cyan}║${colors.reset} Name:           ${colors.green}${team.name}${colors.reset}`,
+        `${colors.cyan}║${colors.reset} Name:           ${colors.green}${user.name}${colors.reset}`,
       );
       console.log(
-        `${colors.cyan}║${colors.reset} Email:          ${colors.green}${team.email}${colors.reset}`,
-      );
-      console.log(
-        `${colors.cyan}║${colors.reset} Contact Person: ${colors.green}${team.contactPerson}${colors.reset}`,
-      );
-      console.log(
-        `${colors.cyan}║${colors.reset} API Key:        ${colors.magenta}${team.apiKey}${colors.reset}`,
+        `${colors.cyan}║${colors.reset} Email:          ${colors.green}${user.email}${colors.reset}`,
       );
       console.log(`${colors.cyan}║${colors.reset} Created:        ${created}`);
       console.log(`${colors.cyan}║${colors.reset} Last Updated:   ${updated}`);
@@ -86,8 +80,8 @@ async function listAllTeams() {
         `${colors.cyan}╚════════════════════════════════════════════════════════════════╝${colors.reset}`,
       );
 
-      if (i < teams.length - 1) {
-        console.log(""); // Add an empty line between teams
+      if (i < users.length - 1) {
+        console.log(""); // Add an empty line between users
       }
     });
 

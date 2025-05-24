@@ -5,15 +5,15 @@
  * It connects directly to the database and does NOT require the server to be running.
  *
  * Usage:
- *   pnpm register:team
+ *   pnpm register:agent
  *
  * Or with command line arguments:
- *   pnpm register:team -- "Team Name" "team@email.com" "Contact Person" "0xWalletAddress"
+ *   pnpm register:agent -- "Agent Name" "0xWalletAddress"
  *
  * The script will:
  * 1. Connect to the database
- * 2. Create a new team with API credentials using the TeamManager service
- * 3. Update the team with the wallet address using database connection
+ * 2. Create a new agent with API credentials using the AgentManager service
+ * 3. Update the agent with the wallet address using database connection
  * 4. Display the API key (only shown once)
  * 5. Close the database connection
  */
@@ -70,9 +70,9 @@ function isValidEthereumAddress(address: string): boolean {
 }
 
 /**
- * Register a new team using TeamManager service and update with wallet address
+ * Register a new team using AgentManager service and update with wallet address
  */
-async function registerTeam() {
+async function registerAgent() {
   try {
     // Banner with clear visual separation
     safeLog("\n\n");
@@ -80,50 +80,34 @@ async function registerTeam() {
       `${colors.magenta}╔════════════════════════════════════════════════════════════════╗${colors.reset}`,
     );
     safeLog(
-      `${colors.magenta}║                        REGISTER NEW TEAM                       ║${colors.reset}`,
+      `${colors.magenta}║                      REGISTER NEW AGENT                      ║${colors.reset}`,
     );
     safeLog(
       `${colors.magenta}╚════════════════════════════════════════════════════════════════╝${colors.reset}`,
     );
 
     safeLog(
-      `\n${colors.cyan}This script will register a new team in the Trading Simulator.${colors.reset}`,
+      `\n${colors.cyan}This script will register a new agent in the Trading Simulator.${colors.reset}`,
     );
     safeLog(
-      `${colors.cyan}You'll need to provide the team name, email, contact person, and wallet address.${colors.reset}`,
+      `${colors.cyan}You'll need to provide the owner's wallet address, and agent name.${colors.reset}`,
     );
     safeLog(
       `${colors.yellow}--------------------------------------------------------------${colors.reset}\n`,
     );
 
     // Get team details from command line arguments or prompt for them
-    let teamName = process.argv[2];
-    let email = process.argv[3];
-    let contactPerson = process.argv[4];
-    let walletAddress = process.argv[5];
+    let agentName = process.argv[2];
+    let walletAddress = process.argv[3];
 
     // Temporarily restore console.log for input
     console.log = originalConsoleLog;
 
     // Collect all input upfront before database operations
-    if (!teamName) {
-      teamName = await prompt("Enter team name: ");
-      if (!teamName) {
-        throw new Error("Team name is required");
-      }
-    }
-
-    if (!email) {
-      email = await prompt("Enter team email: ");
-      if (!email) {
-        throw new Error("Team email is required");
-      }
-    }
-
-    if (!contactPerson) {
-      contactPerson = await prompt("Enter contact person name: ");
-      if (!contactPerson) {
-        throw new Error("Contact person is required");
+    if (!agentName) {
+      agentName = await prompt("Enter agent name: ");
+      if (!agentName) {
+        throw new Error("Agent name is required");
       }
     }
 
@@ -145,12 +129,10 @@ async function registerTeam() {
     }
 
     safeLog(
-      `\n${colors.yellow}Registering team with the following details:${colors.reset}`,
+      `\n${colors.yellow}Registering agent with the following details:${colors.reset}`,
     );
-    safeLog(`- Team Name: ${teamName}`);
-    safeLog(`- Email: ${email}`);
-    safeLog(`- Contact Person: ${contactPerson}`);
-    safeLog(`- Wallet Address: ${walletAddress}`);
+    safeLog(`- Agent Name: ${agentName}`);
+    safeLog(`- Owner's Wallet Address: ${walletAddress}`);
 
     const confirmRegistration = await prompt(
       `${colors.yellow}Proceed with registration? (y/n): ${colors.reset}`,
@@ -169,26 +151,26 @@ async function registerTeam() {
       }
     };
 
-    safeLog(`\n${colors.blue}Registering team...${colors.reset}`);
+    safeLog(`\n${colors.blue}Registering agent...${colors.reset}`);
 
     // Register the team using the updated TeamManager service method
-    const team = await services.teamManager.registerTeam(
-      teamName,
-      email,
-      contactPerson,
-      walletAddress,
-    );
+    const owner =
+      await services.userManager.getUserByWalletAddress(walletAddress);
+    if (!owner) {
+      throw new Error("Owner not found");
+    }
 
-    safeLog(`\n${colors.green}✓ Team registered successfully!${colors.reset}`);
-    safeLog(`\n${colors.cyan}Team Details:${colors.reset}`);
+    const agent = await services.agentManager.createAgent(owner.id, agentName);
+
+    safeLog(`\n${colors.green}✓ Agent registered successfully!${colors.reset}`);
+    safeLog(`\n${colors.cyan}Agent Details:${colors.reset}`);
     safeLog(
       `${colors.cyan}----------------------------------------${colors.reset}`,
     );
-    safeLog(`Team ID: ${team.id}`);
-    safeLog(`Team Name: ${team.name}`);
-    safeLog(`Email: ${team.email}`);
-    safeLog(`Contact: ${team.contactPerson}`);
-    safeLog(`Wallet Address: ${team.walletAddress}`);
+    safeLog(`Agent ID: ${agent.id}`);
+    safeLog(`Agent Name: ${agent.name}`);
+    safeLog(`Owner ID: ${owner.id}`);
+    safeLog(`Owner Wallet Address: ${owner.walletAddress}`);
     safeLog(
       `${colors.cyan}----------------------------------------${colors.reset}`,
     );
@@ -199,7 +181,7 @@ async function registerTeam() {
     safeLog(
       `${colors.yellow}----------------------------------------${colors.reset}`,
     );
-    safeLog(`API Key: ${team.apiKey}`); // Using apiKey from the team object returned by TeamManager
+    safeLog(`API Key: ${agent.apiKey}`); // Using apiKey from the team object returned by AgentManager
     safeLog(
       `${colors.yellow}----------------------------------------${colors.reset}`,
     );
@@ -225,4 +207,4 @@ async function registerTeam() {
 }
 
 // Run the registration function
-registerTeam();
+registerAgent();

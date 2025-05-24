@@ -94,11 +94,11 @@ async function endCompetition() {
       activeCompetition.id,
     );
 
-    // Get all teams
-    const teams = await services.teamManager.getAllTeams(false);
+    // Get all agents
+    const agents = await services.agentManager.getAllAgents();
 
-    // Map team IDs to names
-    const teamMap = new Map(teams.map((team) => [team.id, team.name]));
+    // Map agent IDs to names
+    const agentMap = new Map(agents.map((agent) => [agent.id, agent.name]));
 
     if (leaderboard.length > 0) {
       console.log(`\n${colors.green}Current Standings:${colors.reset}`);
@@ -107,8 +107,10 @@ async function endCompetition() {
       );
 
       leaderboard.forEach((entry, index) => {
-        const teamName = teamMap.get(entry.teamId) || "Unknown Team";
-        console.log(`${index + 1}. ${teamName}: ${entry.value.toFixed(2)} USD`);
+        const agentName = agentMap.get(entry.agentId) || "Unknown Agent";
+        console.log(
+          `${index + 1}. ${agentName}: ${entry.value.toFixed(2)} USD`,
+        );
       });
 
       console.log(
@@ -177,7 +179,7 @@ async function endCompetition() {
       );
 
       sortedLeaderboard.forEach((entry, index) => {
-        const teamName = teamMap.get(entry.teamId) || "Unknown Team";
+        const agentName = agentMap.get(entry.agentId) || "Unknown Agent";
         let position = `${index + 1}. `;
         let positionColor = colors.reset;
 
@@ -194,7 +196,7 @@ async function endCompetition() {
         }
 
         console.log(
-          `${positionColor}${position}${teamName}${colors.reset}: ${colors.cyan}${entry.value.toFixed(2)} USD${colors.reset}`,
+          `${positionColor}${position}${agentName}${colors.reset}: ${colors.cyan}${entry.value.toFixed(2)} USD${colors.reset}`,
         );
       });
 

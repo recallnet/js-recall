@@ -35,30 +35,28 @@ const colors = {
 };
 
 /**
- * List all registered teams to help user find the team ID
+ * List all registered teams to help user find the agent ID
  */
 async function listAllTeams() {
   try {
-    const teams = await services.teamManager.getAllTeams(false);
+    const agents = await services.agentManager.getAllAgents();
 
-    if (teams.length === 0) {
+    if (agents.length === 0) {
       console.log(
-        `\n${colors.yellow}No teams found in the database.${colors.reset}`,
+        `\n${colors.yellow}No agents found in the database.${colors.reset}`,
       );
       return;
     }
 
-    console.log(`\n${colors.cyan}Registered Teams:${colors.reset}`);
+    console.log(`\n${colors.cyan}Registered Agents:${colors.reset}`);
     console.log(
       `${colors.cyan}----------------------------------------${colors.reset}`,
     );
 
-    teams.forEach((team, index) => {
-      console.log(`${index + 1}. ${team.name} (${team.id})`);
-      console.log(`   Email: ${team.email}`);
-      console.log(`   Contact: ${team.contactPerson}`);
-      console.log(`   Created: ${team.createdAt?.toLocaleString()}`);
-      if (index < teams.length - 1) {
+    agents.forEach((agent, index) => {
+      console.log(`${index + 1}. ${agent.name} (${agent.id})`);
+      console.log(`   Created: ${agent.createdAt?.toLocaleString()}`);
+      if (index < agents.length - 1) {
         console.log(
           `   ${colors.cyan}----------------------------------------${colors.reset}`,
         );
@@ -77,56 +75,54 @@ async function listAllTeams() {
 }
 
 /**
- * Delete a team by ID
+ * Delete a agent by ID
  */
 async function deleteTeam(teamId: string) {
   try {
-    // Get team details first to confirm
-    const team = await services.teamManager.getTeam(teamId);
+    // Get agent details first to confirm
+    const agent = await services.agentManager.getAgent(teamId);
 
-    if (!team) {
+    if (!agent) {
       console.log(
-        `\n${colors.red}Error: Team with ID ${teamId} not found.${colors.reset}`,
+        `\n${colors.red}Error: Agent with ID ${teamId} not found.${colors.reset}`,
       );
       return false;
     }
 
-    console.log(`\n${colors.yellow}Team found:${colors.reset}`);
-    console.log(`- Team ID: ${team.id}`);
-    console.log(`- Team Name: ${team.name}`);
-    console.log(`- Email: ${team.email}`);
-    console.log(`- Contact Person: ${team.contactPerson}`);
+    console.log(`\n${colors.yellow}Agent found:${colors.reset}`);
+    console.log(`- Agent ID: ${agent.id}`);
+    console.log(`- Agent Name: ${agent.name}`);
 
     const confirmation =
-      await prompt(`\n${colors.red}WARNING: This will permanently delete this team and all associated data.${colors.reset}
-${colors.red}Type the team name (${team.name}) to confirm deletion:${colors.reset} `);
+      await prompt(`\n${colors.red}WARNING: This will permanently delete this agent and all associated data.${colors.reset}
+${colors.red}Type the agent name (${agent.name}) to confirm deletion:${colors.reset} `);
 
-    if (confirmation !== team.name) {
+    if (confirmation !== agent.name) {
       console.log(
-        `\n${colors.yellow}Deletion cancelled. Team name confirmation did not match.${colors.reset}`,
+        `\n${colors.yellow}Deletion cancelled. Agent name confirmation did not match.${colors.reset}`,
       );
       return false;
     }
 
-    console.log(`\n${colors.blue}Deleting team...${colors.reset}`);
+    console.log(`\n${colors.blue}Deleting agent...${colors.reset}`);
 
-    // Delete the team
-    const result = await services.teamManager.deleteTeam(teamId);
+    // Delete the agent
+    const result = await services.agentManager.deleteAgent(teamId);
 
     if (result) {
       console.log(
-        `\n${colors.green}✓ Team "${team.name}" deleted successfully!${colors.reset}`,
+        `\n${colors.green}✓ Agent "${agent.name}" deleted successfully!${colors.reset}`,
       );
       return true;
     } else {
       console.log(
-        `\n${colors.red}Failed to delete team "${team.name}".${colors.reset}`,
+        `\n${colors.red}Failed to delete agent "${agent.name}".${colors.reset}`,
       );
       return false;
     }
   } catch (error) {
     console.error(
-      `\n${colors.red}Error deleting team:${colors.reset}`,
+      `\n${colors.red}Error deleting agent:${colors.reset}`,
       error instanceof Error ? error.message : error,
     );
     return false;
@@ -142,19 +138,21 @@ async function main() {
       `${colors.cyan}╔════════════════════════════════════════════════════════════════╗${colors.reset}`,
     );
     console.log(
-      `${colors.cyan}║                          DELETE TEAM                          ║${colors.reset}`,
+      `${colors.cyan}║                          DELETE Agent                          ║${colors.reset}`,
     );
     console.log(
       `${colors.cyan}╚════════════════════════════════════════════════════════════════╝${colors.reset}`,
     );
 
-    console.log(`\nThis script will delete a team from the Trading Simulator.`);
-    console.log(`You'll need to provide the team ID to delete.`);
+    console.log(
+      `\nThis script will delete a agent from the Trading Simulator.`,
+    );
+    console.log(`You'll need to provide the agent ID to delete.`);
 
-    // Check if team ID was provided as command-line argument
+    // Check if agent ID was provided as command-line argument
     let teamId = process.argv[2];
 
-    // If no team ID provided, ask if user wants to list teams
+    // If no agent ID provided, ask if user wants to list teams
     if (!teamId) {
       const listTeams = await prompt(
         `\n${colors.yellow}Do you want to list all registered teams? (y/n):${colors.reset} `,
@@ -165,18 +163,18 @@ async function main() {
       }
 
       teamId = await prompt(
-        `\n${colors.yellow}Enter the ID of the team to delete:${colors.reset} `,
+        `\n${colors.yellow}Enter the ID of the agent to delete:${colors.reset} `,
       );
     }
 
     if (!teamId) {
       console.log(
-        `\n${colors.red}No team ID provided. Operation cancelled.${colors.reset}`,
+        `\n${colors.red}No agent ID provided. Operation cancelled.${colors.reset}`,
       );
       return;
     }
 
-    // Delete the team
+    // Delete the agent
     await deleteTeam(teamId);
   } catch (error) {
     console.error(
