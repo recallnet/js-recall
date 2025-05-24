@@ -1,7 +1,7 @@
 import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { ErrorResponse, TeamApiKeyResponse } from "@/e2e/utils/api-types.js";
+import { AgentApiKeyResponse, ErrorResponse } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
@@ -9,7 +9,7 @@ import {
   ADMIN_USERNAME,
   cleanupTestState,
   createTestClient,
-  registerTeamAndGetClient,
+  registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
 
 describe("API Key Retrieval", () => {
@@ -36,42 +36,51 @@ describe("API Key Retrieval", () => {
     console.log(`Admin ID: ${adminId}`);
   });
 
-  test("admin can retrieve a team's API key", async () => {
+  test("admin can retrieve an agent's API key", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register a new team
-    const { team, apiKey } = await registerTeamAndGetClient(adminApiKey);
+    // Register a new user and agent
+    const { agent, apiKey } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Test Agent for API Key Retrieval",
+    });
 
-    // Retrieve the team's API key
-    const keyResponse = (await adminClient.getTeamApiKey(
-      team.id,
-    )) as TeamApiKeyResponse;
+    // Retrieve the agent's API key
+    const keyResponse = (await adminClient.getAgentApiKey(
+      agent.id,
+    )) as AgentApiKeyResponse;
 
     // Assert the API key was retrieved successfully
     expect(keyResponse.success).toBe(true);
-    expect(keyResponse.team).toBeDefined();
-    expect(keyResponse.team.id).toBe(team.id);
-    expect(keyResponse.team.name).toBe(team.name);
-    expect(keyResponse.team.apiKey).toBeDefined();
+    expect(keyResponse.agent).toBeDefined();
+    expect(keyResponse.agent.id).toBe(agent.id);
+    expect(keyResponse.agent.name).toBe(agent.name);
+    expect(keyResponse.agent.apiKey).toBeDefined();
 
     // The retrieved key should match the original API key
-    expect(keyResponse.team.apiKey).toBe(apiKey);
+    expect(keyResponse.agent.apiKey).toBe(apiKey);
   });
 
-  test("regular team cannot retrieve API keys", async () => {
+  test("regular agent cannot retrieve API keys", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register two teams
-    const { client: teamClient } = await registerTeamAndGetClient(adminApiKey);
-    const { team: otherTeam } = await registerTeamAndGetClient(adminApiKey);
+    // Register two agents
+    const { client: agentClient } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "First Agent",
+    });
+    const { agent: otherAgent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Second Agent",
+    });
 
-    // Attempt to retrieve the other team's API key using team client
+    // Attempt to retrieve the other agent's API key using agent client
     try {
-      await teamClient.getTeamApiKey(otherTeam.id);
+      await agentClient.getAgentApiKey(otherAgent.id);
       // Should fail - if it reaches this line, the test should fail
       expect(false).toBe(true);
     } catch (error) {
@@ -86,14 +95,14 @@ describe("API Key Retrieval", () => {
     }
   });
 
-  test("admin cannot retrieve API key for non-existent team", async () => {
+  test("admin cannot retrieve API key for non-existent agent", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Try to retrieve an API key for a non-existent team ID
+    // Try to retrieve an API key for a non-existent agent ID
     const nonExistentId = "00000000-0000-4000-a000-000000000000"; // Valid UUID that doesn't exist
-    const result = (await adminClient.getTeamApiKey(
+    const result = (await adminClient.getAgentApiKey(
       nonExistentId,
     )) as ErrorResponse;
 
@@ -109,7 +118,7 @@ describe("API Key Retrieval", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Use the actual admin ID from setup
-    const result = (await adminClient.getTeamApiKey(adminId)) as ErrorResponse;
+    const result = (await adminClient.getAgentApiKey(adminId)) as ErrorResponse;
 
     // Should fail with a specific error about admin accounts
     // Note: Based on actual server behavior, we adjust expectations
@@ -121,7 +130,7 @@ describe("API Key Retrieval", () => {
       // Ideal case - admin access blocked with proper code
       expect(result.error).toContain("admin");
     } else if (result.status === 404) {
-      // This could happen if admin accounts aren't in the regular team DB
+      // This could happen if admin accounts aren't in the regular agent DB
       console.log("Admin lookup resulted in not found error");
     } else if (result.status === 500) {
       // Server implementation may have different behavior
