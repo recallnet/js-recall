@@ -4,12 +4,12 @@ import { assert, beforeEach, describe, expect, test } from "vitest";
 import config from "@/config/index.js";
 import { ApiClient } from "@/e2e/utils/api-client.js";
 import {
+  AgentProfileResponse,
   BalancesResponse,
   CompetitionStatusResponse,
   LeaderboardResponse,
   SnapshotResponse,
   SpecificChain,
-  TeamProfileResponse,
   TradeResponse,
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
@@ -19,22 +19,22 @@ import {
   ADMIN_USERNAME,
   cleanupTestState,
   createTestClient,
-  registerTeamAndGetClient,
+  registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
 } from "@/e2e/utils/test-helpers.js";
 import { ServiceRegistry } from "@/services/index.js";
 import { BlockchainType } from "@/types/index.js";
 
-describe("Multi-Team Competition", () => {
+describe("Multi-Agent Competition", () => {
   const services = new ServiceRegistry();
 
   let adminApiKey: string;
 
-  // Number of teams to create for multi-team tests
-  const NUM_TEAMS = 6;
+  // Number of agents to create for multi-agent tests
+  const NUM_AGENTS = 6;
 
-  // Base tokens for each team to trade
+  // Base tokens for each agent to trade
   const BASE_TOKENS = [
     "0xacfE6019Ed1A7Dc6f7B508C02d1b04ec88cC21bf", //VVV
     "0x3992B27dA26848C2b19CeA6Fd25ad5568B68AB98", // DEGEN
@@ -47,21 +47,20 @@ describe("Multi-Team Competition", () => {
   // Base USDC token address
   const BASE_USDC_ADDRESS = "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA";
 
-  // Store team details for use in tests
-  let teamClients: {
+  // Store agent details for use in tests
+  let agentClients: {
     client: ApiClient;
-    team: {
+    agent: {
       id: string;
+      ownerId: string;
       name: string;
-      email: string;
-      contactPerson: string;
     };
     apiKey: string;
   }[] = [];
   let adminClient: ApiClient;
   let competitionId: string;
 
-  const reason = "multi-team-competition end-to-end test";
+  const reason = "multi-agent-competition end-to-end test";
 
   // Clean up test state before each test
   beforeEach(async () => {
@@ -80,44 +79,42 @@ describe("Multi-Team Competition", () => {
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
-  test("should create a competition with multiple teams and validate isolation", async () => {
-    console.log("[Test] Starting multi-team competition test");
+  test("should create a competition with multiple agents and validate isolation", async () => {
+    console.log("[Test] Starting multi-agent competition test");
 
     // Step 1: Setup admin client
     adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Step 2: Register 6 teams with unique names
-    console.log(`Registering ${NUM_TEAMS} teams...`);
-    teamClients = [];
+    // Step 2: Register 6 agents with unique names
+    console.log(`Registering ${NUM_AGENTS} agents...`);
+    agentClients = [];
 
-    for (let i = 0; i < NUM_TEAMS; i++) {
-      const teamName = `Team ${i + 1} ${Date.now()}`;
-      const email = `team${i + 1}_${Date.now()}@example.com`;
-      const contactPerson = `Contact Person ${i + 1}`;
+    for (let i = 0; i < NUM_AGENTS; i++) {
+      const agentName = `Agent ${i + 1} ${Date.now()}`;
 
-      const teamData = await registerTeamAndGetClient(
+      const agentData = await registerUserAndAgentAndGetClient({
         adminApiKey,
-        teamName,
-        email,
-        contactPerson,
-      );
+        agentName,
+      });
 
-      teamClients.push(teamData);
-      console.log(`Registered team: ${teamName} with ID: ${teamData.team.id}`);
+      agentClients.push(agentData);
+      console.log(
+        `Registered agent: ${agentName} with ID: ${agentData.agent.id}`,
+      );
     }
 
-    expect(teamClients.length).toBe(NUM_TEAMS);
+    expect(agentClients.length).toBe(NUM_AGENTS);
 
-    // Step 3: Start a competition with all teams
-    const competitionName = `Multi-Team Competition ${Date.now()}`;
-    const teamIds = teamClients.map((tc) => tc.team.id);
+    // Step 3: Start a competition with all agents
+    const competitionName = `Multi-Agent Competition ${Date.now()}`;
+    const agentIds = agentClients.map((tc) => tc.agent.id);
 
-    console.log(`Starting competition with ${teamIds.length} teams...`);
+    console.log(`Starting competition with ${agentIds.length} agents...`);
     const competitionResponse = await startTestCompetition(
       adminClient,
       competitionName,
-      teamIds,
+      agentIds,
     );
 
     expect(competitionResponse.success).toBe(true);
@@ -127,12 +124,12 @@ describe("Multi-Team Competition", () => {
     // Wait for balances to be properly initialized
     await wait(500);
 
-    // Step 4: Validate that all teams have the same starting balances
+    // Step 4: Validate that all agents have the same starting balances
     console.log("Validating starting balances...");
 
-    // Get first team's balance as reference
+    // Get first agent's balance as reference
     const referenceBalanceResponse =
-      (await teamClients[0]?.client.getBalance()) as BalancesResponse;
+      (await agentClients[0]?.client.getBalance()) as BalancesResponse;
     expect(referenceBalanceResponse.success).toBe(true);
     expect(referenceBalanceResponse.balances).toBeDefined();
 
@@ -157,61 +154,61 @@ describe("Multi-Team Competition", () => {
 
     console.log(`Reference USDC balance: ${referenceUsdcBalance}`);
     console.log(`Reference SOL balance: ${referenceSolBalance}`);
-    // Validate other teams have identical balances
-    for (let i = 1; i < NUM_TEAMS; i++) {
-      const teamClient = teamClients[i]?.client;
-      const teamBalanceResponse =
-        (await teamClient?.getBalance()) as BalancesResponse;
+    // Validate other agents have identical balances
+    for (let i = 1; i < NUM_AGENTS; i++) {
+      const agentClient = agentClients[i]?.client;
+      const agentBalanceResponse =
+        (await agentClient?.getBalance()) as BalancesResponse;
 
-      expect(teamBalanceResponse?.success).toBe(true);
-      expect(teamBalanceResponse?.balances).toBeDefined();
+      expect(agentBalanceResponse?.success).toBe(true);
+      expect(agentBalanceResponse?.balances).toBeDefined();
 
-      const teamBalance = teamBalanceResponse.balances;
+      const agentBalance = agentBalanceResponse.balances;
       // Validate USDC balance
-      const teamUsdcBalance = parseFloat(
-        teamBalance
+      const agentUsdcBalance = parseFloat(
+        agentBalance
           .find((b) => b.tokenAddress === usdcTokenAddress)
           ?.amount.toString() || "0",
       );
-      expect(teamUsdcBalance).toBe(referenceUsdcBalance);
+      expect(agentUsdcBalance).toBe(referenceUsdcBalance);
 
       // Validate SOL balance
-      const teamSolBalance = parseFloat(
-        teamBalance
+      const agentSolBalance = parseFloat(
+        agentBalance
           .find((b) => b.tokenAddress === solTokenAddress)
           ?.amount.toString() || "0",
       );
-      expect(teamSolBalance).toBe(referenceSolBalance);
+      expect(agentSolBalance).toBe(referenceSolBalance);
 
       console.log(
-        `Team ${i + 1} USDC balance: ${teamUsdcBalance} - matches reference: ${teamUsdcBalance === referenceUsdcBalance}`,
+        `Agent ${i + 1} USDC balance: ${agentUsdcBalance} - matches reference: ${agentUsdcBalance === referenceUsdcBalance}`,
       );
       console.log(
-        `Team ${i + 1} SOL balance: ${teamSolBalance} - matches reference: ${teamSolBalance === referenceSolBalance}`,
+        `Agent ${i + 1} SOL balance: ${agentSolBalance} - matches reference: ${agentSolBalance === referenceSolBalance}`,
       );
     }
 
     // Step 5: Validate that API keys are properly isolated
     console.log("Validating API key isolation...");
 
-    // Try to access Team 2's data using Team 1's API key
-    // Create a new client with Team 1's API key
-    const team1ApiKey = teamClients[0]?.apiKey;
+    // Try to access Agent 2's data using Agent 1's API key
+    // Create a new client with Agent 1's API key
+    const agent1ApiKey = agentClients[0]?.apiKey;
 
     try {
-      // Try to get Team 2's profile directly (would need to know endpoint structure)
+      // Try to get Agent 2's profile directly (would need to know endpoint structure)
       const response = await axios.get(
-        `${getBaseUrl()}/api/account/profile?teamId=${teamClients[1]?.team.id}`,
+        `${getBaseUrl()}/api/agent/profile?agentId=${agentClients[1]?.agent.id}`,
         {
           headers: {
-            Authorization: `Bearer ${team1ApiKey}`,
+            Authorization: `Bearer ${agent1ApiKey}`,
           },
         },
       );
 
-      // If we get here, the request did not properly validate team ownership
-      // This should never happen - either the request should fail or should return Team 1's data, not Team 2's
-      expect(response.data.team.id).not.toBe(teamClients[1]?.team.id);
+      // If we get here, the request did not properly validate agent ownership
+      // This should never happen - either the request should fail or should return Agent 1's data, not Agent 2's
+      expect(response.data.agent.id).not.toBe(agentClients[1]?.agent.id);
     } catch (error) {
       // Error is expected - validating it's the right type of error
       expect(error).toBeDefined();
@@ -222,87 +219,85 @@ describe("Multi-Team Competition", () => {
       }
     }
 
-    // Verify Team 1's client can access its own data
-    const team1ProfileResponse =
-      (await teamClients[0]?.client.getProfile()) as TeamProfileResponse;
-    expect(team1ProfileResponse.success).toBe(true);
-    expect(team1ProfileResponse.team.id).toBe(teamClients[0]?.team.id);
+    // Verify Agent 1's client can access its own data
+    const agent1ProfileResponse =
+      (await agentClients[0]?.client.getAgentProfile()) as AgentProfileResponse;
+    expect(agent1ProfileResponse.success).toBe(true);
+    expect(agent1ProfileResponse.agent.id).toBe(agentClients[0]?.agent.id);
 
-    // Verify Team 2's client can access its own data
-    const team2ProfileResponse =
-      (await teamClients[1]?.client.getProfile()) as TeamProfileResponse;
-    expect(team2ProfileResponse.success).toBe(true);
-    expect(team2ProfileResponse.team.id).toBe(teamClients[1]?.team.id);
+    // Verify Agent 2's client can access its own data
+    const agent2ProfileResponse =
+      (await agentClients[1]?.client.getAgentProfile()) as AgentProfileResponse;
+    expect(agent2ProfileResponse.success).toBe(true);
+    expect(agent2ProfileResponse.agent.id).toBe(agentClients[1]?.agent.id);
 
-    // Step 6: Validate that all teams can see the competition and leaderboard
+    // Step 6: Validate that all agents can see the competition and leaderboard
     console.log("Validating competition visibility...");
-    for (let i = 0; i < NUM_TEAMS; i++) {
-      const teamClient = teamClients[i]?.client;
+    for (let i = 0; i < NUM_AGENTS; i++) {
+      const agentClient = agentClients[i]?.client;
 
       // Check competition status
       const statusResponse =
-        (await teamClient?.getCompetitionStatus()) as CompetitionStatusResponse;
+        (await agentClient?.getCompetitionStatus()) as CompetitionStatusResponse;
       expect(statusResponse?.success).toBe(true);
       expect(statusResponse?.competition).toBeDefined();
       expect(statusResponse?.competition?.id).toBe(competitionId);
 
       // Check leaderboard
       const leaderboardResponse =
-        (await teamClient?.getLeaderboard()) as LeaderboardResponse;
+        (await agentClient?.getLeaderboard()) as LeaderboardResponse;
       expect(leaderboardResponse?.success).toBe(true);
       expect(leaderboardResponse?.leaderboard).toBeDefined();
       expect(leaderboardResponse?.leaderboard).toBeInstanceOf(Array);
-      expect(leaderboardResponse?.leaderboard?.length).toBe(NUM_TEAMS);
+      expect(leaderboardResponse?.leaderboard?.length).toBe(NUM_AGENTS);
 
-      // Verify this team is in the leaderboard
-      const teamInLeaderboard = leaderboardResponse.leaderboard.find(
-        (entry) => entry.teamId === teamClients[i]?.team.id,
+      // Verify this agent is in the leaderboard
+      const agentInLeaderboard = leaderboardResponse.leaderboard.find(
+        (entry) => entry.agentId === agentClients[i]?.agent.id,
       );
-      expect(teamInLeaderboard).toBeDefined();
+      expect(agentInLeaderboard).toBeDefined();
     }
 
-    console.log("[Test] Completed multi-team competition test");
+    console.log("[Test] Completed multi-agent competition test");
   });
 
-  test("each team should purchase a different token resulting in unique portfolio compositions", async () => {
-    console.log("[Test] Starting multi-team unique token purchasing test");
+  test("each agent should purchase a different token resulting in unique portfolio compositions", async () => {
+    console.log("[Test] Starting multi-agent unique token purchasing test");
 
     // Step 1: Setup admin client
     adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Step 2: Register 6 teams with unique names
-    console.log(`Registering ${NUM_TEAMS} teams...`);
-    teamClients = [];
+    // Step 2: Register 6 agents with unique names
+    console.log(`Registering ${NUM_AGENTS} agents...`);
+    agentClients = [];
 
-    for (let i = 0; i < NUM_TEAMS; i++) {
-      const teamName = `Team ${i + 1} ${Date.now()}`;
-      const email = `team${i + 1}_${Date.now()}@example.com`;
-      const contactPerson = `Contact Person ${i + 1}`;
+    for (let i = 0; i < NUM_AGENTS; i++) {
+      const agentName = `Agent ${i + 1} ${Date.now()}`;
 
-      const teamData = await registerTeamAndGetClient(
+      const agentData = await registerUserAndAgentAndGetClient({
         adminApiKey,
-        teamName,
-        email,
-        contactPerson,
-      );
+        agentName,
+      });
 
-      teamClients.push(teamData);
-      console.log(`Registered team: ${teamName} with ID: ${teamData.team.id}`);
+      agentClients.push(agentData);
+      console.log(
+        `Registered agent: ${agentName} with ID: ${agentData.agent.id}`,
+      );
     }
 
-    expect(teamClients.length).toBe(NUM_TEAMS);
-    expect(teamClients.length).toBe(BASE_TOKENS.length);
+    expect(agentClients.length).toBe(NUM_AGENTS);
+    expect(agentClients.length).toBe(BASE_TOKENS.length);
 
-    // Step 3: Start a competition with all teams
-    const competitionName = `Multi-Team Token Trading ${Date.now()}`;
-    const teamIds = teamClients.map((tc) => tc.team.id);
+    // Step 3: Start a competition with all agents
+    const competitionName = `Multi-Agent Token Trading ${Date.now()}`;
+    const agentIds = agentClients.map((tc) => tc.agent.id);
 
-    console.log(`Starting competition with ${teamIds.length} teams...`);
+    console.log(`Starting competition with ${agentIds.length} agents...`);
     const competitionResponse = await startTestCompetition(
       adminClient,
       competitionName,
-      teamIds,
+      agentIds,
     );
 
     expect(competitionResponse.success).toBe(true);
@@ -312,28 +307,28 @@ describe("Multi-Team Competition", () => {
     // Wait for balances to be properly initialized
     await wait(500);
 
-    // Step 4: Each team trades for a different token
-    console.log("Executing unique token trades for each team...");
+    // Step 4: Each agent trades for a different token
+    console.log("Executing unique token trades for each agent...");
 
-    // Amount of USDC each team will trade
+    // Amount of USDC each agent will trade
     const tradeAmount = 100;
 
     // Store token quantities for validation
     const tokenQuantities: { [tokenAddress: string]: number } = {};
 
     // Execute trades and record results
-    for (let i = 0; i < NUM_TEAMS; i++) {
-      const team = teamClients[i];
+    for (let i = 0; i < NUM_AGENTS; i++) {
+      const agent = agentClients[i];
       const tokenToTrade = BASE_TOKENS[i];
 
       expect(tokenToTrade).toBeDefined();
 
       console.log(
-        `Team ${i + 1} trading ${tradeAmount} USDC for token ${tokenToTrade}`,
+        `Agent ${i + 1} trading ${tradeAmount} USDC for token ${tokenToTrade}`,
       );
 
-      // Execute trade using the client - each team buys a different BASE token with 100 USDC
-      const tradeResponse = (await team?.client.executeTrade({
+      // Execute trade using the client - each agent buys a different BASE token with 100 USDC
+      const tradeResponse = (await agent?.client.executeTrade({
         fromToken: BASE_USDC_ADDRESS,
         toToken: tokenToTrade!,
         amount: tradeAmount.toString(),
@@ -353,7 +348,7 @@ describe("Multi-Team Competition", () => {
         const tokenAmount = tradeResponse.transaction.toAmount;
         tokenQuantities[tokenToTrade!] = tokenAmount;
         console.log(
-          `Team ${i + 1} received ${tokenAmount} of token ${tokenToTrade}`,
+          `Agent ${i + 1} received ${tokenAmount} of token ${tokenToTrade}`,
         );
       }
       // Wait briefly between trades
@@ -363,33 +358,33 @@ describe("Multi-Team Competition", () => {
     // Wait for all trades to settle
     await wait(500);
 
-    // Step 5: Verify each team has a unique token composition
+    // Step 5: Verify each agent has a unique token composition
     console.log("Verifying unique token portfolios...");
 
-    for (let i = 0; i < NUM_TEAMS; i++) {
-      const team = teamClients[i];
+    for (let i = 0; i < NUM_AGENTS; i++) {
+      const agent = agentClients[i];
       const expectedToken = BASE_TOKENS[i];
 
-      // Get team's current balance
+      // Get agent's current balance
       const balanceResponse =
-        (await team?.client.getBalance()) as BalancesResponse;
+        (await agent?.client.getBalance()) as BalancesResponse;
       expect(balanceResponse?.success).toBe(true);
       expect(balanceResponse?.balances).toBeDefined();
-      // Check that the team has the expected token
+      // Check that the agent has the expected token
       const tokenBalance = parseFloat(
         balanceResponse.balances
           .find((b) => b.tokenAddress === expectedToken)
           ?.amount.toString() || "0",
       );
       console.log(
-        `Team ${i + 1} final balance of token ${expectedToken}: ${tokenBalance}`,
+        `Agent ${i + 1} final balance of token ${expectedToken}: ${tokenBalance}`,
       );
 
       // Verify they have a non-zero balance of their unique token
       expect(tokenBalance).toBeGreaterThan(0);
 
-      // Verify they DON'T have any of the other teams' tokens
-      for (let j = 0; j < NUM_TEAMS; j++) {
+      // Verify they DON'T have any of the other agents' tokens
+      for (let j = 0; j < NUM_AGENTS; j++) {
         if (j !== i) {
           // Skip their own token
           const otherToken = BASE_TOKENS[j];
@@ -399,11 +394,11 @@ describe("Multi-Team Competition", () => {
               ?.amount.toString() || "0",
           );
 
-          // They should have 0 of other teams' tokens
+          // They should have 0 of other agents' tokens
           expect(otherTokenBalance).toBe(0);
           if (otherTokenBalance > 0) {
             console.error(
-              `ERROR: Team ${i + 1} unexpectedly has ${otherTokenBalance} of token ${otherToken}`,
+              `ERROR: Agent ${i + 1} unexpectedly has ${otherTokenBalance} of token ${otherToken}`,
             );
           }
         }
@@ -411,12 +406,12 @@ describe("Multi-Team Competition", () => {
     }
 
     // Step 6: Verify that token quantities differ due to different token prices
-    console.log("Verifying token quantities differ between teams...");
+    console.log("Verifying token quantities differ between agents...");
 
     // Get unique token quantities
     const uniqueQuantities = Object.values(tokenQuantities);
 
-    // Verify that no two teams received the same token quantity (within a reasonable precision)
+    // Verify that no two agents received the same token quantity (within a reasonable precision)
     for (let i = 0; i < uniqueQuantities.length; i++) {
       for (let j = i + 1; j < uniqueQuantities.length; j++) {
         const qty1 = uniqueQuantities[i];
@@ -435,53 +430,52 @@ describe("Multi-Team Competition", () => {
       }
     }
 
-    console.log("[Test] Completed multi-team unique token purchasing test");
+    console.log("[Test] Completed multi-agent unique token purchasing test");
   });
 
   // Test that portfolio values change over time due to price fluctuations
-  test("portfolio values should change differently for teams holding different tokens", async () => {
+  test("portfolio values should change differently for agents holding different tokens", async () => {
     console.log("[Test] Starting portfolio value fluctuation test");
 
     // Step 1: Setup admin client
     adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Step 2: Register teams with unique names
-    console.log(`Registering ${NUM_TEAMS} teams...`);
-    teamClients = [];
+    // Step 2: Register agents with unique names
+    console.log(`Registering ${NUM_AGENTS} agents...`);
+    agentClients = [];
 
     // Store token quantities and initial portfolio values
-    const initialPortfolioValues: { [teamId: string]: number | undefined } = {};
-    const tokensByTeam: { [teamId: string]: string } = {};
+    const initialPortfolioValues: { [agentId: string]: number | undefined } =
+      {};
+    const tokensByAgent: { [agentId: string]: string } = {};
 
-    for (let i = 0; i < NUM_TEAMS; i++) {
-      const teamName = `Price Team ${i + 1} ${Date.now()}`;
-      const email = `price_team${i + 1}_${Date.now()}@example.com`;
-      const contactPerson = `Price Contact ${i + 1}`;
+    for (let i = 0; i < NUM_AGENTS; i++) {
+      const agentName = `Price Agent ${i + 1} ${Date.now()}`;
 
-      const teamData = await registerTeamAndGetClient(
+      const agentData = await registerUserAndAgentAndGetClient({
         adminApiKey,
-        teamName,
-        email,
-        contactPerson,
-      );
+        agentName,
+      });
 
-      teamClients.push(teamData);
-      console.log(`Registered team: ${teamName} with ID: ${teamData.team.id}`);
+      agentClients.push(agentData);
+      console.log(
+        `Registered agent: ${agentName} with ID: ${agentData.agent.id}`,
+      );
     }
 
-    expect(teamClients.length).toBe(NUM_TEAMS);
-    expect(teamClients.length).toBe(BASE_TOKENS.length);
+    expect(agentClients.length).toBe(NUM_AGENTS);
+    expect(agentClients.length).toBe(BASE_TOKENS.length);
 
-    // Step 3: Start a competition with all teams
+    // Step 3: Start a competition with all agents
     const competitionName = `Portfolio Value Test ${Date.now()}`;
-    const teamIds = teamClients.map((tc) => tc.team.id);
+    const agentIds = agentClients.map((tc) => tc.agent.id);
 
-    console.log(`Starting competition with ${teamIds.length} teams...`);
+    console.log(`Starting competition with ${agentIds.length} agents...`);
     const competitionResponse = await startTestCompetition(
       adminClient,
       competitionName,
-      teamIds,
+      agentIds,
     );
 
     expect(competitionResponse.success).toBe(true);
@@ -491,24 +485,24 @@ describe("Multi-Team Competition", () => {
     // Wait for balances to be properly initialized
     await wait(1000);
 
-    // Step 4: Each team trades for a different token
-    console.log("Executing unique token trades for each team...");
+    // Step 4: Each agent trades for a different token
+    console.log("Executing unique token trades for each agent...");
 
-    // Amount of USDC each team will trade
+    // Amount of USDC each agent will trade
     const tradeAmount = 500; // Using a larger amount to make price fluctuations more noticeable
 
-    // Execute trades for each team
-    for (let i = 0; i < NUM_TEAMS; i++) {
-      const team = teamClients[i]!;
+    // Execute trades for each agent
+    for (let i = 0; i < NUM_AGENTS; i++) {
+      const agent = agentClients[i]!;
       const tokenToTrade = BASE_TOKENS[i]!;
-      tokensByTeam[team.team.id] = tokenToTrade;
+      tokensByAgent[agent.agent.id] = tokenToTrade;
 
       console.log(
-        `Team ${i + 1} (${team?.team.name}) trading ${tradeAmount} USDC for token ${tokenToTrade}`,
+        `Agent ${i + 1} (${agent?.agent.name}) trading ${tradeAmount} USDC for token ${tokenToTrade}`,
       );
 
-      // Execute trade - each team buys a different BASE token with USDC
-      const tradeResponse = (await team?.client.executeTrade({
+      // Execute trade - each agent buys a different BASE token with USDC
+      const tradeResponse = (await agent?.client.executeTrade({
         fromToken: BASE_USDC_ADDRESS,
         toToken: tokenToTrade,
         amount: tradeAmount.toString(),
@@ -529,7 +523,7 @@ describe("Multi-Team Competition", () => {
           String(tradeResponse.transaction.toAmount),
         );
         console.log(
-          `Team ${i + 1} received ${tokenAmount} of token ${tokenToTrade}`,
+          `Agent ${i + 1} received ${tokenAmount} of token ${tokenToTrade}`,
         );
       }
 
@@ -543,19 +537,19 @@ describe("Multi-Team Competition", () => {
     // Step 5: Get initial portfolio values after trades
     console.log("\n[Test] Getting initial portfolio values after trades...");
 
-    for (let i = 0; i < NUM_TEAMS; i++) {
-      const team = teamClients[i];
+    for (let i = 0; i < NUM_AGENTS; i++) {
+      const agent = agentClients[i];
 
-      assert(team, "Team is undefined");
+      assert(agent, "Agent is undefined");
 
       // Force a snapshot to ensure we have current values
       await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
       await wait(500);
 
-      // Get team's initial portfolio value
+      // Get agent's initial portfolio value
       const snapshotsResponse = (await adminClient.request(
         "get",
-        `/api/admin/competition/${competitionId}/snapshots?teamId=${team.team.id}`,
+        `/api/admin/competition/${competitionId}/snapshots?agentId=${agent.agent.id}`,
       )) as SnapshotResponse;
       expect(snapshotsResponse.success).toBe(true);
       expect(snapshotsResponse.snapshots).toBeDefined();
@@ -565,14 +559,14 @@ describe("Multi-Team Competition", () => {
       const latestSnapshot =
         snapshotsResponse.snapshots[snapshotsResponse.snapshots.length - 1];
       const initialValue = latestSnapshot?.totalValue;
-      initialPortfolioValues[team.team.id] = initialValue;
+      initialPortfolioValues[agent.agent.id] = initialValue;
 
       console.log(
-        `Team ${i + 1} (${team.team.name}) initial portfolio value: $${initialValue?.toFixed(2)}`,
+        `Agent ${i + 1} (${agent.agent.name}) initial portfolio value: $${initialValue?.toFixed(2)}`,
       );
 
       // Log token-specific details
-      const token = tokensByTeam[team.team.id];
+      const token = tokensByAgent[agent.agent.id];
       assert(token, "Token is undefined");
       const tokenValue = latestSnapshot?.valuesByToken[token];
       if (tokenValue) {
@@ -600,31 +594,31 @@ describe("Multi-Team Competition", () => {
       "\n[Test] Getting final portfolio values after waiting period...",
     );
 
-    const finalPortfolioValues: { [teamId: string]: number | undefined } = {};
+    const finalPortfolioValues: { [agentId: string]: number | undefined } = {};
     const portfolioChanges: {
-      [teamId: string]: {
+      [agentId: string]: {
         initial: number;
         final: number;
         change: number;
         percentChange: number;
       };
     } = {};
-    let allTeamsHaveSameChange = true;
+    let allAgentsHaveSameChange = true;
     let previousPercentChange: number | null = null;
 
-    for (let i = 0; i < NUM_TEAMS; i++) {
-      const team = teamClients[i];
+    for (let i = 0; i < NUM_AGENTS; i++) {
+      const agent = agentClients[i];
 
-      assert(team, "Team is undefined");
+      assert(agent, "Agent is undefined");
 
       // Force one final snapshot to ensure we have the latest prices
       await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
       await wait(500);
 
-      // Get team's final portfolio value
+      // Get agent's final portfolio value
       const snapshotsResponse = (await adminClient.request(
         "get",
-        `/api/admin/competition/${competitionId}/snapshots?teamId=${team.team.id}`,
+        `/api/admin/competition/${competitionId}/snapshots?agentId=${agent.agent.id}`,
       )) as SnapshotResponse;
       expect(snapshotsResponse.success).toBe(true);
       expect(snapshotsResponse.snapshots).toBeDefined();
@@ -634,18 +628,18 @@ describe("Multi-Team Competition", () => {
       const latestSnapshot =
         snapshotsResponse.snapshots[snapshotsResponse.snapshots.length - 1];
       const finalValue = latestSnapshot?.totalValue;
-      finalPortfolioValues[team.team.id] = finalValue;
+      finalPortfolioValues[agent.agent.id] = finalValue;
 
       assert(finalValue, "Final value is undefined");
 
       // Calculate change
-      const initialValue = initialPortfolioValues[team.team.id];
+      const initialValue = initialPortfolioValues[agent.agent.id];
       assert(initialValue, "Initial value is undefined");
 
       const absoluteChange = finalValue - initialValue;
       const percentChange = (absoluteChange / initialValue) * 100;
 
-      portfolioChanges[team.team.id] = {
+      portfolioChanges[agent.agent.id] = {
         initial: initialValue,
         final: finalValue,
         change: absoluteChange,
@@ -654,14 +648,14 @@ describe("Multi-Team Competition", () => {
 
       // Log detailed information
       console.log(
-        `Team ${i + 1} (${team.team.name}) final portfolio value: $${finalValue.toFixed(2)}`,
+        `Agent ${i + 1} (${agent.agent.name}) final portfolio value: $${finalValue.toFixed(2)}`,
       );
       console.log(
         `  - Change: $${absoluteChange.toFixed(2)} (${percentChange.toFixed(2)}%)`,
       );
 
       // Log token-specific details
-      const token = tokensByTeam[team.team.id];
+      const token = tokensByAgent[agent.agent.id];
       assert(token, "Token is undefined");
       const tokenValue = latestSnapshot?.valuesByToken[token];
       if (tokenValue) {
@@ -670,11 +664,11 @@ describe("Multi-Team Competition", () => {
         );
       }
 
-      // Check if this percent change is different from previous teams
+      // Check if this percent change is different from previous agents
       if (previousPercentChange !== null) {
         // Allow a tiny bit of precision error (0.00001), but changes should differ by more than this
         if (Math.abs(percentChange - previousPercentChange) > 0.00001) {
-          allTeamsHaveSameChange = false;
+          allAgentsHaveSameChange = false;
         }
       }
       previousPercentChange = percentChange;
@@ -682,28 +676,28 @@ describe("Multi-Team Competition", () => {
 
     // Step 8: Summary of portfolio changes
     console.log("\n[Test] Portfolio change summary:");
-    for (let i = 0; i < NUM_TEAMS; i++) {
-      const team = teamClients[i];
-      assert(team, "Team is undefined");
-      const changes = portfolioChanges[team.team.id];
+    for (let i = 0; i < NUM_AGENTS; i++) {
+      const agent = agentClients[i];
+      assert(agent, "Agent is undefined");
+      const changes = portfolioChanges[agent.agent.id];
       console.log(
-        `Team ${i + 1} (${team.team.name}): $${changes?.initial.toFixed(2)} → $${changes?.final.toFixed(2)}, Change: ${changes?.percentChange.toFixed(4)}%`,
+        `Agent ${i + 1} (${agent.agent.name}): $${changes?.initial.toFixed(2)} → $${changes?.final.toFixed(2)}, Change: ${changes?.percentChange.toFixed(4)}%`,
       );
     }
 
-    // Step 9: Verify that not all teams have exactly the same portfolio change
+    // Step 9: Verify that not all agents have exactly the same portfolio change
     // This test could be flaky if market conditions are extremely stable during the test period
     // or if there's a bug in the pricing system. We log a warning instead of failing in that case.
-    if (allTeamsHaveSameChange) {
+    if (allAgentsHaveSameChange) {
       console.warn(
-        "[Test] WARNING: All teams showed identical percentage changes in portfolio value.",
+        "[Test] WARNING: All agents showed identical percentage changes in portfolio value.",
       );
       console.warn(
         "[Test] This could indicate either extremely stable market conditions or a potential issue with pricing.",
       );
     } else {
       console.log(
-        "[Test] Confirmed that teams with different tokens have different portfolio value changes.",
+        "[Test] Confirmed that agents with different tokens have different portfolio value changes.",
       );
     }
 
