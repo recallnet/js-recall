@@ -871,7 +871,6 @@ export function makeAdminController(services: ServiceRegistry) {
             await services.userManager.searchUsers(userSearchParams);
 
           results.users = users.map((user) => ({
-            type: "user",
             id: user.id,
             walletAddress: user.walletAddress,
             name: user.name,
@@ -899,7 +898,6 @@ export function makeAdminController(services: ServiceRegistry) {
             await services.agentManager.searchAgents(agentSearchParams);
 
           results.agents = agents.map((agent) => ({
-            type: "agent",
             id: agent.id,
             ownerId: agent.ownerId,
             walletAddress: agent.walletAddress,
