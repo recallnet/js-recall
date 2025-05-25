@@ -19,7 +19,7 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *     tags:
    *       - Agent
    *     security:
-   *       - ApiKeyAuth: []
+   *       - BearerAuth: []
    *     responses:
    *       200:
    *         description: Agent profile retrieved successfully
@@ -93,7 +93,7 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *     tags:
    *       - Agent
    *     security:
-   *       - ApiKeyAuth: []
+   *       - BearerAuth: []
    *     requestBody:
    *       required: true
    *       content:
@@ -170,7 +170,7 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *     tags:
    *       - Agent
    *     security:
-   *       - ApiKeyAuth: []
+   *       - BearerAuth: []
    *     responses:
    *       200:
    *         description: Balances retrieved successfully
@@ -221,7 +221,7 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *     tags:
    *       - Agent
    *     security:
-   *       - ApiKeyAuth: []
+   *       - BearerAuth: []
    *     responses:
    *       200:
    *         description: Portfolio retrieved successfully
@@ -294,7 +294,7 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *     tags:
    *       - Agent
    *     security:
-   *       - ApiKeyAuth: []
+   *       - BearerAuth: []
    *     responses:
    *       200:
    *         description: Trade history retrieved successfully
@@ -364,7 +364,7 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *     tags:
    *       - Agent
    *     security:
-   *       - ApiKeyAuth: []
+   *       - BearerAuth: []
    *     responses:
    *       200:
    *         description: API key reset successfully

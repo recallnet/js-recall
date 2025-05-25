@@ -1904,7 +1904,7 @@
         ],
         "security": [
           {
-            "ApiKeyAuth": []
+            "BearerAuth": []
           }
         ],
         "responses": {
@@ -2009,7 +2009,7 @@
         ],
         "security": [
           {
-            "ApiKeyAuth": []
+            "BearerAuth": []
           }
         ],
         "requestBody": {
@@ -2117,7 +2117,7 @@
         ],
         "security": [
           {
-            "ApiKeyAuth": []
+            "BearerAuth": []
           }
         ],
         "responses": {
@@ -2190,7 +2190,7 @@
         ],
         "security": [
           {
-            "ApiKeyAuth": []
+            "BearerAuth": []
           }
         ],
         "responses": {
@@ -2293,7 +2293,7 @@
         ],
         "security": [
           {
-            "ApiKeyAuth": []
+            "BearerAuth": []
           }
         ],
         "responses": {
@@ -2388,7 +2388,7 @@
         ],
         "security": [
           {
-            "ApiKeyAuth": []
+            "BearerAuth": []
           }
         ],
         "responses": {
