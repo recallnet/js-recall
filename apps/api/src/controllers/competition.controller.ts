@@ -436,12 +436,28 @@ export function makeCompetitionController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        console.log(
-          `[CompetitionController] Agent ${req.agentId} requesting competitions`,
-        );
+        const agentId = req.agentId;
+        const userId = req.userId;
+        const isAdmin = req.isAdmin === true;
+        if (isAdmin) {
+          console.log(`[CompetitionController] Admin requesting competitions`);
+        } else if (agentId) {
+          console.log(
+            `[CompetitionController] Agent ${agentId} requesting competitions`,
+          );
+        } else if (userId) {
+          console.log(
+            `[CompetitionController] User ${userId} requesting competitions`,
+          );
+        } else {
+          throw new ApiError(401, "Authentication required");
+        }
 
-        // Get all upcoming competitions
-        const status = CompetitionStatusSchema.parse(req.query.status);
+        // Get all competitions, or those with a given status from the query params
+        // TODO: we allow for null status & set our default as "all" competitions—is this what we want?
+        const status = req.query.status
+          ? CompetitionStatusSchema.parse(req.query.status)
+          : undefined;
         const pagingParams = PagingParamsSchema.parse(req.query);
         const competitions = await services.competitionManager.getCompetitions(
           status,

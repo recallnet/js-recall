@@ -52,7 +52,7 @@ const competitionOrderByFields: Record<string, AnyColumn> = {
  * Find all competitions
  */
 export async function findAll() {
-  return db
+  return await db
     .select({
       crossChainTradingType: tradingCompetitions.crossChainTradingType,
       ...getTableColumns(competitions),
@@ -411,15 +411,18 @@ export async function count() {
 }
 
 /**
- * Find competitions by status
+ * Find competitions by status, or default to all competitions if no status is provided
  * @param status Competition status
  */
-export async function findByStatus(
-  status: CompetitionStatus,
-  params: PagingParams,
-) {
+export async function findByStatus({
+  status,
+  params,
+}: {
+  status: CompetitionStatus | undefined;
+  params: PagingParams;
+}) {
   try {
-    let query = db
+    const queryBuilder = db
       .select({
         crossChainTradingType: tradingCompetitions.crossChainTradingType,
         ...getTableColumns(competitions),
@@ -428,9 +431,14 @@ export async function findByStatus(
       .innerJoin(
         competitions,
         eq(tradingCompetitions.competitionId, competitions.id),
-      )
-      .where(eq(competitions.status, status))
-      .$dynamic();
+      );
+
+    let query;
+    if (status) {
+      query = queryBuilder.where(eq(competitions.status, status)).$dynamic();
+    } else {
+      query = queryBuilder.$dynamic();
+    }
 
     if (params.sort) {
       query = getSort(query, params.sort, competitionOrderByFields);

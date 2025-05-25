@@ -353,10 +353,13 @@ export class CompetitionManager {
    * @returns Array of competitions with PENDING status
    */
   async getUpcomingCompetitions() {
-    return findByStatus(CompetitionStatus.PENDING, {
-      sort: "",
-      limit: 100,
-      offset: 0,
+    return findByStatus({
+      status: CompetitionStatus.PENDING,
+      params: {
+        sort: "",
+        limit: 100,
+        offset: 0,
+      },
     });
   }
 
@@ -366,7 +369,13 @@ export class CompetitionManager {
    * @param pagingParams The paging parameters to use
    * @returns Array of competitions.
    */
-  async getCompetitions(status: CompetitionStatus, pagingParams: PagingParams) {
-    return await findByStatus(status, pagingParams);
+  async getCompetitions(
+    status: CompetitionStatus | undefined,
+    pagingParams: PagingParams,
+  ) {
+    return await findByStatus({
+      status,
+      params: pagingParams,
+    });
   }
 }
