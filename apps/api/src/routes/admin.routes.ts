@@ -571,6 +571,11 @@ export function configureAdminRoutes(
    *                       type: string
    *                       description: URL to user's image
    *                       nullable: true
+   *                     metadata:
+   *                       type: object
+   *                       description: Optional metadata for the user
+   *                       example: { "custom": {"value": "here"} }
+   *                       nullable: true
    *                     status:
    *                       type: string
    *                       description: User status
@@ -578,6 +583,10 @@ export function configureAdminRoutes(
    *                       type: string
    *                       format: date-time
    *                       description: Account creation timestamp
+   *                     updatedAt:
+   *                       type: string
+   *                       format: date-time
+   *                       description: Account updated timestamp
    *                 agent:
    *                   type: object
    *                   nullable: true
@@ -589,6 +598,10 @@ export function configureAdminRoutes(
    *                     ownerId:
    *                       type: string
    *                       description: Agent owner ID
+   *                     walletAddress:
+   *                       type: string
+   *                       description: Agent wallet address
+   *                       nullable: true
    *                     name:
    *                       type: string
    *                       description: Agent name
@@ -599,6 +612,11 @@ export function configureAdminRoutes(
    *                     imageUrl:
    *                       type: string
    *                       description: URL to agent's image
+   *                       nullable: true
+   *                     metadata:
+   *                       type: object
+   *                       description: Optional metadata for the agent
+   *                       example: { "strategy": "yield-farming", "risk": "medium" }
    *                       nullable: true
    *                     apiKey:
    *                       type: string
@@ -611,6 +629,10 @@ export function configureAdminRoutes(
    *                       type: string
    *                       format: date-time
    *                       description: Agent creation timestamp
+   *                     updatedAt:
+   *                       type: string
+   *                       format: date-time
+   *                       description: Agent updated timestamp
    *                 agentError:
    *                   type: string
    *                   nullable: true

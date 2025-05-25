@@ -322,6 +322,9 @@ describe("Agent API", () => {
     const agentProfile = profileResponse as AgentProfileResponse;
 
     // Verify all profile fields including metadata
+    console.log("====== AGENT PROFILE ======");
+    console.log(agentProfile);
+    console.log("====== AGENT PROFILE ======");
     expect(agentProfile.success).toBe(true);
     expect(agentProfile.agent.id).toBeDefined();
     expect(agentProfile.agent.name).toBe(agentName);

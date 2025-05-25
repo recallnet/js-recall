@@ -43,21 +43,21 @@ export async function registerUserAndAgentAndGetClient({
   walletAddress,
   userName,
   userEmail,
+  userImageUrl,
   agentName,
   agentDescription,
   agentImageUrl,
   agentMetadata,
-  userImageUrl,
 }: {
   adminApiKey: string;
   walletAddress?: string;
   userName?: string;
   userEmail?: string;
+  userImageUrl?: string;
   agentName?: string;
   agentDescription?: string;
   agentImageUrl?: string;
   agentMetadata?: Record<string, unknown>;
-  userImageUrl?: string;
 }) {
   // Ensure database is initialized
   await ensureDatabaseInitialized();
@@ -98,16 +98,21 @@ export async function registerUserAndAgentAndGetClient({
       email: result.user.email || "",
       imageUrl: result.user.imageUrl || null,
       status: result.user.status || "active",
+      metadata: result.user.metadata || null,
       createdAt: result.user.createdAt || new Date().toISOString(),
+      updatedAt: result.user.updatedAt || new Date().toISOString(),
     },
     agent: {
       id: result.agent.id || "",
       ownerId: result.agent.ownerId || "",
+      walletAddress: result.agent.walletAddress || "",
       name: result.agent.name || "",
       description: result.agent.description || "",
       imageUrl: result.agent.imageUrl || null,
       status: result.agent.status || "active",
+      metadata: result.agent.metadata || null,
       createdAt: result.agent.createdAt || new Date().toISOString(),
+      updatedAt: result.agent.updatedAt || new Date().toISOString(),
     },
     apiKey: result.agent.apiKey || "",
   };

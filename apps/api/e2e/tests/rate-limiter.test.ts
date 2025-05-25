@@ -207,7 +207,7 @@ describe("Rate Limiter Middleware", () => {
     // Make first request
     const firstAccountResponse = await client.request(
       "get",
-      "/api/account/balances",
+      "/api/agent/balances",
     );
 
     if ((firstAccountResponse as BalancesResponse).success === true) {
@@ -235,7 +235,7 @@ describe("Rate Limiter Middleware", () => {
 
       for (let i = 1; i < accountEndpointLimit; i++) {
         // Start from 1 because we already made one request
-        const response = await client.request("get", "/api/account/balances");
+        const response = await client.request("get", "/api/agent/balances");
 
         if ((response as BalancesResponse).success === true) {
           successfulRequests++;
@@ -334,10 +334,10 @@ describe("Rate Limiter Middleware", () => {
     });
 
     // Find an endpoint with a small limit to test quickly
-    // We'll use /api/account/balances which has a 30 req/min limit
+    // We'll use /api/agent/balances which has a 30 req/min limit
     const limit = 35; // Set higher than the rate limit to ensure we hit it
     console.log(
-      `Testing rate limit headers using /api/account/balances (30 req/min limit)`,
+      `Testing rate limit headers using /api/agent/balances (30 req/min limit)`,
     );
 
     // Make requests up to the limit
@@ -345,7 +345,7 @@ describe("Rate Limiter Middleware", () => {
 
     for (let i = 0; i < limit; i++) {
       try {
-        await axiosInstance.get(`/api/account/balances`);
+        await axiosInstance.get(`/api/agent/balances`);
         console.log(`Headers test: Request ${i + 1}/${limit} succeeded`);
       } catch (error) {
         const axiosError = error as AxiosError;
