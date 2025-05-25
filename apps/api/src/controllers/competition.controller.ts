@@ -31,11 +31,16 @@ export function makeCompetitionController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        const { competitionId } = req.params;
+        // Get active competition or use competitionId from query
+        const competitionId =
+          (req.query.competitionId as string) ||
+          (await services.competitionManager.getActiveCompetition())?.id;
 
-        // Validate competition ID
         if (!competitionId) {
-          throw new ApiError(400, "Competition ID is required");
+          throw new ApiError(
+            400,
+            "No active competition and no competitionId provided",
+          );
         }
 
         // Check if competition exists
@@ -47,31 +52,33 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Check if the agent is authenticated
         const agentId = req.agentId;
-        const isAdmin = req.isAdmin || false;
+        const isAdmin = req.isAdmin === true;
 
-        // Check if the agent is part of the competition
-        // If no agent ID, they can't be in the competition
-        if (!agentId) {
-          throw new ApiError(401, "Authentication required");
-        }
-
-        // If not an admin, verify agent is part of the competition
-        if (!isAdmin) {
+        // Authentication and Authorization
+        if (isAdmin) {
+          // Admin access: Log and proceed
+          console.log(
+            `[CompetitionController] Admin accessing leaderboard for competition ${competitionId}.`,
+          );
+        } else {
+          // Not an admin, an agentId is required
+          if (!agentId) {
+            throw new ApiError(
+              401,
+              "Authentication required to view leaderboard",
+            );
+          }
+          // AgentId is present, verify participation
           const isAgentInCompetitionResult = await isAgentInCompetition(
             agentId,
             competitionId,
           );
-
           if (!isAgentInCompetitionResult) {
             throw new ApiError(
               403,
-              "Your agent is not participating in this competition",
+              "Forbidden: Your agent is not participating in this competition.",
             );
           }
-        } else {
-          console.log(
-            `[CompetitionController] Admin ${agentId} accessing leaderboard for competition ${competitionId}`,
-          );
         }
 
         // Get leaderboard
@@ -149,34 +156,49 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // If no active competition, return null status
         if (!activeCompetition) {
+          console.log("[CompetitionController] No active competition found");
           return res.status(200).json({
             success: true,
+            active: false,
             competition: null,
-            message: "No active competition",
+            message: "No active competition found",
           });
         }
+        console.log(
+          `[CompetitionController] Found active competition: ${activeCompetition.id}`,
+        );
 
         // Get agent ID from request (if authenticated)
         const agentId = req.agentId;
-        const isAdmin = req.isAdmin || false;
+        const isAdmin = req.isAdmin === true;
 
-        // If agent is not authenticated, return basic info only
+        // If admin, return full status
+        if (isAdmin) {
+          console.log(
+            `[CompetitionController] Admin ${agentId} accessing competition status`,
+          );
+          return res.status(200).json({
+            success: true,
+            active: true,
+            competition: activeCompetition,
+            isAdmin,
+            participating: false,
+          });
+        }
+
+        // If not authenticated, just return basic status
+        const basicInfo = {
+          id: activeCompetition.id,
+          name: activeCompetition.name,
+          status: activeCompetition.status,
+          externalLink: activeCompetition.externalLink,
+          imageUrl: activeCompetition.imageUrl,
+        };
         if (!agentId) {
           return res.status(200).json({
             success: true,
-            competition: {
-              id: activeCompetition.id,
-              name: activeCompetition.name,
-              description: activeCompetition.description,
-              status: activeCompetition.status,
-              startDate: activeCompetition.startDate,
-              endDate: activeCompetition.endDate,
-              externalLink: activeCompetition.externalLink,
-              imageUrl: activeCompetition.imageUrl,
-              crossChainTradingType: activeCompetition.crossChainTradingType,
-            },
-            participating: false,
-            isAdmin: false,
+            active: true,
+            competition: basicInfo,
             message: "Authentication required to check participation status",
           });
         }
@@ -187,51 +209,35 @@ export function makeCompetitionController(services: ServiceRegistry) {
           activeCompetition.id,
         );
 
-        // Check if the agent is an admin
-        const adminStatus = isAdmin;
-
         // If agent is not in competition and not an admin, return limited info
-        if (!isAgentInCompetitionResult && !adminStatus) {
+        if (!isAgentInCompetitionResult) {
           console.log(
             `[CompetitionController] Agent ${agentId} is not in competition ${activeCompetition.id}`,
           );
 
           return res.status(200).json({
             success: true,
+            active: true,
             competition: {
-              id: activeCompetition.id,
-              name: activeCompetition.name,
-              description: activeCompetition.description,
-              status: activeCompetition.status,
+              ...basicInfo,
               startDate: activeCompetition.startDate,
-              endDate: activeCompetition.endDate,
-              externalLink: activeCompetition.externalLink,
-              imageUrl: activeCompetition.imageUrl,
-              crossChainTradingType: activeCompetition.crossChainTradingType,
             },
             participating: false,
-            isAdmin: adminStatus,
             message: "Your agent is not participating in this competition",
           });
         }
 
-        // Agent is either participating or is an admin
-        if (adminStatus) {
-          console.log(
-            `[CompetitionController] Admin ${agentId} accessing competition status`,
-          );
-        } else {
-          console.log(
-            `[CompetitionController] Agent ${agentId} is participating in competition ${activeCompetition.id}`,
-          );
-        }
+        // Agent is participating
+        console.log(
+          `[CompetitionController] Agent ${agentId} is participating in competition ${activeCompetition.id}`,
+        );
 
         // Return full competition info
         res.status(200).json({
           success: true,
+          active: true,
           competition: activeCompetition,
-          participating: isAgentInCompetitionResult,
-          isAdmin: adminStatus,
+          participating: true,
         });
       } catch (error) {
         next(error);
@@ -252,87 +258,121 @@ export function makeCompetitionController(services: ServiceRegistry) {
       try {
         // Check if the agent is authenticated
         const agentId = req.agentId;
-        const isAdmin = req.isAdmin || false;
+        const isAdmin = req.isAdmin === true;
 
-        // If no agent ID, they can't be authenticated
-        if (!agentId) {
-          throw new ApiError(401, "Authentication required");
-        }
-
-        // Get active competition
+        // Get active competition first, as rules are always for the active one
         const activeCompetition =
           await services.competitionManager.getActiveCompetition();
 
         if (!activeCompetition) {
-          throw new ApiError(404, "No active competition found");
+          throw new ApiError(
+            404,
+            "No active competition found to get rules for.",
+          );
         }
 
-        // If not an admin, verify agent is part of the active competition
-        if (!isAdmin) {
-          if (activeCompetition.status !== CompetitionStatus.ACTIVE) {
-            throw new ApiError(400, "No active competition found");
+        // Authentication and Authorization
+        if (isAdmin) {
+          // Admin access: Log and proceed
+          console.log(
+            `[CompetitionController] Admin accessing rules for competition ${activeCompetition.id}.`,
+          );
+        } else {
+          // Not an admin, an agentId is required
+          if (!agentId) {
+            throw new ApiError(
+              401,
+              "Authentication required to view competition rules: Agent ID missing.",
+            );
           }
-
+          // AgentId is present, verify participation in the active competition
+          if (activeCompetition.status !== CompetitionStatus.ACTIVE) {
+            // This check might be redundant if getActiveCompetition already ensures this,
+            // but keeping for safety to ensure agent is not trying to get rules for a non-active comp.
+            throw new ApiError(
+              400,
+              "No active competition found to get rules for.",
+            );
+          }
           const isAgentInCompetitionResult = await isAgentInCompetition(
             agentId,
             activeCompetition.id,
           );
-
           if (!isAgentInCompetitionResult) {
             throw new ApiError(
               403,
-              "Your agent is not participating in the active competition",
+              "Forbidden: Your agent is not participating in the active competition.",
             );
           }
-        } else {
-          console.log(
-            `[CompetitionController] Admin ${agentId} accessing competition rules`,
-          );
+        }
+
+        // Build initial balances description based on config
+        const initialBalanceDescriptions = [];
+
+        // Chain-specific balances
+        for (const chain of Object.keys(config.specificChainBalances)) {
+          const chainBalances =
+            config.specificChainBalances[
+              chain as keyof typeof config.specificChainBalances
+            ];
+          const tokenItems = [];
+
+          for (const token of Object.keys(chainBalances)) {
+            const amount = chainBalances[token];
+            if (amount && amount > 0) {
+              tokenItems.push(`${amount} ${token.toUpperCase()}`);
+            }
+          }
+
+          if (tokenItems.length > 0) {
+            let chainName = chain;
+            // Format chain name for better readability
+            if (chain === "eth") chainName = "Ethereum";
+            else if (chain === "svm") chainName = "Solana";
+            else chainName = chain.charAt(0).toUpperCase() + chain.slice(1); // Capitalize
+
+            initialBalanceDescriptions.push(
+              `${chainName}: ${tokenItems.join(", ")}`,
+            );
+          }
         }
 
         // Define base rules
-        const baseRules = [
-          "Competition Duration: The competition runs from the official start time until the official end time",
-          "Objective: Maximize your total portfolio value through strategic trading",
-          "All agents start with identical token balances",
-          `Maximum single trade: ${config.maxTradePercentage}% of agent's total portfolio value`,
-        ];
-
-        // Cross-chain trading rules
-        const crossChainRules = [];
-        if (activeCompetition.crossChainTradingType === "disallowAll") {
-          crossChainRules.push(
-            "Cross-chain trading is disabled for this competition",
-          );
-        } else if (
-          activeCompetition.crossChainTradingType === "disallowXParent"
-        ) {
-          crossChainRules.push(
-            "Cross-chain trading is allowed within the same parent blockchain only",
-          );
-        } else {
-          crossChainRules.push("Cross-chain trading is fully enabled");
-        }
-
         const tradingRules = [
-          "Rate Limiting: API requests are limited to ensure fair play",
-          "10,000 requests per hour per agent",
+          "Trading is only allowed for tokens with valid price data",
+          `All teams start with identical token balances: ${initialBalanceDescriptions.join("; ")}`,
+          "Minimum trade amount: 0.000001 tokens",
+          `Maximum single trade: ${config.maxTradePercentage}% of team's total portfolio value`,
+          "No shorting allowed (trades limited to available balance)",
+          "Slippage is applied to all trades based on trade size",
           `Cross-chain trading type: ${activeCompetition.crossChainTradingType}`,
-          ...crossChainRules,
+          "Transaction fees are not simulated",
         ];
-
-        const complianceRules = [
-          "Fair Play: Agents must operate independently without coordination",
-          "API Usage: Only use the provided trading API endpoints",
-          "Data Sources: Use only the price data provided by the platform",
-          "Automated Trading: Agents can operate autonomously within the competition timeframe",
+        const rateLimits = [
+          `${config.rateLimiting.maxRequests} requests per ${config.rateLimiting.windowMs / 1000} seconds per endpoint`,
+          "100 requests per minute for trade operations",
+          "300 requests per minute for price queries",
+          "30 requests per minute for balance/portfolio checks",
+          "3,000 requests per minute across all endpoints",
+          "10,000 requests per hour per team",
         ];
+        const availableChains = {
+          svm: true,
+          evm: config.evmChains,
+        };
+        const slippageFormula =
+          "baseSlippage = (tradeAmountUSD / 10000) * 0.05%, actualSlippage = baseSlippage * (0.9 + (Math.random() * 0.2))";
+        const portfolioSnapshots = {
+          interval: `${config.portfolio.snapshotIntervalMs / 60000} minutes`,
+        };
 
         // Assemble all rules
         const allRules = {
-          baseRules,
           tradingRules,
-          complianceRules,
+          rateLimits,
+          availableChains,
+          slippageFormula,
+          portfolioSnapshots,
         };
 
         res.status(200).json({
@@ -351,7 +391,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
      * @param res Express response object
      * @param next Express next function
      */
-    async getUpcoming(
+    async getUpcomingCompetitions(
       req: AuthenticatedRequest,
       res: Response,
       next: NextFunction,
@@ -359,16 +399,20 @@ export function makeCompetitionController(services: ServiceRegistry) {
       try {
         // Check if the agent is authenticated
         const agentId = req.agentId;
+        const isAdmin = req.isAdmin === true;
 
         // If no agent ID, they can't be authenticated
-        if (!agentId) {
+        if (isAdmin) {
+          console.log(
+            `[CompetitionController] Admin ${agentId} requesting upcoming competitions`,
+          );
+        } else if (!agentId) {
           throw new ApiError(401, "Authentication required");
+        } else {
+          console.log(
+            `[CompetitionController] Agent ${agentId} requesting upcoming competitions`,
+          );
         }
-
-        console.log(
-          `[CompetitionController] Agent ${agentId} requesting upcoming competitions`,
-        );
-
         // Get upcoming competitions
         const upcomingCompetitions =
           await services.competitionManager.getUpcomingCompetitions();

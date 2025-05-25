@@ -2,13 +2,14 @@ import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import {
-  AdminTeamsListResponse,
+  AdminAgentsListResponse,
+  AdminSearchUsersAndAgentsResponse,
+  AgentMetadata,
+  AgentProfileResponse,
   CreateCompetitionResponse,
   PriceResponse,
   ResetApiKeyResponse,
-  TeamMetadata,
-  TeamProfileResponse,
-  TeamRegistrationResponse,
+  UserRegistrationResponse,
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
@@ -18,7 +19,7 @@ import {
   cleanupTestState,
   createTestClient,
   generateRandomEthAddress,
-  registerTeamAndGetClient,
+  registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
 
 describe("Agent API", () => {
@@ -41,7 +42,7 @@ describe("Agent API", () => {
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
-  test("admin can register a team and team can authenticate", async () => {
+  test("admin can register a user and agent and agent can authenticate", async () => {
     // Create a test client
     const client = createTestClient();
     // Attempt to login as admin with correct API key
@@ -51,38 +52,49 @@ describe("Agent API", () => {
     const loginSuccess = await client.loginAsAdmin(adminApiKey);
     console.log(`TEST: Login result: ${loginSuccess}`);
 
-    // Register a team
-    const teamName = `Team ${Date.now()}`;
-    const email = `team${Date.now()}@example.com`;
-    const contactPerson = "Test Contact";
+    // Register a user and agent
+    const userName = `User ${Date.now()}`;
+    const userEmail = `user${Date.now()}@example.com`;
+    const agentName = `Agent ${Date.now()}`;
+    const agentDescription = "Test agent description";
 
     const {
-      client: teamClient,
-      team,
+      client: agentClient,
+      user,
+      agent,
       apiKey,
-    } = await registerTeamAndGetClient(
+    } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      teamName,
-      email,
-      contactPerson,
-    );
+      userName,
+      userEmail,
+      agentName,
+      agentDescription,
+    });
 
-    expect(team).toBeDefined();
-    expect(team.id).toBeDefined();
-    expect(team.name).toBe(teamName);
-    expect(team.email).toBe(email);
-    expect(team.contactPerson).toBe(contactPerson);
+    expect(user).toBeDefined();
+    expect(user.id).toBeDefined();
+    expect(user.name).toBe(userName);
+    expect(user.email).toBe(userEmail);
+    expect(agent).toBeDefined();
+    expect(agent.id).toBeDefined();
+    expect(agent.name).toBe(agentName);
+    expect(agent.description).toBe(agentDescription);
+    expect(agent.ownerId).toBe(user.id);
     expect(apiKey).toBeDefined();
 
-    // Verify team client is authenticated
-    const profileResponse = await teamClient.getProfile();
+    // Verify agent client is authenticated
+    const profileResponse = await agentClient.getAgentProfile();
     expect(profileResponse.success).toBe(true);
-    expect((profileResponse as TeamProfileResponse).team).toBeDefined();
-    expect((profileResponse as TeamProfileResponse).team.id).toBe(team.id);
-    expect((profileResponse as TeamProfileResponse).team.name).toBe(teamName);
+    expect((profileResponse as AgentProfileResponse).agent).toBeDefined();
+    expect((profileResponse as AgentProfileResponse).agent.id).toBe(agent.id);
+    expect((profileResponse as AgentProfileResponse).agent.name).toBe(
+      agentName,
+    );
+    expect((profileResponse as AgentProfileResponse).owner).toBeDefined();
+    expect((profileResponse as AgentProfileResponse).owner.id).toBe(user.id);
   });
 
-  test("teams can update their profile information", async () => {
+  test("agents can update their profile information", async () => {
     // Setup admin client
     const client = createTestClient();
     // Attempt to login as admin with correct API key
@@ -92,30 +104,32 @@ describe("Agent API", () => {
     const loginSuccess = await client.loginAsAdmin(adminApiKey);
     console.log(`TEST: Login result: ${loginSuccess}`);
 
-    // Register a team
-    const { client: teamClient } = await registerTeamAndGetClient(adminApiKey);
+    // Register a user and agent
+    const { client: agentClient } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+    });
 
-    // Update team profile
-    const newContactPerson = "Updated Contact Person";
-    const updateResponse = await teamClient.updateProfile({
-      contactPerson: newContactPerson,
+    // Update agent profile
+    const newDescription = "Updated agent description";
+    const updateResponse = await agentClient.updateAgentProfile({
+      description: newDescription,
     });
 
     expect(updateResponse.success).toBe(true);
-    expect((updateResponse as TeamProfileResponse).team).toBeDefined();
-    expect((updateResponse as TeamProfileResponse).team.contactPerson).toBe(
-      newContactPerson,
+    expect((updateResponse as AgentProfileResponse).agent).toBeDefined();
+    expect((updateResponse as AgentProfileResponse).agent.description).toBe(
+      newDescription,
     );
 
     // Verify changes persisted
-    const profileResponse = await teamClient.getProfile();
+    const profileResponse = await agentClient.getAgentProfile();
     expect(profileResponse.success).toBe(true);
-    expect((profileResponse as TeamProfileResponse).team.contactPerson).toBe(
-      newContactPerson,
+    expect((profileResponse as AgentProfileResponse).agent.description).toBe(
+      newDescription,
     );
   });
 
-  test("teams can update their profile metadata", async () => {
+  test("agents can update their profile with name and imageUrl", async () => {
     // Setup admin client
     const client = createTestClient();
     console.log(
@@ -124,44 +138,46 @@ describe("Agent API", () => {
     const loginSuccess = await client.loginAsAdmin(adminApiKey);
     console.log(`TEST: Login result: ${loginSuccess}`);
 
-    // Register a team
-    const { client: teamClient } = await registerTeamAndGetClient(adminApiKey);
+    // Register a user and agent
+    const { client: agentClient } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+    });
 
-    // Define metadata for the update
-    const metadata = {
-      ref: {
-        name: "TradingBot",
-        version: "1.0.0",
-        url: "https://github.com/example/trading-bot",
-      },
-      description: "An algorithmic trading bot for the competition",
-      social: {
-        name: "Trading Team",
-        email: "contact@tradingteam.com",
-        twitter: "@tradingbot",
-      },
-    };
+    // Define update data for the agent (excluding metadata since it's not allowed in agent self-service)
+    const newName = "Updated Agent Name";
+    const newDescription = "Updated agent description";
+    const newImageUrl = "https://example.com/new-agent-image.jpg";
 
-    // Update team profile with metadata
-    const updateResponse = await teamClient.updateProfile({
-      metadata,
+    // Update agent profile with all allowed fields
+    const updateResponse = await agentClient.updateAgentProfile({
+      name: newName,
+      description: newDescription,
+      imageUrl: newImageUrl,
     });
 
     expect(updateResponse.success).toBe(true);
-    expect((updateResponse as TeamProfileResponse).team).toBeDefined();
-    expect((updateResponse as TeamProfileResponse).team.metadata).toEqual(
-      metadata,
+    expect((updateResponse as AgentProfileResponse).agent).toBeDefined();
+    expect((updateResponse as AgentProfileResponse).agent.name).toBe(newName);
+    expect((updateResponse as AgentProfileResponse).agent.description).toBe(
+      newDescription,
+    );
+    expect((updateResponse as AgentProfileResponse).agent.imageUrl).toBe(
+      newImageUrl,
     );
 
     // Verify changes persisted
-    const profileResponse = await teamClient.getProfile();
+    const profileResponse = await agentClient.getAgentProfile();
     expect(profileResponse.success).toBe(true);
-    expect((profileResponse as TeamProfileResponse).team.metadata).toEqual(
-      metadata,
+    expect((profileResponse as AgentProfileResponse).agent.name).toBe(newName);
+    expect((profileResponse as AgentProfileResponse).agent.description).toBe(
+      newDescription,
+    );
+    expect((profileResponse as AgentProfileResponse).agent.imageUrl).toBe(
+      newImageUrl,
     );
   });
 
-  test("team cannot authenticate with invalid API key", async () => {
+  test("agent cannot authenticate with invalid API key", async () => {
     // Setup admin client
     const client = createTestClient();
     // Attempt to login as admin with correct API key
@@ -171,16 +187,16 @@ describe("Agent API", () => {
     const loginSuccess = await client.loginAsAdmin(adminApiKey);
     console.log(`TEST: Login result: ${loginSuccess}`);
 
-    // Register a team
-    await registerTeamAndGetClient(adminApiKey);
+    // Register a user and agent
+    await registerUserAndAgentAndGetClient({ adminApiKey });
 
     // Create a client with an invalid API key
     const invalidApiKey = "invalid_key_12345";
-    const invalidClient = client.createTeamClient(invalidApiKey);
+    const invalidClient = client.createAgentClient(invalidApiKey);
 
     // Try to get profile with invalid API key
     try {
-      await invalidClient.getProfile();
+      await invalidClient.getAgentProfile();
       // Should not reach here - authentication should fail
       expect(false).toBe(true); // Force test to fail if we get here
     } catch (error) {
@@ -196,42 +212,59 @@ describe("Agent API", () => {
     }
   });
 
-  test("admin can list all registered teams", async () => {
+  test("admin can list all registered agents", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
     expect(adminLoginSuccess).toBe(true);
 
-    // Register multiple teams
-    const teamData = [
-      { name: `Team A ${Date.now()}`, email: `teama${Date.now()}@example.com` },
-      { name: `Team B ${Date.now()}`, email: `teamb${Date.now()}@example.com` },
-      { name: `Team C ${Date.now()}`, email: `teamc${Date.now()}@example.com` },
+    // Register multiple users and agents
+    const agentData = [
+      {
+        userName: `User A ${Date.now()}`,
+        userEmail: `usera${Date.now()}@example.com`,
+        agentName: `Agent A ${Date.now()}`,
+      },
+      {
+        userName: `User B ${Date.now()}`,
+        userEmail: `userb${Date.now()}@example.com`,
+        agentName: `Agent B ${Date.now()}`,
+      },
+      {
+        userName: `User C ${Date.now()}`,
+        userEmail: `userc${Date.now()}@example.com`,
+        agentName: `Agent C ${Date.now()}`,
+      },
     ];
 
-    for (const data of teamData) {
-      await registerTeamAndGetClient(adminApiKey, data.name, data.email);
+    for (const data of agentData) {
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        userName: data.userName,
+        userEmail: data.userEmail,
+        agentName: data.agentName,
+      });
     }
 
-    // Admin lists all teams
-    const teamsResponse = await adminClient.listAllTeams();
+    // Admin lists all agents
+    const agentsResponse = await adminClient.listAgents();
 
-    expect(teamsResponse.success).toBe(true);
-    expect((teamsResponse as AdminTeamsListResponse).teams).toBeDefined();
+    expect(agentsResponse.success).toBe(true);
+    expect((agentsResponse as AdminAgentsListResponse).agents).toBeDefined();
     expect(
-      (teamsResponse as AdminTeamsListResponse).teams.length,
-    ).toBeGreaterThanOrEqual(teamData.length);
+      (agentsResponse as AdminAgentsListResponse).agents.length,
+    ).toBeGreaterThanOrEqual(agentData.length);
 
-    // Verify all our teams are in the list
-    for (const data of teamData) {
-      const foundTeam = (teamsResponse as AdminTeamsListResponse).teams.find(
-        (t) => t.name === data.name && t.email === data.email,
-      );
-      expect(foundTeam).toBeDefined();
+    // Verify all our agents are in the list
+    for (const data of agentData) {
+      const foundAgent = (
+        agentsResponse as AdminAgentsListResponse
+      ).agents.find((a) => a.name === data.agentName);
+      expect(foundAgent).toBeDefined();
     }
   });
 
-  test("team can retrieve profile with metadata", async () => {
+  test("agent can retrieve profile with metadata", async () => {
     // Setup admin client
     const client = createTestClient();
     console.log(
@@ -240,8 +273,8 @@ describe("Agent API", () => {
     const loginSuccess = await client.loginAsAdmin(adminApiKey);
     console.log(`TEST: Login result: ${loginSuccess}`);
 
-    // Define metadata for the team
-    const metadata: TeamMetadata = {
+    // Define metadata for the agent
+    const metadata: AgentMetadata = {
       ref: {
         name: "ProfileTestBot",
         version: "1.5.0",
@@ -249,64 +282,75 @@ describe("Agent API", () => {
       },
       description: "A bot for testing profile retrieval",
       social: {
-        name: "Profile Testing Team",
-        email: "profile@testingteam.com",
+        name: "Profile Testing Agent",
+        email: "profile@testingagent.com",
         twitter: "@profilebot",
       },
     };
 
-    // Register a team with metadata
-    const teamName = `Profile Metadata Team ${Date.now()}`;
-    const email = `profile-metadata-${Date.now()}@example.com`;
-    const contactPerson = "Profile Test Contact";
+    // Register a user and agent with metadata
+    const userName = `Profile Metadata User ${Date.now()}`;
+    const userEmail = `profile-metadata-${Date.now()}@example.com`;
+    const agentName = `Profile Metadata Agent ${Date.now()}`;
+    const agentDescription = "Agent for testing profile retrieval";
 
-    // Register team with metadata
-    const registerResponse = await client.registerTeam(
-      teamName,
-      email,
-      contactPerson,
+    // Register user and agent with metadata
+    const registerResponse = await client.registerUser(
+      generateRandomEthAddress(),
+      userName,
+      userEmail,
+      undefined,
+      agentName,
+      agentDescription,
       undefined,
       metadata,
     );
     expect(registerResponse.success).toBe(true);
 
-    // Create a client for the new team
-    const registrationResponse = registerResponse as TeamRegistrationResponse;
-    const teamClient = client.createTeamClient(
-      registrationResponse.team.apiKey,
+    // Create a client for the new agent
+    const registrationResponse = registerResponse as UserRegistrationResponse;
+    expect(registrationResponse.agent).toBeDefined();
+    if (!registrationResponse.agent || !registrationResponse.agent.apiKey) {
+      throw new Error("Agent or API key not created during registration");
+    }
+    const agentClient = client.createAgentClient(
+      registrationResponse.agent.apiKey,
     );
 
-    // Get the team profile
-    const profileResponse = await teamClient.getProfile();
-    const teamProfile = profileResponse as TeamProfileResponse;
+    // Get the agent profile
+    const profileResponse = await agentClient.getAgentProfile();
+    const agentProfile = profileResponse as AgentProfileResponse;
 
     // Verify all profile fields including metadata
-    expect(teamProfile.success).toBe(true);
-    expect(teamProfile.team.id).toBeDefined();
-    expect(teamProfile.team.name).toBe(teamName);
-    expect(teamProfile.team.email).toBe(email);
-    expect(teamProfile.team.contactPerson).toBe(contactPerson);
-    expect(teamProfile.team.metadata).toEqual(metadata);
-    expect(teamProfile.team.createdAt).toBeDefined();
-    expect(teamProfile.team.updatedAt).toBeDefined();
+    expect(agentProfile.success).toBe(true);
+    expect(agentProfile.agent.id).toBeDefined();
+    expect(agentProfile.agent.name).toBe(agentName);
+    expect(agentProfile.agent.description).toBe(agentDescription);
+    expect(agentProfile.agent.metadata).toEqual(metadata);
+    expect(agentProfile.agent.createdAt).toBeDefined();
+    expect(agentProfile.agent.updatedAt).toBeDefined();
+    expect(agentProfile.owner.id).toBeDefined();
+    expect(agentProfile.owner.name).toBe(userName);
+    expect(agentProfile.owner.email).toBe(userEmail);
   });
 
-  test("team can continue using API between competitions after inactiveTeamsCache fix", async () => {
+  test("agent can continue using API between competitions after inactiveAgentsCache fix", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
     expect(adminLoginSuccess).toBe(true);
 
-    // Step 1: Register a team
-    const teamName = `Test Team ${Date.now()}`;
-    const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
-      teamName,
-    );
-    expect(team).toBeDefined();
-    expect(team.id).toBeDefined();
+    // Step 1: Register a user and agent
+    const agentName = `Test Agent ${Date.now()}`;
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName,
+      });
+    expect(agent).toBeDefined();
+    expect(agent.id).toBeDefined();
 
-    // Step 2: Create and start first competition with the team
+    // Step 2: Create and start first competition with the agent
     const firstCompName = `Competition 1 ${Date.now()}`;
     const createCompResult = await adminClient.createCompetition(
       firstCompName,
@@ -316,19 +360,19 @@ describe("Agent API", () => {
     const createCompResponse = createCompResult as CreateCompetitionResponse;
     const firstCompetitionId = createCompResponse.competition.id;
 
-    // Start the first competition with our team
+    // Start the first competition with our agent
     const startCompResult = await adminClient.startExistingCompetition(
       firstCompetitionId,
-      [team.id],
+      [agent.id],
     );
     expect(startCompResult.success).toBe(true);
 
-    // Verify team can use API during first competition
-    const firstProfileResponse = await teamClient.getProfile();
+    // Verify agent can use API during first competition
+    const firstProfileResponse = await agentClient.getAgentProfile();
     expect(firstProfileResponse.success).toBe(true);
 
     // Get a token price to confirm API functionality
-    const firstPriceResponse = await teamClient.getPrice(
+    const firstPriceResponse = await agentClient.getPrice(
       "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
     ); // WETH token
     expect(firstPriceResponse.success).toBe(true);
@@ -339,7 +383,7 @@ describe("Agent API", () => {
     const endCompResult = await adminClient.endCompetition(firstCompetitionId);
     expect(endCompResult.success).toBe(true);
 
-    // Step 4: Create and start a second competition with the same team
+    // Step 4: Create and start a second competition with the same agent
     const secondCompName = `Competition 2 ${Date.now()}`;
     const createCompResult2 = await adminClient.createCompetition(
       secondCompName,
@@ -349,20 +393,20 @@ describe("Agent API", () => {
     const createCompResponse2 = createCompResult2 as CreateCompetitionResponse;
     const secondCompetitionId = createCompResponse2.competition.id;
 
-    // Start the second competition with the same team
+    // Start the second competition with the same agent
     const startCompResult2 = await adminClient.startExistingCompetition(
       secondCompetitionId,
-      [team.id],
+      [agent.id],
     );
     expect(startCompResult2.success).toBe(true);
 
-    // Step 5: Verify team can still use API after being added to second competition
-    // This validates our fix for the inactiveTeamsCache issue
-    const secondProfileResponse = await teamClient.getProfile();
+    // Step 5: Verify agent can still use API after being added to second competition
+    // This validates our fix for the inactiveAgentsCache issue
+    const secondProfileResponse = await agentClient.getAgentProfile();
     expect(secondProfileResponse.success).toBe(true);
 
     // Get a token price to confirm API functionality is working after being re-added
-    const secondPriceResponse = await teamClient.getPrice(
+    const secondPriceResponse = await agentClient.getPrice(
       "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
     ); // WETH token
     expect(secondPriceResponse.success).toBe(true);
@@ -370,24 +414,24 @@ describe("Agent API", () => {
     expect(secondPriceData.price).toBeGreaterThan(0);
   });
 
-  test("team profile updates maintain cache consistency", async () => {
+  test("agent profile updates maintain cache consistency", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
     expect(adminLoginSuccess).toBe(true);
 
-    // Step 1: Register a team
-    const teamName = `Cache Test Team ${Date.now()}`;
-    const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
-      teamName,
-    );
-    expect(team).toBeDefined();
-    expect(team.id).toBeDefined();
-    expect(team.imageUrl).toBeNull(); // No initial imageUrl (database returns null, not undefined)
-    expect(team.metadata).toBeNull(); // No initial metadata (database returns null, not undefined)
+    // Step 1: Register a user and agent
+    const agentName = `Cache Test Agent ${Date.now()}`;
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName,
+      });
+    expect(agent).toBeDefined();
+    expect(agent.id).toBeDefined();
+    expect(agent.imageUrl).toBeNull(); // No initial imageUrl (database returns null, not undefined)
 
-    // Step 2: Create and start a competition with the team
+    // Step 2: Create and start a competition with the agent
     const compName = `Cache Test Competition ${Date.now()}`;
     const createCompResult = await adminClient.createCompetition(
       compName,
@@ -397,103 +441,99 @@ describe("Agent API", () => {
     const createCompResponse = createCompResult as CreateCompetitionResponse;
     const competitionId = createCompResponse.competition.id;
 
-    // Start the competition with our team
+    // Start the competition with our agent
     const startCompResult = await adminClient.startExistingCompetition(
       competitionId,
-      [team.id],
+      [agent.id],
     );
     expect(startCompResult.success).toBe(true);
 
     // Step 3: Verify initial API functionality
-    const initialProfileResponse = await teamClient.getProfile();
+    const initialProfileResponse = await agentClient.getAgentProfile();
     expect(initialProfileResponse.success).toBe(true);
 
-    // Step 4: Update the team's profile multiple times in rapid succession
+    // Step 4: Update the agent's profile multiple times in rapid succession
     // This tests that cache consistency is maintained during updates
-    const metadata = {
-      description: "Testing cache consistency",
-      version: "1.0",
-    };
+    const newName = "Cache Test Agent Updated";
 
-    // Update 1: Set metadata
-    const updateResponse1 = await teamClient.updateProfile({ metadata });
+    // Update 1: Set name
+    const updateResponse1 = await agentClient.updateAgentProfile({
+      name: newName,
+    });
     expect(updateResponse1.success).toBe(true);
 
     // Immediately verify API still works
-    const priceResponse1 = await teamClient.getPrice(
+    const priceResponse1 = await agentClient.getPrice(
       "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
     );
     expect(priceResponse1.success).toBe(true);
 
-    // Update 2: Change contact person
-    const newContactPerson = `Cache Test Contact ${Date.now()}`;
-    const updateResponse2 = await teamClient.updateProfile({
-      contactPerson: newContactPerson,
+    // Update 2: Change description
+    const newDescription = `Cache Test Description ${Date.now()}`;
+    const updateResponse2 = await agentClient.updateAgentProfile({
+      description: newDescription,
     });
     expect(updateResponse2.success).toBe(true);
 
     // Immediately verify API still works
-    const priceResponse2 = await teamClient.getPrice(
+    const priceResponse2 = await agentClient.getPrice(
       "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
     ); // USDC token
     expect(priceResponse2.success).toBe(true);
 
-    // Update 3: Change both metadata and contact person
-    const newMetadata = {
-      ...metadata,
-      version: "1.1",
-      notes: "Updated during test",
-    };
-    const updateResponse3 = await teamClient.updateProfile({
-      contactPerson: `${newContactPerson} Updated`,
-      metadata: newMetadata,
+    // Update 3: Change both name and description
+    const updateResponse3 = await agentClient.updateAgentProfile({
+      name: `${newName} Final`,
+      description: `${newDescription} Updated`,
     });
     expect(updateResponse3.success).toBe(true);
 
     // Step 5: Verify final profile state
-    const finalProfileResponse = await teamClient.getProfile();
+    const finalProfileResponse = await agentClient.getAgentProfile();
     expect(finalProfileResponse.success).toBe(true);
-    expect(
-      (finalProfileResponse as TeamProfileResponse).team.contactPerson,
-    ).toBe(`${newContactPerson} Updated`);
-    expect((finalProfileResponse as TeamProfileResponse).team.metadata).toEqual(
-      newMetadata,
+    expect((finalProfileResponse as AgentProfileResponse).agent.name).toBe(
+      `${newName} Final`,
     );
+    expect(
+      (finalProfileResponse as AgentProfileResponse).agent.description,
+    ).toBe(`${newDescription} Updated`);
 
     // Step 6: Make multiple API calls to verify authentication still works
     // This confirms the apiKeyCache remains consistent
     for (let i = 0; i < 3; i++) {
-      const verifyResponse = await teamClient.getBalance();
+      const verifyResponse = await agentClient.getBalance();
       expect(verifyResponse.success).toBe(true);
     }
   });
 
-  test("team can reset their API key", async () => {
+  test("agent can reset their API key", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
     expect(adminLoginSuccess).toBe(true);
 
-    // Step 1: Register a new team
-    const teamName = `API Reset Team ${Date.now()}`;
-    const email = `api-reset-${Date.now()}@example.com`;
-    const contactPerson = "API Reset Contact";
+    // Step 1: Register a new user and agent
+    const userName = `API Reset User ${Date.now()}`;
+    const userEmail = `api-reset-${Date.now()}@example.com`;
+    const agentName = `API Reset Agent ${Date.now()}`;
+    const agentDescription = "Agent for API key reset testing";
 
-    // Register the team
-    const { client: teamClient, apiKey: originalApiKey } =
-      await registerTeamAndGetClient(
+    // Register the user and agent
+    const { client: agentClient, apiKey: originalApiKey } =
+      await registerUserAndAgentAndGetClient({
         adminApiKey,
-        teamName,
-        email,
-        contactPerson,
-      );
+        userName,
+        userEmail,
+        agentName,
+        agentDescription,
+      });
 
     // Step 2: Verify initial authentication works
-    const profileResponse = await teamClient.getProfile();
+    const profileResponse = await agentClient.getAgentProfile();
     expect(profileResponse.success).toBe(true);
 
     // Step 3: Reset the API key
-    const resetResponse = await teamClient.resetApiKey();
+    const resetResponse = await agentClient.resetApiKey();
     expect(resetResponse.success).toBe(true);
 
     const resetApiKeyResponse = resetResponse as ResetApiKeyResponse;
@@ -502,16 +542,16 @@ describe("Agent API", () => {
 
     // Step 4: Create a client with the new API key
     const newApiKey = resetApiKeyResponse.apiKey;
-    const newClient = adminClient.createTeamClient(newApiKey);
+    const newClient = adminClient.createAgentClient(newApiKey);
 
     // Step 5: Verify authentication with the new API key works
-    const newProfileResponse = await newClient.getProfile();
+    const newProfileResponse = await newClient.getAgentProfile();
     expect(newProfileResponse.success).toBe(true);
 
     // Step 6: Verify the old API key no longer works and provides a helpful error message
-    const oldClient = adminClient.createTeamClient(originalApiKey);
+    const oldClient = adminClient.createAgentClient(originalApiKey);
     try {
-      await oldClient.getProfile();
+      await oldClient.getAgentProfile();
       // Should not reach here - authentication should fail
       expect(false).toBe(true); // Force test to fail if we get here
     } catch (error) {
@@ -528,140 +568,139 @@ describe("Agent API", () => {
     }
   });
 
-  test("teams can set and update imageUrl", async () => {
+  test("agents can set and update imageUrl", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
     expect(adminLoginSuccess).toBe(true);
 
-    // Step 1: Register a team with initial imageUrl
-    const teamName = `Image Test Team ${Date.now()}`;
-    const email = `image-test-${Date.now()}@example.com`;
-    const contactPerson = "Image Test Contact";
-    const walletAddress = generateRandomEthAddress();
-    const initialImageUrl = "https://example.com/team-image-initial.jpg";
+    // Step 1: Register a user and agent with initial imageUrl
+    const userName = `Image Test User ${Date.now()}`;
+    const userEmail = `image-test-${Date.now()}@example.com`;
+    const agentName = `Image Test Agent ${Date.now()}`;
+    const agentDescription = "Agent for image testing";
+    const userWalletAddress = generateRandomEthAddress();
+    const initialImageUrl = "https://example.com/agent-image-initial.jpg";
 
-    // Register the team with an initial image URL
-    const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
-      teamName,
-      email,
-      contactPerson,
-      walletAddress,
-      initialImageUrl,
-    );
+    // Register the user and agent with an initial image URL
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        walletAddress: userWalletAddress,
+        userName,
+        userEmail,
+        agentName,
+        agentDescription,
+        agentImageUrl: initialImageUrl,
+      });
 
-    expect(team).toBeDefined();
-    expect(team.id).toBeDefined();
-    expect(team.imageUrl).toBe(initialImageUrl);
+    expect(agent).toBeDefined();
+    expect(agent.id).toBeDefined();
+    expect(agent.imageUrl).toBe(initialImageUrl);
 
     // Step 2: Verify the imageUrl is included in the profile
-    const profileResponse = await teamClient.getProfile();
+    const profileResponse = await agentClient.getAgentProfile();
     expect(profileResponse.success).toBe(true);
-    expect((profileResponse as TeamProfileResponse).team.imageUrl).toBe(
+    expect((profileResponse as AgentProfileResponse).agent.imageUrl).toBe(
       initialImageUrl,
     );
 
-    // Step 3: Update the team's imageUrl
-    const updatedImageUrl = "https://example.com/team-image-updated.jpg";
-    const updateResponse = await teamClient.updateProfile({
+    // Step 3: Update the agent's imageUrl
+    const updatedImageUrl = "https://example.com/agent-image-updated.jpg";
+    const updateResponse = await agentClient.updateAgentProfile({
       imageUrl: updatedImageUrl,
     });
 
     expect(updateResponse.success).toBe(true);
-    expect((updateResponse as TeamProfileResponse).team.imageUrl).toBe(
+    expect((updateResponse as AgentProfileResponse).agent.imageUrl).toBe(
       updatedImageUrl,
     );
 
     // Step 4: Verify changes persisted
-    const updatedProfileResponse = await teamClient.getProfile();
+    const updatedProfileResponse = await agentClient.getAgentProfile();
     expect(updatedProfileResponse.success).toBe(true);
-    expect((updatedProfileResponse as TeamProfileResponse).team.imageUrl).toBe(
-      updatedImageUrl,
-    );
+    expect(
+      (updatedProfileResponse as AgentProfileResponse).agent.imageUrl,
+    ).toBe(updatedImageUrl);
 
-    // Step 5: Verify admin can see the updated imageUrl in team listings
-    const teamsResponse = await adminClient.listAllTeams();
-    expect(teamsResponse.success).toBe(true);
+    // Step 5: Verify admin can see the updated imageUrl in agent listings
+    const agentsResponse = await adminClient.listAgents();
+    expect(agentsResponse.success).toBe(true);
 
-    const foundTeam = (teamsResponse as AdminTeamsListResponse).teams.find(
-      (t) => t.id === team.id,
+    const foundAgent = (agentsResponse as AdminAgentsListResponse).agents.find(
+      (a) => a.id === agent.id,
     );
-    expect(foundTeam).toBeDefined();
-    expect(foundTeam?.imageUrl).toBe(updatedImageUrl);
+    expect(foundAgent).toBeDefined();
+    expect(foundAgent?.imageUrl).toBe(updatedImageUrl);
   });
 
-  test("teams can update both metadata and imageUrl in a single request", async () => {
+  test("agents can update both name and imageUrl in a single request", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
     expect(adminLoginSuccess).toBe(true);
 
-    // Register a team without initial metadata or imageUrl
-    const teamName = `Combined Update Team ${Date.now()}`;
-    const email = `combined-update-${Date.now()}@example.com`;
-    const contactPerson = "Combined Update Contact";
+    // Register a user and agent without initial metadata or imageUrl
+    const userName = `Combined Update User ${Date.now()}`;
+    const userEmail = `combined-update-${Date.now()}@example.com`;
+    const agentName = `Combined Update Agent ${Date.now()}`;
+    const agentDescription = "Agent for combined updates";
 
-    const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
-      teamName,
-      email,
-      contactPerson,
-    );
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        userName,
+        userEmail,
+        agentName,
+        agentDescription,
+      });
 
-    expect(team).toBeDefined();
-    expect(team.id).toBeDefined();
-    expect(team.imageUrl).toBeNull(); // No initial imageUrl (database returns null, not undefined)
-    expect(team.metadata).toBeNull(); // No initial metadata (database returns null, not undefined)
+    expect(agent).toBeDefined();
+    expect(agent.id).toBeDefined();
+    expect(agent.imageUrl).toBeNull(); // No initial imageUrl (database returns null, not undefined)
 
     // Define new values for both fields
-    const newMetadata: TeamMetadata = {
-      ref: {
-        name: "CombinedBot",
-        version: "1.0.0",
-      },
-      description: "Testing combined updates",
-      social: {
-        name: "Combined Team",
-        email: "combined@test.com",
-        twitter: "@combinedbot",
-      },
-    };
+    const newName = "Combined Bot";
     const newImageUrl = "https://example.com/combined-update-image.jpg";
 
     // Update both fields in a single request
-    const updateResponse = await teamClient.updateProfile({
-      metadata: newMetadata,
+    const updateResponse = await agentClient.updateAgentProfile({
+      name: newName,
       imageUrl: newImageUrl,
     });
 
     expect(updateResponse.success).toBe(true);
-    expect((updateResponse as TeamProfileResponse).team.metadata).toEqual(
-      newMetadata,
-    );
-    expect((updateResponse as TeamProfileResponse).team.imageUrl).toBe(
+    expect((updateResponse as AgentProfileResponse).agent.name).toBe(newName);
+    expect((updateResponse as AgentProfileResponse).agent.imageUrl).toBe(
       newImageUrl,
     );
 
     // Verify changes persisted
-    const profileResponse = await teamClient.getProfile();
+    const profileResponse = await agentClient.getAgentProfile();
     expect(profileResponse.success).toBe(true);
 
-    const updatedProfile = (profileResponse as TeamProfileResponse).team;
-    expect(updatedProfile.metadata).toEqual(newMetadata);
+    const updatedProfile = (profileResponse as AgentProfileResponse).agent;
+    expect(updatedProfile.name).toBe(newName);
     expect(updatedProfile.imageUrl).toBe(newImageUrl);
 
     // Verify admin can see both updated fields
-    const searchResponse = await adminClient.searchTeams({
-      email: email,
+    const searchResponse = await adminClient.searchUsersAndAgents({
+      email: userEmail,
     });
 
     expect(searchResponse.success).toBe(true);
-    const foundTeam = (searchResponse as AdminTeamsListResponse).teams.find(
-      (t) => t.email === email,
+    // Note: searchUsersAndAgents returns both users and agents, so we need to find the agent
+    const searchResults =
+      searchResponse as unknown as AdminSearchUsersAndAgentsResponse;
+    expect(searchResults.success).toBe(true);
+    expect(searchResults.results.users).toBeDefined();
+    expect(searchResults.results.agents).toBeDefined();
+    const foundAgent = searchResults.results.agents.find(
+      (a: AdminSearchUsersAndAgentsResponse["results"]["agents"][number]) =>
+        a.id === agent.id,
     );
 
-    expect(foundTeam).toBeDefined();
-    expect(foundTeam?.imageUrl).toBe(newImageUrl);
+    expect(foundAgent).toBeDefined();
+    expect(foundAgent?.imageUrl).toBe(newImageUrl);
   });
 });

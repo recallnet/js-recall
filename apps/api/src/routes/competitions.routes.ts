@@ -452,7 +452,7 @@ export function configureCompetitionsRoutes(
    *       500:
    *         description: Server error
    */
-  router.get("/upcoming", controller.getUpcoming);
+  router.get("/upcoming", controller.getUpcomingCompetitions);
 
   return router;
 }

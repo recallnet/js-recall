@@ -522,3 +522,35 @@ export interface LoginResponse {
 export interface LogoutResponse {
   message: string;
 }
+
+// TODO: figure out types wrt duplication in admin controller
+export interface AdminSearchUsersAndAgentsResponse {
+  success: boolean;
+  searchType: string;
+  results: {
+    users: {
+      id: string;
+      walletAddress: string;
+      name: string | null;
+      email: string | null;
+      imageUrl: string | null;
+      metadata: unknown;
+      status: "active" | "suspended" | "deleted";
+      createdAt: Date;
+      updatedAt: Date;
+    }[];
+    agents: {
+      id: string;
+      ownerId: string;
+      walletAddress: string | null;
+      name: string;
+      description: string | null;
+      imageUrl: string | null;
+      apiKey: string;
+      metadata: unknown;
+      status: "active" | "suspended" | "deleted";
+      createdAt: Date;
+      updatedAt: Date;
+    }[];
+  };
+}

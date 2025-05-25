@@ -3,16 +3,15 @@ import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { db } from "@/database/db.js";
-import { teams } from "@/database/schema/core/defs.js";
+import { agents } from "@/database/schema/core/defs.js";
 import {
-  Competition,
+  AgentProfileResponse,
   CompetitionRulesResponse,
   CompetitionStatusResponse,
   CreateCompetitionResponse,
   CrossChainTradingType,
   EndCompetitionResponse,
   LeaderboardResponse,
-  TeamProfileResponse,
   UpcomingCompetitionsResponse,
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
@@ -23,7 +22,7 @@ import {
   cleanupTestState,
   createTestClient,
   createTestCompetition,
-  registerTeamAndGetClient,
+  registerUserAndAgentAndGetClient,
   startExistingTestCompetition,
   startTestCompetition,
 } from "@/e2e/utils/test-helpers.js";
@@ -49,36 +48,36 @@ describe("Competition API", () => {
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
-  test("should start a competition with registered teams", async () => {
+  test("should start a competition with registered agents", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register teams
-    const { team: team1 } = await registerTeamAndGetClient(
+    // Register agents
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Team Alpha",
-    );
-    const { team: team2 } = await registerTeamAndGetClient(
+      agentName: "Agent Alpha",
+    });
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Team Beta",
-    );
+      agentName: "Agent Beta",
+    });
 
     // Start a competition
     const competitionName = `Test Competition ${Date.now()}`;
     const competitionResponse = await startTestCompetition(
       adminClient,
       competitionName,
-      [team1.id, team2.id],
+      [agent1.id, agent2.id],
     );
 
     // Verify competition was started
     const competition = competitionResponse.competition;
     expect(competition).toBeDefined();
     expect(competition.name).toBe(competitionName);
-    expect(competition.status).toBe("active");
-    expect(competition.teamIds).toContain(team1.id);
-    expect(competition.teamIds).toContain(team2.id);
+    expect(competition.status).toBe("ACTIVE");
+    expect(competition.agentIds).toContain(agent1.id);
+    expect(competition.agentIds).toContain(agent2.id);
   });
 
   test("should create a competition without starting it", async () => {
@@ -102,20 +101,20 @@ describe("Competition API", () => {
     expect(competition.endDate).toBeNull();
   });
 
-  test("should start an existing competition with teams", async () => {
+  test("should start an existing competition with agents", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register teams
-    const { team: team1 } = await registerTeamAndGetClient(
+    // Register agents
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Team Delta",
-    );
-    const { team: team2 } = await registerTeamAndGetClient(
+      agentName: "Agent Delta",
+    });
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Team Echo",
-    );
+      agentName: "Agent Echo",
+    });
 
     // Create a competition without starting it
     const competitionName = `Two-Stage Competition ${Date.now()}`;
@@ -133,7 +132,7 @@ describe("Competition API", () => {
     const startResponse = await startExistingTestCompetition(
       adminClient,
       pendingCompetition.id,
-      [team1.id, team2.id],
+      [agent1.id, agent2.id],
     );
 
     // Verify competition was started
@@ -143,8 +142,8 @@ describe("Competition API", () => {
     expect(activeCompetition.name).toBe(competitionName);
     expect(activeCompetition.status).toBe("active");
     expect(activeCompetition.startDate).toBeDefined();
-    expect(activeCompetition.teamIds).toContain(team1.id);
-    expect(activeCompetition.teamIds).toContain(team2.id);
+    expect(activeCompetition.agentIds).toContain(agent1.id);
+    expect(activeCompetition.agentIds).toContain(agent2.id);
   });
 
   test("should not allow starting a non-pending competition", async () => {
@@ -152,22 +151,22 @@ describe("Competition API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register teams
-    const { team: team1 } = await registerTeamAndGetClient(
+    // Register agents
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Team Foxtrot",
-    );
-    const { team: team2 } = await registerTeamAndGetClient(
+      agentName: "Agent Foxtrot",
+    });
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Team Golf",
-    );
+      agentName: "Agent Golf",
+    });
 
     // Create and start a competition
     const competitionName = `Already Active Competition ${Date.now()}`;
     const startResponse = await startTestCompetition(
       adminClient,
       competitionName,
-      [team1.id],
+      [agent1.id],
     );
 
     const activeCompetition = startResponse.competition;
@@ -176,8 +175,8 @@ describe("Competition API", () => {
     // Try to start the same competition again
     try {
       await startExistingTestCompetition(adminClient, activeCompetition.id, [
-        team1.id,
-        team2.id,
+        agent1.id,
+        agent2.id,
       ]);
 
       // Should not reach this line
@@ -193,8 +192,8 @@ describe("Competition API", () => {
     // Verify through direct API call to see the actual error
     try {
       await adminClient.startExistingCompetition(activeCompetition.id, [
-        team1.id,
-        team2.id,
+        agent1.id,
+        agent2.id,
       ]);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
@@ -203,75 +202,79 @@ describe("Competition API", () => {
     }
   });
 
-  test("teams can view competition status and leaderboard", async () => {
-    // Setup admin client and register a team
+  test("agents can view competition status and leaderboard", async () => {
+    // Setup admin client and register an agent
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
-      "Team Gamma",
-    );
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent Gamma",
+      });
 
-    // Admin starts a competition with the team
+    // Admin starts a competition with the agent
     const competitionName = `Viewable Competition ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [agent.id]);
 
-    // Team checks competition status
+    // Agent checks competition status
     const statusResponse =
-      (await teamClient.getCompetitionStatus()) as CompetitionStatusResponse;
+      (await agentClient.getCompetitionStatus()) as CompetitionStatusResponse;
     expect(statusResponse.success).toBe(true);
     expect(statusResponse.competition).toBeDefined();
     expect(statusResponse.competition?.name).toBe(competitionName);
     expect(statusResponse.competition?.status).toBe("active");
 
-    // Team checks leaderboard
+    // Agent checks leaderboard
     const leaderboardResponse =
-      (await teamClient.getLeaderboard()) as LeaderboardResponse;
+      (await agentClient.getLeaderboard()) as LeaderboardResponse;
     expect(leaderboardResponse.success).toBe(true);
     expect(leaderboardResponse.leaderboard).toBeDefined();
     expect(leaderboardResponse.leaderboard).toBeInstanceOf(Array);
 
-    // There should be one team in the leaderboard
+    // There should be one agent in the leaderboard
     expect(leaderboardResponse.leaderboard.length).toBe(1);
 
-    // The team should be in the leaderboard
-    const teamInLeaderboard = leaderboardResponse.leaderboard.find(
-      (entry) => entry.teamName === "Team Gamma",
+    // The agent should be in the leaderboard
+    const agentInLeaderboard = leaderboardResponse.leaderboard.find(
+      (entry) => entry.agentName === "Agent Gamma",
     );
-    expect(teamInLeaderboard).toBeDefined();
+    expect(agentInLeaderboard).toBeDefined();
   });
 
-  test("teams receive basic information for competitions they are not part of", async () => {
+  test("agents receive basic information for competitions they are not part of", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register teams - one in the competition, one not
-    const { client: teamInClient, team: teamIn } =
-      await registerTeamAndGetClient(adminApiKey, "Inside Team");
-    const { client: teamOutClient } = await registerTeamAndGetClient(
+    // Register agents - one in the competition, one not
+    const { client: agentInClient, agent: agentIn } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Inside Agent",
+      });
+    const { client: agentOutClient } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Outside Team",
-    );
+      agentName: "Outside Agent",
+    });
 
-    // Start a competition with only one team
+    // Start a competition with only one agent
     await startTestCompetition(
       adminClient,
       `Exclusive Competition ${Date.now()}`,
-      [teamIn.id],
+      [agentIn.id],
     );
 
-    // Team in competition checks status - should succeed
+    // Agent in competition checks status - should succeed
     const statusInResponse =
-      (await teamInClient.getCompetitionStatus()) as CompetitionStatusResponse;
+      (await agentInClient.getCompetitionStatus()) as CompetitionStatusResponse;
     expect(statusInResponse.success).toBe(true);
     expect(statusInResponse.competition).toBeDefined();
     expect(statusInResponse.participating).toBe(true);
 
-    // Team not in competition checks status - should show limited competition info
+    // Agent not in competition checks status - should show limited competition info
     const statusOutResponse =
-      (await teamOutClient.getCompetitionStatus()) as CompetitionStatusResponse;
+      (await agentOutClient.getCompetitionStatus()) as CompetitionStatusResponse;
     expect(statusOutResponse.success).toBe(true);
     expect(statusOutResponse.active).toBe(true);
     expect(statusOutResponse.competition).toBeDefined();
@@ -279,36 +282,45 @@ describe("Competition API", () => {
     expect(statusOutResponse.competition?.name).toBeDefined();
     expect(statusOutResponse.competition?.status).toBeDefined();
     expect(statusOutResponse.message).toBe(
-      "Your team is not participating in this competition",
+      "Your agent is not participating in this competition",
     );
-    expect(statusOutResponse.participating).toBeUndefined();
+    expect(statusOutResponse.participating).toBe(false);
   });
 
-  test("admin can access competition endpoints without being a participant", async () => {
+  test("admin can access competition status without being a participant", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register a regular team
-    const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
-      "Regular Team",
-    );
+    // Register a regular agent
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Regular Agent",
+      });
 
-    // Start a competition with only the regular team (admin is not a participant)
+    // Start a competition with only the regular agent (admin is not a participant)
     const competitionName = `Admin Access Test Competition ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [agent.id]);
 
-    // Admin checks competition status
+    // Admin checks competition status with full details
     const adminStatusResponse =
       (await adminClient.getCompetitionStatus()) as CompetitionStatusResponse;
     expect(adminStatusResponse.success).toBe(true);
     expect(adminStatusResponse.active).toBe(true);
     expect(adminStatusResponse.competition).toBeDefined();
     expect(adminStatusResponse.competition?.name).toBe(competitionName);
-    expect(adminStatusResponse.competition?.status).toBe("active");
+    expect(adminStatusResponse.competition?.status).toBe("ACTIVE");
+    expect(adminStatusResponse.competition?.description).toBeDefined();
+    expect(adminStatusResponse.competition?.externalLink).toBeDefined();
+    expect(adminStatusResponse.competition?.imageUrl).toBeDefined();
+    expect(
+      adminStatusResponse.competition?.crossChainTradingType,
+    ).toBeDefined();
+    expect(adminStatusResponse.competition?.startDate).toBeDefined();
+    expect(adminStatusResponse.competition?.endDate).toBeDefined();
 
-    // Admin checks leaderboard
+    // Admin checks leaderboard with no agentId
     const adminLeaderboardResponse =
       (await adminClient.getLeaderboard()) as LeaderboardResponse;
     expect(adminLeaderboardResponse.success).toBe(true);
@@ -316,10 +328,10 @@ describe("Competition API", () => {
     expect(adminLeaderboardResponse.leaderboard).toBeDefined();
     expect(adminLeaderboardResponse.leaderboard).toBeInstanceOf(Array);
 
-    // There should be one team in the leaderboard
+    // There should be one agent in the leaderboard
     expect(adminLeaderboardResponse.leaderboard.length).toBe(1);
-    expect(adminLeaderboardResponse.leaderboard[0]?.teamName).toBe(
-      "Regular Team",
+    expect(adminLeaderboardResponse.leaderboard[0]?.agentName).toBe(
+      "Regular Agent",
     );
 
     // Admin checks competition rules
@@ -333,34 +345,35 @@ describe("Competition API", () => {
     expect(adminRulesResponse.rules.slippageFormula).toBeDefined();
     expect(adminRulesResponse.rules.portfolioSnapshots).toBeDefined();
 
-    // Regular team checks all the same endpoints to verify they work for participants too
-    const teamStatusResponse =
-      (await teamClient.getCompetitionStatus()) as CompetitionStatusResponse;
-    expect(teamStatusResponse.success).toBe(true);
-    expect(teamStatusResponse.active).toBe(true);
+    // Regular agent checks all the same endpoints to verify they work for participants too
+    const agentStatusResponse =
+      (await agentClient.getCompetitionStatus()) as CompetitionStatusResponse;
+    expect(agentStatusResponse.success).toBe(true);
+    expect(agentStatusResponse.active).toBe(true);
 
-    const teamLeaderboardResponse = await teamClient.getLeaderboard();
-    expect(teamLeaderboardResponse.success).toBe(true);
+    const agentLeaderboardResponse = await agentClient.getLeaderboard();
+    expect(agentLeaderboardResponse.success).toBe(true);
 
-    // Regular team checks rules
-    const teamRulesResponse = await teamClient.getRules();
-    expect(teamRulesResponse.success).toBe(true);
+    // Regular agent checks rules
+    const agentRulesResponse = await agentClient.getRules();
+    expect(agentRulesResponse.success).toBe(true);
   });
 
-  test("teams are activated when added to a competition", async () => {
+  test("agents are activated when added to a competition", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register a new team - should be inactive by default
-    const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
-      "Team To Activate",
-    );
+    // Register a new agent - should be inactive by default
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent To Activate",
+      });
 
-    // Team should not be able to access restricted endpoints when inactive
+    // Agent should not be able to access restricted endpoints when inactive
     try {
-      await teamClient.getProfile();
+      await agentClient.getAgentProfile();
       // Should not reach here if properly inactive
       expect(false).toBe(true);
     } catch (error) {
@@ -368,251 +381,96 @@ describe("Competition API", () => {
       expect(error).toBeDefined();
     }
 
-    // Start a competition with the team
+    // Start a competition with the agent
     const competitionName = `Activation Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [agent.id]);
 
-    // Check leaderboard to verify team is now active
+    // Check leaderboard to verify agent is now active
     const leaderboardResponse =
       (await adminClient.getLeaderboard()) as LeaderboardResponse;
     expect(leaderboardResponse.success).toBe(true);
     expect(leaderboardResponse.leaderboard).toBeDefined();
 
-    // Find the team in the leaderboard
-    const teamInLeaderboard = leaderboardResponse.leaderboard.find(
-      (entry) => entry.teamId === team.id,
+    // Find the agent in the leaderboard
+    const agentInLeaderboard = leaderboardResponse.leaderboard.find(
+      (entry) => entry.agentId === agent.id,
     );
-    expect(teamInLeaderboard).toBeDefined();
-    expect(teamInLeaderboard?.active).toBe(true);
+    expect(agentInLeaderboard).toBeDefined();
+    expect(agentInLeaderboard?.active).toBe(true);
 
-    // Team should now be able to access endpoints
+    // Agent should now be able to access endpoints
     const profileResponse =
-      (await teamClient.getProfile()) as TeamProfileResponse;
+      (await agentClient.getAgentProfile()) as AgentProfileResponse;
     expect(profileResponse.success).toBe(true);
-    expect(profileResponse.team).toBeDefined();
+    expect(profileResponse.agent).toBeDefined();
   });
 
-  test("teams are deactivated when a competition ends", async () => {
+  test("agents are deactivated when a competition ends", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register a new team
-    const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
-      "Team To Deactivate",
-    );
+    // Register a new agent
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent To Deactivate",
+      });
 
-    // Start a competition with the team
+    // Start a competition with the agent
     const competitionName = `Deactivation Test ${Date.now()}`;
-    const competition = await startTestCompetition(
+    const startResponse = await startTestCompetition(
       adminClient,
       competitionName,
-      [team.id],
+      [agent.id],
     );
 
-    // Team should be able to access endpoints while competition is active
-    const profileResponse =
-      (await teamClient.getProfile()) as TeamProfileResponse;
-    expect(profileResponse.success).toBe(true);
-    expect(profileResponse.team).toBeDefined();
+    // Agent should be able to access endpoints during competition
+    const activeProfileResponse =
+      (await agentClient.getAgentProfile()) as AgentProfileResponse;
+    expect(activeProfileResponse.success).toBe(true);
 
     // End the competition
     const endResponse = (await adminClient.endCompetition(
-      competition.competition.id,
+      startResponse.competition.id,
     )) as EndCompetitionResponse;
     expect(endResponse.success).toBe(true);
-    expect(endResponse.competition.status).toBe("completed");
 
-    // Give a small delay for deactivation to complete
-    await wait(500);
-    const dbResult = await db.query.teams.findFirst({
-      where: eq(teams.id, team.id),
-    });
+    // Wait a moment for deactivation to process
+    await wait(100);
 
-    // Verify team is marked as inactive in the database
-    expect(dbResult).toBeDefined();
-    expect(dbResult?.active).toBe(false);
-    expect(dbResult?.deactivationReason).toContain("Competition");
-
-    // Team should no longer be able to access restricted endpoints
+    // Agent should now be deactivated and unable to access endpoints
     try {
-      await teamClient.getProfile();
-      // Should not reach here if properly inactive
+      await agentClient.getAgentProfile();
+      // Should not reach here if properly deactivated
       expect(false).toBe(true);
     } catch (error) {
       // Expect error due to inactive status
       expect(error).toBeDefined();
     }
+
+    // Verify through database that agent is deactivated
+    const agentRecord = await db
+      .select()
+      .from(agents)
+      .where(eq(agents.id, agent.id))
+      .limit(1);
+
+    expect(agentRecord.length).toBe(1);
+    expect(agentRecord[0]?.status).toBe("inactive");
+    expect(agentRecord[0]?.deactivationReason).toMatch(/Competition .+ ended/);
+    expect(agentRecord[0]?.deactivationDate).toBeDefined();
   });
 
-  test("creating competition with cross-chain trading parameter", async () => {
-    // Setup admin client
+  test("agents can get list of upcoming competitions", async () => {
+    // Setup admin client and register an agent
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register a team
-    const { client: teamClient, team } = await registerTeamAndGetClient(
+    const { client: agentClient } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Cross-Chain Test Team",
-    );
-
-    // Create and start competition with cross-chain trading enabled
-    const competitionName = `Cross-Chain Competition ${Date.now()}`;
-    const competitionResponse = await adminClient.startCompetition({
-      name: competitionName,
-      teamIds: [team.id],
-      tradingType: CrossChainTradingType.allow,
+      agentName: "Upcoming competitions viewer test",
     });
-
-    expect(competitionResponse.success).toBe(true);
-
-    // Check competition status to verify it was created
-    const statusResponse = await teamClient.getCompetitionStatus();
-    expect(statusResponse.success).toBe(true);
-
-    if (statusResponse.success && statusResponse.competition) {
-      expect(statusResponse.competition.name).toBe(competitionName);
-    }
-
-    // Check competition rules to verify cross-chain trading is enabled
-    const rulesResponse = await teamClient.getRules();
-    expect(rulesResponse.success).toBe(true);
-
-    // Verify cross-chain trading setting in rules
-    if (rulesResponse.success && rulesResponse.rules) {
-      expect(rulesResponse.rules.tradingRules).toBeDefined();
-
-      // Find the cross-chain trading rule
-      const crossChainRule = rulesResponse.rules.tradingRules.find(
-        (rule: string) => rule.includes("Cross-chain trading"),
-      );
-      expect(crossChainRule).toBeDefined();
-      expect(crossChainRule).toContain("Cross-chain trading type: allow");
-    }
-
-    // Create second competition with cross-chain trading disabled
-    const secondCompetitionName = `No-Cross-Chain Competition ${Date.now()}`;
-
-    // End the first competition
-    if (competitionResponse.success && "competition" in competitionResponse) {
-      await adminClient.endCompetition(competitionResponse.competition.id);
-
-      // Start a new competition with cross-chain trading disabled
-      const secondCompetitionResponse = await adminClient.startCompetition({
-        name: secondCompetitionName,
-        teamIds: [team.id],
-        tradingType: CrossChainTradingType.disallowAll,
-      });
-
-      expect(secondCompetitionResponse.success).toBe(true);
-
-      // Check competition rules to verify cross-chain trading is disabled
-      const secondRulesResponse = await teamClient.getRules();
-      expect(secondRulesResponse.success).toBe(true);
-
-      // Verify cross-chain trading setting in rules
-      if (secondRulesResponse.success && secondRulesResponse.rules) {
-        // Find the cross-chain trading rule
-        const secondCrossChainRule =
-          secondRulesResponse.rules.tradingRules.find((rule: string) =>
-            rule.includes("Cross-chain trading"),
-          );
-        expect(secondCrossChainRule).toBeDefined();
-        expect(secondCrossChainRule).toContain(
-          "Cross-chain trading type: disallowAll",
-        );
-      }
-    }
-  });
-
-  test("competition responses include crosschaintradingtype property", async () => {
-    // Setup admin client
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register a team
-    const { team } = await registerTeamAndGetClient(
-      adminApiKey,
-      "Response Fields Test Team",
-    );
-
-    // 1. Test creating a competition with allowCrossChainTrading=true
-    const createCompetitionName = `Create Fields Test ${Date.now()}`;
-    const createResponse = await adminClient.createCompetition(
-      createCompetitionName,
-      "Test description",
-      CrossChainTradingType.allow,
-    );
-
-    expect(createResponse.success).toBe(true);
-    if (createResponse.success && "competition" in createResponse) {
-      expect(createResponse.competition).toBeDefined();
-      expect(createResponse.competition.crossChainTradingType).toBe(
-        CrossChainTradingType.allow,
-      );
-    }
-
-    // 2. Test starting a competition with allowCrossChainTrading=false
-    const startCompetitionName = `Start Fields Test ${Date.now()}`;
-    const startResponse = await adminClient.startCompetition({
-      name: startCompetitionName,
-      teamIds: [team.id],
-      tradingType: CrossChainTradingType.disallowAll,
-    });
-
-    expect(startResponse.success).toBe(true);
-    if (startResponse.success && "competition" in startResponse) {
-      expect(startResponse.competition).toBeDefined();
-      expect(startResponse.competition.crossChainTradingType).toBe(
-        CrossChainTradingType.disallowAll,
-      );
-
-      // 3. Test ending a competition and check field is preserved
-      const endResponse = await adminClient.endCompetition(
-        startResponse.competition.id,
-      );
-
-      expect(endResponse.success).toBe(true);
-      if (endResponse.success && "competition" in endResponse) {
-        const competition = endResponse.competition as Competition;
-        expect(competition).toBeDefined();
-        expect(competition.crossChainTradingType).toBe(
-          CrossChainTradingType.disallowAll,
-        );
-      }
-    }
-
-    // 4. Verify competition status endpoint also includes the property
-    const statusResponse = await adminClient.getCompetitionStatus();
-
-    if (statusResponse.success && statusResponse.competition) {
-      expect(statusResponse.competition.crossChainTradingType).toBeDefined();
-    }
-
-    // 5. Get performance reports - use helper function because the API client doesn't have this method directly
-    if (startResponse.success && "competition" in startResponse) {
-      const reportsUrl = `/api/admin/reports/performance?competitionId=${startResponse.competition.id}`;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const reportsResponse = await adminClient.request<any>("get", reportsUrl);
-
-      if (reportsResponse.success && "competition" in reportsResponse) {
-        const competition = reportsResponse.competition as Competition;
-        expect(competition.crossChainTradingType).toBeDefined();
-      }
-    }
-  });
-
-  test("teams can view competitions by status", async () => {
-    // Setup admin client
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register a team
-    const { client: teamClient } = await registerTeamAndGetClient(
-      adminApiKey,
-      "Upcoming Viewer Team",
-    );
 
     // Create several competitions in PENDING state
     const comp1Name = `Upcoming Competition 1 ${Date.now()}`;
@@ -643,7 +501,7 @@ describe("Competition API", () => {
 
     // Call the new endpoint to get upcoming competitions
     const upcomingResponse =
-      (await teamClient.getUpcomingCompetitions()) as UpcomingCompetitionsResponse;
+      (await agentClient.getUpcomingCompetitions()) as UpcomingCompetitionsResponse;
 
     // Verify the response
     expect(upcomingResponse.success).toBe(true);
@@ -661,27 +519,27 @@ describe("Competition API", () => {
       expect(comp.updatedAt).toBeDefined();
     });
 
-    // Register a team
-    const { team } = await registerTeamAndGetClient(
+    // Register an agent
+    const { agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Upcoming competitions viewer test",
-    );
+      agentName: "Upcoming competitions viewer test agent",
+    });
 
     // Start one of the competitions to verify it disappears from upcoming list
     await startExistingTestCompetition(
       adminClient,
       createResponse1.competition.id,
-      [team.id],
+      [agent.id],
     );
 
     // Get upcoming competitions again
     const upcomingResponseAfterStart =
-      (await teamClient.getUpcomingCompetitions()) as UpcomingCompetitionsResponse;
+      (await agentClient.getUpcomingCompetitions()) as UpcomingCompetitionsResponse;
 
     expect(upcomingResponseAfterStart.competitions.length).toBe(2);
 
     // Get active competitions
-    const activeResponse = (await teamClient.getCompetitions(
+    const activeResponse = (await agentClient.getCompetitions(
       "active",
     )) as UpcomingCompetitionsResponse;
 
@@ -694,10 +552,10 @@ describe("Competition API", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register a team
-    const { client: teamClient } = await registerTeamAndGetClient(
+    const { client: agentClient } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Upcoming Viewer Team",
-    );
+      agentName: "Upcoming Viewer Agent",
+    });
 
     // Create the competitions
     await adminClient.createCompetition(
@@ -707,7 +565,7 @@ describe("Competition API", () => {
     );
 
     // Call the new endpoint to get competitions sorted by start date ascending
-    const ascResponse = (await teamClient.getCompetitions(
+    const ascResponse = (await agentClient.getCompetitions(
       "pending",
       "foo",
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -723,10 +581,10 @@ describe("Competition API", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register a team
-    const { client: teamClient } = await registerTeamAndGetClient(
+    const { client: agentClient } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Upcoming Viewer Team",
-    );
+      agentName: "Upcoming Viewer Agent",
+    });
 
     // Create several competitions in PENDING state that are at least 1200 ms
     // apart in started date, since we are storing at a 1 second precision.
@@ -754,7 +612,7 @@ describe("Competition API", () => {
     );
 
     // Call the new endpoint to get competitions sorted by start date ascending
-    const ascResponse = (await teamClient.getCompetitions(
+    const ascResponse = (await agentClient.getCompetitions(
       "pending",
       "createdAt",
     )) as UpcomingCompetitionsResponse;
@@ -768,7 +626,7 @@ describe("Competition API", () => {
     expect(ascResponse.competitions[2]?.name).toBe(comp3Name);
 
     // Call the new endpoint to get competitions sorted by start date descending NOTE: the '-' at the beginning of the sort value
-    const descResponse = (await teamClient.getCompetitions(
+    const descResponse = (await agentClient.getCompetitions(
       "pending",
       "-createdAt",
     )) as UpcomingCompetitionsResponse;
@@ -787,11 +645,12 @@ describe("Competition API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register a team
-    const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
-      "Link and Image Test Team",
-    );
+    // Register an agent
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Link and Image Test Agent",
+      });
 
     // Test data for new fields
     const externalLink = "https://example.com/competition-details";
@@ -817,7 +676,7 @@ describe("Competition API", () => {
     const startResponse = await startTestCompetition(
       adminClient,
       startCompetitionName,
-      [team.id],
+      [agent.id],
       externalLink,
       imageUrl,
     );
@@ -827,19 +686,19 @@ describe("Competition API", () => {
     expect(startResponse.competition.externalLink).toBe(externalLink);
     expect(startResponse.competition.imageUrl).toBe(imageUrl);
 
-    // 3. Verify the fields are in the competition status response for participating teams
-    const teamStatusResponse =
-      (await teamClient.getCompetitionStatus()) as CompetitionStatusResponse;
-    expect(teamStatusResponse.success).toBe(true);
-    expect(teamStatusResponse.active).toBe(true);
+    // 3. Verify the fields are in the competition status response for participating agents
+    const agentStatusResponse =
+      (await agentClient.getCompetitionStatus()) as CompetitionStatusResponse;
+    expect(agentStatusResponse.success).toBe(true);
+    expect(agentStatusResponse.active).toBe(true);
 
-    if (teamStatusResponse.success && teamStatusResponse.competition) {
-      expect(teamStatusResponse.competition.externalLink).toBe(externalLink);
-      expect(teamStatusResponse.competition.imageUrl).toBe(imageUrl);
+    if (agentStatusResponse.success && agentStatusResponse.competition) {
+      expect(agentStatusResponse.competition.externalLink).toBe(externalLink);
+      expect(agentStatusResponse.competition.imageUrl).toBe(imageUrl);
     }
 
     // 4. Verify the fields are in the competition leaderboard response
-    const leaderboardResponse = await teamClient.getLeaderboard();
+    const leaderboardResponse = await agentClient.getLeaderboard();
     expect(leaderboardResponse.success).toBe(true);
 
     if (leaderboardResponse.success && "competition" in leaderboardResponse) {
@@ -854,7 +713,7 @@ describe("Competition API", () => {
     }
 
     // Get upcoming competitions
-    const upcomingResponse = await teamClient.getUpcomingCompetitions();
+    const upcomingResponse = await agentClient.getUpcomingCompetitions();
 
     if (upcomingResponse.success && "competitions" in upcomingResponse) {
       // Find our created but not started competition
@@ -872,7 +731,7 @@ describe("Competition API", () => {
     const startExistingResponse = await startExistingTestCompetition(
       adminClient,
       createResponse.competition.id,
-      [team.id],
+      [agent.id],
     );
 
     // Verify the original fields are in the response

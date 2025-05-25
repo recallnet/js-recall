@@ -188,8 +188,9 @@ export async function deactivateAgent(
     const [result] = await db
       .update(agents)
       .set({
-        status: "suspended",
-        metadata: { deactivationReason: reason, deactivationDate: now },
+        status: "inactive",
+        deactivationReason: reason,
+        deactivationDate: now,
         updatedAt: now,
       })
       .where(eq(agents.id, agentId))
