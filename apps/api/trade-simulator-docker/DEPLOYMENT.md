@@ -453,7 +453,7 @@ Key environment variables to configure:
 
 - **Database Configuration**:
 
-  - `DATABASE_URL`: Conenction string for PostgreSQL
+  - `DATABASE_URL`: Connection string for PostgreSQL
 
 - **Security Variables**:
 
