@@ -97,10 +97,13 @@ export function configureHealthRoutes(
    *                       type: string
    *                       description: Status of the competition manager service
    *                       example: ok
-   *                     teamManager:
+   *                     userManager:
    *                       type: string
-   *                       description: Status of the team manager service
+   *                       description: Status of the user manager service
    *                       example: ok
+   *                     agentManager:
+   *                       type: string
+   *                       description: Status of the agent manager service
    *       500:
    *         description: Server error
    */

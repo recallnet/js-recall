@@ -50,7 +50,7 @@ describe("User API", () => {
     const loginSuccess = await client.loginAsAdmin(adminApiKey);
     console.log(`TEST: Login result: ${loginSuccess}`);
 
-    // Register a team
+    // Register a user
     const userName = `User ${Date.now()}`;
     const agentName = `Agent ${Date.now()}`;
     const userEmail = `user${Date.now()}@example.com`;
@@ -117,7 +117,7 @@ describe("User API", () => {
     const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
     expect(adminLoginSuccess).toBe(true);
 
-    // Register multiple teams
+    // Register multiple users
     const userData = [
       { name: `User A ${Date.now()}`, email: `user${Date.now()}@example.com` },
       { name: `User B ${Date.now()}`, email: `userb${Date.now()}@example.com` },
@@ -132,7 +132,7 @@ describe("User API", () => {
       });
     }
 
-    // Admin lists all teams
+    // Admin lists all users
     const usersResponse = await adminClient.listUsers();
 
     expect(usersResponse.success).toBe(true);
@@ -141,7 +141,7 @@ describe("User API", () => {
       (usersResponse as AdminUsersListResponse).users.length,
     ).toBeGreaterThanOrEqual(userData.length);
 
-    // Verify all our teams are in the list
+    // Verify all our users are in the list
     for (const data of userData) {
       const foundUser = (usersResponse as AdminUsersListResponse).users.find(
         (u) => u.name === data.name && u.email === data.email,
@@ -160,11 +160,11 @@ describe("User API", () => {
     const loginSuccess = await client.loginAsAdmin(adminApiKey);
     console.log(`TEST: Login result: ${loginSuccess}`);
 
-    // Register a team with metadata
-    const userName = `Profile Metadata Team ${Date.now()}`;
+    // Register a user with metadata
+    const userName = `Profile Metadata User ${Date.now()}`;
     const email = `profile-metadata-${Date.now()}@example.com`;
 
-    // Register team with metadata
+    // Register user with metadata
     const registerResponse = await client.registerUser(
       generateRandomEthAddress(),
       userName,
@@ -205,8 +205,8 @@ describe("User API", () => {
     const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
     expect(adminLoginSuccess).toBe(true);
 
-    // Register a team without initial metadata or imageUrl
-    const userName = `Combined Update Team ${Date.now()}`;
+    // Register a user without initial metadata or imageUrl
+    const userName = `Combined Update User ${Date.now()}`;
     const userEmail = `combined-update-${Date.now()}@example.com`;
     const agentName = "Combined Update Agent";
 

@@ -30,7 +30,7 @@ export function makePriceController(services: ServiceRegistry) {
         }
 
         console.log(
-          `[PriceController] Getting price for token ${token} requested by team ${agentId}`,
+          `[PriceController] Getting price for token ${token} requested by agent ${agentId}`,
         );
 
         // Determine the blockchain type for this token, using the requested chain if provided
@@ -120,7 +120,7 @@ export function makePriceController(services: ServiceRegistry) {
         }
 
         console.log(
-          `[PriceController] Getting token info for ${token} requested by team ${agentId}`,
+          `[PriceController] Getting token info for ${token} requested by agent ${agentId}`,
         );
 
         // Determine blockchain type using the requested chain if provided

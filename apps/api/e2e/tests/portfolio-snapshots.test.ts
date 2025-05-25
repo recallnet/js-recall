@@ -53,13 +53,13 @@ describe("Portfolio Snapshots", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
+    // Register agent and get client
     const { agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      agentName: "Snapshot Test Team",
+      agentName: "Snapshot Test Agent",
     });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Snapshot Test ${Date.now()}`;
     const startResult = await startTestCompetition(
       adminClient,
@@ -73,7 +73,7 @@ describe("Portfolio Snapshots", () => {
     // Get the competition ID
     const competitionId = startResult.competition.id;
 
-    // Verify that a portfolio snapshot was taken for the team
+    // Verify that a portfolio snapshot was taken for the agent
     const snapshotsResponse = await adminClient.request(
       "get",
       `/api/admin/competition/${competitionId}/snapshots`,
@@ -84,7 +84,7 @@ describe("Portfolio Snapshots", () => {
     expect(typedResponse.snapshots).toBeDefined();
     expect(typedResponse.snapshots.length).toBeGreaterThan(0);
 
-    // Verify the snapshot has the correct team ID and competition ID
+    // Verify the snapshot has the correct agent ID and competition ID
     const snapshot = typedResponse.snapshots[0];
     expect(snapshot?.agentId).toBe(agent.id);
     expect(snapshot?.competitionId).toBe(competitionId);
@@ -101,13 +101,13 @@ describe("Portfolio Snapshots", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
+    // Register agent and get client
     const { agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      agentName: "Periodic Snapshot Team",
+      agentName: "Periodic Snapshot Agent",
     });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Periodic Snapshot Test ${Date.now()}`;
     const startResult = await startTestCompetition(
       adminClient,
@@ -171,13 +171,13 @@ describe("Portfolio Snapshots", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
+    // Register agent and get client
     const { client, agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
       agentName: "End Snapshot Agent",
     });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `End Snapshot Test ${Date.now()}`;
     const startResult = await startTestCompetition(
       adminClient,
@@ -243,13 +243,13 @@ describe("Portfolio Snapshots", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
+    // Register agent and get client
     const { client, agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      agentName: "Value Calc Team",
+      agentName: "Value Calc Agent",
     });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Value Calculation Test ${Date.now()}`;
     const startResult = await startTestCompetition(
       adminClient,
@@ -323,13 +323,13 @@ describe("Portfolio Snapshots", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
+    // Register agent and get client
     const { agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      agentName: "Price Freshness Team",
+      agentName: "Price Freshness Agent",
     });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Price Freshness Test ${Date.now()}`;
     const startResult = await startTestCompetition(
       adminClient,

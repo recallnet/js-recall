@@ -70,7 +70,7 @@ function isValidEthereumAddress(address: string): boolean {
 }
 
 /**
- * Register a new team using AgentManager service and update with wallet address
+ * Register a new user + agent using UserManager and AgentManager services
  */
 async function registerAgent() {
   try {
@@ -96,7 +96,7 @@ async function registerAgent() {
       `${colors.yellow}--------------------------------------------------------------${colors.reset}\n`,
     );
 
-    // Get team details from command line arguments or prompt for them
+    // Get agent details from command line arguments or prompt for them
     let walletAddress = process.argv[2];
     let userName = process.argv[3];
     let agentName = process.argv[4];
@@ -185,18 +185,18 @@ async function registerAgent() {
     safeLog(
       `${colors.yellow}----------------------------------------${colors.reset}`,
     );
-    safeLog(`API Key: ${agent.apiKey}`); // Using apiKey from the team object returned by AgentManager
+    safeLog(`API Key: ${agent.apiKey}`); // Using apiKey from the agent object returned by AgentManager
     safeLog(
       `${colors.yellow}----------------------------------------${colors.reset}`,
     );
 
     safeLog(
-      `\n${colors.red}IMPORTANT: The API Key will only be shown once when the team is first created.${colors.reset}`,
+      `\n${colors.red}IMPORTANT: The API Key will only be shown once when the agent is first created.${colors.reset}`,
     );
     safeLog(`Make sure to securely store these credentials.`);
   } catch (error) {
     safeLog(
-      `\n${colors.red}Error registering team:${colors.reset}`,
+      `\n${colors.red}Error registering agent:${colors.reset}`,
       error instanceof Error ? error.message : error,
     );
   } finally {

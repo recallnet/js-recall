@@ -58,7 +58,7 @@ describe("Agent Deactivation API", () => {
     const competitionName = `Test Competition ${Date.now()}`;
     await startTestCompetition(adminClient, competitionName, [agent.id]);
 
-    // Deactivate the team
+    // Deactivate the agent
     const reason = "Violated competition rules by using external API";
     const deactivateResponse = (await adminClient.deactivateAgent(
       agent.id,
@@ -74,7 +74,7 @@ describe("Agent Deactivation API", () => {
     expect(deactivateResponse.agent.deactivationReason).toBe(reason);
     expect(deactivateResponse.agent.deactivationDate).toBeDefined();
 
-    // List all teams to verify the deactivation status is persisted
+    // List all agents to verify the deactivation status is persisted
     const agentsResponse =
       (await adminClient.listAgents()) as AdminAgentsListResponse;
     const deactivatedAgent = agentsResponse.agents.find(
@@ -84,26 +84,26 @@ describe("Agent Deactivation API", () => {
     expect(deactivatedAgent?.status).not.toBe("active");
   });
 
-  test("deactivated team cannot access API endpoints", async () => {
+  test("deactivated agent cannot access API endpoints", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register a team and get the client
+    // Register a agent and get the client
     const { client, agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
       agentName: "To Be Blocked",
     });
 
-    // Start a competition with the team
+    // Start a competition with the agent
     const competitionName = `Deactivation Test ${Date.now()}`;
     await startTestCompetition(adminClient, competitionName, [agent.id]);
 
-    // Verify team can access API before deactivation
+    // Verify agent can access API before deactivation
     const profileResponse = await client.getAgentProfile();
     expect(profileResponse.success).toBe(true);
 
-    // Deactivate the team
+    // Deactivate the agent
     const reason = "Testing deactivation blocking";
     const deactivateResponse = await adminClient.deactivateAgent(
       agent.id,
@@ -153,22 +153,22 @@ describe("Agent Deactivation API", () => {
     }
   });
 
-  test("admin can reactivate a deactivated team", async () => {
+  test("admin can reactivate a deactivated agent", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register a team and get the client
+    // Register a agent and get the client
     const { client, agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
       agentName: "To Be Reactivated",
     });
 
-    // Start a competition with the team
+    // Start a competition with the agent
     const competitionName = `Reactivation Test ${Date.now()}`;
     await startTestCompetition(adminClient, competitionName, [agent.id]);
 
-    // Deactivate the team
+    // Deactivate the agent
     const reason = "Temporary deactivation for testing";
     const deactivateResponse = await adminClient.deactivateAgent(
       agent.id,
@@ -176,7 +176,7 @@ describe("Agent Deactivation API", () => {
     );
     expect(deactivateResponse.success).toBe(true);
 
-    // Verify team is blocked from API
+    // Verify agent is blocked from API
     try {
       await client.getAgentProfile();
       expect(false).toBe(true); // Should not succeed
@@ -184,7 +184,7 @@ describe("Agent Deactivation API", () => {
       expect(error).toBeDefined();
     }
 
-    // Reactivate the team
+    // Reactivate the agent
     const reactivateResponse = (await adminClient.reactivateAgent(
       agent.id,
     )) as AdminAgentResponse;
@@ -196,7 +196,7 @@ describe("Agent Deactivation API", () => {
     // Wait a moment for any cache to update
     await wait(100);
 
-    // Verify team can access API after reactivation
+    // Verify agent can access API after reactivation
     const profileResponse =
       (await client.getAgentProfile()) as AgentProfileResponse;
     expect(profileResponse.success).toBe(true);
@@ -204,12 +204,12 @@ describe("Agent Deactivation API", () => {
     expect(profileResponse.agent.status).toBe("active");
   });
 
-  test("non-admin cannot deactivate a team", async () => {
+  test("non-admin cannot deactivate a agent", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register two teams
+    // Register two agents
     const { client: client1, agent: agent1 } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
@@ -220,14 +220,14 @@ describe("Agent Deactivation API", () => {
       agentName: "Agent Two",
     });
 
-    // Start a competition with both teams
+    // Start a competition with both agents
     const competitionName = `Non-Admin Test ${Date.now()}`;
     await startTestCompetition(adminClient, competitionName, [
       agent1.id,
       agent2.id,
     ]);
 
-    // Team One tries to deactivate Team Two (should fail)
+    // Agent One tries to deactivate Agent Two (should fail)
     const deactivateResponse = (await client1.deactivateAgent(
       agent2.id,
       "Unauthorized deactivation attempt",
@@ -237,7 +237,7 @@ describe("Agent Deactivation API", () => {
     expect(deactivateResponse.success).toBe(false);
     expect(deactivateResponse.error).toBeDefined();
 
-    // Verify Team Two wasn't actually deactivated
+    // Verify Agent Two wasn't actually deactivated
     const agentsResponse =
       (await adminClient.listAgents()) as AdminAgentsListResponse;
     const agentTwoInfo = agentsResponse.agents.find((a) => a.id === agent2.id);
@@ -245,12 +245,12 @@ describe("Agent Deactivation API", () => {
     expect(agentTwoInfo?.status).not.toBe(false);
   });
 
-  test("inactive teams are filtered from leaderboard", async () => {
+  test("inactive agents are filtered from leaderboard", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register three teams for the competition
+    // Register three agents for the competition
     const { client: client1, agent: agent1 } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
@@ -267,7 +267,7 @@ describe("Agent Deactivation API", () => {
         agentName: "Inactive Agent",
       });
 
-    // Create competition with all three teams
+    // Create competition with all three agents
     const competitionName = `Leaderboard Test ${Date.now()}`;
     await startTestCompetition(adminClient, competitionName, [
       agent1.id,
@@ -287,7 +287,7 @@ describe("Agent Deactivation API", () => {
       amount: "100",
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
-      reason: "inactive teams are filtered from leaderboard",
+      reason: "inactive agents are filtered from leaderboard",
     });
 
     // Have the other agents make trades too to populate leaderboard
@@ -297,7 +297,7 @@ describe("Agent Deactivation API", () => {
       amount: "50",
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
-      reason: "inactive teams are filtered from leaderboard",
+      reason: "inactive agents are filtered from leaderboard",
     });
 
     await client2.executeTrade({
@@ -306,7 +306,7 @@ describe("Agent Deactivation API", () => {
       amount: "75",
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
-      reason: "inactive teams are filtered from leaderboard",
+      reason: "inactive agents are filtered from leaderboard",
     });
 
     // Wait a moment for portfolio values to update
@@ -322,7 +322,7 @@ describe("Agent Deactivation API", () => {
     expect(leaderboardBefore.inactiveAgents).toBeDefined();
     expect(leaderboardBefore.inactiveAgents.length).toBe(0);
 
-    // All three teams should be in the active leaderboard
+    // All three agents should be in the active leaderboard
     const agentIds = leaderboardBefore.leaderboard.map(
       (entry) => entry.agentId,
     );
@@ -330,7 +330,7 @@ describe("Agent Deactivation API", () => {
     expect(agentIds).toContain(agent2.id);
     expect(agentIds).toContain(agent3.id);
 
-    // Now deactivate team3
+    // Now deactivate agent3
     const reason = "Deactivated for leaderboard test";
     const deactivateResponse = await adminClient.deactivateAgent(
       agent3.id,
@@ -345,8 +345,8 @@ describe("Agent Deactivation API", () => {
     expect(leaderboardAfter.leaderboard).toBeDefined();
     expect(leaderboardAfter.inactiveAgents).toBeDefined();
 
-    // Verify team3 is now in the inactiveAgents array, not in the main leaderboard
-    // Active leaderboard should only contain team1 and team2
+    // Verify agent3 is now in the inactiveAgents array, not in the main leaderboard
+    // Active leaderboard should only contain agent1 and agent2
     const activeagentIds = leaderboardAfter.leaderboard.map(
       (entry) => entry.agentId,
     );
@@ -354,7 +354,7 @@ describe("Agent Deactivation API", () => {
     expect(activeagentIds).toContain(agent2.id);
     expect(activeagentIds).not.toContain(agent3.id);
 
-    // Verify inactive team array contains only team3
+    // Verify inactive agent array contains only agent3
     expect(leaderboardAfter.inactiveAgents.length).toBe(1);
     const inactiveAgent = leaderboardAfter.inactiveAgents[0];
     expect(inactiveAgent?.agentId).toBe(agent3.id);
@@ -362,15 +362,15 @@ describe("Agent Deactivation API", () => {
     // TODO: fix reason
     expect(inactiveAgent?.deactivationReason).toBe(reason);
 
-    // Active teams should have ranks 1 and 2
+    // Active agents should have ranks 1 and 2
     const ranks = leaderboardAfter.leaderboard.map((entry) => entry.rank);
     expect(ranks).toContain(1);
     expect(ranks).toContain(2);
-    expect(ranks.length).toBe(2); // Only two teams should have ranks
+    expect(ranks.length).toBe(2); // Only two agents should have ranks
 
     expect(leaderboardAfter.hasInactiveAgents).toBe(true);
 
-    // Reactivate the team and verify they show up again
+    // Reactivate the agent and verify they show up again
     await adminClient.reactivateAgent(agent3.id);
 
     // Wait a moment for any cache to update
@@ -384,7 +384,7 @@ describe("Agent Deactivation API", () => {
     expect(leaderboardFinal.inactiveAgents).toBeDefined();
     expect(leaderboardFinal.inactiveAgents.length).toBe(0);
 
-    // Verify team3 is back in the active leaderboard
+    // Verify agent3 is back in the active leaderboard
     const agentIdsFinal = leaderboardFinal.leaderboard.map(
       (entry) => entry.agentId,
     );
@@ -392,7 +392,7 @@ describe("Agent Deactivation API", () => {
     expect(agentIdsFinal).toContain(agent2.id);
     expect(agentIdsFinal).toContain(agent3.id);
 
-    // Find team3 entry and verify it's now active
+    // Find agent3 entry and verify it's now active
     const agent3FinalEntry = leaderboardFinal.leaderboard.find(
       (entry) => entry.agentId === agent3.id,
     );

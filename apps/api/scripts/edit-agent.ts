@@ -1,19 +1,19 @@
 /**
  * Agent Edit Script
  *
- * This script allows admins to edit existing team information in the Trading Simulator.
+ * This script allows admins to edit existing agent information in the Trading Simulator.
  * It connects directly to the database and does NOT require the server to be running.
  *
  * Usage:
- *   pnpm edit:team
+ *   pnpm edit:agent
  *
  * Or with command line arguments:
  *   pnpm edit:agent -- "agentId" "0x123..." "New Agent Name"
  *
  * The script will:
  * 1. Connect to the database
- * 2. Find the team by email
- * 3. Update the team's wallet address and/or bucket addresses
+ * 2. Find the agent by ID
+ * 3. Update the agent's wallet address and/or name
  * 4. Close the database connection
  */
 import * as dotenv from "dotenv";
@@ -69,7 +69,7 @@ function isValidEthereumAddress(address: string): boolean {
 }
 
 /**
- * Edit an existing team
+ * Edit an existing agent
  */
 async function editAgent() {
   try {
@@ -86,16 +86,16 @@ async function editAgent() {
     );
 
     safeLog(
-      `\n${colors.cyan}This script allows you to edit team information in the Trading Simulator.${colors.reset}`,
+      `\n${colors.cyan}This script allows you to edit agent information in the Trading Simulator.${colors.reset}`,
     );
     safeLog(
-      `${colors.cyan}You can update the team's wallet address and bucket addresses.${colors.reset}`,
+      `${colors.cyan}You can update the agent's wallet address and bucket addresses.${colors.reset}`,
     );
     safeLog(
       `${colors.yellow}--------------------------------------------------------------${colors.reset}\n`,
     );
 
-    // Get team details from command line arguments or prompt for them
+    // Get agent details from command line arguments or prompt for them
     let agentId = process.argv[2];
     let walletAddress = process.argv[3];
     let agentName = process.argv[4];
@@ -119,12 +119,12 @@ async function editAgent() {
       }
     };
 
-    // Find the team first
+    // Find the agent first
     safeLog(
       `\n${colors.blue}Finding agent with ID: ${agentId}...${colors.reset}`,
     );
 
-    // Fetch the team by email
+    // Fetch the agent by email
     const currentAgent = await db.query.agents.findFirst({
       where: eq(agents.id, agentId),
     });
@@ -217,10 +217,10 @@ async function editAgent() {
     }
 
     // Proceed with updates
-    safeLog(`\n${colors.blue}Updating team...${colors.reset}`);
+    safeLog(`\n${colors.blue}Updating agent...${colors.reset}`);
 
     const updatedAgent = await db.transaction(async (tx) => {
-      // Get the latest team data since some time has passed
+      // Get the latest agent data since some time has passed
       const agent = await tx.query.agents.findFirst({
         where: eq(agents.id, agentId),
       });
@@ -254,7 +254,7 @@ async function editAgent() {
     }
   } catch (error) {
     safeLog(
-      `\n${colors.red}Error updating team:${colors.reset}`,
+      `\n${colors.red}Error updating agent:${colors.reset}`,
       error instanceof Error ? error.message : error,
     );
   } finally {

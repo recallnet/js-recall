@@ -118,7 +118,7 @@ async function endCompetition() {
       );
     } else {
       console.log(
-        `\n${colors.yellow}No teams have participated in this competition yet.${colors.reset}`,
+        `\n${colors.yellow}No agents have participated in this competition yet.${colors.reset}`,
       );
     }
 
@@ -205,7 +205,7 @@ async function endCompetition() {
       );
     } else {
       console.log(
-        `\n${colors.yellow}No teams participated in this competition.${colors.reset}`,
+        `\n${colors.yellow}No agents participated in this competition.${colors.reset}`,
       );
     }
 

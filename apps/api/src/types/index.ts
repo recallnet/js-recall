@@ -192,45 +192,12 @@ export interface AdminMetadata {
 }
 
 /**
- * Team's agent metadata
+ * Agent's metadata
  */
 export interface AgentMetadata {
   ref?: AgentRef;
   description?: string;
   social?: AgentSocial;
-}
-
-/**
- * Team interface
- */
-export interface Team {
-  id: string;
-  name: string;
-  email: string;
-  contactPerson: string;
-  apiKey: string;
-  walletAddress: string;
-  bucket_addresses?: string[];
-  metadata?: AgentMetadata; // Agent-specific metadata
-  imageUrl?: string; // URL to team's image
-  isAdmin?: boolean;
-  active?: boolean;
-  deactivationReason?: string;
-  deactivationDate?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-/**
- * Team search parameters interface
- */
-export interface TeamSearchParams {
-  email?: string;
-  name?: string;
-  walletAddress?: string;
-  contactPerson?: string;
-  active?: boolean;
-  includeAdmins?: boolean;
 }
 
 /**

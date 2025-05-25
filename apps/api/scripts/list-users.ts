@@ -20,15 +20,15 @@ const colors = {
 };
 
 /**
- * List all registered teams with detailed information
+ * List all registered agents with detailed information
  */
-async function listAllTeams() {
+async function listAllUsers() {
   try {
     console.log(
       `${colors.cyan}╔════════════════════════════════════════════════════════════════╗${colors.reset}`,
     );
     console.log(
-      `${colors.cyan}║                          TEAM LISTING                         ║${colors.reset}`,
+      `${colors.cyan}║                          USER LISTING                          ║${colors.reset}`,
     );
     console.log(
       `${colors.cyan}╚════════════════════════════════════════════════════════════════╝${colors.reset}`,
@@ -38,7 +38,7 @@ async function listAllTeams() {
 
     if (users.length === 0) {
       console.log(
-        `\n${colors.yellow}No teams found in the database.${colors.reset}`,
+        `\n${colors.yellow}No agents found in the database.${colors.reset}`,
       );
       return;
     }
@@ -47,7 +47,7 @@ async function listAllTeams() {
       `\n${colors.green}Found ${users.length} registered user(s):${colors.reset}\n`,
     );
 
-    // Sort teams by creation date (newest first)
+    // Sort agents by creation date (newest first)
     users.sort(
       (a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0),
     );
@@ -60,7 +60,7 @@ async function listAllTeams() {
         `${colors.cyan}╔════════════════════════════════════════════════════════════════╗${colors.reset}`,
       );
       console.log(
-        `${colors.cyan}║ TEAM #${i + 1}${" ".repeat(60 - `TEAM #${i + 1}`.length)}║${colors.reset}`,
+        `${colors.cyan}║ USER #${i + 1}${" ".repeat(60 - `USER #${i + 1}`.length)}║${colors.reset}`,
       );
       console.log(
         `${colors.cyan}╠════════════════════════════════════════════════════════════════╣${colors.reset}`,
@@ -85,10 +85,10 @@ async function listAllTeams() {
       }
     });
 
-    console.log(`\n${colors.green}End of team listing.${colors.reset}`);
+    console.log(`\n${colors.green}End of agent listing.${colors.reset}`);
   } catch (error) {
     console.error(
-      `\n${colors.red}Error listing teams:${colors.reset}`,
+      `\n${colors.red}Error listing agents:${colors.reset}`,
       error instanceof Error ? error.message : error,
     );
   } finally {
@@ -98,4 +98,4 @@ async function listAllTeams() {
 }
 
 // Run the function
-listAllTeams();
+listAllUsers();

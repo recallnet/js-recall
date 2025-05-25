@@ -35,9 +35,9 @@ const colors = {
 };
 
 /**
- * List all registered teams to help user find the agent ID
+ * List all registered agents to help user find the agent ID
  */
-async function listAllTeams() {
+async function listAllAgents() {
   try {
     const agents = await services.agentManager.getAllAgents();
 
@@ -68,7 +68,7 @@ async function listAllTeams() {
     );
   } catch (error) {
     console.error(
-      `\n${colors.red}Error listing teams:${colors.reset}`,
+      `\n${colors.red}Error listing agents:${colors.reset}`,
       error instanceof Error ? error.message : error,
     );
   }
@@ -77,14 +77,14 @@ async function listAllTeams() {
 /**
  * Delete a agent by ID
  */
-async function deleteTeam(teamId: string) {
+async function deleteAgent(agentId: string) {
   try {
     // Get agent details first to confirm
-    const agent = await services.agentManager.getAgent(teamId);
+    const agent = await services.agentManager.getAgent(agentId);
 
     if (!agent) {
       console.log(
-        `\n${colors.red}Error: Agent with ID ${teamId} not found.${colors.reset}`,
+        `\n${colors.red}Error: Agent with ID ${agentId} not found.${colors.reset}`,
       );
       return false;
     }
@@ -107,7 +107,7 @@ ${colors.red}Type the agent name (${agent.name}) to confirm deletion:${colors.re
     console.log(`\n${colors.blue}Deleting agent...${colors.reset}`);
 
     // Delete the agent
-    const result = await services.agentManager.deleteAgent(teamId);
+    const result = await services.agentManager.deleteAgent(agentId);
 
     if (result) {
       console.log(
@@ -150,24 +150,24 @@ async function main() {
     console.log(`You'll need to provide the agent ID to delete.`);
 
     // Check if agent ID was provided as command-line argument
-    let teamId = process.argv[2];
+    let agentId = process.argv[2];
 
-    // If no agent ID provided, ask if user wants to list teams
-    if (!teamId) {
-      const listTeams = await prompt(
-        `\n${colors.yellow}Do you want to list all registered teams? (y/n):${colors.reset} `,
+    // If no agent ID provided, ask if user wants to list agents
+    if (!agentId) {
+      const listAgents = await prompt(
+        `\n${colors.yellow}Do you want to list all registered agents? (y/n):${colors.reset} `,
       );
 
-      if (listTeams.toLowerCase() === "y") {
-        await listAllTeams();
+      if (listAgents.toLowerCase() === "y") {
+        await listAllAgents();
       }
 
-      teamId = await prompt(
+      agentId = await prompt(
         `\n${colors.yellow}Enter the ID of the agent to delete:${colors.reset} `,
       );
     }
 
-    if (!teamId) {
+    if (!agentId) {
       console.log(
         `\n${colors.red}No agent ID provided. Operation cancelled.${colors.reset}`,
       );
@@ -175,7 +175,7 @@ async function main() {
     }
 
     // Delete the agent
-    await deleteTeam(teamId);
+    await deleteAgent(agentId);
   } catch (error) {
     console.error(
       `\n${colors.red}Error:${colors.reset}`,

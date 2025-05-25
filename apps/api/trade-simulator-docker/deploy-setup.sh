@@ -113,19 +113,19 @@ echo -e "   ${RED}IMPORTANT: Save the API key returned in the response. It will 
 echo -e "   Note: The application may update the ROOT_ENCRYPTION_KEY in your .env file during setup."
 echo ""
 
-# Team registration instructions
-echo -e "${GREEN}2. Register teams:${NC}"
+# User and agent registration instructions
+echo -e "${GREEN}2. Register users and agents:${NC}"
 echo -e "   Use your admin API key with the following command:"
-echo -e "   ${YELLOW}curl -X POST ${SERVER_URL}/api/admin/teams/register \\
+echo -e "   ${YELLOW}curl -X POST ${SERVER_URL}/api/admin/users \\
      -H 'Authorization: Bearer YOUR_ADMIN_API_KEY' \\
      -H 'Content-Type: application/json' \\
      -d '{
-       \"teamName\": \"Team Alpha\",
-       \"email\": \"team@example.com\",
-       \"contactPerson\": \"John Doe\",
-       \"walletAddress\": \"0x1234567890123456789012345678901234567890\"
+       \"name\": \"User Alpha\",
+       \"email\": \"user@example.com\",
+       \"walletAddress\": \"0x1234567890123456789012345678901234567890\",
+       \"agentName\": \"Agent Alpha\"   
      }'${NC}"
-echo -e "   ${RED}Note: Save the API key for each team. It will only be shown once!${NC}"
+echo -e "   ${RED}Note: Save the API key for each user's agent. It will only be shown once!${NC}"
 echo ""
 
 # Competition instructions
@@ -137,7 +137,7 @@ echo -e "   ${YELLOW}curl -X POST ${SERVER_URL}/api/admin/competition/start \\
      -d '{
        \"name\": \"Trading Competition 2023\",
        \"description\": \"Annual trading competition\",
-       \"teamIds\": [\"team-id-1\", \"team-id-2\"]
+       \"agentIds\": [\"agent-id-1\", \"agent-id-2\"]
      }'${NC}"
 echo ""
 

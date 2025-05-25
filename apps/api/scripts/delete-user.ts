@@ -35,9 +35,9 @@ const colors = {
 };
 
 /**
- * List all registered teams to help user find the team ID
+ * List all registered agents to help user find the agent ID
  */
-async function listAllTeams() {
+async function listAllUsers() {
   try {
     const users = await services.userManager.getAllUsers();
 
@@ -69,18 +69,18 @@ async function listAllTeams() {
     );
   } catch (error) {
     console.error(
-      `\n${colors.red}Error listing teams:${colors.reset}`,
+      `\n${colors.red}Error listing agents:${colors.reset}`,
       error instanceof Error ? error.message : error,
     );
   }
 }
 
 /**
- * Delete a team by ID
+ * Delete a agent by ID
  */
 async function deleteUser(userId: string) {
   try {
-    // Get team details first to confirm
+    // Get agent details first to confirm
     const user = await services.userManager.getUser(userId);
 
     if (!user) {
@@ -101,14 +101,14 @@ ${colors.red}Type the user name (${user.name}) to confirm deletion:${colors.rese
 
     if (confirmation !== user.name) {
       console.log(
-        `\n${colors.yellow}Deletion cancelled. Team name confirmation did not match.${colors.reset}`,
+        `\n${colors.yellow}Deletion cancelled. Agent name confirmation did not match.${colors.reset}`,
       );
       return false;
     }
 
-    console.log(`\n${colors.blue}Deleting team...${colors.reset}`);
+    console.log(`\n${colors.blue}Deleting agent...${colors.reset}`);
 
-    // Delete the team
+    // Delete the agent
     const result = await services.userManager.deleteUser(userId);
 
     if (result) {
@@ -124,7 +124,7 @@ ${colors.red}Type the user name (${user.name}) to confirm deletion:${colors.rese
     }
   } catch (error) {
     console.error(
-      `\n${colors.red}Error deleting team:${colors.reset}`,
+      `\n${colors.red}Error deleting agent:${colors.reset}`,
       error instanceof Error ? error.message : error,
     );
     return false;
@@ -140,30 +140,32 @@ async function main() {
       `${colors.cyan}╔════════════════════════════════════════════════════════════════╗${colors.reset}`,
     );
     console.log(
-      `${colors.cyan}║                          DELETE TEAM                          ║${colors.reset}`,
+      `${colors.cyan}║                          DELETE USER                          ║${colors.reset}`,
     );
     console.log(
       `${colors.cyan}╚════════════════════════════════════════════════════════════════╝${colors.reset}`,
     );
 
-    console.log(`\nThis script will delete a team from the Trading Simulator.`);
-    console.log(`You'll need to provide the team ID to delete.`);
+    console.log(
+      `\nThis script will delete a agent from the Trading Simulator.`,
+    );
+    console.log(`You'll need to provide the agent ID to delete.`);
 
-    // Check if team ID was provided as command-line argument
+    // Check if agent ID was provided as command-line argument
     let userId = process.argv[2];
 
-    // If no team ID provided, ask if user wants to list teams
+    // If no agent ID provided, ask if user wants to list agents
     if (!userId) {
-      const listTeams = await prompt(
-        `\n${colors.yellow}Do you want to list all registered teams? (y/n):${colors.reset} `,
+      const listUsers = await prompt(
+        `\n${colors.yellow}Do you want to list all registered agents? (y/n):${colors.reset} `,
       );
 
-      if (listTeams.toLowerCase() === "y") {
-        await listAllTeams();
+      if (listUsers.toLowerCase() === "y") {
+        await listAllUsers();
       }
 
       userId = await prompt(
-        `\n${colors.yellow}Enter the ID of the team to delete:${colors.reset} `,
+        `\n${colors.yellow}Enter the ID of the agent to delete:${colors.reset} `,
       );
     }
 

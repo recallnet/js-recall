@@ -1,7 +1,6 @@
 import { NextFunction, Response } from "express";
 
 import { config } from "@/config/index.js";
-import { ensureReqTeam } from "@/controllers/heplers.js";
 import { isAgentInCompetition } from "@/database/repositories/agent-repository.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
@@ -339,9 +338,9 @@ export function makeCompetitionController(services: ServiceRegistry) {
         // Define base rules
         const tradingRules = [
           "Trading is only allowed for tokens with valid price data",
-          `All teams start with identical token balances: ${initialBalanceDescriptions.join("; ")}`,
+          `All agents start with identical token balances: ${initialBalanceDescriptions.join("; ")}`,
           "Minimum trade amount: 0.000001 tokens",
-          `Maximum single trade: ${config.maxTradePercentage}% of team's total portfolio value`,
+          `Maximum single trade: ${config.maxTradePercentage}% of agent's total portfolio value`,
           "No shorting allowed (trades limited to available balance)",
           "Slippage is applied to all trades based on trade size",
           `Cross-chain trading type: ${activeCompetition.crossChainTradingType}`,
@@ -353,7 +352,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           "300 requests per minute for price queries",
           "30 requests per minute for balance/portfolio checks",
           "3,000 requests per minute across all endpoints",
-          "10,000 requests per hour per team",
+          "10,000 requests per hour per agent",
         ];
         const availableChains = {
           svm: true,
@@ -427,7 +426,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
     /**
      * Get competitions
-     * @param req AuthenticatedRequest object with team authentication information
+     * @param req AuthenticatedRequest object with agent authentication information
      * @param res Express response
      * @param next Express next function
      */
@@ -437,9 +436,6 @@ export function makeCompetitionController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        // Check if the team is authenticated
-        ensureReqTeam(req, "Authentication required to view competitions");
-
         console.log(
           `[CompetitionController] Agent ${req.agentId} requesting competitions`,
         );

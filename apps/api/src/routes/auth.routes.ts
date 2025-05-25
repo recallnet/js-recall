@@ -50,7 +50,7 @@ export function configureAuthRoutes(
    * /api/auth/login:
    *   post:
    *     summary: Verify SIWE signature and create a session
-   *     description: Verifies the SIWE message and signature, creates a session, and returns team info
+   *     description: Verifies the SIWE message and signature, creates a session, and returns agent info
    *     tags: [Auth]
    *     requestBody:
    *       required: true
@@ -78,17 +78,17 @@ export function configureAuthRoutes(
    *             schema:
    *               type: object
    *               required:
-   *                 - teamId
+   *                 - agentId
    *                 - wallet
    *               properties:
-   *                 teamId:
+   *                 agentId:
    *                   type: string
    *                   nullable: true
-   *                   description: The ID of the authenticated team
-   *                   example: "team_123abc"
+   *                   description: The ID of the authenticated agent
+   *                   example: "agent_123abc"
    *                 wallet:
    *                   type: string
-   *                   description: The wallet address of the authenticated team
+   *                   description: The wallet address of the authenticated agent
    *                   example: "0x123..."
    *       401:
    *         description: Authentication failed

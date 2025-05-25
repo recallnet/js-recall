@@ -20,7 +20,7 @@ const colors = {
 };
 
 /**
- * List all registered teams with detailed information
+ * List all registered agents with detailed information
  */
 async function listAllAgents() {
   try {
@@ -28,7 +28,7 @@ async function listAllAgents() {
       `${colors.cyan}╔════════════════════════════════════════════════════════════════╗${colors.reset}`,
     );
     console.log(
-      `${colors.cyan}║                          TEAM LISTING                         ║${colors.reset}`,
+      `${colors.cyan}║                          AGENT LISTING                         ║${colors.reset}`,
     );
     console.log(
       `${colors.cyan}╚════════════════════════════════════════════════════════════════╝${colors.reset}`,
@@ -38,7 +38,7 @@ async function listAllAgents() {
 
     if (agents.length === 0) {
       console.log(
-        `\n${colors.yellow}No teams found in the database.${colors.reset}`,
+        `\n${colors.yellow}No agents found in the database.${colors.reset}`,
       );
       return;
     }
@@ -60,7 +60,7 @@ async function listAllAgents() {
         `${colors.cyan}╔════════════════════════════════════════════════════════════════╗${colors.reset}`,
       );
       console.log(
-        `${colors.cyan}║ TEAM #${i + 1}${" ".repeat(60 - `TEAM #${i + 1}`.length)}║${colors.reset}`,
+        `${colors.cyan}║ AGENT #${i + 1}${" ".repeat(60 - `AGENT #${i + 1}`.length)}║${colors.reset}`,
       );
       console.log(
         `${colors.cyan}╠════════════════════════════════════════════════════════════════╣${colors.reset}`,
@@ -85,10 +85,10 @@ async function listAllAgents() {
       }
     });
 
-    console.log(`\n${colors.green}End of team listing.${colors.reset}`);
+    console.log(`\n${colors.green}End of agent listing.${colors.reset}`);
   } catch (error) {
     console.error(
-      `\n${colors.red}Error listing teams:${colors.reset}`,
+      `\n${colors.red}Error listing agents:${colors.reset}`,
       error instanceof Error ? error.message : error,
     );
   } finally {

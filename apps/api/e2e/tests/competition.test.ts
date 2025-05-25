@@ -75,7 +75,7 @@ describe("Competition API", () => {
     const competition = competitionResponse.competition;
     expect(competition).toBeDefined();
     expect(competition.name).toBe(competitionName);
-    expect(competition.status).toBe("ACTIVE");
+    expect(competition.status).toBe("active");
     expect(competition.agentIds).toContain(agent1.id);
     expect(competition.agentIds).toContain(agent2.id);
   });
@@ -310,7 +310,7 @@ describe("Competition API", () => {
     expect(adminStatusResponse.active).toBe(true);
     expect(adminStatusResponse.competition).toBeDefined();
     expect(adminStatusResponse.competition?.name).toBe(competitionName);
-    expect(adminStatusResponse.competition?.status).toBe("ACTIVE");
+    expect(adminStatusResponse.competition?.status).toBe("active");
     expect(adminStatusResponse.competition?.description).toBeDefined();
     expect(adminStatusResponse.competition?.externalLink).toBeDefined();
     expect(adminStatusResponse.competition?.imageUrl).toBeDefined();
@@ -551,7 +551,7 @@ describe("Competition API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register a team
+    // Register a user/agent
     const { client: agentClient } = await registerUserAndAgentAndGetClient({
       adminApiKey,
       agentName: "Upcoming Viewer Agent",
@@ -575,12 +575,12 @@ describe("Competition API", () => {
     expect(ascResponse.status).toBe(400);
   });
 
-  test("teams can view sorted competitions", async () => {
+  test("agents can view sorted competitions", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register a team
+    // Register a user/agent
     const { client: agentClient } = await registerUserAndAgentAndGetClient({
       adminApiKey,
       agentName: "Upcoming Viewer Agent",
