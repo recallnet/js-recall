@@ -105,8 +105,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
             agentName: agent ? agent.name : "Unknown Agent",
             portfolioValue: entry.value,
             active: !isInactive,
-            deactivationReason:
-              isInactive && agent?.status ? `Status: ${agent.status}` : null,
+            deactivationReason: isInactive ? agent?.deactivationReason : null,
           };
 
           if (isInactive) {

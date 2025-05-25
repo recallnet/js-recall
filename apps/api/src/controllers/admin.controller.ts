@@ -15,6 +15,8 @@ import {
   UserSearchParams,
 } from "@/types/index.js";
 
+// TODO: need user deactivation logic
+
 // TODO: unify interfaces since these enforce "null" values vs `@/types/index.js` that uses undefined
 // Also, types aren't really used anywhere else, so we should probably remove them?
 interface Agent {
@@ -1070,6 +1072,8 @@ export function makeAdminController(services: ServiceRegistry) {
             id: deactivatedAgent.id,
             name: deactivatedAgent.name,
             status: deactivatedAgent.status,
+            deactivationReason: deactivatedAgent.deactivationReason,
+            deactivationDate: deactivatedAgent.deactivationDate,
           },
         });
       } catch (error) {

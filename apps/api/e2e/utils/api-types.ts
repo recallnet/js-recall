@@ -70,7 +70,7 @@ export interface User {
   imageUrl?: string;
   isAdmin: boolean;
   metadata?: Record<string, unknown>;
-  status: "active" | "suspended" | "deleted";
+  status: "active" | "inactive" | "suspended" | "deleted";
   createdAt: string;
   updatedAt: string;
 }
@@ -101,7 +101,9 @@ export interface Agent {
   imageUrl?: string;
   apiKey?: string; // Only included in certain admin responses
   metadata?: AgentMetadata;
-  status: "active" | "suspended" | "deleted";
+  status: "active" | "inactive" | "suspended" | "deleted";
+  deactivationReason?: string;
+  deactivationDate?: string;
   createdAt: string;
   updatedAt: string;
 }
