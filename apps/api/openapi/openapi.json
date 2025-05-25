@@ -366,9 +366,9 @@
                         "status": {
                           "type": "string",
                           "enum": [
-                            "PENDING",
-                            "ACTIVE",
-                            "COMPLETED"
+                            "pending",
+                            "active",
+                            "completed"
                           ],
                           "description": "Competition status"
                         },
@@ -535,9 +535,9 @@
                         "status": {
                           "type": "string",
                           "enum": [
-                            "PENDING",
-                            "ACTIVE",
-                            "COMPLETED"
+                            "pending",
+                            "active",
+                            "completed"
                           ],
                           "description": "Competition status"
                         },
@@ -667,9 +667,9 @@
                         "status": {
                           "type": "string",
                           "enum": [
-                            "PENDING",
-                            "ACTIVE",
-                            "COMPLETED"
+                            "pending",
+                            "active",
+                            "completed"
                           ],
                           "description": "Competition status (completed)"
                         },
@@ -887,9 +887,9 @@
                         "status": {
                           "type": "string",
                           "enum": [
-                            "PENDING",
-                            "ACTIVE",
-                            "COMPLETED"
+                            "pending",
+                            "active",
+                            "completed"
                           ],
                           "description": "Competition status"
                         },
@@ -2712,7 +2712,7 @@
                           "status": {
                             "type": "string",
                             "enum": [
-                              "PENDING"
+                              "pending"
                             ],
                             "description": "Competition status (always PENDING)"
                           },
@@ -2827,9 +2827,9 @@
                         "status": {
                           "type": "string",
                           "enum": [
-                            "PENDING",
-                            "ACTIVE",
-                            "COMPLETED"
+                            "pending",
+                            "active",
+                            "completed"
                           ],
                           "description": "Competition status"
                         },
@@ -3004,9 +3004,9 @@
                         "status": {
                           "type": "string",
                           "enum": [
-                            "PENDING",
-                            "ACTIVE",
-                            "COMPLETED"
+                            "pending",
+                            "active",
+                            "completed"
                           ],
                           "description": "Competition status"
                         },
@@ -3202,9 +3202,9 @@
                           "status": {
                             "type": "string",
                             "enum": [
-                              "PENDING"
+                              "pending"
                             ],
-                            "description": "Competition status (always PENDING)"
+                            "description": "Competition status (always pending)"
                           },
                           "crossChainTradingType": {
                             "type": "string",

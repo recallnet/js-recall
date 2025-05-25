@@ -83,7 +83,7 @@ export function configureCompetitionsRoutes(
    *                         description: URL to competition image
    *                       status:
    *                         type: string
-   *                         enum: [PENDING]
+   *                         enum: [pending]
    *                         description: Competition status (always PENDING)
    *                       crossChainTradingType:
    *                         type: string
@@ -164,7 +164,7 @@ export function configureCompetitionsRoutes(
    *                       description: Competition end date
    *                     status:
    *                       type: string
-   *                       enum: [PENDING, ACTIVE, COMPLETED]
+   *                       enum: [pending, active, completed]
    *                       description: Competition status
    *                     createdAt:
    *                       type: string
@@ -293,7 +293,7 @@ export function configureCompetitionsRoutes(
    *                       description: Competition end date
    *                     status:
    *                       type: string
-   *                       enum: [PENDING, ACTIVE, COMPLETED]
+   *                       enum: [pending, active, completed]
    *                       description: Competition status
    *                     crossChainTradingType:
    *                       type: string
@@ -433,8 +433,8 @@ export function configureCompetitionsRoutes(
    *                         description: URL to competition image
    *                       status:
    *                         type: string
-   *                         enum: [PENDING]
-   *                         description: Competition status (always PENDING)
+   *                         enum: [pending]
+   *                         description: Competition status (always pending)
    *                       crossChainTradingType:
    *                         type: string
    *                         enum: [disallowAll, disallowXParent, allow]

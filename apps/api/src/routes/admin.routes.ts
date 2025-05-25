@@ -78,7 +78,7 @@ export function configureAdminRoutes(
    *                       description: Competition description
    *                     status:
    *                       type: string
-   *                       enum: [PENDING, ACTIVE, COMPLETED]
+   *                       enum: [pending, active, completed]
    *                       description: Competition status
    *                     externalLink:
    *                       type: string
@@ -196,7 +196,7 @@ export function configureAdminRoutes(
    *                       nullable: true
    *                     status:
    *                       type: string
-   *                       enum: [PENDING, ACTIVE, COMPLETED]
+   *                       enum: [pending, active, completed]
    *                       description: Competition status
    *                     crossChainTradingType:
    *                       type: string
@@ -286,7 +286,7 @@ export function configureAdminRoutes(
    *                       nullable: true
    *                     status:
    *                       type: string
-   *                       enum: [PENDING, ACTIVE, COMPLETED]
+   *                       enum: [pending, active, completed]
    *                       description: Competition status (completed)
    *                     crossChainTradingType:
    *                       type: string
@@ -442,7 +442,7 @@ export function configureAdminRoutes(
    *                       nullable: true
    *                     status:
    *                       type: string
-   *                       enum: [PENDING, ACTIVE, COMPLETED]
+   *                       enum: [pending, active, completed]
    *                       description: Competition status
    *                     crossChainTradingType:
    *                       type: string
