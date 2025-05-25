@@ -24,10 +24,6 @@ import { configureTradeRoutes } from "@/routes/trade.routes.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 import { configureAdminSetupRoutes } from "./routes/admin-setup.routes.js";
-import { interceptConsole } from "./utils/console-interceptor.js";
-
-// Initialize console interception immediately
-interceptConsole();
 
 // Create Express app
 const app = express();
@@ -50,7 +46,7 @@ try {
   if (process.env.NODE_ENV === "production") {
     console.warn(
       "WARNING: Starting server without successful database initialization. " +
-      "Some functionality may be limited until database connection is restored.",
+        "Some functionality may be limited until database connection is restored.",
     );
   } else {
     console.error(
@@ -79,12 +75,7 @@ app.use(express.urlencoded({ extended: true }));
 const apiRouter = express.Router();
 
 // Define protected routes (without /api prefix since it's implied by the router mount path)
-const protectedRoutes = [
-  "/account",
-  "/trade",
-  "/competition",
-  "/price",
-];
+const protectedRoutes = ["/account", "/trade", "/competition", "/price"];
 
 // Apply authentication middleware to protected routes FIRST
 // This ensures req.teamId is set before rate limiting
@@ -176,6 +167,8 @@ app.listen(PORT, "0.0.0.0", () => {
     `Database: ${databaseInitialized ? "Connected" : "Error - Limited functionality"}`,
   );
   console.log(`API Base Path: ${apiBasePath}/api`);
-  console.log(`API documentation: http://localhost:${PORT}${apiBasePath}/api/docs`);
+  console.log(
+    `API documentation: http://localhost:${PORT}${apiBasePath}/api/docs`,
+  );
   console.log(`========================================\n`);
 });
