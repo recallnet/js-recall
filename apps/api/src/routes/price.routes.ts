@@ -72,6 +72,9 @@ export function configurePriceRoutes(
    *                   type: string
    *                   nullable: true
    *                   description: Specific chain for EVM tokens
+   *                 symbol:
+   *                   type: string
+   *                   description: Token symbol
    *                 timestamp:
    *                   type: string
    *                   format: date-time
@@ -149,6 +152,9 @@ export function configurePriceRoutes(
    *                   type: string
    *                   nullable: true
    *                   description: Specific chain for EVM tokens
+   *                 symbol:
+   *                   type: string
+   *                   description: Token symbol
    *       400:
    *         description: Invalid request parameters
    *         content:

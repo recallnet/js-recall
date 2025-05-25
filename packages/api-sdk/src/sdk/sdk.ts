@@ -4,10 +4,10 @@
 import { ClientSDK } from "../lib/sdks.js";
 import { Account } from "./account.js";
 import { Admin } from "./admin.js";
+import { Auth } from "./auth.js";
 import { Competition } from "./competition.js";
 import { Health } from "./health.js";
 import { Price } from "./price.js";
-import { Public } from "./public.js";
 import { Trade } from "./trade.js";
 
 export class ApiSDK extends ClientSDK {
@@ -19,6 +19,11 @@ export class ApiSDK extends ClientSDK {
   private _admin?: Admin;
   get admin(): Admin {
     return (this._admin ??= new Admin(this._options));
+  }
+
+  private _auth?: Auth;
+  get auth(): Auth {
+    return (this._auth ??= new Auth(this._options));
   }
 
   private _competition?: Competition;
@@ -34,11 +39,6 @@ export class ApiSDK extends ClientSDK {
   private _price?: Price;
   get price(): Price {
     return (this._price ??= new Price(this._options));
-  }
-
-  private _public?: Public;
-  get public(): Public {
-    return (this._public ??= new Public(this._options));
   }
 
   private _trade?: Trade;

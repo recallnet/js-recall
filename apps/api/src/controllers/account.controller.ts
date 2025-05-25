@@ -141,6 +141,7 @@ export function makeAccountController(services: ServiceRegistry) {
                   ...balance,
                   chain: latestPriceRecord.chain,
                   specificChain: "svm",
+                  symbol: latestPriceRecord.symbol || balance.symbol,
                 };
               }
 
@@ -153,6 +154,7 @@ export function makeAccountController(services: ServiceRegistry) {
                   ...balance,
                   chain: latestPriceRecord.chain,
                   specificChain: latestPriceRecord.specificChain,
+                  symbol: latestPriceRecord.symbol || balance.symbol,
                 };
               }
             }
@@ -167,6 +169,7 @@ export function makeAccountController(services: ServiceRegistry) {
                 ...balance,
                 chain: tokenInfo.chain,
                 specificChain: tokenInfo.specificChain,
+                symbol: tokenInfo.symbol || balance.symbol,
               };
             }
 
@@ -180,6 +183,7 @@ export function makeAccountController(services: ServiceRegistry) {
               ...balance,
               chain,
               specificChain,
+              symbol: balance.symbol, // Use the symbol from the database
             };
           }),
         );
@@ -244,6 +248,7 @@ export function makeAccountController(services: ServiceRegistry) {
                 value: tokenValue.valueUsd,
                 chain,
                 specificChain,
+                symbol: tokenValue.symbol, // Use symbol from the snapshot/database
               };
             });
 
@@ -300,6 +305,7 @@ export function makeAccountController(services: ServiceRegistry) {
             value,
             chain: tokenInfo?.chain,
             specificChain: tokenInfo?.specificChain,
+            symbol: tokenInfo?.symbol || balance.symbol,
           });
         }
 

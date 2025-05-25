@@ -4,6 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { v4 as uuidv4 } from "uuid";
 
+import { reloadSecurityConfig } from "@/config/index.js";
 import { getCompetitionTeams } from "@/database/repositories/competition-repository.js";
 import {
   create,
@@ -65,10 +66,12 @@ export function makeAdminController(services: ServiceRegistry) {
 
         // Ensure that ROOT_ENCRYPTION_KEY exists in .env file
         try {
-          // Find .env file in app root directory
-          const envPath = path.resolve(process.cwd(), ".env");
+          // Find the correct .env file based on environment
+          const envFile =
+            process.env.NODE_ENV === "test" ? ".env.test" : ".env";
+          const envPath = path.resolve(process.cwd(), envFile);
           console.log(
-            `[AdminController] Checking for .env file at: ${envPath}`,
+            `[AdminController] Checking for ${envFile} file at: ${envPath}`,
           );
 
           if (fs.existsSync(envPath)) {
@@ -123,15 +126,22 @@ export function makeAdminController(services: ServiceRegistry) {
 
               fs.writeFileSync(envPath, updatedEnvContent);
               console.log(
-                "[AdminController] Updated ROOT_ENCRYPTION_KEY in .env file",
+                `[AdminController] Updated ROOT_ENCRYPTION_KEY in ${envFile} file`,
               );
 
               // We need to update the process.env with the new key for it to be used immediately
               process.env.ROOT_ENCRYPTION_KEY = newEncryptionKey;
+
+              // Reload the configuration to pick up the new encryption key
+              reloadSecurityConfig();
+
+              console.log(
+                "[AdminController] ✅ Configuration reloaded with new encryption key",
+              );
             }
           } else {
             console.error(
-              "[AdminController] .env file not found at expected location",
+              `[AdminController] ${envFile} file not found at expected location`,
             );
           }
         } catch (envError) {

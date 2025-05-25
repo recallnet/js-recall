@@ -86,11 +86,15 @@ export type Transaction = {
   /**
    * Error message if the trade failed
    */
-  error?: string | undefined;
+  error?: string | null | undefined;
   /**
    * Reason provided for executing the trade
    */
   reason?: string | undefined;
+  /**
+   * The USD value of the trade at execution time
+   */
+  tradeAmountUsd?: number | undefined;
   /**
    * Timestamp of when the trade was executed
    */
@@ -111,6 +115,10 @@ export type Transaction = {
    * Specific chain for the destination token
    */
   toSpecificChain?: string | undefined;
+  /**
+   * Symbol of the destination token
+   */
+  toTokenSymbol?: string | undefined;
 };
 
 /**
@@ -217,8 +225,9 @@ export const Transaction$inboundSchema: z.ZodType<
   toAmount: z.number().optional(),
   price: z.number().optional(),
   success: z.boolean().optional(),
-  error: z.string().optional(),
+  error: z.nullable(z.string()).optional(),
   reason: z.string().optional(),
+  tradeAmountUsd: z.number().optional(),
   timestamp: z
     .string()
     .datetime({ offset: true })
@@ -228,6 +237,7 @@ export const Transaction$inboundSchema: z.ZodType<
   toChain: z.string().optional(),
   fromSpecificChain: z.string().optional(),
   toSpecificChain: z.string().optional(),
+  toTokenSymbol: z.string().optional(),
 });
 
 /** @internal */
@@ -241,13 +251,15 @@ export type Transaction$Outbound = {
   toAmount?: number | undefined;
   price?: number | undefined;
   success?: boolean | undefined;
-  error?: string | undefined;
+  error?: string | null | undefined;
   reason?: string | undefined;
+  tradeAmountUsd?: number | undefined;
   timestamp?: string | undefined;
   fromChain?: string | undefined;
   toChain?: string | undefined;
   fromSpecificChain?: string | undefined;
   toSpecificChain?: string | undefined;
+  toTokenSymbol?: string | undefined;
 };
 
 /** @internal */
@@ -265,8 +277,9 @@ export const Transaction$outboundSchema: z.ZodType<
   toAmount: z.number().optional(),
   price: z.number().optional(),
   success: z.boolean().optional(),
-  error: z.string().optional(),
+  error: z.nullable(z.string()).optional(),
   reason: z.string().optional(),
+  tradeAmountUsd: z.number().optional(),
   timestamp: z
     .date()
     .transform((v) => v.toISOString())
@@ -275,6 +288,7 @@ export const Transaction$outboundSchema: z.ZodType<
   toChain: z.string().optional(),
   fromSpecificChain: z.string().optional(),
   toSpecificChain: z.string().optional(),
+  toTokenSymbol: z.string().optional(),
 });
 
 /**

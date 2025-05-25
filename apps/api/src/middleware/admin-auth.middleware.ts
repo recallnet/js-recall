@@ -4,17 +4,6 @@ import { extractApiKey } from "@/middleware/auth-helpers.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { TeamManager } from "@/services/team-manager.service.js";
 
-// Extend Express Request interface using module augmentation
-declare module "express" {
-  interface Request {
-    admin?: {
-      id: string;
-      name: string;
-    };
-    teamId?: string;
-  }
-}
-
 /**
  * Admin Authentication Middleware
  */

@@ -16,16 +16,17 @@ generation:
     securityFeb2025: true
     sharedErrorComponentsApr2025: false
   auth:
-    oAuth2ClientCredentialsEnabled: true
-    oAuth2PasswordEnabled: true
+    oAuth2ClientCredentialsEnabled: false
+    oAuth2PasswordEnabled: false
 typescript:
-  version: 0.0.6
+  version: 0.0.7
   additionalDependencies:
     dependencies: {}
     devDependencies: {}
     peerDependencies: {}
-  additionalPackageJSON: {}
-  author: Speakeasy
+  additionalPackageJSON:
+    private: true
+  author: Recall Contributors
   clientServerStatusCodesAsErrors: true
   defaultErrorName: APIError
   enableCustomCodeRegions: false

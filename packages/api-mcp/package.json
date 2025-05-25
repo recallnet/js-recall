@@ -1,0 +1,40 @@
+{
+  "name": "@recallnet/api-mcp",
+  "version": "0.0.1",
+  "license": "MIT OR Apache-2.0",
+  "private": true,
+  "description": "Recall Model Context Protocol (MCP) server and command line tool for the competitions API",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/recallnet/js-recall.git",
+    "directory": "packages/api-mcp"
+  },
+  "homepage": "https://github.com/recallnet/js-recall/tree/main/packages/api-mcp#readme",
+  "type": "module",
+  "bin": "dist/index.js",
+  "scripts": {
+    "dev": "tsc --watch",
+    "build": "tsup && shx chmod +x dist/*.js",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "clean": "rm -rf .turbo node_modules dist"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.7.0",
+    "@recallnet/api-sdk": "workspace:*",
+    "chalk": "^5.4.1",
+    "minimist": "^1.2.8",
+    "zod": "^3.25.17"
+  },
+  "devDependencies": {
+    "@recallnet/eslint-config": "workspace:*",
+    "@recallnet/typescript-config": "workspace:*",
+    "@types/minimist": "^1.2.5",
+    "@types/node": "^22.13.13",
+    "shx": "^0.4.0",
+    "tsup": "^8.3.6",
+    "typescript": "^5.7.3"
+  }
+}

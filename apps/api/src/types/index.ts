@@ -1,4 +1,7 @@
 import { Request } from "express";
+import { IronSession } from "iron-session";
+import { SiweMessage } from "siwe";
+import { z } from "zod/v4";
 
 /**
  * Token information interface
@@ -74,6 +77,7 @@ export interface Balance {
   createdAt: Date;
   updatedAt: Date;
   specificChain: SpecificChain;
+  symbol: string; // Token symbol
 }
 
 /**
@@ -87,6 +91,8 @@ export interface Trade {
   fromAmount: number;
   toAmount: number;
   price: number;
+  tradeAmountUsd: number;
+  toTokenSymbol: string;
   success: boolean;
   teamId: string;
   competitionId: string;
@@ -122,6 +128,7 @@ export interface PriceReport {
   timestamp: Date;
   chain: BlockchainType;
   specificChain: SpecificChain;
+  symbol: string;
 }
 
 /**
@@ -228,15 +235,6 @@ export interface Competition {
 }
 
 /**
- * Competition status enum
- */
-export enum CompetitionStatus {
-  PENDING = "PENDING",
-  ACTIVE = "ACTIVE",
-  COMPLETED = "COMPLETED",
-}
-
-/**
  * Team's portfolio value
  */
 export interface PortfolioValue {
@@ -259,10 +257,55 @@ export interface ApiAuth {
  * Extended Request interface for authenticated requests
  */
 export interface AuthenticatedRequest extends Request {
+  session?: IronSession<SessionData>;
   teamId?: string;
+  wallet?: string;
   isAdmin?: boolean;
   admin?: {
     id: string;
     name: string;
   };
 }
+
+/**
+ * Session data interface
+ */
+export interface SessionData {
+  nonce?: string;
+  siwe?: SiweMessage;
+  teamId?: string;
+  wallet?: string;
+}
+
+/**
+ * Login response upon successful SIWE authentication
+ */
+export interface LoginResponse {
+  success: boolean;
+  teamId?: string;
+  wallet?: string;
+}
+
+// Zod definitions allow user input validation at runtime and define types
+
+/**
+ * Competition status enum
+ */
+export enum CompetitionStatus {
+  PENDING = "pending",
+  ACTIVE = "active",
+  COMPLETED = "completed",
+}
+// TODO: zod discourages using typescript enums https://zod.dev/api?id=enums https://www.totaltypescript.com/why-i-dont-like-typescript-enums
+export const CompetitionStatusSchema = z.enum(CompetitionStatus);
+
+/**
+ * Querystring parameters that handle sorting and pagination
+ */
+export const PagingParamsSchema = z.object({
+  sort: z.string().default(""),
+  limit: z.number().min(1).max(100).default(10),
+  offset: z.number().min(0).default(0),
+});
+
+export type PagingParams = z.infer<typeof PagingParamsSchema>;

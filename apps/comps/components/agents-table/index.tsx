@@ -3,7 +3,7 @@
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import {
   ColumnDef,
-  Row,
+  SortingState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import Image from "next/image";
+import Link from "next/link";
 import React, { useMemo, useRef, useState } from "react";
 
 import { displayAddress } from "@recallnet/address-utils/display";
@@ -23,20 +24,33 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import { Agent } from "@/data/agents";
+import { AgentResponse, AgentsMetadata } from "@/types";
 
 export interface AgentsTableProps {
-  agents: Agent[];
+  agents: AgentResponse[];
+  onFilterChange: (filter: string) => void;
+  onSortChange: (sort: string) => void;
+  onLoadMore: () => void;
+  hasMore: boolean;
+  metadata?: AgentsMetadata;
 }
 
-export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
+export const AgentsTable: React.FC<AgentsTableProps> = ({
+  agents,
+  onFilterChange,
+  onSortChange,
+  onLoadMore,
+  hasMore,
+  metadata,
+}) => {
   const tableContainerRef = useRef<HTMLDivElement>(null);
-  const [globalFilter, setGlobalFilter] = useState("");
+  const [sorting, setSorting] = useState<SortingState>([]);
 
-  const columns = useMemo<ColumnDef<Agent>[]>(
+  const columns = useMemo<ColumnDef<AgentResponse>[]>(
     () => [
       {
-        id: "agent",
+        id: "name",
+        accessorKey: "name",
         header: () => (
           <span className="text-xs font-semibold tracking-widest text-slate-400">
             AGENT
@@ -45,7 +59,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
         cell: ({ row }) => (
           <div className="flex items-center gap-3">
             <Image
-              src={row.original.image || "/agent-image.png"}
+              src={row.original.imageUrl || "/agent-image.png"}
               alt={row.original.name}
               width={32}
               height={32}
@@ -56,15 +70,17 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
                 {row.original.name}
               </span>
               <span className="text-xs text-slate-400">
-                {displayAddress(row.original.address)}
+                {displayAddress(row.original.metadata.walletAddress || "")}
               </span>
             </div>
           </div>
         ),
         size: 350,
+        enableSorting: true,
       },
       {
-        id: "elo",
+        id: "score",
+        accessorKey: "score",
         header: () => (
           <span className="text-xs font-semibold tracking-widest text-slate-400">
             OVERALL ELO SCORE
@@ -72,17 +88,18 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
         ),
         cell: ({ row }) => (
           <span className="w-full text-right text-base font-semibold text-white">
-            {row.original.elo}
+            {row.original.score || row.original.stats?.eloAvg || 0}
           </span>
         ),
         size: 200,
+        enableSorting: true,
       },
       {
         id: "actions",
         header: () => null,
-        cell: () => (
+        cell: ({ row }) => (
           <div className="flex w-full justify-end gap-2">
-            <Button
+            {/* <Button
               variant="outline"
               size="sm"
               className="border-slate-600 bg-transparent text-white hover:bg-slate-800"
@@ -95,14 +112,16 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
               className="border-slate-600 bg-transparent text-white hover:bg-slate-800"
             >
               <span className="whitespace-nowrap">≡ COT</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-slate-600 bg-transparent text-white hover:bg-slate-800"
-            >
-              <span className="whitespace-nowrap">PROFILE</span>
-            </Button>
+            </Button> */}
+            <Link href={`/agents/${row.original.id}`}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-slate-600 bg-transparent text-white hover:bg-slate-800"
+              >
+                <span className="whitespace-nowrap">PROFILE</span>
+              </Button>
+            </Link>
           </div>
         ),
         meta: { isActions: true },
@@ -111,33 +130,30 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
     [],
   );
 
-  // Custom global filter function: filter by name or address (case-insensitive)
-  const globalFilterFn = (
-    row: Row<Agent>,
-    columnId: string,
-    filterValue: string,
-  ) => {
-    if (!filterValue) return true;
-    const search = filterValue.toLowerCase();
-    const name = row.original.name || "";
-    const address = row.original.address || "";
-    return (
-      name.toLowerCase().includes(search) ||
-      address.toLowerCase().includes(search)
-    );
-  };
-
   const table = useReactTable({
     data: agents,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    globalFilterFn,
     columnResizeMode: "onChange",
+    manualFiltering: true,
+    manualSorting: true,
+    enableSorting: true,
     state: {
-      globalFilter,
+      sorting,
     },
-    onGlobalFilterChange: setGlobalFilter,
+    onSortingChange: (updater) => {
+      const newSorting =
+        typeof updater === "function" ? updater(sorting) : updater;
+      setSorting(newSorting);
+
+      // Convert sorting state to server-side sort format
+      const sortString = newSorting
+        .map((sort) => `${sort.desc ? "-" : ""}${sort.id}`)
+        .join(",");
+
+      onSortChange(sortString);
+    },
   });
 
   // Virtualizer setup: show 10 rows at a time, each 64px tall
@@ -152,15 +168,14 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
     <div className="mt-12 w-full">
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-2xl font-bold text-white">
-          Participants ({agents.length})
+          Participants ({metadata?.total ?? agents.length})
         </h2>
         <div className="mb-4 flex items-center gap-2 rounded bg-slate-900 px-3 py-2">
           <MagnifyingGlassIcon className="mr-2 h-4 w-4 text-slate-400" />
           <Input
             className="border-none bg-transparent text-white placeholder:text-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0"
             placeholder="SEARCH AGENT..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
+            onChange={(e) => onFilterChange(e.target.value)}
             aria-label="Search agent"
           />
         </div>
@@ -191,10 +206,14 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
                     }
                     className={
                       `flex items-center text-xs font-semibold tracking-widest text-slate-400` +
-                      (header.column.id === "elo"
+                      (header.column.id === "score"
                         ? " justify-end pr-3 text-right"
+                        : "") +
+                      (header.column.getCanSort()
+                        ? " cursor-pointer select-none"
                         : "")
                     }
+                    onClick={header.column.getToggleSortingHandler()}
                   >
                     {header.isPlaceholder
                       ? null
@@ -202,6 +221,12 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
                           header.column.columnDef.header,
                           header.getContext(),
                         )}
+                    {header.column.getCanSort()
+                      ? {
+                          asc: " 🔼",
+                          desc: " 🔽",
+                        }[header.column.getIsSorted() as string]
+                      : null}
                   </th>
                 ))}
               </tr>
@@ -253,6 +278,18 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({ agents }) => {
           </TableBody>
         </Table>
       </div>
+      {hasMore && (
+        <div className="mt-4 flex justify-center">
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-slate-600 bg-transparent text-white hover:bg-slate-800"
+            onClick={onLoadMore}
+          >
+            Show More
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

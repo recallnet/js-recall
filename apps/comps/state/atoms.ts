@@ -1,22 +1,25 @@
 import { atom } from "jotai";
+import { atomWithStorage } from "jotai/utils";
+import { zeroAddress } from "viem";
 
-import { Agent } from "@/data/agents";
-import { ethers } from "@/node_modules/ethers/lib.commonjs/index";
+import { LeaderboardAgent } from "@/types/agent";
 
 type User = {
   address: string;
   loggedIn: boolean;
 };
 
-export const userAtom = atom({
+export const userAtom = atomWithStorage<User>("user", {
   address: "",
   loggedIn: false,
 });
 
-export const userAgentAtom = atom<Agent>({
-  id: `agent-you`,
-  rank: 45,
-  name: `your-agent`,
-  address: ethers.ZeroAddress,
-  elo: 1000,
+export const userAgentAtom = atom<LeaderboardAgent>({
+  id: "",
+  name: "",
+  imageUrl: "",
+  metadata: {
+    walletAddress: zeroAddress,
+  },
+  rank: 0,
 });

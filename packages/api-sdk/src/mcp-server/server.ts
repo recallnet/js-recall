@@ -32,15 +32,18 @@ import { tool$adminPostApiAdminSetup } from "./tools/adminPostApiAdminSetup.js";
 import { tool$adminPostApiAdminTeamsRegister } from "./tools/adminPostApiAdminTeamsRegister.js";
 import { tool$adminPostApiAdminTeamsTeamIdDeactivate } from "./tools/adminPostApiAdminTeamsTeamIdDeactivate.js";
 import { tool$adminPostApiAdminTeamsTeamIdReactivate } from "./tools/adminPostApiAdminTeamsTeamIdReactivate.js";
-import { tool$competitionGetApiCompetitionLeaderboard } from "./tools/competitionGetApiCompetitionLeaderboard.js";
-import { tool$competitionGetApiCompetitionRules } from "./tools/competitionGetApiCompetitionRules.js";
-import { tool$competitionGetApiCompetitionStatus } from "./tools/competitionGetApiCompetitionStatus.js";
-import { tool$competitionGetApiCompetitionUpcoming } from "./tools/competitionGetApiCompetitionUpcoming.js";
+import { tool$authGetApiAuthNonce } from "./tools/authGetApiAuthNonce.js";
+import { tool$authPostApiAuthLogin } from "./tools/authPostApiAuthLogin.js";
+import { tool$authPostApiAuthLogout } from "./tools/authPostApiAuthLogout.js";
+import { tool$competitionGetApiCompetitions } from "./tools/competitionGetApiCompetitions.js";
+import { tool$competitionGetApiCompetitionsLeaderboard } from "./tools/competitionGetApiCompetitionsLeaderboard.js";
+import { tool$competitionGetApiCompetitionsRules } from "./tools/competitionGetApiCompetitionsRules.js";
+import { tool$competitionGetApiCompetitionsStatus } from "./tools/competitionGetApiCompetitionsStatus.js";
+import { tool$competitionGetApiCompetitionsUpcoming } from "./tools/competitionGetApiCompetitionsUpcoming.js";
 import { tool$healthGetApiHealth } from "./tools/healthGetApiHealth.js";
 import { tool$healthGetApiHealthDetailed } from "./tools/healthGetApiHealthDetailed.js";
 import { tool$priceGetApiPrice } from "./tools/priceGetApiPrice.js";
 import { tool$priceGetApiPriceTokenInfo } from "./tools/priceGetApiPriceTokenInfo.js";
-import { tool$publicPostApiPublicTeamsRegister } from "./tools/publicPostApiPublicTeamsRegister.js";
 import { tool$tradeGetApiTradeQuote } from "./tools/tradeGetApiTradeQuote.js";
 import { tool$tradePostApiTradeExecute } from "./tools/tradePostApiTradeExecute.js";
 
@@ -54,7 +57,7 @@ export function createMCPServer(deps: {
 }) {
   const server = new McpServer({
     name: "ApiSDK",
-    version: "0.0.6",
+    version: "0.0.7",
   });
 
   const client = new ApiSDKCore({
@@ -103,15 +106,18 @@ export function createMCPServer(deps: {
   tool(tool$adminPostApiAdminTeamsTeamIdDeactivate);
   tool(tool$adminPostApiAdminTeamsTeamIdReactivate);
   tool(tool$adminGetApiAdminTeamsSearch);
-  tool(tool$competitionGetApiCompetitionLeaderboard);
-  tool(tool$competitionGetApiCompetitionStatus);
-  tool(tool$competitionGetApiCompetitionRules);
-  tool(tool$competitionGetApiCompetitionUpcoming);
+  tool(tool$authGetApiAuthNonce);
+  tool(tool$authPostApiAuthLogin);
+  tool(tool$authPostApiAuthLogout);
+  tool(tool$competitionGetApiCompetitions);
+  tool(tool$competitionGetApiCompetitionsLeaderboard);
+  tool(tool$competitionGetApiCompetitionsStatus);
+  tool(tool$competitionGetApiCompetitionsRules);
+  tool(tool$competitionGetApiCompetitionsUpcoming);
   tool(tool$healthGetApiHealth);
   tool(tool$healthGetApiHealthDetailed);
   tool(tool$priceGetApiPrice);
   tool(tool$priceGetApiPriceTokenInfo);
-  tool(tool$publicPostApiPublicTeamsRegister);
   tool(tool$tradePostApiTradeExecute);
   tool(tool$tradeGetApiTradeQuote);
 

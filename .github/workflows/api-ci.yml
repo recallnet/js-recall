@@ -58,7 +58,8 @@ jobs:
           cat > .env.test << EOF
           NODE_ENV=test
           DATABASE_URL=postgresql://postgres:postgres@localhost:5432/trading_simulator_test
-          ROOT_ENCRYPTION_KEY=test_root_encryption_key
+          # Note: root encryption key is also used for sessions; requires a 32 character length
+          ROOT_ENCRYPTION_KEY=test_root_encryption_key_with_32_characters
           EVM_CHAINS=eth,polygon,bsc,arbitrum,base,optimism,avalanche,linea
           TEST_MODE=true
           EOF
@@ -202,7 +203,8 @@ jobs:
           PORT=3001
 
           # Test Security Secrets
-          ROOT_ENCRYPTION_KEY=test_root_encryption_key
+          # Note: root encryption key is also used for sessions; requires a 32 character length
+          ROOT_ENCRYPTION_KEY=test_root_encryption_key_with_32_characters
 
           # EVM Chain Configuration
           EVM_CHAINS=eth,polygon,bsc,arbitrum,base,optimism,avalanche,linea

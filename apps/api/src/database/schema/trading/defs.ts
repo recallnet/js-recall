@@ -48,7 +48,7 @@ export const balances = tradingComps.table(
     id: serial().primaryKey().notNull(),
     teamId: uuid("team_id").notNull(),
     tokenAddress: varchar("token_address", { length: 50 }).notNull(),
-    amount: numeric({ precision: 30, scale: 15, mode: "number" }).notNull(),
+    amount: numeric({ mode: "number" }).notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
     }).defaultNow(),
@@ -56,6 +56,7 @@ export const balances = tradingComps.table(
       withTimezone: true,
     }).defaultNow(),
     specificChain: varchar("specific_chain", { length: 20 }).notNull(),
+    symbol: varchar("symbol", { length: 20 }).notNull(),
   },
   (table) => [
     index("idx_balances_specific_chain").on(table.specificChain),
@@ -81,16 +82,16 @@ export const trades = tradingComps.table(
     fromToken: varchar("from_token", { length: 50 }).notNull(),
     toToken: varchar("to_token", { length: 50 }).notNull(),
     fromAmount: numeric("from_amount", {
-      precision: 30,
-      scale: 15,
       mode: "number",
     }).notNull(),
     toAmount: numeric("to_amount", {
-      precision: 30,
-      scale: 15,
       mode: "number",
     }).notNull(),
-    price: numeric({ precision: 30, scale: 15, mode: "number" }).notNull(),
+    price: numeric({ mode: "number" }).notNull(),
+    tradeAmountUsd: numeric("trade_amount_usd", {
+      mode: "number",
+    }).notNull(),
+    toTokenSymbol: varchar("to_token_symbol", { length: 20 }).notNull(),
     success: boolean().notNull(),
     error: text(),
     reason: text().notNull(),
@@ -126,10 +127,11 @@ export const prices = tradingComps.table(
   {
     id: serial().primaryKey().notNull(),
     token: varchar({ length: 50 }).notNull(),
-    price: numeric({ precision: 30, scale: 15, mode: "number" }).notNull(),
+    price: numeric({ mode: "number" }).notNull(),
     timestamp: timestamp({ withTimezone: true }).defaultNow(),
     chain: varchar({ length: 10 }),
     specificChain: varchar("specific_chain", { length: 20 }),
+    symbol: varchar("symbol", { length: 20 }).notNull(),
   },
   (table) => [
     index("idx_prices_chain").on(table.chain),
@@ -152,6 +154,7 @@ export const portfolioSnapshots = tradingComps.table(
     teamId: uuid("team_id").notNull(),
     competitionId: uuid("competition_id").notNull(),
     timestamp: timestamp({ withTimezone: true }).defaultNow(),
+    // TODO: are units of this number usdc? if so, the precision and scale are good here. if not, need to remove.
     totalValue: numeric("total_value", {
       precision: 30,
       scale: 15,
@@ -183,14 +186,15 @@ export const portfolioTokenValues = tradingComps.table(
     id: serial().primaryKey().notNull(),
     portfolioSnapshotId: integer("portfolio_snapshot_id").notNull(),
     tokenAddress: varchar("token_address", { length: 50 }).notNull(),
-    amount: numeric({ precision: 30, scale: 15, mode: "number" }).notNull(),
+    amount: numeric({ mode: "number" }).notNull(),
     valueUsd: numeric("value_usd", {
       precision: 30,
       scale: 15,
       mode: "number",
     }).notNull(),
-    price: numeric({ precision: 30, scale: 15, mode: "number" }).notNull(),
+    price: numeric({ mode: "number" }).notNull(),
     specificChain: varchar("specific_chain", { length: 20 }),
+    symbol: varchar("symbol", { length: 20 }).notNull(),
   },
   (table) => [
     index("idx_portfolio_token_values_snapshot_id").on(

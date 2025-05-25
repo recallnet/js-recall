@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
 
-import { SIWEButton } from "../siwe";
+import { SIWEButton } from "@/components/siwe";
 
 export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
   children,
@@ -59,7 +59,9 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
           JOIN / SIGN IN
         </SIWEButton>
       </nav>
-      <div className="xl:px-65 lg:px-30 md:px-15 px-5">{children}</div>
+      <div className="xl:px-35 lg:px-30 md:px-15 flex justify-center px-5">
+        {children}
+      </div>
     </>
   );
 };

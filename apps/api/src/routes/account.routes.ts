@@ -309,6 +309,9 @@ export function configureAccountRoutes(
    *                       specificChain:
    *                         type: string
    *                         description: Specific chain for EVM tokens
+   *                       symbol:
+   *                         type: string
+   *                         description: Token symbol
    *       401:
    *         description: Unauthorized - Missing or invalid authentication
    *       500:
@@ -374,10 +377,14 @@ export function configureAccountRoutes(
    *                         description: Whether the trade was successfully completed
    *                       error:
    *                         type: string
+   *                         nullable: true
    *                         description: Error message if the trade failed
    *                       reason:
    *                         type: string
    *                         description: Reason provided for executing the trade
+   *                       tradeAmountUsd:
+   *                         type: number
+   *                         description: The USD value of the trade at execution time
    *                       timestamp:
    *                         type: string
    *                         format: date-time
@@ -394,6 +401,9 @@ export function configureAccountRoutes(
    *                       toSpecificChain:
    *                         type: string
    *                         description: Specific chain for the destination token
+   *                       toTokenSymbol:
+   *                         type: string
+   *                         description: Symbol of the destination token
    *       401:
    *         description: Unauthorized - Missing or invalid authentication
    *       500:
@@ -453,6 +463,9 @@ export function configureAccountRoutes(
    *                         type: string
    *                         nullable: true
    *                         description: Specific chain for EVM tokens
+   *                       symbol:
+   *                         type: string
+   *                         description: Token symbol
    *                 snapshotTime:
    *                   type: string
    *                   format: date-time

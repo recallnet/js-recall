@@ -19,7 +19,11 @@ import {
   TeamManager,
   TradeSimulator,
 } from "@/services/index.js";
-import { CompetitionStatus, CrossChainTradingType } from "@/types/index.js";
+import {
+  CompetitionStatus,
+  CrossChainTradingType,
+  PagingParams,
+} from "@/types/index.js";
 
 /**
  * Competition Manager Service
@@ -350,7 +354,21 @@ export class CompetitionManager {
    * @returns Array of competitions with PENDING status
    */
   async getUpcomingCompetitions() {
-    return findByStatus(CompetitionStatus.PENDING);
+    return findByStatus(CompetitionStatus.PENDING, {
+      sort: "",
+      limit: 100,
+      offset: 0,
+    });
+  }
+
+  /**
+   * Get all competitions with a given status and a sort, limit, or offset
+   * @param status The status of the competitions to get
+   * @param pagingParams The paging parameters to use
+   * @returns Array of competitions.
+   */
+  async getCompetitions(status: CompetitionStatus, pagingParams: PagingParams) {
+    return await findByStatus(status, pagingParams);
   }
 
   /**

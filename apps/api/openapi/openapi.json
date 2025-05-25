@@ -577,6 +577,10 @@
                           "specificChain": {
                             "type": "string",
                             "description": "Specific chain for EVM tokens"
+                          },
+                          "symbol": {
+                            "type": "string",
+                            "description": "Token symbol"
                           }
                         }
                       }
@@ -666,11 +670,16 @@
                           },
                           "error": {
                             "type": "string",
+                            "nullable": true,
                             "description": "Error message if the trade failed"
                           },
                           "reason": {
                             "type": "string",
                             "description": "Reason provided for executing the trade"
+                          },
+                          "tradeAmountUsd": {
+                            "type": "number",
+                            "description": "The USD value of the trade at execution time"
                           },
                           "timestamp": {
                             "type": "string",
@@ -692,6 +701,10 @@
                           "toSpecificChain": {
                             "type": "string",
                             "description": "Specific chain for the destination token"
+                          },
+                          "toTokenSymbol": {
+                            "type": "string",
+                            "description": "Symbol of the destination token"
                           }
                         }
                       }
@@ -883,6 +896,10 @@
                             "type": "string",
                             "nullable": true,
                             "description": "Specific chain for EVM tokens"
+                          },
+                          "symbol": {
+                            "type": "string",
+                            "description": "Token symbol"
                           }
                         }
                       }
@@ -2361,7 +2378,329 @@
         }
       }
     },
-    "/api/competition/leaderboard": {
+    "/api/auth/nonce": {
+      "get": {
+        "summary": "Get a random nonce for SIWE authentication",
+        "description": "Generates a new nonce and stores it in the session for SIWE message verification",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "A new nonce generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "nonce"
+                  ],
+                  "properties": {
+                    "nonce": {
+                      "type": "string",
+                      "description": "The nonce to be used in the SIWE message",
+                      "example": "8J0eXAiOiJ..."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "summary": "Verify SIWE signature and create a session",
+        "description": "Verifies the SIWE message and signature, creates a session, and returns team info",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "message",
+                  "signature"
+                ],
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "description": "The SIWE message to be verified",
+                    "example": "service.example.com wants you to sign in with your Ethereum account:\n0x123...\n\nI accept the ServiceOrg Terms of Service: https://service.example.com/tos\n\nURI: https://service.example.com/login\nVersion: 1\nChain ID: 1\nNonce: 8J0eXAiOiJ...\nIssued At: 2023-01-01T00:00:00.000Z"
+                  },
+                  "signature": {
+                    "type": "string",
+                    "description": "The signature of the SIWE message",
+                    "example": "0x123abc..."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authentication successful, session created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "teamId",
+                    "wallet"
+                  ],
+                  "properties": {
+                    "teamId": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The ID of the authenticated team",
+                      "example": "team_123abc"
+                    },
+                    "wallet": {
+                      "type": "string",
+                      "description": "The wallet address of the authenticated team",
+                      "example": "0x123..."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Unauthorized: signature validation issues"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "summary": "Logout the current user by destroying the session",
+        "description": "Clears the session data and destroys the session cookie",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Logout successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Logged out successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/competitions": {
+      "get": {
+        "tags": [
+          "Competition"
+        ],
+        "summary": "Get upcoming competitions",
+        "description": "Get all competitions",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "description": "Optional filtering by competition status (default value is `active`)"
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "description": "Optional field to sort by (default value is `createdDate`)"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "description": "Optional field to choose max size of result set (default value is `10`)"
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "description": "Optional field to choose offset of result set (default value is `0`)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Competitions retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Operation success status"
+                    },
+                    "competitions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Competition ID"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Competition name"
+                          },
+                          "description": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "Competition description"
+                          },
+                          "externalLink": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "External URL for competition details"
+                          },
+                          "imageUrl": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "URL to competition image"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "PENDING"
+                            ],
+                            "description": "Competition status (always PENDING)"
+                          },
+                          "crossChainTradingType": {
+                            "type": "string",
+                            "enum": [
+                              "disallowAll",
+                              "disallowXParent",
+                              "allow"
+                            ],
+                            "description": "The type of cross-chain trading allowed in this competition"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "When the competition was created"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "When the competition was last updated"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/competitions/leaderboard": {
       "get": {
         "tags": [
           "Competition"
@@ -2544,7 +2883,7 @@
         }
       }
     },
-    "/api/competition/status": {
+    "/api/competitions/status": {
       "get": {
         "tags": [
           "Competition"
@@ -2664,7 +3003,7 @@
         }
       }
     },
-    "/api/competition/rules": {
+    "/api/competitions/rules": {
       "get": {
         "tags": [
           "Competition"
@@ -2756,7 +3095,7 @@
         }
       }
     },
-    "/api/competition/upcoming": {
+    "/api/competitions/upcoming": {
       "get": {
         "tags": [
           "Competition"
@@ -3066,6 +3405,10 @@
                       "nullable": true,
                       "description": "Specific chain for EVM tokens"
                     },
+                    "symbol": {
+                      "type": "string",
+                      "description": "Token symbol"
+                    },
                     "timestamp": {
                       "type": "string",
                       "format": "date-time",
@@ -3190,6 +3533,10 @@
                       "type": "string",
                       "nullable": true,
                       "description": "Specific chain for EVM tokens"
+                    },
+                    "symbol": {
+                      "type": "string",
+                      "description": "Token symbol"
                     }
                   }
                 }
@@ -3343,11 +3690,16 @@
                         },
                         "error": {
                           "type": "string",
+                          "nullable": true,
                           "description": "Error message if the trade failed"
                         },
                         "reason": {
                           "type": "string",
                           "description": "Reason provided for executing the trade"
+                        },
+                        "tradeAmountUsd": {
+                          "type": "number",
+                          "description": "The USD value of the trade at execution time"
                         },
                         "timestamp": {
                           "type": "string",
@@ -3369,6 +3721,10 @@
                         "toSpecificChain": {
                           "type": "string",
                           "description": "Specific chain for the destination token"
+                        },
+                        "toTokenSymbol": {
+                          "type": "string",
+                          "description": "Symbol of the destination token"
                         }
                       }
                     }
@@ -3508,6 +3864,10 @@
                       "type": "number",
                       "description": "Applied slippage percentage for this trade size"
                     },
+                    "tradeAmountUsd": {
+                      "type": "number",
+                      "description": "Estimated USD value of the trade"
+                    },
                     "prices": {
                       "type": "object",
                       "properties": {
@@ -3518,6 +3878,19 @@
                         "toToken": {
                           "type": "number",
                           "description": "Price of the destination token in USD"
+                        }
+                      }
+                    },
+                    "symbols": {
+                      "type": "object",
+                      "properties": {
+                        "fromTokenSymbol": {
+                          "type": "string",
+                          "description": "Symbol of the source token"
+                        },
+                        "toTokenSymbol": {
+                          "type": "string",
+                          "description": "Symbol of the destination token"
                         }
                       }
                     },

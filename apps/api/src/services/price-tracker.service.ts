@@ -115,12 +115,21 @@ export class PriceTracker {
           // For number results, ensure we have a valid specificChain
           const tokenSpecificChain = priceResult.specificChain;
 
+          // Get the symbol
+          const symbol = priceResult.symbol;
+
           console.log(
             `[PriceTracker] Got price $${price} from MultiChainProvider`,
           );
 
           // Store price in database for historical record
-          await this.storePrice(tokenAddress, price, chain, tokenSpecificChain);
+          await this.storePrice(
+            tokenAddress,
+            price,
+            symbol,
+            chain,
+            tokenSpecificChain,
+          );
 
           return priceResult;
         } else {
@@ -146,7 +155,7 @@ export class PriceTracker {
    * @param tokenAddress The token address to get info for
    * @param blockchainType Optional blockchain type override (EVM or SVM)
    * @param specificChain Optional specific chain override (eth, polygon, etc.)
-   * @returns Object containing token price and chain information or null
+   * @returns Object containing token price, symbol, and chain information or null
    */
   async getTokenInfo(
     tokenAddress: string,
@@ -169,11 +178,13 @@ export class PriceTracker {
         await this.storePrice(
           tokenAddress,
           price.price,
+          price.symbol,
           BlockchainType.SVM,
           "svm",
         );
         return {
           price: price.price,
+          symbol: price.symbol,
           chain: BlockchainType.SVM,
           specificChain: "svm",
         };
@@ -197,6 +208,7 @@ export class PriceTracker {
             await this.storePrice(
               tokenAddress,
               tokenInfo.price,
+              tokenInfo.symbol,
               tokenInfo.chain,
               tokenInfo.specificChain,
             );
@@ -204,6 +216,7 @@ export class PriceTracker {
 
           return {
             price: tokenInfo.price,
+            symbol: tokenInfo.symbol,
             chain: tokenInfo.chain,
             specificChain: tokenInfo.specificChain,
           };
@@ -225,6 +238,7 @@ export class PriceTracker {
       // Return combined token info
       return {
         price: price.price,
+        symbol: price.symbol,
         chain: price.chain,
         specificChain: price.specificChain,
       };
@@ -236,12 +250,14 @@ export class PriceTracker {
    * Store price data in the database
    * @param tokenAddress The token address
    * @param price The price in USD
+   * @param symbol The token symbol
    * @param chain The blockchain type (optional)
    * @param specificChain The specific chain (optional)
    */
   private async storePrice(
     tokenAddress: string,
     price: number,
+    symbol: string,
     chain: BlockchainType,
     specificChain: SpecificChain,
   ): Promise<void> {
@@ -249,6 +265,7 @@ export class PriceTracker {
       await createPrice({
         token: tokenAddress,
         price,
+        symbol,
         timestamp: new Date(),
         chain,
         specificChain,

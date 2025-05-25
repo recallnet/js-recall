@@ -4,7 +4,7 @@ import { LockClosedIcon } from "@radix-ui/react-icons";
 
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { Hexagon } from "../hexagon/index";
+import { Hexagon } from "@/components/hexagon";
 
 type AchievementCardProps = {
   achievements: { content?: React.ReactNode; locked: boolean }[];

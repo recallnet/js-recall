@@ -99,6 +99,10 @@ export type GetApiPriceTokenInfoResponse = {
    * Specific chain for EVM tokens
    */
   specificChain?: string | null | undefined;
+  /**
+   * Token symbol
+   */
+  symbol?: string | undefined;
 };
 
 /** @internal */
@@ -241,6 +245,7 @@ export const GetApiPriceTokenInfoResponse$inboundSchema: z.ZodType<
   token: z.string().optional(),
   chain: GetApiPriceTokenInfoChainResponse$inboundSchema.optional(),
   specificChain: z.nullable(z.string()).optional(),
+  symbol: z.string().optional(),
 });
 
 /** @internal */
@@ -250,6 +255,7 @@ export type GetApiPriceTokenInfoResponse$Outbound = {
   token?: string | undefined;
   chain?: string | undefined;
   specificChain?: string | null | undefined;
+  symbol?: string | undefined;
 };
 
 /** @internal */
@@ -263,6 +269,7 @@ export const GetApiPriceTokenInfoResponse$outboundSchema: z.ZodType<
   token: z.string().optional(),
   chain: GetApiPriceTokenInfoChainResponse$outboundSchema.optional(),
   specificChain: z.nullable(z.string()).optional(),
+  symbol: z.string().optional(),
 });
 
 /**

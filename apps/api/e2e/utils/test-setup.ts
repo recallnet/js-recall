@@ -163,6 +163,34 @@ afterAll(async () => {
       log("[Global Teardown] Scheduler service stopped");
     }
 
+    // Clean up any generated ROOT_ENCRYPTION_KEY from .env.test to prevent git commits
+    try {
+      const envTestPath = path.resolve(__dirname, "../../.env.test");
+      if (fs.existsSync(envTestPath)) {
+        const envContent = fs.readFileSync(envTestPath, "utf8");
+
+        // Remove any ROOT_ENCRYPTION_KEY line that was added during tests
+        const updatedContent = envContent.replace(
+          /^ROOT_ENCRYPTION_KEY=.*$\n?/m,
+          "",
+        );
+
+        if (updatedContent !== envContent) {
+          fs.writeFileSync(envTestPath, updatedContent);
+          log(
+            "[Global Teardown] ✅ Removed ROOT_ENCRYPTION_KEY from .env.test",
+          );
+        }
+      }
+    } catch (envCleanupError) {
+      log(
+        "[Global Teardown] Warning: Could not clean up .env.test encryption key: " +
+          (envCleanupError instanceof Error
+            ? envCleanupError.message
+            : String(envCleanupError)),
+      );
+    }
+
     // Add a small delay to allow any pending operations to complete
     await new Promise((resolve) => setTimeout(resolve, 500));
 

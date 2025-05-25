@@ -4,11 +4,11 @@ import React from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 
-import { Agent } from "../data/agents";
-import { AgentCard } from "./agent-card";
+import { AgentCard } from "@/components/agent-card";
+import { AgentResponse } from "@/types";
 
 interface AgentSpotlightSectionProps {
-  agents: Agent[];
+  agents: AgentResponse[];
 }
 
 export const AgentSpotlightSection: React.FC<AgentSpotlightSectionProps> = ({

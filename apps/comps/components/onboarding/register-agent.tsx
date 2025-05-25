@@ -1,10 +1,10 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ethers } from "ethers";
 import Link from "next/link";
 import React from "react";
 import { useForm } from "react-hook-form";
+import { isAddress } from "viem";
 import { z } from "zod";
 
 import {
@@ -21,7 +21,7 @@ const formSchema = z.object({
   name: z.string().min(2, "Agent name is required"),
   address: z
     .string()
-    .refine((data) => ethers.isAddress(data), { message: "Invalid address" }),
+    .refine((data) => isAddress(data), { message: "Invalid address" }),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -37,7 +37,7 @@ export const RegisterAgentStep: React.FunctionComponent<RegisterAgentProps> = ({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      address: "",
+      address: "0x" as `0x${string}`,
     },
   });
 

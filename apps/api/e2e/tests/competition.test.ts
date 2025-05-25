@@ -76,7 +76,7 @@ describe("Competition API", () => {
     const competition = competitionResponse.competition;
     expect(competition).toBeDefined();
     expect(competition.name).toBe(competitionName);
-    expect(competition.status).toBe("ACTIVE");
+    expect(competition.status).toBe("active");
     expect(competition.teamIds).toContain(team1.id);
     expect(competition.teamIds).toContain(team2.id);
   });
@@ -97,7 +97,7 @@ describe("Competition API", () => {
     const competition = competitionResponse.competition;
     expect(competition).toBeDefined();
     expect(competition.name).toBe(competitionName);
-    expect(competition.status).toBe("PENDING");
+    expect(competition.status).toBe("pending");
     expect(competition.startDate).toBeNull();
     expect(competition.endDate).toBeNull();
   });
@@ -127,7 +127,7 @@ describe("Competition API", () => {
     // Verify competition was created in PENDING state
     const pendingCompetition = createResponse.competition;
     expect(pendingCompetition).toBeDefined();
-    expect(pendingCompetition.status).toBe("PENDING");
+    expect(pendingCompetition.status).toBe("pending");
 
     // Now start the existing competition
     const startResponse = await startExistingTestCompetition(
@@ -141,7 +141,7 @@ describe("Competition API", () => {
     expect(activeCompetition).toBeDefined();
     expect(activeCompetition.id).toBe(pendingCompetition.id);
     expect(activeCompetition.name).toBe(competitionName);
-    expect(activeCompetition.status).toBe("ACTIVE");
+    expect(activeCompetition.status).toBe("active");
     expect(activeCompetition.startDate).toBeDefined();
     expect(activeCompetition.teamIds).toContain(team1.id);
     expect(activeCompetition.teamIds).toContain(team2.id);
@@ -171,7 +171,7 @@ describe("Competition API", () => {
     );
 
     const activeCompetition = startResponse.competition;
-    expect(activeCompetition.status).toBe("ACTIVE");
+    expect(activeCompetition.status).toBe("active");
 
     // Try to start the same competition again
     try {
@@ -199,7 +199,7 @@ describe("Competition API", () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       expect(error.success).toBe(false);
-      expect(error.error).toContain("ACTIVE");
+      expect(error.error).toContain("active");
     }
   });
 
@@ -223,7 +223,7 @@ describe("Competition API", () => {
     expect(statusResponse.success).toBe(true);
     expect(statusResponse.competition).toBeDefined();
     expect(statusResponse.competition?.name).toBe(competitionName);
-    expect(statusResponse.competition?.status).toBe("ACTIVE");
+    expect(statusResponse.competition?.status).toBe("active");
 
     // Team checks leaderboard
     const leaderboardResponse =
@@ -306,7 +306,7 @@ describe("Competition API", () => {
     expect(adminStatusResponse.active).toBe(true);
     expect(adminStatusResponse.competition).toBeDefined();
     expect(adminStatusResponse.competition?.name).toBe(competitionName);
-    expect(adminStatusResponse.competition?.status).toBe("ACTIVE");
+    expect(adminStatusResponse.competition?.status).toBe("active");
 
     // Admin checks leaderboard
     const adminLeaderboardResponse =
@@ -422,7 +422,7 @@ describe("Competition API", () => {
       competition.competition.id,
     )) as EndCompetitionResponse;
     expect(endResponse.success).toBe(true);
-    expect(endResponse.competition.status).toBe("COMPLETED");
+    expect(endResponse.competition.status).toBe("completed");
 
     // Give a small delay for deactivation to complete
     await wait(500);
@@ -603,7 +603,7 @@ describe("Competition API", () => {
     }
   });
 
-  test("teams can view upcoming competitions", async () => {
+  test("teams can view competitions by status", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -637,9 +637,9 @@ describe("Competition API", () => {
     )) as CreateCompetitionResponse;
 
     // Verify all competitions were created and in PENDING state
-    expect(createResponse1.competition.status).toBe("PENDING");
-    expect(createResponse2.competition.status).toBe("PENDING");
-    expect(createResponse3.competition.status).toBe("PENDING");
+    expect(createResponse1.competition.status).toBe("pending");
+    expect(createResponse2.competition.status).toBe("pending");
+    expect(createResponse3.competition.status).toBe("pending");
 
     // Call the new endpoint to get upcoming competitions
     const upcomingResponse =
@@ -649,30 +649,13 @@ describe("Competition API", () => {
     expect(upcomingResponse.success).toBe(true);
     expect(upcomingResponse.competitions).toBeDefined();
     expect(Array.isArray(upcomingResponse.competitions)).toBe(true);
-
-    // At least our 3 competitions should be there (there might be others from previous tests)
-    expect(upcomingResponse.competitions.length).toBeGreaterThanOrEqual(3);
-
-    // Verify our competitions are in the response
-    const foundComp1 = upcomingResponse.competitions.some(
-      (comp) => comp.name === comp1Name && comp.status === "PENDING",
-    );
-    const foundComp2 = upcomingResponse.competitions.some(
-      (comp) => comp.name === comp2Name && comp.status === "PENDING",
-    );
-    const foundComp3 = upcomingResponse.competitions.some(
-      (comp) => comp.name === comp3Name && comp.status === "PENDING",
-    );
-
-    expect(foundComp1).toBe(true);
-    expect(foundComp2).toBe(true);
-    expect(foundComp3).toBe(true);
+    expect(upcomingResponse.competitions.length).toBe(3);
 
     // Verify each competition has all expected fields
     upcomingResponse.competitions.forEach((comp) => {
       expect(comp.id).toBeDefined();
       expect(comp.name).toBeDefined();
-      expect(comp.status).toBe("PENDING");
+      expect(comp.status).toBe("pending");
       expect(comp.crossChainTradingType).toBeDefined();
       expect(comp.createdAt).toBeDefined();
       expect(comp.updatedAt).toBeDefined();
@@ -695,24 +678,109 @@ describe("Competition API", () => {
     const upcomingResponseAfterStart =
       (await teamClient.getUpcomingCompetitions()) as UpcomingCompetitionsResponse;
 
-    // Verify the started competition is no longer in the list
-    const foundComp1AfterStart = upcomingResponseAfterStart.competitions.some(
-      (comp) => comp.id === createResponse1.competition.id,
-    );
+    expect(upcomingResponseAfterStart.competitions.length).toBe(2);
 
-    expect(foundComp1AfterStart).toBe(false);
+    // Get active competitions
+    const activeResponse = (await teamClient.getCompetitions(
+      "active",
+    )) as UpcomingCompetitionsResponse;
 
-    // But the other two should still be there
-    const foundComp2AfterStart = upcomingResponseAfterStart.competitions.some(
-      (comp) => comp.id === createResponse2.competition.id,
-    );
-    const foundComp3AfterStart = upcomingResponseAfterStart.competitions.some(
-      (comp) => comp.id === createResponse3.competition.id,
-    );
-
-    expect(foundComp2AfterStart).toBe(true);
-    expect(foundComp3AfterStart).toBe(true);
+    expect(activeResponse.competitions.length).toBe(1);
   });
+
+  test("viewing competitions with invalid querystring values returns 400", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register a team
+    const { client: teamClient } = await registerTeamAndGetClient(
+      adminApiKey,
+      "Upcoming Viewer Team",
+    );
+
+    // Create the competitions
+    await adminClient.createCompetition(
+      `Upcoming Competition ${Date.now()}`,
+      "Test competition 1",
+      CrossChainTradingType.allow,
+    );
+
+    // Call the new endpoint to get competitions sorted by start date ascending
+    const ascResponse = (await teamClient.getCompetitions(
+      "pending",
+      "foo",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    )) as any;
+
+    expect(ascResponse.success).toBe(false);
+    expect(ascResponse.status).toBe(400);
+  });
+
+  test("teams can view sorted competitions", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register a team
+    const { client: teamClient } = await registerTeamAndGetClient(
+      adminApiKey,
+      "Upcoming Viewer Team",
+    );
+
+    // Create several competitions in PENDING state that are at least 1200 ms
+    // apart in started date, since we are storing at a 1 second precision.
+    const comp1Name = `Upcoming Competition 1 ${Date.now()}`;
+    const comp2Name = `Upcoming Competition 2 ${Date.now()}`;
+    const comp3Name = `Upcoming Competition 3 ${Date.now()}`;
+
+    // Create the competitions
+    await adminClient.createCompetition(
+      comp1Name,
+      "Test competition 1",
+      CrossChainTradingType.allow,
+    );
+    await wait(1200);
+    await adminClient.createCompetition(
+      comp2Name,
+      "Test competition 2",
+      CrossChainTradingType.disallowAll,
+    );
+    await wait(1200);
+    await adminClient.createCompetition(
+      comp3Name,
+      "Test competition 3",
+      CrossChainTradingType.allow,
+    );
+
+    // Call the new endpoint to get competitions sorted by start date ascending
+    const ascResponse = (await teamClient.getCompetitions(
+      "pending",
+      "createdAt",
+    )) as UpcomingCompetitionsResponse;
+
+    // Verify the response
+    expect(ascResponse.success).toBe(true);
+    expect(ascResponse.competitions).toBeDefined();
+    expect(Array.isArray(ascResponse.competitions)).toBe(true);
+    expect(ascResponse.competitions[0]?.name).toBe(comp1Name);
+    expect(ascResponse.competitions[1]?.name).toBe(comp2Name);
+    expect(ascResponse.competitions[2]?.name).toBe(comp3Name);
+
+    // Call the new endpoint to get competitions sorted by start date descending NOTE: the '-' at the beginning of the sort value
+    const descResponse = (await teamClient.getCompetitions(
+      "pending",
+      "-createdAt",
+    )) as UpcomingCompetitionsResponse;
+
+    // Verify the response
+    expect(descResponse.success).toBe(true);
+    expect(descResponse.competitions).toBeDefined();
+    expect(Array.isArray(descResponse.competitions)).toBe(true);
+    expect(descResponse.competitions[0]?.name).toBe(comp3Name);
+    expect(descResponse.competitions[1]?.name).toBe(comp2Name);
+    expect(descResponse.competitions[2]?.name).toBe(comp1Name);
+  }, 1000000);
 
   test("competitions include externalLink and imageUrl fields", async () => {
     // Setup admin client

@@ -13,15 +13,16 @@ export const JoinSwarmSection: React.FC<JoinSwarmSectionProps> = ({
   socialLinks,
 }) => {
   return (
-    <section className="my-12">
-      <h2 className="text-primary mb-6 text-[28px] font-bold">
-        Join the swarm
-      </h2>
+    <section className="lg:px-30 relative left-1/2 right-1/2 ml-[-50vw] mr-[-50vw] flex w-screen justify-center bg-white px-10 py-10 text-gray-500 sm:px-20">
+      <div className="max-w-[2000px] md:w-full xl:w-[1500px]">
+        <h2 className="mb-6 text-4xl font-bold">Join the swarm</h2>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {socialLinks.map((link) => (
-          <SocialLinkCard key={link.id} socialLink={link} />
-        ))}
+        <div className="mb-5 h-1 w-full border-b-2 border-gray-200"></div>
+        <div className="grid grid-cols-1 gap-4 border md:grid-cols-2 lg:grid-cols-4">
+          {socialLinks.map((link) => (
+            <SocialLinkCard key={link.id} socialLink={link} />
+          ))}
+        </div>
       </div>
     </section>
   );

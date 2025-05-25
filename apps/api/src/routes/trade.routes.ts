@@ -113,10 +113,14 @@ export function configureTradeRoutes(
    *                       description: Whether the trade was successfully completed
    *                     error:
    *                       type: string
+   *                       nullable: true
    *                       description: Error message if the trade failed
    *                     reason:
    *                       type: string
    *                       description: Reason provided for executing the trade
+   *                     tradeAmountUsd:
+   *                       type: number
+   *                       description: The USD value of the trade at execution time
    *                     timestamp:
    *                       type: string
    *                       format: date-time
@@ -133,6 +137,9 @@ export function configureTradeRoutes(
    *                     toSpecificChain:
    *                       type: string
    *                       description: Specific chain for the destination token
+   *                     toTokenSymbol:
+   *                       type: string
+   *                       description: Symbol of the destination token
    *       400:
    *         description: Invalid input parameters
    *       401:
@@ -230,6 +237,9 @@ export function configureTradeRoutes(
    *                 slippage:
    *                   type: number
    *                   description: Applied slippage percentage for this trade size
+   *                 tradeAmountUsd:
+   *                   type: number
+   *                   description: Estimated USD value of the trade
    *                 prices:
    *                   type: object
    *                   properties:
@@ -239,6 +249,15 @@ export function configureTradeRoutes(
    *                     toToken:
    *                       type: number
    *                       description: Price of the destination token in USD
+   *                 symbols:
+   *                   type: object
+   *                   properties:
+   *                     fromTokenSymbol:
+   *                       type: string
+   *                       description: Symbol of the source token
+   *                     toTokenSymbol:
+   *                       type: string
+   *                       description: Symbol of the destination token
    *                 chains:
    *                   type: object
    *                   properties:

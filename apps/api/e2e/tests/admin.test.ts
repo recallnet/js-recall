@@ -1,6 +1,10 @@
 import axios from "axios";
+import * as crypto from "crypto";
+import { and, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { db } from "@/database/db.js";
+import { teams } from "@/database/schema/core/defs.js";
 import {
   AdminTeamsListResponse,
   ApiResponse,
@@ -461,5 +465,61 @@ describe("Admin API", () => {
     await adminClient.deleteTeam(team1Result.team.id);
     await adminClient.deleteTeam(team2Result.team.id);
     await adminClient.deleteTeam(team3Result.team.id);
+  });
+
+  test("should generate and use new encryption key after admin setup", async () => {
+    // get admin db entry
+    const [result] = await db
+      .select()
+      .from(teams)
+      .where(and(eq(teams.email, ADMIN_EMAIL), eq(teams.isAdmin, true)))
+      .limit(1);
+    expect(result).toBeDefined();
+    expect(result?.apiKey).toBeDefined();
+
+    // decrypting the apiKey using the default root key should not match the admin key
+    const defaultEncryptionKey =
+      "default_encryption_key_do_not_use_in_production";
+
+    const decryptApiKey = (encryptedKey: string): string => {
+      try {
+        const algorithm = "aes-256-cbc";
+        const parts = encryptedKey.split(":");
+
+        if (parts.length !== 2) {
+          throw new Error("Invalid encrypted key format");
+        }
+
+        const iv = Buffer.from(parts[0]!, "hex");
+        const encrypted = parts[1]!;
+
+        // Create a consistently-sized key from the root encryption key
+        const cryptoKey = crypto
+          .createHash("sha256")
+          .update(defaultEncryptionKey)
+          .digest();
+
+        const decipher = crypto.createDecipheriv(algorithm, cryptoKey, iv);
+        let decrypted = decipher.update(encrypted, "hex", "utf8");
+        decrypted += decipher.final("utf8");
+
+        return decrypted;
+      } catch (error) {
+        console.error("[TeamManager] Error decrypting API key:", error);
+        throw error;
+      }
+    };
+    // expect process.env.ENCRYPTION_KEY to be different from the default key
+    expect(process.env.ROOT_ENCRYPTION_KEY).not.toBe(defaultEncryptionKey);
+
+    // Try to decrypt the admin's API key with the default encryption key
+    // This should FAIL if our fix is working (meaning a new key was generated)
+    expect(() => {
+      decryptApiKey(result!.apiKey);
+    }).toThrow(); // Should throw "bad decrypt" error
+
+    console.log(
+      "TEST: ✅ Cannot decrypt admin API key with default encryption key - new key was generated!",
+    );
   });
 });
