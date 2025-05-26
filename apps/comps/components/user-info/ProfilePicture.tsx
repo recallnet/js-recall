@@ -2,17 +2,12 @@ import { useClickAway } from "@uidotdev/usehooks";
 import { SquarePen } from "lucide-react";
 import React, { useState } from "react";
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@recallnet/ui2/components/avatar";
+import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
 import { Button } from "@recallnet/ui2/components/button";
 import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,

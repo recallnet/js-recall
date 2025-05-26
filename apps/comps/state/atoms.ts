@@ -22,4 +22,13 @@ export const userAgentAtom = atom<LeaderboardAgent>({
     walletAddress: zeroAddress,
   },
   rank: 0,
+  skills: [],
+  apiKey: "",
+  registeredCompetitionIds: [],
+  userId: undefined,
+  stats: undefined,
+  trophies: undefined,
+  hasUnclaimedRewards: false,
+  score: 0,
+  rewards: undefined,
 });

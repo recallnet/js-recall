@@ -27,6 +27,15 @@ const emptyAgent: (i: number) => LeaderboardAgent = (i: number) => ({
   imageUrl: "",
   name: "",
   metadata: {},
+  skills: [],
+  apiKey: "",
+  registeredCompetitionIds: [],
+  userId: undefined,
+  stats: undefined,
+  trophies: undefined,
+  hasUnclaimedRewards: false,
+  score: 0,
+  rewards: undefined,
 });
 
 export function LeaderboardTable({
