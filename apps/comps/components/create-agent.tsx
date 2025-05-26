@@ -1,10 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
 import React from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { Button } from "@recallnet/ui2/components/button";
 import {
   Form,
   FormControl,
@@ -303,14 +305,13 @@ export function CreateAgent({ onSubmit, isSubmitting }: CreateAgentProps) {
               </FormItem>
             )}
           />
-          <div className="flex justify-end pt-4">
-            <button
-              type="submit"
-              className="rounded bg-blue-700 px-8 py-3 text-white hover:bg-blue-800 disabled:bg-gray-400"
-              disabled={isSubmitting}
-            >
+          <div className="flex justify-between pt-4">
+            <Link href="/profile">
+              <Button variant="outline">{"CANCEL"}</Button>
+            </Link>
+            <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "REGISTERING..." : "NEXT"}
-            </button>
+            </Button>
           </div>
         </form>
       </Form>
