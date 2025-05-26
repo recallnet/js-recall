@@ -1,13 +1,17 @@
 "use client";
 
-import { CaretDownIcon } from "@radix-ui/react-icons";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 import { FaAward, FaTrophy } from "react-icons/fa";
 
 import { displayAddress } from "@recallnet/address-utils/display";
-import { Button } from "@recallnet/ui2/components/shadcn/button";
+import { Button } from "@recallnet/ui2/components/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@recallnet/ui2/components/collapsible";
 import Card from "@recallnet/ui2/components/shadcn/card";
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import { cn } from "@recallnet/ui2/lib/utils";
@@ -85,36 +89,35 @@ export default function UserAgentsSection({
     );
 
   return (
-    <div className="flex w-full flex-col">
-      <div className="border-b-1 flex w-full justify-between border-gray-700 p-5">
-        <div className="flex items-center gap-2">
-          <CaretDownIcon className="text-gray-500" width={35} height={35} />
-          <span className="text-2xl font-bold text-white">Your Agents</span>
-          <span className="text-xl text-gray-400">({nAgents})</span>
+    <Collapsible defaultOpen>
+      <CollapsibleTrigger className="border-b-1 flex w-full p-5">
+        <div className="flex w-full items-center justify-between">
+          <div className="ml-2 flex items-center gap-2">
+            <span className="text-2xl font-bold">Your Agents</span>
+            <span className="text-secondary-foreground">({nAgents})</span>
+          </div>
+          <Link href="/create-agent">
+            <Button>{"+ ADD AGENT"}</Button>
+          </Link>
         </div>
-        <Link href="/create-agent">
-          <Button className="bg-sky-700 px-8 py-5 text-white hover:bg-sky-600">
-            {"+ ADD AGENT"}
-          </Button>
-        </Link>
-      </div>
-      {agentList}
-    </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent>{agentList}</CollapsibleContent>
+    </Collapsible>
   );
 }
 
 const NoAgents = () => {
   return (
-    <div className="relative w-full">
+    <div className="relative h-[350px] w-full">
       <div className="md:px-50 2xl:px-100 flex w-full flex-col items-center px-10 pt-10 text-center sm:px-20">
-        <span className="font-semibold text-white">
+        <span className="mb-2 font-semibold">
           {"You don't have any agents yet"}
         </span>
-        <span className="text-gray-500">
+        <span className="text-secondary-foreground">
           {`Kick things off by creating your very first AI agent. It'llstart competing and climbing the leaderboard in no time!`}
         </span>
         <Link href="/create-agent">
-          <Button className="mt-6 w-40 bg-sky-700 px-8 py-5 text-white hover:bg-blue-600">
+          <Button className="mt-6 w-40 whitespace-nowrap px-8 py-5">
             {"+ ADD AGENT"}
           </Button>
         </Link>
@@ -144,7 +147,7 @@ const AgentsSummary: React.FunctionComponent<{
     <div
       className={cn(
         className,
-        "flex w-full flex-col justify-around border border-gray-700 sm:flex-row",
+        "flex w-full flex-col justify-around border sm:flex-row",
         {
           "lg:h-95 sm:flex-row": isLoading,
           "2xl:flex-col": nAgents >= 3,
@@ -155,7 +158,7 @@ const AgentsSummary: React.FunctionComponent<{
     >
       <div
         className={cn(
-          "border-b-1 flex w-full flex-col items-start gap-2 border-gray-700 p-8",
+          "border-b-1 flex w-full flex-col items-start gap-2 p-8",
           borderRules,
         )}
       >
@@ -177,7 +180,7 @@ const AgentsSummary: React.FunctionComponent<{
       </div>
       <div
         className={cn(
-          "border-b-1 flex w-full flex-col items-start gap-2 border-gray-700 p-8",
+          "border-b-1 flex w-full flex-col items-start gap-2 p-8",
           borderRules,
         )}
       >
