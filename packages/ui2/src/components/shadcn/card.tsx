@@ -25,7 +25,7 @@ export const Card: React.FC<CardProps> = ({
 
   return (
     <div
-      className={cn("relative bg-white", className)}
+      className={cn("relative", className)}
       style={{
         clipPath: clipPaths[corner],
         WebkitClipPath: clipPaths[corner],
