@@ -14,7 +14,6 @@ import {
   FormItem,
 } from "@recallnet/ui2/components/shadcn/form";
 import { Input } from "@recallnet/ui2/components/shadcn/input";
-import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { ProfileResponse, UpdateProfileRequest } from "@/types/profile";
@@ -80,14 +79,10 @@ export default function UserInfoSection({
         }}
       />
       <div className="flex w-full flex-col items-start justify-center gap-5 p-4">
-        {isLoading ? (
-          <Skeleton className="h-9 w-60 rounded" />
-        ) : (
-          <div className="flex items-center gap-3">
-            <h2 className="text-4xl font-bold">{user?.name}</h2>
-            {user?.isVerified && <BadgeCheckIcon className="text-green-500" />}
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          <h2 className="text-4xl font-bold">{user?.name}</h2>
+          {user?.isVerified && <BadgeCheckIcon className="text-green-500" />}
+        </div>
 
         <Form {...form}>
           <form
@@ -117,8 +112,6 @@ export default function UserInfoSection({
                   />
                   <Button>Save</Button>
                 </div>
-              ) : isLoading ? (
-                <Skeleton className="h-2 w-60 rounded" />
               ) : (
                 <>
                   <FaPenToSquare
@@ -155,8 +148,6 @@ export default function UserInfoSection({
                   />
                   <Button>Save</Button>
                 </div>
-              ) : isLoading ? (
-                <Skeleton className="h-2 w-60 rounded" />
               ) : (
                 <>
                   <FaPenToSquare
