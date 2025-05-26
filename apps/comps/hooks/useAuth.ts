@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 
 import { ApiClient } from "@/lib/api-client";
 import { LoginRequest } from "@/types";
@@ -42,14 +43,41 @@ export const useLogin = () => {
  */
 export const useLogout = () => {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   return useMutation({
     mutationFn: async () => {
-      return apiClient.logout();
+      try {
+        // Clear all queries from cache
+        queryClient.clear();
+
+        // Clear local storage items
+        localStorage.clear();
+        sessionStorage.clear();
+
+        // Call the logout API
+        await apiClient.logout();
+
+        return true;
+      } catch (error) {
+        console.error("Logout error:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       // Invalidate relevant queries after logout
       queryClient.invalidateQueries({ queryKey: ["profile"] });
+
+      // Redirect to home page
+      router.push("/");
+    },
+    onError: (error) => {
+      console.error("Logout failed:", error);
+      // Even if the API call fails, we should still clear local state
+      queryClient.clear();
+      localStorage.clear();
+      sessionStorage.clear();
+      router.push("/");
     },
   });
 };

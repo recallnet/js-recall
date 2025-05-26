@@ -55,7 +55,15 @@ export class ApiClient {
 
     if (!response.ok) {
       if (response.status === 401) {
-        window.location.href = "/competitions";
+        // Handle unauthorized response
+        if (typeof window !== "undefined") {
+          // Clear all auth-related state
+          localStorage.clear();
+          sessionStorage.clear();
+
+          // Redirect to home page
+          window.location.href = "/";
+        }
       }
       const error = await response.json().catch(() => ({
         message: "An unknown error occurred",
