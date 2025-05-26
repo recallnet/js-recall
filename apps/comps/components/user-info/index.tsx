@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import Image from "next/image";
 import React, { useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { FaPenToSquare } from "react-icons/fa6";
@@ -19,6 +18,8 @@ import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { ProfileResponse, UpdateProfileRequest } from "@/types/profile";
+
+import { ProfilePicture } from "./ProfilePicture";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
@@ -70,18 +71,14 @@ export default function UserInfoSection({
   };
 
   return (
-    <div className="h-70 flex w-full border border-gray-500">
-      {isLoading || !user?.image ? (
-        <Skeleton className="w-[350px]" />
-      ) : (
-        <Image
-          src={user?.image}
-          alt="agent"
-          className="pointer-events-none hidden h-full sm:block"
-          width={350}
-          height={350}
-        />
-      )}
+    <div className="flex w-full border">
+      <ProfilePicture
+        image={user?.image}
+        isLoading={isLoading}
+        onSave={async (newUrl) => {
+          await onSave({ image: newUrl });
+        }}
+      />
       <div className="flex w-full flex-col items-start justify-center gap-5 p-4">
         {isLoading ? (
           <Skeleton className="h-9 w-60 rounded" />
@@ -99,7 +96,7 @@ export default function UserInfoSection({
           >
             {/* Email row */}
             <div className="text-secondary-foreground flex items-center gap-4">
-              <span className="w-20 font-semibold text-white">E-mail</span>
+              <span className="text-foreground w-20 font-semibold">E-mail</span>
               {editField === "email" ? (
                 <div className="flex items-center gap-2">
                   <FormField
@@ -110,7 +107,7 @@ export default function UserInfoSection({
                         <FormControl>
                           <Input
                             {...field}
-                            className="w-full max-w-sm bg-gray-700"
+                            className="w-full max-w-sm"
                             autoFocus
                             onKeyDown={handleKeyDown}
                           />
@@ -135,7 +132,9 @@ export default function UserInfoSection({
 
             {/* Website row */}
             <div className="text-secondary-foreground flex items-center gap-4">
-              <span className="w-20 font-semibold text-white">Website</span>
+              <span className="text-foreground w-20 font-semibold">
+                Website
+              </span>
               {editField === "website" ? (
                 <div className="flex items-center gap-2">
                   <FormField
@@ -146,7 +145,7 @@ export default function UserInfoSection({
                         <FormControl>
                           <Input
                             {...field}
-                            className="w-full max-w-sm bg-gray-700"
+                            className="w-full max-w-sm"
                             autoFocus
                             onKeyDown={handleKeyDown}
                           />
