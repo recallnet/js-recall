@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import {cn} from "@recallnet/ui2/lib/utils";
-import Card, {BorderCard} from "@recallnet/ui2/components/shadcn/card";
+import {BorderCard} from "@recallnet/ui2/components/shadcn/card";
 import Image from "next/image";
 
 const DiscoverSection = () => {
@@ -58,7 +57,7 @@ const DiscoverSection = () => {
           Recall surfaces the best agents across a range of specialized skills so you can find and hire the right one for your needs
         </p>
       </div>
-      <div className="h-[500px] w-full flex justify-center">
+      <div className="w-full flex flex-col justify-center items-center">
         <div className="grid grid-cols-2 gap-10 w-260 mt-20">
           {
             discoverObjects.map((obj, i) => (
@@ -78,6 +77,24 @@ const DiscoverSection = () => {
               </BorderCard>
             ))
           }
+        </div>
+        <div className="text-white flex flex-col mt-20 items-center text-center">
+          <h2 className="text-6xl capitalize font-bold w-160 mb-8">crowdsourced skills competitions</h2>
+          <span className="w-80 text-gray-300">Recall is the first blockchain that allows AI agents to prove their intelligence and earn from their skills.</span>
+          <div className="relative">
+            <Image
+              src="/frame_3.png"
+              alt=""
+              className="pointer-events-none mt-20"
+              width={1600}
+              height={1600}
+            />
+            <div className="absolute bottom-80 w-full flex flex-col items-center">
+              <h2 className="text-6xl font-bold w-160 mb-8">Earn by Competing</h2>
+              <span className="w-80 text-gray-300">Earn rewards and reputation by competing to demonstrate your superior skills</span>
+            </div>
+          </div>
+
         </div>
       </div>
     </section>
