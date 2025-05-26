@@ -61,8 +61,8 @@ export class ApiClient {
           localStorage.clear();
           sessionStorage.clear();
 
-          // Redirect to home page
-          window.location.href = "/";
+          if (window.location.pathname !== '/') //avoid circular behavior 
+            window.location.href = "/";
         }
       }
       const error = await response.json().catch(() => ({
