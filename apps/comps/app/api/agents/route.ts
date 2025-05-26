@@ -1,9 +1,8 @@
+import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { v4 as uuid } from "uuid";
 
-import { addAgent } from "@/data-mock/db";
-import { agents } from "@/data-mock/fixtures";
-import { Agent } from "@/types";
+import { addAgent, store } from "@/data-mock/db";
+import { CreateAgentRequest } from "@/types";
 import { applyFilters, applySort, paginate } from "@/utils";
 
 export async function GET(req: NextRequest) {
@@ -13,7 +12,7 @@ export async function GET(req: NextRequest) {
   const limit = Number(searchParams.get("limit") ?? 20);
   const offset = Number(searchParams.get("offset") ?? 0);
 
-  let rows = agents;
+  let rows = store.agents;
   rows = applyFilters(rows, filter);
   rows = applySort(rows, sort);
   const { metadata, data } = paginate(rows, limit, offset);
@@ -22,13 +21,18 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const agentData = await req.json();
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("wallet_address")?.value;
 
-  // Generate ID if not provided
-  if (!agentData.id) {
-    agentData.id = uuid();
+  if (!userId) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  const newAgent = addAgent(agentData as Agent);
-  return NextResponse.json({ agent: newAgent }, { status: 201 });
+  const agentData = await req.json();
+
+  const newAgent = addAgent(agentData as CreateAgentRequest, userId);
+  return NextResponse.json(
+    { agentId: newAgent.id, apiKey: newAgent.apiKey },
+    { status: 201 },
+  );
 }

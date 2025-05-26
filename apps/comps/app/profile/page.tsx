@@ -12,6 +12,7 @@ import {
 } from "@recallnet/ui2/components/breadcrumb";
 
 import { BackButton } from "@/components/back-button";
+import ProfileSkeleton from "@/components/profile-skeleton";
 import { UpdateProfile } from "@/components/update-profile";
 import UserAgentsSection from "@/components/user-agents";
 import UserInfoSection from "@/components/user-info";
@@ -31,7 +32,7 @@ export default function ProfilePage() {
   };
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <ProfileSkeleton />;
   }
 
   return (
