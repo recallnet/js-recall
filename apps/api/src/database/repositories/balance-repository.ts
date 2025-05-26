@@ -27,13 +27,14 @@ export async function count() {
  * @param tokenAddress Token address
  * @param amount Amount
  * @param specificChain Specific chain for the token
- * @param client Optional database client for transactions
+ * @param symbol Token symbol
  */
 export async function saveBalance(
   teamId: string,
   tokenAddress: string,
   amount: number,
   specificChain: string,
+  symbol: string,
 ) {
   try {
     const now = new Date();
@@ -44,6 +45,7 @@ export async function saveBalance(
         tokenAddress,
         amount,
         specificChain,
+        symbol,
         createdAt: now,
         updatedAt: now,
       })
@@ -53,6 +55,7 @@ export async function saveBalance(
           amount,
           updatedAt: new Date(),
           specificChain,
+          symbol,
         },
       })
       .returning();
@@ -108,16 +111,19 @@ export async function getTeamBalances(teamId: string) {
 /**
  * Initialize default balances for a team
  * @param teamId Team ID
- * @param initialBalances Map of token addresses to amounts
+ * @param initialBalances Map of token addresses to amounts and symbols
  */
 export async function initializeTeamBalances(
   teamId: string,
-  initialBalances: Map<string, number>,
+  initialBalances: Map<string, { amount: number; symbol: string }>,
 ) {
   try {
     const now = new Date();
     await db.transaction(async (tx) => {
-      for (const [tokenAddress, amount] of initialBalances.entries()) {
+      for (const [
+        tokenAddress,
+        { amount, symbol },
+      ] of initialBalances.entries()) {
         const specificChain = getTokenSpecificChain(
           tokenAddress,
         ) as SpecificChain;
@@ -128,6 +134,7 @@ export async function initializeTeamBalances(
             tokenAddress,
             amount,
             specificChain,
+            symbol,
             createdAt: now,
             updatedAt: now,
           })
@@ -136,6 +143,7 @@ export async function initializeTeamBalances(
             set: {
               amount,
               specificChain,
+              symbol,
               updatedAt: now,
             },
           });
@@ -179,11 +187,11 @@ function getTokenSpecificChain(tokenAddress: string): string | null {
 /**
  * Reset balances for a team
  * @param teamId Team ID
- * @param initialBalances Map of token addresses to amounts
+ * @param initialBalances Map of token addresses to amounts and symbols
  */
 export async function resetTeamBalances(
   teamId: string,
-  initialBalances: Map<string, number>,
+  initialBalances: Map<string, { amount: number; symbol: string }>,
 ) {
   try {
     await db.transaction(async (tx) => {
@@ -193,11 +201,12 @@ export async function resetTeamBalances(
       // Then initialize new ones
       const now = new Date();
       const values = Array.from(initialBalances.entries()).map(
-        ([tokenAddress, amount]) => ({
+        ([tokenAddress, { amount, symbol }]) => ({
           teamId,
           tokenAddress,
           amount,
           specificChain: getTokenSpecificChain(tokenAddress) as SpecificChain,
+          symbol,
           createdAt: now,
           updatedAt: now,
         }),

@@ -35,10 +35,11 @@ import { tool$adminPostApiAdminTeamsTeamIdReactivate } from "./tools/adminPostAp
 import { tool$authGetApiAuthNonce } from "./tools/authGetApiAuthNonce.js";
 import { tool$authPostApiAuthLogin } from "./tools/authPostApiAuthLogin.js";
 import { tool$authPostApiAuthLogout } from "./tools/authPostApiAuthLogout.js";
-import { tool$competitionGetApiCompetitionLeaderboard } from "./tools/competitionGetApiCompetitionLeaderboard.js";
-import { tool$competitionGetApiCompetitionRules } from "./tools/competitionGetApiCompetitionRules.js";
-import { tool$competitionGetApiCompetitionStatus } from "./tools/competitionGetApiCompetitionStatus.js";
-import { tool$competitionGetApiCompetitionUpcoming } from "./tools/competitionGetApiCompetitionUpcoming.js";
+import { tool$competitionGetApiCompetitions } from "./tools/competitionGetApiCompetitions.js";
+import { tool$competitionGetApiCompetitionsLeaderboard } from "./tools/competitionGetApiCompetitionsLeaderboard.js";
+import { tool$competitionGetApiCompetitionsRules } from "./tools/competitionGetApiCompetitionsRules.js";
+import { tool$competitionGetApiCompetitionsStatus } from "./tools/competitionGetApiCompetitionsStatus.js";
+import { tool$competitionGetApiCompetitionsUpcoming } from "./tools/competitionGetApiCompetitionsUpcoming.js";
 import { tool$healthGetApiHealth } from "./tools/healthGetApiHealth.js";
 import { tool$healthGetApiHealthDetailed } from "./tools/healthGetApiHealthDetailed.js";
 import { tool$priceGetApiPrice } from "./tools/priceGetApiPrice.js";
@@ -56,7 +57,7 @@ export function createMCPServer(deps: {
 }) {
   const server = new McpServer({
     name: "ApiSDK",
-    version: "0.0.2",
+    version: "0.0.7",
   });
 
   const client = new ApiSDKCore({
@@ -108,10 +109,11 @@ export function createMCPServer(deps: {
   tool(tool$authGetApiAuthNonce);
   tool(tool$authPostApiAuthLogin);
   tool(tool$authPostApiAuthLogout);
-  tool(tool$competitionGetApiCompetitionLeaderboard);
-  tool(tool$competitionGetApiCompetitionStatus);
-  tool(tool$competitionGetApiCompetitionRules);
-  tool(tool$competitionGetApiCompetitionUpcoming);
+  tool(tool$competitionGetApiCompetitions);
+  tool(tool$competitionGetApiCompetitionsLeaderboard);
+  tool(tool$competitionGetApiCompetitionsStatus);
+  tool(tool$competitionGetApiCompetitionsRules);
+  tool(tool$competitionGetApiCompetitionsUpcoming);
   tool(tool$healthGetApiHealth);
   tool(tool$healthGetApiHealthDetailed);
   tool(tool$priceGetApiPrice);

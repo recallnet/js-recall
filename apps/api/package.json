@@ -68,7 +68,8 @@
     "redis": "^4.6.5",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "zod": "^3.25.17"
   },
   "devDependencies": {
     "@elizaos/core": "^0.25.9",

@@ -47,6 +47,10 @@ export type Token = {
    * Specific chain for EVM tokens
    */
   specificChain?: string | null | undefined;
+  /**
+   * Token symbol
+   */
+  symbol?: string | undefined;
 };
 
 /**
@@ -118,6 +122,7 @@ export const Token$inboundSchema: z.ZodType<Token, z.ZodTypeDef, unknown> =
     value: z.number().optional(),
     chain: GetApiAccountPortfolioChain$inboundSchema.optional(),
     specificChain: z.nullable(z.string()).optional(),
+    symbol: z.string().optional(),
   });
 
 /** @internal */
@@ -128,6 +133,7 @@ export type Token$Outbound = {
   value?: number | undefined;
   chain?: string | undefined;
   specificChain?: string | null | undefined;
+  symbol?: string | undefined;
 };
 
 /** @internal */
@@ -142,6 +148,7 @@ export const Token$outboundSchema: z.ZodType<
   value: z.number().optional(),
   chain: GetApiAccountPortfolioChain$outboundSchema.optional(),
   specificChain: z.nullable(z.string()).optional(),
+  symbol: z.string().optional(),
 });
 
 /**

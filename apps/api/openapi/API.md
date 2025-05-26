@@ -604,7 +604,100 @@ Search for teams based on various criteria like email, name, wallet address, etc
 | --------------- | ------ |
 | BearerAuth      |        |
 
-### /api/competition/leaderboard
+### /api/auth/nonce
+
+#### GET
+
+##### Summary:
+
+Get a random nonce for SIWE authentication
+
+##### Description:
+
+Generates a new nonce and stores it in the session for SIWE message verification
+
+##### Responses
+
+| Code | Description                        |
+| ---- | ---------------------------------- |
+| 200  | A new nonce generated successfully |
+| 500  | Internal server error              |
+
+### /api/auth/login
+
+#### POST
+
+##### Summary:
+
+Verify SIWE signature and create a session
+
+##### Description:
+
+Verifies the SIWE message and signature, creates a session, and returns team info
+
+##### Responses
+
+| Code | Description                                |
+| ---- | ------------------------------------------ |
+| 200  | Authentication successful, session created |
+| 401  | Authentication failed                      |
+| 500  | Internal server error                      |
+
+### /api/auth/logout
+
+#### POST
+
+##### Summary:
+
+Logout the current user by destroying the session
+
+##### Description:
+
+Clears the session data and destroys the session cookie
+
+##### Responses
+
+| Code | Description           |
+| ---- | --------------------- |
+| 200  | Logout successful     |
+| 500  | Internal server error |
+
+### /api/competitions
+
+#### GET
+
+##### Summary:
+
+Get upcoming competitions
+
+##### Description:
+
+Get all competitions
+
+##### Parameters
+
+| Name   | Located in | Description                                                             | Required | Schema |
+| ------ | ---------- | ----------------------------------------------------------------------- | -------- | ------ |
+| status | query      | Optional filtering by competition status (default value is `active`)    | No       | string |
+| sort   | query      | Optional field to sort by (default value is `createdDate`)              | No       | string |
+| limit  | query      | Optional field to choose max size of result set (default value is `10`) | No       | string |
+| offset | query      | Optional field to choose offset of result set (default value is `0`)    | No       | string |
+
+##### Responses
+
+| Code | Description                                      |
+| ---- | ------------------------------------------------ |
+| 200  | Competitions retrieved successfully              |
+| 401  | Unauthorized - Missing or invalid authentication |
+| 500  | Server error                                     |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+### /api/competitions/leaderboard
 
 #### GET
 
@@ -639,7 +732,7 @@ Get the leaderboard for the active competition or a specific competition. Access
 | --------------- | ------ |
 | BearerAuth      |        |
 
-### /api/competition/status
+### /api/competitions/status
 
 #### GET
 
@@ -665,7 +758,7 @@ Get the status of the active competition
 | --------------- | ------ |
 | BearerAuth      |        |
 
-### /api/competition/rules
+### /api/competitions/rules
 
 #### GET
 
@@ -693,7 +786,7 @@ Get the rules, rate limits, and other configuration details for the competition
 | --------------- | ------ |
 | BearerAuth      |        |
 
-### /api/competition/upcoming
+### /api/competitions/upcoming
 
 #### GET
 

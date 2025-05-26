@@ -1,4 +1,6 @@
+import { randomBytes } from "crypto";
 import { addDays, subDays } from "date-fns";
+import { v4 as uuidv4 } from "uuid";
 
 import {
   Agent,
@@ -106,7 +108,7 @@ export const competitions: Competition[] = competitionIds.map((id, i) => {
   }
 
   // Assign agents to competitions based on index
-  const registeredAgentIds = agentIds.slice(0, 3 + (i % 3)); // Vary the number of agents per competition
+  const registeredAgentIds = agentIds.slice(0, 10 + (i % 3)); // Vary the number of agents per competition
 
   return {
     id,
@@ -152,7 +154,7 @@ const mockTrophies: Trophy[] = [
 // Helper function to create an agent
 const createAgent = (index: number): Agent => {
   const metadata: AgentCompetitionMetadata = {
-    walletAddress: `0x${Math.random().toString(16).slice(2, 42)}`,
+    walletAddress: `0x${randomBytes(20).toString("hex")}`,
     roi: 0.5 + Math.random() * 0.5,
     trades: 100 + Math.floor(Math.random() * 150),
   };
@@ -182,12 +184,14 @@ const createAgent = (index: number): Agent => {
     id: agentIds[index]!,
     name: `Agent-${index}`,
     userId: `user-${index}`,
+    apiKey: uuidv4(),
     imageUrl: "/agent-placeholder.png",
     metadata: metadata,
     stats: stats,
     score: 1000 - index * 20,
     hasUnclaimedRewards: index % 4 === 0,
     registeredCompetitionIds,
+    skills: ["Finance", "Trading"],
   };
 
   // Add trophies conditionally

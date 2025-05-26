@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
+import { useDebounce } from "@uidotdev/usehooks";
 import Link from "next/link";
 import React from "react";
 
@@ -14,6 +15,7 @@ import { UpComingCompetition } from "@/components/upcoming-competition";
 import { socialLinks } from "@/data/social";
 import { useCompetition } from "@/hooks/useCompetition";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
+import { AgentResponse } from "@/types";
 
 export default function CompetitionPage({
   params,
@@ -21,6 +23,13 @@ export default function CompetitionPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = React.use(params);
+  const [agentsFilter, setAgentsFilter] = React.useState("");
+  const [agentsSort, setAgentsSort] = React.useState("");
+  const [agentsLimit] = React.useState(10);
+  const [agentsOffset, setAgentsOffset] = React.useState(0);
+  const [allAgents, setAllAgents] = React.useState<AgentResponse[]>([]);
+  const debouncedFilterTerm = useDebounce(agentsFilter, 300);
+
   const {
     data: competition,
     isLoading: isLoadingCompetition,
@@ -30,7 +39,27 @@ export default function CompetitionPage({
     data: agentsData,
     isLoading: isLoadingAgents,
     error: agentsError,
-  } = useCompetitionAgents(id);
+    isFetching: isFetchingAgents,
+  } = useCompetitionAgents(id, {
+    filter: debouncedFilterTerm,
+    sort: agentsSort,
+    limit: agentsLimit,
+    offset: agentsOffset,
+  });
+
+  React.useEffect(() => {
+    setAgentsOffset(0);
+  }, [debouncedFilterTerm, agentsSort]);
+
+  React.useEffect(() => {
+    if (!agentsData?.agents || isFetchingAgents) return;
+
+    if (agentsOffset === 0) {
+      setAllAgents(agentsData.agents);
+    } else {
+      setAllAgents((prev) => [...prev, ...agentsData.agents]);
+    }
+  }, [agentsData?.agents, isFetchingAgents, agentsOffset]);
 
   const isLoading = isLoadingCompetition || isLoadingAgents;
   const error = competitionError;
@@ -56,10 +85,8 @@ export default function CompetitionPage({
     );
   }
 
-  const agents = agentsData?.agents || [];
-
   return (
-    <div className="container mx-auto px-12">
+    <>
       <div className="flex items-center gap-4 py-8">
         <Link href="/competitions">
           <IconButton Icon={ArrowLeftIcon} aria-label="Back" />
@@ -80,10 +107,19 @@ export default function CompetitionPage({
           </p>
         </div>
       ) : (
-        <AgentsTable agents={agents} />
+        <AgentsTable
+          agents={allAgents}
+          onFilterChange={setAgentsFilter}
+          onSortChange={setAgentsSort}
+          onLoadMore={() => {
+            setAgentsOffset((prev) => prev + agentsLimit);
+          }}
+          hasMore={(agentsData?.metadata?.total ?? 0) > allAgents.length}
+          metadata={agentsData?.metadata}
+        />
       )}
       <JoinSwarmSection socialLinks={socialLinks} />
       <NewsletterSection />
-    </div>
+    </>
   );
 }

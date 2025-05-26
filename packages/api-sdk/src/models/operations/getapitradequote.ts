@@ -49,6 +49,17 @@ export type Prices = {
   toToken?: number | undefined;
 };
 
+export type Symbols = {
+  /**
+   * Symbol of the source token
+   */
+  fromTokenSymbol?: string | undefined;
+  /**
+   * Symbol of the destination token
+   */
+  toTokenSymbol?: string | undefined;
+};
+
 export type Chains = {
   /**
    * Blockchain type of the source token
@@ -93,6 +104,7 @@ export type GetApiTradeQuoteResponse = {
    */
   tradeAmountUsd?: number | undefined;
   prices?: Prices | undefined;
+  symbols?: Symbols | undefined;
   chains?: Chains | undefined;
 };
 
@@ -219,6 +231,56 @@ export function pricesFromJSON(
 }
 
 /** @internal */
+export const Symbols$inboundSchema: z.ZodType<Symbols, z.ZodTypeDef, unknown> =
+  z.object({
+    fromTokenSymbol: z.string().optional(),
+    toTokenSymbol: z.string().optional(),
+  });
+
+/** @internal */
+export type Symbols$Outbound = {
+  fromTokenSymbol?: string | undefined;
+  toTokenSymbol?: string | undefined;
+};
+
+/** @internal */
+export const Symbols$outboundSchema: z.ZodType<
+  Symbols$Outbound,
+  z.ZodTypeDef,
+  Symbols
+> = z.object({
+  fromTokenSymbol: z.string().optional(),
+  toTokenSymbol: z.string().optional(),
+});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace Symbols$ {
+  /** @deprecated use `Symbols$inboundSchema` instead. */
+  export const inboundSchema = Symbols$inboundSchema;
+  /** @deprecated use `Symbols$outboundSchema` instead. */
+  export const outboundSchema = Symbols$outboundSchema;
+  /** @deprecated use `Symbols$Outbound` instead. */
+  export type Outbound = Symbols$Outbound;
+}
+
+export function symbolsToJSON(symbols: Symbols): string {
+  return JSON.stringify(Symbols$outboundSchema.parse(symbols));
+}
+
+export function symbolsFromJSON(
+  jsonString: string,
+): SafeParseResult<Symbols, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) => Symbols$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'Symbols' from JSON`,
+  );
+}
+
+/** @internal */
 export const Chains$inboundSchema: z.ZodType<Chains, z.ZodTypeDef, unknown> =
   z.object({
     fromChain: z.string().optional(),
@@ -282,6 +344,7 @@ export const GetApiTradeQuoteResponse$inboundSchema: z.ZodType<
   slippage: z.number().optional(),
   tradeAmountUsd: z.number().optional(),
   prices: z.lazy(() => Prices$inboundSchema).optional(),
+  symbols: z.lazy(() => Symbols$inboundSchema).optional(),
   chains: z.lazy(() => Chains$inboundSchema).optional(),
 });
 
@@ -295,6 +358,7 @@ export type GetApiTradeQuoteResponse$Outbound = {
   slippage?: number | undefined;
   tradeAmountUsd?: number | undefined;
   prices?: Prices$Outbound | undefined;
+  symbols?: Symbols$Outbound | undefined;
   chains?: Chains$Outbound | undefined;
 };
 
@@ -312,6 +376,7 @@ export const GetApiTradeQuoteResponse$outboundSchema: z.ZodType<
   slippage: z.number().optional(),
   tradeAmountUsd: z.number().optional(),
   prices: z.lazy(() => Prices$outboundSchema).optional(),
+  symbols: z.lazy(() => Symbols$outboundSchema).optional(),
   chains: z.lazy(() => Chains$outboundSchema).optional(),
 });
 

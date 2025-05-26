@@ -48,6 +48,7 @@ export class PortfolioSnapshotter {
           amount: number;
           valueUsd: number;
           price: number;
+          symbol: string;
           specificChain: string | null;
         }
       > = {};
@@ -82,6 +83,7 @@ export class PortfolioSnapshotter {
             // Use the existing price if it's fresh
             priceResult = {
               price: latestPriceRecord.price,
+              symbol: latestPriceRecord.symbol,
               timestamp: latestPriceRecord.timestamp,
               // TODO: Implement typing for these as Drizzle enums or custom types
               chain: latestPriceRecord.chain as BlockchainType,
@@ -130,6 +132,7 @@ export class PortfolioSnapshotter {
             amount: balance.amount,
             valueUsd,
             price: priceResult.price,
+            symbol: priceResult.symbol,
             specificChain: priceResult.specificChain,
           };
           totalValue += valueUsd;
@@ -156,6 +159,7 @@ export class PortfolioSnapshotter {
           amount: data.amount,
           valueUsd: data.valueUsd,
           price: data.price,
+          symbol: data.symbol,
           specificChain: data.specificChain,
         });
       }

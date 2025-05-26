@@ -1,117 +1,165 @@
 "use client";
 
-import Image from "next/image";
+import { zodResolver } from "@hookform/resolvers/zod";
 import React, { useState } from "react";
+import { SubmitHandler, useForm } from "react-hook-form";
 import { FaPenToSquare } from "react-icons/fa6";
+import { z } from "zod";
 
-import { Skeleton } from "@recallnet/ui2/components/skeleton";
+import { Button } from "@recallnet/ui2/components/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+} from "@recallnet/ui2/components/shadcn/form";
+import { Input } from "@recallnet/ui2/components/shadcn/input";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { useProfile } from "@/hooks/useProfile";
+import { ProfileResponse, UpdateProfileRequest } from "@/types/profile";
 
-export default function UserInfoSection() {
-  const { data: user, isLoading } = useProfile();
+import { ProfilePicture } from "./ProfilePicture";
 
+const formSchema = z.object({
+  email: z.string().email({ message: "Invalid email address" }),
+  website: z
+    .string()
+    .url({ message: "Must be a valid URL" })
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
+});
+
+type FormData = z.infer<typeof formSchema>;
+
+interface UserInfoSectionProps {
+  user: ProfileResponse;
+  isLoading: boolean;
+  onSave: (data: Partial<UpdateProfileRequest>) => Promise<void>;
+}
+
+export default function UserInfoSection({
+  user,
+  isLoading,
+  onSave,
+}: UserInfoSectionProps) {
   const [editField, setEditField] = useState<"email" | "website" | null>(null);
-  const [inputValues, setInputValues] = useState({
-    email: user?.email,
-    website: user?.website,
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+
+    defaultValues: {
+      email: user?.email || "",
+      website: user?.website || "",
+    },
   });
 
-  const handleSave = (field: "email" | "website") => {
-    console.log(field);
-    //setUser((prev) => ({...prev, [field]: inputValues[field]}));
-    setEditField(null);
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      setEditField(null);
+      form.reset();
+    }
+  };
+
+  const handleSave: SubmitHandler<FormData> = async (data) => {
+    try {
+      await onSave(data);
+      setEditField(null);
+    } catch (error) {
+      console.error(`Failed to save:`, error);
+    }
   };
 
   return (
-    <div className="h-70 flex w-full border border-gray-500">
-      {isLoading || !user?.image ? (
-        <Skeleton className="w-[350px]" />
-      ) : (
-        <Image
-          src={user?.image}
-          alt="agent"
-          className="pointer-events-none hidden h-full sm:block"
-          width={350}
-          height={350}
-        />
-      )}
+    <div className="flex w-full border">
+      <ProfilePicture
+        image={user?.image}
+        isLoading={isLoading}
+        onSave={async (newUrl) => {
+          await onSave({ image: newUrl });
+        }}
+      />
       <div className="flex w-full flex-col items-start justify-center gap-5 p-4">
-        {isLoading ? (
-          <Skeleton className="h-9 w-60 rounded" />
-        ) : (
-          <div className="flex items-center gap-3">
-            <h2 className="text-4xl font-bold">{user?.name}</h2>
-            <BadgeCheckIcon className="text-green-500" />
-          </div>
-        )}
-
-        {/* Email row */}
-        <div className="flex w-full items-center gap-4 text-gray-500">
-          <span className="w-20 font-semibold text-white">E-mail</span>
-          {editField === "email" ? (
-            <>
-              <input
-                type="text"
-                className="w-full max-w-sm rounded bg-gray-700 p-2 text-white"
-                value={inputValues.email}
-                onChange={(e) =>
-                  setInputValues((v) => ({ ...v, email: e.target.value }))
-                }
-              />
-              <button
-                className="ml-2 text-sm text-blue-400 hover:underline"
-                onClick={() => handleSave("email")}
-              >
-                Save
-              </button>
-            </>
-          ) : isLoading ? (
-            <Skeleton className="h-2 w-60 rounded" />
-          ) : (
-            <>
-              <FaPenToSquare
-                className="h-5 w-5 cursor-pointer"
-                onClick={() => setEditField("email")}
-              />
-              <span className="ml-8">{user?.email}</span>
-            </>
-          )}
+        <div className="flex items-center gap-3">
+          <h2 className="text-4xl font-bold">{user?.name}</h2>
+          {user?.isVerified && <BadgeCheckIcon className="text-green-500" />}
         </div>
 
-        {/* Website row */}
-        <div className="flex w-full items-center gap-4 text-gray-500">
-          <span className="w-20 font-semibold text-white">Website</span>
-          {editField === "website" ? (
-            <>
-              <input
-                type="text"
-                className="w-full max-w-sm rounded bg-gray-700 p-2 text-white"
-                value={inputValues.website}
-                onChange={(e) =>
-                  setInputValues((v) => ({ ...v, website: e.target.value }))
-                }
-              />
-              <button
-                className="ml-2 text-sm text-blue-400 hover:underline"
-                onClick={() => handleSave("website")}
-              >
-                Save
-              </button>
-            </>
-          ) : isLoading ? (
-            <Skeleton className="h-2 w-60 rounded" />
-          ) : (
-            <>
-              <FaPenToSquare
-                className="h-5 w-5 cursor-pointer"
-                onClick={() => setEditField("website")}
-              />
-              <span className="ml-8">{user?.website}</span>
-            </>
-          )}
-        </div>
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(handleSave)}
+            className="w-full space-y-4"
+          >
+            {/* Email row */}
+            <div className="text-secondary-foreground flex items-center gap-4">
+              <span className="text-foreground w-20 font-semibold">E-mail</span>
+              {editField === "email" ? (
+                <div className="flex items-center gap-2">
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <FormControl>
+                          <Input
+                            {...field}
+                            className="w-full max-w-sm"
+                            autoFocus
+                            onKeyDown={handleKeyDown}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <Button>Save</Button>
+                </div>
+              ) : (
+                <>
+                  <FaPenToSquare
+                    className="h-5 w-5 cursor-pointer"
+                    onClick={() => setEditField("email")}
+                  />
+                  <span className="ml-8">{user?.email}</span>
+                </>
+              )}
+            </div>
+
+            {/* Website row */}
+            <div className="text-secondary-foreground flex items-center gap-4">
+              <span className="text-foreground w-20 font-semibold">
+                Website
+              </span>
+              {editField === "website" ? (
+                <div className="flex items-center gap-2">
+                  <FormField
+                    control={form.control}
+                    name="website"
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <FormControl>
+                          <Input
+                            {...field}
+                            className="w-full max-w-sm"
+                            autoFocus
+                            onKeyDown={handleKeyDown}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <Button>Save</Button>
+                </div>
+              ) : (
+                <>
+                  <FaPenToSquare
+                    className="h-5 w-5 cursor-pointer"
+                    onClick={() => setEditField("website")}
+                  />
+                  <span className="ml-8">{user?.website}</span>
+                </>
+              )}
+            </div>
+          </form>
+        </Form>
       </div>
     </div>
   );

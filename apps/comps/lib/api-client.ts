@@ -16,6 +16,7 @@ import {
   LoginResponse,
   NonceResponse,
   ProfileResponse,
+  UpdateProfileRequest,
 } from "@/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
@@ -53,6 +54,17 @@ export class ApiClient {
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        // Handle unauthorized response
+        if (typeof window !== "undefined") {
+          // Clear all auth-related state
+          localStorage.clear();
+          sessionStorage.clear();
+
+          // Redirect to home page
+          window.location.href = "/";
+        }
+      }
       const error = await response.json().catch(() => ({
         message: "An unknown error occurred",
       }));
@@ -71,7 +83,9 @@ export class ApiClient {
    */
   private formatQueryParams<T extends object>(params: T): string {
     const validParams = Object.entries(params as Record<string, unknown>)
-      .filter(([, value]) => value !== undefined && value !== null)
+      .filter(
+        ([, value]) => value !== undefined && value !== null && value !== "",
+      )
       .map(([key, value]) => `${key}=${encodeURIComponent(String(value))}`)
       .join("&");
 
@@ -251,8 +265,8 @@ export class ApiClient {
    * @param data - Profile data
    * @returns Updated profile
    */
-  async updateProfile(data: unknown): Promise<unknown> {
-    return this.request<unknown>("/profile", {
+  async updateProfile(data: UpdateProfileRequest): Promise<ProfileResponse> {
+    return this.request<ProfileResponse>("/profile", {
       method: "PUT",
       body: JSON.stringify(data),
     });

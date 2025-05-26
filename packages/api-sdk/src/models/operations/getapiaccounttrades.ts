@@ -76,6 +76,10 @@ export type Trade = {
    * Specific chain for the destination token
    */
   toSpecificChain?: string | undefined;
+  /**
+   * Symbol of the destination token
+   */
+  toTokenSymbol?: string | undefined;
 };
 
 /**
@@ -117,6 +121,7 @@ export const Trade$inboundSchema: z.ZodType<Trade, z.ZodTypeDef, unknown> =
     toChain: z.string().optional(),
     fromSpecificChain: z.string().optional(),
     toSpecificChain: z.string().optional(),
+    toTokenSymbol: z.string().optional(),
   });
 
 /** @internal */
@@ -138,6 +143,7 @@ export type Trade$Outbound = {
   toChain?: string | undefined;
   fromSpecificChain?: string | undefined;
   toSpecificChain?: string | undefined;
+  toTokenSymbol?: string | undefined;
 };
 
 /** @internal */
@@ -166,6 +172,7 @@ export const Trade$outboundSchema: z.ZodType<
   toChain: z.string().optional(),
   fromSpecificChain: z.string().optional(),
   toSpecificChain: z.string().optional(),
+  toTokenSymbol: z.string().optional(),
 });
 
 /**

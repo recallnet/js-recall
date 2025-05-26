@@ -61,6 +61,12 @@ export const SIWEButton: React.FunctionComponent<
                   My Account
                 </DropdownMenuItem>
                 <DropdownMenuItem
+                  onClick={() => router.push("/profile")}
+                  className="cursor-pointer hover:bg-gray-800"
+                >
+                  My Account
+                </DropdownMenuItem>
+                <DropdownMenuItem
                   onClick={handleLogout}
                   className="cursor-pointer hover:bg-gray-800"
                 >

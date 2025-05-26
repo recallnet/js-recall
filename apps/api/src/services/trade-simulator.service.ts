@@ -312,12 +312,14 @@ export class TradeSimulator {
         fromToken,
         fromAmount,
         fromPrice.specificChain as SpecificChain,
+        fromPrice.symbol,
       );
       await this.balanceManager.addAmount(
         teamId,
         toToken,
         toAmount,
         toPrice.specificChain as SpecificChain,
+        toPrice.symbol,
       );
 
       // Create trade record
@@ -329,6 +331,7 @@ export class TradeSimulator {
         fromAmount,
         toAmount,
         price: toAmount / fromAmount, // Exchange rate
+        toTokenSymbol: toPrice.symbol,
         tradeAmountUsd: fromValueUSD, // Store the USD value of the trade
         success: true,
         teamId,

@@ -430,20 +430,6 @@ export class ApiClient {
   }
 
   /**
-   * Get competition rules
-   */
-  async getCompetitionRules(): Promise<
-    CompetitionRulesResponse | ErrorResponse
-  > {
-    try {
-      const response = await this.axiosInstance.get("/api/competition/rules");
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "get competition rules");
-    }
-  }
-
-  /**
    * Get trade history
    */
   async getTradeHistory(): Promise<TradeHistoryResponse | ErrorResponse> {
@@ -490,7 +476,7 @@ export class ApiClient {
     CompetitionStatusResponse | ErrorResponse
   > {
     try {
-      const response = await this.axiosInstance.get("/api/competition/status");
+      const response = await this.axiosInstance.get("/api/competitions/status");
       return response.data as CompetitionStatusResponse;
     } catch (error) {
       return this.handleApiError(error, "get competition status");
@@ -503,7 +489,7 @@ export class ApiClient {
   async getLeaderboard(): Promise<LeaderboardResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get(
-        "/api/competition/leaderboard",
+        "/api/competitions/leaderboard",
       );
       return response.data as LeaderboardResponse;
     } catch (error) {
@@ -516,7 +502,7 @@ export class ApiClient {
    */
   async getRules(): Promise<CompetitionRulesResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/competition/rules");
+      const response = await this.axiosInstance.get("/api/competitions/rules");
       return response.data as CompetitionRulesResponse;
     } catch (error) {
       return this.handleApiError(error, "get competition rules");
@@ -529,13 +515,29 @@ export class ApiClient {
   async getUpcomingCompetitions(): Promise<
     UpcomingCompetitionsResponse | ErrorResponse
   > {
+    return this.getCompetitions("pending");
+  }
+
+  /**
+   * Get competitions with given status
+   */
+  async getCompetitions(
+    status: string,
+    sort?: string,
+  ): Promise<UpcomingCompetitionsResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get(
-        "/api/competition/upcoming",
-      );
+      let url = `/api/competitions?status=${status}`;
+      if (typeof sort === "string") {
+        url += `&sort=${sort}`;
+      }
+
+      const response = await this.axiosInstance.get(url);
       return response.data as UpcomingCompetitionsResponse;
     } catch (error) {
-      return this.handleApiError(error, "get upcoming competitions");
+      return this.handleApiError(
+        error,
+        `get competitions: sort=${sort}, status=${status}`,
+      );
     }
   }
 

@@ -46,9 +46,9 @@ export enum CrossChainTradingType {
 
 // Competition status
 export enum CompetitionStatus {
-  PENDING = "PENDING",
-  ACTIVE = "ACTIVE",
-  COMPLETED = "COMPLETED",
+  PENDING = "pending",
+  ACTIVE = "active",
+  COMPLETED = "completed",
 }
 
 // Portfolio source
@@ -92,6 +92,7 @@ export interface TokenBalance {
   amount: number;
   chain: BlockchainType;
   specificChain: SpecificChain;
+  symbol: string;
 }
 
 // Balances response
@@ -108,6 +109,7 @@ export interface TokenPortfolioItem {
   value: number;
   chain: BlockchainType;
   specificChain: SpecificChain | null;
+  symbol: string;
 }
 
 // Portfolio response
@@ -138,6 +140,7 @@ export interface TradeTransaction {
   toChain: string;
   fromSpecificChain: string | null;
   toSpecificChain: string | null;
+  toTokenSymbol: string;
 }
 
 // Trade history response
@@ -214,6 +217,10 @@ export interface QuoteResponse extends ApiResponse {
     fromToken: number;
     toToken: number;
   };
+  symbols: {
+    fromTokenSymbol: string;
+    toTokenSymbol: string;
+  };
   chains: {
     fromChain: string;
     toChain: string;
@@ -228,6 +235,7 @@ export interface PriceResponse extends ApiResponse {
   token: string;
   chain: BlockchainType;
   specificChain: SpecificChain | null;
+  symbol: string;
   timestamp?: string;
 }
 
