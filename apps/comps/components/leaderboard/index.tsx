@@ -2,21 +2,21 @@
 
 import React from "react";
 
-import { Skeleton } from "@recallnet/ui2/components/skeleton";
+import {Skeleton} from "@recallnet/ui2/components/skeleton";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { useLeaderboards } from "@/hooks/useLeaderboards";
-import { Agent, LeaderboardTypes } from "@/types";
+import {useLeaderboards} from "@/hooks/useLeaderboards";
+import {AgentsResponse, LeaderboardTypes} from "@/types";
 
 import AgentPodium from "../agent-podium/index";
 import BigNumberDisplay from "../bignumber";
-import { LeaderboardTable } from "../leaderboard-table";
+import {LeaderboardTable} from "../leaderboard-table";
 
 const categories = [
   LeaderboardTypes.ANALYSIS,
@@ -27,7 +27,7 @@ const categories = [
 export function LeaderboardSection() {
   const [selected, setSelected] = React.useState(LeaderboardTypes.TRADING);
   const [limit, setLimit] = React.useState(10);
-  const { data: leaderboard, isLoading } = useLeaderboards({
+  const {data: leaderboard, isLoading} = useLeaderboards({
     limit,
     offset: 0,
   });
@@ -91,9 +91,9 @@ export function LeaderboardSection() {
             ) : (
               <AgentPodium
                 className="mb-10 md:mb-1"
-                first={leaderboard?.agents[0] as Agent}
-                second={leaderboard?.agents[1] as Agent}
-                third={leaderboard?.agents[2] as Agent}
+                first={leaderboard?.agents[0] as AgentResponse}
+                second={leaderboard?.agents[1] as AgentResponse}
+                third={leaderboard?.agents[2] as AgentsResponse}
                 loaded={!isLoading}
               />
             )}

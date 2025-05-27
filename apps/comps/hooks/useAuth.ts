@@ -1,8 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {useRouter} from "next/navigation";
 
-import { ApiClient } from "../lib/api-client";
-import { LoginRequest } from "../types";
+import {ApiClient} from "@/lib/api-client";
+import {LoginRequest} from "@/types";
 
 const apiClient = new ApiClient();
 
@@ -32,7 +32,7 @@ export const useLogin = () => {
     },
     onSuccess: () => {
       // Invalidate relevant queries after login
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({queryKey: ["profile"]});
     },
   });
 };
@@ -66,7 +66,7 @@ export const useLogout = () => {
     },
     onSuccess: () => {
       // Invalidate relevant queries after logout
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({queryKey: ["profile"]});
 
       // Redirect to home page
       router.push("/");

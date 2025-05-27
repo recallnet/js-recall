@@ -1,18 +1,18 @@
 "use client";
 
-import { Share1Icon } from "@radix-ui/react-icons";
+import {Share1Icon} from "@radix-ui/react-icons";
 import Link from "next/link";
 import React from "react";
 
-import { Button } from "@recallnet/ui2/components/button";
-import { IconButton } from "@recallnet/ui2/components/icon-button";
+import {Button} from "@recallnet/ui2/components/button";
+import {IconButton} from "@recallnet/ui2/components/icon-button";
 
-import { Competition } from "../types";
-import CountdownClock from "./clock";
-import { StringList } from "./string-list";
+import CountdownClock from "@/components/clock";
+import {StringList} from "@/components/string-list";
+import {CompetitionResponse} from "@/types";
 
 interface UpComingCompetitionProps {
-  competition: Competition;
+  competition: CompetitionResponse;
 }
 
 export const UpComingCompetition: React.FC<UpComingCompetitionProps> = ({
@@ -37,7 +37,7 @@ export const UpComingCompetition: React.FC<UpComingCompetitionProps> = ({
 
       <div
         className="grid w-full gap-6 md:w-3/4"
-        style={{ gridTemplateColumns: "auto 1fr 1fr 1fr 1fr" }}
+        style={{gridTemplateColumns: "auto 1fr 1fr 1fr 1fr"}}
       >
         <div>
           <h2 className="text-secondary-foreground mb-2 text-xs uppercase">

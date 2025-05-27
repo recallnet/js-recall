@@ -15,7 +15,9 @@ import {
   LoginRequest,
   LoginResponse,
   NonceResponse,
-} from "../types";
+  ProfileResponse,
+  UpdateProfileRequest,
+} from "@/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
@@ -59,9 +61,8 @@ export class ApiClient {
           localStorage.clear();
           sessionStorage.clear();
 
-          if (window.location.pathname !== "/")
-            //avoid circular behavior
-            window.location.href = "/";
+          // Redirect to home page
+          window.location.href = "/";
         }
       }
       const error = await response.json().catch(() => ({
@@ -82,7 +83,9 @@ export class ApiClient {
    */
   private formatQueryParams<T extends object>(params: T): string {
     const validParams = Object.entries(params as Record<string, unknown>)
-      .filter(([, value]) => value !== undefined && value !== null)
+      .filter(
+        ([, value]) => value !== undefined && value !== null && value !== "",
+      )
       .map(([key, value]) => `${key}=${encodeURIComponent(String(value))}`)
       .join("&");
 
@@ -233,18 +236,18 @@ export class ApiClient {
     });
   }
 
-  // Leaderboard endpoints
+  // Leaderboards endpoints
 
   /**
-   * Get leaderboard
+   * Get leaderboards
    * @param params - Query parameters
-   * @returns Leaderboard response
+   * @returns Leaderboards response
    */
-  async getLeaderboard(
+  async getLeaderboards(
     params: GetLeaderboardParams = {},
   ): Promise<LeaderboardResponse> {
     const queryParams = this.formatQueryParams(params);
-    return this.request<LeaderboardResponse>(`/leaderboard${queryParams}`);
+    return this.request<LeaderboardResponse>(`/leaderboards${queryParams}`);
   }
 
   // Profile endpoints
@@ -253,8 +256,8 @@ export class ApiClient {
    * Get user profile
    * @returns User profile
    */
-  async getProfile(): Promise<unknown> {
-    return this.request<unknown>("/profile");
+  async getProfile(): Promise<ProfileResponse> {
+    return this.request<ProfileResponse>("/profile");
   }
 
   /**
@@ -262,8 +265,8 @@ export class ApiClient {
    * @param data - Profile data
    * @returns Updated profile
    */
-  async updateProfile(data: unknown): Promise<unknown> {
-    return this.request<unknown>("/profile", {
+  async updateProfile(data: UpdateProfileRequest): Promise<ProfileResponse> {
+    return this.request<ProfileResponse>("/profile", {
       method: "PUT",
       body: JSON.stringify(data),
     });

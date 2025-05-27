@@ -1,13 +1,13 @@
 "use client";
 
-import { ArrowRightIcon } from "@radix-ui/react-icons";
-import { format } from "date-fns";
-import React, { useState } from "react";
+import {ArrowRightIcon} from "@radix-ui/react-icons";
+import {format} from "date-fns";
+import React, {useState} from "react";
 
-import { Competition } from "../types";
+import {CompetitionResponse} from "@/types/competition";
 
 export interface CompetitionInfoProps {
-  competition: Competition;
+  competition: CompetitionResponse;
 }
 
 export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({

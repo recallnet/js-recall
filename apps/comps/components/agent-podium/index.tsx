@@ -1,17 +1,17 @@
-import Image from "next/image";
 import React from "react";
 
-import { Skeleton } from "@recallnet/ui2/components/skeleton";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {Skeleton} from "@recallnet/ui2/components/skeleton";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { Agent } from "@/types/agent";
+import {MirrorImage} from "@/components/mirror-image";
+import {AgentResponse} from "@/types/agent";
 
 import AwardIcon from "./award-icon";
 
 interface AgentPodiumProps {
-  first?: Agent;
-  second?: Agent;
-  third?: Agent;
+  first?: AgentResponse;
+  second?: AgentResponse;
+  third?: AgentResponse;
   className?: string;
   loaded?: boolean;
 }
@@ -25,39 +25,39 @@ export const AgentPodium: React.FC<AgentPodiumProps> = ({
 }) => {
   return (
     <div className={cn("grid w-full grid-cols-1 md:grid-cols-3", className)}>
-      <div className="flex flex-col justify-end">
+      <div className="order-2 flex flex-col justify-end md:order-1">
         <PodiumAgent
           place={"second"}
           agent={second}
           loaded={loaded}
           feats={[
-            { name: "ROI", value: "25%" },
-            { name: "Trades", value: "2.4k" },
+            {name: "ROI", value: "25%"},
+            {name: "Trades", value: "2.4k"},
           ]}
         />
 
         <div className="h-15 bg-card w-full"></div>
       </div>
-      <div className="flex flex-col justify-end">
+      <div className="order-1 flex flex-col justify-end md:order-2">
         <PodiumAgent
           place={"first"}
           agent={first}
           loaded={loaded}
           feats={[
-            { name: "ROI", value: "25%" },
-            { name: "Trades", value: "2.4k" },
+            {name: "ROI", value: "25%"},
+            {name: "Trades", value: "2.4k"},
           ]}
         />
         <div className="h-25 bg-card w-full border-x-2 border-black"></div>
       </div>
-      <div className="flex flex-col justify-end">
+      <div className="order-3 flex flex-col justify-end">
         <PodiumAgent
           place={"third"}
           agent={third}
           loaded={loaded}
           feats={[
-            { name: "ROI", value: "25%" },
-            { name: "Trades", value: "2.4k" },
+            {name: "ROI", value: "25%"},
+            {name: "Trades", value: "2.4k"},
           ]}
         />
         <div className="bg-card h-8 w-full"></div>
@@ -68,9 +68,9 @@ export const AgentPodium: React.FC<AgentPodiumProps> = ({
 
 type PodiumAgentProps = {
   place: "first" | "second" | "third";
-  agent?: Agent;
+  agent?: AgentResponse;
   loaded?: boolean;
-  feats: [{ name: string; value: string }, { name: string; value: string }];
+  feats: [{name: string; value: string}, {name: string; value: string}];
 };
 
 const PodiumAgent: React.FunctionComponent<PodiumAgentProps> = ({
@@ -83,29 +83,11 @@ const PodiumAgent: React.FunctionComponent<PodiumAgentProps> = ({
     <div className="mb-5 flex flex-col items-center justify-end text-sm text-white">
       <div className="mb-5 h-20 w-20 rounded-full">
         {loaded ? (
-          <>
-            <Image
-              src={agent?.imageUrl || "/default_agent.png"}
-              alt="avatar"
-              width={100}
-              height={100}
-            />
-            <div className="overflow-hidden" style={{ height: 50 }}>
-              <Image
-                src={agent?.imageUrl || "/default_agent.png"}
-                alt="avatar"
-                width={100}
-                height={100}
-                className="block scale-y-[-1] opacity-40 blur-[3px]"
-                style={{
-                  maskImage:
-                    "linear-gradient(to top, black 0%, black 10%, transparent 60%, transparent 100%)",
-                  WebkitMaskImage:
-                    "linear-gradient(to top, black 0%, black 10%, transparent 60%, transparent 100%)",
-                }}
-              />
-            </div>
-          </>
+          <MirrorImage
+            width={100}
+            height={100}
+            image={agent?.imageUrl || "/default_agent.png"}
+          />
         ) : (
           <Skeleton className="h-20 w-20 rounded rounded-full" />
         )}
