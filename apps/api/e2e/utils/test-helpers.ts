@@ -10,6 +10,12 @@ import {
   StartCompetitionResponse,
 } from "./api-types.js";
 import { dbManager } from "./db-manager.js";
+import { getBaseUrl } from "./server.js";
+import {
+  createSiweMessage,
+  signMessage,
+  testWalletAddress,
+} from "./siwe-utils.js";
 
 // Configured test token address
 export const TEST_TOKEN_ADDRESS =
@@ -269,4 +275,79 @@ export function getApiSdk(apiKey: string): InstanceType<typeof ApiSDK> {
     bearerAuth: apiKey,
     serverIdx: 2,
   });
+}
+
+/**
+ * Create a SIWE-authenticated client for testing user routes
+ * This registers a user with the test wallet address and returns a client with an active SIWE session
+ */
+export async function createSiweAuthenticatedClient({
+  adminApiKey,
+  userName,
+  userEmail,
+  userImageUrl,
+}: {
+  adminApiKey: string;
+  userName?: string;
+  userEmail?: string;
+  userImageUrl?: string;
+}) {
+  // Ensure database is initialized
+  await ensureDatabaseInitialized();
+
+  const sdk = getApiSdk(adminApiKey);
+
+  // Register a new user (without agent) using our test wallet address
+  const result = await sdk.admin.postApiAdminUsers({
+    walletAddress: testWalletAddress, // Use the test wallet address from siwe-utils
+    name: userName || `SIWE User ${generateRandomString(8)}`,
+    email: userEmail || `siwe-user-${generateRandomString(8)}@test.com`,
+    userImageUrl,
+    // Don't create an agent automatically - user can create one via SIWE session if needed
+  });
+
+  if (!result.success || !result.user) {
+    throw new Error("Failed to register user for SIWE authentication");
+  }
+
+  // Create a session client (without API key)
+  const sessionClient = new ApiClient(undefined, getBaseUrl());
+
+  // Perform SIWE authentication
+  const domain = new URL(getBaseUrl()).hostname || "localhost";
+
+  // Get nonce
+  const nonceResponse = await sessionClient.getNonce();
+  if (!nonceResponse || "error" in nonceResponse) {
+    throw new Error("Failed to get nonce for SIWE authentication");
+  }
+
+  // Create and sign SIWE message
+  const message = await createSiweMessage(domain, nonceResponse.nonce);
+  const signature = await signMessage(message);
+
+  // Login with SIWE
+  const loginResponse = await sessionClient.login(message, signature);
+  if (!loginResponse || "error" in loginResponse) {
+    throw new Error("Failed to login with SIWE");
+  }
+
+  // Add a small delay to ensure session is properly saved
+  await new Promise((resolve) => setTimeout(resolve, 100));
+
+  return {
+    client: sessionClient,
+    user: {
+      id: result.user.id || "",
+      walletAddress: result.user.walletAddress || "",
+      name: result.user.name || "",
+      email: result.user.email || "",
+      imageUrl: result.user.imageUrl || null,
+      status: result.user.status || "active",
+      metadata: result.user.metadata || null,
+      createdAt: result.user.createdAt || new Date().toISOString(),
+      updatedAt: result.user.updatedAt || new Date().toISOString(),
+    },
+    loginData: loginResponse,
+  };
 }

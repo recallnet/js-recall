@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, test } from "vitest";
 import {
   AdminSearchUsersAndAgentsResponse,
   AdminUsersListResponse,
+  Agent,
+  AgentProfileResponse,
   UserProfileResponse,
   UserRegistrationResponse,
 } from "@/e2e/utils/api-types.js";
@@ -13,6 +15,7 @@ import {
   ADMIN_PASSWORD,
   ADMIN_USERNAME,
   cleanupTestState,
+  createSiweAuthenticatedClient,
   createTestClient,
   generateRandomEthAddress,
   registerUserAndAgentAndGetClient,
@@ -259,5 +262,60 @@ describe("User API", () => {
 
     expect(foundUser).toBeDefined();
     expect(foundUser?.imageUrl).toBe(newImageUrl);
+  });
+
+  test("SIWE user can access their profile and manage agents", async () => {
+    // Create a SIWE-authenticated client
+    const { client: siweClient, user } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "SIWE Test User",
+      userEmail: "siwe-test@example.com",
+    });
+
+    // Test: User can get their profile via SIWE session
+    const profileResponse = await siweClient.getUserProfile();
+    expect(profileResponse.success).toBe(true);
+    expect((profileResponse as UserProfileResponse).user).toBeDefined();
+    expect((profileResponse as UserProfileResponse).user.id).toBe(user.id);
+    expect((profileResponse as UserProfileResponse).user.name).toBe(user.name);
+
+    // Test: User can update their profile via SIWE session
+    const updateResponse = await siweClient.updateUserProfile({
+      name: "Updated SIWE User",
+    });
+    expect(updateResponse.success).toBe(true);
+    expect((updateResponse as UserProfileResponse).user.name).toBe(
+      "Updated SIWE User",
+    );
+
+    // Test: User can create an agent via SIWE session
+    const createAgentResponse = await siweClient.createAgent(
+      "SIWE Created Agent",
+      "Agent created via SIWE session",
+    );
+    expect(createAgentResponse.success).toBe(true);
+    expect((createAgentResponse as AgentProfileResponse).agent).toBeDefined();
+    expect((createAgentResponse as AgentProfileResponse).agent.name).toBe(
+      "SIWE Created Agent",
+    );
+
+    // Test: User can list their agents via SIWE session
+    const agentsResponse = (await siweClient.getUserAgents()) as {
+      success: boolean;
+      userId: string;
+      agents: Agent[];
+    };
+    expect(agentsResponse.success).toBe(true);
+    expect(agentsResponse.agents).toBeDefined();
+    expect(agentsResponse.agents.length).toBe(1);
+    expect(agentsResponse.agents[0]?.name).toBe("SIWE Created Agent");
+
+    // Test: User can get a specific agent via SIWE session
+    const agentId = (createAgentResponse as AgentProfileResponse).agent.id;
+    const specificAgentResponse = await siweClient.getUserAgent(agentId);
+    expect(specificAgentResponse.success).toBe(true);
+    expect((specificAgentResponse as AgentProfileResponse).agent.id).toBe(
+      agentId,
+    );
   });
 });
