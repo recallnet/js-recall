@@ -10,10 +10,10 @@ import { Skeleton } from "@recallnet/ui2/components/skeleton";
 
 import { StringList } from "@/components/string-list";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
-import { AgentResponse, Competition } from "@/types";
+import { AgentResponse, CompetitionResponse } from "@/types";
 
 interface OngoingCompetitionProps {
-  competition: Competition;
+  competition: CompetitionResponse;
 }
 
 export const OngoingCompetition: React.FC<OngoingCompetitionProps> = ({
