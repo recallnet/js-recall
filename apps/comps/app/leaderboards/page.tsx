@@ -18,7 +18,7 @@ export default function LeaderboardPage() {
 
       <JoinSwarmSection className="px-55 py-10 w-screen relative left-1/2 right-1/2 ml-[-50vw] mr-[-50vw] bg-white text-gray-500" socialLinks={getSocialLinksArray()} />
 
-      <FooterSection />
+      <FooterSection className='xl:px-55 px-10 relative left-1/2 right-1/2 ml-[-50vw] mr-[-50vw] w-screen py-5 text-gray-500' />
     </div>
   );
 }

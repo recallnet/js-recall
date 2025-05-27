@@ -1,8 +1,7 @@
-import BigNumber from "bignumber.js";
 import React from "react";
 
 interface BigNumberDisplayProps {
-  value: string | BigNumber;
+  value: string | bigint;
   decimals: number;
   displayDecimals?: number;
   compact?: boolean;
@@ -15,9 +14,18 @@ export const BigNumberDisplay: React.FC<BigNumberDisplayProps> = ({
   compact = true,
 }) => {
   try {
-    const bigNum = new BigNumber(value);
-    const actualValue = bigNum.dividedBy(new BigNumber(10).pow(decimals));
-    const numberValue = actualValue.toNumber();
+    const bigIntValue = typeof value === "bigint" ? value : BigInt(value);
+    const scale = 10n ** BigInt(decimals);
+    const integerPart = bigIntValue / scale;
+    const remainder = bigIntValue % scale;
+
+    // Create a decimal by manually building it
+    const remainderStr = remainder
+      .toString()
+      .padStart(decimals, "0")
+      .slice(0, displayDecimals);
+    const floatStr = `${integerPart.toString()}.${remainderStr}`;
+    const numberValue = parseFloat(floatStr);
 
     const formatterOptions: Intl.NumberFormatOptions = {};
 
@@ -35,7 +43,7 @@ export const BigNumberDisplay: React.FC<BigNumberDisplayProps> = ({
 
     return <span>{formattedValue}</span>;
   } catch (error) {
-    console.error("Error formatting BigNumber:", error);
+    console.error("Error formatting BigInt:", error);
     return <span>Error</span>;
   }
 };

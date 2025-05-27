@@ -2,22 +2,22 @@
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { FaBars } from "react-icons/fa6";
+import {usePathname} from "next/navigation";
+import {useState} from "react";
+import {FaBars} from "react-icons/fa6";
 
-import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
-import { Button } from "@recallnet/ui2/components/shadcn/button";
+import {Avatar, AvatarImage} from "@recallnet/ui2/components/avatar";
+import {Button} from "@recallnet/ui2/components/shadcn/button";
 
-import { SIWEButton } from "@/components/siwe";
+import {SIWEButton} from "@/components/siwe";
 
-export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
+export const Navbar: React.FunctionComponent<{children: React.ReactNode}> = ({
   children,
 }) => {
   const pathname = usePathname();
   const navItems = [
-    { label: "COMPETITIONS", href: "/competitions" },
-    { label: "LEADERBOARDS", href: "/leaderboards" },
+    {label: "COMPETITIONS", href: "/competitions"},
+    {label: "LEADERBOARDS", href: "/leaderboards"},
   ];
 
   const isOnboarding = pathname === "/onboarding";
@@ -51,11 +51,10 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
                     className="h-13 flex items-center justify-center border-r border-gray-700 px-10"
                   >
                     <span
-                      className={`text-xs font-medium transition-colors ${
-                        isActive
-                          ? "text-white"
-                          : "text-gray-400 hover:text-white"
-                      }`}
+                      className={`text-xs font-medium transition-colors ${isActive
+                        ? "text-white"
+                        : "text-gray-400 hover:text-white"
+                        }`}
                     >
                       {item.label}
                     </span>
@@ -105,7 +104,7 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
         </div>
       </nav>
 
-      <div className="xl:px-35 lg:px-30 md:px-15 flex justify-center px-5">
+      <div className="xl:px-25 lg:px-20 md:px-5 flex justify-center">
         {children}
       </div>
     </>

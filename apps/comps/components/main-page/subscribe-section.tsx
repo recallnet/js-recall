@@ -34,7 +34,7 @@ export const SubscribeSection = () => {
   const onSubmit = () => {};
 
   return (
-    <div className="relative w-full bg-black text-white flex flex-col justify-between items-start py-40 px-20 overflow-hidden">
+    <div className="relative w-full bg-black text-white flex flex-col justify-between lg:items-start items-center py-40 overflow-hidden sm:px-0 px-10">
       {/* Left content */}
       <div className="max-w-xl z-10">
         <h2 className="text-7xl font-bold mb-6">Subscribe</h2>
@@ -53,7 +53,7 @@ export const SubscribeSection = () => {
                     <div className="flex">
                       <Input
                         placeholder="EMAIL"
-                        className="w-70 border-2 border-white py-6"
+                        className="md:w-70 w-50 border-2 border-white py-6"
                         {...field}
                       />
                       <Button className="bg-white px-8 text-black hover:bg-gray-200 h-full">
@@ -70,7 +70,7 @@ export const SubscribeSection = () => {
       </div>
 
       {/* Right image */}
-      <div className="absolute top-[-250] right-0 w-[1000px] h-[1000px]">
+      <div className="absolute top-[-250] 2xl:right-0 right-[-300] xl:w-[1000px] xl:h-[1000px] hidden lg:block">
         <Image
           src={"/frame_4.png"}
           alt="Subscribe illustration"
@@ -78,7 +78,7 @@ export const SubscribeSection = () => {
           className="object-contain"
         />
       </div>
-      <FooterSection className="mt-40" />
+      <FooterSection className="w-full mt-40" />
     </div>
   );
 };

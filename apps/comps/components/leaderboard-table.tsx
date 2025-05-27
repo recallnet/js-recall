@@ -1,10 +1,12 @@
 "use client";
 
+import {useAtom} from "jotai";
 import Image from "next/image";
-import { FaRegThumbsUp } from "react-icons/fa";
+import {FaRegThumbsUp} from "react-icons/fa";
 
-import { displayAddress } from "@recallnet/address-utils/display";
-import { Button } from "@recallnet/ui2/components/shadcn/button";
+import {displayAddress} from "@recallnet/address-utils/display";
+import {Button} from "@recallnet/ui2/components/shadcn/button";
+import {Skeleton} from "@recallnet/ui2/components/skeleton";
 import {
   Table,
   TableBody,
@@ -14,13 +16,10 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import { Skeleton } from "@/../../packages/ui2/src/components/skeleton";
-import { useAtom } from "@/node_modules/jotai/react";
-import { userAgentAtom, userAtom } from "@/state/atoms";
-import { Agent, LeaderboardAgent } from "@/types/agent";
+import {userAgentAtom, userAtom} from "@/state/atoms";
+import {LeaderboardAgent} from "@/types/agent";
 
 import AwardIcon from "./agent-podium/award-icon";
-import BigNumberDisplay from "./bignumber/index";
 
 const emptyAgent: (i: number) => LeaderboardAgent = (i: number) => ({
   id: i.toString(),
@@ -28,6 +27,15 @@ const emptyAgent: (i: number) => LeaderboardAgent = (i: number) => ({
   imageUrl: "",
   name: "",
   metadata: {},
+  skills: [],
+  apiKey: "",
+  registeredCompetitionIds: [],
+  userId: undefined,
+  stats: undefined,
+  trophies: undefined,
+  hasUnclaimedRewards: false,
+  score: 0,
+  rewards: undefined,
 });
 
 export function LeaderboardTable({
@@ -35,7 +43,7 @@ export function LeaderboardTable({
   onExtend,
   loaded,
 }: {
-  agents: (Agent & { rank: number })[];
+  agents: LeaderboardAgent[];
   onExtend: () => void;
   loaded?: boolean;
 }) {
@@ -70,7 +78,7 @@ export function LeaderboardTable({
                       className="mr-5"
                       place={
                         ["first", "second", "third"][
-                          userAgent.rank - 1
+                        userAgent.rank - 1
                         ] as "first"
                       }
                     />
@@ -86,22 +94,6 @@ export function LeaderboardTable({
                       width={35}
                       height={35}
                     />
-                  ) : (
-                    <div className="mr-10 bg-gray-900 px-[8px] py-[4px] text-sm text-gray-300">
-                      {agent.rank}
-                    </div>
-                  )}
-                  <div className="flex items-center gap-5">
-                    {loaded ? (
-                      <Image
-                        src={agent.imageUrl || "/agent-image.png"}
-                        alt="avatar"
-                        width={35}
-                        height={35}
-                      />
-                    ) : (
-                      <Skeleton className="h-8 w-8 rounded-full" />
-                    )}
                     <div className="text-sm">
                       <div className="font-medium leading-none text-white">
                         {userAgent.name}
@@ -121,15 +113,11 @@ export function LeaderboardTable({
               </TableCell>
 
               <TableCell className="text-center">
-                {userAgent.stats?.eloAvg || 0}
+                {userAgent.score || 0}
               </TableCell>
 
               <TableCell className="text-center">
-                <BigNumberDisplay
-                  value={userAgent.metadata.roi?.toString() || ""}
-                  decimals={0}
-                />
-                %
+                {`${userAgent.metadata.roi?.toFixed(2) || 0}%`}
               </TableCell>
 
               <TableCell className="text-center">
@@ -194,7 +182,7 @@ export function LeaderboardTable({
 
               <TableCell className="text-center">
                 {loaded ? (
-                  agent.stats?.eloAvg
+                  agent.score
                 ) : (
                   <Skeleton className="h-2 w-10 rounded-full" />
                 )}
@@ -202,13 +190,7 @@ export function LeaderboardTable({
 
               <TableCell className="text-center">
                 {loaded ? (
-                  <>
-                    <BigNumberDisplay
-                      value={agent.metadata.roi?.toString() || ""}
-                      decimals={0}
-                    />
-                    %
-                  </>
+                  <>{`${agent.metadata.roi?.toFixed(2) || "0"}%`}</>
                 ) : (
                   <Skeleton className="h-2 w-10 rounded-full" />
                 )}

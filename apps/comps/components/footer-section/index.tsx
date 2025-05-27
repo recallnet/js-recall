@@ -63,9 +63,9 @@ export const FooterSection: React.FC<FooterSectionProps> = ({className}) => {
   ];
 
   return (
-    <section className={cn("px-55 relative left-1/2 right-1/2 ml-[-50vw] mr-[-50vw] w-screen py-5 text-gray-500", className)}>
+    <section className={cn("", className)}>
       <div className="mb-8 h-1 w-full border-b-2 border-gray-600"></div>
-      <div className="grid grid-cols-1 content-center gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-1 content-center gap-4 sm:grid-cols-2 md:grid-cols-5">
         <Image src="/logo_white.png" alt="recallnet" height={65} width={65} />
         <div className="flex flex-col justify-center space-y-1">
           {linkBlock1.map(({text, link}, i) => (
