@@ -6,7 +6,7 @@ import React from "react";
 
 import { Card } from "@recallnet/ui2/components/shadcn/card";
 
-import { SocialLink } from "../data/social";
+import { SocialLink } from "@/data/social";
 
 interface SocialLinkCardProps {
   socialLink: SocialLink;

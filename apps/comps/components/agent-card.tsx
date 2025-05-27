@@ -4,10 +4,10 @@ import { ChevronRightIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
 import React from "react";
 
-import { Agent } from "../types";
+import { AgentResponse } from "@/types";
 
 interface AgentCardProps {
-  agent: Agent;
+  agent: AgentResponse;
 }
 
 export const AgentCard: React.FC<AgentCardProps> = ({ agent }) => {
