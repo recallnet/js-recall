@@ -2,23 +2,23 @@
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { FaBars } from "react-icons/fa6";
+import {usePathname} from "next/navigation";
+import {useState} from "react";
+import {FaBars} from "react-icons/fa6";
 
-import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
-import { Button } from "@recallnet/ui2/components/shadcn/button";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {Avatar, AvatarImage} from "@recallnet/ui2/components/avatar";
+import {Button} from "@recallnet/ui2/components/shadcn/button";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { SIWEButton } from "@/components/siwe";
+import {SIWEButton} from "@/components/siwe";
 
-export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
+export const Navbar: React.FunctionComponent<{children: React.ReactNode}> = ({
   children,
 }) => {
   const pathname = usePathname();
   const navItems = [
-    { label: "COMPETITIONS", href: "/competitions" },
-    { label: "LEADERBOARDS", href: "/leaderboards" },
+    {label: "COMPETITIONS", href: "/competitions"},
+    {label: "LEADERBOARDS", href: "/leaderboards"},
   ];
 
   const isOnboarding = pathname === "/onboarding";
@@ -30,7 +30,7 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
     <>
       <nav className="flex w-full justify-center border-b border-gray-700 bg-black">
         <div className="xl:px-25 flex w-full items-center justify-between md:px-5 lg:px-20">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center">
             {/* Logo */}
             <Link
               href="/"

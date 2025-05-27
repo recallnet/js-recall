@@ -1,11 +1,11 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import {zodResolver} from "@hookform/resolvers/zod";
 import Image from "next/image";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
+import {useForm} from "react-hook-form";
+import {z} from "zod";
 
-import { Button } from "@recallnet/ui2/components/shadcn/button";
+import {Button} from "@recallnet/ui2/components/shadcn/button";
 import {
   Form,
   FormControl,
@@ -13,9 +13,9 @@ import {
   FormItem,
   FormMessage,
 } from "@recallnet/ui2/components/shadcn/form";
-import { Input } from "@recallnet/ui2/components/shadcn/input";
+import {Input} from "@recallnet/ui2/components/shadcn/input";
 
-import { FooterSection } from "@/components/footer-section";
+import {FooterSection} from "@/components/footer-section";
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -34,7 +34,7 @@ export const SubscribeSection = () => {
   const onSubmit = () => {};
 
   return (
-    <div className="relative flex w-full flex-col items-center justify-between overflow-hidden bg-black px-10 py-40 text-white sm:px-0 lg:items-start">
+    <div className="relative w-screen flex w-full flex-col items-center justify-between overflow-hidden bg-black py-40 text-white md:items-start md:px-30 px-0">
       {/* Left content */}
       <div className="z-10 max-w-xl">
         <h2 className="mb-6 text-7xl font-bold">Subscribe</h2>
@@ -47,17 +47,17 @@ export const SubscribeSection = () => {
             <FormField
               control={form.control}
               name="email"
-              render={({ field }) => (
+              render={({field}) => (
                 <FormItem>
                   <FormControl>
                     <div className="flex">
                       <Input
                         placeholder="EMAIL"
-                        className="md:w-70 w-50 border-2 border-white py-6"
+                        className="md:w-70 w-50 border-1 border-gray-500 py-6"
                         {...field}
                       />
-                      <Button className="h-full bg-white px-8 text-black hover:bg-gray-200">
-                        NOTIFY ME
+                      <Button className="uppercase h-full bg-white px-8 text-black hover:bg-gray-200">
+                        sign up
                       </Button>
                     </div>
                   </FormControl>
@@ -70,12 +70,12 @@ export const SubscribeSection = () => {
       </div>
 
       {/* Right image */}
-      <div className="absolute right-[-300] top-[-250] hidden lg:block xl:h-[1000px] xl:w-[1000px] 2xl:right-0">
+      <div className="absolute hidden md:block h-[1000px] w-[1000px] right-[-300] top-[-250] md:right-[-600] lg:right-[-250] 2xl:right-0">
         <Image
           src={"/frame_4.png"}
           alt="Subscribe illustration"
           fill
-          className="object-contain"
+          className="object-contain z-10"
         />
       </div>
       <FooterSection className="mt-40 w-full" />

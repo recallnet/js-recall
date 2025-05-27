@@ -1,13 +1,13 @@
 import "@rainbow-me/rainbowkit/styles.css";
 import "@recallnet/ui2/globals.css";
 
-import { Analytics } from "@vercel/analytics/react";
-import { Metadata } from "next";
+import {Analytics} from "@vercel/analytics/react";
+import {Metadata} from "next";
 
-import { fontMono, fontSans } from "@recallnet/fonts";
+import {fontMono, fontSans} from "@recallnet/fonts";
 
-import { Navbar } from "@/components/navbar";
-import { Providers } from "@/components/providers";
+import {Navbar} from "@/components/navbar";
+import {Providers} from "@/components/providers";
 
 export const metadata: Metadata = {
   title: "Recall Competitions",

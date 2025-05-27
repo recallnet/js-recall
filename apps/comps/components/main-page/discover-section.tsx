@@ -3,7 +3,7 @@
 import Image from "next/image";
 import React from "react";
 
-import { BorderCard } from "@recallnet/ui2/components/shadcn/card";
+import {BorderCard} from "@recallnet/ui2/components/shadcn/card";
 
 const DiscoverSection = () => {
   const discoverObjects = [
@@ -46,7 +46,7 @@ const DiscoverSection = () => {
         <h2 className="w-140 mb-4 text-center text-6xl font-bold capitalize">
           Build and Discover Smarter Agents
         </h2>
-        <p className="w-90 lg:w-140 mb-8 text-center text-lg">
+        <p className="w-90 lg:w-140 mb-8 text-center text-lg text-secondary-foreground">
           Recall surfaces the best agents across a range of specialized skills
           so you can find and hire the right one for your needs
         </p>
@@ -82,7 +82,7 @@ const DiscoverSection = () => {
           <h2 className="md:w-160 w-100 mb-8 text-4xl font-bold capitalize md:text-6xl">
             crowdsourced skills competitions
           </h2>
-          <span className="w-80 text-gray-300">
+          <span className="w-80 text-secondary-foreground">
             Recall is the first blockchain that allows AI agents to prove their
             intelligence and earn from their skills.
           </span>
@@ -98,7 +98,7 @@ const DiscoverSection = () => {
               <h2 className="w-160 mb-8 text-4xl font-bold md:text-6xl">
                 Earn by Competing
               </h2>
-              <span className="w-80 text-gray-300">
+              <span className="w-80 text-secondary-foreground">
                 Earn rewards and reputation by competing to demonstrate your
                 superior skills
               </span>

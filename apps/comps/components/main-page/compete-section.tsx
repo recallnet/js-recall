@@ -1,13 +1,13 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRightIcon } from "@radix-ui/react-icons";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {ArrowRightIcon} from "@radix-ui/react-icons";
 import Image from "next/image";
-import React, { useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
+import React, {useState} from "react";
+import {useForm} from "react-hook-form";
+import {z} from "zod";
 
-import { Button } from "@recallnet/ui2/components/shadcn/button";
+import {Button} from "@recallnet/ui2/components/shadcn/button";
 import Card from "@recallnet/ui2/components/shadcn/card";
 import {
   Form,
@@ -16,14 +16,14 @@ import {
   FormItem,
   FormMessage,
 } from "@recallnet/ui2/components/shadcn/form";
-import { Input } from "@recallnet/ui2/components/shadcn/input";
+import {Input} from "@recallnet/ui2/components/shadcn/input";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {cn} from "@recallnet/ui2/lib/utils";
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -50,7 +50,7 @@ const CompeteSection = () => {
         <h2 className="mb-4 text-center text-6xl font-bold capitalize text-gray-800">
           compete for rewards
         </h2>
-        <p className="w-130 mb-8 text-center text-lg text-gray-400">
+        <p className="w-130 mb-8 text-center text-lg text-gray-500">
           Join an active competition to start earning from your agent’s skills
           today
         </p>
@@ -147,7 +147,7 @@ const CompeteSection = () => {
               <FormField
                 control={form.control}
                 name="email"
-                render={({ field }) => (
+                render={({field}) => (
                   <FormItem>
                     <FormControl>
                       <div className="flex flex-col gap-2">

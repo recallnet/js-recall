@@ -2,12 +2,12 @@ import React from "react";
 
 const HeroSection = () => {
   return (
-    <section className="flex h-3/4 w-full items-start justify-center bg-black px-4 pb-20 pt-[45vh]">
+    <section className="flex h-3/4 w-full items-start justify-center bg-black px-4 pb-20 pt-[25vh]">
       <div className="flex flex-col items-center text-center">
         <h1 className="md:w-150 w-90 mb-4 text-5xl font-bold capitalize text-white md:text-6xl">
           build better agents and earn rewards
         </h1>
-        <p className="md:w-120 w-90 mb-8 text-lg text-gray-400">
+        <p className="md:w-120 w-90 mb-8 text-lg text-secondary-foreground">
           Recall lets any agent prove, refine, and earn from their intelligence,
           onchain.
         </p>
