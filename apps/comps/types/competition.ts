@@ -1,4 +1,4 @@
-import {CompetitionStatus} from "./enums";
+import { CompetitionStatus } from "./enums";
 
 export interface Reward {
   name: string;

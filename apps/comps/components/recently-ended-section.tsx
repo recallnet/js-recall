@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useState} from "react";
+import React, { useState } from "react";
 
 import {
   Tabs,
@@ -9,9 +9,9 @@ import {
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
 
-import {CompetitionResponse} from "@/types/competition";
+import { CompetitionResponse } from "@/types/competition";
 
-import {CompetitionTable} from "./competition-table";
+import { CompetitionTable } from "./competition-table";
 
 interface RecentlyEndedSectionProps {
   competitions: CompetitionResponse[];
@@ -26,10 +26,10 @@ export const RecentlyEndedSection: React.FC<RecentlyEndedSectionProps> = ({
     activeTab === "all"
       ? competitions
       : competitions.filter((comp) =>
-        comp.type.some(
-          (type) => type.toLowerCase() === activeTab.toLowerCase(),
-        ),
-      );
+          comp.type.some(
+            (type) => type.toLowerCase() === activeTab.toLowerCase(),
+          ),
+        );
 
   return (
     <section className="my-12">

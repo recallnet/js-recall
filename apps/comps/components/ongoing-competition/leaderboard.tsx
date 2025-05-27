@@ -2,9 +2,9 @@
 
 import React from "react";
 
-import {Button} from "@recallnet/ui2/components/button";
+import { Button } from "@recallnet/ui2/components/button";
 
-import {CompetitionResponse} from "@/types";
+import { CompetitionResponse } from "@/types";
 
 import CountdownClock from "../clock/index";
 
@@ -14,7 +14,7 @@ interface OngoingCompetitionProps {
 
 export const LeaderboardOngoingCompetition: React.FC<
   OngoingCompetitionProps
-> = ({competition}) => {
+> = ({ competition }) => {
   return (
     <div className="bg-card p-8">
       <div className="mb-12 flex flex-col items-start justify-start md:flex-row">

@@ -1,8 +1,8 @@
-import {atom} from "jotai";
-import {atomWithStorage} from "jotai/utils";
-import {zeroAddress} from "viem";
+import { atom } from "jotai";
+import { atomWithStorage } from "jotai/utils";
+import { zeroAddress } from "viem";
 
-import {LeaderboardAgent} from "@/types/agent";
+import { LeaderboardAgent } from "@/types/agent";
 
 type User = {
   address: string;

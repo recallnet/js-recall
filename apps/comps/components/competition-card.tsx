@@ -1,14 +1,14 @@
 "use client";
 
-import {Share1Icon} from "@radix-ui/react-icons";
+import { Share1Icon } from "@radix-ui/react-icons";
 import Link from "next/link";
 import React from "react";
 
-import {Button} from "@recallnet/ui2/components/button";
-import {IconButton} from "@recallnet/ui2/components/icon-button";
+import { Button } from "@recallnet/ui2/components/button";
+import { IconButton } from "@recallnet/ui2/components/icon-button";
 
-import {StringList} from "@/components/string-list";
-import {CompetitionResponse, CompetitionStatus} from "@/types";
+import { StringList } from "@/components/string-list";
+import { CompetitionResponse, CompetitionStatus } from "@/types";
 
 interface CompetitionCardProps {
   competition: CompetitionResponse;

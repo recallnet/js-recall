@@ -1,6 +1,6 @@
 "use client";
 
-import {ChevronRightIcon} from "@radix-ui/react-icons";
+import { ChevronRightIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
 import React from "react";
 
@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import {CompetitionResponse} from "@/types/competition";
+import { CompetitionResponse } from "@/types/competition";
 
 interface CompetitionTableProps {
   competitions: CompetitionResponse[];
@@ -46,7 +46,7 @@ export const CompetitionTable: React.FC<CompetitionTableProps> = ({
                 <div>{competition.name}</div>
                 <div
                   className="text-secondary mt-1 text-xs"
-                  style={{color: "hsla(214, 35%, 54%, 1)"}}
+                  style={{ color: "hsla(214, 35%, 54%, 1)" }}
                 >
                   {competition.type.join(" / ")}
                 </div>
@@ -68,7 +68,7 @@ export const CompetitionTable: React.FC<CompetitionTableProps> = ({
                   <span className="text-primary">Top Agent</span>
                   <span
                     className="text-sm"
-                    style={{color: "hsla(214, 35%, 54%, 1)"}}
+                    style={{ color: "hsla(214, 35%, 54%, 1)" }}
                   >
                     0x1234...4321
                   </span>

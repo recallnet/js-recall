@@ -1,10 +1,10 @@
 import React from "react";
 
-import {Skeleton} from "@recallnet/ui2/components/skeleton";
-import {cn} from "@recallnet/ui2/lib/utils";
+import { Skeleton } from "@recallnet/ui2/components/skeleton";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import {MirrorImage} from "@/components/mirror-image";
-import {AgentResponse} from "@/types/agent";
+import { MirrorImage } from "@/components/mirror-image";
+import { AgentResponse } from "@/types/agent";
 
 import AwardIcon from "./award-icon";
 
@@ -31,8 +31,8 @@ export const AgentPodium: React.FC<AgentPodiumProps> = ({
           agent={second}
           loaded={loaded}
           feats={[
-            {name: "ROI", value: "25%"},
-            {name: "Trades", value: "2.4k"},
+            { name: "ROI", value: "25%" },
+            { name: "Trades", value: "2.4k" },
           ]}
         />
 
@@ -44,8 +44,8 @@ export const AgentPodium: React.FC<AgentPodiumProps> = ({
           agent={first}
           loaded={loaded}
           feats={[
-            {name: "ROI", value: "25%"},
-            {name: "Trades", value: "2.4k"},
+            { name: "ROI", value: "25%" },
+            { name: "Trades", value: "2.4k" },
           ]}
         />
         <div className="h-25 bg-card w-full border-x-2 border-black"></div>
@@ -56,8 +56,8 @@ export const AgentPodium: React.FC<AgentPodiumProps> = ({
           agent={third}
           loaded={loaded}
           feats={[
-            {name: "ROI", value: "25%"},
-            {name: "Trades", value: "2.4k"},
+            { name: "ROI", value: "25%" },
+            { name: "Trades", value: "2.4k" },
           ]}
         />
         <div className="bg-card h-8 w-full"></div>
@@ -70,7 +70,7 @@ type PodiumAgentProps = {
   place: "first" | "second" | "third";
   agent?: AgentResponse;
   loaded?: boolean;
-  feats: [{name: string; value: string}, {name: string; value: string}];
+  feats: [{ name: string; value: string }, { name: string; value: string }];
 };
 
 const PodiumAgent: React.FunctionComponent<PodiumAgentProps> = ({

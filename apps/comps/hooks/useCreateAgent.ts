@@ -1,7 +1,7 @@
-import {useMutation, useQueryClient} from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import {ApiClient} from "@/lib/api-client";
-import {CreateAgentRequest} from "@/types";
+import { ApiClient } from "@/lib/api-client";
+import { CreateAgentRequest } from "@/types";
 
 const apiClient = new ApiClient();
 
@@ -18,9 +18,9 @@ export const useCreateAgent = () => {
     },
     onSuccess: () => {
       // Invalidate relevant queries
-      queryClient.invalidateQueries({queryKey: ["profile"]});
-      queryClient.invalidateQueries({queryKey: ["agents"]});
-      queryClient.invalidateQueries({queryKey: ["leaderboard"]});
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: ["agents"] });
+      queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
     },
   });
 };
