@@ -8,6 +8,7 @@ import { FaBars } from "react-icons/fa6";
 
 import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
 import { Button } from "@recallnet/ui2/components/shadcn/button";
+import { cn } from "@recallnet/ui2/lib/utils";
 
 import { SIWEButton } from "@/components/siwe";
 
@@ -48,14 +49,13 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
                   <Link
                     href={item.href}
                     key={item.href}
-                    className="h-13 flex items-center justify-center border-r border-gray-700 px-10"
+                    className={cn(
+                      "px-15 flex h-14 items-center justify-center border-r border-gray-700",
+                      isActive ? "border-b-2 border-b-yellow-500" : "",
+                    )}
                   >
                     <span
-                      className={`text-xs font-medium transition-colors ${
-                        isActive
-                          ? "text-white"
-                          : "text-gray-400 hover:text-white"
-                      }`}
+                      className={`text-xs font-medium text-white transition-colors`}
                     >
                       {item.label}
                     </span>
