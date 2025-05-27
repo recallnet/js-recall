@@ -31,7 +31,7 @@ export function makeTradeController(services: ServiceRegistry) {
           toSpecificChain,
         } = req.body;
 
-        const teamId = req.teamId as string;
+        const agentId = req.agentId as string;
         const competitionId = req.competitionId as string;
 
         // Validate required parameters
@@ -86,7 +86,7 @@ export function makeTradeController(services: ServiceRegistry) {
 
         // Execute the trade with optional chain parameters
         const result = await services.tradeSimulator.executeTrade(
-          teamId,
+          agentId,
           competitionId,
           fromToken,
           toToken,

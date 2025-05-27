@@ -26,7 +26,7 @@ import { Result } from "../types/fp.js";
  * Get competition snapshots
  *
  * @remarks
- * Get portfolio snapshots for a competition, optionally filtered by team
+ * Get portfolio snapshots for a competition, optionally filtered by agent
  */
 export function adminGetApiAdminCompetitionCompetitionIdSnapshots(
   client: ApiSDKCore,
@@ -92,7 +92,7 @@ async function $do(
   );
 
   const query = encodeFormQuery({
-    teamId: payload.teamId,
+    agentId: payload.agentId,
   });
 
   const headers = new Headers(

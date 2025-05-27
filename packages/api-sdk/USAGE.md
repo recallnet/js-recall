@@ -8,7 +8,11 @@ const apiSDK = new ApiSDK({
 });
 
 async function run() {
-  const result = await apiSDK.account.getApiAccountProfile();
+  const result = await apiSDK.admin.postApiAdminSetup({
+    username: "admin",
+    password: "password123",
+    email: "admin@example.com",
+  });
 
   // Handle the result
   console.log(result);

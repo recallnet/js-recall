@@ -16,7 +16,7 @@ export const tool$adminGetApiAdminCompetitionCompetitionIdSnapshots: ToolDefinit
   name: "admin-get-api-admin-competition-competition-id-snapshots",
   description: `Get competition snapshots
 
-Get portfolio snapshots for a competition, optionally filtered by team`,
+Get portfolio snapshots for a competition, optionally filtered by agent`,
   args,
   tool: async (client, args, ctx) => {
     const [result, apiCall] =

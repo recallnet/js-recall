@@ -52,9 +52,9 @@ export type Transaction = {
    */
   id?: string | undefined;
   /**
-   * Team ID that executed the trade
+   * Agent ID that executed the trade
    */
-  teamId?: string | undefined;
+  agentId?: string | undefined;
   /**
    * ID of the competition this trade is part of
    */
@@ -217,7 +217,7 @@ export const Transaction$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   id: z.string().optional(),
-  teamId: z.string().optional(),
+  agentId: z.string().optional(),
   competitionId: z.string().optional(),
   fromToken: z.string().optional(),
   toToken: z.string().optional(),
@@ -243,7 +243,7 @@ export const Transaction$inboundSchema: z.ZodType<
 /** @internal */
 export type Transaction$Outbound = {
   id?: string | undefined;
-  teamId?: string | undefined;
+  agentId?: string | undefined;
   competitionId?: string | undefined;
   fromToken?: string | undefined;
   toToken?: string | undefined;
@@ -269,7 +269,7 @@ export const Transaction$outboundSchema: z.ZodType<
   Transaction
 > = z.object({
   id: z.string().optional(),
-  teamId: z.string().optional(),
+  agentId: z.string().optional(),
   competitionId: z.string().optional(),
   fromToken: z.string().optional(),
   toToken: z.string().optional(),

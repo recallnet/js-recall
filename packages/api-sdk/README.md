@@ -26,7 +26,7 @@ This API uses Bearer token authentication. All protected endpoints require the f
 
 - **Authorization**: Bearer your-api-key
 
-Where "your-api-key" is the API key provided during team registration.
+Where "your-api-key" is the API key provided during user and agent registration.
 
 ### Authentication Examples
 
@@ -234,7 +234,11 @@ const apiSDK = new ApiSDK({
 });
 
 async function run() {
-  const result = await apiSDK.account.getApiAccountProfile();
+  const result = await apiSDK.admin.postApiAdminSetup({
+    username: "admin",
+    password: "password123",
+    email: "admin@example.com",
+  });
 
   // Handle the result
   console.log(result);
@@ -267,7 +271,32 @@ const apiSDK = new ApiSDK({
 });
 
 async function run() {
-  const result = await apiSDK.account.getApiAccountProfile();
+  const result = await apiSDK.admin.postApiAdminSetup({
+    username: "admin",
+    password: "password123",
+    email: "admin@example.com",
+  });
+
+  // Handle the result
+  console.log(result);
+}
+
+run();
+```
+
+### Per-Operation Security Schemes
+
+Some operations in this SDK require the security scheme to be specified at the request level. For example:
+
+```typescript
+import { ApiSDK } from "@recallnet/api-sdk";
+
+const apiSDK = new ApiSDK();
+
+async function run() {
+  const result = await apiSDK.user.getApiUserProfile({
+    siweSession: process.env["APISDK_SIWE_SESSION"] ?? "",
+  });
 
   // Handle the result
   console.log(result);
@@ -285,30 +314,32 @@ run();
 <details open>
 <summary>Available methods</summary>
 
-### [account](docs/sdks/account/README.md)
-
-- [getApiAccountProfile](docs/sdks/account/README.md#getapiaccountprofile) - Get team profile
-- [putApiAccountProfile](docs/sdks/account/README.md#putapiaccountprofile) - Update team profile
-- [postApiAccountResetApiKey](docs/sdks/account/README.md#postapiaccountresetapikey) - Reset team API key
-- [getApiAccountBalances](docs/sdks/account/README.md#getapiaccountbalances) - Get token balances
-- [getApiAccountTrades](docs/sdks/account/README.md#getapiaccounttrades) - Get trade history
-- [getApiAccountPortfolio](docs/sdks/account/README.md#getapiaccountportfolio) - Get portfolio information
-
 ### [admin](docs/sdks/admin/README.md)
 
 - [postApiAdminSetup](docs/sdks/admin/README.md#postapiadminsetup) - Set up initial admin account
-- [postApiAdminTeamsRegister](docs/sdks/admin/README.md#postapiadminteamsregister) - Register a new team
-- [getApiAdminTeams](docs/sdks/admin/README.md#getapiadminteams) - List all teams
-- [getApiAdminTeamsTeamIdKey](docs/sdks/admin/README.md#getapiadminteamsteamidkey) - Get a team's API key
-- [deleteApiAdminTeamsTeamId](docs/sdks/admin/README.md#deleteapiadminteamsteamid) - Delete a team
 - [postApiAdminCompetitionCreate](docs/sdks/admin/README.md#postapiadmincompetitioncreate) - Create a competition
 - [postApiAdminCompetitionStart](docs/sdks/admin/README.md#postapiadmincompetitionstart) - Start a competition
 - [postApiAdminCompetitionEnd](docs/sdks/admin/README.md#postapiadmincompetitionend) - End a competition
 - [getApiAdminCompetitionCompetitionIdSnapshots](docs/sdks/admin/README.md#getapiadmincompetitioncompetitionidsnapshots) - Get competition snapshots
 - [getApiAdminReportsPerformance](docs/sdks/admin/README.md#getapiadminreportsperformance) - Get performance reports
-- [postApiAdminTeamsTeamIdDeactivate](docs/sdks/admin/README.md#postapiadminteamsteamiddeactivate) - Deactivate a team
-- [postApiAdminTeamsTeamIdReactivate](docs/sdks/admin/README.md#postapiadminteamsteamidreactivate) - Reactivate a team
-- [getApiAdminTeamsSearch](docs/sdks/admin/README.md#getapiadminteamssearch) - Search for teams
+- [postApiAdminUsers](docs/sdks/admin/README.md#postapiadminusers) - Register a new user
+- [getApiAdminUsers](docs/sdks/admin/README.md#getapiadminusers) - List all users
+- [getApiAdminAgents](docs/sdks/admin/README.md#getapiadminagents) - List all agents
+- [getApiAdminAgentsAgentIdKey](docs/sdks/admin/README.md#getapiadminagentsagentidkey) - Get an agent's API key
+- [deleteApiAdminAgentsAgentId](docs/sdks/admin/README.md#deleteapiadminagentsagentid) - Delete an agent
+- [getApiAdminAgentsAgentId](docs/sdks/admin/README.md#getapiadminagentsagentid) - Get agent details
+- [postApiAdminAgentsAgentIdDeactivate](docs/sdks/admin/README.md#postapiadminagentsagentiddeactivate) - Deactivate an agent
+- [postApiAdminAgentsAgentIdReactivate](docs/sdks/admin/README.md#postapiadminagentsagentidreactivate) - Reactivate an agent
+- [getApiAdminSearch](docs/sdks/admin/README.md#getapiadminsearch) - Search users and agents
+
+### [agent](docs/sdks/agent/README.md)
+
+- [getApiAgentProfile](docs/sdks/agent/README.md#getapiagentprofile) - Get authenticated agent profile
+- [putApiAgentProfile](docs/sdks/agent/README.md#putapiagentprofile) - Update authenticated agent profile
+- [getApiAgentBalances](docs/sdks/agent/README.md#getapiagentbalances) - Get agent balances
+- [getApiAgentPortfolio](docs/sdks/agent/README.md#getapiagentportfolio) - Get agent portfolio
+- [getApiAgentTrades](docs/sdks/agent/README.md#getapiagenttrades) - Get agent trade history
+- [postApiAgentResetApiKey](docs/sdks/agent/README.md#postapiagentresetapikey) - Reset agent API key
 
 ### [auth](docs/sdks/auth/README.md)
 
@@ -339,6 +370,14 @@ run();
 - [postApiTradeExecute](docs/sdks/trade/README.md#postapitradeexecute) - Execute a trade
 - [getApiTradeQuote](docs/sdks/trade/README.md#getapitradequote) - Get a quote for a trade
 
+### [user](docs/sdks/user/README.md)
+
+- [getApiUserProfile](docs/sdks/user/README.md#getapiuserprofile) - Get authenticated user profile
+- [putApiUserProfile](docs/sdks/user/README.md#putapiuserprofile) - Update authenticated user profile
+- [postApiUserAgents](docs/sdks/user/README.md#postapiuseragents) - Create a new agent
+- [getApiUserAgents](docs/sdks/user/README.md#getapiuseragents) - Get user's agents
+- [getApiUserAgentsAgentId](docs/sdks/user/README.md#getapiuseragentsagentid) - Get specific agent details
+
 </details>
 <!-- End Available Resources and Operations [operations] -->
 
@@ -358,25 +397,27 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 
 <summary>Available standalone functions</summary>
 
-- [`accountGetApiAccountBalances`](docs/sdks/account/README.md#getapiaccountbalances) - Get token balances
-- [`accountGetApiAccountPortfolio`](docs/sdks/account/README.md#getapiaccountportfolio) - Get portfolio information
-- [`accountGetApiAccountProfile`](docs/sdks/account/README.md#getapiaccountprofile) - Get team profile
-- [`accountGetApiAccountTrades`](docs/sdks/account/README.md#getapiaccounttrades) - Get trade history
-- [`accountPostApiAccountResetApiKey`](docs/sdks/account/README.md#postapiaccountresetapikey) - Reset team API key
-- [`accountPutApiAccountProfile`](docs/sdks/account/README.md#putapiaccountprofile) - Update team profile
-- [`adminDeleteApiAdminTeamsTeamId`](docs/sdks/admin/README.md#deleteapiadminteamsteamid) - Delete a team
+- [`adminDeleteApiAdminAgentsAgentId`](docs/sdks/admin/README.md#deleteapiadminagentsagentid) - Delete an agent
+- [`adminGetApiAdminAgents`](docs/sdks/admin/README.md#getapiadminagents) - List all agents
+- [`adminGetApiAdminAgentsAgentId`](docs/sdks/admin/README.md#getapiadminagentsagentid) - Get agent details
+- [`adminGetApiAdminAgentsAgentIdKey`](docs/sdks/admin/README.md#getapiadminagentsagentidkey) - Get an agent's API key
 - [`adminGetApiAdminCompetitionCompetitionIdSnapshots`](docs/sdks/admin/README.md#getapiadmincompetitioncompetitionidsnapshots) - Get competition snapshots
 - [`adminGetApiAdminReportsPerformance`](docs/sdks/admin/README.md#getapiadminreportsperformance) - Get performance reports
-- [`adminGetApiAdminTeams`](docs/sdks/admin/README.md#getapiadminteams) - List all teams
-- [`adminGetApiAdminTeamsSearch`](docs/sdks/admin/README.md#getapiadminteamssearch) - Search for teams
-- [`adminGetApiAdminTeamsTeamIdKey`](docs/sdks/admin/README.md#getapiadminteamsteamidkey) - Get a team's API key
+- [`adminGetApiAdminSearch`](docs/sdks/admin/README.md#getapiadminsearch) - Search users and agents
+- [`adminGetApiAdminUsers`](docs/sdks/admin/README.md#getapiadminusers) - List all users
+- [`adminPostApiAdminAgentsAgentIdDeactivate`](docs/sdks/admin/README.md#postapiadminagentsagentiddeactivate) - Deactivate an agent
+- [`adminPostApiAdminAgentsAgentIdReactivate`](docs/sdks/admin/README.md#postapiadminagentsagentidreactivate) - Reactivate an agent
 - [`adminPostApiAdminCompetitionCreate`](docs/sdks/admin/README.md#postapiadmincompetitioncreate) - Create a competition
 - [`adminPostApiAdminCompetitionEnd`](docs/sdks/admin/README.md#postapiadmincompetitionend) - End a competition
 - [`adminPostApiAdminCompetitionStart`](docs/sdks/admin/README.md#postapiadmincompetitionstart) - Start a competition
 - [`adminPostApiAdminSetup`](docs/sdks/admin/README.md#postapiadminsetup) - Set up initial admin account
-- [`adminPostApiAdminTeamsRegister`](docs/sdks/admin/README.md#postapiadminteamsregister) - Register a new team
-- [`adminPostApiAdminTeamsTeamIdDeactivate`](docs/sdks/admin/README.md#postapiadminteamsteamiddeactivate) - Deactivate a team
-- [`adminPostApiAdminTeamsTeamIdReactivate`](docs/sdks/admin/README.md#postapiadminteamsteamidreactivate) - Reactivate a team
+- [`adminPostApiAdminUsers`](docs/sdks/admin/README.md#postapiadminusers) - Register a new user
+- [`agentGetApiAgentBalances`](docs/sdks/agent/README.md#getapiagentbalances) - Get agent balances
+- [`agentGetApiAgentPortfolio`](docs/sdks/agent/README.md#getapiagentportfolio) - Get agent portfolio
+- [`agentGetApiAgentProfile`](docs/sdks/agent/README.md#getapiagentprofile) - Get authenticated agent profile
+- [`agentGetApiAgentTrades`](docs/sdks/agent/README.md#getapiagenttrades) - Get agent trade history
+- [`agentPostApiAgentResetApiKey`](docs/sdks/agent/README.md#postapiagentresetapikey) - Reset agent API key
+- [`agentPutApiAgentProfile`](docs/sdks/agent/README.md#putapiagentprofile) - Update authenticated agent profile
 - [`authGetApiAuthNonce`](docs/sdks/auth/README.md#getapiauthnonce) - Get a random nonce for SIWE authentication
 - [`authPostApiAuthLogin`](docs/sdks/auth/README.md#postapiauthlogin) - Verify SIWE signature and create a session
 - [`authPostApiAuthLogout`](docs/sdks/auth/README.md#postapiauthlogout) - Logout the current user by destroying the session
@@ -391,6 +432,11 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`priceGetApiPriceTokenInfo`](docs/sdks/price/README.md#getapipricetokeninfo) - Get detailed token information
 - [`tradeGetApiTradeQuote`](docs/sdks/trade/README.md#getapitradequote) - Get a quote for a trade
 - [`tradePostApiTradeExecute`](docs/sdks/trade/README.md#postapitradeexecute) - Execute a trade
+- [`userGetApiUserAgents`](docs/sdks/user/README.md#getapiuseragents) - Get user's agents
+- [`userGetApiUserAgentsAgentId`](docs/sdks/user/README.md#getapiuseragentsagentid) - Get specific agent details
+- [`userGetApiUserProfile`](docs/sdks/user/README.md#getapiuserprofile) - Get authenticated user profile
+- [`userPostApiUserAgents`](docs/sdks/user/README.md#postapiuseragents) - Create a new agent
+- [`userPutApiUserProfile`](docs/sdks/user/README.md#putapiuserprofile) - Update authenticated user profile
 
 </details>
 <!-- End Standalone functions [standalone-funcs] -->
@@ -411,18 +457,25 @@ const apiSDK = new ApiSDK({
 });
 
 async function run() {
-  const result = await apiSDK.account.getApiAccountProfile({
-    retries: {
-      strategy: "backoff",
-      backoff: {
-        initialInterval: 1,
-        maxInterval: 50,
-        exponent: 1.1,
-        maxElapsedTime: 100,
-      },
-      retryConnectionErrors: false,
+  const result = await apiSDK.admin.postApiAdminSetup(
+    {
+      username: "admin",
+      password: "password123",
+      email: "admin@example.com",
     },
-  });
+    {
+      retries: {
+        strategy: "backoff",
+        backoff: {
+          initialInterval: 1,
+          maxInterval: 50,
+          exponent: 1.1,
+          maxElapsedTime: 100,
+        },
+        retryConnectionErrors: false,
+      },
+    },
+  );
 
   // Handle the result
   console.log(result);
@@ -451,7 +504,11 @@ const apiSDK = new ApiSDK({
 });
 
 async function run() {
-  const result = await apiSDK.account.getApiAccountProfile();
+  const result = await apiSDK.admin.postApiAdminSetup({
+    username: "admin",
+    password: "password123",
+    email: "admin@example.com",
+  });
 
   // Handle the result
   console.log(result);
@@ -558,7 +615,11 @@ const apiSDK = new ApiSDK({
 });
 
 async function run() {
-  const result = await apiSDK.account.getApiAccountProfile();
+  const result = await apiSDK.admin.postApiAdminSetup({
+    username: "admin",
+    password: "password123",
+    email: "admin@example.com",
+  });
 
   // Handle the result
   console.log(result);
@@ -580,7 +641,11 @@ const apiSDK = new ApiSDK({
 });
 
 async function run() {
-  const result = await apiSDK.account.getApiAccountProfile();
+  const result = await apiSDK.admin.postApiAdminSetup({
+    username: "admin",
+    password: "password123",
+    email: "admin@example.com",
+  });
 
   // Handle the result
   console.log(result);

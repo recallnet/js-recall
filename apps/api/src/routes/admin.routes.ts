@@ -14,270 +14,6 @@ export function configureAdminRoutes(
 
   /**
    * @openapi
-   * /api/admin/teams/register:
-   *   post:
-   *     tags:
-   *       - Admin
-   *     summary: Register a new team
-   *     description: Admin-only endpoint to register a new team. Admins create team accounts and distribute the generated API keys to team members. Teams cannot register themselves.
-   *     security:
-   *       - BearerAuth: []
-   *     requestBody:
-   *       required: true
-   *       content:
-   *         application/json:
-   *           schema:
-   *             type: object
-   *             required:
-   *               - teamName
-   *               - email
-   *               - contactPerson
-   *               - walletAddress
-   *             properties:
-   *               teamName:
-   *                 type: string
-   *                 description: Name of the team
-   *                 example: Team Alpha
-   *               email:
-   *                 type: string
-   *                 format: email
-   *                 description: Team email address
-   *                 example: team@example.com
-   *               contactPerson:
-   *                 type: string
-   *                 description: Name of the contact person
-   *                 example: John Doe
-   *               walletAddress:
-   *                 type: string
-   *                 description: Ethereum wallet address (must start with 0x)
-   *                 example: 0x1234567890123456789012345678901234567890
-   *               metadata:
-   *                 type: object
-   *                 description: Optional metadata about the team's agent
-   *                 example: {
-   *                     "ref": {
-   *                       "name": "ksobot",
-   *                       "version": "1.0.0",
-   *                       "url": "github.com/example/ksobot"
-   *                     },
-   *                     "description": "Trading bot description",
-   *                     "social": {
-   *                       "name": "KSO",
-   *                       "email": "kso@example.com",
-   *                       "twitter": "hey_kso"
-   *                     }
-   *                   }
-   *               imageUrl:
-   *                 type: string
-   *                 description: URL to the team's image
-   *                 example: "https://example.com/team-image.jpg"
-   *     responses:
-   *       201:
-   *         description: Team registered successfully
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 team:
-   *                   type: object
-   *                   properties:
-   *                     id:
-   *                       type: string
-   *                       description: Team ID
-   *                     name:
-   *                       type: string
-   *                       description: Team name
-   *                     email:
-   *                       type: string
-   *                       description: Team email
-   *                     contactPerson:
-   *                       type: string
-   *                       description: Contact person name
-   *                     walletAddress:
-   *                       type: string
-   *                       description: Ethereum wallet address
-   *                     apiKey:
-   *                       type: string
-   *                       description: API key for the team to use with Bearer authentication. Admin should securely provide this to the team.
-   *                       example: abc123def456_ghi789jkl012
-   *                     imageUrl:
-   *                       type: string
-   *                       description: URL to the team's image
-   *                       nullable: true
-   *                     metadata:
-   *                       type: object
-   *                       description: Optional agent metadata if provided
-   *                     createdAt:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Account creation timestamp
-   *       400:
-   *         description: Missing required parameters or invalid wallet address
-   *       409:
-   *         description: Team with this email or wallet address already exists
-   *       500:
-   *         description: Server error
-   */
-  router.post("/teams/register", controller.registerTeam);
-
-  /**
-   * @openapi
-   * /api/admin/teams:
-   *   get:
-   *     tags:
-   *       - Admin
-   *     summary: List all teams
-   *     description: Get a list of all non-admin teams
-   *     security:
-   *       - BearerAuth: []
-   *     responses:
-   *       200:
-   *         description: List of teams
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 teams:
-   *                   type: array
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       id:
-   *                         type: string
-   *                         description: Team ID
-   *                       name:
-   *                         type: string
-   *                         description: Team name
-   *                       email:
-   *                         type: string
-   *                         description: Team email
-   *                       contactPerson:
-   *                         type: string
-   *                         description: Contact person name
-   *                       createdAt:
-   *                         type: string
-   *                         format: date-time
-   *                         description: Account creation timestamp
-   *                       updatedAt:
-   *                         type: string
-   *                         format: date-time
-   *                         description: Account update timestamp
-   *                       imageUrl:
-   *                         type: string
-   *                         description: URL to the team's image
-   *                         nullable: true
-   *       401:
-   *         description: Unauthorized - Admin authentication required
-   *       500:
-   *         description: Server error
-   */
-  router.get("/teams", controller.listAllTeams);
-
-  /**
-   * @openapi
-   * /api/admin/teams/{teamId}/key:
-   *   get:
-   *     tags:
-   *       - Admin
-   *     summary: Get a team's API key
-   *     description: Retrieves the original API key for a team. Use this when teams lose or misplace their API key.
-   *     security:
-   *       - BearerAuth: []
-   *     parameters:
-   *       - in: path
-   *         name: teamId
-   *         schema:
-   *           type: string
-   *         required: true
-   *         description: ID of the team
-   *     responses:
-   *       200:
-   *         description: API key retrieved successfully
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 team:
-   *                   type: object
-   *                   properties:
-   *                     id:
-   *                       type: string
-   *                       description: Team ID
-   *                     name:
-   *                       type: string
-   *                       description: Team name
-   *                     apiKey:
-   *                       type: string
-   *                       description: The team's API key
-   *       401:
-   *         description: Unauthorized - Admin authentication required
-   *       403:
-   *         description: Cannot retrieve API key for admin accounts
-   *       404:
-   *         description: Team not found
-   *       500:
-   *         description: Server error
-   */
-  router.get("/teams/:teamId/key", controller.getTeamApiKey);
-
-  /**
-   * @openapi
-   * /api/admin/teams/{teamId}:
-   *   delete:
-   *     tags:
-   *       - Admin
-   *     summary: Delete a team
-   *     description: Permanently delete a team and all associated data
-   *     security:
-   *       - BearerAuth: []
-   *     parameters:
-   *       - in: path
-   *         name: teamId
-   *         schema:
-   *           type: string
-   *         required: true
-   *         description: ID of the team to delete
-   *     responses:
-   *       200:
-   *         description: Team deleted successfully
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 message:
-   *                   type: string
-   *                   description: Success message
-   *       400:
-   *         description: Team ID is required
-   *       401:
-   *         description: Unauthorized - Admin authentication required
-   *       403:
-   *         description: Cannot delete admin accounts
-   *       404:
-   *         description: Team not found
-   *       500:
-   *         description: Server error
-   */
-  router.delete("/teams/:teamId", controller.deleteTeam);
-
-  /**
-   * @openapi
    * /api/admin/competition/create:
    *   post:
    *     tags:
@@ -342,7 +78,7 @@ export function configureAdminRoutes(
    *                       description: Competition description
    *                     status:
    *                       type: string
-   *                       enum: [PENDING, ACTIVE, COMPLETED]
+   *                       enum: [pending, active, completed]
    *                       description: Competition status
    *                     externalLink:
    *                       type: string
@@ -376,7 +112,7 @@ export function configureAdminRoutes(
    *     tags:
    *       - Admin
    *     summary: Start a competition
-   *     description: Start a new or existing competition with specified teams. If competitionId is provided, it will start an existing competition. Otherwise, it will create and start a new one.
+   *     description: Start a new or existing competition with specified agents. If competitionId is provided, it will start an existing competition. Otherwise, it will create and start a new one.
    *     security:
    *       - BearerAuth: []
    *     requestBody:
@@ -386,7 +122,7 @@ export function configureAdminRoutes(
    *           schema:
    *             type: object
    *             required:
-   *               - teamIds
+   *               - agentIds
    *             properties:
    *               competitionId:
    *                 type: string
@@ -407,11 +143,11 @@ export function configureAdminRoutes(
    *                 type: string
    *                 description: URL to competition image (used when creating a new competition)
    *                 example: https://example.com/competition-image.jpg
-   *               teamIds:
+   *               agentIds:
    *                 type: array
    *                 items:
    *                   type: string
-   *                 description: Array of team IDs to include in the competition
+   *                 description: Array of agent IDs to include in the competition
    *               tradingType:
    *                 type: string
    *                 description: Type of cross-chain trading to allow in this competition (used when creating a new competition)
@@ -460,17 +196,22 @@ export function configureAdminRoutes(
    *                       nullable: true
    *                     status:
    *                       type: string
-   *                       enum: [PENDING, ACTIVE, COMPLETED]
+   *                       enum: [pending, active, completed]
    *                       description: Competition status
    *                     crossChainTradingType:
    *                       type: string
    *                       enum: [disallowAll, disallowXParent, allow]
    *                       description: Type of cross-chain trading allowed in this competition
-   *                     teamIds:
+   *                     agentIds:
    *                       type: array
    *                       items:
    *                         type: string
-   *                       description: Team IDs participating in the competition
+   *                       description: Agent IDs participating in the competition
+   *                 initializedAgents:
+   *                   type: array
+   *                   items:
+   *                     type: string
+   *                   description: Agent IDs that were successfully initialized for the competition
    *       400:
    *         description: Missing required parameters
    *       401:
@@ -545,7 +286,7 @@ export function configureAdminRoutes(
    *                       nullable: true
    *                     status:
    *                       type: string
-   *                       enum: [PENDING, ACTIVE, COMPLETED]
+   *                       enum: [pending, active, completed]
    *                       description: Competition status (completed)
    *                     crossChainTradingType:
    *                       type: string
@@ -556,9 +297,9 @@ export function configureAdminRoutes(
    *                   items:
    *                     type: object
    *                     properties:
-   *                       teamId:
+   *                       agentId:
    *                         type: string
-   *                         description: Team ID
+   *                         description: Agent ID
    *                       value:
    *                         type: number
    *                         description: Final portfolio value
@@ -580,7 +321,7 @@ export function configureAdminRoutes(
    *     tags:
    *       - Admin
    *     summary: Get competition snapshots
-   *     description: Get portfolio snapshots for a competition, optionally filtered by team
+   *     description: Get portfolio snapshots for a competition, optionally filtered by agent
    *     security:
    *       - BearerAuth: []
    *     parameters:
@@ -591,11 +332,11 @@ export function configureAdminRoutes(
    *         required: true
    *         description: ID of the competition
    *       - in: query
-   *         name: teamId
+   *         name: agentId
    *         schema:
    *           type: string
    *         required: false
-   *         description: Optional team ID to filter snapshots
+   *         description: Optional agent ID to filter snapshots
    *     responses:
    *       200:
    *         description: Competition snapshots
@@ -618,9 +359,9 @@ export function configureAdminRoutes(
    *                       competitionId:
    *                         type: string
    *                         description: Competition ID
-   *                       teamId:
+   *                       agentId:
    *                         type: string
-   *                         description: Team ID
+   *                         description: Agent ID
    *                       totalValue:
    *                         type: number
    *                         description: Total portfolio value at snapshot time
@@ -629,11 +370,11 @@ export function configureAdminRoutes(
    *                         format: date-time
    *                         description: Snapshot timestamp
    *       400:
-   *         description: Missing competitionId or team not in competition
+   *         description: Missing competitionId or agent not in competition
    *       401:
    *         description: Unauthorized - Admin authentication required
    *       404:
-   *         description: Competition or team not found
+   *         description: Competition or agent not found
    *       500:
    *         description: Server error
    */
@@ -701,7 +442,7 @@ export function configureAdminRoutes(
    *                       nullable: true
    *                     status:
    *                       type: string
-   *                       enum: [PENDING, ACTIVE, COMPLETED]
+   *                       enum: [pending, active, completed]
    *                       description: Competition status
    *                     crossChainTradingType:
    *                       type: string
@@ -709,18 +450,19 @@ export function configureAdminRoutes(
    *                       description: Type of cross-chain trading allowed in this competition
    *                 leaderboard:
    *                   type: array
+   *                   description: Ranked list of active agents
    *                   items:
    *                     type: object
    *                     properties:
    *                       rank:
    *                         type: integer
-   *                         description: Team rank on the leaderboard
-   *                       teamId:
+   *                         description: Agent rank on the leaderboard
+   *                       agentId:
    *                         type: string
-   *                         description: Team ID
-   *                       teamName:
+   *                         description: Agent ID
+   *                       agentName:
    *                         type: string
-   *                         description: Team name
+   *                         description: Agent name
    *                       portfolioValue:
    *                         type: number
    *                         description: Portfolio value
@@ -737,21 +479,402 @@ export function configureAdminRoutes(
 
   /**
    * @openapi
-   * /api/admin/teams/{teamId}/deactivate:
+   * /api/admin/users:
    *   post:
    *     tags:
    *       - Admin
-   *     summary: Deactivate a team
-   *     description: Deactivate a team from the competition. The team will no longer be able to perform any actions.
+   *     summary: Register a new user
+   *     description: Admin-only endpoint to register a new user and optionally create their first agent. Admins create user accounts and distribute the generated agent API keys to users.
+   *     security:
+   *       - BearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - walletAddress
+   *             properties:
+   *               walletAddress:
+   *                 type: string
+   *                 description: Ethereum wallet address (must start with 0x)
+   *                 example: 0x1234567890123456789012345678901234567890
+   *               name:
+   *                 type: string
+   *                 description: User's display name
+   *                 example: John Doe
+   *               email:
+   *                 type: string
+   *                 format: email
+   *                 description: User email address
+   *                 example: user@example.com
+   *               userImageUrl:
+   *                 type: string
+   *                 description: URL to the user's profile image
+   *                 example: "https://example.com/user-image.jpg"
+   *               agentName:
+   *                 type: string
+   *                 description: Name for the user's first agent (optional)
+   *                 example: Trading Bot Alpha
+   *               agentDescription:
+   *                 type: string
+   *                 description: Description of the agent (optional)
+   *                 example: High-frequency trading bot specializing in DeFi
+   *               agentImageUrl:
+   *                 type: string
+   *                 description: URL to the agent's image (optional)
+   *                 example: "https://example.com/agent-image.jpg"
+   *               agentMetadata:
+   *                 type: object
+   *                 description: Optional metadata about the agent
+   *                 example: {
+   *                     "ref": {
+   *                       "name": "ksobot",
+   *                       "version": "1.0.0",
+   *                       "url": "github.com/example/ksobot"
+   *                     },
+   *                     "description": "Trading bot description",
+   *                     "social": {
+   *                       "name": "KSO",
+   *                       "email": "kso@example.com",
+   *                       "twitter": "hey_kso"
+   *                     }
+   *                   }
+   *     responses:
+   *       201:
+   *         description: User registered successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 user:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                       description: User ID
+   *                     walletAddress:
+   *                       type: string
+   *                       description: User wallet address
+   *                     name:
+   *                       type: string
+   *                       description: User name
+   *                     email:
+   *                       type: string
+   *                       description: User email
+   *                     imageUrl:
+   *                       type: string
+   *                       description: URL to user's image
+   *                       nullable: true
+   *                     metadata:
+   *                       type: object
+   *                       description: Optional metadata for the user
+   *                       example: { "custom": {"value": "here"} }
+   *                       nullable: true
+   *                     status:
+   *                       type: string
+   *                       description: User status
+   *                     createdAt:
+   *                       type: string
+   *                       format: date-time
+   *                       description: Account creation timestamp
+   *                     updatedAt:
+   *                       type: string
+   *                       format: date-time
+   *                       description: Account updated timestamp
+   *                 agent:
+   *                   type: object
+   *                   nullable: true
+   *                   description: Created agent (if agentName was provided)
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                       description: Agent ID
+   *                     ownerId:
+   *                       type: string
+   *                       description: Agent owner ID
+   *                     walletAddress:
+   *                       type: string
+   *                       description: Agent wallet address
+   *                       nullable: true
+   *                     name:
+   *                       type: string
+   *                       description: Agent name
+   *                     description:
+   *                       type: string
+   *                       description: Agent description
+   *                       nullable: true
+   *                     imageUrl:
+   *                       type: string
+   *                       description: URL to agent's image
+   *                       nullable: true
+   *                     metadata:
+   *                       type: object
+   *                       description: Optional metadata for the agent
+   *                       example: { "strategy": "yield-farming", "risk": "medium" }
+   *                       nullable: true
+   *                     apiKey:
+   *                       type: string
+   *                       description: API key for the agent to use with Bearer authentication. Admin should securely provide this to the user.
+   *                       example: abc123def456_ghi789jkl012
+   *                     status:
+   *                       type: string
+   *                       description: Agent status
+   *                     createdAt:
+   *                       type: string
+   *                       format: date-time
+   *                       description: Agent creation timestamp
+   *                     updatedAt:
+   *                       type: string
+   *                       format: date-time
+   *                       description: Agent updated timestamp
+   *                 agentError:
+   *                   type: string
+   *                   nullable: true
+   *                   description: Error message if agent creation failed
+   *       400:
+   *         description: Missing required parameters or invalid wallet address
+   *       409:
+   *         description: User with this wallet address already exists
+   *       500:
+   *         description: Server error
+   */
+  router.post("/users", controller.registerUser);
+
+  /**
+   * @openapi
+   * /api/admin/users:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: List all users
+   *     description: Get a list of all users in the system
+   *     security:
+   *       - BearerAuth: []
+   *     responses:
+   *       200:
+   *         description: List of users
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 users:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         description: User ID
+   *                       walletAddress:
+   *                         type: string
+   *                         description: User wallet address
+   *                       name:
+   *                         type: string
+   *                         description: User name
+   *                       email:
+   *                         type: string
+   *                         description: User email
+   *                       status:
+   *                         type: string
+   *                         description: User status
+   *                       imageUrl:
+   *                         type: string
+   *                         description: URL to the user's image
+   *                         nullable: true
+   *                       createdAt:
+   *                         type: string
+   *                         format: date-time
+   *                         description: Account creation timestamp
+   *                       updatedAt:
+   *                         type: string
+   *                         format: date-time
+   *                         description: Account update timestamp
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       500:
+   *         description: Server error
+   */
+  router.get("/users", controller.listAllUsers);
+
+  /**
+   * @openapi
+   * /api/admin/agents:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: List all agents
+   *     description: Get a list of all agents in the system
+   *     security:
+   *       - BearerAuth: []
+   *     responses:
+   *       200:
+   *         description: List of agents
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 agents:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         description: Agent ID
+   *                       ownerId:
+   *                         type: string
+   *                         description: Agent owner ID
+   *                       name:
+   *                         type: string
+   *                         description: Agent name
+   *                       description:
+   *                         type: string
+   *                         description: Agent description
+   *                         nullable: true
+   *                       status:
+   *                         type: string
+   *                         description: Agent status
+   *                       imageUrl:
+   *                         type: string
+   *                         description: URL to the agent's image
+   *                         nullable: true
+   *                       createdAt:
+   *                         type: string
+   *                         format: date-time
+   *                         description: Agent creation timestamp
+   *                       updatedAt:
+   *                         type: string
+   *                         format: date-time
+   *                         description: Agent update timestamp
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       500:
+   *         description: Server error
+   */
+  router.get("/agents", controller.listAllAgents);
+
+  /**
+   * @openapi
+   * /api/admin/agents/{agentId}/key:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: Get an agent's API key
+   *     description: Retrieves the original API key for an agent. Use this when agents lose or misplace their API key.
    *     security:
    *       - BearerAuth: []
    *     parameters:
    *       - in: path
-   *         name: teamId
+   *         name: agentId
    *         schema:
    *           type: string
    *         required: true
-   *         description: ID of the team to deactivate
+   *         description: ID of the agent
+   *     responses:
+   *       200:
+   *         description: API key retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 agent:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                       description: Agent ID
+   *                     name:
+   *                       type: string
+   *                       description: Agent name
+   *                     apiKey:
+   *                       type: string
+   *                       description: The agent's API key
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       404:
+   *         description: Agent not found
+   *       500:
+   *         description: Server error
+   */
+  router.get("/agents/:agentId/key", controller.getAgentApiKey);
+
+  /**
+   * @openapi
+   * /api/admin/agents/{agentId}:
+   *   delete:
+   *     tags:
+   *       - Admin
+   *     summary: Delete an agent
+   *     description: Permanently delete an agent and all associated data
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: agentId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: ID of the agent to delete
+   *     responses:
+   *       200:
+   *         description: Agent deleted successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 message:
+   *                   type: string
+   *                   description: Success message
+   *       400:
+   *         description: Agent ID is required
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       404:
+   *         description: Agent not found
+   *       500:
+   *         description: Server error
+   */
+  router.delete("/agents/:agentId", controller.deleteAgent);
+
+  /**
+   * @openapi
+   * /api/admin/agents/{agentId}/deactivate:
+   *   post:
+   *     tags:
+   *       - Admin
+   *     summary: Deactivate an agent
+   *     description: Deactivate an agent from the system. The agent will no longer be able to perform any actions.
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: agentId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: ID of the agent to deactivate
    *     requestBody:
    *       required: true
    *       content:
@@ -767,7 +890,7 @@ export function configureAdminRoutes(
    *                 example: Violated competition rules by using external API
    *     responses:
    *       200:
-   *         description: Team deactivated successfully
+   *         description: Agent deactivated successfully
    *         content:
    *           application/json:
    *             schema:
@@ -776,58 +899,49 @@ export function configureAdminRoutes(
    *                 success:
    *                   type: boolean
    *                   description: Operation success status
-   *                 team:
+   *                 agent:
    *                   type: object
    *                   properties:
    *                     id:
    *                       type: string
-   *                       description: Team ID
+   *                       description: Agent ID
    *                     name:
    *                       type: string
-   *                       description: Team name
-   *                     active:
-   *                       type: boolean
-   *                       description: Active status (will be false)
-   *                     deactivationReason:
+   *                       description: Agent name
+   *                     status:
    *                       type: string
-   *                       description: Reason for deactivation
-   *                     deactivationDate:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Date of deactivation
+   *                       description: Agent status (will be inactive)
    *       400:
    *         description: Missing required parameters
    *       401:
    *         description: Unauthorized - Admin authentication required
-   *       403:
-   *         description: Cannot deactivate admin accounts
    *       404:
-   *         description: Team not found
+   *         description: Agent not found
    *       500:
    *         description: Server error
    */
-  router.post("/teams/:teamId/deactivate", controller.deactivateTeam);
+  router.post("/agents/:agentId/deactivate", controller.deactivateAgent);
 
   /**
    * @openapi
-   * /api/admin/teams/{teamId}/reactivate:
+   * /api/admin/agents/{agentId}/reactivate:
    *   post:
    *     tags:
    *       - Admin
-   *     summary: Reactivate a team
-   *     description: Reactivate a previously deactivated team, allowing them to participate in the competition again.
+   *     summary: Reactivate an agent
+   *     description: Reactivate a previously deactivated agent
    *     security:
    *       - BearerAuth: []
    *     parameters:
    *       - in: path
-   *         name: teamId
+   *         name: agentId
    *         schema:
    *           type: string
    *         required: true
-   *         description: ID of the team to reactivate
+   *         description: ID of the agent to reactivate
    *     responses:
    *       200:
-   *         description: Team reactivated successfully
+   *         description: Agent reactivated successfully
    *         content:
    *           application/json:
    *             schema:
@@ -836,37 +950,107 @@ export function configureAdminRoutes(
    *                 success:
    *                   type: boolean
    *                   description: Operation success status
-   *                 team:
+   *                 agent:
    *                   type: object
    *                   properties:
    *                     id:
    *                       type: string
-   *                       description: Team ID
+   *                       description: Agent ID
    *                     name:
    *                       type: string
-   *                       description: Team name
-   *                     active:
-   *                       type: boolean
-   *                       description: Active status (will be true)
+   *                       description: Agent name
+   *                     status:
+   *                       type: string
+   *                       description: Agent status (will be active)
    *       400:
-   *         description: Team is already active
+   *         description: Agent ID is required or agent is already active
    *       401:
    *         description: Unauthorized - Admin authentication required
    *       404:
-   *         description: Team not found
+   *         description: Agent not found
    *       500:
    *         description: Server error
    */
-  router.post("/teams/:teamId/reactivate", controller.reactivateTeam);
+  router.post("/agents/:agentId/reactivate", controller.reactivateAgent);
 
   /**
    * @openapi
-   * /api/admin/teams/search:
+   * /api/admin/agents/{agentId}:
    *   get:
    *     tags:
    *       - Admin
-   *     summary: Search for teams
-   *     description: Search for teams based on various criteria like email, name, wallet address, etc.
+   *     summary: Get agent details
+   *     description: Get detailed information about a specific agent
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: agentId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: ID of the agent
+   *     responses:
+   *       200:
+   *         description: Agent details retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 agent:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                       description: Agent ID
+   *                     ownerId:
+   *                       type: string
+   *                       description: Agent owner ID
+   *                     name:
+   *                       type: string
+   *                       description: Agent name
+   *                     description:
+   *                       type: string
+   *                       description: Agent description
+   *                       nullable: true
+   *                     status:
+   *                       type: string
+   *                       description: Agent status
+   *                     imageUrl:
+   *                       type: string
+   *                       description: URL to the agent's image
+   *                       nullable: true
+   *                     createdAt:
+   *                       type: string
+   *                       format: date-time
+   *                       description: Agent creation timestamp
+   *                     updatedAt:
+   *                       type: string
+   *                       format: date-time
+   *                       description: Agent update timestamp
+   *       400:
+   *         description: Agent ID is required
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       404:
+   *         description: Agent not found
+   *       500:
+   *         description: Server error
+   */
+  router.get("/agents/:agentId", controller.getAgent);
+
+  /**
+   * @openapi
+   * /api/admin/search:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: Search users and agents
+   *     description: Search for users and agents based on various criteria
    *     security:
    *       - BearerAuth: []
    *     parameters:
@@ -874,35 +1058,33 @@ export function configureAdminRoutes(
    *         name: email
    *         schema:
    *           type: string
-   *         description: Partial match for team email
+   *         description: Partial match for email address (users only)
    *       - in: query
    *         name: name
    *         schema:
    *           type: string
-   *         description: Partial match for team name
+   *         description: Partial match for name
    *       - in: query
    *         name: walletAddress
    *         schema:
    *           type: string
-   *         description: Partial match for wallet address
+   *         description: Partial match for wallet address (users only)
    *       - in: query
-   *         name: contactPerson
+   *         name: status
    *         schema:
    *           type: string
-   *         description: Partial match for contact person name
+   *           enum: [active, suspended, deleted]
+   *         description: Filter by status
    *       - in: query
-   *         name: active
+   *         name: searchType
    *         schema:
-   *           type: boolean
-   *         description: Filter by active status (true/false)
-   *       - in: query
-   *         name: includeAdmins
-   *         schema:
-   *           type: boolean
-   *         description: Whether to include admin accounts in results (default is false)
+   *           type: string
+   *           enum: [users, agents, both]
+   *           default: both
+   *         description: Type of entities to search
    *     responses:
    *       200:
-   *         description: List of teams matching search criteria
+   *         description: Search results
    *         content:
    *           application/json:
    *             schema:
@@ -911,63 +1093,75 @@ export function configureAdminRoutes(
    *                 success:
    *                   type: boolean
    *                   description: Operation success status
-   *                 teams:
-   *                   type: array
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       id:
-   *                         type: string
-   *                         description: Team ID
-   *                       name:
-   *                         type: string
-   *                         description: Team name
-   *                       email:
-   *                         type: string
-   *                         description: Team email
-   *                       contactPerson:
-   *                         type: string
-   *                         description: Contact person name
-   *                       walletAddress:
-   *                         type: string
-   *                         description: Ethereum wallet address
-   *                       active:
-   *                         type: boolean
-   *                         description: Whether the team is active
-   *                       deactivationReason:
-   *                         type: string
-   *                         nullable: true
-   *                         description: Reason for deactivation if inactive
-   *                       deactivationDate:
-   *                         type: string
-   *                         format: date-time
-   *                         nullable: true
-   *                         description: Date of deactivation if inactive
-   *                       imageUrl:
-   *                         type: string
-   *                         description: URL to the team's image
-   *                         nullable: true
-   *                       isAdmin:
-   *                         type: boolean
-   *                         description: Whether the team has admin privileges
-   *                       metadata:
+   *                 searchType:
+   *                   type: string
+   *                   description: Type of search performed
+   *                 results:
+   *                   type: object
+   *                   properties:
+   *                     users:
+   *                       type: array
+   *                       items:
    *                         type: object
-   *                         nullable: true
-   *                         description: Optional agent metadata
-   *                       createdAt:
-   *                         type: string
-   *                         format: date-time
-   *                         description: Account creation timestamp
-   *                       updatedAt:
-   *                         type: string
-   *                         format: date-time
-   *                         description: Account update timestamp
+   *                         properties:
+   *                           type:
+   *                             type: string
+   *                             example: user
+   *                           id:
+   *                             type: string
+   *                           walletAddress:
+   *                             type: string
+   *                           name:
+   *                             type: string
+   *                             nullable: true
+   *                           email:
+   *                             type: string
+   *                             nullable: true
+   *                           status:
+   *                             type: string
+   *                           imageUrl:
+   *                             type: string
+   *                             nullable: true
+   *                           createdAt:
+   *                             type: string
+   *                             format: date-time
+   *                           updatedAt:
+   *                             type: string
+   *                             format: date-time
+   *                     agents:
+   *                       type: array
+   *                       items:
+   *                         type: object
+   *                         properties:
+   *                           type:
+   *                             type: string
+   *                             example: agent
+   *                           id:
+   *                             type: string
+   *                           ownerId:
+   *                             type: string
+   *                           name:
+   *                             type: string
+   *                           description:
+   *                             type: string
+   *                             nullable: true
+   *                           status:
+   *                             type: string
+   *                           imageUrl:
+   *                             type: string
+   *                             nullable: true
+   *                           createdAt:
+   *                             type: string
+   *                             format: date-time
+   *                           updatedAt:
+   *                             type: string
+   *                             format: date-time
    *       401:
    *         description: Unauthorized - Admin authentication required
    *       500:
    *         description: Server error
    */
-  router.get("/teams/search", controller.searchTeams);
+  router.get("/search", controller.searchUsersAndAgents);
 
   return router;
 }

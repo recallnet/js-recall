@@ -31,37 +31,37 @@ const rateLimiterConfigs = {
   },
 };
 
-// Map to store per-team rate limiters
+// Map to store per-agent rate limiters
 const rateLimiters = new Map<string, Map<string, RateLimiterMemory>>();
 
 /**
- * Get a rate limiter for a specific team and type
- * This ensures each team has its own isolated rate limiters
+ * Get a rate limiter for a specific agent and type
+ * This ensures each agent has its own isolated rate limiters
  */
 function getRateLimiter(
-  teamId: string,
+  agentId: string,
   type: "trade" | "price" | "account" | "global" | "hourly",
 ): RateLimiterMemory {
-  // Create a map for this team if it doesn't exist
-  if (!rateLimiters.has(teamId)) {
-    rateLimiters.set(teamId, new Map<string, RateLimiterMemory>());
+  // Create a map for this agent if it doesn't exist
+  if (!rateLimiters.has(agentId)) {
+    rateLimiters.set(agentId, new Map<string, RateLimiterMemory>());
   }
 
-  const teamLimiters = rateLimiters.get(teamId)!;
+  const agentLimiters = rateLimiters.get(agentId)!;
 
-  // Create this type of limiter for the team if it doesn't exist
-  if (!teamLimiters.has(type)) {
+  // Create this type of limiter for the agent if it doesn't exist
+  if (!agentLimiters.has(type)) {
     const options: IRateLimiterOptions = rateLimiterConfigs[type];
-    teamLimiters.set(type, new RateLimiterMemory(options));
+    agentLimiters.set(type, new RateLimiterMemory(options));
   }
 
-  return teamLimiters.get(type)!;
+  return agentLimiters.get(type)!;
 }
 
 /**
  * Rate limiting middleware
- * Enforces API rate limits based on endpoint and team
- * Each team now has their own set of rate limiters to ensure proper isolation
+ * Enforces API rate limits based on endpoint and agent
+ * Each agent now has their own set of rate limiters to ensure proper isolation
  */
 export const rateLimiterMiddleware = async (
   req: Request,
@@ -70,50 +70,53 @@ export const rateLimiterMiddleware = async (
 ) => {
   try {
     // Skip rate limiting for health check endpoint
-    if (req.path === "/health") {
+    if (
+      req.originalUrl === "/health" ||
+      req.originalUrl.startsWith("/health")
+    ) {
       return next();
     }
 
-    // Get team ID from request (set by auth middleware)
-    const teamId = req.teamId || "anonymous";
+    // Get agent ID from request (set by auth middleware)
+    const agentId = req.agentId || "anonymous";
 
     // For debugging in development and testing
     const isDev =
       process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test";
     if (isDev) {
       console.log(
-        `[RateLimiter] Processing request for team ${teamId} to ${req.path}`,
+        `[RateLimiter] Processing request for agent ${agentId} to ${req.originalUrl}`,
       );
     }
 
-    // Apply global rate limit first - this is still per-team but for all endpoints
-    await getRateLimiter(teamId, "global").consume(`global:${teamId}`);
+    // Apply global rate limit first - this is still per-agent but for all endpoints
+    await getRateLimiter(agentId, "global").consume(`global:${agentId}`);
 
-    // Apply hourly rate limit - per-team
-    await getRateLimiter(teamId, "hourly").consume(`hourly:${teamId}`);
+    // Apply hourly rate limit - per-agent
+    await getRateLimiter(agentId, "hourly").consume(`hourly:${agentId}`);
 
-    // Apply endpoint-specific rate limits - use path prefix matching
+    // Apply endpoint-specific rate limits - use originalUrl for full path
     // Note: We need to ensure we match the correct paths
-    const path = req.path.toLowerCase();
+    const path = req.originalUrl.toLowerCase();
 
     if (path.includes("/api/trade")) {
       if (isDev)
         console.log(
-          `[RateLimiter] Applying trade rate limit for team ${teamId}`,
+          `[RateLimiter] Applying trade rate limit for agent ${agentId}`,
         );
-      await getRateLimiter(teamId, "trade").consume(`trade:${teamId}`);
+      await getRateLimiter(agentId, "trade").consume(`trade:${agentId}`);
     } else if (path.includes("/api/price")) {
       if (isDev)
         console.log(
-          `[RateLimiter] Applying price rate limit for team ${teamId}`,
+          `[RateLimiter] Applying price rate limit for agent ${agentId}`,
         );
-      await getRateLimiter(teamId, "price").consume(`price:${teamId}`);
-    } else if (path.includes("/api/account")) {
+      await getRateLimiter(agentId, "price").consume(`price:${agentId}`);
+    } else if (path.includes("/api/agent")) {
       if (isDev)
         console.log(
-          `[RateLimiter] Applying account rate limit for team ${teamId}`,
+          `[RateLimiter] Applying account rate limit for agent ${agentId}`,
         );
-      await getRateLimiter(teamId, "account").consume(`account:${teamId}`);
+      await getRateLimiter(agentId, "account").consume(`account:${agentId}`);
     }
 
     // If we get here, all rate limits passed

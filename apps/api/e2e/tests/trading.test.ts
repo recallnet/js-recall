@@ -28,7 +28,7 @@ import {
   ADMIN_USERNAME,
   cleanupTestState,
   createTestClient,
-  registerTeamAndGetClient,
+  registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
 } from "@/e2e/utils/test-helpers.js";
@@ -58,22 +58,23 @@ describe("Trading API", () => {
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
-  test("team can execute a trade and verify balance updates", async () => {
+  test("agent can execute a trade and verify balance updates", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
-      "Trading Team",
-    );
+    // Register agent and get client
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Trading Agent",
+      });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Trading Test ${Date.now()}`;
     (await adminClient.startCompetition({
       name: competitionName,
-      teamIds: [team.id],
+      agentIds: [agent.id],
       tradingType: CrossChainTradingType.allow,
     })) as StartCompetitionResponse;
 
@@ -81,7 +82,7 @@ describe("Trading API", () => {
     await wait(500);
 
     // Check initial balance
-    const initialBalanceResponse = await teamClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance();
     expect((initialBalanceResponse as BalancesResponse).success).toBe(true);
     expect((initialBalanceResponse as BalancesResponse).balances).toBeDefined();
 
@@ -116,7 +117,7 @@ describe("Trading API", () => {
     );
 
     // Execute a buy trade (buying SOL with USDC)
-    const buyTradeResponse = await teamClient.executeTrade({
+    const buyTradeResponse = await agentClient.executeTrade({
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
       amount: tradeAmount.toString(),
@@ -146,7 +147,7 @@ describe("Trading API", () => {
     await wait(500);
 
     // Check updated balance
-    const updatedBalanceResponse = await teamClient.getBalance();
+    const updatedBalanceResponse = await agentClient.getBalance();
     expect(updatedBalanceResponse.success).toBe(true);
 
     // USDC balance should have decreased
@@ -171,7 +172,7 @@ describe("Trading API", () => {
     expect(updatedSolBalance).toBeGreaterThan(initialSolBalance);
 
     // Get trade history
-    const tradeHistoryResponse = await teamClient.getTradeHistory();
+    const tradeHistoryResponse = await agentClient.getTradeHistory();
     expect(tradeHistoryResponse.success).toBe(true);
     expect(
       (tradeHistoryResponse as TradeHistoryResponse).trades,
@@ -196,7 +197,7 @@ describe("Trading API", () => {
       `Token to sell: ${tokenToSell} (should be less than ${updatedSolBalance})`,
     );
 
-    const sellTradeResponse = await teamClient.executeTrade({
+    const sellTradeResponse = await agentClient.executeTrade({
       fromToken: solTokenAddress,
       toToken: usdcTokenAddress,
       amount: tokenToSell.toString(),
@@ -213,7 +214,7 @@ describe("Trading API", () => {
     await wait(500);
 
     // Check final balance
-    const finalBalanceResponse = await teamClient.getBalance();
+    const finalBalanceResponse = await agentClient.getBalance();
     expect(finalBalanceResponse.success).toBe(true);
     // USDC balance should have increased compared to after buying
     const finalUsdcBalance = parseFloat(
@@ -237,26 +238,27 @@ describe("Trading API", () => {
     expect(finalSolBalance).toBeLessThan(updatedSolBalance);
   });
 
-  test("team can execute a trade with an arbitrary token address", async () => {
+  test("agent can execute a trade with an arbitrary token address", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
-      "Arbitrary Token Team",
-    );
+    // Register agent and get client
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Arbitrary Token Agent",
+      });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Arbitrary Token Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [agent.id]);
 
     // Wait for balances to be properly initialized
     await wait(500);
 
     // Check initial balance
-    const initialBalanceResponse = await teamClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance();
     expect(initialBalanceResponse.success).toBe(true);
     expect((initialBalanceResponse as BalancesResponse).balances).toBeDefined();
 
@@ -291,7 +293,7 @@ describe("Trading API", () => {
     );
 
     // Use the client's executeTrade which expects fromToken and toToken
-    const buyTradeResponse = await teamClient.executeTrade({
+    const buyTradeResponse = await agentClient.executeTrade({
       fromToken: usdcTokenAddress,
       toToken: arbitraryTokenAddress,
       amount: tradeAmount.toString(),
@@ -312,7 +314,7 @@ describe("Trading API", () => {
     await wait(500);
 
     // Check updated balance
-    const updatedBalanceResponse = await teamClient.getBalance();
+    const updatedBalanceResponse = await agentClient.getBalance();
     expect(updatedBalanceResponse.success).toBe(true);
     // USDC balance should have decreased
     const updatedUsdcBalance = parseFloat(
@@ -337,7 +339,7 @@ describe("Trading API", () => {
     );
 
     // Get trade history
-    const tradeHistoryResponse = await teamClient.getTradeHistory();
+    const tradeHistoryResponse = await agentClient.getTradeHistory();
     expect(tradeHistoryResponse.success).toBe(true);
     expect(
       (tradeHistoryResponse as TradeHistoryResponse).trades,
@@ -356,26 +358,27 @@ describe("Trading API", () => {
     ); // Allow for small rounding differences
   });
 
-  test("team cannot execute invalid trades", async () => {
+  test("agent cannot execute invalid trades", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
-      "Invalid Trading Team",
-    );
+    // Register agent and get client
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Invalid Trading Agent",
+      });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     await startTestCompetition(
       adminClient,
       `Invalid Trading Test ${Date.now()}`,
-      [team.id],
+      [agent.id],
     );
 
     // Check initial balance
-    const initialBalanceResponse = await teamClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance();
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
     const initialUsdcBalance = parseFloat(
       (initialBalanceResponse as BalancesResponse).balances
@@ -384,7 +387,7 @@ describe("Trading API", () => {
     );
 
     // Try to execute a trade with invalid token address format
-    const invalidTokenResponse = await teamClient.executeTrade({
+    const invalidTokenResponse = await agentClient.executeTrade({
       fromToken: usdcTokenAddress,
       toToken: "InvalidTokenAddressFormat123", // This should be rejected by the API as not a valid token address format
       amount: "100",
@@ -400,7 +403,7 @@ describe("Trading API", () => {
     const nonExistentTokenAddress =
       "1111111111111111111111111111111111111111111111111111";
 
-    const noPriceTokenResponse = await teamClient.executeTrade({
+    const noPriceTokenResponse = await agentClient.executeTrade({
       fromToken: usdcTokenAddress,
       toToken: nonExistentTokenAddress,
       amount: "100",
@@ -415,7 +418,7 @@ describe("Trading API", () => {
     );
 
     // Try to execute a trade with amount exceeding balance
-    const excessiveAmountResponse = await teamClient.executeTrade({
+    const excessiveAmountResponse = await agentClient.executeTrade({
       fromToken: usdcTokenAddress,
       toToken: usdcTokenAddress, // Use USDC which has a known price
       amount: (initialUsdcBalance * 2).toString(), // Double the available balance
@@ -430,7 +433,7 @@ describe("Trading API", () => {
     );
     // Get portfolio value to calculate appropriate test amounts
     const portfolioResponse =
-      (await teamClient.getPortfolio()) as PortfolioResponse;
+      (await agentClient.getPortfolio()) as PortfolioResponse;
     expect(portfolioResponse.success).toBe(true);
     const portfolioValue = portfolioResponse.totalValue;
     // Test insufficient balance with an amount below max trade percentage but above actual balance
@@ -449,7 +452,7 @@ describe("Trading API", () => {
     );
     // Add a test for truly excessive amounts after fixing the token address
     // The test should now execute a transaction where from != to
-    const solanaPriceResponse = await teamClient.executeTrade({
+    const solanaPriceResponse = await agentClient.executeTrade({
       fromToken: usdcTokenAddress,
       toToken: config.specificChainTokens.svm.sol,
       amount: insufficientBalanceAmount.toString(),
@@ -464,7 +467,7 @@ describe("Trading API", () => {
     );
 
     // Try to execute a sell trade without having tokens
-    const invalidSellResponse = await teamClient.executeTrade({
+    const invalidSellResponse = await agentClient.executeTrade({
       fromToken: config.specificChainTokens.svm.sol, // Use SOL which we don't have in our balance
       toToken: usdcTokenAddress,
       amount: "100",
@@ -484,17 +487,18 @@ describe("Trading API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
-      "Max Trade Limit Team",
-    );
+    // Register agent and get client
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Max Trade Limit Agent",
+      });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     await startTestCompetition(
       adminClient,
       `Max Trade Limit Test ${Date.now()}`,
-      [team.id],
+      [agent.id],
     );
 
     // Wait for balances to be properly initialized
@@ -502,14 +506,14 @@ describe("Trading API", () => {
 
     // Check initial balance
     const initialBalanceResponse =
-      (await teamClient.getBalance()) as BalancesResponse;
+      (await agentClient.getBalance()) as BalancesResponse;
 
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
 
     // First, check if we have any SOL or other tokens and sell them to consolidate into USDC
     const tokenAddressesBefore = Object.keys(initialBalanceResponse.balances);
     console.log(
-      `Team initial balances: ${JSON.stringify(initialBalanceResponse.balances)}`,
+      `Agent initial balances: ${JSON.stringify(initialBalanceResponse.balances)}`,
     );
 
     // Consolidate all non-USDC SVM tokens into USDC
@@ -537,7 +541,7 @@ describe("Trading API", () => {
         console.log(
           `Converting ${balance} of ${tokenAddress} to USDC (SVM token)`,
         );
-        const consolidateResponse = await teamClient.executeTrade({
+        const consolidateResponse = await agentClient.executeTrade({
           fromToken: tokenAddress,
           toToken: usdcTokenAddress,
           amount: balance.toString(),
@@ -561,7 +565,7 @@ describe("Trading API", () => {
     await wait(500);
 
     // // Verify we now have a consolidated USDC balance
-    const balanceAfterConsolidation = await teamClient.getBalance();
+    const balanceAfterConsolidation = await agentClient.getBalance();
     console.log(
       JSON.stringify(balanceAfterConsolidation),
       "balanceAfterConsolidation",
@@ -576,7 +580,7 @@ describe("Trading API", () => {
 
     // Get portfolio value to calculate trade percentage
     const portfolioResponse =
-      (await teamClient.getPortfolio()) as PortfolioResponse;
+      (await agentClient.getPortfolio()) as PortfolioResponse;
     expect(portfolioResponse.success).toBe(true);
     const portfolioValue = portfolioResponse.totalValue;
     console.log(`Portfolio value: $${portfolioValue}`);
@@ -596,7 +600,7 @@ describe("Trading API", () => {
       `Trade percentage: ${tradePercentage}% (Max allowed: ${config.maxTradePercentage}%)`,
     );
 
-    const maxPercentageResponse = await teamClient.executeTrade({
+    const maxPercentageResponse = await agentClient.executeTrade({
       fromToken: usdcTokenAddress,
       toToken: config.specificChainTokens.svm.sol,
       amount: tradeAmount.toString(),
@@ -614,26 +618,27 @@ describe("Trading API", () => {
     );
   });
 
-  test("team can fetch price and execute a calculated trade", async () => {
+  test("agent can fetch price and execute a calculated trade", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
-      "Price Calculation Team",
-    );
+    // Register agent and get client
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Price Calculation Agent",
+      });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Price Calculation Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [agent.id]);
 
     // Wait for balances to be properly initialized
     await wait(500);
 
     // Check initial balance
-    const initialBalanceResponse = await teamClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance();
     expect(initialBalanceResponse.success).toBe(true);
     expect((initialBalanceResponse as BalancesResponse).balances).toBeDefined();
 
@@ -662,7 +667,7 @@ describe("Trading API", () => {
 
     // 1. Fetch the price for the arbitrary token
     console.log(`Fetching price for token: ${arbitraryTokenAddress}`);
-    const priceResponse = await teamClient.getPrice(arbitraryTokenAddress);
+    const priceResponse = await agentClient.getPrice(arbitraryTokenAddress);
     expect(priceResponse.success).toBe(true);
     expect((priceResponse as PriceResponse).price).toBeDefined();
 
@@ -678,7 +683,7 @@ describe("Trading API", () => {
     );
 
     // 3. Execute the trade (buy the token with 10 USDC)
-    const buyTradeResponse = await teamClient.executeTrade({
+    const buyTradeResponse = await agentClient.executeTrade({
       fromToken: usdcTokenAddress,
       toToken: arbitraryTokenAddress,
       amount: usdcAmount.toString(),
@@ -696,7 +701,7 @@ describe("Trading API", () => {
     await wait(500);
 
     // 4. Check final balance and validate it reflects the calculation
-    const finalBalanceResponse = await teamClient.getBalance();
+    const finalBalanceResponse = await agentClient.getBalance();
     expect(finalBalanceResponse.success).toBe(true);
     expect((finalBalanceResponse as BalancesResponse).balances).toBeDefined();
     // USDC balance should have decreased by 10
@@ -720,7 +725,7 @@ describe("Trading API", () => {
     ); // Allow for small variations due to price fluctuations
 
     // Get trade history to verify details
-    const tradeHistoryResponse = await teamClient.getTradeHistory();
+    const tradeHistoryResponse = await agentClient.getTradeHistory();
     expect(tradeHistoryResponse.success).toBe(true);
     const tradeHistory = tradeHistoryResponse as TradeHistoryResponse;
     expect(tradeHistory.trades).toBeInstanceOf(Array);
@@ -734,22 +739,23 @@ describe("Trading API", () => {
     expect(lastTrade?.toAmount).toBeCloseTo(expectedTokenAmount, 1);
   });
 
-  test("team can trade with Ethereum tokens", async () => {
+  test("agent can trade with Ethereum tokens", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
-      "Ethereum Token Team",
-    );
+    // Register agent and get client
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Ethereum Token Agent",
+      });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Ethereum Token Test ${Date.now()}`;
     (await adminClient.startCompetition({
       name: competitionName,
-      teamIds: [team.id],
+      agentIds: [agent.id],
       tradingType: CrossChainTradingType.allow,
     })) as StartCompetitionResponse;
 
@@ -757,7 +763,7 @@ describe("Trading API", () => {
     await wait(500);
 
     // Check initial balance
-    const initialBalanceResponse = await teamClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance();
     expect(initialBalanceResponse.success).toBe(true);
     const balancesResponse = initialBalanceResponse as BalancesResponse;
     expect(balancesResponse.balances).toBeDefined();
@@ -778,7 +784,7 @@ describe("Trading API", () => {
 
     // First check price to verify EVM tokens are working
     try {
-      const priceResponse = await teamClient.getPrice(ethTokenAddress);
+      const priceResponse = await agentClient.getPrice(ethTokenAddress);
 
       // If we get a successful response, verify the token is recognized as EVM
       if ((priceResponse as PriceResponse).chain) {
@@ -817,7 +823,7 @@ describe("Trading API", () => {
       const tradeAmount = Math.min(100, svmUsdcBalance * 0.1);
 
       // Execute a buy trade (buying ETH with USDC)
-      const buyTradeResponse = (await teamClient.executeTrade({
+      const buyTradeResponse = (await agentClient.executeTrade({
         fromToken: svmUsdcAddress,
         toToken: ethTokenAddress,
         amount: tradeAmount.toString(),
@@ -835,7 +841,7 @@ describe("Trading API", () => {
       await wait(500);
 
       // Check updated balance
-      const updatedBalanceResponse = await teamClient.getBalance();
+      const updatedBalanceResponse = await agentClient.getBalance();
       // ETH balance should have increased
       const updatedEthBalance = parseFloat(
         (updatedBalanceResponse as BalancesResponse).balances
@@ -846,7 +852,7 @@ describe("Trading API", () => {
       expect(updatedEthBalance).toBeGreaterThan(initialEthBalance);
 
       // Get trade history and verify the Ethereum trade
-      const tradeHistoryResponse = await teamClient.getTradeHistory();
+      const tradeHistoryResponse = await agentClient.getTradeHistory();
       expect(tradeHistoryResponse.success).toBe(true);
       expect(
         (tradeHistoryResponse as TradeHistoryResponse).trades.length,
@@ -869,26 +875,27 @@ describe("Trading API", () => {
     }
   });
 
-  test("team can execute trades with explicit chain parameters", async () => {
+  test("agent can execute trades with explicit chain parameters", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
-      "Chain-Specific Trading Team",
-    );
+    // Register agent and get client
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Chain-Specific Trading Agent",
+      });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Chain-Specific Trading Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [agent.id]);
 
     // Wait for balances to be properly initialized
     await wait(500);
 
     // Check initial balance
-    const initialBalanceResponse = await teamClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance();
     expect(initialBalanceResponse.success).toBe(true);
 
     // Initial USDC balance should be the starting amount (e.g., 10000)
@@ -916,7 +923,7 @@ describe("Trading API", () => {
 
     // Execute a buy trade with explicit Solana chain parameters
     console.log("Executing trade with explicit Solana chain parameters");
-    const buyTradeResponse = await teamClient.executeTrade({
+    const buyTradeResponse = await agentClient.executeTrade({
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
       amount: tradeAmount.toString(),
@@ -941,7 +948,7 @@ describe("Trading API", () => {
     await wait(500);
 
     // Check updated balance
-    const updatedBalanceResponse = await teamClient.getBalance();
+    const updatedBalanceResponse = await agentClient.getBalance();
     expect(updatedBalanceResponse.success).toBe(true);
     // USDC balance should have decreased
     const updatedUsdcBalance = parseFloat(
@@ -961,7 +968,7 @@ describe("Trading API", () => {
     expect(updatedSolBalance).toBeGreaterThan(initialSolBalance);
 
     // Get trade history and verify chain info is preserved
-    const tradeHistoryResponse = await teamClient.getTradeHistory();
+    const tradeHistoryResponse = await agentClient.getTradeHistory();
     expect(tradeHistoryResponse.success).toBe(true);
     // Get the most recent trade
     const lastTrade = (tradeHistoryResponse as TradeHistoryResponse).trades[0];
@@ -985,7 +992,7 @@ describe("Trading API", () => {
       // Attempt to execute a cross-chain trade with explicit chain parameters
       // This should succeed if cross-chain trading is enabled, or fail if disabled
       console.log("Attempting cross-chain trade (Solana USDC to Ethereum ETH)");
-      const crossChainTradeResponse = await teamClient.executeTrade({
+      const crossChainTradeResponse = await agentClient.executeTrade({
         fromToken: usdcTokenAddress,
         toToken: ethTokenAddress,
         amount: tradeAmount.toString(),
@@ -1009,20 +1016,21 @@ describe("Trading API", () => {
     }
   });
 
-  test("team can execute a trade and verify reason field is returned in responses", async () => {
+  test("agent can execute a trade and verify reason field is returned in responses", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
-      "Reason Verification Team",
-    );
+    // Register agent and get client
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Reason Verification Agent",
+      });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Reason Verification Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [agent.id]);
 
     // Wait for balances to be properly initialized
     await wait(500);
@@ -1035,7 +1043,7 @@ describe("Trading API", () => {
     const specificReason = "Testing reason field persistence and retrieval";
 
     // Execute a trade with the specific reason
-    const tradeResponse = (await teamClient.executeTrade({
+    const tradeResponse = (await agentClient.executeTrade({
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
       amount: "10",
@@ -1059,7 +1067,7 @@ describe("Trading API", () => {
 
     // Get trade history
     const tradeHistoryResponse =
-      (await teamClient.getTradeHistory()) as TradeHistoryResponse;
+      (await agentClient.getTradeHistory()) as TradeHistoryResponse;
 
     // Verify trade history response
     expect(tradeHistoryResponse.success).toBe(true);
@@ -1084,20 +1092,21 @@ describe("Trading API", () => {
     );
   });
 
-  test("team cannot execute a trade without a reason field", async () => {
+  test("agent cannot execute a trade without a reason field", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
-      "Reason Required Team",
-    );
+    // Register agent and get client
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Reason Required Agent",
+      });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Reason Required Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [agent.id]);
 
     // Wait for balances to be properly initialized
     await wait(500);
@@ -1107,7 +1116,7 @@ describe("Trading API", () => {
     const solTokenAddress = config.specificChainTokens.svm.sol;
 
     // Attempt to execute a trade without providing a reason field
-    const tradeResponse = await teamClient.executeTrade({
+    const tradeResponse = await agentClient.executeTrade({
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
       amount: "10",
@@ -1124,7 +1133,7 @@ describe("Trading API", () => {
     expect((tradeResponse as ErrorResponse).error).toContain("reason");
 
     // Now execute a trade with reason to verify the endpoint works when reason is provided
-    const validTradeResponse = await teamClient.executeTrade({
+    const validTradeResponse = await agentClient.executeTrade({
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
       amount: "10",
@@ -1142,11 +1151,12 @@ describe("Trading API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
-      "Cross-Chain Settings Team",
-    );
+    // Register agent and get client
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Cross-Chain Settings Agent",
+      });
 
     // Get token addresses for testing
     const svmUsdcAddress = config.specificChainTokens.svm.usdc;
@@ -1161,7 +1171,7 @@ describe("Trading API", () => {
     const competitionName = `Cross-Chain Settings Test ${Date.now()}`;
     const competitionResponse = await adminClient.startCompetition({
       name: competitionName,
-      teamIds: [team.id],
+      agentIds: [agent.id],
       tradingType: CrossChainTradingType.disallowAll,
     });
 
@@ -1171,7 +1181,7 @@ describe("Trading API", () => {
     await wait(500);
 
     // Check if competition rules reflect the disabled cross-chain trading
-    const rulesResponse = await teamClient.getRules();
+    const rulesResponse = await agentClient.getRules();
     expect(rulesResponse.success).toBe(true);
 
     // Find cross-chain trading rule in the rules list
@@ -1188,7 +1198,7 @@ describe("Trading API", () => {
       "Attempting cross-chain trade when it's disabled in competition settings",
     );
 
-    const balanceResponse = await teamClient.getBalance();
+    const balanceResponse = await agentClient.getBalance();
     const svmUsdcBalance = parseFloat(
       (balanceResponse as BalancesResponse).balances
         .find((b) => b.tokenAddress === svmUsdcAddress)
@@ -1197,7 +1207,7 @@ describe("Trading API", () => {
     const tradeAmount = Math.min(50, svmUsdcBalance * 0.1).toString();
 
     // Attempt to execute a cross-chain trade (should fail)
-    const crossChainTradeResponse = await teamClient.executeTrade({
+    const crossChainTradeResponse = await agentClient.executeTrade({
       fromToken: svmUsdcAddress,
       toToken: ethTokenAddress,
       amount: tradeAmount,
@@ -1222,7 +1232,7 @@ describe("Trading API", () => {
     const secondCompetitionName = `Cross-Chain Enabled Test ${Date.now()}`;
     const secondCompetitionResponse = await adminClient.startCompetition({
       name: secondCompetitionName,
-      teamIds: [team.id],
+      agentIds: [agent.id],
       tradingType: CrossChainTradingType.allow,
     });
 
@@ -1230,7 +1240,7 @@ describe("Trading API", () => {
     await wait(500);
 
     // Check if competition rules reflect the enabled cross-chain trading
-    const secondRulesResponse = await teamClient.getRules();
+    const secondRulesResponse = await agentClient.getRules();
     expect(secondRulesResponse.success).toBe(true);
 
     // Find cross-chain trading rule in the rules list
@@ -1247,7 +1257,7 @@ describe("Trading API", () => {
       "Attempting cross-chain trade when it's enabled in competition settings",
     );
 
-    const secondTradeResponse = await teamClient.executeTrade({
+    const secondTradeResponse = await agentClient.executeTrade({
       fromToken: svmUsdcAddress,
       toToken: ethTokenAddress,
       amount: tradeAmount,
@@ -1309,25 +1319,26 @@ describe("Trading API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
-      "EVM-to-EVM Cross-Chain Team",
-    );
+    // Register agent and get client
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "EVM-to-EVM Cross-Chain Agent",
+      });
 
     // Start a competition with cross-chain trading DISABLED first
     const competitionName = `EVM-EVM Cross-Chain Test ${Date.now()}`;
     const competitionResponse = await adminClient.startCompetition({
       name: competitionName,
-      teamIds: [team.id],
+      agentIds: [agent.id],
       tradingType: CrossChainTradingType.disallowAll,
     });
 
     expect(competitionResponse.success).toBe(true);
     await wait(500);
 
-    // Verify the team has some balance on the source chain
-    const initialBalanceResponse = await teamClient.getBalance();
+    // Verify the agent has some balance on the source chain
+    const initialBalanceResponse = await agentClient.getBalance();
     const sourceUsdcBalance = parseFloat(
       (initialBalanceResponse.success &&
         (initialBalanceResponse as BalancesResponse).balances
@@ -1350,7 +1361,7 @@ describe("Trading API", () => {
     );
 
     // Attempt to execute an EVM-to-EVM cross-chain trade when disabled
-    const crossChainTradeResponse = await teamClient.executeTrade({
+    const crossChainTradeResponse = await agentClient.executeTrade({
       fromToken: sourceUsdcAddress,
       toToken: targetUsdcAddress,
       amount: tradeAmount,
@@ -1377,7 +1388,7 @@ describe("Trading API", () => {
     const secondCompetitionName = `EVM-EVM Cross-Chain Enabled Test ${Date.now()}`;
     const secondCompetitionResponse = await adminClient.startCompetition({
       name: secondCompetitionName,
-      teamIds: [team.id],
+      agentIds: [agent.id],
       tradingType: CrossChainTradingType.allow,
     });
 
@@ -1385,7 +1396,7 @@ describe("Trading API", () => {
     await wait(500);
 
     // Now try to execute the same EVM-to-EVM cross-chain trade (should succeed)
-    const secondTradeResponse = await teamClient.executeTrade({
+    const secondTradeResponse = await agentClient.executeTrade({
       fromToken: sourceUsdcAddress,
       toToken: targetUsdcAddress,
       amount: tradeAmount,
@@ -1420,17 +1431,18 @@ describe("Trading API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
-      "disallowXParent Testing Team",
-    );
+    // Register agent and get client
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "disallowXParent Testing Agent",
+      });
 
     // Start a competition with disallowXParent cross-chain trading setting
     const competitionName = `disallowXParent Test ${Date.now()}`;
     const competitionResponse = await adminClient.startCompetition({
       name: competitionName,
-      teamIds: [team.id],
+      agentIds: [agent.id],
       tradingType: CrossChainTradingType.disallowXParent,
     });
 
@@ -1446,7 +1458,7 @@ describe("Trading API", () => {
     const svmUsdcAddress = config.specificChainTokens.svm.usdc;
 
     // Check the initial balances
-    const initialBalanceResponse = await teamClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance();
     expect(initialBalanceResponse.success).toBe(true);
 
     const baseUsdcBalance = parseFloat(
@@ -1468,7 +1480,7 @@ describe("Trading API", () => {
       `Testing EVM-to-EVM trading (Base -> ETH) with disallowXParent setting`,
     );
 
-    const evmToEvmResponse = await teamClient.executeTrade({
+    const evmToEvmResponse = await agentClient.executeTrade({
       fromToken: baseUsdcAddress,
       toToken: ethUsdcAddress,
       amount: tradeAmount,
@@ -1501,7 +1513,7 @@ describe("Trading API", () => {
     );
 
     // Get updated balances after the first successful trade
-    const updatedBalanceResponse = await teamClient.getBalance();
+    const updatedBalanceResponse = await agentClient.getBalance();
     const ethUsdcBalance = parseFloat(
       (updatedBalanceResponse as BalancesResponse).balances
         .find((b) => b.tokenAddress === ethUsdcAddress)
@@ -1517,7 +1529,7 @@ describe("Trading API", () => {
 
     const secondTradeAmount = Math.min(5, ethUsdcBalance * 0.1).toString();
 
-    const evmToSvmResponse = await teamClient.executeTrade({
+    const evmToSvmResponse = await agentClient.executeTrade({
       fromToken: ethUsdcAddress,
       toToken: svmUsdcAddress,
       amount: secondTradeAmount,
@@ -1544,18 +1556,18 @@ describe("Trading API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
-    const { team } = await registerTeamAndGetClient(
+    // Register agent and get client
+    const { agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Reason Required Team",
-    );
+      agentName: "Reason Required Agent",
+    });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Reason Required Test ${Date.now()}`;
     const competition = await startTestCompetition(
       adminClient,
       competitionName,
-      [team.id],
+      [agent.id],
     );
 
     // Wait for balances to be properly initialized
@@ -1573,7 +1585,7 @@ describe("Trading API", () => {
       price: smallValue, // make sure exchange rate value can be very small
       toTokenSymbol: "NA",
       success: true,
-      teamId: team.id,
+      agentId: agent.id,
       tradeAmountUsd: smallValue,
       competitionId: competition.competition.id,
       reason: "testing small numbers",
@@ -1602,15 +1614,16 @@ describe("Trading API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
-      "USD Amount Test Team",
-    );
+    // Register agent and get client
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "USD Amount Test Agent",
+      });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `USD Amount Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [agent.id]);
 
     // Wait for balances to be properly initialized
     await wait(500);
@@ -1620,7 +1633,7 @@ describe("Trading API", () => {
     const solTokenAddress = config.specificChainTokens.svm.sol;
 
     // Get the current price of SOL to calculate expected USD value
-    const priceResponse = await teamClient.getPrice(solTokenAddress);
+    const priceResponse = await agentClient.getPrice(solTokenAddress);
     expect(priceResponse.success).toBe(true);
     const solPrice = (priceResponse as PriceResponse).price;
     expect(solPrice).toBeGreaterThan(0);
@@ -1631,7 +1644,7 @@ describe("Trading API", () => {
     const expectedUsdValue = tradeAmount; // Since we're trading from USDC, the USD value should be ~tradeAmount
 
     // Execute a trade
-    const tradeResponse = await teamClient.executeTrade({
+    const tradeResponse = await agentClient.executeTrade({
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
       amount: tradeAmount.toString(),
@@ -1658,7 +1671,7 @@ describe("Trading API", () => {
     await wait(500);
 
     // Verify tradeAmountUsd also appears in trade history
-    const tradeHistoryResponse = await teamClient.getTradeHistory();
+    const tradeHistoryResponse = await agentClient.getTradeHistory();
     expect(tradeHistoryResponse.success).toBe(true);
 
     // Get the most recent trade (should be the one we just executed)
@@ -1678,7 +1691,7 @@ describe("Trading API", () => {
     const reverseTradeAmount = 10; // 10 SOL
     const reverseExpectedUsdValue = reverseTradeAmount * (solPrice ?? 0);
 
-    const reverseTradeResponse = await teamClient.executeTrade({
+    const reverseTradeResponse = await agentClient.executeTrade({
       fromToken: solTokenAddress,
       toToken: usdcTokenAddress,
       amount: reverseTradeAmount.toString(),
@@ -1706,15 +1719,16 @@ describe("Trading API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
-      adminApiKey,
-      "Symbol Verification Team",
-    );
+    // Register agent and get client
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Symbol Verification Agent",
+      });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Symbol Verification Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [agent.id]);
 
     // Wait for balances to be properly initialized
     await wait(500);
@@ -1725,7 +1739,7 @@ describe("Trading API", () => {
 
     // 1. Verify symbols are returned in initial balance response
     console.log("1. Checking symbols in initial balance response...");
-    const initialBalanceResponse = await teamClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance();
     expect(initialBalanceResponse.success).toBe(true);
 
     const balancesResponse = initialBalanceResponse as BalancesResponse;
@@ -1753,7 +1767,7 @@ describe("Trading API", () => {
 
     // 2. Get a trade quote and verify symbols are included
     console.log("2. Checking symbols in trade quote response...");
-    const quoteResponse = await teamClient.getQuote(
+    const quoteResponse = await agentClient.getQuote(
       usdcTokenAddress,
       solTokenAddress,
       "100",
@@ -1780,7 +1794,7 @@ describe("Trading API", () => {
 
     // 3. Execute a trade and verify symbols in trade execution response
     console.log("3. Executing trade and checking symbols in response...");
-    const tradeResponse = await teamClient.executeTrade({
+    const tradeResponse = await agentClient.executeTrade({
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
       amount: "50",
@@ -1807,7 +1821,7 @@ describe("Trading API", () => {
 
     // 4. Verify symbols are returned in updated balance response
     console.log("4. Checking symbols in updated balance response...");
-    const updatedBalanceResponse = await teamClient.getBalance();
+    const updatedBalanceResponse = await agentClient.getBalance();
     expect(updatedBalanceResponse.success).toBe(true);
 
     const updatedBalancesResponse = updatedBalanceResponse as BalancesResponse;
@@ -1835,7 +1849,7 @@ describe("Trading API", () => {
 
     // 5. Verify symbols in trade history
     console.log("5. Checking symbols in trade history response...");
-    const tradeHistoryResponse = await teamClient.getTradeHistory();
+    const tradeHistoryResponse = await agentClient.getTradeHistory();
     expect(tradeHistoryResponse.success).toBe(true);
 
     if (tradeHistoryResponse.success) {
@@ -1857,7 +1871,7 @@ describe("Trading API", () => {
 
     // 6. Verify symbols in portfolio response
     console.log("6. Checking symbols in portfolio response...");
-    const portfolioResponse = await teamClient.getPortfolio();
+    const portfolioResponse = await agentClient.getPortfolio();
     expect(portfolioResponse.success).toBe(true);
 
     if (portfolioResponse.success) {
@@ -1906,5 +1920,185 @@ describe("Trading API", () => {
     }
 
     console.log("✅ All symbol verification tests passed!");
+  });
+
+  test("agent can execute a trade and verify balance updates", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register user and agent, get client
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Trading Agent",
+      });
+
+    // Start a competition with our agent
+    const competitionName = `Trading Test ${Date.now()}`;
+    (await adminClient.startCompetition({
+      name: competitionName,
+      agentIds: [agent.id],
+      tradingType: CrossChainTradingType.allow,
+    })) as StartCompetitionResponse;
+
+    // Wait for balances to be properly initialized
+    await wait(500);
+
+    // Check initial balance
+    const initialBalanceResponse = await agentClient.getBalance();
+    expect((initialBalanceResponse as BalancesResponse).success).toBe(true);
+    expect((initialBalanceResponse as BalancesResponse).balances).toBeDefined();
+
+    // Initial USDC balance should be the starting amount (e.g., 10000)
+    const usdcTokenAddress = config.specificChainTokens.svm.usdc;
+    console.log(
+      JSON.stringify(initialBalanceResponse),
+      "initialBalanceResponse test",
+    );
+    const initialUsdcBalance = parseFloat(
+      (initialBalanceResponse as BalancesResponse).balances
+        .find((b) => b.tokenAddress === usdcTokenAddress)
+        ?.amount.toString() || "0",
+    );
+    console.log(`Initial USDC balance: ${initialUsdcBalance}`);
+    expect(initialUsdcBalance).toBeGreaterThan(0);
+
+    // Use SOL token for trading (since we know it has a price in the test environment)
+    const solTokenAddress = config.specificChainTokens.svm.sol;
+    // Initial SOL balance might already exist from initial balance config
+    const initialSolBalance = parseFloat(
+      (initialBalanceResponse as BalancesResponse).balances
+        .find((b) => b.tokenAddress === solTokenAddress)
+        ?.amount.toString() || "0",
+    );
+    console.log(`Initial SOL balance: ${initialSolBalance}`);
+
+    // Use a small fixed amount that should be less than the initial balance
+    const tradeAmount = 100; // Use a small amount that should be available
+    console.log(
+      `Trade amount: ${tradeAmount} (should be less than ${initialUsdcBalance})`,
+    );
+
+    // Execute a buy trade (buying SOL with USDC)
+    const buyTradeResponse = await agentClient.executeTrade({
+      fromToken: usdcTokenAddress,
+      toToken: solTokenAddress,
+      amount: tradeAmount.toString(),
+      fromChain: BlockchainType.SVM,
+      toChain: BlockchainType.SVM,
+      reason,
+    });
+
+    console.log(`Buy trade response: ${JSON.stringify(buyTradeResponse)}`);
+    expect(buyTradeResponse.success).toBe(true);
+    expect((buyTradeResponse as TradeResponse).transaction).toBeDefined();
+    expect((buyTradeResponse as TradeResponse).transaction.id).toBeDefined();
+
+    // Verify chain field is included in transaction response
+    if ((buyTradeResponse as TradeResponse).transaction.fromChain) {
+      expect((buyTradeResponse as TradeResponse).transaction.fromChain).toBe(
+        BlockchainType.SVM,
+      );
+    }
+    if ((buyTradeResponse as TradeResponse).transaction.toChain) {
+      expect((buyTradeResponse as TradeResponse).transaction.toChain).toBe(
+        BlockchainType.SVM,
+      );
+    }
+
+    // Wait a bit longer for the trade to process
+    await wait(500);
+
+    // Check updated balance
+    const updatedBalanceResponse = await agentClient.getBalance();
+    expect(updatedBalanceResponse.success).toBe(true);
+
+    // USDC balance should have decreased
+    const updatedUsdcBalance = parseFloat(
+      (updatedBalanceResponse as BalancesResponse).balances
+        .find((b) => b.tokenAddress === usdcTokenAddress)
+        ?.amount.toString() || "0",
+    );
+    console.log(
+      `Updated USDC balance: ${updatedUsdcBalance} (should be less than ${initialUsdcBalance})`,
+    );
+    expect(updatedUsdcBalance).toBeLessThan(initialUsdcBalance);
+    // SOL balance should have increased
+    const updatedSolBalance = parseFloat(
+      (updatedBalanceResponse as BalancesResponse).balances
+        .find((b) => b.tokenAddress === solTokenAddress)
+        ?.amount.toString() || "0",
+    );
+    console.log(
+      `Updated SOL balance: ${updatedSolBalance} (should be greater than ${initialSolBalance})`,
+    );
+    expect(updatedSolBalance).toBeGreaterThan(initialSolBalance);
+
+    // Get trade history
+    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    expect(tradeHistoryResponse.success).toBe(true);
+    expect(
+      (tradeHistoryResponse as TradeHistoryResponse).trades,
+    ).toBeInstanceOf(Array);
+    expect(
+      (tradeHistoryResponse as TradeHistoryResponse).trades.length,
+    ).toBeGreaterThan(0);
+
+    // Verify chain fields in trades if they exist
+    const lastTrade = (tradeHistoryResponse as TradeHistoryResponse).trades[0];
+    if (lastTrade?.fromChain) {
+      expect(lastTrade.fromChain).toBe(BlockchainType.SVM);
+    }
+    if (lastTrade?.toChain) {
+      expect(lastTrade.toChain).toBe(BlockchainType.SVM);
+    }
+
+    // Execute a sell trade (selling SOL for USDC)
+    // Sell 50% of what we have to ensure we never try to sell more than we have
+    const tokenToSell = updatedSolBalance * 0.5;
+    console.log(
+      `Token to sell: ${tokenToSell} (should be less than ${updatedSolBalance})`,
+    );
+
+    const sellTradeResponse = await agentClient.executeTrade({
+      fromToken: solTokenAddress,
+      toToken: usdcTokenAddress,
+      amount: tokenToSell.toString(),
+      fromChain: BlockchainType.SVM,
+      toChain: BlockchainType.SVM,
+      reason,
+    });
+
+    console.log(`Sell trade response: ${JSON.stringify(sellTradeResponse)}`);
+    expect(sellTradeResponse.success).toBe(true);
+    expect((sellTradeResponse as TradeResponse).transaction).toBeDefined();
+
+    // Wait a bit longer for the trade to process
+    await wait(500);
+
+    // Check final balance
+    const finalBalanceResponse = await agentClient.getBalance();
+    expect(finalBalanceResponse.success).toBe(true);
+    // USDC balance should have increased compared to after buying
+    const finalUsdcBalance = parseFloat(
+      (finalBalanceResponse as BalancesResponse).balances
+        .find((b) => b.tokenAddress === usdcTokenAddress)
+        ?.amount.toString() || "0",
+    );
+    console.log(
+      `Final USDC balance: ${finalUsdcBalance} (should be greater than ${updatedUsdcBalance})`,
+    );
+    expect(finalUsdcBalance).toBeGreaterThan(updatedUsdcBalance);
+    // SOL balance should have decreased compared to after buying
+    const finalSolBalance = parseFloat(
+      (finalBalanceResponse as BalancesResponse).balances
+        .find((b) => b.tokenAddress === solTokenAddress)
+        ?.amount.toString() || "0",
+    );
+    console.log(
+      `Final SOL balance: ${finalSolBalance} (should be less than ${updatedSolBalance})`,
+    );
+    expect(finalSolBalance).toBeLessThan(updatedSolBalance);
   });
 });

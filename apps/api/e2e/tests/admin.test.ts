@@ -1,16 +1,17 @@
 import axios from "axios";
 import * as crypto from "crypto";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { db } from "@/database/db.js";
-import { teams } from "@/database/schema/core/defs.js";
+import { admins } from "@/database/schema/core/defs.js";
 import {
-  AdminTeamsListResponse,
+  AdminAgentsListResponse,
+  AdminUsersListResponse,
+  AgentProfileResponse,
   ApiResponse,
   ErrorResponse,
-  TeamProfileResponse,
-  TeamRegistrationResponse,
+  UserRegistrationResponse,
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
@@ -19,6 +20,7 @@ import {
   ADMIN_USERNAME,
   cleanupTestState,
   createTestClient,
+  generateRandomEthAddress,
 } from "@/e2e/utils/test-helpers.js";
 
 describe("Admin API", () => {
@@ -65,42 +67,49 @@ describe("Admin API", () => {
     console.log("TEST: Admin authentication test completed");
   });
 
-  test("should register a team via admin API", async () => {
+  test("should register a user and agent via admin API", async () => {
     // Setup admin client with the API key
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register a new team
-    const teamName = `Test Team ${Date.now()}`;
-    const teamEmail = `team${Date.now()}@test.com`;
-    const contactPerson = "John Doe";
+    // Register a new user with agent
+    const userName = `Test User ${Date.now()}`;
+    const userEmail = `user${Date.now()}@test.com`;
+    const agentName = `Test Agent ${Date.now()}`;
+    const agentDescription = "A test trading agent";
 
-    const result = (await adminClient.registerTeam(
-      teamName,
-      teamEmail,
-      contactPerson,
-    )) as TeamRegistrationResponse;
+    const result = (await adminClient.registerUser(
+      generateRandomEthAddress(), // Generate random wallet address
+      userName,
+      userEmail,
+      undefined, // userImageUrl
+      agentName,
+      agentDescription,
+    )) as UserRegistrationResponse;
 
     // Assert registration success
     expect(result.success).toBe(true);
-    expect(result.team).toBeDefined();
-    expect(result.team.name).toBe(teamName);
-    expect(result.team.email).toBe(teamEmail);
-    expect(result.team.contactPerson).toBe(contactPerson);
-    expect(result.team.apiKey).toBeDefined();
+    expect(result.user).toBeDefined();
+    expect(result.user.name).toBe(userName);
+    expect(result.user.email).toBe(userEmail);
+    expect(result.agent).toBeDefined();
+    expect(result.agent!.name).toBe(agentName);
+    expect(result.agent!.description).toBe(agentDescription);
+    expect(result.agent!.apiKey).toBeDefined();
   });
 
-  test("should register a team with metadata via admin API", async () => {
+  test("should register a user and agent with metadata via admin API", async () => {
     // Setup admin client with the API key
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register a new team with metadata
-    const teamName = `Metadata Team ${Date.now()}`;
-    const teamEmail = `metadata-team-${Date.now()}@test.com`;
-    const contactPerson = "Meta Data";
+    // Register a new user with agent and metadata
+    const userName = `Metadata User ${Date.now()}`;
+    const userEmail = `metadata-user-${Date.now()}@test.com`;
+    const agentName = `Metadata Agent ${Date.now()}`;
+    const agentDescription = "A trading agent with metadata";
 
-    // Define the metadata for the team
+    // Define the metadata for the agent
     const metadata = {
       ref: {
         name: "AdminBot",
@@ -109,80 +118,92 @@ describe("Admin API", () => {
       },
       description: "A trading bot created by the admin",
       social: {
-        name: "Admin Trading Team",
-        email: "admin@tradingteam.com",
+        name: "Admin Trading Agent",
+        email: "admin@tradingagent.com",
         twitter: "@adminbot",
       },
     };
 
-    // Register the team with metadata
-    const result = await adminClient.registerTeam(
-      teamName,
-      teamEmail,
-      contactPerson,
-      undefined, // Auto-generate wallet address since not explicitly provided
-      metadata, // Pass the metadata
-    );
+    // Register the user and agent with metadata
+    const result = (await adminClient.registerUser(
+      generateRandomEthAddress(),
+      userName,
+      userEmail,
+      undefined, // imageUrl
+      agentName,
+      agentDescription,
+      undefined, // imageUrl
+      metadata,
+    )) as UserRegistrationResponse;
 
     // Assert registration success using type assertion
     expect(result.success).toBe(true);
 
-    // Safely check team properties with type assertion
-    const registrationResponse = result as TeamRegistrationResponse;
-    expect(registrationResponse.team).toBeDefined();
-    expect(registrationResponse.team.name).toBe(teamName);
-    expect(registrationResponse.team.email).toBe(teamEmail);
-    expect(registrationResponse.team.contactPerson).toBe(contactPerson);
-    expect(registrationResponse.team.apiKey).toBeDefined();
+    // Safely check user and agent properties with type assertion
+    const registrationResponse = result as UserRegistrationResponse;
+    console.log(registrationResponse);
+    expect(registrationResponse.user).toBeDefined();
+    expect(registrationResponse.user.name).toBe(userName);
+    expect(registrationResponse.user.email).toBe(userEmail);
+    expect(registrationResponse.agent).toBeDefined();
+    expect(registrationResponse.agent!.name).toBe(agentName);
+    expect(registrationResponse.agent!.description).toBe(agentDescription);
+    expect(registrationResponse.agent!.apiKey).toBeDefined();
 
-    // Now get the team's profile to verify the metadata was saved
-    const teamClient = adminClient.createTeamClient(
-      registrationResponse.team.apiKey,
+    // Now get the agent's profile to verify the metadata was saved
+    const agentClient = adminClient.createAgentClient(
+      registrationResponse.agent!.apiKey!,
     );
-    const profileResponse = await teamClient.getProfile();
+    const profileResponse = await agentClient.getAgentProfile();
 
     // Safely check profile properties with type assertion
-    const teamProfile = profileResponse as TeamProfileResponse;
-    expect(teamProfile.success).toBe(true);
-    expect(teamProfile.team.metadata).toEqual(metadata);
+    const agentProfile = profileResponse as AgentProfileResponse;
+    expect(agentProfile.success).toBe(true);
+    expect(agentProfile.agent.metadata).toEqual(metadata);
   });
 
-  test("should not allow team registration without admin auth", async () => {
+  test("should not allow user registration without admin auth", async () => {
     // Create a test client (not authenticated as admin)
     const client = createTestClient();
 
-    // Attempt to register a team without admin auth
-    const result = await client.registerTeam(
-      "Unauthorized Team",
+    // Attempt to register a user without admin auth
+    const result = await client.registerUser(
+      generateRandomEthAddress(),
+      "Unauthorized User",
       "unauthorized@test.com",
-      "John Doe",
+      undefined,
+      "Unauthorized Agent",
     );
 
     // Assert failure
     expect(result.success).toBe(false);
   });
 
-  test("should not allow registration of teams with duplicate email", async () => {
+  test("should not allow registration of users with duplicate email", async () => {
     // Setup admin client with the API key
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register first team
-    const teamEmail = `same-email-${Date.now()}@test.com`;
-    const firstResult = await adminClient.registerTeam(
-      `First Team ${Date.now()}`,
-      teamEmail,
-      "John Doe",
+    // Register first user
+    const userEmail = `same-email-${Date.now()}@test.com`;
+    const firstResult = await adminClient.registerUser(
+      generateRandomEthAddress(),
+      `First User ${Date.now()}`,
+      userEmail,
+      undefined,
+      `First Agent ${Date.now()}`,
     );
 
     // Assert first registration success
     expect(firstResult.success).toBe(true);
 
-    // Try to register second team with the same email
-    const secondResult = (await adminClient.registerTeam(
-      `Second Team ${Date.now()}`,
-      teamEmail, // Same email as first team
-      "Jane Smith",
+    // Try to register second user with the same email
+    const secondResult = (await adminClient.registerUser(
+      generateRandomEthAddress(),
+      `Second User ${Date.now()}`,
+      userEmail, // Same email as first user
+      undefined,
+      `Second Agent ${Date.now()}`,
     )) as ErrorResponse;
 
     // Assert second registration failure due to duplicate email
@@ -190,89 +211,134 @@ describe("Admin API", () => {
     expect(secondResult.error).toContain("email");
   });
 
-  test("should delete a team as admin", async () => {
+  test("should list agents and users as admin", async () => {
     // Setup admin client with the API key
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register a new team first
-    const teamName = `Team To Delete ${Date.now()}`;
-    const teamEmail = `delete-${Date.now()}@test.com`;
-    const contactPerson = "Delete Me";
+    // Register a new user with agent first
+    const userName = `User To List ${Date.now()}`;
+    const userEmail = `list-${Date.now()}@test.com`;
+    const agentName = `Agent To List ${Date.now()}`;
 
-    const registerResult = (await adminClient.registerTeam(
-      teamName,
-      teamEmail,
-      contactPerson,
-    )) as TeamRegistrationResponse;
+    const registerResult = (await adminClient.registerUser(
+      generateRandomEthAddress(),
+      userName,
+      userEmail,
+      undefined,
+      agentName,
+    )) as UserRegistrationResponse;
     expect(registerResult.success).toBe(true);
+    expect(registerResult.agent).toBeDefined();
 
-    const teamId = registerResult.team.id;
+    // List agents and users
+    const agentsResult =
+      (await adminClient.listAgents()) as AdminAgentsListResponse;
+    expect(agentsResult.success).toBe(true);
+    expect(agentsResult.agents).toBeDefined();
+    expect(agentsResult.agents!.length).greaterThanOrEqual(1);
+    expect(agentsResult.agents![0]?.name).toBe(agentName);
 
-    // Now delete the team
-    const deleteResult = (await adminClient.deleteTeam(teamId)) as ApiResponse;
+    const usersResult =
+      (await adminClient.listUsers()) as AdminUsersListResponse;
+    expect(usersResult.success).toBe(true);
+    expect(usersResult.users).toBeDefined();
+    expect(usersResult.users!.length).greaterThanOrEqual(1);
+    expect(usersResult.users![0]?.name).toBe(userName);
+    expect(usersResult.users![0]?.email).toBe(userEmail);
+  });
+
+  test("should delete an agent as admin", async () => {
+    // Setup admin client with the API key
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register a new user with agent first
+    const userName = `User To Delete ${Date.now()}`;
+    const userEmail = `delete-${Date.now()}@test.com`;
+    const agentName = `Agent To Delete ${Date.now()}`;
+
+    const registerResult = (await adminClient.registerUser(
+      generateRandomEthAddress(),
+      userName,
+      userEmail,
+      undefined,
+      agentName,
+    )) as UserRegistrationResponse;
+    expect(registerResult.success).toBe(true);
+    expect(registerResult.agent).toBeDefined();
+
+    const agentId = registerResult.agent!.id;
+
+    // Now delete the agent
+    const deleteResult = (await adminClient.deleteAgent(
+      agentId,
+    )) as ApiResponse;
 
     // Assert deletion success
     expect(deleteResult.success).toBe(true);
     expect(deleteResult.message).toContain("successfully deleted");
 
-    // Verify the team is gone by trying to get the list of teams
-    const teamsResult =
-      (await adminClient.listTeams()) as AdminTeamsListResponse;
-    expect(teamsResult.success).toBe(true);
+    // Verify the agent is gone by trying to get the list of agents
+    const agentsResult =
+      (await adminClient.listAgents()) as AdminAgentsListResponse;
+    expect(agentsResult.success).toBe(true);
 
-    // Check that the deleted team is not in the list
-    const deletedTeamExists = teamsResult.teams.some(
-      (t: { id: string }) => t.id === teamId,
+    // Check that the deleted agent is not in the list
+    const deletedAgentExists = agentsResult.agents.some(
+      (a: { id: string }) => a.id === agentId,
     );
-    expect(deletedTeamExists).toBe(false);
+    expect(deletedAgentExists).toBe(false);
   });
 
-  test("should not allow team deletion without admin auth", async () => {
-    // Setup admin client with the API key to create a team
+  test("should not allow agent deletion without admin auth", async () => {
+    // Setup admin client with the API key to create an agent
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register a team first
-    const teamName = `Team No Delete ${Date.now()}`;
-    const teamEmail = `nodelete-${Date.now()}@test.com`;
-    const contactPerson = "Keep Me";
+    // Register a user with agent first
+    const userName = `User No Delete ${Date.now()}`;
+    const userEmail = `nodelete-${Date.now()}@test.com`;
+    const agentName = `Agent No Delete ${Date.now()}`;
 
-    const registerResult = (await adminClient.registerTeam(
-      teamName,
-      teamEmail,
-      contactPerson,
-    )) as TeamRegistrationResponse;
+    const registerResult = (await adminClient.registerUser(
+      generateRandomEthAddress(),
+      userName,
+      userEmail,
+      undefined,
+      agentName,
+    )) as UserRegistrationResponse;
     expect(registerResult.success).toBe(true);
+    expect(registerResult.agent).toBeDefined();
 
-    const teamId = registerResult.team.id;
+    const agentId = registerResult.agent!.id;
 
     // Create a non-admin client
     const regularClient = createTestClient();
 
-    // Try to delete the team without admin auth
-    const deleteResult = await regularClient.deleteTeam(teamId);
+    // Try to delete the agent without admin auth
+    const deleteResult = await regularClient.deleteAgent(agentId);
 
     // Assert deletion failure
     expect(deleteResult.success).toBe(false);
 
-    // Verify the team still exists
-    const teamsResult =
-      (await adminClient.listTeams()) as AdminTeamsListResponse;
-    const teamExists = teamsResult.teams.some(
-      (t: { id: string }) => t.id === teamId,
+    // Verify the agent still exists
+    const agentsResult =
+      (await adminClient.listAgents()) as AdminAgentsListResponse;
+    const agentExists = agentsResult.agents.some(
+      (a: { id: string }) => a.id === agentId,
     );
-    expect(teamExists).toBe(true);
+    expect(agentExists).toBe(true);
   });
 
-  test("should not allow deletion of non-existent team", async () => {
+  test("should not allow deletion of non-existent agent", async () => {
     // Setup admin client with the API key
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Try to delete a team with a non-existent ID (using a valid UUID format)
+    // Try to delete an agent with a non-existent ID (using a valid UUID format)
     const nonExistentId = "00000000-0000-4000-a000-000000000000"; // Valid UUID that doesn't exist
-    const deleteResult = (await adminClient.deleteTeam(
+    const deleteResult = (await adminClient.deleteAgent(
       nonExistentId,
     )) as ErrorResponse;
 
@@ -286,193 +352,217 @@ describe("Admin API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Note: We can't directly test deleting the admin account through the API because:
-    // 1. The admin is often filtered out from the team list endpoint for security
-    // 2. We can't create two admin accounts to test deleting one
-    //
-    // However, we've verified through code review that the controller checks
-    // the team.isAdmin flag before allowing deletion, as shown in admin.controller.ts:
-    //
-    // if (team.isAdmin) {
-    //   return res.status(403).json({
-    //     success: false,
-    //     error: 'Cannot delete admin accounts'
-    //   });
-    // }
-    //
-    // To verify the delete team functionality works in general, we'll create and
-    // delete a regular team instead.
+    // Note: Admins are now in a separate table, so we can't accidentally delete them
+    // through the agent deletion endpoint. This test verifies that agent deletion works
+    // correctly for regular agents.
 
-    // Create a regular team to delete
-    const teamName = `Team For Admin Test ${Date.now()}`;
-    const teamEmail = `admin-test-${Date.now()}@test.com`;
-    const contactPerson = "Test Person";
+    // Create a regular agent to delete
+    const userName = `User For Admin Test ${Date.now()}`;
+    const userEmail = `admin-test-${Date.now()}@test.com`;
+    const agentName = `Agent For Admin Test ${Date.now()}`;
 
-    const registerResult = (await adminClient.registerTeam(
-      teamName,
-      teamEmail,
-      contactPerson,
-    )) as TeamRegistrationResponse;
+    const registerResult = (await adminClient.registerUser(
+      generateRandomEthAddress(),
+      userName,
+      userEmail,
+      undefined,
+      agentName,
+    )) as UserRegistrationResponse;
     expect(registerResult.success).toBe(true);
+    expect(registerResult.agent).toBeDefined();
 
-    // Delete the team to verify our delete functionality works correctly
-    const deleteResult = await adminClient.deleteTeam(registerResult.team.id);
+    // Delete the agent to verify our delete functionality works correctly
+    const deleteResult = await adminClient.deleteAgent(
+      registerResult.agent!.id,
+    );
     expect(deleteResult.success).toBe(true);
   });
 
-  test("should search for teams based on various criteria", async () => {
+  test("should search for users and agents based on various criteria", async () => {
     // Setup admin client with the API key
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Create teams with distinct attributes to test the search functionality
+    // Create users with agents with distinct attributes to test the search functionality
     const timestamp = Date.now();
 
-    // Team 1: Standard active team
-    const team1Name = `Search Team Alpha ${timestamp}`;
-    const team1Email = `search-alpha-${timestamp}@test.com`;
-    const team1Contact = "John Smith";
-    const team1Result = (await adminClient.registerTeam(
-      team1Name,
-      team1Email,
-      team1Contact,
-    )) as TeamRegistrationResponse;
-    expect(team1Result.success).toBe(true);
+    // User 1: Standard active user with agent
+    const user1Name = `Search User Alpha ${timestamp}`;
+    const user1Email = `search-alpha-${timestamp}@test.com`;
+    const agent1Name = `Search Agent Alpha ${timestamp}`;
+    const user1Result = (await adminClient.registerUser(
+      generateRandomEthAddress(),
+      user1Name,
+      user1Email,
+      undefined,
+      agent1Name,
+    )) as UserRegistrationResponse;
+    expect(user1Result.success).toBe(true);
 
-    // Team 2: Standard active team with different name pattern
-    const team2Name = `Testing Team Beta ${timestamp}`;
-    const team2Email = `beta-${timestamp}@example.com`;
-    const team2Contact = "Jane Doe";
-    const team2Result = (await adminClient.registerTeam(
-      team2Name,
-      team2Email,
-      team2Contact,
-    )) as TeamRegistrationResponse;
-    expect(team2Result.success).toBe(true);
+    // User 2: Standard active user with different name pattern
+    const user2Name = `Testing User Beta ${timestamp}`;
+    const user2Email = `beta-${timestamp}@example.com`;
+    const agent2Name = `Testing Agent Beta ${timestamp}`;
+    const user2Result = (await adminClient.registerUser(
+      generateRandomEthAddress(),
+      user2Name,
+      user2Email,
+      undefined,
+      agent2Name,
+    )) as UserRegistrationResponse;
+    expect(user2Result.success).toBe(true);
 
-    // Team 3: Create and then deactivate
-    const team3Name = `Search Team Inactive ${timestamp}`;
-    const team3Email = `inactive-${timestamp}@test.com`;
-    const team3Contact = "Bob Inactive";
-    const team3Result = (await adminClient.registerTeam(
-      team3Name,
-      team3Email,
-      team3Contact,
-    )) as TeamRegistrationResponse;
-    expect(team3Result.success).toBe(true);
+    // User 3: Standard active user to test searches
+    const user3Name = `Search User Inactive ${timestamp}`;
+    const user3Email = `inactive-${timestamp}@test.com`;
+    const agent3Name = `Search Agent Inactive ${timestamp}`;
+    const user3Result = (await adminClient.registerUser(
+      generateRandomEthAddress(),
+      user3Name,
+      user3Email,
+      undefined,
+      agent3Name,
+    )) as UserRegistrationResponse;
+    expect(user3Result.success).toBe(true);
 
-    // TEST CASE 1: Search by name substring (should find team 1 and team 3)
-    const nameSearchResult = (await adminClient.searchTeams({
-      name: "Search Team",
-    })) as AdminTeamsListResponse;
+    // TEST CASE 1: Search by user name substring (should find user 1 and user 3)
+    const nameSearchResult = await adminClient.searchUsersAndAgents({
+      name: "Search User",
+      searchType: "users",
+    });
 
     expect(nameSearchResult.success).toBe(true);
-    expect(nameSearchResult.teams.length).toBe(2);
-    expect(nameSearchResult.teams.some((t) => t.name === team1Name)).toBe(true);
-    expect(nameSearchResult.teams.some((t) => t.name === team3Name)).toBe(true);
-    expect(nameSearchResult.teams.some((t) => t.name === team2Name)).toBe(
-      false,
-    );
+    if (nameSearchResult.success) {
+      expect(nameSearchResult.results.users.length).toBe(2);
+      expect(
+        nameSearchResult.results.users.some((u) => u.name === user1Name),
+      ).toBe(true);
+      expect(
+        nameSearchResult.results.users.some((u) => u.name === user3Name),
+      ).toBe(true);
+      expect(
+        nameSearchResult.results.users.some((u) => u.name === user2Name),
+      ).toBe(false);
+    }
 
-    // TEST CASE 2: Search by email domain
-    const emailSearchResult = (await adminClient.searchTeams({
+    // TEST CASE 2: Search by agent name
+    const agentNameSearchResult = await adminClient.searchUsersAndAgents({
+      name: "Search Agent",
+      searchType: "agents",
+    });
+
+    expect(agentNameSearchResult.success).toBe(true);
+    if (agentNameSearchResult.success) {
+      expect(agentNameSearchResult.results.agents.length).toBe(2);
+      expect(
+        agentNameSearchResult.results.agents.some((a) => a.name === agent1Name),
+      ).toBe(true);
+      expect(
+        agentNameSearchResult.results.agents.some((a) => a.name === agent3Name),
+      ).toBe(true);
+      expect(
+        agentNameSearchResult.results.agents.some((a) => a.name === agent2Name),
+      ).toBe(false);
+    }
+
+    // TEST CASE 3: Search by email domain
+    const emailSearchResult = await adminClient.searchUsersAndAgents({
       email: "example.com",
-    })) as AdminTeamsListResponse;
+      searchType: "both",
+    });
 
     expect(emailSearchResult.success).toBe(true);
-    expect(emailSearchResult.teams.length).toBe(1);
-    expect(emailSearchResult.teams[0]?.email).toBe(team2Email);
+    if (emailSearchResult.success) {
+      expect(emailSearchResult.results.users.length).toBe(1);
+      expect(emailSearchResult.results.users[0]?.email).toBe(user2Email);
+    }
 
-    // TEST CASE 3: Search by active status - all teams should be inactive by default
-    const activeSearchResult = (await adminClient.searchTeams({
-      active: false,
-    })) as AdminTeamsListResponse;
+    // TEST CASE 4: Search by status - all users should be active by default
+    const activeSearchResult = await adminClient.searchUsersAndAgents({
+      status: "active",
+      searchType: "both",
+    });
 
     expect(activeSearchResult.success).toBe(true);
-    // All three teams we created should be found as inactive
-    expect(
-      activeSearchResult.teams.some((t) => t.id === team1Result.team.id),
-    ).toBe(true);
-    expect(
-      activeSearchResult.teams.some((t) => t.id === team2Result.team.id),
-    ).toBe(true);
-    expect(
-      activeSearchResult.teams.some((t) => t.id === team3Result.team.id),
-    ).toBe(true);
+    if (activeSearchResult.success) {
+      // All three users we created should be found as active
+      expect(
+        activeSearchResult.results.users.some(
+          (u) => u.id === user1Result.user.id,
+        ),
+      ).toBe(true);
+      expect(
+        activeSearchResult.results.users.some(
+          (u) => u.id === user2Result.user.id,
+        ),
+      ).toBe(true);
+      expect(
+        activeSearchResult.results.users.some(
+          (u) => u.id === user3Result.user.id,
+        ),
+      ).toBe(true);
 
-    // TEST CASE 4: Search for active teams - should find none of our test teams
-    const noActiveTeamsResult = (await adminClient.searchTeams({
-      active: true,
-    })) as AdminTeamsListResponse;
+      // All three agents we created should be found as active
+      expect(user1Result.agent).toBeDefined();
+      expect(user2Result.agent).toBeDefined();
+      expect(user3Result.agent).toBeDefined();
+      expect(
+        activeSearchResult.results.agents.some(
+          (a) => a.id === user1Result.agent!.id,
+        ),
+      ).toBe(true);
+      expect(
+        activeSearchResult.results.agents.some(
+          (a) => a.id === user2Result.agent!.id,
+        ),
+      ).toBe(true);
+      expect(
+        activeSearchResult.results.agents.some(
+          (a) => a.id === user3Result.agent!.id,
+        ),
+      ).toBe(true);
+    }
 
-    expect(noActiveTeamsResult.success).toBe(true);
-    // None of our test teams should be active
-    expect(
-      noActiveTeamsResult.teams.some((t) => t.id === team1Result.team.id),
-    ).toBe(false);
-    expect(
-      noActiveTeamsResult.teams.some((t) => t.id === team2Result.team.id),
-    ).toBe(false);
-    expect(
-      noActiveTeamsResult.teams.some((t) => t.id === team3Result.team.id),
-    ).toBe(false);
-
-    // TEST CASE 5: Search by contact person
-    const contactSearchResult = (await adminClient.searchTeams({
-      contactPerson: "Jane",
-    })) as AdminTeamsListResponse;
-
-    expect(contactSearchResult.success).toBe(true);
-    expect(contactSearchResult.teams.length).toBe(1);
-    expect(contactSearchResult.teams[0]?.id).toBe(team2Result.team.id);
-
-    // TEST CASE 6: Combined search (name and active status)
-    const combinedSearchResult = (await adminClient.searchTeams({
-      name: "Search Team",
-      active: false,
-    })) as AdminTeamsListResponse;
-
-    expect(combinedSearchResult.success).toBe(true);
-    expect(combinedSearchResult.teams.length).toBe(2);
-    expect(
-      combinedSearchResult.teams.some((t) => t.id === team1Result.team.id),
-    ).toBe(true);
-    expect(
-      combinedSearchResult.teams.some((t) => t.id === team3Result.team.id),
-    ).toBe(true);
-
-    // TEST CASE 7: Search by wallet address
-    // Extract wallet address from the first team
-    const walletAddress = team1Result.team.walletAddress;
+    // TEST CASE 5: Search by wallet address
+    // Extract wallet address from the first user
+    const walletAddress = user1Result.user.walletAddress;
     expect(walletAddress).toBeTruthy();
 
     // Search using a portion of the wallet address (e.g., first 10 characters after 0x)
     const partialWalletAddress = walletAddress.substring(0, 12); // 0x + first 10 chars
     console.log(
-      `Searching for teams with partial wallet address: ${partialWalletAddress}`,
+      `Searching for users with partial wallet address: ${partialWalletAddress}`,
     );
 
-    const walletSearchResult = (await adminClient.searchTeams({
+    const walletSearchResult = await adminClient.searchUsersAndAgents({
       walletAddress: partialWalletAddress,
-    })) as AdminTeamsListResponse;
+      searchType: "users",
+    });
 
     expect(walletSearchResult.success).toBe(true);
-    expect(walletSearchResult.teams.length).toBe(1);
-    expect(walletSearchResult.teams[0]?.id).toBe(team1Result.team.id);
-    expect(walletSearchResult.teams[0]?.walletAddress).toBe(walletAddress);
+    if (walletSearchResult.success) {
+      expect(walletSearchResult.results.users.length).toBe(1);
+      expect(walletSearchResult.results.users[0]?.id).toBe(user1Result.user.id);
+      expect(walletSearchResult.results.users[0]?.walletAddress).toBe(
+        walletAddress,
+      );
+    }
 
-    // Clean up - delete the teams we created
-    await adminClient.deleteTeam(team1Result.team.id);
-    await adminClient.deleteTeam(team2Result.team.id);
-    await adminClient.deleteTeam(team3Result.team.id);
+    // Clean up - delete the agents we created
+    expect(user1Result.agent).toBeDefined();
+    expect(user2Result.agent).toBeDefined();
+    expect(user3Result.agent).toBeDefined();
+    await adminClient.deleteAgent(user1Result.agent!.id);
+    await adminClient.deleteAgent(user2Result.agent!.id);
+    await adminClient.deleteAgent(user3Result.agent!.id);
   });
 
   test("should generate and use new encryption key after admin setup", async () => {
     // get admin db entry
     const [result] = await db
       .select()
-      .from(teams)
-      .where(and(eq(teams.email, ADMIN_EMAIL), eq(teams.isAdmin, true)))
+      .from(admins)
+      .where(eq(admins.email, ADMIN_EMAIL))
       .limit(1);
     expect(result).toBeDefined();
     expect(result?.apiKey).toBeDefined();
@@ -505,7 +595,7 @@ describe("Admin API", () => {
 
         return decrypted;
       } catch (error) {
-        console.error("[TeamManager] Error decrypting API key:", error);
+        console.error("[AdminManager] Error decrypting API key:", error);
         throw error;
       }
     };
@@ -515,7 +605,7 @@ describe("Admin API", () => {
     // Try to decrypt the admin's API key with the default encryption key
     // This should FAIL if our fix is working (meaning a new key was generated)
     expect(() => {
-      decryptApiKey(result!.apiKey);
+      decryptApiKey(result!.apiKey!);
     }).toThrow(); // Should throw "bad decrypt" error
 
     console.log(

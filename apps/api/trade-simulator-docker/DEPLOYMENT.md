@@ -300,18 +300,24 @@ git pull
 docker-compose -f trade-simulator-docker/docker-compose.yml up -d --build
 ```
 
-### Manage Teams and Competitions
+### Manage Users and Agents
 
-You can manage teams and competitions either through CLI scripts or direct API calls:
+You can manage users and agents either through CLI scripts or direct API calls:
 
 #### Using CLI Scripts (Legacy Method)
 
 ```bash
-# Register a new team
-docker-compose -f trade-simulator-docker/docker-compose.yml exec app pnpm register:team
+# Register a new user
+docker-compose -f trade-simulator-docker/docker-compose.yml exec app pnpm register:user
 
-# List all teams
-docker-compose -f trade-simulator-docker/docker-compose.yml exec app pnpm list:teams
+# Register a new agent
+docker-compose -f trade-simulator-docker/docker-compose.yml exec app pnpm register:agent
+
+# List all users
+docker-compose -f trade-simulator-docker/docker-compose.yml exec app pnpm list:users
+
+# List all agents
+docker-compose -f trade-simulator-docker/docker-compose.yml exec app pnpm list:agents
 
 # Setup a competition
 docker-compose -f trade-simulator-docker/docker-compose.yml exec app pnpm setup:competition
@@ -354,20 +360,20 @@ The response will include an admin API key like this:
 
 This admin setup process also handles initializing the ROOT_ENCRYPTION_KEY in your mounted `.env` file if needed, ensuring proper encryption of all API keys.
 
-For team registration (using admin API key):
+For agent registration (using admin API key):
 
 ```bash
-# Register a team
-curl -X POST http://localhost:3000/api/admin/teams/register \
+# Register a agent
+curl -X POST http://localhost:3000/api/admin/users \
   -H 'Authorization: Bearer YOUR_ADMIN_API_KEY' \
   -H 'Content-Type: application/json' \
   -d '{
-    "teamName": "Team Alpha",
-    "email": "team@example.com",
-    "contactPerson": "John Doe",
-    "walletAddress": "0x1234567890123456789012345678901234567890"
+    "name": "User Alpha",
+    "email": "user@example.com",
+    "walletAddress": "0x1234567890123456789012345678901234567890",
+    "agentName": "Agent Alpha"
   }'
-# IMPORTANT: Save the team API key from the response!
+# IMPORTANT: Save the agent API key from the response!
 ```
 
 For starting competitions:
@@ -380,7 +386,7 @@ curl -X POST http://localhost:3000/api/admin/competition/start \
   -d '{
     "name": "Trading Competition 2023",
     "description": "Annual trading competition",
-    "teamIds": ["team-id-1", "team-id-2"]
+    "agentIds": ["agent-id-1", "agent-id-2"]
   }'
 ```
 

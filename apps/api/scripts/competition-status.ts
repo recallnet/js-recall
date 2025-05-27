@@ -3,8 +3,8 @@ import * as path from "path";
 
 import {
   findAll,
-  getCompetitionTeams,
-  getTeamPortfolioSnapshots,
+  getAgentPortfolioSnapshots,
+  getCompetitionAgents,
 } from "@/database/repositories/competition-repository.js";
 import { ServiceRegistry } from "@/services/index.js";
 import { CompetitionStatus } from "@/types/index.js";
@@ -124,17 +124,17 @@ async function showCompetitionStatus() {
       return;
     }
 
-    // Get teams participating in the competition
-    const participatingTeamIds = await getCompetitionTeams(competition.id);
+    // Get agents participating in the competition
+    const participatingAgentIds = await getCompetitionAgents(competition.id);
 
-    // Get all teams (for mapping IDs to names)
-    const allTeams = await services.teamManager.getAllTeams(false);
-    const teamMap = new Map(allTeams.map((team) => [team.id, team]));
+    // Get all agents (for mapping IDs to names)
+    const allAgents = await services.agentManager.getAllAgents();
+    const agentMap = new Map(allAgents.map((agent) => [agent.id, agent]));
 
-    // Map participating team IDs to team objects
-    const participatingTeams = participatingTeamIds
-      .map((id) => teamMap.get(id))
-      .filter((team) => team !== undefined);
+    // Map participating agent IDs to agent objects
+    const participatingAgents = participatingAgentIds
+      .map((id) => agentMap.get(id))
+      .filter((agent) => agent !== undefined);
 
     // Get the leaderboard
     const leaderboard = await services.competitionManager.getLeaderboard(
@@ -158,35 +158,35 @@ async function showCompetitionStatus() {
       `${colors.green}Duration:${colors.reset} ${calculateDuration(competition.startDate)}`,
     );
     console.log(
-      `${colors.green}Participating Teams:${colors.reset} ${participatingTeams.length}`,
+      `${colors.green}Participating Agents:${colors.reset} ${participatingAgents.length}`,
     );
 
-    // Display team participation summary
-    console.log(`\n${colors.magenta}Participating Teams:${colors.reset}`);
+    // Display agent participation summary
+    console.log(`\n${colors.magenta}Participating Agents:${colors.reset}`);
     console.log(
       `${colors.magenta}----------------------------------------${colors.reset}`,
     );
 
-    if (participatingTeams.length === 0) {
-      console.log(`No teams are participating in this competition.`);
+    if (participatingAgents.length === 0) {
+      console.log(`No agents are participating in this competition.`);
     } else {
-      // Sort teams by name
-      const sortedTeams = [...participatingTeams].sort((a, b) =>
+      // Sort agents by name
+      const sortedAgents = [...participatingAgents].sort((a, b) =>
         a!.name.localeCompare(b!.name),
       );
 
       // Create a formatted table-like output
       const columns = 3;
-      const rows = Math.ceil(sortedTeams.length / columns);
+      const rows = Math.ceil(sortedAgents.length / columns);
 
       for (let row = 0; row < rows; row++) {
         let line = "";
 
         for (let col = 0; col < columns; col++) {
           const index = row + col * rows;
-          if (index < sortedTeams.length) {
-            const team = sortedTeams[index];
-            const name = team!.name.padEnd(20).substring(0, 20);
+          if (index < sortedAgents.length) {
+            const agent = sortedAgents[index];
+            const name = agent!.name.padEnd(20).substring(0, 20);
             line += `${name} `;
           }
         }
@@ -207,7 +207,7 @@ async function showCompetitionStatus() {
 
     if (leaderboard.length === 0) {
       console.log(
-        `${colors.yellow}No teams have made trades yet.${colors.reset}`,
+        `${colors.yellow}No agents have made trades yet.${colors.reset}`,
       );
     } else {
       // Sort leaderboard by value (descending)
@@ -218,23 +218,23 @@ async function showCompetitionStatus() {
         ]),
       ].sort((a, b) => b.value - a.value) as [
         {
-          teamId: string;
+          agentId: string;
           value: number;
         },
         ...{
-          teamId: string;
+          agentId: string;
           value: number;
         }[],
       ];
 
-      // Get initial snapshots for each team
+      // Get initial snapshots for each agent
       const initialSnapshots = new Map<string, number>();
 
-      // Get the first snapshot for each team in the competition
+      // Get the first snapshot for each agent in the competition
       for (const entry of sortedLeaderboard) {
-        const snapshots = await getTeamPortfolioSnapshots(
+        const snapshots = await getAgentPortfolioSnapshots(
           competition.id,
-          entry.teamId,
+          entry.agentId,
         );
         if (snapshots.length > 0) {
           // Sort by timestamp and get the first one (initial snapshot)
@@ -244,7 +244,7 @@ async function showCompetitionStatus() {
           );
 
           if (sortedSnapshots.length > 0) {
-            initialSnapshots.set(entry.teamId, sortedSnapshots[0]!.totalValue);
+            initialSnapshots.set(entry.agentId, sortedSnapshots[0]!.totalValue);
           }
         }
       }
@@ -254,10 +254,10 @@ async function showCompetitionStatus() {
       const lowestValue =
         sortedLeaderboard[sortedLeaderboard.length - 1]!.value;
 
-      // Display each team's position
+      // Display each agent's position
       sortedLeaderboard.forEach((entry, index) => {
-        const team = teamMap.get(entry.teamId);
-        const teamName = team ? team.name : "Unknown Team";
+        const agent = agentMap.get(entry.agentId);
+        const agentName = agent ? agent.name : "Unknown agent";
 
         // Format the ranking with colors based on position
         let positionPrefix = `${(index + 1).toString().padStart(2, " ")}. `;
@@ -274,8 +274,8 @@ async function showCompetitionStatus() {
           positionColor = colors.green;
         }
 
-        // Get initial value for this team, or fall back to current value if no initial snapshot
-        const initialValue = initialSnapshots.get(entry.teamId) || entry.value;
+        // Get initial value for this agent, or fall back to current value if no initial snapshot
+        const initialValue = initialSnapshots.get(entry.agentId) || entry.value;
 
         // Calculate performance metrics
         const performanceVsInitial = (entry.value / initialValue - 1) * 100;
@@ -286,10 +286,10 @@ async function showCompetitionStatus() {
         const performanceSign = performanceVsInitial >= 0 ? "+" : "";
         const performanceText = `${performanceSign}${performanceVsInitial.toFixed(2)}%`;
 
-        // Display team ranking with portfolio value and performance
+        // Display agent ranking with portfolio value and performance
         console.log(
           `${positionColor}${positionPrefix}${colors.reset}` +
-            `${teamName.padEnd(25).substring(0, 25)} ` +
+            `${agentName.padEnd(25).substring(0, 25)} ` +
             `${colors.cyan}$${formatCurrency(entry.value).padStart(10)}${colors.reset} ` +
             `${performanceColor}(${performanceText})${colors.reset}`,
         );
@@ -307,15 +307,15 @@ async function showCompetitionStatus() {
       );
 
       // Update best/worst performer stats to use initial values
-      const bestTeam = sortedLeaderboard[0];
-      const worstTeam = sortedLeaderboard[sortedLeaderboard.length - 1]!;
+      const bestAgent = sortedLeaderboard[0];
+      const worstAgent = sortedLeaderboard[sortedLeaderboard.length - 1]!;
       const bestInitial =
-        initialSnapshots.get(bestTeam.teamId) || bestTeam.value;
+        initialSnapshots.get(bestAgent.agentId) || bestAgent.value;
       const worstInitial =
-        initialSnapshots.get(worstTeam.teamId) || worstTeam.value;
+        initialSnapshots.get(worstAgent.agentId) || worstAgent.value;
 
-      const bestPerformance = (bestTeam.value / bestInitial - 1) * 100;
-      const worstPerformance = (worstTeam.value / worstInitial - 1) * 100;
+      const bestPerformance = (bestAgent.value / bestInitial - 1) * 100;
+      const worstPerformance = (worstAgent.value / worstInitial - 1) * 100;
 
       console.log(
         `- Best Performer: ${bestPerformance >= 0 ? "+" : ""}${bestPerformance.toFixed(2)}%`,

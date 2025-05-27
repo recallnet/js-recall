@@ -57,8 +57,36 @@ export enum PortfolioSource {
   LIVE_CALCULATION = "live-calculation",
 }
 
-// Team metadata structure
-export interface TeamMetadata {
+/**
+ * USER AND AGENT TYPES
+ */
+
+// User interface
+export interface User {
+  id: string;
+  walletAddress: string;
+  name?: string;
+  email?: string;
+  imageUrl?: string;
+  isAdmin: boolean;
+  metadata?: Record<string, unknown>;
+  status: "active" | "inactive" | "suspended" | "deleted";
+  createdAt: string;
+  updatedAt: string;
+}
+
+// User metadata structure
+export interface UserMetadata {
+  preferences?: {
+    notifications?: boolean;
+    theme?: "light" | "dark";
+  };
+  settings?: Record<string, unknown>;
+  custom?: Record<string, unknown>;
+}
+
+// Agent metadata structure
+export interface AgentMetadata {
   ref?: {
     name?: string;
     version?: string;
@@ -70,21 +98,86 @@ export interface TeamMetadata {
     email?: string;
     twitter?: string;
   };
+  [key: string]: unknown;
 }
 
-// Team profile response
-export interface TeamProfileResponse extends ApiResponse {
-  team: {
+// Agent interface
+export interface Agent {
+  id: string;
+  ownerId: string;
+  walletAddress?: string;
+  name: string;
+  description?: string;
+  imageUrl?: string;
+  apiKey?: string; // Only included in certain admin responses
+  metadata?: AgentMetadata;
+  status: "active" | "inactive" | "suspended" | "deleted";
+  deactivationReason?: string;
+  deactivationDate?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// User registration response
+export interface UserRegistrationResponse extends ApiResponse {
+  success: true;
+  user: User;
+  agent?: Agent;
+}
+
+// User profile response
+export interface UserProfileResponse extends ApiResponse {
+  user: User;
+}
+
+// Agent profile response
+export interface AgentProfileResponse extends ApiResponse {
+  agent: Agent;
+  owner: {
     id: string;
-    name: string;
-    email: string;
-    contactPerson: string;
-    metadata?: TeamMetadata;
-    imageUrl?: string;
-    createdAt: string;
-    updatedAt: string;
+    name?: string;
+    email?: string;
+    walletAddress: string;
   };
 }
+
+// Admin user response
+export interface AdminUserResponse extends ApiResponse {
+  success: true;
+  user: User;
+}
+
+// Admin users list response
+export interface AdminUsersListResponse extends ApiResponse {
+  success: true;
+  users: User[];
+}
+
+// Admin agent response
+export interface AdminAgentResponse extends ApiResponse {
+  success: true;
+  agent: Agent & { apiKey: string }; // Include API key for admin responses
+}
+
+// Admin agents list response
+export interface AdminAgentsListResponse extends ApiResponse {
+  success: true;
+  agents: Agent[];
+}
+
+// Agent API key response
+export interface AgentApiKeyResponse extends ApiResponse {
+  success: true;
+  agent: {
+    id: string;
+    name: string;
+    apiKey: string;
+  };
+}
+
+/**
+ * TRADING TYPES (UPDATED FOR AGENTS)
+ */
 
 // Token balance type
 export interface TokenBalance {
@@ -97,7 +190,7 @@ export interface TokenBalance {
 
 // Balances response
 export interface BalancesResponse extends ApiResponse {
-  teamId: string;
+  agentId: string;
   balances: TokenBalance[];
 }
 
@@ -114,7 +207,7 @@ export interface TokenPortfolioItem {
 
 // Portfolio response
 export interface PortfolioResponse extends ApiResponse {
-  teamId: string;
+  agentId: string;
   totalValue: number;
   tokens: TokenPortfolioItem[];
   snapshotTime: string;
@@ -124,7 +217,7 @@ export interface PortfolioResponse extends ApiResponse {
 // Trade transaction
 export interface TradeTransaction {
   id: string;
-  teamId: string;
+  agentId: string;
   competitionId: string;
   fromToken: string;
   toToken: string;
@@ -145,7 +238,7 @@ export interface TradeTransaction {
 
 // Trade history response
 export interface TradeHistoryResponse extends ApiResponse {
-  teamId: string;
+  agentId: string;
   trades: TradeTransaction[];
 }
 
@@ -153,6 +246,23 @@ export interface TradeHistoryResponse extends ApiResponse {
 export interface TradeResponse extends ApiResponse {
   transaction: TradeTransaction;
 }
+
+// Trade execution parameters
+export interface TradeExecutionParams {
+  fromToken: string;
+  toToken: string;
+  amount: string;
+  reason: string;
+  slippageTolerance?: string;
+  fromChain?: BlockchainType;
+  toChain?: BlockchainType;
+  fromSpecificChain?: SpecificChain;
+  toSpecificChain?: SpecificChain;
+}
+
+/**
+ * COMPETITION TYPES (UPDATED FOR AGENTS)
+ */
 
 // Competition details
 export interface Competition {
@@ -167,23 +277,23 @@ export interface Competition {
   crossChainTradingType: CrossChainTradingType;
   createdAt: string;
   updatedAt: string;
-  teamIds?: string[];
+  agentIds?: string[];
 }
 
 // Leaderboard entry
 export interface LeaderboardEntry {
   rank: number;
-  teamId: string;
-  teamName: string;
+  agentId: string;
+  agentName: string;
   portfolioValue: number;
   active: boolean;
   deactivationReason?: string;
 }
 
-// Inactive team entry (no rank assignment)
-export interface InactiveTeamEntry {
-  teamId: string;
-  teamName: string;
+// Inactive agent entry (no rank assignment)
+export interface InactiveAgentEntry {
+  agentId: string;
+  agentName: string;
   portfolioValue: number;
   active: boolean;
   deactivationReason: string;
@@ -193,8 +303,8 @@ export interface InactiveTeamEntry {
 export interface LeaderboardResponse extends ApiResponse {
   competition: Competition;
   leaderboard: LeaderboardEntry[];
-  inactiveTeams: InactiveTeamEntry[];
-  hasInactiveTeams: boolean;
+  inactiveAgents: InactiveAgentEntry[];
+  hasInactiveAgents: boolean;
 }
 
 // Competition status response
@@ -204,6 +314,82 @@ export interface CompetitionStatusResponse extends ApiResponse {
   message?: string;
   participating?: boolean;
 }
+
+// Admin response for creating a competition
+export interface CreateCompetitionResponse extends ApiResponse {
+  success: true;
+  competition: Competition;
+}
+
+// Admin response for starting a competition
+export interface StartCompetitionResponse extends ApiResponse {
+  success: true;
+  competition: Competition;
+  initializedAgents: string[];
+}
+
+// End competition response
+export interface EndCompetitionResponse extends ApiResponse {
+  success: true;
+  competition: Competition;
+  leaderboard: {
+    agentId: string;
+    value: number;
+  }[];
+}
+
+// Upcoming competitions response
+export interface UpcomingCompetitionsResponse extends ApiResponse {
+  success: true;
+  competitions: Competition[];
+}
+
+// Competition rules response
+export interface CompetitionRulesResponse extends ApiResponse {
+  success: true;
+  rules: {
+    tradingRules: string[];
+    rateLimits: string[];
+    availableChains: {
+      svm: boolean;
+      evm: string[];
+    };
+    slippageFormula: string;
+    portfolioSnapshots: {
+      interval: string;
+    };
+  };
+}
+
+/**
+ * PORTFOLIO SNAPSHOTS (UPDATED FOR AGENTS)
+ */
+
+// Portfolio snapshot
+export interface PortfolioSnapshot {
+  id: string;
+  agentId: string;
+  competitionId: string;
+  totalValue: number;
+  timestamp: string;
+  valuesByToken: {
+    [tokenAddress: string]: {
+      amount: number;
+      valueUsd: number;
+    };
+  };
+}
+
+// Portfolio snapshots response
+export interface SnapshotResponse extends ApiResponse {
+  success: true;
+  agentId: string;
+  snapshots: PortfolioSnapshot[];
+}
+
+/**
+ * PRICING AND TOKEN TYPES
+ */
 
 // Quote response
 export interface QuoteResponse extends ApiResponse {
@@ -269,98 +455,9 @@ export interface PriceHistoryResponse extends ApiResponse {
   history: PriceHistoryPoint[];
 }
 
-// Admin team response for team operations
-export interface AdminTeamResponse extends ApiResponse {
-  success: true;
-  team: {
-    id: string;
-    name: string;
-    email: string;
-    contactPerson: string;
-    apiKey?: string;
-    walletAddress?: string;
-    bucketAddress?: string[];
-    imageUrl?: string;
-    isAdmin: boolean;
-    active: boolean;
-    deactivationReason?: string;
-    deactivationDate?: string;
-    createdAt: string;
-    updatedAt: string;
-  };
-}
-
-// Admin teams list response
-export interface AdminTeamsListResponse extends ApiResponse {
-  success: true;
-  teams: {
-    id: string;
-    name: string;
-    email: string;
-    contactPerson: string;
-    walletAddress?: string;
-    imageUrl?: string;
-    isAdmin: boolean;
-    active: boolean;
-    createdAt: string;
-    updatedAt: string;
-  }[];
-}
-
-// Admin team registration response
-export interface TeamRegistrationResponse extends ApiResponse {
-  success: true;
-  team: {
-    id: string;
-    name: string;
-    email: string;
-    contactPerson: string;
-    metadata?: TeamMetadata;
-    imageUrl?: string;
-    apiKey: string;
-    walletAddress: string;
-    isAdmin: boolean;
-    active: boolean;
-    createdAt: string;
-    updatedAt: string;
-  };
-}
-
-// Admin response for creating a competition
-export interface CreateCompetitionResponse extends ApiResponse {
-  success: true;
-  competition: Competition;
-}
-
-// Admin response for starting a competition
-export interface StartCompetitionResponse extends ApiResponse {
-  success: true;
-  competition: Competition;
-  initializedTeams: string[];
-}
-
-// Upcoming competitions response
-export interface UpcomingCompetitionsResponse extends ApiResponse {
-  success: true;
-  competitions: Competition[];
-}
-
-// Competition rules response
-export interface CompetitionRulesResponse extends ApiResponse {
-  success: true;
-  rules: {
-    tradingRules: string[];
-    rateLimits: string[];
-    availableChains: {
-      svm: boolean;
-      evm: string[];
-    };
-    slippageFormula: string;
-    portfolioSnapshots: {
-      interval: string;
-    };
-  };
-}
+/**
+ * HEALTH CHECK TYPES
+ */
 
 // Health check response
 export interface HealthCheckResponse extends ApiResponse {
@@ -399,62 +496,8 @@ export interface DetailedHealthCheckResponse extends ApiResponse {
     balanceManager: string;
     tradeSimulator: string;
     competitionManager: string;
-    teamManager: string;
-  };
-}
-
-// Portfolio snapshot
-export interface PortfolioSnapshot {
-  id: string;
-  teamId: string;
-  competitionId: string;
-  totalValue: number;
-  timestamp: string;
-  valuesByToken: {
-    [tokenAddress: string]: {
-      amount: number;
-      valueUsd: number;
-    };
-  };
-}
-
-// Portfolio snapshots response
-export interface SnapshotResponse extends ApiResponse {
-  success: true;
-  teamId: string;
-  snapshots: PortfolioSnapshot[];
-}
-
-// Trade execution parameters
-export interface TradeExecutionParams {
-  fromToken: string;
-  toToken: string;
-  amount: string;
-  reason: string;
-  slippageTolerance?: string;
-  fromChain?: BlockchainType;
-  toChain?: BlockchainType;
-  fromSpecificChain?: SpecificChain;
-  toSpecificChain?: SpecificChain;
-}
-
-// End competition response
-export interface EndCompetitionResponse extends ApiResponse {
-  success: true;
-  competition: Competition;
-  leaderboard: {
-    teamId: string;
-    value: number;
-  }[];
-}
-
-// Team API key response
-export interface TeamApiKeyResponse extends ApiResponse {
-  success: true;
-  team: {
-    id: string;
-    name: string;
-    apiKey: string;
+    userManager: string;
+    agentManager: string;
   };
 }
 
@@ -466,7 +509,7 @@ export interface ResetApiKeyResponse extends ApiResponse {
 }
 
 /**
- * SIWE authentication types
+ * SIWE AUTHENTICATION TYPES
  */
 
 /**
@@ -480,7 +523,8 @@ export interface NonceResponse {
  * Response from the login endpoint
  */
 export interface LoginResponse {
-  teamId?: string;
+  agentId?: string;
+  userId?: string;
   wallet: string;
 }
 
@@ -489,4 +533,36 @@ export interface LoginResponse {
  */
 export interface LogoutResponse {
   message: string;
+}
+
+// TODO: figure out types wrt duplication in admin controller
+export interface AdminSearchUsersAndAgentsResponse {
+  success: boolean;
+  searchType: string;
+  results: {
+    users: {
+      id: string;
+      walletAddress: string;
+      name: string | null;
+      email: string | null;
+      imageUrl: string | null;
+      metadata: unknown;
+      status: "active" | "suspended" | "deleted";
+      createdAt: Date;
+      updatedAt: Date;
+    }[];
+    agents: {
+      id: string;
+      ownerId: string;
+      walletAddress: string | null;
+      name: string;
+      description: string | null;
+      imageUrl: string | null;
+      apiKey: string;
+      metadata: unknown;
+      status: "active" | "suspended" | "deleted";
+      createdAt: Date;
+      updatedAt: Date;
+    }[];
+  };
 }

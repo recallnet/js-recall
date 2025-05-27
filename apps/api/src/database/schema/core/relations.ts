@@ -6,13 +6,21 @@ import {
   trades,
   tradingCompetitions,
 } from "../trading/defs.js";
-import { competitionTeams, competitions, teams } from "./defs.js";
+import { agents, competitionAgents, competitions, users } from "./defs.js";
 
-export const teamsRelations = relations(teams, ({ many }) => ({
+export const usersRelations = relations(users, ({ many }) => ({
+  agents: many(agents),
+}));
+
+export const agentsRelations = relations(agents, ({ one, many }) => ({
+  owner: one(users, {
+    fields: [agents.ownerId],
+    references: [users.id],
+  }),
   balances: many(balances),
   trades: many(trades),
   portfolioSnapshots: many(portfolioSnapshots),
-  competitionTeams: many(competitionTeams),
+  competitionAgents: many(competitionAgents),
 }));
 
 export const competitionsRelations = relations(
@@ -21,20 +29,20 @@ export const competitionsRelations = relations(
     tradingCompetition: one(tradingCompetitions),
     trades: many(trades),
     portfolioSnapshots: many(portfolioSnapshots),
-    competitionTeams: many(competitionTeams),
+    competitionAgents: many(competitionAgents),
   }),
 );
 
-export const competitionTeamsRelations = relations(
-  competitionTeams,
+export const competitionAgentsRelations = relations(
+  competitionAgents,
   ({ one }) => ({
     competition: one(competitions, {
-      fields: [competitionTeams.competitionId],
+      fields: [competitionAgents.competitionId],
       references: [competitions.id],
     }),
-    team: one(teams, {
-      fields: [competitionTeams.teamId],
-      references: [teams.id],
+    agent: one(agents, {
+      fields: [competitionAgents.agentId],
+      references: [agents.id],
     }),
   }),
 );

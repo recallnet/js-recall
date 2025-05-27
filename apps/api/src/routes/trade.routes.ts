@@ -87,9 +87,9 @@ export function configureTradeRoutes(
    *                     id:
    *                       type: string
    *                       description: Unique trade ID
-   *                     teamId:
+   *                     agentId:
    *                       type: string
-   *                       description: Team ID that executed the trade
+   *                       description: Agent ID that executed the trade
    *                     competitionId:
    *                       type: string
    *                       description: ID of the competition this trade is part of

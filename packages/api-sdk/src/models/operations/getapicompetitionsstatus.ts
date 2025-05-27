@@ -12,9 +12,9 @@ import { SDKValidationError } from "../errors/sdkvalidationerror.js";
  * Competition status
  */
 export const GetApiCompetitionsStatusStatus = {
-  Pending: "PENDING",
-  Active: "ACTIVE",
-  Completed: "COMPLETED",
+  Pending: "pending",
+  Active: "active",
+  Completed: "completed",
 } as const;
 /**
  * Competition status
@@ -105,7 +105,7 @@ export type GetApiCompetitionsStatusResponse = {
    */
   message?: string | null | undefined;
   /**
-   * Whether the authenticated team is participating in the competition
+   * Whether the authenticated agent is participating in the competition
    */
   participating?: boolean | null | undefined;
 };

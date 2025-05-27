@@ -13,25 +13,27 @@ import {
 } from "./resources.js";
 import { MCPScope } from "./scopes.js";
 import { createRegisterTool } from "./tools.js";
-import { tool$accountGetApiAccountBalances } from "./tools/accountGetApiAccountBalances.js";
-import { tool$accountGetApiAccountPortfolio } from "./tools/accountGetApiAccountPortfolio.js";
-import { tool$accountGetApiAccountProfile } from "./tools/accountGetApiAccountProfile.js";
-import { tool$accountGetApiAccountTrades } from "./tools/accountGetApiAccountTrades.js";
-import { tool$accountPostApiAccountResetApiKey } from "./tools/accountPostApiAccountResetApiKey.js";
-import { tool$accountPutApiAccountProfile } from "./tools/accountPutApiAccountProfile.js";
-import { tool$adminDeleteApiAdminTeamsTeamId } from "./tools/adminDeleteApiAdminTeamsTeamId.js";
+import { tool$adminDeleteApiAdminAgentsAgentId } from "./tools/adminDeleteApiAdminAgentsAgentId.js";
+import { tool$adminGetApiAdminAgents } from "./tools/adminGetApiAdminAgents.js";
+import { tool$adminGetApiAdminAgentsAgentId } from "./tools/adminGetApiAdminAgentsAgentId.js";
+import { tool$adminGetApiAdminAgentsAgentIdKey } from "./tools/adminGetApiAdminAgentsAgentIdKey.js";
 import { tool$adminGetApiAdminCompetitionCompetitionIdSnapshots } from "./tools/adminGetApiAdminCompetitionCompetitionIdSnapshots.js";
 import { tool$adminGetApiAdminReportsPerformance } from "./tools/adminGetApiAdminReportsPerformance.js";
-import { tool$adminGetApiAdminTeams } from "./tools/adminGetApiAdminTeams.js";
-import { tool$adminGetApiAdminTeamsSearch } from "./tools/adminGetApiAdminTeamsSearch.js";
-import { tool$adminGetApiAdminTeamsTeamIdKey } from "./tools/adminGetApiAdminTeamsTeamIdKey.js";
+import { tool$adminGetApiAdminSearch } from "./tools/adminGetApiAdminSearch.js";
+import { tool$adminGetApiAdminUsers } from "./tools/adminGetApiAdminUsers.js";
+import { tool$adminPostApiAdminAgentsAgentIdDeactivate } from "./tools/adminPostApiAdminAgentsAgentIdDeactivate.js";
+import { tool$adminPostApiAdminAgentsAgentIdReactivate } from "./tools/adminPostApiAdminAgentsAgentIdReactivate.js";
 import { tool$adminPostApiAdminCompetitionCreate } from "./tools/adminPostApiAdminCompetitionCreate.js";
 import { tool$adminPostApiAdminCompetitionEnd } from "./tools/adminPostApiAdminCompetitionEnd.js";
 import { tool$adminPostApiAdminCompetitionStart } from "./tools/adminPostApiAdminCompetitionStart.js";
 import { tool$adminPostApiAdminSetup } from "./tools/adminPostApiAdminSetup.js";
-import { tool$adminPostApiAdminTeamsRegister } from "./tools/adminPostApiAdminTeamsRegister.js";
-import { tool$adminPostApiAdminTeamsTeamIdDeactivate } from "./tools/adminPostApiAdminTeamsTeamIdDeactivate.js";
-import { tool$adminPostApiAdminTeamsTeamIdReactivate } from "./tools/adminPostApiAdminTeamsTeamIdReactivate.js";
+import { tool$adminPostApiAdminUsers } from "./tools/adminPostApiAdminUsers.js";
+import { tool$agentGetApiAgentBalances } from "./tools/agentGetApiAgentBalances.js";
+import { tool$agentGetApiAgentPortfolio } from "./tools/agentGetApiAgentPortfolio.js";
+import { tool$agentGetApiAgentProfile } from "./tools/agentGetApiAgentProfile.js";
+import { tool$agentGetApiAgentTrades } from "./tools/agentGetApiAgentTrades.js";
+import { tool$agentPostApiAgentResetApiKey } from "./tools/agentPostApiAgentResetApiKey.js";
+import { tool$agentPutApiAgentProfile } from "./tools/agentPutApiAgentProfile.js";
 import { tool$authGetApiAuthNonce } from "./tools/authGetApiAuthNonce.js";
 import { tool$authPostApiAuthLogin } from "./tools/authPostApiAuthLogin.js";
 import { tool$authPostApiAuthLogout } from "./tools/authPostApiAuthLogout.js";
@@ -57,7 +59,7 @@ export function createMCPServer(deps: {
 }) {
   const server = new McpServer({
     name: "ApiSDK",
-    version: "0.0.7",
+    version: "0.1.0",
   });
 
   const client = new ApiSDKCore({
@@ -87,25 +89,27 @@ export function createMCPServer(deps: {
   const register = { tool, resource, resourceTemplate, prompt };
   void register; // suppress unused warnings
 
-  tool(tool$accountGetApiAccountProfile);
-  tool(tool$accountPutApiAccountProfile);
-  tool(tool$accountPostApiAccountResetApiKey);
-  tool(tool$accountGetApiAccountBalances);
-  tool(tool$accountGetApiAccountTrades);
-  tool(tool$accountGetApiAccountPortfolio);
   tool(tool$adminPostApiAdminSetup);
-  tool(tool$adminPostApiAdminTeamsRegister);
-  tool(tool$adminGetApiAdminTeams);
-  tool(tool$adminGetApiAdminTeamsTeamIdKey);
-  tool(tool$adminDeleteApiAdminTeamsTeamId);
   tool(tool$adminPostApiAdminCompetitionCreate);
   tool(tool$adminPostApiAdminCompetitionStart);
   tool(tool$adminPostApiAdminCompetitionEnd);
   tool(tool$adminGetApiAdminCompetitionCompetitionIdSnapshots);
   tool(tool$adminGetApiAdminReportsPerformance);
-  tool(tool$adminPostApiAdminTeamsTeamIdDeactivate);
-  tool(tool$adminPostApiAdminTeamsTeamIdReactivate);
-  tool(tool$adminGetApiAdminTeamsSearch);
+  tool(tool$adminPostApiAdminUsers);
+  tool(tool$adminGetApiAdminUsers);
+  tool(tool$adminGetApiAdminAgents);
+  tool(tool$adminGetApiAdminAgentsAgentIdKey);
+  tool(tool$adminDeleteApiAdminAgentsAgentId);
+  tool(tool$adminGetApiAdminAgentsAgentId);
+  tool(tool$adminPostApiAdminAgentsAgentIdDeactivate);
+  tool(tool$adminPostApiAdminAgentsAgentIdReactivate);
+  tool(tool$adminGetApiAdminSearch);
+  tool(tool$agentGetApiAgentProfile);
+  tool(tool$agentPutApiAgentProfile);
+  tool(tool$agentGetApiAgentBalances);
+  tool(tool$agentGetApiAgentPortfolio);
+  tool(tool$agentGetApiAgentTrades);
+  tool(tool$agentPostApiAgentResetApiKey);
   tool(tool$authGetApiAuthNonce);
   tool(tool$authPostApiAuthLogin);
   tool(tool$authPostApiAuthLogout);

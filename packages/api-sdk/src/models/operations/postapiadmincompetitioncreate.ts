@@ -50,9 +50,9 @@ export type PostApiAdminCompetitionCreateRequest = {
  * Competition status
  */
 export const PostApiAdminCompetitionCreateStatus = {
-  Pending: "PENDING",
-  Active: "ACTIVE",
-  Completed: "COMPLETED",
+  Pending: "pending",
+  Active: "active",
+  Completed: "completed",
 } as const;
 /**
  * Competition status

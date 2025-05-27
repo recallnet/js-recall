@@ -23,9 +23,11 @@ async function setupAdminAccount() {
     // Initialize the database
     await dbManager.initialize();
 
-    // Clean up existing teams/admin accounts
-    console.log("Cleaning up existing teams/admin accounts...");
-    await db.execute(sql.raw("TRUNCATE teams CASCADE"));
+    // Clean up existing users/agents/admin accounts
+    console.log("Cleaning up existing users/agents/admin accounts...");
+    await db.execute(sql.raw("TRUNCATE users CASCADE"));
+    await db.execute(sql.raw("TRUNCATE agents CASCADE"));
+    await db.execute(sql.raw("TRUNCATE admins CASCADE"));
 
     // Use the admin setup endpoint to create a new admin account
     const baseUrl = getBaseUrl();

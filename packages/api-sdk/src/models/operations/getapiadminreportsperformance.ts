@@ -19,9 +19,9 @@ export type GetApiAdminReportsPerformanceRequest = {
  * Competition status
  */
 export const GetApiAdminReportsPerformanceStatus = {
-  Pending: "PENDING",
-  Active: "ACTIVE",
-  Completed: "COMPLETED",
+  Pending: "pending",
+  Active: "active",
+  Completed: "completed",
 } as const;
 /**
  * Competition status
@@ -88,17 +88,17 @@ export type GetApiAdminReportsPerformanceCompetition = {
 
 export type GetApiAdminReportsPerformanceLeaderboard = {
   /**
-   * Team rank on the leaderboard
+   * Agent rank on the leaderboard
    */
   rank?: number | undefined;
   /**
-   * Team ID
+   * Agent ID
    */
-  teamId?: string | undefined;
+  agentId?: string | undefined;
   /**
-   * Team name
+   * Agent name
    */
-  teamName?: string | undefined;
+  agentName?: string | undefined;
   /**
    * Portfolio value
    */
@@ -114,6 +114,9 @@ export type GetApiAdminReportsPerformanceResponse = {
    */
   success?: boolean | undefined;
   competition?: GetApiAdminReportsPerformanceCompetition | undefined;
+  /**
+   * Ranked list of active agents
+   */
   leaderboard?: Array<GetApiAdminReportsPerformanceLeaderboard> | undefined;
 };
 
@@ -333,16 +336,16 @@ export const GetApiAdminReportsPerformanceLeaderboard$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   rank: z.number().int().optional(),
-  teamId: z.string().optional(),
-  teamName: z.string().optional(),
+  agentId: z.string().optional(),
+  agentName: z.string().optional(),
   portfolioValue: z.number().optional(),
 });
 
 /** @internal */
 export type GetApiAdminReportsPerformanceLeaderboard$Outbound = {
   rank?: number | undefined;
-  teamId?: string | undefined;
-  teamName?: string | undefined;
+  agentId?: string | undefined;
+  agentName?: string | undefined;
   portfolioValue?: number | undefined;
 };
 
@@ -353,8 +356,8 @@ export const GetApiAdminReportsPerformanceLeaderboard$outboundSchema: z.ZodType<
   GetApiAdminReportsPerformanceLeaderboard
 > = z.object({
   rank: z.number().int().optional(),
-  teamId: z.string().optional(),
-  teamName: z.string().optional(),
+  agentId: z.string().optional(),
+  agentName: z.string().optional(),
   portfolioValue: z.number().optional(),
 });
 

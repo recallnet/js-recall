@@ -19,9 +19,9 @@ export type GetApiCompetitionsLeaderboardRequest = {
  * Competition status
  */
 export const GetApiCompetitionsLeaderboardStatus = {
-  Pending: "PENDING",
-  Active: "ACTIVE",
-  Completed: "COMPLETED",
+  Pending: "pending",
+  Active: "active",
+  Completed: "completed",
 } as const;
 /**
  * Competition status
@@ -75,17 +75,17 @@ export type GetApiCompetitionsLeaderboardCompetition = {
 
 export type GetApiCompetitionsLeaderboardLeaderboard = {
   /**
-   * Team rank on the leaderboard
+   * Agent rank on the leaderboard
    */
   rank?: number | undefined;
   /**
-   * Team ID
+   * Agent ID
    */
-  teamId?: string | undefined;
+  agentId?: string | undefined;
   /**
-   * Team name
+   * Agent name
    */
-  teamName?: string | undefined;
+  agentName?: string | undefined;
   /**
    * Current portfolio value in USD
    */
@@ -95,20 +95,20 @@ export type GetApiCompetitionsLeaderboardLeaderboard = {
    */
   active?: boolean | undefined;
   /**
-   * Always null for active teams
+   * Always null for active agents
    */
   deactivationReason?: string | null | undefined;
 };
 
-export type InactiveTeam = {
+export type InactiveAgent = {
   /**
-   * Team ID
+   * Agent ID
    */
-  teamId?: string | undefined;
+  agentId?: string | undefined;
   /**
-   * Team name
+   * Agent name
    */
-  teamName?: string | undefined;
+  agentName?: string | undefined;
   /**
    * Current portfolio value in USD
    */
@@ -118,7 +118,7 @@ export type InactiveTeam = {
    */
   active?: boolean | undefined;
   /**
-   * Reason for team deactivation
+   * Reason for agent deactivation
    */
   deactivationReason?: string | undefined;
 };
@@ -133,17 +133,17 @@ export type GetApiCompetitionsLeaderboardResponse = {
   success?: boolean | undefined;
   competition?: GetApiCompetitionsLeaderboardCompetition | undefined;
   /**
-   * Ranked list of active teams
+   * Ranked list of active agents
    */
   leaderboard?: Array<GetApiCompetitionsLeaderboardLeaderboard> | undefined;
   /**
-   * List of deactivated teams (excluded from ranking)
+   * List of deactivated agents (excluded from ranking)
    */
-  inactiveTeams?: Array<InactiveTeam> | undefined;
+  inactiveAgents?: Array<InactiveAgent> | undefined;
   /**
-   * Indicates if any teams are inactive
+   * Indicates if any agents are inactive
    */
-  hasInactiveTeams?: boolean | undefined;
+  hasInactiveAgents?: boolean | undefined;
 };
 
 /** @internal */
@@ -354,8 +354,8 @@ export const GetApiCompetitionsLeaderboardLeaderboard$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   rank: z.number().int().optional(),
-  teamId: z.string().optional(),
-  teamName: z.string().optional(),
+  agentId: z.string().optional(),
+  agentName: z.string().optional(),
   portfolioValue: z.number().optional(),
   active: z.boolean().optional(),
   deactivationReason: z.nullable(z.string()).optional(),
@@ -364,8 +364,8 @@ export const GetApiCompetitionsLeaderboardLeaderboard$inboundSchema: z.ZodType<
 /** @internal */
 export type GetApiCompetitionsLeaderboardLeaderboard$Outbound = {
   rank?: number | undefined;
-  teamId?: string | undefined;
-  teamName?: string | undefined;
+  agentId?: string | undefined;
+  agentName?: string | undefined;
   portfolioValue?: number | undefined;
   active?: boolean | undefined;
   deactivationReason?: string | null | undefined;
@@ -378,8 +378,8 @@ export const GetApiCompetitionsLeaderboardLeaderboard$outboundSchema: z.ZodType<
   GetApiCompetitionsLeaderboardLeaderboard
 > = z.object({
   rank: z.number().int().optional(),
-  teamId: z.string().optional(),
-  teamName: z.string().optional(),
+  agentId: z.string().optional(),
+  agentName: z.string().optional(),
   portfolioValue: z.number().optional(),
   active: z.boolean().optional(),
   deactivationReason: z.nullable(z.string()).optional(),
@@ -427,35 +427,35 @@ export function getApiCompetitionsLeaderboardLeaderboardFromJSON(
 }
 
 /** @internal */
-export const InactiveTeam$inboundSchema: z.ZodType<
-  InactiveTeam,
+export const InactiveAgent$inboundSchema: z.ZodType<
+  InactiveAgent,
   z.ZodTypeDef,
   unknown
 > = z.object({
-  teamId: z.string().optional(),
-  teamName: z.string().optional(),
+  agentId: z.string().optional(),
+  agentName: z.string().optional(),
   portfolioValue: z.number().optional(),
   active: z.boolean().optional(),
   deactivationReason: z.string().optional(),
 });
 
 /** @internal */
-export type InactiveTeam$Outbound = {
-  teamId?: string | undefined;
-  teamName?: string | undefined;
+export type InactiveAgent$Outbound = {
+  agentId?: string | undefined;
+  agentName?: string | undefined;
   portfolioValue?: number | undefined;
   active?: boolean | undefined;
   deactivationReason?: string | undefined;
 };
 
 /** @internal */
-export const InactiveTeam$outboundSchema: z.ZodType<
-  InactiveTeam$Outbound,
+export const InactiveAgent$outboundSchema: z.ZodType<
+  InactiveAgent$Outbound,
   z.ZodTypeDef,
-  InactiveTeam
+  InactiveAgent
 > = z.object({
-  teamId: z.string().optional(),
-  teamName: z.string().optional(),
+  agentId: z.string().optional(),
+  agentName: z.string().optional(),
   portfolioValue: z.number().optional(),
   active: z.boolean().optional(),
   deactivationReason: z.string().optional(),
@@ -465,26 +465,26 @@ export const InactiveTeam$outboundSchema: z.ZodType<
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace InactiveTeam$ {
-  /** @deprecated use `InactiveTeam$inboundSchema` instead. */
-  export const inboundSchema = InactiveTeam$inboundSchema;
-  /** @deprecated use `InactiveTeam$outboundSchema` instead. */
-  export const outboundSchema = InactiveTeam$outboundSchema;
-  /** @deprecated use `InactiveTeam$Outbound` instead. */
-  export type Outbound = InactiveTeam$Outbound;
+export namespace InactiveAgent$ {
+  /** @deprecated use `InactiveAgent$inboundSchema` instead. */
+  export const inboundSchema = InactiveAgent$inboundSchema;
+  /** @deprecated use `InactiveAgent$outboundSchema` instead. */
+  export const outboundSchema = InactiveAgent$outboundSchema;
+  /** @deprecated use `InactiveAgent$Outbound` instead. */
+  export type Outbound = InactiveAgent$Outbound;
 }
 
-export function inactiveTeamToJSON(inactiveTeam: InactiveTeam): string {
-  return JSON.stringify(InactiveTeam$outboundSchema.parse(inactiveTeam));
+export function inactiveAgentToJSON(inactiveAgent: InactiveAgent): string {
+  return JSON.stringify(InactiveAgent$outboundSchema.parse(inactiveAgent));
 }
 
-export function inactiveTeamFromJSON(
+export function inactiveAgentFromJSON(
   jsonString: string,
-): SafeParseResult<InactiveTeam, SDKValidationError> {
+): SafeParseResult<InactiveAgent, SDKValidationError> {
   return safeParse(
     jsonString,
-    (x) => InactiveTeam$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'InactiveTeam' from JSON`,
+    (x) => InactiveAgent$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'InactiveAgent' from JSON`,
   );
 }
 
@@ -501,8 +501,8 @@ export const GetApiCompetitionsLeaderboardResponse$inboundSchema: z.ZodType<
   leaderboard: z
     .array(z.lazy(() => GetApiCompetitionsLeaderboardLeaderboard$inboundSchema))
     .optional(),
-  inactiveTeams: z.array(z.lazy(() => InactiveTeam$inboundSchema)).optional(),
-  hasInactiveTeams: z.boolean().optional(),
+  inactiveAgents: z.array(z.lazy(() => InactiveAgent$inboundSchema)).optional(),
+  hasInactiveAgents: z.boolean().optional(),
 });
 
 /** @internal */
@@ -512,8 +512,8 @@ export type GetApiCompetitionsLeaderboardResponse$Outbound = {
   leaderboard?:
     | Array<GetApiCompetitionsLeaderboardLeaderboard$Outbound>
     | undefined;
-  inactiveTeams?: Array<InactiveTeam$Outbound> | undefined;
-  hasInactiveTeams?: boolean | undefined;
+  inactiveAgents?: Array<InactiveAgent$Outbound> | undefined;
+  hasInactiveAgents?: boolean | undefined;
 };
 
 /** @internal */
@@ -531,8 +531,10 @@ export const GetApiCompetitionsLeaderboardResponse$outboundSchema: z.ZodType<
       z.lazy(() => GetApiCompetitionsLeaderboardLeaderboard$outboundSchema),
     )
     .optional(),
-  inactiveTeams: z.array(z.lazy(() => InactiveTeam$outboundSchema)).optional(),
-  hasInactiveTeams: z.boolean().optional(),
+  inactiveAgents: z
+    .array(z.lazy(() => InactiveAgent$outboundSchema))
+    .optional(),
+  hasInactiveAgents: z.boolean().optional(),
 });
 
 /**

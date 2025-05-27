@@ -1,8 +1,14 @@
 import axios, { AxiosInstance } from "axios";
 
 import {
-  AdminTeamResponse,
-  AdminTeamsListResponse,
+  AdminAgentResponse,
+  AdminAgentsListResponse,
+  AdminUserResponse,
+  AdminUsersListResponse,
+  Agent,
+  AgentApiKeyResponse,
+  AgentMetadata,
+  AgentProfileResponse,
   ApiResponse,
   BalancesResponse,
   BlockchainType,
@@ -24,15 +30,13 @@ import {
   ResetApiKeyResponse,
   SpecificChain,
   StartCompetitionResponse,
-  TeamApiKeyResponse,
-  TeamMetadata,
-  TeamProfileResponse,
-  TeamRegistrationResponse,
   TokenInfoResponse,
   TradeExecutionParams,
   TradeHistoryResponse,
   TradeResponse,
   UpcomingCompetitionsResponse,
+  UserProfileResponse,
+  UserRegistrationResponse,
 } from "./api-types.js";
 import { getBaseUrl } from "./server.js";
 
@@ -137,7 +141,7 @@ export class ApiClient {
     username: string,
     password: string,
     email: string,
-  ): Promise<AdminTeamResponse | ErrorResponse> {
+  ): Promise<AdminUserResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post("/api/admin/setup", {
         username,
@@ -165,7 +169,7 @@ export class ApiClient {
       this.adminApiKey = apiKey;
 
       // Verify the API key by making a simple admin request
-      const response = await this.axiosInstance.get("/api/admin/teams");
+      const response = await this.axiosInstance.get("/api/admin/agents");
       return response.data.success;
     } catch (error) {
       // Clear the admin API key if login fails
@@ -191,60 +195,60 @@ export class ApiClient {
   }
 
   /**
-   * Register a new team (admin only)
-   * @param name Team name
-   * @param email Team email
-   * @param contactPerson Contact person name
-   * @param walletAddress Optional Ethereum wallet address (random valid address will be generated if not provided)
-   * @param metadata Optional metadata for the team agent
-   * @param imageUrl Optional image URL for the team
+   * Register a new user and optionally create their first agent (admin only)
+   * @param walletAddress Ethereum wallet address for the user
+   * @param name User's display name
+   * @param email User email address
+   * @param userImageUrl Optional image URL for the user
+   * @param agentName Optional name for the user's first agent
+   * @param agentDescription Optional description for the agent
+   * @param agentImageUrl Optional image URL for the agent
+   * @param agentMetadata Optional metadata for the agent
    */
-  async registerTeam(
-    name: string,
-    email: string,
-    contactPerson: string,
-    walletAddress?: string,
-    metadata?: TeamMetadata,
-    imageUrl?: string,
-  ): Promise<TeamRegistrationResponse | ErrorResponse> {
+  async registerUser(
+    walletAddress: string,
+    name?: string,
+    email?: string,
+    userImageUrl?: string,
+    agentName?: string,
+    agentDescription?: string,
+    agentImageUrl?: string,
+    agentMetadata?: AgentMetadata,
+  ): Promise<UserRegistrationResponse | ErrorResponse> {
     try {
-      // Generate a random Ethereum address if one isn't provided
-      const address = walletAddress || this.generateRandomEthAddress();
-
-      const response = await this.axiosInstance.post(
-        "/api/admin/teams/register",
-        {
-          teamName: name,
-          email,
-          contactPerson,
-          walletAddress: address,
-          metadata,
-          imageUrl,
-        },
-      );
+      const response = await this.axiosInstance.post("/api/admin/users", {
+        walletAddress,
+        name,
+        email,
+        userImageUrl,
+        agentName,
+        agentDescription,
+        agentImageUrl,
+        agentMetadata,
+      });
 
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, "register team");
+      return this.handleApiError(error, "register user");
     }
   }
 
   /**
-   * Start a competition
+   * Start a competition with agents
    */
   async startCompetition(
     params:
       | {
           name: string;
           description?: string;
-          teamIds: string[];
+          agentIds: string[];
           tradingType?: CrossChainTradingType;
           externalLink?: string;
           imageUrl?: string;
         }
       | string,
     description?: string,
-    teamIds?: string[],
+    agentIds?: string[],
     tradingType?: CrossChainTradingType,
     externalLink?: string,
     imageUrl?: string,
@@ -259,7 +263,7 @@ export class ApiClient {
         requestData = {
           name: params,
           description,
-          teamIds: teamIds || [],
+          agentIds: agentIds || [],
           tradingType,
           externalLink,
           imageUrl,
@@ -306,11 +310,11 @@ export class ApiClient {
   }
 
   /**
-   * Start an existing competition
+   * Start an existing competition with agents
    */
   async startExistingCompetition(
     competitionId: string,
-    teamIds: string[],
+    agentIds: string[],
     crossChainTradingType?: CrossChainTradingType,
     externalLink?: string,
     imageUrl?: string,
@@ -320,7 +324,7 @@ export class ApiClient {
         "/api/admin/competition/start",
         {
           competitionId,
-          teamIds,
+          agentIds,
           crossChainTradingType,
           externalLink,
           imageUrl,
@@ -334,18 +338,18 @@ export class ApiClient {
   }
 
   /**
-   * Create a team client with a provided API key
+   * Create an agent client with a provided API key
    */
-  createTeamClient(apiKey: string): ApiClient {
+  createAgentClient(apiKey: string): ApiClient {
     return new ApiClient(apiKey, this.baseUrl);
   }
 
   /**
-   * Get team profile
+   * Get user profile
    */
-  async getProfile(): Promise<TeamProfileResponse | ErrorResponse> {
+  async getUserProfile(): Promise<UserProfileResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/account/profile");
+      const response = await this.axiosInstance.get("/api/user/profile");
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get profile");
@@ -353,56 +357,195 @@ export class ApiClient {
   }
 
   /**
-   * Update team profile
-   * @param profileData Profile data to update including contactPerson, metadata, and imageUrl
+   * Get user profile
    */
-  async updateProfile(profileData: {
-    contactPerson?: string;
-    metadata?: TeamMetadata;
+  async getAgentProfile(): Promise<AgentProfileResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get("/api/agent/profile");
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get profile");
+    }
+  }
+
+  /**
+   * Update a user profile
+   * @param profileData Profile data to update including name and imageUrl only (users have limited self-service editing)
+   */
+  async updateUserProfile(profileData: {
+    name?: string;
     imageUrl?: string;
-  }): Promise<TeamProfileResponse | ErrorResponse> {
+  }): Promise<UserProfileResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.put(
-        "/api/account/profile",
+        "/api/user/profile",
         profileData,
       );
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, "update profile");
+      return this.handleApiError(error, "update user profile");
     }
   }
 
   /**
-   * List all teams (admin only)
+   * Update an agent profile
+   * @param profileData Profile data to update including name, description, and imageUrl only (agents have limited self-service editing)
    */
-  async listAllTeams(): Promise<AdminTeamsListResponse | ErrorResponse> {
+  async updateAgentProfile(profileData: {
+    name?: string;
+    description?: string;
+    imageUrl?: string;
+  }): Promise<AgentProfileResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/admin/teams");
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "list teams");
-    }
-  }
-
-  /**
-   * Alias for listAllTeams for better readability in tests
-   */
-  async listTeams(): Promise<AdminTeamsListResponse | ErrorResponse> {
-    return this.listAllTeams();
-  }
-
-  /**
-   * Delete a team (admin only)
-   * @param teamId ID of the team to delete
-   */
-  async deleteTeam(teamId: string): Promise<ApiResponse | ErrorResponse> {
-    try {
-      const response = await this.axiosInstance.delete(
-        `/api/admin/teams/${teamId}`,
+      const response = await this.axiosInstance.put(
+        "/api/agent/profile",
+        profileData,
       );
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, "delete team");
+      return this.handleApiError(error, "update agent profile");
+    }
+  }
+
+  /**
+   * List all agents (admin only)
+   */
+  async listAgents(): Promise<AdminAgentsListResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get("/api/admin/agents");
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "list agents");
+    }
+  }
+
+  /**
+   * List all users (admin only)
+   */
+  async listUsers(): Promise<AdminUsersListResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get("/api/admin/users");
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "list users");
+    }
+  }
+
+  /**
+   * Delete an agent (admin only)
+   * @param agentId ID of the agent to delete
+   */
+  async deleteAgent(agentId: string): Promise<ApiResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.delete(
+        `/api/admin/agents/${agentId}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "delete agent");
+    }
+  }
+
+  /**
+   * Delete a user (admin only)
+   */
+  async deleteUser(userId: string): Promise<ApiResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.delete(
+        `/api/admin/users/${userId}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "delete user");
+    }
+  }
+
+  /**
+   * Deactivate an agent (admin only)
+   * @param agentId ID of the agent to deactivate
+   * @param reason Reason for deactivation
+   */
+  async deactivateAgent(
+    agentId: string,
+    reason: string,
+  ): Promise<ApiResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post(
+        `/api/admin/agents/${agentId}/deactivate`,
+        { reason },
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "deactivate agent");
+    }
+  }
+
+  // /**
+  //  * Deactivate a user (admin only) - DEPRECATED
+  //  * @deprecated Use deactivateAgent instead
+  //  */
+  // TODO: Implement this
+  // async deactivateUser(
+  //   userId: string,
+  //   reason: string,
+  // ): Promise<AdminUserResponse | ErrorResponse> {
+  //   try {
+  //     const response = await this.axiosInstance.post(
+  //       `/api/admin/users/${userId}/deactivate`,
+  //       { reason },
+  //     );
+  //     return response.data;
+  //   } catch (error) {
+  //     return this.handleApiError(error, "deactivate user");
+  //   }
+  // }
+
+  /**
+   * Reactivate an agent (admin only)
+   * @param agentId ID of the agent to reactivate
+   */
+  async reactivateAgent(
+    agentId: string,
+  ): Promise<AdminAgentResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post(
+        `/api/admin/agents/${agentId}/reactivate`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "reactivate agent");
+    }
+  }
+
+  /**
+   * Get an agent's API key (admin only)
+   * @param agentId ID of the agent
+   */
+  async getAgentApiKey(
+    agentId: string,
+  ): Promise<AgentApiKeyResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/admin/agents/${agentId}/key`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get agent API key");
+    }
+  }
+
+  /**
+   * Get specific agent details (admin only)
+   * @param agentId ID of the agent to retrieve
+   */
+  async getAgent(agentId: string): Promise<AdminAgentResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/admin/agents/${agentId}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get admin agent");
     }
   }
 
@@ -411,7 +554,7 @@ export class ApiClient {
    */
   async getBalance(): Promise<BalancesResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/account/balances");
+      const response = await this.axiosInstance.get("/api/agent/balances");
       return response.data as BalancesResponse;
     } catch (error) {
       return this.handleApiError(error, "get balances");
@@ -422,7 +565,7 @@ export class ApiClient {
    */
   async getPortfolio(): Promise<PortfolioResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/account/portfolio");
+      const response = await this.axiosInstance.get("/api/agent/portfolio");
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get portfolio");
@@ -434,7 +577,7 @@ export class ApiClient {
    */
   async getTradeHistory(): Promise<TradeHistoryResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/account/trades");
+      const response = await this.axiosInstance.get("/api/agent/trades");
       return response.data as TradeHistoryResponse;
     } catch (error) {
       return this.handleApiError(error, "get trade history");
@@ -676,45 +819,6 @@ export class ApiClient {
   }
 
   /**
-   * Deactivate a team (admin only)
-   * @param teamId ID of the team to deactivate
-   * @param reason Reason for deactivation
-   */
-  async deactivateTeam(
-    teamId: string,
-    reason: string,
-  ): Promise<AdminTeamResponse | ErrorResponse> {
-    try {
-      const response = await this.axiosInstance.post(
-        `/api/admin/teams/${teamId}/deactivate`,
-        {
-          reason,
-        },
-      );
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "deactivate team");
-    }
-  }
-
-  /**
-   * Reactivate a team (admin only)
-   * @param teamId ID of the team to reactivate
-   */
-  async reactivateTeam(
-    teamId: string,
-  ): Promise<AdminTeamResponse | ErrorResponse> {
-    try {
-      const response = await this.axiosInstance.post(
-        `/api/admin/teams/${teamId}/reactivate`,
-      );
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "reactivate team");
-    }
-  }
-
-  /**
    * Get basic system health status
    */
   async getHealthStatus(): Promise<HealthCheckResponse | ErrorResponse> {
@@ -771,69 +875,13 @@ export class ApiClient {
   }
 
   /**
-   * Get a team's API key (admin only)
-   * @param teamId The ID of the team
-   */
-  async getTeamApiKey(
-    teamId: string,
-  ): Promise<TeamApiKeyResponse | ErrorResponse> {
-    try {
-      const response = await this.axiosInstance.get(
-        `/api/admin/teams/${teamId}/key`,
-      );
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "get team API key");
-    }
-  }
-
-  /**
-   * Publicly register a new team (no authentication required)
-   * @param name Team name
-   * @param email Team email
-   * @param contactPerson Contact person name
-   * @param walletAddress Optional Ethereum wallet address (random valid address will be generated if not provided)
-   * @param metadata Optional metadata for the team agent
-   * @param imageUrl Optional image URL for the team
-   */
-  async publicRegisterTeam(
-    name: string,
-    email: string,
-    contactPerson: string,
-    walletAddress?: string,
-    metadata?: TeamMetadata,
-    imageUrl?: string,
-  ): Promise<TeamRegistrationResponse | ErrorResponse> {
-    try {
-      // Generate a random Ethereum address if one isn't provided
-      const address = walletAddress || this.generateRandomEthAddress();
-
-      const response = await this.axiosInstance.post(
-        "/api/public/teams/register",
-        {
-          teamName: name,
-          email,
-          contactPerson,
-          walletAddress: address,
-          metadata,
-          imageUrl,
-        },
-      );
-
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "publicly register team");
-    }
-  }
-
-  /**
-   * Reset the team's API key
+   * Reset the agent's API key
    * @returns A promise that resolves to the reset API key response
    */
   async resetApiKey(): Promise<ResetApiKeyResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
-        "/api/account/reset-api-key",
+        "/api/agent/reset-api-key",
       );
       return response.data as ResetApiKeyResponse;
     } catch (error) {
@@ -842,40 +890,63 @@ export class ApiClient {
   }
 
   /**
-   * Search teams by various criteria (admin only)
-   * @param searchParams Search parameters (email, name, walletAddress, contactPerson, active, includeAdmins)
+   * Search users and agents (admin only)
+   * @param searchParams Search parameters (email, name, walletAddress, status, searchType)
    */
-  async searchTeams(searchParams: {
+  async searchUsersAndAgents(searchParams: {
     email?: string;
     name?: string;
     walletAddress?: string;
-    contactPerson?: string;
-    active?: boolean;
-    includeAdmins?: boolean;
-  }): Promise<AdminTeamsListResponse | ErrorResponse> {
+    status?: "active" | "suspended" | "deleted";
+    searchType?: "users" | "agents" | "both";
+  }): Promise<
+    | {
+        success: boolean;
+        searchType: string;
+        results: {
+          users: Array<{
+            type: "user";
+            id: string;
+            walletAddress: string;
+            name: string | null;
+            email: string | null;
+            status: string;
+            imageUrl: string | null;
+            createdAt: string;
+            updatedAt: string;
+          }>;
+          agents: Array<{
+            type: "agent";
+            id: string;
+            ownerId: string;
+            name: string;
+            description: string | null;
+            status: string;
+            imageUrl: string | null;
+            createdAt: string;
+            updatedAt: string;
+          }>;
+        };
+      }
+    | ErrorResponse
+  > {
     try {
-      // Convert search parameters to query string
       const queryParams = new URLSearchParams();
 
       if (searchParams.email) queryParams.append("email", searchParams.email);
       if (searchParams.name) queryParams.append("name", searchParams.name);
       if (searchParams.walletAddress)
         queryParams.append("walletAddress", searchParams.walletAddress);
-      if (searchParams.contactPerson)
-        queryParams.append("contactPerson", searchParams.contactPerson);
-      if (searchParams.active !== undefined)
-        queryParams.append("active", searchParams.active.toString());
-      if (searchParams.includeAdmins !== undefined)
-        queryParams.append(
-          "includeAdmins",
-          searchParams.includeAdmins.toString(),
-        );
+      if (searchParams.status)
+        queryParams.append("status", searchParams.status);
+      if (searchParams.searchType)
+        queryParams.append("searchType", searchParams.searchType);
 
-      const url = `/api/admin/teams/search?${queryParams.toString()}`;
+      const url = `/api/admin/search?${queryParams.toString()}`;
 
-      return this.request<AdminTeamsListResponse>("get", url);
+      return this.request("get", url);
     } catch (error) {
-      return this.handleApiError(error, "search teams");
+      return this.handleApiError(error, "search users and agents");
     }
   }
 
@@ -923,6 +994,68 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "logout");
+    }
+  }
+
+  /**
+   * Create a new agent for the authenticated user
+   * @param name Agent name (required, must be unique for this user)
+   * @param description Optional agent description
+   * @param imageUrl Optional agent image URL
+   * @param metadata Optional agent metadata
+   */
+  async createAgent(
+    name: string,
+    description?: string,
+    imageUrl?: string,
+    metadata?: Record<string, unknown>,
+  ): Promise<AgentProfileResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post("/api/user/agents", {
+        name,
+        description,
+        imageUrl,
+        metadata,
+      });
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "create agent");
+    }
+  }
+
+  /**
+   * Get all agents owned by the authenticated user
+   */
+  async getUserAgents(): Promise<
+    | {
+        success: boolean;
+        userId: string;
+        agents: Agent[];
+      }
+    | ErrorResponse
+  > {
+    try {
+      const response = await this.axiosInstance.get("/api/user/agents");
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get user agents");
+    }
+  }
+
+  /**
+   * Get details of a specific agent owned by the authenticated user
+   * @param agentId ID of the agent to retrieve
+   */
+  async getUserAgent(
+    agentId: string,
+  ): Promise<AgentProfileResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/user/agents/${agentId}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get user agent");
     }
   }
 }

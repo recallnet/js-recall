@@ -13,9 +13,9 @@ export type GetApiAdminCompetitionCompetitionIdSnapshotsRequest = {
    */
   competitionId: string;
   /**
-   * Optional team ID to filter snapshots
+   * Optional agent ID to filter snapshots
    */
-  teamId?: string | undefined;
+  agentId?: string | undefined;
 };
 
 export type Snapshot = {
@@ -28,9 +28,9 @@ export type Snapshot = {
    */
   competitionId?: string | undefined;
   /**
-   * Team ID
+   * Agent ID
    */
-  teamId?: string | undefined;
+  agentId?: string | undefined;
   /**
    * Total portfolio value at snapshot time
    */
@@ -59,13 +59,13 @@ export const GetApiAdminCompetitionCompetitionIdSnapshotsRequest$inboundSchema: 
   unknown
 > = z.object({
   competitionId: z.string(),
-  teamId: z.string().optional(),
+  agentId: z.string().optional(),
 });
 
 /** @internal */
 export type GetApiAdminCompetitionCompetitionIdSnapshotsRequest$Outbound = {
   competitionId: string;
-  teamId?: string | undefined;
+  agentId?: string | undefined;
 };
 
 /** @internal */
@@ -75,7 +75,7 @@ export const GetApiAdminCompetitionCompetitionIdSnapshotsRequest$outboundSchema:
   GetApiAdminCompetitionCompetitionIdSnapshotsRequest
 > = z.object({
   competitionId: z.string(),
-  teamId: z.string().optional(),
+  agentId: z.string().optional(),
 });
 
 /**
@@ -128,7 +128,7 @@ export const Snapshot$inboundSchema: z.ZodType<
 > = z.object({
   id: z.string().optional(),
   competitionId: z.string().optional(),
-  teamId: z.string().optional(),
+  agentId: z.string().optional(),
   totalValue: z.number().optional(),
   timestamp: z
     .string()
@@ -141,7 +141,7 @@ export const Snapshot$inboundSchema: z.ZodType<
 export type Snapshot$Outbound = {
   id?: string | undefined;
   competitionId?: string | undefined;
-  teamId?: string | undefined;
+  agentId?: string | undefined;
   totalValue?: number | undefined;
   timestamp?: string | undefined;
 };
@@ -154,7 +154,7 @@ export const Snapshot$outboundSchema: z.ZodType<
 > = z.object({
   id: z.string().optional(),
   competitionId: z.string().optional(),
-  teamId: z.string().optional(),
+  agentId: z.string().optional(),
   totalValue: z.number().optional(),
   timestamp: z
     .date()

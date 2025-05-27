@@ -13,7 +13,7 @@ import {
   ADMIN_USERNAME,
   cleanupTestState,
   createTestClient,
-  registerTeamAndGetClient,
+  registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
 import { PriceTracker } from "@/services/price-tracker.service.js";
 import { MultiChainProvider } from "@/services/providers/multi-chain.provider.js";
@@ -95,8 +95,10 @@ describe("Multi-Chain Provider Tests", () => {
     adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register a team and get an authenticated client
-    const result = await registerTeamAndGetClient(adminApiKey);
+    // Register a user/agent and get an authenticated client
+    const result = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+    });
     client = result.client;
 
     // Log the API key to verify it's correctly set

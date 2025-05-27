@@ -22,7 +22,7 @@ export function makeAuthController(services: ServiceRegistry) {
       try {
         const { message, signature } = req.body;
         const { session } = req;
-        const { success, teamId, wallet } = await services.authService.login({
+        const { success, userId, wallet } = await services.authService.login({
           message,
           signature,
           session,
@@ -33,9 +33,9 @@ export function makeAuthController(services: ServiceRegistry) {
             .json({ error: "Unauthorized: invalid signature" });
         }
         console.log(
-          `[AuthController] Login successful for ${wallet} (teamId: ${teamId ? teamId : "N/A"})`,
+          `[AuthController] Login successful for ${wallet} (userId: ${userId ? userId : "N/A"})`,
         );
-        res.status(200).json({ teamId, wallet });
+        res.status(200).json({ userId, wallet });
       } catch (error) {
         next(error);
       }

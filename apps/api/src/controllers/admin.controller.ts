@@ -2,24 +2,72 @@ import * as crypto from "crypto";
 import { NextFunction, Request, Response } from "express";
 import * as fs from "fs";
 import * as path from "path";
-import { v4 as uuidv4 } from "uuid";
 
 import { reloadSecurityConfig } from "@/config/index.js";
-import { getCompetitionTeams } from "@/database/repositories/competition-repository.js";
-import {
-  create,
-  findAll,
-  findByEmail,
-  findById,
-  isTeamInCompetition,
-} from "@/database/repositories/team-repository.js";
+import { isAgentInCompetition } from "@/database/repositories/agent-repository.js";
+import { getCompetitionAgents } from "@/database/repositories/competition-repository.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
+  AgentSearchParams,
   CompetitionStatus,
   CrossChainTradingType,
-  TeamSearchParams,
+  UserSearchParams,
 } from "@/types/index.js";
+
+// TODO: need user deactivation logic
+
+// TODO: unify interfaces since these enforce "null" values vs `@/types/index.js` that uses undefined
+// Also, types aren't really used anywhere else, so we should probably remove them?
+interface Agent {
+  id: string;
+  ownerId: string;
+  walletAddress: string | null;
+  name: string;
+  description: string | null;
+  imageUrl: string | null;
+  apiKey: string;
+  metadata: unknown;
+  status: "active" | "suspended" | "deleted";
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface User {
+  id: string;
+  walletAddress: string;
+  name: string | null;
+  email: string | null;
+  imageUrl: string | null;
+  metadata: unknown;
+  status: "active" | "suspended" | "deleted";
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface AdminUserRegistrationResponse {
+  success: boolean;
+  user: User;
+  agent?: Agent;
+  agentError?: string;
+}
+
+interface AdminAgentRegistrationResponse {
+  success: boolean;
+  agent: Agent;
+  agentError?: string;
+}
+
+interface AdminSearchResults {
+  users: User[];
+  agents: Omit<Agent, "apiKey">[];
+}
+
+export interface AdminSearchUsersAndAgentsResponse {
+  success: boolean;
+  searchType: string;
+  results: AdminSearchResults;
+}
 
 export function makeAdminController(services: ServiceRegistry) {
   /**
@@ -37,8 +85,8 @@ export function makeAdminController(services: ServiceRegistry) {
     async setupAdmin(req: Request, res: Response, next: NextFunction) {
       try {
         // Check if any admin already exists
-        const teams = await findAll();
-        const adminExists = teams.some((team) => team.isAdmin === true);
+        const admins = await services.adminManager.getAllAdmins();
+        const adminExists = admins.length > 0;
 
         if (adminExists) {
           throw new ApiError(
@@ -152,35 +200,23 @@ export function makeAdminController(services: ServiceRegistry) {
           // Continue with admin setup even if the env update fails
         }
 
-        // Generate API key (same as for regular teams)
-        const apiKey = services.teamManager.generateApiKey();
-
-        // Encrypt API key for storage
-        const encryptedApiKey = services.teamManager.encryptApiKey(apiKey);
-
-        // Create admin record using team repository
-        const admin = await create({
-          id: uuidv4(),
-          name: username, // Use username as team name for admin
+        // Setup the initial admin using AdminManager
+        const adminResult = await services.adminManager.setupInitialAdmin(
+          username,
+          password,
           email,
-          contactPerson: "System Administrator",
-          apiKey: encryptedApiKey,
-          walletAddress: "0x0000000000000000000000000000000000000000", // Placeholder address for admin
-          isAdmin: true, // Set admin flag
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
+        );
 
-        // Return success without exposing password
+        // Return success with admin information
         res.status(201).json({
           success: true,
           message: "Admin account created successfully",
           admin: {
-            id: admin.id,
-            username: admin.name,
-            email: admin.email,
-            createdAt: admin.createdAt,
-            apiKey,
+            id: adminResult.id,
+            username: adminResult.username,
+            email: adminResult.email,
+            createdAt: adminResult.createdAt,
+            apiKey: adminResult.apiKey,
           },
         });
       } catch (error) {
@@ -189,37 +225,42 @@ export function makeAdminController(services: ServiceRegistry) {
     },
 
     /**
-     * Register a new team
+     * Register a new user and optionally create their first agent
      * @param req Express request
      * @param res Express response
      * @param next Express next function
      */
-    async registerTeam(req: Request, res: Response, next: NextFunction) {
+    async registerUser(req: Request, res: Response, next: NextFunction) {
       try {
         const {
-          teamName,
-          email,
-          contactPerson,
           walletAddress,
-          metadata,
-          imageUrl,
+          name,
+          email,
+          userImageUrl,
+          agentName,
+          agentDescription,
+          agentImageUrl,
+          agentMetadata,
         } = req.body;
 
         // Validate required parameters
-        if (!teamName || !email || !contactPerson || !walletAddress) {
+        if (!walletAddress) {
           return res.status(400).json({
             success: false,
-            error:
-              "Missing required parameters: teamName, email, contactPerson, walletAddress",
+            error: "Missing required parameter: walletAddress",
           });
         }
 
-        // First check if a team with this email already exists
-        const existingTeam = await findByEmail(email);
+        // Check if a user with this wallet address already exists
+        const existingUser =
+          await services.userManager.getUserByWalletAddress(walletAddress);
 
-        if (existingTeam) {
-          const errorMessage = `A team with email ${email} already exists`;
-          console.log("[AdminController] Duplicate email error:", errorMessage);
+        if (existingUser) {
+          const errorMessage = `A user with wallet address ${walletAddress} already exists`;
+          console.log(
+            "[AdminController] Duplicate wallet address error:",
+            errorMessage,
+          );
           return res.status(409).json({
             success: false,
             error: errorMessage,
@@ -227,38 +268,93 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         try {
-          // Request team registration through the team manager service
-          const team = await services.teamManager.registerTeam(
-            teamName,
-            email,
-            contactPerson,
+          // Create the user
+          const user = await services.userManager.registerUser(
             walletAddress,
-            metadata,
-            imageUrl,
+            name,
+            email,
+            userImageUrl,
           );
 
-          // Return success with created team
-          return res.status(201).json({
-            success: true,
-            team: {
-              id: team.id,
-              name: team.name,
-              email: team.email,
-              contactPerson: team.contactPerson,
-              walletAddress: team.walletAddress,
-              apiKey: team.apiKey,
-              metadata: team.metadata,
-              imageUrl: team.imageUrl,
-              createdAt: team.createdAt,
-            },
-          });
-        } catch (error) {
-          console.error("[AdminController] Error registering team:", error);
+          let agent = null;
 
-          // Check if this is a duplicate email error that somehow got here
+          // If agent details are provided, create an agent for this user
+          if (agentName) {
+            try {
+              agent = await services.agentManager.createAgent(
+                user.id,
+                agentName,
+                agentDescription,
+                agentImageUrl,
+                agentMetadata,
+              );
+            } catch (agentError) {
+              console.error(
+                "[AdminController] Error creating agent for user:",
+                agentError,
+              );
+              // If agent creation fails, we still return the user but note the agent error
+              return res.status(201).json({
+                success: true,
+                user: {
+                  id: user.id,
+                  walletAddress: user.walletAddress,
+                  name: user.name,
+                  email: user.email,
+                  imageUrl: user.imageUrl,
+                  metadata: user.metadata,
+                  status: user.status,
+                  createdAt: user.createdAt,
+                  updatedAt: user.updatedAt,
+                },
+                agentError:
+                  agentError instanceof Error
+                    ? agentError.message
+                    : "Failed to create agent",
+              });
+            }
+          }
+
+          // Return success with created user and agent
+          const response: AdminUserRegistrationResponse = {
+            success: true,
+            user: {
+              id: user.id,
+              walletAddress: user.walletAddress,
+              name: user.name,
+              email: user.email,
+              imageUrl: user.imageUrl,
+              metadata: user.metadata,
+              status: user.status as "active" | "suspended" | "deleted",
+              createdAt: user.createdAt,
+              updatedAt: user.updatedAt,
+            },
+          };
+
+          if (agent) {
+            response.agent = {
+              id: agent.id,
+              ownerId: agent.ownerId,
+              walletAddress: agent.walletAddress,
+              name: agent.name,
+              description: agent.description,
+              imageUrl: agent.imageUrl,
+              apiKey: agent.apiKey,
+              metadata: agent.metadata,
+              status: agent.status as "active" | "suspended" | "deleted",
+              createdAt: agent.createdAt,
+              updatedAt: agent.updatedAt,
+            };
+          }
+
+          return res.status(201).json(response);
+        } catch (error) {
+          console.error("[AdminController] Error registering user:", error);
+
+          // Check if this is a duplicate wallet address error that somehow got here
           if (
             error instanceof Error &&
-            error.message.includes("email already exists")
+            error.message.includes("already exists")
           ) {
             return res.status(409).json({
               success: false,
@@ -278,16 +374,103 @@ export function makeAdminController(services: ServiceRegistry) {
             });
           }
 
-          // Check if this is a duplicate wallet address error (UNIQUE constraint)
+          // Handle other errors
+          return res.status(500).json({
+            success: false,
+            error:
+              error instanceof Error
+                ? error.message
+                : "Unknown error registering user",
+          });
+        }
+      } catch (error) {
+        console.error(
+          "[AdminController] Uncaught error in registerUser:",
+          error,
+        );
+        next(error);
+      }
+    },
+
+    /**
+     * Register a new agent
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async registerAgent(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { userId, walletAddress, name, description, imageUrl, metadata } =
+          req.body;
+
+        // Validate required parameters
+        if (!walletAddress || !userId) {
+          return res.status(400).json({
+            success: false,
+            error: "Missing required parameter: walletAddress or userId",
+          });
+        }
+
+        // Check if a user with this wallet address already exists
+        const existingUser = userId
+          ? await services.userManager.getUser(userId)
+          : await services.userManager.getUserByWalletAddress(walletAddress);
+
+        if (existingUser) {
+          const errorMessage = `A user with wallet address ${
+            userId ? userId : walletAddress
+          } already exists`;
+          console.log(
+            "[AdminController] Duplicate wallet address error:",
+            errorMessage,
+          );
+          return res.status(409).json({
+            success: false,
+            error: errorMessage,
+          });
+        }
+
+        try {
+          // Create the agent
+          const agent = await services.agentManager.createAgent(
+            userId,
+            name,
+            description,
+            imageUrl,
+            metadata,
+          );
+          const response: AdminAgentRegistrationResponse = {
+            success: true,
+            agent: {
+              ...agent,
+              status: agent.status as "active" | "suspended" | "deleted",
+            },
+          };
+
+          return res.status(201).json(response);
+        } catch (error) {
+          console.error("[AdminController] Error registering agent:", error);
+
+          // Check if this is a duplicate wallet address error that somehow got here
           if (
             error instanceof Error &&
-            error.message.includes(
-              "duplicate key value violates unique constraint",
-            )
+            error.message.includes("already exists")
           ) {
             return res.status(409).json({
               success: false,
-              error: "A team with this wallet address already exists",
+              error: error.message,
+            });
+          }
+
+          // Check if this is an invalid wallet address error
+          if (
+            error instanceof Error &&
+            (error.message.includes("Wallet address is required") ||
+              error.message.includes("Invalid Ethereum address"))
+          ) {
+            return res.status(400).json({
+              success: false,
+              error: error.message,
             });
           }
 
@@ -297,12 +480,12 @@ export function makeAdminController(services: ServiceRegistry) {
             error:
               error instanceof Error
                 ? error.message
-                : "Unknown error registering team",
+                : "Unknown error registering agent",
           });
         }
       } catch (error) {
         console.error(
-          "[AdminController] Uncaught error in registerTeam:",
+          "[AdminController] Uncaught error in registerUser:",
           error,
         );
         next(error);
@@ -354,17 +537,17 @@ export function makeAdminController(services: ServiceRegistry) {
           competitionId,
           name,
           description,
-          teamIds,
+          agentIds,
           tradingType,
           externalLink,
           imageUrl,
         } = req.body;
 
         // Validate required parameters
-        if (!teamIds || !Array.isArray(teamIds) || teamIds.length === 0) {
+        if (!agentIds || !Array.isArray(agentIds) || agentIds.length === 0) {
           throw new ApiError(
             400,
-            "Missing required parameter: teamIds (array)",
+            "Missing required parameter: agentIds (array)",
           );
         }
 
@@ -410,7 +593,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const startedCompetition =
           await services.competitionManager.startCompetition(
             competition.id,
-            teamIds,
+            agentIds,
           );
 
         // Return the started competition
@@ -418,7 +601,7 @@ export function makeAdminController(services: ServiceRegistry) {
           success: true,
           competition: {
             ...startedCompetition,
-            teamIds,
+            agentIds,
           },
         });
       } catch (error) {
@@ -490,17 +673,32 @@ export function makeAdminController(services: ServiceRegistry) {
           competitionId as string,
         );
 
-        // Get all teams
-        const teams = await services.teamManager.getAllTeams();
+        // Get all users for agent owner names
+        const users = await services.userManager.getAllUsers();
 
-        // Map team IDs to names
-        const teamMap = new Map(teams.map((team) => [team.id, team.name]));
+        // Map agent IDs to owner names
+        const userMap = new Map(
+          users.map((user) => [user.id, user.name || "Unknown User"]),
+        );
 
-        // Format leaderboard with team names
+        // Get all agents to map agent IDs to agent names and owners
+        const agents = await services.agentManager.getAllAgents();
+        const agentMap = new Map(
+          agents.map((agent) => [
+            agent.id,
+            {
+              name: agent.name,
+              ownerName: userMap.get(agent.ownerId) || "Unknown Owner",
+            },
+          ]),
+        );
+
+        // Format leaderboard with agent and owner names
         const formattedLeaderboard = leaderboard.map((entry, index) => ({
           rank: index + 1,
-          teamId: entry.teamId,
-          teamName: teamMap.get(entry.teamId) || "Unknown Team",
+          agentId: entry.agentId,
+          agentName: agentMap.get(entry.agentId)?.name || "Unknown Agent",
+          ownerName: agentMap.get(entry.agentId)?.ownerName || "Unknown Owner",
           portfolioValue: entry.value,
         }));
 
@@ -516,91 +714,34 @@ export function makeAdminController(services: ServiceRegistry) {
     },
 
     /**
-     * List all teams
+     * List all users
      * @param req Express request
      * @param res Express response
      * @param next Express next function
      */
-    async listAllTeams(req: Request, res: Response, next: NextFunction) {
+    async listAllUsers(req: Request, res: Response, next: NextFunction) {
       try {
-        // Get all teams (excluding admin teams)
-        const teams = await services.teamManager.getAllTeams(false);
+        // Get all users (non-admin users only)
+        const users = await services.userManager.getAllUsers();
 
         // Format the response to match the expected structure
-        const formattedTeams = teams.map((team) => ({
-          id: team.id,
-          name: team.name,
-          email: team.email,
-          contactPerson: team.contactPerson,
-          active: team.active,
-          deactivationReason: team.deactivationReason,
-          deactivationDate: team.deactivationDate,
-          imageUrl: team.imageUrl,
-          createdAt: team.createdAt,
-          updatedAt: team.updatedAt,
+        const formattedUsers = users.map((user) => ({
+          id: user.id,
+          walletAddress: user.walletAddress,
+          name: user.name,
+          email: user.email,
+          status: user.status,
+          imageUrl: user.imageUrl,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
         }));
 
-        // Return the teams
+        // Return the users
         res.status(200).json({
           success: true,
-          teams: formattedTeams,
+          users: formattedUsers,
         });
       } catch (error) {
-        next(error);
-      }
-    },
-
-    /**
-     * Delete a team
-     * @param req Express request
-     * @param res Express response
-     * @param next Express next function
-     */
-    async deleteTeam(req: Request, res: Response, next: NextFunction) {
-      try {
-        const { teamId } = req.params;
-
-        if (!teamId) {
-          return res.status(400).json({
-            success: false,
-            error: "Team ID is required",
-          });
-        }
-
-        // Get the team first to check if it exists and is not an admin
-        const team = await services.teamManager.getTeam(teamId);
-
-        if (!team) {
-          return res.status(404).json({
-            success: false,
-            error: "Team not found",
-          });
-        }
-
-        // Prevent deletion of admin teams
-        if (team.isAdmin) {
-          return res.status(403).json({
-            success: false,
-            error: "Cannot delete admin accounts",
-          });
-        }
-
-        // Delete the team
-        const deleted = await services.teamManager.deleteTeam(teamId);
-
-        if (deleted) {
-          return res.status(200).json({
-            success: true,
-            message: "Team successfully deleted",
-          });
-        } else {
-          return res.status(500).json({
-            success: false,
-            error: "Failed to delete team",
-          });
-        }
-      } catch (error) {
-        console.error("[AdminController] Error deleting team:", error);
         next(error);
       }
     },
@@ -630,48 +771,49 @@ export function makeAdminController(services: ServiceRegistry) {
           throw new ApiError(404, "Competition not found");
         }
 
-        // Get team ID from query param if provided
-        const teamId = req.query.teamId as string;
+        // Get agent ID from query param if provided
+        const agentId = req.query.agentId as string;
 
-        // Get snapshots based on whether a team ID was provided
+        // Get snapshots based on whether an agent ID was provided
         let snapshots;
-        if (teamId) {
-          // Check if the team exists and is in the competition
-          const team = await findById(teamId);
-          if (!team) {
-            throw new ApiError(404, "Team not found");
+        if (agentId) {
+          // Check if the agent exists
+          const agent = await services.agentManager.getAgent(agentId);
+          if (!agent) {
+            throw new ApiError(404, "Agent not found");
           }
 
-          const teamInCompetition = await isTeamInCompetition(
-            teamId,
+          // Check if the agent is in the competition
+          const agentInCompetition = await isAgentInCompetition(
+            agentId,
             competitionId,
           );
 
-          if (!teamInCompetition) {
+          if (!agentInCompetition) {
             throw new ApiError(
               400,
-              "Team is not participating in this competition",
+              "Agent is not participating in this competition",
             );
           }
 
-          // Get snapshots for the specific team
+          // Get snapshots for the specific agent
           snapshots =
-            await services.portfolioSnapshotter.getTeamPortfolioSnapshots(
+            await services.portfolioSnapshotter.getAgentPortfolioSnapshots(
               competitionId,
-              teamId,
+              agentId,
             );
         } else {
-          // Get snapshots for all teams in the competition
-          const teams = await getCompetitionTeams(competitionId);
+          // Get snapshots for all agents in the competition
+          const agents = await getCompetitionAgents(competitionId);
           snapshots = [];
 
-          for (const teamId of teams) {
-            const teamSnapshots =
-              await services.portfolioSnapshotter.getTeamPortfolioSnapshots(
+          for (const agentId of agents) {
+            const agentSnapshots =
+              await services.portfolioSnapshotter.getAgentPortfolioSnapshots(
                 competitionId,
-                teamId,
+                agentId,
               );
-            snapshots.push(...teamSnapshots);
+            snapshots.push(...agentSnapshots);
           }
         }
 
@@ -686,21 +828,196 @@ export function makeAdminController(services: ServiceRegistry) {
     },
 
     /**
-     * Deactivate a team
+     * Search for users and agents based on various criteria
      * @param req Express request
      * @param res Express response
      * @param next Express next function
      */
-    async deactivateTeam(req: Request, res: Response, next: NextFunction) {
+    async searchUsersAndAgents(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
       try {
-        const { teamId } = req.params;
+        const {
+          email,
+          name,
+          walletAddress,
+          status,
+          searchType, // 'users', 'agents', or 'both' (default)
+        } = req.query;
+
+        const searchTypeFilter = (searchType as string) || "both";
+        const results: AdminSearchResults = {
+          users: [],
+          agents: [],
+        };
+
+        // Search users if requested
+        if (searchTypeFilter === "users" || searchTypeFilter === "both") {
+          const userSearchParams: UserSearchParams = {};
+
+          if (email) userSearchParams.email = email as string;
+          if (name) userSearchParams.name = name as string;
+          if (walletAddress)
+            userSearchParams.walletAddress = walletAddress as string;
+          if (status)
+            userSearchParams.status = status as
+              | "active"
+              | "suspended"
+              | "deleted";
+
+          const users =
+            await services.userManager.searchUsers(userSearchParams);
+
+          results.users = users.map((user) => ({
+            id: user.id,
+            walletAddress: user.walletAddress,
+            name: user.name,
+            email: user.email,
+            status: user.status as "active" | "suspended" | "deleted",
+            imageUrl: user.imageUrl,
+            metadata: user.metadata,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+          }));
+        }
+
+        // Search agents if requested
+        if (searchTypeFilter === "agents" || searchTypeFilter === "both") {
+          const agentSearchParams: AgentSearchParams = {};
+
+          if (name) agentSearchParams.name = name as string;
+          if (status)
+            agentSearchParams.status = status as
+              | "active"
+              | "suspended"
+              | "deleted";
+
+          const agents =
+            await services.agentManager.searchAgents(agentSearchParams);
+
+          results.agents = agents.map((agent) => ({
+            id: agent.id,
+            ownerId: agent.ownerId,
+            walletAddress: agent.walletAddress,
+            name: agent.name,
+            description: agent.description,
+            status: agent.status as "active" | "suspended" | "deleted",
+            imageUrl: agent.imageUrl,
+            metadata: agent.metadata,
+            createdAt: agent.createdAt,
+            updatedAt: agent.updatedAt,
+          }));
+        }
+
+        // Return the search results
+        res.status(200).json({
+          success: true,
+          searchType: searchTypeFilter,
+          results,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * List all agents
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async listAllAgents(req: Request, res: Response, next: NextFunction) {
+      try {
+        // Get all agents from the database
+        const agents = await services.agentManager.getAllAgents();
+
+        // Format the agents for the response
+        const formattedAgents = agents.map((agent) => ({
+          id: agent.id,
+          ownerId: agent.ownerId,
+          name: agent.name,
+          description: agent.description,
+          status: agent.status,
+          imageUrl: agent.imageUrl,
+          createdAt: agent.createdAt,
+          updatedAt: agent.updatedAt,
+        }));
+
+        // Return the agents
+        res.status(200).json({
+          success: true,
+          agents: formattedAgents,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Delete an agent
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async deleteAgent(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { agentId } = req.params;
+
+        if (!agentId) {
+          return res.status(400).json({
+            success: false,
+            error: "Agent ID is required",
+          });
+        }
+
+        // Get the agent first to check if it exists
+        const agent = await services.agentManager.getAgent(agentId);
+
+        if (!agent) {
+          return res.status(404).json({
+            success: false,
+            error: "Agent not found",
+          });
+        }
+
+        // Delete the agent
+        const deleted = await services.agentManager.deleteAgent(agentId);
+
+        if (deleted) {
+          return res.status(200).json({
+            success: true,
+            message: "Agent successfully deleted",
+          });
+        } else {
+          return res.status(500).json({
+            success: false,
+            error: "Failed to delete agent",
+          });
+        }
+      } catch (error) {
+        console.error("[AdminController] Error deleting agent:", error);
+        next(error);
+      }
+    },
+
+    /**
+     * Deactivate an agent
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async deactivateAgent(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { agentId } = req.params;
         const { reason } = req.body;
 
         // Validate required parameters
-        if (!teamId) {
+        if (!agentId) {
           return res.status(400).json({
             success: false,
-            error: "Team ID is required",
+            error: "Agent ID is required",
           });
         }
 
@@ -711,61 +1028,51 @@ export function makeAdminController(services: ServiceRegistry) {
           });
         }
 
-        // Get the team first to check if it exists and is not an admin
-        const team = await services.teamManager.getTeam(teamId);
+        // Get the agent first to check if it exists
+        const agent = await services.agentManager.getAgent(agentId);
 
-        if (!team) {
+        if (!agent) {
           return res.status(404).json({
             success: false,
-            error: "Team not found",
+            error: "Agent not found",
           });
         }
 
-        // Prevent deactivation of admin teams
-        if (team.isAdmin) {
-          return res.status(403).json({
-            success: false,
-            error: "Cannot deactivate admin accounts",
-          });
-        }
-
-        // Check if team is already inactive
-        if (team.active === false) {
+        // Check if agent is already inactive
+        if (agent.status !== "active") {
           return res.status(400).json({
             success: false,
-            error: "Team is already inactive",
-            team: {
-              id: team.id,
-              name: team.name,
-              active: false,
-              deactivationReason: team.deactivationReason,
-              deactivationDate: team.deactivationDate,
+            error: "Agent is already inactive",
+            agent: {
+              id: agent.id,
+              name: agent.name,
+              status: agent.status,
             },
           });
         }
 
-        // Deactivate the team
-        const deactivatedTeam = await services.teamManager.deactivateTeam(
-          teamId,
+        // Deactivate the agent
+        const deactivatedAgent = await services.agentManager.deactivateAgent(
+          agentId,
           reason,
         );
 
-        if (!deactivatedTeam) {
+        if (!deactivatedAgent) {
           return res.status(500).json({
             success: false,
-            error: "Failed to deactivate team",
+            error: "Failed to deactivate agent",
           });
         }
 
-        // Return the updated team info
+        // Return the updated agent info
         res.status(200).json({
           success: true,
-          team: {
-            id: deactivatedTeam.id,
-            name: deactivatedTeam.name,
-            active: false,
-            deactivationReason: deactivatedTeam.deactivationReason,
-            deactivationDate: deactivatedTeam.deactivationDate,
+          agent: {
+            id: deactivatedAgent.id,
+            name: deactivatedAgent.name,
+            status: deactivatedAgent.status,
+            deactivationReason: deactivatedAgent.deactivationReason,
+            deactivationDate: deactivatedAgent.deactivationDate,
           },
         });
       } catch (error) {
@@ -774,64 +1081,64 @@ export function makeAdminController(services: ServiceRegistry) {
     },
 
     /**
-     * Reactivate a team
+     * Reactivate an agent
      * @param req Express request
      * @param res Express response
      * @param next Express next function
      */
-    async reactivateTeam(req: Request, res: Response, next: NextFunction) {
+    async reactivateAgent(req: Request, res: Response, next: NextFunction) {
       try {
-        const { teamId } = req.params;
+        const { agentId } = req.params;
 
         // Validate required parameters
-        if (!teamId) {
+        if (!agentId) {
           return res.status(400).json({
             success: false,
-            error: "Team ID is required",
+            error: "Agent ID is required",
           });
         }
 
-        // Get the team first to check if it exists and is actually inactive
-        const team = await services.teamManager.getTeam(teamId);
+        // Get the agent first to check if it exists and is actually inactive
+        const agent = await services.agentManager.getAgent(agentId);
 
-        if (!team) {
+        if (!agent) {
           return res.status(404).json({
             success: false,
-            error: "Team not found",
+            error: "Agent not found",
           });
         }
 
-        // Check if team is already active
-        if (team.active !== false) {
+        // Check if agent is already active
+        if (agent.status === "active") {
           return res.status(400).json({
             success: false,
-            error: "Team is already active",
-            team: {
-              id: team.id,
-              name: team.name,
-              active: true,
+            error: "Agent is already active",
+            agent: {
+              id: agent.id,
+              name: agent.name,
+              status: agent.status,
             },
           });
         }
 
-        // Reactivate the team
-        const reactivatedTeam =
-          await services.teamManager.reactivateTeam(teamId);
+        // Reactivate the agent
+        const reactivatedAgent =
+          await services.agentManager.reactivateAgent(agentId);
 
-        if (!reactivatedTeam) {
+        if (!reactivatedAgent) {
           return res.status(500).json({
             success: false,
-            error: "Failed to reactivate team",
+            error: "Failed to reactivate agent",
           });
         }
 
-        // Return the updated team info
+        // Return the updated agent info
         res.status(200).json({
           success: true,
-          team: {
-            id: reactivatedTeam.id,
-            name: reactivatedTeam.name,
-            active: true,
+          agent: {
+            id: reactivatedAgent.id,
+            name: reactivatedAgent.name,
+            status: reactivatedAgent.status,
           },
         });
       } catch (error) {
@@ -840,51 +1147,50 @@ export function makeAdminController(services: ServiceRegistry) {
     },
 
     /**
-     * Get a team by ID
+     * Get an agent by ID
      * @param req Express request
      * @param res Express response
      * @param next Express next function
      */
-    async getTeam(req: Request, res: Response, next: NextFunction) {
+    async getAgent(req: Request, res: Response, next: NextFunction) {
       try {
-        const { teamId } = req.params;
+        const { agentId } = req.params;
 
-        if (!teamId) {
+        if (!agentId) {
           return res.status(400).json({
             success: false,
-            error: "Team ID is required",
+            error: "Agent ID is required",
           });
         }
 
-        // Get the team
-        const team = await services.teamManager.getTeam(teamId);
+        // Get the agent
+        const agent = await services.agentManager.getAgent(agentId);
 
-        if (!team) {
+        if (!agent) {
           return res.status(404).json({
             success: false,
-            error: "Team not found",
+            error: "Agent not found",
           });
         }
 
         // Format the response
-        const formattedTeam = {
-          id: team.id,
-          name: team.name,
-          email: team.email,
-          contactPerson: team.contactPerson,
-          active: team.active,
-          deactivationReason: team.deactivationReason,
-          deactivationDate: team.deactivationDate,
-          imageUrl: team.imageUrl,
-          createdAt: team.createdAt,
-          updatedAt: team.updatedAt,
-          isAdmin: team.isAdmin,
+        const formattedAgent = {
+          id: agent.id,
+          ownerId: agent.ownerId,
+          walletAddress: agent.walletAddress,
+          name: agent.name,
+          description: agent.description,
+          status: agent.status as "active" | "suspended" | "deleted",
+          imageUrl: agent.imageUrl,
+          metadata: agent.metadata,
+          createdAt: agent.createdAt,
+          updatedAt: agent.updatedAt,
         };
 
-        // Return the team
+        // Return the agent
         res.status(200).json({
           success: true,
-          team: formattedTeam,
+          agent: formattedAgent,
         });
       } catch (error) {
         next(error);
@@ -892,23 +1198,22 @@ export function makeAdminController(services: ServiceRegistry) {
     },
 
     /**
-     * Get a team's API key
+     * Get an agent's API key
      * @param req Express request
      * @param res Express response
      * @param next Express next function
      */
-    async getTeamApiKey(req: Request, res: Response, next: NextFunction) {
+    async getAgentApiKey(req: Request, res: Response, next: NextFunction) {
       try {
-        const { teamId } = req.params;
+        const { agentId } = req.params;
 
-        if (!teamId) {
-          throw new ApiError(400, "Team ID is required");
+        if (!agentId) {
+          throw new ApiError(400, "Agent ID is required");
         }
 
-        // Get the decrypted API key using the service method
-        // The service method now handles team lookup and admin validation
+        // Get the decrypted API key using the agent manager
         const result =
-          await services.teamManager.getDecryptedApiKeyById(teamId);
+          await services.agentManager.getDecryptedApiKeyById(agentId);
 
         if (!result.success) {
           // If there was an error, use the error code and message from the service
@@ -918,78 +1223,14 @@ export function makeAdminController(services: ServiceRegistry) {
           );
         }
 
-        // Return the team with the decrypted API key
+        // Return the agent with the decrypted API key
         res.status(200).json({
           success: true,
-          team: {
-            id: result.team?.id || teamId,
-            name: result.team?.name || "Unknown",
+          agent: {
+            id: result.agent?.id || agentId,
+            name: result.agent?.name || "Unknown",
             apiKey: result.apiKey,
           },
-        });
-      } catch (error) {
-        next(error);
-      }
-    },
-
-    /**
-     * Search for teams based on various criteria
-     * @param req Express request
-     * @param res Express response
-     * @param next Express next function
-     */
-    async searchTeams(req: Request, res: Response, next: NextFunction) {
-      try {
-        const {
-          email,
-          name,
-          walletAddress,
-          contactPerson,
-          active,
-          includeAdmins,
-        } = req.query;
-
-        // Prepare search params
-        const searchParams: TeamSearchParams = {};
-
-        if (email) searchParams.email = email as string;
-        if (name) searchParams.name = name as string;
-        if (walletAddress) searchParams.walletAddress = walletAddress as string;
-        if (contactPerson) searchParams.contactPerson = contactPerson as string;
-
-        // Convert active string query param to boolean if provided
-        if (active !== undefined) {
-          searchParams.active = active === "true" || active === "1";
-        }
-
-        // Set whether to include admin accounts
-        searchParams.includeAdmins =
-          includeAdmins === "true" || includeAdmins === "1";
-
-        // Perform search
-        const teams = await services.teamManager.searchTeams(searchParams);
-
-        // Format the response to exclude sensitive data
-        const formattedTeams = teams.map((team) => ({
-          id: team.id,
-          name: team.name,
-          email: team.email,
-          contactPerson: team.contactPerson,
-          walletAddress: team.walletAddress,
-          active: team.active,
-          deactivationReason: team.deactivationReason,
-          deactivationDate: team.deactivationDate,
-          isAdmin: team.isAdmin,
-          metadata: team.metadata,
-          imageUrl: team.imageUrl,
-          createdAt: team.createdAt,
-          updatedAt: team.updatedAt,
-        }));
-
-        // Return the search results
-        res.status(200).json({
-          success: true,
-          teams: formattedTeams,
         });
       } catch (error) {
         next(error);

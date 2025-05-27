@@ -35,13 +35,13 @@ export async function create(trade: InsertTrade) {
 }
 
 /**
- * Get trades for a team
- * @param teamId Team ID
+ * Get trades for an agent
+ * @param agentId Agent ID
  * @param limit Optional result limit
  * @param offset Optional result offset
  */
-export async function getTeamTrades(
-  teamId: string,
+export async function getAgentTrades(
+  agentId: string,
   limit?: number,
   offset?: number,
 ) {
@@ -49,7 +49,7 @@ export async function getTeamTrades(
     const query = db
       .select()
       .from(trades)
-      .where(eq(trades.teamId, teamId))
+      .where(eq(trades.agentId, agentId))
       .orderBy(desc(trades.timestamp));
 
     if (limit !== undefined) {
@@ -62,7 +62,7 @@ export async function getTeamTrades(
 
     return await query;
   } catch (error) {
-    console.error("[TradeRepository] Error in getTeamTrades:", error);
+    console.error("[TradeRepository] Error in getAgentTrades:", error);
     throw error;
   }
 }
@@ -101,19 +101,19 @@ export async function getCompetitionTrades(
 }
 
 /**
- * Count trades for a team
- * @param teamId Team ID
+ * Count trades for an agent
+ * @param agentId Agent ID
  */
-export async function countTeamTrades(teamId: string) {
+export async function countAgentTrades(agentId: string) {
   try {
     const [result] = await db
       .select({ count: drizzleCount() })
       .from(trades)
-      .where(eq(trades.teamId, teamId));
+      .where(eq(trades.agentId, agentId));
 
     return result?.count ?? 0;
   } catch (error) {
-    console.error("[TradeRepository] Error in countTeamTrades:", error);
+    console.error("[TradeRepository] Error in countAgentTrades:", error);
     throw error;
   }
 }
