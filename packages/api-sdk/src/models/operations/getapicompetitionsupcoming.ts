@@ -9,13 +9,13 @@ import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 
 /**
- * Competition status (always PENDING)
+ * Competition status (always pending)
  */
 export const GetApiCompetitionsUpcomingStatus = {
-  Pending: "PENDING",
+  Pending: "pending",
 } as const;
 /**
- * Competition status (always PENDING)
+ * Competition status (always pending)
  */
 export type GetApiCompetitionsUpcomingStatus = ClosedEnum<
   typeof GetApiCompetitionsUpcomingStatus
@@ -58,7 +58,7 @@ export type GetApiCompetitionsUpcomingCompetition = {
    */
   imageUrl?: string | null | undefined;
   /**
-   * Competition status (always PENDING)
+   * Competition status (always pending)
    */
   status?: GetApiCompetitionsUpcomingStatus | undefined;
   /**

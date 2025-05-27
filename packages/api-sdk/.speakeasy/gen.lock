@@ -1,12 +1,12 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: 8bc90caa5b903bf33454b610cea655ae
+  docChecksum: 5011e89711184a854d35367331011fea
   docVersion: 1.0.0
-  speakeasyVersion: 1.551.0
+  speakeasyVersion: 1.552.0
   generationVersion: 2.610.0
-  releaseVersion: 0.0.7
-  configChecksum: 78aada5706e22d1c5bd9f7be82eea621
+  releaseVersion: 0.1.0
+  configChecksum: 3a2f7d4def301561d18f787f3a3f82a3
 features:
   typescript:
     additionalDependencies: 0.1.0
@@ -21,6 +21,7 @@ features:
     globalSecurityFlattening: 0.1.0
     globalServerURLs: 2.82.5
     mcpServer: 0.9.2
+    methodSecurity: 2.82.6
     nullables: 0.1.1
     responseFormat: 0.2.3
     retries: 2.83.0
@@ -42,21 +43,21 @@ generatedFiles:
   - docs/models/errors/postapiauthlogoutinternalservererror.md
   - docs/models/errors/unauthorizederror.md
   - docs/models/operations/admin.md
+  - docs/models/operations/agentmetadatarequest.md
+  - docs/models/operations/agentmetadataresponse.md
   - docs/models/operations/availablechains.md
   - docs/models/operations/balance.md
   - docs/models/operations/chains.md
-  - docs/models/operations/deleteapiadminteamsteamidrequest.md
-  - docs/models/operations/deleteapiadminteamsteamidresponse.md
-  - docs/models/operations/getapiaccountbalanceschain.md
-  - docs/models/operations/getapiaccountbalancesresponse.md
-  - docs/models/operations/getapiaccountportfoliochain.md
-  - docs/models/operations/getapiaccountportfolioresponse.md
-  - docs/models/operations/getapiaccountprofilemetadata.md
-  - docs/models/operations/getapiaccountprofileref.md
-  - docs/models/operations/getapiaccountprofileresponse.md
-  - docs/models/operations/getapiaccountprofilesocial.md
-  - docs/models/operations/getapiaccountprofileteam.md
-  - docs/models/operations/getapiaccounttradesresponse.md
+  - docs/models/operations/deleteapiadminagentsagentidrequest.md
+  - docs/models/operations/deleteapiadminagentsagentidresponse.md
+  - docs/models/operations/getapiadminagentsagent.md
+  - docs/models/operations/getapiadminagentsagentidagent.md
+  - docs/models/operations/getapiadminagentsagentidkeyagent.md
+  - docs/models/operations/getapiadminagentsagentidkeyrequest.md
+  - docs/models/operations/getapiadminagentsagentidkeyresponse.md
+  - docs/models/operations/getapiadminagentsagentidrequest.md
+  - docs/models/operations/getapiadminagentsagentidresponse.md
+  - docs/models/operations/getapiadminagentsresponse.md
   - docs/models/operations/getapiadmincompetitioncompetitionidsnapshotsrequest.md
   - docs/models/operations/getapiadmincompetitioncompetitionidsnapshotsresponse.md
   - docs/models/operations/getapiadminreportsperformancecompetition.md
@@ -65,15 +66,21 @@ generatedFiles:
   - docs/models/operations/getapiadminreportsperformancerequest.md
   - docs/models/operations/getapiadminreportsperformanceresponse.md
   - docs/models/operations/getapiadminreportsperformancestatus.md
-  - docs/models/operations/getapiadminteamsresponse.md
-  - docs/models/operations/getapiadminteamssearchmetadata.md
-  - docs/models/operations/getapiadminteamssearchrequest.md
-  - docs/models/operations/getapiadminteamssearchresponse.md
-  - docs/models/operations/getapiadminteamssearchteam.md
-  - docs/models/operations/getapiadminteamsteam.md
-  - docs/models/operations/getapiadminteamsteamidkeyrequest.md
-  - docs/models/operations/getapiadminteamsteamidkeyresponse.md
-  - docs/models/operations/getapiadminteamsteamidkeyteam.md
+  - docs/models/operations/getapiadminsearchagent.md
+  - docs/models/operations/getapiadminsearchrequest.md
+  - docs/models/operations/getapiadminsearchresponse.md
+  - docs/models/operations/getapiadminsearchstatus.md
+  - docs/models/operations/getapiadminsearchuser.md
+  - docs/models/operations/getapiadminusersresponse.md
+  - docs/models/operations/getapiadminusersuser.md
+  - docs/models/operations/getapiagentbalanceschain.md
+  - docs/models/operations/getapiagentbalancesresponse.md
+  - docs/models/operations/getapiagentportfoliochain.md
+  - docs/models/operations/getapiagentportfolioresponse.md
+  - docs/models/operations/getapiagentprofileagent.md
+  - docs/models/operations/getapiagentprofileresponse.md
+  - docs/models/operations/getapiagentprofilestatus.md
+  - docs/models/operations/getapiagenttradesresponse.md
   - docs/models/operations/getapiauthnonceresponse.md
   - docs/models/operations/getapicompetitionscompetition.md
   - docs/models/operations/getapicompetitionscrosschaintradingtype.md
@@ -108,9 +115,29 @@ generatedFiles:
   - docs/models/operations/getapipricetokeninfospecificchain.md
   - docs/models/operations/getapitradequoterequest.md
   - docs/models/operations/getapitradequoteresponse.md
-  - docs/models/operations/inactiveteam.md
+  - docs/models/operations/getapiuseragentsagent.md
+  - docs/models/operations/getapiuseragentsagentidagent.md
+  - docs/models/operations/getapiuseragentsagentidrequest.md
+  - docs/models/operations/getapiuseragentsagentidresponse.md
+  - docs/models/operations/getapiuseragentsagentidsecurity.md
+  - docs/models/operations/getapiuseragentsagentidstatus.md
+  - docs/models/operations/getapiuseragentsresponse.md
+  - docs/models/operations/getapiuseragentssecurity.md
+  - docs/models/operations/getapiuseragentsstatus.md
+  - docs/models/operations/getapiuserprofileresponse.md
+  - docs/models/operations/getapiuserprofilesecurity.md
+  - docs/models/operations/getapiuserprofilestatus.md
+  - docs/models/operations/getapiuserprofileuser.md
+  - docs/models/operations/inactiveagent.md
+  - docs/models/operations/owner.md
   - docs/models/operations/portfoliosnapshots.md
-  - docs/models/operations/postapiaccountresetapikeyresponse.md
+  - docs/models/operations/postapiadminagentsagentiddeactivateagent.md
+  - docs/models/operations/postapiadminagentsagentiddeactivaterequest.md
+  - docs/models/operations/postapiadminagentsagentiddeactivaterequestbody.md
+  - docs/models/operations/postapiadminagentsagentiddeactivateresponse.md
+  - docs/models/operations/postapiadminagentsagentidreactivateagent.md
+  - docs/models/operations/postapiadminagentsagentidreactivaterequest.md
+  - docs/models/operations/postapiadminagentsagentidreactivateresponse.md
   - docs/models/operations/postapiadmincompetitioncreatecompetition.md
   - docs/models/operations/postapiadmincompetitioncreatecrosschaintradingtype.md
   - docs/models/operations/postapiadmincompetitioncreaterequest.md
@@ -131,72 +158,75 @@ generatedFiles:
   - docs/models/operations/postapiadmincompetitionstarttradingtype.md
   - docs/models/operations/postapiadminsetuprequest.md
   - docs/models/operations/postapiadminsetupresponse.md
-  - docs/models/operations/postapiadminteamsregistermetadatarequest.md
-  - docs/models/operations/postapiadminteamsregistermetadataresponse.md
-  - docs/models/operations/postapiadminteamsregisterrequest.md
-  - docs/models/operations/postapiadminteamsregisterresponse.md
-  - docs/models/operations/postapiadminteamsregisterteam.md
-  - docs/models/operations/postapiadminteamsteamiddeactivaterequest.md
-  - docs/models/operations/postapiadminteamsteamiddeactivaterequestbody.md
-  - docs/models/operations/postapiadminteamsteamiddeactivateresponse.md
-  - docs/models/operations/postapiadminteamsteamiddeactivateteam.md
-  - docs/models/operations/postapiadminteamsteamidreactivaterequest.md
-  - docs/models/operations/postapiadminteamsteamidreactivateresponse.md
-  - docs/models/operations/postapiadminteamsteamidreactivateteam.md
+  - docs/models/operations/postapiadminusersagent.md
+  - docs/models/operations/postapiadminusersrequest.md
+  - docs/models/operations/postapiadminusersresponse.md
+  - docs/models/operations/postapiadminusersuser.md
+  - docs/models/operations/postapiagentresetapikeyresponse.md
   - docs/models/operations/postapiauthloginrequest.md
   - docs/models/operations/postapiauthloginresponse.md
   - docs/models/operations/postapiauthlogoutresponse.md
   - docs/models/operations/postapitradeexecuterequest.md
   - docs/models/operations/postapitradeexecuteresponse.md
+  - docs/models/operations/postapiuseragentsagent.md
+  - docs/models/operations/postapiuseragentsmetadata.md
+  - docs/models/operations/postapiuseragentsrequest.md
+  - docs/models/operations/postapiuseragentsresponse.md
+  - docs/models/operations/postapiuseragentssecurity.md
+  - docs/models/operations/postapiuseragentsstatus.md
   - docs/models/operations/prices.md
-  - docs/models/operations/putapiaccountprofilemetadatarequest.md
-  - docs/models/operations/putapiaccountprofilemetadataresponse.md
-  - docs/models/operations/putapiaccountprofilerefresponse.md
-  - docs/models/operations/putapiaccountprofilerequest.md
-  - docs/models/operations/putapiaccountprofileresponse.md
-  - docs/models/operations/putapiaccountprofilesocialresponse.md
-  - docs/models/operations/putapiaccountprofileteam.md
-  - docs/models/operations/refrequest.md
+  - docs/models/operations/putapiagentprofileagent.md
+  - docs/models/operations/putapiagentprofilerequest.md
+  - docs/models/operations/putapiagentprofileresponse.md
+  - docs/models/operations/putapiuserprofilerequest.md
+  - docs/models/operations/putapiuserprofileresponse.md
+  - docs/models/operations/putapiuserprofilesecurity.md
+  - docs/models/operations/putapiuserprofileuser.md
+  - docs/models/operations/results.md
   - docs/models/operations/rules.md
+  - docs/models/operations/searchtype.md
   - docs/models/operations/services.md
   - docs/models/operations/snapshot.md
-  - docs/models/operations/socialrequest.md
   - docs/models/operations/source.md
   - docs/models/operations/symbols.md
   - docs/models/operations/token.md
   - docs/models/operations/trade.md
   - docs/models/operations/transaction.md
-  - docs/sdks/account/README.md
+  - docs/models/operations/usermetadata.md
   - docs/sdks/admin/README.md
+  - docs/sdks/agent/README.md
   - docs/sdks/apisdk/README.md
   - docs/sdks/auth/README.md
   - docs/sdks/competition/README.md
   - docs/sdks/health/README.md
   - docs/sdks/price/README.md
   - docs/sdks/trade/README.md
+  - docs/sdks/user/README.md
   - eslint.config.mjs
   - jsr.json
   - package.json
   - src/core.ts
-  - src/funcs/accountGetApiAccountBalances.ts
-  - src/funcs/accountGetApiAccountPortfolio.ts
-  - src/funcs/accountGetApiAccountProfile.ts
-  - src/funcs/accountGetApiAccountTrades.ts
-  - src/funcs/accountPostApiAccountResetApiKey.ts
-  - src/funcs/accountPutApiAccountProfile.ts
-  - src/funcs/adminDeleteApiAdminTeamsTeamId.ts
+  - src/funcs/adminDeleteApiAdminAgentsAgentId.ts
+  - src/funcs/adminGetApiAdminAgents.ts
+  - src/funcs/adminGetApiAdminAgentsAgentId.ts
+  - src/funcs/adminGetApiAdminAgentsAgentIdKey.ts
   - src/funcs/adminGetApiAdminCompetitionCompetitionIdSnapshots.ts
   - src/funcs/adminGetApiAdminReportsPerformance.ts
-  - src/funcs/adminGetApiAdminTeams.ts
-  - src/funcs/adminGetApiAdminTeamsSearch.ts
-  - src/funcs/adminGetApiAdminTeamsTeamIdKey.ts
+  - src/funcs/adminGetApiAdminSearch.ts
+  - src/funcs/adminGetApiAdminUsers.ts
+  - src/funcs/adminPostApiAdminAgentsAgentIdDeactivate.ts
+  - src/funcs/adminPostApiAdminAgentsAgentIdReactivate.ts
   - src/funcs/adminPostApiAdminCompetitionCreate.ts
   - src/funcs/adminPostApiAdminCompetitionEnd.ts
   - src/funcs/adminPostApiAdminCompetitionStart.ts
   - src/funcs/adminPostApiAdminSetup.ts
-  - src/funcs/adminPostApiAdminTeamsRegister.ts
-  - src/funcs/adminPostApiAdminTeamsTeamIdDeactivate.ts
-  - src/funcs/adminPostApiAdminTeamsTeamIdReactivate.ts
+  - src/funcs/adminPostApiAdminUsers.ts
+  - src/funcs/agentGetApiAgentBalances.ts
+  - src/funcs/agentGetApiAgentPortfolio.ts
+  - src/funcs/agentGetApiAgentProfile.ts
+  - src/funcs/agentGetApiAgentTrades.ts
+  - src/funcs/agentPostApiAgentResetApiKey.ts
+  - src/funcs/agentPutApiAgentProfile.ts
   - src/funcs/authGetApiAuthNonce.ts
   - src/funcs/authPostApiAuthLogin.ts
   - src/funcs/authPostApiAuthLogout.ts
@@ -211,6 +241,11 @@ generatedFiles:
   - src/funcs/priceGetApiPriceTokenInfo.ts
   - src/funcs/tradeGetApiTradeQuote.ts
   - src/funcs/tradePostApiTradeExecute.ts
+  - src/funcs/userGetApiUserAgents.ts
+  - src/funcs/userGetApiUserAgentsAgentId.ts
+  - src/funcs/userGetApiUserProfile.ts
+  - src/funcs/userPostApiUserAgents.ts
+  - src/funcs/userPutApiUserProfile.ts
   - src/hooks/hooks.ts
   - src/hooks/index.ts
   - src/hooks/types.ts
@@ -244,25 +279,27 @@ generatedFiles:
   - src/mcp-server/server.ts
   - src/mcp-server/shared.ts
   - src/mcp-server/tools.ts
-  - src/mcp-server/tools/accountGetApiAccountBalances.ts
-  - src/mcp-server/tools/accountGetApiAccountPortfolio.ts
-  - src/mcp-server/tools/accountGetApiAccountProfile.ts
-  - src/mcp-server/tools/accountGetApiAccountTrades.ts
-  - src/mcp-server/tools/accountPostApiAccountResetApiKey.ts
-  - src/mcp-server/tools/accountPutApiAccountProfile.ts
-  - src/mcp-server/tools/adminDeleteApiAdminTeamsTeamId.ts
+  - src/mcp-server/tools/adminDeleteApiAdminAgentsAgentId.ts
+  - src/mcp-server/tools/adminGetApiAdminAgents.ts
+  - src/mcp-server/tools/adminGetApiAdminAgentsAgentId.ts
+  - src/mcp-server/tools/adminGetApiAdminAgentsAgentIdKey.ts
   - src/mcp-server/tools/adminGetApiAdminCompetitionCompetitionIdSnapshots.ts
   - src/mcp-server/tools/adminGetApiAdminReportsPerformance.ts
-  - src/mcp-server/tools/adminGetApiAdminTeams.ts
-  - src/mcp-server/tools/adminGetApiAdminTeamsSearch.ts
-  - src/mcp-server/tools/adminGetApiAdminTeamsTeamIdKey.ts
+  - src/mcp-server/tools/adminGetApiAdminSearch.ts
+  - src/mcp-server/tools/adminGetApiAdminUsers.ts
+  - src/mcp-server/tools/adminPostApiAdminAgentsAgentIdDeactivate.ts
+  - src/mcp-server/tools/adminPostApiAdminAgentsAgentIdReactivate.ts
   - src/mcp-server/tools/adminPostApiAdminCompetitionCreate.ts
   - src/mcp-server/tools/adminPostApiAdminCompetitionEnd.ts
   - src/mcp-server/tools/adminPostApiAdminCompetitionStart.ts
   - src/mcp-server/tools/adminPostApiAdminSetup.ts
-  - src/mcp-server/tools/adminPostApiAdminTeamsRegister.ts
-  - src/mcp-server/tools/adminPostApiAdminTeamsTeamIdDeactivate.ts
-  - src/mcp-server/tools/adminPostApiAdminTeamsTeamIdReactivate.ts
+  - src/mcp-server/tools/adminPostApiAdminUsers.ts
+  - src/mcp-server/tools/agentGetApiAgentBalances.ts
+  - src/mcp-server/tools/agentGetApiAgentPortfolio.ts
+  - src/mcp-server/tools/agentGetApiAgentProfile.ts
+  - src/mcp-server/tools/agentGetApiAgentTrades.ts
+  - src/mcp-server/tools/agentPostApiAgentResetApiKey.ts
+  - src/mcp-server/tools/agentPutApiAgentProfile.ts
   - src/mcp-server/tools/authGetApiAuthNonce.ts
   - src/mcp-server/tools/authPostApiAuthLogin.ts
   - src/mcp-server/tools/authPostApiAuthLogout.ts
@@ -287,16 +324,18 @@ generatedFiles:
   - src/models/errors/postapiauthlogin.ts
   - src/models/errors/postapiauthlogout.ts
   - src/models/errors/sdkvalidationerror.ts
-  - src/models/operations/deleteapiadminteamsteamid.ts
-  - src/models/operations/getapiaccountbalances.ts
-  - src/models/operations/getapiaccountportfolio.ts
-  - src/models/operations/getapiaccountprofile.ts
-  - src/models/operations/getapiaccounttrades.ts
+  - src/models/operations/deleteapiadminagentsagentid.ts
+  - src/models/operations/getapiadminagents.ts
+  - src/models/operations/getapiadminagentsagentid.ts
+  - src/models/operations/getapiadminagentsagentidkey.ts
   - src/models/operations/getapiadmincompetitioncompetitionidsnapshots.ts
   - src/models/operations/getapiadminreportsperformance.ts
-  - src/models/operations/getapiadminteams.ts
-  - src/models/operations/getapiadminteamssearch.ts
-  - src/models/operations/getapiadminteamsteamidkey.ts
+  - src/models/operations/getapiadminsearch.ts
+  - src/models/operations/getapiadminusers.ts
+  - src/models/operations/getapiagentbalances.ts
+  - src/models/operations/getapiagentportfolio.ts
+  - src/models/operations/getapiagentprofile.ts
+  - src/models/operations/getapiagenttrades.ts
   - src/models/operations/getapiauthnonce.ts
   - src/models/operations/getapicompetitions.ts
   - src/models/operations/getapicompetitionsleaderboard.ts
@@ -308,21 +347,26 @@ generatedFiles:
   - src/models/operations/getapiprice.ts
   - src/models/operations/getapipricetokeninfo.ts
   - src/models/operations/getapitradequote.ts
+  - src/models/operations/getapiuseragents.ts
+  - src/models/operations/getapiuseragentsagentid.ts
+  - src/models/operations/getapiuserprofile.ts
   - src/models/operations/index.ts
-  - src/models/operations/postapiaccountresetapikey.ts
+  - src/models/operations/postapiadminagentsagentiddeactivate.ts
+  - src/models/operations/postapiadminagentsagentidreactivate.ts
   - src/models/operations/postapiadmincompetitioncreate.ts
   - src/models/operations/postapiadmincompetitionend.ts
   - src/models/operations/postapiadmincompetitionstart.ts
   - src/models/operations/postapiadminsetup.ts
-  - src/models/operations/postapiadminteamsregister.ts
-  - src/models/operations/postapiadminteamsteamiddeactivate.ts
-  - src/models/operations/postapiadminteamsteamidreactivate.ts
+  - src/models/operations/postapiadminusers.ts
+  - src/models/operations/postapiagentresetapikey.ts
   - src/models/operations/postapiauthlogin.ts
   - src/models/operations/postapiauthlogout.ts
   - src/models/operations/postapitradeexecute.ts
-  - src/models/operations/putapiaccountprofile.ts
-  - src/sdk/account.ts
+  - src/models/operations/postapiuseragents.ts
+  - src/models/operations/putapiagentprofile.ts
+  - src/models/operations/putapiuserprofile.ts
   - src/sdk/admin.ts
+  - src/sdk/agent.ts
   - src/sdk/auth.ts
   - src/sdk/competition.ts
   - src/sdk/health.ts
@@ -330,6 +374,7 @@ generatedFiles:
   - src/sdk/price.ts
   - src/sdk/sdk.ts
   - src/sdk/trade.ts
+  - src/sdk/user.ts
   - src/types/async.ts
   - src/types/blobs.ts
   - src/types/constdatetime.ts
@@ -418,7 +463,7 @@ examples:
   post_/api/admin/competition/start:
     speakeasy-default-post-/api/admin/competition/start:
       requestBody:
-        application/json: {"name": "Spring 2023 Trading Competition", "description": "A trading competition for the spring semester", "externalLink": "https://example.com/competition-details", "imageUrl": "https://example.com/competition-image.jpg", "teamIds": ["<value 1>", "<value 2>"], "tradingType": "disallowAll"}
+        application/json: {"name": "Spring 2023 Trading Competition", "description": "A trading competition for the spring semester", "externalLink": "https://example.com/competition-details", "imageUrl": "https://example.com/competition-image.jpg", "agentIds": ["<value 1>", "<value 2>"], "tradingType": "disallowAll"}
       responses:
         "200":
           application/json: {}
@@ -498,7 +543,7 @@ examples:
     speakeasy-default-get-/api/health/detailed:
       responses:
         "200":
-          application/json: {"status": "ok", "services": {"priceTracker": "ok", "balanceManager": "ok", "tradeSimulator": "ok", "competitionManager": "ok", "teamManager": "ok"}}
+          application/json: {"status": "ok", "services": {"priceTracker": "ok", "balanceManager": "ok", "tradeSimulator": "ok", "competitionManager": "ok", "userManager": "ok"}}
   get_/api/price:
     "":
       parameters:
@@ -557,7 +602,7 @@ examples:
         application/json: {"message": "service.example.com wants you to sign in with your Ethereum account:\n0x123...\n\nI accept the ServiceOrg Terms of Service: https://service.example.com/tos\n\nURI: https://service.example.com/login\nVersion: 1\nChain ID: 1\nNonce: 8J0eXAiOiJ...\nIssued At: 2023-01-01T00:00:00.000Z", "signature": "0x123abc..."}
       responses:
         "200":
-          application/json: {"teamId": "team_123abc", "wallet": "0x123..."}
+          application/json: {"agentId": "agent_123abc", "wallet": "0x123..."}
         "401":
           application/json: {"error": "Unauthorized: signature validation issues"}
         "500":
@@ -594,5 +639,136 @@ examples:
       responses:
         "200":
           application/json: {}
+  post_/api/admin/users:
+    speakeasy-default-post-/api/admin/users:
+      requestBody:
+        application/json: {"walletAddress": "1.0392900530713021e+47", "name": "John Doe", "email": "user@example.com", "userImageUrl": "https://example.com/user-image.jpg", "agentName": "Trading Bot Alpha", "agentDescription": "High-frequency trading bot specializing in DeFi", "agentImageUrl": "https://example.com/agent-image.jpg", "agentMetadata": {}}
+      responses:
+        "201":
+          application/json: {"user": {"metadata": {}}, "agent": {"metadata": {}, "apiKey": "abc123def456_ghi789jkl012"}}
+  get_/api/admin/users:
+    speakeasy-default-get-/api/admin/users:
+      responses:
+        "200":
+          application/json: {}
+  get_/api/admin/agents:
+    speakeasy-default-get-/api/admin/agents:
+      responses:
+        "200":
+          application/json: {}
+  get_/api/admin/agents/{agentId}/key:
+    speakeasy-default-get-/api/admin/agents/{agent-id}/key:
+      parameters:
+        path:
+          agentId: "<id>"
+      responses:
+        "200":
+          application/json: {}
+  delete_/api/admin/agents/{agentId}:
+    speakeasy-default-delete-/api/admin/agents/{agent-id}:
+      parameters:
+        path:
+          agentId: "<id>"
+      responses:
+        "200":
+          application/json: {}
+  get_/api/admin/agents/{agentId}:
+    speakeasy-default-get-/api/admin/agents/{agent-id}:
+      parameters:
+        path:
+          agentId: "<id>"
+      responses:
+        "200":
+          application/json: {}
+  post_/api/admin/agents/{agentId}/deactivate:
+    speakeasy-default-post-/api/admin/agents/{agent-id}/deactivate:
+      parameters:
+        path:
+          agentId: "<id>"
+      requestBody:
+        application/json: {"reason": "Violated competition rules by using external API"}
+      responses:
+        "200":
+          application/json: {}
+  post_/api/admin/agents/{agentId}/reactivate:
+    speakeasy-default-post-/api/admin/agents/{agent-id}/reactivate:
+      parameters:
+        path:
+          agentId: "<id>"
+      responses:
+        "200":
+          application/json: {}
+  get_/api/admin/search:
+    speakeasy-default-get-/api/admin/search:
+      parameters:
+        query:
+          searchType: "both"
+      responses:
+        "200":
+          application/json: {"results": {"users": [{"type": "user"}], "agents": [{"type": "agent"}, {"type": "agent"}, {"type": "agent"}]}}
+  get_/api/agent/profile:
+    speakeasy-default-get-/api/agent/profile:
+      responses:
+        "200":
+          application/json: {"success": true, "agent": {"walletAddress": "0x1234567890abcdef1234567890abcdef12345678", "name": "Trading Bot Alpha", "description": "AI agent focusing on DeFi yield farming", "imageUrl": "https://example.com/bot-avatar.jpg"}}
+  put_/api/agent/profile:
+    speakeasy-default-put-/api/agent/profile:
+      requestBody:
+        application/json: {"name": "Trading Bot Beta", "description": "Updated description of trading strategy", "imageUrl": "https://example.com/new-bot-avatar.jpg"}
+      responses:
+        "200":
+          application/json: {"success": true}
+  get_/api/agent/balances:
+    speakeasy-default-get-/api/agent/balances:
+      responses:
+        "200":
+          application/json: {"success": true, "balances": [{"tokenAddress": "0x1234567890abcdef1234567890abcdef12345678", "amount": 100.5, "symbol": "USDC", "specificChain": "svm"}]}
+  get_/api/agent/portfolio:
+    speakeasy-default-get-/api/agent/portfolio:
+      responses:
+        "200":
+          application/json: {"success": true, "totalValue": 1250.75, "tokens": [{"token": "0x1234567890abcdef1234567890abcdef12345678", "amount": 100.5, "price": 1, "value": 100.5, "specificChain": "svm", "symbol": "USDC"}]}
+  get_/api/agent/trades:
+    speakeasy-default-get-/api/agent/trades:
+      responses:
+        "200":
+          application/json: {"success": true}
+  post_/api/agent/reset-api-key:
+    speakeasy-default-post-/api/agent/reset-api-key:
+      responses:
+        "200":
+          application/json: {"success": true, "apiKey": "1234567890abcdef_fedcba0987654321"}
+  get_/api/user/profile:
+    speakeasy-default-get-/api/user/profile:
+      responses:
+        "200":
+          application/json: {"success": true, "user": {"walletAddress": "0x1234567890abcdef1234567890abcdef12345678", "name": "John Doe", "email": "john@example.com", "imageUrl": "https://example.com/avatar.jpg"}}
+  put_/api/user/profile:
+    speakeasy-default-put-/api/user/profile:
+      requestBody:
+        application/json: {"name": "John Doe", "imageUrl": "https://example.com/avatar.jpg"}
+      responses:
+        "200":
+          application/json: {"success": true}
+  post_/api/user/agents:
+    speakeasy-default-post-/api/user/agents:
+      requestBody:
+        application/json: {"name": "Trading Bot Alpha", "description": "An AI agent that focuses on DeFi yield farming", "imageUrl": "https://example.com/bot-avatar.jpg", "metadata": {}}
+      responses:
+        "201":
+          application/json: {"success": true, "agent": {"apiKey": "1234567890abcdef_fedcba0987654321"}}
+  get_/api/user/agents:
+    speakeasy-default-get-/api/user/agents:
+      responses:
+        "200":
+          application/json: {"success": true}
+  get_/api/user/agents/{agentId}:
+    speakeasy-default-get-/api/user/agents/{agent-id}:
+      parameters:
+        path:
+          agentId: "78137904-2b89-49fb-b755-5a57262f4ae5"
+      responses:
+        "200":
+          application/json: {"success": true}
 examplesVersion: 1.0.2
 generatedTests: {}

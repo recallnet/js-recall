@@ -20,7 +20,7 @@ specific category of applications.
 
 ```typescript
 import { ApiSDKCore } from "@recallnet/api-sdk/core.js";
-import { accountGetApiAccountProfile } from "@recallnet/api-sdk/funcs/accountGetApiAccountProfile.js";
+import { adminPostApiAdminSetup } from "@recallnet/api-sdk/funcs/adminPostApiAdminSetup.js";
 import { SDKValidationError } from "@recallnet/api-sdk/models/errors/sdkvalidationerror.js";
 
 // Use `ApiSDKCore` for best tree-shaking performance.
@@ -30,7 +30,11 @@ const apiSDK = new ApiSDKCore({
 });
 
 async function run() {
-  const res = await accountGetApiAccountProfile(apiSDK);
+  const res = await adminPostApiAdminSetup(apiSDK, {
+    username: "admin",
+    password: "password123",
+    email: "admin@example.com",
+  });
 
   switch (true) {
     case res.ok:

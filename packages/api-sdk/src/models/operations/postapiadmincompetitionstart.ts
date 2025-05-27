@@ -45,9 +45,9 @@ export type PostApiAdminCompetitionStartRequest = {
    */
   imageUrl?: string | undefined;
   /**
-   * Array of team IDs to include in the competition
+   * Array of agent IDs to include in the competition
    */
-  teamIds: Array<string>;
+  agentIds: Array<string>;
   /**
    * Type of cross-chain trading to allow in this competition (used when creating a new competition)
    */
@@ -58,9 +58,9 @@ export type PostApiAdminCompetitionStartRequest = {
  * Competition status
  */
 export const PostApiAdminCompetitionStartStatus = {
-  Pending: "PENDING",
-  Active: "ACTIVE",
-  Completed: "COMPLETED",
+  Pending: "pending",
+  Active: "active",
+  Completed: "completed",
 } as const;
 /**
  * Competition status
@@ -124,9 +124,9 @@ export type PostApiAdminCompetitionStartCompetition = {
     | PostApiAdminCompetitionStartCrossChainTradingType
     | undefined;
   /**
-   * Team IDs participating in the competition
+   * Agent IDs participating in the competition
    */
-  teamIds?: Array<string> | undefined;
+  agentIds?: Array<string> | undefined;
 };
 
 /**
@@ -138,6 +138,10 @@ export type PostApiAdminCompetitionStartResponse = {
    */
   success?: boolean | undefined;
   competition?: PostApiAdminCompetitionStartCompetition | undefined;
+  /**
+   * Agent IDs that were successfully initialized for the competition
+   */
+  initializedAgents?: Array<string> | undefined;
 };
 
 /** @internal */
@@ -174,7 +178,7 @@ export const PostApiAdminCompetitionStartRequest$inboundSchema: z.ZodType<
   description: z.string().optional(),
   externalLink: z.string().optional(),
   imageUrl: z.string().optional(),
-  teamIds: z.array(z.string()),
+  agentIds: z.array(z.string()),
   tradingType:
     PostApiAdminCompetitionStartTradingType$inboundSchema.default(
       "disallowAll",
@@ -188,7 +192,7 @@ export type PostApiAdminCompetitionStartRequest$Outbound = {
   description?: string | undefined;
   externalLink?: string | undefined;
   imageUrl?: string | undefined;
-  teamIds: Array<string>;
+  agentIds: Array<string>;
   tradingType: string;
 };
 
@@ -203,7 +207,7 @@ export const PostApiAdminCompetitionStartRequest$outboundSchema: z.ZodType<
   description: z.string().optional(),
   externalLink: z.string().optional(),
   imageUrl: z.string().optional(),
-  teamIds: z.array(z.string()),
+  agentIds: z.array(z.string()),
   tradingType:
     PostApiAdminCompetitionStartTradingType$outboundSchema.default(
       "disallowAll",
@@ -318,7 +322,7 @@ export const PostApiAdminCompetitionStartCompetition$inboundSchema: z.ZodType<
   status: PostApiAdminCompetitionStartStatus$inboundSchema.optional(),
   crossChainTradingType:
     PostApiAdminCompetitionStartCrossChainTradingType$inboundSchema.optional(),
-  teamIds: z.array(z.string()).optional(),
+  agentIds: z.array(z.string()).optional(),
 });
 
 /** @internal */
@@ -332,7 +336,7 @@ export type PostApiAdminCompetitionStartCompetition$Outbound = {
   imageUrl?: string | null | undefined;
   status?: string | undefined;
   crossChainTradingType?: string | undefined;
-  teamIds?: Array<string> | undefined;
+  agentIds?: Array<string> | undefined;
 };
 
 /** @internal */
@@ -354,7 +358,7 @@ export const PostApiAdminCompetitionStartCompetition$outboundSchema: z.ZodType<
   status: PostApiAdminCompetitionStartStatus$outboundSchema.optional(),
   crossChainTradingType:
     PostApiAdminCompetitionStartCrossChainTradingType$outboundSchema.optional(),
-  teamIds: z.array(z.string()).optional(),
+  agentIds: z.array(z.string()).optional(),
 });
 
 /**
@@ -408,12 +412,14 @@ export const PostApiAdminCompetitionStartResponse$inboundSchema: z.ZodType<
   competition: z
     .lazy(() => PostApiAdminCompetitionStartCompetition$inboundSchema)
     .optional(),
+  initializedAgents: z.array(z.string()).optional(),
 });
 
 /** @internal */
 export type PostApiAdminCompetitionStartResponse$Outbound = {
   success?: boolean | undefined;
   competition?: PostApiAdminCompetitionStartCompetition$Outbound | undefined;
+  initializedAgents?: Array<string> | undefined;
 };
 
 /** @internal */
@@ -426,6 +432,7 @@ export const PostApiAdminCompetitionStartResponse$outboundSchema: z.ZodType<
   competition: z
     .lazy(() => PostApiAdminCompetitionStartCompetition$outboundSchema)
     .optional(),
+  initializedAgents: z.array(z.string()).optional(),
 });
 
 /**

@@ -28,9 +28,13 @@ export type Services = {
    */
   competitionManager?: string | undefined;
   /**
-   * Status of the team manager service
+   * Status of the user manager service
    */
-  teamManager?: string | undefined;
+  userManager?: string | undefined;
+  /**
+   * Status of the agent manager service
+   */
+  agentManager?: string | undefined;
 };
 
 /**
@@ -69,7 +73,8 @@ export const Services$inboundSchema: z.ZodType<
   balanceManager: z.string().optional(),
   tradeSimulator: z.string().optional(),
   competitionManager: z.string().optional(),
-  teamManager: z.string().optional(),
+  userManager: z.string().optional(),
+  agentManager: z.string().optional(),
 });
 
 /** @internal */
@@ -78,7 +83,8 @@ export type Services$Outbound = {
   balanceManager?: string | undefined;
   tradeSimulator?: string | undefined;
   competitionManager?: string | undefined;
-  teamManager?: string | undefined;
+  userManager?: string | undefined;
+  agentManager?: string | undefined;
 };
 
 /** @internal */
@@ -91,7 +97,8 @@ export const Services$outboundSchema: z.ZodType<
   balanceManager: z.string().optional(),
   tradeSimulator: z.string().optional(),
   competitionManager: z.string().optional(),
-  teamManager: z.string().optional(),
+  userManager: z.string().optional(),
+  agentManager: z.string().optional(),
 });
 
 /**

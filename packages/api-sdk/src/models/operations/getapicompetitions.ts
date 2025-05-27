@@ -31,7 +31,7 @@ export type GetApiCompetitionsRequest = {
  * Competition status (always PENDING)
  */
 export const GetApiCompetitionsStatus = {
-  Pending: "PENDING",
+  Pending: "pending",
 } as const;
 /**
  * Competition status (always PENDING)

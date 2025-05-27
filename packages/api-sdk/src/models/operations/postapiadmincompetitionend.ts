@@ -19,9 +19,9 @@ export type PostApiAdminCompetitionEndRequest = {
  * Competition status (completed)
  */
 export const PostApiAdminCompetitionEndStatus = {
-  Pending: "PENDING",
-  Active: "ACTIVE",
-  Completed: "COMPLETED",
+  Pending: "pending",
+  Active: "active",
+  Completed: "completed",
 } as const;
 /**
  * Competition status (completed)
@@ -88,9 +88,9 @@ export type PostApiAdminCompetitionEndCompetition = {
 
 export type PostApiAdminCompetitionEndLeaderboard = {
   /**
-   * Team ID
+   * Agent ID
    */
-  teamId?: string | undefined;
+  agentId?: string | undefined;
   /**
    * Final portfolio value
    */
@@ -315,13 +315,13 @@ export const PostApiAdminCompetitionEndLeaderboard$inboundSchema: z.ZodType<
   z.ZodTypeDef,
   unknown
 > = z.object({
-  teamId: z.string().optional(),
+  agentId: z.string().optional(),
   value: z.number().optional(),
 });
 
 /** @internal */
 export type PostApiAdminCompetitionEndLeaderboard$Outbound = {
-  teamId?: string | undefined;
+  agentId?: string | undefined;
   value?: number | undefined;
 };
 
@@ -331,7 +331,7 @@ export const PostApiAdminCompetitionEndLeaderboard$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   PostApiAdminCompetitionEndLeaderboard
 > = z.object({
-  teamId: z.string().optional(),
+  agentId: z.string().optional(),
   value: z.number().optional(),
 });
 

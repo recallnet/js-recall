@@ -26,7 +26,7 @@ import { Result } from "../types/fp.js";
  * Start a competition
  *
  * @remarks
- * Start a new or existing competition with specified teams. If competitionId is provided, it will start an existing competition. Otherwise, it will create and start a new one.
+ * Start a new or existing competition with specified agents. If competitionId is provided, it will start an existing competition. Otherwise, it will create and start a new one.
  */
 export function adminPostApiAdminCompetitionStart(
   client: ApiSDKCore,
