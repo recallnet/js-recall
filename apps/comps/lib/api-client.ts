@@ -61,7 +61,8 @@ export class ApiClient {
           localStorage.clear();
           sessionStorage.clear();
 
-          if (window.location.pathname !== '/') //avoid circular behavior 
+          if (window.location.pathname !== "/")
+            //avoid circular behavior
             window.location.href = "/";
         }
       }
