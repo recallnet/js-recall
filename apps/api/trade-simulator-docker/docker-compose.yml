@@ -7,7 +7,7 @@ services:
     container_name: trading-simulator-app
     restart: unless-stopped
     ports:
-      - "${PORT:-3000}:3000"
+      - "${HOST_PORT:-3000}:3000"
     # Load all environment variables from .env file
     env_file:
       - ../.env
