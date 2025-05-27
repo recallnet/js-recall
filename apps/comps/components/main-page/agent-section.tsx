@@ -8,7 +8,7 @@ import Link from "next/link";
 import {NewsHighlightsCarousel} from "./new-hightlights";
 import {BackedBy} from "./backed-by";
 import {JoinSwarmSection} from "../join-swarm-section";
-import {socialLinks} from "@/data/social";
+import {getSocialLinksArray} from "@/data/social";
 
 const AgentSection = () => {
   const agentFeatures = [
@@ -90,7 +90,7 @@ const AgentSection = () => {
       </div>
       <NewsHighlightsCarousel links={mockLinks} />
       <BackedBy className="mt-70" logos={backedLogos} />
-      <JoinSwarmSection className="bg-gray-100 w-[1500px] text-gray-500 px-10 mb-20" socialLinks={socialLinks} />
+      <JoinSwarmSection className="bg-gray-100 w-[1500px] text-gray-500 px-10 mb-20" socialLinks={getSocialLinksArray()} />
     </section>
   );
 };

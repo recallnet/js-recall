@@ -1,5 +1,32 @@
-import { Agent, Competition } from "../types";
-import { agents, competitions } from "./fixtures";
+import {v4 as uuidv4} from "uuid";
+
+import {agents, competitions} from "@/data-mock/fixtures";
+import {Agent, Competition, CreateAgentRequest} from "@/types";
+
+interface Store {
+  agents: Agent[];
+  competitions: Competition[];
+}
+
+let store: Store;
+
+if (process.env.NODE_ENV === "production") {
+  store = {
+    agents: [...agents],
+    competitions: [...competitions],
+  };
+} else {
+  const globalStore = (global as any).store;
+  if (!globalStore) {
+    (global as any).store = {
+      agents: [...agents],
+      competitions: [...competitions],
+    };
+  }
+  store = (global as any).store;
+}
+
+export {store};
 
 // Competition helpers
 export const findCompetition = (id: string): Competition | undefined => {
@@ -102,11 +129,15 @@ export const filterAgents = (filter?: Record<string, string>): Agent[] => {
 };
 
 export const findAgentsByCompetition = (competitionId: string): Agent[] => {
-  // In the updated schema, we don't directly store competitions in the agent
-  // Instead, we would need to query the API for this relationship
-  // For mock purposes, we'll return a random subset of agents
-  const randomCount = Math.floor(Math.random() * 5) + 1;
-  return agents.slice(0, randomCount);
+  return store.agents.filter((agent) =>
+    agent.registeredCompetitionIds?.includes(competitionId),
+  );
+};
+
+export const findCompetitionsByAgent = (agentId: string): Competition[] => {
+  return store.competitions.filter((competition) =>
+    competition.registeredAgentIds?.includes(agentId),
+  );
 };
 
 export const addAgent = (agent: CreateAgentRequest, userId: string): Agent => {
@@ -138,7 +169,7 @@ export const updateAgent = (
   const index = store.agents.findIndex((a) => a.id === id);
   if (index === -1) return undefined;
 
-  store.agents[index] = { ...store.agents[index], ...updates } as Agent;
+  store.agents[index] = {...store.agents[index], ...updates} as Agent;
   return agents[index];
 };
 
