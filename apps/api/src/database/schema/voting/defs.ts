@@ -21,7 +21,7 @@ const bytea = customType<{ data: Uint8Array; notNull: false; default: false }>({
 });
 
 export const epochs = pgTable("epochs", {
-  id: serial().primaryKey(),
+  id: uuid().primaryKey().notNull(),
   startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
   endedAt: timestamp("ended_at", { withTimezone: true }),
 });

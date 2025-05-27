@@ -8,6 +8,13 @@
       "when": 1748116940027,
       "tag": "0000_mighty_psynapse",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1748388928512,
+      "tag": "0001_tired_alex_wilder",
+      "breakpoints": true
     }
   ]
 }
