@@ -1,4 +1,5 @@
 import * as crypto from "crypto";
+import { getAddress } from "viem";
 
 import { ApiSDK } from "@recallnet/api-sdk";
 
@@ -13,8 +14,8 @@ import { dbManager } from "./db-manager.js";
 import { getBaseUrl } from "./server.js";
 import {
   createSiweMessage,
+  createTestWallet,
   signMessage,
-  testWalletAddress,
 } from "./siwe-utils.js";
 
 // Configured test token address
@@ -264,7 +265,9 @@ export function generateRandomEthAddress(): string {
     const randomIndex = Math.floor(Math.random() * hexChars.length);
     result += hexChars[randomIndex];
   }
-  return result;
+
+  // Convert to proper EIP-55 checksum format using viem
+  return getAddress(result);
 }
 
 /**
@@ -279,7 +282,7 @@ export function getApiSdk(apiKey: string): InstanceType<typeof ApiSDK> {
 
 /**
  * Create a SIWE-authenticated client for testing user routes
- * This registers a user with the test wallet address and returns a client with an active SIWE session
+ * This generates a unique wallet for each test and returns a client with an active SIWE session
  */
 export async function createSiweAuthenticatedClient({
   adminApiKey,
@@ -297,11 +300,19 @@ export async function createSiweAuthenticatedClient({
 
   const sdk = getApiSdk(adminApiKey);
 
-  // Register a new user (without agent) using our test wallet address
+  // Generate a unique wallet for this test
+  const testWallet = createTestWallet();
+
+  // Use unique names/emails for this test
+  const timestamp = Date.now();
+  const uniqueUserName = userName || `SIWE User ${timestamp}`;
+  const uniqueUserEmail = userEmail || `siwe-user-${timestamp}@test.com`;
+
+  // Register a new user with the unique wallet address
   const result = await sdk.admin.postApiAdminUsers({
-    walletAddress: testWalletAddress, // Use the test wallet address from siwe-utils
-    name: userName || `SIWE User ${generateRandomString(8)}`,
-    email: userEmail || `siwe-user-${generateRandomString(8)}@test.com`,
+    walletAddress: testWallet.address,
+    name: uniqueUserName,
+    email: uniqueUserEmail,
     userImageUrl,
     // Don't create an agent automatically - user can create one via SIWE session if needed
   });
@@ -322,9 +333,13 @@ export async function createSiweAuthenticatedClient({
     throw new Error("Failed to get nonce for SIWE authentication");
   }
 
-  // Create and sign SIWE message
-  const message = await createSiweMessage(domain, nonceResponse.nonce);
-  const signature = await signMessage(message);
+  // Create and sign SIWE message using the unique wallet
+  const message = await createSiweMessage(
+    domain,
+    nonceResponse.nonce,
+    testWallet.address,
+  );
+  const signature = await signMessage(message, testWallet.account);
 
   // Login with SIWE
   const loginResponse = await sessionClient.login(message, signature);
@@ -339,15 +354,16 @@ export async function createSiweAuthenticatedClient({
     client: sessionClient,
     user: {
       id: result.user.id || "",
-      walletAddress: result.user.walletAddress || "",
-      name: result.user.name || "",
-      email: result.user.email || "",
+      walletAddress: result.user.walletAddress || testWallet.address,
+      name: result.user.name || uniqueUserName,
+      email: result.user.email || uniqueUserEmail,
       imageUrl: result.user.imageUrl || null,
       status: result.user.status || "active",
       metadata: result.user.metadata || null,
       createdAt: result.user.createdAt || new Date().toISOString(),
       updatedAt: result.user.updatedAt || new Date().toISOString(),
     },
+    wallet: testWallet, // Include wallet info for potential future use
     loginData: loginResponse,
   };
 }

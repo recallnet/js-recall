@@ -7,7 +7,6 @@ import {
   Agent,
   AgentProfileResponse,
   UserProfileResponse,
-  UserRegistrationResponse,
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
@@ -17,7 +16,6 @@ import {
   cleanupTestState,
   createSiweAuthenticatedClient,
   createTestClient,
-  generateRandomEthAddress,
   registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
 
