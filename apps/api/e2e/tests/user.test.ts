@@ -6,6 +6,7 @@ import {
   AdminUsersListResponse,
   Agent,
   AgentProfileResponse,
+  ErrorResponse,
   UserProfileResponse,
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
@@ -265,6 +266,126 @@ describe("User API", () => {
     expect(specificAgentResponse.success).toBe(true);
     expect((specificAgentResponse as AgentProfileResponse).agent.id).toBe(
       agentId,
+    );
+  });
+
+  test("SIWE user can update their agent profiles", async () => {
+    // Create a SIWE-authenticated client
+    const { client: siweClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Agent Profile Test User",
+      userEmail: "agent-profile-test@example.com",
+    });
+
+    // Create an agent via SIWE session
+    const createAgentResponse = await siweClient.createAgent(
+      "Original Agent Name",
+      "Original agent description",
+      "https://example.com/original-image.jpg",
+    );
+    expect(createAgentResponse.success).toBe(true);
+    const agent = (createAgentResponse as AgentProfileResponse).agent;
+    expect(agent.name).toBe("Original Agent Name");
+    expect(agent.description).toBe("Original agent description");
+    expect(agent.imageUrl).toBe("https://example.com/original-image.jpg");
+
+    // Test: User can update agent name only
+    const updateNameResponse = await siweClient.updateUserAgentProfile(
+      agent.id,
+      {
+        name: "Updated Agent Name",
+      },
+    );
+    expect(updateNameResponse.success).toBe(true);
+    const updatedAgent1 = (updateNameResponse as AgentProfileResponse).agent;
+    expect(updatedAgent1.name).toBe("Updated Agent Name");
+    expect(updatedAgent1.description).toBe("Original agent description"); // Should remain unchanged
+    expect(updatedAgent1.imageUrl).toBe(
+      "https://example.com/original-image.jpg",
+    ); // Should remain unchanged
+
+    // Test: User can update description only
+    const updateDescResponse = await siweClient.updateUserAgentProfile(
+      agent.id,
+      {
+        description: "Updated agent description",
+      },
+    );
+    expect(updateDescResponse.success).toBe(true);
+    const updatedAgent2 = (updateDescResponse as AgentProfileResponse).agent;
+    expect(updatedAgent2.name).toBe("Updated Agent Name"); // Should remain from previous update
+    expect(updatedAgent2.description).toBe("Updated agent description");
+    expect(updatedAgent2.imageUrl).toBe(
+      "https://example.com/original-image.jpg",
+    ); // Should remain unchanged
+
+    // Test: User can update imageUrl only
+    const updateImageResponse = await siweClient.updateUserAgentProfile(
+      agent.id,
+      {
+        imageUrl: "https://example.com/updated-image.jpg",
+      },
+    );
+    expect(updateImageResponse.success).toBe(true);
+    const updatedAgent3 = (updateImageResponse as AgentProfileResponse).agent;
+    expect(updatedAgent3.name).toBe("Updated Agent Name"); // Should remain from previous update
+    expect(updatedAgent3.description).toBe("Updated agent description"); // Should remain from previous update
+    expect(updatedAgent3.imageUrl).toBe(
+      "https://example.com/updated-image.jpg",
+    );
+
+    // Test: User can update all fields at once
+    const updateAllResponse = await siweClient.updateUserAgentProfile(
+      agent.id,
+      {
+        name: "Final Agent Name",
+        description: "Final agent description",
+        imageUrl: "https://example.com/final-image.jpg",
+      },
+    );
+    expect(updateAllResponse.success).toBe(true);
+    const finalAgent = (updateAllResponse as AgentProfileResponse).agent;
+    expect(finalAgent.name).toBe("Final Agent Name");
+    expect(finalAgent.description).toBe("Final agent description");
+    expect(finalAgent.imageUrl).toBe("https://example.com/final-image.jpg");
+
+    // Test: Verify changes persisted by getting the agent again
+    const getAgentResponse = await siweClient.getUserAgent(agent.id);
+    expect(getAgentResponse.success).toBe(true);
+    const persistedAgent = (getAgentResponse as AgentProfileResponse).agent;
+    expect(persistedAgent.name).toBe("Final Agent Name");
+    expect(persistedAgent.description).toBe("Final agent description");
+    expect(persistedAgent.imageUrl).toBe("https://example.com/final-image.jpg");
+
+    // Test: User cannot update agent they don't own
+    // Create another user and try to update the first user's agent
+    const { client: otherUserClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Other User",
+      userEmail: "other-user@example.com",
+    });
+
+    const unauthorizedUpdateResponse =
+      await otherUserClient.updateUserAgentProfile(agent.id, {
+        name: "Unauthorized Update",
+      });
+    expect(unauthorizedUpdateResponse.success).toBe(false);
+    expect((unauthorizedUpdateResponse as ErrorResponse).error).toContain(
+      "Access denied",
+    );
+
+    // Test: Invalid fields are rejected
+    const invalidFieldsResponse = await siweClient.request(
+      "put",
+      `/api/user/agents/${agent.id}/profile`,
+      {
+        name: "Valid Name",
+        invalidField: "Should be rejected",
+      },
+    );
+    expect((invalidFieldsResponse as ErrorResponse).success).toBe(false);
+    expect((invalidFieldsResponse as ErrorResponse).error).toContain(
+      "Invalid fields",
     );
   });
 });
