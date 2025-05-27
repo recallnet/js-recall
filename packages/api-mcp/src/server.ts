@@ -1,13 +1,12 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
 import { createMCPServer } from "@recallnet/api-sdk/mcp-server/server.js";
-import { tool$accountGetApiAccountBalances } from "@recallnet/api-sdk/mcp-server/tools/accountGetApiAccountBalances.js";
-import { tool$accountGetApiAccountPortfolio } from "@recallnet/api-sdk/mcp-server/tools/accountGetApiAccountPortfolio.js";
 // Import non-admin tools directly
-import { tool$accountGetApiAccountProfile } from "@recallnet/api-sdk/mcp-server/tools/accountGetApiAccountProfile.js";
-import { tool$accountGetApiAccountTrades } from "@recallnet/api-sdk/mcp-server/tools/accountGetApiAccountTrades.js";
-import { tool$accountPostApiAccountResetApiKey } from "@recallnet/api-sdk/mcp-server/tools/accountPostApiAccountResetApiKey.js";
-import { tool$accountPutApiAccountProfile } from "@recallnet/api-sdk/mcp-server/tools/accountPutApiAccountProfile.js";
+import { tool$agentGetApiAgentBalances } from "@recallnet/api-sdk/mcp-server/tools/agentGetApiAgentBalances";
+import { tool$agentGetApiAgentPortfolio } from "@recallnet/api-sdk/mcp-server/tools/agentGetApiAgentPortfolio.js";
+import { tool$agentGetApiAgentProfile } from "@recallnet/api-sdk/mcp-server/tools/agentGetApiAgentProfile.js";
+import { tool$agentGetApiAgentTrades } from "@recallnet/api-sdk/mcp-server/tools/agentGetApiAgentTrades.js";
+import { tool$agentPostApiAgentResetApiKey } from "@recallnet/api-sdk/mcp-server/tools/agentPostApiAgentResetApiKey.js";
 import { tool$competitionGetApiCompetitions } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitions.js";
 import { tool$competitionGetApiCompetitionsLeaderboard } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionsLeaderboard.js";
 import { tool$competitionGetApiCompetitionsRules } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionsRules.js";
@@ -25,12 +24,12 @@ import { ServerOptions } from "./types.js";
 // Non-admin tool definitions
 const USER_TOOLS = [
   // Account tools
-  tool$accountGetApiAccountProfile,
-  tool$accountPutApiAccountProfile,
-  tool$accountPostApiAccountResetApiKey,
-  tool$accountGetApiAccountBalances,
-  tool$accountGetApiAccountTrades,
-  tool$accountGetApiAccountPortfolio,
+  tool$agentGetApiAgentProfile,
+  tool$agentGetApiAgentBalances,
+  tool$agentPostApiAgentResetApiKey,
+  tool$agentGetApiAgentBalances,
+  tool$agentGetApiAgentTrades,
+  tool$agentGetApiAgentPortfolio,
 
   // Competition tools
   tool$competitionGetApiCompetitions,
