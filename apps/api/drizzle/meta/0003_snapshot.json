@@ -1,5 +1,5 @@
 {
-  "id": "01050e1d-6641-47c1-930d-79e7cb9e881d",
+  "id": "f75f66cc-8377-4a3e-a111-9b70eef831a4",
   "prevId": "afd9fbeb-d5d7-4ae1-a4c3-2fc5368b91de",
   "version": "7",
   "dialect": "postgresql",
@@ -1277,12 +1277,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "from_token_symbol": {
-          "name": "from_token_symbol",
-          "type": "varchar(20)",
-          "primaryKey": false,
-          "notNull": true
-        },
         "success": {
           "name": "success",
           "type": "boolean",
@@ -1600,7 +1594,7 @@
         },
         "amount": {
           "name": "amount",
-          "type": "numeric(30, 18)",
+          "type": "numeric(78, 0)",
           "primaryKey": false,
           "notNull": true
         },
@@ -1911,7 +1905,7 @@
         },
         "amount": {
           "name": "amount",
-          "type": "numeric(30, 18)",
+          "type": "numeric(78, 0)",
           "primaryKey": false,
           "notNull": true
         },
@@ -2042,7 +2036,7 @@
         },
         "amount": {
           "name": "amount",
-          "type": "numeric(30, 18)",
+          "type": "numeric(78, 0)",
           "primaryKey": false,
           "notNull": true
         }
@@ -2159,7 +2153,7 @@
         },
         "amount": {
           "name": "amount",
-          "type": "numeric(30, 18)",
+          "type": "numeric(78, 0)",
           "primaryKey": false,
           "notNull": true
         },
@@ -2245,7 +2239,7 @@
         },
         "amount": {
           "name": "amount",
-          "type": "numeric(30, 18)",
+          "type": "numeric(78, 0)",
           "primaryKey": false,
           "notNull": true
         },

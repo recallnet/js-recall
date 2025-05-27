@@ -1,10 +1,10 @@
 import { numeric, varchar } from "drizzle-orm/pg-core";
 
 /**
- * PG column for amount of tokens in humanese
+ * PG column for amount of tokens in wei (BigInt representation)
  */
 export function tokenAmount(name: string) {
-  return numeric(name, { precision: 30, scale: 18, mode: "number" });
+  return numeric(name, { precision: 78, scale: 0, mode: "bigint" });
 }
 
 /**
