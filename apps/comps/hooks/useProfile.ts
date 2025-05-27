@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiClient } from "@/lib/api-client";
+import { ProfileResponse, UpdateProfileRequest } from "@/types/profile";
 
 const apiClient = new ApiClient();
 

@@ -23,7 +23,7 @@ export const SocialLinkCard: React.FC<SocialLinkCardProps> = ({
         href={socialLink.url}
         target="_blank"
         rel="noopener noreferrer"
-        className={`bg-${socialLink.bgColor || "card"} hover:bg-card max-w-65 flex h-36 flex-col justify-between rounded-md p-6`}
+        className={`bg-${socialLink.bg || "card"} hover:bg-card max-w-65 flex h-36 flex-col justify-between rounded-md p-6`}
       >
         <div className="text-primary flex h-8 w-8 items-center justify-center">
           <Image

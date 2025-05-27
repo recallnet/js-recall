@@ -12,7 +12,7 @@ import {
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useLeaderboards } from "@/hooks/useLeaderboards";
-import { AgentsResponse, LeaderboardTypes } from "@/types";
+import { AgentResponse, LeaderboardTypes } from "@/types";
 
 import AgentPodium from "../agent-podium/index";
 import BigNumberDisplay from "../bignumber";
@@ -93,7 +93,7 @@ export function LeaderboardSection() {
                 className="mb-10 md:mb-1"
                 first={leaderboard?.agents[0] as AgentResponse}
                 second={leaderboard?.agents[1] as AgentResponse}
-                third={leaderboard?.agents[2] as AgentsResponse}
+                third={leaderboard?.agents[2] as AgentResponse}
                 loaded={!isLoading}
               />
             )}
