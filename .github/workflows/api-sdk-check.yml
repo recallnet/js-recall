@@ -1,0 +1,50 @@
+name: API-SDK Check
+
+on:
+  # DEBUG ONLY!!!
+  push:
+    branches:
+      - alexei/speakeasy-gh-workflow
+  pull_request:
+
+jobs:
+  check-api-sdk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.3 # Note: matches exact version from root `package.json`
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Install speakeasy CLI
+        run: |
+          set -ex
+          d=/tmp/sp.tmp
+          mkdir -p $d
+          f=$d/se.zip
+          curl -Lo $f https://github.com/speakeasy-api/speakeasy/releases/download/v1.548.4/speakeasy_linux_amd64.zip
+          cd $d
+          unzip $f
+          mv speakeasy /usr/local/bin/
+          rm -r $d
+
+      - name: Generate API SDK
+        env:
+          SPEAKEASY_API_KEY: "${{ secrets.SPEAKEASY_API_KEY }}"
+        run: |
+          set -ex
+          (cd apps/api && npm run generate-openapi)
+          (cd packages/api-sdk && speakeasy run --skip-versioning)
+          pnpm format
+
+      - name: Check if API SDK is up to date
+        run: |
+          ! git status -s | grep -v workflow.lock
