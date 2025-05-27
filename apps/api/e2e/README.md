@@ -8,20 +8,35 @@ The E2E testing framework is structured as follows:
 
 ```
 e2e/
-├── jest.config.js         # Jest configuration for E2E tests
-├── setup.ts               # Global setup for all tests (runs once)
-├── tsconfig.json          # TypeScript configuration for tests
-├── tests/                 # Test files
-│   ├── admin.test.ts      # Admin functionality tests
-│   ├── competition.test.ts # Competition management tests
-│   ├── team.test.ts       # Team registration and management tests
-│   └── trading.test.ts    # Trading functionality tests
-└── utils/                 # Utility functions for tests
-    ├── api-client.ts      # API client for making requests
-    ├── database.ts        # Database utilities
-    ├── server.ts          # Server startup/shutdown utilities
-    ├── test-helpers.ts    # Common test helper functions
-    └── test-setup.ts      # Setup that runs before each test
+├── jest.config.js                       # Jest configuration for E2E tests
+├── setup.ts                             # Global setup for all tests (runs once)
+├── tsconfig.json                        # TypeScript configuration for tests
+├── tests/                               # Test files
+│   ├── admin.test.ts                    # Admin functionality tests
+│   ├── agent.test.ts                    # Agent functionality tests
+│   ├── api-key-retrieval.test.ts        # API key retrieval tests
+│   ├── base-trades.test.ts              # Base-specific trading tests
+│   ├── competition.test.ts              # Competition management tests
+│   ├── deactivate.test.ts               # Deactivate user or agent tests
+│   ├── leaderboard.test.ts              # Leaderboard tests
+│   ├── multi-agent-competition.test.ts  # Multi-agent competition tests
+│   ├── portfolio-snapshots.test.ts      # Multi-agent competition tests
+│   ├── price                            # Price tracking tests
+│   ├── price-fetching.test.ts           # Price fetching tests
+│   ├── rate-limiter-diagnostic.test.ts  # Rate limiting diagnostic tests
+│   ├── rate-limiter.test.ts             # Rate limiting tests
+│   ├── trading.test.ts                  # Trading functionality tests
+│   └── user.test.ts                     # User registration and management tests
+└── utils/                               # Utility functions for tests
+    ├── api-client.ts                    # API client for making requests
+    ├── api-types.ts                     # API types for making requests
+    ├── db-manager.ts                    # Database utilities
+    ├── log-reporter.ts                  # Log reporter for tests
+    ├── server.ts                        # Server startup/shutdown utilities
+    ├── setup-admin.ts                   # Setup admin for tests
+    ├── siwe-utils.ts                    # SIWE utilities for tests
+    ├── test-helpers.ts                  # Common test helper functions
+    └── test-setup.ts                    # Setup that runs before each test
 ```
 
 ## Environment Setup
@@ -84,7 +99,7 @@ pnpm test:e2e:watch
 Each test follows a similar pattern:
 
 1. Setup test environment (database, server)
-2. Create necessary test data (admin account, teams, competition)
+2. Create necessary test data (admin users, agents, competition)
 3. Execute the functionality being tested
 4. Verify the expected outcomes
 5. Clean up test state

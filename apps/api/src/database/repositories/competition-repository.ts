@@ -1,7 +1,18 @@
-import { and, desc, eq, getTableColumns, max, sql } from "drizzle-orm";
+import {
+  AnyColumn,
+  and,
+  desc,
+  eq,
+  getTableColumns,
+  max,
+  sql,
+} from "drizzle-orm";
 
 import { db } from "@/database/db.js";
-import { competitionTeams, competitions } from "@/database/schema/core/defs.js";
+import {
+  competitionAgents,
+  competitions,
+} from "@/database/schema/core/defs.js";
 import { InsertCompetition } from "@/database/schema/core/types.js";
 import {
   portfolioSnapshots,
@@ -13,14 +24,29 @@ import {
   InsertPortfolioSnapshot,
   InsertPortfolioTokenValue,
 } from "@/database/schema/trading/types.js";
-import { CompetitionStatus } from "@/types/index.js";
+import { CompetitionStatus, PagingParams } from "@/types/index.js";
 
+import { getSort } from "./helpers.js";
 import { PartialExcept } from "./types.js";
 
 /**
  * Competition Repository
  * Handles database operations for competitions
  */
+
+/**
+ * allowable order by database columns
+ */
+const competitionOrderByFields: Record<string, AnyColumn> = {
+  id: competitions.id,
+  name: competitions.name,
+  description: competitions.description,
+  externalLink: competitions.externalLink,
+  imageUrl: competitions.imageUrl,
+  startDate: competitions.startDate,
+  endDate: competitions.endDate,
+  createdAt: competitions.createdAt,
+};
 
 /**
  * Find all competitions
@@ -125,26 +151,26 @@ export async function update(
 }
 
 /**
- * Add a single team to a competition
+ * Add a single agent to a competition
  * @param competitionId Competition ID
- * @param teamId Team ID to add
+ * @param agentId Agent ID to add
  */
-export async function addTeamToCompetition(
+export async function addAgentToCompetition(
   competitionId: string,
-  teamId: string,
+  agentId: string,
 ) {
   try {
     await db
-      .insert(competitionTeams)
+      .insert(competitionAgents)
       .values({
         competitionId,
-        teamId,
+        agentId,
         createdAt: new Date(),
       })
       .onConflictDoNothing();
   } catch (error) {
     console.error(
-      `[CompetitionRepository] Error adding team ${teamId} to competition ${competitionId}:`,
+      `[CompetitionRepository] Error adding agent ${agentId} to competition ${competitionId}:`,
       error,
     );
     throw error;
@@ -152,49 +178,49 @@ export async function addTeamToCompetition(
 }
 
 /**
- * Add teams to a competition
+ * Add agents to a competition
  * @param competitionId Competition ID
- * @param teamIds Array of team IDs
+ * @param agentIds Array of agent IDs
  */
-export async function addTeams(competitionId: string, teamIds: string[]) {
+export async function addAgents(competitionId: string, agentIds: string[]) {
   const createdAt = new Date();
-  const values = teamIds.map((teamId) => ({
+  const values = agentIds.map((agentId) => ({
     competitionId,
-    teamId,
+    agentId,
     createdAt,
   }));
   try {
-    await db.insert(competitionTeams).values(values).onConflictDoNothing();
+    await db.insert(competitionAgents).values(values).onConflictDoNothing();
   } catch (error) {
-    console.error("[CompetitionRepository] Error in addTeams:", error);
+    console.error("[CompetitionRepository] Error in addAgents:", error);
     throw error;
   }
 }
 
 /**
- * Get teams in a competition
+ * Get agents in a competition
  * @param competitionId Competition ID
  */
-export async function getTeams(competitionId: string) {
+export async function getAgents(competitionId: string) {
   try {
     const result = await db
-      .select({ teamId: competitionTeams.teamId })
-      .from(competitionTeams)
-      .where(eq(competitionTeams.competitionId, competitionId));
+      .select({ agentId: competitionAgents.agentId })
+      .from(competitionAgents)
+      .where(eq(competitionAgents.competitionId, competitionId));
 
-    return result.map((row) => row.teamId);
+    return result.map((row) => row.agentId);
   } catch (error) {
-    console.error("[CompetitionRepository] Error in getTeams:", error);
+    console.error("[CompetitionRepository] Error in getAgents:", error);
     throw error;
   }
 }
 
 /**
- * Alias for getTeams for better semantic naming
+ * Alias for getAgents for better semantic naming
  * @param competitionId Competition ID
  */
-export async function getCompetitionTeams(competitionId: string) {
-  return getTeams(competitionId);
+export async function getCompetitionAgents(competitionId: string) {
+  return getAgents(competitionId);
 }
 
 /**
@@ -255,7 +281,7 @@ export async function createPortfolioSnapshot(
 
 /**
  * Create a portfolio token value
- * @param tokenValue Portfolio token value data
+ * @param tokenValue Portfolio token value data including amount, price, symbol, and specific chain
  */
 export async function createPortfolioTokenValue(
   tokenValue: InsertPortfolioTokenValue,
@@ -283,19 +309,19 @@ export async function createPortfolioTokenValue(
 }
 
 /**
- * Get latest portfolio snapshots for all teams in a competition
+ * Get latest portfolio snapshots for all agents in a competition
  * @param competitionId Competition ID
  */
 export async function getLatestPortfolioSnapshots(competitionId: string) {
   try {
     const subquery = db
       .select({
-        teamId: portfolioSnapshots.teamId,
+        agentId: portfolioSnapshots.agentId,
         maxTimestamp: max(portfolioSnapshots.timestamp).as("max_timestamp"),
       })
       .from(portfolioSnapshots)
       .where(eq(portfolioSnapshots.competitionId, competitionId))
-      .groupBy(portfolioSnapshots.teamId)
+      .groupBy(portfolioSnapshots.agentId)
       .as("latest_snapshots");
 
     const result = await db
@@ -304,7 +330,7 @@ export async function getLatestPortfolioSnapshots(competitionId: string) {
       .innerJoin(
         subquery,
         and(
-          eq(portfolioSnapshots.teamId, subquery.teamId),
+          eq(portfolioSnapshots.agentId, subquery.agentId),
           eq(portfolioSnapshots.timestamp, subquery.maxTimestamp),
         ),
       )
@@ -321,13 +347,13 @@ export async function getLatestPortfolioSnapshots(competitionId: string) {
 }
 
 /**
- * Get portfolio snapshots for a team in a competition
+ * Get portfolio snapshots for an agent in a competition
  * @param competitionId Competition ID
- * @param teamId Team ID
+ * @param agentId Agent ID
  */
-export async function getTeamPortfolioSnapshots(
+export async function getAgentPortfolioSnapshots(
   competitionId: string,
-  teamId: string,
+  agentId: string,
 ) {
   try {
     return await db
@@ -336,13 +362,13 @@ export async function getTeamPortfolioSnapshots(
       .where(
         and(
           eq(portfolioSnapshots.competitionId, competitionId),
-          eq(portfolioSnapshots.teamId, teamId),
+          eq(portfolioSnapshots.agentId, agentId),
         ),
       )
       .orderBy(desc(portfolioSnapshots.timestamp));
   } catch (error) {
     console.error(
-      "[CompetitionRepository] Error in getTeamPortfolioSnapshots:",
+      "[CompetitionRepository] Error in getAgentPortfolioSnapshots:",
       error,
     );
     throw error;
@@ -385,22 +411,42 @@ export async function count() {
 }
 
 /**
- * Find competitions by status
+ * Find competitions by status, or default to all competitions if no status is provided
  * @param status Competition status
  */
-export async function findByStatus(status: CompetitionStatus) {
+export async function findByStatus({
+  status,
+  params,
+}: {
+  status: CompetitionStatus | undefined;
+  params: PagingParams;
+}) {
   try {
-    return await db
+    const queryBuilder = db
       .select({
-        ...getTableColumns(competitions),
         crossChainTradingType: tradingCompetitions.crossChainTradingType,
+        ...getTableColumns(competitions),
       })
       .from(tradingCompetitions)
       .innerJoin(
         competitions,
         eq(tradingCompetitions.competitionId, competitions.id),
-      )
-      .where(eq(competitions.status, status));
+      );
+
+    let query;
+    if (status) {
+      query = queryBuilder.where(eq(competitions.status, status)).$dynamic();
+    } else {
+      query = queryBuilder.$dynamic();
+    }
+
+    if (params.sort) {
+      query = getSort(query, params.sort, competitionOrderByFields);
+    }
+
+    query = query.limit(params.limit).offset(params.offset);
+
+    return await query;
   } catch (error) {
     console.error("[CompetitionRepository] Error in findByStatus:", error);
     throw error;

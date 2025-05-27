@@ -1,26 +1,37 @@
 "use client";
 
-import { CaretDownIcon } from "@radix-ui/react-icons";
 import Image from "next/image";
+import Link from "next/link";
 import React from "react";
 import { FaAward, FaTrophy } from "react-icons/fa";
 
 import { displayAddress } from "@recallnet/address-utils/display";
-import { Button } from "@recallnet/ui2/components/shadcn/button";
+import { Button } from "@recallnet/ui2/components/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@recallnet/ui2/components/collapsible";
 import Card from "@recallnet/ui2/components/shadcn/card";
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { useProfile } from "@/hooks";
-import { AgentResponse } from "@/types";
+import { AgentResponse, ProfileResponse } from "@/types";
 
 import BigNumberDisplay from "../bignumber";
 import MirrorImage from "../mirror-image";
 
-export default function UserAgentsSection() {
+interface UserAgentsSectionProps {
+  user: ProfileResponse;
+  isLoading: boolean;
+}
+
+export default function UserAgentsSection({
+  user,
+  isLoading,
+}: UserAgentsSectionProps) {
   // for now using this hook, later must be user agents
-  const { data, isLoading } = useProfile();
-  const nAgents = isLoading ? 2 : data?.agents?.length || 0;
+  const nAgents = isLoading ? 2 : user?.agents?.length || 0;
   let agentList = <NoAgents />;
 
   if (isLoading || (nAgents > 0 && nAgents <= 3))
@@ -45,16 +56,16 @@ export default function UserAgentsSection() {
             ? new Array(nAgents)
                 .fill(0)
                 .map((_, i) => <AgentCard key={i} agent={i} isLoading />)
-            : data?.agents?.map((agent, i) => (
+            : user?.agents?.map((agent, i) => (
                 <AgentCard key={i} agent={agent} isLoading={false} />
               ))}
         </div>
         <AgentsSummary
           isLoading={isLoading}
           nAgents={nAgents}
-          best="1st of 2054"
-          completedComps={10}
-          highest={2400}
+          best="-"
+          completedComps={0}
+          highest={0}
         />
       </div>
     );
@@ -63,7 +74,7 @@ export default function UserAgentsSection() {
     agentList = (
       <div className="mt-8 flex w-full flex-col gap-10">
         <div className="flex justify-around gap-10 overflow-x-auto">
-          {data?.agents?.map((agent, i) => (
+          {user?.agents?.map((agent, i) => (
             <AgentCard key={i} agent={agent} isLoading={isLoading} />
           ))}
         </div>
@@ -78,40 +89,43 @@ export default function UserAgentsSection() {
     );
 
   return (
-    <div className="flex w-full flex-col">
-      <div className="border-b-1 flex w-full justify-between border-gray-700 p-5">
-        <div className="flex items-center gap-2">
-          <CaretDownIcon className="text-gray-500" width={35} height={35} />
-          <span className="text-2xl font-bold text-white">Your Agents</span>
-          <span className="text-xl text-gray-400">(1)</span>
+    <Collapsible defaultOpen>
+      <CollapsibleTrigger className="border-b-1 flex w-full p-5">
+        <div className="flex w-full items-center justify-between">
+          <div className="ml-2 flex items-center gap-2">
+            <span className="text-2xl font-bold">Your Agents</span>
+            <span className="text-secondary-foreground">({nAgents})</span>
+          </div>
+          <Link href="/create-agent">
+            <Button>{"+ ADD AGENT"}</Button>
+          </Link>
         </div>
-        <Button className="bg-sky-700 px-8 py-5 text-white hover:bg-sky-600">
-          {"+ ADD AGENT"}
-        </Button>
-      </div>
-      {agentList}
-    </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent>{agentList}</CollapsibleContent>
+    </Collapsible>
   );
 }
 
 const NoAgents = () => {
   return (
-    <div className="relative w-full">
+    <div className="relative h-[350px] w-full">
       <div className="md:px-50 2xl:px-100 flex w-full flex-col items-center px-10 pt-10 text-center sm:px-20">
-        <span className="font-semibold text-white">
-          {"You don’t have any agents yet"}
+        <span className="mb-2 font-semibold">
+          {"You don't have any agents yet"}
         </span>
-        <span className="text-gray-500">
-          {`Kick things off by creating your very first AI agent. It’llstart competing and climbing the leaderboard in no time!`}
+        <span className="text-secondary-foreground">
+          {`Kick things off by creating your very first AI agent. It'llstart competing and climbing the leaderboard in no time!`}
         </span>
-        <Button className="mt-6 w-40 bg-sky-700 px-8 py-5 text-white hover:bg-blue-600">
-          {"+ ADD AGENT"}
-        </Button>
+        <Link href="/create-agent">
+          <Button className="mt-6 w-40 whitespace-nowrap px-8 py-5">
+            {"+ ADD AGENT"}
+          </Button>
+        </Link>
       </div>
       <Image
         src="/default_agent_2.png"
         alt="agent"
-        className="pointer-events-none absolute left-[60px] top-[-90px] z-0 object-contain opacity-20 sm:opacity-35"
+        className="pointer-events-none absolute left-[60px] top-[-70px] z-0 object-contain opacity-20 sm:opacity-35"
         width={350}
         height={350}
       />
@@ -133,7 +147,7 @@ const AgentsSummary: React.FunctionComponent<{
     <div
       className={cn(
         className,
-        "flex w-full flex-col justify-around border border-gray-700 sm:flex-row",
+        "flex w-full flex-col justify-around border sm:flex-row",
         {
           "lg:h-95 sm:flex-row": isLoading,
           "2xl:flex-col": nAgents >= 3,
@@ -144,14 +158,14 @@ const AgentsSummary: React.FunctionComponent<{
     >
       <div
         className={cn(
-          "border-b-1 flex w-full flex-col items-start gap-2 border-gray-700 p-8",
+          "border-b-1 flex w-full flex-col items-start gap-2 p-8",
           borderRules,
         )}
       >
         {isLoading ? (
           <Skeleton className="w-30 h-2" />
         ) : (
-          <span className="uppercase text-gray-500">BEST PLACE M ENT</span>
+          <span className="uppercase text-gray-500">BEST PLACEMENT</span>
         )}
         <div className="flex items-center gap-3 text-2xl font-semibold">
           {isLoading ? (
@@ -166,7 +180,7 @@ const AgentsSummary: React.FunctionComponent<{
       </div>
       <div
         className={cn(
-          "border-b-1 flex w-full flex-col items-start gap-2 border-gray-700 p-8",
+          "border-b-1 flex w-full flex-col items-start gap-2 p-8",
           borderRules,
         )}
       >
@@ -208,22 +222,21 @@ const AgentsSummary: React.FunctionComponent<{
   );
 };
 
-type AgentCardProps =
-  | {
-      className?: string;
-      agent: AgentResponse;
-      isLoading: false;
-    }
-  | { className?: string; isLoading: true; agent: number };
+type AgentCardProps = {
+  className?: string;
+  agent: AgentResponse | number;
+  isLoading: boolean;
+};
 
-const AgentCard: React.FunctionComponent<AgentCardProps> = ({
+export const AgentCard: React.FunctionComponent<AgentCardProps> = ({
   className,
   agent,
   isLoading,
 }) => {
   const size = "min-w-70 max-w-80 md:max-w-70 h-95";
 
-  if (isLoading) return <Skeleton className={size} />;
+  if (isLoading || typeof agent === "number")
+    return <Skeleton className={size} />;
 
   return (
     <Card
@@ -244,17 +257,17 @@ const AgentCard: React.FunctionComponent<AgentCardProps> = ({
         image="/default_agent.png"
       />
       <div className="flex w-full items-center justify-center gap-3 text-sm text-gray-400">
-        <FaAward /> <span>{agent.score}</span>
+        <FaAward /> <span>{agent.score || "-"}</span>
       </div>
       <span className="text-center text-2xl font-bold text-gray-400">
         {agent.name}
       </span>
       <div className="flex justify-center gap-3 text-gray-400">
         <div className="text-nowrap rounded border border-gray-700 p-2">
-          ROI {agent.metadata.roi?.toFixed(0)}%
+          ROI {agent.metadata.roi?.toFixed(0) || "-"}
         </div>
         <div className="text-nowrap rounded border border-gray-700 p-2">
-          Trades {agent.metadata.trades}%
+          Trades {agent.metadata.trades || "-"}
         </div>
       </div>
     </Card>

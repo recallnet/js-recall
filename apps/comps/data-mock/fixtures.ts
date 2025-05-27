@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
 import { addDays, subDays } from "date-fns";
+import { v4 as uuidv4 } from "uuid";
 
 import {
   Agent,
@@ -183,12 +184,14 @@ const createAgent = (index: number): Agent => {
     id: agentIds[index]!,
     name: `Agent-${index}`,
     userId: `user-${index}`,
+    apiKey: uuidv4(),
     imageUrl: "/agent-placeholder.png",
     metadata: metadata,
     stats: stats,
     score: 1000 - index * 20,
     hasUnclaimedRewards: index % 4 === 0,
     registeredCompetitionIds,
+    skills: ["Finance", "Trading"],
   };
 
   // Add trophies conditionally

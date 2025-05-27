@@ -23,11 +23,11 @@ export type PostApiAuthLoginRequest = {
  */
 export type PostApiAuthLoginResponse = {
   /**
-   * The ID of the authenticated team
+   * The ID of the authenticated agent
    */
-  teamId: string | null;
+  agentId: string | null;
   /**
-   * The wallet address of the authenticated team
+   * The wallet address of the authenticated agent
    */
   wallet: string;
 };
@@ -95,13 +95,13 @@ export const PostApiAuthLoginResponse$inboundSchema: z.ZodType<
   z.ZodTypeDef,
   unknown
 > = z.object({
-  teamId: z.nullable(z.string()),
+  agentId: z.nullable(z.string()),
   wallet: z.string(),
 });
 
 /** @internal */
 export type PostApiAuthLoginResponse$Outbound = {
-  teamId: string | null;
+  agentId: string | null;
   wallet: string;
 };
 
@@ -111,7 +111,7 @@ export const PostApiAuthLoginResponse$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   PostApiAuthLoginResponse
 > = z.object({
-  teamId: z.nullable(z.string()),
+  agentId: z.nullable(z.string()),
   wallet: z.string(),
 });
 

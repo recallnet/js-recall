@@ -14,7 +14,7 @@ import {
   ADMIN_USERNAME,
   cleanupTestState,
   getApiSdk,
-  registerTeamAndGetClient,
+  registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
 import { BlockchainType } from "@/types/index.js";
 
@@ -51,8 +51,10 @@ describe("Price Fetching", () => {
     expect(adminApiKey).toBeDefined();
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
 
-    // Register a team and get an authenticated client
-    const result = await registerTeamAndGetClient(adminApiKey);
+    // Register a user/agent and get an authenticated client
+    const result = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+    });
     clientApiKey = result.apiKey;
   });
 
@@ -321,6 +323,85 @@ describe("Price Fetching", () => {
         `Error fetching token info for Base ETH: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
+  });
+
+  test("should return symbol information in price responses", async () => {
+    const sdk = getApiSdk(clientApiKey);
+
+    // Test SOL price with symbol
+    const solResponse = await sdk.price.getApiPrice({
+      token: encodeURIComponent(config.specificChainTokens.svm.sol),
+    });
+
+    expect(solResponse.success).toBe(true);
+    expect(solResponse.symbol).toBeDefined();
+    expect(typeof solResponse.symbol).toBe("string");
+    expect(solResponse.symbol?.length).toBeGreaterThan(0);
+    console.log(
+      `SOL symbol: ${solResponse.symbol}, price: $${solResponse.price}`,
+    );
+
+    // Test USDC price with symbol
+    const usdcResponse = await sdk.price.getApiPrice({
+      token: encodeURIComponent(config.specificChainTokens.svm.usdc),
+    });
+
+    expect(usdcResponse.success).toBe(true);
+    expect(usdcResponse.symbol).toBeDefined();
+    expect(typeof usdcResponse.symbol).toBe("string");
+    expect(usdcResponse.symbol?.length).toBeGreaterThan(0);
+    console.log(
+      `USDC symbol: ${usdcResponse.symbol}, price: $${usdcResponse.price}`,
+    );
+
+    // Test USDT price with symbol
+    const usdtResponse = await sdk.price.getApiPrice({
+      token: encodeURIComponent(config.specificChainTokens.svm.usdt),
+    });
+
+    expect(usdtResponse.success).toBe(true);
+    expect(usdtResponse.symbol).toBeDefined();
+    expect(typeof usdtResponse.symbol).toBe("string");
+    expect(usdtResponse.symbol?.length).toBeGreaterThan(0);
+    console.log(
+      `USDT symbol: ${usdtResponse.symbol}, price: $${usdtResponse.price}`,
+    );
+
+    // Test Ethereum token with symbol
+    try {
+      const ethResponse = await sdk.price.getApiPrice({
+        token: ETHEREUM_TOKENS.ETH,
+      });
+
+      if (ethResponse.success && ethResponse.price) {
+        expect(ethResponse.symbol).toBeDefined();
+        expect(typeof ethResponse.symbol).toBe("string");
+        expect(ethResponse.symbol?.length).toBeGreaterThan(0);
+        console.log(
+          `ETH symbol: ${ethResponse.symbol}, price: $${ethResponse.price}`,
+        );
+      }
+    } catch (error) {
+      console.log(
+        `Error fetching token info for ETH: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
+
+    // Test token info endpoint also returns symbol
+    const tokenInfoResponse = await sdk.price.getApiPriceTokenInfo({
+      token: config.specificChainTokens.svm.sol,
+    });
+
+    if (tokenInfoResponse.success) {
+      expect(tokenInfoResponse.symbol).toBeDefined();
+      expect(typeof tokenInfoResponse.symbol).toBe("string");
+      expect(tokenInfoResponse.symbol?.length).toBeGreaterThan(0);
+      console.log(`SOL token info symbol: ${tokenInfoResponse.symbol}`);
+    }
+
+    console.log(
+      "✅ All price endpoints returning symbol information correctly",
+    );
   });
 
   test("should detect chain from token format", async () => {

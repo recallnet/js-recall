@@ -2,29 +2,31 @@ import cors from "cors";
 import express from "express";
 
 import { config } from "@/config/index.js";
-import { makeAccountController } from "@/controllers/account.controller.js";
 import { makeAdminController } from "@/controllers/admin.controller.js";
+import { makeAgentController } from "@/controllers/agent.controller.js";
 import { makeAuthController } from "@/controllers/auth.controller.js";
 import { makeCompetitionController } from "@/controllers/competition.controller.js";
 import { makeDocsController } from "@/controllers/docs.controller.js";
 import { makeHealthController } from "@/controllers/health.controller.js";
 import { makePriceController } from "@/controllers/price.controller.js";
 import { makeTradeController } from "@/controllers/trade.controller.js";
+import { makeUserController } from "@/controllers/user.controller.js";
 import { migrateDb } from "@/database/db.js";
 import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
 import { authMiddleware } from "@/middleware/auth.middleware.js";
 import errorHandler from "@/middleware/errorHandler.js";
 import { rateLimiterMiddleware } from "@/middleware/rate-limiter.middleware.js";
 import { siweSessionMiddleware } from "@/middleware/siwe.middleware.js";
-import { configureAccountRoutes } from "@/routes/account.routes.js";
 import { configureAdminSetupRoutes } from "@/routes/admin-setup.routes.js";
 import { configureAdminRoutes } from "@/routes/admin.routes.js";
+import { configureAgentRoutes } from "@/routes/agent.routes.js";
 import { configureAuthRoutes } from "@/routes/auth.routes.js";
-import { configureCompetitionRoutes } from "@/routes/competition.routes.js";
+import { configureCompetitionsRoutes } from "@/routes/competitions.routes.js";
 import { configureDocsRoutes } from "@/routes/docs.routes.js";
 import { configureHealthRoutes } from "@/routes/health.routes.js";
 import { configurePriceRoutes } from "@/routes/price.routes.js";
 import { configureTradeRoutes } from "@/routes/trade.routes.js";
+import { configureUserRoutes } from "@/routes/user.routes.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 // Create Express app
@@ -76,29 +78,64 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Define protected routes
-const protectedRoutes = [
-  "/api/account",
-  "/api/trade",
+// Define different types of protected routes with their authentication needs
+const agentApiKeyRoutes = [
+  "/api/agent",
+  "/api/trade", // Trade operations use agent API keys
+];
+
+const userSessionRoutes = [
+  "/api/user", // User operations use SIWE sessions
+];
+
+const legacyRoutes = [
+  "/api/account", // Legacy routes that still need both types
   "/api/competition",
+  "/api/competitions",
   "/api/price",
 ];
 
-// Apply authentication middleware to protected routes FIRST
-// This ensures req.teamId is set before rate limiting
+// Apply agent API key authentication to agent routes
 app.use(
-  protectedRoutes,
+  agentApiKeyRoutes,
+  authMiddleware(
+    services.agentManager,
+    services.userManager,
+    services.adminManager,
+    services.competitionManager,
+  ),
+);
+
+// Apply SIWE session authentication to user routes
+app.use(
+  userSessionRoutes,
   siweSessionMiddleware, // Apply SIWE session middleware first to populate req.session
-  authMiddleware(services.teamManager, services.competitionManager),
+  authMiddleware(
+    services.agentManager,
+    services.userManager,
+    services.adminManager,
+    services.competitionManager,
+  ),
+);
+
+// Apply combined authentication to legacy routes (supports both)
+app.use(
+  legacyRoutes,
+  siweSessionMiddleware, // Apply SIWE session middleware first to populate req.session
+  authMiddleware(
+    services.agentManager,
+    services.userManager,
+    services.adminManager,
+    services.competitionManager,
+  ),
 );
 
 // Apply rate limiting middleware AFTER authentication
-// This ensures we can properly rate limit by team ID
+// This ensures we can properly rate limit by agent/user ID
 app.use(rateLimiterMiddleware);
 
-const adminMiddleware = adminAuthMiddleware(services.teamManager);
+const adminMiddleware = adminAuthMiddleware(services.adminManager);
 
-const accountController = makeAccountController(services);
 const adminController = makeAdminController(services);
 const authController = makeAuthController(services);
 const competitionController = makeCompetitionController(services);
@@ -106,27 +143,31 @@ const docsController = makeDocsController();
 const healthController = makeHealthController();
 const priceController = makePriceController(services);
 const tradeController = makeTradeController(services);
+const userController = makeUserController(services);
+const agentController = makeAgentController(services);
 
-const accountRoutes = configureAccountRoutes(accountController);
 const adminRoutes = configureAdminRoutes(adminController, adminMiddleware);
 const adminSetupRoutes = configureAdminSetupRoutes(adminController);
 const authRoutes = configureAuthRoutes(authController, siweSessionMiddleware);
-const competitionRoutes = configureCompetitionRoutes(competitionController);
+const competitionsRoutes = configureCompetitionsRoutes(competitionController);
 const docsRoutes = configureDocsRoutes(docsController);
 const healthRoutes = configureHealthRoutes(healthController);
 const priceRoutes = configurePriceRoutes(priceController);
 const tradeRoutes = configureTradeRoutes(tradeController);
+const userRoutes = configureUserRoutes(userController);
+const agentRoutes = configureAgentRoutes(agentController);
 
 // Apply routes
-app.use("/api/account", accountRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/trade", tradeRoutes);
 app.use("/api/price", priceRoutes);
-app.use("/api/competition", competitionRoutes);
+app.use("/api/competitions", competitionsRoutes);
 app.use("/api/admin/setup", adminSetupRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/health", healthRoutes);
 app.use("/api/docs", docsRoutes);
+app.use("/api/user", userRoutes);
+app.use("/api/agent", agentRoutes);
 
 // Legacy health check endpoint for backward compatibility
 app.get("/health", (_req, res) => {

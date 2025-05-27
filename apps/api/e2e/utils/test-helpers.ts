@@ -1,4 +1,5 @@
 import * as crypto from "crypto";
+import { getAddress } from "viem";
 
 import { ApiSDK } from "@recallnet/api-sdk";
 
@@ -10,6 +11,12 @@ import {
   StartCompetitionResponse,
 } from "./api-types.js";
 import { dbManager } from "./db-manager.js";
+import { getBaseUrl } from "./server.js";
+import {
+  createSiweMessage,
+  createTestWallet,
+  signMessage,
+} from "./siwe-utils.js";
 
 // Configured test token address
 export const TEST_TOKEN_ADDRESS =
@@ -36,59 +43,95 @@ export function createTestClient(baseUrl?: string): ApiClient {
 }
 
 /**
- * Register a new team and return a client configured with its API credentials
+ * Register a new user and agent, and return a client configured with the agent's API credentials
  */
-export async function registerTeamAndGetClient(
-  adminApiKey: string,
-  teamName?: string,
-  email?: string,
-  contactPerson?: string,
-  walletAddress?: string,
-  imageUrl?: string,
-) {
+export async function registerUserAndAgentAndGetClient({
+  adminApiKey,
+  walletAddress,
+  userName,
+  userEmail,
+  userImageUrl,
+  agentName,
+  agentDescription,
+  agentImageUrl,
+  agentMetadata,
+}: {
+  adminApiKey: string;
+  walletAddress?: string;
+  userName?: string;
+  userEmail?: string;
+  userImageUrl?: string;
+  agentName?: string;
+  agentDescription?: string;
+  agentImageUrl?: string;
+  agentMetadata?: Record<string, unknown>;
+}) {
   // Ensure database is initialized
   await ensureDatabaseInitialized();
 
   const sdk = getApiSdk(adminApiKey);
-  // Register a new team
-  const result = await sdk.admin.postApiAdminTeamsRegister({
-    teamName: teamName || `Team ${generateRandomString(8)}`,
-    email: email || `team-${generateRandomString(8)}@test.com`,
-    contactPerson: contactPerson || `Contact ${generateRandomString(8)}`,
+
+  // Register a new user with optional agent creation
+  const result = await sdk.admin.postApiAdminUsers({
     walletAddress: walletAddress || generateRandomEthAddress(),
-    imageUrl,
-    metadata: {},
+    name: userName || `User ${generateRandomString(8)}`,
+    email: userEmail || `user-${generateRandomString(8)}@test.com`,
+    userImageUrl,
+    agentName: agentName || `Agent ${generateRandomString(8)}`,
+    agentDescription:
+      agentDescription || `Test agent for ${agentName || "testing"}`,
+    agentImageUrl,
+    agentMetadata,
   });
 
-  if (!result.success || !result.team || typeof result.team.id !== "string") {
-    throw new Error("Failed to register team");
+  if (
+    !result.success ||
+    !result.user ||
+    !result.agent ||
+    typeof result.agent.id !== "string"
+  ) {
+    throw new Error("Failed to register user and agent");
   }
 
-  // Create a client with the team's API key
-  const client = new ApiClient(result.team.apiKey);
-  // TODO: work on replacing `ApiClient` instances with SDK instances everywhere
-  // TODO: the return for this function can be cleaned up when we use the sdk everywhere
+  // Create a client with the agent's API key
+  const client = new ApiClient(result.agent.apiKey);
+
   return {
     client,
-    team: {
-      id: result.team.id || "",
-      name: result.team.name || "",
-      email: result.team.email || "",
-      contactPerson: result.team.contactPerson || "",
-      metadata: null, // TODO: this is a workaround for the inconsistency between the open api spec and actual data returned from routes
-      imageUrl: result.team.imageUrl || null,
+    user: {
+      id: result.user.id || "",
+      walletAddress: result.user.walletAddress || "",
+      name: result.user.name || "",
+      email: result.user.email || "",
+      imageUrl: result.user.imageUrl || null,
+      status: result.user.status || "active",
+      metadata: result.user.metadata || null,
+      createdAt: result.user.createdAt || new Date().toISOString(),
+      updatedAt: result.user.updatedAt || new Date().toISOString(),
     },
-    apiKey: result.team.apiKey || "",
+    agent: {
+      id: result.agent.id || "",
+      ownerId: result.agent.ownerId || "",
+      walletAddress: result.agent.walletAddress || "",
+      name: result.agent.name || "",
+      description: result.agent.description || "",
+      imageUrl: result.agent.imageUrl || null,
+      status: result.agent.status || "active",
+      metadata: result.agent.metadata || null,
+      createdAt: result.agent.createdAt || new Date().toISOString(),
+      updatedAt: result.agent.updatedAt || new Date().toISOString(),
+    },
+    apiKey: result.agent.apiKey || "",
   };
 }
 
 /**
- * Start a competition with given teams
+ * Start a competition with given agents
  */
 export async function startTestCompetition(
   adminClient: ApiClient,
   name: string,
-  teamIds: string[],
+  agentIds: string[],
   externalLink?: string,
   imageUrl?: string,
 ): Promise<StartCompetitionResponse> {
@@ -98,7 +141,7 @@ export async function startTestCompetition(
   const result = await adminClient.startCompetition(
     name,
     `Test competition description for ${name}`,
-    teamIds,
+    agentIds,
     undefined, // tradingType
     externalLink,
     imageUrl,
@@ -140,12 +183,12 @@ export async function createTestCompetition(
 }
 
 /**
- * Start an existing competition with given teams
+ * Start an existing competition with given agents
  */
 export async function startExistingTestCompetition(
   adminClient: ApiClient,
   competitionId: string,
-  teamIds: string[],
+  agentIds: string[],
   externalLink?: string,
   imageUrl?: string,
 ): Promise<StartCompetitionResponse> {
@@ -154,7 +197,7 @@ export async function startExistingTestCompetition(
 
   const result = await adminClient.startExistingCompetition(
     competitionId,
-    teamIds,
+    agentIds,
     undefined, // crossChainTradingType
     externalLink,
     imageUrl,
@@ -222,7 +265,9 @@ export function generateRandomEthAddress(): string {
     const randomIndex = Math.floor(Math.random() * hexChars.length);
     result += hexChars[randomIndex];
   }
-  return result;
+
+  // Convert to proper EIP-55 checksum format using viem
+  return getAddress(result);
 }
 
 /**
@@ -233,4 +278,92 @@ export function getApiSdk(apiKey: string): InstanceType<typeof ApiSDK> {
     bearerAuth: apiKey,
     serverIdx: 2,
   });
+}
+
+/**
+ * Create a SIWE-authenticated client for testing user routes
+ * This generates a unique wallet for each test and returns a client with an active SIWE session
+ */
+export async function createSiweAuthenticatedClient({
+  adminApiKey,
+  userName,
+  userEmail,
+  userImageUrl,
+}: {
+  adminApiKey: string;
+  userName?: string;
+  userEmail?: string;
+  userImageUrl?: string;
+}) {
+  // Ensure database is initialized
+  await ensureDatabaseInitialized();
+
+  const sdk = getApiSdk(adminApiKey);
+
+  // Generate a unique wallet for this test
+  const testWallet = createTestWallet();
+
+  // Use unique names/emails for this test
+  const timestamp = Date.now();
+  const uniqueUserName = userName || `SIWE User ${timestamp}`;
+  const uniqueUserEmail = userEmail || `siwe-user-${timestamp}@test.com`;
+
+  // Register a new user with the unique wallet address
+  const result = await sdk.admin.postApiAdminUsers({
+    walletAddress: testWallet.address,
+    name: uniqueUserName,
+    email: uniqueUserEmail,
+    userImageUrl,
+    // Don't create an agent automatically - user can create one via SIWE session if needed
+  });
+
+  if (!result.success || !result.user) {
+    throw new Error("Failed to register user for SIWE authentication");
+  }
+
+  // Create a session client (without API key)
+  const sessionClient = new ApiClient(undefined, getBaseUrl());
+
+  // Perform SIWE authentication
+  const domain = new URL(getBaseUrl()).hostname || "localhost";
+
+  // Get nonce
+  const nonceResponse = await sessionClient.getNonce();
+  if (!nonceResponse || "error" in nonceResponse) {
+    throw new Error("Failed to get nonce for SIWE authentication");
+  }
+
+  // Create and sign SIWE message using the unique wallet
+  const message = await createSiweMessage(
+    domain,
+    nonceResponse.nonce,
+    testWallet.address,
+  );
+  const signature = await signMessage(message, testWallet.account);
+
+  // Login with SIWE
+  const loginResponse = await sessionClient.login(message, signature);
+  if (!loginResponse || "error" in loginResponse) {
+    throw new Error("Failed to login with SIWE");
+  }
+
+  // Add a small delay to ensure session is properly saved
+  await new Promise((resolve) => setTimeout(resolve, 100));
+
+  return {
+    client: sessionClient,
+    user: {
+      id: result.user.id || "",
+      walletAddress: result.user.walletAddress || testWallet.address,
+      name: result.user.name || uniqueUserName,
+      email: result.user.email || uniqueUserEmail,
+      imageUrl: result.user.imageUrl || null,
+      status: result.user.status || "active",
+      metadata: result.user.metadata || null,
+      createdAt: result.user.createdAt || new Date().toISOString(),
+      updatedAt: result.user.updatedAt || new Date().toISOString(),
+    },
+    wallet: testWallet, // Include wallet info for potential future use
+    loginData: loginResponse,
+  };
 }

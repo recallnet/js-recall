@@ -11,7 +11,7 @@ import {
   ADMIN_USERNAME,
   cleanupTestState,
   createTestClient,
-  registerTeamAndGetClient,
+  registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
 import { PriceTracker } from "@/services/price-tracker.service.js";
 import { BlockchainType } from "@/types/index.js";
@@ -57,8 +57,10 @@ describe("Chain Detection Debug", () => {
     adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register a team and get an authenticated client
-    const result = await registerTeamAndGetClient(adminApiKey);
+    // Register a user/agent and get an authenticated client
+    const result = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+    });
     client = result.client;
 
     // Initialize price tracker

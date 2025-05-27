@@ -52,9 +52,9 @@ export type Transaction = {
    */
   id?: string | undefined;
   /**
-   * Team ID that executed the trade
+   * Agent ID that executed the trade
    */
-  teamId?: string | undefined;
+  agentId?: string | undefined;
   /**
    * ID of the competition this trade is part of
    */
@@ -115,6 +115,10 @@ export type Transaction = {
    * Specific chain for the destination token
    */
   toSpecificChain?: string | undefined;
+  /**
+   * Symbol of the destination token
+   */
+  toTokenSymbol?: string | undefined;
 };
 
 /**
@@ -213,7 +217,7 @@ export const Transaction$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   id: z.string().optional(),
-  teamId: z.string().optional(),
+  agentId: z.string().optional(),
   competitionId: z.string().optional(),
   fromToken: z.string().optional(),
   toToken: z.string().optional(),
@@ -233,12 +237,13 @@ export const Transaction$inboundSchema: z.ZodType<
   toChain: z.string().optional(),
   fromSpecificChain: z.string().optional(),
   toSpecificChain: z.string().optional(),
+  toTokenSymbol: z.string().optional(),
 });
 
 /** @internal */
 export type Transaction$Outbound = {
   id?: string | undefined;
-  teamId?: string | undefined;
+  agentId?: string | undefined;
   competitionId?: string | undefined;
   fromToken?: string | undefined;
   toToken?: string | undefined;
@@ -254,6 +259,7 @@ export type Transaction$Outbound = {
   toChain?: string | undefined;
   fromSpecificChain?: string | undefined;
   toSpecificChain?: string | undefined;
+  toTokenSymbol?: string | undefined;
 };
 
 /** @internal */
@@ -263,7 +269,7 @@ export const Transaction$outboundSchema: z.ZodType<
   Transaction
 > = z.object({
   id: z.string().optional(),
-  teamId: z.string().optional(),
+  agentId: z.string().optional(),
   competitionId: z.string().optional(),
   fromToken: z.string().optional(),
   toToken: z.string().optional(),
@@ -282,6 +288,7 @@ export const Transaction$outboundSchema: z.ZodType<
   toChain: z.string().optional(),
   fromSpecificChain: z.string().optional(),
   toSpecificChain: z.string().optional(),
+  toTokenSymbol: z.string().optional(),
 });
 
 /**

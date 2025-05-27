@@ -23,36 +23,39 @@ export async function count() {
 
 /**
  * Create or update a balance
- * @param teamId Team ID
+ * @param agentId Agent ID
  * @param tokenAddress Token address
  * @param amount Amount
  * @param specificChain Specific chain for the token
- * @param client Optional database client for transactions
+ * @param symbol Token symbol
  */
 export async function saveBalance(
-  teamId: string,
+  agentId: string,
   tokenAddress: string,
   amount: number,
   specificChain: string,
+  symbol: string,
 ) {
   try {
     const now = new Date();
     const [result] = await db
       .insert(balances)
       .values({
-        teamId,
+        agentId,
         tokenAddress,
         amount,
         specificChain,
+        symbol,
         createdAt: now,
         updatedAt: now,
       })
       .onConflictDoUpdate({
-        target: [balances.teamId, balances.tokenAddress],
+        target: [balances.agentId, balances.tokenAddress],
         set: {
           amount,
           updatedAt: new Date(),
           specificChain,
+          symbol,
         },
       })
       .returning();
@@ -70,17 +73,17 @@ export async function saveBalance(
 
 /**
  * Get a specific balance
- * @param teamId Team ID
+ * @param agentId Agent ID
  * @param tokenAddress Token address
  */
-export async function getBalance(teamId: string, tokenAddress: string) {
+export async function getBalance(agentId: string, tokenAddress: string) {
   try {
     const [result] = await db
       .select()
       .from(balances)
       .where(
         and(
-          eq(balances.teamId, teamId),
+          eq(balances.agentId, agentId),
           eq(balances.tokenAddress, tokenAddress),
         ),
       );
@@ -93,49 +96,57 @@ export async function getBalance(teamId: string, tokenAddress: string) {
 }
 
 /**
- * Get all balances for a team
- * @param teamId Team ID
+ * Get all balances for an agent
+ * @param agentId Agent ID
  */
-export async function getTeamBalances(teamId: string) {
+export async function getAgentBalances(agentId: string) {
   try {
-    return await db.select().from(balances).where(eq(balances.teamId, teamId));
+    return await db
+      .select()
+      .from(balances)
+      .where(eq(balances.agentId, agentId));
   } catch (error) {
-    console.error("[BalanceRepository] Error in getTeamBalances:", error);
+    console.error("[BalanceRepository] Error in getAgentBalances:", error);
     throw error;
   }
 }
 
 /**
- * Initialize default balances for a team
- * @param teamId Team ID
- * @param initialBalances Map of token addresses to amounts
+ * Initialize default balances for an agent
+ * @param agentId Agent ID
+ * @param initialBalances Map of token addresses to amounts and symbols
  */
-export async function initializeTeamBalances(
-  teamId: string,
-  initialBalances: Map<string, number>,
+export async function initializeAgentBalances(
+  agentId: string,
+  initialBalances: Map<string, { amount: number; symbol: string }>,
 ) {
   try {
     const now = new Date();
     await db.transaction(async (tx) => {
-      for (const [tokenAddress, amount] of initialBalances.entries()) {
+      for (const [
+        tokenAddress,
+        { amount, symbol },
+      ] of initialBalances.entries()) {
         const specificChain = getTokenSpecificChain(
           tokenAddress,
         ) as SpecificChain;
         await tx
           .insert(balances)
           .values({
-            teamId,
+            agentId,
             tokenAddress,
             amount,
             specificChain,
+            symbol,
             createdAt: now,
             updatedAt: now,
           })
           .onConflictDoUpdate({
-            target: [balances.teamId, balances.tokenAddress],
+            target: [balances.agentId, balances.tokenAddress],
             set: {
               amount,
               specificChain,
+              symbol,
               updatedAt: now,
             },
           });
@@ -143,7 +154,7 @@ export async function initializeTeamBalances(
     });
   } catch (error) {
     console.error(
-      "[BalanceRepository] Error in initializeTeamBalances:",
+      "[BalanceRepository] Error in initializeAgentBalances:",
       error,
     );
     throw error;
@@ -177,35 +188,41 @@ function getTokenSpecificChain(tokenAddress: string): string | null {
 }
 
 /**
- * Reset balances for a team
- * @param teamId Team ID
- * @param initialBalances Map of token addresses to amounts
+ * Reset balances for an agent
+ * @param agentId Agent ID
+ * @param initialBalances Map of token addresses to amounts and symbols
  */
-export async function resetTeamBalances(
-  teamId: string,
-  initialBalances: Map<string, number>,
+export async function resetAgentBalances(
+  agentId: string,
+  initialBalances: Map<string, { amount: number; symbol: string }>,
 ) {
   try {
     await db.transaction(async (tx) => {
       // First delete all current balances
-      await tx.delete(balances).where(eq(balances.teamId, teamId));
+      await tx.delete(balances).where(eq(balances.agentId, agentId));
 
-      // Then initialize new ones
+      // Then initialize with new balances
       const now = new Date();
-      const values = Array.from(initialBalances.entries()).map(
-        ([tokenAddress, amount]) => ({
-          teamId,
+      for (const [
+        tokenAddress,
+        { amount, symbol },
+      ] of initialBalances.entries()) {
+        const specificChain = getTokenSpecificChain(
+          tokenAddress,
+        ) as SpecificChain;
+        await tx.insert(balances).values({
+          agentId,
           tokenAddress,
           amount,
-          specificChain: getTokenSpecificChain(tokenAddress) as SpecificChain,
+          specificChain,
+          symbol,
           createdAt: now,
           updatedAt: now,
-        }),
-      );
-      await tx.insert(balances).values(values);
+        });
+      }
     });
   } catch (error) {
-    console.error("[BalanceRepository] Error in resetTeamBalances:", error);
+    console.error("[BalanceRepository] Error in resetAgentBalances:", error);
     throw error;
   }
 }

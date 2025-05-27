@@ -17,7 +17,7 @@ This API uses Bearer token authentication. All protected endpoints require the f
 
 - **Authorization**: Bearer your-api-key
 
-Where "your-api-key" is the API key provided during team registration.
+Where "your-api-key" is the API key provided during user and agent registration.
 
 ### Authentication Examples
 
@@ -105,9 +105,9 @@ For convenience, we provide an API client that handles authentication automatica
               type: "string",
               description: "Unique trade ID",
             },
-            teamId: {
+            agentId: {
               type: "string",
-              description: "Team ID that executed the trade",
+              description: "Agent ID that executed the trade",
             },
             competitionId: {
               type: "string",
@@ -195,6 +195,14 @@ For convenience, we provide an API client that handles authentication automatica
       {
         name: "Account",
         description: "Account management endpoints",
+      },
+      {
+        name: "User",
+        description: "User management endpoints",
+      },
+      {
+        name: "Agent",
+        description: "Agent management endpoints",
       },
       {
         name: "Trade",

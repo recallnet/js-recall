@@ -11,7 +11,7 @@ import { socialLinks } from "../../data/social";
 
 export default function LeaderboardPage() {
   return (
-    <div className="container max-w-[1600px] py-8 md:px-12">
+    <>
       <LeaderboardSection />
 
       <RegisterAgentBlock />
@@ -19,6 +19,6 @@ export default function LeaderboardPage() {
       <JoinSwarmSection socialLinks={socialLinks} />
 
       <FooterSection />
-    </div>
+    </>
   );
 }

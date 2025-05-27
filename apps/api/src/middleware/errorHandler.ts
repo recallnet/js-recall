@@ -35,7 +35,7 @@ const errorHandler = (
     });
   }
 
-  // Handle inactive team errors
+  // Handle inactive agent errors
   if (err.message && err.message.includes("inactive")) {
     return res.status(403).json({
       success: false,

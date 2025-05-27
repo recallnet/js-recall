@@ -58,6 +58,11 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
+      - name: Check API-SDK
+        uses: ./.github/actions/api-sdk-check
+        env:
+          SPEAKEASY_API_KEY: "${{ secrets.SPEAKEASY_API_KEY }}"
+
       - name: Install eslint cli
         run: pnpm install -w eslint
 

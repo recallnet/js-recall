@@ -84,6 +84,7 @@ export class JupiterProvider implements PriceSource {
           timestamp: new Date(),
           chain: BlockchainType.SVM,
           specificChain: "svm",
+          symbol: "",
         };
       }
 
@@ -146,6 +147,7 @@ export class JupiterProvider implements PriceSource {
             timestamp: new Date(),
             chain: BlockchainType.SVM,
             specificChain: "svm",
+            symbol: tokenData.symbol || "",
           };
         } catch (error) {
           if (attempt === this.MAX_RETRIES) {

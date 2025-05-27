@@ -55,58 +55,89 @@ beforeEach(async () => {
   // Reset caches to ensure a clean state for each test
   log("[Global Setup] Resetting service caches...");
 
-  // Reset TeamManager caches
-  if (services.teamManager) {
-    // Reset apiKeyCache if it exists
-    //@ts-expect-error known private class property
-    if (services.teamManager.apiKeyCache instanceof Map) {
-      //@ts-expect-error known private class property
-      const count = services.teamManager.apiKeyCache.size;
+  // Reset UserManager caches
+  if (services.userManager) {
+    // Reset userWalletCache if it exists
+    // @ts-expect-error known private class property
+    if (services.userManager.userWalletCache instanceof Map) {
+      //  @ts-expect-error known private class property
+      const count = services.userManager.userWalletCache.size;
       if (count > 0) {
         log(
-          `[Global Setup] Clearing ${count} entries from TeamManager.apiKeyCache`,
+          `[Global Setup] Clearing ${count} entries from UserManager.userWalletCache`,
         );
-        //@ts-expect-error known private class property
-        services.teamManager.apiKeyCache.clear();
+        // @ts-expect-error known private class property
+        services.userManager.userWalletCache.clear();
       }
     }
 
-    // Reset inactiveTeamsCache if it exists
-    //@ts-expect-error known private class property
-    if (services.teamManager.inactiveTeamsCache instanceof Map) {
-      //@ts-expect-error known private class property
-      const count = services.teamManager.inactiveTeamsCache.size;
+    // Reset userProfileCache if it exists
+    // @ts-expect-error known private class property
+    if (services.userManager.userProfileCache instanceof Map) {
+      //  @ts-expect-error known private class property
+      const count = services.userManager.userProfileCache.size;
       if (count > 0) {
         log(
-          `[Global Setup] Clearing ${count} entries from TeamManager.inactiveTeamsCache`,
+          `[Global Setup] Clearing ${count} entries from UserManager.userProfileCache`,
         );
-        //@ts-expect-error known private class property
-        services.teamManager.inactiveTeamsCache.clear();
+        // @ts-expect-error known private class property
+        services.userManager.userProfileCache.clear();
+      }
+    }
+  }
+
+  // Reset AgentManager caches
+  if (services.agentManager) {
+    // Reset apiKeyCache cache if it exists
+    // @ts-expect-error known private class property
+    if (services.agentManager.apiKeyCache instanceof Map) {
+      //  @ts-expect-error known private class property
+      const count = services.agentManager.apiKeyCache.size;
+      if (count > 0) {
+        log(
+          `[Global Setup] Clearing ${count} entries from AgentManager.apiKeyCache`,
+        );
+        // @ts-expect-error known private class property
+        services.agentManager.apiKeyCache.clear();
+      }
+    }
+
+    // Reset inactiveAgentsCache if it exists
+    // @ts-expect-error known private class property
+    if (services.agentManager.inactiveAgentsCache instanceof Map) {
+      // @ts-expect-error known private class property
+      const count = services.agentManager.inactiveAgentsCache.size;
+      if (count > 0) {
+        log(
+          `[Global Setup] Clearing ${count} entries from AgentManager.inactiveAgentsCache`,
+        );
+        // @ts-expect-error known private class property
+        services.agentManager.inactiveAgentsCache.clear();
       }
     }
   }
 
   // Reset CompetitionManager cache
   if (services.competitionManager) {
-    //@ts-expect-error known private class property
+    // @ts-expect-error known private class property
     if (services.competitionManager.activeCompetitionCache !== null) {
       log("[Global Setup] Resetting CompetitionManager.activeCompetitionCache");
-      //@ts-expect-error known private class property
+      // @ts-expect-error known private class property
       services.competitionManager.activeCompetitionCache = null;
     }
   }
 
   // Reset BalanceManager cache
   if (services.balanceManager) {
-    //@ts-expect-error known private class property
+    // @ts-expect-error known private class property
     if (services.balanceManager.balanceCache instanceof Map) {
-      //@ts-expect-error known private class property
+      // @ts-expect-error known private class property
       const count = services.balanceManager.balanceCache.size;
       if (count > 0) {
         log(
           `[Global Setup] Clearing ${count} entries from BalanceManager.balanceCache`,
         );
-        //@ts-expect-error known private class property
+        // @ts-expect-error known private class property
         services.balanceManager.balanceCache.clear();
       }
     }
@@ -114,15 +145,15 @@ beforeEach(async () => {
 
   // Reset TradeSimulator cache
   if (services.tradeSimulator) {
-    //@ts-expect-error known private class property
+    // @ts-expect-error known private class property
     if (services.tradeSimulator.tradeCache instanceof Map) {
-      //@ts-expect-error known private class property
+      // @ts-expect-error known private class property
       const count = services.tradeSimulator.tradeCache.size;
       if (count > 0) {
         log(
           `[Global Setup] Clearing ${count} entries from TradeSimulator.tradeCache`,
         );
-        //@ts-expect-error known private class property
+        // @ts-expect-error known private class property
         services.tradeSimulator.tradeCache.clear();
       }
     }
@@ -134,7 +165,7 @@ beforeEach(async () => {
     const providers = ["dexscreenerProvider", "multiChainProvider"];
 
     providers.forEach((providerName) => {
-      //@ts-expect-error known private class property
+      // @ts-expect-error known private class property
       const provider = services.priceTracker[providerName];
       if (provider) {
         if (provider.cache instanceof Map) {

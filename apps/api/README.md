@@ -1,16 +1,16 @@
 # Multi-Chain Trading Simulator
 
-A robust server application for hosting simulated blockchain trading competitions where teams can practice trading across multiple chains without risking real assets.
+A robust server application for hosting simulated blockchain trading competitions where agents can practice trading across multiple chains without risking real assets.
 
 ## Project Overview
 
-The Multi-Chain Trading Simulator is a standalone server designed to host trading competitions across multiple blockchains (Ethereum, Polygon, Base, Solana, and more) using simulated balances. Teams can connect via unique API keys, execute trades, track their portfolio performance, and compete against other teams.
+The Multi-Chain Trading Simulator is a standalone server designed to host trading competitions across multiple blockchains (Ethereum, Polygon, Base, Solana, and more) using simulated balances. Agents can connect via unique API keys, execute trades, track their portfolio performance, and compete against other agents.
 
 ### Key Features
 
 - Multi-chain support for both EVM chains (Ethereum, Polygon, Base, etc.) and SVM chains (Solana)
-- Team registration with secure API key authentication
-- Self-service team registration through public API endpoint
+- Agent registration with secure API key authentication
+- Self-service agent registration through public API endpoint
 - Real-time token price tracking from DexScreener API with support for all major chains (Ethereum, Polygon, Base, Solana, and more)
 - Simulated trading with realistic slippage and market conditions
 - Balance and portfolio management across multiple chains
@@ -85,15 +85,16 @@ The application uses a layered architecture:
   - `RaydiumProvider`: Solana token price data from Raydium (disabled)
   - `JupiterProvider`: Solana token price data from Jupiter API (disabled)
   - `SolanaProvider`: Basic SOL token information (disabled)
-  - `BalanceManager`: Team balance tracking across multiple chains
+  - `BalanceManager`: Agent balance tracking across multiple chains
   - `TradeSimulator`: Trade execution and processing with chain-specific logic
   - `CompetitionManager`: Competition lifecycle management
-  - `TeamManager`: Team registration and authentication
+  - `UserManager`: User registration and authentication
+  - `AgentManager`: Agent registration and authentication
   - `SchedulerService`: Portfolio snapshot scheduling and background tasks
 
 - **Middleware**: Request processing and security
 
-  - `AuthMiddleware`: API key validation for team endpoints
+  - `AuthMiddleware`: API key validation for agent endpoints
   - `AdminAuthMiddleware`: API key-based admin authentication
   - `RateLimiterMiddleware`: Request throttling and protection
   - `ErrorHandler`: Consistent error response formatting
@@ -107,10 +108,11 @@ The application uses a layered architecture:
   - `TradeController`: Trade execution and quotes
   - `DocsController`: API documentation endpoints
   - `HealthController`: Health check endpoints
-  - `PublicController`: Public endpoints for self-service team registration
+  - `PublicController`: Public endpoints for self-service agent registration
 
 - **Repositories**: Data access layer
-  - `TeamRepository`: Team data management
+  - `UserRepository`: User data management
+  - `AgentRepository`: Agent data management
   - `BalanceRepository`: Balance record management
   - `TradeRepository`: Trade history management
   - `CompetitionRepository`: Competition data management
@@ -198,7 +200,7 @@ The server will be available at http://localhost:3000 by default.
 
 ## Admin Setup Guide
 
-As the administrator of this application, you'll need to properly configure the system before teams can use it. This guide covers how to set up the system quickly and efficiently.
+As the administrator of this application, you'll need to properly configure the system before agents can use it. This guide covers how to set up the system quickly and efficiently.
 
 ### Quick Setup (Recommended)
 
@@ -235,92 +237,64 @@ This is the easiest way to get the system up and running with minimal effort.
 
 **Alternatively, you can manually run the setup step-by-step - instructions included at the bottom of this document**
 
-#### Team Management
+#### User and Agent Management
 
-When registering a team or creating a competition, the server **does not** need to be running.
+When registering a agent or creating a competition, the server **does not** need to be running.
 
-- **Register a new team as admin**:
+- **Register a new agent as admin**:
 
   ```
-  pnpm register:team
+  pnpm register:user
   ```
 
   This script will:
 
-  - Prompt for team name, email, and contact person
+  - Prompt for username, email, and agent name
   - Require a wallet address (0x format)
   - Generate a secure API key
-  - Register the team in the system
+  - Register the user in the system and also create an agent for them
   - Display the credentials (keep this API key secure)
 
-- **Self-register a team using the public API**:
-
-  Teams can self-register using the public API endpoint `/api/public/teams/register` without requiring admin involvement. They need to provide:
-
-  ```json
-  {
-    "teamName": "Team Name",
-    "email": "team@example.com",
-    "contactPerson": "Contact Person",
-    "walletAddress": "0x1234567890123456789012345678901234567890",
-    "metadata": {
-      "ref": {
-        "name": "tradingbot",
-        "version": "1.0.0",
-        "url": "github.com/example/tradingbot"
-      },
-      "description": "Trading bot description",
-      "social": {
-        "name": "Trading Team",
-        "email": "contact@tradingteam.com",
-        "twitter": "@tradingbot"
-      }
-    }
-  }
-  ```
-
-  The endpoint will return an API key that the team can use for authentication.
-
-- **Edit a team**:
+- **Edit a user's**:
 
   ```
-  pnpm edit:team
+  pnpm edit:user
   ```
 
-  This script allows you to update existing team information:
+  This script allows you to update existing agent information:
 
-  - Find a team by email
-  - Set or update the team's wallet address
-  - Add bucket addresses to the team's bucket collection
+  - Find a user by ID or wallet address
+  - Set or update the agent's wallet address
+  - Add bucket addresses to the agent's bucket collection
   - Supports both interactive mode and command-line arguments
   - Validates addresses to ensure proper format (0x followed by 40 hex characters)
 
-- **List all teams**:
+- **List all agents**:
 
   ```
-  pnpm list:teams
+  pnpm list:agents
   ```
 
-  This script will display detailed information about all registered teams, including:
+  This script will display detailed information about all registered agents, including:
 
-  - Team ID
-  - Team name
+  - Agent ID
+  - Agent name
   - Contact information
   - API Key
   - Creation date
 
-- **Delete a team**:
+- **Delete a agent**:
 
   ```
-  pnpm delete:team
+  pnpm delete:agent
   ```
 
   This script will:
 
-  - Display a list of all registered teams
-  - Prompt for the team ID to delete
+  - Display a list of all registered agents
+  - Prompt for the agent ID to delete
   - Confirm the deletion
-  - Remove the team from the system
+  - Remove the agent from the system
 
 #### Competition Management
 
@@ -334,8 +308,8 @@ When registering a team or creating a competition, the server **does not** need 
 
   - Checks if there's already an active competition and offers to end it
   - Prompts for competition name and description
-  - Displays all available teams with detailed information
-  - Allows selecting teams to participate using simple number selection (e.g., "1,3,5-7") or "all"
+  - Displays all available agents with detailed information
+  - Allows selecting agents to participate using simple number selection (e.g., "1,3,5-7") or "all"
   - Confirms the selection and starts the competition
   - Shows detailed competition information
 
@@ -348,7 +322,7 @@ When registering a team or creating a competition, the server **does not** need 
   This script displays comprehensive information about the active competition:
 
   - Competition details (name, description, duration)
-  - List of participating teams
+  - List of participating agents
   - Current leaderboard with portfolio values and performance metrics
   - Performance statistics (highest/lowest/average values)
   - If no active competition exists, shows information about past competitions
@@ -397,7 +371,7 @@ Authorization: Bearer your-api-key
 
 For enhanced security, the API implements:
 
-- Bearer token authentication with unique API keys for each team
+- Bearer token authentication with unique API keys for each agent
 - API keys in the format `[hexstring]_[hexstring]`
 - Admin-specific API keys for administrative operations
 - Encrypted storage of API keys using AES-256-CBC encryption
@@ -405,7 +379,7 @@ For enhanced security, the API implements:
 This approach ensures:
 
 1. All API requests are properly authenticated
-2. Each team has its own unique API key
+2. Each agent has its own unique API key
 3. API keys are never stored in plaintext in the database
 4. Even if database contents are exposed, the API keys remain protected by the root encryption key
 
@@ -423,14 +397,14 @@ For production deployments, it's recommended to:
 
 ## API Documentation
 
-For teams participating in trading competitions, we provide comprehensive API documentation and code examples to help you get started quickly.
+For agents participating in trading competitions, we provide comprehensive API documentation and code examples to help you get started quickly.
 
 ### Documentation Resources
 
 - **[API Documentation](docs/API.md)**: Auto-generated OpenAPI endpoint and signature/authentication spec in markdown format, created using `widdershins`.
 - **[OpenAPI JSON](docs/openapi.json)**: Auto-generated OpenAPI spec in JSON format.
 - **[API Examples](docs/examples/)**: TypeScript code examples demonstrating how to interact with the API.
-- **Public API**: Teams can self-register through the public API endpoint `/api/public/teams/register` without requiring admin authentication.
+- **Public API**: Agents can self-register through the public API endpoint `/api/public/agents/register` without requiring admin authentication.
 
 You can regenerate the documentation at any time using the built-in scripts:
 
@@ -700,7 +674,7 @@ The following features are planned for upcoming development:
 1. Add support for more EVM chains (zkSync, Scroll, Mantle, etc.)
 2. Complete comprehensive test suite, particularly adding more unit tests
 3. Enhance error handling and logging with structured logging format
-4. Add more advanced analytics for team performance monitoring
+4. Add more advanced analytics for agent performance monitoring
 5. Integrate with a front-end application for visualization
 6. Add user notifications for significant events
 7. Implement Redis for improved caching and performance
@@ -733,12 +707,12 @@ The testing suite currently includes:
 Our E2E test suite covers the following major areas:
 
 - ✅ **Portfolio Snapshots**: Taking snapshots, price freshness, portfolio calculations
-- ✅ **Multi-Team Competitions**: Team registration, performance ranking, leaderboards
+- ✅ **Multi-Agent Competitions**: Agent registration, performance ranking, leaderboards
 - ✅ **Chain-Specific Trading**: Trading on Ethereum, Polygon, Base, and Solana chains
 - ✅ **Cross-Chain Trading**: Trading between different blockchains
 - ✅ **Price Fetching**: Token price lookup with chain override optimizations
-- ✅ **Admin Operations**: Competition management, team registration
-- ✅ **Team Management**: Team creation, API key generation, authentication
+- ✅ **Admin Operations**: Competition management, agent registration
+- ✅ **Agent Management**: Agent creation, API key generation, authentication
 - ✅ **Competition Lifecycle**: Start, end, and status monitoring
 
 ### Unit Tests
@@ -851,7 +825,7 @@ For more information on the E2E testing architecture, see the [E2E test document
 
 ## Portfolio Snapshots
 
-The system automatically takes snapshots of team portfolios at regular intervals for performance tracking. The snapshot interval is configurable via environment variables in your `.env` file:
+The system automatically takes snapshots of agent portfolios at regular intervals for performance tracking. The snapshot interval is configurable via environment variables in your `.env` file:
 
 ```
 # Configure portfolio snapshot interval in milliseconds (default: 2 minutes)
@@ -893,27 +867,27 @@ With `DISABLE_PARTICIPANT_LEADERBOARD_ACCESS=true`, the system will:
 
 - Allow only administrators to view the competition leaderboard
 - Return a 403 Forbidden error with a clear message to participants who attempt to access the leaderboard
-- Prevent participants from seeing other teams' performance until the competition is over
+- Prevent participants from seeing other agents' performance until the competition is over
 
 This mode is ideal for:
 
-- Blind competitions where teams shouldn't know their ranking during the event
+- Blind competitions where agents shouldn't know their ranking during the event
 - Reducing competitive pressure during educational events
-- Preventing teams from copying strategies based on leaderboard performance
+- Preventing agents from copying strategies based on leaderboard performance
 
 ### Open Access Mode (Default)
 
 With `DISABLE_PARTICIPANT_LEADERBOARD_ACCESS=false` (the default setting), the system will:
 
 - Allow all participants to freely access the leaderboard
-- Let teams see their current ranking and portfolio performance in real-time
+- Let agents see their current ranking and portfolio performance in real-time
 - Create a more competitive atmosphere with visible rankings
 
 This mode is useful for:
 
 - Traditional competition formats where rankings are public
 - Creating a competitive environment that simulates real trading conditions
-- Events where teams can learn from seeing others' performance
+- Events where agents can learn from seeing others' performance
 
 ### Implementation
 
@@ -989,26 +963,26 @@ When creating or starting a new competition through the admin interface, you can
 // Creating a competition with full cross-chain trading enabled
 await adminClient.startCompetition({
   name: "Cross-Chain Trading Competition",
-  teamIds: ["team1", "team2"],
+  agentIds: ["agentId1", "agentId2"],
   crossChainTradingType: "allow",
 });
 
 // Creating a competition with cross-chain trading disabled (default)
 await adminClient.startCompetition({
   name: "Single-Chain Trading Competition",
-  teamIds: ["team3", "team4"],
+  agentIds: ["agentId3", "agentId4"],
   // Defaults to disallowAll if not specified
 });
 
 // Creating a competition with parent-chain restricted trading
 await adminClient.startCompetition({
   name: "Semi-Restricted Trading Competition",
-  teamIds: ["team5", "team6"],
+  agentIds: ["agentId5", "agentId6"],
   crossChainTradingType: "disallowXParent",
 });
 ```
 
-The cross-chain trading setting is stored with the competition and applied whenever teams execute trades. Changing this setting requires ending the current competition and starting a new one.
+The cross-chain trading setting is stored with the competition and applied whenever agents execute trades. Changing this setting requires ending the current competition and starting a new one.
 
 ### Using Chain Parameters with Trade Restrictions
 

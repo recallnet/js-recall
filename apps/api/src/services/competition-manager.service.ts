@@ -1,48 +1,52 @@
 import { v4 as uuidv4 } from "uuid";
 
 import {
-  addTeamToCompetition,
+  addAgentToCompetition,
   create as createCompetition,
   findActive,
   findAll,
   findById,
   findByStatus,
-  getCompetitionTeams,
+  getCompetitionAgents,
   getLatestPortfolioSnapshots,
   update as updateCompetition,
 } from "@/database/repositories/competition-repository.js";
 import {
+  AgentManager,
   BalanceManager,
   ConfigurationService,
   PortfolioSnapshotter,
-  TeamManager,
   TradeSimulator,
 } from "@/services/index.js";
-import { CompetitionStatus, CrossChainTradingType } from "@/types/index.js";
+import {
+  CompetitionStatus,
+  CrossChainTradingType,
+  PagingParams,
+} from "@/types/index.js";
 
 /**
  * Competition Manager Service
- * Manages trading competitions
+ * Manages trading competitions with agent-based participation
  */
 export class CompetitionManager {
   private balanceManager: BalanceManager;
   private tradeSimulator: TradeSimulator;
   private portfolioSnapshotter: PortfolioSnapshotter;
   private activeCompetitionCache: string | null = null;
-  private teamManager: TeamManager;
+  private agentManager: AgentManager;
   private configurationService: ConfigurationService;
 
   constructor(
     balanceManager: BalanceManager,
     tradeSimulator: TradeSimulator,
     portfolioSnapshotter: PortfolioSnapshotter,
-    teamManager: TeamManager,
+    agentManager: AgentManager,
     configurationService: ConfigurationService,
   ) {
     this.balanceManager = balanceManager;
     this.tradeSimulator = tradeSimulator;
     this.portfolioSnapshotter = portfolioSnapshotter;
-    this.teamManager = teamManager;
+    this.agentManager = agentManager;
     this.configurationService = configurationService;
     // Load active competition on initialization
     this.loadActiveCompetition();
@@ -125,10 +129,10 @@ export class CompetitionManager {
   /**
    * Start a competition
    * @param competitionId The competition ID
-   * @param teamIds Array of team IDs participating in the competition
+   * @param agentIds Array of agent IDs participating in the competition
    * @returns The updated competition
    */
-  async startCompetition(competitionId: string, teamIds: string[]) {
+  async startCompetition(competitionId: string, agentIds: string[]) {
     const competition = await findById(competitionId);
     if (!competition) {
       throw new Error(`Competition not found: ${competitionId}`);
@@ -145,17 +149,17 @@ export class CompetitionManager {
       );
     }
 
-    // Process all team additions and activations
-    for (const teamId of teamIds) {
+    // Process all agent additions and activations
+    for (const agentId of agentIds) {
       // Reset balances
-      await this.balanceManager.resetTeamBalances(teamId);
+      await this.balanceManager.resetAgentBalances(agentId);
 
-      // Register team in the competition
-      await addTeamToCompetition(competitionId, teamId);
+      // Register agent in the competition
+      await addAgentToCompetition(competitionId, agentId);
 
-      // Use the team manager service to reactivate teams - this properly clears the cache
-      await this.teamManager.reactivateTeam(teamId);
-      console.log(`[CompetitionManager] Activated team: ${teamId}`);
+      // Use the agent manager service to reactivate agents - this properly clears the cache
+      await this.agentManager.reactivateAgent(agentId);
+      console.log(`[CompetitionManager] Activated agent: ${agentId}`);
     }
 
     // Update competition status
@@ -171,7 +175,7 @@ export class CompetitionManager {
       `[CompetitionManager] Started competition: ${competition.name} (${competitionId})`,
     );
     console.log(
-      `[CompetitionManager] Participating teams: ${teamIds.join(", ")}`,
+      `[CompetitionManager] Participating agents: ${agentIds.join(", ")}`,
     );
 
     // Take initial portfolio snapshots
@@ -208,22 +212,22 @@ export class CompetitionManager {
     // Take final portfolio snapshots
     await this.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
 
-    // Get teams in the competition
-    const competitionTeams = await getCompetitionTeams(competitionId);
+    // Get agents in the competition
+    const competitionAgents = await getCompetitionAgents(competitionId);
 
-    // Deactivate all teams in the competition
+    // Deactivate all agents in the competition
     console.log(
-      `[CompetitionManager] Deactivating ${competitionTeams.length} teams for ended competition`,
+      `[CompetitionManager] Deactivating ${competitionAgents.length} agents for ended competition`,
     );
-    for (const teamId of competitionTeams) {
+    for (const agentId of competitionAgents) {
       try {
-        await this.teamManager.deactivateTeam(
-          teamId,
+        await this.agentManager.deactivateAgent(
+          agentId,
           `Competition ${competition.name} (${competitionId}) ended`,
         );
       } catch (error) {
         console.error(
-          `[CompetitionManager] Error deactivating team ${teamId}:`,
+          `[CompetitionManager] Error deactivating agent ${agentId}:`,
           error,
         );
       }
@@ -286,7 +290,7 @@ export class CompetitionManager {
   /**
    * Get the leaderboard for a competition
    * @param competitionId The competition ID
-   * @returns Array of team IDs sorted by portfolio value
+   * @returns Array of agent IDs sorted by portfolio value
    */
   async getLeaderboard(competitionId: string) {
     try {
@@ -297,7 +301,7 @@ export class CompetitionManager {
         // Sort by value descending
         return snapshots
           .map((snapshot) => ({
-            teamId: snapshot.teamId,
+            agentId: snapshot.agentId,
             value: snapshot.totalValue,
           }))
           .sort(
@@ -306,14 +310,14 @@ export class CompetitionManager {
       }
 
       // Fallback to calculating current values
-      const teams = await getCompetitionTeams(competitionId);
-      const leaderboard: { teamId: string; value: number }[] = [];
+      const agents = await getCompetitionAgents(competitionId);
+      const leaderboard: { agentId: string; value: number }[] = [];
 
-      for (const teamId of teams) {
+      for (const agentId of agents) {
         const portfolioValue =
-          await this.tradeSimulator.calculatePortfolioValue(teamId);
+          await this.tradeSimulator.calculatePortfolioValue(agentId);
         leaderboard.push({
-          teamId,
+          agentId,
           value: portfolioValue,
         });
       }
@@ -349,6 +353,29 @@ export class CompetitionManager {
    * @returns Array of competitions with PENDING status
    */
   async getUpcomingCompetitions() {
-    return findByStatus(CompetitionStatus.PENDING);
+    return findByStatus({
+      status: CompetitionStatus.PENDING,
+      params: {
+        sort: "",
+        limit: 100,
+        offset: 0,
+      },
+    });
+  }
+
+  /**
+   * Get all competitions with a given status and a sort, limit, or offset
+   * @param status The status of the competitions to get
+   * @param pagingParams The paging parameters to use
+   * @returns Array of competitions.
+   */
+  async getCompetitions(
+    status: CompetitionStatus | undefined,
+    pagingParams: PagingParams,
+  ) {
+    return await findByStatus({
+      status,
+      params: pagingParams,
+    });
   }
 }

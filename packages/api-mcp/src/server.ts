@@ -1,17 +1,18 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
 import { createMCPServer } from "@recallnet/api-sdk/mcp-server/server.js";
-import { tool$accountGetApiAccountBalances } from "@recallnet/api-sdk/mcp-server/tools/accountGetApiAccountBalances.js";
-import { tool$accountGetApiAccountPortfolio } from "@recallnet/api-sdk/mcp-server/tools/accountGetApiAccountPortfolio.js";
 // Import non-admin tools directly
-import { tool$accountGetApiAccountProfile } from "@recallnet/api-sdk/mcp-server/tools/accountGetApiAccountProfile.js";
-import { tool$accountGetApiAccountTrades } from "@recallnet/api-sdk/mcp-server/tools/accountGetApiAccountTrades.js";
-import { tool$accountPostApiAccountResetApiKey } from "@recallnet/api-sdk/mcp-server/tools/accountPostApiAccountResetApiKey.js";
-import { tool$accountPutApiAccountProfile } from "@recallnet/api-sdk/mcp-server/tools/accountPutApiAccountProfile.js";
-import { tool$competitionGetApiCompetitionLeaderboard } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionLeaderboard.js";
-import { tool$competitionGetApiCompetitionRules } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionRules.js";
-import { tool$competitionGetApiCompetitionStatus } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionStatus.js";
-import { tool$competitionGetApiCompetitionUpcoming } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionUpcoming.js";
+import { tool$agentGetApiAgentBalances } from "@recallnet/api-sdk/mcp-server/tools/agentGetApiAgentBalances.js";
+import { tool$agentGetApiAgentPortfolio } from "@recallnet/api-sdk/mcp-server/tools/agentGetApiAgentPortfolio.js";
+import { tool$agentGetApiAgentProfile } from "@recallnet/api-sdk/mcp-server/tools/agentGetApiAgentProfile.js";
+import { tool$agentGetApiAgentTrades } from "@recallnet/api-sdk/mcp-server/tools/agentGetApiAgentTrades.js";
+import { tool$agentPostApiAgentResetApiKey } from "@recallnet/api-sdk/mcp-server/tools/agentPostApiAgentResetApiKey.js";
+import { tool$agentPutApiAgentProfile } from "@recallnet/api-sdk/mcp-server/tools/agentPutApiAgentProfile.js";
+import { tool$competitionGetApiCompetitions } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitions.js";
+import { tool$competitionGetApiCompetitionsLeaderboard } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionsLeaderboard.js";
+import { tool$competitionGetApiCompetitionsRules } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionsRules.js";
+import { tool$competitionGetApiCompetitionsStatus } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionsStatus.js";
+import { tool$competitionGetApiCompetitionsUpcoming } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionsUpcoming.js";
 import { tool$healthGetApiHealth } from "@recallnet/api-sdk/mcp-server/tools/healthGetApiHealth.js";
 import { tool$healthGetApiHealthDetailed } from "@recallnet/api-sdk/mcp-server/tools/healthGetApiHealthDetailed.js";
 import { tool$priceGetApiPrice } from "@recallnet/api-sdk/mcp-server/tools/priceGetApiPrice.js";
@@ -23,19 +24,20 @@ import { ServerOptions } from "./types.js";
 
 // Non-admin tool definitions
 const USER_TOOLS = [
-  // Account tools
-  tool$accountGetApiAccountProfile,
-  tool$accountPutApiAccountProfile,
-  tool$accountPostApiAccountResetApiKey,
-  tool$accountGetApiAccountBalances,
-  tool$accountGetApiAccountTrades,
-  tool$accountGetApiAccountPortfolio,
+  // Agent tools
+  tool$agentGetApiAgentProfile,
+  tool$agentPutApiAgentProfile,
+  tool$agentPostApiAgentResetApiKey,
+  tool$agentGetApiAgentBalances,
+  tool$agentGetApiAgentTrades,
+  tool$agentGetApiAgentPortfolio,
 
   // Competition tools
-  tool$competitionGetApiCompetitionLeaderboard,
-  tool$competitionGetApiCompetitionStatus,
-  tool$competitionGetApiCompetitionRules,
-  tool$competitionGetApiCompetitionUpcoming,
+  tool$competitionGetApiCompetitions,
+  tool$competitionGetApiCompetitionsLeaderboard,
+  tool$competitionGetApiCompetitionsStatus,
+  tool$competitionGetApiCompetitionsRules,
+  tool$competitionGetApiCompetitionsUpcoming,
 
   // Health check tools
   tool$healthGetApiHealth,

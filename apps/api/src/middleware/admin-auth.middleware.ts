@@ -2,12 +2,13 @@ import { NextFunction, Request, Response } from "express";
 
 import { extractApiKey } from "@/middleware/auth-helpers.js";
 import { ApiError } from "@/middleware/errorHandler.js";
-import { TeamManager } from "@/services/team-manager.service.js";
+import { AdminManager } from "@/services/admin-manager.service.js";
 
 /**
  * Admin Authentication Middleware
+ * Specifically for admin-only endpoints that require admin API key authentication
  */
-export const adminAuthMiddleware = (teamManager: TeamManager) => {
+export const adminAuthMiddleware = (adminManager: AdminManager) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       console.log(`\n[AdminAuthMiddleware] ========== AUTH REQUEST ==========`);
@@ -26,54 +27,55 @@ export const adminAuthMiddleware = (teamManager: TeamManager) => {
         console.log("[AdminAuthMiddleware] No API key found in request");
         throw new ApiError(
           401,
-          "Authentication required. Use Authorization: Bearer YOUR_API_KEY",
+          "Admin authentication required. Use Authorization: Bearer YOUR_ADMIN_API_KEY",
         );
       }
 
-      // Validate API key
+      // Validate admin API key
       console.log(
-        `[AdminAuthMiddleware] Validating API key: ${apiKey.substring(0, 8)}...`,
+        `[AdminAuthMiddleware] Validating admin API key: ${apiKey.substring(0, 8)}...`,
       );
-      const teamId = await teamManager.validateApiKey(apiKey);
+      const adminId = await adminManager.validateApiKey(apiKey);
 
       console.log(
-        `[AdminAuthMiddleware] Validation result: ${teamId ? `Valid, team: ${teamId}` : "Invalid key"}`,
+        `[AdminAuthMiddleware] Validation result: ${adminId ? `Valid, admin: ${adminId}` : "Invalid key"}`,
       );
 
-      if (!teamId) {
-        console.log("[AdminAuthMiddleware] Invalid API key");
+      if (!adminId) {
+        console.log("[AdminAuthMiddleware] Invalid admin API key");
         throw new ApiError(
           401,
-          "Invalid API key. This key may have been reset or is no longer associated with an active account. Please ensure you're using your most recent API key.",
+          "Invalid admin API key. This key may have been reset or is no longer associated with an active admin account.",
         );
       }
 
-      // Get the team to check admin status
+      // Get the admin details
       console.log(
-        `[AdminAuthMiddleware] Getting team details for ID: ${teamId}`,
+        `[AdminAuthMiddleware] Getting admin details for ID: ${adminId}`,
       );
-      const team = await teamManager.getTeam(teamId);
+      const admin = await adminManager.getAdmin(adminId);
 
       console.log(
-        `[AdminAuthMiddleware] Team details: ${team ? `Name: ${team.name}, Admin: ${team.isAdmin}` : "Team not found"}`,
+        `[AdminAuthMiddleware] Admin details: ${admin ? `Username: ${admin.username}, Status: ${admin.status}` : "Admin not found"}`,
       );
 
-      if (!team || !team.isAdmin) {
+      if (!admin || admin.status !== "active") {
         console.log(
-          "[AdminAuthMiddleware] Admin access denied - not an admin account",
+          "[AdminAuthMiddleware] Admin access denied - admin not found or inactive",
         );
-        throw new ApiError(403, "Admin access required");
+        throw new ApiError(403, "Admin access denied - account inactive");
       }
 
-      // Set team ID and admin flag in request
-      req.teamId = teamId;
+      // Set admin properties in request
+      req.adminId = adminId;
+      req.isAdmin = true;
       req.admin = {
-        id: teamId,
-        name: team.name,
+        id: adminId,
+        name: admin.name || admin.username,
       };
 
       console.log(
-        `[AdminAuthMiddleware] Admin authentication successful for: ${team.name}`,
+        `[AdminAuthMiddleware] Admin authentication successful for: ${admin.username}`,
       );
       console.log(`[AdminAuthMiddleware] ========== END AUTH ==========\n`);
 

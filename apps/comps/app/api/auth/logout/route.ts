@@ -4,7 +4,7 @@ export async function POST() {
   const response = NextResponse.json({ ok: true });
 
   // Clear the wallet address cookie
-  response.cookies.set("wallet", "", {
+  response.cookies.set("wallet_address", "", {
     httpOnly: true,
     secure: true,
     sameSite: "lax",

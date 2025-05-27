@@ -42,11 +42,11 @@ const colors = {
  */
 function parseSelectionInput(
   input: string,
-  teams: Awaited<ReturnType<typeof services.teamManager.getAllTeams>>,
+  agents: Awaited<ReturnType<typeof services.agentManager.getAllAgents>>,
 ) {
   try {
-    const maxIndex = teams.length;
-    const result: typeof teams = [];
+    const maxIndex = agents.length;
+    const result: typeof agents = [];
     const parts = input.split(",");
 
     for (const part of parts) {
@@ -60,9 +60,9 @@ function parseSelectionInput(
           if (
             i > 0 &&
             i <= maxIndex &&
-            !result.find((t) => t.id === teams[i - 1]!.id)
+            !result.find((t) => t.id === agents[i - 1]!.id)
           ) {
-            result.push(teams[i - 1]!);
+            result.push(agents[i - 1]!);
           }
         }
       } else {
@@ -72,9 +72,9 @@ function parseSelectionInput(
           !isNaN(num) &&
           num > 0 &&
           num <= maxIndex &&
-          !result.find((t) => t.id === teams[num - 1]!.id)
+          !result.find((t) => t.id === agents[num - 1]!.id)
         ) {
-          result.push(teams[num - 1]!);
+          result.push(agents[num - 1]!);
         }
       }
     }
@@ -87,37 +87,35 @@ function parseSelectionInput(
 }
 
 /**
- * Display all teams with indices and allow selecting them
+ * Display all agents with indices and allow selecting them
  */
-async function selectTeams() {
+async function selectAgents() {
   try {
-    // Get all non-admin teams
-    const teams = await services.teamManager.getAllTeams(false);
+    // Get all agents
+    const agents = await services.agentManager.getAllAgents();
 
-    if (teams.length === 0) {
+    if (agents.length === 0) {
       console.log(
-        `\n${colors.yellow}No teams found in the database. Please register teams first.${colors.reset}`,
+        `\n${colors.yellow}No agents found in the database. Please register agents first.${colors.reset}`,
       );
       return [];
     }
 
-    console.log(`\n${colors.cyan}Available Teams:${colors.reset}`);
+    console.log(`\n${colors.cyan}Available Agents:${colors.reset}`);
     console.log(
       `${colors.cyan}----------------------------------------${colors.reset}`,
     );
 
-    // Sort teams by name for easier selection
-    teams.sort((a, b) => a.name.localeCompare(b.name));
+    // Sort agents by name for easier selection
+    agents.sort((a, b) => a.name.localeCompare(b.name));
 
-    // Display teams with indices
-    teams.forEach((team, index) => {
+    // Display agents with indices
+    agents.forEach((agent, index) => {
       console.log(
-        `${colors.green}${index + 1}.${colors.reset} ${colors.white}${team.name}${colors.reset} ${colors.gray}(${team.id})${colors.reset}`,
+        `${colors.green}${index + 1}.${colors.reset} ${colors.white}${agent.name}${colors.reset} ${colors.gray}(${agent.id})${colors.reset}`,
       );
-      console.log(`   Email: ${team.email}`);
-      console.log(`   Contact: ${team.contactPerson}`);
 
-      if (index < teams.length - 1) {
+      if (index < agents.length - 1) {
         console.log(
           `   ${colors.cyan}----------------------------------------${colors.reset}`,
         );
@@ -128,39 +126,39 @@ async function selectTeams() {
       `${colors.cyan}----------------------------------------${colors.reset}`,
     );
 
-    // Prompt for team selection
+    // Prompt for agent selection
     console.log(
-      `\n${colors.yellow}Select teams to include in the competition.${colors.reset}`,
+      `\n${colors.yellow}Select agents to include in the competition.${colors.reset}`,
     );
     console.log(
-      `Enter team numbers separated by commas or as ranges (e.g., "1,3,5-7").`,
+      `Enter agent numbers separated by commas or as ranges (e.g., "1,3,5-7").`,
     );
-    console.log(`To select all teams, enter "all".`);
+    console.log(`To select all agents, enter "all".`);
 
     const selection = await prompt(
-      `\n${colors.magenta}Team selection:${colors.reset} `,
+      `\n${colors.magenta}Agent selection:${colors.reset} `,
     );
 
     if (selection.toLowerCase() === "all") {
-      return teams;
+      return agents;
     }
 
-    // Parse the selection and return selected teams
-    const selectedTeams = parseSelectionInput(selection, teams);
+    // Parse the selection and return selected agents
+    const selectedAgents = parseSelectionInput(selection, agents);
 
-    if (selectedTeams.length === 0) {
+    if (selectedAgents.length === 0) {
       console.log(
-        `\n${colors.red}No valid teams selected. Please try again.${colors.reset}`,
+        `\n${colors.red}No valid agents selected. Please try again.${colors.reset}`,
       );
-      return await selectTeams(); // Retry selection
+      return await selectAgents(); // Retry selection
     }
 
     // Show selection summary
     console.log(
-      `\n${colors.green}Selected Teams (${selectedTeams.length}):${colors.reset}`,
+      `\n${colors.green}Selected Agents (${selectedAgents.length}):${colors.reset}`,
     );
-    selectedTeams.forEach((team, index) => {
-      console.log(`${index + 1}. ${team.name}`);
+    selectedAgents.forEach((agent, index) => {
+      console.log(`${index + 1}. ${agent.name}`);
     });
 
     // Confirm selection
@@ -169,14 +167,14 @@ async function selectTeams() {
     );
 
     if (confirm.toLowerCase() !== "y") {
-      console.log(`\n${colors.blue}Let's select teams again.${colors.reset}`);
-      return await selectTeams(); // Retry selection
+      console.log(`\n${colors.blue}Let's select agents again.${colors.reset}`);
+      return await selectAgents(); // Retry selection
     }
 
-    return selectedTeams;
+    return selectedAgents;
   } catch (error) {
     console.error(
-      `\n${colors.red}Error selecting teams:${colors.reset}`,
+      `\n${colors.red}Error selecting agents:${colors.reset}`,
       error instanceof Error ? error.message : error,
     );
     return [];
@@ -249,20 +247,20 @@ async function setupCompetition() {
       `${colors.yellow}Enter competition description (optional):${colors.reset} `,
     );
 
-    // Select teams for the competition
+    // Select agents for the competition
     console.log(
-      `\n${colors.blue}Now let's select teams to participate in the competition.${colors.reset}`,
+      `\n${colors.blue}Now let's select agents to participate in the competition.${colors.reset}`,
     );
-    const selectedTeams = await selectTeams();
+    const selectedAgents = await selectAgents();
 
-    if (selectedTeams.length === 0) {
+    if (selectedAgents.length === 0) {
       throw new Error(
-        "At least one team must be selected for the competition.",
+        "At least one agent must be selected for the competition.",
       );
     }
 
-    // Extract team IDs
-    const teamIds = selectedTeams.map((team) => team.id);
+    // Extract agent IDs
+    const agentIds = selectedAgents.map((agent) => agent.id);
 
     // Confirm competition setup
     console.log(`\n${colors.yellow}Competition Summary:${colors.reset}`);
@@ -271,7 +269,7 @@ async function setupCompetition() {
     );
     console.log(`Name: ${name}`);
     console.log(`Description: ${description || "(none)"}`);
-    console.log(`Teams: ${selectedTeams.length} selected`);
+    console.log(`Agents: ${selectedAgents.length} selected`);
     console.log(
       `${colors.yellow}----------------------------------------${colors.reset}`,
     );
@@ -293,12 +291,12 @@ async function setupCompetition() {
     );
 
     console.log(
-      `${colors.blue}Starting competition with ${teamIds.length} teams...${colors.reset}`,
+      `${colors.blue}Starting competition with ${agentIds.length} agents...${colors.reset}`,
     );
     const startedCompetition =
       await services.competitionManager.startCompetition(
         competition.id,
-        teamIds,
+        agentIds,
       );
 
     console.log(
@@ -315,13 +313,13 @@ async function setupCompetition() {
       `Started: ${new Date(startedCompetition.startDate!).toLocaleString()}`,
     );
     console.log(`Status: ${startedCompetition.status}`);
-    console.log(`Teams: ${teamIds.length} participating`);
+    console.log(`Agents: ${agentIds.length} participating`);
     console.log(
       `${colors.cyan}----------------------------------------${colors.reset}`,
     );
 
     console.log(
-      `\n${colors.green}Teams can now participate in the competition!${colors.reset}`,
+      `\n${colors.green}Agents can now participate in the competition!${colors.reset}`,
     );
   } catch (error) {
     console.error(

@@ -10,7 +10,7 @@ import {
   ADMIN_USERNAME,
   cleanupTestState,
   createTestClient,
-  registerTeamAndGetClient,
+  registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
 } from "@/e2e/utils/test-helpers.js";
@@ -35,55 +35,57 @@ describe("Rate Limiter Middleware", () => {
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
-  test("enforces separate rate limits for different teams", async () => {
+  test("enforces separate rate limits for different agents", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register two teams
-    const { client: team1Client, team: team1 } = await registerTeamAndGetClient(
-      adminApiKey,
-      "Rate Limit Team 1",
-    );
-    const { client: team2Client, team: team2 } = await registerTeamAndGetClient(
-      adminApiKey,
-      "Rate Limit Team 2",
-    );
+    // Register two agents
+    const { client: client1, agent: agent1 } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Rate Limit Agent 1",
+      });
+    const { client: client2, agent: agent2 } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Rate Limit Agent 2",
+      });
 
-    // Start a competition with both teams
+    // Start a competition with both agents
     const competitionName = `Rate Limit Test ${Date.now()}`;
     await startTestCompetition(adminClient, competitionName, [
-      team1.id,
-      team2.id,
+      agent1.id,
+      agent2.id,
     ]);
 
     // Wait for competition to initialize
     await wait(500);
 
     console.log(
-      `Starting per-team rate limit test with teams ${team1.id} and ${team2.id}`,
+      `Starting per-agent rate limit test with agents ${agent1.id} and ${agent2.id}`,
     );
 
-    // Test for the existence of per-team rate limits:
-    // 1. If a team is already rate-limited, verify another team can still make requests
+    // Test for the existence of per-agent rate limits:
+    // 1. If a agent is already rate-limited, verify another agent can still make requests
     // 2. If not rate-limited, make requests until we hit the limit
 
-    // First, check if team 1 can make a request
-    let team1RateLimited = false;
-    let team1SuccessfulRequests = 0;
+    // First, check if agent 1 can make a request
+    let agent1RateLimited = false;
+    let agent1SuccessfulRequests = 0;
 
-    // Make first request to check if team 1 is already rate limited
-    const firstResponse = await team1Client.getBalance();
+    // Make first request to check if agent 1 is already rate limited
+    const firstResponse = await client1.getBalance();
 
     if (firstResponse.success === true) {
-      console.log("Team 1 first request succeeded");
-      team1SuccessfulRequests = 1;
+      console.log("Agent 1 first request succeeded");
+      agent1SuccessfulRequests = 1;
     } else if ((firstResponse as ErrorResponse).status === 429) {
-      console.log("Team 1 is already rate limited");
-      team1RateLimited = true;
+      console.log("Agent 1 is already rate limited");
+      agent1RateLimited = true;
     } else {
       console.error(
-        "Unexpected error for team 1:",
+        "Unexpected error for agent 1:",
         (firstResponse as ErrorResponse).error,
       );
       throw new Error(
@@ -91,27 +93,27 @@ describe("Rate Limiter Middleware", () => {
       );
     }
 
-    // If team 1 isn't rate limited yet, make more requests until we hit the limit
-    if (!team1RateLimited) {
+    // If agent 1 isn't rate limited yet, make more requests until we hit the limit
+    if (!agent1RateLimited) {
       const limit = 35; // Set slightly higher than the rate limit (30) to ensure we hit it
 
       console.log(
-        `Team 1 not rate limited yet. Making up to ${limit} requests`,
+        `Agent 1 not rate limited yet. Making up to ${limit} requests`,
       );
 
       for (let i = 1; i < limit; i++) {
         // Start from 1 because we already made one request
-        const response = await team1Client.getBalance();
+        const response = await client1.getBalance();
 
         if (response.success === true) {
-          team1SuccessfulRequests++;
+          agent1SuccessfulRequests++;
           console.log(
-            `Request ${i + 1}/${limit} succeeded (total: ${team1SuccessfulRequests})`,
+            `Request ${i + 1}/${limit} succeeded (total: ${agent1SuccessfulRequests})`,
           );
         } else if ((response as ErrorResponse).status === 429) {
-          team1RateLimited = true;
+          agent1RateLimited = true;
           console.log(
-            `Rate limit hit at request ${i + 1} after ${team1SuccessfulRequests} successful requests`,
+            `Rate limit hit at request ${i + 1} after ${agent1SuccessfulRequests} successful requests`,
           );
 
           // Verify we have additional information about the rate limit
@@ -123,7 +125,7 @@ describe("Rate Limiter Middleware", () => {
           break;
         } else {
           console.error(
-            "Unexpected error for team 1:",
+            "Unexpected error for agent 1:",
             (response as ErrorResponse).error,
           );
           throw new Error(
@@ -136,42 +138,42 @@ describe("Rate Limiter Middleware", () => {
       }
     }
 
-    // Verify we either found Team 1 already rate limited, or hit the rate limit during testing
-    if (team1RateLimited) {
+    // Verify we either found Agent 1 already rate limited, or hit the rate limit during testing
+    if (agent1RateLimited) {
       console.log(
-        `Team 1 rate limited after ${team1SuccessfulRequests} requests`,
+        `Agent 1 rate limited after ${agent1SuccessfulRequests} requests`,
       );
     } else {
       console.log(
-        `Failed to trigger rate limit for Team 1 after ${team1SuccessfulRequests} requests`,
+        `Failed to trigger rate limit for Agent 1 after ${agent1SuccessfulRequests} requests`,
       );
       // If we get here, something is wrong with rate limiting
-      throw new Error("Failed to trigger rate limit for Team 1");
+      throw new Error("Failed to trigger rate limit for Agent 1");
     }
 
-    // Now verify team 2 can still make requests, confirming rate limits are per-team
-    const team2Response = await team2Client.getBalance();
+    // Now verify agent 2 can still make requests, confirming rate limits are per-agent
+    const agent2Response = await client2.getBalance();
 
-    if (team2Response.success === true) {
-      console.log("Team 2 was able to make a request successfully");
+    if (agent2Response.success === true) {
+      console.log("Agent 2 was able to make a request successfully");
     } else {
       console.error(
-        "Team 2 request failed:",
-        (team2Response as ErrorResponse).error,
+        "Agent 2 request failed:",
+        (agent2Response as ErrorResponse).error,
       );
 
       // Check if the error is a rate limit error
-      if ((team2Response as ErrorResponse).status === 429) {
-        console.error("Team 2 should not be rate limited at this point");
-        throw new Error("Rate limits are not properly isolated per team");
+      if ((agent2Response as ErrorResponse).status === 429) {
+        console.error("Agent 2 should not be rate limited at this point");
+        throw new Error("Rate limits are not properly isolated per agent");
       } else {
         throw new Error(
-          `Unexpected error for team 2: ${(team2Response as ErrorResponse).error}`,
+          `Unexpected error for agent 2: ${(agent2Response as ErrorResponse).error}`,
         );
       }
     }
 
-    console.log("Successfully verified per-team rate limiting");
+    console.log("Successfully verified per-agent rate limiting");
   });
 
   test("enforces different rate limits for different endpoint types", async () => {
@@ -179,15 +181,15 @@ describe("Rate Limiter Middleware", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team
-    const { client: teamClient, team } = await registerTeamAndGetClient(
+    // Register agent
+    const { client, agent: agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Endpoint Rate Limit Team",
-    );
+      agentName: "Endpoint Rate Limit Agent",
+    });
 
     // Start a competition
     const competitionName = `Endpoint Rate Limit Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [agent.id]);
 
     // Wait for competition to initialize
     await wait(500);
@@ -203,9 +205,9 @@ describe("Rate Limiter Middleware", () => {
     let successfulRequests = 0;
 
     // Make first request
-    const firstAccountResponse = await teamClient.request(
+    const firstAccountResponse = await client.request(
       "get",
-      "/api/account/balances",
+      "/api/agent/balances",
     );
 
     if ((firstAccountResponse as BalancesResponse).success === true) {
@@ -233,10 +235,7 @@ describe("Rate Limiter Middleware", () => {
 
       for (let i = 1; i < accountEndpointLimit; i++) {
         // Start from 1 because we already made one request
-        const response = await teamClient.request(
-          "get",
-          "/api/account/balances",
-        );
+        const response = await client.request("get", "/api/agent/balances");
 
         if ((response as BalancesResponse).success === true) {
           successfulRequests++;
@@ -271,7 +270,7 @@ describe("Rate Limiter Middleware", () => {
     // Now verify the price endpoint still works (300 requests/min limit)
     // This confirms different endpoints have different limits
     console.log("Verifying price endpoint still accessible (has higher limit)");
-    const priceResponse = await teamClient.request(
+    const priceResponse = await client.request(
       "get",
       `/api/price?token=${config.specificChainTokens.svm.sol}`,
     );
@@ -305,15 +304,15 @@ describe("Rate Limiter Middleware", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team
-    const { team, apiKey } = await registerTeamAndGetClient(
+    // Register agent
+    const { apiKey, agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Headers Rate Limit Team",
-    );
+      agentName: "Headers Rate Limit Agent",
+    });
 
     // Start a competition
     const competitionName = `Headers Rate Limit Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [team.id]);
+    await startTestCompetition(adminClient, competitionName, [agent.id]);
 
     // Wait for competition to initialize
     await wait(500);
@@ -335,10 +334,10 @@ describe("Rate Limiter Middleware", () => {
     });
 
     // Find an endpoint with a small limit to test quickly
-    // We'll use /api/account/balances which has a 30 req/min limit
+    // We'll use /api/agent/balances which has a 30 req/min limit
     const limit = 35; // Set higher than the rate limit to ensure we hit it
     console.log(
-      `Testing rate limit headers using /api/account/balances (30 req/min limit)`,
+      `Testing rate limit headers using /api/agent/balances (30 req/min limit)`,
     );
 
     // Make requests up to the limit
@@ -346,7 +345,7 @@ describe("Rate Limiter Middleware", () => {
 
     for (let i = 0; i < limit; i++) {
       try {
-        await axiosInstance.get(`/api/account/balances`);
+        await axiosInstance.get(`/api/agent/balances`);
         console.log(`Headers test: Request ${i + 1}/${limit} succeeded`);
       } catch (error) {
         const axiosError = error as AxiosError;

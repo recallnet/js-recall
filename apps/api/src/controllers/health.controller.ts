@@ -47,7 +47,8 @@ export function makeHealthController() {
             balanceManager: "ok",
             tradeSimulator: "ok",
             competitionManager: "ok",
-            teamManager: "ok",
+            userManager: "ok",
+            agentManager: "ok",
           },
         });
       } catch (error) {

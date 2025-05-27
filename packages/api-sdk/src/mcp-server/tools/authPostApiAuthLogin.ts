@@ -13,7 +13,7 @@ export const tool$authPostApiAuthLogin: ToolDefinition<typeof args> = {
   name: "auth-post-api-auth-login",
   description: `Verify SIWE signature and create a session
 
-Verifies the SIWE message and signature, creates a session, and returns team info`,
+Verifies the SIWE message and signature, creates a session, and returns agent info`,
   args,
   tool: async (client, args, ctx) => {
     const [result, apiCall] = await authPostApiAuthLogin(client, args.request, {

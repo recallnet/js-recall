@@ -25,7 +25,7 @@ export class Auth extends ClientSDK {
    * Verify SIWE signature and create a session
    *
    * @remarks
-   * Verifies the SIWE message and signature, creates a session, and returns team info
+   * Verifies the SIWE message and signature, creates a session, and returns agent info
    */
   async postApiAuthLogin(
     request: operations.PostApiAuthLoginRequest,

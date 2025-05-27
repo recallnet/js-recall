@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1746852592144,
-      "tag": "0000_mighty_stephen_strange",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1747326065815,
-      "tag": "0001_sparkling_domino",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1747505760840,
-      "tag": "0002_fair_stryfe",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1747769438851,
-      "tag": "0003_brave_wong",
+      "when": 1748116940027,
+      "tag": "0000_mighty_psynapse",
       "breakpoints": true
     }
   ]

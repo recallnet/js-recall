@@ -14,7 +14,7 @@ import {
   ADMIN_USERNAME,
   cleanupTestState,
   createTestClient,
-  registerTeamAndGetClient,
+  registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
 } from "@/e2e/utils/test-helpers.js";
@@ -53,18 +53,18 @@ describe("Portfolio Snapshots", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
-    const { team } = await registerTeamAndGetClient(
+    // Register agent and get client
+    const { agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Snapshot Test Team",
-    );
+      agentName: "Snapshot Test Agent",
+    });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Snapshot Test ${Date.now()}`;
     const startResult = await startTestCompetition(
       adminClient,
       competitionName,
-      [team.id],
+      [agent.id],
     );
 
     // Wait for operations to complete
@@ -73,7 +73,7 @@ describe("Portfolio Snapshots", () => {
     // Get the competition ID
     const competitionId = startResult.competition.id;
 
-    // Verify that a portfolio snapshot was taken for the team
+    // Verify that a portfolio snapshot was taken for the agent
     const snapshotsResponse = await adminClient.request(
       "get",
       `/api/admin/competition/${competitionId}/snapshots`,
@@ -84,9 +84,9 @@ describe("Portfolio Snapshots", () => {
     expect(typedResponse.snapshots).toBeDefined();
     expect(typedResponse.snapshots.length).toBeGreaterThan(0);
 
-    // Verify the snapshot has the correct team ID and competition ID
+    // Verify the snapshot has the correct agent ID and competition ID
     const snapshot = typedResponse.snapshots[0];
-    expect(snapshot?.teamId).toBe(team.id);
+    expect(snapshot?.agentId).toBe(agent.id);
     expect(snapshot?.competitionId).toBe(competitionId);
     // Verify the snapshot has token values
     expect(snapshot?.valuesByToken).toBeDefined();
@@ -101,18 +101,18 @@ describe("Portfolio Snapshots", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
-    const { team } = await registerTeamAndGetClient(
+    // Register agent and get client
+    const { agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Periodic Snapshot Team",
-    );
+      agentName: "Periodic Snapshot Agent",
+    });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Periodic Snapshot Test ${Date.now()}`;
     const startResult = await startTestCompetition(
       adminClient,
       competitionName,
-      [team.id],
+      [agent.id],
     );
 
     // Get the competition ID
@@ -171,18 +171,18 @@ describe("Portfolio Snapshots", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
+    // Register agent and get client
+    const { client, agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "End Snapshot Team",
-    );
+      agentName: "End Snapshot Agent",
+    });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `End Snapshot Test ${Date.now()}`;
     const startResult = await startTestCompetition(
       adminClient,
       competitionName,
-      [team.id],
+      [agent.id],
     );
 
     // Get the competition ID
@@ -195,7 +195,7 @@ describe("Portfolio Snapshots", () => {
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
     const solTokenAddress = config.specificChainTokens.svm.sol;
 
-    await teamClient.executeTrade({
+    await client.executeTrade({
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
       amount: "100",
@@ -243,18 +243,18 @@ describe("Portfolio Snapshots", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
-    const { client: teamClient, team } = await registerTeamAndGetClient(
+    // Register agent and get client
+    const { client, agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Value Calc Team",
-    );
+      agentName: "Value Calc Agent",
+    });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Value Calculation Test ${Date.now()}`;
     const startResult = await startTestCompetition(
       adminClient,
       competitionName,
-      [team.id],
+      [agent.id],
     );
 
     // Get the competition ID
@@ -265,7 +265,7 @@ describe("Portfolio Snapshots", () => {
 
     // Get initial balances
     const initialBalanceResponse =
-      (await teamClient.getBalance()) as BalancesResponse;
+      (await client.getBalance()) as BalancesResponse;
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
     const initialUsdcBalance =
       initialBalanceResponse.balances.find(
@@ -323,18 +323,18 @@ describe("Portfolio Snapshots", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register team and get client
-    const { team } = await registerTeamAndGetClient(
+    // Register agent and get client
+    const { agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      "Price Freshness Team",
-    );
+      agentName: "Price Freshness Agent",
+    });
 
-    // Start a competition with our team
+    // Start a competition with our agent
     const competitionName = `Price Freshness Test ${Date.now()}`;
     const startResult = await startTestCompetition(
       adminClient,
       competitionName,
-      [team.id],
+      [agent.id],
     );
 
     // Get the competition ID

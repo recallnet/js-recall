@@ -24,7 +24,9 @@ export default function RootLayout({
       <body className={`${fontSans.variable} ${fontMono.variable} antialiased`}>
         <Analytics />
         <Providers>
-          <Navbar>{children}</Navbar>
+          <Navbar>
+            <main className="min-h-screen w-full">{children}</main>
+          </Navbar>
         </Providers>
       </body>
     </html>
