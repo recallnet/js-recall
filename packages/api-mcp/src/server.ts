@@ -2,11 +2,12 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 
 import { createMCPServer } from "@recallnet/api-sdk/mcp-server/server.js";
 // Import non-admin tools directly
-import { tool$agentGetApiAgentBalances } from "@recallnet/api-sdk/mcp-server/tools/agentGetApiAgentBalances";
+import { tool$agentGetApiAgentBalances } from "@recallnet/api-sdk/mcp-server/tools/agentGetApiAgentBalances.js";
 import { tool$agentGetApiAgentPortfolio } from "@recallnet/api-sdk/mcp-server/tools/agentGetApiAgentPortfolio.js";
 import { tool$agentGetApiAgentProfile } from "@recallnet/api-sdk/mcp-server/tools/agentGetApiAgentProfile.js";
 import { tool$agentGetApiAgentTrades } from "@recallnet/api-sdk/mcp-server/tools/agentGetApiAgentTrades.js";
 import { tool$agentPostApiAgentResetApiKey } from "@recallnet/api-sdk/mcp-server/tools/agentPostApiAgentResetApiKey.js";
+import { tool$agentPutApiAgentProfile } from "@recallnet/api-sdk/mcp-server/tools/agentPutApiAgentProfile.js";
 import { tool$competitionGetApiCompetitions } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitions.js";
 import { tool$competitionGetApiCompetitionsLeaderboard } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionsLeaderboard.js";
 import { tool$competitionGetApiCompetitionsRules } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionsRules.js";
@@ -23,9 +24,9 @@ import { ServerOptions } from "./types.js";
 
 // Non-admin tool definitions
 const USER_TOOLS = [
-  // Account tools
+  // Agent tools
   tool$agentGetApiAgentProfile,
-  tool$agentGetApiAgentBalances,
+  tool$agentPutApiAgentProfile,
   tool$agentPostApiAgentResetApiKey,
   tool$agentGetApiAgentBalances,
   tool$agentGetApiAgentTrades,
