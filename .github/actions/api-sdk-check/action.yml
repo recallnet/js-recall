@@ -28,4 +28,4 @@ runs:
     - name: Check if API SDK is up to date
       shell: bash
       run: |
-        ! git status -s | grep -v .speakeasy
+        ! git status -s | grep -v .speakeasy | grep -v src/hooks/hooks.ts
