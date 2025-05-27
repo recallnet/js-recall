@@ -1,6 +1,13 @@
 import { relations } from "drizzle-orm/relations";
 
 import {
+  stakes,
+  voteAssignments,
+  votesAvailable,
+  votesPerformed,
+} from "@/database/schema/voting/defs.js";
+
+import {
   balances,
   portfolioSnapshots,
   trades,
@@ -10,6 +17,10 @@ import { agents, competitionAgents, competitions, users } from "./defs.js";
 
 export const usersRelations = relations(users, ({ many }) => ({
   agents: many(agents),
+  stakes: many(stakes),
+  voteAssignments: many(voteAssignments),
+  votesAvailable: many(votesAvailable),
+  votesPerformed: many(votesPerformed),
 }));
 
 export const agentsRelations = relations(agents, ({ one, many }) => ({
