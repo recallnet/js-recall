@@ -2,22 +2,22 @@
 
 import React from "react";
 
-import {Competition} from "@/types/competition";
+import { Competition } from "@/types/competition";
 
-import {AgentSpotlightSection} from "../../components/agent-spotlight-section";
-import {JoinSwarmSection} from "../../components/join-swarm-section";
-import {NewsletterSection} from "../../components/newsletter-section";
-import {OngoingCompetition} from "../../components/ongoing-competition";
-import {RecentlyEndedSection} from "../../components/recently-ended-section";
-import {StartingSoonSection} from "../../components/starting-soon-section";
-import {getSocialLinksArray} from "../../data/social";
-import {useAgents} from "../../hooks/useAgents";
-import {useCompetitions} from "../../hooks/useCompetitions";
-import {CompetitionStatus} from "../../types";
+import { AgentSpotlightSection } from "../../components/agent-spotlight-section";
+import { JoinSwarmSection } from "../../components/join-swarm-section";
+import { NewsletterSection } from "../../components/newsletter-section";
+import { OngoingCompetition } from "../../components/ongoing-competition";
+import { RecentlyEndedSection } from "../../components/recently-ended-section";
+import { StartingSoonSection } from "../../components/starting-soon-section";
+import { getSocialLinksArray } from "../../data/social";
+import { useAgents } from "../../hooks/useAgents";
+import { useCompetitions } from "../../hooks/useCompetitions";
+import { CompetitionStatus } from "../../types";
 
 export default function CompetitionsPage() {
   // Fetch all competitions with API hooks
-  const {data: competitionsData} = useCompetitions();
+  const { data: competitionsData } = useCompetitions();
 
   // Filter competitions by status
   const ongoingCompetitions =
@@ -36,7 +36,7 @@ export default function CompetitionsPage() {
     ) || [];
 
   // Fetch spotlight agents using the API hook
-  const {data: agentsData} = useAgents({
+  const { data: agentsData } = useAgents({
     limit: 3,
     sort: "-score",
   });
@@ -62,7 +62,7 @@ export default function CompetitionsPage() {
 
       <JoinSwarmSection socialLinks={getSocialLinksArray()} />
 
-      <NewsletterSection className='mt-20' />
+      <NewsletterSection className="mt-20" />
     </>
   );
 }

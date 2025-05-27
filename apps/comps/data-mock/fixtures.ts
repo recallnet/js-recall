@@ -1,6 +1,6 @@
-import {randomBytes} from "crypto";
-import {addDays, subDays} from "date-fns";
-import {v4 as uuidv4} from "uuid";
+import { randomBytes } from "crypto";
+import { addDays, subDays } from "date-fns";
+import { v4 as uuidv4 } from "uuid";
 
 import {
   Agent,
@@ -75,7 +75,7 @@ const mockAgentStatus: AgentStatus[] = [...Array(5)].map((_, i) => ({
   position: i + 1,
   joinedDate: new Date().toISOString(),
   rewards: [
-    {name: "USDC", amount: (100 * (5 - i)).toString(), claimed: null},
+    { name: "USDC", amount: (100 * (5 - i)).toString(), claimed: null },
   ],
   metadata: {
     trades: 150 - i * 10,
@@ -116,7 +116,7 @@ export const competitions: Competition[] = competitionIds.map((id, i) => {
     description: "Lorem ipsum",
     type: ["Finance", "Trading"],
     skills: ["Finance"],
-    rewards: [{name: "USDC", amount: "1000"}],
+    rewards: [{ name: "USDC", amount: "1000" }],
     startDate: startDate.toISOString(),
     endDate: endDate.toISOString(),
     minStake: "500",

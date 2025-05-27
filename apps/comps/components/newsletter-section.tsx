@@ -1,13 +1,12 @@
 "use client";
 
-import {zodResolver} from "@hookform/resolvers/zod";
-import React, {useState} from "react";
-import {useForm} from "react-hook-form";
-import {z} from "zod";
-import {cn} from "@recallnet/ui2/lib/utils";
+import { zodResolver } from "@hookform/resolvers/zod";
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
-import {Button} from "@recallnet/ui2/components/button";
-import {Card} from "@recallnet/ui2/components/shadcn/card";
+import { Button } from "@recallnet/ui2/components/button";
+import { Card } from "@recallnet/ui2/components/shadcn/card";
 import {
   Form,
   FormControl,
@@ -15,7 +14,8 @@ import {
   FormItem,
   FormMessage,
 } from "@recallnet/ui2/components/shadcn/form";
-import {Input} from "@recallnet/ui2/components/shadcn/input";
+import { Input } from "@recallnet/ui2/components/shadcn/input";
+import { cn } from "@recallnet/ui2/lib/utils";
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -23,7 +23,11 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-export const NewsletterSection: React.FC = ({className}: {className?: string;}) => {
+export const NewsletterSection: React.FC = ({
+  className,
+}: {
+  className?: string;
+}) => {
   const [email, setEmail] = useState("");
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -41,7 +45,10 @@ export const NewsletterSection: React.FC = ({className}: {className?: string;}) 
     <Card
       corner="bottom-left"
       cropSize={50}
-      className={cn(className, "flex h-[300px] w-[450px] items-center justify-center bg-gray-600")}
+      className={cn(
+        className,
+        "flex h-[300px] w-[450px] items-center justify-center bg-gray-600",
+      )}
     >
       <Card
         corner="bottom-left"
@@ -59,7 +66,7 @@ export const NewsletterSection: React.FC = ({className}: {className?: string;}) 
             <FormField
               control={form.control}
               name="email"
-              render={({field}) => (
+              render={({ field }) => (
                 <FormItem>
                   <FormControl>
                     <div className="flex flex-col gap-5">

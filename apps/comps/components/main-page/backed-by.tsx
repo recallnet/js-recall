@@ -1,22 +1,23 @@
 "use client";
 
 import Image from "next/image";
-import {cn} from "@recallnet/ui2/lib/utils";
+
+import { cn } from "@recallnet/ui2/lib/utils";
 
 type BackedByProps = {
   className?: string;
   logos: string[]; // Array of image URLs
 };
 
-export const BackedBy: React.FC<BackedByProps> = ({className, logos}) => {
+export const BackedBy: React.FC<BackedByProps> = ({ className, logos }) => {
   return (
-    <div className={cn("flex flex-col items-center w-[80%]", className)}>
+    <div className={cn("flex w-[80%] flex-col items-center", className)}>
       <div className="flex flex-col">
-        <h2 className="text-5xl text-gray-500 mb-8 md:w-full w-100 font-semibold">
+        <h2 className="w-100 mb-8 text-5xl font-semibold text-gray-500 md:w-full">
           Backed by industry leaders
         </h2>
-        <div className="border-t border-gray-300 mb-5" />
-        <div className="flex gap-20 justify-center w-full flex-wrap">
+        <div className="mb-5 border-t border-gray-300" />
+        <div className="flex w-full flex-wrap justify-center gap-20">
           {logos.map((src, i) => (
             <div key={i} className="w-50 h-50 relative flex-shrink-0">
               <Image
@@ -32,4 +33,3 @@ export const BackedBy: React.FC<BackedByProps> = ({className, logos}) => {
     </div>
   );
 };
-

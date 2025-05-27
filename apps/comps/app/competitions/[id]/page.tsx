@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
+import { useDebounce } from "@uidotdev/usehooks";
 import Link from "next/link";
 import React from "react";
 
@@ -14,6 +15,7 @@ import { UpComingCompetition } from "@/components/upcoming-competition";
 import { socialLinks } from "@/data/social";
 import { useCompetition } from "@/hooks/useCompetition";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
+import { AgentResponse } from "@/types";
 
 export default function CompetitionPage({
   params,
@@ -21,6 +23,13 @@ export default function CompetitionPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = React.use(params);
+  const [agentsFilter, setAgentsFilter] = React.useState("");
+  const [agentsSort, setAgentsSort] = React.useState("");
+  const [agentsLimit] = React.useState(10);
+  const [agentsOffset, setAgentsOffset] = React.useState(0);
+  const [allAgents, setAllAgents] = React.useState<AgentResponse[]>([]);
+  const debouncedFilterTerm = useDebounce(agentsFilter, 300);
+
   const {
     data: competition,
     isLoading: isLoadingCompetition,

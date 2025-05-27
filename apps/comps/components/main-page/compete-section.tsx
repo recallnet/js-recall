@@ -1,13 +1,14 @@
 "use client";
 
-import React, {useState} from "react";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@recallnet/ui2/components/tabs";
-import {Button} from "@recallnet/ui2/components/shadcn/button";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowRightIcon } from "@radix-ui/react-icons";
+import Image from "next/image";
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+
+import { Button } from "@recallnet/ui2/components/shadcn/button";
+import Card from "@recallnet/ui2/components/shadcn/card";
 import {
   Form,
   FormControl,
@@ -15,14 +16,14 @@ import {
   FormItem,
   FormMessage,
 } from "@recallnet/ui2/components/shadcn/form";
-import {Input} from "@recallnet/ui2/components/shadcn/input";
-import {cn} from "@recallnet/ui2/lib/utils";
-import {useForm} from "react-hook-form";
-import {z} from "zod";
-import {zodResolver} from "@hookform/resolvers/zod";
-import Card from "@recallnet/ui2/components/shadcn/card";
-import {ArrowRightIcon} from "@radix-ui/react-icons";
-import Image from "next/image";
+import { Input } from "@recallnet/ui2/components/shadcn/input";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@recallnet/ui2/components/tabs";
+import { cn } from "@recallnet/ui2/lib/utils";
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -44,13 +45,14 @@ const CompeteSection = () => {
   const onSubmit = () => {};
 
   return (
-    <section className="w-screen bg-white px-6 py-20 -mx-[calc(50vw-50%)]">
-      <div className="max-w-5xl mx-auto flex flex-col items-center">
-        <h2 className="capitalize text-6xl font-bold mb-4 text-gray-800 text-center">
+    <section className="-mx-[calc(50vw-50%)] w-screen bg-white px-6 py-20">
+      <div className="mx-auto flex max-w-5xl flex-col items-center">
+        <h2 className="mb-4 text-center text-6xl font-bold capitalize text-gray-800">
           compete for rewards
         </h2>
-        <p className="text-gray-400 text-lg mb-8 text-center w-130">
-          Join an active competition to start earning from your agent’s skills today
+        <p className="w-130 mb-8 text-center text-lg text-gray-400">
+          Join an active competition to start earning from your agent’s skills
+          today
         </p>
 
         <Tabs
@@ -58,14 +60,16 @@ const CompeteSection = () => {
           className="w-full"
           onValueChange={(value: string) => setSelected(value)}
         >
-          <TabsList className="mt-5 bg-transparent justify-center flex">
+          <TabsList className="mt-5 flex justify-center bg-transparent">
             {categories.map((cat) => (
               <TabsTrigger
                 key={cat}
                 value={cat}
                 className={cn(
-                  "text-sm uppercase decoration-gray-600 decoration-2 border-t py-3 px-10",
-                  selected === cat ? "text-black border-black" : "text-gray-500 border-gray-300"
+                  "border-t px-10 py-3 text-sm uppercase decoration-gray-600 decoration-2",
+                  selected === cat
+                    ? "border-black text-black"
+                    : "border-gray-300 text-gray-500",
                 )}
               >
                 {cat}
@@ -77,59 +81,73 @@ const CompeteSection = () => {
             <TabsContent
               key={cat}
               value={cat}
-              className="flex flex-col items-center md:flex-row w-full pt-8"
+              className="flex w-full flex-col items-center pt-8 md:flex-row"
             >
-              {
-                cat == categories[0] ?
-                  <Card corner='bottom-left' cropSize={45} className="flex-1 bg-[#15191F] h-60 rounded-xl shadow-md flex items-center justify-center w-130">
-                    <div className="flex md:flex-row flex-col h-full w-full">
-
-                      <div className="relative pb-5 md:border-r border-gray-500 flex justify-center items-end md:pb-10 md:pl-10 md:w-2/3 w-full h-60">
-                        <Image
-                          src="/frame.png"
-                          alt="agent"
-                          className="pointer-events-none absolute top-0 left-0 z-0 object-contain"
-                          width={450}
-                          height={450}
-                        />
-                        <h1 className="text-3xl text-white font-bold w-100">Crypto Trading Competition</h1>
-                      </div>
-                      <div className="flex flex-col justify-end items-center">
-                        <div className="justify-center items-center text-gray-400 text-lg w-3/4 h-full md:flex hidden">Prove your agent generates the most profitable alpha to compete for 25K.</div>
-                        <Button className="uppercase bg-transparent text-gray-200 hover:bg-gray-800 flex justify-between border-t border-gray-500 w-full py-8 px-10">
-                          <span className="pl-10 md:pl-0">participate</span> <ArrowRightIcon className="text-white" />
-                        </Button>
-                      </div>
+              {cat == categories[0] ? (
+                <Card
+                  corner="bottom-left"
+                  cropSize={45}
+                  className="w-130 flex h-60 flex-1 items-center justify-center rounded-xl bg-[#15191F] shadow-md"
+                >
+                  <div className="flex h-full w-full flex-col md:flex-row">
+                    <div className="relative flex h-60 w-full items-end justify-center border-gray-500 pb-5 md:w-2/3 md:border-r md:pb-10 md:pl-10">
+                      <Image
+                        src="/frame.png"
+                        alt="agent"
+                        className="pointer-events-none absolute left-0 top-0 z-0 object-contain"
+                        width={450}
+                        height={450}
+                      />
+                      <h1 className="w-100 text-3xl font-bold text-white">
+                        Crypto Trading Competition
+                      </h1>
                     </div>
-                  </Card>
-                  :
-
-                  <Card corner='bottom-left' cropSize={45} className="flex-1 bg-gray-100 h-60 rounded-xl shadow-md flex flex-col py-5 md:px-60 sm:px-30 px-10 items-center justify-center text-gray-500 text-center">
-                    <span className="text-3xl font-bold">Nothing here yet</span>
-                    <span>Once competitions are over, they’ll show up here.
-                      Meanwhile subscribe to alerts about new competitions on the testnet. </span>
-                  </Card>
-              }
+                    <div className="flex flex-col items-center justify-end">
+                      <div className="hidden h-full w-3/4 items-center justify-center text-lg text-gray-400 md:flex">
+                        Prove your agent generates the most profitable alpha to
+                        compete for 25K.
+                      </div>
+                      <Button className="flex w-full justify-between border-t border-gray-500 bg-transparent px-10 py-8 uppercase text-gray-200 hover:bg-gray-800">
+                        <span className="pl-10 md:pl-0">participate</span>{" "}
+                        <ArrowRightIcon className="text-white" />
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ) : (
+                <Card
+                  corner="bottom-left"
+                  cropSize={45}
+                  className="sm:px-30 flex h-60 flex-1 flex-col items-center justify-center rounded-xl bg-gray-100 px-10 py-5 text-center text-gray-500 shadow-md md:px-60"
+                >
+                  <span className="text-3xl font-bold">Nothing here yet</span>
+                  <span>
+                    Once competitions are over, they’ll show up here. Meanwhile
+                    subscribe to alerts about new competitions on the
+                    testnet.{" "}
+                  </span>
+                </Card>
+              )}
             </TabsContent>
           ))}
         </Tabs>
 
-        <div className="border-t border-gray-300 w-full my-10" />
+        <div className="my-10 w-full border-t border-gray-300" />
 
-        <div className="flex flex-col md:flex-row justify-between items-start gap-10">
-          <div className="text-gray-500 text-3xl font-bold max-w-md">
+        <div className="flex flex-col items-start justify-between gap-10 md:flex-row">
+          <div className="max-w-md text-3xl font-bold text-gray-500">
             More Competitions Coming Soon
           </div>
 
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}
-              className="space-y-2 w-full max-w-md"
+              className="w-full max-w-md space-y-2"
             >
               <FormField
                 control={form.control}
                 name="email"
-                render={({field}) => (
+                render={({ field }) => (
                   <FormItem>
                     <FormControl>
                       <div className="flex flex-col gap-2">
@@ -139,11 +157,11 @@ const CompeteSection = () => {
                             className="w-full rounded-r-none border border-gray-400 py-6"
                             {...field}
                           />
-                          <Button className="rounded-l-none bg-gray-800 px-6 text-white hover:bg-gray-800 h-full">
+                          <Button className="h-full rounded-l-none bg-gray-800 px-6 text-white hover:bg-gray-800">
                             NOTIFY ME
                           </Button>
                         </div>
-                        <span className="text-gray-400 text-sm">
+                        <span className="text-sm text-gray-400">
                           Sign up for alerts about new competitions on testnet.
                         </span>
                       </div>
@@ -161,4 +179,3 @@ const CompeteSection = () => {
 };
 
 export default CompeteSection;
-

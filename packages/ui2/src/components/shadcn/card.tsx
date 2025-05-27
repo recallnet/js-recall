@@ -55,10 +55,6 @@ interface BorderCardProps extends Omit<CardProps, "width" | "height"> {
 export const BorderCard: React.FC<BorderCardProps> = ({
   width,
   height,
-  xlWidth,
-  xlHeight,
-  mdWidth,
-  mdHeight,
   borderColor,
   inset = 2,
   children,

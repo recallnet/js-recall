@@ -1,4 +1,5 @@
-import {atom} from "jotai";
+import { atom } from "jotai";
+import { zeroAddress } from "viem";
 
 import {
   LeaderboardAgent,
@@ -6,7 +7,6 @@ import {
   LeaderboardTypes,
   User,
 } from "@/types";
-import {zeroAddress} from "viem";
 
 export const userAtom = atom<User>({
   address: "",
@@ -34,10 +34,10 @@ export const userAgentAtom = atom<LeaderboardAgent>({
 export const leaderboardAtom = atom<
   Record<
     LeaderboardTypes,
-    {loaded: false} | (LeaderboardResponse & {loaded: true})
+    { loaded: false } | (LeaderboardResponse & { loaded: true })
   >
 >({
-  [LeaderboardTypes.TRADING]: {loaded: false},
-  [LeaderboardTypes.DERIVATIVES]: {loaded: false},
-  [LeaderboardTypes.ANALYSIS]: {loaded: false},
+  [LeaderboardTypes.TRADING]: { loaded: false },
+  [LeaderboardTypes.DERIVATIVES]: { loaded: false },
+  [LeaderboardTypes.ANALYSIS]: { loaded: false },
 });

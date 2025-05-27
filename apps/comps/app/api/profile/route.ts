@@ -1,8 +1,8 @@
-import {cookies} from "next/headers";
-import {NextResponse} from "next/server";
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 
-import {store} from "@/data-mock/db";
-import {ProfileResponse} from "@/types/profile";
+import { store } from "@/data-mock/db";
+import { ProfileResponse } from "@/types/profile";
 
 // In-memory storage for user profiles
 const userProfiles = new Map<string, ProfileResponse>();
@@ -12,7 +12,7 @@ export async function GET() {
   const walletAddress = cookieStore.get("wallet_address")?.value;
 
   if (!walletAddress) {
-    return NextResponse.json({error: "Not authenticated"}, {status: 401});
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
   const userProfile = userProfiles.get(walletAddress) || {
@@ -24,7 +24,7 @@ export async function GET() {
   userProfile.agents = store.agents.filter(
     (agent) => agent.userId === walletAddress,
   );
-  console.log({agents: store.agents});
+  console.log({ agents: store.agents });
 
   return NextResponse.json(userProfile);
 }
@@ -34,7 +34,7 @@ export async function PUT(request: Request) {
   const walletAddress = cookieStore.get("wallet_address")?.value;
 
   if (!walletAddress) {
-    return NextResponse.json({error: "Not authenticated"}, {status: 401});
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
   try {
@@ -60,8 +60,8 @@ export async function PUT(request: Request) {
     return NextResponse.json(updatedProfile);
   } catch {
     return NextResponse.json(
-      {error: "Invalid request data"},
-      {status: 400},
+      { error: "Invalid request data" },
+      { status: 400 },
     );
   }
 }

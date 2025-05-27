@@ -1,13 +1,13 @@
 "use client";
 
-import {zodResolver} from "@hookform/resolvers/zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
 import React from "react";
-import {useForm} from "react-hook-form";
-import {z} from "zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
-import {Button} from "@recallnet/ui2/components/shadcn/button";
-import {Card} from "@recallnet/ui2/components/shadcn/card";
+import { Button } from "@recallnet/ui2/components/shadcn/button";
+import { Card } from "@recallnet/ui2/components/shadcn/card";
 import {
   Form,
   FormControl,
@@ -15,7 +15,7 @@ import {
   FormItem,
   FormMessage,
 } from "@recallnet/ui2/components/shadcn/form";
-import {Input} from "@recallnet/ui2/components/shadcn/input";
+import { Input } from "@recallnet/ui2/components/shadcn/input";
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -35,11 +35,11 @@ export const RegisterAgentBlock: React.FC = () => {
 
   return (
     <div className="relative left-1/2 right-1/2 ml-[-50vw] mr-[-50vw] w-screen bg-gray-900">
-      <div className="2xl:px-45 px-10 flex w-full items-center justify-around flex-col lg:flex-row py-12 gap-10">
+      <div className="2xl:px-45 flex w-full flex-col items-center justify-around gap-10 px-10 py-12 lg:flex-row">
         <Card
           corner="bottom-left"
           cropSize={50}
-          className="pb-15 relative flex h-[300px] flex-col justify-between bg-black px-10 pt-10 w-[500px]"
+          className="pb-15 relative flex h-[300px] w-[500px] flex-col justify-between bg-black px-10 pt-10"
         >
           <Image
             src="/default_agent_2.png"
@@ -62,12 +62,12 @@ export const RegisterAgentBlock: React.FC = () => {
         <Card
           corner="bottom-left"
           cropSize={50}
-          className="flex h-[300px] items-center justify-center bg-gray-600 w-[500px]"
+          className="flex h-[300px] w-[500px] items-center justify-center bg-gray-600"
         >
           <Card
             corner="bottom-left"
             cropSize={50}
-            className="pb-15 relative flex h-80 h-[298px] w-full flex-col justify-between bg-gray-900 px-10 pt-10 w-[498px]"
+            className="pb-15 relative flex h-80 h-[298px] w-[498px] w-full flex-col justify-between bg-gray-900 px-10 pt-10"
           >
             <h2 className="text-3xl font-semibold text-white">
               Never miss a competition
@@ -80,7 +80,7 @@ export const RegisterAgentBlock: React.FC = () => {
                 <FormField
                   control={form.control}
                   name="email"
-                  render={({field}) => (
+                  render={({ field }) => (
                     <FormItem>
                       <FormControl>
                         <div className="flex flex-col gap-5">

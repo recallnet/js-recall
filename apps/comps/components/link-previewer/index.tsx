@@ -24,26 +24,21 @@ export const LinkPreview: React.FC<LinkPreviewProps> = ({
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex flex-col justify-between w-80 h-110 border border-gray-400 bg-white transition"
+      className="h-110 flex w-80 flex-col justify-between border border-gray-400 bg-white transition"
     >
-      <div className="p-6 flex flex-col w-full">
+      <div className="flex w-full flex-col p-6">
         {image && (
-          <div className="relative h-40 w-full flex-shrink-0 rounded-t-lg mb-4">
-            <Image
-              src={image}
-              alt={title}
-              fill
-              className="object-cover"
-            />
+          <div className="relative mb-4 h-40 w-full flex-shrink-0 rounded-t-lg">
+            <Image src={image} alt={title} fill className="object-cover" />
           </div>
         )}
 
-        <div className="flex flex-col flex-grow justify-between">
+        <div className="flex flex-grow flex-col justify-between">
           <div className="flex-grow">
-            <p className="text-gray-500 font-semibold">{title}</p>
+            <p className="font-semibold text-gray-500">{title}</p>
             {description && (
-              <p className="text-sm text-gray-400 mt-1 line-clamp-2 relative max-h-10 overflow-hidden">
-                <span className="absolute bottom-0 left-0 w-full h-4 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+              <p className="relative mt-1 line-clamp-2 max-h-10 overflow-hidden text-sm text-gray-400">
+                <span className="pointer-events-none absolute bottom-0 left-0 h-4 w-full bg-gradient-to-t from-white to-transparent" />
                 {description}
               </p>
             )}
@@ -53,11 +48,13 @@ export const LinkPreview: React.FC<LinkPreviewProps> = ({
 
       <div className="flex items-center justify-between border-t border-gray-300 px-4 py-3">
         <div className="flex items-center gap-3">
-          <div className="w-7 h-7 rounded-full overflow-hidden bg-gray-200">
+          <div className="h-7 w-7 overflow-hidden rounded-full bg-gray-200">
             <Image src={siteIcon} alt="Site logo" width={28} height={28} />
           </div>
           <div className="flex flex-col">
-            <span className="text-sm text-gray-700 font-medium">{siteHandle}</span>
+            <span className="text-sm font-medium text-gray-700">
+              {siteHandle}
+            </span>
             <span className="text-xs text-gray-400">{date}</span>
           </div>
         </div>
@@ -65,4 +62,3 @@ export const LinkPreview: React.FC<LinkPreviewProps> = ({
     </a>
   );
 };
-

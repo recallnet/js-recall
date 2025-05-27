@@ -1,12 +1,12 @@
 "use client";
 
-import {ConnectButton} from "@rainbow-me/rainbowkit";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import Image from "next/image";
-import {useRouter} from "next/navigation";
+import { useRouter } from "next/navigation";
 import React from "react";
-import {FaArrowRightFromBracket} from "react-icons/fa6";
+import { FaArrowRightFromBracket } from "react-icons/fa6";
 
-import {Button} from "@recallnet/ui2/components/shadcn/button";
+import { Button } from "@recallnet/ui2/components/shadcn/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,15 +14,15 @@ import {
   DropdownMenuTrigger,
 } from "@recallnet/ui2/components/shadcn/dropdown-menu";
 
-import {useLogout} from "@/hooks";
-import {useProfile} from "@/hooks/useProfile";
+import { useLogout } from "@/hooks";
+import { useProfile } from "@/hooks/useProfile";
 
 export const SIWEButton: React.FunctionComponent<
   React.ComponentProps<typeof Button>
 > = () => {
   const router = useRouter();
   const logout = useLogout();
-  const {data: user, isError, refetch} = useProfile();
+  const { data: user, isError, refetch } = useProfile();
 
   const handleLogout = async () => {
     logout.mutate();
@@ -35,24 +35,23 @@ export const SIWEButton: React.FunctionComponent<
 
   return (
     <ConnectButton.Custom>
-      {({openConnectModal}) => {
+      {({ openConnectModal }) => {
         return user && !isError ? (
           <div className="mx-3 flex items-center space-x-3">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <div className="ml-5 flex cursor-pointer items-center justify-between">
-                  {
-                    user.image ?
-                      <Image
-                        src={user?.image || ""}
-                        alt="agent"
-                        className="pointer-events-none"
-                        width={25}
-                        height={25}
-                      />
-                      :
-                      <div className="bg-gray-800 w-[25px] h-[25px]" />
-                  }
+                  {user.image ? (
+                    <Image
+                      src={user?.image || ""}
+                      alt="agent"
+                      className="pointer-events-none"
+                      width={25}
+                      height={25}
+                    />
+                  ) : (
+                    <div className="h-[25px] w-[25px] bg-gray-800" />
+                  )}
                   <div className="focus ml-3 text-xs font-medium text-white">
                     {user.address.slice(0, 6)}...{user.address.slice(-4)}
                   </div>

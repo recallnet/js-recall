@@ -1,7 +1,7 @@
-import {v4 as uuidv4} from "uuid";
+import { v4 as uuidv4 } from "uuid";
 
-import {agents, competitions} from "@/data-mock/fixtures";
-import {Agent, Competition, CreateAgentRequest} from "@/types";
+import { agents, competitions } from "@/data-mock/fixtures";
+import { Agent, Competition, CreateAgentRequest } from "@/types";
 
 interface Store {
   agents: Agent[];
@@ -26,7 +26,7 @@ if (process.env.NODE_ENV === "production") {
   store = (global as any).store;
 }
 
-export {store};
+export { store };
 
 // Competition helpers
 export const findCompetition = (id: string): Competition | undefined => {
@@ -169,7 +169,7 @@ export const updateAgent = (
   const index = store.agents.findIndex((a) => a.id === id);
   if (index === -1) return undefined;
 
-  store.agents[index] = {...store.agents[index], ...updates} as Agent;
+  store.agents[index] = { ...store.agents[index], ...updates } as Agent;
   return agents[index];
 };
 

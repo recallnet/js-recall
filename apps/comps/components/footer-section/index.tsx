@@ -2,15 +2,16 @@
 
 import Image from "next/image";
 import React from "react";
-import {FaDiscord, FaReddit, FaYoutube} from "react-icons/fa";
-import {FaXTwitter} from "react-icons/fa6";
-import {cn} from "@recallnet/ui2/lib/utils";
+import { FaDiscord, FaReddit, FaYoutube } from "react-icons/fa";
+import { FaXTwitter } from "react-icons/fa6";
+
+import { cn } from "@recallnet/ui2/lib/utils";
 
 interface FooterSectionProps {
   className?: string;
 }
 
-export const FooterSection: React.FC<FooterSectionProps> = ({className}) => {
+export const FooterSection: React.FC<FooterSectionProps> = ({ className }) => {
   const linkBlock1 = [
     {
       text: "COMPETITIONS",
@@ -56,10 +57,10 @@ export const FooterSection: React.FC<FooterSectionProps> = ({className}) => {
     },
   ];
   const socialLinks = [
-    {icon: FaXTwitter, url: "/"},
-    {icon: FaDiscord, url: "/"},
-    {icon: FaYoutube, url: "/"},
-    {icon: FaReddit, url: "/"},
+    { icon: FaXTwitter, url: "/" },
+    { icon: FaDiscord, url: "/" },
+    { icon: FaYoutube, url: "/" },
+    { icon: FaReddit, url: "/" },
   ];
 
   return (
@@ -68,7 +69,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({className}) => {
       <div className="grid grid-cols-1 content-center gap-4 sm:grid-cols-2 md:grid-cols-5">
         <Image src="/logo_white.png" alt="recallnet" height={65} width={65} />
         <div className="flex flex-col justify-center space-y-1">
-          {linkBlock1.map(({text, link}, i) => (
+          {linkBlock1.map(({ text, link }, i) => (
             <a
               key={i}
               href={link}
@@ -81,7 +82,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({className}) => {
           ))}
         </div>
         <div className="flex flex-col justify-center space-y-1">
-          {linkBlock2.map(({text, link}, i) => (
+          {linkBlock2.map(({ text, link }, i) => (
             <a
               key={i}
               href={link}

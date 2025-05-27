@@ -1,10 +1,11 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
-import {FooterSection} from "@/components/footer-section";
-import {zodResolver} from "@hookform/resolvers/zod";
-import {useForm} from "react-hook-form";
-import {z} from "zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+
+import { Button } from "@recallnet/ui2/components/shadcn/button";
 import {
   Form,
   FormControl,
@@ -12,16 +13,15 @@ import {
   FormItem,
   FormMessage,
 } from "@recallnet/ui2/components/shadcn/form";
-import {Input} from "@recallnet/ui2/components/shadcn/input";
-import {Button} from "@recallnet/ui2/components/shadcn/button";
+import { Input } from "@recallnet/ui2/components/shadcn/input";
 
+import { FooterSection } from "@/components/footer-section";
 
 const formSchema = z.object({
   email: z.string().email(),
 });
 
 type FormData = z.infer<typeof formSchema>;
-
 
 export const SubscribeSection = () => {
   const form = useForm<FormData>({
@@ -34,20 +34,20 @@ export const SubscribeSection = () => {
   const onSubmit = () => {};
 
   return (
-    <div className="relative w-full bg-black text-white flex flex-col justify-between lg:items-start items-center py-40 overflow-hidden sm:px-0 px-10">
+    <div className="relative flex w-full flex-col items-center justify-between overflow-hidden bg-black px-10 py-40 text-white sm:px-0 lg:items-start">
       {/* Left content */}
-      <div className="max-w-xl z-10">
-        <h2 className="text-7xl font-bold mb-6">Subscribe</h2>
-        <p className="text-gray-400 mb-8 w-90"> Sign up to hear about new competitions and big announcements</p>
+      <div className="z-10 max-w-xl">
+        <h2 className="mb-6 text-7xl font-bold">Subscribe</h2>
+        <p className="w-90 mb-8 text-gray-400">
+          {" "}
+          Sign up to hear about new competitions and big announcements
+        </p>
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-6"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
               name="email"
-              render={({field}) => (
+              render={({ field }) => (
                 <FormItem>
                   <FormControl>
                     <div className="flex">
@@ -56,7 +56,7 @@ export const SubscribeSection = () => {
                         className="md:w-70 w-50 border-2 border-white py-6"
                         {...field}
                       />
-                      <Button className="bg-white px-8 text-black hover:bg-gray-200 h-full">
+                      <Button className="h-full bg-white px-8 text-black hover:bg-gray-200">
                         NOTIFY ME
                       </Button>
                     </div>
@@ -70,7 +70,7 @@ export const SubscribeSection = () => {
       </div>
 
       {/* Right image */}
-      <div className="absolute top-[-250] 2xl:right-0 right-[-300] xl:w-[1000px] xl:h-[1000px] hidden lg:block">
+      <div className="absolute right-[-300] top-[-250] hidden lg:block xl:h-[1000px] xl:w-[1000px] 2xl:right-0">
         <Image
           src={"/frame_4.png"}
           alt="Subscribe illustration"
@@ -78,8 +78,7 @@ export const SubscribeSection = () => {
           className="object-contain"
         />
       </div>
-      <FooterSection className="w-full mt-40" />
+      <FooterSection className="mt-40 w-full" />
     </div>
   );
 };
-
