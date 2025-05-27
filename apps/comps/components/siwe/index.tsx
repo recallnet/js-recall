@@ -17,6 +17,8 @@ import {
 import { useLogout } from "@/hooks";
 import { useProfile } from "@/hooks/useProfile";
 
+import { Identicon } from "../identicon/index";
+
 export const SIWEButton: React.FunctionComponent<
   React.ComponentProps<typeof Button>
 > = () => {
@@ -27,10 +29,6 @@ export const SIWEButton: React.FunctionComponent<
   const handleLogout = async () => {
     logout.mutate();
     await refetch();
-  };
-
-  const handleMyAccount = () => {
-    router.push("/user/agents");
   };
 
   return (
@@ -50,7 +48,10 @@ export const SIWEButton: React.FunctionComponent<
                       height={25}
                     />
                   ) : (
-                    <div className="h-[25px] w-[25px] bg-gray-800" />
+                    <Identicon
+                      className="rounded-none"
+                      address={user.address}
+                    />
                   )}
                   <div className="focus ml-3 text-xs font-medium text-white">
                     {user.address.slice(0, 6)}...{user.address.slice(-4)}
@@ -58,12 +59,6 @@ export const SIWEButton: React.FunctionComponent<
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-40 bg-black">
-                <DropdownMenuItem
-                  onClick={handleMyAccount}
-                  className="cursor-pointer hover:bg-gray-800"
-                >
-                  My Account
-                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => router.push("/profile")}
                   className="cursor-pointer hover:bg-gray-800"
@@ -81,10 +76,10 @@ export const SIWEButton: React.FunctionComponent<
             </DropdownMenu>
           </div>
         ) : (
-          <div className="mx-3 flex items-center space-x-10">
+          <div className="flex items-center">
             <Button
               onClick={openConnectModal}
-              className="bg-sky-700 px-6 py-5 text-white hover:bg-sky-600"
+              className="h-full bg-white px-10 px-6 py-5 text-black"
             >
               JOIN / SIGN IN
             </Button>

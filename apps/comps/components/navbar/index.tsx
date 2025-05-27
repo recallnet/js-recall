@@ -28,7 +28,7 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
   return (
     <>
       <nav className="flex w-full justify-center border-b border-gray-700 bg-black">
-        <div className="xl:px-43 md:px-25 flex w-full max-w-[1820px] items-center justify-between px-5 lg:px-40">
+        <div className="xl:px-25 flex w-full items-center justify-between md:px-5 lg:px-20">
           <div className="flex items-center gap-4">
             {/* Logo */}
             <Link
@@ -105,7 +105,7 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
         </div>
       </nav>
 
-      <div className="xl:px-25 flex justify-center md:px-5 lg:px-20">
+      <div className="xl:px-25 flex justify-center pt-10 md:px-5 lg:px-20">
         {children}
       </div>
     </>

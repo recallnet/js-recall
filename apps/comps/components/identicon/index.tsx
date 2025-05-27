@@ -1,8 +1,16 @@
 import { toSvg } from "jdenticon";
 
-export function Identicon({ address }: { address: string }) {
+import { cn } from "@recallnet/ui2/lib/utils";
+
+export function Identicon({
+  address,
+  className,
+}: {
+  address: string;
+  className?: string;
+}) {
   const svg = toSvg(address, 40, {
-    padding: 0.8,
+    padding: 0.9,
     hues: [227],
     lightness: {
       color: [0.74, 1.0],
@@ -17,7 +25,7 @@ export function Identicon({ address }: { address: string }) {
   return (
     <div
       dangerouslySetInnerHTML={{ __html: svg }}
-      className="h-10 w-10 rounded-full bg-gray-700"
+      className={cn("h-10 w-10 rounded-full bg-gray-700", className)}
     />
   );
 }
