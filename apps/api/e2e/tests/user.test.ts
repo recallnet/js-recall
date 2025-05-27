@@ -153,55 +153,6 @@ describe("User API", () => {
     }
   });
 
-  // TODO: user auth isn't enabled
-  test.skip("user can retrieve profile info", async () => {
-    // Setup admin client
-    const client = createTestClient();
-    console.log(
-      `TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`,
-    );
-    const loginSuccess = await client.loginAsAdmin(adminApiKey);
-    console.log(`TEST: Login result: ${loginSuccess}`);
-
-    // Register a user with metadata
-    const userName = `Profile Metadata User ${Date.now()}`;
-    const email = `profile-metadata-${Date.now()}@example.com`;
-
-    // Register user with metadata
-    const registerResponse = await client.registerUser(
-      generateRandomEthAddress(),
-      userName,
-      email,
-    );
-    expect(registerResponse.success).toBe(true);
-
-    // Create a client for the new user
-    const registrationResponse = registerResponse as UserRegistrationResponse;
-    expect(registrationResponse.agent?.apiKey).toBeDefined();
-    const userClient = client.createAgentClient(
-      registrationResponse.agent!.apiKey!,
-    );
-
-    // Manually set metadata to mimic UI behavior
-    const newName = "Profile Test User";
-    await userClient.updateUserProfile({
-      name: newName,
-    });
-
-    // Get the user profile
-    const profileResponse = await userClient.getUserProfile();
-    expect(profileResponse.success).toBe(true);
-    const userProfile = profileResponse as UserProfileResponse;
-
-    // Verify all profile fields including metadata
-    expect(userProfile.user.id).toBeDefined();
-    expect(userProfile.user.name).toBe(newName);
-    expect(userProfile.user.email).toBe(email);
-    expect(userProfile.user.metadata).toBeNull();
-    expect(userProfile.user.createdAt).toBeDefined();
-    expect(userProfile.user.updatedAt).toBeDefined();
-  });
-
   test("user can update both name and imageUrl in a single request", async () => {
     // Setup admin client
     const adminClient = createTestClient();
