@@ -156,8 +156,8 @@ export function makeUserController(services: ServiceRegistry) {
           userId,
           name.trim(),
           description?.trim(),
-          metadata,
           imageUrl?.trim(),
+          metadata,
         );
 
         if (!agent) {
@@ -262,6 +262,102 @@ export function makeUserController(services: ServiceRegistry) {
             status: agent.status,
             createdAt: agent.createdAt,
             updatedAt: agent.updatedAt,
+            // Explicitly exclude apiKey for security
+          },
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Update profile for a specific agent owned by the authenticated user
+     * Limited to name, description, and imageUrl only
+     * @param req Express request with userId from session and agentId parameter
+     * @param res Express response
+     * @param next Express next function
+     */
+    async updateAgentProfile(req: Request, res: Response, next: NextFunction) {
+      try {
+        const userId = req.userId as string;
+        const { agentId } = req.params;
+        const { name, description, imageUrl } = req.body;
+
+        if (!agentId) {
+          throw new ApiError(400, "Agent ID is required");
+        }
+
+        // Validate that only allowed fields are being updated
+        const allowedFields = ["name", "description", "imageUrl"];
+        const providedFields = Object.keys(req.body);
+        const invalidFields = providedFields.filter(
+          (field) => !allowedFields.includes(field),
+        );
+
+        if (invalidFields.length > 0) {
+          throw new ApiError(
+            400,
+            `Invalid fields: ${invalidFields.join(", ")}. Agents can only update: ${allowedFields.join(", ")}`,
+          );
+        }
+
+        // Get the agent to verify ownership
+        const agent = await services.agentManager.getAgent(agentId);
+
+        if (!agent) {
+          throw new ApiError(404, "Agent not found");
+        }
+
+        // Verify ownership
+        if (agent.ownerId !== userId) {
+          throw new ApiError(403, "Access denied: You don't own this agent");
+        }
+
+        // Prepare update data with only allowed fields
+        const updateData: {
+          id: string;
+          name?: string;
+          description?: string;
+          imageUrl?: string;
+        } = {
+          id: agentId,
+        };
+
+        if (name !== undefined) {
+          updateData.name = name;
+        }
+
+        if (description !== undefined) {
+          updateData.description = description;
+        }
+
+        if (imageUrl !== undefined) {
+          updateData.imageUrl = imageUrl;
+        }
+
+        // Update the agent using AgentManager
+        const updatedAgent = await services.agentManager.updateAgent({
+          ...agent, // Include all existing agent fields
+          ...updateData, // Overlay the updates
+        });
+
+        if (!updatedAgent) {
+          throw new ApiError(500, "Failed to update agent profile");
+        }
+
+        // Return the updated agent profile (without API key for security)
+        res.status(200).json({
+          success: true,
+          agent: {
+            id: updatedAgent.id,
+            ownerId: updatedAgent.ownerId,
+            name: updatedAgent.name,
+            description: updatedAgent.description,
+            imageUrl: updatedAgent.imageUrl,
+            metadata: updatedAgent.metadata,
+            status: updatedAgent.status,
+            createdAt: updatedAgent.createdAt,
+            updatedAt: updatedAgent.updatedAt,
             // Explicitly exclude apiKey for security
           },
         });

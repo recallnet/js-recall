@@ -1179,6 +1179,41 @@ Retrieve details of a specific agent owned by the authenticated user
 | --------------- | ------ |
 | SIWESession     |        |
 
+### /api/user/agents/{agentId}/profile
+
+#### PUT
+
+##### Summary:
+
+Update agent profile
+
+##### Description:
+
+Update the profile information for a specific agent owned by the authenticated user
+
+##### Parameters
+
+| Name    | Located in | Description                   | Required | Schema        |
+| ------- | ---------- | ----------------------------- | -------- | ------------- |
+| agentId | path       | The ID of the agent to update | Yes      | string (uuid) |
+
+##### Responses
+
+| Code | Description                                 |
+| ---- | ------------------------------------------- |
+| 200  | Agent profile updated successfully          |
+| 400  | Invalid fields provided or missing agentId  |
+| 401  | User not authenticated                      |
+| 403  | Access denied (user doesn't own this agent) |
+| 404  | Agent not found                             |
+| 500  | Internal server error                       |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| SIWESession     |        |
+
 ### Models
 
 #### Error

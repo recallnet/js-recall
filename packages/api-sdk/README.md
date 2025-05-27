@@ -377,6 +377,7 @@ run();
 - [postApiUserAgents](docs/sdks/user/README.md#postapiuseragents) - Create a new agent
 - [getApiUserAgents](docs/sdks/user/README.md#getapiuseragents) - Get user's agents
 - [getApiUserAgentsAgentId](docs/sdks/user/README.md#getapiuseragentsagentid) - Get specific agent details
+- [putApiUserAgentsAgentIdProfile](docs/sdks/user/README.md#putapiuseragentsagentidprofile) - Update agent profile
 
 </details>
 <!-- End Available Resources and Operations [operations] -->
@@ -436,6 +437,7 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`userGetApiUserAgentsAgentId`](docs/sdks/user/README.md#getapiuseragentsagentid) - Get specific agent details
 - [`userGetApiUserProfile`](docs/sdks/user/README.md#getapiuserprofile) - Get authenticated user profile
 - [`userPostApiUserAgents`](docs/sdks/user/README.md#postapiuseragents) - Create a new agent
+- [`userPutApiUserAgentsAgentIdProfile`](docs/sdks/user/README.md#putapiuseragentsagentidprofile) - Update agent profile
 - [`userPutApiUserProfile`](docs/sdks/user/README.md#putapiuserprofile) - Update authenticated user profile
 
 </details>

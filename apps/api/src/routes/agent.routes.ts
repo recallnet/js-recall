@@ -335,12 +335,23 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *                       toAmount:
    *                         type: number
    *                         description: Amount received in destination token
-   *                       fromPrice:
+   *                       price:
    *                         type: number
-   *                         description: Price of source token at trade time
-   *                       toPrice:
+   *                         description: Price at which the trade was executed
+   *                       tradeAmountUsd:
    *                         type: number
-   *                         description: Price of destination token at trade time
+   *                         description: USD value of the trade at execution time
+   *                       toTokenSymbol:
+   *                         type: string
+   *                         description: Symbol of the destination token
+   *                         example: "USDC"
+   *                       success:
+   *                         type: boolean
+   *                         description: Whether the trade was successfully completed
+   *                       error:
+   *                         type: string
+   *                         description: Error message if the trade failed
+   *                         nullable: true
    *                       reason:
    *                         type: string
    *                         description: Reason for the trade
@@ -348,6 +359,24 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *                         type: string
    *                         format: date-time
    *                         description: When the trade was executed
+   *                       fromChain:
+   *                         type: string
+   *                         description: Blockchain type of the source token
+   *                         example: "evm"
+   *                       toChain:
+   *                         type: string
+   *                         description: Blockchain type of the destination token
+   *                         example: "svm"
+   *                       fromSpecificChain:
+   *                         type: string
+   *                         description: Specific chain for the source token
+   *                         example: "polygon"
+   *                         nullable: true
+   *                       toSpecificChain:
+   *                         type: string
+   *                         description: Specific chain for the destination token
+   *                         example: "svm"
+   *                         nullable: true
    *       401:
    *         description: Agent not authenticated
    *       500:

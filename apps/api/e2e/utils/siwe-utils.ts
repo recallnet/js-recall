@@ -1,23 +1,46 @@
 import { SiweMessage } from "siwe";
-import { privateKeyToAccount } from "viem/accounts";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 const TEST_PRIVATE_KEY =
   "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 const testWallet = privateKeyToAccount(TEST_PRIVATE_KEY);
 
 /**
- * Create a SIWE message for testing
+ * Test wallet address for backward compatibility
+ */
+export const testWalletAddress = testWallet.address.toLowerCase();
+
+/**
+ * Generate a unique test wallet for isolated testing
+ * @returns Object with privateKey, address, and account
+ */
+export function createTestWallet() {
+  const privateKey = generatePrivateKey();
+  const account = privateKeyToAccount(privateKey);
+  return {
+    privateKey,
+    address: account.address,
+    account,
+  };
+}
+
+/**
+ * Create a SIWE message for testing with a specific wallet
  * @param domain The domain requesting the signature
  * @param nonce The nonce to use in the message
+ * @param walletAddress The wallet address to use in the message
  * @returns Prepared SIWE message string
  */
 export async function createSiweMessage(
   domain: string,
   nonce: string,
+  walletAddress?: string,
 ): Promise<string> {
+  const address = walletAddress || testWallet.address;
+
   const message = new SiweMessage({
     domain,
-    address: testWallet.address,
+    address,
     statement: "Sign in with Ethereum to the app.",
     uri: `https://${domain}`,
     version: "1",
@@ -29,15 +52,18 @@ export async function createSiweMessage(
 }
 
 /**
- * Sign a message with the test wallet
- * @param message The message to sign
- * @returns The signature
+ * Sign a SIWE message using a specific account
+ * @param message The SIWE message to sign
+ * @param account The account to sign with (defaults to test wallet)
+ * @returns Hex signature string
  */
-export async function signMessage(message: string): Promise<string> {
-  return testWallet.signMessage({ message });
-}
+export async function signMessage(
+  message: string,
+  account?: ReturnType<typeof privateKeyToAccount>,
+): Promise<string> {
+  const signingAccount = account || testWallet;
 
-/**
- * The Ethereum address of the test wallet
- */
-export const testWalletAddress = testWallet.address.toLowerCase();
+  return await signingAccount.signMessage({
+    message,
+  });
+}

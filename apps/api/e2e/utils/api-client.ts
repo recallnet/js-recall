@@ -1,4 +1,6 @@
 import axios, { AxiosInstance } from "axios";
+import { wrapper } from "axios-cookiejar-support";
+import { CookieJar } from "tough-cookie";
 
 import {
   AdminAgentResponse,
@@ -51,6 +53,7 @@ export class ApiClient {
   private apiKey: string | undefined;
   private baseUrl: string;
   private adminApiKey: string | undefined;
+  private cookieJar: CookieJar;
 
   /**
    * Create a new API client
@@ -61,15 +64,19 @@ export class ApiClient {
   constructor(apiKey?: string, baseUrl: string = getBaseUrl()) {
     this.apiKey = apiKey;
     this.baseUrl = baseUrl;
+    this.cookieJar = new CookieJar();
 
-    // Create axios instance
-    this.axiosInstance = axios.create({
-      baseURL: baseUrl,
-      headers: {
-        "Content-Type": "application/json",
-      },
-      withCredentials: true, // Enable sending cookies with cross-origin requests
-    });
+    // Create axios instance with cookie jar support
+    this.axiosInstance = wrapper(
+      axios.create({
+        baseURL: baseUrl,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        withCredentials: true, // Enable sending cookies with cross-origin requests
+        jar: this.cookieJar, // Add cookie jar for session persistence
+      }),
+    );
 
     // Add interceptor to add authentication header
     this.axiosInstance.interceptors.request.use((config) => {
@@ -404,6 +411,30 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "update agent profile");
+    }
+  }
+
+  /**
+   * Update a user's agent profile (via SIWE authentication)
+   * @param agentId ID of the agent to update
+   * @param profileData Profile data to update including name, description, and imageUrl only
+   */
+  async updateUserAgentProfile(
+    agentId: string,
+    profileData: {
+      name?: string;
+      description?: string;
+      imageUrl?: string;
+    },
+  ): Promise<AgentProfileResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.put(
+        `/api/user/agents/${agentId}/profile`,
+        profileData,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "update user agent profile");
     }
   }
 

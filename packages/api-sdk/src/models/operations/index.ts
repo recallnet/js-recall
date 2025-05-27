@@ -41,4 +41,5 @@ export * from "./postapiauthlogout.js";
 export * from "./postapitradeexecute.js";
 export * from "./postapiuseragents.js";
 export * from "./putapiagentprofile.js";
+export * from "./putapiuseragentsagentidprofile.js";
 export * from "./putapiuserprofile.js";
