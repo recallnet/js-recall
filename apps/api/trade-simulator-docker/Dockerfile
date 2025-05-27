@@ -20,9 +20,10 @@ COPY --from=builder /workdir /workdir
 
 # Set environment variables
 ENV NODE_ENV=production
+ENV PORT=3000
 
-# Expose the application port
-EXPOSE 3000
+# Expose the application port (will be overridden by docker-compose)
+EXPOSE $PORT
 
 # Start the application
 WORKDIR /workdir/apps/api

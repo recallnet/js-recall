@@ -7,10 +7,12 @@ services:
     container_name: trading-simulator-app
     restart: unless-stopped
     ports:
-      - "${PORT:-3000}:3000"
+      - "${PORT:-3000}:${PORT:-3000}"
     # Load all environment variables from .env file
     env_file:
       - ../.env
+    environment:
+      - PORT=${PORT:-3000}
     # Override only the critical variables that need specific values for Docker
     volumes:
       - ../logs:/app/logs
