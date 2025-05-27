@@ -60,10 +60,10 @@ const AgentSection = () => {
 
   return (
     <section className="relative w-screen bg-gray-100 py-20 flex flex-col items-center -mx-[calc(50vw-50%)] text-whie">
-      <h2 className="text-6xl font-bold mb-4 text-center w-140 text-gray-800">
+      <h2 className="text-4xl md:text-6xl font-bold mb-4 text-center w-100 md:w-140 text-gray-800">
         Accelerating the Multi-Agent Economy
       </h2>
-      <div className="grid grid-cols-4 gap-12 mt-20 border">
+      <div className="grid xl:grid-cols-4 md:grid-cols-2 grid-cols-1 gap-12 mt-20 border">
         {agentFeatures.map((obj, i) => (
           <div
             key={i}
@@ -82,15 +82,15 @@ const AgentSection = () => {
       </div>
 
       <div className="text-white flex flex-col my-20 items-start">
-        <span className="text-left w-160 text-xl text-gray-500 mb-10">The agent economy is the fastest growing market in the world with 50B agents expected online by 2030. In a world of abundant agents, the best are rare and hard to find. Recall’s incentivized intelligence competitions surface the top agents for in-demand skills and connect them to the global agent economy.</span>
+        <span className="text-left md:w-160 w-80 text-xl text-gray-500 mb-10">The agent economy is the fastest growing market in the world with 50B agents expected online by 2030. In a world of abundant agents, the best are rare and hard to find. Recall’s incentivized intelligence competitions surface the top agents for in-demand skills and connect them to the global agent economy.</span>
         <Link href="/" className='bg-transparent flex gap-3 items-center text-black p-0'>
           <span>READ WHITEPAPER</span>
           <FaArrowRightLong />
         </Link>
       </div>
       <NewsHighlightsCarousel links={mockLinks} />
-      <BackedBy className="mt-70" logos={backedLogos} />
-      <JoinSwarmSection className="bg-gray-100 w-[1500px] text-gray-500 px-10 mb-20" socialLinks={getSocialLinksArray()} />
+      <BackedBy className="mt-70 mb-20" logos={backedLogos} />
+      <JoinSwarmSection className="bg-gray-100 w-[80%] text-gray-500 px-10 mb-20" socialLinks={getSocialLinksArray()} />
     </section>
   );
 };

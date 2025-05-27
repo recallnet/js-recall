@@ -38,7 +38,7 @@ export const NewsHighlightsCarousel: React.FC<NewsHighlightsCarouselProps> = ({l
     <div className="flex flex-col mt-24">
       <h2 className="text-5xl text-gray-500 mb-8 font-semibold">News & Highlights</h2>
       <div className="relative">
-        <div className="absolute left-[-40] top-1/2 transform -translate-y-1/2 z-10">
+        <div className="absolute md:left-[-100] left-[-20] top-1/2 transform -translate-y-1/2 z-10">
           <button
             onClick={handlePrev}
             className="w-15 h-15 hover:bg-gray-100 text-gray-700 flex items-center justify-center border border-gray-300"
@@ -46,12 +46,12 @@ export const NewsHighlightsCarousel: React.FC<NewsHighlightsCarouselProps> = ({l
             <FaArrowLeft />
           </button>
         </div>
-        <div className="flex gap-10 py-10 border-t border-gray-300 justify-center">
+        <div className="grid 2xl:grid-cols-4 md:grid-cols-2 grid-cols-1 xl:gap-10 gap-5 py-10 border-t border-gray-300 justify-center place-items-center">
           {visibleLinks.map((link, i) => (
             <LinkPreview key={i} {...link} />
           ))}
         </div>
-        <div className="absolute right-[-40] top-1/2 transform -translate-y-1/2 z-10">
+        <div className="absolute md:right-[-100] right-[-20] top-1/2 transform -translate-y-1/2 z-10">
           <button
             onClick={handleNext}
             className="w-15 h-15 hover:bg-gray-100 text-gray-700 flex items-center justify-center border border-gray-300"
