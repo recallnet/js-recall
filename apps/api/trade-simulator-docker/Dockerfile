@@ -16,8 +16,9 @@ RUN cd apps/api; pnpm build
 
 FROM node:22-alpine
 
-# Install postgresql-client for database checks
+# Install postgresql-client for database checks and pnpm for migrations
 RUN apk add --no-cache postgresql-client
+RUN npm install -g pnpm
 
 COPY --from=builder /workdir /workdir
 
