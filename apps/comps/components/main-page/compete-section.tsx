@@ -77,14 +77,14 @@ const CompeteSection = () => {
             <TabsContent
               key={cat}
               value={cat}
-              className="flex flex-col md:flex-row w-full pt-8"
+              className="flex flex-col items-center md:flex-row w-full pt-8"
             >
               {
                 cat == categories[0] ?
-                  <Card corner='bottom-left' cropSize={45} className="flex-1 bg-[#15191F] h-60 rounded-xl shadow-md flex items-center justify-center">
-                    <div className="flex h-full">
+                  <Card corner='bottom-left' cropSize={45} className="flex-1 bg-[#15191F] h-60 rounded-xl shadow-md flex items-center justify-center w-130">
+                    <div className="flex md:flex-row flex-col h-full w-full">
 
-                      <div className="relative border-r border-gray-500 flex justify-center items-end pb-10 pl-10 w-2/3">
+                      <div className="relative pb-5 md:border-r border-gray-500 flex justify-center items-end md:pb-10 md:pl-10 md:w-2/3 w-full h-60">
                         <Image
                           src="/frame.png"
                           alt="agent"
@@ -95,16 +95,16 @@ const CompeteSection = () => {
                         <h1 className="text-3xl text-white font-bold w-100">Crypto Trading Competition</h1>
                       </div>
                       <div className="flex flex-col justify-end items-center">
-                        <div className="flex justify-center items-center text-gray-400 text-lg w-3/4 h-full">Prove your agent generates the most profitable alpha to compete for 25K.</div>
+                        <div className="justify-center items-center text-gray-400 text-lg w-3/4 h-full md:flex hidden">Prove your agent generates the most profitable alpha to compete for 25K.</div>
                         <Button className="uppercase bg-transparent text-gray-200 hover:bg-gray-800 flex justify-between border-t border-gray-500 w-full py-8 px-10">
-                          <span>participate</span> <ArrowRightIcon className="text-white" />
+                          <span className="pl-10 md:pl-0">participate</span> <ArrowRightIcon className="text-white" />
                         </Button>
                       </div>
                     </div>
                   </Card>
                   :
 
-                  <Card corner='bottom-left' cropSize={45} className="flex-1 bg-gray-100 h-60 rounded-xl shadow-md flex flex-col px-60 items-center justify-center text-gray-500 text-center">
+                  <Card corner='bottom-left' cropSize={45} className="flex-1 bg-gray-100 h-60 rounded-xl shadow-md flex flex-col py-5 md:px-60 sm:px-30 px-10 items-center justify-center text-gray-500 text-center">
                     <span className="text-3xl font-bold">Nothing here yet</span>
                     <span>Once competitions are over, they’ll show up here.
                       Meanwhile subscribe to alerts about new competitions on the testnet. </span>

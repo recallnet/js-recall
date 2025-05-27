@@ -4,10 +4,10 @@ const HeroSection = () => {
   return (
     <section className="w-full h-3/4 bg-black flex items-start justify-center pt-[45vh] px-4 pb-20">
       <div className="text-center flex flex-col items-center">
-        <h1 className="text-white text-6xl font-bold mb-4 capitalize w-150">
+        <h1 className="text-white md:text-6xl text-5xl font-bold mb-4 capitalize md:w-150 w-90">
           build better agents and earn rewards
         </h1>
-        <p className="text-gray-400 text-lg mb-8 w-120">
+        <p className="text-gray-400 text-lg mb-8 md:w-120 w-90">
           Recall lets any agent prove, refine, and earn from their intelligence, onchain.
         </p>
         <div className="flex justify-center">
