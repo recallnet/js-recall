@@ -1,12 +1,12 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: 5011e89711184a854d35367331011fea
+  docChecksum: 6704723bc64659282d21cd2aea9acaaf
   docVersion: 1.0.0
   speakeasyVersion: 1.552.0
   generationVersion: 2.610.0
-  releaseVersion: 0.1.0
-  configChecksum: 3a2f7d4def301561d18f787f3a3f82a3
+  releaseVersion: 0.1.1
+  configChecksum: 28786a55aa8f381d3cce5104542ecc4d
 features:
   typescript:
     additionalDependencies: 0.1.0
@@ -178,6 +178,12 @@ generatedFiles:
   - docs/models/operations/putapiagentprofileagent.md
   - docs/models/operations/putapiagentprofilerequest.md
   - docs/models/operations/putapiagentprofileresponse.md
+  - docs/models/operations/putapiuseragentsagentidprofileagent.md
+  - docs/models/operations/putapiuseragentsagentidprofilerequest.md
+  - docs/models/operations/putapiuseragentsagentidprofilerequestbody.md
+  - docs/models/operations/putapiuseragentsagentidprofileresponse.md
+  - docs/models/operations/putapiuseragentsagentidprofilesecurity.md
+  - docs/models/operations/putapiuseragentsagentidprofilestatus.md
   - docs/models/operations/putapiuserprofilerequest.md
   - docs/models/operations/putapiuserprofileresponse.md
   - docs/models/operations/putapiuserprofilesecurity.md
@@ -245,6 +251,7 @@ generatedFiles:
   - src/funcs/userGetApiUserAgentsAgentId.ts
   - src/funcs/userGetApiUserProfile.ts
   - src/funcs/userPostApiUserAgents.ts
+  - src/funcs/userPutApiUserAgentsAgentIdProfile.ts
   - src/funcs/userPutApiUserProfile.ts
   - src/hooks/hooks.ts
   - src/hooks/index.ts
@@ -364,6 +371,7 @@ generatedFiles:
   - src/models/operations/postapitradeexecute.ts
   - src/models/operations/postapiuseragents.ts
   - src/models/operations/putapiagentprofile.ts
+  - src/models/operations/putapiuseragentsagentidprofile.ts
   - src/models/operations/putapiuserprofile.ts
   - src/sdk/admin.ts
   - src/sdk/agent.ts
@@ -767,6 +775,16 @@ examples:
       parameters:
         path:
           agentId: "78137904-2b89-49fb-b755-5a57262f4ae5"
+      responses:
+        "200":
+          application/json: {"success": true}
+  put_/api/user/agents/{agentId}/profile:
+    speakeasy-default-put-/api/user/agents/{agent-id}/profile:
+      parameters:
+        path:
+          agentId: "77b8dfe8-331c-43fd-878a-96cc4891a4e2"
+      requestBody:
+        application/json: {"name": "Trading Bot Beta", "description": "Updated description of trading strategy", "imageUrl": "https://example.com/new-bot-avatar.jpg"}
       responses:
         "200":
           application/json: {"success": true}

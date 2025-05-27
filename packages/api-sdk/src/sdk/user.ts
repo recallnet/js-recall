@@ -5,6 +5,7 @@ import { userGetApiUserAgents } from "../funcs/userGetApiUserAgents.js";
 import { userGetApiUserAgentsAgentId } from "../funcs/userGetApiUserAgentsAgentId.js";
 import { userGetApiUserProfile } from "../funcs/userGetApiUserProfile.js";
 import { userPostApiUserAgents } from "../funcs/userPostApiUserAgents.js";
+import { userPutApiUserAgentsAgentIdProfile } from "../funcs/userPutApiUserAgentsAgentIdProfile.js";
 import { userPutApiUserProfile } from "../funcs/userPutApiUserProfile.js";
 import { ClientSDK, RequestOptions } from "../lib/sdks.js";
 import * as operations from "../models/operations/index.js";
@@ -78,6 +79,22 @@ export class User extends ClientSDK {
   ): Promise<operations.GetApiUserAgentsAgentIdResponse> {
     return unwrapAsync(
       userGetApiUserAgentsAgentId(this, security, request, options),
+    );
+  }
+
+  /**
+   * Update agent profile
+   *
+   * @remarks
+   * Update the profile information for a specific agent owned by the authenticated user
+   */
+  async putApiUserAgentsAgentIdProfile(
+    security: operations.PutApiUserAgentsAgentIdProfileSecurity,
+    request: operations.PutApiUserAgentsAgentIdProfileRequest,
+    options?: RequestOptions,
+  ): Promise<operations.PutApiUserAgentsAgentIdProfileResponse> {
+    return unwrapAsync(
+      userPutApiUserAgentsAgentIdProfile(this, security, request, options),
     );
   }
 }
