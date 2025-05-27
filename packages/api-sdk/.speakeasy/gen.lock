@@ -1,12 +1,12 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: 6704723bc64659282d21cd2aea9acaaf
+  docChecksum: 8cd5dc5ab25dda7878e9c822e0a7ef29
   docVersion: 1.0.0
   speakeasyVersion: 1.552.0
   generationVersion: 2.610.0
-  releaseVersion: 0.1.1
-  configChecksum: 28786a55aa8f381d3cce5104542ecc4d
+  releaseVersion: 0.1.2
+  configChecksum: 1dbefbe1b8e2e7f3885ef8c4df18e6ab
 features:
   typescript:
     additionalDependencies: 0.1.0
@@ -740,7 +740,7 @@ examples:
     speakeasy-default-get-/api/agent/trades:
       responses:
         "200":
-          application/json: {"success": true}
+          application/json: {"success": true, "trades": [{"toTokenSymbol": "USDC", "fromChain": "evm", "toChain": "svm", "fromSpecificChain": "polygon", "toSpecificChain": "svm"}, {"toTokenSymbol": "USDC", "fromChain": "evm", "toChain": "svm", "fromSpecificChain": "polygon", "toSpecificChain": "svm"}, {"toTokenSymbol": "USDC", "fromChain": "evm", "toChain": "svm", "fromSpecificChain": "polygon", "toSpecificChain": "svm"}]}
   post_/api/agent/reset-api-key:
     speakeasy-default-post-/api/agent/reset-api-key:
       responses:
