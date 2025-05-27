@@ -345,5 +345,91 @@ export function configureUserRoutes(userController: UserController): Router {
    */
   router.get("/agents/:agentId", userController.getAgent);
 
+  /**
+   * @openapi
+   * /api/user/agents/{agentId}/profile:
+   *   put:
+   *     summary: Update agent profile
+   *     description: Update the profile information for a specific agent owned by the authenticated user
+   *     tags:
+   *       - User
+   *     security:
+   *       - SIWESession: []
+   *     parameters:
+   *       - in: path
+   *         name: agentId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: The ID of the agent to update
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               name:
+   *                 type: string
+   *                 description: Agent's display name
+   *                 example: "Trading Bot Beta"
+   *               description:
+   *                 type: string
+   *                 description: Agent description
+   *                 example: "Updated description of trading strategy"
+   *               imageUrl:
+   *                 type: string
+   *                 description: URL to agent's profile image
+   *                 example: "https://example.com/new-bot-avatar.jpg"
+   *             additionalProperties: false
+   *     responses:
+   *       200:
+   *         description: Agent profile updated successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 agent:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                       format: uuid
+   *                     ownerId:
+   *                       type: string
+   *                       format: uuid
+   *                     name:
+   *                       type: string
+   *                     description:
+   *                       type: string
+   *                     imageUrl:
+   *                       type: string
+   *                     status:
+   *                       type: string
+   *                       enum: [active, suspended, deleted]
+   *                     createdAt:
+   *                       type: string
+   *                       format: date-time
+   *                     updatedAt:
+   *                       type: string
+   *                       format: date-time
+   *       400:
+   *         description: Invalid fields provided or missing agentId
+   *       401:
+   *         description: User not authenticated
+   *       403:
+   *         description: Access denied (user doesn't own this agent)
+   *       404:
+   *         description: Agent not found
+   *       500:
+   *         description: Internal server error
+   */
+  router.put("/agents/:agentId/profile", userController.updateAgentProfile);
+
   return router;
 }

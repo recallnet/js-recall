@@ -415,6 +415,30 @@ export class ApiClient {
   }
 
   /**
+   * Update a user's agent profile (via SIWE authentication)
+   * @param agentId ID of the agent to update
+   * @param profileData Profile data to update including name, description, and imageUrl only
+   */
+  async updateUserAgentProfile(
+    agentId: string,
+    profileData: {
+      name?: string;
+      description?: string;
+      imageUrl?: string;
+    },
+  ): Promise<AgentProfileResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.put(
+        `/api/user/agents/${agentId}/profile`,
+        profileData,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "update user agent profile");
+    }
+  }
+
+  /**
    * List all agents (admin only)
    */
   async listAgents(): Promise<AdminAgentsListResponse | ErrorResponse> {
