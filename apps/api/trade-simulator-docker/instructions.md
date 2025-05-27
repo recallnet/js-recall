@@ -15,7 +15,7 @@ Create a `.env` file in `apps/api/trade-simulator-docker/` with your configurati
 
 ### 2. Run the Application
 
-From the `apps/api` directory, run:
+From the `apps/api/trade-simulator-docker` directory, run:
 
 ```bash
 docker-compose -f trade-simulator-docker/docker-compose.yml up --build

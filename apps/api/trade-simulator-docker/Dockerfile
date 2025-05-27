@@ -16,6 +16,9 @@ RUN cd apps/api; pnpm build
 
 FROM node:22-alpine
 
+# Install postgresql-client for database checks
+RUN apk add --no-cache postgresql-client
+
 COPY --from=builder /workdir /workdir
 
 # Set environment variables
@@ -25,6 +28,10 @@ ENV PORT=3000
 # Expose the application port (will be overridden by docker-compose)
 EXPOSE $PORT
 
+# Create startup script
+COPY apps/api/trade-simulator-docker/startup.sh /workdir/apps/api/startup.sh
+RUN chmod +x /workdir/apps/api/startup.sh
+
 # Start the application
 WORKDIR /workdir/apps/api
-CMD ["node", "dist/src/index.js"]
+CMD ["./startup.sh"]
