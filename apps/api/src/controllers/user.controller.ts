@@ -317,7 +317,18 @@ export function makeUserController(services: ServiceRegistry) {
         // Return the updated agent profile (without API key for security)
         res.status(200).json({
           success: true,
-          agent: services.agentManager.sanitizeAgent(updatedAgent),
+          agent: {
+            id: agent.id,
+            ownerId: agent.ownerId,
+            name: agent.name,
+            description: agent.description,
+            imageUrl: agent.imageUrl,
+            metadata: agent.metadata,
+            apiKey: agent.apiKey, // Include API key for user to use,
+            status: agent.status,
+            createdAt: agent.createdAt,
+            updatedAt: agent.updatedAt,
+          },
         });
       } catch (error) {
         next(error);
