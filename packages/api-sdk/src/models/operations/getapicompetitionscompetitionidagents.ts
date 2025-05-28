@@ -4,14 +4,47 @@
 import * as z from "zod";
 
 import { safeParse } from "../../lib/schemas.js";
+import { ClosedEnum } from "../../types/enums.js";
 import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
+
+/**
+ * Sort order for results
+ */
+export const Sort = {
+  Position: "position",
+  Name: "name",
+  NameDesc: "name_desc",
+  Created: "created",
+  CreatedDesc: "created_desc",
+  Status: "status",
+} as const;
+/**
+ * Sort order for results
+ */
+export type Sort = ClosedEnum<typeof Sort>;
 
 export type GetApiCompetitionsCompetitionIdAgentsRequest = {
   /**
    * The ID of the competition to get agents for
    */
   competitionId: string;
+  /**
+   * Optional filter by agent name
+   */
+  filter?: string | undefined;
+  /**
+   * Sort order for results
+   */
+  sort?: Sort | undefined;
+  /**
+   * Maximum number of results to return
+   */
+  limit?: number | undefined;
+  /**
+   * Number of results to skip for pagination
+   */
+  offset?: number | undefined;
 };
 
 export type GetApiCompetitionsCompetitionIdAgentsAgent = {
@@ -70,6 +103,28 @@ export type GetApiCompetitionsCompetitionIdAgentsAgent = {
 };
 
 /**
+ * Pagination metadata
+ */
+export type Pagination = {
+  /**
+   * Total number of agents in the competition
+   */
+  total?: number | undefined;
+  /**
+   * Maximum number of results returned
+   */
+  limit?: number | undefined;
+  /**
+   * Number of results skipped
+   */
+  offset?: number | undefined;
+  /**
+   * Whether there are more results available
+   */
+  hasMore?: boolean | undefined;
+};
+
+/**
  * Competition agents retrieved successfully
  */
 export type GetApiCompetitionsCompetitionIdAgentsResponse = {
@@ -85,7 +140,30 @@ export type GetApiCompetitionsCompetitionIdAgentsResponse = {
    * List of agents participating in the competition
    */
   agents?: Array<GetApiCompetitionsCompetitionIdAgentsAgent> | undefined;
+  /**
+   * Pagination metadata
+   */
+  pagination?: Pagination | undefined;
 };
+
+/** @internal */
+export const Sort$inboundSchema: z.ZodNativeEnum<typeof Sort> =
+  z.nativeEnum(Sort);
+
+/** @internal */
+export const Sort$outboundSchema: z.ZodNativeEnum<typeof Sort> =
+  Sort$inboundSchema;
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace Sort$ {
+  /** @deprecated use `Sort$inboundSchema` instead. */
+  export const inboundSchema = Sort$inboundSchema;
+  /** @deprecated use `Sort$outboundSchema` instead. */
+  export const outboundSchema = Sort$outboundSchema;
+}
 
 /** @internal */
 export const GetApiCompetitionsCompetitionIdAgentsRequest$inboundSchema: z.ZodType<
@@ -94,11 +172,19 @@ export const GetApiCompetitionsCompetitionIdAgentsRequest$inboundSchema: z.ZodTy
   unknown
 > = z.object({
   competitionId: z.string(),
+  filter: z.string().optional(),
+  sort: Sort$inboundSchema.default("position"),
+  limit: z.number().int().default(50),
+  offset: z.number().int().default(0),
 });
 
 /** @internal */
 export type GetApiCompetitionsCompetitionIdAgentsRequest$Outbound = {
   competitionId: string;
+  filter?: string | undefined;
+  sort: string;
+  limit: number;
+  offset: number;
 };
 
 /** @internal */
@@ -108,6 +194,10 @@ export const GetApiCompetitionsCompetitionIdAgentsRequest$outboundSchema: z.ZodT
   GetApiCompetitionsCompetitionIdAgentsRequest
 > = z.object({
   competitionId: z.string(),
+  filter: z.string().optional(),
+  sort: Sort$outboundSchema.default("position"),
+  limit: z.number().int().default(50),
+  offset: z.number().int().default(0),
 });
 
 /**
@@ -252,6 +342,65 @@ export function getApiCompetitionsCompetitionIdAgentsAgentFromJSON(
 }
 
 /** @internal */
+export const Pagination$inboundSchema: z.ZodType<
+  Pagination,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  total: z.number().int().optional(),
+  limit: z.number().int().optional(),
+  offset: z.number().int().optional(),
+  hasMore: z.boolean().optional(),
+});
+
+/** @internal */
+export type Pagination$Outbound = {
+  total?: number | undefined;
+  limit?: number | undefined;
+  offset?: number | undefined;
+  hasMore?: boolean | undefined;
+};
+
+/** @internal */
+export const Pagination$outboundSchema: z.ZodType<
+  Pagination$Outbound,
+  z.ZodTypeDef,
+  Pagination
+> = z.object({
+  total: z.number().int().optional(),
+  limit: z.number().int().optional(),
+  offset: z.number().int().optional(),
+  hasMore: z.boolean().optional(),
+});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace Pagination$ {
+  /** @deprecated use `Pagination$inboundSchema` instead. */
+  export const inboundSchema = Pagination$inboundSchema;
+  /** @deprecated use `Pagination$outboundSchema` instead. */
+  export const outboundSchema = Pagination$outboundSchema;
+  /** @deprecated use `Pagination$Outbound` instead. */
+  export type Outbound = Pagination$Outbound;
+}
+
+export function paginationToJSON(pagination: Pagination): string {
+  return JSON.stringify(Pagination$outboundSchema.parse(pagination));
+}
+
+export function paginationFromJSON(
+  jsonString: string,
+): SafeParseResult<Pagination, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) => Pagination$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'Pagination' from JSON`,
+  );
+}
+
+/** @internal */
 export const GetApiCompetitionsCompetitionIdAgentsResponse$inboundSchema: z.ZodType<
   GetApiCompetitionsCompetitionIdAgentsResponse,
   z.ZodTypeDef,
@@ -264,6 +413,7 @@ export const GetApiCompetitionsCompetitionIdAgentsResponse$inboundSchema: z.ZodT
       z.lazy(() => GetApiCompetitionsCompetitionIdAgentsAgent$inboundSchema),
     )
     .optional(),
+  pagination: z.lazy(() => Pagination$inboundSchema).optional(),
 });
 
 /** @internal */
@@ -273,6 +423,7 @@ export type GetApiCompetitionsCompetitionIdAgentsResponse$Outbound = {
   agents?:
     | Array<GetApiCompetitionsCompetitionIdAgentsAgent$Outbound>
     | undefined;
+  pagination?: Pagination$Outbound | undefined;
 };
 
 /** @internal */
@@ -288,6 +439,7 @@ export const GetApiCompetitionsCompetitionIdAgentsResponse$outboundSchema: z.Zod
       z.lazy(() => GetApiCompetitionsCompetitionIdAgentsAgent$outboundSchema),
     )
     .optional(),
+  pagination: z.lazy(() => Pagination$outboundSchema).optional(),
 });
 
 /**
