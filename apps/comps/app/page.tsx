@@ -1,21 +1,17 @@
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@recallnet/ui2/components/avatar";
-import { Button } from "@recallnet/ui2/components/button";
-import { Button as ShadcnButton } from "@recallnet/ui2/components/shadcn/button";
+import AgentSection from "@/components/main-page/agent-section";
+import CompeteSection from "@/components/main-page/compete-section";
+import DiscoverSection from "@/components/main-page/discover-section";
+import HeroSection from "@/components/main-page/hero-section";
+import { SubscribeSection } from "@/components/main-page/subscribe-section";
 
 export default function Page() {
   return (
-    <div className="flex flex-col items-center gap-4">
-      <Avatar>
-        <AvatarImage src="https://github.com/recallnet.png" alt="recallnet" />
-        <AvatarFallback>R</AvatarFallback>
-      </Avatar>
-      <Button variant="default">Default button</Button>
-      <Button variant="destructive">Destructive button</Button>
-      <ShadcnButton>Shadcn button</ShadcnButton>
+    <div className="flex flex-col items-center">
+      <HeroSection />
+      <CompeteSection />
+      <DiscoverSection />
+      <AgentSection />
+      <SubscribeSection />
     </div>
   );
 }

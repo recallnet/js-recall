@@ -12,7 +12,7 @@ import { CompetitionInfo } from "@/components/competition-info";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
 import { NewsletterSection } from "@/components/newsletter-section";
 import { UpComingCompetition } from "@/components/upcoming-competition";
-import { socialLinks } from "@/data/social";
+import { getSocialLinksArray } from "@/data/social";
 import { useCompetition } from "@/hooks/useCompetition";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
 import { AgentResponse } from "@/types";
@@ -118,7 +118,7 @@ export default function CompetitionPage({
           metadata={agentsData?.metadata}
         />
       )}
-      <JoinSwarmSection socialLinks={socialLinks} />
+      <JoinSwarmSection socialLinks={getSocialLinksArray()} />
       <NewsletterSection />
     </>
   );
