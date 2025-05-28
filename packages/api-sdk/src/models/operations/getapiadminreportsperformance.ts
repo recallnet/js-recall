@@ -45,6 +45,19 @@ export type GetApiAdminReportsPerformanceCrossChainTradingType = ClosedEnum<
   typeof GetApiAdminReportsPerformanceCrossChainTradingType
 >;
 
+/**
+ * The type of competition
+ */
+export const GetApiAdminReportsPerformanceType = {
+  Trading: "trading",
+} as const;
+/**
+ * The type of competition
+ */
+export type GetApiAdminReportsPerformanceType = ClosedEnum<
+  typeof GetApiAdminReportsPerformanceType
+>;
+
 export type GetApiAdminReportsPerformanceCompetition = {
   /**
    * Competition ID
@@ -69,7 +82,7 @@ export type GetApiAdminReportsPerformanceCompetition = {
   /**
    * External URL for competition details
    */
-  externalLink?: string | null | undefined;
+  externalUrl?: string | null | undefined;
   /**
    * URL to competition image
    */
@@ -84,6 +97,10 @@ export type GetApiAdminReportsPerformanceCompetition = {
   crossChainTradingType?:
     | GetApiAdminReportsPerformanceCrossChainTradingType
     | undefined;
+  /**
+   * The type of competition
+   */
+  type?: GetApiAdminReportsPerformanceType | undefined;
 };
 
 export type GetApiAdminReportsPerformanceLeaderboard = {
@@ -226,6 +243,28 @@ export namespace GetApiAdminReportsPerformanceCrossChainTradingType$ {
 }
 
 /** @internal */
+export const GetApiAdminReportsPerformanceType$inboundSchema: z.ZodNativeEnum<
+  typeof GetApiAdminReportsPerformanceType
+> = z.nativeEnum(GetApiAdminReportsPerformanceType);
+
+/** @internal */
+export const GetApiAdminReportsPerformanceType$outboundSchema: z.ZodNativeEnum<
+  typeof GetApiAdminReportsPerformanceType
+> = GetApiAdminReportsPerformanceType$inboundSchema;
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace GetApiAdminReportsPerformanceType$ {
+  /** @deprecated use `GetApiAdminReportsPerformanceType$inboundSchema` instead. */
+  export const inboundSchema = GetApiAdminReportsPerformanceType$inboundSchema;
+  /** @deprecated use `GetApiAdminReportsPerformanceType$outboundSchema` instead. */
+  export const outboundSchema =
+    GetApiAdminReportsPerformanceType$outboundSchema;
+}
+
+/** @internal */
 export const GetApiAdminReportsPerformanceCompetition$inboundSchema: z.ZodType<
   GetApiAdminReportsPerformanceCompetition,
   z.ZodTypeDef,
@@ -247,11 +286,12 @@ export const GetApiAdminReportsPerformanceCompetition$inboundSchema: z.ZodType<
         .transform((v) => new Date(v)),
     )
     .optional(),
-  externalLink: z.nullable(z.string()).optional(),
+  externalUrl: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
   status: GetApiAdminReportsPerformanceStatus$inboundSchema.optional(),
   crossChainTradingType:
     GetApiAdminReportsPerformanceCrossChainTradingType$inboundSchema.optional(),
+  type: GetApiAdminReportsPerformanceType$inboundSchema.optional(),
 });
 
 /** @internal */
@@ -261,10 +301,11 @@ export type GetApiAdminReportsPerformanceCompetition$Outbound = {
   description?: string | undefined;
   startDate?: string | undefined;
   endDate?: string | null | undefined;
-  externalLink?: string | null | undefined;
+  externalUrl?: string | null | undefined;
   imageUrl?: string | null | undefined;
   status?: string | undefined;
   crossChainTradingType?: string | undefined;
+  type?: string | undefined;
 };
 
 /** @internal */
@@ -281,11 +322,12 @@ export const GetApiAdminReportsPerformanceCompetition$outboundSchema: z.ZodType<
     .transform((v) => v.toISOString())
     .optional(),
   endDate: z.nullable(z.date().transform((v) => v.toISOString())).optional(),
-  externalLink: z.nullable(z.string()).optional(),
+  externalUrl: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
   status: GetApiAdminReportsPerformanceStatus$outboundSchema.optional(),
   crossChainTradingType:
     GetApiAdminReportsPerformanceCrossChainTradingType$outboundSchema.optional(),
+  type: GetApiAdminReportsPerformanceType$outboundSchema.optional(),
 });
 
 /**

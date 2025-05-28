@@ -21,14 +21,18 @@ export type PutApiUserProfileRequest = {
    * URL to user's profile image
    */
   imageUrl?: string | undefined;
+  /**
+   * User's email
+   */
+  email?: string | undefined;
 };
 
 export type PutApiUserProfileUser = {
   id?: string | undefined;
-  walletAddress?: string | undefined;
+  walletAddress?: string | null | undefined;
   name?: string | undefined;
-  email?: string | undefined;
-  imageUrl?: string | undefined;
+  email?: string | null | undefined;
+  imageUrl?: string | null | undefined;
   status?: string | undefined;
   createdAt?: Date | undefined;
   updatedAt?: Date | undefined;
@@ -116,12 +120,14 @@ export const PutApiUserProfileRequest$inboundSchema: z.ZodType<
 > = z.object({
   name: z.string().optional(),
   imageUrl: z.string().optional(),
+  email: z.string().optional(),
 });
 
 /** @internal */
 export type PutApiUserProfileRequest$Outbound = {
   name?: string | undefined;
   imageUrl?: string | undefined;
+  email?: string | undefined;
 };
 
 /** @internal */
@@ -132,6 +138,7 @@ export const PutApiUserProfileRequest$outboundSchema: z.ZodType<
 > = z.object({
   name: z.string().optional(),
   imageUrl: z.string().optional(),
+  email: z.string().optional(),
 });
 
 /**
@@ -172,10 +179,10 @@ export const PutApiUserProfileUser$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   id: z.string().optional(),
-  walletAddress: z.string().optional(),
+  walletAddress: z.nullable(z.string()).optional(),
   name: z.string().optional(),
-  email: z.string().optional(),
-  imageUrl: z.string().optional(),
+  email: z.nullable(z.string()).optional(),
+  imageUrl: z.nullable(z.string()).optional(),
   status: z.string().optional(),
   createdAt: z
     .string()
@@ -192,10 +199,10 @@ export const PutApiUserProfileUser$inboundSchema: z.ZodType<
 /** @internal */
 export type PutApiUserProfileUser$Outbound = {
   id?: string | undefined;
-  walletAddress?: string | undefined;
+  walletAddress?: string | null | undefined;
   name?: string | undefined;
-  email?: string | undefined;
-  imageUrl?: string | undefined;
+  email?: string | null | undefined;
+  imageUrl?: string | null | undefined;
   status?: string | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
@@ -208,10 +215,10 @@ export const PutApiUserProfileUser$outboundSchema: z.ZodType<
   PutApiUserProfileUser
 > = z.object({
   id: z.string().optional(),
-  walletAddress: z.string().optional(),
+  walletAddress: z.nullable(z.string()).optional(),
   name: z.string().optional(),
-  email: z.string().optional(),
-  imageUrl: z.string().optional(),
+  email: z.nullable(z.string()).optional(),
+  imageUrl: z.nullable(z.string()).optional(),
   status: z.string().optional(),
   createdAt: z
     .date()

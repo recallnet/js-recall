@@ -71,12 +71,16 @@ export type GetApiAdminSearchUser = {
   updatedAt?: Date | undefined;
 };
 
+export type GetApiAdminSearchMetadata = {};
+
 export type GetApiAdminSearchAgent = {
   type?: string | undefined;
   id?: string | undefined;
   ownerId?: string | undefined;
   name?: string | undefined;
   description?: string | null | undefined;
+  email?: string | null | undefined;
+  metadata?: GetApiAdminSearchMetadata | null | undefined;
   status?: string | undefined;
   imageUrl?: string | null | undefined;
   createdAt?: Date | undefined;
@@ -302,6 +306,54 @@ export function getApiAdminSearchUserFromJSON(
 }
 
 /** @internal */
+export const GetApiAdminSearchMetadata$inboundSchema: z.ZodType<
+  GetApiAdminSearchMetadata,
+  z.ZodTypeDef,
+  unknown
+> = z.object({});
+
+/** @internal */
+export type GetApiAdminSearchMetadata$Outbound = {};
+
+/** @internal */
+export const GetApiAdminSearchMetadata$outboundSchema: z.ZodType<
+  GetApiAdminSearchMetadata$Outbound,
+  z.ZodTypeDef,
+  GetApiAdminSearchMetadata
+> = z.object({});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace GetApiAdminSearchMetadata$ {
+  /** @deprecated use `GetApiAdminSearchMetadata$inboundSchema` instead. */
+  export const inboundSchema = GetApiAdminSearchMetadata$inboundSchema;
+  /** @deprecated use `GetApiAdminSearchMetadata$outboundSchema` instead. */
+  export const outboundSchema = GetApiAdminSearchMetadata$outboundSchema;
+  /** @deprecated use `GetApiAdminSearchMetadata$Outbound` instead. */
+  export type Outbound = GetApiAdminSearchMetadata$Outbound;
+}
+
+export function getApiAdminSearchMetadataToJSON(
+  getApiAdminSearchMetadata: GetApiAdminSearchMetadata,
+): string {
+  return JSON.stringify(
+    GetApiAdminSearchMetadata$outboundSchema.parse(getApiAdminSearchMetadata),
+  );
+}
+
+export function getApiAdminSearchMetadataFromJSON(
+  jsonString: string,
+): SafeParseResult<GetApiAdminSearchMetadata, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) => GetApiAdminSearchMetadata$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetApiAdminSearchMetadata' from JSON`,
+  );
+}
+
+/** @internal */
 export const GetApiAdminSearchAgent$inboundSchema: z.ZodType<
   GetApiAdminSearchAgent,
   z.ZodTypeDef,
@@ -312,6 +364,10 @@ export const GetApiAdminSearchAgent$inboundSchema: z.ZodType<
   ownerId: z.string().optional(),
   name: z.string().optional(),
   description: z.nullable(z.string()).optional(),
+  email: z.nullable(z.string()).optional(),
+  metadata: z
+    .nullable(z.lazy(() => GetApiAdminSearchMetadata$inboundSchema))
+    .optional(),
   status: z.string().optional(),
   imageUrl: z.nullable(z.string()).optional(),
   createdAt: z
@@ -333,6 +389,8 @@ export type GetApiAdminSearchAgent$Outbound = {
   ownerId?: string | undefined;
   name?: string | undefined;
   description?: string | null | undefined;
+  email?: string | null | undefined;
+  metadata?: GetApiAdminSearchMetadata$Outbound | null | undefined;
   status?: string | undefined;
   imageUrl?: string | null | undefined;
   createdAt?: string | undefined;
@@ -350,6 +408,10 @@ export const GetApiAdminSearchAgent$outboundSchema: z.ZodType<
   ownerId: z.string().optional(),
   name: z.string().optional(),
   description: z.nullable(z.string()).optional(),
+  email: z.nullable(z.string()).optional(),
+  metadata: z
+    .nullable(z.lazy(() => GetApiAdminSearchMetadata$outboundSchema))
+    .optional(),
   status: z.string().optional(),
   imageUrl: z.nullable(z.string()).optional(),
   createdAt: z

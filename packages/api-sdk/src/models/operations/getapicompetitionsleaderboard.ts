@@ -21,7 +21,7 @@ export type GetApiCompetitionsLeaderboardRequest = {
 export const GetApiCompetitionsLeaderboardStatus = {
   Pending: "pending",
   Active: "active",
-  Completed: "completed",
+  Ended: "ended",
 } as const;
 /**
  * Competition status
@@ -46,7 +46,7 @@ export type GetApiCompetitionsLeaderboardCompetition = {
   /**
    * External URL for competition details
    */
-  externalLink?: string | null | undefined;
+  externalUrl?: string | null | undefined;
   /**
    * URL to competition image
    */
@@ -237,7 +237,7 @@ export const GetApiCompetitionsLeaderboardCompetition$inboundSchema: z.ZodType<
   id: z.string().optional(),
   name: z.string().optional(),
   description: z.nullable(z.string()).optional(),
-  externalLink: z.nullable(z.string()).optional(),
+  externalUrl: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
   startDate: z
     .string()
@@ -270,7 +270,7 @@ export type GetApiCompetitionsLeaderboardCompetition$Outbound = {
   id?: string | undefined;
   name?: string | undefined;
   description?: string | null | undefined;
-  externalLink?: string | null | undefined;
+  externalUrl?: string | null | undefined;
   imageUrl?: string | null | undefined;
   startDate?: string | undefined;
   endDate?: string | null | undefined;
@@ -288,7 +288,7 @@ export const GetApiCompetitionsLeaderboardCompetition$outboundSchema: z.ZodType<
   id: z.string().optional(),
   name: z.string().optional(),
   description: z.nullable(z.string()).optional(),
-  externalLink: z.nullable(z.string()).optional(),
+  externalUrl: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
   startDate: z
     .date()

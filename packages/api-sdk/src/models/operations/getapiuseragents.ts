@@ -13,8 +13,11 @@ export type GetApiUserAgentsSecurity = {
   siweSession: string;
 };
 
+export type GetApiUserAgentsMetadata = {};
+
 export const GetApiUserAgentsStatus = {
   Active: "active",
+  Inactive: "inactive",
   Suspended: "suspended",
   Deleted: "deleted",
 } as const;
@@ -23,9 +26,12 @@ export type GetApiUserAgentsStatus = ClosedEnum<typeof GetApiUserAgentsStatus>;
 export type GetApiUserAgentsAgent = {
   id?: string | undefined;
   ownerId?: string | undefined;
+  walletAddress?: string | null | undefined;
   name?: string | undefined;
-  description?: string | undefined;
+  description?: string | null | undefined;
+  email?: string | undefined;
   imageUrl?: string | undefined;
+  metadata?: GetApiUserAgentsMetadata | undefined;
   status?: GetApiUserAgentsStatus | undefined;
   createdAt?: Date | undefined;
   updatedAt?: Date | undefined;
@@ -107,6 +113,54 @@ export function getApiUserAgentsSecurityFromJSON(
 }
 
 /** @internal */
+export const GetApiUserAgentsMetadata$inboundSchema: z.ZodType<
+  GetApiUserAgentsMetadata,
+  z.ZodTypeDef,
+  unknown
+> = z.object({});
+
+/** @internal */
+export type GetApiUserAgentsMetadata$Outbound = {};
+
+/** @internal */
+export const GetApiUserAgentsMetadata$outboundSchema: z.ZodType<
+  GetApiUserAgentsMetadata$Outbound,
+  z.ZodTypeDef,
+  GetApiUserAgentsMetadata
+> = z.object({});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace GetApiUserAgentsMetadata$ {
+  /** @deprecated use `GetApiUserAgentsMetadata$inboundSchema` instead. */
+  export const inboundSchema = GetApiUserAgentsMetadata$inboundSchema;
+  /** @deprecated use `GetApiUserAgentsMetadata$outboundSchema` instead. */
+  export const outboundSchema = GetApiUserAgentsMetadata$outboundSchema;
+  /** @deprecated use `GetApiUserAgentsMetadata$Outbound` instead. */
+  export type Outbound = GetApiUserAgentsMetadata$Outbound;
+}
+
+export function getApiUserAgentsMetadataToJSON(
+  getApiUserAgentsMetadata: GetApiUserAgentsMetadata,
+): string {
+  return JSON.stringify(
+    GetApiUserAgentsMetadata$outboundSchema.parse(getApiUserAgentsMetadata),
+  );
+}
+
+export function getApiUserAgentsMetadataFromJSON(
+  jsonString: string,
+): SafeParseResult<GetApiUserAgentsMetadata, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) => GetApiUserAgentsMetadata$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetApiUserAgentsMetadata' from JSON`,
+  );
+}
+
+/** @internal */
 export const GetApiUserAgentsStatus$inboundSchema: z.ZodNativeEnum<
   typeof GetApiUserAgentsStatus
 > = z.nativeEnum(GetApiUserAgentsStatus);
@@ -135,9 +189,12 @@ export const GetApiUserAgentsAgent$inboundSchema: z.ZodType<
 > = z.object({
   id: z.string().optional(),
   ownerId: z.string().optional(),
+  walletAddress: z.nullable(z.string()).optional(),
   name: z.string().optional(),
-  description: z.string().optional(),
+  description: z.nullable(z.string()).optional(),
+  email: z.string().optional(),
   imageUrl: z.string().optional(),
+  metadata: z.lazy(() => GetApiUserAgentsMetadata$inboundSchema).optional(),
   status: GetApiUserAgentsStatus$inboundSchema.optional(),
   createdAt: z
     .string()
@@ -155,9 +212,12 @@ export const GetApiUserAgentsAgent$inboundSchema: z.ZodType<
 export type GetApiUserAgentsAgent$Outbound = {
   id?: string | undefined;
   ownerId?: string | undefined;
+  walletAddress?: string | null | undefined;
   name?: string | undefined;
-  description?: string | undefined;
+  description?: string | null | undefined;
+  email?: string | undefined;
   imageUrl?: string | undefined;
+  metadata?: GetApiUserAgentsMetadata$Outbound | undefined;
   status?: string | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
@@ -171,9 +231,12 @@ export const GetApiUserAgentsAgent$outboundSchema: z.ZodType<
 > = z.object({
   id: z.string().optional(),
   ownerId: z.string().optional(),
+  walletAddress: z.nullable(z.string()).optional(),
   name: z.string().optional(),
-  description: z.string().optional(),
+  description: z.nullable(z.string()).optional(),
+  email: z.string().optional(),
   imageUrl: z.string().optional(),
+  metadata: z.lazy(() => GetApiUserAgentsMetadata$outboundSchema).optional(),
   status: GetApiUserAgentsStatus$outboundSchema.optional(),
   createdAt: z
     .date()

@@ -10,6 +10,7 @@ import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 
 export const GetApiAgentProfileStatus = {
   Active: "active",
+  Inactive: "inactive",
   Suspended: "suspended",
   Deleted: "deleted",
 } as const;
@@ -17,14 +18,24 @@ export type GetApiAgentProfileStatus = ClosedEnum<
   typeof GetApiAgentProfileStatus
 >;
 
+/**
+ * Optional metadata for the agent
+ */
+export type GetApiAgentProfileMetadata = {};
+
 export type GetApiAgentProfileAgent = {
   id?: string | undefined;
   ownerId?: string | undefined;
   walletAddress?: string | undefined;
   name?: string | undefined;
   description?: string | undefined;
-  imageUrl?: string | undefined;
+  imageUrl?: string | null | undefined;
+  email?: string | null | undefined;
   status?: GetApiAgentProfileStatus | undefined;
+  /**
+   * Optional metadata for the agent
+   */
+  metadata?: GetApiAgentProfileMetadata | null | undefined;
   createdAt?: Date | undefined;
   updatedAt?: Date | undefined;
 };
@@ -68,6 +79,54 @@ export namespace GetApiAgentProfileStatus$ {
 }
 
 /** @internal */
+export const GetApiAgentProfileMetadata$inboundSchema: z.ZodType<
+  GetApiAgentProfileMetadata,
+  z.ZodTypeDef,
+  unknown
+> = z.object({});
+
+/** @internal */
+export type GetApiAgentProfileMetadata$Outbound = {};
+
+/** @internal */
+export const GetApiAgentProfileMetadata$outboundSchema: z.ZodType<
+  GetApiAgentProfileMetadata$Outbound,
+  z.ZodTypeDef,
+  GetApiAgentProfileMetadata
+> = z.object({});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace GetApiAgentProfileMetadata$ {
+  /** @deprecated use `GetApiAgentProfileMetadata$inboundSchema` instead. */
+  export const inboundSchema = GetApiAgentProfileMetadata$inboundSchema;
+  /** @deprecated use `GetApiAgentProfileMetadata$outboundSchema` instead. */
+  export const outboundSchema = GetApiAgentProfileMetadata$outboundSchema;
+  /** @deprecated use `GetApiAgentProfileMetadata$Outbound` instead. */
+  export type Outbound = GetApiAgentProfileMetadata$Outbound;
+}
+
+export function getApiAgentProfileMetadataToJSON(
+  getApiAgentProfileMetadata: GetApiAgentProfileMetadata,
+): string {
+  return JSON.stringify(
+    GetApiAgentProfileMetadata$outboundSchema.parse(getApiAgentProfileMetadata),
+  );
+}
+
+export function getApiAgentProfileMetadataFromJSON(
+  jsonString: string,
+): SafeParseResult<GetApiAgentProfileMetadata, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) => GetApiAgentProfileMetadata$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetApiAgentProfileMetadata' from JSON`,
+  );
+}
+
+/** @internal */
 export const GetApiAgentProfileAgent$inboundSchema: z.ZodType<
   GetApiAgentProfileAgent,
   z.ZodTypeDef,
@@ -78,8 +137,12 @@ export const GetApiAgentProfileAgent$inboundSchema: z.ZodType<
   walletAddress: z.string().optional(),
   name: z.string().optional(),
   description: z.string().optional(),
-  imageUrl: z.string().optional(),
+  imageUrl: z.nullable(z.string()).optional(),
+  email: z.nullable(z.string()).optional(),
   status: GetApiAgentProfileStatus$inboundSchema.optional(),
+  metadata: z
+    .nullable(z.lazy(() => GetApiAgentProfileMetadata$inboundSchema))
+    .optional(),
   createdAt: z
     .string()
     .datetime({ offset: true })
@@ -99,8 +162,10 @@ export type GetApiAgentProfileAgent$Outbound = {
   walletAddress?: string | undefined;
   name?: string | undefined;
   description?: string | undefined;
-  imageUrl?: string | undefined;
+  imageUrl?: string | null | undefined;
+  email?: string | null | undefined;
   status?: string | undefined;
+  metadata?: GetApiAgentProfileMetadata$Outbound | null | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
 };
@@ -116,8 +181,12 @@ export const GetApiAgentProfileAgent$outboundSchema: z.ZodType<
   walletAddress: z.string().optional(),
   name: z.string().optional(),
   description: z.string().optional(),
-  imageUrl: z.string().optional(),
+  imageUrl: z.nullable(z.string()).optional(),
+  email: z.nullable(z.string()).optional(),
   status: GetApiAgentProfileStatus$outboundSchema.optional(),
+  metadata: z
+    .nullable(z.lazy(() => GetApiAgentProfileMetadata$outboundSchema))
+    .optional(),
   createdAt: z
     .date()
     .transform((v) => v.toISOString())

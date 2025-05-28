@@ -23,6 +23,19 @@ export type PostApiAdminCompetitionCreateTradingType = ClosedEnum<
   typeof PostApiAdminCompetitionCreateTradingType
 >;
 
+/**
+ * The type of competition
+ */
+export const PostApiAdminCompetitionCreateTypeRequest = {
+  Trading: "trading",
+} as const;
+/**
+ * The type of competition
+ */
+export type PostApiAdminCompetitionCreateTypeRequest = ClosedEnum<
+  typeof PostApiAdminCompetitionCreateTypeRequest
+>;
+
 export type PostApiAdminCompetitionCreateRequest = {
   /**
    * Competition name
@@ -37,9 +50,13 @@ export type PostApiAdminCompetitionCreateRequest = {
    */
   tradingType?: PostApiAdminCompetitionCreateTradingType | undefined;
   /**
+   * The type of competition
+   */
+  type?: PostApiAdminCompetitionCreateTypeRequest | undefined;
+  /**
    * External URL for competition details
    */
-  externalLink?: string | undefined;
+  externalUrl?: string | undefined;
   /**
    * URL to competition image
    */
@@ -76,6 +93,19 @@ export type PostApiAdminCompetitionCreateCrossChainTradingType = ClosedEnum<
   typeof PostApiAdminCompetitionCreateCrossChainTradingType
 >;
 
+/**
+ * The type of competition
+ */
+export const PostApiAdminCompetitionCreateTypeResponse = {
+  Trading: "trading",
+} as const;
+/**
+ * The type of competition
+ */
+export type PostApiAdminCompetitionCreateTypeResponse = ClosedEnum<
+  typeof PostApiAdminCompetitionCreateTypeResponse
+>;
+
 export type PostApiAdminCompetitionCreateCompetition = {
   /**
    * Competition ID
@@ -96,7 +126,7 @@ export type PostApiAdminCompetitionCreateCompetition = {
   /**
    * External URL for competition details
    */
-  externalLink?: string | null | undefined;
+  externalUrl?: string | null | undefined;
   /**
    * URL to competition image
    */
@@ -107,6 +137,10 @@ export type PostApiAdminCompetitionCreateCompetition = {
   crossChainTradingType?:
     | PostApiAdminCompetitionCreateCrossChainTradingType
     | undefined;
+  /**
+   * The type of competition
+   */
+  type?: PostApiAdminCompetitionCreateTypeResponse | undefined;
   /**
    * Competition creation date
    */
@@ -148,6 +182,29 @@ export namespace PostApiAdminCompetitionCreateTradingType$ {
 }
 
 /** @internal */
+export const PostApiAdminCompetitionCreateTypeRequest$inboundSchema: z.ZodNativeEnum<
+  typeof PostApiAdminCompetitionCreateTypeRequest
+> = z.nativeEnum(PostApiAdminCompetitionCreateTypeRequest);
+
+/** @internal */
+export const PostApiAdminCompetitionCreateTypeRequest$outboundSchema: z.ZodNativeEnum<
+  typeof PostApiAdminCompetitionCreateTypeRequest
+> = PostApiAdminCompetitionCreateTypeRequest$inboundSchema;
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace PostApiAdminCompetitionCreateTypeRequest$ {
+  /** @deprecated use `PostApiAdminCompetitionCreateTypeRequest$inboundSchema` instead. */
+  export const inboundSchema =
+    PostApiAdminCompetitionCreateTypeRequest$inboundSchema;
+  /** @deprecated use `PostApiAdminCompetitionCreateTypeRequest$outboundSchema` instead. */
+  export const outboundSchema =
+    PostApiAdminCompetitionCreateTypeRequest$outboundSchema;
+}
+
+/** @internal */
 export const PostApiAdminCompetitionCreateRequest$inboundSchema: z.ZodType<
   PostApiAdminCompetitionCreateRequest,
   z.ZodTypeDef,
@@ -159,7 +216,10 @@ export const PostApiAdminCompetitionCreateRequest$inboundSchema: z.ZodType<
     PostApiAdminCompetitionCreateTradingType$inboundSchema.default(
       "disallowAll",
     ),
-  externalLink: z.string().optional(),
+  type: PostApiAdminCompetitionCreateTypeRequest$inboundSchema.default(
+    "trading",
+  ),
+  externalUrl: z.string().optional(),
   imageUrl: z.string().optional(),
 });
 
@@ -168,7 +228,8 @@ export type PostApiAdminCompetitionCreateRequest$Outbound = {
   name: string;
   description?: string | undefined;
   tradingType: string;
-  externalLink?: string | undefined;
+  type: string;
+  externalUrl?: string | undefined;
   imageUrl?: string | undefined;
 };
 
@@ -184,7 +245,10 @@ export const PostApiAdminCompetitionCreateRequest$outboundSchema: z.ZodType<
     PostApiAdminCompetitionCreateTradingType$outboundSchema.default(
       "disallowAll",
     ),
-  externalLink: z.string().optional(),
+  type: PostApiAdminCompetitionCreateTypeRequest$outboundSchema.default(
+    "trading",
+  ),
+  externalUrl: z.string().optional(),
   imageUrl: z.string().optional(),
 });
 
@@ -271,6 +335,29 @@ export namespace PostApiAdminCompetitionCreateCrossChainTradingType$ {
 }
 
 /** @internal */
+export const PostApiAdminCompetitionCreateTypeResponse$inboundSchema: z.ZodNativeEnum<
+  typeof PostApiAdminCompetitionCreateTypeResponse
+> = z.nativeEnum(PostApiAdminCompetitionCreateTypeResponse);
+
+/** @internal */
+export const PostApiAdminCompetitionCreateTypeResponse$outboundSchema: z.ZodNativeEnum<
+  typeof PostApiAdminCompetitionCreateTypeResponse
+> = PostApiAdminCompetitionCreateTypeResponse$inboundSchema;
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace PostApiAdminCompetitionCreateTypeResponse$ {
+  /** @deprecated use `PostApiAdminCompetitionCreateTypeResponse$inboundSchema` instead. */
+  export const inboundSchema =
+    PostApiAdminCompetitionCreateTypeResponse$inboundSchema;
+  /** @deprecated use `PostApiAdminCompetitionCreateTypeResponse$outboundSchema` instead. */
+  export const outboundSchema =
+    PostApiAdminCompetitionCreateTypeResponse$outboundSchema;
+}
+
+/** @internal */
 export const PostApiAdminCompetitionCreateCompetition$inboundSchema: z.ZodType<
   PostApiAdminCompetitionCreateCompetition,
   z.ZodTypeDef,
@@ -280,10 +367,13 @@ export const PostApiAdminCompetitionCreateCompetition$inboundSchema: z.ZodType<
   name: z.string().optional(),
   description: z.string().optional(),
   status: PostApiAdminCompetitionCreateStatus$inboundSchema.optional(),
-  externalLink: z.nullable(z.string()).optional(),
+  externalUrl: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
   crossChainTradingType:
     PostApiAdminCompetitionCreateCrossChainTradingType$inboundSchema.optional(),
+  type: PostApiAdminCompetitionCreateTypeResponse$inboundSchema.default(
+    "trading",
+  ),
   createdAt: z
     .string()
     .datetime({ offset: true })
@@ -297,9 +387,10 @@ export type PostApiAdminCompetitionCreateCompetition$Outbound = {
   name?: string | undefined;
   description?: string | undefined;
   status?: string | undefined;
-  externalLink?: string | null | undefined;
+  externalUrl?: string | null | undefined;
   imageUrl?: string | null | undefined;
   crossChainTradingType?: string | undefined;
+  type: string;
   createdAt?: string | undefined;
 };
 
@@ -313,10 +404,13 @@ export const PostApiAdminCompetitionCreateCompetition$outboundSchema: z.ZodType<
   name: z.string().optional(),
   description: z.string().optional(),
   status: PostApiAdminCompetitionCreateStatus$outboundSchema.optional(),
-  externalLink: z.nullable(z.string()).optional(),
+  externalUrl: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
   crossChainTradingType:
     PostApiAdminCompetitionCreateCrossChainTradingType$outboundSchema.optional(),
+  type: PostApiAdminCompetitionCreateTypeResponse$outboundSchema.default(
+    "trading",
+  ),
   createdAt: z
     .date()
     .transform((v) => v.toISOString())

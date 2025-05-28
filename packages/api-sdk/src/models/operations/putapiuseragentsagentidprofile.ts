@@ -13,6 +13,11 @@ export type PutApiUserAgentsAgentIdProfileSecurity = {
   siweSession: string;
 };
 
+/**
+ * Optional metadata for the agent
+ */
+export type PutApiUserAgentsAgentIdProfileMetadataRequest = {};
+
 export type PutApiUserAgentsAgentIdProfileRequestBody = {
   /**
    * Agent's display name
@@ -26,6 +31,14 @@ export type PutApiUserAgentsAgentIdProfileRequestBody = {
    * URL to agent's profile image
    */
   imageUrl?: string | undefined;
+  /**
+   * Agent email
+   */
+  email?: string | undefined;
+  /**
+   * Optional metadata for the agent
+   */
+  metadata?: PutApiUserAgentsAgentIdProfileMetadataRequest | undefined;
 };
 
 export type PutApiUserAgentsAgentIdProfileRequest = {
@@ -36,8 +49,11 @@ export type PutApiUserAgentsAgentIdProfileRequest = {
   requestBody: PutApiUserAgentsAgentIdProfileRequestBody;
 };
 
+export type PutApiUserAgentsAgentIdProfileAgentMetadata = {};
+
 export const PutApiUserAgentsAgentIdProfileStatus = {
   Active: "active",
+  Inactive: "inactive",
   Suspended: "suspended",
   Deleted: "deleted",
 } as const;
@@ -48,9 +64,12 @@ export type PutApiUserAgentsAgentIdProfileStatus = ClosedEnum<
 export type PutApiUserAgentsAgentIdProfileAgent = {
   id?: string | undefined;
   ownerId?: string | undefined;
+  walletAddress?: string | null | undefined;
   name?: string | undefined;
+  email?: string | null | undefined;
   description?: string | undefined;
   imageUrl?: string | undefined;
+  metadata?: PutApiUserAgentsAgentIdProfileAgentMetadata | null | undefined;
   status?: PutApiUserAgentsAgentIdProfileStatus | undefined;
   createdAt?: Date | undefined;
   updatedAt?: Date | undefined;
@@ -136,6 +155,64 @@ export function putApiUserAgentsAgentIdProfileSecurityFromJSON(
 }
 
 /** @internal */
+export const PutApiUserAgentsAgentIdProfileMetadataRequest$inboundSchema: z.ZodType<
+  PutApiUserAgentsAgentIdProfileMetadataRequest,
+  z.ZodTypeDef,
+  unknown
+> = z.object({});
+
+/** @internal */
+export type PutApiUserAgentsAgentIdProfileMetadataRequest$Outbound = {};
+
+/** @internal */
+export const PutApiUserAgentsAgentIdProfileMetadataRequest$outboundSchema: z.ZodType<
+  PutApiUserAgentsAgentIdProfileMetadataRequest$Outbound,
+  z.ZodTypeDef,
+  PutApiUserAgentsAgentIdProfileMetadataRequest
+> = z.object({});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace PutApiUserAgentsAgentIdProfileMetadataRequest$ {
+  /** @deprecated use `PutApiUserAgentsAgentIdProfileMetadataRequest$inboundSchema` instead. */
+  export const inboundSchema =
+    PutApiUserAgentsAgentIdProfileMetadataRequest$inboundSchema;
+  /** @deprecated use `PutApiUserAgentsAgentIdProfileMetadataRequest$outboundSchema` instead. */
+  export const outboundSchema =
+    PutApiUserAgentsAgentIdProfileMetadataRequest$outboundSchema;
+  /** @deprecated use `PutApiUserAgentsAgentIdProfileMetadataRequest$Outbound` instead. */
+  export type Outbound = PutApiUserAgentsAgentIdProfileMetadataRequest$Outbound;
+}
+
+export function putApiUserAgentsAgentIdProfileMetadataRequestToJSON(
+  putApiUserAgentsAgentIdProfileMetadataRequest: PutApiUserAgentsAgentIdProfileMetadataRequest,
+): string {
+  return JSON.stringify(
+    PutApiUserAgentsAgentIdProfileMetadataRequest$outboundSchema.parse(
+      putApiUserAgentsAgentIdProfileMetadataRequest,
+    ),
+  );
+}
+
+export function putApiUserAgentsAgentIdProfileMetadataRequestFromJSON(
+  jsonString: string,
+): SafeParseResult<
+  PutApiUserAgentsAgentIdProfileMetadataRequest,
+  SDKValidationError
+> {
+  return safeParse(
+    jsonString,
+    (x) =>
+      PutApiUserAgentsAgentIdProfileMetadataRequest$inboundSchema.parse(
+        JSON.parse(x),
+      ),
+    `Failed to parse 'PutApiUserAgentsAgentIdProfileMetadataRequest' from JSON`,
+  );
+}
+
+/** @internal */
 export const PutApiUserAgentsAgentIdProfileRequestBody$inboundSchema: z.ZodType<
   PutApiUserAgentsAgentIdProfileRequestBody,
   z.ZodTypeDef,
@@ -144,6 +221,10 @@ export const PutApiUserAgentsAgentIdProfileRequestBody$inboundSchema: z.ZodType<
   name: z.string().optional(),
   description: z.string().optional(),
   imageUrl: z.string().optional(),
+  email: z.string().optional(),
+  metadata: z
+    .lazy(() => PutApiUserAgentsAgentIdProfileMetadataRequest$inboundSchema)
+    .optional(),
 });
 
 /** @internal */
@@ -151,6 +232,8 @@ export type PutApiUserAgentsAgentIdProfileRequestBody$Outbound = {
   name?: string | undefined;
   description?: string | undefined;
   imageUrl?: string | undefined;
+  email?: string | undefined;
+  metadata?: PutApiUserAgentsAgentIdProfileMetadataRequest$Outbound | undefined;
 };
 
 /** @internal */
@@ -162,6 +245,10 @@ export const PutApiUserAgentsAgentIdProfileRequestBody$outboundSchema: z.ZodType
   name: z.string().optional(),
   description: z.string().optional(),
   imageUrl: z.string().optional(),
+  email: z.string().optional(),
+  metadata: z
+    .lazy(() => PutApiUserAgentsAgentIdProfileMetadataRequest$outboundSchema)
+    .optional(),
 });
 
 /**
@@ -284,6 +371,64 @@ export function putApiUserAgentsAgentIdProfileRequestFromJSON(
 }
 
 /** @internal */
+export const PutApiUserAgentsAgentIdProfileAgentMetadata$inboundSchema: z.ZodType<
+  PutApiUserAgentsAgentIdProfileAgentMetadata,
+  z.ZodTypeDef,
+  unknown
+> = z.object({});
+
+/** @internal */
+export type PutApiUserAgentsAgentIdProfileAgentMetadata$Outbound = {};
+
+/** @internal */
+export const PutApiUserAgentsAgentIdProfileAgentMetadata$outboundSchema: z.ZodType<
+  PutApiUserAgentsAgentIdProfileAgentMetadata$Outbound,
+  z.ZodTypeDef,
+  PutApiUserAgentsAgentIdProfileAgentMetadata
+> = z.object({});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace PutApiUserAgentsAgentIdProfileAgentMetadata$ {
+  /** @deprecated use `PutApiUserAgentsAgentIdProfileAgentMetadata$inboundSchema` instead. */
+  export const inboundSchema =
+    PutApiUserAgentsAgentIdProfileAgentMetadata$inboundSchema;
+  /** @deprecated use `PutApiUserAgentsAgentIdProfileAgentMetadata$outboundSchema` instead. */
+  export const outboundSchema =
+    PutApiUserAgentsAgentIdProfileAgentMetadata$outboundSchema;
+  /** @deprecated use `PutApiUserAgentsAgentIdProfileAgentMetadata$Outbound` instead. */
+  export type Outbound = PutApiUserAgentsAgentIdProfileAgentMetadata$Outbound;
+}
+
+export function putApiUserAgentsAgentIdProfileAgentMetadataToJSON(
+  putApiUserAgentsAgentIdProfileAgentMetadata: PutApiUserAgentsAgentIdProfileAgentMetadata,
+): string {
+  return JSON.stringify(
+    PutApiUserAgentsAgentIdProfileAgentMetadata$outboundSchema.parse(
+      putApiUserAgentsAgentIdProfileAgentMetadata,
+    ),
+  );
+}
+
+export function putApiUserAgentsAgentIdProfileAgentMetadataFromJSON(
+  jsonString: string,
+): SafeParseResult<
+  PutApiUserAgentsAgentIdProfileAgentMetadata,
+  SDKValidationError
+> {
+  return safeParse(
+    jsonString,
+    (x) =>
+      PutApiUserAgentsAgentIdProfileAgentMetadata$inboundSchema.parse(
+        JSON.parse(x),
+      ),
+    `Failed to parse 'PutApiUserAgentsAgentIdProfileAgentMetadata' from JSON`,
+  );
+}
+
+/** @internal */
 export const PutApiUserAgentsAgentIdProfileStatus$inboundSchema: z.ZodNativeEnum<
   typeof PutApiUserAgentsAgentIdProfileStatus
 > = z.nativeEnum(PutApiUserAgentsAgentIdProfileStatus);
@@ -314,9 +459,16 @@ export const PutApiUserAgentsAgentIdProfileAgent$inboundSchema: z.ZodType<
 > = z.object({
   id: z.string().optional(),
   ownerId: z.string().optional(),
+  walletAddress: z.nullable(z.string()).optional(),
   name: z.string().optional(),
+  email: z.nullable(z.string()).optional(),
   description: z.string().optional(),
   imageUrl: z.string().optional(),
+  metadata: z
+    .nullable(
+      z.lazy(() => PutApiUserAgentsAgentIdProfileAgentMetadata$inboundSchema),
+    )
+    .optional(),
   status: PutApiUserAgentsAgentIdProfileStatus$inboundSchema.optional(),
   createdAt: z
     .string()
@@ -334,9 +486,15 @@ export const PutApiUserAgentsAgentIdProfileAgent$inboundSchema: z.ZodType<
 export type PutApiUserAgentsAgentIdProfileAgent$Outbound = {
   id?: string | undefined;
   ownerId?: string | undefined;
+  walletAddress?: string | null | undefined;
   name?: string | undefined;
+  email?: string | null | undefined;
   description?: string | undefined;
   imageUrl?: string | undefined;
+  metadata?:
+    | PutApiUserAgentsAgentIdProfileAgentMetadata$Outbound
+    | null
+    | undefined;
   status?: string | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
@@ -350,9 +508,16 @@ export const PutApiUserAgentsAgentIdProfileAgent$outboundSchema: z.ZodType<
 > = z.object({
   id: z.string().optional(),
   ownerId: z.string().optional(),
+  walletAddress: z.nullable(z.string()).optional(),
   name: z.string().optional(),
+  email: z.nullable(z.string()).optional(),
   description: z.string().optional(),
   imageUrl: z.string().optional(),
+  metadata: z
+    .nullable(
+      z.lazy(() => PutApiUserAgentsAgentIdProfileAgentMetadata$outboundSchema),
+    )
+    .optional(),
   status: PutApiUserAgentsAgentIdProfileStatus$outboundSchema.optional(),
   createdAt: z
     .date()

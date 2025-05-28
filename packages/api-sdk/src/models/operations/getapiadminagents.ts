@@ -7,6 +7,11 @@ import { safeParse } from "../../lib/schemas.js";
 import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 
+/**
+ * Optional metadata for the agent
+ */
+export type GetApiAdminAgentsMetadata = {};
+
 export type GetApiAdminAgentsAgent = {
   /**
    * Agent ID
@@ -21,6 +26,10 @@ export type GetApiAdminAgentsAgent = {
    */
   name?: string | undefined;
   /**
+   * Agent email
+   */
+  email?: string | null | undefined;
+  /**
    * Agent description
    */
   description?: string | null | undefined;
@@ -32,6 +41,10 @@ export type GetApiAdminAgentsAgent = {
    * URL to the agent's image
    */
   imageUrl?: string | null | undefined;
+  /**
+   * Optional metadata for the agent
+   */
+  metadata?: GetApiAdminAgentsMetadata | null | undefined;
   /**
    * Agent creation timestamp
    */
@@ -54,6 +67,54 @@ export type GetApiAdminAgentsResponse = {
 };
 
 /** @internal */
+export const GetApiAdminAgentsMetadata$inboundSchema: z.ZodType<
+  GetApiAdminAgentsMetadata,
+  z.ZodTypeDef,
+  unknown
+> = z.object({});
+
+/** @internal */
+export type GetApiAdminAgentsMetadata$Outbound = {};
+
+/** @internal */
+export const GetApiAdminAgentsMetadata$outboundSchema: z.ZodType<
+  GetApiAdminAgentsMetadata$Outbound,
+  z.ZodTypeDef,
+  GetApiAdminAgentsMetadata
+> = z.object({});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace GetApiAdminAgentsMetadata$ {
+  /** @deprecated use `GetApiAdminAgentsMetadata$inboundSchema` instead. */
+  export const inboundSchema = GetApiAdminAgentsMetadata$inboundSchema;
+  /** @deprecated use `GetApiAdminAgentsMetadata$outboundSchema` instead. */
+  export const outboundSchema = GetApiAdminAgentsMetadata$outboundSchema;
+  /** @deprecated use `GetApiAdminAgentsMetadata$Outbound` instead. */
+  export type Outbound = GetApiAdminAgentsMetadata$Outbound;
+}
+
+export function getApiAdminAgentsMetadataToJSON(
+  getApiAdminAgentsMetadata: GetApiAdminAgentsMetadata,
+): string {
+  return JSON.stringify(
+    GetApiAdminAgentsMetadata$outboundSchema.parse(getApiAdminAgentsMetadata),
+  );
+}
+
+export function getApiAdminAgentsMetadataFromJSON(
+  jsonString: string,
+): SafeParseResult<GetApiAdminAgentsMetadata, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) => GetApiAdminAgentsMetadata$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetApiAdminAgentsMetadata' from JSON`,
+  );
+}
+
+/** @internal */
 export const GetApiAdminAgentsAgent$inboundSchema: z.ZodType<
   GetApiAdminAgentsAgent,
   z.ZodTypeDef,
@@ -62,9 +123,13 @@ export const GetApiAdminAgentsAgent$inboundSchema: z.ZodType<
   id: z.string().optional(),
   ownerId: z.string().optional(),
   name: z.string().optional(),
+  email: z.nullable(z.string()).optional(),
   description: z.nullable(z.string()).optional(),
   status: z.string().optional(),
   imageUrl: z.nullable(z.string()).optional(),
+  metadata: z
+    .nullable(z.lazy(() => GetApiAdminAgentsMetadata$inboundSchema))
+    .optional(),
   createdAt: z
     .string()
     .datetime({ offset: true })
@@ -82,9 +147,11 @@ export type GetApiAdminAgentsAgent$Outbound = {
   id?: string | undefined;
   ownerId?: string | undefined;
   name?: string | undefined;
+  email?: string | null | undefined;
   description?: string | null | undefined;
   status?: string | undefined;
   imageUrl?: string | null | undefined;
+  metadata?: GetApiAdminAgentsMetadata$Outbound | null | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
 };
@@ -98,9 +165,13 @@ export const GetApiAdminAgentsAgent$outboundSchema: z.ZodType<
   id: z.string().optional(),
   ownerId: z.string().optional(),
   name: z.string().optional(),
+  email: z.nullable(z.string()).optional(),
   description: z.nullable(z.string()).optional(),
   status: z.string().optional(),
   imageUrl: z.nullable(z.string()).optional(),
+  metadata: z
+    .nullable(z.lazy(() => GetApiAdminAgentsMetadata$outboundSchema))
+    .optional(),
   createdAt: z
     .date()
     .transform((v) => v.toISOString())

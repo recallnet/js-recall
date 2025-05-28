@@ -16,7 +16,7 @@ export type PostApiUserAgentsSecurity = {
 /**
  * Optional metadata for the agent
  */
-export type PostApiUserAgentsMetadata = {};
+export type PostApiUserAgentsMetadataRequest = {};
 
 export type PostApiUserAgentsRequest = {
   /**
@@ -34,11 +34,14 @@ export type PostApiUserAgentsRequest = {
   /**
    * Optional metadata for the agent
    */
-  metadata?: PostApiUserAgentsMetadata | undefined;
+  metadata?: PostApiUserAgentsMetadataRequest | undefined;
 };
+
+export type PostApiUserAgentsAgentMetadata = {};
 
 export const PostApiUserAgentsStatus = {
   Active: "active",
+  Inactive: "inactive",
   Suspended: "suspended",
   Deleted: "deleted",
 } as const;
@@ -49,13 +52,16 @@ export type PostApiUserAgentsStatus = ClosedEnum<
 export type PostApiUserAgentsAgent = {
   id?: string | undefined;
   ownerId?: string | undefined;
+  walletAddress?: string | null | undefined;
   name?: string | undefined;
-  description?: string | undefined;
-  imageUrl?: string | undefined;
+  email?: string | null | undefined;
+  description?: string | null | undefined;
+  imageUrl?: string | null | undefined;
   /**
    * The API key for this agent (store this securely)
    */
   apiKey?: string | undefined;
+  metadata?: PostApiUserAgentsAgentMetadata | null | undefined;
   status?: PostApiUserAgentsStatus | undefined;
   createdAt?: Date | undefined;
   updatedAt?: Date | undefined;
@@ -136,50 +142,52 @@ export function postApiUserAgentsSecurityFromJSON(
 }
 
 /** @internal */
-export const PostApiUserAgentsMetadata$inboundSchema: z.ZodType<
-  PostApiUserAgentsMetadata,
+export const PostApiUserAgentsMetadataRequest$inboundSchema: z.ZodType<
+  PostApiUserAgentsMetadataRequest,
   z.ZodTypeDef,
   unknown
 > = z.object({});
 
 /** @internal */
-export type PostApiUserAgentsMetadata$Outbound = {};
+export type PostApiUserAgentsMetadataRequest$Outbound = {};
 
 /** @internal */
-export const PostApiUserAgentsMetadata$outboundSchema: z.ZodType<
-  PostApiUserAgentsMetadata$Outbound,
+export const PostApiUserAgentsMetadataRequest$outboundSchema: z.ZodType<
+  PostApiUserAgentsMetadataRequest$Outbound,
   z.ZodTypeDef,
-  PostApiUserAgentsMetadata
+  PostApiUserAgentsMetadataRequest
 > = z.object({});
 
 /**
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace PostApiUserAgentsMetadata$ {
-  /** @deprecated use `PostApiUserAgentsMetadata$inboundSchema` instead. */
-  export const inboundSchema = PostApiUserAgentsMetadata$inboundSchema;
-  /** @deprecated use `PostApiUserAgentsMetadata$outboundSchema` instead. */
-  export const outboundSchema = PostApiUserAgentsMetadata$outboundSchema;
-  /** @deprecated use `PostApiUserAgentsMetadata$Outbound` instead. */
-  export type Outbound = PostApiUserAgentsMetadata$Outbound;
+export namespace PostApiUserAgentsMetadataRequest$ {
+  /** @deprecated use `PostApiUserAgentsMetadataRequest$inboundSchema` instead. */
+  export const inboundSchema = PostApiUserAgentsMetadataRequest$inboundSchema;
+  /** @deprecated use `PostApiUserAgentsMetadataRequest$outboundSchema` instead. */
+  export const outboundSchema = PostApiUserAgentsMetadataRequest$outboundSchema;
+  /** @deprecated use `PostApiUserAgentsMetadataRequest$Outbound` instead. */
+  export type Outbound = PostApiUserAgentsMetadataRequest$Outbound;
 }
 
-export function postApiUserAgentsMetadataToJSON(
-  postApiUserAgentsMetadata: PostApiUserAgentsMetadata,
+export function postApiUserAgentsMetadataRequestToJSON(
+  postApiUserAgentsMetadataRequest: PostApiUserAgentsMetadataRequest,
 ): string {
   return JSON.stringify(
-    PostApiUserAgentsMetadata$outboundSchema.parse(postApiUserAgentsMetadata),
+    PostApiUserAgentsMetadataRequest$outboundSchema.parse(
+      postApiUserAgentsMetadataRequest,
+    ),
   );
 }
 
-export function postApiUserAgentsMetadataFromJSON(
+export function postApiUserAgentsMetadataRequestFromJSON(
   jsonString: string,
-): SafeParseResult<PostApiUserAgentsMetadata, SDKValidationError> {
+): SafeParseResult<PostApiUserAgentsMetadataRequest, SDKValidationError> {
   return safeParse(
     jsonString,
-    (x) => PostApiUserAgentsMetadata$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'PostApiUserAgentsMetadata' from JSON`,
+    (x) => PostApiUserAgentsMetadataRequest$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'PostApiUserAgentsMetadataRequest' from JSON`,
   );
 }
 
@@ -192,7 +200,9 @@ export const PostApiUserAgentsRequest$inboundSchema: z.ZodType<
   name: z.string(),
   description: z.string().optional(),
   imageUrl: z.string().optional(),
-  metadata: z.lazy(() => PostApiUserAgentsMetadata$inboundSchema).optional(),
+  metadata: z
+    .lazy(() => PostApiUserAgentsMetadataRequest$inboundSchema)
+    .optional(),
 });
 
 /** @internal */
@@ -200,7 +210,7 @@ export type PostApiUserAgentsRequest$Outbound = {
   name: string;
   description?: string | undefined;
   imageUrl?: string | undefined;
-  metadata?: PostApiUserAgentsMetadata$Outbound | undefined;
+  metadata?: PostApiUserAgentsMetadataRequest$Outbound | undefined;
 };
 
 /** @internal */
@@ -212,7 +222,9 @@ export const PostApiUserAgentsRequest$outboundSchema: z.ZodType<
   name: z.string(),
   description: z.string().optional(),
   imageUrl: z.string().optional(),
-  metadata: z.lazy(() => PostApiUserAgentsMetadata$outboundSchema).optional(),
+  metadata: z
+    .lazy(() => PostApiUserAgentsMetadataRequest$outboundSchema)
+    .optional(),
 });
 
 /**
@@ -247,6 +259,56 @@ export function postApiUserAgentsRequestFromJSON(
 }
 
 /** @internal */
+export const PostApiUserAgentsAgentMetadata$inboundSchema: z.ZodType<
+  PostApiUserAgentsAgentMetadata,
+  z.ZodTypeDef,
+  unknown
+> = z.object({});
+
+/** @internal */
+export type PostApiUserAgentsAgentMetadata$Outbound = {};
+
+/** @internal */
+export const PostApiUserAgentsAgentMetadata$outboundSchema: z.ZodType<
+  PostApiUserAgentsAgentMetadata$Outbound,
+  z.ZodTypeDef,
+  PostApiUserAgentsAgentMetadata
+> = z.object({});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace PostApiUserAgentsAgentMetadata$ {
+  /** @deprecated use `PostApiUserAgentsAgentMetadata$inboundSchema` instead. */
+  export const inboundSchema = PostApiUserAgentsAgentMetadata$inboundSchema;
+  /** @deprecated use `PostApiUserAgentsAgentMetadata$outboundSchema` instead. */
+  export const outboundSchema = PostApiUserAgentsAgentMetadata$outboundSchema;
+  /** @deprecated use `PostApiUserAgentsAgentMetadata$Outbound` instead. */
+  export type Outbound = PostApiUserAgentsAgentMetadata$Outbound;
+}
+
+export function postApiUserAgentsAgentMetadataToJSON(
+  postApiUserAgentsAgentMetadata: PostApiUserAgentsAgentMetadata,
+): string {
+  return JSON.stringify(
+    PostApiUserAgentsAgentMetadata$outboundSchema.parse(
+      postApiUserAgentsAgentMetadata,
+    ),
+  );
+}
+
+export function postApiUserAgentsAgentMetadataFromJSON(
+  jsonString: string,
+): SafeParseResult<PostApiUserAgentsAgentMetadata, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) => PostApiUserAgentsAgentMetadata$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'PostApiUserAgentsAgentMetadata' from JSON`,
+  );
+}
+
+/** @internal */
 export const PostApiUserAgentsStatus$inboundSchema: z.ZodNativeEnum<
   typeof PostApiUserAgentsStatus
 > = z.nativeEnum(PostApiUserAgentsStatus);
@@ -275,10 +337,15 @@ export const PostApiUserAgentsAgent$inboundSchema: z.ZodType<
 > = z.object({
   id: z.string().optional(),
   ownerId: z.string().optional(),
+  walletAddress: z.nullable(z.string()).optional(),
   name: z.string().optional(),
-  description: z.string().optional(),
-  imageUrl: z.string().optional(),
+  email: z.nullable(z.string()).optional(),
+  description: z.nullable(z.string()).optional(),
+  imageUrl: z.nullable(z.string()).optional(),
   apiKey: z.string().optional(),
+  metadata: z
+    .nullable(z.lazy(() => PostApiUserAgentsAgentMetadata$inboundSchema))
+    .optional(),
   status: PostApiUserAgentsStatus$inboundSchema.optional(),
   createdAt: z
     .string()
@@ -296,10 +363,13 @@ export const PostApiUserAgentsAgent$inboundSchema: z.ZodType<
 export type PostApiUserAgentsAgent$Outbound = {
   id?: string | undefined;
   ownerId?: string | undefined;
+  walletAddress?: string | null | undefined;
   name?: string | undefined;
-  description?: string | undefined;
-  imageUrl?: string | undefined;
+  email?: string | null | undefined;
+  description?: string | null | undefined;
+  imageUrl?: string | null | undefined;
   apiKey?: string | undefined;
+  metadata?: PostApiUserAgentsAgentMetadata$Outbound | null | undefined;
   status?: string | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
@@ -313,10 +383,15 @@ export const PostApiUserAgentsAgent$outboundSchema: z.ZodType<
 > = z.object({
   id: z.string().optional(),
   ownerId: z.string().optional(),
+  walletAddress: z.nullable(z.string()).optional(),
   name: z.string().optional(),
-  description: z.string().optional(),
-  imageUrl: z.string().optional(),
+  email: z.nullable(z.string()).optional(),
+  description: z.nullable(z.string()).optional(),
+  imageUrl: z.nullable(z.string()).optional(),
   apiKey: z.string().optional(),
+  metadata: z
+    .nullable(z.lazy(() => PostApiUserAgentsAgentMetadata$outboundSchema))
+    .optional(),
   status: PostApiUserAgentsStatus$outboundSchema.optional(),
   createdAt: z
     .date()
