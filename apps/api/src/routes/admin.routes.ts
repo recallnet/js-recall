@@ -45,6 +45,12 @@ export function configureAdminRoutes(
    *                 enum: [disallowAll, disallowXParent, allow]
    *                 default: disallowAll
    *                 example: disallowAll
+   *               type:
+   *                 type: string
+   *                 description: The type of competition
+   *                 enum: [trading]
+   *                 default: trading
+   *                 example: trading
    *               externalUrl:
    *                 type: string
    *                 description: External URL for competition details
@@ -92,6 +98,11 @@ export function configureAdminRoutes(
    *                       type: string
    *                       enum: [disallowAll, disallowXParent, allow]
    *                       description: The type of cross-chain trading allowed in this competition
+   *                     type:
+   *                       type: string
+   *                       enum: [trading]
+   *                       default: trading
+   *                       description: The type of competition
    *                     createdAt:
    *                       type: string
    *                       format: date-time
@@ -154,6 +165,12 @@ export function configureAdminRoutes(
    *                 enum: [disallowAll, disallowXParent, allow]
    *                 default: disallowAll
    *                 example: disallowAll
+   *               type:
+   *                 type: string
+   *                 description: The type of competition
+   *                 enum: [trading]
+   *                 default: trading
+   *                 example: trading
    *     responses:
    *       200:
    *         description: Competition started successfully
@@ -202,6 +219,10 @@ export function configureAdminRoutes(
    *                       type: string
    *                       enum: [disallowAll, disallowXParent, allow]
    *                       description: Type of cross-chain trading allowed in this competition
+   *                     type:
+   *                       type: string
+   *                       enum: [trading]
+   *                       description: The type of competition
    *                     agentIds:
    *                       type: array
    *                       items:
@@ -292,6 +313,10 @@ export function configureAdminRoutes(
    *                       type: string
    *                       enum: [disallowAll, disallowXParent, allow]
    *                       description: Type of cross-chain trading allowed in this competition
+   *                     type:
+   *                       type: string
+   *                       enum: [trading]
+   *                       description: The type of competition
    *                 leaderboard:
    *                   type: array
    *                   items:
@@ -448,6 +473,10 @@ export function configureAdminRoutes(
    *                       type: string
    *                       enum: [disallowAll, disallowXParent, allow]
    *                       description: Type of cross-chain trading allowed in this competition
+   *                     type:
+   *                       type: string
+   *                       enum: [trading]
+   *                       description: The type of competition
    *                 leaderboard:
    *                   type: array
    *                   description: Ranked list of active agents
@@ -605,6 +634,10 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     email:
+   *                       type: string
+   *                       description: Agent email
+   *                       nullable: true
    *                     description:
    *                       type: string
    *                       description: Agent description
@@ -681,9 +714,11 @@ export function configureAdminRoutes(
    *                       name:
    *                         type: string
    *                         description: User name
+   *                         nullable: true
    *                       email:
    *                         type: string
    *                         description: User email
+   *                         nullable: true
    *                       status:
    *                         type: string
    *                         description: User status
@@ -741,6 +776,10 @@ export function configureAdminRoutes(
    *                       name:
    *                         type: string
    *                         description: Agent name
+   *                       email:
+   *                         type: string
+   *                         description: Agent email
+   *                         nullable: true
    *                       description:
    *                         type: string
    *                         description: Agent description
@@ -751,6 +790,10 @@ export function configureAdminRoutes(
    *                       imageUrl:
    *                         type: string
    *                         description: URL to the agent's image
+   *                         nullable: true
+   *                       metadata:
+   *                         type: object
+   *                         description: Optional metadata for the agent
    *                         nullable: true
    *                       createdAt:
    *                         type: string
@@ -1144,6 +1187,12 @@ export function configureAdminRoutes(
    *                             type: string
    *                           description:
    *                             type: string
+   *                             nullable: true
+   *                           email:
+   *                             type: string
+   *                             nullable: true
+   *                           metadata:
+   *                             type: object
    *                             nullable: true
    *                           status:
    *                             type: string

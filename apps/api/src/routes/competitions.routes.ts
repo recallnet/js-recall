@@ -164,7 +164,7 @@ export function configureCompetitionsRoutes(
    *                       description: Competition end date
    *                     status:
    *                       type: string
-   *                       enum: [pending, active, completed]
+   *                       enum: [pending, active, ended]
    *                       description: Competition status
    *                     createdAt:
    *                       type: string
@@ -293,7 +293,7 @@ export function configureCompetitionsRoutes(
    *                       description: Competition end date
    *                     status:
    *                       type: string
-   *                       enum: [pending, active, completed]
+   *                       enum: [pending, active, ended]
    *                       description: Competition status
    *                     crossChainTradingType:
    *                       type: string

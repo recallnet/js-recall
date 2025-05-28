@@ -56,10 +56,10 @@ export function makeUserController(services: ServiceRegistry) {
     async updateProfile(req: Request, res: Response, next: NextFunction) {
       try {
         const userId = req.userId as string;
-        const { name, imageUrl } = req.body;
+        const { name, imageUrl, email } = req.body;
 
         // Validate that only allowed fields are being updated
-        const allowedFields = ["name", "imageUrl"];
+        const allowedFields = ["name", "imageUrl", "email"];
         const providedFields = Object.keys(req.body);
         const invalidFields = providedFields.filter(
           (field) => !allowedFields.includes(field),
@@ -79,7 +79,12 @@ export function makeUserController(services: ServiceRegistry) {
         }
 
         // Prepare update data with only allowed fields
-        const updateData: { id: string; name?: string; imageUrl?: string } = {
+        const updateData: {
+          id: string;
+          name?: string;
+          imageUrl?: string;
+          email?: string;
+        } = {
           id: userId,
         };
 
@@ -89,6 +94,10 @@ export function makeUserController(services: ServiceRegistry) {
 
         if (imageUrl !== undefined) {
           updateData.imageUrl = imageUrl;
+        }
+
+        if (email !== undefined) {
+          updateData.email = email;
         }
 
         // Update the user using UserManager
@@ -107,6 +116,7 @@ export function makeUserController(services: ServiceRegistry) {
             name: updatedUser.name,
             email: updatedUser.email,
             imageUrl: updatedUser.imageUrl,
+            metadata: updatedUser.metadata,
             status: updatedUser.status,
             createdAt: updatedUser.createdAt,
             updatedAt: updatedUser.updatedAt,
@@ -126,7 +136,7 @@ export function makeUserController(services: ServiceRegistry) {
     async createAgent(req: Request, res: Response, next: NextFunction) {
       try {
         const userId = req.userId as string;
-        const { name, description, imageUrl, metadata } = req.body;
+        const { name, description, imageUrl, email, metadata } = req.body;
 
         // Validate required fields
         if (!name || typeof name !== "string" || name.trim().length === 0) {
@@ -157,6 +167,7 @@ export function makeUserController(services: ServiceRegistry) {
           name.trim(),
           description?.trim(),
           imageUrl?.trim(),
+          email?.trim(),
           metadata,
         );
 
@@ -173,6 +184,7 @@ export function makeUserController(services: ServiceRegistry) {
             name: agent.name,
             description: agent.description,
             imageUrl: agent.imageUrl,
+            email: agent.email,
             metadata: agent.metadata,
             apiKey: agent.apiKey, // Include API key for user to use
             status: agent.status,
@@ -205,6 +217,7 @@ export function makeUserController(services: ServiceRegistry) {
           name: agent.name,
           description: agent.description,
           imageUrl: agent.imageUrl,
+          email: agent.email,
           metadata: agent.metadata,
           status: agent.status,
           createdAt: agent.createdAt,
@@ -258,6 +271,7 @@ export function makeUserController(services: ServiceRegistry) {
             name: agent.name,
             description: agent.description,
             imageUrl: agent.imageUrl,
+            email: agent.email,
             metadata: agent.metadata,
             status: agent.status,
             createdAt: agent.createdAt,
