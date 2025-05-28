@@ -20,7 +20,7 @@ import {
   searchAgents,
   update,
 } from "@/database/repositories/agent-repository.js";
-import { InsertAgent } from "@/database/schema/core/types.js";
+import { InsertAgent, SelectAgent } from "@/database/schema/core/types.js";
 import {
   AgentMetadata,
   AgentSearchParams,
@@ -791,5 +791,21 @@ export class AgentManager {
     }
 
     return count();
+  }
+
+  sanitizeAgent(agent: SelectAgent) {
+    return {
+      id: agent.id,
+      ownerId: agent.ownerId,
+      name: agent.name,
+      description: agent.description,
+      imageUrl: agent.imageUrl,
+      metadata: agent.metadata,
+      status: agent.status,
+      walletAddress: agent.walletAddress,
+      createdAt: agent.createdAt,
+      updatedAt: agent.updatedAt,
+      // Explicitly exclude apiKey for security
+    };
   }
 }

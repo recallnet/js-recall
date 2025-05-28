@@ -167,18 +167,7 @@ export function makeUserController(services: ServiceRegistry) {
         // Return the created agent with API key (user needs this for distribution)
         res.status(201).json({
           success: true,
-          agent: {
-            id: agent.id,
-            ownerId: agent.ownerId,
-            name: agent.name,
-            description: agent.description,
-            imageUrl: agent.imageUrl,
-            metadata: agent.metadata,
-            apiKey: agent.apiKey, // Include API key for user to use
-            status: agent.status,
-            createdAt: agent.createdAt,
-            updatedAt: agent.updatedAt,
-          },
+          agent: services.agentManager.sanitizeAgent(agent),
         });
       } catch (error) {
         next(error);
@@ -199,18 +188,9 @@ export function makeUserController(services: ServiceRegistry) {
         const agents = await services.agentManager.getAgentsByOwner(userId);
 
         // Return agents (without API keys for security)
-        const sanitizedAgents = agents.map((agent) => ({
-          id: agent.id,
-          ownerId: agent.ownerId,
-          name: agent.name,
-          description: agent.description,
-          imageUrl: agent.imageUrl,
-          metadata: agent.metadata,
-          status: agent.status,
-          createdAt: agent.createdAt,
-          updatedAt: agent.updatedAt,
-          // Explicitly exclude apiKey for security
-        }));
+        const sanitizedAgents = agents.map(
+          services.agentManager.sanitizeAgent.bind(services.agentManager),
+        );
 
         res.status(200).json({
           success: true,
@@ -252,18 +232,7 @@ export function makeUserController(services: ServiceRegistry) {
         // Return agent details (without API key for security)
         res.status(200).json({
           success: true,
-          agent: {
-            id: agent.id,
-            ownerId: agent.ownerId,
-            name: agent.name,
-            description: agent.description,
-            imageUrl: agent.imageUrl,
-            metadata: agent.metadata,
-            status: agent.status,
-            createdAt: agent.createdAt,
-            updatedAt: agent.updatedAt,
-            // Explicitly exclude apiKey for security
-          },
+          agent: services.agentManager.sanitizeAgent(agent),
         });
       } catch (error) {
         next(error);
@@ -348,18 +317,7 @@ export function makeUserController(services: ServiceRegistry) {
         // Return the updated agent profile (without API key for security)
         res.status(200).json({
           success: true,
-          agent: {
-            id: updatedAgent.id,
-            ownerId: updatedAgent.ownerId,
-            name: updatedAgent.name,
-            description: updatedAgent.description,
-            imageUrl: updatedAgent.imageUrl,
-            metadata: updatedAgent.metadata,
-            status: updatedAgent.status,
-            createdAt: updatedAgent.createdAt,
-            updatedAt: updatedAgent.updatedAt,
-            // Explicitly exclude apiKey for security
-          },
+          agent: services.agentManager.sanitizeAgent(updatedAgent),
         });
       } catch (error) {
         next(error);

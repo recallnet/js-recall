@@ -50,18 +50,7 @@ export function makeAgentController(services: ServiceRegistry) {
         // TODO: we can clean this up with better types that help omit the api key
         res.status(200).json({
           success: true,
-          agent: {
-            id: agent.id,
-            ownerId: agent.ownerId,
-            walletAddress: agent.walletAddress,
-            name: agent.name,
-            description: agent.description,
-            imageUrl: agent.imageUrl,
-            metadata: agent.metadata,
-            status: agent.status,
-            createdAt: agent.createdAt,
-            updatedAt: agent.updatedAt,
-          },
+          agent: services.agentManager.sanitizeAgent(agent),
           owner: {
             id: owner.id,
             walletAddress: owner.walletAddress,
@@ -153,18 +142,7 @@ export function makeAgentController(services: ServiceRegistry) {
         // Return the updated agent profile
         res.status(200).json({
           success: true,
-          agent: {
-            id: updatedAgent.id,
-            ownerId: updatedAgent.ownerId,
-            walletAddress: updatedAgent.walletAddress,
-            name: updatedAgent.name,
-            description: updatedAgent.description,
-            imageUrl: updatedAgent.imageUrl,
-            metadata: updatedAgent.metadata,
-            status: updatedAgent.status,
-            createdAt: updatedAgent.createdAt,
-            updatedAt: updatedAgent.updatedAt,
-          },
+          agent: services.agentManager.sanitizeAgent(updatedAgent),
         });
       } catch (error) {
         next(error);
@@ -195,7 +173,9 @@ export function makeAgentController(services: ServiceRegistry) {
             limit: pagingParams.limit,
             offset: pagingParams.offset,
           },
-          agents,
+          agents: agents.map(
+            services.agentManager.sanitizeAgent.bind(services.agentManager),
+          ),
         });
       } catch (err) {
         next(err);
