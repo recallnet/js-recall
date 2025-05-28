@@ -162,7 +162,7 @@ export const competitions = pgTable(
     name: varchar({ length: 100 }).notNull(),
     description: text(),
     type: competitionType("type").default("trading").notNull(),
-    externalLink: text("external_link"),
+    externalUrl: text("external_url"),
     imageUrl: text("image_url"),
     startDate: timestamp("start_date", { withTimezone: true }),
     endDate: timestamp("end_date", { withTimezone: true }),

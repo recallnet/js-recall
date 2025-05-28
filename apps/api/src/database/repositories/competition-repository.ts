@@ -45,7 +45,7 @@ const competitionOrderByFields: Record<string, AnyColumn> = {
   id: competitions.id,
   name: competitions.name,
   description: competitions.description,
-  externalLink: competitions.externalLink,
+  externalUrl: competitions.externalUrl,
   imageUrl: competitions.imageUrl,
   startDate: competitions.startDate,
   endDate: competitions.endDate,

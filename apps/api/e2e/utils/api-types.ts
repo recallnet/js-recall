@@ -288,7 +288,7 @@ export interface Competition {
   id: string;
   name: string;
   description: string | null;
-  externalLink: string | null;
+  externalUrl: string | null;
   imageUrl: string | null;
   startDate: string | null;
   endDate: string | null;

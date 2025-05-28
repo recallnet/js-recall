@@ -73,7 +73,7 @@ export function configureCompetitionsRoutes(
    *                         type: string
    *                         nullable: true
    *                         description: Competition description
-   *                       externalLink:
+   *                       externalUrl:
    *                         type: string
    *                         nullable: true
    *                         description: External URL for competition details
@@ -145,7 +145,7 @@ export function configureCompetitionsRoutes(
    *                       type: string
    *                       nullable: true
    *                       description: Competition description
-   *                     externalLink:
+   *                     externalUrl:
    *                       type: string
    *                       nullable: true
    *                       description: External URL for competition details
@@ -274,7 +274,7 @@ export function configureCompetitionsRoutes(
    *                       type: string
    *                       nullable: true
    *                       description: Competition description
-   *                     externalLink:
+   *                     externalUrl:
    *                       type: string
    *                       nullable: true
    *                       description: External URL for competition details
@@ -423,7 +423,7 @@ export function configureCompetitionsRoutes(
    *                         type: string
    *                         nullable: true
    *                         description: Competition description
-   *                       externalLink:
+   *                       externalUrl:
    *                         type: string
    *                         nullable: true
    *                         description: External URL for competition details

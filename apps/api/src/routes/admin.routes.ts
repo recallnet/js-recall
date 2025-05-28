@@ -45,7 +45,7 @@ export function configureAdminRoutes(
    *                 enum: [disallowAll, disallowXParent, allow]
    *                 default: disallowAll
    *                 example: disallowAll
-   *               externalLink:
+   *               externalUrl:
    *                 type: string
    *                 description: External URL for competition details
    *                 example: https://example.com/competition-details
@@ -80,7 +80,7 @@ export function configureAdminRoutes(
    *                       type: string
    *                       enum: [pending, active, completed]
    *                       description: Competition status
-   *                     externalLink:
+   *                     externalUrl:
    *                       type: string
    *                       description: External URL for competition details
    *                       nullable: true
@@ -135,7 +135,7 @@ export function configureAdminRoutes(
    *                 type: string
    *                 description: Competition description (used when creating a new competition)
    *                 example: A trading competition for the spring semester
-   *               externalLink:
+   *               externalUrl:
    *                 type: string
    *                 description: External URL for competition details (used when creating a new competition)
    *                 example: https://example.com/competition-details
@@ -186,7 +186,7 @@ export function configureAdminRoutes(
    *                       format: date-time
    *                       nullable: true
    *                       description: Competition end date (null if not ended)
-   *                     externalLink:
+   *                     externalUrl:
    *                       type: string
    *                       description: External URL for competition details
    *                       nullable: true
@@ -276,7 +276,7 @@ export function configureAdminRoutes(
    *                       type: string
    *                       format: date-time
    *                       description: Competition end date
-   *                     externalLink:
+   *                     externalUrl:
    *                       type: string
    *                       description: External URL for competition details
    *                       nullable: true
@@ -432,7 +432,7 @@ export function configureAdminRoutes(
    *                       format: date-time
    *                       nullable: true
    *                       description: Competition end date
-   *                     externalLink:
+   *                     externalUrl:
    *                       type: string
    *                       description: External URL for competition details
    *                       nullable: true

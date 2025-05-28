@@ -317,12 +317,13 @@ export interface Competition {
   id: string;
   name: string;
   description?: string;
-  externalLink?: string;
+  externalUrl?: string;
   imageUrl?: string;
   startDate: Date | null;
   endDate: Date | null;
   status: CompetitionStatus;
   crossChainTradingType: CrossChainTradingType; // Controls cross-chain trading behavior
+  type: CompetitionType;
   createdAt: Date;
   updatedAt: Date;
 }

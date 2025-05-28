@@ -80,7 +80,7 @@ export class CompetitionManager {
    * @param name Competition name
    * @param description Optional description
    * @param tradingType Type of cross-chain trading to allow (defaults to disallowAll)
-   * @param externalLink Optional URL for external competition details
+   * @param externalUrl Optional URL for external competition details
    * @param imageUrl Optional URL to the competition image
    * @returns The created competition
    */
@@ -88,7 +88,7 @@ export class CompetitionManager {
     name: string,
     description?: string,
     tradingType: CrossChainTradingType = CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
-    externalLink?: string,
+    externalUrl?: string,
     imageUrl?: string,
     type: CompetitionType = COMPETITION_TYPE.TRADING,
   ) {
@@ -97,7 +97,7 @@ export class CompetitionManager {
       id,
       name,
       description,
-      externalLink,
+      externalUrl,
       imageUrl,
       startDate: null,
       endDate: null,

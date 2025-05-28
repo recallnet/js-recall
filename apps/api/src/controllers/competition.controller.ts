@@ -189,7 +189,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           id: activeCompetition.id,
           name: activeCompetition.name,
           status: activeCompetition.status,
-          externalLink: activeCompetition.externalLink,
+          externalUrl: activeCompetition.externalUrl,
           imageUrl: activeCompetition.imageUrl,
         };
         if (!agentId) {

@@ -312,7 +312,7 @@ describe("Competition API", () => {
     expect(adminStatusResponse.competition?.name).toBe(competitionName);
     expect(adminStatusResponse.competition?.status).toBe("active");
     expect(adminStatusResponse.competition?.description).toBeDefined();
-    expect(adminStatusResponse.competition?.externalLink).toBeDefined();
+    expect(adminStatusResponse.competition?.externalUrl).toBeDefined();
     expect(adminStatusResponse.competition?.imageUrl).toBeDefined();
     expect(
       adminStatusResponse.competition?.crossChainTradingType,
@@ -640,7 +640,7 @@ describe("Competition API", () => {
     expect(descResponse.competitions[2]?.name).toBe(comp1Name);
   }, 1000000);
 
-  test("competitions include externalLink and imageUrl fields", async () => {
+  test("competitions include externalUrl and imageUrl fields", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -653,37 +653,37 @@ describe("Competition API", () => {
       });
 
     // Test data for new fields
-    const externalLink = "https://example.com/competition-details";
+    const externalUrl = "https://example.com/competition-details";
     const imageUrl = "https://example.com/competition-image.jpg";
 
-    // 1. Test creating a competition with externalLink and imageUrl
+    // 1. Test creating a competition with externalUrl and imageUrl
     const createCompetitionName = `Create with Links Test ${Date.now()}`;
     const createResponse = await createTestCompetition(
       adminClient,
       createCompetitionName,
       "Test description with links",
-      externalLink,
+      externalUrl,
       imageUrl,
     );
 
     // Verify the fields are in the creation response
     expect(createResponse.success).toBe(true);
-    expect(createResponse.competition.externalLink).toBe(externalLink);
+    expect(createResponse.competition.externalUrl).toBe(externalUrl);
     expect(createResponse.competition.imageUrl).toBe(imageUrl);
 
-    // 2. Test starting a competition with externalLink and imageUrl
+    // 2. Test starting a competition with externalUrl and imageUrl
     const startCompetitionName = `Start with Links Test ${Date.now()}`;
     const startResponse = await startTestCompetition(
       adminClient,
       startCompetitionName,
       [agent.id],
-      externalLink,
+      externalUrl,
       imageUrl,
     );
 
     // Verify the fields are in the start competition response
     expect(startResponse.success).toBe(true);
-    expect(startResponse.competition.externalLink).toBe(externalLink);
+    expect(startResponse.competition.externalUrl).toBe(externalUrl);
     expect(startResponse.competition.imageUrl).toBe(imageUrl);
 
     // 3. Verify the fields are in the competition status response for participating agents
@@ -693,7 +693,7 @@ describe("Competition API", () => {
     expect(agentStatusResponse.active).toBe(true);
 
     if (agentStatusResponse.success && agentStatusResponse.competition) {
-      expect(agentStatusResponse.competition.externalLink).toBe(externalLink);
+      expect(agentStatusResponse.competition.externalUrl).toBe(externalUrl);
       expect(agentStatusResponse.competition.imageUrl).toBe(imageUrl);
     }
 
@@ -702,7 +702,7 @@ describe("Competition API", () => {
     expect(leaderboardResponse.success).toBe(true);
 
     if (leaderboardResponse.success && "competition" in leaderboardResponse) {
-      expect(leaderboardResponse.competition.externalLink).toBe(externalLink);
+      expect(leaderboardResponse.competition.externalUrl).toBe(externalUrl);
       expect(leaderboardResponse.competition.imageUrl).toBe(imageUrl);
     }
 
@@ -723,7 +723,7 @@ describe("Competition API", () => {
 
       expect(pendingCompetition).toBeDefined();
       if (pendingCompetition) {
-        expect(pendingCompetition.externalLink).toBe(externalLink);
+        expect(pendingCompetition.externalUrl).toBe(externalUrl);
         expect(pendingCompetition.imageUrl).toBe(imageUrl);
       }
     }
@@ -736,7 +736,7 @@ describe("Competition API", () => {
 
     // Verify the original fields are in the response
     expect(startExistingResponse.success).toBe(true);
-    expect(startExistingResponse.competition.externalLink).toBe(externalLink);
+    expect(startExistingResponse.competition.externalUrl).toBe(externalUrl);
     expect(startExistingResponse.competition.imageUrl).toBe(imageUrl);
   });
 });
