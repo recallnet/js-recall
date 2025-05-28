@@ -222,7 +222,9 @@ export async function findByApiKey(
 }
 
 /**
- *
+ * Get agents based on wallet address
+ * @param walletAddress the wallet address to filter by
+ * @param pagingParams pagination parameters
  */
 export async function findByWallet({
   walletAddress,
@@ -252,7 +254,10 @@ export async function findByWallet({
 }
 
 /**
- *
+ * Get agents filtered by name.  The filter input is converted to a where
+ *  clause with an ILIKE operator that matches all names that start with the provided filter
+ * @param name characters to use in the ilike pattern
+ * @param pagingParams pagination parameters
  */
 export async function findByName({
   name,
@@ -262,7 +267,6 @@ export async function findByName({
   pagingParams: PagingParams;
 }): Promise<SelectAgent[]> {
   try {
-    console.log();
     let query = db
       .select()
       .from(agents)
