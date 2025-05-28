@@ -35,10 +35,7 @@ const agentOrderByFields: Record<string, AnyColumn> = {
   name: agents.name,
   description: agents.description,
   imageUrl: agents.imageUrl,
-  apiKey: agents.apiKey,
   status: agents.status,
-  deactivationReason: agents.deactivationReason,
-  deactivationDate: agents.deactivationDate,
   createdAt: agents.createdAt,
   updatedAt: agents.updatedAt,
 };
