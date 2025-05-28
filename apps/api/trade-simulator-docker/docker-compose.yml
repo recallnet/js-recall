@@ -2,66 +2,28 @@ services:
   # Application service
   app:
     build:
-      context: ..
-      dockerfile: trade-simulator-docker/Dockerfile
+      context: ../../..
+      dockerfile: apps/api/trade-simulator-docker/Dockerfile
     container_name: trading-simulator-app
     restart: unless-stopped
     ports:
-      - "${PORT:-3000}:3000"
-    depends_on:
-      db:
-        condition: service_healthy
+      - "${PORT:-3000}:${PORT:-3000}"
     # Load all environment variables from .env file
     env_file:
-      - ../.env
-    # Override only the critical variables that need specific values for Docker
+      - .env
     environment:
-      # Database host must point to the db service
-      - DB_HOST=db
-      # SSL not needed within Docker network
-      - DB_SSL=false
+      - PORT=${PORT:-3000}
+    # Override only the critical variables that need specific values for Docker
     volumes:
       - ../logs:/app/logs
-      - ../.env:/app/.env # Mount the .env file for direct access and modification
-    networks:
-      - trading-simulator-network
+      - .env:/app/.env # Mount the .env file for direct access and modification
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          "wget --no-verbose --tries=1 --spider http://0.0.0.0:${PORT:-3000}/api/health || exit 1",
+          "wget --no-verbose --tries=1 --spider http://127.0.0.1:${PORT:-3000}/api/health || exit 1",
         ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
-
-  # Database service
-  db:
-    image: postgres:14-alpine
-    container_name: trading-simulator-db
-    restart: unless-stopped
-    environment:
-      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/trading_simulator}
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    networks:
-      - trading-simulator-network
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "pg_isready -d ${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/trading_simulator}",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-volumes:
-  postgres-data:
-    name: trading-simulator-postgres-data
-
-networks:
-  trading-simulator-network:
-    name: trading-simulator-network
-    driver: bridge
