@@ -3,8 +3,8 @@ module.exports = {
     extend: {
       keyframes: {
         marquee: {
-          "0%": {transform: "translateX(0%)"},
-          "100%": {transform: "translateX(-50%)"},
+          "0%": { transform: "translateX(0%)" },
+          "100%": { transform: "translateX(-50%)" },
         },
       },
       animation: {
@@ -13,4 +13,3 @@ module.exports = {
     },
   },
 };
-

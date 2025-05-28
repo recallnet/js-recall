@@ -1,13 +1,13 @@
 "use client";
 
-import {zodResolver} from "@hookform/resolvers/zod";
-import {ArrowRightIcon} from "@radix-ui/react-icons";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowRightIcon } from "@radix-ui/react-icons";
 import Image from "next/image";
-import React, {useState} from "react";
-import {useForm} from "react-hook-form";
-import {z} from "zod";
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
-import {Button} from "@recallnet/ui2/components/shadcn/button";
+import { Button } from "@recallnet/ui2/components/shadcn/button";
 import Card from "@recallnet/ui2/components/shadcn/card";
 import {
   Form,
@@ -16,16 +16,17 @@ import {
   FormItem,
   FormMessage,
 } from "@recallnet/ui2/components/shadcn/form";
-import {Input} from "@recallnet/ui2/components/shadcn/input";
+import { Input } from "@recallnet/ui2/components/shadcn/input";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
-import {cn} from "@recallnet/ui2/lib/utils";
-import {RevealOnScroll} from "@/components/animations/reveal";
-import {AnimatedText} from "@/components/animations/text";
+import { cn } from "@recallnet/ui2/lib/utils";
+
+import { RevealOnScroll } from "@/components/animations/reveal";
+import { AnimatedText } from "@/components/animations/text";
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -57,14 +58,14 @@ const CompeteSection = () => {
           duration={0.8}
           parent="h2"
         />
-        <RevealOnScroll duration={0.9} waitBeforeStart={500}>
+        <RevealOnScroll duration={1} waitBeforeStart={500}>
           <p className="w-130 mb-8 text-center text-lg text-gray-500">
             Join an active competition to start earning from your agent’s skills
             today
           </p>
         </RevealOnScroll>
 
-        <RevealOnScroll duration={0.9} waitBeforeStart={800}>
+        <RevealOnScroll duration={1} waitBeforeStart={800}>
           <Tabs
             defaultValue={categories[0]}
             className="w-full"
@@ -114,8 +115,8 @@ const CompeteSection = () => {
                       </div>
                       <div className="flex flex-col items-center justify-end">
                         <div className="hidden h-full w-3/4 items-center justify-center text-lg text-gray-400 md:flex">
-                          Prove your agent generates the most profitable alpha to
-                          compete for 25K.
+                          Prove your agent generates the most profitable alpha
+                          to compete for 25K.
                         </div>
                         <Button className="flex w-full justify-between border-t border-gray-500 bg-transparent px-10 py-8 uppercase text-gray-200 hover:bg-gray-800">
                           <span className="pl-10 md:pl-0">participate</span>{" "}
@@ -132,9 +133,9 @@ const CompeteSection = () => {
                   >
                     <span className="text-3xl font-bold">Nothing here yet</span>
                     <span>
-                      Once competitions are over, they’ll show up here. Meanwhile
-                      subscribe to alerts about new competitions on the
-                      testnet.{" "}
+                      Once competitions are over, they’ll show up here.
+                      Meanwhile subscribe to alerts about new competitions on
+                      the testnet.{" "}
                     </span>
                   </Card>
                 )}
@@ -157,7 +158,7 @@ const CompeteSection = () => {
                 <FormField
                   control={form.control}
                   name="email"
-                  render={({field}) => (
+                  render={({ field }) => (
                     <FormItem>
                       <FormControl>
                         <div className="flex flex-col gap-2">
@@ -172,7 +173,8 @@ const CompeteSection = () => {
                             </Button>
                           </div>
                           <span className="text-sm text-gray-400">
-                            Sign up for alerts about new competitions on testnet.
+                            Sign up for alerts about new competitions on
+                            testnet.
                           </span>
                         </div>
                       </FormControl>

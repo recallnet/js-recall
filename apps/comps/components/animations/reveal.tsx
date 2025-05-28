@@ -1,7 +1,8 @@
 "use client";
 
-import React, {useState, useEffect, ReactNode} from "react";
-import {useInView} from "@/hooks/useInView";
+import React, { ReactNode, useEffect, useState } from "react";
+
+import { useInView } from "@/hooks/useInView";
 
 type RevealOnScrollProps = {
   children: ReactNode;
@@ -16,7 +17,7 @@ export const RevealOnScroll: React.FC<RevealOnScrollProps> = ({
   duration = 0.5,
   waitBeforeStart = 0,
 }) => {
-  const {ref, inView} = useInView({threshold: 0.3});
+  const { ref, inView } = useInView({ threshold: 0.3 });
   const [shouldReveal, setShouldReveal] = useState(false);
 
   useEffect(() => {
@@ -31,11 +32,11 @@ export const RevealOnScroll: React.FC<RevealOnScrollProps> = ({
   return (
     <div
       ref={ref}
-      className={`${className} transition-all duration-[${duration * 1000}ms] ease-out ${shouldReveal ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-        }`}
+      className={`${className} transition-all duration-[${duration * 1000}ms] ease-out ${
+        shouldReveal ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
+      }`}
     >
       {children}
     </div>
   );
 };
-

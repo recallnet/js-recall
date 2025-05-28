@@ -1,7 +1,8 @@
 "use client";
 
-import React, {useEffect, useState, ElementType} from "react";
-import {useInView} from "@/hooks/useInView";
+import React, { ElementType, useEffect, useState } from "react";
+
+import { useInView } from "@/hooks/useInView";
 
 type AnimatedTextProps = {
   letters: string[];
@@ -20,21 +21,26 @@ export const AnimatedText: React.FC<AnimatedTextProps> = ({
   duration = 0.4,
   parent,
 }) => {
-  const [visible, setVisible] = useState<boolean[]>(Array(letters.length).fill(false));
-  const {ref, inView} = useInView({threshold: 0.3});
+  const [visible, setVisible] = useState<boolean[]>(
+    Array(letters.length).fill(false),
+  );
+  const { ref, inView } = useInView({ threshold: 0.3 });
 
   useEffect(() => {
     if (!inView) return;
     const timeouts: NodeJS.Timeout[] = [];
 
     letters.forEach((_, i) => {
-      const timeout = setTimeout(() => {
-        setVisible((prev) => {
-          const updated = [...prev];
-          updated[i] = true;
-          return updated;
-        });
-      }, i * delay * 1000);
+      const timeout = setTimeout(
+        () => {
+          setVisible((prev) => {
+            const updated = [...prev];
+            updated[i] = true;
+            return updated;
+          });
+        },
+        i * delay * 1000,
+      );
 
       timeouts.push(timeout);
     });
@@ -63,4 +69,3 @@ export const AnimatedText: React.FC<AnimatedTextProps> = ({
     </ParentTag>
   );
 };
-

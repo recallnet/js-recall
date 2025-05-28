@@ -30,7 +30,6 @@
     "@vercel/analytics": "^1.5.0",
     "@wagmi/core": "^2.17.0",
     "axios": "^1.7.9",
-    "bignumber.js": "^9.3.0",
     "cookie": "^1.0.2",
     "date-fns": "^4.1.0",
     "jdenticon": "^3.3.0",

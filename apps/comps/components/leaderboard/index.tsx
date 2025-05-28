@@ -11,7 +11,7 @@ import {
 } from "@recallnet/ui2/components/tabs";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import AgentPodium from "@/components/agent-podium/index";
+import AgentPodium from "@/components/agent-podium";
 import BigNumberDisplay from "@/components/bignumber";
 import { LeaderboardTable } from "@/components/leaderboard-table";
 import { useLeaderboards } from "@/hooks/useLeaderboards";

@@ -3,16 +3,16 @@
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
-import {FaArrowRightLong} from "react-icons/fa6";
+import { FaArrowRightLong } from "react-icons/fa6";
 
-import {getSocialLinksArray} from "@/data/social";
+import { RevealOnScroll } from "@/components/animations/reveal";
+import { AnimatedText } from "@/components/animations/text";
+import { TrainReveal } from "@/components/animations/train";
+import { getSocialLinksArray } from "@/data/social";
 
-import {JoinSwarmSection} from "../join-swarm-section";
-import {BackedBy} from "./backed-by";
-import {NewsHighlightsCarousel} from "./new-hightlights";
-import {AnimatedText} from "@/components/animations/text";
-import {TrainReveal} from "@/components/animations/train";
-import {RevealOnScroll} from "@/components/animations/reveal";
+import { JoinSwarmSection } from "../join-swarm-section";
+import { BackedBy } from "./backed-by";
+import { NewsHighlightsCarousel } from "./new-hightlights";
 
 const AgentSection = () => {
   const agentFeatures = [
@@ -78,7 +78,11 @@ const AgentSection = () => {
         duration={0.8}
         parent="h2"
       />
-      <TrainReveal duration={2} offset={500} className="mt-20 grid grid-cols-1 gap-12 border md:grid-cols-2 xl:grid-cols-4">
+      <TrainReveal
+        duration={2}
+        offset={500}
+        className="mt-20 grid grid-cols-1 gap-12 border md:grid-cols-2 xl:grid-cols-4"
+      >
         {agentFeatures.map((obj, i) => (
           <div
             key={i}
@@ -101,11 +105,11 @@ const AgentSection = () => {
       <RevealOnScroll duration={0.9} waitBeforeStart={500}>
         <div className="my-20 flex flex-col items-start text-white">
           <span className="md:w-160 mb-10 w-80 text-left text-xl text-gray-500">
-            The agent economy is the fastest growing market in the world with 50B
-            agents expected online by 2030. In a world of abundant agents, the
-            best are rare and hard to find. Recall’s incentivized intelligence
-            competitions surface the top agents for in-demand skills and connect
-            them to the global agent economy.
+            The agent economy is the fastest growing market in the world with
+            50B agents expected online by 2030. In a world of abundant agents,
+            the best are rare and hard to find. Recall’s incentivized
+            intelligence competitions surface the top agents for in-demand
+            skills and connect them to the global agent economy.
           </span>
           <Link
             href="/"
@@ -116,11 +120,15 @@ const AgentSection = () => {
           </Link>
         </div>
       </RevealOnScroll>
-      <RevealOnScroll duration={0.9} waitBeforeStart={500}>
+      <RevealOnScroll duration={1} waitBeforeStart={500}>
         <NewsHighlightsCarousel links={mockLinks} />
       </RevealOnScroll>
-      <RevealOnScroll duration={0.9} waitBeforeStart={500}>
-        <BackedBy className="mt-70 mb-20" logos={backedLogos} />
+      <RevealOnScroll
+        duration={1}
+        waitBeforeStart={500}
+        className="w-[80%] px-10"
+      >
+        <BackedBy className="mt-70 mb-20 w-full" logos={backedLogos} />
       </RevealOnScroll>
       <JoinSwarmSection
         className="mb-20 w-[80%] bg-gray-100 px-10 text-gray-500"

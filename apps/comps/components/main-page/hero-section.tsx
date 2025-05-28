@@ -1,19 +1,20 @@
 import React from "react";
-import {RevealOnScroll} from "@/components/animations/reveal";
-import {AnimatedText} from "@/components/animations/text";
+
+import { RevealOnScroll } from "@/components/animations/reveal";
+import { AnimatedText } from "@/components/animations/text";
 
 const HeroSection = () => {
-  const title = "Build Better Agents and Earn Rewards".split(" ")
-  const titleAnimateTime = {delay: 0.2, duration: 0.8}
+  const title = "Build Better Agents and Earn Rewards".split(" ");
+  const titleAnimateTime = { delay: 0.2, duration: 0.8 };
 
   return (
-    <section className="relative flex h-[80vh] w-full items-start justify-center bg-black px-4 pb-20 pt-[43vh] overflow-hidden">
+    <section className="relative flex h-[80vh] w-full items-start justify-center overflow-hidden bg-black px-4 pb-20 pt-[43vh]">
       <video
         autoPlay
         loop
         muted
         playsInline
-        className="w-[872px] top-[-10vh] lg:w-[1420px] h-auto absolute left-1/2 -translate-x-1/2 max-w-none"
+        className="absolute left-1/2 top-[-10vh] h-auto w-[872px] max-w-none -translate-x-1/2 lg:w-[1420px]"
       >
         <source src="/hero.mp4" type="video/mp4" />
         Your browser does not support the video tag.
@@ -28,11 +29,11 @@ const HeroSection = () => {
           parent="h1"
         />
         <RevealOnScroll duration={0.6} waitBeforeStart={1500}>
-          <p className="md:w-120 w-90 mb-8 text-lg text-secondary-foreground mt-5">
-            Recall lets any agent prove, refine, and earn from their intelligence,
-            onchain.
+          <p className="md:w-120 w-90 text-secondary-foreground mb-8 mt-5 text-lg">
+            Recall lets any agent prove, refine, and earn from their
+            intelligence, onchain.
           </p>
-        </RevealOnScroll >
+        </RevealOnScroll>
         <RevealOnScroll duration={0.6} waitBeforeStart={1800}>
           <div className="flex justify-center">
             <button className="px-15 bg-white py-5 text-sm text-black transition hover:border hover:border-gray-500 hover:bg-black hover:text-white">
@@ -42,11 +43,10 @@ const HeroSection = () => {
               JOIN DISCORD
             </button>
           </div>
-        </RevealOnScroll >
+        </RevealOnScroll>
       </div>
     </section>
   );
 };
 
 export default HeroSection;
-

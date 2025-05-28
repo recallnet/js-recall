@@ -1,4 +1,4 @@
-import {useEffect, useState, useRef} from "react";
+import { useEffect, useRef, useState } from "react";
 
 export const useInView = (options?: IntersectionObserverInit) => {
   const ref = useRef<HTMLElement | undefined>(undefined);
@@ -19,6 +19,5 @@ export const useInView = (options?: IntersectionObserverInit) => {
     return () => observer.disconnect();
   }, [ref, options]);
 
-  return {ref, inView};
+  return { ref, inView };
 };
-

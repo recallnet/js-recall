@@ -3,9 +3,10 @@
 import Image from "next/image";
 import React from "react";
 
-import {BorderCard} from "@recallnet/ui2/components/shadcn/card";
-import {AnimatedText} from "@/components/animations/text";
-import {RevealOnScroll} from "@/components/animations/reveal";
+import { BorderCard } from "@recallnet/ui2/components/shadcn/card";
+
+import { RevealOnScroll } from "@/components/animations/reveal";
+import { AnimatedText } from "@/components/animations/text";
 
 const DiscoverSection = () => {
   const discoverObjects = [
@@ -37,10 +38,10 @@ const DiscoverSection = () => {
 
   return (
     <section className="text-whie relative -mx-[calc(50vw-50%)] h-[2500px] w-screen bg-black px-6 py-20">
-      <div className="top-15 pointer-events-none absolute left-0 z-0 hidden h-[500px] w-[500px] object-contain lg:block xl:top-0 xl:h-[800px] xl:w-[777px]">
+      <div className="top-15 pointer-events-none absolute left-0 z-0 hidden h-[500px] w-[500px] object-contain lg:block xl:top-[-20] xl:h-[600px] xl:w-[900px]">
         <Image src="/frame_2_left.png" alt="" fill />
       </div>
-      <div className="top-15 pointer-events-none absolute right-0 z-0 hidden h-[495px] w-[500px] object-contain lg:block xl:top-0 xl:h-[800px] xl:w-[800px]">
+      <div className="top-15 pointer-events-none absolute right-0 z-0 hidden h-[495px] w-[500px] object-contain lg:block xl:top-[-20] xl:h-[600px] xl:w-[900px]">
         <Image src="/frame_2_right.png" alt="" fill />
       </div>
 
@@ -53,16 +54,16 @@ const DiscoverSection = () => {
           duration={0.8}
           parent="h2"
         />
-        <RevealOnScroll duration={0.6} waitBeforeStart={1000}>
-          <p className="w-90 lg:w-140 mb-8 text-center text-lg text-secondary-foreground">
+        <RevealOnScroll duration={0.8} waitBeforeStart={1000}>
+          <p className="w-90 lg:w-140 text-secondary-foreground mb-8 text-center text-lg">
             Recall surfaces the best agents across a range of specialized skills
             so you can find and hire the right one for your needs
           </p>
-        </RevealOnScroll >
+        </RevealOnScroll>
       </div>
       <div className="flex w-full flex-col items-center justify-center">
-        <RevealOnScroll duration={0.6} waitBeforeStart={1500}>
-          <div className="lg:w-260 xl:mt-50 mt-20 grid grid-cols-1 gap-10 lg:grid-cols-2">
+        <RevealOnScroll duration={0.8} waitBeforeStart={1500}>
+          <div className="lg:w-260 mt-20 grid grid-cols-1 gap-10 lg:grid-cols-2">
             {discoverObjects.map((obj, i) => (
               <BorderCard
                 key={i}
@@ -88,12 +89,12 @@ const DiscoverSection = () => {
               </BorderCard>
             ))}
           </div>
-        </RevealOnScroll >
+        </RevealOnScroll>
         <div className="mt-20 flex flex-col items-center text-center text-white">
           <h2 className="md:w-160 w-100 mb-8 text-4xl font-bold capitalize md:text-6xl">
             crowdsourced skills competitions
           </h2>
-          <span className="w-80 text-secondary-foreground">
+          <span className="text-secondary-foreground w-80">
             Recall is the first blockchain that allows AI agents to prove their
             intelligence and earn from their skills.
           </span>
@@ -109,7 +110,7 @@ const DiscoverSection = () => {
               <h2 className="w-160 mb-8 text-4xl font-bold md:text-6xl">
                 Earn by Competing
               </h2>
-              <span className="w-80 text-secondary-foreground">
+              <span className="text-secondary-foreground w-80">
                 Earn rewards and reputation by competing to demonstrate your
                 superior skills
               </span>
@@ -117,7 +118,7 @@ const DiscoverSection = () => {
           </div>
         </div>
       </div>
-    </section >
+    </section>
   );
 };
 

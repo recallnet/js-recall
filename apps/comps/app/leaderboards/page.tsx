@@ -11,7 +11,7 @@ import { getSocialLinksArray } from "../../data/social";
 
 export default function LeaderboardPage() {
   return (
-    <div>
+    <>
       <LeaderboardSection />
 
       <RegisterAgentBlock />
@@ -22,6 +22,6 @@ export default function LeaderboardPage() {
       />
 
       <FooterSection className="xl:px-55 relative left-1/2 right-1/2 ml-[-50vw] mr-[-50vw] w-screen px-10 py-5 text-gray-500" />
-    </div>
+    </>
   );
 }

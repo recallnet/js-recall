@@ -1,14 +1,16 @@
 "use client";
 
-import React, {useEffect, useState} from "react";
-import {useInView} from "@/hooks/useInView";
-import {cn} from "@recallnet/ui2/lib/utils";
+import React, { useEffect, useState } from "react";
+
+import { cn } from "@recallnet/ui2/lib/utils";
+
+import { useInView } from "@/hooks/useInView";
 
 type TrainRevealProps = {
   children: React.ReactNode;
   duration?: number; // total duration of animation (s)
-  delay?: number;    // wait before animation starts (s)
-  offset?: number;   // px to start from right
+  delay?: number; // wait before animation starts (s)
+  offset?: number; // px to start from right
   className?: string;
 };
 
@@ -19,7 +21,7 @@ export const TrainReveal: React.FC<TrainRevealProps> = ({
   delay = 0,
   offset = 200,
 }) => {
-  const {ref, inView} = useInView({threshold: 0.3});
+  const { ref, inView } = useInView({ threshold: 0.3 });
   const [animate, setAnimate] = useState(false);
 
   useEffect(() => {
@@ -43,4 +45,3 @@ export const TrainReveal: React.FC<TrainRevealProps> = ({
     </div>
   );
 };
-

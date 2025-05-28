@@ -20,7 +20,9 @@ export const InfiniteCarousel: React.FC<InfiniteCarouselProps> = ({
   const direction = reverse ? "reverse" : "normal";
 
   return (
-    <div className={`overflow-hidden w-full inline-flex flex-nowrap ${className}`}>
+    <div
+      className={`inline-flex w-[1450px] flex-nowrap overflow-hidden ${className}`}
+    >
       <style>
         {`
           @keyframes marquee {
@@ -34,7 +36,7 @@ export const InfiniteCarousel: React.FC<InfiniteCarouselProps> = ({
           animation: `marquee ${speed}s linear infinite`,
           animationDirection: direction,
         }}
-        className='gap-20 flex nowrap'
+        className="nowrap flex gap-20"
       >
         {[...items].map((item, i) => (
           <div key={i} className={itemClassName}>
@@ -46,7 +48,8 @@ export const InfiniteCarousel: React.FC<InfiniteCarouselProps> = ({
         style={{
           animation: `marquee ${speed}s linear infinite`,
           animationDirection: direction,
-        }} className='gap-20 flex flex-nowrap'
+        }}
+        className="flex flex-nowrap gap-20"
       >
         {[...items].map((item, i) => (
           <div key={i} className={itemClassName}>
@@ -57,4 +60,3 @@ export const InfiniteCarousel: React.FC<InfiniteCarouselProps> = ({
     </div>
   );
 };
-
