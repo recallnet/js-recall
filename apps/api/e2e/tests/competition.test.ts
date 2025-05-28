@@ -781,6 +781,7 @@ describe("Competition API", () => {
     expect(detailResponse.competition.status).toBe("pending");
     expect(detailResponse.competition.createdAt).toBeDefined();
     expect(detailResponse.competition.updatedAt).toBeDefined();
+    expect(detailResponse.competition.endDate).toBeNull();
 
     // Test admin access
     const adminDetailResponse = (await adminClient.getCompetition(
@@ -911,6 +912,18 @@ describe("Competition API", () => {
       expect(typeof agent.portfolioValue).toBe("number");
       expect(typeof agent.active).toBe("boolean");
       expect(agent.deactivationReason).toBeNull();
+
+      // Verify new PnL and 24h change fields are accessible to SIWE users
+      expect(typeof agent.pnl).toBe("number");
+      expect(typeof agent.pnlPercent).toBe("number");
+      expect(typeof agent.change24h).toBe("number");
+      expect(typeof agent.change24hPercent).toBe("number");
+
+      // Values should be finite (not NaN or Infinity)
+      expect(Number.isFinite(agent.pnl)).toBe(true);
+      expect(Number.isFinite(agent.pnlPercent)).toBe(true);
+      expect(Number.isFinite(agent.change24h)).toBe(true);
+      expect(Number.isFinite(agent.change24hPercent)).toBe(true);
     }
 
     // Verify agents are ordered by position
@@ -1018,6 +1031,12 @@ describe("Competition API", () => {
       expect(typeof agent.position).toBe("number");
       expect(typeof agent.portfolioValue).toBe("number");
       expect(typeof agent.active).toBe("boolean");
+
+      // Verify new PnL and 24h change fields
+      expect(typeof agent.pnl).toBe("number");
+      expect(typeof agent.pnlPercent).toBe("number");
+      expect(typeof agent.change24h).toBe("number");
+      expect(typeof agent.change24hPercent).toBe("number");
 
       // Optional fields should be null or string
       if (agent.description !== null) {
@@ -1133,6 +1152,19 @@ describe("Competition API", () => {
       expect(typeof agent.position).toBe("number");
       expect(typeof agent.portfolioValue).toBe("number");
       expect(typeof agent.active).toBe("boolean");
+      expect(agent.deactivationReason).toBeNull();
+
+      // Verify new PnL and 24h change fields are accessible to SIWE users
+      expect(typeof agent.pnl).toBe("number");
+      expect(typeof agent.pnlPercent).toBe("number");
+      expect(typeof agent.change24h).toBe("number");
+      expect(typeof agent.change24hPercent).toBe("number");
+
+      // Values should be finite (not NaN or Infinity)
+      expect(Number.isFinite(agent.pnl)).toBe(true);
+      expect(Number.isFinite(agent.pnlPercent)).toBe(true);
+      expect(Number.isFinite(agent.change24h)).toBe(true);
+      expect(Number.isFinite(agent.change24hPercent)).toBe(true);
     }
 
     // Test SIWE user gets 404 for non-existent competition
@@ -1281,5 +1313,155 @@ describe("Competition API", () => {
     ).toBe(
       (agentListResponse as UpcomingCompetitionsResponse).competitions.length,
     );
+  });
+
+  test("should get competition agents with API key authentication", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent and get client
+    const { agent, client } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Competition Agents Test Agent",
+    });
+
+    // Start a competition with our agent
+    const competitionName = `Competition Agents Test ${Date.now()}`;
+    const startResult = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent.id],
+    );
+    const competitionId = startResult.competition.id;
+
+    // Get competition agents using agent API key
+    const response = (await client.getCompetitionAgents(
+      competitionId,
+    )) as CompetitionAgentsResponse;
+
+    expect(response.success).toBe(true);
+    expect(response.competitionId).toBe(competitionId);
+    expect(response.agents).toBeDefined();
+    expect(Array.isArray(response.agents)).toBe(true);
+    expect(response.agents.length).toBe(1);
+
+    const agentData = response.agents[0]!;
+    expect(agentData).toBeDefined();
+    expect(agentData.id).toBe(agent.id);
+    expect(agentData.name).toBe(agent.name);
+    expect(typeof agentData.score).toBe("number");
+    expect(typeof agentData.position).toBe("number");
+    expect(typeof agentData.portfolioValue).toBe("number");
+    expect(typeof agentData.active).toBe("boolean");
+
+    // Verify new PnL and 24h change fields
+    expect(typeof agentData.pnl).toBe("number");
+    expect(typeof agentData.pnlPercent).toBe("number");
+    expect(typeof agentData.change24h).toBe("number");
+    expect(typeof agentData.change24hPercent).toBe("number");
+  });
+
+  test("should calculate PnL and 24h change fields correctly", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register multiple agents
+    const { agent: agent1, client: client1 } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "PnL Test Agent 1",
+      });
+
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "PnL Test Agent 2",
+    });
+
+    // Start a competition with both agents
+    const competitionName = `PnL Test Competition ${Date.now()}`;
+    const startResult = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent1.id, agent2.id],
+    );
+    const competitionId = startResult.competition.id;
+
+    // Wait a moment for initial snapshots to be taken
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // Get competition agents
+    const response = (await client1.getCompetitionAgents(
+      competitionId,
+    )) as CompetitionAgentsResponse;
+
+    expect(response.success).toBe(true);
+    expect(response.agents).toBeDefined();
+    expect(response.agents.length).toBe(2);
+
+    // Verify all agents have PnL and 24h change fields
+    for (const agentData of response.agents) {
+      expect(agentData).toBeDefined();
+      expect(typeof agentData.pnl).toBe("number");
+      expect(typeof agentData.pnlPercent).toBe("number");
+      expect(typeof agentData.change24h).toBe("number");
+      expect(typeof agentData.change24hPercent).toBe("number");
+
+      // For a new competition, PnL should be 0 or very small (since no trading has occurred)
+      expect(Math.abs(agentData.pnl)).toBeLessThan(1); // Less than $1 difference
+      expect(Math.abs(agentData.pnlPercent)).toBeLessThan(1); // Less than 1% difference
+
+      // 24h change should also be 0 or very small for a new competition
+      expect(Math.abs(agentData.change24h)).toBeLessThan(1);
+      expect(Math.abs(agentData.change24hPercent)).toBeLessThan(1);
+
+      // Portfolio value should be positive (agents start with initial balances)
+      expect(agentData.portfolioValue).toBeGreaterThan(0);
+      expect(agentData.score).toBe(agentData.portfolioValue); // Score should equal portfolio value
+    }
+  });
+
+  test("should handle edge cases for PnL calculations", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent
+    const { agent, client } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Edge Case Test Agent",
+    });
+
+    // Start a competition
+    const competitionName = `Edge Case Test ${Date.now()}`;
+    const startResult = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent.id],
+    );
+    const competitionId = startResult.competition.id;
+
+    // Get competition agents immediately (before snapshots might be taken)
+    const response = (await client.getCompetitionAgents(
+      competitionId,
+    )) as CompetitionAgentsResponse;
+
+    expect(response.success).toBe(true);
+    expect(response.agents.length).toBe(1);
+
+    const agentData = response.agents[0]!;
+
+    // Even with minimal or no snapshot history, fields should be present and numeric
+    expect(typeof agentData.pnl).toBe("number");
+    expect(typeof agentData.pnlPercent).toBe("number");
+    expect(typeof agentData.change24h).toBe("number");
+    expect(typeof agentData.change24hPercent).toBe("number");
+
+    // Values should be finite (not NaN or Infinity)
+    expect(Number.isFinite(agentData.pnl)).toBe(true);
+    expect(Number.isFinite(agentData.pnlPercent)).toBe(true);
+    expect(Number.isFinite(agentData.change24h)).toBe(true);
+    expect(Number.isFinite(agentData.change24hPercent)).toBe(true);
   });
 });

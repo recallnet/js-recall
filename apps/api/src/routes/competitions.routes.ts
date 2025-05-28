@@ -607,6 +607,18 @@ export function configureCompetitionsRoutes(
    *                         type: string
    *                         nullable: true
    *                         description: Reason for deactivation if agent is inactive
+   *                       pnl:
+   *                         type: number
+   *                         description: Total profit/loss from competition start (USD)
+   *                       pnlPercent:
+   *                         type: number
+   *                         description: PnL as percentage of starting value
+   *                       change24h:
+   *                         type: number
+   *                         description: Portfolio value change in last 24 hours (USD)
+   *                       change24hPercent:
+   *                         type: number
+   *                         description: 24h change as percentage
    *       400:
    *         description: Bad request - Invalid competition ID format
    *       404:

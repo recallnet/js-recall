@@ -585,24 +585,38 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const agentMap = new Map(agents.map((agent) => [agent.id, agent]));
 
         // Build the response with agent details and competition data
-        const competitionAgents = leaderboard.map((entry, index) => {
-          const agent = agentMap.get(entry.agentId);
-          const isActive = agent?.status === "active";
+        const competitionAgents = await Promise.all(
+          leaderboard.map(async (entry, index) => {
+            const agent = agentMap.get(entry.agentId);
+            const isActive = agent?.status === "active";
 
-          return {
-            id: entry.agentId,
-            name: agent ? agent.name : "Unknown Agent",
-            description: agent?.description || null,
-            imageUrl: agent?.imageUrl || null,
-            score: entry.value,
-            position: index + 1,
-            portfolioValue: entry.value,
-            active: isActive,
-            deactivationReason: !isActive
-              ? agent?.deactivationReason || null
-              : null,
-          };
-        });
+            // Calculate PnL and 24h change metrics using the service
+            const metrics =
+              await services.competitionManager.calculateAgentMetrics(
+                competitionId,
+                entry.agentId,
+                entry.value,
+              );
+
+            return {
+              id: entry.agentId,
+              name: agent ? agent.name : "Unknown Agent",
+              description: agent?.description || null,
+              imageUrl: agent?.imageUrl || null,
+              score: entry.value,
+              position: index + 1,
+              portfolioValue: entry.value,
+              active: isActive,
+              deactivationReason: !isActive
+                ? agent?.deactivationReason || null
+                : null,
+              pnl: metrics.pnl,
+              pnlPercent: metrics.pnlPercent,
+              change24h: metrics.change24h,
+              change24hPercent: metrics.change24hPercent,
+            };
+          }),
+        );
 
         // Return the competition agents
         res.status(200).json({

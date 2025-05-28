@@ -377,6 +377,10 @@ export interface CompetitionAgent {
   portfolioValue: number;
   active: boolean;
   deactivationReason?: string | null;
+  pnl: number; // Total profit/loss from competition start (USD)
+  pnlPercent: number; // PnL as percentage of starting value
+  change24h: number; // Portfolio value change in last 24 hours (USD)
+  change24hPercent: number; // 24h change as percentage
 }
 
 // Competition agents response
