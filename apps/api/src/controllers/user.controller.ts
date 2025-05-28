@@ -116,7 +116,6 @@ export function makeUserController(services: ServiceRegistry) {
             name: updatedUser.name,
             email: updatedUser.email,
             imageUrl: updatedUser.imageUrl,
-            metadata: updatedUser.metadata,
             status: updatedUser.status,
             createdAt: updatedUser.createdAt,
             updatedAt: updatedUser.updatedAt,
