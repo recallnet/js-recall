@@ -69,7 +69,49 @@ db.$client.on("error", (err: Error) => {
 });
 
 export async function resetDb() {
-  await reset(db, schema);
+  const maxRetries = 3;
+  let retryCount = 0;
+
+  while (retryCount < maxRetries) {
+    try {
+      // Wait a bit before each attempt to let any pending transactions complete
+      if (retryCount > 0) {
+        const delay = Math.pow(2, retryCount) * 100; // Exponential backoff: 200ms, 400ms, 800ms
+        console.log(
+          `Retrying database reset (attempt ${retryCount + 1}/${maxRetries}) after ${delay}ms delay...`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+
+      await reset(db, schema);
+      return; // Success, exit the retry loop
+    } catch (error: unknown) {
+      retryCount++;
+
+      // Check if it's a deadlock error
+      const errorMessage = error instanceof Error ? error.message : "";
+      const errorCode =
+        error && typeof error === "object" && "code" in error ? error.code : "";
+      const isDeadlock =
+        errorMessage.includes("deadlock") ||
+        errorCode === "40P01" ||
+        errorCode === "40001";
+
+      if (isDeadlock && retryCount < maxRetries) {
+        console.warn(
+          `Database deadlock detected on attempt ${retryCount}/${maxRetries}, retrying...`,
+        );
+        continue;
+      }
+
+      // If it's not a deadlock or we've exhausted retries, throw the error
+      console.error(
+        `Database reset failed after ${retryCount} attempts:`,
+        error,
+      );
+      throw error;
+    }
+  }
 }
 
 export async function dropAll() {

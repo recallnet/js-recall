@@ -1,12 +1,12 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: 8cd5dc5ab25dda7878e9c822e0a7ef29
+  docChecksum: 86ce8589ea84e3360c0b2b334ef502e0
   docVersion: 1.0.0
   speakeasyVersion: 1.552.0
   generationVersion: 2.610.0
-  releaseVersion: 0.1.2
-  configChecksum: 1dbefbe1b8e2e7f3885ef8c4df18e6ab
+  releaseVersion: 0.1.5
+  configChecksum: 95577c888005661d21ad23141e1aff06
 features:
   typescript:
     additionalDependencies: 0.1.0
@@ -83,6 +83,14 @@ generatedFiles:
   - docs/models/operations/getapiagenttradesresponse.md
   - docs/models/operations/getapiauthnonceresponse.md
   - docs/models/operations/getapicompetitionscompetition.md
+  - docs/models/operations/getapicompetitionscompetitionidagentsagent.md
+  - docs/models/operations/getapicompetitionscompetitionidagentsrequest.md
+  - docs/models/operations/getapicompetitionscompetitionidagentsresponse.md
+  - docs/models/operations/getapicompetitionscompetitionidcompetition.md
+  - docs/models/operations/getapicompetitionscompetitionidcrosschaintradingtype.md
+  - docs/models/operations/getapicompetitionscompetitionidrequest.md
+  - docs/models/operations/getapicompetitionscompetitionidresponse.md
+  - docs/models/operations/getapicompetitionscompetitionidstatus.md
   - docs/models/operations/getapicompetitionscrosschaintradingtype.md
   - docs/models/operations/getapicompetitionsleaderboardcompetition.md
   - docs/models/operations/getapicompetitionsleaderboardleaderboard.md
@@ -130,6 +138,7 @@ generatedFiles:
   - docs/models/operations/getapiuserprofileuser.md
   - docs/models/operations/inactiveagent.md
   - docs/models/operations/owner.md
+  - docs/models/operations/pagination.md
   - docs/models/operations/portfoliosnapshots.md
   - docs/models/operations/postapiadminagentsagentiddeactivateagent.md
   - docs/models/operations/postapiadminagentsagentiddeactivaterequest.md
@@ -193,6 +202,7 @@ generatedFiles:
   - docs/models/operations/searchtype.md
   - docs/models/operations/services.md
   - docs/models/operations/snapshot.md
+  - docs/models/operations/sort.md
   - docs/models/operations/source.md
   - docs/models/operations/symbols.md
   - docs/models/operations/token.md
@@ -237,6 +247,8 @@ generatedFiles:
   - src/funcs/authPostApiAuthLogin.ts
   - src/funcs/authPostApiAuthLogout.ts
   - src/funcs/competitionGetApiCompetitions.ts
+  - src/funcs/competitionGetApiCompetitionsCompetitionId.ts
+  - src/funcs/competitionGetApiCompetitionsCompetitionIdAgents.ts
   - src/funcs/competitionGetApiCompetitionsLeaderboard.ts
   - src/funcs/competitionGetApiCompetitionsRules.ts
   - src/funcs/competitionGetApiCompetitionsStatus.ts
@@ -311,6 +323,8 @@ generatedFiles:
   - src/mcp-server/tools/authPostApiAuthLogin.ts
   - src/mcp-server/tools/authPostApiAuthLogout.ts
   - src/mcp-server/tools/competitionGetApiCompetitions.ts
+  - src/mcp-server/tools/competitionGetApiCompetitionsCompetitionId.ts
+  - src/mcp-server/tools/competitionGetApiCompetitionsCompetitionIdAgents.ts
   - src/mcp-server/tools/competitionGetApiCompetitionsLeaderboard.ts
   - src/mcp-server/tools/competitionGetApiCompetitionsRules.ts
   - src/mcp-server/tools/competitionGetApiCompetitionsStatus.ts
@@ -345,6 +359,8 @@ generatedFiles:
   - src/models/operations/getapiagenttrades.ts
   - src/models/operations/getapiauthnonce.ts
   - src/models/operations/getapicompetitions.ts
+  - src/models/operations/getapicompetitionscompetitionid.ts
+  - src/models/operations/getapicompetitionscompetitionidagents.ts
   - src/models/operations/getapicompetitionsleaderboard.ts
   - src/models/operations/getapicompetitionsrules.ts
   - src/models/operations/getapicompetitionsstatus.ts
@@ -788,5 +804,25 @@ examples:
       responses:
         "200":
           application/json: {"success": true}
+  get_/api/competitions/{competitionId}:
+    speakeasy-default-get-/api/competitions/{competition-id}:
+      parameters:
+        path:
+          competitionId: "<id>"
+      responses:
+        "200":
+          application/json: {}
+  get_/api/competitions/{competitionId}/agents:
+    speakeasy-default-get-/api/competitions/{competition-id}/agents:
+      parameters:
+        path:
+          competitionId: "<id>"
+        query:
+          sort: "position"
+          limit: 50
+          offset: 0
+      responses:
+        "200":
+          application/json: {}
 examplesVersion: 1.0.2
 generatedTests: {}

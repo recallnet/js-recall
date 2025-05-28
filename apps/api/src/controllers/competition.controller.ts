@@ -6,6 +6,7 @@ import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
   AuthenticatedRequest,
+  CompetitionAgentsParamsSchema,
   CompetitionStatus,
   CompetitionStatusSchema,
   PagingParamsSchema,
@@ -468,6 +469,186 @@ export function makeCompetitionController(services: ServiceRegistry) {
         res.status(200).json({
           success: true,
           competitions: competitions,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get competition by ID
+     * @param req AuthenticatedRequest object with agent authentication information
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getCompetitionById(
+      req: AuthenticatedRequest,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const agentId = req.agentId;
+        const userId = req.userId;
+        const isAdmin = req.isAdmin === true;
+
+        // Authentication check
+        if (isAdmin) {
+          console.log(
+            `[CompetitionController] Admin requesting competition details`,
+          );
+        } else if (agentId) {
+          console.log(
+            `[CompetitionController] Agent ${agentId} requesting competition details`,
+          );
+        } else if (userId) {
+          console.log(
+            `[CompetitionController] User ${userId} requesting competition details`,
+          );
+        } else {
+          throw new ApiError(401, "Authentication required");
+        }
+
+        // Get competition ID from path parameter
+        const competitionId = req.params.competitionId;
+        if (!competitionId) {
+          throw new ApiError(400, "Competition ID is required");
+        }
+
+        // Get competition details
+        const competition =
+          await services.competitionManager.getCompetition(competitionId);
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
+
+        // Return the competition details
+        res.status(200).json({
+          success: true,
+          competition: competition,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get agents participating in a competition
+     * @param req AuthenticatedRequest object with agent authentication information
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getCompetitionAgents(
+      req: AuthenticatedRequest,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const agentId = req.agentId;
+        const userId = req.userId;
+        const isAdmin = req.isAdmin === true;
+
+        // Authentication check
+        if (isAdmin) {
+          console.log(
+            `[CompetitionController] Admin requesting competition agents`,
+          );
+        } else if (agentId) {
+          console.log(
+            `[CompetitionController] Agent ${agentId} requesting competition agents`,
+          );
+        } else if (userId) {
+          console.log(
+            `[CompetitionController] User ${userId} requesting competition agents`,
+          );
+        } else {
+          throw new ApiError(401, "Authentication required");
+        }
+
+        // Get competition ID from path parameter
+        const competitionId = req.params.competitionId;
+        if (!competitionId) {
+          throw new ApiError(400, "Competition ID is required");
+        }
+
+        // Parse query parameters
+        const queryParams = CompetitionAgentsParamsSchema.parse(req.query);
+
+        // Check if competition exists
+        const competition =
+          await services.competitionManager.getCompetition(competitionId);
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
+
+        // Get agents for the competition with pagination
+        const { agents, total } =
+          await services.agentManager.getAgentsForCompetition(
+            competitionId,
+            queryParams,
+          );
+
+        // Get leaderboard data for the competition to get scores and positions
+        const leaderboard =
+          await services.competitionManager.getLeaderboard(competitionId);
+        const leaderboardMap = new Map(
+          leaderboard.map((entry, index) => [
+            entry.agentId,
+            { score: entry.value, position: index + 1 },
+          ]),
+        );
+
+        // Build the response with agent details and competition data
+        const competitionAgents = await Promise.all(
+          agents.map(async (agent) => {
+            const isActive = agent.status === "active";
+            const leaderboardData = leaderboardMap.get(agent.id);
+            const score = leaderboardData?.score ?? 0;
+            const position = leaderboardData?.position ?? 0;
+
+            // Calculate PnL and 24h change metrics using the service
+            const metrics =
+              await services.competitionManager.calculateAgentMetrics(
+                competitionId,
+                agent.id,
+                score,
+              );
+
+            return {
+              id: agent.id,
+              name: agent.name,
+              description: agent.description || null,
+              imageUrl: agent.imageUrl || null,
+              score: score,
+              position: position,
+              portfolioValue: score,
+              active: isActive,
+              deactivationReason: !isActive
+                ? agent.deactivationReason || null
+                : null,
+              pnl: metrics.pnl,
+              pnlPercent: metrics.pnlPercent,
+              change24h: metrics.change24h,
+              change24hPercent: metrics.change24hPercent,
+            };
+          }),
+        );
+
+        // Apply position-based sorting if requested
+        if (queryParams.sort === "position") {
+          competitionAgents.sort((a, b) => a.position - b.position);
+        }
+
+        // Return the competition agents with pagination metadata
+        res.status(200).json({
+          success: true,
+          competitionId: competitionId,
+          agents: competitionAgents,
+          pagination: {
+            total,
+            limit: queryParams.limit,
+            offset: queryParams.offset,
+            hasMore: queryParams.offset + queryParams.limit < total,
+          },
         });
       } catch (error) {
         next(error);

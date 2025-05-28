@@ -14,6 +14,8 @@ import {
   ApiResponse,
   BalancesResponse,
   BlockchainType,
+  CompetitionAgentsResponse,
+  CompetitionDetailResponse,
   CompetitionRulesResponse,
   CompetitionStatusResponse,
   CreateCompetitionResponse,
@@ -713,6 +715,60 @@ export class ApiClient {
         `get competitions: sort=${sort}, status=${status}`,
       );
     }
+  }
+
+  /**
+   * Get competition details by ID
+   * @param competitionId Competition ID
+   * @returns Competition details
+   */
+  async getCompetition(
+    competitionId: string,
+  ): Promise<CompetitionDetailResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/competitions/${competitionId}`,
+      );
+      return response.data as CompetitionDetailResponse;
+    } catch (error) {
+      return this.handleApiError(error, `get competition: ${competitionId}`);
+    }
+  }
+
+  /**
+   * Get agents participating in a competition
+   * @param competitionId Competition ID
+   * @param params Optional query parameters for filtering, sorting, and pagination
+   * @returns Competition agents response
+   */
+  async getCompetitionAgents(
+    competitionId: string,
+    params?: {
+      filter?: string;
+      sort?: string;
+      limit?: number;
+      offset?: number;
+    },
+  ): Promise<CompetitionAgentsResponse | ErrorResponse> {
+    const queryParams = new URLSearchParams();
+
+    if (params?.filter) {
+      queryParams.append("filter", params.filter);
+    }
+    if (params?.sort) {
+      queryParams.append("sort", params.sort);
+    }
+    if (params?.limit !== undefined) {
+      queryParams.append("limit", params.limit.toString());
+    }
+    if (params?.offset !== undefined) {
+      queryParams.append("offset", params.offset.toString());
+    }
+
+    const queryString = queryParams.toString();
+    const url = `/api/competitions/${competitionId}/agents${queryString ? `?${queryString}` : ""}`;
+
+    return this.request<CompetitionAgentsResponse>("get", url);
   }
 
   /**
