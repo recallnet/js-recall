@@ -1,46 +1,29 @@
-FROM node:18-alpine AS builder
+FROM node:22 AS builder
 
-WORKDIR /app
+WORKDIR /workdir
 
-# Copy package files and install dependencies
-COPY package*.json ./
-RUN npm ci
+COPY apps/api apps/api
+COPY packages/api-sdk packages/api-sdk
+COPY packages/eslint-config packages/eslint-config
+COPY packages/typescript-config packages/typescript-config
+COPY .npmrc .prettie* *.js *.json *.yaml ./
 
-# Copy source code
-COPY . .
+# # Build the application
+RUN npm -g install pnpm typescript turbo
+RUN cd apps/api; pnpm install
+RUN cd packages/api-sdk; pnpm build
+RUN cd apps/api; pnpm build
 
-# Build the application
-RUN pnpm build
+FROM node:22-alpine
 
-# Second stage: runtime
-FROM node:18-alpine
-
-WORKDIR /app
-
-# Create a non-root user and set permissions
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
-    mkdir -p /app/node_modules /app/dist/src/database && \
-    chown -R appuser:appgroup /app
-
-# Copy only necessary files from builder stage
-COPY --from=builder --chown=appuser:appgroup /app/dist ./dist
-COPY --from=builder --chown=appuser:appgroup /app/package*.json ./
-COPY --from=builder --chown=appuser:appgroup /app/scripts ./scripts
-COPY --from=builder --chown=appuser:appgroup /app/src/database ./src/database
-
-RUN chown -R appuser:appgroup ./dist
-
-# Install production dependencies only
-RUN npm ci --only=production
+COPY --from=builder /workdir /workdir
 
 # Set environment variables
 ENV NODE_ENV=production
-
-# Switch to non-root user
-USER appuser
 
 # Expose the application port
 EXPOSE 3000
 
 # Start the application
-CMD ["node", "dist/src/index.js"] 
+WORKDIR /workdir/apps/api
+CMD ["node", "dist/src/index.js"]

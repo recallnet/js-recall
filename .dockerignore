@@ -4,11 +4,12 @@
 .github
 
 # Node.js
-node_modules
+**/node_modules
 npm-debug.log
+.pnpm-store
 
 # Build artifacts
-dist
+**/dist
 *.log
 coverage
 .nyc_output
@@ -50,4 +51,4 @@ __tests__
 
 # OS specific files
 .DS_Store
-Thumbs.db 
+Thumbs.db
