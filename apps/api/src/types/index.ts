@@ -399,3 +399,10 @@ export const CompetitionAgentsParamsSchema = z.object({
 export type CompetitionAgentsParams = z.infer<
   typeof CompetitionAgentsParamsSchema
 >;
+
+/**
+ * Get agents filter values, it can be any string, but the query will be name or wallet address
+ */
+export const AgentFilterSchema = z.string().max(100);
+
+export type AgentFilter = z.infer<typeof AgentFilterSchema>;

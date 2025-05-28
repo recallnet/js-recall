@@ -1,12 +1,12 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: 86ce8589ea84e3360c0b2b334ef502e0
+  docChecksum: ad141bdc55ce603497c129318b8ca5c0
   docVersion: 1.0.0
   speakeasyVersion: 1.552.0
   generationVersion: 2.610.0
-  releaseVersion: 0.1.5
-  configChecksum: 95577c888005661d21ad23141e1aff06
+  releaseVersion: 0.1.4
+  configChecksum: 02f3ba990623800322f7c4260c4f4ef9
 features:
   typescript:
     additionalDependencies: 0.1.0
@@ -80,6 +80,11 @@ generatedFiles:
   - docs/models/operations/getapiagentprofileagent.md
   - docs/models/operations/getapiagentprofileresponse.md
   - docs/models/operations/getapiagentprofilestatus.md
+  - docs/models/operations/getapiagentsagent.md
+  - docs/models/operations/getapiagentsmetadata.md
+  - docs/models/operations/getapiagentsrequest.md
+  - docs/models/operations/getapiagentsresponse.md
+  - docs/models/operations/getapiagentsstatus.md
   - docs/models/operations/getapiagenttradesresponse.md
   - docs/models/operations/getapiauthnonceresponse.md
   - docs/models/operations/getapicompetitionscompetition.md
@@ -241,6 +246,7 @@ generatedFiles:
   - src/funcs/agentGetApiAgentPortfolio.ts
   - src/funcs/agentGetApiAgentProfile.ts
   - src/funcs/agentGetApiAgentTrades.ts
+  - src/funcs/agentGetApiAgents.ts
   - src/funcs/agentPostApiAgentResetApiKey.ts
   - src/funcs/agentPutApiAgentProfile.ts
   - src/funcs/authGetApiAuthNonce.ts
@@ -317,6 +323,7 @@ generatedFiles:
   - src/mcp-server/tools/agentGetApiAgentPortfolio.ts
   - src/mcp-server/tools/agentGetApiAgentProfile.ts
   - src/mcp-server/tools/agentGetApiAgentTrades.ts
+  - src/mcp-server/tools/agentGetApiAgents.ts
   - src/mcp-server/tools/agentPostApiAgentResetApiKey.ts
   - src/mcp-server/tools/agentPutApiAgentProfile.ts
   - src/mcp-server/tools/authGetApiAuthNonce.ts
@@ -356,6 +363,7 @@ generatedFiles:
   - src/models/operations/getapiagentbalances.ts
   - src/models/operations/getapiagentportfolio.ts
   - src/models/operations/getapiagentprofile.ts
+  - src/models/operations/getapiagents.ts
   - src/models/operations/getapiagenttrades.ts
   - src/models/operations/getapiauthnonce.ts
   - src/models/operations/getapicompetitions.ts
@@ -666,7 +674,7 @@ examples:
   post_/api/admin/users:
     speakeasy-default-post-/api/admin/users:
       requestBody:
-        application/json: {"walletAddress": "1.0392900530713021e+47", "name": "John Doe", "email": "user@example.com", "userImageUrl": "https://example.com/user-image.jpg", "agentName": "Trading Bot Alpha", "agentDescription": "High-frequency trading bot specializing in DeFi", "agentImageUrl": "https://example.com/agent-image.jpg", "agentMetadata": {}}
+        application/json: {"walletAddress": "1.0392900530713021e+47", "name": "John Doe", "email": "user@example.com", "userImageUrl": "https://example.com/user-image.jpg", "agentName": "Trading Bot Alpha", "agentDescription": "High-frequency trading bot specializing in DeFi", "agentImageUrl": "https://example.com/agent-image.jpg", "agentMetadata": {}, "agentWalletAddress": "1.0392900530713021e+47"}
       responses:
         "201":
           application/json: {"user": {"metadata": {}}, "agent": {"metadata": {}, "apiKey": "abc123def456_ghi789jkl012"}}
@@ -804,6 +812,11 @@ examples:
       responses:
         "200":
           application/json: {"success": true}
+  get_/api/agents:
+    speakeasy-default-get-/api/agents:
+      responses:
+        "200":
+          application/json: {"success": true, "agents": [{"walletAddress": "0x1234567890abcdef1234567890abcdef12345678", "name": "Trading Bot Alpha", "description": "AI agent focusing on DeFi yield farming", "imageUrl": "https://example.com/bot-avatar.jpg"}, {"walletAddress": "0x1234567890abcdef1234567890abcdef12345678", "name": "Trading Bot Alpha", "description": "AI agent focusing on DeFi yield farming", "imageUrl": "https://example.com/bot-avatar.jpg"}, {"walletAddress": "0x1234567890abcdef1234567890abcdef12345678", "name": "Trading Bot Alpha", "description": "AI agent focusing on DeFi yield farming", "imageUrl": "https://example.com/bot-avatar.jpg"}]}
   get_/api/competitions/{competitionId}:
     speakeasy-default-get-/api/competitions/{competition-id}:
       parameters:

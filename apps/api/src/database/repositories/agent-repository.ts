@@ -1,16 +1,44 @@
-import { and, asc, desc, count as drizzleCount, eq, ilike } from "drizzle-orm";
+import {
+  AnyColumn,
+  and,
+  asc,
+  desc,
+  count as drizzleCount,
+  eq,
+  ilike,
+} from "drizzle-orm";
 
 import { db } from "@/database/db.js";
 import { agents, competitionAgents } from "@/database/schema/core/defs.js";
 import { InsertAgent, SelectAgent } from "@/database/schema/core/types.js";
-import { AgentSearchParams, CompetitionAgentsParams } from "@/types/index.js";
+import {
+  AgentSearchParams,
+  CompetitionAgentsParams,
+  PagingParams,
+} from "@/types/index.js";
 
+import { getSort } from "./helpers.js";
 import { PartialExcept } from "./types.js";
 
 /**
  * Agent Repository
  * Handles database operations for agents
  */
+
+/**
+ * allowable order by database columns
+ */
+const agentOrderByFields: Record<string, AnyColumn> = {
+  id: agents.id,
+  ownerId: agents.ownerId,
+  walletAddress: agents.walletAddress,
+  name: agents.name,
+  description: agents.description,
+  imageUrl: agents.imageUrl,
+  status: agents.status,
+  createdAt: agents.createdAt,
+  updatedAt: agents.updatedAt,
+};
 
 /**
  * Create a new agent
@@ -42,9 +70,23 @@ export async function create(agent: InsertAgent): Promise<SelectAgent> {
 /**
  * Find all agents
  */
-export async function findAll(): Promise<SelectAgent[]> {
+export async function findAll(
+  pagingParams?: PagingParams,
+): Promise<SelectAgent[]> {
   try {
-    return await db.select().from(agents);
+    if (!pagingParams) {
+      return db.select().from(agents);
+    }
+
+    let query = db.select().from(agents).$dynamic();
+
+    if (pagingParams.sort) {
+      query = getSort(query, pagingParams.sort, agentOrderByFields);
+    }
+
+    query = query.limit(pagingParams.limit).offset(pagingParams.offset);
+
+    return query;
   } catch (error) {
     console.error("[AgentRepository] Error in findAll:", error);
     throw error;
@@ -172,6 +214,71 @@ export async function findByApiKey(
     return result;
   } catch (error) {
     console.error("[AgentRepository] Error in findByApiKey:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get agents based on wallet address
+ * @param walletAddress the wallet address to filter by
+ * @param pagingParams pagination parameters
+ */
+export async function findByWallet({
+  walletAddress,
+  pagingParams,
+}: {
+  walletAddress: string;
+  pagingParams: PagingParams;
+}): Promise<SelectAgent[]> {
+  try {
+    let query = db
+      .select()
+      .from(agents)
+      .where(eq(agents.walletAddress, walletAddress))
+      .$dynamic();
+
+    if (pagingParams.sort) {
+      query = getSort(query, pagingParams.sort, agentOrderByFields);
+    }
+
+    query = query.limit(pagingParams.limit).offset(pagingParams.offset);
+
+    return await query;
+  } catch (error) {
+    console.error("[AgentRepository] Error in findByWallet:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get agents filtered by name.  The filter input is converted to a where
+ *  clause with an ILIKE operator that matches all names that start with the provided filter
+ * @param name characters to use in the ilike pattern
+ * @param pagingParams pagination parameters
+ */
+export async function findByName({
+  name,
+  pagingParams,
+}: {
+  name: string;
+  pagingParams: PagingParams;
+}): Promise<SelectAgent[]> {
+  try {
+    let query = db
+      .select()
+      .from(agents)
+      .where(ilike(agents.name, name + "%"))
+      .$dynamic();
+
+    if (pagingParams.sort) {
+      query = getSort(query, pagingParams.sort, agentOrderByFields);
+    }
+
+    query = query.limit(pagingParams.limit).offset(pagingParams.offset);
+
+    return await query;
+  } catch (error) {
+    console.error("[AgentRepository] Error in findByName:", error);
     throw error;
   }
 }
@@ -361,6 +468,38 @@ export async function count(): Promise<number> {
     return result?.count ?? 0;
   } catch (error) {
     console.error("[AgentRepository] Error in count:", error);
+    throw error;
+  }
+}
+
+/**
+ * Count agents with a given wallet address
+ */
+export async function countByWallet(walletAddress: string): Promise<number> {
+  try {
+    const [result] = await db
+      .select({ count: drizzleCount() })
+      .from(agents)
+      .where(eq(agents.walletAddress, walletAddress));
+    return result?.count ?? 0;
+  } catch (error) {
+    console.error("[AgentRepository] Error in countByWallet:", error);
+    throw error;
+  }
+}
+
+/**
+ * Count agents with a given name
+ */
+export async function countByName(name: string): Promise<number> {
+  try {
+    const [result] = await db
+      .select({ count: drizzleCount() })
+      .from(agents)
+      .where(ilike(agents.name, name));
+    return result?.count ?? 0;
+  } catch (error) {
+    console.error("[AgentRepository] Error in countByName:", error);
     throw error;
   }
 }

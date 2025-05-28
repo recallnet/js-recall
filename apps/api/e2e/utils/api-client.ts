@@ -2,6 +2,8 @@ import axios, { AxiosInstance } from "axios";
 import { wrapper } from "axios-cookiejar-support";
 import { CookieJar } from "tough-cookie";
 
+import { PagingParams } from "@/types/index.js";
+
 import {
   AdminAgentResponse,
   AdminAgentsListResponse,
@@ -11,6 +13,7 @@ import {
   AgentApiKeyResponse,
   AgentMetadata,
   AgentProfileResponse,
+  AgentsGetResponse,
   ApiResponse,
   BalancesResponse,
   BlockchainType,
@@ -446,6 +449,29 @@ export class ApiClient {
   async listAgents(): Promise<AdminAgentsListResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get("/api/admin/agents");
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "list agents");
+    }
+  }
+
+  /**
+   * List all agents (auth only)
+   */
+  async getAgents(
+    pagingParams: PagingParams,
+    filter?: string,
+  ): Promise<AgentsGetResponse | ErrorResponse> {
+    try {
+      let url = `/api/agents?limit=${pagingParams.limit}&offset=${pagingParams.offset}`;
+      if (pagingParams.sort) {
+        url += `&sort=${pagingParams.sort}`;
+      }
+      if (filter) {
+        url += `&filter=${filter}`;
+      }
+
+      const response = await this.axiosInstance.get(url);
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "list agents");

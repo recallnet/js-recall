@@ -45,6 +45,10 @@ export type PostApiAdminUsersRequest = {
    * Optional metadata about the agent
    */
   agentMetadata?: AgentMetadataRequest | undefined;
+  /**
+   * Ethereum wallet address (must start with 0x)
+   */
+  agentWalletAddress?: string | undefined;
 };
 
 /**
@@ -227,6 +231,7 @@ export const PostApiAdminUsersRequest$inboundSchema: z.ZodType<
   agentDescription: z.string().optional(),
   agentImageUrl: z.string().optional(),
   agentMetadata: z.lazy(() => AgentMetadataRequest$inboundSchema).optional(),
+  agentWalletAddress: z.string().optional(),
 });
 
 /** @internal */
@@ -239,6 +244,7 @@ export type PostApiAdminUsersRequest$Outbound = {
   agentDescription?: string | undefined;
   agentImageUrl?: string | undefined;
   agentMetadata?: AgentMetadataRequest$Outbound | undefined;
+  agentWalletAddress?: string | undefined;
 };
 
 /** @internal */
@@ -255,6 +261,7 @@ export const PostApiAdminUsersRequest$outboundSchema: z.ZodType<
   agentDescription: z.string().optional(),
   agentImageUrl: z.string().optional(),
   agentMetadata: z.lazy(() => AgentMetadataRequest$outboundSchema).optional(),
+  agentWalletAddress: z.string().optional(),
 });
 
 /**

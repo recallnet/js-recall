@@ -5,6 +5,7 @@ import { agentGetApiAgentBalances } from "../funcs/agentGetApiAgentBalances.js";
 import { agentGetApiAgentPortfolio } from "../funcs/agentGetApiAgentPortfolio.js";
 import { agentGetApiAgentProfile } from "../funcs/agentGetApiAgentProfile.js";
 import { agentGetApiAgentTrades } from "../funcs/agentGetApiAgentTrades.js";
+import { agentGetApiAgents } from "../funcs/agentGetApiAgents.js";
 import { agentPostApiAgentResetApiKey } from "../funcs/agentPostApiAgentResetApiKey.js";
 import { agentPutApiAgentProfile } from "../funcs/agentPutApiAgentProfile.js";
 import { ClientSDK, RequestOptions } from "../lib/sdks.js";
@@ -83,5 +84,18 @@ export class Agent extends ClientSDK {
     options?: RequestOptions,
   ): Promise<operations.PostApiAgentResetApiKeyResponse> {
     return unwrapAsync(agentPostApiAgentResetApiKey(this, options));
+  }
+
+  /**
+   * Get list of agents
+   *
+   * @remarks
+   * Retrieve a list of agents based on querystring parameters
+   */
+  async getApiAgents(
+    request: operations.GetApiAgentsRequest,
+    options?: RequestOptions,
+  ): Promise<operations.GetApiAgentsResponse> {
+    return unwrapAsync(agentGetApiAgents(this, request, options));
   }
 }

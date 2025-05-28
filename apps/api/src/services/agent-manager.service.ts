@@ -4,24 +4,29 @@ import { v4 as uuidv4 } from "uuid";
 import { config } from "@/config/index.js";
 import {
   count,
+  countByName,
+  countByWallet,
   create,
   deactivateAgent,
   deleteAgent,
   findAll,
   findByCompetition,
   findById,
+  findByName,
   findByOwnerId,
+  findByWallet,
   findInactiveAgents,
   reactivateAgent,
   searchAgents,
   update,
 } from "@/database/repositories/agent-repository.js";
-import { InsertAgent } from "@/database/schema/core/types.js";
+import { InsertAgent, SelectAgent } from "@/database/schema/core/types.js";
 import {
   AgentMetadata,
   AgentSearchParams,
   ApiAuth,
   CompetitionAgentsParams,
+  PagingParams,
 } from "@/types/index.js";
 
 /**
@@ -752,5 +757,55 @@ export class AgentManager {
       );
       return { agents: [], total: 0 };
     }
+  }
+
+  /**
+   * Get agents with paging and filtering
+   */
+  async getAgents({
+    filter,
+    pagingParams,
+  }: {
+    filter?: string;
+    pagingParams: PagingParams;
+  }) {
+    if (filter?.length === 42) {
+      return findByWallet({ walletAddress: filter, pagingParams });
+    }
+    if (typeof filter === "string" && filter.length > 0) {
+      return findByName({ name: filter, pagingParams });
+    }
+
+    return findAll(pagingParams);
+  }
+
+  /**
+   * Count agents with optional filter
+   */
+  async countAgents(filter?: string) {
+    if (filter?.length === 42) {
+      return countByWallet(filter);
+    }
+    if (filter?.length) {
+      return countByName(filter);
+    }
+
+    return count();
+  }
+
+  sanitizeAgent(agent: SelectAgent) {
+    return {
+      id: agent.id,
+      ownerId: agent.ownerId,
+      name: agent.name,
+      description: agent.description,
+      imageUrl: agent.imageUrl,
+      metadata: agent.metadata,
+      status: agent.status,
+      walletAddress: agent.walletAddress,
+      createdAt: agent.createdAt,
+      updatedAt: agent.updatedAt,
+      // Explicitly exclude apiKey for security
+    };
   }
 }
