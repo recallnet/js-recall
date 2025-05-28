@@ -557,6 +557,37 @@ export function configureCompetitionsRoutes(
    *           type: string
    *         required: true
    *         description: The ID of the competition to get agents for
+   *       - in: query
+   *         name: filter
+   *         schema:
+   *           type: string
+   *         required: false
+   *         description: Optional filter by agent name
+   *       - in: query
+   *         name: sort
+   *         schema:
+   *           type: string
+   *           enum: [position, name, name_desc, created, created_desc, status]
+   *           default: position
+   *         required: false
+   *         description: Sort order for results
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: integer
+   *           minimum: 1
+   *           maximum: 100
+   *           default: 50
+   *         required: false
+   *         description: Maximum number of results to return
+   *       - in: query
+   *         name: offset
+   *         schema:
+   *           type: integer
+   *           minimum: 0
+   *           default: 0
+   *         required: false
+   *         description: Number of results to skip for pagination
    *     responses:
    *       200:
    *         description: Competition agents retrieved successfully
@@ -619,8 +650,24 @@ export function configureCompetitionsRoutes(
    *                       change24hPercent:
    *                         type: number
    *                         description: 24h change as percentage
+   *                 pagination:
+   *                   type: object
+   *                   description: Pagination metadata
+   *                   properties:
+   *                     total:
+   *                       type: integer
+   *                       description: Total number of agents in the competition
+   *                     limit:
+   *                       type: integer
+   *                       description: Maximum number of results returned
+   *                     offset:
+   *                       type: integer
+   *                       description: Number of results skipped
+   *                     hasMore:
+   *                       type: boolean
+   *                       description: Whether there are more results available
    *       400:
-   *         description: Bad request - Invalid competition ID format
+   *         description: Bad request - Invalid competition ID format or query parameters
    *       404:
    *         description: Competition not found
    *       401:

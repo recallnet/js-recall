@@ -387,6 +387,12 @@ export interface CompetitionAgent {
 export interface CompetitionAgentsResponse extends ApiResponse {
   competitionId: string;
   agents: CompetitionAgent[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
 }
 
 /**

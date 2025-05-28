@@ -385,3 +385,17 @@ export const PagingParamsSchema = z.object({
 });
 
 export type PagingParams = z.infer<typeof PagingParamsSchema>;
+
+/**
+ * Query string parameters for competition agents endpoint
+ */
+export const CompetitionAgentsParamsSchema = z.object({
+  filter: z.string().optional(),
+  sort: z.string().default("position"),
+  limit: z.coerce.number().min(1).max(100).default(50),
+  offset: z.coerce.number().min(0).default(0),
+});
+
+export type CompetitionAgentsParams = z.infer<
+  typeof CompetitionAgentsParamsSchema
+>;

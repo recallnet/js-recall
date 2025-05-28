@@ -6,6 +6,7 @@ import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
   AuthenticatedRequest,
+  CompetitionAgentsParamsSchema,
   CompetitionStatus,
   CompetitionStatusSchema,
   PagingParamsSchema,
@@ -569,6 +570,9 @@ export function makeCompetitionController(services: ServiceRegistry) {
           throw new ApiError(400, "Competition ID is required");
         }
 
+        // Parse query parameters
+        const queryParams = CompetitionAgentsParamsSchema.parse(req.query);
+
         // Check if competition exists
         const competition =
           await services.competitionManager.getCompetition(competitionId);
@@ -576,39 +580,50 @@ export function makeCompetitionController(services: ServiceRegistry) {
           throw new ApiError(404, "Competition not found");
         }
 
-        // Get leaderboard data for the competition
+        // Get agents for the competition with pagination
+        const { agents, total } =
+          await services.agentManager.getAgentsForCompetition(
+            competitionId,
+            queryParams,
+          );
+
+        // Get leaderboard data for the competition to get scores and positions
         const leaderboard =
           await services.competitionManager.getLeaderboard(competitionId);
-
-        // Get all agents to get their details
-        const agents = await services.agentManager.getAllAgents();
-        const agentMap = new Map(agents.map((agent) => [agent.id, agent]));
+        const leaderboardMap = new Map(
+          leaderboard.map((entry, index) => [
+            entry.agentId,
+            { score: entry.value, position: index + 1 },
+          ]),
+        );
 
         // Build the response with agent details and competition data
         const competitionAgents = await Promise.all(
-          leaderboard.map(async (entry, index) => {
-            const agent = agentMap.get(entry.agentId);
-            const isActive = agent?.status === "active";
+          agents.map(async (agent) => {
+            const isActive = agent.status === "active";
+            const leaderboardData = leaderboardMap.get(agent.id);
+            const score = leaderboardData?.score ?? 0;
+            const position = leaderboardData?.position ?? 0;
 
             // Calculate PnL and 24h change metrics using the service
             const metrics =
               await services.competitionManager.calculateAgentMetrics(
                 competitionId,
-                entry.agentId,
-                entry.value,
+                agent.id,
+                score,
               );
 
             return {
-              id: entry.agentId,
-              name: agent ? agent.name : "Unknown Agent",
-              description: agent?.description || null,
-              imageUrl: agent?.imageUrl || null,
-              score: entry.value,
-              position: index + 1,
-              portfolioValue: entry.value,
+              id: agent.id,
+              name: agent.name,
+              description: agent.description || null,
+              imageUrl: agent.imageUrl || null,
+              score: score,
+              position: position,
+              portfolioValue: score,
               active: isActive,
               deactivationReason: !isActive
-                ? agent?.deactivationReason || null
+                ? agent.deactivationReason || null
                 : null,
               pnl: metrics.pnl,
               pnlPercent: metrics.pnlPercent,
@@ -618,11 +633,22 @@ export function makeCompetitionController(services: ServiceRegistry) {
           }),
         );
 
-        // Return the competition agents
+        // Apply position-based sorting if requested
+        if (queryParams.sort === "position") {
+          competitionAgents.sort((a, b) => a.position - b.position);
+        }
+
+        // Return the competition agents with pagination metadata
         res.status(200).json({
           success: true,
           competitionId: competitionId,
           agents: competitionAgents,
+          pagination: {
+            total,
+            limit: queryParams.limit,
+            offset: queryParams.offset,
+            hasMore: queryParams.offset + queryParams.limit < total,
+          },
         });
       } catch (error) {
         next(error);

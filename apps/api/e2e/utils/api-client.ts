@@ -738,22 +738,37 @@ export class ApiClient {
   /**
    * Get agents participating in a competition
    * @param competitionId Competition ID
-   * @returns List of agents with scores and positions
+   * @param params Optional query parameters for filtering, sorting, and pagination
+   * @returns Competition agents response
    */
   async getCompetitionAgents(
     competitionId: string,
+    params?: {
+      filter?: string;
+      sort?: string;
+      limit?: number;
+      offset?: number;
+    },
   ): Promise<CompetitionAgentsResponse | ErrorResponse> {
-    try {
-      const response = await this.axiosInstance.get(
-        `/api/competitions/${competitionId}/agents`,
-      );
-      return response.data as CompetitionAgentsResponse;
-    } catch (error) {
-      return this.handleApiError(
-        error,
-        `get competition agents: ${competitionId}`,
-      );
+    const queryParams = new URLSearchParams();
+
+    if (params?.filter) {
+      queryParams.append("filter", params.filter);
     }
+    if (params?.sort) {
+      queryParams.append("sort", params.sort);
+    }
+    if (params?.limit !== undefined) {
+      queryParams.append("limit", params.limit.toString());
+    }
+    if (params?.offset !== undefined) {
+      queryParams.append("offset", params.offset.toString());
+    }
+
+    const queryString = queryParams.toString();
+    const url = `/api/competitions/${competitionId}/agents${queryString ? `?${queryString}` : ""}`;
+
+    return this.request<CompetitionAgentsResponse>("get", url);
   }
 
   /**

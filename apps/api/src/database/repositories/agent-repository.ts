@@ -1,9 +1,9 @@
-import { and, count as drizzleCount, eq, ilike } from "drizzle-orm";
+import { and, asc, desc, count as drizzleCount, eq, ilike } from "drizzle-orm";
 
 import { db } from "@/database/db.js";
 import { agents, competitionAgents } from "@/database/schema/core/defs.js";
 import { InsertAgent, SelectAgent } from "@/database/schema/core/types.js";
-import { AgentSearchParams } from "@/types/index.js";
+import { AgentSearchParams, CompetitionAgentsParams } from "@/types/index.js";
 
 import { PartialExcept } from "./types.js";
 
@@ -47,6 +47,84 @@ export async function findAll(): Promise<SelectAgent[]> {
     return await db.select().from(agents);
   } catch (error) {
     console.error("[AgentRepository] Error in findAll:", error);
+    throw error;
+  }
+}
+
+/**
+ * Find agents participating in a specific competition with pagination and sorting
+ * @param competitionId Competition ID
+ * @param params Query parameters for filtering, sorting, and pagination
+ * @returns Object containing agents array and total count
+ */
+export async function findByCompetition(
+  competitionId: string,
+  params: CompetitionAgentsParams,
+): Promise<{ agents: SelectAgent[]; total: number }> {
+  try {
+    const { filter, sort, limit, offset } = params;
+
+    // Build where conditions
+    const whereConditions = [
+      eq(competitionAgents.competitionId, competitionId),
+    ];
+
+    if (filter) {
+      whereConditions.push(ilike(agents.name, `%${filter}%`));
+    }
+
+    // Determine sort order
+    let orderBy;
+    switch (sort?.toLowerCase()) {
+      case "name":
+        orderBy = asc(agents.name);
+        break;
+      case "name_desc":
+        orderBy = desc(agents.name);
+        break;
+      case "created":
+        orderBy = asc(agents.createdAt);
+        break;
+      case "created_desc":
+        orderBy = desc(agents.createdAt);
+        break;
+      case "status":
+        orderBy = asc(agents.status);
+        break;
+      default:
+        // Default to name ascending
+        orderBy = asc(agents.name);
+        break;
+    }
+
+    // Query for agents with pagination
+    const agentsResult = await db
+      .select()
+      .from(agents)
+      .innerJoin(competitionAgents, eq(agents.id, competitionAgents.agentId))
+      .where(and(...whereConditions))
+      .orderBy(orderBy)
+      .limit(limit)
+      .offset(offset);
+
+    // Query for total count
+    const countResult = await db
+      .select({ count: drizzleCount() })
+      .from(agents)
+      .innerJoin(competitionAgents, eq(agents.id, competitionAgents.agentId))
+      .where(and(...whereConditions));
+
+    const total = countResult[0]?.count ?? 0;
+
+    // Extract agent data from the joined result
+    const agents_data = agentsResult.map((row) => row.agents);
+
+    return {
+      agents: agents_data,
+      total,
+    };
+  } catch (error) {
+    console.error("[AgentRepository] Error in findByCompetition:", error);
     throw error;
   }
 }
