@@ -51,6 +51,22 @@ export type GetApiCompetitionsCompetitionIdAgentsAgent = {
    * Reason for deactivation if agent is inactive
    */
   deactivationReason?: string | null | undefined;
+  /**
+   * Total profit/loss from competition start (USD)
+   */
+  pnl?: number | undefined;
+  /**
+   * PnL as percentage of starting value
+   */
+  pnlPercent?: number | undefined;
+  /**
+   * Portfolio value change in last 24 hours (USD)
+   */
+  change24h?: number | undefined;
+  /**
+   * 24h change as percentage
+   */
+  change24hPercent?: number | undefined;
 };
 
 /**
@@ -150,6 +166,10 @@ export const GetApiCompetitionsCompetitionIdAgentsAgent$inboundSchema: z.ZodType
   portfolioValue: z.number().optional(),
   active: z.boolean().optional(),
   deactivationReason: z.nullable(z.string()).optional(),
+  pnl: z.number().optional(),
+  pnlPercent: z.number().optional(),
+  change24h: z.number().optional(),
+  change24hPercent: z.number().optional(),
 });
 
 /** @internal */
@@ -163,6 +183,10 @@ export type GetApiCompetitionsCompetitionIdAgentsAgent$Outbound = {
   portfolioValue?: number | undefined;
   active?: boolean | undefined;
   deactivationReason?: string | null | undefined;
+  pnl?: number | undefined;
+  pnlPercent?: number | undefined;
+  change24h?: number | undefined;
+  change24hPercent?: number | undefined;
 };
 
 /** @internal */
@@ -180,6 +204,10 @@ export const GetApiCompetitionsCompetitionIdAgentsAgent$outboundSchema: z.ZodTyp
   portfolioValue: z.number().optional(),
   active: z.boolean().optional(),
   deactivationReason: z.nullable(z.string()).optional(),
+  pnl: z.number().optional(),
+  pnlPercent: z.number().optional(),
+  change24h: z.number().optional(),
+  change24hPercent: z.number().optional(),
 });
 
 /**
