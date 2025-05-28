@@ -14,6 +14,8 @@ import {
   ApiResponse,
   BalancesResponse,
   BlockchainType,
+  CompetitionAgentsResponse,
+  CompetitionDetailResponse,
   CompetitionRulesResponse,
   CompetitionStatusResponse,
   CreateCompetitionResponse,
@@ -711,6 +713,45 @@ export class ApiClient {
       return this.handleApiError(
         error,
         `get competitions: sort=${sort}, status=${status}`,
+      );
+    }
+  }
+
+  /**
+   * Get competition details by ID
+   * @param competitionId Competition ID
+   * @returns Competition details
+   */
+  async getCompetition(
+    competitionId: string,
+  ): Promise<CompetitionDetailResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/competitions/${competitionId}`,
+      );
+      return response.data as CompetitionDetailResponse;
+    } catch (error) {
+      return this.handleApiError(error, `get competition: ${competitionId}`);
+    }
+  }
+
+  /**
+   * Get agents participating in a competition
+   * @param competitionId Competition ID
+   * @returns List of agents with scores and positions
+   */
+  async getCompetitionAgents(
+    competitionId: string,
+  ): Promise<CompetitionAgentsResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/competitions/${competitionId}/agents`,
+      );
+      return response.data as CompetitionAgentsResponse;
+    } catch (error) {
+      return this.handleApiError(
+        error,
+        `get competition agents: ${competitionId}`,
       );
     }
   }

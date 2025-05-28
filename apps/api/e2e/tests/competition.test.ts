@@ -6,12 +6,16 @@ import { db } from "@/database/db.js";
 import { agents } from "@/database/schema/core/defs.js";
 import {
   AgentProfileResponse,
+  CompetitionAgentsResponse,
+  CompetitionDetailResponse,
   CompetitionRulesResponse,
   CompetitionStatusResponse,
   CreateCompetitionResponse,
   CrossChainTradingType,
   EndCompetitionResponse,
+  ErrorResponse,
   LeaderboardResponse,
+  StartCompetitionResponse,
   UpcomingCompetitionsResponse,
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
@@ -20,6 +24,7 @@ import {
   ADMIN_PASSWORD,
   ADMIN_USERNAME,
   cleanupTestState,
+  createSiweAuthenticatedClient,
   createTestClient,
   createTestCompetition,
   registerUserAndAgentAndGetClient,
@@ -738,5 +743,543 @@ describe("Competition API", () => {
     expect(startExistingResponse.success).toBe(true);
     expect(startExistingResponse.competition.externalLink).toBe(externalLink);
     expect(startExistingResponse.competition.imageUrl).toBe(imageUrl);
+  });
+
+  // New test cases for GET /competitions/{competitionId}
+  test("should get competition details by ID", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register an agent
+    const { client: agentClient } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Competition Detail Test Agent",
+    });
+
+    // Create a competition
+    const competitionName = `Detail Test Competition ${Date.now()}`;
+    const createResponse = await createTestCompetition(
+      adminClient,
+      competitionName,
+      "Test competition for detail endpoint",
+    );
+
+    // Test getting competition details by ID
+    const detailResponse = (await agentClient.getCompetition(
+      createResponse.competition.id,
+    )) as CompetitionDetailResponse;
+
+    // Verify the response
+    expect(detailResponse.success).toBe(true);
+    expect(detailResponse.competition).toBeDefined();
+    expect(detailResponse.competition.id).toBe(createResponse.competition.id);
+    expect(detailResponse.competition.name).toBe(competitionName);
+    expect(detailResponse.competition.description).toBe(
+      "Test competition for detail endpoint",
+    );
+    expect(detailResponse.competition.status).toBe("pending");
+    expect(detailResponse.competition.createdAt).toBeDefined();
+    expect(detailResponse.competition.updatedAt).toBeDefined();
+
+    // Test admin access
+    const adminDetailResponse = (await adminClient.getCompetition(
+      createResponse.competition.id,
+    )) as CompetitionDetailResponse;
+
+    expect(adminDetailResponse.success).toBe(true);
+    expect(adminDetailResponse.competition.id).toBe(
+      createResponse.competition.id,
+    );
+  });
+
+  test("should return 404 for non-existent competition", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register an agent
+    const { client: agentClient } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "404 Test Agent",
+    });
+
+    // Try to get a non-existent competition
+    const response = await agentClient.getCompetition(
+      "00000000-0000-0000-0000-000000000000",
+    );
+
+    // Should return error response
+    expect(response.success).toBe(false);
+    expect((response as ErrorResponse).error).toContain("not found");
+  });
+
+  test("should include all required fields in competition details", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register an agent
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Fields Test Agent",
+      });
+
+    // Create and start a competition
+    const competitionName = `Fields Test Competition ${Date.now()}`;
+    const startResponse = await adminClient.startCompetition({
+      name: competitionName,
+      description: "Test competition for field validation",
+      agentIds: [agent.id],
+      tradingType: CrossChainTradingType.disallowAll,
+      externalLink: "https://example.com",
+      imageUrl: "https://example.com/image.png",
+    });
+
+    expect(startResponse.success).toBe(true);
+    const competition = (startResponse as StartCompetitionResponse).competition;
+
+    // Get competition details
+    const detailResponse = await agentClient.getCompetition(competition.id);
+    expect(detailResponse.success).toBe(true);
+
+    const competitionDetail = (detailResponse as CompetitionDetailResponse)
+      .competition;
+
+    // Verify all required fields are present
+    expect(competitionDetail.id).toBe(competition.id);
+    expect(competitionDetail.name).toBe(competitionName);
+    expect(competitionDetail.description).toBe(
+      "Test competition for field validation",
+    );
+    expect(competitionDetail.status).toBe("active");
+    expect(competitionDetail.crossChainTradingType).toBe("disallowAll");
+    expect(competitionDetail.externalLink).toBe("https://example.com");
+    expect(competitionDetail.imageUrl).toBe("https://example.com/image.png");
+    expect(competitionDetail.createdAt).toBeDefined();
+    expect(competitionDetail.updatedAt).toBeDefined();
+    expect(competitionDetail.startDate).toBeDefined();
+    expect(competitionDetail.endDate).toBeNull();
+  });
+
+  // New test cases for GET /competitions/{competitionId}/agents
+  test("should get competition agents with scores and positions", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register multiple agents
+    const { client: agentClient1, agent: agent1 } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent One",
+      });
+
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent Two",
+    });
+
+    // Create and start a competition with multiple agents
+    const competitionName = `Agents Test Competition ${Date.now()}`;
+    const startResponse = await adminClient.startCompetition({
+      name: competitionName,
+      description: "Test competition for agents endpoint",
+      agentIds: [agent1.id, agent2.id],
+      tradingType: CrossChainTradingType.disallowAll,
+    });
+
+    expect(startResponse.success).toBe(true);
+    const competition = (startResponse as StartCompetitionResponse).competition;
+
+    // Get competition agents
+    const agentsResponse = await agentClient1.getCompetitionAgents(
+      competition.id,
+    );
+    expect(agentsResponse.success).toBe(true);
+
+    const agentsData = agentsResponse as CompetitionAgentsResponse;
+    expect(agentsData.agents).toHaveLength(2);
+
+    // Verify agent data structure
+    for (const agent of agentsData.agents) {
+      expect(agent.id).toBeDefined();
+      expect(agent.name).toBeDefined();
+      expect(typeof agent.score).toBe("number");
+      expect(typeof agent.position).toBe("number");
+      expect(typeof agent.portfolioValue).toBe("number");
+      expect(typeof agent.active).toBe("boolean");
+      expect(agent.deactivationReason).toBeNull();
+    }
+
+    // Verify agents are ordered by position
+    const positions = agentsData.agents.map((a) => a.position);
+    expect(positions).toEqual([...positions].sort((a, b) => a - b));
+  });
+
+  test("should return 404 for agents of non-existent competition", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register an agent
+    const { client: agentClient } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "404 Agents Test Agent",
+    });
+
+    // Try to get agents for a non-existent competition
+    const response = await agentClient.getCompetitionAgents(
+      "00000000-0000-0000-0000-000000000000",
+    );
+
+    // Should return error response
+    expect(response.success).toBe(false);
+    expect((response as ErrorResponse).error).toContain("not found");
+  });
+
+  test("should handle competitions with no agents", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register an agent for testing
+    const { client: agentClient } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Empty Competition Test Agent",
+    });
+
+    // Create a competition without starting it (no agents)
+    const competitionName = `Empty Competition ${Date.now()}`;
+    const createResponse = await createTestCompetition(
+      adminClient,
+      competitionName,
+    );
+
+    // Test getting agents for competition with no agents
+    const agentsResponse = (await agentClient.getCompetitionAgents(
+      createResponse.competition.id,
+    )) as CompetitionAgentsResponse;
+
+    // Verify the response
+    expect(agentsResponse.success).toBe(true);
+    expect(agentsResponse.competitionId).toBe(createResponse.competition.id);
+    expect(agentsResponse.agents).toBeDefined();
+    expect(Array.isArray(agentsResponse.agents)).toBe(true);
+    expect(agentsResponse.agents.length).toBe(0);
+  });
+
+  test("should handle agent data completeness and ordering", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register multiple agents with different names for ordering test
+    const { client: agentClient, agent: agent1 } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent Charlie",
+      });
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent Alpha",
+    });
+    const { agent: agent3 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent Beta",
+    });
+
+    // Start a competition with multiple agents
+    const competitionName = `Ordering Test Competition ${Date.now()}`;
+    const startResponse = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent1.id, agent2.id, agent3.id],
+    );
+
+    // Test getting competition agents
+    const agentsResponse = (await agentClient.getCompetitionAgents(
+      startResponse.competition.id,
+    )) as CompetitionAgentsResponse;
+
+    // Verify the response
+    expect(agentsResponse.success).toBe(true);
+    expect(agentsResponse.agents.length).toBe(3);
+
+    // Verify positions are sequential
+    agentsResponse.agents.forEach((agent, index) => {
+      expect(agent.position).toBe(index + 1);
+
+      // Verify all required fields are present and have correct types
+      expect(typeof agent.id).toBe("string");
+      expect(typeof agent.name).toBe("string");
+      expect(typeof agent.score).toBe("number");
+      expect(typeof agent.position).toBe("number");
+      expect(typeof agent.portfolioValue).toBe("number");
+      expect(typeof agent.active).toBe("boolean");
+
+      // Optional fields should be null or string
+      if (agent.description !== null) {
+        expect(typeof agent.description).toBe("string");
+      }
+      if (agent.imageUrl !== null) {
+        expect(typeof agent.imageUrl).toBe("string");
+      }
+      if (agent.deactivationReason !== null) {
+        expect(typeof agent.deactivationReason).toBe("string");
+      }
+    });
+  });
+
+  // New test cases for SIWE user authentication
+  test("SIWE users can access competition details endpoint", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a SIWE-authenticated user client
+    const { client: siweClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "SIWE Competition Detail User",
+      userEmail: "siwe-competition-detail@example.com",
+    });
+
+    // Create a competition
+    const competitionName = `SIWE Detail Test Competition ${Date.now()}`;
+    const createResponse = await createTestCompetition(
+      adminClient,
+      competitionName,
+      "Test competition for SIWE user access",
+    );
+
+    // Test SIWE user can get competition details by ID
+    const detailResponse = await siweClient.getCompetition(
+      createResponse.competition.id,
+    );
+
+    // Verify the response
+    expect(detailResponse.success).toBe(true);
+    expect(
+      (detailResponse as CompetitionDetailResponse).competition,
+    ).toBeDefined();
+    expect((detailResponse as CompetitionDetailResponse).competition.id).toBe(
+      createResponse.competition.id,
+    );
+    expect((detailResponse as CompetitionDetailResponse).competition.name).toBe(
+      competitionName,
+    );
+    expect(
+      (detailResponse as CompetitionDetailResponse).competition.status,
+    ).toBe("pending");
+
+    // Test SIWE user gets 404 for non-existent competition
+    const notFoundResponse = await siweClient.getCompetition(
+      "00000000-0000-0000-0000-000000000000",
+    );
+    expect(notFoundResponse.success).toBe(false);
+    expect((notFoundResponse as ErrorResponse).error).toContain("not found");
+  });
+
+  test("SIWE users can access competition agents endpoint", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a SIWE-authenticated user client
+    const { client: siweClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "SIWE Competition Agents User",
+      userEmail: "siwe-competition-agents@example.com",
+    });
+
+    // Register multiple agents for the competition
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "SIWE Test Agent One",
+    });
+
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "SIWE Test Agent Two",
+    });
+
+    // Create and start a competition with multiple agents
+    const competitionName = `SIWE Agents Test Competition ${Date.now()}`;
+    const startResponse = await adminClient.startCompetition({
+      name: competitionName,
+      description: "Test competition for SIWE user agents access",
+      agentIds: [agent1.id, agent2.id],
+      tradingType: CrossChainTradingType.disallowAll,
+    });
+
+    expect(startResponse.success).toBe(true);
+    const competition = (startResponse as StartCompetitionResponse).competition;
+
+    // Test SIWE user can get competition agents
+    const agentsResponse = await siweClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(agentsResponse.success).toBe(true);
+
+    const agentsData = agentsResponse as CompetitionAgentsResponse;
+    expect(agentsData.agents).toHaveLength(2);
+
+    // Verify agent data structure
+    for (const agent of agentsData.agents) {
+      expect(agent.id).toBeDefined();
+      expect(agent.name).toBeDefined();
+      expect(typeof agent.score).toBe("number");
+      expect(typeof agent.position).toBe("number");
+      expect(typeof agent.portfolioValue).toBe("number");
+      expect(typeof agent.active).toBe("boolean");
+    }
+
+    // Test SIWE user gets 404 for non-existent competition
+    const notFoundResponse = await siweClient.getCompetitionAgents(
+      "00000000-0000-0000-0000-000000000000",
+    );
+    expect(notFoundResponse.success).toBe(false);
+    expect((notFoundResponse as ErrorResponse).error).toContain("not found");
+  });
+
+  test("SIWE users can access existing competitions endpoint", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a SIWE-authenticated user client
+    const { client: siweClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "SIWE Competitions List User",
+      userEmail: "siwe-competitions-list@example.com",
+    });
+
+    // Create several competitions in different states
+    const pendingComp = await createTestCompetition(
+      adminClient,
+      `SIWE Pending Competition ${Date.now()}`,
+    );
+
+    // Register an agent for active competition
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "SIWE Active Competition Agent",
+    });
+
+    const activeComp = await startTestCompetition(
+      adminClient,
+      `SIWE Active Competition ${Date.now()}`,
+      [agent.id],
+    );
+
+    // Test SIWE user can get pending competitions
+    const pendingResponse = await siweClient.getCompetitions("pending");
+    expect(pendingResponse.success).toBe(true);
+    expect(
+      (pendingResponse as UpcomingCompetitionsResponse).competitions,
+    ).toBeDefined();
+
+    // Should find our pending competition
+    const foundPending = (
+      pendingResponse as UpcomingCompetitionsResponse
+    ).competitions.find((comp) => comp.id === pendingComp.competition.id);
+    expect(foundPending).toBeDefined();
+
+    // Test SIWE user can get active competitions
+    const activeResponse = await siweClient.getCompetitions("active");
+    expect(activeResponse.success).toBe(true);
+    expect(
+      (activeResponse as UpcomingCompetitionsResponse).competitions,
+    ).toBeDefined();
+
+    // Should find our active competition
+    const foundActive = (
+      activeResponse as UpcomingCompetitionsResponse
+    ).competitions.find((comp) => comp.id === activeComp.competition.id);
+    expect(foundActive).toBeDefined();
+
+    // Test SIWE user can use sorting
+    const sortedResponse = await siweClient.getCompetitions(
+      "pending",
+      "createdAt",
+    );
+    expect(sortedResponse.success).toBe(true);
+    expect(
+      (sortedResponse as UpcomingCompetitionsResponse).competitions,
+    ).toBeDefined();
+  });
+
+  test("SIWE users have same access as agent API key users for competition endpoints", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a SIWE-authenticated user client
+    const { client: siweClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "SIWE Access Comparison User",
+      userEmail: "siwe-access-comparison@example.com",
+    });
+
+    // Create an agent API key authenticated client
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "API Key Access Comparison Agent",
+      });
+
+    // Create and start a competition
+    const competitionName = `Access Comparison Competition ${Date.now()}`;
+    const startResponse = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent.id],
+    );
+
+    const competitionId = startResponse.competition.id;
+
+    // Test both clients can access competition details
+    const siweDetailResponse = await siweClient.getCompetition(competitionId);
+    const agentDetailResponse = await agentClient.getCompetition(competitionId);
+
+    expect(siweDetailResponse.success).toBe(true);
+    expect(agentDetailResponse.success).toBe(true);
+
+    // Both should return the same competition data
+    expect(
+      (siweDetailResponse as CompetitionDetailResponse).competition.id,
+    ).toBe((agentDetailResponse as CompetitionDetailResponse).competition.id);
+    expect(
+      (siweDetailResponse as CompetitionDetailResponse).competition.name,
+    ).toBe((agentDetailResponse as CompetitionDetailResponse).competition.name);
+
+    // Test both clients can access competition agents
+    const siweAgentsResponse =
+      await siweClient.getCompetitionAgents(competitionId);
+    const agentAgentsResponse =
+      await agentClient.getCompetitionAgents(competitionId);
+
+    expect(siweAgentsResponse.success).toBe(true);
+    expect(agentAgentsResponse.success).toBe(true);
+
+    // Both should return the same agents data
+    expect(
+      (siweAgentsResponse as CompetitionAgentsResponse).agents.length,
+    ).toBe((agentAgentsResponse as CompetitionAgentsResponse).agents.length);
+
+    // Test both clients can access competitions list
+    const siweListResponse = await siweClient.getCompetitions("active");
+    const agentListResponse = await agentClient.getCompetitions("active");
+
+    expect(siweListResponse.success).toBe(true);
+    expect(agentListResponse.success).toBe(true);
+
+    // Both should return the same competitions list
+    expect(
+      (siweListResponse as UpcomingCompetitionsResponse).competitions.length,
+    ).toBe(
+      (agentListResponse as UpcomingCompetitionsResponse).competitions.length,
+    );
   });
 });

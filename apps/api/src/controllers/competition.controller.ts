@@ -473,6 +473,147 @@ export function makeCompetitionController(services: ServiceRegistry) {
         next(error);
       }
     },
+
+    /**
+     * Get competition by ID
+     * @param req AuthenticatedRequest object with agent authentication information
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getCompetitionById(
+      req: AuthenticatedRequest,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const agentId = req.agentId;
+        const userId = req.userId;
+        const isAdmin = req.isAdmin === true;
+
+        // Authentication check
+        if (isAdmin) {
+          console.log(
+            `[CompetitionController] Admin requesting competition details`,
+          );
+        } else if (agentId) {
+          console.log(
+            `[CompetitionController] Agent ${agentId} requesting competition details`,
+          );
+        } else if (userId) {
+          console.log(
+            `[CompetitionController] User ${userId} requesting competition details`,
+          );
+        } else {
+          throw new ApiError(401, "Authentication required");
+        }
+
+        // Get competition ID from path parameter
+        const competitionId = req.params.competitionId;
+        if (!competitionId) {
+          throw new ApiError(400, "Competition ID is required");
+        }
+
+        // Get competition details
+        const competition =
+          await services.competitionManager.getCompetition(competitionId);
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
+
+        // Return the competition details
+        res.status(200).json({
+          success: true,
+          competition: competition,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get agents participating in a competition
+     * @param req AuthenticatedRequest object with agent authentication information
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getCompetitionAgents(
+      req: AuthenticatedRequest,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const agentId = req.agentId;
+        const userId = req.userId;
+        const isAdmin = req.isAdmin === true;
+
+        // Authentication check
+        if (isAdmin) {
+          console.log(
+            `[CompetitionController] Admin requesting competition agents`,
+          );
+        } else if (agentId) {
+          console.log(
+            `[CompetitionController] Agent ${agentId} requesting competition agents`,
+          );
+        } else if (userId) {
+          console.log(
+            `[CompetitionController] User ${userId} requesting competition agents`,
+          );
+        } else {
+          throw new ApiError(401, "Authentication required");
+        }
+
+        // Get competition ID from path parameter
+        const competitionId = req.params.competitionId;
+        if (!competitionId) {
+          throw new ApiError(400, "Competition ID is required");
+        }
+
+        // Check if competition exists
+        const competition =
+          await services.competitionManager.getCompetition(competitionId);
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
+
+        // Get leaderboard data for the competition
+        const leaderboard =
+          await services.competitionManager.getLeaderboard(competitionId);
+
+        // Get all agents to get their details
+        const agents = await services.agentManager.getAllAgents();
+        const agentMap = new Map(agents.map((agent) => [agent.id, agent]));
+
+        // Build the response with agent details and competition data
+        const competitionAgents = leaderboard.map((entry, index) => {
+          const agent = agentMap.get(entry.agentId);
+          const isActive = agent?.status === "active";
+
+          return {
+            id: entry.agentId,
+            name: agent ? agent.name : "Unknown Agent",
+            description: agent?.description || null,
+            imageUrl: agent?.imageUrl || null,
+            score: entry.value,
+            position: index + 1,
+            portfolioValue: entry.value,
+            active: isActive,
+            deactivationReason: !isActive
+              ? agent?.deactivationReason || null
+              : null,
+          };
+        });
+
+        // Return the competition agents
+        res.status(200).json({
+          success: true,
+          competitionId: competitionId,
+          agents: competitionAgents,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
   };
 }
 

@@ -346,7 +346,7 @@ export interface UpcomingCompetitionsResponse extends ApiResponse {
 
 // Competition rules response
 export interface CompetitionRulesResponse extends ApiResponse {
-  success: true;
+  competition: Competition;
   rules: {
     tradingRules: string[];
     rateLimits: string[];
@@ -359,6 +359,30 @@ export interface CompetitionRulesResponse extends ApiResponse {
       interval: string;
     };
   };
+}
+
+// Competition detail response
+export interface CompetitionDetailResponse extends ApiResponse {
+  competition: Competition;
+}
+
+// Competition agent interface
+export interface CompetitionAgent {
+  id: string;
+  name: string;
+  description?: string | null;
+  imageUrl?: string | null;
+  score: number;
+  position: number;
+  portfolioValue: number;
+  active: boolean;
+  deactivationReason?: string | null;
+}
+
+// Competition agents response
+export interface CompetitionAgentsResponse extends ApiResponse {
+  competitionId: string;
+  agents: CompetitionAgent[];
 }
 
 /**
