@@ -127,6 +127,12 @@ export interface Agent {
   updatedAt: string;
 }
 
+export interface AgentsGetResponse {
+  success: true;
+  agents: Agent[];
+  metadata: unknown;
+}
+
 // User registration response
 export interface UserRegistrationResponse extends ApiResponse {
   success: true;
@@ -365,7 +371,7 @@ export interface UpcomingCompetitionsResponse extends ApiResponse {
 
 // Competition rules response
 export interface CompetitionRulesResponse extends ApiResponse {
-  success: true;
+  competition: Competition;
   rules: {
     tradingRules: string[];
     rateLimits: string[];
@@ -377,6 +383,40 @@ export interface CompetitionRulesResponse extends ApiResponse {
     portfolioSnapshots: {
       interval: string;
     };
+  };
+}
+
+// Competition detail response
+export interface CompetitionDetailResponse extends ApiResponse {
+  competition: Competition;
+}
+
+// Competition agent interface
+export interface CompetitionAgent {
+  id: string;
+  name: string;
+  description?: string | null;
+  imageUrl?: string | null;
+  score: number;
+  position: number;
+  portfolioValue: number;
+  active: boolean;
+  deactivationReason?: string | null;
+  pnl: number; // Total profit/loss from competition start (USD)
+  pnlPercent: number; // PnL as percentage of starting value
+  change24h: number; // Portfolio value change in last 24 hours (USD)
+  change24hPercent: number; // 24h change as percentage
+}
+
+// Competition agents response
+export interface CompetitionAgentsResponse extends ApiResponse {
+  competitionId: string;
+  agents: CompetitionAgent[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
   };
 }
 

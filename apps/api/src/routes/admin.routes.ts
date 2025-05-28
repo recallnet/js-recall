@@ -570,6 +570,10 @@ export function configureAdminRoutes(
    *                       "twitter": "hey_kso"
    *                     }
    *                   }
+   *               agentWalletAddress:
+   *                 type: string
+   *                 description: Ethereum wallet address (must start with 0x)
+   *                 example: 0x1234567890123456789012345678901234567890
    *     responses:
    *       201:
    *         description: User registered successfully

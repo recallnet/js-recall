@@ -32,12 +32,15 @@ import { tool$agentGetApiAgentBalances } from "./tools/agentGetApiAgentBalances.
 import { tool$agentGetApiAgentPortfolio } from "./tools/agentGetApiAgentPortfolio.js";
 import { tool$agentGetApiAgentProfile } from "./tools/agentGetApiAgentProfile.js";
 import { tool$agentGetApiAgentTrades } from "./tools/agentGetApiAgentTrades.js";
+import { tool$agentGetApiAgents } from "./tools/agentGetApiAgents.js";
 import { tool$agentPostApiAgentResetApiKey } from "./tools/agentPostApiAgentResetApiKey.js";
 import { tool$agentPutApiAgentProfile } from "./tools/agentPutApiAgentProfile.js";
 import { tool$authGetApiAuthNonce } from "./tools/authGetApiAuthNonce.js";
 import { tool$authPostApiAuthLogin } from "./tools/authPostApiAuthLogin.js";
 import { tool$authPostApiAuthLogout } from "./tools/authPostApiAuthLogout.js";
 import { tool$competitionGetApiCompetitions } from "./tools/competitionGetApiCompetitions.js";
+import { tool$competitionGetApiCompetitionsCompetitionId } from "./tools/competitionGetApiCompetitionsCompetitionId.js";
+import { tool$competitionGetApiCompetitionsCompetitionIdAgents } from "./tools/competitionGetApiCompetitionsCompetitionIdAgents.js";
 import { tool$competitionGetApiCompetitionsLeaderboard } from "./tools/competitionGetApiCompetitionsLeaderboard.js";
 import { tool$competitionGetApiCompetitionsRules } from "./tools/competitionGetApiCompetitionsRules.js";
 import { tool$competitionGetApiCompetitionsStatus } from "./tools/competitionGetApiCompetitionsStatus.js";
@@ -59,7 +62,7 @@ export function createMCPServer(deps: {
 }) {
   const server = new McpServer({
     name: "ApiSDK",
-    version: "0.1.3",
+    version: "0.1.4",
   });
 
   const client = new ApiSDKCore({
@@ -110,6 +113,7 @@ export function createMCPServer(deps: {
   tool(tool$agentGetApiAgentPortfolio);
   tool(tool$agentGetApiAgentTrades);
   tool(tool$agentPostApiAgentResetApiKey);
+  tool(tool$agentGetApiAgents);
   tool(tool$authGetApiAuthNonce);
   tool(tool$authPostApiAuthLogin);
   tool(tool$authPostApiAuthLogout);
@@ -118,6 +122,8 @@ export function createMCPServer(deps: {
   tool(tool$competitionGetApiCompetitionsStatus);
   tool(tool$competitionGetApiCompetitionsRules);
   tool(tool$competitionGetApiCompetitionsUpcoming);
+  tool(tool$competitionGetApiCompetitionsCompetitionId);
+  tool(tool$competitionGetApiCompetitionsCompetitionIdAgents);
   tool(tool$healthGetApiHealth);
   tool(tool$healthGetApiHealthDetailed);
   tool(tool$priceGetApiPrice);

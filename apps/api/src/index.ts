@@ -20,6 +20,7 @@ import { siweSessionMiddleware } from "@/middleware/siwe.middleware.js";
 import { configureAdminSetupRoutes } from "@/routes/admin-setup.routes.js";
 import { configureAdminRoutes } from "@/routes/admin.routes.js";
 import { configureAgentRoutes } from "@/routes/agent.routes.js";
+import { configureAgentsRoutes } from "@/routes/agents.routes.js";
 import { configureAuthRoutes } from "@/routes/auth.routes.js";
 import { configureCompetitionsRoutes } from "@/routes/competitions.routes.js";
 import { configureDocsRoutes } from "@/routes/docs.routes.js";
@@ -155,6 +156,7 @@ const priceRoutes = configurePriceRoutes(priceController);
 const tradeRoutes = configureTradeRoutes(tradeController);
 const userRoutes = configureUserRoutes(userController);
 const agentRoutes = configureAgentRoutes(agentController);
+const agentsRoutes = configureAgentsRoutes(agentController);
 
 // Apply routes
 app.use("/api/auth", authRoutes);
@@ -167,6 +169,7 @@ app.use("/api/health", healthRoutes);
 app.use("/api/docs", docsRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/agent", agentRoutes);
+app.use("/api/agents", agentsRoutes);
 
 // Legacy health check endpoint for backward compatibility
 app.get("/health", (_req, res) => {

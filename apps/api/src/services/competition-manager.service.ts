@@ -341,6 +341,92 @@ export class CompetitionManager {
   }
 
   /**
+   * Calculate PnL and 24h change metrics for an agent in a competition
+   * @param competitionId The competition ID
+   * @param agentId The agent ID
+   * @param currentValue The agent's current portfolio value
+   * @returns Object containing pnl, pnlPercent, change24h, change24hPercent
+   */
+  async calculateAgentMetrics(
+    competitionId: string,
+    agentId: string,
+    currentValue: number,
+  ) {
+    try {
+      // Get portfolio snapshots for this agent in this competition
+      const snapshots =
+        await this.portfolioSnapshotter.getAgentPortfolioSnapshots(
+          competitionId,
+          agentId,
+        );
+
+      // Default values
+      let pnl = 0;
+      let pnlPercent = 0;
+      let change24h = 0;
+      let change24hPercent = 0;
+
+      if (snapshots.length > 0) {
+        // Sort snapshots by timestamp (oldest first)
+        const sortedSnapshots = snapshots.sort(
+          (a, b) =>
+            (a.timestamp?.getTime() ?? 0) - (b.timestamp?.getTime() ?? 0),
+        );
+
+        // Get starting value (earliest snapshot)
+        const startingSnapshot = sortedSnapshots[0];
+        const startingValue = startingSnapshot?.totalValue ?? 0;
+
+        // Calculate PnL
+        if (startingValue > 0) {
+          pnl = currentValue - startingValue;
+          pnlPercent = (pnl / startingValue) * 100;
+        }
+
+        // Calculate 24h change
+        const now = new Date();
+        const twentyFourHoursAgo = new Date(
+          now.getTime() - 24 * 60 * 60 * 1000,
+        );
+
+        // Find the snapshot closest to 24h ago
+        let closestSnapshot = null;
+        let smallestTimeDiff = Infinity;
+
+        for (const snapshot of snapshots) {
+          if (snapshot.timestamp) {
+            const timeDiff = Math.abs(
+              snapshot.timestamp.getTime() - twentyFourHoursAgo.getTime(),
+            );
+            if (timeDiff < smallestTimeDiff) {
+              smallestTimeDiff = timeDiff;
+              closestSnapshot = snapshot;
+            }
+          }
+        }
+
+        // Calculate 24h change
+        if (closestSnapshot) {
+          const value24hAgo = closestSnapshot.totalValue;
+          if (value24hAgo > 0) {
+            change24h = currentValue - value24hAgo;
+            change24hPercent = (change24h / value24hAgo) * 100;
+          }
+        }
+      }
+
+      return { pnl, pnlPercent, change24h, change24hPercent };
+    } catch (error) {
+      console.error(
+        `[CompetitionManager] Error calculating metrics for agent ${agentId}:`,
+        error,
+      );
+      // Return default values on error
+      return { pnl: 0, pnlPercent: 0, change24h: 0, change24hPercent: 0 };
+    }
+  }
+
+  /**
    * Check if competition manager is healthy
    * For system health check use
    */

@@ -8,7 +8,12 @@ import {
 import { getLatestPrice } from "@/database/repositories/price-repository.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
-import { SpecificChain } from "@/types/index.js";
+import {
+  AgentFilterSchema,
+  AuthenticatedRequest,
+  PagingParamsSchema,
+  SpecificChain,
+} from "@/types/index.js";
 
 /**
  * Agent Controller
@@ -45,18 +50,7 @@ export function makeAgentController(services: ServiceRegistry) {
         // TODO: we can clean this up with better types that help omit the api key
         res.status(200).json({
           success: true,
-          agent: {
-            id: agent.id,
-            ownerId: agent.ownerId,
-            walletAddress: agent.walletAddress,
-            name: agent.name,
-            description: agent.description,
-            imageUrl: agent.imageUrl,
-            metadata: agent.metadata,
-            status: agent.status,
-            createdAt: agent.createdAt,
-            updatedAt: agent.updatedAt,
-          },
+          agent: services.agentManager.sanitizeAgent(agent),
           owner: {
             id: owner.id,
             walletAddress: owner.walletAddress,
@@ -168,22 +162,43 @@ export function makeAgentController(services: ServiceRegistry) {
 
         res.status(200).json({
           success: true,
-          agent: {
-            id: updatedAgent.id,
-            ownerId: updatedAgent.ownerId,
-            walletAddress: updatedAgent.walletAddress,
-            name: updatedAgent.name,
-            description: updatedAgent.description,
-            email: updatedAgent.email,
-            imageUrl: updatedAgent.imageUrl,
-            metadata: updatedAgent.metadata,
-            status: updatedAgent.status,
-            createdAt: updatedAgent.createdAt,
-            updatedAt: updatedAgent.updatedAt,
-          },
+          agent: services.agentManager.sanitizeAgent(updatedAgent),
         });
       } catch (error) {
         next(error);
+      }
+    },
+
+    async getAgents(
+      req: AuthenticatedRequest,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const pagingParams = PagingParamsSchema.parse(req.query);
+        const filter = req.query.filter
+          ? AgentFilterSchema.parse(req.query.filter)
+          : undefined;
+        const agents = await services.agentManager.getAgents({
+          filter,
+          pagingParams,
+        });
+        const totalCount = await services.agentManager.countAgents(filter);
+
+        // Return the competitions
+        res.status(200).json({
+          success: true,
+          metadata: {
+            total: totalCount,
+            limit: pagingParams.limit,
+            offset: pagingParams.offset,
+          },
+          agents: agents.map(
+            services.agentManager.sanitizeAgent.bind(services.agentManager),
+          ),
+        });
+      } catch (err) {
+        next(err);
       }
     },
 

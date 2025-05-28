@@ -10,7 +10,7 @@ import {
 } from "@recallnet/ui2/components/tabs";
 
 import { CompetitionTable } from "@/components/competition-table";
-import { CompetitionResponse } from "@/types";
+import { CompetitionResponse } from "@/types/competition";
 
 interface RecentlyEndedSectionProps {
   competitions: CompetitionResponse[];

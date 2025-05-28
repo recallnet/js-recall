@@ -26,14 +26,10 @@ const categories = [
 export function LeaderboardSection() {
   const [selected, setSelected] = React.useState(LeaderboardTypes.TRADING);
   const [limit, setLimit] = React.useState(10);
-  const { data: leaderboard, isLoading } = useLeaderboards({});
-  const toRender = React.useMemo(
-    () =>
-      leaderboard && leaderboard.agents
-        ? leaderboard?.agents.slice(0, limit)
-        : [],
-    [leaderboard, limit],
-  );
+  const { data: leaderboard, isLoading } = useLeaderboards({
+    limit,
+    offset: 0,
+  });
 
   return (
     <div className="mb-10">
@@ -60,7 +56,7 @@ export function LeaderboardSection() {
                   <Skeleton />
                 ) : (
                   <div className="text-lg text-white">
-                    {leaderboard?.stats?.totalTrades}
+                    {leaderboard?.stats.totalTrades}
                   </div>
                 )}
               </div>
@@ -70,7 +66,7 @@ export function LeaderboardSection() {
                   <Skeleton />
                 ) : (
                   <div className="text-lg text-white">
-                    {leaderboard?.stats?.activeAgents}
+                    {leaderboard?.stats.activeAgents}
                   </div>
                 )}
               </div>
@@ -81,7 +77,7 @@ export function LeaderboardSection() {
                 ) : (
                   <div className="text-lg text-white">
                     <BigNumberDisplay
-                      value={leaderboard?.stats?.totalVolume.toString() || "0"}
+                      value={leaderboard?.stats.totalVolume.toString() || ""}
                       decimals={0}
                     />
                   </div>
@@ -130,7 +126,7 @@ export function LeaderboardSection() {
         ) : (
           <LeaderboardTable
             onExtend={() => setLimit((prev) => prev + 10)}
-            agents={toRender}
+            agents={leaderboard?.agents || []}
             loaded
           />
         )}

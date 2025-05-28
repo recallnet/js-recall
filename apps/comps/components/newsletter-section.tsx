@@ -15,6 +15,7 @@ import {
   FormMessage,
 } from "@recallnet/ui2/components/shadcn/form";
 import { Input } from "@recallnet/ui2/components/shadcn/input";
+import { cn } from "@recallnet/ui2/lib/utils";
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -22,7 +23,11 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-export const NewsletterSection: React.FC = () => {
+export const NewsletterSection: React.FC = ({
+  className,
+}: {
+  className?: string;
+}) => {
   const [email, setEmail] = useState("");
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -40,7 +45,10 @@ export const NewsletterSection: React.FC = () => {
     <Card
       corner="bottom-left"
       cropSize={50}
-      className="flex h-[300px] w-[450px] items-center justify-center bg-gray-600"
+      className={cn(
+        className,
+        "flex h-[300px] w-[450px] items-center justify-center bg-gray-600",
+      )}
     >
       <Card
         corner="bottom-left"

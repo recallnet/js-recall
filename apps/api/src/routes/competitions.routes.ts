@@ -454,5 +454,228 @@ export function configureCompetitionsRoutes(
    */
   router.get("/upcoming", controller.getUpcomingCompetitions);
 
+  /**
+   * @openapi
+   * /api/competitions/{competitionId}:
+   *   get:
+   *     tags:
+   *       - Competition
+   *     summary: Get competition details by ID
+   *     description: Get detailed information about a specific competition including all metadata
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: The ID of the competition to retrieve
+   *     responses:
+   *       200:
+   *         description: Competition details retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 competition:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                       description: Competition ID
+   *                     name:
+   *                       type: string
+   *                       description: Competition name
+   *                     description:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Competition description
+   *                     externalLink:
+   *                       type: string
+   *                       nullable: true
+   *                       description: External URL for competition details
+   *                     imageUrl:
+   *                       type: string
+   *                       nullable: true
+   *                       description: URL to competition image
+   *                     status:
+   *                       type: string
+   *                       enum: [pending, active, completed]
+   *                       description: Competition status
+   *                     crossChainTradingType:
+   *                       type: string
+   *                       enum: [disallowAll, disallowXParent, allow]
+   *                       description: The type of cross-chain trading allowed in this competition
+   *                     startDate:
+   *                       type: string
+   *                       format: date-time
+   *                       nullable: true
+   *                       description: Competition start date (null for pending competitions)
+   *                     endDate:
+   *                       type: string
+   *                       format: date-time
+   *                       nullable: true
+   *                       description: Competition end date (null for pending/active competitions)
+   *                     createdAt:
+   *                       type: string
+   *                       format: date-time
+   *                       description: When the competition was created
+   *                     updatedAt:
+   *                       type: string
+   *                       format: date-time
+   *                       description: When the competition was last updated
+   *       400:
+   *         description: Bad request - Invalid competition ID format
+   *       404:
+   *         description: Competition not found
+   *       401:
+   *         description: Unauthorized - Missing or invalid authentication
+   *       500:
+   *         description: Server error
+   */
+  router.get("/:competitionId", controller.getCompetitionById);
+
+  /**
+   * @openapi
+   * /api/competitions/{competitionId}/agents:
+   *   get:
+   *     tags:
+   *       - Competition
+   *     summary: Get agents participating in a competition
+   *     description: Get a list of all agents participating in a specific competition with their scores and positions
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: The ID of the competition to get agents for
+   *       - in: query
+   *         name: filter
+   *         schema:
+   *           type: string
+   *         required: false
+   *         description: Optional filter by agent name
+   *       - in: query
+   *         name: sort
+   *         schema:
+   *           type: string
+   *           enum: [position, name, name_desc, created, created_desc, status]
+   *           default: position
+   *         required: false
+   *         description: Sort order for results
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: integer
+   *           minimum: 1
+   *           maximum: 100
+   *           default: 50
+   *         required: false
+   *         description: Maximum number of results to return
+   *       - in: query
+   *         name: offset
+   *         schema:
+   *           type: integer
+   *           minimum: 0
+   *           default: 0
+   *         required: false
+   *         description: Number of results to skip for pagination
+   *     responses:
+   *       200:
+   *         description: Competition agents retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 competitionId:
+   *                   type: string
+   *                   description: The ID of the competition
+   *                 agents:
+   *                   type: array
+   *                   description: List of agents participating in the competition
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         description: Agent ID
+   *                       name:
+   *                         type: string
+   *                         description: Agent name
+   *                       description:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Agent description
+   *                       imageUrl:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Agent image URL
+   *                       score:
+   *                         type: number
+   *                         description: Agent's current score/portfolio value
+   *                       position:
+   *                         type: integer
+   *                         description: Agent's current position in the competition
+   *                       portfolioValue:
+   *                         type: number
+   *                         description: Current portfolio value in USD
+   *                       active:
+   *                         type: boolean
+   *                         description: Whether the agent is currently active
+   *                       deactivationReason:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Reason for deactivation if agent is inactive
+   *                       pnl:
+   *                         type: number
+   *                         description: Total profit/loss from competition start (USD)
+   *                       pnlPercent:
+   *                         type: number
+   *                         description: PnL as percentage of starting value
+   *                       change24h:
+   *                         type: number
+   *                         description: Portfolio value change in last 24 hours (USD)
+   *                       change24hPercent:
+   *                         type: number
+   *                         description: 24h change as percentage
+   *                 pagination:
+   *                   type: object
+   *                   description: Pagination metadata
+   *                   properties:
+   *                     total:
+   *                       type: integer
+   *                       description: Total number of agents in the competition
+   *                     limit:
+   *                       type: integer
+   *                       description: Maximum number of results returned
+   *                     offset:
+   *                       type: integer
+   *                       description: Number of results skipped
+   *                     hasMore:
+   *                       type: boolean
+   *                       description: Whether there are more results available
+   *       400:
+   *         description: Bad request - Invalid competition ID format or query parameters
+   *       404:
+   *         description: Competition not found
+   *       401:
+   *         description: Unauthorized - Missing or invalid authentication
+   *       500:
+   *         description: Server error
+   */
+  router.get("/:competitionId/agents", controller.getCompetitionAgents);
+
   return router;
 }

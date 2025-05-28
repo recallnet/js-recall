@@ -9,6 +9,8 @@ import { tool$agentGetApiAgentTrades } from "@recallnet/api-sdk/mcp-server/tools
 import { tool$agentPostApiAgentResetApiKey } from "@recallnet/api-sdk/mcp-server/tools/agentPostApiAgentResetApiKey.js";
 import { tool$agentPutApiAgentProfile } from "@recallnet/api-sdk/mcp-server/tools/agentPutApiAgentProfile.js";
 import { tool$competitionGetApiCompetitions } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitions.js";
+import { tool$competitionGetApiCompetitionsCompetitionId } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionsCompetitionId.js";
+import { tool$competitionGetApiCompetitionsCompetitionIdAgents } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionsCompetitionIdAgents.js";
 import { tool$competitionGetApiCompetitionsLeaderboard } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionsLeaderboard.js";
 import { tool$competitionGetApiCompetitionsRules } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionsRules.js";
 import { tool$competitionGetApiCompetitionsStatus } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionsStatus.js";
@@ -34,6 +36,8 @@ const USER_TOOLS = [
 
   // Competition tools
   tool$competitionGetApiCompetitions,
+  tool$competitionGetApiCompetitionsCompetitionId,
+  tool$competitionGetApiCompetitionsCompetitionIdAgents,
   tool$competitionGetApiCompetitionsLeaderboard,
   tool$competitionGetApiCompetitionsStatus,
   tool$competitionGetApiCompetitionsRules,

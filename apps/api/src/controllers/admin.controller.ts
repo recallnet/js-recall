@@ -242,6 +242,7 @@ export function makeAdminController(services: ServiceRegistry) {
           agentDescription,
           agentImageUrl,
           agentMetadata,
+          agentWalletAddress,
         } = req.body;
 
         // Validate required parameters
@@ -288,6 +289,7 @@ export function makeAdminController(services: ServiceRegistry) {
                 agentDescription,
                 agentImageUrl,
                 agentMetadata,
+                agentWalletAddress,
               );
             } catch (agentError) {
               console.error(

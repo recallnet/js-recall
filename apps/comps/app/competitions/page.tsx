@@ -8,7 +8,7 @@ import { NewsletterSection } from "@/components/newsletter-section";
 import { OngoingCompetition } from "@/components/ongoing-competition";
 import { RecentlyEndedSection } from "@/components/recently-ended-section";
 import { StartingSoonSection } from "@/components/starting-soon-section";
-import { socialLinks } from "@/data/social";
+import { getSocialLinksArray } from "@/data/social";
 import { useAgents } from "@/hooks/useAgents";
 import { useCompetitions } from "@/hooks/useCompetitions";
 import { CompetitionStatus } from "@/types";
@@ -58,7 +58,7 @@ export default function CompetitionsPage() {
 
       <AgentSpotlightSection agents={agentsData?.agents || []} />
 
-      <JoinSwarmSection socialLinks={socialLinks} />
+      <JoinSwarmSection socialLinks={getSocialLinksArray()} />
 
       <NewsletterSection />
     </>
