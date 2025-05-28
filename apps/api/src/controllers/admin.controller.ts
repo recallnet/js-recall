@@ -10,8 +10,8 @@ import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
   AgentSearchParams,
-  CompetitionStatus,
-  CrossChainTradingType,
+  COMPETITION_STATUS,
+  CROSS_CHAIN_TRADING_TYPE,
   UserSearchParams,
 } from "@/types/index.js";
 
@@ -511,7 +511,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const competition = await services.competitionManager.createCompetition(
           name,
           description,
-          tradingType || CrossChainTradingType.disallowAll,
+          tradingType || CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
           externalLink,
           imageUrl,
         );
@@ -564,7 +564,7 @@ export function makeAdminController(services: ServiceRegistry) {
           }
 
           // Verify competition is in PENDING state
-          if (competition.status !== CompetitionStatus.PENDING) {
+          if (competition.status !== COMPETITION_STATUS.PENDING) {
             throw new ApiError(
               400,
               `Competition is already in ${competition.status} state and cannot be started`,
@@ -583,7 +583,7 @@ export function makeAdminController(services: ServiceRegistry) {
           competition = await services.competitionManager.createCompetition(
             name,
             description,
-            tradingType || CrossChainTradingType.disallowAll,
+            tradingType || CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
             externalLink,
             imageUrl,
           );

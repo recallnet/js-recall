@@ -6,10 +6,10 @@ import { db } from "@/database/db.js";
 import { agents } from "@/database/schema/core/defs.js";
 import {
   AgentProfileResponse,
+  CROSS_CHAIN_TRADING_TYPE,
   CompetitionRulesResponse,
   CompetitionStatusResponse,
   CreateCompetitionResponse,
-  CrossChainTradingType,
   EndCompetitionResponse,
   LeaderboardResponse,
   UpcomingCompetitionsResponse,
@@ -481,17 +481,17 @@ describe("Competition API", () => {
     const createResponse1 = (await adminClient.createCompetition(
       comp1Name,
       "Test competition 1",
-      CrossChainTradingType.allow,
+      CROSS_CHAIN_TRADING_TYPE.ALLOW,
     )) as CreateCompetitionResponse;
     const createResponse2 = (await adminClient.createCompetition(
       comp2Name,
       "Test competition 2",
-      CrossChainTradingType.disallowAll,
+      CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
     )) as CreateCompetitionResponse;
     const createResponse3 = (await adminClient.createCompetition(
       comp3Name,
       "Test competition 3",
-      CrossChainTradingType.allow,
+      CROSS_CHAIN_TRADING_TYPE.ALLOW,
     )) as CreateCompetitionResponse;
 
     // Verify all competitions were created and in PENDING state
@@ -561,7 +561,7 @@ describe("Competition API", () => {
     await adminClient.createCompetition(
       `Upcoming Competition ${Date.now()}`,
       "Test competition 1",
-      CrossChainTradingType.allow,
+      CROSS_CHAIN_TRADING_TYPE.ALLOW,
     );
 
     // Call the new endpoint to get competitions sorted by start date ascending
@@ -596,19 +596,19 @@ describe("Competition API", () => {
     await adminClient.createCompetition(
       comp1Name,
       "Test competition 1",
-      CrossChainTradingType.allow,
+      CROSS_CHAIN_TRADING_TYPE.ALLOW,
     );
     await wait(1200);
     await adminClient.createCompetition(
       comp2Name,
       "Test competition 2",
-      CrossChainTradingType.disallowAll,
+      CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
     );
     await wait(1200);
     await adminClient.createCompetition(
       comp3Name,
       "Test competition 3",
-      CrossChainTradingType.allow,
+      CROSS_CHAIN_TRADING_TYPE.ALLOW,
     );
 
     // Call the new endpoint to get competitions sorted by start date ascending

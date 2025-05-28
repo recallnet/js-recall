@@ -24,7 +24,11 @@ import {
   InsertPortfolioSnapshot,
   InsertPortfolioTokenValue,
 } from "@/database/schema/trading/types.js";
-import { CompetitionStatus, PagingParams } from "@/types/index.js";
+import {
+  COMPETITION_STATUS,
+  CompetitionStatus,
+  PagingParams,
+} from "@/types/index.js";
 
 import { getSort } from "./helpers.js";
 import { PartialExcept } from "./types.js";
@@ -238,7 +242,7 @@ export async function findActive() {
         competitions,
         eq(tradingCompetitions.competitionId, competitions.id),
       )
-      .where(eq(competitions.status, CompetitionStatus.ACTIVE))
+      .where(eq(competitions.status, COMPETITION_STATUS.ACTIVE))
       .limit(1);
     return result;
   } catch (error) {

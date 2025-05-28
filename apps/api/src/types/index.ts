@@ -207,7 +207,7 @@ export interface UserSearchParams {
   email?: string;
   name?: string;
   walletAddress?: string;
-  status?: "active" | "suspended" | "deleted";
+  status?: ActorStatus;
 }
 
 /**
@@ -216,7 +216,7 @@ export interface UserSearchParams {
 export interface AgentSearchParams {
   name?: string;
   ownerId?: string;
-  status?: "active" | "suspended" | "deleted";
+  status?: ActorStatus;
 }
 
 /**
@@ -226,7 +226,7 @@ export interface AdminSearchParams {
   username?: string;
   email?: string;
   name?: string;
-  status?: "active" | "suspended";
+  status?: ActorStatus;
 }
 
 /**
@@ -239,7 +239,7 @@ export interface User {
   email?: string;
   imageUrl?: string;
   metadata?: UserMetadata;
-  status: "active" | "suspended" | "deleted";
+  status: ActorStatus;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -256,7 +256,7 @@ export interface Agent {
   imageUrl?: string;
   apiKey: string;
   metadata?: AgentMetadata;
-  status: "active" | "suspended" | "deleted";
+  status: ActorStatus;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -273,20 +273,41 @@ export interface Admin {
   name?: string;
   imageUrl?: string;
   metadata?: AdminMetadata;
-  status: "active" | "suspended";
+  status: ActorStatus;
   lastLoginAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
 
 /**
- * Competition status enum
+ * Cross-chain trading types values for zod or database enum.
  */
-export enum CrossChainTradingType {
-  disallowAll = "disallowAll",
-  disallowXParent = "disallowXParent",
-  allow = "allow",
-}
+export const CROSS_CHAIN_TRADING_TYPE_VALUES = [
+  "disallowAll",
+  "disallowXParent",
+  "allow",
+] as const;
+
+/**
+ * Cross-chain trading types values.
+ */
+export const CROSS_CHAIN_TRADING_TYPE = {
+  DISALLOW_ALL: "disallowAll",
+  DISALLOW_X_PARENT: "disallowXParent",
+  ALLOW: "allow",
+} as const;
+
+/**
+ * Zod schema for the cross-chain trading type.
+ */
+export const CrossChainTradingTypeSchema = z.enum(
+  CROSS_CHAIN_TRADING_TYPE_VALUES,
+);
+
+/**
+ * Cross-chain trading type.
+ */
+export type CrossChainTradingType = z.infer<typeof CrossChainTradingTypeSchema>;
 
 /**
  * Competition interface
@@ -362,18 +383,63 @@ export interface LoginResponse {
   wallet?: string;
 }
 
-// Zod definitions allow user input validation at runtime and define types
+/**
+ * Actor (user, agent, admin) status values for zod or database enum.
+ */
+export const ACTOR_STATUS_VALUES = [
+  "active",
+  "inactive",
+  "suspended",
+  "deleted",
+] as const;
 
 /**
- * Competition status enum
+ * Actor (user, agent, admin) statuses.
  */
-export enum CompetitionStatus {
-  PENDING = "pending",
-  ACTIVE = "active",
-  COMPLETED = "completed",
-}
-// TODO: zod discourages using typescript enums https://zod.dev/api?id=enums https://www.totaltypescript.com/why-i-dont-like-typescript-enums
-export const CompetitionStatusSchema = z.enum(CompetitionStatus);
+export const ACTOR_STATUS = {
+  ACTIVE: "active",
+  INACTIVE: "inactive",
+  SUSPENDED: "suspended",
+  DELETED: "deleted",
+} as const;
+
+/**
+ * Zod schema for the status of a user, agent, or admin.
+ */
+export const ActorStatusSchema = z.enum(ACTOR_STATUS_VALUES);
+
+/**
+ * Status of a user, agent, or admin.
+ */
+export type ActorStatus = z.infer<typeof ActorStatusSchema>;
+
+/**
+ * Competition status values for zod or database enum.
+ */
+export const COMPETITION_STATUS_VALUES = [
+  "pending",
+  "active",
+  "ended",
+] as const;
+
+/**
+ * Competition statuses.
+ */
+export const COMPETITION_STATUS = {
+  PENDING: "pending",
+  ACTIVE: "active",
+  ENDED: "ended",
+} as const;
+
+/**
+ * Zod schema for the status of a competition.
+ */
+export const CompetitionStatusSchema = z.enum(COMPETITION_STATUS_VALUES);
+
+/**
+ * Status of a competition.
+ */
+export type CompetitionStatus = z.infer<typeof CompetitionStatusSchema>;
 
 /**
  * Query string parameters that handle sorting and pagination

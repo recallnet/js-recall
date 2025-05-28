@@ -6,7 +6,7 @@ import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
   AuthenticatedRequest,
-  CompetitionStatus,
+  COMPETITION_STATUS,
   CompetitionStatusSchema,
   PagingParamsSchema,
 } from "@/types/index.js";
@@ -284,7 +284,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
             );
           }
           // AgentId is present, verify participation in the active competition
-          if (activeCompetition.status !== CompetitionStatus.ACTIVE) {
+          if (activeCompetition.status !== COMPETITION_STATUS.ACTIVE) {
             // This check might be redundant if getActiveCompetition already ensures this,
             // but keeping for safety to ensure agent is not trying to get rules for a non-active comp.
             throw new ApiError(

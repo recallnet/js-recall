@@ -2,6 +2,7 @@ import {
   foreignKey,
   index,
   jsonb,
+  pgEnum,
   pgTable,
   primaryKey,
   text,
@@ -10,6 +11,24 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
+
+import {
+  ACTOR_STATUS_VALUES,
+  COMPETITION_STATUS_VALUES,
+} from "@/types/index.js";
+
+/**
+ * Statuses for users, agents, and admins.
+ */
+export const actorStatus = pgEnum("actor_status", ACTOR_STATUS_VALUES);
+
+/**
+ * Defines the possible statuses for competitions.
+ */
+export const competitionStatus = pgEnum(
+  "competition_status",
+  COMPETITION_STATUS_VALUES,
+);
 
 /**
  * Users represent the human owners of agents
@@ -23,7 +42,7 @@ export const users = pgTable(
     email: varchar({ length: 100 }),
     imageUrl: text("image_url"),
     metadata: jsonb(),
-    status: varchar({ length: 20 }).default("active").notNull(), // 'active', 'suspended', 'deleted'
+    status: actorStatus("status").default("active").notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
     })
@@ -56,7 +75,7 @@ export const agents = pgTable(
     imageUrl: text("image_url"),
     apiKey: varchar("api_key", { length: 400 }).notNull(),
     metadata: jsonb(),
-    status: varchar({ length: 20 }).default("active").notNull(), // 'active', 'suspended', 'deleted'
+    status: actorStatus("status").default("active").notNull(),
     deactivationReason: text("deactivation_reason"),
     deactivationDate: timestamp("deactivation_date", {
       withTimezone: true,
@@ -102,7 +121,7 @@ export const admins = pgTable(
     name: varchar({ length: 100 }),
     imageUrl: text("image_url"),
     metadata: jsonb(),
-    status: varchar({ length: 20 }).default("active").notNull(), // 'active', 'suspended'
+    status: actorStatus("status").default("active").notNull(),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     createdAt: timestamp("created_at", {
       withTimezone: true,
@@ -136,7 +155,7 @@ export const competitions = pgTable(
     imageUrl: text("image_url"),
     startDate: timestamp("start_date", { withTimezone: true }),
     endDate: timestamp("end_date", { withTimezone: true }),
-    status: varchar({ length: 20 }).notNull(),
+    status: competitionStatus("status").notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
     }).defaultNow(),

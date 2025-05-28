@@ -9,7 +9,7 @@ import { InsertTrade } from "@/database/schema/trading/types.js";
 import {
   BalancesResponse,
   BlockchainType,
-  CrossChainTradingType,
+  CROSS_CHAIN_TRADING_TYPE,
   ErrorResponse,
   PortfolioResponse,
   PriceResponse,
@@ -75,7 +75,7 @@ describe("Trading API", () => {
     (await adminClient.startCompetition({
       name: competitionName,
       agentIds: [agent.id],
-      tradingType: CrossChainTradingType.allow,
+      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
     })) as StartCompetitionResponse;
 
     // Wait for balances to be properly initialized
@@ -756,7 +756,7 @@ describe("Trading API", () => {
     (await adminClient.startCompetition({
       name: competitionName,
       agentIds: [agent.id],
-      tradingType: CrossChainTradingType.allow,
+      tradingType: CROSS_CHAIN_TRADING_TYPE.ALLOW,
     })) as StartCompetitionResponse;
 
     // Wait for balances to be properly initialized
@@ -1172,7 +1172,7 @@ describe("Trading API", () => {
     const competitionResponse = await adminClient.startCompetition({
       name: competitionName,
       agentIds: [agent.id],
-      tradingType: CrossChainTradingType.disallowAll,
+      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
     });
 
     expect(competitionResponse.success).toBe(true);
@@ -1233,7 +1233,7 @@ describe("Trading API", () => {
     const secondCompetitionResponse = await adminClient.startCompetition({
       name: secondCompetitionName,
       agentIds: [agent.id],
-      tradingType: CrossChainTradingType.allow,
+      tradingType: CROSS_CHAIN_TRADING_TYPE.ALLOW,
     });
 
     expect(secondCompetitionResponse.success).toBe(true);
@@ -1331,7 +1331,7 @@ describe("Trading API", () => {
     const competitionResponse = await adminClient.startCompetition({
       name: competitionName,
       agentIds: [agent.id],
-      tradingType: CrossChainTradingType.disallowAll,
+      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
     });
 
     expect(competitionResponse.success).toBe(true);
@@ -1389,7 +1389,7 @@ describe("Trading API", () => {
     const secondCompetitionResponse = await adminClient.startCompetition({
       name: secondCompetitionName,
       agentIds: [agent.id],
-      tradingType: CrossChainTradingType.allow,
+      tradingType: CROSS_CHAIN_TRADING_TYPE.ALLOW,
     });
 
     expect(secondCompetitionResponse.success).toBe(true);
@@ -1443,7 +1443,7 @@ describe("Trading API", () => {
     const competitionResponse = await adminClient.startCompetition({
       name: competitionName,
       agentIds: [agent.id],
-      tradingType: CrossChainTradingType.disallowXParent,
+      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_X_PARENT,
     });
 
     expect(competitionResponse.success).toBe(true);
@@ -1939,7 +1939,7 @@ describe("Trading API", () => {
     (await adminClient.startCompetition({
       name: competitionName,
       agentIds: [agent.id],
-      tradingType: CrossChainTradingType.allow,
+      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
     })) as StartCompetitionResponse;
 
     // Wait for balances to be properly initialized

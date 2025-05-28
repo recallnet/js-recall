@@ -37,29 +37,38 @@ export enum SpecificChain {
   SVM = "svm",
 }
 
-// Cross-chain trading type enum
-export enum CrossChainTradingType {
-  disallowAll = "disallowAll",
-  disallowXParent = "disallowXParent",
-  allow = "allow",
-}
+// Cross-chain trading type values
+export const CROSS_CHAIN_TRADING_TYPE = {
+  DISALLOW_ALL: "disallowAll",
+  DISALLOW_X_PARENT: "disallowXParent",
+  ALLOW: "allow",
+} as const;
 
-// Competition status
-export enum CompetitionStatus {
-  PENDING = "pending",
-  ACTIVE = "active",
-  COMPLETED = "completed",
-}
+// Cross-chain trading type
+export type CrossChainTradingType =
+  (typeof CROSS_CHAIN_TRADING_TYPE)[keyof typeof CROSS_CHAIN_TRADING_TYPE];
 
-// Portfolio source
-export enum PortfolioSource {
-  SNAPSHOT = "snapshot",
-  LIVE_CALCULATION = "live-calculation",
-}
+// Competition status values
+export const COMPETITION_STATUS = {
+  PENDING: "pending",
+  ACTIVE: "active",
+  ENDED: "ended",
+} as const;
 
 /**
  * USER AND AGENT TYPES
  */
+
+// User, admin, agent status
+export const ACTOR_STATUS = {
+  ACTIVE: "active",
+  INACTIVE: "inactive",
+  SUSPENDED: "suspended",
+  DELETED: "deleted",
+} as const;
+
+// Actor status
+export type ActorStatus = (typeof ACTOR_STATUS)[keyof typeof ACTOR_STATUS];
 
 // User interface
 export interface User {
@@ -70,7 +79,7 @@ export interface User {
   imageUrl?: string;
   isAdmin: boolean;
   metadata?: Record<string, unknown>;
-  status: "active" | "inactive" | "suspended" | "deleted";
+  status: ActorStatus;
   createdAt: string;
   updatedAt: string;
 }
@@ -111,7 +120,7 @@ export interface Agent {
   imageUrl?: string;
   apiKey?: string; // Only included in certain admin responses
   metadata?: AgentMetadata;
-  status: "active" | "inactive" | "suspended" | "deleted";
+  status: ActorStatus;
   deactivationReason?: string;
   deactivationDate?: string;
   createdAt: string;
@@ -176,7 +185,7 @@ export interface AgentApiKeyResponse extends ApiResponse {
 }
 
 /**
- * TRADING TYPES (UPDATED FOR AGENTS)
+ * TRADING TYPES
  */
 
 // Token balance type
@@ -261,8 +270,18 @@ export interface TradeExecutionParams {
 }
 
 /**
- * COMPETITION TYPES (UPDATED FOR AGENTS)
+ * COMPETITION TYPES
  */
+
+// Competition status
+export type CompetitionStatus =
+  (typeof COMPETITION_STATUS)[keyof typeof COMPETITION_STATUS];
+
+// Portfolio source
+export enum PortfolioSource {
+  SNAPSHOT = "snapshot",
+  LIVE_CALCULATION = "live-calculation",
+}
 
 // Competition details
 export interface Competition {
@@ -362,7 +381,7 @@ export interface CompetitionRulesResponse extends ApiResponse {
 }
 
 /**
- * PORTFOLIO SNAPSHOTS (UPDATED FOR AGENTS)
+ * PORTFOLIO SNAPSHOTS
  */
 
 // Portfolio snapshot
@@ -547,7 +566,7 @@ export interface AdminSearchUsersAndAgentsResponse {
       email: string | null;
       imageUrl: string | null;
       metadata: unknown;
-      status: "active" | "suspended" | "deleted";
+      status: ActorStatus;
       createdAt: Date;
       updatedAt: Date;
     }[];
@@ -560,7 +579,7 @@ export interface AdminSearchUsersAndAgentsResponse {
       imageUrl: string | null;
       apiKey: string;
       metadata: unknown;
-      status: "active" | "suspended" | "deleted";
+      status: ActorStatus;
       createdAt: Date;
       updatedAt: Date;
     }[];
