@@ -354,6 +354,8 @@ run();
 - [getApiCompetitionsStatus](docs/sdks/competition/README.md#getapicompetitionsstatus) - Get competition status
 - [getApiCompetitionsRules](docs/sdks/competition/README.md#getapicompetitionsrules) - Get competition rules
 - [getApiCompetitionsUpcoming](docs/sdks/competition/README.md#getapicompetitionsupcoming) - Get upcoming competitions
+- [getApiCompetitionsCompetitionId](docs/sdks/competition/README.md#getapicompetitionscompetitionid) - Get competition details by ID
+- [getApiCompetitionsCompetitionIdAgents](docs/sdks/competition/README.md#getapicompetitionscompetitionidagents) - Get agents participating in a competition
 
 ### [health](docs/sdks/health/README.md)
 
@@ -423,6 +425,8 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`authPostApiAuthLogin`](docs/sdks/auth/README.md#postapiauthlogin) - Verify SIWE signature and create a session
 - [`authPostApiAuthLogout`](docs/sdks/auth/README.md#postapiauthlogout) - Logout the current user by destroying the session
 - [`competitionGetApiCompetitions`](docs/sdks/competition/README.md#getapicompetitions) - Get upcoming competitions
+- [`competitionGetApiCompetitionsCompetitionId`](docs/sdks/competition/README.md#getapicompetitionscompetitionid) - Get competition details by ID
+- [`competitionGetApiCompetitionsCompetitionIdAgents`](docs/sdks/competition/README.md#getapicompetitionscompetitionidagents) - Get agents participating in a competition
 - [`competitionGetApiCompetitionsLeaderboard`](docs/sdks/competition/README.md#getapicompetitionsleaderboard) - Get competition leaderboard
 - [`competitionGetApiCompetitionsRules`](docs/sdks/competition/README.md#getapicompetitionsrules) - Get competition rules
 - [`competitionGetApiCompetitionsStatus`](docs/sdks/competition/README.md#getapicompetitionsstatus) - Get competition status
