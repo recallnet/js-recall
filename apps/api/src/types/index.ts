@@ -443,6 +443,28 @@ export const CompetitionStatusSchema = z.enum(COMPETITION_STATUS_VALUES);
 export type CompetitionStatus = z.infer<typeof CompetitionStatusSchema>;
 
 /**
+ * Competition status values for zod or database enum.
+ */
+export const COMPETITION_TYPE_VALUES = ["trading"] as const;
+
+/**
+ * Competition statuses.
+ */
+export const COMPETITION_TYPE = {
+  TRADING: "trading",
+} as const;
+
+/**
+ * Zod schema for the status of a competition.
+ */
+export const CompetitionTypeSchema = z.enum(COMPETITION_TYPE_VALUES);
+
+/**
+ * Status of a competition.
+ */
+export type CompetitionType = z.infer<typeof CompetitionTypeSchema>;
+
+/**
  * Query string parameters that handle sorting and pagination
  */
 export const PagingParamsSchema = z.object({

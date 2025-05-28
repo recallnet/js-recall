@@ -15,6 +15,7 @@ import {
 import {
   ACTOR_STATUS_VALUES,
   COMPETITION_STATUS_VALUES,
+  COMPETITION_TYPE_VALUES,
 } from "@/types/index.js";
 
 /**
@@ -28,6 +29,14 @@ export const actorStatus = pgEnum("actor_status", ACTOR_STATUS_VALUES);
 export const competitionStatus = pgEnum(
   "competition_status",
   COMPETITION_STATUS_VALUES,
+);
+
+/**
+ * Defines the possible types for competitions.
+ */
+export const competitionType = pgEnum(
+  "competition_type",
+  COMPETITION_TYPE_VALUES,
 );
 
 /**
@@ -152,6 +161,7 @@ export const competitions = pgTable(
     id: uuid().primaryKey().notNull(),
     name: varchar({ length: 100 }).notNull(),
     description: text(),
+    type: competitionType("type").default("trading").notNull(),
     externalLink: text("external_link"),
     imageUrl: text("image_url"),
     startDate: timestamp("start_date", { withTimezone: true }),

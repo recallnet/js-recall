@@ -508,7 +508,7 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async createCompetition(req: Request, res: Response, next: NextFunction) {
       try {
-        const { name, description, tradingType, externalLink, imageUrl } =
+        const { name, description, tradingType, externalLink, imageUrl, type } =
           req.body;
 
         // Validate required parameters
@@ -523,6 +523,7 @@ export function makeAdminController(services: ServiceRegistry) {
           tradingType || CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
           externalLink,
           imageUrl,
+          type,
         );
 
         // Return the created competition

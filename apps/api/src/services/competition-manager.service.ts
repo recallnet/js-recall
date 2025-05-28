@@ -20,9 +20,11 @@ import {
 } from "@/services/index.js";
 import {
   COMPETITION_STATUS,
+  COMPETITION_TYPE,
   CROSS_CHAIN_TRADING_TYPE,
   CompetitionStatus,
   CompetitionStatusSchema,
+  CompetitionType,
   CrossChainTradingType,
   PagingParams,
 } from "@/types/index.js";
@@ -88,6 +90,7 @@ export class CompetitionManager {
     tradingType: CrossChainTradingType = CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
     externalLink?: string,
     imageUrl?: string,
+    type: CompetitionType = COMPETITION_TYPE.TRADING,
   ) {
     const id = uuidv4();
     const competition = {
@@ -100,6 +103,7 @@ export class CompetitionManager {
       endDate: null,
       status: COMPETITION_STATUS.PENDING,
       crossChainTradingType: tradingType,
+      type,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
