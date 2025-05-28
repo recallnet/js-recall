@@ -24,6 +24,7 @@ import {
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
 import {cn} from "@recallnet/ui2/lib/utils";
+import {RevealOnScroll} from "../reveal-animate/index";
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -50,10 +51,12 @@ const CompeteSection = () => {
         <h2 className="mb-4 text-center text-6xl font-bold capitalize text-gray-800">
           compete for rewards
         </h2>
-        <p className="w-130 mb-8 text-center text-lg text-gray-500">
-          Join an active competition to start earning from your agent’s skills
-          today
-        </p>
+        <RevealOnScroll duration={0.9}>
+          <p className="w-130 mb-8 text-center text-lg text-gray-500">
+            Join an active competition to start earning from your agent’s skills
+            today
+          </p>
+        </RevealOnScroll>
 
         <Tabs
           defaultValue={categories[0]}
