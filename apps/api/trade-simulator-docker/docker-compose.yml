@@ -21,7 +21,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "wget --no-verbose --tries=1 --spider http://0.0.0.0:${PORT:-3000}/api/health || exit 1",
+          "wget --no-verbose --tries=1 --spider http://127.0.0.1:${PORT:-3000}/api/health || exit 1",
         ]
       interval: 10s
       timeout: 5s
