@@ -4,6 +4,8 @@ import Image from "next/image";
 import React from "react";
 
 import {BorderCard} from "@recallnet/ui2/components/shadcn/card";
+import {AnimatedText} from "@/components/animations/text";
+import {RevealOnScroll} from "@/components/animations/reveal";
 
 const DiscoverSection = () => {
   const discoverObjects = [
@@ -43,41 +45,50 @@ const DiscoverSection = () => {
       </div>
 
       <div className="mx-auto flex max-w-5xl flex-col items-center">
-        <h2 className="w-140 mb-4 text-center text-6xl font-bold capitalize">
-          Build and Discover Smarter Agents
-        </h2>
-        <p className="w-90 lg:w-140 mb-8 text-center text-lg text-secondary-foreground">
-          Recall surfaces the best agents across a range of specialized skills
-          so you can find and hire the right one for your needs
-        </p>
+        <AnimatedText
+          letters={"Build and Discover Smarter Agents".split(" ")}
+          parentClass="w-140 mb-4 text-center text-6xl font-bold capitalize"
+          spanClass="inline-block mr-3"
+          delay={0.2}
+          duration={0.8}
+          parent="h2"
+        />
+        <RevealOnScroll duration={0.6} waitBeforeStart={1000}>
+          <p className="w-90 lg:w-140 mb-8 text-center text-lg text-secondary-foreground">
+            Recall surfaces the best agents across a range of specialized skills
+            so you can find and hire the right one for your needs
+          </p>
+        </RevealOnScroll >
       </div>
       <div className="flex w-full flex-col items-center justify-center">
-        <div className="lg:w-260 xl:mt-50 mt-20 grid grid-cols-1 gap-10 lg:grid-cols-2">
-          {discoverObjects.map((obj, i) => (
-            <BorderCard
-              key={i}
-              corner="bottom-left"
-              cropSize={40}
-              width={500}
-              height={200}
-              borderColor="gray-500"
-              className="flex bg-black p-4"
-            >
-              <div className="pr-30 flex w-1/2 items-start justify-start border-r border-gray-500 text-xl font-semibold text-white">
-                {obj.title}
-              </div>
-              <div className="flex items-center justify-center">
-                <Image
-                  src={obj.image}
-                  alt={obj.title}
-                  className="pointer-events-none"
-                  width={200}
-                  height={200}
-                />
-              </div>
-            </BorderCard>
-          ))}
-        </div>
+        <RevealOnScroll duration={0.6} waitBeforeStart={1500}>
+          <div className="lg:w-260 xl:mt-50 mt-20 grid grid-cols-1 gap-10 lg:grid-cols-2">
+            {discoverObjects.map((obj, i) => (
+              <BorderCard
+                key={i}
+                corner="bottom-left"
+                cropSize={40}
+                width={500}
+                height={200}
+                borderColor="gray-500"
+                className="flex bg-black p-4"
+              >
+                <div className="pr-30 flex w-1/2 items-start justify-start border-r border-gray-500 text-xl font-semibold text-white">
+                  {obj.title}
+                </div>
+                <div className="flex items-center justify-center">
+                  <Image
+                    src={obj.image}
+                    alt={obj.title}
+                    className="pointer-events-none"
+                    width={200}
+                    height={200}
+                  />
+                </div>
+              </BorderCard>
+            ))}
+          </div>
+        </RevealOnScroll >
         <div className="mt-20 flex flex-col items-center text-center text-white">
           <h2 className="md:w-160 w-100 mb-8 text-4xl font-bold capitalize md:text-6xl">
             crowdsourced skills competitions
@@ -106,7 +117,7 @@ const DiscoverSection = () => {
           </div>
         </div>
       </div>
-    </section>
+    </section >
   );
 };
 

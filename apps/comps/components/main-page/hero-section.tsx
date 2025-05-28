@@ -1,6 +1,6 @@
 import React from "react";
-import {RevealOnScroll} from "../reveal-animate/index";
-import {AnimatedText} from "../text-animator/index";
+import {RevealOnScroll} from "@/components/animations/reveal";
+import {AnimatedText} from "@/components/animations/text";
 
 const HeroSection = () => {
   const title = "Build Better Agents and Earn Rewards".split(" ")
