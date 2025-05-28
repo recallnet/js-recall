@@ -199,26 +199,6 @@ export async function findByOwnerId(ownerId: string): Promise<SelectAgent[]> {
 }
 
 /**
- * Find agents by wallet address
- * @param walletAddress Wallet address to search for
- */
-export async function findByWalletAddress(
-  walletAddress: string,
-): Promise<SelectAgent | undefined> {
-  try {
-    const normalizedWalletAddress = walletAddress.toLowerCase();
-    const [result] = await db
-      .select()
-      .from(agents)
-      .where(eq(agents.walletAddress, normalizedWalletAddress));
-    return result;
-  } catch (error) {
-    console.error("[AgentRepository] Error in findByWalletAddress:", error);
-    throw error;
-  }
-}
-
-/**
  * Find an agent by API key
  * @param apiKey The API key to search for
  */
@@ -250,11 +230,12 @@ export async function findByWallet({
   walletAddress: string;
   pagingParams: PagingParams;
 }): Promise<SelectAgent[]> {
+  const normalizedWalletAddress = walletAddress.toLowerCase();
   try {
     let query = db
       .select()
       .from(agents)
-      .where(eq(agents.walletAddress, walletAddress))
+      .where(eq(agents.walletAddress, normalizedWalletAddress))
       .$dynamic();
 
     if (pagingParams.sort) {
