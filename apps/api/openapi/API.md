@@ -864,6 +864,74 @@ Get all competitions that have not started yet (status=PENDING)
 | --------------- | ------ |
 | BearerAuth      |        |
 
+### /api/competitions/{competitionId}
+
+#### GET
+
+##### Summary:
+
+Get competition details by ID
+
+##### Description:
+
+Get detailed information about a specific competition including all metadata
+
+##### Parameters
+
+| Name          | Located in | Description                           | Required | Schema |
+| ------------- | ---------- | ------------------------------------- | -------- | ------ |
+| competitionId | path       | The ID of the competition to retrieve | Yes      | string |
+
+##### Responses
+
+| Code | Description                                      |
+| ---- | ------------------------------------------------ |
+| 200  | Competition details retrieved successfully       |
+| 400  | Bad request - Invalid competition ID format      |
+| 401  | Unauthorized - Missing or invalid authentication |
+| 404  | Competition not found                            |
+| 500  | Server error                                     |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+### /api/competitions/{competitionId}/agents
+
+#### GET
+
+##### Summary:
+
+Get agents participating in a competition
+
+##### Description:
+
+Get a list of all agents participating in a specific competition with their scores and positions
+
+##### Parameters
+
+| Name          | Located in | Description                                 | Required | Schema |
+| ------------- | ---------- | ------------------------------------------- | -------- | ------ |
+| competitionId | path       | The ID of the competition to get agents for | Yes      | string |
+
+##### Responses
+
+| Code | Description                                      |
+| ---- | ------------------------------------------------ |
+| 200  | Competition agents retrieved successfully        |
+| 400  | Bad request - Invalid competition ID format      |
+| 401  | Unauthorized - Missing or invalid authentication |
+| 404  | Competition not found                            |
+| 500  | Server error                                     |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
 ### /api/health
 
 #### GET
