@@ -35,25 +35,24 @@ const app = express();
 const PORT = config.server.port;
 let databaseInitialized = false;
 
-try {
-  // Migrate the database if needed
-  console.log("Checking database connection...");
-  await migrateDb();
-  console.log("Database connection and schema verification completed");
-  databaseInitialized = true;
-} catch (error) {
-  console.error("Database initialization error:", error);
-  if (process.env.NODE_ENV === "production") {
-    console.warn(
-      "WARNING: Starting server without successful database initialization. " +
-        "Some functionality may be limited until database connection is restored.",
-    );
-  } else {
+// Only run migrations in development, not production
+if (process.env.NODE_ENV !== "production") {
+  try {
+    // Migrate the database if needed
+    console.log("Checking database connection...");
+    await migrateDb();
+    console.log("Database connection and schema verification completed");
+    databaseInitialized = true;
+  } catch (error) {
+    console.error("Database initialization error:", error);
     console.error(
       "Failed to start server due to database initialization error. Exiting...",
     );
     process.exit(1);
   }
+} else {
+  console.log("Production mode: Skipping automatic database migrations");
+  databaseInitialized = true; // Assume database is already set up in production
 }
 
 const services = new ServiceRegistry();
