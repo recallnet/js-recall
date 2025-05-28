@@ -216,6 +216,7 @@ export interface UserSearchParams {
 export interface AgentSearchParams {
   name?: string;
   ownerId?: string;
+  walletAddress?: string;
   status?: ActorStatus;
 }
 

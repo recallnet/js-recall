@@ -84,10 +84,16 @@ export function makeAgentController(services: ServiceRegistry) {
     async updateProfile(req: Request, res: Response, next: NextFunction) {
       try {
         const agentId = req.agentId as string;
-        const { name, description, imageUrl } = req.body;
+        const { name, description, imageUrl, email, metadata } = req.body;
 
         // Validate that only allowed fields are being updated
-        const allowedFields = ["name", "description", "imageUrl"];
+        const allowedFields = [
+          "name",
+          "description",
+          "imageUrl",
+          "email",
+          "metadata",
+        ];
         const providedFields = Object.keys(req.body);
         const invalidFields = providedFields.filter(
           (field) => !allowedFields.includes(field),
@@ -112,6 +118,8 @@ export function makeAgentController(services: ServiceRegistry) {
           name?: string;
           description?: string;
           imageUrl?: string;
+          email?: string;
+          metadata?: Record<string, unknown>;
         } = { id: agentId };
 
         if (name !== undefined) {
@@ -135,17 +143,29 @@ export function makeAgentController(services: ServiceRegistry) {
           updateData.imageUrl = imageUrl.trim();
         }
 
-        // Update the agent using AgentManager
+        if (email !== undefined) {
+          if (typeof email !== "string" || email.trim().length === 0) {
+            throw new ApiError(400, "Agent email must be a non-empty string");
+          }
+          updateData.email = email;
+        }
+
+        if (metadata !== undefined) {
+          if (typeof metadata !== "object" || metadata === null) {
+            throw new ApiError(400, "Agent metadata must be an object");
+          }
+          updateData.metadata = metadata;
+        }
+
         const updatedAgent = await services.agentManager.updateAgent({
-          ...agent, // Include all existing agent fields
-          ...updateData, // Overlay the updates
+          ...agent,
+          ...updateData,
         });
 
         if (!updatedAgent) {
           throw new ApiError(500, "Failed to update agent profile");
         }
 
-        // Return the updated agent profile
         res.status(200).json({
           success: true,
           agent: {
@@ -154,6 +174,7 @@ export function makeAgentController(services: ServiceRegistry) {
             walletAddress: updatedAgent.walletAddress,
             name: updatedAgent.name,
             description: updatedAgent.description,
+            email: updatedAgent.email,
             imageUrl: updatedAgent.imageUrl,
             metadata: updatedAgent.metadata,
             status: updatedAgent.status,

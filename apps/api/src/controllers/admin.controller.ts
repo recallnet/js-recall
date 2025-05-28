@@ -9,6 +9,7 @@ import { getCompetitionAgents } from "@/database/repositories/competition-reposi
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
+  ActorStatus,
   AgentSearchParams,
   COMPETITION_STATUS,
   CROSS_CHAIN_TRADING_TYPE,
@@ -28,7 +29,7 @@ interface Agent {
   imageUrl: string | null;
   apiKey: string;
   metadata: unknown;
-  status: "active" | "suspended" | "deleted";
+  status: ActorStatus;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -40,7 +41,7 @@ interface User {
   email: string | null;
   imageUrl: string | null;
   metadata: unknown;
-  status: "active" | "suspended" | "deleted";
+  status: ActorStatus;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -325,7 +326,7 @@ export function makeAdminController(services: ServiceRegistry) {
               email: user.email,
               imageUrl: user.imageUrl,
               metadata: user.metadata,
-              status: user.status as "active" | "suspended" | "deleted",
+              status: user.status as ActorStatus,
               createdAt: user.createdAt,
               updatedAt: user.updatedAt,
             },
@@ -341,7 +342,7 @@ export function makeAdminController(services: ServiceRegistry) {
               imageUrl: agent.imageUrl,
               apiKey: agent.apiKey,
               metadata: agent.metadata,
-              status: agent.status as "active" | "suspended" | "deleted",
+              status: agent.status as ActorStatus,
               createdAt: agent.createdAt,
               updatedAt: agent.updatedAt,
             };
@@ -400,8 +401,15 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async registerAgent(req: Request, res: Response, next: NextFunction) {
       try {
-        const { userId, walletAddress, name, description, imageUrl, metadata } =
-          req.body;
+        const {
+          userId,
+          walletAddress,
+          name,
+          email,
+          description,
+          imageUrl,
+          metadata,
+        } = req.body;
 
         // Validate required parameters
         if (!walletAddress || !userId) {
@@ -436,6 +444,7 @@ export function makeAdminController(services: ServiceRegistry) {
             userId,
             name,
             description,
+            email,
             imageUrl,
             metadata,
           );
@@ -443,7 +452,7 @@ export function makeAdminController(services: ServiceRegistry) {
             success: true,
             agent: {
               ...agent,
-              status: agent.status as "active" | "suspended" | "deleted",
+              status: agent.status as ActorStatus,
             },
           };
 
@@ -875,7 +884,7 @@ export function makeAdminController(services: ServiceRegistry) {
             walletAddress: user.walletAddress,
             name: user.name,
             email: user.email,
-            status: user.status as "active" | "suspended" | "deleted",
+            status: user.status as ActorStatus,
             imageUrl: user.imageUrl,
             metadata: user.metadata,
             createdAt: user.createdAt,
@@ -903,7 +912,7 @@ export function makeAdminController(services: ServiceRegistry) {
             walletAddress: agent.walletAddress,
             name: agent.name,
             description: agent.description,
-            status: agent.status as "active" | "suspended" | "deleted",
+            status: agent.status as ActorStatus,
             imageUrl: agent.imageUrl,
             metadata: agent.metadata,
             createdAt: agent.createdAt,
@@ -937,10 +946,12 @@ export function makeAdminController(services: ServiceRegistry) {
         const formattedAgents = agents.map((agent) => ({
           id: agent.id,
           ownerId: agent.ownerId,
+          walletAddress: agent.walletAddress,
           name: agent.name,
           description: agent.description,
           status: agent.status,
           imageUrl: agent.imageUrl,
+          metadata: agent.metadata,
           createdAt: agent.createdAt,
           updatedAt: agent.updatedAt,
         }));
@@ -1180,7 +1191,7 @@ export function makeAdminController(services: ServiceRegistry) {
           walletAddress: agent.walletAddress,
           name: agent.name,
           description: agent.description,
-          status: agent.status as "active" | "suspended" | "deleted",
+          status: agent.status as ActorStatus,
           imageUrl: agent.imageUrl,
           metadata: agent.metadata,
           createdAt: agent.createdAt,

@@ -19,14 +19,14 @@ import { PartialExcept } from "./types.js";
 export async function create(agent: InsertAgent): Promise<SelectAgent> {
   try {
     const now = new Date();
-    const [result] = await db
-      .insert(agents)
-      .values({
-        ...agent,
-        createdAt: agent.createdAt || now,
-        updatedAt: agent.updatedAt || now,
-      })
-      .returning();
+    const normalizedWalletAddress = agent.walletAddress?.toLowerCase();
+    const data = {
+      ...agent,
+      walletAddress: normalizedWalletAddress,
+      createdAt: agent.createdAt || now,
+      updatedAt: agent.updatedAt || now,
+    };
+    const [result] = await db.insert(agents).values(data).returning();
 
     if (!result) {
       throw new Error("Failed to create agent - no result returned");
@@ -79,6 +79,26 @@ export async function findByOwnerId(ownerId: string): Promise<SelectAgent[]> {
 }
 
 /**
+ * Find agents by wallet address
+ * @param walletAddress Wallet address to search for
+ */
+export async function findByWalletAddress(
+  walletAddress: string,
+): Promise<SelectAgent | undefined> {
+  try {
+    const normalizedWalletAddress = walletAddress.toLowerCase();
+    const [result] = await db
+      .select()
+      .from(agents)
+      .where(eq(agents.walletAddress, normalizedWalletAddress));
+    return result;
+  } catch (error) {
+    console.error("[AgentRepository] Error in findByWalletAddress:", error);
+    throw error;
+  }
+}
+
+/**
  * Find an agent by API key
  * @param apiKey The API key to search for
  */
@@ -107,12 +127,15 @@ export async function update(
 ): Promise<SelectAgent> {
   try {
     const now = new Date();
+    const normalizedWalletAddress = agent.walletAddress?.toLowerCase();
+    const data = {
+      ...agent,
+      walletAddress: normalizedWalletAddress,
+      updatedAt: now,
+    };
     const [result] = await db
       .update(agents)
-      .set({
-        ...agent,
-        updatedAt: now,
-      })
+      .set(data)
       .where(eq(agents.id, agent.id))
       .returning();
 
@@ -252,6 +275,13 @@ export async function searchAgents(
 
     if (searchParams.ownerId) {
       conditions.push(eq(agents.ownerId, searchParams.ownerId));
+    }
+
+    if (searchParams.walletAddress) {
+      const normalizedWalletAddress = searchParams.walletAddress.toLowerCase();
+      conditions.push(
+        ilike(agents.walletAddress, `%${normalizedWalletAddress}%`),
+      );
     }
 
     if (searchParams.status) {

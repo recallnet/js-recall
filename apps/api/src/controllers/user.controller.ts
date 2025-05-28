@@ -281,14 +281,20 @@ export function makeUserController(services: ServiceRegistry) {
       try {
         const userId = req.userId as string;
         const { agentId } = req.params;
-        const { name, description, imageUrl } = req.body;
+        const { name, description, imageUrl, email, metadata } = req.body;
 
         if (!agentId) {
           throw new ApiError(400, "Agent ID is required");
         }
 
         // Validate that only allowed fields are being updated
-        const allowedFields = ["name", "description", "imageUrl"];
+        const allowedFields = [
+          "name",
+          "description",
+          "imageUrl",
+          "email",
+          "metadata",
+        ];
         const providedFields = Object.keys(req.body);
         const invalidFields = providedFields.filter(
           (field) => !allowedFields.includes(field),
@@ -319,6 +325,8 @@ export function makeUserController(services: ServiceRegistry) {
           name?: string;
           description?: string;
           imageUrl?: string;
+          email?: string;
+          metadata?: Record<string, unknown>;
         } = {
           id: agentId,
         };
@@ -333,6 +341,14 @@ export function makeUserController(services: ServiceRegistry) {
 
         if (imageUrl !== undefined) {
           updateData.imageUrl = imageUrl;
+        }
+
+        if (email !== undefined) {
+          updateData.email = email;
+        }
+
+        if (metadata !== undefined) {
+          updateData.metadata = metadata;
         }
 
         // Update the agent using AgentManager
@@ -351,9 +367,11 @@ export function makeUserController(services: ServiceRegistry) {
           agent: {
             id: updatedAgent.id,
             ownerId: updatedAgent.ownerId,
+            walletAddress: updatedAgent.walletAddress,
             name: updatedAgent.name,
             description: updatedAgent.description,
             imageUrl: updatedAgent.imageUrl,
+            email: updatedAgent.email,
             metadata: updatedAgent.metadata,
             status: updatedAgent.status,
             createdAt: updatedAgent.createdAt,

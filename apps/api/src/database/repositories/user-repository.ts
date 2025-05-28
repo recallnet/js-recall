@@ -19,14 +19,14 @@ import { PartialExcept } from "./types.js";
 export async function create(user: InsertUser): Promise<SelectUser> {
   try {
     const now = new Date();
-    const [result] = await db
-      .insert(users)
-      .values({
-        ...user,
-        createdAt: user.createdAt || now,
-        updatedAt: user.updatedAt || now,
-      })
-      .returning();
+    const normalizedWalletAddress = user.walletAddress.toLowerCase();
+    const data = {
+      ...user,
+      walletAddress: normalizedWalletAddress,
+      createdAt: user.createdAt || now,
+      updatedAt: user.updatedAt || now,
+    };
+    const [result] = await db.insert(users).values(data).returning();
 
     if (!result) {
       throw new Error("Failed to create user - no result returned");
@@ -73,10 +73,11 @@ export async function findByWalletAddress(
   walletAddress: string,
 ): Promise<SelectUser | undefined> {
   try {
+    const normalizedWalletAddress = walletAddress.toLowerCase();
     const [result] = await db
       .select()
       .from(users)
-      .where(eq(users.walletAddress, walletAddress.toLowerCase()));
+      .where(eq(users.walletAddress, normalizedWalletAddress));
 
     return result;
   } catch (error) {
@@ -114,12 +115,15 @@ export async function update(
 ): Promise<SelectUser> {
   try {
     const now = new Date();
+    const normalizedWalletAddress = user.walletAddress?.toLowerCase();
+    const data = {
+      ...user,
+      walletAddress: normalizedWalletAddress,
+      updatedAt: now,
+    };
     const [result] = await db
       .update(users)
-      .set({
-        ...user,
-        updatedAt: now,
-      })
+      .set(data)
       .where(eq(users.id, user.id))
       .returning();
 
@@ -171,8 +175,9 @@ export async function searchUsers(
     }
 
     if (searchParams.walletAddress) {
+      const normalizedWalletAddress = searchParams.walletAddress.toLowerCase();
       conditions.push(
-        ilike(users.walletAddress, `%${searchParams.walletAddress}%`),
+        ilike(users.walletAddress, `%${normalizedWalletAddress}%`),
       );
     }
 
