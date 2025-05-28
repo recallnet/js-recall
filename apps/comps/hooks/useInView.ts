@@ -19,5 +19,5 @@ export const useInView = (options?: IntersectionObserverInit) => {
     return () => observer.disconnect();
   }, [ref, options]);
 
-  return { ref, inView };
+  return { ref: ref as React.Ref<HTMLDivElement>, inView };
 };
