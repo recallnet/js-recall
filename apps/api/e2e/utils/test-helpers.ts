@@ -55,6 +55,7 @@ export async function registerUserAndAgentAndGetClient({
   agentDescription,
   agentImageUrl,
   agentMetadata,
+  agentWalletAddress,
 }: {
   adminApiKey: string;
   walletAddress?: string;
@@ -65,6 +66,7 @@ export async function registerUserAndAgentAndGetClient({
   agentDescription?: string;
   agentImageUrl?: string;
   agentMetadata?: Record<string, unknown>;
+  agentWalletAddress?: string;
 }) {
   // Ensure database is initialized
   await ensureDatabaseInitialized();
@@ -82,6 +84,7 @@ export async function registerUserAndAgentAndGetClient({
       agentDescription || `Test agent for ${agentName || "testing"}`,
     agentImageUrl,
     agentMetadata,
+    agentWalletAddress: agentWalletAddress || generateRandomEthAddress(),
   });
 
   if (

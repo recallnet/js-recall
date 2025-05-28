@@ -32,6 +32,7 @@ import { tool$agentGetApiAgentBalances } from "./tools/agentGetApiAgentBalances.
 import { tool$agentGetApiAgentPortfolio } from "./tools/agentGetApiAgentPortfolio.js";
 import { tool$agentGetApiAgentProfile } from "./tools/agentGetApiAgentProfile.js";
 import { tool$agentGetApiAgentTrades } from "./tools/agentGetApiAgentTrades.js";
+import { tool$agentGetApiAgents } from "./tools/agentGetApiAgents.js";
 import { tool$agentPostApiAgentResetApiKey } from "./tools/agentPostApiAgentResetApiKey.js";
 import { tool$agentPutApiAgentProfile } from "./tools/agentPutApiAgentProfile.js";
 import { tool$authGetApiAuthNonce } from "./tools/authGetApiAuthNonce.js";
@@ -61,7 +62,7 @@ export function createMCPServer(deps: {
 }) {
   const server = new McpServer({
     name: "ApiSDK",
-    version: "0.1.5",
+    version: "0.1.4",
   });
 
   const client = new ApiSDKCore({
@@ -112,6 +113,7 @@ export function createMCPServer(deps: {
   tool(tool$agentGetApiAgentPortfolio);
   tool(tool$agentGetApiAgentTrades);
   tool(tool$agentPostApiAgentResetApiKey);
+  tool(tool$agentGetApiAgents);
   tool(tool$authGetApiAuthNonce);
   tool(tool$authPostApiAuthLogin);
   tool(tool$authPostApiAuthLogout);

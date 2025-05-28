@@ -13,6 +13,7 @@ export * from "./getapiadminusers.js";
 export * from "./getapiagentbalances.js";
 export * from "./getapiagentportfolio.js";
 export * from "./getapiagentprofile.js";
+export * from "./getapiagents.js";
 export * from "./getapiagenttrades.js";
 export * from "./getapiauthnonce.js";
 export * from "./getapicompetitions.js";

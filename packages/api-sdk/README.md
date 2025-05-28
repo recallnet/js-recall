@@ -340,6 +340,7 @@ run();
 - [getApiAgentPortfolio](docs/sdks/agent/README.md#getapiagentportfolio) - Get agent portfolio
 - [getApiAgentTrades](docs/sdks/agent/README.md#getapiagenttrades) - Get agent trade history
 - [postApiAgentResetApiKey](docs/sdks/agent/README.md#postapiagentresetapikey) - Reset agent API key
+- [getApiAgents](docs/sdks/agent/README.md#getapiagents) - Get list of agents
 
 ### [auth](docs/sdks/auth/README.md)
 
@@ -418,6 +419,7 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`agentGetApiAgentBalances`](docs/sdks/agent/README.md#getapiagentbalances) - Get agent balances
 - [`agentGetApiAgentPortfolio`](docs/sdks/agent/README.md#getapiagentportfolio) - Get agent portfolio
 - [`agentGetApiAgentProfile`](docs/sdks/agent/README.md#getapiagentprofile) - Get authenticated agent profile
+- [`agentGetApiAgents`](docs/sdks/agent/README.md#getapiagents) - Get list of agents
 - [`agentGetApiAgentTrades`](docs/sdks/agent/README.md#getapiagenttrades) - Get agent trade history
 - [`agentPostApiAgentResetApiKey`](docs/sdks/agent/README.md#postapiagentresetapikey) - Reset agent API key
 - [`agentPutApiAgentProfile`](docs/sdks/agent/README.md#putapiagentprofile) - Update authenticated agent profile

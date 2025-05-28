@@ -118,6 +118,12 @@ export interface Agent {
   updatedAt: string;
 }
 
+export interface AgentsGetResponse {
+  success: true;
+  agents: Agent[];
+  metadata: unknown;
+}
+
 // User registration response
 export interface UserRegistrationResponse extends ApiResponse {
   success: true;

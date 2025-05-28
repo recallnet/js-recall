@@ -8,7 +8,12 @@ import {
 import { getLatestPrice } from "@/database/repositories/price-repository.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
-import { SpecificChain } from "@/types/index.js";
+import {
+  AgentFilterSchema,
+  AuthenticatedRequest,
+  PagingParamsSchema,
+  SpecificChain,
+} from "@/types/index.js";
 
 /**
  * Agent Controller
@@ -163,6 +168,37 @@ export function makeAgentController(services: ServiceRegistry) {
         });
       } catch (error) {
         next(error);
+      }
+    },
+
+    async getAgents(
+      req: AuthenticatedRequest,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const pagingParams = PagingParamsSchema.parse(req.query);
+        const filter = req.query.filter
+          ? AgentFilterSchema.parse(req.query.filter)
+          : undefined;
+        const agents = await services.agentManager.getAgents({
+          filter,
+          pagingParams,
+        });
+        const totalCount = await services.agentManager.countAgents(filter);
+
+        // Return the competitions
+        res.status(200).json({
+          success: true,
+          metadata: {
+            total: totalCount,
+            limit: pagingParams.limit,
+            offset: pagingParams.offset,
+          },
+          agents,
+        });
+      } catch (err) {
+        next(err);
       }
     },
 

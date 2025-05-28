@@ -6,6 +6,7 @@ import {
   AdminSearchUsersAndAgentsResponse,
   AgentMetadata,
   AgentProfileResponse,
+  AgentsGetResponse,
   CreateCompetitionResponse,
   PriceResponse,
   ResetApiKeyResponse,
@@ -262,6 +263,90 @@ describe("Agent API", () => {
       ).agents.find((a) => a.name === data.agentName);
       expect(foundAgent).toBeDefined();
     }
+  });
+
+  test("admin can filter and sort agents with paging", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+    expect(adminLoginSuccess).toBe(true);
+
+    // Register multiple users and agents
+    const agentData = [
+      {
+        userName: `User A ${Date.now()}`,
+        userEmail: `usera${Date.now()}@example.com`,
+        agentName: `Agent A ${Date.now()}`,
+        walletAddress: generateRandomEthAddress(),
+        agentWalletAddress: generateRandomEthAddress(),
+      },
+      {
+        userName: `User B ${Date.now()}`,
+        userEmail: `userb${Date.now()}@example.com`,
+        agentName: `Agent B ${Date.now()}`,
+        walletAddress: generateRandomEthAddress(),
+        agentWalletAddress: generateRandomEthAddress(),
+      },
+      {
+        userName: `User C ${Date.now()}`,
+        userEmail: `userc${Date.now()}@example.com`,
+        agentName: `Agent C ${Date.now()}`,
+        walletAddress: generateRandomEthAddress(),
+        agentWalletAddress: generateRandomEthAddress(),
+      },
+    ];
+
+    for (const data of agentData) {
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        userName: data.userName,
+        userEmail: data.userEmail,
+        agentName: data.agentName,
+        agentWalletAddress: data.agentWalletAddress,
+      });
+    }
+
+    // Test that sort, limit, and offest work
+    const agentsResponse = await adminClient.getAgents({
+      limit: 2,
+      offset: 1,
+      sort: "name",
+    });
+
+    expect(agentsResponse.success).toBe(true);
+    expect((agentsResponse as AgentsGetResponse).agents).toBeDefined();
+    expect((agentsResponse as AgentsGetResponse).agents.length).toBe(2);
+
+    expect((agentsResponse as AgentsGetResponse).agents[0]?.name).toBe(
+      agentData[1]?.agentName,
+    );
+    expect((agentsResponse as AgentsGetResponse).agents[1]?.name).toBe(
+      agentData[2]?.agentName,
+    );
+
+    // Test that filter works
+    const agentsResponse2 = await adminClient.getAgents(
+      { limit: 10, offset: 0, sort: "name" },
+      "Agent",
+    ); // should get all
+
+    expect((agentsResponse2 as AgentsGetResponse).success).toBe(true);
+    expect((agentsResponse2 as AgentsGetResponse).agents).toBeDefined();
+    expect((agentsResponse2 as AgentsGetResponse).agents.length).toBe(3);
+
+    // Test getting based on wallet
+    const agentsResponse3 = await adminClient.getAgents(
+      { limit: 10, offset: 0, sort: "name" },
+      agentData[0]?.agentWalletAddress,
+    );
+
+    expect((agentsResponse3 as AgentsGetResponse).success).toBe(true);
+    expect((agentsResponse3 as AgentsGetResponse).agents).toBeDefined();
+    expect((agentsResponse3 as AgentsGetResponse).agents.length).toBe(1);
+
+    expect((agentsResponse3 as AgentsGetResponse).agents[0]?.name).toBe(
+      agentData[0]?.agentName,
+    );
   });
 
   test("agent can retrieve profile with metadata", async () => {
