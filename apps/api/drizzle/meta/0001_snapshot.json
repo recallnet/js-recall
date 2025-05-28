@@ -1,5 +1,5 @@
 {
-  "id": "399445a3-5683-44bf-9a3c-e7a52ad13bd5",
+  "id": "52346519-148c-4d12-8d87-231c3854bacd",
   "prevId": "a84fa2b4-2840-450b-bc53-d2f65c09224e",
   "version": "7",
   "dialect": "postgresql",
@@ -1496,6 +1496,12 @@
           "primaryKey": true,
           "notNull": true
         },
+        "number": {
+          "name": "number",
+          "type": "serial",
+          "primaryKey": false,
+          "notNull": true
+        },
         "started_at": {
           "name": "started_at",
           "type": "timestamp with time zone",
@@ -1512,7 +1518,15 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "epochs_number_unique": {
+          "name": "epochs_number_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "number"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -1523,7 +1537,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
@@ -1560,25 +1574,40 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         }
       },
       "indexes": {
-        "idx_rewards_epoch_id": {
-          "name": "idx_rewards_epoch_id",
+        "idx_rewards_epoch": {
+          "name": "idx_rewards_epoch",
           "columns": [
             {
               "expression": "epoch",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_rewards_address": {
+          "name": "idx_rewards_address",
+          "columns": [
+            {
+              "expression": "address",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1617,7 +1646,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
@@ -1641,15 +1670,15 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         }
       },
       "indexes": {
-        "idx_rewards_roots_epoch_id": {
-          "name": "idx_rewards_roots_epoch_id",
+        "uq_rewards_roots_epoch": {
+          "name": "uq_rewards_roots_epoch",
           "columns": [
             {
               "expression": "epoch",
@@ -1658,7 +1687,7 @@
               "nulls": "last"
             }
           ],
-          "isUnique": false,
+          "isUnique": true,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -1691,7 +1720,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
@@ -1721,13 +1750,40 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         }
       },
       "indexes": {
+        "idx_rewards_tree_epoch_level_idx": {
+          "name": "idx_rewards_tree_epoch_level_idx",
+          "columns": [
+            {
+              "expression": "epoch",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "level",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "idx",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "idx_rewards_tree_level_hash": {
           "name": "idx_rewards_tree_level_hash",
           "columns": [
@@ -1859,7 +1915,23 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_stakes_address": {
+          "name": "idx_stakes_address",
+          "columns": [
+            {
+              "expression": "address",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "stakes_user_id_users_id_fk": {
           "name": "stakes_user_id_users_id_fk",
@@ -1931,11 +2003,17 @@
         }
       },
       "indexes": {
-        "idx_vote_assignments_user_id": {
-          "name": "idx_vote_assignments_user_id",
+        "idx_vote_assignments_user_epoch": {
+          "name": "idx_vote_assignments_user_epoch",
           "columns": [
             {
               "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "epoch",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1951,21 +2029,6 @@
           "columns": [
             {
               "expression": "epoch",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_vote_assignments_stake_id": {
-          "name": "idx_vote_assignments_stake_id",
-          "columns": [
-            {
-              "expression": "stake_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -2018,7 +2081,16 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "vote_assignments_pkey": {
+          "name": "vote_assignments_pkey",
+          "columns": [
+            "stake_id",
+            "user_id",
+            "epoch"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -2061,23 +2133,7 @@
           "default": "now()"
         }
       },
-      "indexes": {
-        "idx_votes_available_user_id": {
-          "name": "idx_votes_available_user_id",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "votes_available_user_id_users_id_fk": {
           "name": "votes_available_user_id_users_id_fk",
@@ -2164,26 +2220,17 @@
         }
       },
       "indexes": {
-        "idx_votes_performed_user_id": {
-          "name": "idx_votes_performed_user_id",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_votes_performed_agent_id": {
-          "name": "idx_votes_performed_agent_id",
+        "idx_votes_performed_agent_epoch": {
+          "name": "idx_votes_performed_agent_epoch",
           "columns": [
             {
               "expression": "agent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "epoch",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -2251,7 +2298,16 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "votes_performed_pkey": {
+          "name": "votes_performed_pkey",
+          "columns": [
+            "user_id",
+            "agent_id",
+            "epoch"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
