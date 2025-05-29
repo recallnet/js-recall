@@ -5,7 +5,7 @@
  */
 import fs from "fs";
 import path from "path";
-import { afterAll, afterEach, beforeAll, beforeEach, expect, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, vi } from "vitest";
 
 import { ServiceRegistry } from "@/services/index.js";
 
@@ -235,12 +235,8 @@ afterAll(async () => {
   }
 });
 
-// Log test lifecycle events for debugging
-beforeEach(() => {
-  log(`[Test] Starting test: ${expect.getState().currentTestName}`);
-});
+// Log test lifecycle events are now handled by LogReporter
 
 afterEach(() => {
-  log(`[Test] Completed test: ${expect.getState().currentTestName}`);
   vi.resetAllMocks();
 });
