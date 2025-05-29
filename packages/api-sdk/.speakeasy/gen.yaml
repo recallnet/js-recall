@@ -7,7 +7,6 @@ generation:
   maintainOpenAPIOrder: true
   usageSnippets:
     optionalPropertyRendering: withExample
-    sdkInitStyle: constructor
   useClassNamesForArrayFields: true
   fixes:
     nameResolutionDec2023: true
@@ -20,7 +19,7 @@ generation:
     oAuth2ClientCredentialsEnabled: false
     oAuth2PasswordEnabled: false
 typescript:
-  version: 0.2.0
+  version: 0.1.4
   additionalDependencies:
     dependencies: {}
     devDependencies: {}
