@@ -2,7 +2,7 @@
 
 > [!NOTE]
 > This section is useful if you are using a bundler and targetting browsers and
-> runtimes where the size of an application affects performance and load times. 
+> runtimes where the size of an application affects performance and load times.
 
 Every method in this SDK is also available as a standalone function. This
 alternative API is suitable when targetting the browser or serverless runtimes
@@ -49,9 +49,11 @@ async function run() {
       // TypeScript's type checking will fail on the following line if the above
       // cases were not exhaustive.
       res.error satisfies never;
-      throw new Error("Assertion failed: expected error checks to be exhaustive: " + res.error);
+      throw new Error(
+        "Assertion failed: expected error checks to be exhaustive: " +
+          res.error,
+      );
   }
-
 
   const { value: result } = res;
 
