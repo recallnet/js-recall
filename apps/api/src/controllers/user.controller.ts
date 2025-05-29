@@ -89,15 +89,24 @@ export function makeUserController(services: ServiceRegistry) {
         };
 
         if (name !== undefined) {
-          updateData.name = name;
+          if (typeof name !== "string" || name.trim().length === 0) {
+            throw new ApiError(400, "User name must be a non-empty string");
+          }
+          updateData.name = name.trim();
         }
 
         if (imageUrl !== undefined) {
-          updateData.imageUrl = imageUrl;
+          if (typeof imageUrl !== "string") {
+            throw new ApiError(400, "User imageUrl must be a string");
+          }
+          updateData.imageUrl = imageUrl.trim();
         }
 
         if (email !== undefined) {
-          updateData.email = email;
+          if (typeof email !== "string" || email.trim().length === 0) {
+            throw new ApiError(400, "User email must be a non-empty string");
+          }
+          updateData.email = email.trim();
         }
 
         // Update the user using UserManager
@@ -146,12 +155,28 @@ export function makeUserController(services: ServiceRegistry) {
         }
 
         // Validate optional fields
-        if (description !== undefined && typeof description !== "string") {
-          throw new ApiError(400, "Agent description must be a string");
+        if (description !== undefined) {
+          if (typeof description !== "string") {
+            throw new ApiError(400, "Agent description must be a string");
+          }
         }
 
-        if (imageUrl !== undefined && typeof imageUrl !== "string") {
-          throw new ApiError(400, "Agent imageUrl must be a string");
+        if (imageUrl !== undefined) {
+          if (typeof imageUrl !== "string") {
+            throw new ApiError(400, "User imageUrl must be a string");
+          }
+        }
+
+        if (email !== undefined) {
+          if (typeof email !== "string" || email.trim().length === 0) {
+            throw new ApiError(400, "User email must be a non-empty string");
+          }
+        }
+
+        if (metadata !== undefined) {
+          if (typeof metadata !== "object" || metadata === null) {
+            throw new ApiError(400, "Agent metadata must be an object");
+          }
         }
 
         // Verify the user exists
@@ -345,22 +370,37 @@ export function makeUserController(services: ServiceRegistry) {
         };
 
         if (name !== undefined) {
-          updateData.name = name;
+          if (typeof name !== "string" || name.trim().length === 0) {
+            throw new ApiError(400, "Agent name must be a non-empty string");
+          }
+          updateData.name = name.trim();
         }
 
         if (description !== undefined) {
-          updateData.description = description;
+          if (typeof description !== "string") {
+            throw new ApiError(400, "Agent description must be a string");
+          }
+          updateData.description = description.trim();
         }
 
         if (imageUrl !== undefined) {
-          updateData.imageUrl = imageUrl;
+          if (typeof imageUrl !== "string") {
+            throw new ApiError(400, "Agent imageUrl must be a string");
+          }
+          updateData.imageUrl = imageUrl.trim();
         }
 
         if (email !== undefined) {
-          updateData.email = email;
+          if (typeof email !== "string" || email.trim().length === 0) {
+            throw new ApiError(400, "Agent email must be a non-empty string");
+          }
+          updateData.email = email.trim();
         }
 
         if (metadata !== undefined) {
+          if (typeof metadata !== "object" || metadata === null) {
+            throw new ApiError(400, "Agent metadata must be an object");
+          }
           updateData.metadata = metadata;
         }
 

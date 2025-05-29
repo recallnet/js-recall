@@ -141,7 +141,7 @@ export function makeAgentController(services: ServiceRegistry) {
           if (typeof email !== "string" || email.trim().length === 0) {
             throw new ApiError(400, "Agent email must be a non-empty string");
           }
-          updateData.email = email;
+          updateData.email = email.trim();
         }
 
         if (metadata !== undefined) {
