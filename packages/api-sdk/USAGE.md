@@ -1,5 +1,4 @@
 <!-- Start SDK Example Usage [usage] -->
-
 ```typescript
 import { ApiSDK } from "@recallnet/api-sdk";
 
@@ -19,6 +18,6 @@ async function run() {
 }
 
 run();
-```
 
+```
 <!-- End SDK Example Usage [usage] -->
