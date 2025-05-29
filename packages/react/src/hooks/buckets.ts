@@ -19,6 +19,30 @@ import {
 } from "@recallnet/contracts";
 import { base32ToHex, hexToBase32 } from "@recallnet/fvm/utils";
 
+// Note: the `CreateBucketResult` & `DeleteObjectResult` are fixes for random CI complaints about
+// types. See this issue for context: https://github.com/recallnet/js-recall/issues/330
+type CreateBucketResult = Omit<
+  ReturnType<typeof useWriteContract>,
+  "writeContract" | "writeContractAsync"
+> & {
+  createBucket: (options?: {
+    owner: Address;
+    metadata?: Record<string, string>;
+  }) => void;
+  createBucketAsync: (options?: {
+    owner: Address;
+    metadata?: Record<string, string>;
+  }) => Promise<`0x${string}`>;
+};
+
+type DeleteObjectResult = Omit<
+  ReturnType<typeof useWriteContract>,
+  "writeContract" | "writeContractAsync"
+> & {
+  deleteObject: (bucket: Address, key: string) => void;
+  deleteObjectAsync: (bucket: Address, key: string) => Promise<`0x${string}`>;
+};
+
 export function useListBuckets(owner?: Address) {
   const chainId = useChainId();
   const { address } = useAccount();
@@ -161,7 +185,7 @@ export function useGetObject(
   };
 }
 
-export function useCreateBucket() {
+export function useCreateBucket(): CreateBucketResult {
   const chainId = useChainId();
   const contractAddress =
     iMachineFacadeAddress[chainId as keyof typeof iMachineFacadeAddress];
@@ -302,7 +326,7 @@ export function useAddFile() {
   return { addFile, isPending, isSuccess, isError, error, data };
 }
 
-export function useDeleteObject() {
+export function useDeleteObject(): DeleteObjectResult {
   const { writeContract, writeContractAsync, ...rest } = useWriteContract();
 
   const deleteObject = useCallback(

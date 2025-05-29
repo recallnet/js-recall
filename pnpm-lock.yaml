@@ -139,7 +139,7 @@ importers:
         specifier: ^0.3.1
         version: 0.3.1(drizzle-orm@0.43.1(@electric-sql/pglite@0.2.17)(@opentelemetry/api@1.9.0)(@types/pg@8.15.2)(better-sqlite3@11.8.1)(bun-types@1.2.13)(pg@8.16.0)(sql.js@1.13.0))
       eslint:
-        specifier: ^9.27.0
+        specifier: ^9.19.0
         version: 9.27.0(jiti@2.4.2)
       openapi-markdown:
         specifier: ^1.2.3
@@ -781,7 +781,7 @@ importers:
         specifier: ^20.10.6
         version: 20.17.48
       eslint:
-        specifier: ^9.15.0
+        specifier: ^9.19.0
         version: 9.27.0(jiti@2.4.2)
       typedoc:
         specifier: ^0.28.1
@@ -811,7 +811,7 @@ importers:
         specifier: ^8.15.0
         version: 8.32.1(eslint@9.27.0(jiti@2.4.2))(typescript@5.8.3)
       eslint:
-        specifier: ^9.15.0
+        specifier: ^9.19.0
         version: 9.27.0(jiti@2.4.2)
       eslint-config-prettier:
         specifier: ^9.1.0
@@ -1003,6 +1003,9 @@ importers:
       '@types/react':
         specifier: ^19.0.0
         version: 19.1.4
+      eslint:
+        specifier: ^9.19.0
+        version: 9.27.0(jiti@2.4.2)
       tsup:
         specifier: ^8.3.6
         version: 8.5.0(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.8.0)
