@@ -819,4 +819,18 @@ export class AgentManager {
       // Explicitly exclude apiKey for security
     };
   }
+
+  attachAgentMetrics(
+    sanitizedAgent: ReturnType<AgentManager["sanitizeAgent"]>,
+  ) {
+    const metadata = sanitizedAgent.metadata as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const stats = metadata?.stats || {};
+
+    return {
+      ...sanitizedAgent,
+      stats,
+      trophies: metadata?.trophies || [],
+      hasUnclaimedRewards: metadata?.hasUnclaimedRewards || false,
+    };
+  }
 }

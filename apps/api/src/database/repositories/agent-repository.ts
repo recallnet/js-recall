@@ -9,7 +9,11 @@ import {
 } from "drizzle-orm";
 
 import { db } from "@/database/db.js";
-import { agents, competitionAgents } from "@/database/schema/core/defs.js";
+import {
+  agents,
+  competitionAgents,
+  competitions,
+} from "@/database/schema/core/defs.js";
 import { InsertAgent, SelectAgent } from "@/database/schema/core/types.js";
 import {
   AgentSearchParams,
@@ -89,6 +93,26 @@ export async function findAll(
     return query;
   } catch (error) {
     console.error("[AgentRepository] Error in findAll:", error);
+    throw error;
+  }
+}
+
+/**
+ * Find all competitions that given agent is, or has, participated in
+ * @param agentId the ID of the agent used for lookup
+ */
+export async function findAgentCompetitions(agentId: string) {
+  try {
+    return db
+      .select()
+      .from(competitions)
+      .innerJoin(
+        competitionAgents,
+        eq(competitions.id, competitionAgents.competitionId),
+      )
+      .where(eq(competitionAgents.agentId, agentId));
+  } catch (error) {
+    console.error("[AgentRepository] Error in findAgentCompetitions:", error);
     throw error;
   }
 }

@@ -28,6 +28,7 @@ import { tool$adminPostApiAdminCompetitionEnd } from "./tools/adminPostApiAdminC
 import { tool$adminPostApiAdminCompetitionStart } from "./tools/adminPostApiAdminCompetitionStart.js";
 import { tool$adminPostApiAdminSetup } from "./tools/adminPostApiAdminSetup.js";
 import { tool$adminPostApiAdminUsers } from "./tools/adminPostApiAdminUsers.js";
+import { tool$agentGetApiAgentAgentId } from "./tools/agentGetApiAgentAgentId.js";
 import { tool$agentGetApiAgentBalances } from "./tools/agentGetApiAgentBalances.js";
 import { tool$agentGetApiAgentPortfolio } from "./tools/agentGetApiAgentPortfolio.js";
 import { tool$agentGetApiAgentProfile } from "./tools/agentGetApiAgentProfile.js";
@@ -64,7 +65,7 @@ export function createMCPServer(deps: {
 }) {
   const server = new McpServer({
     name: "ApiSDK",
-    version: "0.1.5",
+    version: "0.1.6",
   });
 
   const client = new ApiSDKCore({
@@ -109,6 +110,7 @@ export function createMCPServer(deps: {
   tool(tool$adminPostApiAdminAgentsAgentIdDeactivate);
   tool(tool$adminPostApiAdminAgentsAgentIdReactivate);
   tool(tool$adminGetApiAdminSearch);
+  tool(tool$agentGetApiAgentAgentId);
   tool(tool$agentGetApiAgentProfile);
   tool(tool$agentPutApiAgentProfile);
   tool(tool$agentGetApiAgentBalances);
