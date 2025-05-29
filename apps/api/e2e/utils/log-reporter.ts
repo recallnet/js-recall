@@ -7,10 +7,11 @@ import type {
   TestModule,
   TestRunEndReason,
 } from "vitest/node";
+import type { TestCase } from "vitest/node";
 
 /**
  * Custom Vitest reporter that logs test results to e2e-server.log file
- * and processes the log file to count tests at the end of the run.
+ * and tracks test failures through Vitest's proper reporter API.
  */
 class LogReporter implements Reporter {
   logFile: string;
@@ -27,6 +28,90 @@ class LogReporter implements Reporter {
 
   onTestRunStart(): void {
     this.log("==== VITEST TEST SUITE STARTED ====");
+  }
+
+  /**
+   * Called when test case is ready to run.
+   * We use this to log the start of each test.
+   */
+  onTestCaseReady(testCase: TestCase): void {
+    this.log(`[Test] Starting test: ${testCase.fullName}`);
+  }
+
+  /**
+   * Called after the test and its hooks are finished running.
+   * We use this to log test completion and track failures.
+   */
+  onTestCaseResult(testCase: TestCase): void {
+    const result = testCase.result();
+
+    // If the test failed, log the failure with error details
+    if (result.state === "failed") {
+      this.log(`[Test] Failed test: ${testCase.fullName}`);
+
+      // Log the error details if available
+      if (result.errors && result.errors.length > 0) {
+        result.errors.forEach((error, index) => {
+          if (error.message) {
+            // Clean up the error message for better readability
+            const cleanMessage = error.message
+              .replace(/\n\s+/g, " ")
+              .replace(/\s+/g, " ")
+              .trim();
+            this.log(`[Test] Error ${index + 1}: ${cleanMessage}`);
+          }
+
+          // Also log the error type if available
+          if (error.name && error.name !== "Error") {
+            this.log(`[Test] Error Type: ${error.name}`);
+          }
+
+          // Log stack trace information if available
+          if (error.stack) {
+            // Extract relevant parts of the stack trace
+            const stackLines = error.stack.split("\n");
+            // Find the first line that contains our test file
+            const testFileStack = stackLines.find(
+              (line) => line.includes(".test.") || line.includes("e2e/tests/"),
+            );
+
+            if (testFileStack) {
+              // Clean up the stack line to show just the relevant part
+              const cleanStack = testFileStack
+                .trim()
+                .replace(/^\s*at\s+/, "") // Remove "at " prefix
+                .replace(/file:\/\/[^)]+/, "") // Remove file:// URLs
+                .replace(/\(.+node_modules.+\)/, "") // Remove node_modules references
+                .trim();
+
+              if (cleanStack) {
+                this.log(`[Test] Location: ${cleanStack}`);
+              }
+            }
+          }
+
+          // Log source location if available (line/column numbers)
+          if (
+            error.loc &&
+            typeof error.loc === "object" &&
+            "line" in error.loc &&
+            "column" in error.loc
+          ) {
+            this.log(
+              `[Test] Source: Line ${error.loc.line}, Column ${error.loc.column}`,
+            );
+          }
+
+          // If there's a diff (for assertion errors), log it
+          if (error.diff) {
+            this.log(`[Test] Diff: ${error.diff}`);
+          }
+        });
+      }
+    }
+
+    // Always log test completion
+    this.log(`[Test] Completed test: ${testCase.fullName}`);
   }
 
   onTestRunEnd(
