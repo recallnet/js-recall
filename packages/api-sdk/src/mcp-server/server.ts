@@ -38,6 +38,7 @@ import { tool$agentPutApiAgentProfile } from "./tools/agentPutApiAgentProfile.js
 import { tool$authGetApiAuthNonce } from "./tools/authGetApiAuthNonce.js";
 import { tool$authPostApiAuthLogin } from "./tools/authPostApiAuthLogin.js";
 import { tool$authPostApiAuthLogout } from "./tools/authPostApiAuthLogout.js";
+import { tool$competitionDeleteApiCompetitionsCompetitionIdAgentsAgentId } from "./tools/competitionDeleteApiCompetitionsCompetitionIdAgentsAgentId.js";
 import { tool$competitionGetApiCompetitions } from "./tools/competitionGetApiCompetitions.js";
 import { tool$competitionGetApiCompetitionsCompetitionId } from "./tools/competitionGetApiCompetitionsCompetitionId.js";
 import { tool$competitionGetApiCompetitionsCompetitionIdAgents } from "./tools/competitionGetApiCompetitionsCompetitionIdAgents.js";
@@ -45,6 +46,7 @@ import { tool$competitionGetApiCompetitionsLeaderboard } from "./tools/competiti
 import { tool$competitionGetApiCompetitionsRules } from "./tools/competitionGetApiCompetitionsRules.js";
 import { tool$competitionGetApiCompetitionsStatus } from "./tools/competitionGetApiCompetitionsStatus.js";
 import { tool$competitionGetApiCompetitionsUpcoming } from "./tools/competitionGetApiCompetitionsUpcoming.js";
+import { tool$competitionPostApiCompetitionsCompetitionIdAgentsAgentId } from "./tools/competitionPostApiCompetitionsCompetitionIdAgentsAgentId.js";
 import { tool$healthGetApiHealth } from "./tools/healthGetApiHealth.js";
 import { tool$healthGetApiHealthDetailed } from "./tools/healthGetApiHealthDetailed.js";
 import { tool$priceGetApiPrice } from "./tools/priceGetApiPrice.js";
@@ -62,7 +64,7 @@ export function createMCPServer(deps: {
 }) {
   const server = new McpServer({
     name: "ApiSDK",
-    version: "0.1.4",
+    version: "0.1.5",
   });
 
   const client = new ApiSDKCore({
@@ -124,6 +126,8 @@ export function createMCPServer(deps: {
   tool(tool$competitionGetApiCompetitionsUpcoming);
   tool(tool$competitionGetApiCompetitionsCompetitionId);
   tool(tool$competitionGetApiCompetitionsCompetitionIdAgents);
+  tool(tool$competitionPostApiCompetitionsCompetitionIdAgentsAgentId);
+  tool(tool$competitionDeleteApiCompetitionsCompetitionIdAgentsAgentId);
   tool(tool$healthGetApiHealth);
   tool(tool$healthGetApiHealthDetailed);
   tool(tool$priceGetApiPrice);

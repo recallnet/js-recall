@@ -42,6 +42,14 @@ export type GetApiUserAgentsAgentIdAgent = {
   imageUrl?: string | null | undefined;
   metadata?: GetApiUserAgentsAgentIdMetadata | null | undefined;
   status?: GetApiUserAgentsAgentIdStatus | undefined;
+  /**
+   * Reason for deactivation (if status is inactive)
+   */
+  deactivationReason?: string | null | undefined;
+  /**
+   * Date when agent was deactivated (if status is inactive)
+   */
+  deactivationDate?: Date | null | undefined;
   createdAt?: Date | undefined;
   updatedAt?: Date | undefined;
 };
@@ -266,6 +274,15 @@ export const GetApiUserAgentsAgentIdAgent$inboundSchema: z.ZodType<
     .nullable(z.lazy(() => GetApiUserAgentsAgentIdMetadata$inboundSchema))
     .optional(),
   status: GetApiUserAgentsAgentIdStatus$inboundSchema.optional(),
+  deactivationReason: z.nullable(z.string()).optional(),
+  deactivationDate: z
+    .nullable(
+      z
+        .string()
+        .datetime({ offset: true })
+        .transform((v) => new Date(v)),
+    )
+    .optional(),
   createdAt: z
     .string()
     .datetime({ offset: true })
@@ -289,6 +306,8 @@ export type GetApiUserAgentsAgentIdAgent$Outbound = {
   imageUrl?: string | null | undefined;
   metadata?: GetApiUserAgentsAgentIdMetadata$Outbound | null | undefined;
   status?: string | undefined;
+  deactivationReason?: string | null | undefined;
+  deactivationDate?: string | null | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
 };
@@ -310,6 +329,10 @@ export const GetApiUserAgentsAgentIdAgent$outboundSchema: z.ZodType<
     .nullable(z.lazy(() => GetApiUserAgentsAgentIdMetadata$outboundSchema))
     .optional(),
   status: GetApiUserAgentsAgentIdStatus$outboundSchema.optional(),
+  deactivationReason: z.nullable(z.string()).optional(),
+  deactivationDate: z
+    .nullable(z.date().transform((v) => v.toISOString()))
+    .optional(),
   createdAt: z
     .date()
     .transform((v) => v.toISOString())

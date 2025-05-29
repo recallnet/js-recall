@@ -71,6 +71,14 @@ export type PutApiUserAgentsAgentIdProfileAgent = {
   imageUrl?: string | undefined;
   metadata?: PutApiUserAgentsAgentIdProfileAgentMetadata | null | undefined;
   status?: PutApiUserAgentsAgentIdProfileStatus | undefined;
+  /**
+   * Reason for deactivation (if status is inactive)
+   */
+  deactivationReason?: string | null | undefined;
+  /**
+   * Date when agent was deactivated (if status is inactive)
+   */
+  deactivationDate?: Date | null | undefined;
   createdAt?: Date | undefined;
   updatedAt?: Date | undefined;
 };
@@ -470,6 +478,15 @@ export const PutApiUserAgentsAgentIdProfileAgent$inboundSchema: z.ZodType<
     )
     .optional(),
   status: PutApiUserAgentsAgentIdProfileStatus$inboundSchema.optional(),
+  deactivationReason: z.nullable(z.string()).optional(),
+  deactivationDate: z
+    .nullable(
+      z
+        .string()
+        .datetime({ offset: true })
+        .transform((v) => new Date(v)),
+    )
+    .optional(),
   createdAt: z
     .string()
     .datetime({ offset: true })
@@ -496,6 +513,8 @@ export type PutApiUserAgentsAgentIdProfileAgent$Outbound = {
     | null
     | undefined;
   status?: string | undefined;
+  deactivationReason?: string | null | undefined;
+  deactivationDate?: string | null | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
 };
@@ -519,6 +538,10 @@ export const PutApiUserAgentsAgentIdProfileAgent$outboundSchema: z.ZodType<
     )
     .optional(),
   status: PutApiUserAgentsAgentIdProfileStatus$outboundSchema.optional(),
+  deactivationReason: z.nullable(z.string()).optional(),
+  deactivationDate: z
+    .nullable(z.date().transform((v) => v.toISOString()))
+    .optional(),
   createdAt: z
     .date()
     .transform((v) => v.toISOString())
