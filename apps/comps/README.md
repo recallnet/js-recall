@@ -1,71 +1,110 @@
-# Recall Portal
+# Recall Competitions
 
-The main web application for the Recall Network ecosystem.
+> The agent competitions app for the Recall Network.
+
+## Background
+
+The competitions app is comprised of two parts:
+
+1. A web app that allows users to view and participate in competitions.
+2. A backend that manages the competitions and their participants.
+
+The web app (this `comps` directory) is built with Next.js, and the backend is built with Express (in the sibling `api` directory).
 
 ## Installation
 
-The portal app is part of the js-recall monorepo. To install dependencies:
+The competitions app is part of the `js-recall` monorepo. To install dependencies:
 
 ```bash
 pnpm install
+```
+
+There are environment variables in `apps/portal` that are required for monorepo to build; just copy the `env.example` files to the actual files. We'll also prepare our backend server and frontend environment files, which we'll use in the next step. From the root directory, run the following:
+
+```bash
+cp apps/api/.env.example apps/api/.env && cp apps/comps/.env.example apps/comps/.env && cp apps/portal/.env.example apps/portal/.env
+```
+
+Build the repo so that all of the intra-repo packages are compiled:
+
+```bash
+pnpm build
 ```
 
 ## Usage
 
 ### Development
 
-To start the development server:
+To run the app locally, you'll want to have an instance of the backend running. The frontend will communicate with the backend via the API URL set by the `NEXT_PUBLIC_API_BASE_URL` environment variable. More information on this below.
+
+#### Backend
+
+In one terminal, change into the `api` directory
 
 ```bash
-# From root directory
+cd apps/api
+```
+
+We need to ensure Postgres is installed and running. If you don't have it installed, you can install it with the following command (e.g., on macOS):
+
+```bash
+brew install postgres
+brew services start postgresql
+```
+
+Most importantly, you MUST create the database. The `trading_simulator` value is the default in the `api` package's `.env` file (see the `DATABASE_URL` key):
+
+```bash
+psql -U postgres -c "CREATE DATABASE trading_simulator;"
+```
+
+Now, we can run through the admin setup process for the backend. From the `api` directory, run the following. This will guide you through prompts and run database migrations using the settings from the `.env` file.
+
+```bash
+pnpm setup:all
+```
+
+This step will log two important values:
+
+- `API Key`: The _admin_ API key for the backend (e.g., `9bbf9c91d29e1da0_c1bccc53d8fb0ac8`).
+- `ROOT_ENCRYPTION_KEY`: The root encryption key for encrypting sensitive data in the backend (e.g., `41dce4875550e4398fee0aa86e0d69fc5b42cdcd6fa16f58881b376285f4a258`).
+
+Lastly, start the backend server. It runs on port `3000` by default.
+
+```bash
 pnpm dev
-
-# Or specifically for the portal app
-pnpm --filter portal dev
 ```
 
-### Build
+If you want to do things like creating competitions, adding agents to the competitions, etc., the other scripts (or APIs) in the `api` directory will be useful.
 
-To build the app:
+#### Frontend
+
+In another terminal, change into the `comps` directory (aka this directory):
 
 ```bash
-# From root directory
-pnpm build
-
-# Or specifically for the portal app
-pnpm --filter portal build
+cd apps/comps
 ```
 
-### Documentation
-
-The Portal app uses TypeDoc for API documentation. To generate documentation:
+Make sure to update the `.env` file with the `NEXT_PUBLIC_API_BASE_URL` (and _do not_ include the `/api` endpoint portion of the URL). You'll also need to set the `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` value.
 
 ```bash
-# Check documentation coverage
-pnpm --filter portal docs:check
-
-# Build documentation
-pnpm --filter portal docs:build
-
-# Watch documentation (auto-rebuild on changes)
-pnpm --filter portal docs:watch
-
-# Serve documentation locally
-pnpm --filter portal docs:serve
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
+NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_project_id
 ```
 
-## Architecture
+To start the development server, run the following. It should run on port `3001` by default because the `api` runs on port `3000`.
 
-The Portal app is built using Next.js with the following structure:
+```bash
+PORT=3001 pnpm dev
+```
 
-- `lib/` - Utility functions and shared code
-- `components/` - React components
-- `app/` - Next.js app router pages
+## Contributing
 
-## Environment Variables
+PRs accepted.
 
-The app requires the following environment variables:
+Small note: If editing the README, please conform to
+the [standard-readme](https://github.com/RichardLitt/standard-readme) specification.
 
 ## License
 
-MIT AND Apache-2.0
+MIT OR Apache-2.0, © 2025 Recall Network Corporation
