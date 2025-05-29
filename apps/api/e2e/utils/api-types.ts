@@ -626,3 +626,19 @@ export interface AdminSearchUsersAndAgentsResponse {
     }[];
   };
 }
+
+/**
+ * Competition Join/Leave Response Types
+ */
+
+// Competition join response
+export interface CompetitionJoinResponse extends ApiResponse {
+  success: true;
+  message: string;
+}
+
+// Competition leave response
+export interface CompetitionLeaveResponse extends ApiResponse {
+  success: true;
+  message: string;
+}

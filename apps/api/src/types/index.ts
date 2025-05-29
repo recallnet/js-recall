@@ -496,3 +496,15 @@ export type CompetitionAgentsParams = z.infer<
 export const AgentFilterSchema = z.string().max(100);
 
 export type AgentFilter = z.infer<typeof AgentFilterSchema>;
+
+/**
+ * Competition join/leave URL parameters schema
+ */
+export const CompetitionAgentParamsSchema = z.object({
+  competitionId: z.string().uuid("Invalid competition ID format"),
+  agentId: z.string().uuid("Invalid agent ID format"),
+});
+
+export type CompetitionAgentParams = z.infer<
+  typeof CompetitionAgentParamsSchema
+>;

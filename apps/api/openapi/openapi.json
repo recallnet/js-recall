@@ -3840,6 +3840,150 @@
         }
       }
     },
+    "/api/competitions/{competitionId}/agents/{agentId}": {
+      "post": {
+        "tags": [
+          "Competition"
+        ],
+        "summary": "Join a competition",
+        "description": "Register an agent for a pending competition",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "competitionId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Competition ID"
+          },
+          {
+            "in": "path",
+            "name": "agentId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Agent ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully joined competition",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Operation success status"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Success message"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid UUID format for competitionId or agentId"
+          },
+          "401": {
+            "description": "Unauthorized - Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Forbidden - Various business rule violations:\n- Cannot join competition that has already started/ended\n- Agent does not belong to requesting user\n- Agent is already registered for this competition\n- Agent is not eligible to join competitions\n"
+          },
+          "404": {
+            "description": "Competition or agent not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Competition"
+        ],
+        "summary": "Leave a competition",
+        "description": "Remove an agent from a competition. Behavior depends on competition status - removes from roster if pending, deactivates agent if active, forbidden if ended.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "competitionId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Competition ID"
+          },
+          {
+            "in": "path",
+            "name": "agentId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Agent ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully left competition",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Operation success status"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Success message"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid UUID format for competitionId or agentId"
+          },
+          "401": {
+            "description": "Unauthorized - Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Forbidden - Various business rule violations:\n- Cannot leave competition that has already ended\n- Agent does not belong to requesting user\n- Agent is not registered for this competition\n"
+          },
+          "404": {
+            "description": "Competition or agent not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
     "/api/health": {
       "get": {
         "tags": [
@@ -4974,6 +5118,17 @@
                               "deleted"
                             ]
                           },
+                          "deactivationReason": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "Reason for deactivation (if status is inactive)"
+                          },
+                          "deactivationDate": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true,
+                            "description": "Date when agent was deactivated (if status is inactive)"
+                          },
                           "createdAt": {
                             "type": "string",
                             "format": "date-time"
@@ -5077,6 +5232,17 @@
                             "suspended",
                             "deleted"
                           ]
+                        },
+                        "deactivationReason": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "Reason for deactivation (if status is inactive)"
+                        },
+                        "deactivationDate": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "Date when agent was deactivated (if status is inactive)"
                         },
                         "createdAt": {
                           "type": "string",
@@ -5224,6 +5390,17 @@
                             "suspended",
                             "deleted"
                           ]
+                        },
+                        "deactivationReason": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "Reason for deactivation (if status is inactive)"
+                        },
+                        "deactivationDate": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "Date when agent was deactivated (if status is inactive)"
                         },
                         "createdAt": {
                           "type": "string",

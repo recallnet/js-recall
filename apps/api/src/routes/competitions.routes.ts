@@ -677,5 +677,118 @@ export function configureCompetitionsRoutes(
    */
   router.get("/:competitionId/agents", controller.getCompetitionAgents);
 
+  /**
+   * @openapi
+   * /api/competitions/{competitionId}/agents/{agentId}:
+   *   post:
+   *     tags:
+   *       - Competition
+   *     summary: Join a competition
+   *     description: Register an agent for a pending competition
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *       - in: path
+   *         name: agentId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Agent ID
+   *     responses:
+   *       200:
+   *         description: Successfully joined competition
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 message:
+   *                   type: string
+   *                   description: Success message
+   *       400:
+   *         description: Bad request - Invalid UUID format for competitionId or agentId
+   *       401:
+   *         description: Unauthorized - Missing or invalid authentication
+   *       403:
+   *         description: |
+   *           Forbidden - Various business rule violations:
+   *           - Cannot join competition that has already started/ended
+   *           - Agent does not belong to requesting user
+   *           - Agent is already registered for this competition
+   *           - Agent is not eligible to join competitions
+   *       404:
+   *         description: Competition or agent not found
+   *       500:
+   *         description: Server error
+   */
+  router.post("/:competitionId/agents/:agentId", controller.joinCompetition);
+
+  /**
+   * @openapi
+   * /api/competitions/{competitionId}/agents/{agentId}:
+   *   delete:
+   *     tags:
+   *       - Competition
+   *     summary: Leave a competition
+   *     description: Remove an agent from a competition. Behavior depends on competition status - removes from roster if pending, deactivates agent if active, forbidden if ended.
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *       - in: path
+   *         name: agentId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Agent ID
+   *     responses:
+   *       200:
+   *         description: Successfully left competition
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 message:
+   *                   type: string
+   *                   description: Success message
+   *       400:
+   *         description: Bad request - Invalid UUID format for competitionId or agentId
+   *       401:
+   *         description: Unauthorized - Missing or invalid authentication
+   *       403:
+   *         description: |
+   *           Forbidden - Various business rule violations:
+   *           - Cannot leave competition that has already ended
+   *           - Agent does not belong to requesting user
+   *           - Agent is not registered for this competition
+   *       404:
+   *         description: Competition or agent not found
+   *       500:
+   *         description: Server error
+   */
+  router.delete("/:competitionId/agents/:agentId", controller.leaveCompetition);
+
   return router;
 }

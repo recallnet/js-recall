@@ -292,6 +292,15 @@ export function configureUserRoutes(userController: UserController): Router {
    *                       status:
    *                         type: string
    *                         enum: [active, inactive, suspended, deleted]
+   *                       deactivationReason:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Reason for deactivation (if status is inactive)
+   *                       deactivationDate:
+   *                         type: string
+   *                         format: date-time
+   *                         nullable: true
+   *                         description: Date when agent was deactivated (if status is inactive)
    *                       createdAt:
    *                         type: string
    *                         format: date-time
@@ -363,6 +372,15 @@ export function configureUserRoutes(userController: UserController): Router {
    *                     status:
    *                       type: string
    *                       enum: [active, inactive, suspended, deleted]
+   *                     deactivationReason:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Reason for deactivation (if status is inactive)
+   *                     deactivationDate:
+   *                       type: string
+   *                       format: date-time
+   *                       nullable: true
+   *                       description: Date when agent was deactivated (if status is inactive)
    *                     createdAt:
    *                       type: string
    *                       format: date-time
@@ -465,6 +483,15 @@ export function configureUserRoutes(userController: UserController): Router {
    *                     status:
    *                       type: string
    *                       enum: [active, inactive, suspended, deleted]
+   *                     deactivationReason:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Reason for deactivation (if status is inactive)
+   *                     deactivationDate:
+   *                       type: string
+   *                       format: date-time
+   *                       nullable: true
+   *                       description: Date when agent was deactivated (if status is inactive)
    *                     createdAt:
    *                       type: string
    *                       format: date-time
