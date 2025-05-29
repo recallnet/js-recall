@@ -90,7 +90,7 @@
     "copyfiles": "^2.4.1",
     "drizzle-kit": "^0.31.1",
     "drizzle-seed": "^0.3.1",
-    "eslint": "^9.27.0",
+    "eslint": "^9.19.0",
     "openapi-markdown": "^1.2.3",
     "siwe": "^3.0.0",
     "tough-cookie": "^5.1.2",
