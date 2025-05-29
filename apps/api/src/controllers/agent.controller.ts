@@ -78,16 +78,10 @@ export function makeAgentController(services: ServiceRegistry) {
     async updateProfile(req: Request, res: Response, next: NextFunction) {
       try {
         const agentId = req.agentId as string;
-        const { name, description, imageUrl, email, metadata } = req.body;
+        const { name, description, imageUrl } = req.body;
 
         // Validate that only allowed fields are being updated
-        const allowedFields = [
-          "name",
-          "description",
-          "imageUrl",
-          "email",
-          "metadata",
-        ];
+        const allowedFields = ["name", "description", "imageUrl"];
         const providedFields = Object.keys(req.body);
         const invalidFields = providedFields.filter(
           (field) => !allowedFields.includes(field),
@@ -112,8 +106,6 @@ export function makeAgentController(services: ServiceRegistry) {
           name?: string;
           description?: string;
           imageUrl?: string;
-          email?: string;
-          metadata?: Record<string, unknown>;
         } = { id: agentId };
 
         if (name !== undefined) {
@@ -135,20 +127,6 @@ export function makeAgentController(services: ServiceRegistry) {
             throw new ApiError(400, "Agent imageUrl must be a string");
           }
           updateData.imageUrl = imageUrl.trim();
-        }
-
-        if (email !== undefined) {
-          if (typeof email !== "string" || email.trim().length === 0) {
-            throw new ApiError(400, "Agent email must be a non-empty string");
-          }
-          updateData.email = email.trim();
-        }
-
-        if (metadata !== undefined) {
-          if (typeof metadata !== "object" || metadata === null) {
-            throw new ApiError(400, "Agent metadata must be an object");
-          }
-          updateData.metadata = metadata;
         }
 
         const updatedAgent = await services.agentManager.updateAgent({

@@ -791,4 +791,80 @@ describe("Agent API", () => {
     expect(foundAgent).toBeDefined();
     expect(foundAgent?.imageUrl).toBe(newImageUrl);
   });
+
+  test("agents cannot update email or metadata", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+    expect(adminLoginSuccess).toBe(true);
+
+    // Step 1: Register a user and agent with initial imageUrl
+    const userName = `Email Test User ${Date.now()}`;
+    const userEmail = `email-test-${Date.now()}@example.com`;
+    const agentName = `Email Test Agent ${Date.now()}`;
+    const agentDescription = "Agent for email testing";
+    const userWalletAddress = generateRandomEthAddress();
+
+    // Register the user and agent with an initial image URL
+    const { agent, apiKey } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      walletAddress: userWalletAddress,
+      userName,
+      userEmail,
+      agentName,
+      agentDescription,
+    });
+
+    expect(agent).toBeDefined();
+    expect(agent.id).toBeDefined();
+
+    // Step 2: Try to have the agent update its email
+    try {
+      await axios.put(
+        `${getBaseUrl()}/api/agent/profile`,
+        {
+          email: "test@test.com",
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+        },
+      );
+      // Unreachable code (should throw an error)
+      expect(false).toBe(true);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        expect(error.response.status).toBe(400);
+        expect(error.response.data.error).toContain("Invalid fields");
+      }
+    }
+
+    // Step 3: Try to have the agent update its metadata
+    try {
+      const agentMetadata = {
+        test: "test",
+      };
+      await axios.put(
+        `${getBaseUrl()}/api/agent/profile`,
+        {
+          metadata: agentMetadata,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+        },
+      );
+      // Unreachable code (should throw an error)
+      expect(false).toBe(true);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        expect(error.response.status).toBe(400);
+        expect(error.response.data.error).toContain("Invalid fields");
+      }
+    }
+  });
 });

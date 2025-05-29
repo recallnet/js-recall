@@ -20,8 +20,6 @@ import {
   registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
 
-// TODO: the tests below still have some API key usage, and we need to add more tests for user auth
-
 describe("User API", () => {
   // Clean up test state before each test
   let adminApiKey: string;
@@ -82,6 +80,7 @@ describe("User API", () => {
     expect((profileResponse as UserProfileResponse).user.name).toBe(userName);
   });
 
+  // TODO: once we have a user-centric API, switch to a user-centric test
   test("users can update their profile information", async () => {
     // Setup admin client
     const client = createTestClient();
@@ -152,6 +151,7 @@ describe("User API", () => {
     }
   });
 
+  // TODO: once we have a user-centric API, switch to a user-centric test
   test("user can update both name and imageUrl in a single request", async () => {
     // Setup admin client
     const adminClient = createTestClient();
@@ -334,6 +334,40 @@ describe("User API", () => {
       "https://example.com/updated-image.jpg",
     );
 
+    // Test: User can update email field
+    const updateEmailResponse = await siweClient.updateUserAgentProfile(
+      agent.id,
+      {
+        email: "updated-email@example.com",
+      },
+    );
+    expect(updateEmailResponse.success).toBe(true);
+    const updatedAgent4 = (updateEmailResponse as AgentProfileResponse).agent;
+    expect(updatedAgent4.email).toBe("updated-email@example.com");
+
+    // Test: User can update metadata field
+    const updateMetadataResponse = await siweClient.updateUserAgentProfile(
+      agent.id,
+      {
+        metadata: {
+          ref: {
+            name: "Updated Ref Name",
+            version: "1.0.0",
+            url: "https://example.com/updated-ref.com",
+          },
+        },
+      },
+    );
+    expect(updateMetadataResponse.success).toBe(true);
+    const updatedAgent5 = (updateMetadataResponse as AgentProfileResponse)
+      .agent;
+    expect(updatedAgent5.metadata).toBeDefined();
+    expect(updatedAgent5.metadata?.ref?.name).toBe("Updated Ref Name");
+    expect(updatedAgent5.metadata?.ref?.version).toBe("1.0.0");
+    expect(updatedAgent5.metadata?.ref?.url).toBe(
+      "https://example.com/updated-ref.com",
+    );
+
     // Test: User can update all fields at once
     const updateAllResponse = await siweClient.updateUserAgentProfile(
       agent.id,
@@ -341,6 +375,14 @@ describe("User API", () => {
         name: "Final Agent Name",
         description: "Final agent description",
         imageUrl: "https://example.com/final-image.jpg",
+        email: "final-email@example.com",
+        metadata: {
+          ref: {
+            name: "Final Ref Name",
+            version: "1.0.1",
+            url: "https://example.com/final-ref.com",
+          },
+        },
       },
     );
     expect(updateAllResponse.success).toBe(true);
@@ -356,6 +398,24 @@ describe("User API", () => {
     expect(persistedAgent.name).toBe("Final Agent Name");
     expect(persistedAgent.description).toBe("Final agent description");
     expect(persistedAgent.imageUrl).toBe("https://example.com/final-image.jpg");
+  });
+
+  test("user cannot update an agent they don't own", async () => {
+    // Create a SIWE-authenticated client
+    const { client: siweClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Agent Profile Test User",
+      userEmail: "agent-profile-test@example.com",
+    });
+
+    // Create an agent via SIWE session
+    const createAgentResponse = await siweClient.createAgent(
+      "Original Agent Name",
+      "Original agent description",
+      "https://example.com/original-image.jpg",
+    );
+    expect(createAgentResponse.success).toBe(true);
+    const agent = (createAgentResponse as AgentProfileResponse).agent;
 
     // Test: User cannot update agent they don't own
     // Create another user and try to update the first user's agent

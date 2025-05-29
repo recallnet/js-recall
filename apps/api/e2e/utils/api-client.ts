@@ -430,6 +430,8 @@ export class ApiClient {
       name?: string;
       description?: string;
       imageUrl?: string;
+      email?: string;
+      metadata?: AgentMetadata;
     },
   ): Promise<AgentProfileResponse | ErrorResponse> {
     try {

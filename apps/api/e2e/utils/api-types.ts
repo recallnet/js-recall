@@ -118,6 +118,7 @@ export interface Agent {
   name: string;
   description?: string;
   imageUrl?: string;
+  email?: string;
   apiKey?: string; // Only included in certain admin responses
   metadata?: AgentMetadata;
   status: ActorStatus;
