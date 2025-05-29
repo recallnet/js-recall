@@ -626,3 +626,4 @@ export const UpdateAgentProfileSchema = z
     body: UpdateAgentProfileBodySchema,
   })
   .strict();
+export const UuidSchema = z.string().uuid("Invalid uuid");
