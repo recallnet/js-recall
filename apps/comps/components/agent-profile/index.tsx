@@ -84,8 +84,8 @@ export default function AgentProfile({
     <>
       <Breadcrumbs items={[{title: "RECALL", href: "/"}, {title: "AGENTS", href: "/"}, {title: agent.name, href: "/"},]} />
 
-      <div className="my-6 pt-5 flex flex-col items-center gap-6 rounded-xl md:flex-row md:items-start md:gap-10 border-t border-gray-700">
-        <Card className="flex flex-col items-center justify-between bg-gray-900 h-[65vh] w-140 p-8" corner="top-left" cropSize={45}>
+      <div className="my-6 pt-5 grid md:grid-cols-[400px_1fr_1fr] grid-cols-[300px_1fr_1fr] sm:grid-rows-[65vh_1fr] rounded-xl border-t border-gray-700">
+        <Card className="sm:col-span-1 col-span-3 flex flex-col items-center justify-between bg-gray-900 h-[65vh] p-8 sm:mr-8" corner="top-left" cropSize={45}>
           <div className="flex justify-end w-full">
             <Share2Icon className="text-gray-600" size={30} />
           </div>
@@ -96,73 +96,71 @@ export default function AgentProfile({
           />
           <span className="text-gray-400 text-lg text-center w-50 mt-20">Calm accumulation of elite assets.</span>
         </Card>
-        <div className="flex border border-gray-700 h-[65vh] w-full">
-          <div className="flex flex-col w-130">
-            <div className="p-8 border-r border-b border-gray-700 grow">
-              <h1 className="text-white text-4xl font-bold">
-                {agent.name}
-              </h1>
-              <div className="flex gap-3 justify-start w-full mt-5">
-                <Hexagon className="bg-blue-500 w-10 h-10" />
-                <Hexagon className="bg-red-500 w-10 h-10" />
-                <Hexagon className="bg-yellow-500 w-10 h-10" />
-              </div>
-            </div>
-            <div className="flex flex-col items-start border-r border-b border-gray-700 p-6">
-              <span className="text-gray-300 w-full text-left text-xs font-semibold uppercase">
-                Best Placement
-              </span>
-              <span className="text-primary-foreground w-full text-left text-lg font-bold">
-                {agent.stats?.bestPlacement
-                  ? `🥇 ${agent.stats.bestPlacement.position} of ${agent.stats.bestPlacement.participants}`
-                  : "No placement"}
-              </span>
-            </div>
-            <div className="flex w-full">
-              <div className="flex flex-col items-start border-r border-b border-gray-700 p-6 w-1/2">
-                <span className="text-primary-foreground w-full text-left text-xs font-semibold uppercase">
-                  ELO Rating
-                </span>
-                <span className="text-primary-foreground w-full text-left text-lg font-bold">
-                  {agent.stats?.eloAvg || 0}
-                </span>
-              </div>
-              <div className="flex flex-col items-start border-r border-b border-gray-700 p-6 w-1/2">
-                <span className="text-primary-foreground w-full text-left text-xs font-semibold uppercase">
-                  Completed Comps
-                </span>
-                <span className="text-primary-foreground w-full text-left text-lg font-bold">
-                  {agent.stats?.completedCompetitions || 0}
-                </span>
-              </div>
+        <div className="lg:col-span-1 lg:col-start-2 sm:col-span-2 col-span-3 sm:col-start-2 row-start-2 sm:row-start-1 flex flex-col flex-2 shrink sm:h-[65vh] border border-gray-700 sm:mt-0 mt-5">
+          <div className="p-8 border-b border-gray-700 grow">
+            <h1 className="text-white text-4xl font-bold">
+              {agent.name}
+            </h1>
+            <div className="flex gap-3 justify-start w-full mt-5">
+              <Hexagon className="bg-blue-500 w-10 h-10" />
+              <Hexagon className="bg-red-500 w-10 h-10" />
+              <Hexagon className="bg-yellow-500 w-10 h-10" />
             </div>
           </div>
-          <div className="w-1/2 flex flex-col text-md">
-            <div className="flex flex-col items-start p-6 border-b border-gray-700 flex-1">
-              <span className="text-gray-500 uppercase font-semibold">agent profile</span>
-              <span className="text-secondary-foreground">Hunts analytics, prediction, and compute plays, backing teams that ship fast and iterate often.
+          <div className="flex flex-col items-start border-b border-gray-700 p-6">
+            <span className="text-gray-300 w-full text-left text-xs font-semibold uppercase">
+              Best Placement
+            </span>
+            <span className="text-primary-foreground w-full text-left text-lg font-bold">
+              {agent.stats?.bestPlacement
+                ? `🥇 ${agent.stats.bestPlacement.position} of ${agent.stats.bestPlacement.participants}`
+                : "No placement"}
+            </span>
+          </div>
+          <div className="flex w-full">
+            <div className="flex flex-col items-start border-r border-gray-700 p-6 w-1/2">
+              <span className="text-primary-foreground w-full text-left text-xs font-semibold uppercase">
+                ELO Rating
+              </span>
+              <span className="text-primary-foreground w-full text-left text-lg font-bold">
+                {agent.stats?.eloAvg || 0}
               </span>
             </div>
-            <div className="flex flex-col items-start p-6 border-b border-gray-700 flex-1">
-              <span className="text-gray-500 uppercase font-semibold">trading strategy</span>
-              <span className="text-secondary-foreground">
-                Builds positions only in AI/ML/data tokens, scaling in around major model releases and trimming on slowing dev activity.
+            <div className="flex flex-col items-start p-6 w-1/2">
+              <span className="text-primary-foreground w-full text-left text-xs font-semibold uppercase">
+                Completed Comps
+              </span>
+              <span className="text-primary-foreground w-full text-left text-lg font-bold">
+                {agent.stats?.completedCompetitions || 0}
               </span>
             </div>
-            <div className="flex flex-col items-start p-6 flex-1">
-              <span className="text-gray-500 w-full text-left font-semibold uppercase">
-                Proven Skills
-              </span>
-              <div className="mt-3 flex flex-wrap gap-3">
-                {skills.map((skill, index) => (
-                  <span
-                    key={index}
-                    className="border-gray-700 rounded border px-2 py-1 text-white"
-                  >
-                    {skill}
-                  </span>
-                ))}
-              </div>
+          </div>
+        </div>
+        <div className="lg:col-start-3 lg:row-start-1 lg:border-l-0 lg:mt-0 lg:h-[65vh] sm:grid mt-8 col-span-3 row-start-2 text-sm border-l border-t border-r border-b border-gray-700 hidden grid-rows-3">
+          <div className="flex flex-col items-start p-6 border-b border-gray-700 flex-1">
+            <span className="text-gray-500 uppercase font-semibold">agent profile</span>
+            <span className="text-secondary-foreground">Hunts analytics, prediction, and compute plays, backing teams that ship fast and iterate often.
+            </span>
+          </div>
+          <div className="flex flex-col items-start p-6 border-b border-gray-700 flex-1">
+            <span className="text-gray-500 uppercase font-semibold">trading strategy</span>
+            <span className="text-secondary-foreground">
+              Builds positions only in AI/ML/data tokens, scaling in around major model releases and trimming on slowing dev activity.
+            </span>
+          </div>
+          <div className="flex flex-col items-start p-6 flex-1">
+            <span className="text-gray-500 w-full text-left font-semibold uppercase">
+              Proven Skills
+            </span>
+            <div className="mt-3 flex flex-wrap gap-3">
+              {skills.map((skill, index) => (
+                <span
+                  key={index}
+                  className="border-gray-700 rounded border px-2 py-1 text-white"
+                >
+                  {skill}
+                </span>
+              ))}
             </div>
           </div>
         </div>
