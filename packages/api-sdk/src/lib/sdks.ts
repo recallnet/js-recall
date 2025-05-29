@@ -64,6 +64,7 @@ type RequestConfig = {
   headers?: HeadersInit;
   security?: SecurityState | null;
   uaHeader?: string;
+  userAgent?: string | undefined;
   timeoutMs?: number;
 };
 
@@ -97,19 +98,21 @@ export class ClientSDK {
     } else {
       this.#hooks = new SDKHooks();
     }
-    this._options = { ...options, hooks: this.#hooks };
-
     const url = serverURLFromOptions(options);
     if (url) {
       url.pathname = url.pathname.replace(/\/+$/, "") + "/";
     }
+
     const { baseURL, client } = this.#hooks.sdkInit({
       baseURL: url,
       client: options.httpClient || new HTTPClient(),
     });
     this._baseURL = baseURL;
     this.#httpClient = client;
-    this.#logger = options.debugLogger;
+
+    this._options = { ...options, hooks: this.#hooks };
+
+    this.#logger = this._options.debugLogger;
     if (!this.#logger && env().APISDK_DEBUG) {
       this.#logger = console;
     }
@@ -185,7 +188,10 @@ export class ClientSDK {
     // Only set user agent header in non-browser-like environments since CORS
     // policy disallows setting it in browsers e.g. Chrome throws an error.
     if (!isBrowserLike) {
-      headers.set(conf.uaHeader ?? "user-agent", SDK_METADATA.userAgent);
+      headers.set(
+        conf.uaHeader ?? "user-agent",
+        conf.userAgent ?? SDK_METADATA.userAgent,
+      );
     }
 
     const fetchOptions: Omit<RequestInit, "method" | "body"> = {

@@ -3,10 +3,10 @@ id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
   docChecksum: 9f9c086839a64f3a4504adfdf27a9dc7
   docVersion: 1.0.0
-  speakeasyVersion: 1.552.0
-  generationVersion: 2.610.0
+  speakeasyVersion: 1.554.1
+  generationVersion: 2.616.1
   releaseVersion: 0.1.4
-  configChecksum: 02f3ba990623800322f7c4260c4f4ef9
+  configChecksum: 47d6708606fcdde27ee1316e9fd44628
 features:
   typescript:
     additionalDependencies: 0.1.0
@@ -25,7 +25,7 @@ features:
     nullables: 0.1.1
     responseFormat: 0.2.3
     retries: 2.83.0
-    sdkHooks: 0.2.0
+    sdkHooks: 0.3.0
 generatedFiles:
   - .devcontainer/README.md
   - .devcontainer/devcontainer.json

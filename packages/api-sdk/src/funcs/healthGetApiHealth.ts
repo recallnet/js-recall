@@ -75,6 +75,7 @@ async function $do(
   const requestSecurity = resolveGlobalSecurity(securityInput);
 
   const context = {
+    options: client._options,
     baseURL: options?.serverURL ?? client._baseURL ?? "",
     operationID: "get_/api/health",
     oAuth2Scopes: [],
@@ -95,6 +96,7 @@ async function $do(
       baseURL: options?.serverURL,
       path: path,
       headers: headers,
+      userAgent: client._options.userAgent,
       timeoutMs: options?.timeoutMs || client._options.timeoutMs || -1,
     },
     options,
