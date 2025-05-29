@@ -3,6 +3,7 @@
  */
 
 export * from "./deleteapiadminagentsagentid.js";
+export * from "./deleteapicompetitionscompetitionidagentsagentid.js";
 export * from "./getapiadminagents.js";
 export * from "./getapiadminagentsagentid.js";
 export * from "./getapiadminagentsagentidkey.js";
@@ -41,6 +42,7 @@ export * from "./postapiadminusers.js";
 export * from "./postapiagentresetapikey.js";
 export * from "./postapiauthlogin.js";
 export * from "./postapiauthlogout.js";
+export * from "./postapicompetitionscompetitionidagentsagentid.js";
 export * from "./postapitradeexecute.js";
 export * from "./postapiuseragents.js";
 export * from "./putapiagentprofile.js";

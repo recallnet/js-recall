@@ -1,12 +1,12 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: 9f9c086839a64f3a4504adfdf27a9dc7
+  docChecksum: f1af7514191f1dfd30e1d5a66c8046fd
   docVersion: 1.0.0
-  speakeasyVersion: 1.552.0
-  generationVersion: 2.610.0
-  releaseVersion: 0.1.4
-  configChecksum: 02f3ba990623800322f7c4260c4f4ef9
+  speakeasyVersion: 1.554.1
+  generationVersion: 2.616.1
+  releaseVersion: 0.2.0
+  configChecksum: 2abb305916b89681cf1e1d69879bf83c
 features:
   typescript:
     additionalDependencies: 0.1.0
@@ -25,7 +25,7 @@ features:
     nullables: 0.1.1
     responseFormat: 0.2.3
     retries: 2.83.0
-    sdkHooks: 0.2.0
+    sdkHooks: 0.3.0
 generatedFiles:
   - .devcontainer/README.md
   - .devcontainer/devcontainer.json
@@ -49,6 +49,8 @@ generatedFiles:
   - docs/models/operations/chains.md
   - docs/models/operations/deleteapiadminagentsagentidrequest.md
   - docs/models/operations/deleteapiadminagentsagentidresponse.md
+  - docs/models/operations/deleteapicompetitionscompetitionidagentsagentidrequest.md
+  - docs/models/operations/deleteapicompetitionscompetitionidagentsagentidresponse.md
   - docs/models/operations/getapiadminagentsagent.md
   - docs/models/operations/getapiadminagentsagentidagent.md
   - docs/models/operations/getapiadminagentsagentidkeyagent.md
@@ -191,6 +193,8 @@ generatedFiles:
   - docs/models/operations/postapiauthloginrequest.md
   - docs/models/operations/postapiauthloginresponse.md
   - docs/models/operations/postapiauthlogoutresponse.md
+  - docs/models/operations/postapicompetitionscompetitionidagentsagentidrequest.md
+  - docs/models/operations/postapicompetitionscompetitionidagentsagentidresponse.md
   - docs/models/operations/postapitradeexecuterequest.md
   - docs/models/operations/postapitradeexecuteresponse.md
   - docs/models/operations/postapiuseragentsagent.md
@@ -267,6 +271,7 @@ generatedFiles:
   - src/funcs/authGetApiAuthNonce.ts
   - src/funcs/authPostApiAuthLogin.ts
   - src/funcs/authPostApiAuthLogout.ts
+  - src/funcs/competitionDeleteApiCompetitionsCompetitionIdAgentsAgentId.ts
   - src/funcs/competitionGetApiCompetitions.ts
   - src/funcs/competitionGetApiCompetitionsCompetitionId.ts
   - src/funcs/competitionGetApiCompetitionsCompetitionIdAgents.ts
@@ -274,6 +279,7 @@ generatedFiles:
   - src/funcs/competitionGetApiCompetitionsRules.ts
   - src/funcs/competitionGetApiCompetitionsStatus.ts
   - src/funcs/competitionGetApiCompetitionsUpcoming.ts
+  - src/funcs/competitionPostApiCompetitionsCompetitionIdAgentsAgentId.ts
   - src/funcs/healthGetApiHealth.ts
   - src/funcs/healthGetApiHealthDetailed.ts
   - src/funcs/priceGetApiPrice.ts
@@ -344,6 +350,7 @@ generatedFiles:
   - src/mcp-server/tools/authGetApiAuthNonce.ts
   - src/mcp-server/tools/authPostApiAuthLogin.ts
   - src/mcp-server/tools/authPostApiAuthLogout.ts
+  - src/mcp-server/tools/competitionDeleteApiCompetitionsCompetitionIdAgentsAgentId.ts
   - src/mcp-server/tools/competitionGetApiCompetitions.ts
   - src/mcp-server/tools/competitionGetApiCompetitionsCompetitionId.ts
   - src/mcp-server/tools/competitionGetApiCompetitionsCompetitionIdAgents.ts
@@ -351,6 +358,7 @@ generatedFiles:
   - src/mcp-server/tools/competitionGetApiCompetitionsRules.ts
   - src/mcp-server/tools/competitionGetApiCompetitionsStatus.ts
   - src/mcp-server/tools/competitionGetApiCompetitionsUpcoming.ts
+  - src/mcp-server/tools/competitionPostApiCompetitionsCompetitionIdAgentsAgentId.ts
   - src/mcp-server/tools/healthGetApiHealth.ts
   - src/mcp-server/tools/healthGetApiHealthDetailed.ts
   - src/mcp-server/tools/priceGetApiPrice.ts
@@ -368,6 +376,7 @@ generatedFiles:
   - src/models/errors/postapiauthlogout.ts
   - src/models/errors/sdkvalidationerror.ts
   - src/models/operations/deleteapiadminagentsagentid.ts
+  - src/models/operations/deleteapicompetitionscompetitionidagentsagentid.ts
   - src/models/operations/getapiadminagents.ts
   - src/models/operations/getapiadminagentsagentid.ts
   - src/models/operations/getapiadminagentsagentidkey.ts
@@ -407,6 +416,7 @@ generatedFiles:
   - src/models/operations/postapiagentresetapikey.ts
   - src/models/operations/postapiauthlogin.ts
   - src/models/operations/postapiauthlogout.ts
+  - src/models/operations/postapicompetitionscompetitionidagentsagentid.ts
   - src/models/operations/postapitradeexecute.ts
   - src/models/operations/postapiuseragents.ts
   - src/models/operations/putapiagentprofile.ts
@@ -849,6 +859,24 @@ examples:
           sort: "position"
           limit: 50
           offset: 0
+      responses:
+        "200":
+          application/json: {}
+  post_/api/competitions/{competitionId}/agents/{agentId}:
+    speakeasy-default-post-/api/competitions/{competition-id}/agents/{agent-id}:
+      parameters:
+        path:
+          competitionId: "0154cfd6-fcda-4d23-9c6f-569854d0e269"
+          agentId: "b30c9cd5-2d56-40eb-8b08-e8c8a06eeb34"
+      responses:
+        "200":
+          application/json: {}
+  delete_/api/competitions/{competitionId}/agents/{agentId}:
+    speakeasy-default-delete-/api/competitions/{competition-id}/agents/{agent-id}:
+      parameters:
+        path:
+          competitionId: "11931252-73d1-45ae-965c-43a3f8a27c3b"
+          agentId: "48f1eb3b-b262-4d5f-8c07-8f29e5cb6a77"
       responses:
         "200":
           application/json: {}
