@@ -2,10 +2,10 @@
 
 import React from "react";
 
-import { cn } from "@recallnet/ui2/lib/utils";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { SocialLink } from "../data/social";
-import { SocialLinkCard } from "./social-link-card";
+import {SocialLink} from "../data/social";
+import {SocialLinkCard} from "./social-link-card";
 
 interface JoinSwarmSectionProps {
   className?: string;
@@ -20,8 +20,8 @@ export const JoinSwarmSection: React.FC<JoinSwarmSectionProps> = ({
     <section className={cn("", className)}>
       <h2 className="mb-6 text-3xl font-bold md:text-4xl">Join the swarm</h2>
 
-      <div className="mb-5 h-1 w-full border-b-2 border-gray-300"></div>
-      <div className="grid grid-cols-1 place-items-center gap-4 border md:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-5 h-1 w-full border-b border-gray-700"></div>
+      <div className="grid grid-cols-1 place-items-center gap-4 md:grid-cols-2 lg:grid-cols-4">
         {socialLinks.map((link) => (
           <SocialLinkCard
             className="w-50 min-w-40 xl:w-60"
