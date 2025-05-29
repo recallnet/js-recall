@@ -696,16 +696,11 @@ export function makeCompetitionController(services: ServiceRegistry) {
         } else if (req.userId) {
           // User session authentication - need to verify agent ownership
           const agent = await services.agentManager.getAgent(agentId);
-          if (!agent || agent.ownerId !== req.userId) {
-            throw new ApiError(403, "Access denied: You do not own this agent");
+          if (!agent) {
+            throw new ApiError(404, "Agent not found");
           }
-
-          // Check agent status - inactive agents should be rejected regardless of auth method
-          if (agent.status !== "active") {
-            throw new ApiError(
-              403,
-              `Cannot use inactive agent: ${agent.deactivationReason || "Agent has been deactivated"}`,
-            );
+          if (agent.ownerId !== req.userId) {
+            throw new ApiError(403, "Access denied: You do not own this agent");
           }
 
           validatedUserId = req.userId;
@@ -800,16 +795,11 @@ export function makeCompetitionController(services: ServiceRegistry) {
         } else if (req.userId) {
           // User session authentication - need to verify agent ownership
           const agent = await services.agentManager.getAgent(agentId);
-          if (!agent || agent.ownerId !== req.userId) {
-            throw new ApiError(403, "Access denied: You do not own this agent");
+          if (!agent) {
+            throw new ApiError(404, "Agent not found");
           }
-
-          // Check agent status - inactive agents should be rejected regardless of auth method
-          if (agent.status !== "active") {
-            throw new ApiError(
-              403,
-              `Cannot use inactive agent: ${agent.deactivationReason || "Agent has been deactivated"}`,
-            );
+          if (agent.ownerId !== req.userId) {
+            throw new ApiError(403, "Access denied: You do not own this agent");
           }
 
           validatedUserId = req.userId;

@@ -2107,7 +2107,7 @@ describe("Competition API", () => {
     }
   });
 
-  test("user cannot use inactive agent for competition", async () => {
+  test("user cannot use deleted agent for competition", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -2115,37 +2115,37 @@ describe("Competition API", () => {
     // Create a SIWE-authenticated user
     const { client: userClient } = await createSiweAuthenticatedClient({
       adminApiKey,
-      userName: "Inactive Agent User",
-      userEmail: "inactive-agent@example.com",
+      userName: "Deleted Agent User",
+      userEmail: "deleted-agent@example.com",
     });
 
     // User creates an agent
     const createAgentResponse = await userClient.createAgent(
-      "Inactive Agent Test",
-      "Agent for testing inactive agent rejection",
+      "Deleted Agent",
+      "Agent to be deleted for testing",
     );
     expect(createAgentResponse.success).toBe(true);
     const agent = (createAgentResponse as AgentProfileResponse).agent;
 
-    // Admin deactivates the agent
-    await adminClient.deactivateAgent(agent.id, "Test deactivation");
+    // Admin deletes the agent (deleted agents should not be able to join)
+    await adminClient.deleteAgent(agent.id);
 
     // Create a pending competition
-    const competitionName = `Inactive Agent Test ${Date.now()}`;
+    const competitionName = `Deleted Agent Test ${Date.now()}`;
     const createResponse = await createTestCompetition(
       adminClient,
       competitionName,
     );
     const competition = createResponse.competition;
 
-    // Try to join with inactive agent
+    // Try to join with deleted agent
     const joinResponse = await userClient.joinCompetition(
       competition.id,
       agent.id,
     );
     expect("success" in joinResponse && joinResponse.success).toBe(false);
     if ("error" in joinResponse) {
-      expect(joinResponse.error).toContain("inactive agent");
+      expect(joinResponse.error).toContain("not found");
     }
   });
 
@@ -2236,8 +2236,8 @@ describe("Competition API", () => {
     );
     expect("success" in leaveResponse && leaveResponse.success).toBe(false);
     if ("error" in leaveResponse) {
-      // When a competition ends, agents are deactivated, so the error will be about inactive agents
-      expect(leaveResponse.error).toContain("inactive agent");
+      // When a competition ends, we should get an error about the competition being ended
+      expect(leaveResponse.error).toContain("already ended");
     }
   });
 
