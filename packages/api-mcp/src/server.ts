@@ -6,6 +6,7 @@ import { tool$agentGetApiAgentBalances } from "@recallnet/api-sdk/mcp-server/too
 import { tool$agentGetApiAgentPortfolio } from "@recallnet/api-sdk/mcp-server/tools/agentGetApiAgentPortfolio.js";
 import { tool$agentGetApiAgentProfile } from "@recallnet/api-sdk/mcp-server/tools/agentGetApiAgentProfile.js";
 import { tool$agentGetApiAgentTrades } from "@recallnet/api-sdk/mcp-server/tools/agentGetApiAgentTrades.js";
+import { tool$agentGetApiAgents } from "@recallnet/api-sdk/mcp-server/tools/agentGetApiAgents.js";
 import { tool$agentPostApiAgentResetApiKey } from "@recallnet/api-sdk/mcp-server/tools/agentPostApiAgentResetApiKey.js";
 import { tool$agentPutApiAgentProfile } from "@recallnet/api-sdk/mcp-server/tools/agentPutApiAgentProfile.js";
 import { tool$competitionGetApiCompetitions } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitions.js";
@@ -33,6 +34,7 @@ const USER_TOOLS = [
   tool$agentGetApiAgentBalances,
   tool$agentGetApiAgentTrades,
   tool$agentGetApiAgentPortfolio,
+  tool$agentGetApiAgents,
 
   // Competition tools
   tool$competitionGetApiCompetitions,

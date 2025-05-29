@@ -9,9 +9,10 @@ import { getCompetitionAgents } from "@/database/repositories/competition-reposi
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
+  ActorStatus,
   AgentSearchParams,
-  CompetitionStatus,
-  CrossChainTradingType,
+  COMPETITION_STATUS,
+  CROSS_CHAIN_TRADING_TYPE,
   UserSearchParams,
 } from "@/types/index.js";
 
@@ -28,7 +29,7 @@ interface Agent {
   imageUrl: string | null;
   apiKey: string;
   metadata: unknown;
-  status: "active" | "suspended" | "deleted";
+  status: ActorStatus;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -40,7 +41,7 @@ interface User {
   email: string | null;
   imageUrl: string | null;
   metadata: unknown;
-  status: "active" | "suspended" | "deleted";
+  status: ActorStatus;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -327,7 +328,7 @@ export function makeAdminController(services: ServiceRegistry) {
               email: user.email,
               imageUrl: user.imageUrl,
               metadata: user.metadata,
-              status: user.status as "active" | "suspended" | "deleted",
+              status: user.status as ActorStatus,
               createdAt: user.createdAt,
               updatedAt: user.updatedAt,
             },
@@ -343,7 +344,7 @@ export function makeAdminController(services: ServiceRegistry) {
               imageUrl: agent.imageUrl,
               apiKey: agent.apiKey,
               metadata: agent.metadata,
-              status: agent.status as "active" | "suspended" | "deleted",
+              status: agent.status as ActorStatus,
               createdAt: agent.createdAt,
               updatedAt: agent.updatedAt,
             };
@@ -402,8 +403,15 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async registerAgent(req: Request, res: Response, next: NextFunction) {
       try {
-        const { userId, walletAddress, name, description, imageUrl, metadata } =
-          req.body;
+        const {
+          userId,
+          walletAddress,
+          name,
+          email,
+          description,
+          imageUrl,
+          metadata,
+        } = req.body;
 
         // Validate required parameters
         if (!walletAddress || !userId) {
@@ -438,6 +446,7 @@ export function makeAdminController(services: ServiceRegistry) {
             userId,
             name,
             description,
+            email,
             imageUrl,
             metadata,
           );
@@ -445,7 +454,7 @@ export function makeAdminController(services: ServiceRegistry) {
             success: true,
             agent: {
               ...agent,
-              status: agent.status as "active" | "suspended" | "deleted",
+              status: agent.status as ActorStatus,
             },
           };
 
@@ -501,7 +510,7 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async createCompetition(req: Request, res: Response, next: NextFunction) {
       try {
-        const { name, description, tradingType, externalLink, imageUrl } =
+        const { name, description, tradingType, externalUrl, imageUrl, type } =
           req.body;
 
         // Validate required parameters
@@ -513,9 +522,10 @@ export function makeAdminController(services: ServiceRegistry) {
         const competition = await services.competitionManager.createCompetition(
           name,
           description,
-          tradingType || CrossChainTradingType.disallowAll,
-          externalLink,
+          tradingType || CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+          externalUrl,
           imageUrl,
+          type,
         );
 
         // Return the created competition
@@ -541,7 +551,7 @@ export function makeAdminController(services: ServiceRegistry) {
           description,
           agentIds,
           tradingType,
-          externalLink,
+          externalUrl,
           imageUrl,
         } = req.body;
 
@@ -566,7 +576,7 @@ export function makeAdminController(services: ServiceRegistry) {
           }
 
           // Verify competition is in PENDING state
-          if (competition.status !== CompetitionStatus.PENDING) {
+          if (competition.status !== COMPETITION_STATUS.PENDING) {
             throw new ApiError(
               400,
               `Competition is already in ${competition.status} state and cannot be started`,
@@ -585,8 +595,8 @@ export function makeAdminController(services: ServiceRegistry) {
           competition = await services.competitionManager.createCompetition(
             name,
             description,
-            tradingType || CrossChainTradingType.disallowAll,
-            externalLink,
+            tradingType || CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+            externalUrl,
             imageUrl,
           );
         }
@@ -877,7 +887,7 @@ export function makeAdminController(services: ServiceRegistry) {
             walletAddress: user.walletAddress,
             name: user.name,
             email: user.email,
-            status: user.status as "active" | "suspended" | "deleted",
+            status: user.status as ActorStatus,
             imageUrl: user.imageUrl,
             metadata: user.metadata,
             createdAt: user.createdAt,
@@ -905,7 +915,7 @@ export function makeAdminController(services: ServiceRegistry) {
             walletAddress: agent.walletAddress,
             name: agent.name,
             description: agent.description,
-            status: agent.status as "active" | "suspended" | "deleted",
+            status: agent.status as ActorStatus,
             imageUrl: agent.imageUrl,
             metadata: agent.metadata,
             createdAt: agent.createdAt,
@@ -939,10 +949,12 @@ export function makeAdminController(services: ServiceRegistry) {
         const formattedAgents = agents.map((agent) => ({
           id: agent.id,
           ownerId: agent.ownerId,
+          walletAddress: agent.walletAddress,
           name: agent.name,
           description: agent.description,
           status: agent.status,
           imageUrl: agent.imageUrl,
+          metadata: agent.metadata,
           createdAt: agent.createdAt,
           updatedAt: agent.updatedAt,
         }));
@@ -1182,7 +1194,7 @@ export function makeAdminController(services: ServiceRegistry) {
           walletAddress: agent.walletAddress,
           name: agent.name,
           description: agent.description,
-          status: agent.status as "active" | "suspended" | "deleted",
+          status: agent.status as ActorStatus,
           imageUrl: agent.imageUrl,
           metadata: agent.metadata,
           createdAt: agent.createdAt,

@@ -2,6 +2,7 @@ import {
   foreignKey,
   index,
   jsonb,
+  pgEnum,
   pgTable,
   primaryKey,
   text,
@@ -10,6 +11,33 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
+
+import {
+  ACTOR_STATUS_VALUES,
+  COMPETITION_STATUS_VALUES,
+  COMPETITION_TYPE_VALUES,
+} from "@/types/index.js";
+
+/**
+ * Statuses for users, agents, and admins.
+ */
+export const actorStatus = pgEnum("actor_status", ACTOR_STATUS_VALUES);
+
+/**
+ * Defines the possible statuses for competitions.
+ */
+export const competitionStatus = pgEnum(
+  "competition_status",
+  COMPETITION_STATUS_VALUES,
+);
+
+/**
+ * Defines the possible types for competitions.
+ */
+export const competitionType = pgEnum(
+  "competition_type",
+  COMPETITION_TYPE_VALUES,
+);
 
 /**
  * Users represent the human owners of agents
@@ -20,10 +48,10 @@ export const users = pgTable(
     id: uuid().primaryKey().notNull(),
     walletAddress: varchar("wallet_address", { length: 42 }).unique().notNull(),
     name: varchar({ length: 100 }),
-    email: varchar({ length: 100 }),
+    email: varchar({ length: 100 }).unique(),
     imageUrl: text("image_url"),
     metadata: jsonb(),
-    status: varchar({ length: 20 }).default("active").notNull(), // 'active', 'suspended', 'deleted'
+    status: actorStatus("status").default("active").notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
     })
@@ -50,13 +78,14 @@ export const agents = pgTable(
   {
     id: uuid().primaryKey().notNull(),
     ownerId: uuid("owner_id").notNull(),
-    walletAddress: varchar("wallet_address", { length: 42 }),
+    walletAddress: varchar("wallet_address", { length: 42 }).unique(),
     name: varchar({ length: 100 }).notNull(),
+    email: varchar({ length: 100 }).unique(),
     description: text(),
     imageUrl: text("image_url"),
     apiKey: varchar("api_key", { length: 400 }).notNull(),
     metadata: jsonb(),
-    status: varchar({ length: 20 }).default("active").notNull(), // 'active', 'suspended', 'deleted'
+    status: actorStatus("status").default("active").notNull(),
     deactivationReason: text("deactivation_reason"),
     deactivationDate: timestamp("deactivation_date", {
       withTimezone: true,
@@ -102,7 +131,7 @@ export const admins = pgTable(
     name: varchar({ length: 100 }),
     imageUrl: text("image_url"),
     metadata: jsonb(),
-    status: varchar({ length: 20 }).default("active").notNull(), // 'active', 'suspended'
+    status: actorStatus("status").default("active").notNull(),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     createdAt: timestamp("created_at", {
       withTimezone: true,
@@ -132,11 +161,12 @@ export const competitions = pgTable(
     id: uuid().primaryKey().notNull(),
     name: varchar({ length: 100 }).notNull(),
     description: text(),
-    externalLink: text("external_link"),
+    type: competitionType("type").default("trading").notNull(),
+    externalUrl: text("external_url"),
     imageUrl: text("image_url"),
     startDate: timestamp("start_date", { withTimezone: true }),
     endDate: timestamp("end_date", { withTimezone: true }),
-    status: varchar({ length: 20 }).notNull(),
+    status: competitionStatus("status").notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
     }).defaultNow(),

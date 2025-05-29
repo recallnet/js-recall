@@ -321,7 +321,16 @@
                     "default": "disallowAll",
                     "example": "disallowAll"
                   },
-                  "externalLink": {
+                  "type": {
+                    "type": "string",
+                    "description": "The type of competition",
+                    "enum": [
+                      "trading"
+                    ],
+                    "default": "trading",
+                    "example": "trading"
+                  },
+                  "externalUrl": {
                     "type": "string",
                     "description": "External URL for competition details",
                     "example": "https://example.com/competition-details"
@@ -372,7 +381,7 @@
                           ],
                           "description": "Competition status"
                         },
-                        "externalLink": {
+                        "externalUrl": {
                           "type": "string",
                           "description": "External URL for competition details",
                           "nullable": true
@@ -390,6 +399,14 @@
                             "allow"
                           ],
                           "description": "The type of cross-chain trading allowed in this competition"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "trading"
+                          ],
+                          "default": "trading",
+                          "description": "The type of competition"
                         },
                         "createdAt": {
                           "type": "string",
@@ -451,7 +468,7 @@
                     "description": "Competition description (used when creating a new competition)",
                     "example": "A trading competition for the spring semester"
                   },
-                  "externalLink": {
+                  "externalUrl": {
                     "type": "string",
                     "description": "External URL for competition details (used when creating a new competition)",
                     "example": "https://example.com/competition-details"
@@ -478,6 +495,15 @@
                     ],
                     "default": "disallowAll",
                     "example": "disallowAll"
+                  },
+                  "type": {
+                    "type": "string",
+                    "description": "The type of competition",
+                    "enum": [
+                      "trading"
+                    ],
+                    "default": "trading",
+                    "example": "trading"
                   }
                 }
               }
@@ -522,7 +548,7 @@
                           "nullable": true,
                           "description": "Competition end date (null if not ended)"
                         },
-                        "externalLink": {
+                        "externalUrl": {
                           "type": "string",
                           "description": "External URL for competition details",
                           "nullable": true
@@ -549,6 +575,13 @@
                             "allow"
                           ],
                           "description": "Type of cross-chain trading allowed in this competition"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "trading"
+                          ],
+                          "description": "The type of competition"
                         },
                         "agentIds": {
                           "type": "array",
@@ -654,7 +687,7 @@
                           "format": "date-time",
                           "description": "Competition end date"
                         },
-                        "externalLink": {
+                        "externalUrl": {
                           "type": "string",
                           "description": "External URL for competition details",
                           "nullable": true
@@ -681,6 +714,13 @@
                             "allow"
                           ],
                           "description": "Type of cross-chain trading allowed in this competition"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "trading"
+                          ],
+                          "description": "The type of competition"
                         }
                       }
                     },
@@ -874,7 +914,7 @@
                           "nullable": true,
                           "description": "Competition end date"
                         },
-                        "externalLink": {
+                        "externalUrl": {
                           "type": "string",
                           "description": "External URL for competition details",
                           "nullable": true
@@ -901,6 +941,13 @@
                             "allow"
                           ],
                           "description": "Type of cross-chain trading allowed in this competition"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "trading"
+                          ],
+                          "description": "The type of competition"
                         }
                       }
                     },
@@ -1118,6 +1165,11 @@
                           "type": "string",
                           "description": "Agent name"
                         },
+                        "email": {
+                          "type": "string",
+                          "description": "Agent email",
+                          "nullable": true
+                        },
                         "description": {
                           "type": "string",
                           "description": "Agent description",
@@ -1217,11 +1269,13 @@
                           },
                           "name": {
                             "type": "string",
-                            "description": "User name"
+                            "description": "User name",
+                            "nullable": true
                           },
                           "email": {
                             "type": "string",
-                            "description": "User email"
+                            "description": "User email",
+                            "nullable": true
                           },
                           "status": {
                             "type": "string",
@@ -1300,6 +1354,11 @@
                             "type": "string",
                             "description": "Agent name"
                           },
+                          "email": {
+                            "type": "string",
+                            "description": "Agent email",
+                            "nullable": true
+                          },
                           "description": {
                             "type": "string",
                             "description": "Agent description",
@@ -1312,6 +1371,11 @@
                           "imageUrl": {
                             "type": "string",
                             "description": "URL to the agent's image",
+                            "nullable": true
+                          },
+                          "metadata": {
+                            "type": "object",
+                            "description": "Optional metadata for the agent",
                             "nullable": true
                           },
                           "createdAt": {
@@ -1874,6 +1938,14 @@
                                 "type": "string",
                                 "nullable": true
                               },
+                              "email": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "metadata": {
+                                "type": "object",
+                                "nullable": true
+                              },
                               "status": {
                                 "type": "string"
                               },
@@ -1957,15 +2029,31 @@
                         },
                         "imageUrl": {
                           "type": "string",
-                          "example": "https://example.com/bot-avatar.jpg"
+                          "example": "https://example.com/bot-avatar.jpg",
+                          "nullable": true
+                        },
+                        "email": {
+                          "type": "string",
+                          "example": "tradingbot@example.com",
+                          "nullable": true
                         },
                         "status": {
                           "type": "string",
                           "enum": [
                             "active",
+                            "inactive",
                             "suspended",
                             "deleted"
                           ]
+                        },
+                        "metadata": {
+                          "type": "object",
+                          "description": "Optional metadata for the agent",
+                          "example": {
+                            "strategy": "yield-farming",
+                            "risk": "medium"
+                          },
+                          "nullable": true
                         },
                         "createdAt": {
                           "type": "string",
@@ -2083,13 +2171,23 @@
                           "type": "string"
                         },
                         "description": {
-                          "type": "string"
+                          "type": "string",
+                          "nullable": true
                         },
                         "imageUrl": {
-                          "type": "string"
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "email": {
+                          "type": "string",
+                          "nullable": true
                         },
                         "status": {
                           "type": "string"
+                        },
+                        "metadata": {
+                          "type": "object",
+                          "nullable": true
                         },
                         "createdAt": {
                           "type": "string",
@@ -2881,7 +2979,7 @@
                             "nullable": true,
                             "description": "Competition description"
                           },
-                          "externalLink": {
+                          "externalUrl": {
                             "type": "string",
                             "nullable": true,
                             "description": "External URL for competition details"
@@ -2985,7 +3083,7 @@
                           "nullable": true,
                           "description": "Competition description"
                         },
-                        "externalLink": {
+                        "externalUrl": {
                           "type": "string",
                           "nullable": true,
                           "description": "External URL for competition details"
@@ -3011,7 +3109,7 @@
                           "enum": [
                             "pending",
                             "active",
-                            "completed"
+                            "ended"
                           ],
                           "description": "Competition status"
                         },
@@ -3162,7 +3260,7 @@
                           "nullable": true,
                           "description": "Competition description"
                         },
-                        "externalLink": {
+                        "externalUrl": {
                           "type": "string",
                           "nullable": true,
                           "description": "External URL for competition details"
@@ -3188,7 +3286,7 @@
                           "enum": [
                             "pending",
                             "active",
-                            "completed"
+                            "ended"
                           ],
                           "description": "Competition status"
                         },
@@ -3371,7 +3469,7 @@
                             "nullable": true,
                             "description": "Competition description"
                           },
-                          "externalLink": {
+                          "externalUrl": {
                             "type": "string",
                             "nullable": true,
                             "description": "External URL for competition details"
@@ -3475,7 +3573,7 @@
                           "nullable": true,
                           "description": "Competition description"
                         },
-                        "externalLink": {
+                        "externalUrl": {
                           "type": "string",
                           "nullable": true,
                           "description": "External URL for competition details"
@@ -4531,6 +4629,7 @@
                           "type": "string",
                           "enum": [
                             "active",
+                            "inactive",
                             "suspended",
                             "deleted"
                           ]
@@ -4588,6 +4687,11 @@
                     "type": "string",
                     "description": "URL to user's profile image",
                     "example": "https://example.com/avatar.jpg"
+                  },
+                  "email": {
+                    "type": "string",
+                    "description": "User's email",
+                    "example": "john@example.com"
                   }
                 },
                 "additionalProperties": false
@@ -4615,16 +4719,19 @@
                           "format": "uuid"
                         },
                         "walletAddress": {
-                          "type": "string"
+                          "type": "string",
+                          "nullable": true
                         },
                         "name": {
                           "type": "string"
                         },
                         "email": {
-                          "type": "string"
+                          "type": "string",
+                          "nullable": true
                         },
                         "imageUrl": {
-                          "type": "string"
+                          "type": "string",
+                          "nullable": true
                         },
                         "status": {
                           "type": "string"
@@ -4732,24 +4839,39 @@
                           "type": "string",
                           "format": "uuid"
                         },
+                        "walletAddress": {
+                          "type": "string",
+                          "nullable": true
+                        },
                         "name": {
                           "type": "string"
                         },
+                        "email": {
+                          "type": "string",
+                          "nullable": true
+                        },
                         "description": {
-                          "type": "string"
+                          "type": "string",
+                          "nullable": true
                         },
                         "imageUrl": {
-                          "type": "string"
+                          "type": "string",
+                          "nullable": true
                         },
                         "apiKey": {
                           "type": "string",
                           "description": "The API key for this agent (store this securely)",
                           "example": "1234567890abcdef_fedcba0987654321"
                         },
+                        "metadata": {
+                          "type": "object",
+                          "nullable": true
+                        },
                         "status": {
                           "type": "string",
                           "enum": [
                             "active",
+                            "inactive",
                             "suspended",
                             "deleted"
                           ]
@@ -4823,19 +4945,31 @@
                             "type": "string",
                             "format": "uuid"
                           },
+                          "walletAddress": {
+                            "type": "string",
+                            "nullable": true
+                          },
                           "name": {
                             "type": "string"
                           },
                           "description": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "email": {
                             "type": "string"
                           },
                           "imageUrl": {
                             "type": "string"
                           },
+                          "metadata": {
+                            "type": "object"
+                          },
                           "status": {
                             "type": "string",
                             "enum": [
                               "active",
+                              "inactive",
                               "suspended",
                               "deleted"
                             ]
@@ -4912,19 +5046,34 @@
                           "type": "string",
                           "format": "uuid"
                         },
+                        "walletAddress": {
+                          "type": "string",
+                          "nullable": true
+                        },
                         "name": {
                           "type": "string"
                         },
+                        "email": {
+                          "type": "string",
+                          "nullable": true
+                        },
                         "description": {
-                          "type": "string"
+                          "type": "string",
+                          "nullable": true
                         },
                         "imageUrl": {
-                          "type": "string"
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "metadata": {
+                          "type": "object",
+                          "nullable": true
                         },
                         "status": {
                           "type": "string",
                           "enum": [
                             "active",
+                            "inactive",
                             "suspended",
                             "deleted"
                           ]
@@ -5007,6 +5156,15 @@
                     "type": "string",
                     "description": "URL to agent's profile image",
                     "example": "https://example.com/new-bot-avatar.jpg"
+                  },
+                  "email": {
+                    "type": "string",
+                    "description": "Agent email",
+                    "example": "tradingbot@example.com"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "description": "Optional metadata for the agent"
                   }
                 },
                 "additionalProperties": false
@@ -5037,8 +5195,16 @@
                           "type": "string",
                           "format": "uuid"
                         },
+                        "walletAddress": {
+                          "type": "string",
+                          "nullable": true
+                        },
                         "name": {
                           "type": "string"
+                        },
+                        "email": {
+                          "type": "string",
+                          "nullable": true
                         },
                         "description": {
                           "type": "string"
@@ -5046,10 +5212,15 @@
                         "imageUrl": {
                           "type": "string"
                         },
+                        "metadata": {
+                          "type": "object",
+                          "nullable": true
+                        },
                         "status": {
                           "type": "string",
                           "enum": [
                             "active",
+                            "inactive",
                             "suspended",
                             "deleted"
                           ]

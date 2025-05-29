@@ -22,14 +22,18 @@ export type PutApiAgentProfileRequest = {
   imageUrl?: string | undefined;
 };
 
+export type PutApiAgentProfileMetadata = {};
+
 export type PutApiAgentProfileAgent = {
   id?: string | undefined;
   ownerId?: string | undefined;
   walletAddress?: string | undefined;
   name?: string | undefined;
-  description?: string | undefined;
-  imageUrl?: string | undefined;
+  description?: string | null | undefined;
+  imageUrl?: string | null | undefined;
+  email?: string | null | undefined;
   status?: string | undefined;
+  metadata?: PutApiAgentProfileMetadata | null | undefined;
   createdAt?: Date | undefined;
   updatedAt?: Date | undefined;
 };
@@ -103,6 +107,54 @@ export function putApiAgentProfileRequestFromJSON(
 }
 
 /** @internal */
+export const PutApiAgentProfileMetadata$inboundSchema: z.ZodType<
+  PutApiAgentProfileMetadata,
+  z.ZodTypeDef,
+  unknown
+> = z.object({});
+
+/** @internal */
+export type PutApiAgentProfileMetadata$Outbound = {};
+
+/** @internal */
+export const PutApiAgentProfileMetadata$outboundSchema: z.ZodType<
+  PutApiAgentProfileMetadata$Outbound,
+  z.ZodTypeDef,
+  PutApiAgentProfileMetadata
+> = z.object({});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace PutApiAgentProfileMetadata$ {
+  /** @deprecated use `PutApiAgentProfileMetadata$inboundSchema` instead. */
+  export const inboundSchema = PutApiAgentProfileMetadata$inboundSchema;
+  /** @deprecated use `PutApiAgentProfileMetadata$outboundSchema` instead. */
+  export const outboundSchema = PutApiAgentProfileMetadata$outboundSchema;
+  /** @deprecated use `PutApiAgentProfileMetadata$Outbound` instead. */
+  export type Outbound = PutApiAgentProfileMetadata$Outbound;
+}
+
+export function putApiAgentProfileMetadataToJSON(
+  putApiAgentProfileMetadata: PutApiAgentProfileMetadata,
+): string {
+  return JSON.stringify(
+    PutApiAgentProfileMetadata$outboundSchema.parse(putApiAgentProfileMetadata),
+  );
+}
+
+export function putApiAgentProfileMetadataFromJSON(
+  jsonString: string,
+): SafeParseResult<PutApiAgentProfileMetadata, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) => PutApiAgentProfileMetadata$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'PutApiAgentProfileMetadata' from JSON`,
+  );
+}
+
+/** @internal */
 export const PutApiAgentProfileAgent$inboundSchema: z.ZodType<
   PutApiAgentProfileAgent,
   z.ZodTypeDef,
@@ -112,9 +164,13 @@ export const PutApiAgentProfileAgent$inboundSchema: z.ZodType<
   ownerId: z.string().optional(),
   walletAddress: z.string().optional(),
   name: z.string().optional(),
-  description: z.string().optional(),
-  imageUrl: z.string().optional(),
+  description: z.nullable(z.string()).optional(),
+  imageUrl: z.nullable(z.string()).optional(),
+  email: z.nullable(z.string()).optional(),
   status: z.string().optional(),
+  metadata: z
+    .nullable(z.lazy(() => PutApiAgentProfileMetadata$inboundSchema))
+    .optional(),
   createdAt: z
     .string()
     .datetime({ offset: true })
@@ -133,9 +189,11 @@ export type PutApiAgentProfileAgent$Outbound = {
   ownerId?: string | undefined;
   walletAddress?: string | undefined;
   name?: string | undefined;
-  description?: string | undefined;
-  imageUrl?: string | undefined;
+  description?: string | null | undefined;
+  imageUrl?: string | null | undefined;
+  email?: string | null | undefined;
   status?: string | undefined;
+  metadata?: PutApiAgentProfileMetadata$Outbound | null | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
 };
@@ -150,9 +208,13 @@ export const PutApiAgentProfileAgent$outboundSchema: z.ZodType<
   ownerId: z.string().optional(),
   walletAddress: z.string().optional(),
   name: z.string().optional(),
-  description: z.string().optional(),
-  imageUrl: z.string().optional(),
+  description: z.nullable(z.string()).optional(),
+  imageUrl: z.nullable(z.string()).optional(),
+  email: z.nullable(z.string()).optional(),
   status: z.string().optional(),
+  metadata: z
+    .nullable(z.lazy(() => PutApiAgentProfileMetadata$outboundSchema))
+    .optional(),
   createdAt: z
     .date()
     .transform((v) => v.toISOString())

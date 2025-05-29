@@ -13,15 +13,26 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
+import { CROSS_CHAIN_TRADING_TYPE_VALUES } from "@/types/index.js";
+
 import { agents, competitions } from "../core/defs.js";
 
+/**
+ * Trading schema for all trading-related components.
+ */
 export const tradingComps = pgSchema("trading_comps");
 
+/**
+ * Enum for cross-chain trading type.
+ */
 export const crossChainTradingType = tradingComps.enum(
   "cross_chain_trading_type",
-  ["disallowAll", "disallowXParent", "allow"],
+  CROSS_CHAIN_TRADING_TYPE_VALUES,
 );
 
+/**
+ * Table for trading competitions.
+ */
 export const tradingCompetitions = tradingComps.table(
   "trading_competitions",
   {
@@ -42,6 +53,9 @@ export const tradingCompetitions = tradingComps.table(
   ],
 );
 
+/**
+ * Table for balances of agents in a competition.
+ */
 export const balances = tradingComps.table(
   "balances",
   {
@@ -73,6 +87,9 @@ export const balances = tradingComps.table(
   ],
 );
 
+/**
+ * Table for trades of agents in a competition.
+ */
 export const trades = tradingComps.table(
   "trades",
   {
@@ -122,6 +139,9 @@ export const trades = tradingComps.table(
   ],
 );
 
+/**
+ * Table for prices of tokens in a competition.
+ */
 export const prices = tradingComps.table(
   "prices",
   {
@@ -147,6 +167,9 @@ export const prices = tradingComps.table(
   ],
 );
 
+/**
+ * Table for portfolio snapshots of agents in a competition.
+ */
 export const portfolioSnapshots = tradingComps.table(
   "portfolio_snapshots",
   {
@@ -180,6 +203,9 @@ export const portfolioSnapshots = tradingComps.table(
   ],
 );
 
+/**
+ * Table for token values of portfolios in a competition.
+ */
 export const portfolioTokenValues = tradingComps.table(
   "portfolio_token_values",
   {

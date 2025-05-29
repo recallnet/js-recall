@@ -51,7 +51,7 @@ export function configureUserRoutes(userController: UserController): Router {
    *                       example: "https://example.com/avatar.jpg"
    *                     status:
    *                       type: string
-   *                       enum: [active, suspended, deleted]
+   *                       enum: [active, inactive, suspended, deleted]
    *                     createdAt:
    *                       type: string
    *                       format: date-time
@@ -92,6 +92,10 @@ export function configureUserRoutes(userController: UserController): Router {
    *                 type: string
    *                 description: URL to user's profile image
    *                 example: "https://example.com/avatar.jpg"
+   *               email:
+   *                 type: string
+   *                 description: User's email
+   *                 example: "john@example.com"
    *             additionalProperties: false
    *     responses:
    *       200:
@@ -112,12 +116,15 @@ export function configureUserRoutes(userController: UserController): Router {
    *                       format: uuid
    *                     walletAddress:
    *                       type: string
+   *                       nullable: true
    *                     name:
    *                       type: string
    *                     email:
    *                       type: string
+   *                       nullable: true
    *                     imageUrl:
    *                       type: string
+   *                       nullable: true
    *                     status:
    *                       type: string
    *                     createdAt:
@@ -192,19 +199,30 @@ export function configureUserRoutes(userController: UserController): Router {
    *                     ownerId:
    *                       type: string
    *                       format: uuid
+   *                     walletAddress:
+   *                       type: string
+   *                       nullable: true
    *                     name:
    *                       type: string
+   *                     email:
+   *                       type: string
+   *                       nullable: true
    *                     description:
    *                       type: string
+   *                       nullable: true
    *                     imageUrl:
    *                       type: string
+   *                       nullable: true
    *                     apiKey:
    *                       type: string
    *                       description: The API key for this agent (store this securely)
    *                       example: "1234567890abcdef_fedcba0987654321"
+   *                     metadata:
+   *                       type: object
+   *                       nullable: true
    *                     status:
    *                       type: string
-   *                       enum: [active, suspended, deleted]
+   *                       enum: [active, inactive, suspended, deleted]
    *                     createdAt:
    *                       type: string
    *                       format: date-time
@@ -257,15 +275,23 @@ export function configureUserRoutes(userController: UserController): Router {
    *                       ownerId:
    *                         type: string
    *                         format: uuid
+   *                       walletAddress:
+   *                         type: string
+   *                         nullable: true
    *                       name:
    *                         type: string
    *                       description:
    *                         type: string
+   *                         nullable: true
+   *                       email:
+   *                         type: string
    *                       imageUrl:
    *                         type: string
+   *                       metadata:
+   *                         type: object
    *                       status:
    *                         type: string
-   *                         enum: [active, suspended, deleted]
+   *                         enum: [active, inactive, suspended, deleted]
    *                       createdAt:
    *                         type: string
    *                         format: date-time
@@ -317,15 +343,26 @@ export function configureUserRoutes(userController: UserController): Router {
    *                     ownerId:
    *                       type: string
    *                       format: uuid
+   *                     walletAddress:
+   *                       type: string
+   *                       nullable: true
    *                     name:
    *                       type: string
+   *                     email:
+   *                       type: string
+   *                       nullable: true
    *                     description:
    *                       type: string
+   *                       nullable: true
    *                     imageUrl:
    *                       type: string
+   *                       nullable: true
+   *                     metadata:
+   *                       type: object
+   *                       nullable: true
    *                     status:
    *                       type: string
-   *                       enum: [active, suspended, deleted]
+   *                       enum: [active, inactive, suspended, deleted]
    *                     createdAt:
    *                       type: string
    *                       format: date-time
@@ -382,6 +419,13 @@ export function configureUserRoutes(userController: UserController): Router {
    *                 type: string
    *                 description: URL to agent's profile image
    *                 example: "https://example.com/new-bot-avatar.jpg"
+   *               email:
+   *                 type: string
+   *                 description: Agent email
+   *                 example: "tradingbot@example.com"
+   *               metadata:
+   *                 type: object
+   *                 description: Optional metadata for the agent
    *             additionalProperties: false
    *     responses:
    *       200:
@@ -403,15 +447,24 @@ export function configureUserRoutes(userController: UserController): Router {
    *                     ownerId:
    *                       type: string
    *                       format: uuid
+   *                     walletAddress:
+   *                       type: string
+   *                       nullable: true
    *                     name:
    *                       type: string
+   *                     email:
+   *                       type: string
+   *                       nullable: true
    *                     description:
    *                       type: string
    *                     imageUrl:
    *                       type: string
+   *                     metadata:
+   *                       type: object
+   *                       nullable: true
    *                     status:
    *                       type: string
-   *                       enum: [active, suspended, deleted]
+   *                       enum: [active, inactive, suspended, deleted]
    *                     createdAt:
    *                       type: string
    *                       format: date-time

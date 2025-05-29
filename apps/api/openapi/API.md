@@ -656,6 +656,42 @@ Generate a new API key for the authenticated agent (invalidates the current key)
 | --------------- | ------ |
 | BearerAuth      |        |
 
+### /api/agents
+
+#### GET
+
+##### Summary:
+
+Get list of agents
+
+##### Description:
+
+Retrieve a list of agents based on querystring parameters
+
+##### Parameters
+
+| Name   | Located in | Description                                                             | Required | Schema |
+| ------ | ---------- | ----------------------------------------------------------------------- | -------- | ------ |
+| filter | query      | Optional filtering agents based on name or wallet address               | No       | string |
+| sort   | query      | Optional field to sort by (default value is `createdDate`)              | No       | string |
+| limit  | query      | Optional field to choose max size of result set (default value is `10`) | No       | string |
+| offset | query      | Optional field to choose offset of result set (default value is `0`)    | No       | string |
+
+##### Responses
+
+| Code | Description                          |
+| ---- | ------------------------------------ |
+| 200  | Agent profile retrieved successfully |
+| 401  | Not authenticated                    |
+| 404  | Agents not found                     |
+| 500  | Internal server error                |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
 ### /api/auth/nonce
 
 #### GET

@@ -52,9 +52,19 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *                     imageUrl:
    *                       type: string
    *                       example: "https://example.com/bot-avatar.jpg"
+   *                       nullable: true
+   *                     email:
+   *                       type: string
+   *                       example: "tradingbot@example.com"
+   *                       nullable: true
    *                     status:
    *                       type: string
-   *                       enum: [active, suspended, deleted]
+   *                       enum: [active, inactive, suspended, deleted]
+   *                     metadata:
+   *                       type: object
+   *                       description: Optional metadata for the agent
+   *                       example: { "strategy": "yield-farming", "risk": "medium" }
+   *                       nullable: true
    *                     createdAt:
    *                       type: string
    *                       format: date-time
@@ -140,10 +150,18 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *                       type: string
    *                     description:
    *                       type: string
+   *                       nullable: true
    *                     imageUrl:
    *                       type: string
+   *                       nullable: true
+   *                     email:
+   *                       type: string
+   *                       nullable: true
    *                     status:
    *                       type: string
+   *                     metadata:
+   *                       type: object
+   *                       nullable: true
    *                     createdAt:
    *                       type: string
    *                       format: date-time

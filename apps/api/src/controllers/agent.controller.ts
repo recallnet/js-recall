@@ -129,17 +129,15 @@ export function makeAgentController(services: ServiceRegistry) {
           updateData.imageUrl = imageUrl.trim();
         }
 
-        // Update the agent using AgentManager
         const updatedAgent = await services.agentManager.updateAgent({
-          ...agent, // Include all existing agent fields
-          ...updateData, // Overlay the updates
+          ...agent,
+          ...updateData,
         });
 
         if (!updatedAgent) {
           throw new ApiError(500, "Failed to update agent profile");
         }
 
-        // Return the updated agent profile
         res.status(200).json({
           success: true,
           agent: services.agentManager.sanitizeAgent(updatedAgent),

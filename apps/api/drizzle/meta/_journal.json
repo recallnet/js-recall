@@ -15,6 +15,13 @@
       "when": 1748448591612,
       "tag": "0001_naive_ben_grimm",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1748454089351,
+      "tag": "0002_polite_obadiah_stane",
+      "breakpoints": true
     }
   ]
 }

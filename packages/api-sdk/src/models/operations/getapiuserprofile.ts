@@ -15,6 +15,7 @@ export type GetApiUserProfileSecurity = {
 
 export const GetApiUserProfileStatus = {
   Active: "active",
+  Inactive: "inactive",
   Suspended: "suspended",
   Deleted: "deleted",
 } as const;

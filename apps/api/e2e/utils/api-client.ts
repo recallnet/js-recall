@@ -255,14 +255,14 @@ export class ApiClient {
           description?: string;
           agentIds: string[];
           tradingType?: CrossChainTradingType;
-          externalLink?: string;
+          externalUrl?: string;
           imageUrl?: string;
         }
       | string,
     description?: string,
     agentIds?: string[],
     tradingType?: CrossChainTradingType,
-    externalLink?: string,
+    externalUrl?: string,
     imageUrl?: string,
   ): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
@@ -277,7 +277,7 @@ export class ApiClient {
           description,
           agentIds: agentIds || [],
           tradingType,
-          externalLink,
+          externalUrl,
           imageUrl,
         };
       }
@@ -300,7 +300,7 @@ export class ApiClient {
     name: string,
     description?: string,
     tradingType?: CrossChainTradingType,
-    externalLink?: string,
+    externalUrl?: string,
     imageUrl?: string,
   ): Promise<CreateCompetitionResponse | ErrorResponse> {
     try {
@@ -310,7 +310,7 @@ export class ApiClient {
           name,
           description,
           tradingType,
-          externalLink,
+          externalUrl,
           imageUrl,
         },
       );
@@ -328,7 +328,7 @@ export class ApiClient {
     competitionId: string,
     agentIds: string[],
     crossChainTradingType?: CrossChainTradingType,
-    externalLink?: string,
+    externalUrl?: string,
     imageUrl?: string,
   ): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
@@ -338,7 +338,7 @@ export class ApiClient {
           competitionId,
           agentIds,
           crossChainTradingType,
-          externalLink,
+          externalUrl,
           imageUrl,
         },
       );
@@ -430,6 +430,8 @@ export class ApiClient {
       name?: string;
       description?: string;
       imageUrl?: string;
+      email?: string;
+      metadata?: AgentMetadata;
     },
   ): Promise<AgentProfileResponse | ErrorResponse> {
     try {

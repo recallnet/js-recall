@@ -56,10 +56,10 @@ export function makeUserController(services: ServiceRegistry) {
     async updateProfile(req: Request, res: Response, next: NextFunction) {
       try {
         const userId = req.userId as string;
-        const { name, imageUrl } = req.body;
+        const { name, imageUrl, email } = req.body;
 
         // Validate that only allowed fields are being updated
-        const allowedFields = ["name", "imageUrl"];
+        const allowedFields = ["name", "imageUrl", "email"];
         const providedFields = Object.keys(req.body);
         const invalidFields = providedFields.filter(
           (field) => !allowedFields.includes(field),
@@ -79,16 +79,34 @@ export function makeUserController(services: ServiceRegistry) {
         }
 
         // Prepare update data with only allowed fields
-        const updateData: { id: string; name?: string; imageUrl?: string } = {
+        const updateData: {
+          id: string;
+          name?: string;
+          imageUrl?: string;
+          email?: string;
+        } = {
           id: userId,
         };
 
         if (name !== undefined) {
-          updateData.name = name;
+          if (typeof name !== "string" || name.trim().length === 0) {
+            throw new ApiError(400, "User name must be a non-empty string");
+          }
+          updateData.name = name.trim();
         }
 
         if (imageUrl !== undefined) {
-          updateData.imageUrl = imageUrl;
+          if (typeof imageUrl !== "string") {
+            throw new ApiError(400, "User imageUrl must be a string");
+          }
+          updateData.imageUrl = imageUrl.trim();
+        }
+
+        if (email !== undefined) {
+          if (typeof email !== "string" || email.trim().length === 0) {
+            throw new ApiError(400, "User email must be a non-empty string");
+          }
+          updateData.email = email.trim();
         }
 
         // Update the user using UserManager
@@ -126,7 +144,7 @@ export function makeUserController(services: ServiceRegistry) {
     async createAgent(req: Request, res: Response, next: NextFunction) {
       try {
         const userId = req.userId as string;
-        const { name, description, imageUrl, metadata } = req.body;
+        const { name, description, imageUrl, email, metadata } = req.body;
 
         // Validate required fields
         if (!name || typeof name !== "string" || name.trim().length === 0) {
@@ -137,12 +155,28 @@ export function makeUserController(services: ServiceRegistry) {
         }
 
         // Validate optional fields
-        if (description !== undefined && typeof description !== "string") {
-          throw new ApiError(400, "Agent description must be a string");
+        if (description !== undefined) {
+          if (typeof description !== "string") {
+            throw new ApiError(400, "Agent description must be a string");
+          }
         }
 
-        if (imageUrl !== undefined && typeof imageUrl !== "string") {
-          throw new ApiError(400, "Agent imageUrl must be a string");
+        if (imageUrl !== undefined) {
+          if (typeof imageUrl !== "string") {
+            throw new ApiError(400, "User imageUrl must be a string");
+          }
+        }
+
+        if (email !== undefined) {
+          if (typeof email !== "string" || email.trim().length === 0) {
+            throw new ApiError(400, "User email must be a non-empty string");
+          }
+        }
+
+        if (metadata !== undefined) {
+          if (typeof metadata !== "object" || metadata === null) {
+            throw new ApiError(400, "Agent metadata must be an object");
+          }
         }
 
         // Verify the user exists
@@ -157,6 +191,7 @@ export function makeUserController(services: ServiceRegistry) {
           name.trim(),
           description?.trim(),
           imageUrl?.trim(),
+          email?.trim(),
           metadata,
         );
 
@@ -173,6 +208,7 @@ export function makeUserController(services: ServiceRegistry) {
             name: agent.name,
             description: agent.description,
             imageUrl: agent.imageUrl,
+            email: agent.email,
             metadata: agent.metadata,
             apiKey: agent.apiKey, // Include API key for user to use
             status: agent.status,
@@ -205,6 +241,7 @@ export function makeUserController(services: ServiceRegistry) {
           name: agent.name,
           description: agent.description,
           imageUrl: agent.imageUrl,
+          email: agent.email,
           metadata: agent.metadata,
           status: agent.status,
           createdAt: agent.createdAt,
@@ -258,6 +295,7 @@ export function makeUserController(services: ServiceRegistry) {
             name: agent.name,
             description: agent.description,
             imageUrl: agent.imageUrl,
+            email: agent.email,
             metadata: agent.metadata,
             status: agent.status,
             createdAt: agent.createdAt,
@@ -281,14 +319,20 @@ export function makeUserController(services: ServiceRegistry) {
       try {
         const userId = req.userId as string;
         const { agentId } = req.params;
-        const { name, description, imageUrl } = req.body;
+        const { name, description, imageUrl, email, metadata } = req.body;
 
         if (!agentId) {
           throw new ApiError(400, "Agent ID is required");
         }
 
         // Validate that only allowed fields are being updated
-        const allowedFields = ["name", "description", "imageUrl"];
+        const allowedFields = [
+          "name",
+          "description",
+          "imageUrl",
+          "email",
+          "metadata",
+        ];
         const providedFields = Object.keys(req.body);
         const invalidFields = providedFields.filter(
           (field) => !allowedFields.includes(field),
@@ -319,20 +363,45 @@ export function makeUserController(services: ServiceRegistry) {
           name?: string;
           description?: string;
           imageUrl?: string;
+          email?: string;
+          metadata?: Record<string, unknown>;
         } = {
           id: agentId,
         };
 
         if (name !== undefined) {
-          updateData.name = name;
+          if (typeof name !== "string" || name.trim().length === 0) {
+            throw new ApiError(400, "Agent name must be a non-empty string");
+          }
+          updateData.name = name.trim();
         }
 
         if (description !== undefined) {
-          updateData.description = description;
+          if (typeof description !== "string") {
+            throw new ApiError(400, "Agent description must be a string");
+          }
+          updateData.description = description.trim();
         }
 
         if (imageUrl !== undefined) {
-          updateData.imageUrl = imageUrl;
+          if (typeof imageUrl !== "string") {
+            throw new ApiError(400, "Agent imageUrl must be a string");
+          }
+          updateData.imageUrl = imageUrl.trim();
+        }
+
+        if (email !== undefined) {
+          if (typeof email !== "string" || email.trim().length === 0) {
+            throw new ApiError(400, "Agent email must be a non-empty string");
+          }
+          updateData.email = email.trim();
+        }
+
+        if (metadata !== undefined) {
+          if (typeof metadata !== "object" || metadata === null) {
+            throw new ApiError(400, "Agent metadata must be an object");
+          }
+          updateData.metadata = metadata;
         }
 
         // Update the agent using AgentManager
@@ -351,9 +420,11 @@ export function makeUserController(services: ServiceRegistry) {
           agent: {
             id: updatedAgent.id,
             ownerId: updatedAgent.ownerId,
+            walletAddress: updatedAgent.walletAddress,
             name: updatedAgent.name,
             description: updatedAgent.description,
             imageUrl: updatedAgent.imageUrl,
+            email: updatedAgent.email,
             metadata: updatedAgent.metadata,
             status: updatedAgent.status,
             createdAt: updatedAgent.createdAt,

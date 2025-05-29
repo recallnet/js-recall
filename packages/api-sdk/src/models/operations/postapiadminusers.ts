@@ -10,7 +10,7 @@ import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 /**
  * Optional metadata about the agent
  */
-export type AgentMetadataRequest = {};
+export type AgentMetadata = {};
 
 export type PostApiAdminUsersRequest = {
   /**
@@ -44,7 +44,7 @@ export type PostApiAdminUsersRequest = {
   /**
    * Optional metadata about the agent
    */
-  agentMetadata?: AgentMetadataRequest | undefined;
+  agentMetadata?: AgentMetadata | undefined;
   /**
    * Ethereum wallet address (must start with 0x)
    */
@@ -98,7 +98,7 @@ export type PostApiAdminUsersUser = {
 /**
  * Optional metadata for the agent
  */
-export type AgentMetadataResponse = {};
+export type PostApiAdminUsersAgentMetadata = {};
 
 /**
  * Created agent (if agentName was provided)
@@ -121,6 +121,10 @@ export type PostApiAdminUsersAgent = {
    */
   name?: string | undefined;
   /**
+   * Agent email
+   */
+  email?: string | null | undefined;
+  /**
    * Agent description
    */
   description?: string | null | undefined;
@@ -131,7 +135,7 @@ export type PostApiAdminUsersAgent = {
   /**
    * Optional metadata for the agent
    */
-  metadata?: AgentMetadataResponse | null | undefined;
+  metadata?: PostApiAdminUsersAgentMetadata | null | undefined;
   /**
    * API key for the agent to use with Bearer authentication. Admin should securely provide this to the user.
    */
@@ -170,50 +174,46 @@ export type PostApiAdminUsersResponse = {
 };
 
 /** @internal */
-export const AgentMetadataRequest$inboundSchema: z.ZodType<
-  AgentMetadataRequest,
+export const AgentMetadata$inboundSchema: z.ZodType<
+  AgentMetadata,
   z.ZodTypeDef,
   unknown
 > = z.object({});
 
 /** @internal */
-export type AgentMetadataRequest$Outbound = {};
+export type AgentMetadata$Outbound = {};
 
 /** @internal */
-export const AgentMetadataRequest$outboundSchema: z.ZodType<
-  AgentMetadataRequest$Outbound,
+export const AgentMetadata$outboundSchema: z.ZodType<
+  AgentMetadata$Outbound,
   z.ZodTypeDef,
-  AgentMetadataRequest
+  AgentMetadata
 > = z.object({});
 
 /**
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace AgentMetadataRequest$ {
-  /** @deprecated use `AgentMetadataRequest$inboundSchema` instead. */
-  export const inboundSchema = AgentMetadataRequest$inboundSchema;
-  /** @deprecated use `AgentMetadataRequest$outboundSchema` instead. */
-  export const outboundSchema = AgentMetadataRequest$outboundSchema;
-  /** @deprecated use `AgentMetadataRequest$Outbound` instead. */
-  export type Outbound = AgentMetadataRequest$Outbound;
+export namespace AgentMetadata$ {
+  /** @deprecated use `AgentMetadata$inboundSchema` instead. */
+  export const inboundSchema = AgentMetadata$inboundSchema;
+  /** @deprecated use `AgentMetadata$outboundSchema` instead. */
+  export const outboundSchema = AgentMetadata$outboundSchema;
+  /** @deprecated use `AgentMetadata$Outbound` instead. */
+  export type Outbound = AgentMetadata$Outbound;
 }
 
-export function agentMetadataRequestToJSON(
-  agentMetadataRequest: AgentMetadataRequest,
-): string {
-  return JSON.stringify(
-    AgentMetadataRequest$outboundSchema.parse(agentMetadataRequest),
-  );
+export function agentMetadataToJSON(agentMetadata: AgentMetadata): string {
+  return JSON.stringify(AgentMetadata$outboundSchema.parse(agentMetadata));
 }
 
-export function agentMetadataRequestFromJSON(
+export function agentMetadataFromJSON(
   jsonString: string,
-): SafeParseResult<AgentMetadataRequest, SDKValidationError> {
+): SafeParseResult<AgentMetadata, SDKValidationError> {
   return safeParse(
     jsonString,
-    (x) => AgentMetadataRequest$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'AgentMetadataRequest' from JSON`,
+    (x) => AgentMetadata$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'AgentMetadata' from JSON`,
   );
 }
 
@@ -230,7 +230,7 @@ export const PostApiAdminUsersRequest$inboundSchema: z.ZodType<
   agentName: z.string().optional(),
   agentDescription: z.string().optional(),
   agentImageUrl: z.string().optional(),
-  agentMetadata: z.lazy(() => AgentMetadataRequest$inboundSchema).optional(),
+  agentMetadata: z.lazy(() => AgentMetadata$inboundSchema).optional(),
   agentWalletAddress: z.string().optional(),
 });
 
@@ -243,7 +243,7 @@ export type PostApiAdminUsersRequest$Outbound = {
   agentName?: string | undefined;
   agentDescription?: string | undefined;
   agentImageUrl?: string | undefined;
-  agentMetadata?: AgentMetadataRequest$Outbound | undefined;
+  agentMetadata?: AgentMetadata$Outbound | undefined;
   agentWalletAddress?: string | undefined;
 };
 
@@ -260,7 +260,7 @@ export const PostApiAdminUsersRequest$outboundSchema: z.ZodType<
   agentName: z.string().optional(),
   agentDescription: z.string().optional(),
   agentImageUrl: z.string().optional(),
-  agentMetadata: z.lazy(() => AgentMetadataRequest$outboundSchema).optional(),
+  agentMetadata: z.lazy(() => AgentMetadata$outboundSchema).optional(),
   agentWalletAddress: z.string().optional(),
 });
 
@@ -432,50 +432,52 @@ export function postApiAdminUsersUserFromJSON(
 }
 
 /** @internal */
-export const AgentMetadataResponse$inboundSchema: z.ZodType<
-  AgentMetadataResponse,
+export const PostApiAdminUsersAgentMetadata$inboundSchema: z.ZodType<
+  PostApiAdminUsersAgentMetadata,
   z.ZodTypeDef,
   unknown
 > = z.object({});
 
 /** @internal */
-export type AgentMetadataResponse$Outbound = {};
+export type PostApiAdminUsersAgentMetadata$Outbound = {};
 
 /** @internal */
-export const AgentMetadataResponse$outboundSchema: z.ZodType<
-  AgentMetadataResponse$Outbound,
+export const PostApiAdminUsersAgentMetadata$outboundSchema: z.ZodType<
+  PostApiAdminUsersAgentMetadata$Outbound,
   z.ZodTypeDef,
-  AgentMetadataResponse
+  PostApiAdminUsersAgentMetadata
 > = z.object({});
 
 /**
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace AgentMetadataResponse$ {
-  /** @deprecated use `AgentMetadataResponse$inboundSchema` instead. */
-  export const inboundSchema = AgentMetadataResponse$inboundSchema;
-  /** @deprecated use `AgentMetadataResponse$outboundSchema` instead. */
-  export const outboundSchema = AgentMetadataResponse$outboundSchema;
-  /** @deprecated use `AgentMetadataResponse$Outbound` instead. */
-  export type Outbound = AgentMetadataResponse$Outbound;
+export namespace PostApiAdminUsersAgentMetadata$ {
+  /** @deprecated use `PostApiAdminUsersAgentMetadata$inboundSchema` instead. */
+  export const inboundSchema = PostApiAdminUsersAgentMetadata$inboundSchema;
+  /** @deprecated use `PostApiAdminUsersAgentMetadata$outboundSchema` instead. */
+  export const outboundSchema = PostApiAdminUsersAgentMetadata$outboundSchema;
+  /** @deprecated use `PostApiAdminUsersAgentMetadata$Outbound` instead. */
+  export type Outbound = PostApiAdminUsersAgentMetadata$Outbound;
 }
 
-export function agentMetadataResponseToJSON(
-  agentMetadataResponse: AgentMetadataResponse,
+export function postApiAdminUsersAgentMetadataToJSON(
+  postApiAdminUsersAgentMetadata: PostApiAdminUsersAgentMetadata,
 ): string {
   return JSON.stringify(
-    AgentMetadataResponse$outboundSchema.parse(agentMetadataResponse),
+    PostApiAdminUsersAgentMetadata$outboundSchema.parse(
+      postApiAdminUsersAgentMetadata,
+    ),
   );
 }
 
-export function agentMetadataResponseFromJSON(
+export function postApiAdminUsersAgentMetadataFromJSON(
   jsonString: string,
-): SafeParseResult<AgentMetadataResponse, SDKValidationError> {
+): SafeParseResult<PostApiAdminUsersAgentMetadata, SDKValidationError> {
   return safeParse(
     jsonString,
-    (x) => AgentMetadataResponse$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'AgentMetadataResponse' from JSON`,
+    (x) => PostApiAdminUsersAgentMetadata$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'PostApiAdminUsersAgentMetadata' from JSON`,
   );
 }
 
@@ -489,10 +491,11 @@ export const PostApiAdminUsersAgent$inboundSchema: z.ZodType<
   ownerId: z.string().optional(),
   walletAddress: z.nullable(z.string()).optional(),
   name: z.string().optional(),
+  email: z.nullable(z.string()).optional(),
   description: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
   metadata: z
-    .nullable(z.lazy(() => AgentMetadataResponse$inboundSchema))
+    .nullable(z.lazy(() => PostApiAdminUsersAgentMetadata$inboundSchema))
     .optional(),
   apiKey: z.string().optional(),
   status: z.string().optional(),
@@ -514,9 +517,10 @@ export type PostApiAdminUsersAgent$Outbound = {
   ownerId?: string | undefined;
   walletAddress?: string | null | undefined;
   name?: string | undefined;
+  email?: string | null | undefined;
   description?: string | null | undefined;
   imageUrl?: string | null | undefined;
-  metadata?: AgentMetadataResponse$Outbound | null | undefined;
+  metadata?: PostApiAdminUsersAgentMetadata$Outbound | null | undefined;
   apiKey?: string | undefined;
   status?: string | undefined;
   createdAt?: string | undefined;
@@ -533,10 +537,11 @@ export const PostApiAdminUsersAgent$outboundSchema: z.ZodType<
   ownerId: z.string().optional(),
   walletAddress: z.nullable(z.string()).optional(),
   name: z.string().optional(),
+  email: z.nullable(z.string()).optional(),
   description: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
   metadata: z
-    .nullable(z.lazy(() => AgentMetadataResponse$outboundSchema))
+    .nullable(z.lazy(() => PostApiAdminUsersAgentMetadata$outboundSchema))
     .optional(),
   apiKey: z.string().optional(),
   status: z.string().optional(),

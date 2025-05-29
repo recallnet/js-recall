@@ -19,11 +19,11 @@ export type GetApiAdminUsersUser = {
   /**
    * User name
    */
-  name?: string | undefined;
+  name?: string | null | undefined;
   /**
    * User email
    */
-  email?: string | undefined;
+  email?: string | null | undefined;
   /**
    * User status
    */
@@ -61,8 +61,8 @@ export const GetApiAdminUsersUser$inboundSchema: z.ZodType<
 > = z.object({
   id: z.string().optional(),
   walletAddress: z.string().optional(),
-  name: z.string().optional(),
-  email: z.string().optional(),
+  name: z.nullable(z.string()).optional(),
+  email: z.nullable(z.string()).optional(),
   status: z.string().optional(),
   imageUrl: z.nullable(z.string()).optional(),
   createdAt: z
@@ -81,8 +81,8 @@ export const GetApiAdminUsersUser$inboundSchema: z.ZodType<
 export type GetApiAdminUsersUser$Outbound = {
   id?: string | undefined;
   walletAddress?: string | undefined;
-  name?: string | undefined;
-  email?: string | undefined;
+  name?: string | null | undefined;
+  email?: string | null | undefined;
   status?: string | undefined;
   imageUrl?: string | null | undefined;
   createdAt?: string | undefined;
@@ -97,8 +97,8 @@ export const GetApiAdminUsersUser$outboundSchema: z.ZodType<
 > = z.object({
   id: z.string().optional(),
   walletAddress: z.string().optional(),
-  name: z.string().optional(),
-  email: z.string().optional(),
+  name: z.nullable(z.string()).optional(),
+  email: z.nullable(z.string()).optional(),
   status: z.string().optional(),
   imageUrl: z.nullable(z.string()).optional(),
   createdAt: z

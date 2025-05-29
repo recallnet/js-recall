@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: ad141bdc55ce603497c129318b8ca5c0
+  docChecksum: 9f9c086839a64f3a4504adfdf27a9dc7
   docVersion: 1.0.0
   speakeasyVersion: 1.552.0
   generationVersion: 2.610.0
@@ -43,8 +43,7 @@ generatedFiles:
   - docs/models/errors/postapiauthlogoutinternalservererror.md
   - docs/models/errors/unauthorizederror.md
   - docs/models/operations/admin.md
-  - docs/models/operations/agentmetadatarequest.md
-  - docs/models/operations/agentmetadataresponse.md
+  - docs/models/operations/agentmetadata.md
   - docs/models/operations/availablechains.md
   - docs/models/operations/balance.md
   - docs/models/operations/chains.md
@@ -57,6 +56,7 @@ generatedFiles:
   - docs/models/operations/getapiadminagentsagentidkeyresponse.md
   - docs/models/operations/getapiadminagentsagentidrequest.md
   - docs/models/operations/getapiadminagentsagentidresponse.md
+  - docs/models/operations/getapiadminagentsmetadata.md
   - docs/models/operations/getapiadminagentsresponse.md
   - docs/models/operations/getapiadmincompetitioncompetitionidsnapshotsrequest.md
   - docs/models/operations/getapiadmincompetitioncompetitionidsnapshotsresponse.md
@@ -66,7 +66,9 @@ generatedFiles:
   - docs/models/operations/getapiadminreportsperformancerequest.md
   - docs/models/operations/getapiadminreportsperformanceresponse.md
   - docs/models/operations/getapiadminreportsperformancestatus.md
+  - docs/models/operations/getapiadminreportsperformancetype.md
   - docs/models/operations/getapiadminsearchagent.md
+  - docs/models/operations/getapiadminsearchmetadata.md
   - docs/models/operations/getapiadminsearchrequest.md
   - docs/models/operations/getapiadminsearchresponse.md
   - docs/models/operations/getapiadminsearchstatus.md
@@ -78,6 +80,7 @@ generatedFiles:
   - docs/models/operations/getapiagentportfoliochain.md
   - docs/models/operations/getapiagentportfolioresponse.md
   - docs/models/operations/getapiagentprofileagent.md
+  - docs/models/operations/getapiagentprofilemetadata.md
   - docs/models/operations/getapiagentprofileresponse.md
   - docs/models/operations/getapiagentprofilestatus.md
   - docs/models/operations/getapiagentsagent.md
@@ -130,10 +133,12 @@ generatedFiles:
   - docs/models/operations/getapitradequoteresponse.md
   - docs/models/operations/getapiuseragentsagent.md
   - docs/models/operations/getapiuseragentsagentidagent.md
+  - docs/models/operations/getapiuseragentsagentidmetadata.md
   - docs/models/operations/getapiuseragentsagentidrequest.md
   - docs/models/operations/getapiuseragentsagentidresponse.md
   - docs/models/operations/getapiuseragentsagentidsecurity.md
   - docs/models/operations/getapiuseragentsagentidstatus.md
+  - docs/models/operations/getapiuseragentsmetadata.md
   - docs/models/operations/getapiuseragentsresponse.md
   - docs/models/operations/getapiuseragentssecurity.md
   - docs/models/operations/getapiuseragentsstatus.md
@@ -158,21 +163,27 @@ generatedFiles:
   - docs/models/operations/postapiadmincompetitioncreateresponse.md
   - docs/models/operations/postapiadmincompetitioncreatestatus.md
   - docs/models/operations/postapiadmincompetitioncreatetradingtype.md
+  - docs/models/operations/postapiadmincompetitioncreatetyperequest.md
+  - docs/models/operations/postapiadmincompetitioncreatetyperesponse.md
   - docs/models/operations/postapiadmincompetitionendcompetition.md
   - docs/models/operations/postapiadmincompetitionendcrosschaintradingtype.md
   - docs/models/operations/postapiadmincompetitionendleaderboard.md
   - docs/models/operations/postapiadmincompetitionendrequest.md
   - docs/models/operations/postapiadmincompetitionendresponse.md
   - docs/models/operations/postapiadmincompetitionendstatus.md
+  - docs/models/operations/postapiadmincompetitionendtype.md
   - docs/models/operations/postapiadmincompetitionstartcompetition.md
   - docs/models/operations/postapiadmincompetitionstartcrosschaintradingtype.md
   - docs/models/operations/postapiadmincompetitionstartrequest.md
   - docs/models/operations/postapiadmincompetitionstartresponse.md
   - docs/models/operations/postapiadmincompetitionstartstatus.md
   - docs/models/operations/postapiadmincompetitionstarttradingtype.md
+  - docs/models/operations/postapiadmincompetitionstarttyperequest.md
+  - docs/models/operations/postapiadmincompetitionstarttyperesponse.md
   - docs/models/operations/postapiadminsetuprequest.md
   - docs/models/operations/postapiadminsetupresponse.md
   - docs/models/operations/postapiadminusersagent.md
+  - docs/models/operations/postapiadminusersagentmetadata.md
   - docs/models/operations/postapiadminusersrequest.md
   - docs/models/operations/postapiadminusersresponse.md
   - docs/models/operations/postapiadminusersuser.md
@@ -183,16 +194,20 @@ generatedFiles:
   - docs/models/operations/postapitradeexecuterequest.md
   - docs/models/operations/postapitradeexecuteresponse.md
   - docs/models/operations/postapiuseragentsagent.md
-  - docs/models/operations/postapiuseragentsmetadata.md
+  - docs/models/operations/postapiuseragentsagentmetadata.md
+  - docs/models/operations/postapiuseragentsmetadatarequest.md
   - docs/models/operations/postapiuseragentsrequest.md
   - docs/models/operations/postapiuseragentsresponse.md
   - docs/models/operations/postapiuseragentssecurity.md
   - docs/models/operations/postapiuseragentsstatus.md
   - docs/models/operations/prices.md
   - docs/models/operations/putapiagentprofileagent.md
+  - docs/models/operations/putapiagentprofilemetadata.md
   - docs/models/operations/putapiagentprofilerequest.md
   - docs/models/operations/putapiagentprofileresponse.md
   - docs/models/operations/putapiuseragentsagentidprofileagent.md
+  - docs/models/operations/putapiuseragentsagentidprofileagentmetadata.md
+  - docs/models/operations/putapiuseragentsagentidprofilemetadatarequest.md
   - docs/models/operations/putapiuseragentsagentidprofilerequest.md
   - docs/models/operations/putapiuseragentsagentidprofilerequestbody.md
   - docs/models/operations/putapiuseragentsagentidprofileresponse.md
@@ -488,14 +503,14 @@ examples:
   post_/api/admin/competition/create:
     speakeasy-default-post-/api/admin/competition/create:
       requestBody:
-        application/json: {"name": "Spring 2023 Trading Competition", "description": "A trading competition for the spring semester", "tradingType": "disallowAll", "externalLink": "https://example.com/competition-details", "imageUrl": "https://example.com/competition-image.jpg"}
+        application/json: {"name": "Spring 2023 Trading Competition", "description": "A trading competition for the spring semester", "tradingType": "disallowAll", "type": "trading", "externalUrl": "https://example.com/competition-details", "imageUrl": "https://example.com/competition-image.jpg"}
       responses:
         "201":
           application/json: {}
   post_/api/admin/competition/start:
     speakeasy-default-post-/api/admin/competition/start:
       requestBody:
-        application/json: {"name": "Spring 2023 Trading Competition", "description": "A trading competition for the spring semester", "externalLink": "https://example.com/competition-details", "imageUrl": "https://example.com/competition-image.jpg", "agentIds": ["<value 1>", "<value 2>"], "tradingType": "disallowAll"}
+        application/json: {"name": "Spring 2023 Trading Competition", "description": "A trading competition for the spring semester", "externalUrl": "https://example.com/competition-details", "imageUrl": "https://example.com/competition-image.jpg", "agentIds": ["<value 1>", "<value 2>"], "tradingType": "disallowAll", "type": "trading"}
       responses:
         "200":
           application/json: {}
@@ -742,7 +757,7 @@ examples:
     speakeasy-default-get-/api/agent/profile:
       responses:
         "200":
-          application/json: {"success": true, "agent": {"walletAddress": "0x1234567890abcdef1234567890abcdef12345678", "name": "Trading Bot Alpha", "description": "AI agent focusing on DeFi yield farming", "imageUrl": "https://example.com/bot-avatar.jpg"}}
+          application/json: {"success": true, "agent": {"walletAddress": "0x1234567890abcdef1234567890abcdef12345678", "name": "Trading Bot Alpha", "description": "AI agent focusing on DeFi yield farming", "imageUrl": "https://example.com/bot-avatar.jpg", "email": "tradingbot@example.com", "metadata": {}}}
   put_/api/agent/profile:
     speakeasy-default-put-/api/agent/profile:
       requestBody:
@@ -778,7 +793,7 @@ examples:
   put_/api/user/profile:
     speakeasy-default-put-/api/user/profile:
       requestBody:
-        application/json: {"name": "John Doe", "imageUrl": "https://example.com/avatar.jpg"}
+        application/json: {"name": "John Doe", "imageUrl": "https://example.com/avatar.jpg", "email": "john@example.com"}
       responses:
         "200":
           application/json: {"success": true}
@@ -808,7 +823,7 @@ examples:
         path:
           agentId: "77b8dfe8-331c-43fd-878a-96cc4891a4e2"
       requestBody:
-        application/json: {"name": "Trading Bot Beta", "description": "Updated description of trading strategy", "imageUrl": "https://example.com/new-bot-avatar.jpg"}
+        application/json: {"name": "Trading Bot Beta", "description": "Updated description of trading strategy", "imageUrl": "https://example.com/new-bot-avatar.jpg", "email": "tradingbot@example.com"}
       responses:
         "200":
           application/json: {"success": true}

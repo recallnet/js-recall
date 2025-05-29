@@ -19,7 +19,12 @@ import {
   TradeSimulator,
 } from "@/services/index.js";
 import {
+  COMPETITION_STATUS,
+  COMPETITION_TYPE,
+  CROSS_CHAIN_TRADING_TYPE,
   CompetitionStatus,
+  CompetitionStatusSchema,
+  CompetitionType,
   CrossChainTradingType,
   PagingParams,
 } from "@/types/index.js";
@@ -75,28 +80,30 @@ export class CompetitionManager {
    * @param name Competition name
    * @param description Optional description
    * @param tradingType Type of cross-chain trading to allow (defaults to disallowAll)
-   * @param externalLink Optional URL for external competition details
+   * @param externalUrl Optional URL for external competition details
    * @param imageUrl Optional URL to the competition image
    * @returns The created competition
    */
   async createCompetition(
     name: string,
     description?: string,
-    tradingType: CrossChainTradingType = CrossChainTradingType.disallowAll,
-    externalLink?: string,
+    tradingType: CrossChainTradingType = CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+    externalUrl?: string,
     imageUrl?: string,
+    type: CompetitionType = COMPETITION_TYPE.TRADING,
   ) {
     const id = uuidv4();
     const competition = {
       id,
       name,
       description,
-      externalLink,
+      externalUrl,
       imageUrl,
       startDate: null,
       endDate: null,
-      status: CompetitionStatus.PENDING,
+      status: COMPETITION_STATUS.PENDING,
       crossChainTradingType: tradingType,
+      type,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -138,7 +145,7 @@ export class CompetitionManager {
       throw new Error(`Competition not found: ${competitionId}`);
     }
 
-    if (competition.status !== CompetitionStatus.PENDING) {
+    if (competition.status !== COMPETITION_STATUS.PENDING) {
       throw new Error(`Competition cannot be started: ${competition.status}`);
     }
 
@@ -163,7 +170,7 @@ export class CompetitionManager {
     }
 
     // Update competition status
-    competition.status = CompetitionStatus.ACTIVE;
+    competition.status = COMPETITION_STATUS.ACTIVE;
     competition.startDate = new Date();
     competition.updatedAt = new Date();
     await updateCompetition(competition);
@@ -199,7 +206,7 @@ export class CompetitionManager {
       throw new Error(`Competition not found: ${competitionId}`);
     }
 
-    if (competition.status !== CompetitionStatus.ACTIVE) {
+    if (competition.status !== COMPETITION_STATUS.ACTIVE) {
       throw new Error(`Competition is not active: ${competition.status}`);
     }
 
@@ -234,7 +241,7 @@ export class CompetitionManager {
     }
 
     // Update competition status
-    competition.status = CompetitionStatus.COMPLETED;
+    competition.status = CompetitionStatusSchema.parse("ended");
     competition.endDate = new Date();
     competition.updatedAt = new Date();
     await updateCompetition(competition);
@@ -260,7 +267,7 @@ export class CompetitionManager {
    */
   async isCompetitionActive(competitionId: string) {
     const competition = await findById(competitionId);
-    return competition?.status === CompetitionStatus.ACTIVE;
+    return competition?.status === COMPETITION_STATUS.ACTIVE;
   }
 
   /**
@@ -271,7 +278,7 @@ export class CompetitionManager {
     // First check cache for better performance
     if (this.activeCompetitionCache) {
       const competition = await findById(this.activeCompetitionCache);
-      if (competition?.status === CompetitionStatus.ACTIVE) {
+      if (competition?.status === COMPETITION_STATUS.ACTIVE) {
         return competition;
       } else {
         // Cache is out of sync, clear it
@@ -440,7 +447,7 @@ export class CompetitionManager {
    */
   async getUpcomingCompetitions() {
     return findByStatus({
-      status: CompetitionStatus.PENDING,
+      status: COMPETITION_STATUS.PENDING,
       params: {
         sort: "",
         limit: 100,

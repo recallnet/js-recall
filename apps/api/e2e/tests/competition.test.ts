@@ -6,12 +6,12 @@ import { db } from "@/database/db.js";
 import { agents } from "@/database/schema/core/defs.js";
 import {
   AgentProfileResponse,
+  CROSS_CHAIN_TRADING_TYPE,
   CompetitionAgentsResponse,
   CompetitionDetailResponse,
   CompetitionRulesResponse,
   CompetitionStatusResponse,
   CreateCompetitionResponse,
-  CrossChainTradingType,
   EndCompetitionResponse,
   ErrorResponse,
   LeaderboardResponse,
@@ -317,7 +317,7 @@ describe("Competition API", () => {
     expect(adminStatusResponse.competition?.name).toBe(competitionName);
     expect(adminStatusResponse.competition?.status).toBe("active");
     expect(adminStatusResponse.competition?.description).toBeDefined();
-    expect(adminStatusResponse.competition?.externalLink).toBeDefined();
+    expect(adminStatusResponse.competition?.externalUrl).toBeDefined();
     expect(adminStatusResponse.competition?.imageUrl).toBeDefined();
     expect(
       adminStatusResponse.competition?.crossChainTradingType,
@@ -486,17 +486,17 @@ describe("Competition API", () => {
     const createResponse1 = (await adminClient.createCompetition(
       comp1Name,
       "Test competition 1",
-      CrossChainTradingType.allow,
+      CROSS_CHAIN_TRADING_TYPE.ALLOW,
     )) as CreateCompetitionResponse;
     const createResponse2 = (await adminClient.createCompetition(
       comp2Name,
       "Test competition 2",
-      CrossChainTradingType.disallowAll,
+      CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
     )) as CreateCompetitionResponse;
     const createResponse3 = (await adminClient.createCompetition(
       comp3Name,
       "Test competition 3",
-      CrossChainTradingType.allow,
+      CROSS_CHAIN_TRADING_TYPE.ALLOW,
     )) as CreateCompetitionResponse;
 
     // Verify all competitions were created and in PENDING state
@@ -566,7 +566,7 @@ describe("Competition API", () => {
     await adminClient.createCompetition(
       `Upcoming Competition ${Date.now()}`,
       "Test competition 1",
-      CrossChainTradingType.allow,
+      CROSS_CHAIN_TRADING_TYPE.ALLOW,
     );
 
     // Call the new endpoint to get competitions sorted by start date ascending
@@ -601,19 +601,19 @@ describe("Competition API", () => {
     await adminClient.createCompetition(
       comp1Name,
       "Test competition 1",
-      CrossChainTradingType.allow,
+      CROSS_CHAIN_TRADING_TYPE.ALLOW,
     );
     await wait(1200);
     await adminClient.createCompetition(
       comp2Name,
       "Test competition 2",
-      CrossChainTradingType.disallowAll,
+      CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
     );
     await wait(1200);
     await adminClient.createCompetition(
       comp3Name,
       "Test competition 3",
-      CrossChainTradingType.allow,
+      CROSS_CHAIN_TRADING_TYPE.ALLOW,
     );
 
     // Call the new endpoint to get competitions sorted by start date ascending
@@ -645,7 +645,7 @@ describe("Competition API", () => {
     expect(descResponse.competitions[2]?.name).toBe(comp1Name);
   }, 1000000);
 
-  test("competitions include externalLink and imageUrl fields", async () => {
+  test("competitions include externalUrl and imageUrl fields", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -658,37 +658,37 @@ describe("Competition API", () => {
       });
 
     // Test data for new fields
-    const externalLink = "https://example.com/competition-details";
+    const externalUrl = "https://example.com/competition-details";
     const imageUrl = "https://example.com/competition-image.jpg";
 
-    // 1. Test creating a competition with externalLink and imageUrl
+    // 1. Test creating a competition with externalUrl and imageUrl
     const createCompetitionName = `Create with Links Test ${Date.now()}`;
     const createResponse = await createTestCompetition(
       adminClient,
       createCompetitionName,
       "Test description with links",
-      externalLink,
+      externalUrl,
       imageUrl,
     );
 
     // Verify the fields are in the creation response
     expect(createResponse.success).toBe(true);
-    expect(createResponse.competition.externalLink).toBe(externalLink);
+    expect(createResponse.competition.externalUrl).toBe(externalUrl);
     expect(createResponse.competition.imageUrl).toBe(imageUrl);
 
-    // 2. Test starting a competition with externalLink and imageUrl
+    // 2. Test starting a competition with externalUrl and imageUrl
     const startCompetitionName = `Start with Links Test ${Date.now()}`;
     const startResponse = await startTestCompetition(
       adminClient,
       startCompetitionName,
       [agent.id],
-      externalLink,
+      externalUrl,
       imageUrl,
     );
 
     // Verify the fields are in the start competition response
     expect(startResponse.success).toBe(true);
-    expect(startResponse.competition.externalLink).toBe(externalLink);
+    expect(startResponse.competition.externalUrl).toBe(externalUrl);
     expect(startResponse.competition.imageUrl).toBe(imageUrl);
 
     // 3. Verify the fields are in the competition status response for participating agents
@@ -698,7 +698,7 @@ describe("Competition API", () => {
     expect(agentStatusResponse.active).toBe(true);
 
     if (agentStatusResponse.success && agentStatusResponse.competition) {
-      expect(agentStatusResponse.competition.externalLink).toBe(externalLink);
+      expect(agentStatusResponse.competition.externalUrl).toBe(externalUrl);
       expect(agentStatusResponse.competition.imageUrl).toBe(imageUrl);
     }
 
@@ -707,7 +707,7 @@ describe("Competition API", () => {
     expect(leaderboardResponse.success).toBe(true);
 
     if (leaderboardResponse.success && "competition" in leaderboardResponse) {
-      expect(leaderboardResponse.competition.externalLink).toBe(externalLink);
+      expect(leaderboardResponse.competition.externalUrl).toBe(externalUrl);
       expect(leaderboardResponse.competition.imageUrl).toBe(imageUrl);
     }
 
@@ -728,7 +728,7 @@ describe("Competition API", () => {
 
       expect(pendingCompetition).toBeDefined();
       if (pendingCompetition) {
-        expect(pendingCompetition.externalLink).toBe(externalLink);
+        expect(pendingCompetition.externalUrl).toBe(externalUrl);
         expect(pendingCompetition.imageUrl).toBe(imageUrl);
       }
     }
@@ -741,7 +741,7 @@ describe("Competition API", () => {
 
     // Verify the original fields are in the response
     expect(startExistingResponse.success).toBe(true);
-    expect(startExistingResponse.competition.externalLink).toBe(externalLink);
+    expect(startExistingResponse.competition.externalUrl).toBe(externalUrl);
     expect(startExistingResponse.competition.imageUrl).toBe(imageUrl);
   });
 
@@ -833,8 +833,8 @@ describe("Competition API", () => {
       name: competitionName,
       description: "Test competition for field validation",
       agentIds: [agent.id],
-      tradingType: CrossChainTradingType.disallowAll,
-      externalLink: "https://example.com",
+      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+      externalUrl: "https://example.com",
       imageUrl: "https://example.com/image.png",
     });
 
@@ -856,7 +856,7 @@ describe("Competition API", () => {
     );
     expect(competitionDetail.status).toBe("active");
     expect(competitionDetail.crossChainTradingType).toBe("disallowAll");
-    expect(competitionDetail.externalLink).toBe("https://example.com");
+    expect(competitionDetail.externalUrl).toBe("https://example.com");
     expect(competitionDetail.imageUrl).toBe("https://example.com/image.png");
     expect(competitionDetail.createdAt).toBeDefined();
     expect(competitionDetail.updatedAt).toBeDefined();
@@ -888,7 +888,7 @@ describe("Competition API", () => {
       name: competitionName,
       description: "Test competition for agents endpoint",
       agentIds: [agent1.id, agent2.id],
-      tradingType: CrossChainTradingType.disallowAll,
+      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
     });
 
     expect(startResponse.success).toBe(true);
@@ -1129,7 +1129,7 @@ describe("Competition API", () => {
       name: competitionName,
       description: "Test competition for SIWE user agents access",
       agentIds: [agent1.id, agent2.id],
-      tradingType: CrossChainTradingType.disallowAll,
+      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
     });
 
     expect(startResponse.success).toBe(true);

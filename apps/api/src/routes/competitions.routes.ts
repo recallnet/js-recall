@@ -73,7 +73,7 @@ export function configureCompetitionsRoutes(
    *                         type: string
    *                         nullable: true
    *                         description: Competition description
-   *                       externalLink:
+   *                       externalUrl:
    *                         type: string
    *                         nullable: true
    *                         description: External URL for competition details
@@ -145,7 +145,7 @@ export function configureCompetitionsRoutes(
    *                       type: string
    *                       nullable: true
    *                       description: Competition description
-   *                     externalLink:
+   *                     externalUrl:
    *                       type: string
    *                       nullable: true
    *                       description: External URL for competition details
@@ -164,7 +164,7 @@ export function configureCompetitionsRoutes(
    *                       description: Competition end date
    *                     status:
    *                       type: string
-   *                       enum: [pending, active, completed]
+   *                       enum: [pending, active, ended]
    *                       description: Competition status
    *                     createdAt:
    *                       type: string
@@ -274,7 +274,7 @@ export function configureCompetitionsRoutes(
    *                       type: string
    *                       nullable: true
    *                       description: Competition description
-   *                     externalLink:
+   *                     externalUrl:
    *                       type: string
    *                       nullable: true
    *                       description: External URL for competition details
@@ -293,7 +293,7 @@ export function configureCompetitionsRoutes(
    *                       description: Competition end date
    *                     status:
    *                       type: string
-   *                       enum: [pending, active, completed]
+   *                       enum: [pending, active, ended]
    *                       description: Competition status
    *                     crossChainTradingType:
    *                       type: string
@@ -423,7 +423,7 @@ export function configureCompetitionsRoutes(
    *                         type: string
    *                         nullable: true
    *                         description: Competition description
-   *                       externalLink:
+   *                       externalUrl:
    *                         type: string
    *                         nullable: true
    *                         description: External URL for competition details
@@ -495,7 +495,7 @@ export function configureCompetitionsRoutes(
    *                       type: string
    *                       nullable: true
    *                       description: Competition description
-   *                     externalLink:
+   *                     externalUrl:
    *                       type: string
    *                       nullable: true
    *                       description: External URL for competition details

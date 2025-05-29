@@ -1,7 +1,11 @@
 import dotenv from "dotenv";
 import path from "path";
 
-import { CrossChainTradingType, SpecificChain } from "@/types/index.js";
+import {
+  CROSS_CHAIN_TRADING_TYPE,
+  CrossChainTradingType,
+  SpecificChain,
+} from "@/types/index.js";
 
 // Environment file selection logic:
 // - When NODE_ENV=test, load from .env.test
@@ -242,11 +246,13 @@ export const config = {
 /**
  * Feature flag configurations
  */
-export const features = {
+export const features: {
+  CROSS_CHAIN_TRADING_TYPE: CrossChainTradingType;
+} = {
   // Enable or disable cross-chain trading functionality
   // When set to false, trades can only occur between tokens on the same chain
   // Defaults to false for security, must be explicitly enabled
-  CROSS_CHAIN_TRADING_TYPE: CrossChainTradingType.disallowAll,
+  CROSS_CHAIN_TRADING_TYPE: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
 };
 
 /**

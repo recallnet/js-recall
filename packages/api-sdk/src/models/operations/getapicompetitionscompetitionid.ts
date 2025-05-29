@@ -61,7 +61,7 @@ export type GetApiCompetitionsCompetitionIdCompetition = {
   /**
    * External URL for competition details
    */
-  externalLink?: string | null | undefined;
+  externalUrl?: string | null | undefined;
   /**
    * URL to competition image
    */
@@ -219,7 +219,7 @@ export const GetApiCompetitionsCompetitionIdCompetition$inboundSchema: z.ZodType
   id: z.string().optional(),
   name: z.string().optional(),
   description: z.nullable(z.string()).optional(),
-  externalLink: z.nullable(z.string()).optional(),
+  externalUrl: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
   status: GetApiCompetitionsCompetitionIdStatus$inboundSchema.optional(),
   crossChainTradingType:
@@ -257,7 +257,7 @@ export type GetApiCompetitionsCompetitionIdCompetition$Outbound = {
   id?: string | undefined;
   name?: string | undefined;
   description?: string | null | undefined;
-  externalLink?: string | null | undefined;
+  externalUrl?: string | null | undefined;
   imageUrl?: string | null | undefined;
   status?: string | undefined;
   crossChainTradingType?: string | undefined;
@@ -276,7 +276,7 @@ export const GetApiCompetitionsCompetitionIdCompetition$outboundSchema: z.ZodTyp
   id: z.string().optional(),
   name: z.string().optional(),
   description: z.nullable(z.string()).optional(),
-  externalLink: z.nullable(z.string()).optional(),
+  externalUrl: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
   status: GetApiCompetitionsCompetitionIdStatus$outboundSchema.optional(),
   crossChainTradingType:
