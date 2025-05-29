@@ -1823,4 +1823,624 @@ describe("Competition API", () => {
 
     expect(validResponse.success).toBe(true);
   });
+
+  // New test cases for join/leave competition functionality
+  test("user can join competition on behalf of their agent", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a SIWE-authenticated user
+    const { client: userClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Competition Join User",
+      userEmail: "competition-join@example.com",
+    });
+
+    // User creates an agent
+    const createAgentResponse = await userClient.createAgent(
+      "Competition Join Agent",
+      "Agent for testing competition joining",
+    );
+    expect(createAgentResponse.success).toBe(true);
+    const agent = (createAgentResponse as AgentProfileResponse).agent;
+
+    // Create a pending competition
+    const competitionName = `Join Test Competition ${Date.now()}`;
+    const createResponse = await createTestCompetition(
+      adminClient,
+      competitionName,
+    );
+    const competition = createResponse.competition;
+
+    // Verify initial state - agent not in competition
+    const agentsBefore = await adminClient.getCompetitionAgents(competition.id);
+    if ("agents" in agentsBefore) {
+      const agentInCompetition = agentsBefore.agents.find(
+        (a) => a.id === agent.id,
+      );
+      expect(agentInCompetition).toBeUndefined();
+    }
+
+    // User joins the competition on behalf of their agent
+    const joinResponse = await userClient.joinCompetition(
+      competition.id,
+      agent.id,
+    );
+    expect("success" in joinResponse && joinResponse.success).toBe(true);
+    if ("message" in joinResponse) {
+      expect(joinResponse.message).toBe("Successfully joined competition");
+    }
+
+    // Verify agent is now in the competition
+    const agentsAfter = await adminClient.getCompetitionAgents(competition.id);
+    if ("agents" in agentsAfter) {
+      const agentInCompetition = agentsAfter.agents.find(
+        (a) => a.id === agent.id,
+      );
+      expect(agentInCompetition).toBeDefined();
+    }
+  });
+
+  test("user can leave pending competition on behalf of their agent", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a SIWE-authenticated user
+    const { client: userClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Competition Leave User",
+      userEmail: "competition-leave@example.com",
+    });
+
+    // User creates an agent
+    const createAgentResponse = await userClient.createAgent(
+      "Competition Leave Agent",
+      "Agent for testing competition leaving",
+    );
+    expect(createAgentResponse.success).toBe(true);
+    const agent = (createAgentResponse as AgentProfileResponse).agent;
+
+    // Create and join competition
+    const competitionName = `Leave Test Competition ${Date.now()}`;
+    const createResponse = await createTestCompetition(
+      adminClient,
+      competitionName,
+    );
+    const competition = createResponse.competition;
+
+    // Join the competition first
+    await userClient.joinCompetition(competition.id, agent.id);
+
+    // Verify agent is in competition
+    const agentsBefore = await adminClient.getCompetitionAgents(competition.id);
+    if ("agents" in agentsBefore) {
+      const agentInCompetition = agentsBefore.agents.find(
+        (a) => a.id === agent.id,
+      );
+      expect(agentInCompetition).toBeDefined();
+    }
+
+    // Leave the competition
+    const leaveResponse = await userClient.leaveCompetition(
+      competition.id,
+      agent.id,
+    );
+    expect("success" in leaveResponse && leaveResponse.success).toBe(true);
+    if ("message" in leaveResponse) {
+      expect(leaveResponse.message).toBe("Successfully left competition");
+    }
+
+    // Verify agent is no longer in competition
+    const agentsAfter = await adminClient.getCompetitionAgents(competition.id);
+    if ("agents" in agentsAfter) {
+      const agentInCompetition = agentsAfter.agents.find(
+        (a) => a.id === agent.id,
+      );
+      expect(agentInCompetition).toBeUndefined();
+    }
+  });
+
+  test("user cannot join competition with agent they don't own", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create two SIWE-authenticated users
+    const { client: user1Client } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "User 1",
+      userEmail: "user1@example.com",
+    });
+
+    const { client: user2Client } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "User 2",
+      userEmail: "user2@example.com",
+    });
+
+    // User 2 creates an agent
+    const createAgentResponse = await user2Client.createAgent(
+      "User 2 Agent",
+      "Agent owned by user 2",
+    );
+    expect(createAgentResponse.success).toBe(true);
+    const agent2 = (createAgentResponse as AgentProfileResponse).agent;
+
+    // Create a pending competition
+    const competitionName = `Ownership Test Competition ${Date.now()}`;
+    const createResponse = await createTestCompetition(
+      adminClient,
+      competitionName,
+    );
+    const competition = createResponse.competition;
+
+    // User 1 tries to join with User 2's agent
+    const joinResponse = await user1Client.joinCompetition(
+      competition.id,
+      agent2.id,
+    );
+    expect("success" in joinResponse && joinResponse.success).toBe(false);
+    if ("error" in joinResponse) {
+      expect(joinResponse.error).toContain("do not own this agent");
+    }
+  });
+
+  test("user cannot join non-pending competition", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a dummy user and agent to make the competition startable
+    const { client: dummyUserClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Dummy User for Competition",
+      userEmail: "dummy-user@example.com",
+    });
+
+    const dummyAgentResponse = await dummyUserClient.createAgent(
+      "Dummy Agent",
+      "Agent to make competition startable",
+    );
+    expect(dummyAgentResponse.success).toBe(true);
+    const dummyAgent = (dummyAgentResponse as AgentProfileResponse).agent;
+
+    // Create a SIWE-authenticated user who will try to join
+    const { client: userClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Non-Pending Test User",
+      userEmail: "non-pending-test@example.com",
+    });
+
+    // User creates an agent
+    const createAgentResponse = await userClient.createAgent(
+      "Non-Pending Test Agent",
+      "Agent for testing non-pending competition join",
+    );
+    expect(createAgentResponse.success).toBe(true);
+    const agent = (createAgentResponse as AgentProfileResponse).agent;
+
+    // Create a pending competition
+    const competitionName = `Non-Pending Test ${Date.now()}`;
+    const createResponse = await createTestCompetition(
+      adminClient,
+      competitionName,
+    );
+    const competition = createResponse.competition;
+
+    // Dummy user joins the competition (pre-registers)
+    const dummyJoinResponse = await dummyUserClient.joinCompetition(
+      competition.id,
+      dummyAgent.id,
+    );
+    expect("success" in dummyJoinResponse && dummyJoinResponse.success).toBe(
+      true,
+    );
+
+    // Start the competition with empty agentIds (will use pre-registered agent)
+    const startResponse = await startExistingTestCompetition(
+      adminClient,
+      competition.id,
+      [], // No agentIds - should use pre-registered dummy agent
+    );
+    expect(startResponse.success).toBe(true);
+
+    // Now try to join the active competition with a different agent
+    const joinResponse = await userClient.joinCompetition(
+      competition.id,
+      agent.id,
+    );
+    expect("success" in joinResponse && joinResponse.success).toBe(false);
+    if ("error" in joinResponse) {
+      expect(joinResponse.error).toContain("already started/ended");
+    }
+  });
+
+  test("user cannot join competition twice with same agent", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a SIWE-authenticated user
+    const { client: userClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Duplicate Join User",
+      userEmail: "duplicate-join@example.com",
+    });
+
+    // User creates an agent
+    const createAgentResponse = await userClient.createAgent(
+      "Duplicate Join Agent",
+      "Agent for testing duplicate join prevention",
+    );
+    expect(createAgentResponse.success).toBe(true);
+    const agent = (createAgentResponse as AgentProfileResponse).agent;
+
+    // Create competition
+    const competitionName = `Duplicate Join Test ${Date.now()}`;
+    const createResponse = await createTestCompetition(
+      adminClient,
+      competitionName,
+    );
+    const competition = createResponse.competition;
+
+    // First join should succeed
+    const firstJoinResponse = await userClient.joinCompetition(
+      competition.id,
+      agent.id,
+    );
+    expect("success" in firstJoinResponse && firstJoinResponse.success).toBe(
+      true,
+    );
+
+    // Second join should fail
+    const secondJoinResponse = await userClient.joinCompetition(
+      competition.id,
+      agent.id,
+    );
+    expect("success" in secondJoinResponse && secondJoinResponse.success).toBe(
+      false,
+    );
+    if ("error" in secondJoinResponse) {
+      expect(secondJoinResponse.error).toContain("already registered");
+    }
+  });
+
+  test("user cannot use inactive agent for competition", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a SIWE-authenticated user
+    const { client: userClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Inactive Agent User",
+      userEmail: "inactive-agent@example.com",
+    });
+
+    // User creates an agent
+    const createAgentResponse = await userClient.createAgent(
+      "Inactive Agent Test",
+      "Agent for testing inactive agent rejection",
+    );
+    expect(createAgentResponse.success).toBe(true);
+    const agent = (createAgentResponse as AgentProfileResponse).agent;
+
+    // Admin deactivates the agent
+    await adminClient.deactivateAgent(agent.id, "Test deactivation");
+
+    // Create a pending competition
+    const competitionName = `Inactive Agent Test ${Date.now()}`;
+    const createResponse = await createTestCompetition(
+      adminClient,
+      competitionName,
+    );
+    const competition = createResponse.competition;
+
+    // Try to join with inactive agent
+    const joinResponse = await userClient.joinCompetition(
+      competition.id,
+      agent.id,
+    );
+    expect("success" in joinResponse && joinResponse.success).toBe(false);
+    if ("error" in joinResponse) {
+      expect(joinResponse.error).toContain("inactive agent");
+    }
+  });
+
+  test("leaving active competition deactivates agent", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a SIWE-authenticated user with agent
+    const { client: userClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Active Leave User",
+      userEmail: "active-leave@example.com",
+    });
+
+    const createAgentResponse = await userClient.createAgent(
+      "Active Leave Agent",
+      "Agent for testing active competition leave",
+    );
+    expect(createAgentResponse.success).toBe(true);
+    const agent = (createAgentResponse as AgentProfileResponse).agent;
+
+    // Start competition with the agent
+    const competitionName = `Active Leave Test ${Date.now()}`;
+    const startResponse = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent.id],
+    );
+    const competition = startResponse.competition;
+
+    // User leaves the active competition
+    const leaveResponse = await userClient.leaveCompetition(
+      competition.id,
+      agent.id,
+    );
+    expect("success" in leaveResponse && leaveResponse.success).toBe(true);
+
+    // Check that agent is now deactivated by trying to get its profile
+    // The agent should still exist but be marked as inactive
+    const agentProfileResponse = await userClient.getUserAgent(agent.id);
+    expect(agentProfileResponse.success).toBe(true);
+    if ("agent" in agentProfileResponse) {
+      // Agent should be deactivated (status changed to inactive)
+      expect(agentProfileResponse.agent.status).toBe("inactive");
+      expect(agentProfileResponse.agent.deactivationReason).toContain(
+        "Left competition",
+      );
+    }
+  });
+
+  test("user cannot leave ended competition", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a SIWE-authenticated user
+    const { client: userClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Ended Leave User",
+      userEmail: "ended-leave@example.com",
+    });
+
+    // User creates an agent
+    const createAgentResponse = await userClient.createAgent(
+      "Ended Leave Agent",
+      "Agent for testing ended competition leave",
+    );
+    expect(createAgentResponse.success).toBe(true);
+    const agent = (createAgentResponse as AgentProfileResponse).agent;
+
+    // Start and end competition
+    const competitionName = `Ended Leave Test ${Date.now()}`;
+    const startResponse = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent.id],
+    );
+    const competition = startResponse.competition;
+
+    // End the competition
+    await adminClient.endCompetition(competition.id);
+
+    // Try to leave the ended competition
+    const leaveResponse = await userClient.leaveCompetition(
+      competition.id,
+      agent.id,
+    );
+    expect("success" in leaveResponse && leaveResponse.success).toBe(false);
+    if ("error" in leaveResponse) {
+      // When a competition ends, agents are deactivated, so the error will be about inactive agents
+      expect(leaveResponse.error).toContain("inactive agent");
+    }
+  });
+
+  test("user cannot join/leave non-existent competition", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a SIWE-authenticated user
+    const { client: userClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Non-Existent Competition User",
+      userEmail: "non-existent-comp@example.com",
+    });
+
+    // User creates an agent
+    const createAgentResponse = await userClient.createAgent(
+      "Non-Existent Competition Agent",
+      "Agent for testing non-existent competition",
+    );
+    expect(createAgentResponse.success).toBe(true);
+    const agent = (createAgentResponse as AgentProfileResponse).agent;
+
+    // Try to join non-existent competition
+    const fakeCompetitionId = "00000000-0000-0000-0000-000000000000";
+    const joinResponse = await userClient.joinCompetition(
+      fakeCompetitionId,
+      agent.id,
+    );
+    expect("success" in joinResponse && joinResponse.success).toBe(false);
+    if ("error" in joinResponse) {
+      expect(joinResponse.error).toContain("not found");
+    }
+
+    // Try to leave non-existent competition
+    const leaveResponse = await userClient.leaveCompetition(
+      fakeCompetitionId,
+      agent.id,
+    );
+    expect("success" in leaveResponse && leaveResponse.success).toBe(false);
+    if ("error" in leaveResponse) {
+      expect(leaveResponse.error).toContain("not found");
+    }
+  });
+
+  test("user cannot leave competition agent is not in", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a SIWE-authenticated user
+    const { client: userClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Not In Competition User",
+      userEmail: "not-in-comp@example.com",
+    });
+
+    // User creates an agent
+    const createAgentResponse = await userClient.createAgent(
+      "Not In Competition Agent",
+      "Agent for testing leave without join",
+    );
+    expect(createAgentResponse.success).toBe(true);
+    const agent = (createAgentResponse as AgentProfileResponse).agent;
+
+    // Create competition (but don't join)
+    const competitionName = `Not In Competition Test ${Date.now()}`;
+    const createResponse = await createTestCompetition(
+      adminClient,
+      competitionName,
+    );
+    const competition = createResponse.competition;
+
+    // Try to leave competition without joining first
+    const leaveResponse = await userClient.leaveCompetition(
+      competition.id,
+      agent.id,
+    );
+    expect("success" in leaveResponse && leaveResponse.success).toBe(false);
+    if ("error" in leaveResponse) {
+      expect(leaveResponse.error).toContain("not registered");
+    }
+  });
+
+  test("unauthenticated requests to join/leave are rejected", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create an agent (via admin for this test)
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Unauth Test Agent",
+    });
+
+    // Create competition
+    const competitionName = `Unauth Test ${Date.now()}`;
+    const createResponse = await createTestCompetition(
+      adminClient,
+      competitionName,
+    );
+    const competition = createResponse.competition;
+
+    // Create unauthenticated client
+    const unauthClient = createTestClient();
+
+    // Try to join without authentication
+    const joinResponse = await unauthClient.joinCompetition(
+      competition.id,
+      agent.id,
+    );
+    expect("success" in joinResponse && joinResponse.success).toBe(false);
+
+    // Try to leave without authentication
+    const leaveResponse = await unauthClient.leaveCompetition(
+      competition.id,
+      agent.id,
+    );
+    expect("success" in leaveResponse && leaveResponse.success).toBe(false);
+  });
+
+  test("agent API key authentication also works for join/leave", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register user and agent (this gives us agent API key client)
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent API Key Test Agent",
+      });
+
+    // Create a pending competition
+    const competitionName = `Agent API Key Test ${Date.now()}`;
+    const createResponse = await createTestCompetition(
+      adminClient,
+      competitionName,
+    );
+    const competition = createResponse.competition;
+
+    // Join using agent API key authentication (fallback method)
+    const joinResponse = await agentClient.joinCompetition(
+      competition.id,
+      agent.id,
+    );
+    expect("success" in joinResponse && joinResponse.success).toBe(true);
+    if ("message" in joinResponse) {
+      expect(joinResponse.message).toBe("Successfully joined competition");
+    }
+
+    // Verify agent is in the competition
+    const agentsAfter = await adminClient.getCompetitionAgents(competition.id);
+    if ("agents" in agentsAfter) {
+      const agentInCompetition = agentsAfter.agents.find(
+        (a) => a.id === agent.id,
+      );
+      expect(agentInCompetition).toBeDefined();
+    }
+
+    // Leave using agent API key authentication
+    const leaveResponse = await agentClient.leaveCompetition(
+      competition.id,
+      agent.id,
+    );
+    expect("success" in leaveResponse && leaveResponse.success).toBe(true);
+    if ("message" in leaveResponse) {
+      expect(leaveResponse.message).toBe("Successfully left competition");
+    }
+  });
+
+  test("agent API key cannot be used with different agent ID", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register two agents
+    const { client: agent1Client } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent 1 API Key Test",
+    });
+
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent 2 API Key Test",
+    });
+
+    // Create a pending competition
+    const competitionName = `API Key Mismatch Test ${Date.now()}`;
+    const createResponse = await createTestCompetition(
+      adminClient,
+      competitionName,
+    );
+    const competition = createResponse.competition;
+
+    // Try to join with agent1's API key but agent2's ID
+    const joinResponse = await agent1Client.joinCompetition(
+      competition.id,
+      agent2.id,
+    );
+    expect("success" in joinResponse && joinResponse.success).toBe(false);
+    if ("error" in joinResponse) {
+      expect(joinResponse.error).toContain("does not match agent ID in URL");
+    }
+  });
 });

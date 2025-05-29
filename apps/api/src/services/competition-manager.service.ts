@@ -1,6 +1,10 @@
 import { v4 as uuidv4 } from "uuid";
 
 import {
+  findById as findAgentById,
+  isAgentInCompetition,
+} from "@/database/repositories/agent-repository.js";
+import {
   addAgentToCompetition,
   create as createCompetition,
   findActive,
@@ -9,6 +13,7 @@ import {
   findByStatus,
   getCompetitionAgents,
   getLatestPortfolioSnapshots,
+  removeAgentFromCompetition,
   update as updateCompetition,
 } from "@/database/repositories/competition-repository.js";
 import {
@@ -19,6 +24,7 @@ import {
   TradeSimulator,
 } from "@/services/index.js";
 import {
+  ACTOR_STATUS,
   COMPETITION_STATUS,
   COMPETITION_TYPE,
   CROSS_CHAIN_TRADING_TYPE,
@@ -470,5 +476,135 @@ export class CompetitionManager {
       status,
       params: pagingParams,
     });
+  }
+
+  /**
+   * Join an agent to a competition
+   * @param competitionId Competition ID
+   * @param agentId Agent ID
+   * @param userId User ID (for ownership validation)
+   */
+  async joinCompetition(
+    competitionId: string,
+    agentId: string,
+    userId: string,
+  ): Promise<void> {
+    console.log(
+      `[CompetitionManager] Join competition request: agent ${agentId} to competition ${competitionId} by user ${userId}`,
+    );
+
+    // 1. Check if competition exists
+    const competition = await findById(competitionId);
+    if (!competition) {
+      throw new Error(`Competition not found: ${competitionId}`);
+    }
+
+    // 2. Check if agent exists
+    const agent = await findAgentById(agentId);
+    if (!agent) {
+      throw new Error(`Agent not found: ${agentId}`);
+    }
+
+    // 3. Check if agent belongs to user
+    if (agent.ownerId !== userId) {
+      throw new Error("Agent does not belong to requesting user");
+    }
+
+    // 4. Check agent status is eligible
+    if (
+      agent.status === ACTOR_STATUS.DELETED ||
+      agent.status === ACTOR_STATUS.SUSPENDED
+    ) {
+      throw new Error("Agent is not eligible to join competitions");
+    }
+
+    // 5. Check if competition status is pending
+    if (competition.status !== COMPETITION_STATUS.PENDING) {
+      throw new Error("Cannot join competition that has already started/ended");
+    }
+
+    // 6. Check if agent is already registered
+    const isAlreadyInCompetition = await isAgentInCompetition(
+      agentId,
+      competitionId,
+    );
+    if (isAlreadyInCompetition) {
+      throw new Error("Agent is already registered for this competition");
+    }
+
+    // Add agent to competition
+    await addAgentToCompetition(competitionId, agentId);
+
+    console.log(
+      `[CompetitionManager] Successfully joined agent ${agentId} to competition ${competitionId}`,
+    );
+  }
+
+  /**
+   * Remove an agent from a competition
+   * @param competitionId Competition ID
+   * @param agentId Agent ID
+   * @param userId User ID (for ownership validation)
+   */
+  async leaveCompetition(
+    competitionId: string,
+    agentId: string,
+    userId: string,
+  ): Promise<void> {
+    console.log(
+      `[CompetitionManager] Leave competition request: agent ${agentId} from competition ${competitionId} by user ${userId}`,
+    );
+
+    // 1. Check if competition exists
+    const competition = await findById(competitionId);
+    if (!competition) {
+      throw new Error(`Competition not found: ${competitionId}`);
+    }
+
+    // 2. Check if agent exists
+    const agent = await findAgentById(agentId);
+    if (!agent) {
+      throw new Error(`Agent not found: ${agentId}`);
+    }
+
+    // 3. Check if agent belongs to user
+    if (agent.ownerId !== userId) {
+      throw new Error("Agent does not belong to requesting user");
+    }
+
+    // 4. Check if agent is registered for the competition
+    const isInCompetition = await isAgentInCompetition(agentId, competitionId);
+    if (!isInCompetition) {
+      throw new Error("Agent is not registered for this competition");
+    }
+
+    // 5. Handle based on competition status
+    if (competition.status === COMPETITION_STATUS.ENDED) {
+      throw new Error("Cannot leave competition that has already ended");
+    } else if (competition.status === COMPETITION_STATUS.ACTIVE) {
+      // During active competition: deactivate the agent
+      await this.agentManager.deactivateAgent(
+        agentId,
+        `Left competition ${competition.name} (${competitionId})`,
+      );
+      console.log(
+        `[CompetitionManager] Deactivated agent ${agentId} for leaving active competition ${competitionId}`,
+      );
+    } else if (competition.status === COMPETITION_STATUS.PENDING) {
+      // During pending competition: just remove from roster
+      const wasRemoved = await removeAgentFromCompetition(
+        competitionId,
+        agentId,
+      );
+      if (!wasRemoved) {
+        console.warn(
+          `[CompetitionManager] Agent ${agentId} was not found in competition ${competitionId} roster`,
+        );
+      }
+    }
+
+    console.log(
+      `[CompetitionManager] Successfully processed leave request for agent ${agentId} from competition ${competitionId}`,
+    );
   }
 }

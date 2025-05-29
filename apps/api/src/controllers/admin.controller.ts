@@ -556,10 +556,30 @@ export function makeAdminController(services: ServiceRegistry) {
         } = req.body;
 
         // Validate required parameters
-        if (!agentIds || !Array.isArray(agentIds) || agentIds.length === 0) {
+        if (!agentIds || !Array.isArray(agentIds)) {
           throw new ApiError(
             400,
-            "Missing required parameter: agentIds (array)",
+            "Missing required parameter: agentIds (must be an array, can be empty)",
+          );
+        }
+
+        let finalAgentIds = [...agentIds]; // Start with provided agent IDs
+
+        // Get pre-registered agents from the database if we have a competitionId
+        if (competitionId) {
+          const registeredAgents = await getCompetitionAgents(competitionId);
+          // Combine with provided agentIds, removing duplicates
+          const combinedAgents = [
+            ...new Set([...finalAgentIds, ...registeredAgents]),
+          ];
+          finalAgentIds = combinedAgents;
+        }
+
+        // Now check if we have any agents to start the competition with
+        if (finalAgentIds.length === 0) {
+          throw new ApiError(
+            400,
+            "Cannot start competition: no agents provided in agentIds and no agents have joined the competition",
           );
         }
 
@@ -605,7 +625,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const startedCompetition =
           await services.competitionManager.startCompetition(
             competition.id,
-            agentIds,
+            finalAgentIds,
           );
 
         // Return the started competition
@@ -613,7 +633,7 @@ export function makeAdminController(services: ServiceRegistry) {
           success: true,
           competition: {
             ...startedCompetition,
-            agentIds,
+            agentIds: finalAgentIds,
           },
         });
       } catch (error) {

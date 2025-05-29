@@ -244,6 +244,8 @@ export function makeUserController(services: ServiceRegistry) {
           email: agent.email,
           metadata: agent.metadata,
           status: agent.status,
+          deactivationReason: agent.deactivationReason,
+          deactivationDate: agent.deactivationDate,
           createdAt: agent.createdAt,
           updatedAt: agent.updatedAt,
           // Explicitly exclude apiKey for security
@@ -298,6 +300,8 @@ export function makeUserController(services: ServiceRegistry) {
             email: agent.email,
             metadata: agent.metadata,
             status: agent.status,
+            deactivationReason: agent.deactivationReason,
+            deactivationDate: agent.deactivationDate,
             createdAt: agent.createdAt,
             updatedAt: agent.updatedAt,
             // Explicitly exclude apiKey for security

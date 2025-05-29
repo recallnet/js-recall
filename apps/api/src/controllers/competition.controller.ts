@@ -7,6 +7,7 @@ import { ServiceRegistry } from "@/services/index.js";
 import {
   AuthenticatedRequest,
   COMPETITION_STATUS,
+  CompetitionAgentParamsSchema,
   CompetitionAgentsParamsSchema,
   CompetitionStatusSchema,
   PagingParamsSchema,
@@ -652,6 +653,207 @@ export function makeCompetitionController(services: ServiceRegistry) {
         });
       } catch (error) {
         next(error);
+      }
+    },
+
+    /**
+     * Join an agent to a competition
+     * @param req AuthenticatedRequest with competitionId and agentId params
+     * @param res Express response object
+     * @param next Express next function
+     */
+    async joinCompetition(
+      req: AuthenticatedRequest,
+      res: Response,
+      next: NextFunction,
+    ): Promise<void> {
+      try {
+        // Parse and validate URL parameters
+        const params = CompetitionAgentParamsSchema.parse(req.params);
+        const { competitionId, agentId } = params;
+
+        // Authentication handling
+        const authenticatedAgentId = req.agentId;
+
+        let validatedUserId: string;
+
+        if (authenticatedAgentId) {
+          // Agent API key authentication: verify agent matches URL parameter
+          if (authenticatedAgentId !== agentId) {
+            throw new ApiError(
+              403,
+              "Agent API key does not match agent ID in URL",
+            );
+          }
+
+          // Get agent to find the owner
+          const agent = await services.agentManager.getAgent(agentId);
+          if (!agent) {
+            throw new ApiError(404, "Agent not found");
+          }
+
+          validatedUserId = agent.ownerId;
+        } else if (req.userId) {
+          // User session authentication - need to verify agent ownership
+          const agent = await services.agentManager.getAgent(agentId);
+          if (!agent || agent.ownerId !== req.userId) {
+            throw new ApiError(403, "Access denied: You do not own this agent");
+          }
+
+          // Check agent status - inactive agents should be rejected regardless of auth method
+          if (agent.status !== "active") {
+            throw new ApiError(
+              403,
+              `Cannot use inactive agent: ${agent.deactivationReason || "Agent has been deactivated"}`,
+            );
+          }
+
+          validatedUserId = req.userId;
+        } else {
+          throw new ApiError(401, "Authentication required");
+        }
+
+        // Call the service layer
+        await services.competitionManager.joinCompetition(
+          competitionId,
+          agentId,
+          validatedUserId,
+        );
+
+        res.status(200).json({
+          success: true,
+          message: "Successfully joined competition",
+        });
+      } catch (error) {
+        // Convert service layer errors to appropriate HTTP errors
+        if (error instanceof Error) {
+          if (error.message.includes("not found")) {
+            next(new ApiError(404, error.message));
+          } else if (
+            error.message.includes("does not belong to requesting user")
+          ) {
+            next(new ApiError(403, "Agent does not belong to requesting user"));
+          } else if (error.message.includes("already started/ended")) {
+            next(
+              new ApiError(
+                403,
+                "Cannot join competition that has already started/ended",
+              ),
+            );
+          } else if (error.message.includes("already registered")) {
+            next(
+              new ApiError(
+                403,
+                "Agent is already registered for this competition",
+              ),
+            );
+          } else if (error.message.includes("not eligible")) {
+            next(
+              new ApiError(403, "Agent is not eligible to join competitions"),
+            );
+          } else {
+            next(error);
+          }
+        } else {
+          next(error);
+        }
+      }
+    },
+
+    /**
+     * Leave a competition
+     * @param req AuthenticatedRequest with competitionId and agentId params
+     * @param res Express response object
+     * @param next Express next function
+     */
+    async leaveCompetition(
+      req: AuthenticatedRequest,
+      res: Response,
+      next: NextFunction,
+    ): Promise<void> {
+      try {
+        // Parse and validate URL parameters
+        const params = CompetitionAgentParamsSchema.parse(req.params);
+        const { competitionId, agentId } = params;
+
+        // Authentication handling
+        const authenticatedAgentId = req.agentId;
+
+        let validatedUserId: string;
+
+        if (authenticatedAgentId) {
+          // Agent API key authentication: verify agent matches URL parameter
+          if (authenticatedAgentId !== agentId) {
+            throw new ApiError(
+              403,
+              "Agent API key does not match agent ID in URL",
+            );
+          }
+
+          // Get agent to find the owner
+          const agent = await services.agentManager.getAgent(agentId);
+          if (!agent) {
+            throw new ApiError(404, "Agent not found");
+          }
+
+          validatedUserId = agent.ownerId;
+        } else if (req.userId) {
+          // User session authentication - need to verify agent ownership
+          const agent = await services.agentManager.getAgent(agentId);
+          if (!agent || agent.ownerId !== req.userId) {
+            throw new ApiError(403, "Access denied: You do not own this agent");
+          }
+
+          // Check agent status - inactive agents should be rejected regardless of auth method
+          if (agent.status !== "active") {
+            throw new ApiError(
+              403,
+              `Cannot use inactive agent: ${agent.deactivationReason || "Agent has been deactivated"}`,
+            );
+          }
+
+          validatedUserId = req.userId;
+        } else {
+          throw new ApiError(401, "Authentication required");
+        }
+
+        // Call the service layer
+        await services.competitionManager.leaveCompetition(
+          competitionId,
+          agentId,
+          validatedUserId,
+        );
+
+        res.status(200).json({
+          success: true,
+          message: "Successfully left competition",
+        });
+      } catch (error) {
+        // Convert service layer errors to appropriate HTTP errors
+        if (error instanceof Error) {
+          if (error.message.includes("not found")) {
+            next(new ApiError(404, error.message));
+          } else if (
+            error.message.includes("does not belong to requesting user")
+          ) {
+            next(new ApiError(403, "Agent does not belong to requesting user"));
+          } else if (error.message.includes("already ended")) {
+            next(
+              new ApiError(
+                403,
+                "Cannot leave competition that has already ended",
+              ),
+            );
+          } else if (error.message.includes("not registered")) {
+            next(
+              new ApiError(403, "Agent is not registered for this competition"),
+            );
+          } else {
+            next(error);
+          }
+        } else {
+          next(error);
+        }
       }
     },
   };
