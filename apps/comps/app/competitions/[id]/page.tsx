@@ -9,6 +9,7 @@ import { IconButton } from "@recallnet/ui2/components/icon-button";
 
 import { AgentsTable } from "@/components/agents-table";
 import { CompetitionInfo } from "@/components/competition-info";
+import CompetitionSkeleton from "@/components/competition-skeleton";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
 import { NewsletterSection } from "@/components/newsletter-section";
 import { UpComingCompetition } from "@/components/upcoming-competition";
@@ -65,12 +66,7 @@ export default function CompetitionPage({
   const error = competitionError;
 
   if (isLoading) {
-    return (
-      <div className="container mx-auto px-12 py-20 text-center">
-        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
-        <p className="mt-4">Loading competition data...</p>
-      </div>
-    );
+    return <CompetitionSkeleton />;
   }
 
   if (error || !competition) {

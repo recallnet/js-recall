@@ -28,14 +28,11 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
 
   return (
     <>
-      <nav className="flex w-full justify-center border-b border-gray-700 bg-black">
-        <div className="xl:px-25 flex w-full items-center justify-between md:px-5 lg:px-20">
+      <nav className="flex w-full justify-center border-b bg-black">
+        <div className="mx-auto flex w-full max-w-screen-lg items-center justify-between px-5 sm:px-20">
           <div className="flex items-center">
             {/* Logo */}
-            <Link
-              href="/"
-              className="flex items-center border-x border-gray-700 p-1"
-            >
+            <Link href="/" className="flex items-center border-x p-1">
               <Avatar className="h-12 w-12">
                 <AvatarImage src="/favicon-32x32.png" alt="recallnet" />
               </Avatar>
@@ -50,7 +47,7 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
                     href={item.href}
                     key={item.href}
                     className={cn(
-                      "px-15 flex h-14 items-center justify-center border-r border-gray-700",
+                      "px-15 flex h-14 items-center justify-center border-r",
                       isActive ? "border-b-2 border-b-yellow-500" : "",
                     )}
                   >
@@ -74,7 +71,7 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Portal>
                   <DropdownMenu.Content
-                    className="z-50 min-w-[180px] rounded-md border border-gray-700 bg-black p-1 shadow-xl"
+                    className="z-50 min-w-[180px] rounded-md border bg-black p-1 shadow-xl"
                     sideOffset={5}
                   >
                     {navItems.map((item) => (
@@ -105,7 +102,7 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
         </div>
       </nav>
 
-      <div className="xl:px-25 flex justify-center pt-10 md:px-5 lg:px-20">
+      <div className="mx-auto flex w-full max-w-screen-lg justify-center px-5 pt-10 sm:px-20">
         {children}
       </div>
     </>
