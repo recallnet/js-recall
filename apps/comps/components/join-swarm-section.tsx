@@ -2,10 +2,10 @@
 
 import React from "react";
 
-import {cn} from "@recallnet/ui2/lib/utils";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import {SocialLink} from "../data/social";
-import {SocialLinkCard} from "./social-link-card";
+import { SocialLink } from "../data/social";
+import { SocialLinkCard } from "./social-link-card";
 
 interface JoinSwarmSectionProps {
   className?: string;
