@@ -1,7 +1,10 @@
 import { IronSession } from "iron-session";
 import { SiweMessage, generateNonce } from "siwe";
 
-import { findByWalletAddress } from "@/database/repositories/user-repository.js";
+import {
+  createUserFromWallet,
+  findByWalletAddress,
+} from "@/database/repositories/user-repository.js";
 import { LoginResponse, SessionData } from "@/types/index.js";
 
 /**
@@ -50,9 +53,20 @@ export class AuthService {
       session.nonce = undefined;
 
       // Attempt to find the user that matches the verified wallet address
-      const user = await findByWalletAddress(siweData.address);
-      const userId = user?.id;
       const wallet = siweData.address;
+      let user = await findByWalletAddress(wallet);
+      let userId = user?.id;
+
+      if (!user) {
+        console.log(
+          `[AuthService] No user found for wallet ${wallet}. Creating new user.`,
+        );
+        user = await createUserFromWallet(wallet);
+        userId = user.id;
+        console.log(
+          `[AuthService] New user ${userId} created for wallet ${wallet}`,
+        );
+      }
 
       // Store session data
       session.siwe = siweData;
@@ -61,7 +75,7 @@ export class AuthService {
       await session.save();
 
       console.log(
-        `[AuthService] User login ${siweSuccess ? "successful" : "failed"} for wallet: ${wallet}`,
+        `[AuthService] User login successful for wallet: ${wallet}, userId: ${userId}`,
       );
 
       return {

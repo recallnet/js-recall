@@ -2,6 +2,11 @@ import { NextFunction, Request, Response } from "express";
 
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
+import {
+  CreateAgentSchema,
+  UpdateUserAgentProfileSchema,
+  UpdateUserProfileSchema,
+} from "@/types/index.js";
 
 /**
  * User Controller
@@ -55,22 +60,17 @@ export function makeUserController(services: ServiceRegistry) {
      */
     async updateProfile(req: Request, res: Response, next: NextFunction) {
       try {
-        const userId = req.userId as string;
-        const { name, imageUrl, email } = req.body;
-
-        // Validate that only allowed fields are being updated
-        const allowedFields = ["name", "imageUrl", "email"];
-        const providedFields = Object.keys(req.body);
-        const invalidFields = providedFields.filter(
-          (field) => !allowedFields.includes(field),
-        );
-
-        if (invalidFields.length > 0) {
-          throw new ApiError(
-            400,
-            `Invalid fields: ${invalidFields.join(", ")}. Users can only update: ${allowedFields.join(", ")}`,
-          );
+        const { success, data, error } = UpdateUserProfileSchema.safeParse({
+          userId: req.userId,
+          body: req.body,
+        });
+        if (!success) {
+          throw new ApiError(400, `Invalid request format: ${error.message}`);
         }
+        const {
+          userId,
+          body: { name, imageUrl, email },
+        } = data;
 
         // Get the current user
         const user = await services.userManager.getUser(userId);
@@ -79,35 +79,12 @@ export function makeUserController(services: ServiceRegistry) {
         }
 
         // Prepare update data with only allowed fields
-        const updateData: {
-          id: string;
-          name?: string;
-          imageUrl?: string;
-          email?: string;
-        } = {
+        const updateData = {
           id: userId,
+          name,
+          imageUrl,
+          email,
         };
-
-        if (name !== undefined) {
-          if (typeof name !== "string" || name.trim().length === 0) {
-            throw new ApiError(400, "User name must be a non-empty string");
-          }
-          updateData.name = name.trim();
-        }
-
-        if (imageUrl !== undefined) {
-          if (typeof imageUrl !== "string") {
-            throw new ApiError(400, "User imageUrl must be a string");
-          }
-          updateData.imageUrl = imageUrl.trim();
-        }
-
-        if (email !== undefined) {
-          if (typeof email !== "string" || email.trim().length === 0) {
-            throw new ApiError(400, "User email must be a non-empty string");
-          }
-          updateData.email = email.trim();
-        }
 
         // Update the user using UserManager
         const updatedUser = await services.userManager.updateUser(updateData);
@@ -143,41 +120,17 @@ export function makeUserController(services: ServiceRegistry) {
      */
     async createAgent(req: Request, res: Response, next: NextFunction) {
       try {
-        const userId = req.userId as string;
-        const { name, description, imageUrl, email, metadata } = req.body;
-
-        // Validate required fields
-        if (!name || typeof name !== "string" || name.trim().length === 0) {
-          throw new ApiError(
-            400,
-            "Agent name is required and must be a non-empty string",
-          );
+        const { success, data, error } = CreateAgentSchema.safeParse({
+          userId: req.userId,
+          body: req.body,
+        });
+        if (!success) {
+          throw new ApiError(400, `Invalid request format: ${error.message}`);
         }
-
-        // Validate optional fields
-        if (description !== undefined) {
-          if (typeof description !== "string") {
-            throw new ApiError(400, "Agent description must be a string");
-          }
-        }
-
-        if (imageUrl !== undefined) {
-          if (typeof imageUrl !== "string") {
-            throw new ApiError(400, "User imageUrl must be a string");
-          }
-        }
-
-        if (email !== undefined) {
-          if (typeof email !== "string" || email.trim().length === 0) {
-            throw new ApiError(400, "User email must be a non-empty string");
-          }
-        }
-
-        if (metadata !== undefined) {
-          if (typeof metadata !== "object" || metadata === null) {
-            throw new ApiError(400, "Agent metadata must be an object");
-          }
-        }
+        const {
+          userId,
+          body: { name, description, imageUrl, email, metadata },
+        } = data;
 
         // Verify the user exists
         const user = await services.userManager.getUser(userId);
@@ -186,14 +139,14 @@ export function makeUserController(services: ServiceRegistry) {
         }
 
         // Create the agent using AgentManager
-        const agent = await services.agentManager.createAgent(
-          userId,
-          name.trim(),
-          description?.trim(),
-          imageUrl?.trim(),
-          email?.trim(),
+        const agent = await services.agentManager.createAgent({
+          ownerId: userId,
+          name,
+          description,
+          imageUrl,
           metadata,
-        );
+          email,
+        });
 
         if (!agent) {
           throw new ApiError(500, "Failed to create agent");
@@ -321,33 +274,21 @@ export function makeUserController(services: ServiceRegistry) {
      */
     async updateAgentProfile(req: Request, res: Response, next: NextFunction) {
       try {
-        const userId = req.userId as string;
-        const { agentId } = req.params;
-        const { name, description, imageUrl, email, metadata } = req.body;
-
-        if (!agentId) {
-          throw new ApiError(400, "Agent ID is required");
-        }
-
-        // Validate that only allowed fields are being updated
-        const allowedFields = [
-          "name",
-          "description",
-          "imageUrl",
-          "email",
-          "metadata",
-        ];
-        const providedFields = Object.keys(req.body);
-        const invalidFields = providedFields.filter(
-          (field) => !allowedFields.includes(field),
+        const { success, data, error } = UpdateUserAgentProfileSchema.safeParse(
+          {
+            userId: req.userId,
+            agentId: req.params.agentId,
+            body: req.body,
+          },
         );
-
-        if (invalidFields.length > 0) {
-          throw new ApiError(
-            400,
-            `Invalid fields: ${invalidFields.join(", ")}. Agents can only update: ${allowedFields.join(", ")}`,
-          );
+        if (!success) {
+          throw new ApiError(400, `Invalid request format: ${error.message}`);
         }
+        const {
+          userId,
+          agentId,
+          body: { name, description, imageUrl, email, metadata },
+        } = data;
 
         // Get the agent to verify ownership
         const agent = await services.agentManager.getAgent(agentId);
@@ -362,56 +303,19 @@ export function makeUserController(services: ServiceRegistry) {
         }
 
         // Prepare update data with only allowed fields
-        const updateData: {
-          id: string;
-          name?: string;
-          description?: string;
-          imageUrl?: string;
-          email?: string;
-          metadata?: Record<string, unknown>;
-        } = {
+        const updateData = {
           id: agentId,
+          name: name ?? agent.name,
+          description,
+          imageUrl,
+          email,
+          metadata,
         };
-
-        if (name !== undefined) {
-          if (typeof name !== "string" || name.trim().length === 0) {
-            throw new ApiError(400, "Agent name must be a non-empty string");
-          }
-          updateData.name = name.trim();
-        }
-
-        if (description !== undefined) {
-          if (typeof description !== "string") {
-            throw new ApiError(400, "Agent description must be a string");
-          }
-          updateData.description = description.trim();
-        }
-
-        if (imageUrl !== undefined) {
-          if (typeof imageUrl !== "string") {
-            throw new ApiError(400, "Agent imageUrl must be a string");
-          }
-          updateData.imageUrl = imageUrl.trim();
-        }
-
-        if (email !== undefined) {
-          if (typeof email !== "string" || email.trim().length === 0) {
-            throw new ApiError(400, "Agent email must be a non-empty string");
-          }
-          updateData.email = email.trim();
-        }
-
-        if (metadata !== undefined) {
-          if (typeof metadata !== "object" || metadata === null) {
-            throw new ApiError(400, "Agent metadata must be an object");
-          }
-          updateData.metadata = metadata;
-        }
 
         // Update the agent using AgentManager
         const updatedAgent = await services.agentManager.updateAgent({
-          ...agent, // Include all existing agent fields
-          ...updateData, // Overlay the updates
+          ...agent,
+          ...updateData,
         });
 
         if (!updatedAgent) {

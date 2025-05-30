@@ -433,6 +433,23 @@ describe("User API", () => {
     expect((unauthorizedUpdateResponse as ErrorResponse).error).toContain(
       "Access denied",
     );
+  });
+
+  test("user cannot update an agent with invalid fields", async () => {
+    // Create a SIWE-authenticated client
+    const { client: siweClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Agent Profile Test User",
+      userEmail: "agent-profile-test@example.com",
+    });
+
+    // Create an agent via SIWE session
+    const createAgentResponse = await siweClient.createAgent(
+      "Original Agent Name",
+      "Original agent description",
+      "https://example.com/original-image.jpg",
+    );
+    const agent = (createAgentResponse as AgentProfileResponse).agent;
 
     // Test: Invalid fields are rejected
     const invalidFieldsResponse = await siweClient.request(
@@ -445,7 +462,7 @@ describe("User API", () => {
     );
     expect((invalidFieldsResponse as ErrorResponse).success).toBe(false);
     expect((invalidFieldsResponse as ErrorResponse).error).toContain(
-      "Invalid fields",
+      "Invalid request format",
     );
   });
 });
