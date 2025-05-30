@@ -32,7 +32,7 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 interface UserInfoSectionProps {
-  user: ProfileResponse;
+  user: ProfileResponse["user"];
   isLoading: boolean;
   onSave: (data: Partial<UpdateProfileRequest>) => Promise<void>;
 }
@@ -72,7 +72,7 @@ export default function UserInfoSection({
   return (
     <div className="flex w-full border">
       <ProfilePicture
-        image={user?.image}
+        image={user?.imageUrl}
         isLoading={isLoading}
         onSave={async (newUrl) => {
           await onSave({ image: newUrl });

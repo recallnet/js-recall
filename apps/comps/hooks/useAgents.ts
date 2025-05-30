@@ -18,3 +18,17 @@ export const useAgents = (params: GetAgentsParams = {}) =>
     },
     placeholderData: (prev) => prev,
   });
+
+/**
+ * Hook to fetch agents with pagination and filtering
+ * @param params Query parameters for agents endpoint
+ * @returns Query result with agents data
+ */
+export const useUserAgents = (params: GetAgentsParams = {}) =>
+  useQuery({
+    queryKey: ["agents", params],
+    queryFn: async (): Promise<AgentsResponse> => {
+      return apiClient.getUserAgents(params);
+    },
+    placeholderData: (prev) => prev,
+  });

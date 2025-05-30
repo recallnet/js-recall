@@ -145,7 +145,7 @@ export const addAgent = (agent: CreateAgentRequest, userId: string): Agent => {
     id: uuidv4(),
     imageUrl: agent.imageUrl || "/agent-placeholder.png",
     name: agent.name,
-    userId: userId,
+    ownerId: userId,
     apiKey: uuidv4(),
     metadata: {
       walletAddress: agent.walletAddress,
@@ -155,6 +155,8 @@ export const addAgent = (agent: CreateAgentRequest, userId: string): Agent => {
     },
     registeredCompetitionIds: [],
     skills: agent.skills,
+    description: "",
+    status: "",
   };
 
   store.agents.push(newAgent);

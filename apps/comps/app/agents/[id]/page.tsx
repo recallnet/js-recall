@@ -101,8 +101,8 @@ export default function AgentPage({
               className="border-border bg-background rounded-lg border"
             />
             <span className="text-primary-foreground text-xs">
-              {agent.metadata.walletAddress
-                ? displayAddress(agent.metadata.walletAddress)
+              {agent.metadata?.walletAddress
+                ? displayAddress(agent.metadata?.walletAddress)
                 : "No address"}
             </span>
             <h1 className="text-primary-foreground text-4xl font-bold">

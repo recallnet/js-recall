@@ -21,7 +21,7 @@ export async function GET(
       (agent) =>
         agent.name?.toLowerCase().startsWith(filter) ||
         agent.id?.toLowerCase().startsWith(filter) ||
-        agent.metadata.walletAddress?.toLowerCase().startsWith(filter),
+        agent.metadata?.walletAddress?.toLowerCase().startsWith(filter),
     );
   }
 

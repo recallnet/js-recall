@@ -60,7 +60,7 @@ export default function ProfilePage() {
             isLoading={isLoading}
             onSave={handleUpdateProfile}
           />
-          <UserAgentsSection user={profile} isLoading={isLoading} />
+          <UserAgentsSection />
         </>
       )}
     </>

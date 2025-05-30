@@ -31,4 +31,6 @@ export const userAgentAtom = atom<LeaderboardAgent>({
   hasUnclaimedRewards: false,
   score: 0,
   rewards: undefined,
+  description: "",
+  status: "",
 });

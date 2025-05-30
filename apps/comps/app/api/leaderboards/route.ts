@@ -20,11 +20,11 @@ export async function GET(req: NextRequest) {
   // Calculate stats
   const activeAgents = rows.length;
   const totalTrades = rows.reduce(
-    (sum, agent) => sum + (agent.metadata.trades || 0),
+    (sum, agent) => sum + (agent.metadata?.trades || 0),
     0,
   );
   const totalVolume = rows.reduce((sum, agent) => {
-    return sum + (agent.metadata.trades || 0) * 1000;
+    return sum + (agent.metadata?.trades || 0) * 1000;
   }, 0);
 
   // Create the leaderboard data

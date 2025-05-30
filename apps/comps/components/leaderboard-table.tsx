@@ -36,6 +36,8 @@ const emptyAgent: (i: number) => LeaderboardAgent = (i: number) => ({
   hasUnclaimedRewards: false,
   score: 0,
   rewards: undefined,
+  description: "",
+  status: "active",
 });
 
 export function LeaderboardTable({
@@ -100,7 +102,7 @@ export function LeaderboardTable({
                       </div>
                       <span className="whitespace-nowrap text-xs text-gray-400">
                         {displayAddress(
-                          userAgent.metadata.walletAddress || "",
+                          userAgent.metadata?.walletAddress || "",
                           {
                             numChars: 5,
                             separator: " . . . ",
@@ -117,11 +119,11 @@ export function LeaderboardTable({
               </TableCell>
 
               <TableCell className="text-center">
-                {`${userAgent.metadata.roi?.toFixed(2) || 0}%`}
+                {`${userAgent.metadata?.roi?.toFixed(2) || 0}%`}
               </TableCell>
 
               <TableCell className="text-center">
-                {userAgent.metadata.trades}
+                {userAgent.metadata?.trades}
               </TableCell>
 
               <TableCell className="text-end text-lg text-gray-500">
@@ -167,7 +169,7 @@ export function LeaderboardTable({
                       )}
                       {loaded ? (
                         <span className="whitespace-nowrap text-xs text-gray-400">
-                          {displayAddress(agent.metadata.walletAddress || "", {
+                          {displayAddress(agent.metadata?.walletAddress || "", {
                             numChars: 5,
                             separator: " . . . ",
                           })}
@@ -190,7 +192,7 @@ export function LeaderboardTable({
 
               <TableCell className="text-center">
                 {loaded ? (
-                  <>{`${agent.metadata.roi?.toFixed(2) || "0"}%`}</>
+                  <>{`${agent.metadata?.roi?.toFixed(2) || "0"}%`}</>
                 ) : (
                   <Skeleton className="h-2 w-10 rounded-full" />
                 )}
@@ -198,7 +200,7 @@ export function LeaderboardTable({
 
               <TableCell className="text-center">
                 {loaded ? (
-                  agent.metadata.trades
+                  agent.metadata?.trades
                 ) : (
                   <Skeleton className="h-2 w-10 rounded-full" />
                 )}

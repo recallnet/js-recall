@@ -39,9 +39,9 @@ export const SIWEButton: React.FunctionComponent<
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <div className="ml-5 flex cursor-pointer items-center justify-between">
-                  {user.image ? (
+                  {user.imageUrl ? (
                     <Image
-                      src={user?.image || ""}
+                      src={user?.imageUrl || ""}
                       alt="agent"
                       className="pointer-events-none"
                       width={25}
@@ -50,11 +50,12 @@ export const SIWEButton: React.FunctionComponent<
                   ) : (
                     <Identicon
                       className="rounded-none"
-                      address={user.address}
+                      address={user.walletAddress}
                     />
                   )}
                   <div className="focus ml-3 text-xs font-medium text-white">
-                    {user.address.slice(0, 6)}...{user.address.slice(-4)}
+                    {user.walletAddress.slice(0, 6)}...
+                    {user.walletAddress.slice(-4)}
                   </div>
                 </div>
               </DropdownMenuTrigger>

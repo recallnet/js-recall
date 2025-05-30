@@ -70,7 +70,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 {row.original.name}
               </span>
               <span className="text-xs text-slate-400">
-                {displayAddress(row.original.metadata.walletAddress || "")}
+                {displayAddress(row.original.metadata?.walletAddress || "")}
               </span>
             </div>
           </div>
