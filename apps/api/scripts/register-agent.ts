@@ -160,7 +160,10 @@ async function registerAgent() {
       throw new Error("Owner not found");
     }
 
-    const agent = await services.agentManager.createAgent(owner.id, agentName);
+    const agent = await services.agentManager.createAgent({
+      ownerId: owner.id,
+      name: agentName,
+    });
 
     safeLog(`\n${colors.green}✓ Agent registered successfully!${colors.reset}`);
     safeLog(`\n${colors.cyan}Agent Details:${colors.reset}`);
