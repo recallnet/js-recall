@@ -15,22 +15,16 @@ import Card from "@recallnet/ui2/components/shadcn/card";
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { AgentResponse, ProfileResponse } from "@/types";
+import { useUserAgents } from "@/hooks/useAgents";
+import { AgentResponse } from "@/types";
 
 import BigNumberDisplay from "../bignumber";
 import MirrorImage from "../mirror-image";
 
-interface UserAgentsSectionProps {
-  user: ProfileResponse["user"];
-  isLoading: boolean;
-}
-
-export default function UserAgentsSection({
-  user,
-  isLoading,
-}: UserAgentsSectionProps) {
-  // for now using this hook, later must be user agents
-  const nAgents = isLoading ? 2 : user?.agents?.length || 0;
+export default function UserAgentsSection() {
+  const { data: agentsData, isLoading } = useUserAgents();
+  const agents = isLoading || !agentsData?.agents ? [] : agentsData.agents;
+  const nAgents = agents.length;
   let agentList = <NoAgents />;
 
   if (isLoading || (nAgents > 0 && nAgents <= 3))
@@ -55,7 +49,7 @@ export default function UserAgentsSection({
             ? new Array(nAgents)
                 .fill(0)
                 .map((_, i) => <AgentCard key={i} agent={i} isLoading />)
-            : user?.agents?.map((agent, i) => (
+            : agents.map((agent, i) => (
                 <AgentCard key={i} agent={agent} isLoading={false} />
               ))}
         </div>
@@ -73,7 +67,7 @@ export default function UserAgentsSection({
     agentList = (
       <div className="mt-8 flex w-full flex-col gap-10">
         <div className="flex justify-around gap-10 overflow-x-auto">
-          {user?.agents?.map((agent, i) => (
+          {agents.map((agent, i) => (
             <AgentCard key={i} agent={agent} isLoading={isLoading} />
           ))}
         </div>
@@ -246,7 +240,9 @@ export const AgentCard: React.FunctionComponent<AgentCardProps> = ({
       )}
     >
       <span className="text-gray-400">
-        {displayAddress(agent.metadata.walletAddress || "")}
+        {agent.metadata?.walletAddress
+          ? displayAddress(agent.metadata?.walletAddress)
+          : "-"}
       </span>
       <MirrorImage
         className="mb-10"
@@ -258,14 +254,14 @@ export const AgentCard: React.FunctionComponent<AgentCardProps> = ({
         <FaAward /> <span>{agent.score || "-"}</span>
       </div>
       <span className="text-center text-2xl font-bold text-gray-400">
-        {agent.name}
+        {agent.name.length > 20 ? `${agent.name.slice(0, 10)}...` : agent.name}
       </span>
       <div className="flex justify-center gap-3 text-gray-400">
         <div className="text-nowrap rounded border border-gray-700 p-2">
-          ROI {agent.metadata.roi?.toFixed(0) || "-"}
+          ROI {agent.metadata?.roi?.toFixed(0) || "-"}
         </div>
         <div className="text-nowrap rounded border border-gray-700 p-2">
-          Trades {agent.metadata.trades || "-"}
+          Trades {agent.metadata?.trades || "-"}
         </div>
       </div>
     </Card>

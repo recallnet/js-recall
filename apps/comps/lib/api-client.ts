@@ -192,6 +192,16 @@ export class ApiClient {
   // Agent endpoints
 
   /**
+   * Get list of authenticated user agents
+   * @param params - Query parameters
+   * @returns Agents response
+   */
+  async getUserAgents(params: GetAgentsParams = {}): Promise<AgentsResponse> {
+    const queryParams = this.formatQueryParams(params);
+    return this.request<AgentsResponse>(`/user/agents${queryParams}`);
+  }
+
+  /**
    * Get list of agents
    * @param params - Query parameters
    * @returns Agents response
