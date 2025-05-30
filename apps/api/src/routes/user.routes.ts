@@ -366,6 +366,9 @@ export function configureUserRoutes(userController: UserController): Router {
    *                     imageUrl:
    *                       type: string
    *                       nullable: true
+   *                     apiKey:
+   *                       type: string
+   *                       nullable: true
    *                     metadata:
    *                       type: object
    *                       nullable: true
