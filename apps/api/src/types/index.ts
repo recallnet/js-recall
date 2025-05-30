@@ -552,7 +552,7 @@ export const CreateAgentBodySchema = z
       .optional(),
     imageUrl: z.url("Invalid image URL format").optional(),
     email: z.email("Invalid email format").optional(),
-    metadata: z.object().optional(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
   })
   .strict();
 
