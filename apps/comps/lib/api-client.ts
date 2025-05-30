@@ -259,7 +259,7 @@ export class ApiClient {
    * @returns User profile
    */
   async getProfile(): Promise<ProfileResponse> {
-    return this.request<ProfileResponse>("/profile");
+    return this.request<ProfileResponse>("/user/profile");
   }
 
   /**

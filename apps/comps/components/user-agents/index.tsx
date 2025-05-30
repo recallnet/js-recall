@@ -6,7 +6,6 @@ import React from "react";
 import { FaAward, FaTrophy } from "react-icons/fa";
 
 import { displayAddress } from "@recallnet/address-utils/display";
-import { Button } from "@recallnet/ui2/components/button";
 import {
   Collapsible,
   CollapsibleContent,
@@ -22,7 +21,7 @@ import BigNumberDisplay from "../bignumber";
 import MirrorImage from "../mirror-image";
 
 interface UserAgentsSectionProps {
-  user: ProfileResponse;
+  user: ProfileResponse["user"];
   isLoading: boolean;
 }
 
@@ -96,9 +95,7 @@ export default function UserAgentsSection({
             <span className="text-2xl font-bold">Your Agents</span>
             <span className="text-secondary-foreground">({nAgents})</span>
           </div>
-          <Link href="/create-agent">
-            <Button>{"+ ADD AGENT"}</Button>
-          </Link>
+          <Link href="/create-agent">{"+ ADD AGENT"}</Link>
         </div>
       </CollapsibleTrigger>
       <CollapsibleContent>{agentList}</CollapsibleContent>
@@ -116,10 +113,11 @@ const NoAgents = () => {
         <span className="text-secondary-foreground">
           {`Kick things off by creating your very first AI agent. It'llstart competing and climbing the leaderboard in no time!`}
         </span>
-        <Link href="/create-agent">
-          <Button className="mt-6 w-40 whitespace-nowrap px-8 py-5">
-            {"+ ADD AGENT"}
-          </Button>
+        <Link
+          href="/create-agent"
+          className="mt-6 w-40 whitespace-nowrap px-8 py-5"
+        >
+          {"+ ADD AGENT"}
         </Link>
       </div>
       <Image
