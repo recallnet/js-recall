@@ -1,6 +1,6 @@
 "use client";
 
-import {ArrowDownUp, Share2Icon} from "lucide-react";
+import { ArrowDownUp, Share2Icon } from "lucide-react";
 import React from "react";
 
 import Card from "@recallnet/ui2/components/shadcn/card";
@@ -18,14 +18,14 @@ import {
   TabsList,
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
-import {cn} from "@recallnet/ui2/lib/utils";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import {Breadcrumbs} from "@/components/breadcrumb";
-import {Hexagon} from "@/components/hexagon";
+import { Breadcrumbs } from "@/components/breadcrumb";
+import { Hexagon } from "@/components/hexagon";
 import MirrorImage from "@/components/mirror-image";
-import {useAgent} from "@/hooks/useAgent";
-import {useAgentCompetitions} from "@/hooks/useAgentCompetitions";
-import {AgentResponse, CompetitionResponse, CompetitionStatus} from "@/types";
+import { useAgent } from "@/hooks/useAgent";
+import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
+import { AgentResponse, CompetitionResponse, CompetitionStatus } from "@/types";
 
 type AgentCompetition = CompetitionResponse & {
   placement: string;
@@ -34,13 +34,14 @@ type AgentCompetition = CompetitionResponse & {
   elo: number;
 };
 
-export default function AgentProfile({id}: {id: string}) {
+export default function AgentProfile({ id }: { id: string }) {
   const {
     data: agent,
     isLoading: isLoadingAgent,
     error: agentError,
   } = useAgent(id);
-  const {data: agentCompetitionsData, isLoading: isLoadingCompetitions} =
+  const [selected, setSelected] = React.useState("all");
+  const { data: agentCompetitionsData, isLoading: isLoadingCompetitions } =
     useAgentCompetitions(id);
 
   // Format competitions data
@@ -79,9 +80,9 @@ export default function AgentProfile({id}: {id: string}) {
     <>
       <Breadcrumbs
         items={[
-          {title: "RECALL", href: "/"},
-          {title: "AGENTS", href: "/"},
-          {title: agent.name, href: "/"},
+          { title: "RECALL", href: "/" },
+          { title: "AGENTS", href: "/" },
+          { title: agent.name, href: "/" },
         ]}
       />
 
@@ -183,38 +184,57 @@ export default function AgentProfile({id}: {id: string}) {
         <h2 className="text-primary mb-2 text-lg font-semibold">
           Competitions
         </h2>
-        <Tabs defaultValue="all" className="w-full">
+        <Tabs
+          defaultValue="all"
+          className="w-full"
+          onValueChange={(value: string) => setSelected(value)}
+        >
           <TabsList className="mb-4 flex flex-wrap gap-2">
             <TabsTrigger
               value="all"
-              className="rounded border border-white bg-white p-2 text-black"
+              className={cn(
+                "rounded border border-white p-2 text-black",
+                selected === "all" ? "bg-white" : "text-white",
+              )}
             >
               All
             </TabsTrigger>
             <TabsTrigger
               value="ongoing"
-              className="rounded border border-green-500 bg-green-500 p-2 text-black"
+              className={cn(
+                "rounded border border-green-500 p-2",
+                selected === "ongoing"
+                  ? "bg-green-500 text-white"
+                  : "text-green-500",
+              )}
             >
               Ongoing
             </TabsTrigger>
             <TabsTrigger
               value="upcoming"
-              className="rounded border border-blue-500 bg-blue-500 p-2 text-black"
+              className={cn(
+                "rounded border border-blue-500 p-2 text-black",
+                selected === "upcoming"
+                  ? "bg-blue-500 text-white"
+                  : "text-blue-500",
+              )}
             >
               Upcoming
             </TabsTrigger>
             <TabsTrigger
               value="complete"
-              className="rounded border border-gray-500 bg-gray-500 p-2 text-black"
+              className={cn(
+                "rounded border border-gray-500 p-2 text-black",
+                selected === "complete"
+                  ? "bg-gray-500 text-white"
+                  : "text-gray-500",
+              )}
             >
               Complete
             </TabsTrigger>
           </TabsList>
           <TabsContent value="all">
-            <CompetitionTable
-              agent={agent}
-              competitions={competitions}
-            />
+            <CompetitionTable agent={agent} competitions={competitions} />
           </TabsContent>
           <TabsContent value="ongoing">
             <CompetitionTable
@@ -273,18 +293,18 @@ function CompetitionTable({
               const compStatus =
                 comp.status === CompetitionStatus.Active
                   ? {
-                    text: "On-going",
-                    style: "border-green-500 text-green-500",
-                  }
+                      text: "On-going",
+                      style: "border-green-500 text-green-500",
+                    }
                   : comp.status === CompetitionStatus.Pending
                     ? {
-                      text: "Upcoming",
-                      style: "border-blue-500 text-blue-500",
-                    }
+                        text: "Upcoming",
+                        style: "border-blue-500 text-blue-500",
+                      }
                     : {
-                      text: "Complete",
-                      style: "border-gray-500 text-gray-500",
-                    };
+                        text: "Complete",
+                        style: "border-gray-500 text-gray-500",
+                      };
 
               return (
                 <TableRow key={i}>
@@ -360,8 +380,16 @@ function CompetitionTable({
             })
           ) : (
             <TableRow>
-              <TableCell colSpan={7} className="text-center">
-                No competitions found
+              <TableCell colSpan={7} className="p-5 text-center">
+                <div className="flex flex-col">
+                  <span className="font-bold text-gray-400">
+                    This agent hasn’t joined any competitions yet
+                  </span>
+                  <span className="text-gray-600">
+                    Participated competitions will appear here once the agent
+                    enters one.
+                  </span>
+                </div>
               </TableCell>
             </TableRow>
           )}
