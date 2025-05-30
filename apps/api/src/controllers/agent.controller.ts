@@ -13,6 +13,7 @@ import {
   AuthenticatedRequest,
   PagingParamsSchema,
   SpecificChain,
+  UpdateAgentProfileSchema,
 } from "@/types/index.js";
 
 /**
@@ -77,22 +78,17 @@ export function makeAgentController(services: ServiceRegistry) {
      */
     async updateProfile(req: Request, res: Response, next: NextFunction) {
       try {
-        const agentId = req.agentId as string;
-        const { name, description, imageUrl } = req.body;
-
-        // Validate that only allowed fields are being updated
-        const allowedFields = ["name", "description", "imageUrl"];
-        const providedFields = Object.keys(req.body);
-        const invalidFields = providedFields.filter(
-          (field) => !allowedFields.includes(field),
-        );
-
-        if (invalidFields.length > 0) {
-          throw new ApiError(
-            400,
-            `Invalid fields: ${invalidFields.join(", ")}. Agents can only update: ${allowedFields.join(", ")}`,
-          );
+        const { success, data, error } = UpdateAgentProfileSchema.safeParse({
+          agentId: req.agentId,
+          body: req.body,
+        });
+        if (!success) {
+          throw new ApiError(400, `Invalid request format: ${error.message}`);
         }
+        const {
+          agentId,
+          body: { name, description, imageUrl },
+        } = data;
 
         // Get the current agent
         const agent = await services.agentManager.getAgent(agentId);
@@ -101,33 +97,12 @@ export function makeAgentController(services: ServiceRegistry) {
         }
 
         // Prepare update data with only allowed fields
-        const updateData: {
-          id: string;
-          name?: string;
-          description?: string;
-          imageUrl?: string;
-        } = { id: agentId };
-
-        if (name !== undefined) {
-          if (typeof name !== "string" || name.trim().length === 0) {
-            throw new ApiError(400, "Agent name must be a non-empty string");
-          }
-          updateData.name = name.trim();
-        }
-
-        if (description !== undefined) {
-          if (typeof description !== "string") {
-            throw new ApiError(400, "Agent description must be a string");
-          }
-          updateData.description = description.trim();
-        }
-
-        if (imageUrl !== undefined) {
-          if (typeof imageUrl !== "string") {
-            throw new ApiError(400, "Agent imageUrl must be a string");
-          }
-          updateData.imageUrl = imageUrl.trim();
-        }
+        const updateData = {
+          id: agentId,
+          name: name ?? agent.name,
+          description,
+          imageUrl,
+        };
 
         const updatedAgent = await services.agentManager.updateAgent({
           ...agent,

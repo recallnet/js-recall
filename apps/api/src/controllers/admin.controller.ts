@@ -29,6 +29,7 @@ interface Agent {
   imageUrl: string | null;
   apiKey: string;
   metadata: unknown;
+  email: string | null;
   status: ActorStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -283,14 +284,14 @@ export function makeAdminController(services: ServiceRegistry) {
           // If agent details are provided, create an agent for this user
           if (agentName) {
             try {
-              agent = await services.agentManager.createAgent(
-                user.id,
-                agentName,
-                agentDescription,
-                agentImageUrl,
-                agentMetadata,
-                agentWalletAddress,
-              );
+              agent = await services.agentManager.createAgent({
+                ownerId: user.id,
+                name: agentName,
+                description: agentDescription,
+                imageUrl: agentImageUrl,
+                metadata: agentMetadata,
+                walletAddress: agentWalletAddress,
+              });
             } catch (agentError) {
               console.error(
                 "[AdminController] Error creating agent for user:",
@@ -345,6 +346,7 @@ export function makeAdminController(services: ServiceRegistry) {
               apiKey: agent.apiKey,
               metadata: agent.metadata,
               status: agent.status as ActorStatus,
+              email: agent.email,
               createdAt: agent.createdAt,
               updatedAt: agent.updatedAt,
             };
@@ -442,14 +444,14 @@ export function makeAdminController(services: ServiceRegistry) {
 
         try {
           // Create the agent
-          const agent = await services.agentManager.createAgent(
-            userId,
+          const agent = await services.agentManager.createAgent({
+            ownerId: userId,
             name,
             description,
             email,
             imageUrl,
             metadata,
-          );
+          });
           const response: AdminAgentRegistrationResponse = {
             success: true,
             agent: {
@@ -938,6 +940,7 @@ export function makeAdminController(services: ServiceRegistry) {
             status: agent.status as ActorStatus,
             imageUrl: agent.imageUrl,
             metadata: agent.metadata,
+            email: agent.email,
             createdAt: agent.createdAt,
             updatedAt: agent.updatedAt,
           }));

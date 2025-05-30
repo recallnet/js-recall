@@ -1,4 +1,5 @@
 import { and, count as drizzleCount, eq, ilike } from "drizzle-orm";
+import { v4 as uuidv4 } from "uuid";
 
 import { db } from "@/database/db.js";
 import { users } from "@/database/schema/core/defs.js";
@@ -35,6 +36,46 @@ export async function create(user: InsertUser): Promise<SelectUser> {
     return result;
   } catch (error) {
     console.error("[UserRepository] Error in create:", error);
+    throw error;
+  }
+}
+
+/**
+ * Create a new user from a wallet address
+ * This is typically used during the SIWE login process if a user record
+ * doesn't exist yet for a successfully authenticated wallet.
+ * @param walletAddress The wallet address of the user to create
+ * @returns The newly created user object
+ */
+export async function createUserFromWallet(
+  walletAddress: string,
+): Promise<SelectUser> {
+  try {
+    const now = new Date();
+    const normalizedWalletAddress = walletAddress.toLowerCase();
+    const newUser: InsertUser = {
+      id: uuidv4(),
+      walletAddress: normalizedWalletAddress,
+      status: "active",
+      createdAt: now,
+      updatedAt: now,
+    };
+    const [result] = await db.insert(users).values(newUser).returning();
+
+    if (!result) {
+      throw new Error(
+        `[UserRepository] Failed to create user from wallet ${normalizedWalletAddress} - no result returned`,
+      );
+    }
+    console.log(
+      `[UserRepository] Created new user ${result.id} for wallet ${normalizedWalletAddress}`,
+    );
+    return result;
+  } catch (error) {
+    console.error(
+      `[UserRepository] Error in createUserFromWallet for wallet ${walletAddress}:`,
+      error,
+    );
     throw error;
   }
 }

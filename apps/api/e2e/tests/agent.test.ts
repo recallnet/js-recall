@@ -837,7 +837,7 @@ describe("Agent API", () => {
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         expect(error.response.status).toBe(400);
-        expect(error.response.data.error).toContain("Invalid fields");
+        expect(error.response.data.error).toContain("Invalid request format");
       }
     }
 
@@ -863,7 +863,7 @@ describe("Agent API", () => {
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         expect(error.response.status).toBe(400);
-        expect(error.response.data.error).toContain("Invalid fields");
+        expect(error.response.data.error).toContain("Invalid request format");
       }
     }
   });

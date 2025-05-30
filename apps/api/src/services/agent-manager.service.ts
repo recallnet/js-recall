@@ -51,17 +51,27 @@ export class AgentManager {
    * @param description Agent description
    * @param imageUrl Optional URL to the agent's image
    * @param metadata Optional agent metadata
+   * @param email Optional email address
    * @param walletAddress Optional Ethereum wallet address
    * @returns The created agent with API credentials
    */
-  async createAgent(
-    ownerId: string,
-    name: string,
-    description?: string,
-    imageUrl?: string,
-    metadata?: AgentMetadata,
-    walletAddress?: string,
-  ) {
+  async createAgent({
+    ownerId,
+    name,
+    description,
+    imageUrl,
+    metadata,
+    email,
+    walletAddress,
+  }: {
+    ownerId: string;
+    name: string;
+    description?: string;
+    imageUrl?: string;
+    metadata?: AgentMetadata;
+    email?: string;
+    walletAddress?: string;
+  }) {
     try {
       // Validate wallet address if provided
       if (walletAddress && !this.isValidEthereumAddress(walletAddress)) {
@@ -88,7 +98,8 @@ export class AgentManager {
         imageUrl,
         apiKey: encryptedApiKey, // Store encrypted key in database
         walletAddress,
-        metadata, // Add the optional metadata
+        metadata,
+        email,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
