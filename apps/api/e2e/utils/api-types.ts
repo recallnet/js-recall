@@ -121,6 +121,9 @@ export interface Agent {
   email?: string;
   apiKey?: string; // Only included in certain admin responses
   metadata?: AgentMetadata;
+  stats?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  hasUnclaimedRewards?: boolean;
+  trophies?: string[];
   status: ActorStatus;
   deactivationReason?: string;
   deactivationDate?: string;

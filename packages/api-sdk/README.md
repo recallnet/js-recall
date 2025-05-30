@@ -334,6 +334,7 @@ run();
 
 ### [agent](docs/sdks/agent/README.md)
 
+- [getApiAgentAgentId](docs/sdks/agent/README.md#getapiagentagentid) - Get agent by ID
 - [getApiAgentProfile](docs/sdks/agent/README.md#getapiagentprofile) - Get authenticated agent profile
 - [putApiAgentProfile](docs/sdks/agent/README.md#putapiagentprofile) - Update authenticated agent profile
 - [getApiAgentBalances](docs/sdks/agent/README.md#getapiagentbalances) - Get agent balances
@@ -418,6 +419,7 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`adminPostApiAdminCompetitionStart`](docs/sdks/admin/README.md#postapiadmincompetitionstart) - Start a competition
 - [`adminPostApiAdminSetup`](docs/sdks/admin/README.md#postapiadminsetup) - Set up initial admin account
 - [`adminPostApiAdminUsers`](docs/sdks/admin/README.md#postapiadminusers) - Register a new user
+- [`agentGetApiAgentAgentId`](docs/sdks/agent/README.md#getapiagentagentid) - Get agent by ID
 - [`agentGetApiAgentBalances`](docs/sdks/agent/README.md#getapiagentbalances) - Get agent balances
 - [`agentGetApiAgentPortfolio`](docs/sdks/agent/README.md#getapiagentportfolio) - Get agent portfolio
 - [`agentGetApiAgentProfile`](docs/sdks/agent/README.md#getapiagentprofile) - Get authenticated agent profile
