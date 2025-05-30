@@ -955,7 +955,7 @@ describe("Agent API", () => {
     expect(agent.id).toBeDefined();
     try {
       // Make a GET request to fetch the agent details using the agent ID
-      const response = await axios.get(`${getBaseUrl()}/api/agent/foo123`, {
+      await axios.get(`${getBaseUrl()}/api/agent/foo123`, {
         headers: {
           // Make sure that other agents/users can load details for a given agent id
           Authorization: `Bearer ${apiKey}`,
