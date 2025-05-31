@@ -182,6 +182,49 @@ export async function addAgentToCompetition(
 }
 
 /**
+ * Remove an agent from a competition
+ * @param competitionId Competition ID
+ * @param agentId Agent ID to remove
+ * @returns Boolean indicating if a row was deleted
+ */
+export async function removeAgentFromCompetition(
+  competitionId: string,
+  agentId: string,
+): Promise<boolean> {
+  try {
+    const result = await db
+      .delete(competitionAgents)
+      .where(
+        and(
+          eq(competitionAgents.competitionId, competitionId),
+          eq(competitionAgents.agentId, agentId),
+        ),
+      )
+      .returning();
+
+    const wasDeleted = result.length > 0;
+
+    if (wasDeleted) {
+      console.log(
+        `[CompetitionRepository] Removed agent ${agentId} from competition ${competitionId}`,
+      );
+    } else {
+      console.log(
+        `[CompetitionRepository] No agent ${agentId} found in competition ${competitionId} to remove`,
+      );
+    }
+
+    return wasDeleted;
+  } catch (error) {
+    console.error(
+      `[CompetitionRepository] Error removing agent ${agentId} from competition ${competitionId}:`,
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
  * Add agents to a competition
  * @param competitionId Competition ID
  * @param agentIds Array of agent IDs

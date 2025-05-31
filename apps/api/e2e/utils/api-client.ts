@@ -19,6 +19,8 @@ import {
   BlockchainType,
   CompetitionAgentsResponse,
   CompetitionDetailResponse,
+  CompetitionJoinResponse,
+  CompetitionLeaveResponse,
   CompetitionRulesResponse,
   CompetitionStatusResponse,
   CreateCompetitionResponse,
@@ -216,6 +218,7 @@ export class ApiClient {
    * @param agentDescription Optional description for the agent
    * @param agentImageUrl Optional image URL for the agent
    * @param agentMetadata Optional metadata for the agent
+   * @param agentWalletAddress Optional wallet address for the agent
    */
   async registerUser(
     walletAddress: string,
@@ -226,6 +229,7 @@ export class ApiClient {
     agentDescription?: string,
     agentImageUrl?: string,
     agentMetadata?: AgentMetadata,
+    agentWalletAddress?: string,
   ): Promise<UserRegistrationResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post("/api/admin/users", {
@@ -237,6 +241,7 @@ export class ApiClient {
         agentDescription,
         agentImageUrl,
         agentMetadata,
+        agentWalletAddress,
       });
 
       return response.data;
@@ -797,6 +802,46 @@ export class ApiClient {
     const url = `/api/competitions/${competitionId}/agents${queryString ? `?${queryString}` : ""}`;
 
     return this.request<CompetitionAgentsResponse>("get", url);
+  }
+
+  /**
+   * Join a competition
+   * @param competitionId Competition ID
+   * @param agentId Agent ID
+   * @returns A promise that resolves to the join response
+   */
+  async joinCompetition(
+    competitionId: string,
+    agentId: string,
+  ): Promise<CompetitionJoinResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post(
+        `/api/competitions/${competitionId}/agents/${agentId}`,
+      );
+      return response.data as CompetitionJoinResponse;
+    } catch (error) {
+      return this.handleApiError(error, "join competition");
+    }
+  }
+
+  /**
+   * Leave a competition
+   * @param competitionId Competition ID
+   * @param agentId Agent ID
+   * @returns A promise that resolves to the leave response
+   */
+  async leaveCompetition(
+    competitionId: string,
+    agentId: string,
+  ): Promise<CompetitionLeaveResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.delete(
+        `/api/competitions/${competitionId}/agents/${agentId}`,
+      );
+      return response.data as CompetitionLeaveResponse;
+    } catch (error) {
+      return this.handleApiError(error, "leave competition");
+    }
   }
 
   /**

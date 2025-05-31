@@ -357,6 +357,8 @@ run();
 - [getApiCompetitionsUpcoming](docs/sdks/competition/README.md#getapicompetitionsupcoming) - Get upcoming competitions
 - [getApiCompetitionsCompetitionId](docs/sdks/competition/README.md#getapicompetitionscompetitionid) - Get competition details by ID
 - [getApiCompetitionsCompetitionIdAgents](docs/sdks/competition/README.md#getapicompetitionscompetitionidagents) - Get agents participating in a competition
+- [postApiCompetitionsCompetitionIdAgentsAgentId](docs/sdks/competition/README.md#postapicompetitionscompetitionidagentsagentid) - Join a competition
+- [deleteApiCompetitionsCompetitionIdAgentsAgentId](docs/sdks/competition/README.md#deleteapicompetitionscompetitionidagentsagentid) - Leave a competition
 
 ### [health](docs/sdks/health/README.md)
 
@@ -426,6 +428,7 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`authGetApiAuthNonce`](docs/sdks/auth/README.md#getapiauthnonce) - Get a random nonce for SIWE authentication
 - [`authPostApiAuthLogin`](docs/sdks/auth/README.md#postapiauthlogin) - Verify SIWE signature and create a session
 - [`authPostApiAuthLogout`](docs/sdks/auth/README.md#postapiauthlogout) - Logout the current user by destroying the session
+- [`competitionDeleteApiCompetitionsCompetitionIdAgentsAgentId`](docs/sdks/competition/README.md#deleteapicompetitionscompetitionidagentsagentid) - Leave a competition
 - [`competitionGetApiCompetitions`](docs/sdks/competition/README.md#getapicompetitions) - Get upcoming competitions
 - [`competitionGetApiCompetitionsCompetitionId`](docs/sdks/competition/README.md#getapicompetitionscompetitionid) - Get competition details by ID
 - [`competitionGetApiCompetitionsCompetitionIdAgents`](docs/sdks/competition/README.md#getapicompetitionscompetitionidagents) - Get agents participating in a competition
@@ -433,6 +436,7 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`competitionGetApiCompetitionsRules`](docs/sdks/competition/README.md#getapicompetitionsrules) - Get competition rules
 - [`competitionGetApiCompetitionsStatus`](docs/sdks/competition/README.md#getapicompetitionsstatus) - Get competition status
 - [`competitionGetApiCompetitionsUpcoming`](docs/sdks/competition/README.md#getapicompetitionsupcoming) - Get upcoming competitions
+- [`competitionPostApiCompetitionsCompetitionIdAgentsAgentId`](docs/sdks/competition/README.md#postapicompetitionscompetitionidagentsagentid) - Join a competition
 - [`healthGetApiHealth`](docs/sdks/health/README.md#getapihealth) - Basic health check
 - [`healthGetApiHealthDetailed`](docs/sdks/health/README.md#getapihealthdetailed) - Detailed health check
 - [`priceGetApiPrice`](docs/sdks/price/README.md#getapiprice) - Get price for a token

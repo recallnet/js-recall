@@ -29,6 +29,7 @@ interface Agent {
   imageUrl: string | null;
   apiKey: string;
   metadata: unknown;
+  email: string | null;
   status: ActorStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -283,14 +284,14 @@ export function makeAdminController(services: ServiceRegistry) {
           // If agent details are provided, create an agent for this user
           if (agentName) {
             try {
-              agent = await services.agentManager.createAgent(
-                user.id,
-                agentName,
-                agentDescription,
-                agentImageUrl,
-                agentMetadata,
-                agentWalletAddress,
-              );
+              agent = await services.agentManager.createAgent({
+                ownerId: user.id,
+                name: agentName,
+                description: agentDescription,
+                imageUrl: agentImageUrl,
+                metadata: agentMetadata,
+                walletAddress: agentWalletAddress,
+              });
             } catch (agentError) {
               console.error(
                 "[AdminController] Error creating agent for user:",
@@ -345,6 +346,7 @@ export function makeAdminController(services: ServiceRegistry) {
               apiKey: agent.apiKey,
               metadata: agent.metadata,
               status: agent.status as ActorStatus,
+              email: agent.email,
               createdAt: agent.createdAt,
               updatedAt: agent.updatedAt,
             };
@@ -442,14 +444,14 @@ export function makeAdminController(services: ServiceRegistry) {
 
         try {
           // Create the agent
-          const agent = await services.agentManager.createAgent(
-            userId,
+          const agent = await services.agentManager.createAgent({
+            ownerId: userId,
             name,
             description,
             email,
             imageUrl,
             metadata,
-          );
+          });
           const response: AdminAgentRegistrationResponse = {
             success: true,
             agent: {
@@ -556,10 +558,30 @@ export function makeAdminController(services: ServiceRegistry) {
         } = req.body;
 
         // Validate required parameters
-        if (!agentIds || !Array.isArray(agentIds) || agentIds.length === 0) {
+        if (!agentIds || !Array.isArray(agentIds)) {
           throw new ApiError(
             400,
-            "Missing required parameter: agentIds (array)",
+            "Missing required parameter: agentIds (must be an array, can be empty)",
+          );
+        }
+
+        let finalAgentIds = [...agentIds]; // Start with provided agent IDs
+
+        // Get pre-registered agents from the database if we have a competitionId
+        if (competitionId) {
+          const registeredAgents = await getCompetitionAgents(competitionId);
+          // Combine with provided agentIds, removing duplicates
+          const combinedAgents = [
+            ...new Set([...finalAgentIds, ...registeredAgents]),
+          ];
+          finalAgentIds = combinedAgents;
+        }
+
+        // Now check if we have any agents to start the competition with
+        if (finalAgentIds.length === 0) {
+          throw new ApiError(
+            400,
+            "Cannot start competition: no agents provided in agentIds and no agents have joined the competition",
           );
         }
 
@@ -605,7 +627,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const startedCompetition =
           await services.competitionManager.startCompetition(
             competition.id,
-            agentIds,
+            finalAgentIds,
           );
 
         // Return the started competition
@@ -613,7 +635,7 @@ export function makeAdminController(services: ServiceRegistry) {
           success: true,
           competition: {
             ...startedCompetition,
-            agentIds,
+            agentIds: finalAgentIds,
           },
         });
       } catch (error) {
@@ -918,6 +940,7 @@ export function makeAdminController(services: ServiceRegistry) {
             status: agent.status as ActorStatus,
             imageUrl: agent.imageUrl,
             metadata: agent.metadata,
+            email: agent.email,
             createdAt: agent.createdAt,
             updatedAt: agent.updatedAt,
           }));

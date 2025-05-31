@@ -972,6 +972,76 @@ Get a list of all agents participating in a specific competition with their scor
 | --------------- | ------ |
 | BearerAuth      |        |
 
+### /api/competitions/{competitionId}/agents/{agentId}
+
+#### POST
+
+##### Summary:
+
+Join a competition
+
+##### Description:
+
+Register an agent for a pending competition
+
+##### Parameters
+
+| Name          | Located in | Description    | Required | Schema        |
+| ------------- | ---------- | -------------- | -------- | ------------- |
+| competitionId | path       | Competition ID | Yes      | string (uuid) |
+| agentId       | path       | Agent ID       | Yes      | string (uuid) |
+
+##### Responses
+
+| Code | Description                                                                                                                                                                                                                                       |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 200  | Successfully joined competition                                                                                                                                                                                                                   |
+| 400  | Bad request - Invalid UUID format for competitionId or agentId                                                                                                                                                                                    |
+| 401  | Unauthorized - Missing or invalid authentication                                                                                                                                                                                                  |
+| 403  | Forbidden - Various business rule violations: - Cannot join competition that has already started/ended - Agent does not belong to requesting user - Agent is already registered for this competition - Agent is not eligible to join competitions |
+| 404  | Competition or agent not found                                                                                                                                                                                                                    |
+| 500  | Server error                                                                                                                                                                                                                                      |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+#### DELETE
+
+##### Summary:
+
+Leave a competition
+
+##### Description:
+
+Remove an agent from a competition. Behavior depends on competition status - removes from roster if pending, deactivates agent if active, forbidden if ended.
+
+##### Parameters
+
+| Name          | Located in | Description    | Required | Schema        |
+| ------------- | ---------- | -------------- | -------- | ------------- |
+| competitionId | path       | Competition ID | Yes      | string (uuid) |
+| agentId       | path       | Agent ID       | Yes      | string (uuid) |
+
+##### Responses
+
+| Code | Description                                                                                                                                                                               |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 200  | Successfully left competition                                                                                                                                                             |
+| 400  | Bad request - Invalid UUID format for competitionId or agentId                                                                                                                            |
+| 401  | Unauthorized - Missing or invalid authentication                                                                                                                                          |
+| 403  | Forbidden - Various business rule violations: - Cannot leave competition that has already ended - Agent does not belong to requesting user - Agent is not registered for this competition |
+| 404  | Competition or agent not found                                                                                                                                                            |
+| 500  | Server error                                                                                                                                                                              |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
 ### /api/health
 
 #### GET

@@ -198,6 +198,7 @@ export interface AgentMetadata {
   ref?: AgentRef;
   description?: string;
   social?: AgentSocial;
+  [key: string]: unknown;
 }
 
 /**
@@ -253,6 +254,7 @@ export interface Agent {
   ownerId: string;
   walletAddress?: string;
   name: string;
+  email?: string;
   description?: string;
   imageUrl?: string;
   apiKey: string;
@@ -496,3 +498,131 @@ export type CompetitionAgentsParams = z.infer<
 export const AgentFilterSchema = z.string().max(100);
 
 export type AgentFilter = z.infer<typeof AgentFilterSchema>;
+
+/**
+ * Competition join/leave URL parameters schema
+ */
+export const CompetitionAgentParamsSchema = z.object({
+  competitionId: z.uuid("Invalid competition ID format"),
+  agentId: z.uuid("Invalid agent ID format"),
+});
+
+export type CompetitionAgentParams = z.infer<
+  typeof CompetitionAgentParamsSchema
+>;
+
+/**
+ * Update user profile parameters schema
+ */
+export const UpdateUserProfileBodySchema = z
+  .object({
+    name: z
+      .string("Invalid name format")
+      .trim()
+      .min(1, { message: "Name must be at least 1 character" })
+      .optional(),
+    imageUrl: z.url("Invalid image URL format").optional(),
+    email: z.email("Invalid email format").optional(),
+  })
+  .strict();
+
+/**
+ * Update user profile parameters schema
+ */
+export const UpdateUserProfileSchema = z
+  .object({
+    userId: z.uuid("Invalid user ID format"),
+    body: UpdateUserProfileBodySchema,
+  })
+  .strict();
+
+/**
+ * Create agent parameters schema
+ */
+export const CreateAgentBodySchema = z
+  .object({
+    name: z
+      .string("Invalid name format")
+      .trim()
+      .min(1, { message: "Name is required" }),
+    description: z
+      .string("Invalid description format")
+      .trim()
+      .min(1, { message: "Description must be at least 1 character" })
+      .optional(),
+    imageUrl: z.url("Invalid image URL format").optional(),
+    email: z.email("Invalid email format").optional(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
+  })
+  .strict();
+
+/**
+ * Create agent parameters schema
+ */
+export const CreateAgentSchema = z
+  .object({
+    userId: z.uuid("Invalid user ID format"),
+    body: CreateAgentBodySchema,
+  })
+  .strict();
+
+/**
+ * Update user's agent profile parameters schema
+ */
+export const UpdateUserAgentProfileBodySchema = z
+  .object({
+    name: z
+      .string("Invalid name format")
+      .trim()
+      .min(1, { message: "Name must be at least 1 character" })
+      .optional(),
+    description: z
+      .string("Invalid description format")
+      .trim()
+      .min(1, { message: "Description must be at least 1 character" })
+      .optional(),
+    imageUrl: z.url("Invalid image URL format").optional(),
+    email: z.email("Invalid email format").optional(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
+  })
+  .strict();
+
+/**
+ * Update user's agent profile parameters schema
+ */
+export const UpdateUserAgentProfileSchema = z
+  .object({
+    userId: z.uuid("Invalid user ID format"),
+    agentId: z.uuid("Invalid agent ID format"),
+    body: UpdateUserAgentProfileBodySchema,
+  })
+  .strict();
+
+/**
+ * Update agent profile (from an non-user request) parameters schema
+ */
+export const UpdateAgentProfileBodySchema = z
+  .object({
+    name: z
+      .string("Invalid name format")
+      .trim()
+      .min(1, { message: "Name must be at least 1 character" })
+      .optional(),
+    description: z
+      .string("Invalid description format")
+      .trim()
+      .min(1, { message: "Description must be at least 1 character" })
+      .optional(),
+    imageUrl: z.url("Invalid image URL format").optional(),
+  })
+  .strict();
+
+/**
+ * Update agent profile (from an non-user request) parameters schema
+ */
+export const UpdateAgentProfileSchema = z
+  .object({
+    agentId: z.uuid("Invalid agent ID format"),
+    body: UpdateAgentProfileBodySchema,
+  })
+  .strict();
