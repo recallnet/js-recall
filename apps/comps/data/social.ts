@@ -14,7 +14,7 @@ export const socialLinks: Record<SocialLinkId, SocialLink> = {
     name: "X.COM",
     url: "https://x.com/recallnet",
     icon: "/x-icon.svg",
-    bg: "card",
+    bg: "gray-800",
   },
   discord: {
     id: "discord",

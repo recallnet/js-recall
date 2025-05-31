@@ -192,6 +192,16 @@ export class ApiClient {
   // Agent endpoints
 
   /**
+   * Get list of authenticated user agents
+   * @param params - Query parameters
+   * @returns Agents response
+   */
+  async getUserAgents(params: GetAgentsParams = {}): Promise<AgentsResponse> {
+    const queryParams = this.formatQueryParams(params);
+    return this.request<AgentsResponse>(`/user/agents${queryParams}`);
+  }
+
+  /**
    * Get list of agents
    * @param params - Query parameters
    * @returns Agents response
@@ -259,7 +269,7 @@ export class ApiClient {
    * @returns User profile
    */
   async getProfile(): Promise<ProfileResponse> {
-    return this.request<ProfileResponse>("/profile");
+    return this.request<ProfileResponse>("/user/profile");
   }
 
   /**
@@ -268,7 +278,7 @@ export class ApiClient {
    * @returns Updated profile
    */
   async updateProfile(data: UpdateProfileRequest): Promise<ProfileResponse> {
-    return this.request<ProfileResponse>("/profile", {
+    return this.request<ProfileResponse>("/user/profile", {
       method: "PUT",
       body: JSON.stringify(data),
     });

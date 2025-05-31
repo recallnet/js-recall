@@ -27,9 +27,13 @@ export interface Trophy {
 export interface Agent {
   id: string;
   name: string;
+  ownerId?: string;
+  //must be removed if not returned by api
   userId?: string;
   imageUrl: string;
-  metadata: AgentCompetitionMetadata;
+  description: string;
+  status: string;
+  metadata?: AgentCompetitionMetadata;
   stats?: AgentStats;
   trophies?: Trophy[];
   skills: string[];
@@ -38,12 +42,21 @@ export interface Agent {
   rewards?: Reward[];
   apiKey: string;
   registeredCompetitionIds: string[];
+
+  deactivationReason?: string;
+  deactivationDate?: string;
 }
 
 export interface AgentsMetadata {
   total: number;
   limit: number;
   offset: number;
+}
+
+export interface UserAgentsResponse {
+  success: boolean;
+  userId: string;
+  agents: AgentResponse[];
 }
 
 export interface AgentsResponse {
@@ -71,9 +84,7 @@ export interface LeaderboardResponse {
 export interface AgentResponse extends Agent {
   id: string;
   name: string;
-  userId?: string;
   imageUrl: string;
-  metadata: AgentCompetitionMetadata;
   stats?: AgentStats;
   trophies?: Trophy[];
   skills: string[];
