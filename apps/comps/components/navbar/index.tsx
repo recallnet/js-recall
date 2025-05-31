@@ -105,7 +105,7 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
         </div>
       </nav>
 
-      <div className="xl:px-25 flex justify-center pt-10 md:px-5 lg:px-20">
+      <div className="xl:px-25 flex justify-center px-5 pt-10 lg:px-20">
         {children}
       </div>
     </>
