@@ -75,7 +75,7 @@ export default function UserInfoSection({
         image={user?.imageUrl}
         isLoading={isLoading}
         onSave={async (newUrl) => {
-          await onSave({ image: newUrl });
+          await onSave({ imageUrl: newUrl });
         }}
       />
       <div className="flex w-full flex-col items-start justify-center gap-5 p-4">

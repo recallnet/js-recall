@@ -50,6 +50,17 @@ export const UpdateProfile: React.FC<UpdateProfileProps> = ({ onSubmit }) => {
     },
   });
 
+  const handleSubmit = (data: FormData) => {
+    const transformedData: UpdateProfileRequest = {
+      name: data.name,
+      email: data.email,
+      imageUrl: data.image || undefined,
+      // TODO: add metadata to the API
+      //metadata: data.website ? { website: data.website } : undefined,
+    };
+    onSubmit(transformedData);
+  };
+
   return (
     <div className="flex h-full w-full flex-col pt-5">
       <h2 className="text-primary mb-4 w-full text-start text-2xl font-semibold">
@@ -60,7 +71,7 @@ export const UpdateProfile: React.FC<UpdateProfileProps> = ({ onSubmit }) => {
         your profile.
       </p>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           <FormField
             control={form.control}
             name="name"

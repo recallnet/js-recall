@@ -278,7 +278,7 @@ export class ApiClient {
    * @returns Updated profile
    */
   async updateProfile(data: UpdateProfileRequest): Promise<ProfileResponse> {
-    return this.request<ProfileResponse>("/profile", {
+    return this.request<ProfileResponse>("/user/profile", {
       method: "PUT",
       body: JSON.stringify(data),
     });

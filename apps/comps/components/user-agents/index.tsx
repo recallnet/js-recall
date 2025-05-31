@@ -6,6 +6,7 @@ import React from "react";
 import { FaAward, FaTrophy } from "react-icons/fa";
 
 import { displayAddress } from "@recallnet/address-utils/display";
+import { Button } from "@recallnet/ui2/components/button";
 import {
   Collapsible,
   CollapsibleContent,
@@ -111,7 +112,7 @@ const NoAgents = () => {
           href="/create-agent"
           className="mt-6 w-40 whitespace-nowrap px-8 py-5"
         >
-          {"+ ADD AGENT"}
+          <Button>{"+ ADD AGENT"}</Button>
         </Link>
       </div>
       <Image
