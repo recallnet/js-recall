@@ -58,6 +58,7 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
+      # TODO: figure out correct flow to not make this problematic
       - name: Check API-SDK
         uses: ./.github/actions/api-sdk-check
         env:
