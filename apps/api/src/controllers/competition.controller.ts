@@ -461,15 +461,25 @@ export function makeCompetitionController(services: ServiceRegistry) {
           ? CompetitionStatusSchema.parse(req.query.status)
           : undefined;
         const pagingParams = PagingParamsSchema.parse(req.query);
-        const competitions = await services.competitionManager.getCompetitions(
-          status,
-          pagingParams,
-        );
+        const { competitions, total } =
+          await services.competitionManager.getCompetitions(
+            status,
+            pagingParams,
+          );
 
-        // Return the competitions
+        // Calculate hasMore based on total and current page
+        const hasMore = pagingParams.offset + pagingParams.limit < total;
+
+        // Return the competitions with metadata
         res.status(200).json({
           success: true,
           competitions: competitions,
+          pagination: {
+            total: total,
+            limit: pagingParams.limit,
+            offset: pagingParams.offset,
+            hasMore: hasMore,
+          },
         });
       } catch (error) {
         next(error);

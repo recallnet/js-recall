@@ -731,21 +731,25 @@ export class ApiClient {
    * Get competitions with given status
    */
   async getCompetitions(
-    status: string,
+    status?: string,
     sort?: string,
+    limit?: number,
+    offset?: number,
   ): Promise<UpcomingCompetitionsResponse | ErrorResponse> {
     try {
-      let url = `/api/competitions?status=${status}`;
-      if (typeof sort === "string") {
-        url += `&sort=${sort}`;
-      }
+      const params = new URLSearchParams();
+      if (status) params.append("status", status);
+      if (sort) params.append("sort", sort);
+      if (limit !== undefined) params.append("limit", limit.toString());
+      if (offset !== undefined) params.append("offset", offset.toString());
 
+      const url = `/api/competitions?${params.toString()}`;
       const response = await this.axiosInstance.get(url);
       return response.data as UpcomingCompetitionsResponse;
     } catch (error) {
       return this.handleApiError(
         error,
-        `get competitions: sort=${sort}, status=${status}`,
+        `get competitions: sort=${sort}, status=${status}, limit=${limit}, offset=${offset}`,
       );
     }
   }

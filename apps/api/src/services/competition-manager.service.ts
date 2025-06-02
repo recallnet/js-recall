@@ -449,7 +449,7 @@ export class CompetitionManager {
 
   /**
    * Get all upcoming (pending) competitions
-   * @returns Array of competitions with PENDING status
+   * @returns Object with competitions array and total count
    */
   async getUpcomingCompetitions() {
     return findByStatus({
@@ -463,10 +463,10 @@ export class CompetitionManager {
   }
 
   /**
-   * Get all competitions with a given status and a sort, limit, or offset
+   * Get all competitions with a given status and pagination parameters
    * @param status The status of the competitions to get
    * @param pagingParams The paging parameters to use
-   * @returns Array of competitions.
+   * @returns Object containing competitions array and total count for pagination
    */
   async getCompetitions(
     status: CompetitionStatus | undefined,

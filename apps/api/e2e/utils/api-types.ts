@@ -372,6 +372,12 @@ export interface EndCompetitionResponse extends ApiResponse {
 export interface UpcomingCompetitionsResponse extends ApiResponse {
   success: true;
   competitions: Competition[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
 }
 
 // Competition rules response

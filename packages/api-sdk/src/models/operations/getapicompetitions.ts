@@ -110,6 +110,28 @@ export type GetApiCompetitionsCompetition = {
 };
 
 /**
+ * Pagination metadata
+ */
+export type GetApiCompetitionsPagination = {
+  /**
+   * Total number of competitions matching the filter
+   */
+  total?: number | undefined;
+  /**
+   * Maximum number of results returned
+   */
+  limit?: number | undefined;
+  /**
+   * Number of results skipped
+   */
+  offset?: number | undefined;
+  /**
+   * Whether there are more results available
+   */
+  hasMore?: boolean | undefined;
+};
+
+/**
  * Competitions retrieved successfully
  */
 export type GetApiCompetitionsResponse = {
@@ -118,6 +140,10 @@ export type GetApiCompetitionsResponse = {
    */
   success?: boolean | undefined;
   competitions?: Array<GetApiCompetitionsCompetition> | undefined;
+  /**
+   * Pagination metadata
+   */
+  pagination?: GetApiCompetitionsPagination | undefined;
 };
 
 /** @internal */
@@ -348,6 +374,71 @@ export function getApiCompetitionsCompetitionFromJSON(
 }
 
 /** @internal */
+export const GetApiCompetitionsPagination$inboundSchema: z.ZodType<
+  GetApiCompetitionsPagination,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  total: z.number().int().optional(),
+  limit: z.number().int().optional(),
+  offset: z.number().int().optional(),
+  hasMore: z.boolean().optional(),
+});
+
+/** @internal */
+export type GetApiCompetitionsPagination$Outbound = {
+  total?: number | undefined;
+  limit?: number | undefined;
+  offset?: number | undefined;
+  hasMore?: boolean | undefined;
+};
+
+/** @internal */
+export const GetApiCompetitionsPagination$outboundSchema: z.ZodType<
+  GetApiCompetitionsPagination$Outbound,
+  z.ZodTypeDef,
+  GetApiCompetitionsPagination
+> = z.object({
+  total: z.number().int().optional(),
+  limit: z.number().int().optional(),
+  offset: z.number().int().optional(),
+  hasMore: z.boolean().optional(),
+});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace GetApiCompetitionsPagination$ {
+  /** @deprecated use `GetApiCompetitionsPagination$inboundSchema` instead. */
+  export const inboundSchema = GetApiCompetitionsPagination$inboundSchema;
+  /** @deprecated use `GetApiCompetitionsPagination$outboundSchema` instead. */
+  export const outboundSchema = GetApiCompetitionsPagination$outboundSchema;
+  /** @deprecated use `GetApiCompetitionsPagination$Outbound` instead. */
+  export type Outbound = GetApiCompetitionsPagination$Outbound;
+}
+
+export function getApiCompetitionsPaginationToJSON(
+  getApiCompetitionsPagination: GetApiCompetitionsPagination,
+): string {
+  return JSON.stringify(
+    GetApiCompetitionsPagination$outboundSchema.parse(
+      getApiCompetitionsPagination,
+    ),
+  );
+}
+
+export function getApiCompetitionsPaginationFromJSON(
+  jsonString: string,
+): SafeParseResult<GetApiCompetitionsPagination, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) => GetApiCompetitionsPagination$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetApiCompetitionsPagination' from JSON`,
+  );
+}
+
+/** @internal */
 export const GetApiCompetitionsResponse$inboundSchema: z.ZodType<
   GetApiCompetitionsResponse,
   z.ZodTypeDef,
@@ -357,12 +448,16 @@ export const GetApiCompetitionsResponse$inboundSchema: z.ZodType<
   competitions: z
     .array(z.lazy(() => GetApiCompetitionsCompetition$inboundSchema))
     .optional(),
+  pagination: z
+    .lazy(() => GetApiCompetitionsPagination$inboundSchema)
+    .optional(),
 });
 
 /** @internal */
 export type GetApiCompetitionsResponse$Outbound = {
   success?: boolean | undefined;
   competitions?: Array<GetApiCompetitionsCompetition$Outbound> | undefined;
+  pagination?: GetApiCompetitionsPagination$Outbound | undefined;
 };
 
 /** @internal */
@@ -374,6 +469,9 @@ export const GetApiCompetitionsResponse$outboundSchema: z.ZodType<
   success: z.boolean().optional(),
   competitions: z
     .array(z.lazy(() => GetApiCompetitionsCompetition$outboundSchema))
+    .optional(),
+  pagination: z
+    .lazy(() => GetApiCompetitionsPagination$outboundSchema)
     .optional(),
 });
 
