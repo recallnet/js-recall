@@ -7,7 +7,7 @@ import { useState } from "react";
 import { FaBars } from "react-icons/fa6";
 
 import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
-import { Button } from "@recallnet/ui2/components/shadcn/button";
+import { Button } from "@recallnet/ui2/components/button";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { SIWEButton } from "@/components/siwe";

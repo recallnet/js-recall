@@ -3,7 +3,7 @@
 import Image from "next/image";
 import React from "react";
 
-import { BorderCard } from "@recallnet/ui2/components/shadcn/card";
+import { BorderCard } from "@recallnet/ui2/components/card";
 
 import { RevealOnScroll } from "@/components/animations/reveal";
 import { AnimatedText } from "@/components/animations/text";

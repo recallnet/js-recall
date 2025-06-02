@@ -5,7 +5,7 @@ import Image from "next/image";
 import { FaRegThumbsUp } from "react-icons/fa";
 
 import { displayAddress } from "@recallnet/address-utils/display";
-import { Button } from "@recallnet/ui2/components/shadcn/button";
+import { Button } from "@recallnet/ui2/components/button";
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import {
   Table,

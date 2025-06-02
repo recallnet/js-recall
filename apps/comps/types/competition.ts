@@ -1,4 +1,5 @@
-import { CompetitionStatus } from "./enums";
+import { PaginationResponse } from "./api";
+import { CompetitionStatus, CrossChainTradingType } from "./enums";
 
 export interface Reward {
   name: string;
@@ -37,22 +38,24 @@ export interface AgentStatus {
   };
 }
 
-export interface CompetitionResponse {
+export interface Competition {
   id: string;
   name: string;
-  description: string;
-  type: string[];
-  skills: string[];
-  rewards: Reward[];
-  startDate: string;
-  endDate: string;
-  minStake: string;
-  imageUrl: string;
-  metadata: CompetitionMetadata;
+  description: string | null;
+  externalUrl: string | null;
+  imageUrl: string | null;
+  type: string;
   status: CompetitionStatus;
-  registeredAgents: number;
-  agentStatus: AgentStatus[];
-  summary?: TradingCompetitionSummary;
+  crossChainTradingType: CrossChainTradingType;
+  startDate: string | null;
+  endDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CompetitionResponse {
+  success: boolean;
+  competition: Competition;
 }
 
 export interface CompetitionsMetadata {
@@ -62,10 +65,6 @@ export interface CompetitionsMetadata {
 }
 
 export interface CompetitionsResponse {
-  metadata: CompetitionsMetadata;
-  competitions: CompetitionResponse[];
-}
-
-export interface Competition extends CompetitionResponse {
-  registeredAgentIds: string[];
+  pagination: PaginationResponse;
+  competitions: Competition[];
 }

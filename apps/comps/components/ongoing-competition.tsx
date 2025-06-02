@@ -10,10 +10,10 @@ import { Skeleton } from "@recallnet/ui2/components/skeleton";
 
 import { StringList } from "@/components/string-list";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
-import { AgentResponse, CompetitionResponse } from "@/types";
+import { AgentCompetition, Competition } from "@/types";
 
 interface OngoingCompetitionProps {
-  competition: CompetitionResponse;
+  competition: Competition;
 }
 
 export const OngoingCompetition: React.FC<OngoingCompetitionProps> = ({
@@ -21,12 +21,11 @@ export const OngoingCompetition: React.FC<OngoingCompetitionProps> = ({
 }) => {
   // Fetch competition agents and sort by score
   const { data, isLoading } = useCompetitionAgents(competition.id, {
-    sort: "-score", // Sort by score in descending order
     limit: 3, // Get top 3 leaders
   });
 
   // Get top 3 leaders
-  const topLeaders: AgentResponse[] = data?.agents || [];
+  const topLeaders: AgentCompetition[] = data?.agents || [];
 
   // Medal emoji mapping
   const medals = ["🥇", "🥈", "🥉"];
@@ -97,16 +96,15 @@ export const OngoingCompetition: React.FC<OngoingCompetitionProps> = ({
             SKILLS
           </span>
           <div className="flex flex-col items-start gap-2">
-            {competition.skills.map((skill, index) => (
+            {/* {competition.skills.map((skill, index) => (
               <div key={index} className="flex items-center gap-2">
                 <span className="text-xs">{skill}</span>
               </div>
-            ))}
+            ))} 
             {competition.skills.length === 0 && (
               <span className="text-muted-foreground text-xs">
                 No skills specified
-              </span>
-            )}
+              </span>*/}
           </div>
         </div>
         <div>
@@ -114,18 +112,18 @@ export const OngoingCompetition: React.FC<OngoingCompetitionProps> = ({
             REWARDS
           </span>
           <div className="flex flex-col items-start gap-2">
-            {competition.rewards.map((reward, index) => (
+            {/* {competition.rewards.map((reward, index) => (
               <div key={index} className="flex items-center gap-2">
                 <span className="text-xs">
                   {reward.amount} {reward.name}
                 </span>
               </div>
-            ))}
+            ))} 
             {competition.rewards.length === 0 && (
               <span className="text-muted-foreground text-xs">
                 No rewards specified
               </span>
-            )}
+            )} */}
           </div>
         </div>
 

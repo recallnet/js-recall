@@ -9,10 +9,10 @@ import { IconButton } from "@recallnet/ui2/components/icon-button";
 
 import CountdownClock from "@/components/clock";
 import { StringList } from "@/components/string-list";
-import { CompetitionResponse } from "@/types";
+import { Competition } from "@/types";
 
 interface UpComingCompetitionProps {
-  competition: CompetitionResponse;
+  competition: Competition;
 }
 
 export const UpComingCompetition: React.FC<UpComingCompetitionProps> = ({
@@ -44,11 +44,11 @@ export const UpComingCompetition: React.FC<UpComingCompetitionProps> = ({
             SKILLS
           </h2>
           <div className="flex flex-col items-start gap-2">
-            {competition.skills?.map((skill, index) => (
+            {/* {competition.skills?.map((skill, index) => (
               <div key={index} className="text-sm font-medium">
                 {skill}
               </div>
-            )) || <span className="text-sm font-medium">No skills</span>}
+            )) || <span className="text-sm font-medium">No skills</span>} */}
           </div>
         </div>
         <div>
@@ -56,11 +56,11 @@ export const UpComingCompetition: React.FC<UpComingCompetitionProps> = ({
             REWARDS
           </h2>
           <div className="flex flex-col items-start gap-2">
-            {competition.rewards?.map((reward, index) => (
+            {/* {competition.rewards?.map((reward, index) => (
               <div key={index} className="text-sm font-medium">
                 {reward.amount} {reward.name}
               </div>
-            )) || <span className="text-sm font-medium">No rewards</span>}
+            )) || <span className="text-sm font-medium">No rewards</span>} */}
           </div>
         </div>
         <div>
@@ -68,7 +68,9 @@ export const UpComingCompetition: React.FC<UpComingCompetitionProps> = ({
             STARTS SOON
           </h2>
           <div>
-            <CountdownClock targetDate={new Date(competition.startDate)} />
+            <CountdownClock
+              targetDate={new Date(competition.startDate || "")}
+            />
           </div>
         </div>
 

@@ -2,7 +2,6 @@
 
 import React from "react";
 
-import { BackButton } from "@/components/back-button";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import ProfileSkeleton from "@/components/profile-skeleton";
 import { UpdateProfile } from "@/components/update-profile";

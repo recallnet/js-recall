@@ -3,7 +3,7 @@
 import { ArrowDownUp, Share2Icon } from "lucide-react";
 import React from "react";
 
-import Card from "@recallnet/ui2/components/shadcn/card";
+import Card from "@recallnet/ui2/components/card";
 import {
   Table,
   TableBody,
@@ -25,14 +25,7 @@ import { Hexagon } from "@/components/hexagon";
 import MirrorImage from "@/components/mirror-image";
 import { useAgent } from "@/hooks/useAgent";
 import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
-import { AgentResponse, CompetitionResponse, CompetitionStatus } from "@/types";
-
-type AgentCompetition = CompetitionResponse & {
-  placement: string;
-  roi: string;
-  trades: number;
-  elo: number;
-};
+import { Competition, CompetitionStatus } from "@/types";
 
 export default function AgentProfile({ id }: { id: string }) {
   const {
@@ -43,31 +36,6 @@ export default function AgentProfile({ id }: { id: string }) {
   const [selected, setSelected] = React.useState("all");
   const { data: agentCompetitionsData, isLoading: isLoadingCompetitions } =
     useAgentCompetitions(id);
-
-  // Format competitions data
-  const competitions = React.useMemo(() => {
-    if (!agentCompetitionsData?.competitions || !agent) return [];
-
-    return agentCompetitionsData.competitions.map((comp) => {
-      // Find the agent's status in this competition
-      const agentStatus = comp.agentStatus.find(
-        (status) => status.agentId === id,
-      );
-
-      return {
-        ...comp,
-        placement: agentStatus
-          ? `${agentStatus.position}/${comp.registeredAgents}`
-          : "N/A",
-        roi:
-          agentStatus?.metadata?.roi !== undefined
-            ? `${(agentStatus.metadata.roi * 100).toFixed(2)}%`
-            : "0.00%",
-        trades: agentStatus?.metadata?.trades || 0,
-        elo: agent.stats?.eloAvg || 0,
-      };
-    });
-  }, [agentCompetitionsData, agent, id]);
 
   if (isLoadingAgent || isLoadingCompetitions)
     return <div className="py-20 text-center">Loading agent data...</div>;
@@ -234,29 +202,28 @@ export default function AgentProfile({ id }: { id: string }) {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="all">
-            <CompetitionTable agent={agent} competitions={competitions} />
+            <CompetitionTable
+              competitions={agentCompetitionsData?.competitions || []}
+            />
           </TabsContent>
           <TabsContent value="ongoing">
             <CompetitionTable
-              agent={agent}
-              competitions={competitions.filter(
+              competitions={agentCompetitionsData?.competitions.filter(
                 (c) => c.status === CompetitionStatus.Active,
               )}
             />
           </TabsContent>
           <TabsContent value="upcoming">
             <CompetitionTable
-              agent={agent}
-              competitions={competitions.filter(
+              competitions={agentCompetitionsData?.competitions.filter(
                 (c) => c.status === CompetitionStatus.Pending,
               )}
             />
           </TabsContent>
           <TabsContent value="complete">
             <CompetitionTable
-              agent={agent}
-              competitions={competitions.filter(
-                (c) => c.status === CompetitionStatus.Ended,
+              competitions={agentCompetitionsData?.competitions.filter(
+                (c) => c.status === CompetitionStatus.Completed,
               )}
             />
           </TabsContent>
@@ -267,11 +234,9 @@ export default function AgentProfile({ id }: { id: string }) {
 }
 
 function CompetitionTable({
-  agent,
   competitions,
 }: {
-  agent: AgentResponse;
-  competitions: AgentCompetition[];
+  competitions: Competition[] | undefined;
 }) {
   return (
     <div className="overflow-hidden rounded border border-gray-800">
@@ -288,7 +253,7 @@ function CompetitionTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {competitions.length > 0 ? (
+          {competitions && competitions.length > 0 ? (
             competitions.slice(0, 10).map((comp, i) => {
               const compStatus =
                 comp.status === CompetitionStatus.Active
@@ -325,22 +290,18 @@ function CompetitionTable({
                   </TableCell>
                   <TableCell className="align-center">
                     <div className="flex flex-wrap items-center gap-2">
-                      {comp.skills.map((skill, idx) => (
+                      {/*  {comp.skills.map((skill, idx) => (
                         <span
                           key={idx}
                           className="rounded border border-gray-700 p-2 text-xs text-white"
                         >
                           {skill}
                         </span>
-                      ))}
+                      ))} */}
                     </div>
                   </TableCell>
                   <TableCell className="align-center text-md font-medium text-gray-400">
-                    $
-                    {Number(
-                      comp.agentStatus.find((ag) => ag.agentId === agent.id)
-                        ?.score || "0",
-                    ).toFixed(2)}
+                    $0
                     <span className="ml-2 text-xs">USDC</span>
                   </TableCell>
                   <TableCell className="align-center w-30 flex justify-center font-medium">
@@ -349,26 +310,16 @@ function CompetitionTable({
                     }
                     <div className="text-right">
                       <span className={cn("flex flex-col text-gray-400")}>
-                        {Number(comp.elo).toFixed(2)}$
+                        0$
                       </span>
-                      <span
-                        className={cn(
-                          "ml-1 text-xs",
-                          Number(comp.elo) >= 0
-                            ? "text-green-600"
-                            : "text-red-600",
-                        )}
-                      >
-                        ({comp.elo > 0 ? "+" : ""}
-                        {comp.elo.toFixed(2)}%)
-                      </span>
+                      <span>0</span>
                     </div>
                   </TableCell>
                   <TableCell className="align-center w-30 text-md fond-semibold text-center text-gray-400">
-                    {comp.trades}
+                    0
                   </TableCell>
                   <TableCell className="align-center w-30 text-center text-gray-400">
-                    {comp.placement}/{comp.registeredAgents}
+                    0/0
                   </TableCell>
                   <TableCell className="align-center h-25 flex items-center gap-2">
                     <Hexagon className="h-8 w-8 bg-blue-500" />
@@ -396,7 +347,7 @@ function CompetitionTable({
         </TableBody>
       </Table>
 
-      {competitions.length > 10 && (
+      {competitions && competitions.length > 10 && (
         <div className="max-h-[600px] overflow-y-auto">
           <Table>
             <TableBody>

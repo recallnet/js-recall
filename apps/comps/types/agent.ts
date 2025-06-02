@@ -1,5 +1,7 @@
+import { PaginationResponse } from "./api";
 import {
   AgentCompetitionMetadata,
+  Competition,
   CompetitionResponse,
   Reward,
 } from "./competition";
@@ -65,8 +67,8 @@ export interface AgentsResponse {
 }
 
 export interface AgentCompetitionsResponse {
-  metadata: AgentsMetadata;
-  competitions: CompetitionResponse[];
+  pagination: PaginationResponse;
+  competitions: Competition[];
 }
 
 export interface LeaderboardStats {
@@ -79,6 +81,29 @@ export interface LeaderboardResponse {
   metadata: AgentsMetadata;
   stats: LeaderboardStats;
   agents: LeaderboardAgent[];
+}
+
+export interface AgentCompetitionResponse {
+  success: boolean;
+  competitionId: string;
+  agents: AgentCompetition[];
+  pagination: PaginationResponse;
+}
+
+export interface AgentCompetition {
+  id: string;
+  name: string;
+  description: string;
+  imageUrl: string;
+  score: number;
+  position: number;
+  portfolioValue: number;
+  active: boolean;
+  deactivationReason?: string;
+  pnl: number;
+  pnlPercent: number;
+  change24h: number;
+  change24hPercent: number;
 }
 
 export interface AgentResponse extends Agent {

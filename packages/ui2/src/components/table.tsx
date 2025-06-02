@@ -1,3 +1,4 @@
+import { ArrowDownUp } from "lucide-react";
 import * as React from "react";
 
 import { cn } from "@recallnet/ui2/lib/utils";
@@ -13,7 +14,7 @@ export type TableCaptionProps = React.JSX.IntrinsicElements["caption"];
 
 function Table({ className, ref, ...props }: TableProps) {
   return (
-    <div className="w-full">
+    <div className="w-full rounded-xl border">
       <table
         ref={ref}
         className={cn("w-full caption-bottom text-sm", className)}
@@ -22,28 +23,22 @@ function Table({ className, ref, ...props }: TableProps) {
     </div>
   );
 }
-Table.displayName = "Table";
 
 function TableHeader({ className, ref, ...props }: TableHeaderProps) {
-  return <thead ref={ref} className={cn("", className)} {...props} />;
+  return (
+    <thead ref={ref} className={cn("[&_tr]:border-0", className)} {...props} />
+  );
 }
-TableHeader.displayName = "TableHeader";
 
 function TableBody({ className, ref, ...props }: TableBodyProps) {
   return <tbody ref={ref} className={cn("", className)} {...props} />;
 }
-TableBody.displayName = "TableBody";
 
 function TableFooter({ className, ref, ...props }: TableFooterProps) {
   return (
-    <tfoot
-      ref={ref}
-      className={cn("border-t font-medium", className)}
-      {...props}
-    />
+    <tfoot ref={ref} className={cn("font-medium", className)} {...props} />
   );
 }
-TableFooter.displayName = "TableFooter";
 
 function TableRow({ className, ref, ...props }: TableRowProps) {
   return (
@@ -57,28 +52,25 @@ function TableRow({ className, ref, ...props }: TableRowProps) {
     />
   );
 }
-TableRow.displayName = "TableRow";
 
 function TableHead({ className, ref, ...props }: TableHeadProps) {
   return (
     <th
       ref={ref}
       className={cn(
-        "text-muted-foreground h-12 px-4 align-middle font-medium",
+        "text-primary-foreground flex h-12 items-center px-4 align-middle font-medium",
         className,
       )}
       {...props}
     />
   );
 }
-TableHead.displayName = "TableHead";
 
 function TableCell({ className, ref, ...props }: TableCellProps) {
   return (
     <td ref={ref} className={cn("p-4 align-middle", className)} {...props} />
   );
 }
-TableCell.displayName = "TableCell";
 
 function TableCaption({ className, ref, ...props }: TableCaptionProps) {
   return (
@@ -89,7 +81,21 @@ function TableCaption({ className, ref, ...props }: TableCaptionProps) {
     />
   );
 }
-TableCaption.displayName = "TableCaption";
+
+function SortableTableHeader({ className, ref, ...props }: TableHeadProps) {
+  return (
+    <TableHead
+      ref={ref}
+      className={cn("hover:bg-accent/50 cursor-pointer text-left", className)}
+      {...props}
+    >
+      <div className="flex items-center gap-1">
+        <span className="font-semibold">{props.children}</span>
+        <ArrowDownUp className="text-secondary-foreground" size={20} />
+      </div>
+    </TableHead>
+  );
+}
 
 export {
   Table,
@@ -100,4 +106,5 @@ export {
   TableRow,
   TableCell,
   TableCaption,
+  SortableTableHeader,
 };

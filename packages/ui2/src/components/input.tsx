@@ -9,7 +9,7 @@ const Input = function Input({ className, type, ref, ...props }: InputProps) {
     <input
       type={type}
       className={cn(
-        "placeholder:text-muted-foreground flex h-10 w-full rounded-md border px-3 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+        "placeholder:text-secondary-foreground flex h-10 w-full rounded-md border px-3 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
         className,
       )}
       ref={ref}

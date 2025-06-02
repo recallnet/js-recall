@@ -1,5 +1,6 @@
 import React from "react";
-import {cn} from "@recallnet/ui2/lib/utils"
+
+import { cn } from "@recallnet/ui2/lib/utils";
 
 type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
@@ -29,7 +30,7 @@ export const Card: React.FC<CardProps> = ({
       style={{
         clipPath: clipPaths[corner],
         WebkitClipPath: clipPaths[corner],
-        ...style
+        ...style,
       }}
       {...props}
     >
@@ -77,11 +78,7 @@ export const BorderCard: React.FC<BorderCardProps> = ({
       style={outerStyle}
       {...rest}
     >
-      <Card
-        className={cn("relative", className)}
-        style={innerStyle}
-        {...rest}
-      >
+      <Card className={cn("relative", className)} style={innerStyle} {...rest}>
         {children}
       </Card>
     </Card>

@@ -29,7 +29,7 @@
 }
 
 .dark {
-  --background: oklch(0 0 0);
+  --background: oklch(0.1163 0.0062 285.4);
   --foreground: oklch(1 0 0);
   --card: oklch(0.17 0.02 250);
   --card-foreground: oklch(1 0 0);
@@ -44,7 +44,7 @@
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.59 0.2415 29.52);
-  --border: oklch(1 0 0 / 10%);
+  --border: oklch(0.2894 0.03 254.71);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
 }
@@ -78,6 +78,7 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
 }
 
 @layer base {
