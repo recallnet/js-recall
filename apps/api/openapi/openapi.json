@@ -2996,6 +2996,13 @@
                             ],
                             "description": "Competition status (always PENDING)"
                           },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "trading"
+                            ],
+                            "description": "Competition type"
+                          },
                           "crossChainTradingType": {
                             "type": "string",
                             "enum": [
@@ -3112,6 +3119,13 @@
                             "ended"
                           ],
                           "description": "Competition status"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "trading"
+                          ],
+                          "description": "Competition type"
                         },
                         "createdAt": {
                           "type": "string",
@@ -3289,6 +3303,13 @@
                             "ended"
                           ],
                           "description": "Competition status"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "trading"
+                          ],
+                          "description": "Competition type"
                         },
                         "crossChainTradingType": {
                           "type": "string",
@@ -3486,6 +3507,13 @@
                             ],
                             "description": "Competition status (always pending)"
                           },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "trading"
+                            ],
+                            "description": "Competition type"
+                          },
                           "crossChainTradingType": {
                             "type": "string",
                             "enum": [
@@ -3592,6 +3620,13 @@
                           ],
                           "description": "Competition status"
                         },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "trading"
+                          ],
+                          "description": "Competition type"
+                        },
                         "crossChainTradingType": {
                           "type": "string",
                           "enum": [
@@ -3612,6 +3647,27 @@
                           "format": "date-time",
                           "nullable": true,
                           "description": "Competition end date (null for pending/active competitions)"
+                        },
+                        "stats": {
+                          "type": "object",
+                          "properties": {
+                            "totalTrades": {
+                              "type": "number",
+                              "description": "Total number of trades"
+                            },
+                            "totalAgents": {
+                              "type": "number",
+                              "description": "Total number of agents"
+                            },
+                            "totalVolume": {
+                              "type": "number",
+                              "description": "Total volume of trades in USD"
+                            },
+                            "uniqueTokens": {
+                              "type": "number",
+                              "description": "Total number of unique tokens traded"
+                            }
+                          }
                         },
                         "createdAt": {
                           "type": "string",
