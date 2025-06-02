@@ -9,6 +9,7 @@ import { getLatestPrice } from "@/database/repositories/price-repository.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
+  AgentCompetitionsParamsSchema,
   AgentFilterSchema,
   AuthenticatedRequest,
   PagingParamsSchema,
@@ -460,6 +461,33 @@ export function makeAgentController(services: ServiceRegistry) {
         res.status(200).json({
           success: true,
           apiKey: result.apiKey,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get competitions associated with the authenticated agent
+     * @param req Express request with agentId from API key
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getCompetitions(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { success, data: agentId} = UuidSchema.safeParse(req.agentId);
+        if (!success) {
+          throw "todo";
+        }
+        const params = AgentCompetitionsParamsSchema.parse(req.query)
+
+        // Fetch all competitions associated with the agent
+        const competitions = await services.agentManager.getCompetitionsForAgent(agentId, params);
+
+        res.status(200).json({
+          success: true,
+          agentId,
+          competitions,
         });
       } catch (error) {
         next(error);

@@ -22,7 +22,7 @@ import {
 } from "@/types/index.js";
 
 import { getSort } from "./helpers.js";
-import { PartialExcept } from "./types.js";
+import { AgentCompetitionsParams, PartialExcept } from "./types.js";
 
 /**
  * Agent Repository
@@ -101,7 +101,7 @@ export async function findAll(
  * Find all competitions that given agent is, or has, participated in
  * @param agentId the ID of the agent used for lookup
  */
-export async function findAgentCompetitions(agentId: string) {
+export async function findAgentCompetitions(agentId: string, params: AgentCompetitionsParams) {
   try {
     return db
       .select()
@@ -111,6 +111,8 @@ export async function findAgentCompetitions(agentId: string) {
         eq(competitions.id, competitionAgents.competitionId),
       )
       .where(eq(competitionAgents.agentId, agentId));
+
+    // TODO: sort, filter by status, filter by claimed, and paging
   } catch (error) {
     console.error("[AgentRepository] Error in findAgentCompetitions:", error);
     throw error;

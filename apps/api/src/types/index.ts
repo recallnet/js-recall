@@ -511,6 +511,10 @@ export type CompetitionAgentParams = z.infer<
   typeof CompetitionAgentParamsSchema
 >;
 
+export const AgentCompetitionsParamsSchema = z.object({
+
+});
+
 /**
  * Update user profile parameters schema
  */

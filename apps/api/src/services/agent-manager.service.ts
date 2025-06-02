@@ -9,6 +9,7 @@ import {
   create,
   deactivateAgent,
   deleteAgent,
+  findAgentCompetitions,
   findAll,
   findByCompetition,
   findById,
@@ -769,6 +770,40 @@ export class AgentManager {
       return { agents: [], total: 0 };
     }
   }
+
+
+  /**
+   * Get agents for a specific competition
+   * @param competitionId Competition ID
+   * @param params Competition agents parameters
+   * @returns Object containing agents array and total count
+   */
+  async getCompetitionsForAgent(
+    agentId: string,
+    params: AgentCompetitionsParams,
+  ) {
+    try {
+      console.log(
+        `[AgentManager] Retrieving competitions for agent ${agentId} with params:`,
+        params,
+      );
+
+      // Get agents from repository
+      const result = await findAgentCompetitions(agentId, params);
+
+      console.log(
+        `[AgentManager] Found ${result.agents.length} agents for competition ${competitionId}`,
+      );
+      return result;
+    } catch (error) {
+      console.error(
+        `[AgentManager] Error retrieving agents for competition ${competitionId}:`,
+        error,
+      );
+      return { agents: [], total: 0 };
+    }
+  }
+
 
   /**
    * Get agents with paging and filtering
