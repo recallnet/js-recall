@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDownUp, Share2Icon } from "lucide-react";
+import {Share2Icon} from "lucide-react";
 import React from "react";
 
 import Card from "@recallnet/ui2/components/card";
@@ -18,23 +18,23 @@ import {
   TabsList,
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { Breadcrumbs } from "@/components/breadcrumb";
-import { Hexagon } from "@/components/hexagon";
+import {Breadcrumbs} from "@/components/breadcrumb";
+import {Hexagon} from "@/components/hexagon";
 import MirrorImage from "@/components/mirror-image";
-import { useAgent } from "@/hooks/useAgent";
-import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
-import { Competition, CompetitionStatus } from "@/types";
+import {useAgent} from "@/hooks/useAgent";
+import {useAgentCompetitions} from "@/hooks/useAgentCompetitions";
+import {Competition, CompetitionStatus} from "@/types";
 
-export default function AgentProfile({ id }: { id: string }) {
+export default function AgentProfile({id}: {id: string}) {
   const {
     data: agent,
     isLoading: isLoadingAgent,
     error: agentError,
   } = useAgent(id);
   const [selected, setSelected] = React.useState("all");
-  const { data: agentCompetitionsData, isLoading: isLoadingCompetitions } =
+  const {data: agentCompetitionsData, isLoading: isLoadingCompetitions} =
     useAgentCompetitions(id);
 
   if (isLoadingAgent || isLoadingCompetitions)
@@ -48,9 +48,9 @@ export default function AgentProfile({ id }: { id: string }) {
     <>
       <Breadcrumbs
         items={[
-          { title: "RECALL", href: "/" },
-          { title: "AGENTS", href: "/" },
-          { title: agent.name, href: "/" },
+          {title: "RECALL", href: "/"},
+          {title: "AGENTS", href: "/"},
+          {title: agent.name, href: "/"},
         ]}
       />
 
@@ -258,18 +258,18 @@ function CompetitionTable({
               const compStatus =
                 comp.status === CompetitionStatus.Active
                   ? {
-                      text: "On-going",
-                      style: "border-green-500 text-green-500",
-                    }
+                    text: "On-going",
+                    style: "border-green-500 text-green-500",
+                  }
                   : comp.status === CompetitionStatus.Pending
                     ? {
-                        text: "Upcoming",
-                        style: "border-blue-500 text-blue-500",
-                      }
+                      text: "Upcoming",
+                      style: "border-blue-500 text-blue-500",
+                    }
                     : {
-                        text: "Complete",
-                        style: "border-gray-500 text-gray-500",
-                      };
+                      text: "Complete",
+                      style: "border-gray-500 text-gray-500",
+                    };
 
               return (
                 <TableRow key={i}>
@@ -362,19 +362,3 @@ function CompetitionTable({
   );
 }
 
-function SortableHeader({
-  title,
-  className,
-}: {
-  title: string;
-  className?: string;
-}) {
-  return (
-    <TableHead className={cn("text-left", className)}>
-      <div className="flex items-center gap-1">
-        <span className="font-semibold text-white">{title}</span>
-        <ArrowDownUp className="text-gray-600" size={20} />
-      </div>
-    </TableHead>
-  );
-}
