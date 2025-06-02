@@ -49,7 +49,6 @@ export default function CreateAgentPage() {
       setCreatedAgentId(result.agent.id);
       setApiKey(result.agent.apiKey);
     } catch {
-      console.log("CATCH??J");
       // Error handled by react-query or can show toast here
     }
   };
