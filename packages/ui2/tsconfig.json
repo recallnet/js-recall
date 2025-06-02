@@ -6,6 +6,6 @@
       "@recallnet/ui2/*": ["./src/*"]
     }
   },
-  "include": [".", "../../apps/comps/components/create-agent.tsx"],
+  "include": ["."],
   "exclude": ["node_modules", "dist"]
 }
