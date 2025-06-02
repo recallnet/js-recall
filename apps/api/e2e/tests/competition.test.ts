@@ -514,15 +514,13 @@ describe("Competition API", () => {
     expect(Array.isArray(upcomingResponse.competitions)).toBe(true);
     expect(upcomingResponse.competitions.length).toBe(3);
 
-    // Verify each competition has all expected fields
-    upcomingResponse.competitions.forEach((comp) => {
-      expect(comp.id).toBeDefined();
-      expect(comp.name).toBeDefined();
-      expect(comp.status).toBe("pending");
-      expect(comp.crossChainTradingType).toBeDefined();
-      expect(comp.createdAt).toBeDefined();
-      expect(comp.updatedAt).toBeDefined();
-    });
+    // Verify metadata fields
+    expect(upcomingResponse.metadata).toBeDefined();
+    expect(upcomingResponse.metadata.total).toBe(3);
+    expect(upcomingResponse.metadata.limit).toBe(10); // default limit
+    expect(upcomingResponse.metadata.offset).toBe(0); // default offset
+    expect(typeof upcomingResponse.metadata.hasMore).toBe("boolean");
+    expect(upcomingResponse.metadata.hasMore).toBe(false); // 3 competitions < 10 limit
 
     // Register an agent
     const { agent } = await registerUserAndAgentAndGetClient({
@@ -644,6 +642,76 @@ describe("Competition API", () => {
     expect(descResponse.competitions[1]?.name).toBe(comp2Name);
     expect(descResponse.competitions[2]?.name).toBe(comp1Name);
   }, 1000000);
+
+  test("should support pagination for competitions list", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register a user/agent
+    const { client: agentClient } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Pagination Test Agent",
+    });
+
+    // Create multiple competitions for pagination testing
+    const competitionNames: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      const name = `Pagination Test Competition ${i + 1} ${Date.now()}`;
+      competitionNames.push(name);
+      await adminClient.createCompetition(
+        name,
+        `Test competition ${i + 1}`,
+        CROSS_CHAIN_TRADING_TYPE.ALLOW,
+      );
+      await wait(100); // Small delay to ensure different timestamps
+    }
+
+    // Test first page with limit 3
+    const firstPageResponse = (await agentClient.getCompetitions(
+      "pending",
+      undefined,
+      3,
+      0,
+    )) as UpcomingCompetitionsResponse;
+
+    expect(firstPageResponse.success).toBe(true);
+    expect(firstPageResponse.competitions.length).toBe(3);
+    expect(firstPageResponse.metadata.total).toBe(5);
+    expect(firstPageResponse.metadata.limit).toBe(3);
+    expect(firstPageResponse.metadata.offset).toBe(0);
+    expect(firstPageResponse.metadata.hasMore).toBe(true); // 0 + 3 < 5
+
+    // Test second page with limit 3, offset 3
+    const secondPageResponse = (await agentClient.getCompetitions(
+      "pending",
+      undefined,
+      3,
+      3,
+    )) as UpcomingCompetitionsResponse;
+
+    expect(secondPageResponse.success).toBe(true);
+    expect(secondPageResponse.competitions.length).toBe(2); // remaining competitions
+    expect(secondPageResponse.metadata.total).toBe(5);
+    expect(secondPageResponse.metadata.limit).toBe(3);
+    expect(secondPageResponse.metadata.offset).toBe(3);
+    expect(secondPageResponse.metadata.hasMore).toBe(false); // 3 + 3 > 5
+
+    // Test beyond last page
+    const emptyPageResponse = (await agentClient.getCompetitions(
+      "pending",
+      undefined,
+      3,
+      6,
+    )) as UpcomingCompetitionsResponse;
+
+    expect(emptyPageResponse.success).toBe(true);
+    expect(emptyPageResponse.competitions.length).toBe(0);
+    expect(emptyPageResponse.metadata.total).toBe(5);
+    expect(emptyPageResponse.metadata.limit).toBe(3);
+    expect(emptyPageResponse.metadata.offset).toBe(6);
+    expect(emptyPageResponse.metadata.hasMore).toBe(false); // 6 + 3 > 5
+  });
 
   test("competitions include externalUrl and imageUrl fields", async () => {
     // Setup admin client

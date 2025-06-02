@@ -101,6 +101,26 @@ export function configureCompetitionsRoutes(
    *                         type: string
    *                         format: date-time
    *                         description: When the competition was last updated
+   *                 metadata:
+   *                   type: object
+   *                   description: Pagination metadata
+   *                   properties:
+   *                     total:
+   *                       type: integer
+   *                       description: Total number of competitions matching the filter
+   *                       example: 25
+   *                     limit:
+   *                       type: integer
+   *                       description: Maximum number of results returned
+   *                       example: 10
+   *                     offset:
+   *                       type: integer
+   *                       description: Number of results skipped
+   *                       example: 0
+   *                     hasMore:
+   *                       type: boolean
+   *                       description: Whether there are more results available
+   *                       example: true
    *       401:
    *         description: Unauthorized - Missing or invalid authentication
    *       500:

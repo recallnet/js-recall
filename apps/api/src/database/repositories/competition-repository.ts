@@ -2,6 +2,7 @@ import {
   AnyColumn,
   and,
   desc,
+  count as drizzleCount,
   eq,
   getTableColumns,
   max,
@@ -460,6 +461,8 @@ export async function count() {
 /**
  * Find competitions by status, or default to all competitions if no status is provided
  * @param status Competition status
+ * @param params Pagination parameters
+ * @returns Object containing competitions array and total count
  */
 export async function findByStatus({
   status,
@@ -469,7 +472,32 @@ export async function findByStatus({
   params: PagingParams;
 }) {
   try {
-    const queryBuilder = db
+    // Count query
+    const countResult = await (() => {
+      if (status) {
+        return db
+          .select({ count: drizzleCount() })
+          .from(tradingCompetitions)
+          .innerJoin(
+            competitions,
+            eq(tradingCompetitions.competitionId, competitions.id),
+          )
+          .where(eq(competitions.status, status));
+      } else {
+        return db
+          .select({ count: drizzleCount() })
+          .from(tradingCompetitions)
+          .innerJoin(
+            competitions,
+            eq(tradingCompetitions.competitionId, competitions.id),
+          );
+      }
+    })();
+
+    const total = countResult[0]?.count ?? 0;
+
+    // Data query with dynamic building
+    let dataQuery = db
       .select({
         crossChainTradingType: tradingCompetitions.crossChainTradingType,
         ...getTableColumns(competitions),
@@ -478,22 +506,22 @@ export async function findByStatus({
       .innerJoin(
         competitions,
         eq(tradingCompetitions.competitionId, competitions.id),
-      );
+      )
+      .$dynamic();
 
-    let query;
     if (status) {
-      query = queryBuilder.where(eq(competitions.status, status)).$dynamic();
-    } else {
-      query = queryBuilder.$dynamic();
+      dataQuery = dataQuery.where(eq(competitions.status, status));
     }
 
     if (params.sort) {
-      query = getSort(query, params.sort, competitionOrderByFields);
+      dataQuery = getSort(dataQuery, params.sort, competitionOrderByFields);
     }
 
-    query = query.limit(params.limit).offset(params.offset);
+    const competitionResults = await dataQuery
+      .limit(params.limit)
+      .offset(params.offset);
 
-    return await query;
+    return { competitions: competitionResults, total };
   } catch (error) {
     console.error("[CompetitionRepository] Error in findByStatus:", error);
     throw error;
