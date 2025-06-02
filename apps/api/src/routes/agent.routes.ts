@@ -438,5 +438,79 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    */
   router.post("/reset-api-key", agentController.resetApiKey);
 
+  /**
+   * @openapi
+   * /api/agent/{agentId}:
+   *   get:
+   *     summary: Get agent by ID
+   *     description: Retrieve the information for the given agent ID
+   *     tags:
+   *       - Agent
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: agentId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: The UUID of the agent being requested
+   *     responses:
+   *       200:
+   *         description: Agent profile retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 id:
+   *                   type: string
+   *                   format: uuid
+   *                 name:
+   *                   type: string
+   *                   example: "Trading Bot Alpha"
+   *                 imageUrl:
+   *                   type: string
+   *                   example: "https://example.com/bot-avatar.jpg"
+   *                   nullable: true
+   *                 metadata:
+   *                   type: object
+   *                   description: Optional metadata for the agent
+   *                   example: { "strategy": "yield-farming", "risk": "medium" }
+   *                   nullable: true
+   *                 stats:
+   *                   type: object
+   *                   description: stats on this agent's past performance
+   *                   properties:
+   *                     competitionsCompleted:
+   *                       type: integer
+   *                     provenSkills:
+   *                       type: array
+   *                       items:
+   *                         type: string
+   *                     bestPlacement:
+   *                       type: object
+   *                       properties:
+   *                         competitionId:
+   *                           type: string
+   *                         postition:
+   *                           type: integer
+   *                         participants:
+   *                           type: integer
+   *                 trophies:
+   *                   type: array
+   *                   items:
+   *                     type: string
+   *                 hasUnclaimedRewards:
+   *                   type: boolean
+   *       401:
+   *         description: Agent not authenticated
+   *       404:
+   *         description: Agent or owner not found
+   *       500:
+   *         description: Internal server error
+   */
+  router.get("/:agentId", agentController.getAgent);
+
   return router;
 }

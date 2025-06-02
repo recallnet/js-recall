@@ -2,17 +2,8 @@
 
 import React, { useState } from "react";
 
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@recallnet/ui2/components/breadcrumb";
-
 import { AgentCreated } from "@/components/agent-created";
-import { BackButton } from "@/components/back-button";
+import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { CreateAgent, FormData } from "@/components/create-agent";
 import { useAgent } from "@/hooks/useAgent";
 import { useCreateAgent } from "@/hooks/useCreateAgent";
@@ -32,19 +23,22 @@ export default function CreateAgentPage() {
     try {
       const result = await createAgent.mutateAsync({
         name: data.name,
-        imageUrl: data.imageUrl || "",
-        walletAddress: data.walletAddress,
-        skills: data.skills,
-        description: data.description || "",
+        imageUrl: data.imageUrl,
         email: data.email || "",
-        repositoryUrl: data.repositoryUrl || "",
+        description: data.description || "",
         metadata: {
+          walletAddress: data.walletAddress,
+          skills: JSON.stringify(data.skills),
+          repositoryUrl: data.repositoryUrl || "",
           x: data.x || "",
           telegram: data.telegram || "",
         },
       });
-      setCreatedAgentId(result.agentId);
-      setApiKey(result.apiKey);
+
+      if (!result.success) throw new Error("Error when creating agent");
+
+      setCreatedAgentId(result.agent.id);
+      setApiKey(result.agent.apiKey);
     } catch {
       // Error handled by react-query or can show toast here
     }
@@ -52,24 +46,14 @@ export default function CreateAgentPage() {
 
   return (
     <>
-      <div className="mb-5 flex items-center gap-4">
-        <BackButton />
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/competitions">HOME</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/profile">USER PROFILE</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>ADD AGENT</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
+      <BreadcrumbNav
+        items={[
+          { label: "HOME", href: "/competitions" },
+          { label: "USER PROFILE", href: "/profile" },
+          { label: "ADD AGENT" },
+        ]}
+      />
+
       {createdAgentId && apiKey ? (
         isAgentLoading ? (
           <div className="py-12 text-center text-white">Loading agent...</div>

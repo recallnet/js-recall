@@ -1,6 +1,5 @@
 "use client";
 
-import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import {
   ColumnDef,
   SortingState,
@@ -10,29 +9,34 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { ArrowUp, Search } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useMemo, useRef, useState } from "react";
 
-import { displayAddress } from "@recallnet/address-utils/display";
 import { Button } from "@recallnet/ui2/components/button";
 import { Input } from "@recallnet/ui2/components/input";
 import {
+  SortableTableHeader,
   Table,
   TableBody,
   TableCell,
+  TableHead,
+  TableHeader,
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import { AgentResponse, AgentsMetadata } from "@/types";
+import { AgentCompetition, PaginationResponse } from "@/types";
+
+import { RankBadge } from "./rank-badge";
 
 export interface AgentsTableProps {
-  agents: AgentResponse[];
+  agents: AgentCompetition[];
   onFilterChange: (filter: string) => void;
   onSortChange: (sort: string) => void;
   onLoadMore: () => void;
   hasMore: boolean;
-  metadata?: AgentsMetadata;
+  pagination: PaginationResponse;
 }
 
 export const AgentsTable: React.FC<AgentsTableProps> = ({
@@ -41,21 +45,25 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   onSortChange,
   onLoadMore,
   hasMore,
-  metadata,
+  pagination,
 }) => {
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
 
-  const columns = useMemo<ColumnDef<AgentResponse>[]>(
+  const columns = useMemo<ColumnDef<AgentCompetition>[]>(
     () => [
+      {
+        id: "rank",
+        accessorKey: "position",
+        header: () => "Rank",
+        cell: ({ row }) => <RankBadge position={row.original.position} />,
+        enableSorting: true,
+        size: 100,
+      },
       {
         id: "name",
         accessorKey: "name",
-        header: () => (
-          <span className="text-xs font-semibold tracking-widest text-slate-400">
-            AGENT
-          </span>
-        ),
+        header: () => "Agent",
         cell: ({ row }) => (
           <div className="flex items-center gap-3">
             <Image
@@ -63,68 +71,111 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               alt={row.original.name}
               width={32}
               height={32}
-              className="rounded"
+              className="rounded-full border border-slate-700 bg-slate-900"
             />
             <div className="flex flex-col">
-              <span className="text-sm font-semibold leading-tight text-white">
-                {row.original.name}
-              </span>
-              <span className="text-xs text-slate-400">
-                {displayAddress(row.original.metadata?.walletAddress || "")}
+              <Link href={`/agents/${row.original.id}`}>
+                <span className="font-semibold leading-tight">
+                  {row.original.name}
+                </span>
+              </Link>
+              <span className="text-secondary-foreground max-w-[150px] truncate text-xs">
+                {row.original.description}
               </span>
             </div>
           </div>
         ),
-        size: 350,
         enableSorting: true,
       },
       {
-        id: "score",
-        accessorKey: "score",
-        header: () => (
-          <span className="text-xs font-semibold tracking-widest text-slate-400">
-            OVERALL ELO SCORE
-          </span>
-        ),
+        id: "portfolio",
+        accessorKey: "portfolioValue",
+        header: () => "Portfolio",
         cell: ({ row }) => (
-          <span className="w-full text-right text-base font-semibold text-white">
-            {row.original.score || row.original.stats?.eloAvg || 0}
+          <span className="text-secondary-foreground font-semibold">
+            {row.original.portfolioValue.toLocaleString("en-US", {
+              style: "currency",
+              currency: "USD",
+              maximumFractionDigits: 2,
+            })}
           </span>
         ),
-        size: 200,
         enableSorting: true,
+        size: 140,
       },
       {
-        id: "actions",
-        header: () => null,
-        cell: ({ row }) => (
-          <div className="flex w-full justify-end gap-2">
-            {/* <Button
-              variant="outline"
-              size="sm"
-              className="border-slate-600 bg-transparent text-white hover:bg-slate-800"
-            >
-              <span className="whitespace-nowrap">✓ VOTE</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-slate-600 bg-transparent text-white hover:bg-slate-800"
-            >
-              <span className="whitespace-nowrap">≡ COT</span>
-            </Button> */}
-            <Link href={`/agents/${row.original.id}`}>
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-slate-600 bg-transparent text-white hover:bg-slate-800"
-              >
-                <span className="whitespace-nowrap">PROFILE</span>
-              </Button>
-            </Link>
+        id: "pnl",
+        accessorKey: "pnl",
+        header: () => "P&L",
+        cell: ({ row }) => {
+          const pnlColor =
+            row.original.pnlPercent >= 0 ? "text-green-400" : "text-red-400";
+          return (
+            <div className="flex flex-col">
+              <span className={`text-secondary-foreground font-semibold`}>
+                {row.original.pnlPercent >= 0 ? "+" : ""}
+                {row.original.pnl.toLocaleString("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                  maximumFractionDigits: 2,
+                })}
+              </span>
+              <span className={`text-xs ${pnlColor}`}>
+                ({row.original.pnlPercent >= 0 ? "+" : ""}
+                {row.original.pnlPercent.toFixed(2)}%)
+              </span>
+            </div>
+          );
+        },
+        enableSorting: true,
+        size: 140,
+      },
+      {
+        id: "change24h",
+        accessorKey: "change24h",
+        header: () => "24h",
+        cell: ({ row }) => {
+          const percentColor =
+            row.original.change24hPercent >= 0
+              ? "text-green-500"
+              : "text-red-500";
+          return (
+            <div className="flex flex-col">
+              <span className={`text-xs ${percentColor}`}>
+                {row.original.change24hPercent >= 0 ? "+" : ""}
+                {row.original.change24hPercent.toFixed(2)}%
+              </span>
+            </div>
+          );
+        },
+        enableSorting: true,
+        size: 100,
+      },
+      {
+        id: "votes",
+        header: () => "Votes",
+        cell: () => (
+          <div className="flex flex-col items-end">
+            <span className="text-secondary-foreground font-semibold">0</span>
+            <span className="text-xs text-slate-400">(0%)</span>
+          </div>
+        ),
+        enableSorting: false,
+        size: 80,
+      },
+      {
+        id: "vote",
+        header: () => "Vote",
+        cell: () => (
+          <div className="flex w-full justify-center">
+            <ArrowUp
+              className="text-secondary-foreground cursor-pointer hover:text-white"
+              size={20}
+            />
           </div>
         ),
         meta: { isActions: true },
+        size: 70,
       },
     ],
     [],
@@ -160,78 +211,84 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   const rowVirtualizer = useVirtualizer({
     count: table.getRowModel().rows.length,
     getScrollElement: () => tableContainerRef.current,
-    estimateSize: () => 64, // row height
+    estimateSize: () => 68, // row height
     overscan: 5,
   });
 
   return (
     <div className="mt-12 w-full">
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-white">
-          Participants ({metadata?.total ?? agents.length})
-        </h2>
-        <div className="mb-4 flex items-center gap-2 rounded bg-slate-900 px-3 py-2">
-          <MagnifyingGlassIcon className="mr-2 h-4 w-4 text-slate-400" />
-          <Input
-            className="border-none bg-transparent text-white placeholder:text-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0"
-            placeholder="SEARCH AGENT..."
-            onChange={(e) => onFilterChange(e.target.value)}
-            aria-label="Search agent"
-          />
-        </div>
+      <h2 className="mb-5 text-2xl font-bold">
+        Competition Leaderboard ({pagination.total})
+      </h2>
+      <div className="mb-5 flex w-full items-center gap-2 rounded-2xl border px-3 py-2 md:w-1/2">
+        <Search className="text-secondary-foreground mr-1 h-5" />
+        <Input
+          className="border-none bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+          placeholder="Search for an agent..."
+          onChange={(e) => onFilterChange(e.target.value)}
+          aria-label="Search for an agent"
+        />
       </div>
       <div
         ref={tableContainerRef}
         style={{
-          height: "640px", // 10 rows * 64px
+          maxHeight: "680px", // 10 rows × 68px height
           overflowY: "auto",
           position: "relative",
         }}
       >
         <Table>
-          <thead>
+          <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr
+              <TableRow
                 key={headerGroup.id}
                 style={{ display: "flex", width: "100%" }}
               >
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    colSpan={header.colSpan}
-                    style={
-                      header.column.id === "actions"
-                        ? { flex: 1 }
-                        : { width: header.getSize() }
-                    }
-                    className={
-                      `flex items-center text-xs font-semibold tracking-widest text-slate-400` +
-                      (header.column.id === "score"
-                        ? " justify-end pr-3 text-right"
-                        : "") +
-                      (header.column.getCanSort()
-                        ? " cursor-pointer select-none"
-                        : "")
-                    }
-                    onClick={header.column.getToggleSortingHandler()}
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                    {header.column.getCanSort()
-                      ? {
-                          asc: " 🔼",
-                          desc: " 🔽",
-                        }[header.column.getIsSorted() as string]
-                      : null}
-                  </th>
-                ))}
-              </tr>
+                {headerGroup.headers.map((header) =>
+                  header.column.getCanSort() ? (
+                    <SortableTableHeader
+                      key={header.id}
+                      colSpan={header.colSpan}
+                      style={
+                        header.column.id === "actions"
+                          ? { flex: 1 }
+                          : header.column.id === "name"
+                            ? { flex: 1 }
+                            : { width: header.getSize() }
+                      }
+                      onClick={header.column.getToggleSortingHandler()}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                    </SortableTableHeader>
+                  ) : (
+                    <TableHead
+                      key={header.id}
+                      colSpan={header.colSpan}
+                      style={
+                        header.column.id === "actions"
+                          ? { flex: 1 }
+                          : header.column.id === "name"
+                            ? { flex: 1 }
+                            : { width: header.getSize() }
+                      }
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                    </TableHead>
+                  ),
+                )}
+              </TableRow>
             ))}
-          </thead>
+          </TableHeader>
           <TableBody
             style={{
               height: `${rowVirtualizer.getTotalSize()}px`,
@@ -244,7 +301,6 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               return (
                 <TableRow
                   key={row.id}
-                  className="border-b border-slate-700"
                   style={{
                     position: "absolute",
                     top: 0,
@@ -263,7 +319,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                       style={
                         cell.column.id === "actions"
                           ? { flex: 1, justifyContent: "flex-end" }
-                          : { width: cell.column.getSize() }
+                          : cell.column.id === "name"
+                            ? { flex: 1 }
+                            : { width: cell.column.getSize() }
                       }
                     >
                       {flexRender(

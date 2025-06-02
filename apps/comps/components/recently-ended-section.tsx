@@ -10,10 +10,10 @@ import {
 } from "@recallnet/ui2/components/tabs";
 
 import { CompetitionTable } from "@/components/competition-table";
-import { CompetitionResponse } from "@/types/competition";
+import { Competition } from "@/types";
 
 interface RecentlyEndedSectionProps {
-  competitions: CompetitionResponse[];
+  competitions: Competition[];
 }
 
 export const RecentlyEndedSection: React.FC<RecentlyEndedSectionProps> = ({
@@ -24,10 +24,8 @@ export const RecentlyEndedSection: React.FC<RecentlyEndedSectionProps> = ({
   const filteredCompetitions =
     activeTab === "all"
       ? competitions
-      : competitions.filter((comp) =>
-          comp.type.some(
-            (type) => type.toLowerCase() === activeTab.toLowerCase(),
-          ),
+      : competitions.filter(
+          (comp) => comp.type.toLowerCase() === activeTab.toLowerCase(),
         );
 
   return (

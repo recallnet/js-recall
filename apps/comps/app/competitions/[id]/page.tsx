@@ -1,21 +1,22 @@
 "use client";
 
-import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import { useDebounce } from "@uidotdev/usehooks";
+import { ArrowUpRight, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
-import { IconButton } from "@recallnet/ui2/components/icon-button";
+import { Button } from "@recallnet/ui2/components/button";
 
 import { AgentsTable } from "@/components/agents-table";
+import { BreadcrumbNav } from "@/components/breadcrumb-nav";
+import { CompetitionCard } from "@/components/competition-card";
 import { CompetitionInfo } from "@/components/competition-info";
+import CompetitionSkeleton from "@/components/competition-skeleton";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
-import { NewsletterSection } from "@/components/newsletter-section";
-import { UpComingCompetition } from "@/components/upcoming-competition";
 import { getSocialLinksArray } from "@/data/social";
 import { useCompetition } from "@/hooks/useCompetition";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
-import { AgentResponse } from "@/types";
+import { AgentCompetition } from "@/types";
 
 export default function CompetitionPage({
   params,
@@ -27,7 +28,7 @@ export default function CompetitionPage({
   const [agentsSort, setAgentsSort] = React.useState("");
   const [agentsLimit] = React.useState(10);
   const [agentsOffset, setAgentsOffset] = React.useState(0);
-  const [allAgents, setAllAgents] = React.useState<AgentResponse[]>([]);
+  const [allAgents, setAllAgents] = React.useState<AgentCompetition[]>([]);
   const debouncedFilterTerm = useDebounce(agentsFilter, 300);
 
   const {
@@ -65,12 +66,7 @@ export default function CompetitionPage({
   const error = competitionError;
 
   if (isLoading) {
-    return (
-      <div className="container mx-auto px-12 py-20 text-center">
-        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
-        <p className="mt-4">Loading competition data...</p>
-      </div>
-    );
+    return <CompetitionSkeleton />;
   }
 
   if (error || !competition) {
@@ -87,22 +83,46 @@ export default function CompetitionPage({
 
   return (
     <>
-      <div className="flex items-center gap-4 py-8">
-        <Link href="/competitions">
-          <IconButton Icon={ArrowLeftIcon} aria-label="Back" />
-        </Link>
-        <h1 className="font-bold">Competition Page</h1>
+      <BreadcrumbNav
+        items={[
+          { label: "Recall", href: "/" },
+          { label: "Competitions", href: "/competitions" },
+          { label: competition.name },
+        ]}
+        className="mb-10"
+      />
+      <div className="flex w-full flex-col gap-5 md:flex-row">
+        <CompetitionCard competition={competition} className="md:w-1/2" />
+        <div className="md:w-1/2">
+          <CompetitionInfo competition={competition} />
+          <div className="mt-5 flex w-full flex-row justify-center gap-4">
+            <Button
+              variant="outline"
+              className="w-1/2 justify-between"
+              size="lg"
+            >
+              <span className="font-semibold">Join Discord</span>{" "}
+              <ArrowUpRight className="ml-2" size={18} />
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-1/2 justify-between uppercase"
+              size="lg"
+            >
+              <span className="font-semibold">Vote on an Agent</span>{" "}
+              <ChevronRight className="ml-2" size={18} />
+            </Button>
+          </div>
+        </div>
       </div>
-      <UpComingCompetition competition={competition} />
-      <CompetitionInfo competition={competition} />
 
-      {agentsError ? (
+      {agentsError || !agentsData ? (
         <div className="my-12 rounded border border-red-400 bg-red-100 bg-opacity-10 p-6 text-center">
           <h2 className="text-xl font-semibold text-red-400">
             Failed to load agents
           </h2>
           <p className="mt-2 text-slate-300">
-            {agentsError.message ||
+            {agentsError?.message ||
               "An error occurred while loading agents data"}
           </p>
         </div>
@@ -114,12 +134,11 @@ export default function CompetitionPage({
           onLoadMore={() => {
             setAgentsOffset((prev) => prev + agentsLimit);
           }}
-          hasMore={(agentsData?.metadata?.total ?? 0) > allAgents.length}
-          metadata={agentsData?.metadata}
+          hasMore={agentsData.pagination.hasMore}
+          pagination={agentsData.pagination}
         />
       )}
-      <JoinSwarmSection socialLinks={getSocialLinksArray()} />
-      <NewsletterSection />
+      <JoinSwarmSection socialLinks={getSocialLinksArray()} className="mt-12" />
     </>
   );
 }

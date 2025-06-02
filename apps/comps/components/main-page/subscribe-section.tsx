@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-import { Button } from "@recallnet/ui2/components/shadcn/button";
+import { Button } from "@recallnet/ui2/components/button";
 import {
   Form,
   FormControl,

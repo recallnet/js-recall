@@ -867,4 +867,109 @@ describe("Agent API", () => {
       }
     }
   });
+
+  test("GET /api/agent/:agentId retrieves agent details", async () => {
+    // Setup admin client and login
+    const adminClient = createTestClient();
+    const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+    expect(adminLoginSuccess).toBe(true);
+
+    async function register() {
+      // Register a user and agent
+      const userName = `Get Agent Test User ${Date.now()}`;
+      const userEmail = `get-agent-${Date.now()}@example.com`;
+      const agentName = `Get Agent Test ${Date.now()}`;
+      const agentDescription = "Agent for GET endpoint test";
+
+      const res = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        userName,
+        userEmail,
+        agentName,
+        agentDescription,
+      });
+
+      return {
+        agentName,
+        agentDescription,
+        res,
+      };
+    }
+
+    const {
+      res: { agent },
+      agentName,
+      agentDescription,
+    } = await register();
+    const {
+      res: { apiKey: apiKey2 },
+    } = await register();
+
+    expect(agent).toBeDefined();
+    expect(agent.id).toBeDefined();
+
+    // Make a GET request to fetch the agent details using the agent ID
+    const response = await axios.get(`${getBaseUrl()}/api/agent/${agent.id}`, {
+      headers: {
+        // Make sure that other agents/users can load details for a given agent id
+        Authorization: `Bearer ${apiKey2}`,
+      },
+    });
+
+    // Validate response
+    expect(response.status).toBe(200);
+    const agentData = response.data as AgentProfileResponse;
+    expect(agentData.success).toBe(true);
+    expect(agentData.agent.id).toBe(agent.id);
+    expect(agentData.agent.name).toBe(agentName);
+    expect(agentData.agent.description).toBe(agentDescription);
+    expect(agentData.agent.stats).toBeDefined();
+    expect(agentData.agent.trophies).toBeDefined();
+    expect(Array.isArray(agentData.agent.trophies)).toBe(true);
+    expect(agentData.agent.hasUnclaimedRewards).toBe(false);
+    expect(agentData.agent.stats).toBeDefined();
+    // make sure public info is not exposed
+    expect(agentData.agent.apiKey).not.toBeDefined();
+  });
+
+  test("GET /api/agent/:agentId returns 400 with invalid agent id", async () => {
+    // Setup admin client and login
+    const adminClient = createTestClient();
+    const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+    expect(adminLoginSuccess).toBe(true);
+
+    const userName = `Get Agent Test User ${Date.now()}`;
+    const userEmail = `get-agent-${Date.now()}@example.com`;
+    const agentName = `Get Agent Test ${Date.now()}`;
+    const agentDescription = "Agent for GET endpoint test";
+
+    const { agent, apiKey } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      userName,
+      userEmail,
+      agentName,
+      agentDescription,
+    });
+
+    expect(agent).toBeDefined();
+    expect(agent.id).toBeDefined();
+    try {
+      // Make a GET request to fetch the agent details using the agent ID
+      await axios.get(`${getBaseUrl()}/api/agent/foo123`, {
+        headers: {
+          // Make sure that other agents/users can load details for a given agent id
+          Authorization: `Bearer ${apiKey}`,
+        },
+      });
+      // Unreachable code (should throw an error)
+      expect(false).toBe(true);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        expect(error.response.status).toBe(400);
+        expect(error.response.data.error).toContain("Invalid Agent ID");
+      } else {
+        throw error;
+      }
+    }
+  });
 });

@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@recallnet/ui2/components/button";
-import { Card } from "@recallnet/ui2/components/shadcn/card";
+import { Card } from "@recallnet/ui2/components/card";
 import {
   Form,
   FormControl,

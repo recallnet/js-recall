@@ -13,10 +13,10 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import { CompetitionResponse } from "@/types/competition";
+import { Competition } from "@/types";
 
 interface CompetitionTableProps {
-  competitions: CompetitionResponse[];
+  competitions: Competition[];
 }
 
 export const CompetitionTable: React.FC<CompetitionTableProps> = ({
@@ -48,17 +48,17 @@ export const CompetitionTable: React.FC<CompetitionTableProps> = ({
                   className="text-secondary mt-1 text-xs"
                   style={{ color: "hsla(214, 35%, 54%, 1)" }}
                 >
-                  {competition.type.join(" / ")}
+                  {competition.type}
                 </div>
               </div>
             </TableCell>
             <TableCell>
               <div className="flex flex-col items-start gap-2">
-                {competition.rewards.map((reward, index) => (
+                {/* {competition.rewards?.map((reward, index) => (
                   <div key={index} className="text-xs">
                     {reward.amount} {reward.name}
                   </div>
-                ))}
+                ))} */}
               </div>
             </TableCell>
             <TableCell className="text-xs font-semibold">

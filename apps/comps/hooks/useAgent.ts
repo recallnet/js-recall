@@ -15,7 +15,11 @@ export const useAgent = (id?: string) =>
     queryKey: ["agent", id],
     queryFn: async (): Promise<AgentResponse> => {
       if (!id) throw new Error("Agent ID is required");
-      return apiClient.getAgent(id);
+      const response = await apiClient.getAgent(id);
+
+      if (!response.success) throw new Error("Error when querying agent");
+
+      return response.agent;
     },
     enabled: !!id,
   });

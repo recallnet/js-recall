@@ -1,65 +1,52 @@
 "use client";
 
 import { Share1Icon } from "@radix-ui/react-icons";
-import Link from "next/link";
+import Image from "next/image";
 import React from "react";
 
-import { Button } from "@recallnet/ui2/components/button";
+import { Badge } from "@recallnet/ui2/components/badge";
+import { Card } from "@recallnet/ui2/components/card";
 import { IconButton } from "@recallnet/ui2/components/icon-button";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import { StringList } from "@/components/string-list";
-import { CompetitionResponse, CompetitionStatus } from "@/types";
+import { Competition } from "@/types";
 
 interface CompetitionCardProps {
-  competition: CompetitionResponse;
-  showActions?: boolean;
+  competition: Competition;
+  className?: string;
 }
 
 export const CompetitionCard: React.FC<CompetitionCardProps> = ({
   competition,
-  showActions = true,
+  className,
 }) => {
   return (
-    <div className="bg-card p-4">
-      <div className="flex items-start justify-between">
-        <StringList strings={competition.type} />
-        {showActions && (
+    <Card
+      cropSize={35}
+      corner="bottom-left"
+      className={cn("bg-card flex flex-col p-4", className)}
+    >
+      <div className="flex h-1/2 flex-col">
+        <div className="flex items-start justify-between">
+          <div className="flex gap-2">
+            <Badge>{competition.type}</Badge>
+          </div>
           <IconButton
             Icon={Share1Icon}
             aria-label="Share"
             iconClassName="text-primary"
           />
-        )}
-      </div>
-      <Link href={`/competitions/${competition.id}`} className="block">
-        <h1 className="mb-6 mt-4 text-xl font-bold hover:underline">
-          {competition.name}
-        </h1>
-      </Link>
-      <div className="flex items-end justify-between">
-        <div>
-          <span className="text-secondary-foreground mb-1 text-xs font-semibold uppercase">
-            REWARDS
-          </span>
-          {competition.rewards.length > 0 && (
-            <div className="flex gap-2">
-              {competition.rewards.map((reward, index) => (
-                <span key={index} className="text-primary text-xs">
-                  {reward.amount} {reward.name}
-                </span>
-              ))}
-            </div>
-          )}
         </div>
-        {showActions && competition.status === CompetitionStatus.Pending && (
-          <div className="flex gap-2">
-            <Button size="sm">JOIN</Button>
-            <Button variant="secondary" size="sm">
-              VOTE
-            </Button>
-          </div>
-        )}
+        <h1 className="mb-6 mt-4 text-4xl font-bold">{competition.name}</h1>
       </div>
-    </div>
+      <div className="relative hidden h-1/2 justify-end sm:flex">
+        <Image
+          src={competition.imageUrl || "/competition-placeholder.png"}
+          alt={competition.name}
+          fill
+          className="object-contain"
+        />
+      </div>
+    </Card>
   );
 };

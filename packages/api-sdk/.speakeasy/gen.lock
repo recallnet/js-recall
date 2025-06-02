@@ -1,12 +1,12 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: 29fde560b0c2951e46fea9a53977aec3
+  docChecksum: bc03ad9425430bc3b892b4641adeb6d9
   docVersion: 1.0.0
   speakeasyVersion: 1.555.0
   generationVersion: 2.618.0
-  releaseVersion: 0.1.6
-  configChecksum: ceceb979da5e8092b73c527676adc1bd
+  releaseVersion: 0.1.7
+  configChecksum: 3594ac7470acfe9a164a520d2554bab3
 features:
   typescript:
     additionalDependencies: 0.1.0
@@ -46,6 +46,7 @@ generatedFiles:
   - docs/models/operations/agentmetadata.md
   - docs/models/operations/availablechains.md
   - docs/models/operations/balance.md
+  - docs/models/operations/bestplacement.md
   - docs/models/operations/chains.md
   - docs/models/operations/deleteapiadminagentsagentidrequest.md
   - docs/models/operations/deleteapiadminagentsagentidresponse.md
@@ -77,6 +78,9 @@ generatedFiles:
   - docs/models/operations/getapiadminsearchuser.md
   - docs/models/operations/getapiadminusersresponse.md
   - docs/models/operations/getapiadminusersuser.md
+  - docs/models/operations/getapiagentagentidmetadata.md
+  - docs/models/operations/getapiagentagentidrequest.md
+  - docs/models/operations/getapiagentagentidresponse.md
   - docs/models/operations/getapiagentbalanceschain.md
   - docs/models/operations/getapiagentbalancesresponse.md
   - docs/models/operations/getapiagentportfoliochain.md
@@ -233,6 +237,7 @@ generatedFiles:
   - docs/models/operations/snapshot.md
   - docs/models/operations/sort.md
   - docs/models/operations/source.md
+  - docs/models/operations/stats.md
   - docs/models/operations/symbols.md
   - docs/models/operations/token.md
   - docs/models/operations/trade.md
@@ -266,6 +271,7 @@ generatedFiles:
   - src/funcs/adminPostApiAdminCompetitionStart.ts
   - src/funcs/adminPostApiAdminSetup.ts
   - src/funcs/adminPostApiAdminUsers.ts
+  - src/funcs/agentGetApiAgentAgentId.ts
   - src/funcs/agentGetApiAgentBalances.ts
   - src/funcs/agentGetApiAgentPortfolio.ts
   - src/funcs/agentGetApiAgentProfile.ts
@@ -345,6 +351,7 @@ generatedFiles:
   - src/mcp-server/tools/adminPostApiAdminCompetitionStart.ts
   - src/mcp-server/tools/adminPostApiAdminSetup.ts
   - src/mcp-server/tools/adminPostApiAdminUsers.ts
+  - src/mcp-server/tools/agentGetApiAgentAgentId.ts
   - src/mcp-server/tools/agentGetApiAgentBalances.ts
   - src/mcp-server/tools/agentGetApiAgentPortfolio.ts
   - src/mcp-server/tools/agentGetApiAgentProfile.ts
@@ -389,6 +396,7 @@ generatedFiles:
   - src/models/operations/getapiadminreportsperformance.ts
   - src/models/operations/getapiadminsearch.ts
   - src/models/operations/getapiadminusers.ts
+  - src/models/operations/getapiagentagentid.ts
   - src/models/operations/getapiagentbalances.ts
   - src/models/operations/getapiagentportfolio.ts
   - src/models/operations/getapiagentprofile.ts
@@ -885,5 +893,13 @@ examples:
       responses:
         "200":
           application/json: {}
+  get_/api/agent/{agentId}:
+    speakeasy-default-get-/api/agent/{agent-id}:
+      parameters:
+        path:
+          agentId: "<id>"
+      responses:
+        "200":
+          application/json: {"name": "Trading Bot Alpha", "imageUrl": "https://example.com/bot-avatar.jpg", "metadata": {}}
 examplesVersion: 1.0.2
 generatedTests: {}

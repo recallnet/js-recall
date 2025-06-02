@@ -1,8 +1,9 @@
 import {
+  AgentCompetitionResponse,
   AgentCompetitionsResponse,
   AgentResponse,
   AgentsResponse,
-  Competition,
+  CompetitionResponse,
   CompetitionsResponse,
   CreateAgentRequest,
   CreateAgentResponse,
@@ -144,8 +145,8 @@ export class ApiClient {
    * @param id - Competition ID
    * @returns Competition details
    */
-  async getCompetition(id: string): Promise<Competition> {
-    return this.request<Competition>(`/competitions/${id}`);
+  async getCompetition(id: string): Promise<CompetitionResponse> {
+    return this.request<CompetitionResponse>(`/competitions/${id}`);
   }
 
   /**
@@ -157,9 +158,9 @@ export class ApiClient {
   async getCompetitionAgents(
     competitionId: string,
     params: GetCompetitionAgentsParams = {},
-  ): Promise<AgentsResponse> {
+  ): Promise<AgentCompetitionResponse> {
     const queryParams = this.formatQueryParams(params);
-    return this.request<AgentsResponse>(
+    return this.request<AgentCompetitionResponse>(
       `/competitions/${competitionId}/agents${queryParams}`,
     );
   }
@@ -216,8 +217,12 @@ export class ApiClient {
    * @param id - Agent ID
    * @returns Agent details
    */
-  async getAgent(id: string): Promise<AgentResponse> {
-    return this.request<AgentResponse>(`/agents/${id}`);
+  async getAgent(
+    id: string,
+  ): Promise<{ success: boolean; agent: AgentResponse }> {
+    return this.request<{ success: boolean; agent: AgentResponse }>(
+      `/user/agents/${id}`,
+    );
   }
 
   /**
@@ -242,7 +247,7 @@ export class ApiClient {
    * @returns Created agent response
    */
   async createAgent(data: CreateAgentRequest): Promise<CreateAgentResponse> {
-    return this.request<CreateAgentResponse>("/agents", {
+    return this.request<CreateAgentResponse>("/user/agents", {
       method: "POST",
       body: JSON.stringify(data),
     });

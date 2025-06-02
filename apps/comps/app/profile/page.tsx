@@ -2,16 +2,7 @@
 
 import React from "react";
 
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@recallnet/ui2/components/breadcrumb";
-
-import { BackButton } from "@/components/back-button";
+import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import ProfileSkeleton from "@/components/profile-skeleton";
 import { UpdateProfile } from "@/components/update-profile";
 import UserAgentsSection from "@/components/user-agents";
@@ -37,20 +28,12 @@ export default function ProfilePage() {
 
   return (
     <>
-      <div className="mb-5 flex items-center gap-4">
-        <BackButton />
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/competitions">HOME</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>USER PROFILE</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
+      <BreadcrumbNav
+        items={[
+          { label: "HOME", href: "/competitions" },
+          { label: "USER PROFILE" },
+        ]}
+      />
       {!profile?.name ? (
         <UpdateProfile onSubmit={handleUpdateProfile} />
       ) : (

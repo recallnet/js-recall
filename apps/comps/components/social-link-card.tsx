@@ -4,7 +4,7 @@ import { ArrowRightIcon } from "@radix-ui/react-icons";
 import Image from "next/image";
 import React from "react";
 
-import { Card } from "@recallnet/ui2/components/shadcn/card";
+import { Card } from "@recallnet/ui2/components/card";
 
 import { SocialLink } from "@/data/social";
 

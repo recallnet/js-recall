@@ -7,12 +7,12 @@ import { FaAward, FaTrophy } from "react-icons/fa";
 
 import { displayAddress } from "@recallnet/address-utils/display";
 import { Button } from "@recallnet/ui2/components/button";
+import Card from "@recallnet/ui2/components/card";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@recallnet/ui2/components/collapsible";
-import Card from "@recallnet/ui2/components/shadcn/card";
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import { cn } from "@recallnet/ui2/lib/utils";
 
