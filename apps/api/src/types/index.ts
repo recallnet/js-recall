@@ -511,6 +511,15 @@ export type CompetitionAgentParams = z.infer<
   typeof CompetitionAgentParamsSchema
 >;
 
+export const AgentCompetitionsParamsSchema = PagingParamsSchema.extend({
+  status: z.optional(CompetitionStatusSchema),
+  claimed: z.optional(z.boolean()),
+});
+
+export type AgentCompetitionsParams = z.infer<
+  typeof AgentCompetitionsParamsSchema
+>;
+
 /**
  * Update user profile parameters schema
  */
