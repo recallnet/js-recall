@@ -119,6 +119,10 @@ export type Transaction = {
    * Symbol of the destination token
    */
   toTokenSymbol?: string | undefined;
+  /**
+   * Symbol of the source token
+   */
+  fromTokenSymbol?: string | undefined;
 };
 
 /**
@@ -238,6 +242,7 @@ export const Transaction$inboundSchema: z.ZodType<
   fromSpecificChain: z.string().optional(),
   toSpecificChain: z.string().optional(),
   toTokenSymbol: z.string().optional(),
+  fromTokenSymbol: z.string().optional(),
 });
 
 /** @internal */
@@ -260,6 +265,7 @@ export type Transaction$Outbound = {
   fromSpecificChain?: string | undefined;
   toSpecificChain?: string | undefined;
   toTokenSymbol?: string | undefined;
+  fromTokenSymbol?: string | undefined;
 };
 
 /** @internal */
@@ -289,6 +295,7 @@ export const Transaction$outboundSchema: z.ZodType<
   fromSpecificChain: z.string().optional(),
   toSpecificChain: z.string().optional(),
   toTokenSymbol: z.string().optional(),
+  fromTokenSymbol: z.string().optional(),
 });
 
 /**

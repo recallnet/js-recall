@@ -41,6 +41,17 @@ export type GetApiCompetitionsStatus = ClosedEnum<
 >;
 
 /**
+ * Competition type
+ */
+export const GetApiCompetitionsType = {
+  Trading: "trading",
+} as const;
+/**
+ * Competition type
+ */
+export type GetApiCompetitionsType = ClosedEnum<typeof GetApiCompetitionsType>;
+
+/**
  * The type of cross-chain trading allowed in this competition
  */
 export const GetApiCompetitionsCrossChainTradingType = {
@@ -80,6 +91,10 @@ export type GetApiCompetitionsCompetition = {
    * Competition status (always PENDING)
    */
   status?: GetApiCompetitionsStatus | undefined;
+  /**
+   * Competition type
+   */
+  type?: GetApiCompetitionsType | undefined;
   /**
    * The type of cross-chain trading allowed in this competition
    */
@@ -190,6 +205,27 @@ export namespace GetApiCompetitionsStatus$ {
 }
 
 /** @internal */
+export const GetApiCompetitionsType$inboundSchema: z.ZodNativeEnum<
+  typeof GetApiCompetitionsType
+> = z.nativeEnum(GetApiCompetitionsType);
+
+/** @internal */
+export const GetApiCompetitionsType$outboundSchema: z.ZodNativeEnum<
+  typeof GetApiCompetitionsType
+> = GetApiCompetitionsType$inboundSchema;
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace GetApiCompetitionsType$ {
+  /** @deprecated use `GetApiCompetitionsType$inboundSchema` instead. */
+  export const inboundSchema = GetApiCompetitionsType$inboundSchema;
+  /** @deprecated use `GetApiCompetitionsType$outboundSchema` instead. */
+  export const outboundSchema = GetApiCompetitionsType$outboundSchema;
+}
+
+/** @internal */
 export const GetApiCompetitionsCrossChainTradingType$inboundSchema: z.ZodNativeEnum<
   typeof GetApiCompetitionsCrossChainTradingType
 > = z.nativeEnum(GetApiCompetitionsCrossChainTradingType);
@@ -224,6 +260,7 @@ export const GetApiCompetitionsCompetition$inboundSchema: z.ZodType<
   externalUrl: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
   status: GetApiCompetitionsStatus$inboundSchema.optional(),
+  type: GetApiCompetitionsType$inboundSchema.optional(),
   crossChainTradingType:
     GetApiCompetitionsCrossChainTradingType$inboundSchema.optional(),
   createdAt: z
@@ -246,6 +283,7 @@ export type GetApiCompetitionsCompetition$Outbound = {
   externalUrl?: string | null | undefined;
   imageUrl?: string | null | undefined;
   status?: string | undefined;
+  type?: string | undefined;
   crossChainTradingType?: string | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
@@ -263,6 +301,7 @@ export const GetApiCompetitionsCompetition$outboundSchema: z.ZodType<
   externalUrl: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
   status: GetApiCompetitionsStatus$outboundSchema.optional(),
+  type: GetApiCompetitionsType$outboundSchema.optional(),
   crossChainTradingType:
     GetApiCompetitionsCrossChainTradingType$outboundSchema.optional(),
   createdAt: z
