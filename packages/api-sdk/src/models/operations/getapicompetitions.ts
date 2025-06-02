@@ -110,6 +110,28 @@ export type GetApiCompetitionsCompetition = {
 };
 
 /**
+ * Pagination metadata
+ */
+export type GetApiCompetitionsMetadata = {
+  /**
+   * Total number of competitions matching the filter
+   */
+  total?: number | undefined;
+  /**
+   * Maximum number of results returned
+   */
+  limit?: number | undefined;
+  /**
+   * Number of results skipped
+   */
+  offset?: number | undefined;
+  /**
+   * Whether there are more results available
+   */
+  hasMore?: boolean | undefined;
+};
+
+/**
  * Competitions retrieved successfully
  */
 export type GetApiCompetitionsResponse = {
@@ -118,6 +140,10 @@ export type GetApiCompetitionsResponse = {
    */
   success?: boolean | undefined;
   competitions?: Array<GetApiCompetitionsCompetition> | undefined;
+  /**
+   * Pagination metadata
+   */
+  metadata?: GetApiCompetitionsMetadata | undefined;
 };
 
 /** @internal */
@@ -348,6 +374,69 @@ export function getApiCompetitionsCompetitionFromJSON(
 }
 
 /** @internal */
+export const GetApiCompetitionsMetadata$inboundSchema: z.ZodType<
+  GetApiCompetitionsMetadata,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  total: z.number().int().optional(),
+  limit: z.number().int().optional(),
+  offset: z.number().int().optional(),
+  hasMore: z.boolean().optional(),
+});
+
+/** @internal */
+export type GetApiCompetitionsMetadata$Outbound = {
+  total?: number | undefined;
+  limit?: number | undefined;
+  offset?: number | undefined;
+  hasMore?: boolean | undefined;
+};
+
+/** @internal */
+export const GetApiCompetitionsMetadata$outboundSchema: z.ZodType<
+  GetApiCompetitionsMetadata$Outbound,
+  z.ZodTypeDef,
+  GetApiCompetitionsMetadata
+> = z.object({
+  total: z.number().int().optional(),
+  limit: z.number().int().optional(),
+  offset: z.number().int().optional(),
+  hasMore: z.boolean().optional(),
+});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace GetApiCompetitionsMetadata$ {
+  /** @deprecated use `GetApiCompetitionsMetadata$inboundSchema` instead. */
+  export const inboundSchema = GetApiCompetitionsMetadata$inboundSchema;
+  /** @deprecated use `GetApiCompetitionsMetadata$outboundSchema` instead. */
+  export const outboundSchema = GetApiCompetitionsMetadata$outboundSchema;
+  /** @deprecated use `GetApiCompetitionsMetadata$Outbound` instead. */
+  export type Outbound = GetApiCompetitionsMetadata$Outbound;
+}
+
+export function getApiCompetitionsMetadataToJSON(
+  getApiCompetitionsMetadata: GetApiCompetitionsMetadata,
+): string {
+  return JSON.stringify(
+    GetApiCompetitionsMetadata$outboundSchema.parse(getApiCompetitionsMetadata),
+  );
+}
+
+export function getApiCompetitionsMetadataFromJSON(
+  jsonString: string,
+): SafeParseResult<GetApiCompetitionsMetadata, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) => GetApiCompetitionsMetadata$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetApiCompetitionsMetadata' from JSON`,
+  );
+}
+
+/** @internal */
 export const GetApiCompetitionsResponse$inboundSchema: z.ZodType<
   GetApiCompetitionsResponse,
   z.ZodTypeDef,
@@ -357,12 +446,14 @@ export const GetApiCompetitionsResponse$inboundSchema: z.ZodType<
   competitions: z
     .array(z.lazy(() => GetApiCompetitionsCompetition$inboundSchema))
     .optional(),
+  metadata: z.lazy(() => GetApiCompetitionsMetadata$inboundSchema).optional(),
 });
 
 /** @internal */
 export type GetApiCompetitionsResponse$Outbound = {
   success?: boolean | undefined;
   competitions?: Array<GetApiCompetitionsCompetition$Outbound> | undefined;
+  metadata?: GetApiCompetitionsMetadata$Outbound | undefined;
 };
 
 /** @internal */
@@ -375,6 +466,7 @@ export const GetApiCompetitionsResponse$outboundSchema: z.ZodType<
   competitions: z
     .array(z.lazy(() => GetApiCompetitionsCompetition$outboundSchema))
     .optional(),
+  metadata: z.lazy(() => GetApiCompetitionsMetadata$outboundSchema).optional(),
 });
 
 /**
