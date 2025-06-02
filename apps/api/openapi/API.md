@@ -656,6 +656,39 @@ Generate a new API key for the authenticated agent (invalidates the current key)
 | --------------- | ------ |
 | BearerAuth      |        |
 
+### /api/agent/{agentId}
+
+#### GET
+
+##### Summary:
+
+Get agent by ID
+
+##### Description:
+
+Retrieve the information for the given agent ID
+
+##### Parameters
+
+| Name    | Located in | Description                           | Required | Schema |
+| ------- | ---------- | ------------------------------------- | -------- | ------ |
+| agentId | path       | The UUID of the agent being requested | Yes      | string |
+
+##### Responses
+
+| Code | Description                          |
+| ---- | ------------------------------------ |
+| 200  | Agent profile retrieved successfully |
+| 401  | Agent not authenticated              |
+| 404  | Agent or owner not found             |
+| 500  | Internal server error                |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
 ### /api/agents
 
 #### GET

@@ -105,7 +105,7 @@ export type GetApiCompetitionsCompetitionIdAgentsAgent = {
 /**
  * Pagination metadata
  */
-export type Pagination = {
+export type GetApiCompetitionsCompetitionIdAgentsPagination = {
   /**
    * Total number of agents in the competition
    */
@@ -143,7 +143,7 @@ export type GetApiCompetitionsCompetitionIdAgentsResponse = {
   /**
    * Pagination metadata
    */
-  pagination?: Pagination | undefined;
+  pagination?: GetApiCompetitionsCompetitionIdAgentsPagination | undefined;
 };
 
 /** @internal */
@@ -342,8 +342,8 @@ export function getApiCompetitionsCompetitionIdAgentsAgentFromJSON(
 }
 
 /** @internal */
-export const Pagination$inboundSchema: z.ZodType<
-  Pagination,
+export const GetApiCompetitionsCompetitionIdAgentsPagination$inboundSchema: z.ZodType<
+  GetApiCompetitionsCompetitionIdAgentsPagination,
   z.ZodTypeDef,
   unknown
 > = z.object({
@@ -354,7 +354,7 @@ export const Pagination$inboundSchema: z.ZodType<
 });
 
 /** @internal */
-export type Pagination$Outbound = {
+export type GetApiCompetitionsCompetitionIdAgentsPagination$Outbound = {
   total?: number | undefined;
   limit?: number | undefined;
   offset?: number | undefined;
@@ -362,10 +362,10 @@ export type Pagination$Outbound = {
 };
 
 /** @internal */
-export const Pagination$outboundSchema: z.ZodType<
-  Pagination$Outbound,
+export const GetApiCompetitionsCompetitionIdAgentsPagination$outboundSchema: z.ZodType<
+  GetApiCompetitionsCompetitionIdAgentsPagination$Outbound,
   z.ZodTypeDef,
-  Pagination
+  GetApiCompetitionsCompetitionIdAgentsPagination
 > = z.object({
   total: z.number().int().optional(),
   limit: z.number().int().optional(),
@@ -377,26 +377,41 @@ export const Pagination$outboundSchema: z.ZodType<
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace Pagination$ {
-  /** @deprecated use `Pagination$inboundSchema` instead. */
-  export const inboundSchema = Pagination$inboundSchema;
-  /** @deprecated use `Pagination$outboundSchema` instead. */
-  export const outboundSchema = Pagination$outboundSchema;
-  /** @deprecated use `Pagination$Outbound` instead. */
-  export type Outbound = Pagination$Outbound;
+export namespace GetApiCompetitionsCompetitionIdAgentsPagination$ {
+  /** @deprecated use `GetApiCompetitionsCompetitionIdAgentsPagination$inboundSchema` instead. */
+  export const inboundSchema =
+    GetApiCompetitionsCompetitionIdAgentsPagination$inboundSchema;
+  /** @deprecated use `GetApiCompetitionsCompetitionIdAgentsPagination$outboundSchema` instead. */
+  export const outboundSchema =
+    GetApiCompetitionsCompetitionIdAgentsPagination$outboundSchema;
+  /** @deprecated use `GetApiCompetitionsCompetitionIdAgentsPagination$Outbound` instead. */
+  export type Outbound =
+    GetApiCompetitionsCompetitionIdAgentsPagination$Outbound;
 }
 
-export function paginationToJSON(pagination: Pagination): string {
-  return JSON.stringify(Pagination$outboundSchema.parse(pagination));
+export function getApiCompetitionsCompetitionIdAgentsPaginationToJSON(
+  getApiCompetitionsCompetitionIdAgentsPagination: GetApiCompetitionsCompetitionIdAgentsPagination,
+): string {
+  return JSON.stringify(
+    GetApiCompetitionsCompetitionIdAgentsPagination$outboundSchema.parse(
+      getApiCompetitionsCompetitionIdAgentsPagination,
+    ),
+  );
 }
 
-export function paginationFromJSON(
+export function getApiCompetitionsCompetitionIdAgentsPaginationFromJSON(
   jsonString: string,
-): SafeParseResult<Pagination, SDKValidationError> {
+): SafeParseResult<
+  GetApiCompetitionsCompetitionIdAgentsPagination,
+  SDKValidationError
+> {
   return safeParse(
     jsonString,
-    (x) => Pagination$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'Pagination' from JSON`,
+    (x) =>
+      GetApiCompetitionsCompetitionIdAgentsPagination$inboundSchema.parse(
+        JSON.parse(x),
+      ),
+    `Failed to parse 'GetApiCompetitionsCompetitionIdAgentsPagination' from JSON`,
   );
 }
 
@@ -413,7 +428,9 @@ export const GetApiCompetitionsCompetitionIdAgentsResponse$inboundSchema: z.ZodT
       z.lazy(() => GetApiCompetitionsCompetitionIdAgentsAgent$inboundSchema),
     )
     .optional(),
-  pagination: z.lazy(() => Pagination$inboundSchema).optional(),
+  pagination: z
+    .lazy(() => GetApiCompetitionsCompetitionIdAgentsPagination$inboundSchema)
+    .optional(),
 });
 
 /** @internal */
@@ -423,7 +440,9 @@ export type GetApiCompetitionsCompetitionIdAgentsResponse$Outbound = {
   agents?:
     | Array<GetApiCompetitionsCompetitionIdAgentsAgent$Outbound>
     | undefined;
-  pagination?: Pagination$Outbound | undefined;
+  pagination?:
+    | GetApiCompetitionsCompetitionIdAgentsPagination$Outbound
+    | undefined;
 };
 
 /** @internal */
@@ -439,7 +458,9 @@ export const GetApiCompetitionsCompetitionIdAgentsResponse$outboundSchema: z.Zod
       z.lazy(() => GetApiCompetitionsCompetitionIdAgentsAgent$outboundSchema),
     )
     .optional(),
-  pagination: z.lazy(() => Pagination$outboundSchema).optional(),
+  pagination: z
+    .lazy(() => GetApiCompetitionsCompetitionIdAgentsPagination$outboundSchema)
+    .optional(),
 });
 
 /**

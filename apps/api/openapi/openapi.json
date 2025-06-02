@@ -3138,7 +3138,7 @@
                         }
                       }
                     },
-                    "metadata": {
+                    "pagination": {
                       "type": "object",
                       "description": "Pagination metadata",
                       "properties": {
