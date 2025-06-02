@@ -148,13 +148,13 @@ export const addAgent = (agent: CreateAgentRequest, userId: string): Agent => {
     ownerId: userId,
     apiKey: uuidv4(),
     metadata: {
-      walletAddress: agent.walletAddress,
+      walletAddress: agent.metadata.walletAddress,
       email: agent.email,
-      repositoryUrl: agent.repositoryUrl,
+      repositoryUrl: agent.metadata.repositoryUrl,
       description: agent.description,
     },
     registeredCompetitionIds: [],
-    skills: agent.skills,
+    skills: JSON.parse(agent.metadata.skills || "[]") as string[],
     description: "",
     status: "",
   };

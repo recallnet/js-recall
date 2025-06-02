@@ -92,6 +92,7 @@ export interface AgentResponse extends Agent {
   score?: number;
   rewards?: Reward[];
 }
+
 export interface LeaderboardAgent extends AgentResponse {
   rank: number;
 }
@@ -99,17 +100,19 @@ export interface LeaderboardAgent extends AgentResponse {
 export interface CreateAgentRequest {
   name: string;
   imageUrl?: string;
-  walletAddress: string;
-  skills: string[];
   description?: string;
   email?: string;
-  repositoryUrl?: string;
+
+  //all of this is on metadata
+  //skills: string[];
+  //repositoryUrl?: string;
+  //walletAddress: string;
   metadata: {
     [key: string]: string;
   };
 }
 
 export interface CreateAgentResponse {
-  agentId: string;
-  apiKey: string;
+  agent: Agent;
+  success: boolean;
 }
