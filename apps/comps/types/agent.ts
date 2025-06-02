@@ -95,6 +95,6 @@ export interface CreateAgentRequest {
 }
 
 export interface CreateAgentResponse {
-  agent: Agent;
+  agent: Agent & { apiKey: string };
   success: boolean;
 }

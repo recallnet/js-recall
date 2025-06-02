@@ -6,12 +6,12 @@ import React from "react";
 import { Button } from "@recallnet/ui2/components/button";
 
 import { socialLinks } from "@/data/social";
-import { AgentResponse } from "@/types";
+import { Agent } from "@/types/agent";
 
 import { AgentCard } from "./user-agents";
 
 interface AgentCreatedProps {
-  agent: AgentResponse;
+  agent: Agent;
   apiKey: string;
 }
 
