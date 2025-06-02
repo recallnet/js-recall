@@ -23,19 +23,22 @@ export default function CreateAgentPage() {
     try {
       const result = await createAgent.mutateAsync({
         name: data.name,
-        imageUrl: data.imageUrl || "",
-        walletAddress: data.walletAddress,
-        skills: data.skills,
-        description: data.description || "",
+        imageUrl: data.imageUrl,
         email: data.email || "",
-        repositoryUrl: data.repositoryUrl || "",
+        description: data.description || "",
         metadata: {
+          walletAddress: data.walletAddress,
+          skills: JSON.stringify(data.skills),
+          repositoryUrl: data.repositoryUrl || "",
           x: data.x || "",
           telegram: data.telegram || "",
         },
       });
-      setCreatedAgentId(result.agentId);
-      setApiKey(result.apiKey);
+
+      if (!result.success) throw new Error("Error when creating agent");
+
+      setCreatedAgentId(result.agent.id);
+      setApiKey(result.agent.apiKey);
     } catch {
       // Error handled by react-query or can show toast here
     }

@@ -131,6 +131,20 @@ describe("Trading API", () => {
     expect((buyTradeResponse as TradeResponse).transaction).toBeDefined();
     expect((buyTradeResponse as TradeResponse).transaction.id).toBeDefined();
 
+    // Verify token symbols are included
+    expect(
+      (buyTradeResponse as TradeResponse).transaction.fromTokenSymbol,
+    ).toBeDefined();
+    expect(
+      (buyTradeResponse as TradeResponse).transaction.toTokenSymbol,
+    ).toBeDefined();
+    console.log(
+      `Buy trade fromTokenSymbol: "${(buyTradeResponse as TradeResponse).transaction.fromTokenSymbol}"`,
+    );
+    console.log(
+      `Buy trade toTokenSymbol: "${(buyTradeResponse as TradeResponse).transaction.toTokenSymbol}"`,
+    );
+
     // Verify chain field is included in transaction response
     if ((buyTradeResponse as TradeResponse).transaction.fromChain) {
       expect((buyTradeResponse as TradeResponse).transaction.fromChain).toBe(
@@ -936,7 +950,7 @@ describe("Trading API", () => {
     expect(buyTradeResponse.success).toBe(true);
     expect((buyTradeResponse as TradeResponse).transaction).toBeDefined();
 
-    // Verify chain fields in the transaction
+    // Verify chain field is included in the transaction
     expect((buyTradeResponse as TradeResponse).transaction.fromChain).toBe(
       BlockchainType.SVM,
     );
@@ -1584,6 +1598,7 @@ describe("Trading API", () => {
       toAmount: smallValue,
       price: smallValue, // make sure exchange rate value can be very small
       toTokenSymbol: "NA",
+      fromTokenSymbol: "USDC",
       success: true,
       agentId: agent.id,
       tradeAmountUsd: smallValue,
@@ -1814,6 +1829,14 @@ describe("Trading API", () => {
       console.log(
         `Trade execution toTokenSymbol: "${transaction.toTokenSymbol}"`,
       );
+
+      // Verify fromTokenSymbol is included
+      expect(transaction.fromTokenSymbol).toBeDefined();
+      expect(typeof transaction.fromTokenSymbol).toBe("string");
+      expect(transaction.fromTokenSymbol.length).toBeGreaterThan(0);
+      console.log(
+        `Trade execution fromTokenSymbol: "${transaction.fromTokenSymbol}"`,
+      );
     }
 
     // Wait for trade to be processed
@@ -1866,6 +1889,13 @@ describe("Trading API", () => {
         console.log(
           `Trade history toTokenSymbol: "${lastTrade.toTokenSymbol}"`,
         );
+
+        expect(lastTrade.fromTokenSymbol).toBeDefined();
+        expect(typeof lastTrade.fromTokenSymbol).toBe("string");
+        expect(lastTrade.fromTokenSymbol.length).toBeGreaterThan(0);
+        console.log(
+          `Trade history fromTokenSymbol: "${lastTrade.fromTokenSymbol}"`,
+        );
       }
     }
 
@@ -1906,6 +1936,11 @@ describe("Trading API", () => {
         (t) => t.token === solTokenAddress,
       );
 
+      // Find USDC token in portfolio (the fromToken from our trade)
+      const usdcTokenInPortfolio = portfolio.tokens.find(
+        (t) => t.token === usdcTokenAddress,
+      );
+
       if (solTokenInPortfolio) {
         // Verify the toTokenSymbol from quote matches what's in the portfolio
         expect(quote.symbols.toTokenSymbol).toBe(solTokenInPortfolio.symbol);
@@ -1914,7 +1949,21 @@ describe("Trading API", () => {
         expect(tradeTransaction.toTokenSymbol).toBe(solTokenInPortfolio.symbol);
 
         console.log(
-          `Symbol consistency verified: "${quote.symbols.toTokenSymbol}" across all responses`,
+          `toTokenSymbol consistency verified: "${quote.symbols.toTokenSymbol}" across all responses`,
+        );
+      }
+
+      if (usdcTokenInPortfolio) {
+        // Verify the fromTokenSymbol from quote matches what's in the portfolio
+        expect(quote.symbols.fromTokenSymbol).toBe(usdcTokenInPortfolio.symbol);
+
+        // Verify the fromTokenSymbol from trade execution matches what's in the portfolio
+        expect(tradeTransaction.fromTokenSymbol).toBe(
+          usdcTokenInPortfolio.symbol,
+        );
+
+        console.log(
+          `fromTokenSymbol consistency verified: "${quote.symbols.fromTokenSymbol}" across all responses`,
         );
       }
     }
@@ -1994,6 +2043,20 @@ describe("Trading API", () => {
     expect(buyTradeResponse.success).toBe(true);
     expect((buyTradeResponse as TradeResponse).transaction).toBeDefined();
     expect((buyTradeResponse as TradeResponse).transaction.id).toBeDefined();
+
+    // Verify token symbols are included
+    expect(
+      (buyTradeResponse as TradeResponse).transaction.fromTokenSymbol,
+    ).toBeDefined();
+    expect(
+      (buyTradeResponse as TradeResponse).transaction.toTokenSymbol,
+    ).toBeDefined();
+    console.log(
+      `Buy trade fromTokenSymbol: "${(buyTradeResponse as TradeResponse).transaction.fromTokenSymbol}"`,
+    );
+    console.log(
+      `Buy trade toTokenSymbol: "${(buyTradeResponse as TradeResponse).transaction.toTokenSymbol}"`,
+    );
 
     // Verify chain field is included in transaction response
     if ((buyTradeResponse as TradeResponse).transaction.fromChain) {

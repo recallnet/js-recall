@@ -40,6 +40,10 @@ export type Trade = {
    */
   toTokenSymbol?: string | undefined;
   /**
+   * Symbol of the source token
+   */
+  fromTokenSymbol?: string | undefined;
+  /**
    * Whether the trade was successfully completed
    */
   success?: boolean | undefined;
@@ -95,6 +99,7 @@ export const Trade$inboundSchema: z.ZodType<Trade, z.ZodTypeDef, unknown> =
     price: z.number().optional(),
     tradeAmountUsd: z.number().optional(),
     toTokenSymbol: z.string().optional(),
+    fromTokenSymbol: z.string().optional(),
     success: z.boolean().optional(),
     error: z.nullable(z.string()).optional(),
     reason: z.string().optional(),
@@ -121,6 +126,7 @@ export type Trade$Outbound = {
   price?: number | undefined;
   tradeAmountUsd?: number | undefined;
   toTokenSymbol?: string | undefined;
+  fromTokenSymbol?: string | undefined;
   success?: boolean | undefined;
   error?: string | null | undefined;
   reason?: string | undefined;
@@ -147,6 +153,7 @@ export const Trade$outboundSchema: z.ZodType<
   price: z.number().optional(),
   tradeAmountUsd: z.number().optional(),
   toTokenSymbol: z.string().optional(),
+  fromTokenSymbol: z.string().optional(),
   success: z.boolean().optional(),
   error: z.nullable(z.string()).optional(),
   reason: z.string().optional(),

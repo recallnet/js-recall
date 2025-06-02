@@ -1,17 +1,17 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: f1af7514191f1dfd30e1d5a66c8046fd
+  docChecksum: 29fde560b0c2951e46fea9a53977aec3
   docVersion: 1.0.0
-  speakeasyVersion: 1.554.1
-  generationVersion: 2.616.1
-  releaseVersion: 0.1.5
-  configChecksum: 2fa758fcd333e49d5c885b66938ac112
+  speakeasyVersion: 1.555.0
+  generationVersion: 2.618.0
+  releaseVersion: 0.1.6
+  configChecksum: ceceb979da5e8092b73c527676adc1bd
 features:
   typescript:
     additionalDependencies: 0.1.0
     constsAndDefaults: 0.1.11
-    core: 3.21.9
+    core: 3.21.10
     defaultEnabledRetries: 0.1.0
     devContainers: 2.90.0
     enumUnions: 0.1.0
@@ -101,12 +101,14 @@ generatedFiles:
   - docs/models/operations/getapicompetitionscompetitionidrequest.md
   - docs/models/operations/getapicompetitionscompetitionidresponse.md
   - docs/models/operations/getapicompetitionscompetitionidstatus.md
+  - docs/models/operations/getapicompetitionscompetitionidtype.md
   - docs/models/operations/getapicompetitionscrosschaintradingtype.md
   - docs/models/operations/getapicompetitionsleaderboardcompetition.md
   - docs/models/operations/getapicompetitionsleaderboardleaderboard.md
   - docs/models/operations/getapicompetitionsleaderboardrequest.md
   - docs/models/operations/getapicompetitionsleaderboardresponse.md
   - docs/models/operations/getapicompetitionsleaderboardstatus.md
+  - docs/models/operations/getapicompetitionsleaderboardtype.md
   - docs/models/operations/getapicompetitionsrequest.md
   - docs/models/operations/getapicompetitionsresponse.md
   - docs/models/operations/getapicompetitionsrulesresponse.md
@@ -115,10 +117,13 @@ generatedFiles:
   - docs/models/operations/getapicompetitionsstatuscrosschaintradingtype.md
   - docs/models/operations/getapicompetitionsstatusresponse.md
   - docs/models/operations/getapicompetitionsstatusstatus.md
+  - docs/models/operations/getapicompetitionsstatustype.md
+  - docs/models/operations/getapicompetitionstype.md
   - docs/models/operations/getapicompetitionsupcomingcompetition.md
   - docs/models/operations/getapicompetitionsupcomingcrosschaintradingtype.md
   - docs/models/operations/getapicompetitionsupcomingresponse.md
   - docs/models/operations/getapicompetitionsupcomingstatus.md
+  - docs/models/operations/getapicompetitionsupcomingtype.md
   - docs/models/operations/getapihealthdetailedresponse.md
   - docs/models/operations/getapihealthresponse.md
   - docs/models/operations/getapipricechainresponse.md

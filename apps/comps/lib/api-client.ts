@@ -217,8 +217,12 @@ export class ApiClient {
    * @param id - Agent ID
    * @returns Agent details
    */
-  async getAgent(id: string): Promise<AgentResponse> {
-    return this.request<AgentResponse>(`/agents/${id}`);
+  async getAgent(
+    id: string,
+  ): Promise<{ success: boolean; agent: AgentResponse }> {
+    return this.request<{ success: boolean; agent: AgentResponse }>(
+      `/user/agents/${id}`,
+    );
   }
 
   /**
@@ -243,7 +247,7 @@ export class ApiClient {
    * @returns Created agent response
    */
   async createAgent(data: CreateAgentRequest): Promise<CreateAgentResponse> {
-    return this.request<CreateAgentResponse>("/agents", {
+    return this.request<CreateAgentResponse>("/user/agents", {
       method: "POST",
       body: JSON.stringify(data),
     });
