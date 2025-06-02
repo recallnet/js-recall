@@ -3,7 +3,7 @@
 import { ArrowRightIcon, ReloadIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
 
-import { Button } from "@recallnet/ui2/components/shadcn/button";
+import { Button } from "@recallnet/ui2/components/button";
 
 import { AchievementCard } from "@/components/achievement-card";
 

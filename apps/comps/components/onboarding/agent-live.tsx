@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@recallnet/ui2/components/shadcn/button";
+import { Button } from "@recallnet/ui2/components/button";
 
 import { AchievementCard } from "@/components/achievement-card";
 

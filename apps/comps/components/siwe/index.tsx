@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import React from "react";
 import { FaArrowRightFromBracket } from "react-icons/fa6";
 
-import { Button } from "@recallnet/ui2/components/shadcn/button";
+import { Button } from "@recallnet/ui2/components/button";
 import {
   DropdownMenu,
   DropdownMenuContent,

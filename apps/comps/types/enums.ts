@@ -1,7 +1,7 @@
 export enum CompetitionStatus {
   Pending = "pending",
   Active = "active",
-  Ended = "ended",
+  Completed = "completed",
 }
 
 export enum LeaderboardTypes {
@@ -10,4 +10,8 @@ export enum LeaderboardTypes {
   ANALYSIS = "SENTIMENT-ANALYSIS",
 }
 
-// Note: AgentStatus is no longer an enum but rather an interface/type
+export enum CrossChainTradingType {
+  DisallowAll = "disallowAll",
+  DisallowXParent = "disallowXParent",
+  Allow = "allow",
+}

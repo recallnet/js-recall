@@ -1,8 +1,9 @@
 import {
+  AgentCompetitionResponse,
   AgentCompetitionsResponse,
   AgentResponse,
   AgentsResponse,
-  Competition,
+  CompetitionResponse,
   CompetitionsResponse,
   CreateAgentRequest,
   CreateAgentResponse,
@@ -144,8 +145,8 @@ export class ApiClient {
    * @param id - Competition ID
    * @returns Competition details
    */
-  async getCompetition(id: string): Promise<Competition> {
-    return this.request<Competition>(`/competitions/${id}`);
+  async getCompetition(id: string): Promise<CompetitionResponse> {
+    return this.request<CompetitionResponse>(`/competitions/${id}`);
   }
 
   /**
@@ -157,9 +158,9 @@ export class ApiClient {
   async getCompetitionAgents(
     competitionId: string,
     params: GetCompetitionAgentsParams = {},
-  ): Promise<AgentsResponse> {
+  ): Promise<AgentCompetitionResponse> {
     const queryParams = this.formatQueryParams(params);
-    return this.request<AgentsResponse>(
+    return this.request<AgentCompetitionResponse>(
       `/competitions/${competitionId}/agents${queryParams}`,
     );
   }

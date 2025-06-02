@@ -1,3 +1,10 @@
+export interface PaginationResponse {
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+}
+
 // GET /competitions query parameters
 export interface GetCompetitionsParams {
   status?: string;

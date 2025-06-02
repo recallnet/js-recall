@@ -2,17 +2,8 @@
 
 import React, { useState } from "react";
 
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@recallnet/ui2/components/breadcrumb";
-
 import { AgentCreated } from "@/components/agent-created";
-import { BackButton } from "@/components/back-button";
+import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { CreateAgent, FormData } from "@/components/create-agent";
 import { useAgent } from "@/hooks/useAgent";
 import { useCreateAgent } from "@/hooks/useCreateAgent";
@@ -55,24 +46,14 @@ export default function CreateAgentPage() {
 
   return (
     <>
-      <div className="mb-5 flex items-center gap-4">
-        <BackButton />
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/competitions">HOME</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/profile">USER PROFILE</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>ADD AGENT</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
+      <BreadcrumbNav
+        items={[
+          { label: "HOME", href: "/competitions" },
+          { label: "USER PROFILE", href: "/profile" },
+          { label: "ADD AGENT" },
+        ]}
+      />
+
       {createdAgentId && apiKey ? (
         isAgentLoading ? (
           <div className="py-12 text-center text-white">Loading agent...</div>

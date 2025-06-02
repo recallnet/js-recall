@@ -3,10 +3,10 @@
 import React from "react";
 
 import { CompetitionCard } from "@/components/competition-card";
-import { CompetitionResponse } from "@/types";
+import { Competition } from "@/types";
 
 interface StartingSoonSectionProps {
-  competitions: CompetitionResponse[];
+  competitions: Competition[];
 }
 
 export const StartingSoonSection: React.FC<StartingSoonSectionProps> = ({
@@ -17,11 +17,7 @@ export const StartingSoonSection: React.FC<StartingSoonSectionProps> = ({
       <h2 className="text-primary mb-6 text-[28px] font-bold">Starting Soon</h2>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {competitions.map((competition) => (
-          <CompetitionCard
-            key={competition.id}
-            competition={competition}
-            showActions={true}
-          />
+          <CompetitionCard key={competition.id} competition={competition} />
         ))}
       </div>
     </section>
