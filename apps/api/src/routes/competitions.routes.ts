@@ -541,6 +541,21 @@ export function configureCompetitionsRoutes(
    *                       format: date-time
    *                       nullable: true
    *                       description: Competition end date (null for pending/active competitions)
+   *                     stats:
+   *                       type: object
+   *                       properties:
+   *                         totalTrades:
+   *                           type: number
+   *                           description: Total number of trades
+   *                         totalAgents:
+   *                           type: number
+   *                           description: Total number of agents
+   *                         totalVolume:
+   *                           type: number
+   *                           description: Total volume of trades in USD
+   *                         uniqueTokens:
+   *                           type: number
+   *                           description: Total number of unique tokens traded
    *                     createdAt:
    *                       type: string
    *                       format: date-time

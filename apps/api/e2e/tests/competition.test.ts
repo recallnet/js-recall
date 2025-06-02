@@ -2,6 +2,7 @@ import axios from "axios";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
 import { agents } from "@/database/schema/core/defs.js";
 import {
@@ -16,6 +17,7 @@ import {
   ErrorResponse,
   LeaderboardResponse,
   StartCompetitionResponse,
+  TradeResponse,
   UpcomingCompetitionsResponse,
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
@@ -1420,6 +1422,73 @@ describe("Competition API", () => {
       expect(agentData.portfolioValue).toBeGreaterThan(0);
       expect(agentData.score).toBe(agentData.portfolioValue); // Score should equal portfolio value
     }
+  });
+
+  test("should calculate stats in competition details", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register multiple agents
+    const { agent: agent1, client: client1 } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "PnL Test Agent 1",
+      });
+
+    const { agent: agent2, client: client2 } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "PnL Test Agent 2",
+      });
+
+    // Start a competition with both agents
+    const competitionName = `PnL Test Competition ${Date.now()}`;
+    const startResult = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent1.id, agent2.id],
+    );
+    const competitionId = startResult.competition.id;
+
+    // Make trades with both clients
+    const trades1 = await client1.executeTrade({
+      fromToken: config.specificChainTokens.eth.eth,
+      toToken: config.specificChainTokens.eth.usdc,
+      amount: "0.001",
+      reason: "Test trade 1",
+    });
+    expect(trades1.success).toBe(true);
+    const trades2 = await client1.executeTrade({
+      fromToken: config.specificChainTokens.eth.eth,
+      toToken: config.specificChainTokens.eth.usdt,
+      amount: "0.001",
+      reason: "Test trade 2",
+    });
+    expect(trades2.success).toBe(true);
+    const trades3 = await client2.executeTrade({
+      fromToken: config.specificChainTokens.eth.eth,
+      toToken: config.specificChainTokens.eth.usdt,
+      amount: "0.001",
+      reason: "Test trade 3",
+    });
+    expect(trades3.success).toBe(true);
+
+    // Get the total trade values
+    const allTrades = [trades1, trades2, trades3] as TradeResponse[];
+    const totalVolume = allTrades.reduce(
+      (acc, trade) => acc + (trade.transaction.tradeAmountUsd ?? 0),
+      0,
+    );
+    const { competition } = (await client1.getCompetition(
+      competitionId,
+    )) as CompetitionDetailResponse;
+    const stats = competition.stats;
+    expect(stats).toBeDefined();
+    expect(stats?.totalTrades).toBe(3);
+    expect(stats?.totalAgents).toBe(2);
+    expect(stats?.totalVolume).toBe(totalVolume);
+    expect(stats?.uniqueTokens).toBe(3);
   });
 
   test("should handle edge cases for PnL calculations", async () => {

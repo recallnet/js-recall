@@ -304,6 +304,12 @@ export interface Competition {
   createdAt: string;
   updatedAt: string;
   agentIds?: string[];
+  stats?: {
+    totalTrades: number;
+    totalAgents: number;
+    totalVolume: number;
+    uniqueTokens: number;
+  };
 }
 
 // Leaderboard entry
