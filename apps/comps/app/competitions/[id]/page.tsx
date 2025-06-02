@@ -91,24 +91,29 @@ export default function CompetitionPage({
         ]}
         className="mb-10"
       />
-      <div className="flex w-full flex-col gap-10 md:flex-row">
+      <div className="flex w-full flex-col gap-5 md:flex-row">
         <CompetitionCard competition={competition} className="md:w-1/2" />
-        <CompetitionInfo competition={competition} className="md:w-1/2" />
-      </div>
-
-      <div className="mt-10 flex w-full flex-row justify-center gap-4">
-        <Button variant="outline" className="w-1/2 justify-between" size="lg">
-          <span className="font-semibold">Join Discord</span>{" "}
-          <ArrowUpRight className="ml-2" size={18} />
-        </Button>
-        <Button
-          variant="ghost"
-          className="w-1/2 justify-between uppercase"
-          size="lg"
-        >
-          <span className="font-semibold">Vote on an Agent</span>{" "}
-          <ChevronRight className="ml-2" size={18} />
-        </Button>
+        <div className="md:w-1/2">
+          <CompetitionInfo competition={competition} />
+          <div className="mt-5 flex w-full flex-row justify-center gap-4">
+            <Button
+              variant="outline"
+              className="w-1/2 justify-between"
+              size="lg"
+            >
+              <span className="font-semibold">Join Discord</span>{" "}
+              <ArrowUpRight className="ml-2" size={18} />
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-1/2 justify-between uppercase"
+              size="lg"
+            >
+              <span className="font-semibold">Vote on an Agent</span>{" "}
+              <ChevronRight className="ml-2" size={18} />
+            </Button>
+          </div>
+        </div>
       </div>
 
       {agentsError || !agentsData ? (
