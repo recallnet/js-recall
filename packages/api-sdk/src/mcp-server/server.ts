@@ -64,7 +64,7 @@ export function createMCPServer(deps: {
 }) {
   const server = new McpServer({
     name: "ApiSDK",
-    version: "0.1.6",
+    version: "0.1.7",
   });
 
   const client = new ApiSDKCore({
