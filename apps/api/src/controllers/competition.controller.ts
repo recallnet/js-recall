@@ -531,11 +531,25 @@ export function makeCompetitionController(services: ServiceRegistry) {
         if (!competition) {
           throw new ApiError(404, "Competition not found");
         }
+        const trades =
+          await services.tradeSimulator.getCompetitionTrades(competitionId);
+        const stats = {
+          totalTrades: trades.length,
+          totalAgents: new Set(trades.map((trade) => trade.agentId)).size,
+          totalVolume: trades.reduce(
+            (acc, trade) => acc + trade.tradeAmountUsd,
+            0,
+          ),
+          uniqueTokens: new Set([
+            ...trades.map((trade) => trade.fromToken),
+            ...trades.map((trade) => trade.toToken),
+          ]).size,
+        };
 
         // Return the competition details
         res.status(200).json({
           success: true,
-          competition: competition,
+          competition: { ...competition, stats },
         });
       } catch (error) {
         next(error);
