@@ -332,6 +332,7 @@ export class TradeSimulator {
         toAmount,
         price: toAmount / fromAmount, // Exchange rate
         toTokenSymbol: toPrice.symbol,
+        fromTokenSymbol: fromPrice.symbol,
         tradeAmountUsd: fromValueUSD, // Store the USD value of the trade
         success: true,
         agentId,

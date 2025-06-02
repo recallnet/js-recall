@@ -2469,6 +2469,11 @@
                             "description": "Symbol of the destination token",
                             "example": "USDC"
                           },
+                          "fromTokenSymbol": {
+                            "type": "string",
+                            "description": "Symbol of the source token",
+                            "example": "SOL"
+                          },
                           "success": {
                             "type": "boolean",
                             "description": "Whether the trade was successfully completed"
@@ -2996,6 +3001,13 @@
                             ],
                             "description": "Competition status (always PENDING)"
                           },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "trading"
+                            ],
+                            "description": "Competition type"
+                          },
                           "crossChainTradingType": {
                             "type": "string",
                             "enum": [
@@ -3112,6 +3124,13 @@
                             "ended"
                           ],
                           "description": "Competition status"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "trading"
+                          ],
+                          "description": "Competition type"
                         },
                         "createdAt": {
                           "type": "string",
@@ -3289,6 +3308,13 @@
                             "ended"
                           ],
                           "description": "Competition status"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "trading"
+                          ],
+                          "description": "Competition type"
                         },
                         "crossChainTradingType": {
                           "type": "string",
@@ -3486,6 +3512,13 @@
                             ],
                             "description": "Competition status (always pending)"
                           },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "trading"
+                            ],
+                            "description": "Competition type"
+                          },
                           "crossChainTradingType": {
                             "type": "string",
                             "enum": [
@@ -3591,6 +3624,13 @@
                             "completed"
                           ],
                           "description": "Competition status"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "trading"
+                          ],
+                          "description": "Competition type"
                         },
                         "crossChainTradingType": {
                           "type": "string",
@@ -4523,6 +4563,10 @@
                         "toTokenSymbol": {
                           "type": "string",
                           "description": "Symbol of the destination token"
+                        },
+                        "fromTokenSymbol": {
+                          "type": "string",
+                          "description": "Symbol of the source token"
                         }
                       }
                     }

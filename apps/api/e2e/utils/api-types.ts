@@ -250,6 +250,7 @@ export interface TradeTransaction {
   fromSpecificChain: string | null;
   toSpecificChain: string | null;
   toTokenSymbol: string;
+  fromTokenSymbol: string;
 }
 
 // Trade history response

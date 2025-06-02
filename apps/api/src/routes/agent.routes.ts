@@ -363,6 +363,10 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *                         type: string
    *                         description: Symbol of the destination token
    *                         example: "USDC"
+   *                       fromTokenSymbol:
+   *                         type: string
+   *                         description: Symbol of the source token
+   *                         example: "SOL"
    *                       success:
    *                         type: boolean
    *                         description: Whether the trade was successfully completed

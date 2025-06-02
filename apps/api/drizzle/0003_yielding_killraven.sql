@@ -1,0 +1,1 @@
+ALTER TABLE "trading_comps"."trades" ADD COLUMN "from_token_symbol" varchar(20) NOT NULL;

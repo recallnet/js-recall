@@ -140,6 +140,9 @@ export function configureTradeRoutes(
    *                     toTokenSymbol:
    *                       type: string
    *                       description: Symbol of the destination token
+   *                     fromTokenSymbol:
+   *                       type: string
+   *                       description: Symbol of the source token
    *       400:
    *         description: Invalid input parameters
    *       401:
