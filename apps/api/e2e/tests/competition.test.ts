@@ -514,13 +514,13 @@ describe("Competition API", () => {
     expect(Array.isArray(upcomingResponse.competitions)).toBe(true);
     expect(upcomingResponse.competitions.length).toBe(3);
 
-    // Verify metadata fields
-    expect(upcomingResponse.metadata).toBeDefined();
-    expect(upcomingResponse.metadata.total).toBe(3);
-    expect(upcomingResponse.metadata.limit).toBe(10); // default limit
-    expect(upcomingResponse.metadata.offset).toBe(0); // default offset
-    expect(typeof upcomingResponse.metadata.hasMore).toBe("boolean");
-    expect(upcomingResponse.metadata.hasMore).toBe(false); // 3 competitions < 10 limit
+    // Validate pagination metadata
+    expect(upcomingResponse.pagination).toBeDefined();
+    expect(upcomingResponse.pagination.total).toBe(3); // total competitions created
+    expect(upcomingResponse.pagination.limit).toBe(10); // default limit
+    expect(upcomingResponse.pagination.offset).toBe(0); // default offset
+    expect(typeof upcomingResponse.pagination.hasMore).toBe("boolean");
+    expect(upcomingResponse.pagination.hasMore).toBe(false); // 3 competitions < 10 limit
 
     // Verify each competition has all expected fields
     upcomingResponse.competitions.forEach((comp) => {
@@ -687,10 +687,10 @@ describe("Competition API", () => {
 
     expect(firstPageResponse.success).toBe(true);
     expect(firstPageResponse.competitions.length).toBe(3);
-    expect(firstPageResponse.metadata.total).toBe(5);
-    expect(firstPageResponse.metadata.limit).toBe(3);
-    expect(firstPageResponse.metadata.offset).toBe(0);
-    expect(firstPageResponse.metadata.hasMore).toBe(true); // 0 + 3 < 5
+    expect(firstPageResponse.pagination.total).toBe(5);
+    expect(firstPageResponse.pagination.limit).toBe(3);
+    expect(firstPageResponse.pagination.offset).toBe(0);
+    expect(firstPageResponse.pagination.hasMore).toBe(true); // 0 + 3 < 5
 
     // Test second page with limit 3, offset 3
     const secondPageResponse = (await agentClient.getCompetitions(
@@ -702,10 +702,10 @@ describe("Competition API", () => {
 
     expect(secondPageResponse.success).toBe(true);
     expect(secondPageResponse.competitions.length).toBe(2); // remaining competitions
-    expect(secondPageResponse.metadata.total).toBe(5);
-    expect(secondPageResponse.metadata.limit).toBe(3);
-    expect(secondPageResponse.metadata.offset).toBe(3);
-    expect(secondPageResponse.metadata.hasMore).toBe(false); // 3 + 3 > 5
+    expect(secondPageResponse.pagination.total).toBe(5);
+    expect(secondPageResponse.pagination.limit).toBe(3);
+    expect(secondPageResponse.pagination.offset).toBe(3);
+    expect(secondPageResponse.pagination.hasMore).toBe(false); // 3 + 3 > 5
 
     // Test beyond last page
     const emptyPageResponse = (await agentClient.getCompetitions(
@@ -717,10 +717,10 @@ describe("Competition API", () => {
 
     expect(emptyPageResponse.success).toBe(true);
     expect(emptyPageResponse.competitions.length).toBe(0);
-    expect(emptyPageResponse.metadata.total).toBe(5);
-    expect(emptyPageResponse.metadata.limit).toBe(3);
-    expect(emptyPageResponse.metadata.offset).toBe(6);
-    expect(emptyPageResponse.metadata.hasMore).toBe(false); // 6 + 3 > 5
+    expect(emptyPageResponse.pagination.total).toBe(5);
+    expect(emptyPageResponse.pagination.limit).toBe(3);
+    expect(emptyPageResponse.pagination.offset).toBe(6);
+    expect(emptyPageResponse.pagination.hasMore).toBe(false); // 6 + 3 > 5
   });
 
   test("competitions include externalUrl and imageUrl fields", async () => {

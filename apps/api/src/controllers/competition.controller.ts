@@ -474,7 +474,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         res.status(200).json({
           success: true,
           competitions: competitions,
-          metadata: {
+          pagination: {
             total: total,
             limit: pagingParams.limit,
             offset: pagingParams.offset,

@@ -1,12 +1,12 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: 7515839916393a27d9c1b354f5609fa6
+  docChecksum: bc03ad9425430bc3b892b4641adeb6d9
   docVersion: 1.0.0
   speakeasyVersion: 1.555.0
   generationVersion: 2.618.0
-  releaseVersion: 0.1.8
-  configChecksum: c9d45d0ca17a90913b20a257507c253a
+  releaseVersion: 0.1.7
+  configChecksum: 3594ac7470acfe9a164a520d2554bab3
 features:
   typescript:
     additionalDependencies: 0.1.0
@@ -113,7 +113,6 @@ generatedFiles:
   - docs/models/operations/getapicompetitionsleaderboardresponse.md
   - docs/models/operations/getapicompetitionsleaderboardstatus.md
   - docs/models/operations/getapicompetitionsleaderboardtype.md
-  - docs/models/operations/getapicompetitionsmetadata.md
   - docs/models/operations/getapicompetitionsrequest.md
   - docs/models/operations/getapicompetitionsresponse.md
   - docs/models/operations/getapicompetitionsrulesresponse.md
@@ -689,7 +688,7 @@ examples:
     speakeasy-default-get-/api/competitions:
       responses:
         "200":
-          application/json: {"metadata": {"total": 25, "limit": 10, "offset": 0, "hasMore": true}}
+          application/json: {}
   get_/api/competitions/leaderboard:
     speakeasy-default-get-/api/competitions/leaderboard:
       responses:

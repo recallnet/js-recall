@@ -372,7 +372,7 @@ export interface EndCompetitionResponse extends ApiResponse {
 export interface UpcomingCompetitionsResponse extends ApiResponse {
   success: true;
   competitions: Competition[];
-  metadata: {
+  pagination: {
     total: number;
     limit: number;
     offset: number;

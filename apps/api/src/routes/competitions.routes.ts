@@ -101,7 +101,7 @@ export function configureCompetitionsRoutes(
    *                         type: string
    *                         format: date-time
    *                         description: When the competition was last updated
-   *                 metadata:
+   *                 pagination:
    *                   type: object
    *                   description: Pagination metadata
    *                   properties:
