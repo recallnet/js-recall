@@ -17,16 +17,15 @@ import { Input } from "@recallnet/ui2/components/shadcn/input";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { ProfileResponse, UpdateProfileRequest } from "@/types/profile";
+import { asOptionalStringWithoutEmpty } from "@/utils";
 
 import { ProfilePicture } from "./ProfilePicture";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
-  website: z
-    .string()
-    .url({ message: "Must be a valid URL" })
-    .optional()
-    .or(z.literal("").transform(() => undefined)),
+  website: asOptionalStringWithoutEmpty(
+    z.string().url({ message: "Must be a valid URL" }),
+  ),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -62,7 +61,12 @@ export default function UserInfoSection({
 
   const handleSave: SubmitHandler<FormData> = async (data) => {
     try {
-      await onSave(data);
+      const transformedData: UpdateProfileRequest = {
+        email: data.email,
+        metadata: data.website ? { website: data.website } : undefined,
+      };
+
+      await onSave(transformedData);
       setEditField(null);
     } catch (error) {
       console.error(`Failed to save:`, error);

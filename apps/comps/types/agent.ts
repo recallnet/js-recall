@@ -1,22 +1,10 @@
 import { PaginationResponse } from "./api";
-import {
-  AgentCompetitionMetadata,
-  Competition,
-  CompetitionResponse,
-  Reward,
-} from "./competition";
+import { AgentCompetitionMetadata, Competition } from "./competition";
 
 export interface BestPlacement {
   competitionId: string;
   position: number;
   participants: number;
-}
-
-export interface AgentStats {
-  eloAvg: number;
-  bestPlacement?: BestPlacement;
-  completedCompetitions: number;
-  provenSkills: string[];
 }
 
 export interface Trophy {
@@ -29,22 +17,12 @@ export interface Trophy {
 export interface Agent {
   id: string;
   name: string;
+  walletAddress: string;
   ownerId?: string;
-  //must be removed if not returned by api
-  userId?: string;
   imageUrl: string;
   description: string;
   status: string;
   metadata?: AgentCompetitionMetadata;
-  stats?: AgentStats;
-  trophies?: Trophy[];
-  skills: string[];
-  hasUnclaimedRewards?: boolean;
-  score?: number;
-  rewards?: Reward[];
-  apiKey: string;
-  registeredCompetitionIds: string[];
-
   deactivationReason?: string;
   deactivationDate?: string;
 }
@@ -58,12 +36,12 @@ export interface AgentsMetadata {
 export interface UserAgentsResponse {
   success: boolean;
   userId: string;
-  agents: AgentResponse[];
+  agents: Agent[];
 }
 
 export interface AgentsResponse {
   metadata: AgentsMetadata;
-  agents: AgentResponse[];
+  agents: Agent[];
 }
 
 export interface AgentCompetitionsResponse {
@@ -80,7 +58,7 @@ export interface LeaderboardStats {
 export interface LeaderboardResponse {
   metadata: AgentsMetadata;
   stats: LeaderboardStats;
-  agents: LeaderboardAgent[];
+  agents: Agent[];
 }
 
 export interface AgentCompetitionResponse {
@@ -106,34 +84,13 @@ export interface AgentCompetition {
   change24hPercent: number;
 }
 
-export interface AgentResponse extends Agent {
-  id: string;
-  name: string;
-  imageUrl: string;
-  stats?: AgentStats;
-  trophies?: Trophy[];
-  skills: string[];
-  hasUnclaimedRewards?: boolean;
-  score?: number;
-  rewards?: Reward[];
-}
-
-export interface LeaderboardAgent extends AgentResponse {
-  rank: number;
-}
-
 export interface CreateAgentRequest {
   name: string;
   imageUrl?: string;
   description?: string;
   email?: string;
-
-  //all of this is on metadata
-  //skills: string[];
-  //repositoryUrl?: string;
-  //walletAddress: string;
   metadata: {
-    [key: string]: string;
+    [key: string]: string | undefined;
   };
 }
 
