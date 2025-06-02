@@ -14,6 +14,7 @@ import {
   PagingParamsSchema,
   SpecificChain,
   UpdateAgentProfileSchema,
+  UuidSchema,
 } from "@/types/index.js";
 
 /**
@@ -122,6 +123,12 @@ export function makeAgentController(services: ServiceRegistry) {
       }
     },
 
+    /**
+     * Get agents with sorting, filtering, and pagination
+     * @param req Express request with querystring containing filter, sort, and paging
+     * @param res Express response
+     * @param next Express next function
+     */
     async getAgents(
       req: AuthenticatedRequest,
       res: Response,
@@ -138,7 +145,7 @@ export function makeAgentController(services: ServiceRegistry) {
         });
         const totalCount = await services.agentManager.countAgents(filter);
 
-        // Return the competitions
+        // Return the agents
         res.status(200).json({
           success: true,
           metadata: {
@@ -149,6 +156,46 @@ export function makeAgentController(services: ServiceRegistry) {
           agents: agents.map(
             services.agentManager.sanitizeAgent.bind(services.agentManager),
           ),
+        });
+      } catch (err) {
+        next(err);
+      }
+    },
+
+    /**
+     * Get an agent with the given agent id
+     * @param req Express request with agent id in url path
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getAgent(
+      req: AuthenticatedRequest,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { success, data: agentId } = UuidSchema.safeParse(
+          req.params.agentId,
+        );
+        if (!success) {
+          throw new ApiError(400, "Invalid Agent ID");
+        }
+
+        // Get the agent using the service
+        const agent = await services.agentManager.getAgent(agentId);
+
+        if (!agent) {
+          throw new ApiError(404, "Agent not found");
+        }
+
+        const sanitizedAgent = services.agentManager.sanitizeAgent(agent);
+        const computedAgent =
+          services.agentManager.attachAgentMetrics(sanitizedAgent);
+
+        // Return the agent
+        res.status(200).json({
+          success: true,
+          agent: computedAgent,
         });
       } catch (err) {
         next(err);

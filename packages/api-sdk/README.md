@@ -340,6 +340,7 @@ run();
 - [getApiAgentPortfolio](docs/sdks/agent/README.md#getapiagentportfolio) - Get agent portfolio
 - [getApiAgentTrades](docs/sdks/agent/README.md#getapiagenttrades) - Get agent trade history
 - [postApiAgentResetApiKey](docs/sdks/agent/README.md#postapiagentresetapikey) - Reset agent API key
+- [getApiAgentAgentId](docs/sdks/agent/README.md#getapiagentagentid) - Get agent by ID
 - [getApiAgents](docs/sdks/agent/README.md#getapiagents) - Get list of agents
 
 ### [auth](docs/sdks/auth/README.md)
@@ -418,6 +419,7 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`adminPostApiAdminCompetitionStart`](docs/sdks/admin/README.md#postapiadmincompetitionstart) - Start a competition
 - [`adminPostApiAdminSetup`](docs/sdks/admin/README.md#postapiadminsetup) - Set up initial admin account
 - [`adminPostApiAdminUsers`](docs/sdks/admin/README.md#postapiadminusers) - Register a new user
+- [`agentGetApiAgentAgentId`](docs/sdks/agent/README.md#getapiagentagentid) - Get agent by ID
 - [`agentGetApiAgentBalances`](docs/sdks/agent/README.md#getapiagentbalances) - Get agent balances
 - [`agentGetApiAgentPortfolio`](docs/sdks/agent/README.md#getapiagentportfolio) - Get agent portfolio
 - [`agentGetApiAgentProfile`](docs/sdks/agent/README.md#getapiagentprofile) - Get authenticated agent profile
