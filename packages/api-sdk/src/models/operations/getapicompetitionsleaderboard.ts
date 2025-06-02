@@ -30,6 +30,19 @@ export type GetApiCompetitionsLeaderboardStatus = ClosedEnum<
   typeof GetApiCompetitionsLeaderboardStatus
 >;
 
+/**
+ * Competition type
+ */
+export const GetApiCompetitionsLeaderboardType = {
+  Trading: "trading",
+} as const;
+/**
+ * Competition type
+ */
+export type GetApiCompetitionsLeaderboardType = ClosedEnum<
+  typeof GetApiCompetitionsLeaderboardType
+>;
+
 export type GetApiCompetitionsLeaderboardCompetition = {
   /**
    * Competition ID
@@ -63,6 +76,10 @@ export type GetApiCompetitionsLeaderboardCompetition = {
    * Competition status
    */
   status?: GetApiCompetitionsLeaderboardStatus | undefined;
+  /**
+   * Competition type
+   */
+  type?: GetApiCompetitionsLeaderboardType | undefined;
   /**
    * When the competition was created
    */
@@ -229,6 +246,28 @@ export namespace GetApiCompetitionsLeaderboardStatus$ {
 }
 
 /** @internal */
+export const GetApiCompetitionsLeaderboardType$inboundSchema: z.ZodNativeEnum<
+  typeof GetApiCompetitionsLeaderboardType
+> = z.nativeEnum(GetApiCompetitionsLeaderboardType);
+
+/** @internal */
+export const GetApiCompetitionsLeaderboardType$outboundSchema: z.ZodNativeEnum<
+  typeof GetApiCompetitionsLeaderboardType
+> = GetApiCompetitionsLeaderboardType$inboundSchema;
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace GetApiCompetitionsLeaderboardType$ {
+  /** @deprecated use `GetApiCompetitionsLeaderboardType$inboundSchema` instead. */
+  export const inboundSchema = GetApiCompetitionsLeaderboardType$inboundSchema;
+  /** @deprecated use `GetApiCompetitionsLeaderboardType$outboundSchema` instead. */
+  export const outboundSchema =
+    GetApiCompetitionsLeaderboardType$outboundSchema;
+}
+
+/** @internal */
 export const GetApiCompetitionsLeaderboardCompetition$inboundSchema: z.ZodType<
   GetApiCompetitionsLeaderboardCompetition,
   z.ZodTypeDef,
@@ -253,6 +292,7 @@ export const GetApiCompetitionsLeaderboardCompetition$inboundSchema: z.ZodType<
     )
     .optional(),
   status: GetApiCompetitionsLeaderboardStatus$inboundSchema.optional(),
+  type: GetApiCompetitionsLeaderboardType$inboundSchema.optional(),
   createdAt: z
     .string()
     .datetime({ offset: true })
@@ -275,6 +315,7 @@ export type GetApiCompetitionsLeaderboardCompetition$Outbound = {
   startDate?: string | undefined;
   endDate?: string | null | undefined;
   status?: string | undefined;
+  type?: string | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
 };
@@ -296,6 +337,7 @@ export const GetApiCompetitionsLeaderboardCompetition$outboundSchema: z.ZodType<
     .optional(),
   endDate: z.nullable(z.date().transform((v) => v.toISOString())).optional(),
   status: GetApiCompetitionsLeaderboardStatus$outboundSchema.optional(),
+  type: GetApiCompetitionsLeaderboardType$outboundSchema.optional(),
   createdAt: z
     .date()
     .transform((v) => v.toISOString())

@@ -109,6 +109,7 @@ export const trades = tradingComps.table(
       mode: "number",
     }).notNull(),
     toTokenSymbol: varchar("to_token_symbol", { length: 20 }).notNull(),
+    fromTokenSymbol: varchar("from_token_symbol", { length: 20 }).notNull(),
     success: boolean().notNull(),
     error: text(),
     reason: text().notNull(),
