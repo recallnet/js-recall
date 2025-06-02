@@ -522,6 +522,16 @@ describe("Competition API", () => {
     expect(typeof upcomingResponse.metadata.hasMore).toBe("boolean");
     expect(upcomingResponse.metadata.hasMore).toBe(false); // 3 competitions < 10 limit
 
+    // Verify each competition has all expected fields
+    upcomingResponse.competitions.forEach((comp) => {
+      expect(comp.id).toBeDefined();
+      expect(comp.name).toBeDefined();
+      expect(comp.status).toBe("pending");
+      expect(comp.crossChainTradingType).toBeDefined();
+      expect(comp.createdAt).toBeDefined();
+      expect(comp.updatedAt).toBeDefined();
+    });
+
     // Register an agent
     const { agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
