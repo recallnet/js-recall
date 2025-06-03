@@ -27,6 +27,7 @@ import {
   CrossChainTradingType,
   DetailedHealthCheckResponse,
   ErrorResponse,
+  GlobalLeaderboardResponse,
   HealthCheckResponse,
   LeaderboardResponse,
   LoginResponse,
@@ -724,7 +725,9 @@ export class ApiClient {
   /**
    * Get competition leaderboard
    */
-  async getLeaderboard(): Promise<LeaderboardResponse | ErrorResponse> {
+  async getCompetitionLeaderboard(): Promise<
+    LeaderboardResponse | ErrorResponse
+  > {
     try {
       const response = await this.axiosInstance.get(
         "/api/competitions/leaderboard",
@@ -732,6 +735,28 @@ export class ApiClient {
       return response.data as LeaderboardResponse;
     } catch (error) {
       return this.handleApiError(error, "get leaderboard");
+    }
+  }
+
+  /**
+   * Get the global leaderboard (global rankings)
+   */
+  async getGlobalLeaderboard(params?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<GlobalLeaderboardResponse | ErrorResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.limit !== undefined)
+        queryParams.append("limit", params.limit.toString());
+      if (params?.offset !== undefined)
+        queryParams.append("offset", params.offset.toString());
+      const response = await this.axiosInstance.get(
+        `/api/leaderboard?${queryParams.toString()}`,
+      );
+      return response.data as GlobalLeaderboardResponse;
+    } catch (error) {
+      return this.handleApiError(error, "get leaderboards");
     }
   }
 

@@ -4,6 +4,7 @@ import { AuthService } from "@/services/auth.service.js";
 import { BalanceManager } from "@/services/balance-manager.service.js";
 import { CompetitionManager } from "@/services/competition-manager.service.js";
 import { ConfigurationService } from "@/services/configuration.service.js";
+import { LeaderboardService } from "@/services/leaderboard.service.js";
 import { PortfolioSnapshotter } from "@/services/portfolio-snapshotter.service.js";
 import { PriceTracker } from "@/services/price-tracker.service.js";
 import { SchedulerService } from "@/services/scheduler.service.js";
@@ -29,6 +30,7 @@ class ServiceRegistry {
   private _scheduler: SchedulerService;
   private _configurationService: ConfigurationService;
   private _portfolioSnapshotter: PortfolioSnapshotter;
+  private _leaderboardService: LeaderboardService;
 
   constructor() {
     // Initialize services in dependency order
@@ -60,6 +62,8 @@ class ServiceRegistry {
       this._agentManager,
       this._configurationService,
     );
+
+    this._leaderboardService = new LeaderboardService();
 
     // Initialize and start the scheduler
     this._scheduler = new SchedulerService(
@@ -96,6 +100,10 @@ class ServiceRegistry {
 
   get competitionManager(): CompetitionManager {
     return this._competitionManager;
+  }
+
+  get leaderboardService(): LeaderboardService {
+    return this._leaderboardService;
   }
 
   get portfolioSnapshotter(): PortfolioSnapshotter {
@@ -136,6 +144,7 @@ export {
   ConfigurationService,
   ServiceRegistry,
   PortfolioSnapshotter,
+  LeaderboardService,
 };
 
 export default ServiceRegistry;

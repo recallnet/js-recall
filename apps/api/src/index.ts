@@ -8,6 +8,7 @@ import { makeAuthController } from "@/controllers/auth.controller.js";
 import { makeCompetitionController } from "@/controllers/competition.controller.js";
 import { makeDocsController } from "@/controllers/docs.controller.js";
 import { makeHealthController } from "@/controllers/health.controller.js";
+import { makeLeaderboardController } from "@/controllers/leaderboard.controller.js";
 import { makePriceController } from "@/controllers/price.controller.js";
 import { makeTradeController } from "@/controllers/trade.controller.js";
 import { makeUserController } from "@/controllers/user.controller.js";
@@ -29,6 +30,8 @@ import { configurePriceRoutes } from "@/routes/price.routes.js";
 import { configureTradeRoutes } from "@/routes/trade.routes.js";
 import { configureUserRoutes } from "@/routes/user.routes.js";
 import { ServiceRegistry } from "@/services/index.js";
+
+import { configureLeaderboardRoutes } from "./routes/leaderboard.routes.js";
 
 // Create Express app
 const app = express();
@@ -79,21 +82,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Define different types of protected routes with their authentication needs
-const agentApiKeyRoutes = [
-  "/api/agent",
-  "/api/trade", // Trade operations use agent API keys
-];
+const agentApiKeyRoutes = ["/api/agent", "/api/trade", "/api/price"];
 
-const userSessionRoutes = [
-  "/api/user", // User operations use SIWE sessions
-];
-
-const legacyRoutes = [
-  "/api/account", // Legacy routes that still need both types
-  "/api/competition",
-  "/api/competitions",
-  "/api/price",
-];
+const userSessionRoutes = ["/api/user", "/api/competitions"];
 
 // Apply agent API key authentication to agent routes
 app.use(
@@ -118,18 +109,6 @@ app.use(
   ),
 );
 
-// Apply combined authentication to legacy routes (supports both)
-app.use(
-  legacyRoutes,
-  siweSessionMiddleware, // Apply SIWE session middleware first to populate req.session
-  authMiddleware(
-    services.agentManager,
-    services.userManager,
-    services.adminManager,
-    services.competitionManager,
-  ),
-);
-
 // Apply rate limiting middleware AFTER authentication
 // This ensures we can properly rate limit by agent/user ID
 app.use(rateLimiterMiddleware);
@@ -145,6 +124,7 @@ const priceController = makePriceController(services);
 const tradeController = makeTradeController(services);
 const userController = makeUserController(services);
 const agentController = makeAgentController(services);
+const leaderboardController = makeLeaderboardController(services);
 
 const adminRoutes = configureAdminRoutes(adminController, adminMiddleware);
 const adminSetupRoutes = configureAdminSetupRoutes(adminController);
@@ -157,6 +137,7 @@ const tradeRoutes = configureTradeRoutes(tradeController);
 const userRoutes = configureUserRoutes(userController);
 const agentRoutes = configureAgentRoutes(agentController);
 const agentsRoutes = configureAgentsRoutes(agentController);
+const leaderboardRoutes = configureLeaderboardRoutes(leaderboardController);
 
 // Apply routes
 app.use("/api/auth", authRoutes);
@@ -170,6 +151,7 @@ app.use("/api/docs", docsRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/agent", agentRoutes);
 app.use("/api/agents", agentsRoutes);
+app.use("/api/leaderboard", leaderboardRoutes);
 
 // Legacy health check endpoint for backward compatibility
 app.get("/health", (_req, res) => {
