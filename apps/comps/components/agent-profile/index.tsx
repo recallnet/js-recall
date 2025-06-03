@@ -361,4 +361,3 @@ function CompetitionTable({
     </div>
   );
 }
-

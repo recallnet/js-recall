@@ -1,10 +1,7 @@
+import { ArrowDownUp } from "lucide-react";
 
-import {ArrowDownUp} from "lucide-react";
-
-import {cn} from "@recallnet/ui2/lib/utils";
-import {
-  TableHead,
-} from "@recallnet/ui2/components/table";
+import { TableHead } from "@recallnet/ui2/components/table";
+import { cn } from "@recallnet/ui2/lib/utils";
 
 export function SortableHeader({
   title,
@@ -23,4 +20,4 @@ export function SortableHeader({
   );
 }
 
-export default SortableHeader
+export default SortableHeader;
