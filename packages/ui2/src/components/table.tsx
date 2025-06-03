@@ -1,7 +1,7 @@
-import {ArrowDownUp} from "lucide-react";
+import { ArrowDownUp } from "lucide-react";
 import * as React from "react";
 
-import {cn} from "@recallnet/ui2/lib/utils";
+import { cn } from "@recallnet/ui2/lib/utils";
 
 export type TableProps = React.JSX.IntrinsicElements["table"];
 export type TableHeaderProps = React.JSX.IntrinsicElements["thead"];
@@ -12,9 +12,9 @@ export type TableHeadProps = React.JSX.IntrinsicElements["th"];
 export type TableCellProps = React.JSX.IntrinsicElements["td"];
 export type TableCaptionProps = React.JSX.IntrinsicElements["caption"];
 
-function Table({className, ref, ...props}: TableProps) {
+function Table({ className, ref, ...props }: TableProps) {
   return (
-    <div className="w-full rounded-xl border overflow-x-scroll">
+    <div className="w-full overflow-x-scroll rounded-xl border">
       <table
         ref={ref}
         className={cn("w-full caption-bottom text-sm", className)}
@@ -24,23 +24,23 @@ function Table({className, ref, ...props}: TableProps) {
   );
 }
 
-function TableHeader({className, ref, ...props}: TableHeaderProps) {
+function TableHeader({ className, ref, ...props }: TableHeaderProps) {
   return (
     <thead ref={ref} className={cn("[&_tr]:border-0", className)} {...props} />
   );
 }
 
-function TableBody({className, ref, ...props}: TableBodyProps) {
+function TableBody({ className, ref, ...props }: TableBodyProps) {
   return <tbody ref={ref} className={cn("", className)} {...props} />;
 }
 
-function TableFooter({className, ref, ...props}: TableFooterProps) {
+function TableFooter({ className, ref, ...props }: TableFooterProps) {
   return (
     <tfoot ref={ref} className={cn("font-medium", className)} {...props} />
   );
 }
 
-function TableRow({className, ref, ...props}: TableRowProps) {
+function TableRow({ className, ref, ...props }: TableRowProps) {
   return (
     <tr
       ref={ref}
@@ -53,7 +53,7 @@ function TableRow({className, ref, ...props}: TableRowProps) {
   );
 }
 
-function TableHead({className, ref, ...props}: TableHeadProps) {
+function TableHead({ className, ref, ...props }: TableHeadProps) {
   return (
     <th
       ref={ref}
@@ -66,13 +66,13 @@ function TableHead({className, ref, ...props}: TableHeadProps) {
   );
 }
 
-function TableCell({className, ref, ...props}: TableCellProps) {
+function TableCell({ className, ref, ...props }: TableCellProps) {
   return (
     <td ref={ref} className={cn("p-4 align-middle", className)} {...props} />
   );
 }
 
-function TableCaption({className, ref, ...props}: TableCaptionProps) {
+function TableCaption({ className, ref, ...props }: TableCaptionProps) {
   return (
     <caption
       ref={ref}
@@ -82,7 +82,7 @@ function TableCaption({className, ref, ...props}: TableCaptionProps) {
   );
 }
 
-function SortableTableHeader({className, ref, ...props}: TableHeadProps) {
+function SortableTableHeader({ className, ref, ...props }: TableHeadProps) {
   return (
     <TableHead
       ref={ref}

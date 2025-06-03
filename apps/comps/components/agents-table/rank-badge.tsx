@@ -1,6 +1,6 @@
 import React from "react";
 
-import { AwardIcon } from "../agent-podium/award-icon";
+import { AwardIcon } from "./award-icon";
 
 interface RankBadgeProps {
   position: number;
