@@ -1,4 +1,4 @@
-import { AgentResponse } from "./agent";
+import { Agent } from "./agent";
 
 export interface ProfileResponse {
   success: boolean;
@@ -9,7 +9,7 @@ export interface ProfileResponse {
     id: string;
 
     isVerified?: boolean;
-    agents?: AgentResponse[];
+    agents?: Agent[];
     name?: string;
     email?: string;
     imageUrl?: string;

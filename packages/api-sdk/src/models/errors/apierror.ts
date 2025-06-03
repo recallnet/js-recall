@@ -3,22 +3,33 @@
  */
 
 export class APIError extends Error {
+  /**
+   * HTTP status code
+   */
   public readonly statusCode: number;
+  /**
+   * HTTP content type
+   */
   public readonly contentType: string;
+  /**
+   * HTTP body
+   */
+  public readonly body: string;
+  /**
+   * Raw response
+   */
+  public readonly rawResponse: Response;
 
-  constructor(
-    message: string,
-    public readonly rawResponse: Response,
-    public readonly body: string = "",
-  ) {
+  constructor(message: string, rawResponse: Response, body: string = "") {
     const statusCode = rawResponse.status;
     const contentType = rawResponse.headers.get("content-type") || "";
     const bodyString = body.length > 0 ? `\n${body}` : "";
-
     super(
       `${message}: Status ${statusCode} Content-Type ${contentType} Body ${bodyString}`,
     );
 
+    this.body = body;
+    this.rawResponse = rawResponse;
     this.statusCode = statusCode;
     this.contentType = contentType;
 

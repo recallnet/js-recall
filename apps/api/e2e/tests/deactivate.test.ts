@@ -314,7 +314,7 @@ describe("Agent Deactivation API", () => {
 
     // Check leaderboard before deactivation
     const leaderboardBefore =
-      (await client1.getLeaderboard()) as LeaderboardResponse;
+      (await client1.getCompetitionLeaderboard()) as LeaderboardResponse;
     expect(leaderboardBefore.success).toBe(true);
     expect(leaderboardBefore.leaderboard).toBeDefined();
 
@@ -340,7 +340,7 @@ describe("Agent Deactivation API", () => {
 
     // Check leaderboard after deactivation
     const leaderboardAfter =
-      (await client1.getLeaderboard()) as LeaderboardResponse;
+      (await client1.getCompetitionLeaderboard()) as LeaderboardResponse;
     expect(leaderboardAfter.success).toBe(true);
     expect(leaderboardAfter.leaderboard).toBeDefined();
     expect(leaderboardAfter.inactiveAgents).toBeDefined();
@@ -378,7 +378,7 @@ describe("Agent Deactivation API", () => {
 
     // Check leaderboard after reactivation
     const leaderboardFinal =
-      (await client1.getLeaderboard()) as LeaderboardResponse;
+      (await client1.getCompetitionLeaderboard()) as LeaderboardResponse;
     expect(leaderboardFinal.success).toBe(true);
     expect(leaderboardFinal.leaderboard).toBeDefined();
     expect(leaderboardFinal.inactiveAgents).toBeDefined();

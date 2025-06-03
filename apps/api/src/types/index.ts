@@ -511,6 +511,15 @@ export type CompetitionAgentParams = z.infer<
   typeof CompetitionAgentParamsSchema
 >;
 
+export const AgentCompetitionsParamsSchema = PagingParamsSchema.extend({
+  status: z.optional(CompetitionStatusSchema),
+  claimed: z.optional(z.boolean()),
+});
+
+export type AgentCompetitionsParams = z.infer<
+  typeof AgentCompetitionsParamsSchema
+>;
+
 /**
  * Update user profile parameters schema
  */
@@ -523,6 +532,7 @@ export const UpdateUserProfileBodySchema = z
       .optional(),
     imageUrl: z.url("Invalid image URL format").optional(),
     email: z.email("Invalid email format").optional(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
   })
   .strict();
 
@@ -626,4 +636,29 @@ export const UpdateAgentProfileSchema = z
     body: UpdateAgentProfileBodySchema,
   })
   .strict();
-export const UuidSchema = z.string().uuid("Invalid uuid");
+
+/**
+ * UUID parameter schema
+ */
+export const UuidSchema = z.uuid("Invalid uuid");
+
+/**
+ * Query string parameters for global leaderboard rankings
+ */
+export const LeaderboardParamsSchema = z.object({
+  type: z.enum(COMPETITION_TYPE_VALUES).default(COMPETITION_TYPE.TRADING),
+  limit: z.coerce.number().min(1).max(100).default(50),
+  offset: z.coerce.number().min(0).default(0),
+});
+
+export type LeaderboardParams = z.infer<typeof LeaderboardParamsSchema>;
+
+/**
+ * Structure for an agent entry in the global leaderboard
+ */
+export interface AgentRank
+  extends Pick<Agent, "id" | "name" | "imageUrl" | "metadata"> {
+  rank: number;
+  score: number;
+  numCompetitions: number;
+}

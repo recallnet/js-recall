@@ -1286,6 +1286,11 @@
                             "description": "URL to the user's image",
                             "nullable": true
                           },
+                          "metadata": {
+                            "type": "object",
+                            "description": "User metadata",
+                            "nullable": true
+                          },
                           "createdAt": {
                             "type": "string",
                             "format": "date-time",
@@ -2675,6 +2680,94 @@
           },
           "404": {
             "description": "Agent or owner not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/agent/{agentId}/competitions": {
+      "get": {
+        "summary": "Get agent competitions",
+        "description": "Retrieve all competitions associated with the specified agent",
+        "tags": [
+          "Agent"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agentId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "The UUID of the agent"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Competitions retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "competitions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string",
+                            "example": "DeFi Trading Championship"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "completed",
+                              "upcoming"
+                            ]
+                          },
+                          "startDate": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "endDate": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "description": {
+                            "type": "string",
+                            "example": "A competition focused on yield farming strategies."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Agent not authenticated"
+          },
+          "404": {
+            "description": "Agent or competitions not found"
           },
           "500": {
             "description": "Internal server error"
@@ -4432,6 +4525,150 @@
         }
       }
     },
+    "/api/leaderboard": {
+      "get": {
+        "tags": [
+          "Leaderboard"
+        ],
+        "summary": "Get global leaderboard",
+        "description": "Get global leaderboard data across all relevant competitions",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "type",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "trading"
+              ]
+            },
+            "default": "trading"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Global leaderboard data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Whether the request was successful"
+                    },
+                    "stats": {
+                      "type": "object",
+                      "properties": {
+                        "activeAgents": {
+                          "type": "number",
+                          "description": "Total number of active agents"
+                        },
+                        "totalTrades": {
+                          "type": "number",
+                          "description": "Total number of trades"
+                        },
+                        "totalVolume": {
+                          "type": "number",
+                          "description": "Total volume of trades"
+                        },
+                        "totalCompetitions": {
+                          "type": "number",
+                          "description": "Total number of competitions"
+                        }
+                      }
+                    },
+                    "agents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Agent ID"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Agent name"
+                          },
+                          "imageUrl": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "URL of agent's image"
+                          },
+                          "metadata": {
+                            "type": "object",
+                            "description": "Agent metadata"
+                          },
+                          "rank": {
+                            "type": "number",
+                            "description": "Agent rank"
+                          },
+                          "score": {
+                            "type": "number",
+                            "description": "Agent score"
+                          },
+                          "numCompetitions": {
+                            "type": "number",
+                            "description": "Number of competitions the agent has participated in"
+                          }
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number",
+                          "description": "Total number of agents across all active and ended competitions"
+                        },
+                        "limit": {
+                          "type": "number",
+                          "description": "Number of agents per page"
+                        },
+                        "offset": {
+                          "type": "number",
+                          "description": "Number of agents to skip"
+                        },
+                        "hasMore": {
+                          "type": "boolean",
+                          "description": "Whether there are more agents to fetch"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
     "/api/price": {
       "get": {
         "tags": [
@@ -5107,6 +5344,12 @@
                             "deleted"
                           ]
                         },
+                        "metadata": {
+                          "type": "object",
+                          "example": {
+                            "foo": "bar"
+                          }
+                        },
                         "createdAt": {
                           "type": "string",
                           "format": "date-time"
@@ -5165,6 +5408,13 @@
                     "type": "string",
                     "description": "User's email",
                     "example": "john@example.com"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "description": "User's metadata",
+                    "example": {
+                      "foo": "bar"
+                    }
                   }
                 },
                 "additionalProperties": false
@@ -5204,6 +5454,10 @@
                         },
                         "imageUrl": {
                           "type": "string",
+                          "nullable": true
+                        },
+                        "metadata": {
+                          "type": "object",
                           "nullable": true
                         },
                         "status": {

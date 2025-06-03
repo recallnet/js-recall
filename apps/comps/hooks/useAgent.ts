@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { ApiClient } from "@/lib/api-client";
-import { AgentResponse } from "@/types";
+import { Agent } from "@/types";
 
 const apiClient = new ApiClient();
 
@@ -13,7 +13,7 @@ const apiClient = new ApiClient();
 export const useAgent = (id?: string) =>
   useQuery({
     queryKey: ["agent", id],
-    queryFn: async (): Promise<AgentResponse> => {
+    queryFn: async (): Promise<Agent> => {
       if (!id) throw new Error("Agent ID is required");
       const response = await apiClient.getAgent(id);
 

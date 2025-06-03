@@ -62,14 +62,14 @@ describe("Leaderboard Access Control", () => {
 
     // Verify the admin can still access the leaderboard
     const adminResponse =
-      (await adminClient.getLeaderboard()) as LeaderboardResponse;
+      (await adminClient.getCompetitionLeaderboard()) as LeaderboardResponse;
     expect(adminResponse.success).toBe(true);
     expect(adminResponse.leaderboard).toBeDefined();
     console.log("Admin successfully accessed leaderboard when toggle is true");
 
     // Agent should not be able to access leaderboard
     try {
-      const result = (await client.getLeaderboard()) as
+      const result = (await client.getCompetitionLeaderboard()) as
         | ErrorResponse
         | LeaderboardResponse;
       // If we get here with a success response, the access control is not working as expected

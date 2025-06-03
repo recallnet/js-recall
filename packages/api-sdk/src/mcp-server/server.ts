@@ -29,6 +29,7 @@ import { tool$adminPostApiAdminCompetitionStart } from "./tools/adminPostApiAdmi
 import { tool$adminPostApiAdminSetup } from "./tools/adminPostApiAdminSetup.js";
 import { tool$adminPostApiAdminUsers } from "./tools/adminPostApiAdminUsers.js";
 import { tool$agentGetApiAgentAgentId } from "./tools/agentGetApiAgentAgentId.js";
+import { tool$agentGetApiAgentAgentIdCompetitions } from "./tools/agentGetApiAgentAgentIdCompetitions.js";
 import { tool$agentGetApiAgentBalances } from "./tools/agentGetApiAgentBalances.js";
 import { tool$agentGetApiAgentPortfolio } from "./tools/agentGetApiAgentPortfolio.js";
 import { tool$agentGetApiAgentProfile } from "./tools/agentGetApiAgentProfile.js";
@@ -117,6 +118,7 @@ export function createMCPServer(deps: {
   tool(tool$agentGetApiAgentTrades);
   tool(tool$agentPostApiAgentResetApiKey);
   tool(tool$agentGetApiAgentAgentId);
+  tool(tool$agentGetApiAgentAgentIdCompetitions);
   tool(tool$agentGetApiAgents);
   tool(tool$authGetApiAuthNonce);
   tool(tool$authPostApiAuthLogin);

@@ -152,7 +152,7 @@ describe("User API", () => {
   });
 
   // TODO: once we have a user-centric API, switch to a user-centric test
-  test("user can update both name and imageUrl in a single request", async () => {
+  test("user can update both optional parameters in a single request", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
@@ -177,14 +177,18 @@ describe("User API", () => {
     expect(user.imageUrl).toBeNull(); // No initial imageUrl (database returns null, not undefined)
     expect(user.metadata).toBeNull(); // No initial metadata (database returns null, not undefined)
 
-    // Define new values for both fields
+    // Define new values for both fields, including metadata
     const newName = "Combined Update User";
     const newImageUrl = "https://example.com/combined-update-image.jpg";
+    const newMetadata = {
+      foo: "bar",
+    };
 
     // Update both fields in a single request
     const updateResponse = await userClient.updateUserProfile({
       name: newName,
       imageUrl: newImageUrl,
+      metadata: newMetadata,
     });
 
     expect(updateResponse.success).toBe(true);
@@ -199,6 +203,7 @@ describe("User API", () => {
     const updatedProfile = (profileResponse as UserProfileResponse).user;
     expect(updatedProfile.name).toBe(newName);
     expect(updatedProfile.imageUrl).toBe(newImageUrl);
+    expect(updatedProfile.metadata).toEqual(newMetadata);
 
     // Verify admin can see both updated fields
     const searchResponse = await adminClient.searchUsersAndAgents({
@@ -228,14 +233,21 @@ describe("User API", () => {
     expect((profileResponse as UserProfileResponse).user).toBeDefined();
     expect((profileResponse as UserProfileResponse).user.id).toBe(user.id);
     expect((profileResponse as UserProfileResponse).user.name).toBe(user.name);
+    expect((profileResponse as UserProfileResponse).user.metadata).toBeNull();
 
-    // Test: User can update their profile via SIWE session
+    // Test: User can update their profile via SIWE session, including metadata
+    const newName = "Updated SIWE User";
+    const newMetadata = {
+      foo: "bar",
+    };
     const updateResponse = await siweClient.updateUserProfile({
-      name: "Updated SIWE User",
+      name: newName,
+      metadata: newMetadata,
     });
     expect(updateResponse.success).toBe(true);
-    expect((updateResponse as UserProfileResponse).user.name).toBe(
-      "Updated SIWE User",
+    expect((updateResponse as UserProfileResponse).user.name).toBe(newName);
+    expect((updateResponse as UserProfileResponse).user.metadata).toEqual(
+      newMetadata,
     );
 
     // Test: User can create an agent via SIWE session

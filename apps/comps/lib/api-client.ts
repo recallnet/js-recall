@@ -1,7 +1,7 @@
 import {
+  Agent,
   AgentCompetitionResponse,
   AgentCompetitionsResponse,
-  AgentResponse,
   AgentsResponse,
   CompetitionResponse,
   CompetitionsResponse,
@@ -217,10 +217,8 @@ export class ApiClient {
    * @param id - Agent ID
    * @returns Agent details
    */
-  async getAgent(
-    id: string,
-  ): Promise<{ success: boolean; agent: AgentResponse }> {
-    return this.request<{ success: boolean; agent: AgentResponse }>(
+  async getAgent(id: string): Promise<{ success: boolean; agent: Agent }> {
+    return this.request<{ success: boolean; agent: Agent }>(
       `/user/agents/${id}`,
     );
   }

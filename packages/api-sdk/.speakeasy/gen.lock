@@ -1,10 +1,10 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: eea0c1a7485de234299a696b978f3e77
+  docChecksum: 48446770a7acee66aa6b552645010c53
   docVersion: 1.0.0
-  speakeasyVersion: 1.555.0
-  generationVersion: 2.618.0
+  speakeasyVersion: 1.555.2
+  generationVersion: 2.620.2
   releaseVersion: 0.1.9
   configChecksum: bd3b9989cea9105f8f983430d3d4f578
 features:
@@ -78,6 +78,10 @@ generatedFiles:
   - docs/models/operations/getapiadminsearchuser.md
   - docs/models/operations/getapiadminusersresponse.md
   - docs/models/operations/getapiadminusersuser.md
+  - docs/models/operations/getapiagentagentidcompetitionscompetition.md
+  - docs/models/operations/getapiagentagentidcompetitionsrequest.md
+  - docs/models/operations/getapiagentagentidcompetitionsresponse.md
+  - docs/models/operations/getapiagentagentidcompetitionsstatus.md
   - docs/models/operations/getapiagentagentidmetadata.md
   - docs/models/operations/getapiagentagentidrequest.md
   - docs/models/operations/getapiagentagentidresponse.md
@@ -277,6 +281,7 @@ generatedFiles:
   - src/funcs/adminPostApiAdminSetup.ts
   - src/funcs/adminPostApiAdminUsers.ts
   - src/funcs/agentGetApiAgentAgentId.ts
+  - src/funcs/agentGetApiAgentAgentIdCompetitions.ts
   - src/funcs/agentGetApiAgentBalances.ts
   - src/funcs/agentGetApiAgentPortfolio.ts
   - src/funcs/agentGetApiAgentProfile.ts
@@ -358,6 +363,7 @@ generatedFiles:
   - src/mcp-server/tools/adminPostApiAdminSetup.ts
   - src/mcp-server/tools/adminPostApiAdminUsers.ts
   - src/mcp-server/tools/agentGetApiAgentAgentId.ts
+  - src/mcp-server/tools/agentGetApiAgentAgentIdCompetitions.ts
   - src/mcp-server/tools/agentGetApiAgentBalances.ts
   - src/mcp-server/tools/agentGetApiAgentPortfolio.ts
   - src/mcp-server/tools/agentGetApiAgentProfile.ts
@@ -403,6 +409,7 @@ generatedFiles:
   - src/models/operations/getapiadminsearch.ts
   - src/models/operations/getapiadminusers.ts
   - src/models/operations/getapiagentagentid.ts
+  - src/models/operations/getapiagentagentidcompetitions.ts
   - src/models/operations/getapiagentbalances.ts
   - src/models/operations/getapiagentportfolio.ts
   - src/models/operations/getapiagentprofile.ts
@@ -908,12 +915,13 @@ examples:
       responses:
         "200":
           application/json: {"name": "Trading Bot Alpha", "imageUrl": "https://example.com/bot-avatar.jpg", "metadata": {}}
-  post_/api/auth/verify:
-    speakeasy-default-post-/api/auth/verify:
-      requestBody:
-        application/json: {"message": "VERIFY_WALLET_OWNERSHIP\nTimestamp: 2024-01-15T10:30:00.000Z\nDomain: api.competitions.recall.network\nPurpose: WALLET_VERIFICATION\n", "signature": "0x123abc..."}
+  get_/api/agent/{agentId}/competitions:
+    speakeasy-default-get-/api/agent/{agent-id}/competitions:
+      parameters:
+        path:
+          agentId: "<id>"
       responses:
         "200":
-          application/json: {"success": true, "walletAddress": "0x123...", "message": "Wallet verified successfully"}
+          application/json: {"success": true, "competitions": [{"name": "DeFi Trading Championship", "description": "A competition focused on yield farming strategies."}]}
 examplesVersion: 1.0.2
 generatedTests: {}

@@ -29,6 +29,7 @@ import {
   CrossChainTradingType,
   DetailedHealthCheckResponse,
   ErrorResponse,
+  GlobalLeaderboardResponse,
   HealthCheckResponse,
   LeaderboardResponse,
   LoginResponse,
@@ -175,7 +176,35 @@ export class ApiClient {
       return this.handleApiError(error, "create admin account");
     }
   }
+  async getAgentCompetitions(
+    agentId: string,
+    params?: {
+      status?: string;
+      sort?: string;
+      limit?: number;
+      offset?: number;
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ): Promise<any | ErrorResponse> {
+    try {
+      const queryParams = new URLSearchParams();
 
+      if (params?.status) queryParams.append("status", params.status);
+      if (params?.sort) queryParams.append("sort", params.sort);
+      if (params?.limit !== undefined)
+        queryParams.append("limit", params.limit.toString());
+      if (params?.offset !== undefined)
+        queryParams.append("offset", params.offset.toString());
+
+      const queryString = queryParams.toString();
+      const url = `/api/agent/${agentId}/competitions${queryString ? `?${queryString}` : ""}`;
+
+      const response = await this.axiosInstance.get(url);
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get agent competitions");
+    }
+  }
   /**
    * Login as admin (this method now expects the admin API key directly)
    */
@@ -394,6 +423,7 @@ export class ApiClient {
   async updateUserProfile(profileData: {
     name?: string;
     imageUrl?: string;
+    metadata?: Record<string, unknown>;
   }): Promise<UserProfileResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.put(
@@ -697,7 +727,9 @@ export class ApiClient {
   /**
    * Get competition leaderboard
    */
-  async getLeaderboard(): Promise<LeaderboardResponse | ErrorResponse> {
+  async getCompetitionLeaderboard(): Promise<
+    LeaderboardResponse | ErrorResponse
+  > {
     try {
       const response = await this.axiosInstance.get(
         "/api/competitions/leaderboard",
@@ -705,6 +737,28 @@ export class ApiClient {
       return response.data as LeaderboardResponse;
     } catch (error) {
       return this.handleApiError(error, "get leaderboard");
+    }
+  }
+
+  /**
+   * Get the global leaderboard (global rankings)
+   */
+  async getGlobalLeaderboard(params?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<GlobalLeaderboardResponse | ErrorResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.limit !== undefined)
+        queryParams.append("limit", params.limit.toString());
+      if (params?.offset !== undefined)
+        queryParams.append("offset", params.offset.toString());
+      const response = await this.axiosInstance.get(
+        `/api/leaderboard?${queryParams.toString()}`,
+      );
+      return response.data as GlobalLeaderboardResponse;
+    } catch (error) {
+      return this.handleApiError(error, "get leaderboards");
     }
   }
 

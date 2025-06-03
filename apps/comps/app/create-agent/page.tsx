@@ -24,14 +24,14 @@ export default function CreateAgentPage() {
       const result = await createAgent.mutateAsync({
         name: data.name,
         imageUrl: data.imageUrl,
-        email: data.email || "",
-        description: data.description || "",
+        email: data.email,
+        description: data.description,
         metadata: {
           walletAddress: data.walletAddress,
           skills: JSON.stringify(data.skills),
-          repositoryUrl: data.repositoryUrl || "",
-          x: data.x || "",
-          telegram: data.telegram || "",
+          repositoryUrl: data.repositoryUrl,
+          x: data.x,
+          telegram: data.telegram,
         },
       });
 

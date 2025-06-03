@@ -245,7 +245,7 @@ describe("Multi-Agent Competition", () => {
 
       // Check leaderboard
       const leaderboardResponse =
-        (await agentClient?.getLeaderboard()) as LeaderboardResponse;
+        (await agentClient?.getCompetitionLeaderboard()) as LeaderboardResponse;
       expect(leaderboardResponse?.success).toBe(true);
       expect(leaderboardResponse?.leaderboard).toBeDefined();
       expect(leaderboardResponse?.leaderboard).toBeInstanceOf(Array);

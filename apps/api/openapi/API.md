@@ -1169,6 +1169,34 @@ Check if the API and all its services are running properly
 | 200  | Detailed health status |
 | 500  | Server error           |
 
+### /api/leaderboard
+
+#### GET
+
+##### Summary:
+
+Get global leaderboard
+
+##### Description:
+
+Get global leaderboard data across all relevant competitions
+
+##### Parameters
+
+| Name   | Located in | Description | Required | Schema |
+| ------ | ---------- | ----------- | -------- | ------ |
+| type   | query      |             | No       | string |
+| limit  | query      |             | No       | number |
+| offset | query      |             | No       | number |
+
+##### Responses
+
+| Code | Description             |
+| ---- | ----------------------- |
+| 200  | Global leaderboard data |
+| 400  | Invalid parameters      |
+| 500  | Server error            |
+
 ### /api/price
 
 #### GET
