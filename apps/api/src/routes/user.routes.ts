@@ -52,6 +52,9 @@ export function configureUserRoutes(userController: UserController): Router {
    *                     status:
    *                       type: string
    *                       enum: [active, inactive, suspended, deleted]
+   *                     metadata:
+   *                       type: object
+   *                       example: { "foo": "bar" }
    *                     createdAt:
    *                       type: string
    *                       format: date-time
@@ -96,6 +99,10 @@ export function configureUserRoutes(userController: UserController): Router {
    *                 type: string
    *                 description: User's email
    *                 example: "john@example.com"
+   *               metadata:
+   *                 type: object
+   *                 description: User's metadata
+   *                 example: { "foo": "bar" }
    *             additionalProperties: false
    *     responses:
    *       200:
@@ -124,6 +131,9 @@ export function configureUserRoutes(userController: UserController): Router {
    *                       nullable: true
    *                     imageUrl:
    *                       type: string
+   *                       nullable: true
+   *                     metadata:
+   *                       type: object
    *                       nullable: true
    *                     status:
    *                       type: string

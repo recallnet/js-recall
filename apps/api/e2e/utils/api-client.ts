@@ -392,6 +392,7 @@ export class ApiClient {
   async updateUserProfile(profileData: {
     name?: string;
     imageUrl?: string;
+    metadata?: Record<string, unknown>;
   }): Promise<UserProfileResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.put(
