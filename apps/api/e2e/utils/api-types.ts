@@ -316,7 +316,7 @@ export interface Competition {
   };
 }
 
-// Leaderboard entry
+// Leaderboard entry (per-competition leaderboard)
 export interface LeaderboardEntry {
   rank: number;
   agentId: string;
@@ -657,4 +657,33 @@ export interface CompetitionJoinResponse extends ApiResponse {
 export interface CompetitionLeaveResponse extends ApiResponse {
   success: true;
   message: string;
+}
+
+// Agent rank (global rankings)
+export interface AgentRank {
+  id: string;
+  name: string;
+  imageUrl?: string;
+  metadata?: AgentMetadata;
+  rank: number;
+  score: number;
+  numCompetitions: number;
+}
+
+// Global leaderboard response
+export interface GlobalLeaderboardResponse extends ApiResponse {
+  success: true;
+  stats: {
+    activeAgents: number;
+    totalTrades: number;
+    totalVolume: number;
+    totalCompetitions: number;
+  };
+  agents: AgentRank[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
 }

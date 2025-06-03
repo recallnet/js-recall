@@ -234,7 +234,7 @@ describe("Competition API", () => {
 
     // Agent checks leaderboard
     const leaderboardResponse =
-      (await agentClient.getLeaderboard()) as LeaderboardResponse;
+      (await agentClient.getCompetitionLeaderboard()) as LeaderboardResponse;
     expect(leaderboardResponse.success).toBe(true);
     expect(leaderboardResponse.leaderboard).toBeDefined();
     expect(leaderboardResponse.leaderboard).toBeInstanceOf(Array);
@@ -329,7 +329,7 @@ describe("Competition API", () => {
 
     // Admin checks leaderboard with no agentId
     const adminLeaderboardResponse =
-      (await adminClient.getLeaderboard()) as LeaderboardResponse;
+      (await adminClient.getCompetitionLeaderboard()) as LeaderboardResponse;
     expect(adminLeaderboardResponse.success).toBe(true);
     expect(adminLeaderboardResponse.competition).toBeDefined();
     expect(adminLeaderboardResponse.leaderboard).toBeDefined();
@@ -358,7 +358,8 @@ describe("Competition API", () => {
     expect(agentStatusResponse.success).toBe(true);
     expect(agentStatusResponse.active).toBe(true);
 
-    const agentLeaderboardResponse = await agentClient.getLeaderboard();
+    const agentLeaderboardResponse =
+      await agentClient.getCompetitionLeaderboard();
     expect(agentLeaderboardResponse.success).toBe(true);
 
     // Regular agent checks rules
@@ -394,7 +395,7 @@ describe("Competition API", () => {
 
     // Check leaderboard to verify agent is now active
     const leaderboardResponse =
-      (await adminClient.getLeaderboard()) as LeaderboardResponse;
+      (await adminClient.getCompetitionLeaderboard()) as LeaderboardResponse;
     expect(leaderboardResponse.success).toBe(true);
     expect(leaderboardResponse.leaderboard).toBeDefined();
 
@@ -783,7 +784,7 @@ describe("Competition API", () => {
     }
 
     // 4. Verify the fields are in the competition leaderboard response
-    const leaderboardResponse = await agentClient.getLeaderboard();
+    const leaderboardResponse = await agentClient.getCompetitionLeaderboard();
     expect(leaderboardResponse.success).toBe(true);
 
     if (leaderboardResponse.success && "competition" in leaderboardResponse) {
