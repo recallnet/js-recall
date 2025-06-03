@@ -13,6 +13,7 @@ import {
   AgentApiKeyResponse,
   AgentMetadata,
   AgentProfileResponse,
+  AgentWalletVerificationResponse,
   AgentsGetResponse,
   ApiResponse,
   BalancesResponse,
@@ -1050,6 +1051,27 @@ export class ApiClient {
       return response.data as ResetApiKeyResponse;
     } catch (error) {
       return this.handleApiError(error, "reset API key");
+    }
+  }
+
+  /**
+   * Verify agent wallet ownership via custom message signature
+   * @param message The verification message
+   * @param signature The signature of the message
+   * @returns A promise that resolves to the verification response
+   */
+  async verifyAgentWallet(
+    message: string,
+    signature: string,
+  ): Promise<AgentWalletVerificationResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post("/api/auth/verify", {
+        message,
+        signature,
+      });
+      return response.data as AgentWalletVerificationResponse;
+    } catch (error) {
+      return this.handleApiError(error, "verify agent wallet");
     }
   }
 

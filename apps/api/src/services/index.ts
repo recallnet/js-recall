@@ -32,7 +32,6 @@ class ServiceRegistry {
 
   constructor() {
     // Initialize services in dependency order
-    this._authService = new AuthService();
     this._balanceManager = new BalanceManager();
     this._priceTracker = new PriceTracker();
     this._portfolioSnapshotter = new PortfolioSnapshotter(
@@ -49,6 +48,9 @@ class ServiceRegistry {
     this._userManager = new UserManager();
     this._agentManager = new AgentManager();
     this._adminManager = new AdminManager();
+
+    // Initialize auth service (no dependencies needed)
+    this._authService = new AuthService();
 
     // Configuration service for dynamic settings
     this._configurationService = new ConfigurationService();

@@ -20,6 +20,7 @@ import {
   searchAgents,
   update,
 } from "@/database/repositories/agent-repository.js";
+import { findByWalletAddress as findUserByWalletAddress } from "@/database/repositories/user-repository.js";
 import { InsertAgent, SelectAgent } from "@/database/schema/core/types.js";
 import {
   AgentMetadata,
@@ -832,5 +833,162 @@ export class AgentManager {
       trophies: metadata?.trophies || [],
       hasUnclaimedRewards: metadata?.hasUnclaimedRewards || false,
     };
+  }
+
+  /**
+   * Verify agent wallet ownership via custom message signature
+   * @param agentId The agent ID
+   * @param message The verification message
+   * @param signature The signature of the message
+   * @returns Verification response with success status
+   */
+  async verifyWalletOwnership(
+    agentId: string,
+    message: string,
+    signature: string,
+  ): Promise<{
+    success: boolean;
+    walletAddress?: string;
+    error?: string;
+  }> {
+    try {
+      // Parse custom message format
+      const parseResult = this.parseVerificationMessage(message);
+      if (!parseResult.success) {
+        return { success: false, error: parseResult.error };
+      }
+
+      const { timestamp, domain, purpose } = parseResult;
+
+      // Validate message content
+      const apiDomain =
+        process.env.API_DOMAIN || "api.competitions.recall.network";
+      if (domain !== apiDomain) {
+        return { success: false, error: "Invalid domain" };
+      }
+
+      if (purpose !== "WALLET_VERIFICATION") {
+        return { success: false, error: "Invalid purpose" };
+      }
+
+      // Validate timestamp (within 5 minutes)
+      if (!timestamp) {
+        return { success: false, error: "Missing timestamp in message" };
+      }
+
+      const messageTime = new Date(timestamp);
+      const now = new Date();
+      const timeDiff = Math.abs(now.getTime() - messageTime.getTime());
+      const maxAgeMs = 5 * 60 * 1000; // 5 minutes
+
+      if (timeDiff > maxAgeMs) {
+        return { success: false, error: "Message timestamp too old" };
+      }
+
+      // Verify signature and recover wallet address
+      let walletAddress: string;
+      try {
+        const { recoverMessageAddress } = await import("viem");
+        walletAddress = (
+          await recoverMessageAddress({
+            message,
+            signature: signature as `0x${string}`,
+          })
+        ).toLowerCase();
+      } catch (error) {
+        console.error("[AgentManager] Error recovering wallet address:", error);
+        return { success: false, error: "Invalid signature" };
+      }
+
+      // Check cross-table uniqueness
+      const existingUser = await findUserByWalletAddress(walletAddress);
+      if (existingUser) {
+        return {
+          success: false,
+          error: "Wallet address already associated with a user account",
+        };
+      }
+
+      const existingAgents = await findByWallet({
+        walletAddress,
+        pagingParams: { limit: 1, offset: 0, sort: "createdAt" },
+      });
+      const existingAgent = existingAgents[0];
+      if (existingAgent && existingAgent.id !== agentId) {
+        return {
+          success: false,
+          error: "Wallet address already associated with another agent",
+        };
+      }
+
+      // Get and update agent wallet address
+      const agent = await this.getAgent(agentId);
+      if (!agent) {
+        return { success: false, error: "Agent not found" };
+      }
+
+      const updatedAgent = await this.updateAgent({
+        ...agent,
+        walletAddress,
+      });
+
+      if (!updatedAgent) {
+        return {
+          success: false,
+          error: "Failed to update agent wallet address",
+        };
+      }
+
+      return { success: true, walletAddress };
+    } catch (error) {
+      console.error("[AgentManager] Error in verifyWalletOwnership:", error);
+      return { success: false, error: "Verification failed" };
+    }
+  }
+
+  /**
+   * Parse custom verification message format
+   */
+  private parseVerificationMessage(message: string): {
+    success: boolean;
+    timestamp?: string;
+    domain?: string;
+    purpose?: string;
+    error?: string;
+  } {
+    try {
+      const lines = message.trim().split("\n");
+
+      if (lines[0] !== "VERIFY_WALLET_OWNERSHIP") {
+        return { success: false, error: "Invalid message header" };
+      }
+
+      const timestampLine = lines.find((line) =>
+        line.startsWith("Timestamp: "),
+      );
+      const domainLine = lines.find((line) => line.startsWith("Domain: "));
+      const purposeLine = lines.find((line) => line.startsWith("Purpose: "));
+
+      if (!timestampLine || !domainLine || !purposeLine) {
+        return { success: false, error: "Missing required message fields" };
+      }
+
+      const timestamp = timestampLine.replace("Timestamp: ", "");
+      const domain = domainLine.replace("Domain: ", "");
+      const purpose = purposeLine.replace("Purpose: ", "");
+
+      return {
+        success: true,
+        timestamp,
+        domain,
+        purpose,
+      };
+    } catch (error) {
+      console.error(
+        "[AgentManager] Error parsing verification message:",
+        error,
+      );
+      return { success: false, error: "Failed to parse message" };
+    }
   }
 }

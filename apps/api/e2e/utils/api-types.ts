@@ -611,6 +611,19 @@ export interface LogoutResponse {
   message: string;
 }
 
+/**
+ * AGENT WALLET VERIFICATION TYPES
+ */
+
+/**
+ * Response from the agent wallet verification endpoint
+ */
+export interface AgentWalletVerificationResponse extends ApiResponse {
+  success: true;
+  walletAddress: string;
+  message: string;
+}
+
 // TODO: figure out types wrt duplication in admin controller
 export interface AdminSearchUsersAndAgentsResponse {
   success: boolean;

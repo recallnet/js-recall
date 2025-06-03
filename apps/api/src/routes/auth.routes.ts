@@ -4,13 +4,13 @@ import { AuthController } from "@/controllers/auth.controller.js";
 
 export function configureAuthRoutes(
   controller: AuthController,
-  ...middlewares: RequestHandler[]
+  sessionMiddleware: RequestHandler,
+  agentAuthMiddleware: RequestHandler,
 ) {
   const router = Router();
 
-  if (middlewares.length) {
-    router.use(...middlewares);
-  }
+  // Apply session middleware to all routes by default
+  router.use(sessionMiddleware);
 
   /**
    * @openapi
@@ -113,6 +113,64 @@ export function configureAuthRoutes(
    *                   type: string
    */
   router.post("/login", controller.login);
+
+  /**
+   * @openapi
+   * /api/auth/verify:
+   *   post:
+   *     summary: Verify agent wallet ownership
+   *     description: Verify wallet ownership for an authenticated agent via custom message signature
+   *     tags: [Auth]
+   *     security:
+   *       - AgentApiKey: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - message
+   *               - signature
+   *             properties:
+   *               message:
+   *                 type: string
+   *                 description: The verification message to be signed
+   *                 example: |
+   *                   VERIFY_WALLET_OWNERSHIP
+   *                   Timestamp: 2024-01-15T10:30:00.000Z
+   *                   Domain: api.competitions.recall.network
+   *                   Purpose: WALLET_VERIFICATION
+   *               signature:
+   *                 type: string
+   *                 description: The signature of the verification message
+   *                 example: "0x123abc..."
+   *     responses:
+   *       200:
+   *         description: Wallet verification successful
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 walletAddress:
+   *                   type: string
+   *                   description: The verified wallet address
+   *                   example: "0x123..."
+   *                 message:
+   *                   type: string
+   *                   example: "Wallet verified successfully"
+   *       400:
+   *         description: Invalid message format or signature verification failed
+   *       401:
+   *         description: Agent authentication required
+   *       409:
+   *         description: Wallet address already in use
+   */
+  router.post("/verify", agentAuthMiddleware, controller.verifyAgentWallet);
 
   /**
    * @openapi

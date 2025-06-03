@@ -148,7 +148,16 @@ const agentController = makeAgentController(services);
 
 const adminRoutes = configureAdminRoutes(adminController, adminMiddleware);
 const adminSetupRoutes = configureAdminSetupRoutes(adminController);
-const authRoutes = configureAuthRoutes(authController, siweSessionMiddleware);
+const authRoutes = configureAuthRoutes(
+  authController,
+  siweSessionMiddleware,
+  authMiddleware(
+    services.agentManager,
+    services.userManager,
+    services.adminManager,
+    services.competitionManager,
+  ),
+);
 const competitionsRoutes = configureCompetitionsRoutes(competitionController);
 const docsRoutes = configureDocsRoutes(docsController);
 const healthRoutes = configureHealthRoutes(healthController);

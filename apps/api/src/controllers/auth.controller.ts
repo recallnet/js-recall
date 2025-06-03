@@ -49,6 +49,49 @@ export function makeAuthController(services: ServiceRegistry) {
         next(error);
       }
     },
+
+    /**
+     * Verify agent wallet ownership via custom message signature
+     */
+    async verifyAgentWallet(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { message, signature } = req.body;
+        const agentId = req.agentId; // Set by authMiddleware
+
+        if (!agentId) {
+          return res
+            .status(401)
+            .json({ error: "Agent authentication required" });
+        }
+
+        if (!message || !signature) {
+          return res
+            .status(400)
+            .json({ error: "Message and signature are required" });
+        }
+
+        const result = await services.agentManager.verifyWalletOwnership(
+          agentId,
+          message,
+          signature,
+        );
+
+        if (!result.success) {
+          const statusCode = result.error?.includes("already") ? 409 : 400;
+          return res
+            .status(statusCode)
+            .json({ error: result.error || "Verification failed" });
+        }
+
+        res.status(200).json({
+          success: true,
+          walletAddress: result.walletAddress,
+          message: "Wallet verified successfully",
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
   };
 }
 

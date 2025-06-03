@@ -1,6 +1,8 @@
 import axios from "axios";
+import { privateKeyToAccount } from "viem/accounts";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { ApiClient } from "@/e2e/utils/api-client.js";
 import {
   AdminAgentsListResponse,
   AdminSearchUsersAndAgentsResponse,
@@ -18,6 +20,7 @@ import {
   ADMIN_PASSWORD,
   ADMIN_USERNAME,
   cleanupTestState,
+  createAgentVerificationSignature,
   createTestClient,
   generateRandomEthAddress,
   registerUserAndAgentAndGetClient,
@@ -971,5 +974,213 @@ describe("Agent API", () => {
         throw error;
       }
     }
+  });
+
+  describe("Agent Wallet Verification", () => {
+    test("should successfully verify agent wallet ownership", async () => {
+      // Setup: Create admin client
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      // Create a test agent
+      const { client: agentClient, agent } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Test Agent",
+          agentDescription: "Test agent for wallet verification",
+        });
+
+      // Generate a new wallet for verification
+      const privateKey =
+        "0x1234567890123456789012345678901234567890123456789012345678901234";
+      const testAccount = privateKeyToAccount(privateKey);
+      const walletAddress = testAccount.address;
+
+      // Create verification message and signature
+      const { message, signature } =
+        await createAgentVerificationSignature(privateKey);
+
+      // Verify wallet ownership
+      const response = await agentClient.verifyAgentWallet(message, signature);
+
+      expect(response).toEqual({
+        success: true,
+        walletAddress: walletAddress.toLowerCase(),
+        message: "Wallet verified successfully",
+      });
+
+      // Verify the agent's wallet address was updated
+      const agentProfile = await agentClient.getAgentProfile();
+      expect((agentProfile as AgentProfileResponse).agent.walletAddress).toBe(
+        walletAddress.toLowerCase(),
+      );
+    });
+
+    test("should reject verification with invalid signature", async () => {
+      // Setup: Create admin client and agent
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      const { client: agentClient } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Test Agent",
+      });
+
+      // Create verification message with correct account
+      const privateKey =
+        "0x1234567890123456789012345678901234567890123456789012345678901234";
+      const { message } = await createAgentVerificationSignature(privateKey);
+
+      // Use an invalid signature
+      const invalidSignature = "0xinvalidsignature";
+
+      // Attempt verification
+      const response = await agentClient.verifyAgentWallet(
+        message,
+        invalidSignature,
+      );
+
+      expect(response).toEqual({
+        success: false,
+        error: "Invalid signature",
+        status: 400,
+      });
+    });
+
+    test("should reject verification with expired timestamp", async () => {
+      // Setup: Create admin client and agent
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      const { client: agentClient } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Test Agent",
+      });
+
+      // Create verification message with expired timestamp (6 minutes ago)
+      const privateKey =
+        "0x1234567890123456789012345678901234567890123456789012345678901234";
+      const expiredTimestamp = new Date(
+        Date.now() - 6 * 60 * 1000,
+      ).toISOString();
+      const { message, signature } = await createAgentVerificationSignature(
+        privateKey,
+        expiredTimestamp,
+      );
+
+      // Attempt verification
+      const response = await agentClient.verifyAgentWallet(message, signature);
+
+      expect(response).toEqual({
+        success: false,
+        error: "Message timestamp too old",
+        status: 400,
+      });
+    });
+
+    test("should reject verification with wrong domain", async () => {
+      // Setup: Create admin client and agent
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      const { client: agentClient } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Test Agent",
+      });
+
+      // Create verification message with wrong domain
+      const privateKey =
+        "0x1234567890123456789012345678901234567890123456789012345678901234";
+      const { message, signature } = await createAgentVerificationSignature(
+        privateKey,
+        undefined,
+        "wrong.domain.com",
+      );
+
+      // Attempt verification
+      const response = await agentClient.verifyAgentWallet(message, signature);
+
+      expect(response).toEqual({
+        success: false,
+        error: "Invalid domain",
+        status: 400,
+      });
+    });
+
+    test("should reject verification when wallet is already associated with another agent", async () => {
+      // Setup: Create admin client and two agents
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      // Create first agent
+      const { client: firstAgentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "First Agent",
+        });
+
+      // Create second agent
+      const { client: secondAgentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Second Agent",
+        });
+
+      // Generate wallet and verify with first agent
+      const privateKey =
+        "0x1234567890123456789012345678901234567890123456789012345678901234";
+      const { message: firstMessage, signature: firstSignature } =
+        await createAgentVerificationSignature(privateKey);
+
+      // Verify with first agent - should succeed
+      const firstResponse = await firstAgentClient.verifyAgentWallet(
+        firstMessage,
+        firstSignature,
+      );
+      expect(firstResponse).toMatchObject({ success: true });
+
+      // Try to verify same wallet with second agent - should fail
+      const { message: secondMessage, signature: secondSignature } =
+        await createAgentVerificationSignature(privateKey);
+
+      const secondResponse = await secondAgentClient.verifyAgentWallet(
+        secondMessage,
+        secondSignature,
+      );
+      expect(secondResponse).toEqual({
+        success: false,
+        error: "Wallet address already associated with another agent",
+        status: 409,
+      });
+    });
+
+    test("should require agent authentication", async () => {
+      // Create a client without API key
+      const unauthenticatedClient = new ApiClient(undefined, getBaseUrl());
+
+      // Create verification message
+      const privateKey =
+        "0x1234567890123456789012345678901234567890123456789012345678901234";
+      const { message, signature } =
+        await createAgentVerificationSignature(privateKey);
+
+      // Attempt verification without authentication
+      const response = await unauthenticatedClient.verifyAgentWallet(
+        message,
+        signature,
+      );
+
+      expect(response).toEqual({
+        success: false,
+        error:
+          "Authentication required. No active session and no API key provided. Use Authorization: Bearer YOUR_API_KEY",
+        status: 401,
+      });
+    });
   });
 });
