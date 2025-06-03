@@ -2967,6 +2967,82 @@
         }
       }
     },
+    "/api/auth/verify": {
+      "post": {
+        "summary": "Verify agent wallet ownership",
+        "description": "Verify wallet ownership for an authenticated agent via custom message signature",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "AgentApiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "message",
+                  "signature"
+                ],
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "description": "The verification message to be signed",
+                    "example": "VERIFY_WALLET_OWNERSHIP\nTimestamp: 2024-01-15T10:30:00.000Z\nDomain: api.competitions.recall.network\nPurpose: WALLET_VERIFICATION\n"
+                  },
+                  "signature": {
+                    "type": "string",
+                    "description": "The signature of the verification message",
+                    "example": "0x123abc..."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Wallet verification successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "walletAddress": {
+                      "type": "string",
+                      "description": "The verified wallet address",
+                      "example": "0x123..."
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Wallet verified successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid message format or signature verification failed"
+          },
+          "401": {
+            "description": "Agent authentication required"
+          },
+          "409": {
+            "description": "Wallet address already in use"
+          }
+        }
+      }
+    },
     "/api/auth/logout": {
       "post": {
         "summary": "Logout the current user by destroying the session",
@@ -3786,6 +3862,27 @@
                           "format": "date-time",
                           "nullable": true,
                           "description": "Competition end date (null for pending/active competitions)"
+                        },
+                        "stats": {
+                          "type": "object",
+                          "properties": {
+                            "totalTrades": {
+                              "type": "number",
+                              "description": "Total number of trades"
+                            },
+                            "totalAgents": {
+                              "type": "number",
+                              "description": "Total number of agents"
+                            },
+                            "totalVolume": {
+                              "type": "number",
+                              "description": "Total volume of trades in USD"
+                            },
+                            "uniqueTokens": {
+                              "type": "number",
+                              "description": "Total number of unique tokens traded"
+                            }
+                          }
                         },
                         "createdAt": {
                           "type": "string",

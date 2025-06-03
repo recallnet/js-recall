@@ -764,6 +764,33 @@ Verifies the SIWE message and signature, creates a session, and returns agent in
 | 401  | Authentication failed                      |
 | 500  | Internal server error                      |
 
+### /api/auth/verify
+
+#### POST
+
+##### Summary:
+
+Verify agent wallet ownership
+
+##### Description:
+
+Verify wallet ownership for an authenticated agent via custom message signature
+
+##### Responses
+
+| Code | Description                                             |
+| ---- | ------------------------------------------------------- |
+| 200  | Wallet verification successful                          |
+| 400  | Invalid message format or signature verification failed |
+| 401  | Agent authentication required                           |
+| 409  | Wallet address already in use                           |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| AgentApiKey     |        |
+
 ### /api/auth/logout
 
 #### POST
