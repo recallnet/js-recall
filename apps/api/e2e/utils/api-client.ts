@@ -12,6 +12,7 @@ import {
   Agent,
   AgentApiKeyResponse,
   AgentMetadata,
+  AgentNonceResponse,
   AgentProfileResponse,
   AgentWalletVerificationResponse,
   AgentsGetResponse,
@@ -1146,6 +1147,19 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get nonce");
+    }
+  }
+
+  /**
+   * Get a nonce for agent wallet verification
+   * @returns A promise that resolves to the agent nonce response
+   */
+  async getAgentNonce(): Promise<AgentNonceResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get("/api/auth/agent/nonce");
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get agent nonce");
     }
   }
 

@@ -47,6 +47,47 @@ export function configureAuthRoutes(
 
   /**
    * @openapi
+   * /api/auth/agent/nonce:
+   *   get:
+   *     summary: Get a random nonce for agent wallet verification
+   *     description: |
+   *       Generates a new nonce for agent wallet verification. The nonce is stored in the
+   *       database and must be included in the wallet verification message.
+   *
+   *       Requires agent authentication via API key.
+   *     tags: [Auth]
+   *     security:
+   *       - AgentApiKey: []
+   *     responses:
+   *       200:
+   *         description: Agent nonce generated successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               required:
+   *                 - nonce
+   *               properties:
+   *                 nonce:
+   *                   type: string
+   *                   description: The nonce to be used in agent wallet verification
+   *                   example: "8J0eXAiOiJ..."
+   *       401:
+   *         description: Agent authentication required
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 error:
+   *                   type: string
+   */
+  router.get("/agent/nonce", agentAuthMiddleware, controller.getAgentNonce);
+
+  /**
+   * @openapi
    * /api/auth/login:
    *   post:
    *     summary: Verify SIWE signature and create a session

@@ -1,8 +1,10 @@
 import * as crypto from "crypto";
+import { generateNonce } from "siwe";
 import { v4 as uuidv4 } from "uuid";
 import { recoverMessageAddress } from "viem";
 
 import { config } from "@/config/index.js";
+import * as agentNonceRepo from "@/database/repositories/agent-nonce-repository.js";
 import {
   count,
   countByName,
@@ -859,7 +861,7 @@ export class AgentManager {
         return { success: false, error: parseResult.error };
       }
 
-      const { timestamp, domain, purpose } = parseResult;
+      const { timestamp, domain, purpose, nonce } = parseResult;
 
       // Validate message content using config
       if (domain !== config.api.domain) {
@@ -870,18 +872,33 @@ export class AgentManager {
         return { success: false, error: "Invalid purpose" };
       }
 
-      // Validate timestamp (within 5 minutes)
-      if (!timestamp) {
-        return { success: false, error: "Missing timestamp in message" };
+      // Ensure we have all required fields (TypeScript safety)
+      if (!timestamp || !nonce) {
+        return {
+          success: false,
+          error: "Missing required fields in parsed message",
+        };
       }
 
-      const messageTime = new Date(timestamp);
+      // Validate timestamp (5-minute window)
+      const timestampDate = new Date(timestamp);
       const now = new Date();
-      const timeDiff = Math.abs(now.getTime() - messageTime.getTime());
-      const maxAgeMs = 5 * 60 * 1000; // 5 minutes
+      const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
 
-      if (timeDiff > maxAgeMs) {
+      if (timestampDate < fiveMinutesAgo) {
         return { success: false, error: "Message timestamp too old" };
+      }
+
+      // Validate and consume nonce (now required)
+      const nonceValidation = await this.validateAndConsumeNonce(
+        agentId,
+        nonce,
+      );
+      if (!nonceValidation.success) {
+        return {
+          success: false,
+          error: nonceValidation.error || "Nonce validation failed",
+        };
       }
 
       // Verify signature and recover wallet address
@@ -952,6 +969,7 @@ export class AgentManager {
     timestamp?: string;
     domain?: string;
     purpose?: string;
+    nonce?: string;
     error?: string;
   } {
     try {
@@ -966,20 +984,27 @@ export class AgentManager {
       );
       const domainLine = lines.find((line) => line.startsWith("Domain: "));
       const purposeLine = lines.find((line) => line.startsWith("Purpose: "));
+      const nonceLine = lines.find((line) => line.startsWith("Nonce: "));
 
       if (!timestampLine || !domainLine || !purposeLine) {
         return { success: false, error: "Missing required message fields" };
       }
 
+      if (!nonceLine) {
+        return { success: false, error: "Nonce is required" };
+      }
+
       const timestamp = timestampLine.replace("Timestamp: ", "");
       const domain = domainLine.replace("Domain: ", "");
       const purpose = purposeLine.replace("Purpose: ", "");
+      const nonce = nonceLine.replace("Nonce: ", "");
 
       return {
         success: true,
         timestamp,
         domain,
         purpose,
+        nonce,
       };
     } catch (error) {
       console.error(
@@ -987,6 +1012,100 @@ export class AgentManager {
         error,
       );
       return { success: false, error: "Failed to parse message" };
+    }
+  }
+
+  /**
+   * Generate a nonce for agent wallet verification
+   * @param agentId The agent ID requesting a nonce
+   * @returns Generated nonce
+   */
+  async generateNonceForAgent(agentId: string): Promise<{
+    success: boolean;
+    nonce?: string;
+    error?: string;
+  }> {
+    try {
+      // Generate a cryptographically secure nonce
+      const nonce = generateNonce();
+
+      // Set expiration time (10 minutes from now)
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+      // Clean up any existing nonces for this agent to keep table clean
+      await agentNonceRepo.deleteByAgentId(agentId);
+
+      // Store in database
+      await agentNonceRepo.create({
+        id: uuidv4(),
+        agentId,
+        nonce,
+        expiresAt,
+      });
+
+      return { success: true, nonce };
+    } catch (error) {
+      console.error("[AgentManager] Error generating nonce:", error);
+      return { success: false, error: "Failed to generate nonce" };
+    }
+  }
+
+  /**
+   * Validate and consume a nonce for agent wallet verification
+   * @param agentId The agent ID using the nonce
+   * @param nonce The nonce to validate and consume
+   * @returns Validation result
+   */
+  async validateAndConsumeNonce(
+    agentId: string,
+    nonce: string,
+  ): Promise<{
+    success: boolean;
+    error?: string;
+  }> {
+    try {
+      // Find the nonce
+      const nonceRecord = await agentNonceRepo.findByNonce(nonce);
+
+      if (!nonceRecord) {
+        return { success: false, error: "Invalid nonce" };
+      }
+
+      // Check if nonce belongs to the agent
+      if (nonceRecord.agentId !== agentId) {
+        return { success: false, error: "Nonce does not belong to this agent" };
+      }
+
+      // Check if nonce is already used
+      if (nonceRecord.usedAt) {
+        return { success: false, error: "Nonce already used" };
+      }
+
+      // Check if nonce is expired
+      if (new Date() > nonceRecord.expiresAt) {
+        return { success: false, error: "Nonce expired" };
+      }
+
+      // Mark nonce as used
+      await agentNonceRepo.markAsUsed(nonce);
+
+      return { success: true };
+    } catch (error) {
+      console.error("[AgentManager] Error validating nonce:", error);
+      return { success: false, error: "Failed to validate nonce" };
+    }
+  }
+
+  /**
+   * Clean up expired nonces (can be called by a background job)
+   * @returns Number of cleaned up nonces
+   */
+  async cleanupExpiredNonces(): Promise<number> {
+    try {
+      return await agentNonceRepo.deleteExpired();
+    } catch (error) {
+      console.error("[AgentManager] Error cleaning up expired nonces:", error);
+      return 0;
     }
   }
 }

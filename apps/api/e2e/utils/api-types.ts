@@ -596,6 +596,13 @@ export interface NonceResponse {
 }
 
 /**
+ * Response from the agent nonce endpoint
+ */
+export interface AgentNonceResponse {
+  nonce: string;
+}
+
+/**
  * Response from the login endpoint
  */
 export interface LoginResponse {

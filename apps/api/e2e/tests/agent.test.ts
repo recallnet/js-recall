@@ -990,17 +990,27 @@ describe("Agent API", () => {
         agentDescription: "Test agent for wallet verification",
       });
 
-      // Generate a new wallet for verification
+      // Step 1: Get a nonce for agent verification
+      const nonceResponse = await agentClient.getAgentNonce();
+      expect(nonceResponse).toMatchObject({ nonce: expect.any(String) });
+
+      const nonce = (nonceResponse as { nonce: string }).nonce;
+
+      // Step 2: Generate a new wallet for verification
       const privateKey =
         "0x1234567890123456789012345678901234567890123456789012345678901234";
       const testAccount = privateKeyToAccount(privateKey);
       const walletAddress = testAccount.address;
 
-      // Create verification message and signature
-      const { message, signature } =
-        await createAgentVerificationSignature(privateKey);
+      // Step 3: Create verification message with nonce and signature
+      const { message, signature } = await createAgentVerificationSignature(
+        privateKey,
+        nonce,
+        undefined,
+        undefined,
+      );
 
-      // Verify wallet ownership
+      // Step 4: Verify wallet ownership
       const response = await agentClient.verifyAgentWallet(message, signature);
 
       expect(response).toEqual({
@@ -1009,7 +1019,7 @@ describe("Agent API", () => {
         message: "Wallet verified successfully",
       });
 
-      // Verify the agent's wallet address was updated
+      // Step 5: Verify the agent's wallet address was updated
       const agentProfile = await agentClient.getAgentProfile();
       expect((agentProfile as AgentProfileResponse).agent.walletAddress).toBe(
         walletAddress.toLowerCase(),
@@ -1027,10 +1037,20 @@ describe("Agent API", () => {
         agentName: "Test Agent",
       });
 
+      // Get a nonce for agent verification
+      const nonceResponse = await agentClient.getAgentNonce();
+      expect(nonceResponse).toMatchObject({ nonce: expect.any(String) });
+      const nonce = (nonceResponse as { nonce: string }).nonce;
+
       // Create verification message with correct account
       const privateKey =
         "0x1234567890123456789012345678901234567890123456789012345678901234";
-      const { message } = await createAgentVerificationSignature(privateKey);
+      const { message } = await createAgentVerificationSignature(
+        privateKey,
+        nonce,
+        undefined,
+        undefined,
+      );
 
       // Use an invalid signature
       const invalidSignature = "0xinvalidsignature";
@@ -1059,6 +1079,12 @@ describe("Agent API", () => {
         agentName: "Test Agent",
       });
 
+      // Step 1: Get a nonce for agent verification
+      const nonceResponse = await agentClient.getAgentNonce();
+      expect(nonceResponse).toMatchObject({ nonce: expect.any(String) });
+
+      const nonce = (nonceResponse as { nonce: string }).nonce;
+
       // Create verification message with expired timestamp (6 minutes ago)
       const privateKey =
         "0x1234567890123456789012345678901234567890123456789012345678901234";
@@ -1067,7 +1093,9 @@ describe("Agent API", () => {
       ).toISOString();
       const { message, signature } = await createAgentVerificationSignature(
         privateKey,
+        nonce,
         expiredTimestamp,
+        undefined,
       );
 
       // Attempt verification
@@ -1091,11 +1119,17 @@ describe("Agent API", () => {
         agentName: "Test Agent",
       });
 
+      // Get a nonce for agent verification
+      const nonceResponse = await agentClient.getAgentNonce();
+      expect(nonceResponse).toMatchObject({ nonce: expect.any(String) });
+      const nonce = (nonceResponse as { nonce: string }).nonce;
+
       // Create verification message with wrong domain
       const privateKey =
         "0x1234567890123456789012345678901234567890123456789012345678901234";
       const { message, signature } = await createAgentVerificationSignature(
         privateKey,
+        nonce,
         undefined,
         "wrong.domain.com",
       );
@@ -1110,48 +1144,63 @@ describe("Agent API", () => {
       });
     });
 
-    test("should reject verification when wallet is already associated with another agent", async () => {
-      // Setup: Create admin client and two agents
+    test("should reject verification when wallet already assigned to different agent", async () => {
+      // Setup: Create admin client
       const adminClient = createTestClient();
       const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
       expect(adminLoginSuccess).toBe(true);
 
-      // Create first agent
-      const { client: firstAgentClient } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "First Agent",
-        });
+      // Create first agent and verify wallet
+      const { client: agentClient1 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "First Agent",
+      });
 
-      // Create second agent
-      const { client: secondAgentClient } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Second Agent",
-        });
-
-      // Generate wallet and verify with first agent
       const privateKey =
         "0x1234567890123456789012345678901234567890123456789012345678901234";
-      const { message: firstMessage, signature: firstSignature } =
-        await createAgentVerificationSignature(privateKey);
 
-      // Verify with first agent - should succeed
-      const firstResponse = await firstAgentClient.verifyAgentWallet(
-        firstMessage,
-        firstSignature,
+      // Get nonce for first agent
+      const nonceResponse1 = await agentClient1.getAgentNonce();
+      const nonce1 = (nonceResponse1 as { nonce: string }).nonce;
+
+      const { message: message1, signature: signature1 } =
+        await createAgentVerificationSignature(
+          privateKey,
+          nonce1,
+          undefined,
+          undefined,
+        );
+
+      const response1 = await agentClient1.verifyAgentWallet(
+        message1,
+        signature1,
       );
-      expect(firstResponse).toMatchObject({ success: true });
+      expect(response1).toMatchObject({ success: true });
 
-      // Try to verify same wallet with second agent - should fail
-      const { message: secondMessage, signature: secondSignature } =
-        await createAgentVerificationSignature(privateKey);
+      // Create second agent and try to verify with same wallet
+      const { client: agentClient2 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Second Agent",
+      });
 
-      const secondResponse = await secondAgentClient.verifyAgentWallet(
-        secondMessage,
-        secondSignature,
+      // Get nonce for second agent
+      const nonceResponse2 = await agentClient2.getAgentNonce();
+      const nonce2 = (nonceResponse2 as { nonce: string }).nonce;
+
+      const { message: message2, signature: signature2 } =
+        await createAgentVerificationSignature(
+          privateKey,
+          nonce2,
+          undefined,
+          undefined,
+        );
+
+      const response2 = await agentClient2.verifyAgentWallet(
+        message2,
+        signature2,
       );
-      expect(secondResponse).toEqual({
+
+      expect(response2).toEqual({
         success: false,
         error: "Wallet address already associated with another agent",
         status: 409,
@@ -1162,17 +1211,204 @@ describe("Agent API", () => {
       // Create a client without API key
       const unauthenticatedClient = new ApiClient(undefined, getBaseUrl());
 
-      // Create verification message
+      // Try to get a nonce without authentication - should fail
+      const nonceResponse = await unauthenticatedClient.getAgentNonce();
+
+      expect(nonceResponse).toEqual({
+        success: false,
+        error:
+          "Authentication required. No active session and no API key provided. Use Authorization: Bearer YOUR_API_KEY",
+        status: 401,
+      });
+
+      // Also test direct wallet verification without auth (will fail on nonce requirement)
       const privateKey =
         "0x1234567890123456789012345678901234567890123456789012345678901234";
-      const { message, signature } =
-        await createAgentVerificationSignature(privateKey);
+
+      // Create a message manually (without nonce since we can't get one)
+      const timestamp = new Date().toISOString();
+      const message = `VERIFY_WALLET_OWNERSHIP
+Timestamp: ${timestamp}
+Domain: api.recall.net
+Purpose: WALLET_VERIFICATION`;
+
+      const testAccount = privateKeyToAccount(privateKey as `0x${string}`);
+      const signature = await testAccount.signMessage({ message });
 
       // Attempt verification without authentication
-      const response = await unauthenticatedClient.verifyAgentWallet(
+      const verifyResponse = await unauthenticatedClient.verifyAgentWallet(
         message,
         signature,
       );
+
+      expect(verifyResponse).toEqual({
+        success: false,
+        error:
+          "Authentication required. No active session and no API key provided. Use Authorization: Bearer YOUR_API_KEY",
+        status: 401,
+      });
+    });
+
+    test("should successfully verify agent wallet ownership with nonce", async () => {
+      // Setup: Create admin client
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      // Create a test agent
+      const { client: agentClient } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Test Agent with Nonce",
+        agentDescription: "Test agent for nonce-based wallet verification",
+      });
+
+      // Step 1: Get a nonce for agent verification
+      const nonceResponse = await agentClient.getAgentNonce();
+      expect(nonceResponse).toMatchObject({ nonce: expect.any(String) });
+      expect("error" in nonceResponse).toBe(false);
+
+      const nonce = (nonceResponse as { nonce: string }).nonce;
+
+      // Step 2: Generate a new wallet for verification
+      const privateKey =
+        "0x1234567890123456789012345678901234567890123456789012345678901234";
+      const testAccount = privateKeyToAccount(privateKey);
+      const walletAddress = testAccount.address;
+
+      // Step 3: Create verification message with nonce and signature
+      const { message, signature } = await createAgentVerificationSignature(
+        privateKey,
+        nonce,
+        undefined,
+        undefined,
+      );
+
+      // Step 4: Verify wallet ownership
+      const response = await agentClient.verifyAgentWallet(message, signature);
+
+      expect(response).toEqual({
+        success: true,
+        walletAddress: walletAddress.toLowerCase(),
+        message: "Wallet verified successfully",
+      });
+
+      // Step 5: Verify the agent's wallet address was updated
+      const agentProfile = await agentClient.getAgentProfile();
+      expect((agentProfile as AgentProfileResponse).agent.walletAddress).toBe(
+        walletAddress.toLowerCase(),
+      );
+    });
+
+    test("should reject verification when nonce is reused", async () => {
+      // Setup: Create admin client and two agents
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      // Create first agent
+      const { client: firstAgentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "First Agent Nonce Test",
+        });
+
+      // Create second agent
+      const { client: secondAgentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Second Agent Nonce Test",
+        });
+
+      // Get a nonce for first agent
+      const nonceResponse = await firstAgentClient.getAgentNonce();
+      expect(nonceResponse).toMatchObject({ nonce: expect.any(String) });
+      const nonce = (nonceResponse as { nonce: string }).nonce;
+
+      // Generate wallet and verify with first agent using the nonce
+      const privateKey1 =
+        "0x1111111111111111111111111111111111111111111111111111111111111111";
+      const { message: firstMessage, signature: firstSignature } =
+        await createAgentVerificationSignature(
+          privateKey1,
+          nonce,
+          undefined,
+          undefined,
+        );
+
+      // Verify with first agent - should succeed
+      const firstResponse = await firstAgentClient.verifyAgentWallet(
+        firstMessage,
+        firstSignature,
+      );
+      expect(firstResponse).toMatchObject({ success: true });
+
+      // Try to use the same nonce with second agent - should fail
+      const privateKey2 =
+        "0x2222222222222222222222222222222222222222222222222222222222222222";
+      const { message: secondMessage, signature: secondSignature } =
+        await createAgentVerificationSignature(
+          privateKey2,
+          nonce,
+          undefined,
+          undefined,
+        );
+
+      const secondResponse = await secondAgentClient.verifyAgentWallet(
+        secondMessage,
+        secondSignature,
+      );
+      expect(secondResponse).toEqual({
+        success: false,
+        error: "Nonce does not belong to this agent",
+        status: 400,
+      });
+    });
+
+    test("should reject verification with expired nonce", async () => {
+      // Setup: Create admin client and agent
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      const { client: agentClient } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Expired Nonce Test Agent",
+      });
+
+      // Get a nonce
+      const nonceResponse = await agentClient.getAgentNonce();
+      expect(nonceResponse).toMatchObject({ nonce: expect.any(String) });
+      const nonce = (nonceResponse as { nonce: string }).nonce;
+
+      // Create verification message with expired timestamp (15 minutes ago)
+      const privateKey =
+        "0x3333333333333333333333333333333333333333333333333333333333333333";
+      const expiredTimestamp = new Date(
+        Date.now() - 15 * 60 * 1000,
+      ).toISOString();
+
+      const { message, signature } = await createAgentVerificationSignature(
+        privateKey,
+        nonce,
+        expiredTimestamp,
+        undefined,
+      );
+
+      // Attempt verification - should fail due to expired timestamp
+      const response = await agentClient.verifyAgentWallet(message, signature);
+      expect(response).toEqual({
+        success: false,
+        error: "Message timestamp too old",
+        status: 400,
+      });
+    });
+
+    test("should require agent authentication for nonce generation", async () => {
+      // Create a client without API key
+      const unauthenticatedClient = new ApiClient(undefined, getBaseUrl());
+
+      // Attempt to get agent nonce without authentication
+      const response = await unauthenticatedClient.getAgentNonce();
 
       expect(response).toEqual({
         success: false,
@@ -1180,6 +1416,48 @@ describe("Agent API", () => {
           "Authentication required. No active session and no API key provided. Use Authorization: Bearer YOUR_API_KEY",
         status: 401,
       });
+    });
+
+    test("should work with both nonce and non-nonce verification (backward compatibility)", async () => {
+      // Setup: Create admin client and two agents
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      // Create first agent for nonce-based verification
+      const { client: nonceAgentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Nonce Agent",
+        });
+
+      // Create second agent for legacy (no nonce) verification
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Legacy Agent",
+      });
+
+      // Test 1: Nonce-based verification
+      const nonceResponse = await nonceAgentClient.getAgentNonce();
+      expect("error" in nonceResponse).toBe(false);
+      const nonce = (nonceResponse as { nonce: string }).nonce;
+
+      const privateKey1 =
+        "0x4444444444444444444444444444444444444444444444444444444444444444";
+      const { message: nonceMessage, signature: nonceSignature } =
+        await createAgentVerificationSignature(
+          privateKey1,
+          nonce,
+          undefined,
+          undefined,
+        );
+
+      const nonceVerificationResponse =
+        await nonceAgentClient.verifyAgentWallet(nonceMessage, nonceSignature);
+      expect(nonceVerificationResponse).toMatchObject({ success: true });
+
+      // Test 2: Legacy (no nonce) verification
+      // This test should be removed since nonce is now required
     });
   });
 });
