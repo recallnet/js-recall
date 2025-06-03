@@ -1,12 +1,12 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: eea0c1a7485de234299a696b978f3e77
+  docChecksum: a063cf68d2faaedbb2451447c3ce656d
   docVersion: 1.0.0
   speakeasyVersion: 1.555.0
   generationVersion: 2.618.0
-  releaseVersion: 0.1.9
-  configChecksum: bd3b9989cea9105f8f983430d3d4f578
+  releaseVersion: 0.1.10
+  configChecksum: 6cd589f11e48a9104dd96fee35c23fdb
 features:
   typescript:
     additionalDependencies: 0.1.0
@@ -38,6 +38,7 @@ generatedFiles:
   - docs/lib/utils/retryconfig.md
   - docs/models/components/security.md
   - docs/models/errors/errort.md
+  - docs/models/errors/getapiauthagentnonceinternalservererror.md
   - docs/models/errors/getapiauthnonceinternalservererror.md
   - docs/models/errors/postapiauthlogininternalservererror.md
   - docs/models/errors/postapiauthlogoutinternalservererror.md
@@ -96,6 +97,8 @@ generatedFiles:
   - docs/models/operations/getapiagentsresponse.md
   - docs/models/operations/getapiagentsstatus.md
   - docs/models/operations/getapiagenttradesresponse.md
+  - docs/models/operations/getapiauthagentnonceresponse.md
+  - docs/models/operations/getapiauthagentnoncesecurity.md
   - docs/models/operations/getapiauthnonceresponse.md
   - docs/models/operations/getapicompetitionscompetition.md
   - docs/models/operations/getapicompetitionscompetitionidagentsagent.md
@@ -284,6 +287,7 @@ generatedFiles:
   - src/funcs/agentGetApiAgents.ts
   - src/funcs/agentPostApiAgentResetApiKey.ts
   - src/funcs/agentPutApiAgentProfile.ts
+  - src/funcs/authGetApiAuthAgentNonce.ts
   - src/funcs/authGetApiAuthNonce.ts
   - src/funcs/authPostApiAuthLogin.ts
   - src/funcs/authPostApiAuthLogout.ts
@@ -387,6 +391,7 @@ generatedFiles:
   - src/models/components/security.ts
   - src/models/errors/apierror.ts
   - src/models/errors/error.ts
+  - src/models/errors/getapiauthagentnonce.ts
   - src/models/errors/getapiauthnonce.ts
   - src/models/errors/httpclienterrors.ts
   - src/models/errors/index.ts
@@ -408,6 +413,7 @@ generatedFiles:
   - src/models/operations/getapiagentprofile.ts
   - src/models/operations/getapiagents.ts
   - src/models/operations/getapiagenttrades.ts
+  - src/models/operations/getapiauthagentnonce.ts
   - src/models/operations/getapiauthnonce.ts
   - src/models/operations/getapicompetitions.ts
   - src/models/operations/getapicompetitionscompetitionid.ts
@@ -915,5 +921,12 @@ examples:
       responses:
         "200":
           application/json: {"success": true, "walletAddress": "0x123...", "message": "Wallet verified successfully"}
+  get_/api/auth/agent/nonce:
+    speakeasy-default-get-/api/auth/agent/nonce:
+      responses:
+        "200":
+          application/json: {"nonce": "8J0eXAiOiJ..."}
+        "500":
+          application/json: {}
 examplesVersion: 1.0.2
 generatedTests: {}
