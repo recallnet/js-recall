@@ -744,6 +744,35 @@ Generates a new nonce and stores it in the session for SIWE message verification
 | 200  | A new nonce generated successfully |
 | 500  | Internal server error              |
 
+### /api/auth/agent/nonce
+
+#### GET
+
+##### Summary:
+
+Get a random nonce for agent wallet verification
+
+##### Description:
+
+Generates a new nonce for agent wallet verification. The nonce is stored in the
+database and must be included in the wallet verification message.
+
+Requires agent authentication via API key.
+
+##### Responses
+
+| Code | Description                        |
+| ---- | ---------------------------------- |
+| 200  | Agent nonce generated successfully |
+| 401  | Agent authentication required      |
+| 500  | Internal server error              |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| AgentApiKey     |        |
+
 ### /api/auth/login
 
 #### POST
