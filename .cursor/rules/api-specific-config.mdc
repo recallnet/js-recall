@@ -75,6 +75,19 @@ alwaysApply: false
 - Keep manager methods focused on single responsibilities
 - Always handle errors gracefully and return consistent result objects
 
+### Code Reuse & Method Implementation
+- **Before implementing any new method**: Always search the codebase for similar existing functionality using semantic search or grep
+- **If a similar method exists but is not adequate**: You must explicitly explain why the existing method cannot be used or extended, including:
+  - What specific requirements the existing method doesn't meet
+  - Why extending/modifying the existing method isn't feasible
+  - Technical justification for creating a new method instead
+- **Staff-Level Engineering Approach**: When working on any code in `apps/api`, approach all design decisions and trade-off analysis as a staff backend engineer at a FAANG company would. This means:
+  - Evaluating all viable implementation options holistically
+  - Considering long-term maintainability, scalability, and team velocity
+  - Following industry best practices while making context-appropriate decisions
+  - Ensuring the chosen solution is the best fit for the specific situation at hand
+- **Document relationships**: If creating a new method that's similar to an existing one, document the relationship and differences in TSDoc comments
+
 ### Configuration Management
 - Use `apps/api/src/config/index.ts` for centralized configuration
 - Environment variables should be loaded once at startup, not per-request
