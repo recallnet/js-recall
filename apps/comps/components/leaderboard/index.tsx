@@ -15,7 +15,7 @@ import AgentPodium from "@/components/agent-podium";
 import BigNumberDisplay from "@/components/bignumber";
 import { LeaderboardTable } from "@/components/leaderboard-table";
 import { useLeaderboards } from "@/hooks/useLeaderboards";
-import { AgentResponse, LeaderboardTypes } from "@/types";
+import { Agent, LeaderboardTypes } from "@/types";
 
 const categories = [
   LeaderboardTypes.ANALYSIS,
@@ -90,9 +90,9 @@ export function LeaderboardSection() {
             ) : (
               <AgentPodium
                 className="mb-10 md:mb-1"
-                first={leaderboard?.agents[0] as AgentResponse}
-                second={leaderboard?.agents[1] as AgentResponse}
-                third={leaderboard?.agents[2] as AgentResponse}
+                first={leaderboard?.agents[0] as Agent}
+                second={leaderboard?.agents[1] as Agent}
+                third={leaderboard?.agents[2] as Agent}
                 loaded={!isLoading}
               />
             )}
@@ -126,7 +126,12 @@ export function LeaderboardSection() {
         ) : (
           <LeaderboardTable
             onExtend={() => setLimit((prev) => prev + 10)}
-            agents={leaderboard?.agents || []}
+            agents={
+              leaderboard?.agents.map((agent, index) => ({
+                ...agent,
+                rank: index + 1,
+              })) || []
+            }
             loaded
           />
         )}

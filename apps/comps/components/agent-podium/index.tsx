@@ -4,14 +4,14 @@ import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { MirrorImage } from "@/components/mirror-image";
-import { AgentResponse } from "@/types/agent";
+import { Agent } from "@/types/agent";
 
 import AwardIcon from "./award-icon";
 
 interface AgentPodiumProps {
-  first?: AgentResponse;
-  second?: AgentResponse;
-  third?: AgentResponse;
+  first?: Agent;
+  second?: Agent;
+  third?: Agent;
   className?: string;
   loaded?: boolean;
 }
@@ -68,7 +68,7 @@ export const AgentPodium: React.FC<AgentPodiumProps> = ({
 
 type PodiumAgentProps = {
   place: "first" | "second" | "third";
-  agent?: AgentResponse;
+  agent?: Agent;
   loaded?: boolean;
   feats: [{ name: string; value: string }, { name: string; value: string }];
 };

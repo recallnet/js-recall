@@ -1,5 +1,3 @@
-import { AgentResponse } from "./agent";
-
 export interface NonceResponse {
   nonce: string;
 }

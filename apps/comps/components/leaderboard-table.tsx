@@ -3,6 +3,7 @@
 import { useAtom } from "jotai";
 import Image from "next/image";
 import { FaRegThumbsUp } from "react-icons/fa";
+import { zeroAddress } from "viem";
 
 import { displayAddress } from "@recallnet/address-utils/display";
 import { Button } from "@recallnet/ui2/components/button";
@@ -17,25 +18,18 @@ import {
 } from "@recallnet/ui2/components/table";
 
 import { userAgentAtom, userAtom } from "@/state/atoms";
-import { LeaderboardAgent } from "@/types/agent";
+import { Agent } from "@/types/agent";
 
 import AwardIcon from "./agent-podium/award-icon";
+
+type LeaderboardAgent = Agent & { rank: number };
 
 const emptyAgent: (i: number) => LeaderboardAgent = (i: number) => ({
   id: i.toString(),
   rank: i + 1,
   imageUrl: "",
   name: "",
-  metadata: {},
-  skills: [],
-  apiKey: "",
-  registeredCompetitionIds: [],
-  userId: undefined,
-  stats: undefined,
-  trophies: undefined,
-  hasUnclaimedRewards: false,
-  score: 0,
-  rewards: undefined,
+  walletAddress: "",
   description: "",
   status: "active",
 });
@@ -102,7 +96,7 @@ export function LeaderboardTable({
                       </div>
                       <span className="whitespace-nowrap text-xs text-gray-400">
                         {displayAddress(
-                          userAgent.metadata?.walletAddress || "",
+                          userAgent.walletAddress || zeroAddress,
                           {
                             numChars: 5,
                             separator: " . . . ",
@@ -115,16 +109,12 @@ export function LeaderboardTable({
               </TableCell>
 
               <TableCell className="text-center">
-                {userAgent.score || 0}
+                {userAgent.rank || 0}
               </TableCell>
 
-              <TableCell className="text-center">
-                {`${userAgent.metadata?.roi?.toFixed(2) || 0}%`}
-              </TableCell>
+              <TableCell className="text-center">N/A</TableCell>
 
-              <TableCell className="text-center">
-                {userAgent.metadata?.trades}
-              </TableCell>
+              <TableCell className="text-center">N/A</TableCell>
 
               <TableCell className="text-end text-lg text-gray-500">
                 <FaRegThumbsUp />
@@ -169,7 +159,7 @@ export function LeaderboardTable({
                       )}
                       {loaded ? (
                         <span className="whitespace-nowrap text-xs text-gray-400">
-                          {displayAddress(agent.metadata?.walletAddress || "", {
+                          {displayAddress(agent.walletAddress || zeroAddress, {
                             numChars: 5,
                             separator: " . . . ",
                           })}
@@ -184,7 +174,7 @@ export function LeaderboardTable({
 
               <TableCell className="text-center">
                 {loaded ? (
-                  agent.score
+                  "N/A"
                 ) : (
                   <Skeleton className="h-2 w-10 rounded-full" />
                 )}
@@ -192,7 +182,7 @@ export function LeaderboardTable({
 
               <TableCell className="text-center">
                 {loaded ? (
-                  <>{`${agent.metadata?.roi?.toFixed(2) || "0"}%`}</>
+                  "N/A"
                 ) : (
                   <Skeleton className="h-2 w-10 rounded-full" />
                 )}
@@ -200,7 +190,7 @@ export function LeaderboardTable({
 
               <TableCell className="text-center">
                 {loaded ? (
-                  agent.metadata?.trades
+                  "N/A"
                 ) : (
                   <Skeleton className="h-2 w-10 rounded-full" />
                 )}

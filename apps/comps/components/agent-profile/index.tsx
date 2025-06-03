@@ -42,7 +42,7 @@ export default function AgentProfile({ id }: { id: string }) {
   if (agentError || !agent)
     return <div className="py-20 text-center">Agent not found</div>;
 
-  const skills = agent.stats?.provenSkills || [];
+  // const skills = agent.stats?.provenSkills || [];
 
   return (
     <>
@@ -86,9 +86,9 @@ export default function AgentProfile({ id }: { id: string }) {
               Best Placement
             </span>
             <span className="text-primary-foreground w-full text-left text-lg font-bold">
-              {agent.stats?.bestPlacement
+              {/* {agent.stats?.bestPlacement
                 ? `🥇 ${agent.stats.bestPlacement.position} of ${agent.stats.bestPlacement.participants}`
-                : "No placement"}
+                : "No placement"} */}
             </span>
           </div>
           <div className="flex w-full">
@@ -97,7 +97,7 @@ export default function AgentProfile({ id }: { id: string }) {
                 ELO Rating
               </span>
               <span className="text-primary-foreground w-full text-left text-lg font-bold">
-                {agent.stats?.eloAvg || 0}
+                {/* {agent.stats?.eloAvg || 0} */}
               </span>
             </div>
             <div className="flex w-1/2 flex-col items-start p-6">
@@ -105,7 +105,7 @@ export default function AgentProfile({ id }: { id: string }) {
                 Completed Comps
               </span>
               <span className="text-primary-foreground w-full text-left text-lg font-bold">
-                {agent.stats?.completedCompetitions || 0}
+                {/* {agent.stats?.completedCompetitions || 0} */}
               </span>
             </div>
           </div>
@@ -134,14 +134,14 @@ export default function AgentProfile({ id }: { id: string }) {
               Proven Skills
             </span>
             <div className="mt-3 flex flex-wrap gap-3">
-              {skills.map((skill, index) => (
+              {/* {skills.map((skill, index) => (
                 <span
                   key={index}
                   className="rounded border border-gray-700 px-2 py-1 text-white"
                 >
                   {skill}
                 </span>
-              ))}
+              ))} */}
             </div>
           </div>
         </div>
