@@ -4,6 +4,7 @@ import { privateKeyToAccount } from "viem/accounts";
 
 import { ApiSDK } from "@recallnet/api-sdk";
 
+import { config } from "@/config/index.js";
 import { resetRateLimiters } from "@/middleware/rate-limiter.middleware.js";
 
 import { ApiClient } from "./api-client.js";
@@ -376,7 +377,7 @@ export async function createSiweAuthenticatedClient({
  * Create verification message and signature for testing agent wallet verification
  * @param privateKey The private key to sign with
  * @param timestampOverride Optional timestamp override for testing
- * @param domain Optional domain override for testing (defaults to "http://localhost:3001")
+ * @param domain Optional domain override for testing (defaults to config.api.domain)
  * @returns Object with message and signature
  */
 export async function createAgentVerificationSignature(
@@ -385,7 +386,8 @@ export async function createAgentVerificationSignature(
   domain?: string,
 ): Promise<{ message: string; signature: string }> {
   const timestamp = timestampOverride || new Date().toISOString();
-  const verificationDomain = domain || "http://localhost:3001";
+  // Use config.api.domain which will be "api.recall.net" by default for test environment
+  const verificationDomain = domain || config.api.domain;
 
   const message = `VERIFY_WALLET_OWNERSHIP
 Timestamp: ${timestamp}

@@ -984,12 +984,11 @@ describe("Agent API", () => {
       expect(adminLoginSuccess).toBe(true);
 
       // Create a test agent
-      const { client: agentClient, agent } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Test Agent",
-          agentDescription: "Test agent for wallet verification",
-        });
+      const { client: agentClient } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Test Agent",
+        agentDescription: "Test agent for wallet verification",
+      });
 
       // Generate a new wallet for verification
       const privateKey =

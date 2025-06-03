@@ -1,5 +1,6 @@
 import * as crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
+import { recoverMessageAddress } from "viem";
 
 import { config } from "@/config/index.js";
 import {
@@ -836,11 +837,11 @@ export class AgentManager {
   }
 
   /**
-   * Verify agent wallet ownership via custom message signature
-   * @param agentId The agent ID
+   * Verify wallet ownership for an agent via custom message signature
+   * @param agentId The agent ID to update
    * @param message The verification message
    * @param signature The signature of the message
-   * @returns Verification response with success status
+   * @returns Verification result
    */
   async verifyWalletOwnership(
     agentId: string,
@@ -860,10 +861,8 @@ export class AgentManager {
 
       const { timestamp, domain, purpose } = parseResult;
 
-      // Validate message content
-      const apiDomain =
-        process.env.API_DOMAIN || "api.competitions.recall.network";
-      if (domain !== apiDomain) {
+      // Validate message content using config
+      if (domain !== config.api.domain) {
         return { success: false, error: "Invalid domain" };
       }
 
@@ -888,7 +887,6 @@ export class AgentManager {
       // Verify signature and recover wallet address
       let walletAddress: string;
       try {
-        const { recoverMessageAddress } = await import("viem");
         walletAddress = (
           await recoverMessageAddress({
             message,
