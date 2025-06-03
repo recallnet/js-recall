@@ -17,7 +17,6 @@ export * from "./getapiagentportfolio.js";
 export * from "./getapiagentprofile.js";
 export * from "./getapiagents.js";
 export * from "./getapiagenttrades.js";
-export * from "./getapiauthagentnonce.js";
 export * from "./getapiauthnonce.js";
 export * from "./getapicompetitions.js";
 export * from "./getapicompetitionscompetitionid.js";

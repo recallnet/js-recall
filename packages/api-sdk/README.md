@@ -294,9 +294,20 @@ import { ApiSDK } from "@recallnet/api-sdk";
 const apiSDK = new ApiSDK();
 
 async function run() {
-  const result = await apiSDK.auth.getApiAuthAgentNonce({
-    agentApiKey: process.env["APISDK_AGENT_API_KEY"] ?? "",
-  });
+  const result = await apiSDK.auth.postApiAuthVerify(
+    {
+      agentApiKey: process.env["APISDK_AGENT_API_KEY"] ?? "",
+    },
+    {
+      message:
+        "VERIFY_WALLET_OWNERSHIP\n" +
+        "Timestamp: 2024-01-15T10:30:00.000Z\n" +
+        "Domain: api.competitions.recall.network\n" +
+        "Purpose: WALLET_VERIFICATION\n" +
+        "",
+      signature: "0x123abc...",
+    },
+  );
 
   // Handle the result
   console.log(result);
@@ -346,7 +357,6 @@ run();
 ### [auth](docs/sdks/auth/README.md)
 
 - [getApiAuthNonce](docs/sdks/auth/README.md#getapiauthnonce) - Get a random nonce for SIWE authentication
-- [getApiAuthAgentNonce](docs/sdks/auth/README.md#getapiauthagentnonce) - Get a random nonce for agent wallet verification
 - [postApiAuthLogin](docs/sdks/auth/README.md#postapiauthlogin) - Verify SIWE signature and create a session
 - [postApiAuthVerify](docs/sdks/auth/README.md#postapiauthverify) - Verify agent wallet ownership
 - [postApiAuthLogout](docs/sdks/auth/README.md#postapiauthlogout) - Logout the current user by destroying the session
@@ -429,7 +439,6 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`agentGetApiAgentTrades`](docs/sdks/agent/README.md#getapiagenttrades) - Get agent trade history
 - [`agentPostApiAgentResetApiKey`](docs/sdks/agent/README.md#postapiagentresetapikey) - Reset agent API key
 - [`agentPutApiAgentProfile`](docs/sdks/agent/README.md#putapiagentprofile) - Update authenticated agent profile
-- [`authGetApiAuthAgentNonce`](docs/sdks/auth/README.md#getapiauthagentnonce) - Get a random nonce for agent wallet verification
 - [`authGetApiAuthNonce`](docs/sdks/auth/README.md#getapiauthnonce) - Get a random nonce for SIWE authentication
 - [`authPostApiAuthLogin`](docs/sdks/auth/README.md#postapiauthlogin) - Verify SIWE signature and create a session
 - [`authPostApiAuthLogout`](docs/sdks/auth/README.md#postapiauthlogout) - Logout the current user by destroying the session
