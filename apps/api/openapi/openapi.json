@@ -1286,6 +1286,11 @@
                             "description": "URL to the user's image",
                             "nullable": true
                           },
+                          "metadata": {
+                            "type": "object",
+                            "description": "User metadata",
+                            "nullable": true
+                          },
                           "createdAt": {
                             "type": "string",
                             "format": "date-time",
@@ -5121,6 +5126,12 @@
                             "deleted"
                           ]
                         },
+                        "metadata": {
+                          "type": "object",
+                          "example": {
+                            "foo": "bar"
+                          }
+                        },
                         "createdAt": {
                           "type": "string",
                           "format": "date-time"
@@ -5179,6 +5190,13 @@
                     "type": "string",
                     "description": "User's email",
                     "example": "john@example.com"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "description": "User's metadata",
+                    "example": {
+                      "foo": "bar"
+                    }
                   }
                 },
                 "additionalProperties": false
@@ -5218,6 +5236,10 @@
                         },
                         "imageUrl": {
                           "type": "string",
+                          "nullable": true
+                        },
+                        "metadata": {
+                          "type": "object",
                           "nullable": true
                         },
                         "status": {

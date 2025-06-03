@@ -766,6 +766,7 @@ export function makeAdminController(services: ServiceRegistry) {
           email: user.email,
           status: user.status,
           imageUrl: user.imageUrl,
+          metadata: user.metadata,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
         }));

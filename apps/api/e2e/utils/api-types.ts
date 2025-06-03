@@ -86,12 +86,7 @@ export interface User {
 
 // User metadata structure
 export interface UserMetadata {
-  preferences?: {
-    notifications?: boolean;
-    theme?: "light" | "dark";
-  };
-  settings?: Record<string, unknown>;
-  custom?: Record<string, unknown>;
+  [key: string]: unknown;
 }
 
 // Agent metadata structure
