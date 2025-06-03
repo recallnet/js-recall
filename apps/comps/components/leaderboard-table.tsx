@@ -3,6 +3,7 @@
 import { useAtom } from "jotai";
 import Image from "next/image";
 import { FaRegThumbsUp } from "react-icons/fa";
+import { zeroAddress } from "viem";
 
 import { displayAddress } from "@recallnet/address-utils/display";
 import { Button } from "@recallnet/ui2/components/button";
@@ -94,10 +95,13 @@ export function LeaderboardTable({
                         {userAgent.name}
                       </div>
                       <span className="whitespace-nowrap text-xs text-gray-400">
-                        {displayAddress(userAgent.walletAddress || "", {
-                          numChars: 5,
-                          separator: " . . . ",
-                        })}
+                        {displayAddress(
+                          userAgent.walletAddress || zeroAddress,
+                          {
+                            numChars: 5,
+                            separator: " . . . ",
+                          },
+                        )}
                       </span>
                     </div>
                   </div>
@@ -155,7 +159,7 @@ export function LeaderboardTable({
                       )}
                       {loaded ? (
                         <span className="whitespace-nowrap text-xs text-gray-400">
-                          {displayAddress(agent.walletAddress || "", {
+                          {displayAddress(agent.walletAddress || zeroAddress, {
                             numChars: 5,
                             separator: " . . . ",
                           })}
