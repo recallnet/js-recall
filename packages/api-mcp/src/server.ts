@@ -24,7 +24,10 @@ import { tool$tradeGetApiTradeQuote } from "@recallnet/api-sdk/mcp-server/tools/
 import { tool$tradePostApiTradeExecute } from "@recallnet/api-sdk/mcp-server/tools/tradePostApiTradeExecute.js";
 
 // Import custom tools
-import { tool$authPostApiAuthVerify } from "./tools.js";
+import {
+  tool$authGetApiAuthAgentNonce,
+  tool$authPostApiAuthVerify,
+} from "./tools.js";
 import { ServerOptions } from "./types.js";
 
 // Non-admin tool definitions
@@ -39,6 +42,7 @@ const USER_TOOLS = [
   tool$agentGetApiAgents,
 
   // Auth tools (custom)
+  tool$authGetApiAuthAgentNonce,
   tool$authPostApiAuthVerify,
 
   // Competition tools
