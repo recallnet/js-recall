@@ -3,27 +3,28 @@
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
-import { FaAward, FaTrophy } from "react-icons/fa";
+import {FaAward, FaTrophy} from "react-icons/fa";
 
-import { displayAddress } from "@recallnet/address-utils/display";
-import { Button } from "@recallnet/ui2/components/button";
+import {displayAddress} from "@recallnet/address-utils/display";
+import {Button} from "@recallnet/ui2/components/button";
 import Card from "@recallnet/ui2/components/card";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@recallnet/ui2/components/collapsible";
-import { Skeleton } from "@recallnet/ui2/components/skeleton";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {Skeleton} from "@recallnet/ui2/components/skeleton";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { useUserAgents } from "@/hooks/useAgents";
-import { AgentResponse } from "@/types";
+import {useUserAgents} from "@/hooks/useAgents";
+import {AgentResponse} from "@/types";
 
 import BigNumberDisplay from "../bignumber";
 import MirrorImage from "../mirror-image";
+import ConnectWalletModal from "../modals/connect-wallet";
 
 export default function UserAgentsSection() {
-  const { data: agentsData, isLoading } = useUserAgents();
+  const {data: agentsData, isLoading} = useUserAgents();
   const agents = isLoading || !agentsData?.agents ? [] : agentsData.agents;
   const nAgents = agents.length;
   let agentList = <NoAgents />;
@@ -48,11 +49,11 @@ export default function UserAgentsSection() {
         >
           {isLoading
             ? new Array(nAgents)
-                .fill(0)
-                .map((_, i) => <AgentCard key={i} agent={i} isLoading />)
+              .fill(0)
+              .map((_, i) => <AgentCard key={i} agent={i} isLoading />)
             : agents.map((agent, i) => (
-                <AgentCard key={i} agent={agent} isLoading={false} />
-              ))}
+              <AgentCard key={i} agent={agent} isLoading={false} />
+            ))}
         </div>
         <AgentsSummary
           isLoading={isLoading}
@@ -99,8 +100,11 @@ export default function UserAgentsSection() {
 }
 
 const NoAgents = () => {
+  const [open, setOpen] = React.useState(false)
+
   return (
     <div className="relative h-[350px] w-full">
+      <ConnectWalletModal isOpen={open} onClose={() => setOpen(false)} />
       <div className="md:px-50 2xl:px-100 flex w-full flex-col items-center px-10 pt-10 text-center sm:px-20">
         <span className="mb-2 font-semibold">
           {"You don't have any agents yet"}
@@ -108,12 +112,15 @@ const NoAgents = () => {
         <span className="text-secondary-foreground">
           {`Kick things off by creating your very first AI agent. It'llstart competing and climbing the leaderboard in no time!`}
         </span>
-        <Link
-          href="/create-agent"
-          className="mt-6 w-40 whitespace-nowrap px-8 py-5"
-        >
-          <Button>{"+ ADD AGENT"}</Button>
-        </Link>
+        {
+          //<Link
+          //href="/create-agent"
+          //className="mt-6 w-40 whitespace-nowrap px-8 py-5"
+          //>
+          //<Button onClick={() => setOpen(true)}>{"+ ADD AGENT"}</Button>
+          //</Link>
+        }
+        <Button onClick={() => setOpen(true)}>{"+ ADD AGENT"}</Button>
       </div>
       <Image
         src="/default_agent_2.png"
@@ -133,7 +140,7 @@ const AgentsSummary: React.FunctionComponent<{
   best: string;
   completedComps: number;
   highest: number;
-}> = ({ best, nAgents = 0, isLoading, completedComps, highest, className }) => {
+}> = ({best, nAgents = 0, isLoading, completedComps, highest, className}) => {
   const borderRules = "sm:border-l-1";
 
   return (
