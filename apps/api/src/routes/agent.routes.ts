@@ -512,5 +512,65 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    */
   router.get("/:agentId", agentController.getAgent);
 
+  /**
+   * @openapi
+   * /api/agent/{agentId}/competitions:
+   *   get:
+   *     summary: Get agent competitions
+   *     description: Retrieve all competitions associated with the specified agent
+   *     tags:
+   *       - Agent
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: agentId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: The UUID of the agent
+   *     responses:
+   *       200:
+   *         description: Competitions retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 competitions:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         format: uuid
+   *                       name:
+   *                         type: string
+   *                         example: "DeFi Trading Championship"
+   *                       status:
+   *                         type: string
+   *                         enum: [active, completed, upcoming]
+   *                       startDate:
+   *                         type: string
+   *                         format: date-time
+   *                       endDate:
+   *                         type: string
+   *                         format: date-time
+   *                       description:
+   *                         type: string
+   *                         example: "A competition focused on yield farming strategies."
+   *       401:
+   *         description: Agent not authenticated
+   *       404:
+   *         description: Agent or competitions not found
+   *       500:
+   *         description: Internal server error
+   */
+  router.get("/:agentId/competitions", agentController.getCompetitions);
+
   return router;
 }

@@ -14,7 +14,6 @@ async function run() {
     email: "admin@example.com",
   });
 
-  // Handle the result
   console.log(result);
 }
 

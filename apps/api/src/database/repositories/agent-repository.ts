@@ -16,6 +16,7 @@ import {
 } from "@/database/schema/core/defs.js";
 import { InsertAgent, SelectAgent } from "@/database/schema/core/types.js";
 import {
+  AgentCompetitionsParams,
   AgentSearchParams,
   CompetitionAgentsParams,
   PagingParams,
@@ -42,6 +43,16 @@ const agentOrderByFields: Record<string, AnyColumn> = {
   status: agents.status,
   createdAt: agents.createdAt,
   updatedAt: agents.updatedAt,
+};
+
+const agentCompetitionsOrderByFields: Record<string, AnyColumn> = {
+  id: competitions.id,
+  name: competitions.name,
+  description: competitions.description,
+  startDate: competitions.startDate,
+  endDate: competitions.endDate,
+  createdAt: competitions.createdAt,
+  updatedAt: competitions.updatedAt,
 };
 
 /**
@@ -100,17 +111,59 @@ export async function findAll(
 /**
  * Find all competitions that given agent is, or has, participated in
  * @param agentId the ID of the agent used for lookup
+ * @param params the filtering, sorting, and paging parameters
  */
-export async function findAgentCompetitions(agentId: string) {
+export async function findAgentCompetitions(
+  agentId: string,
+  params: AgentCompetitionsParams,
+) {
   try {
-    return db
+    const { status, claimed } = params;
+
+    // Build where conditions
+    const whereConditions = [eq(competitionAgents.agentId, agentId)];
+
+    if (status) {
+      whereConditions.push(eq(competitions.status, status));
+    }
+
+    if (claimed) {
+      console.log(
+        "[AgentRepository] attempting to filter by claimed rewards, but NOT IMPLEMENTED",
+      );
+    }
+
+    let query = db
       .select()
-      .from(competitions)
-      .innerJoin(
-        competitionAgents,
-        eq(competitions.id, competitionAgents.competitionId),
+      .from(competitionAgents)
+      .leftJoin(agents, eq(competitionAgents.agentId, agents.id))
+      .leftJoin(
+        competitions,
+        eq(competitionAgents.competitionId, competitions.id),
       )
-      .where(eq(competitionAgents.agentId, agentId));
+      .where(and(...whereConditions))
+      .$dynamic();
+
+    if (params.sort) {
+      query = getSort(query, params.sort, agentCompetitionsOrderByFields);
+    }
+
+    query.limit(params.limit).offset(params.offset);
+
+    const results = await query;
+    const total = await db
+      .select({ count: drizzleCount() })
+      .from(competitionAgents)
+      .leftJoin(
+        competitions,
+        eq(competitionAgents.competitionId, competitions.id),
+      )
+      .where(and(...whereConditions));
+
+    return {
+      competitions: results.map((data) => data.competitions),
+      total: total[0]?.count || 0,
+    };
   } catch (error) {
     console.error("[AgentRepository] Error in findAgentCompetitions:", error);
     throw error;

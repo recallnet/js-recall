@@ -173,7 +173,35 @@ export class ApiClient {
       return this.handleApiError(error, "create admin account");
     }
   }
+  async getAgentCompetitions(
+    agentId: string,
+    params?: {
+      status?: string;
+      sort?: string;
+      limit?: number;
+      offset?: number;
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ): Promise<any | ErrorResponse> {
+    try {
+      const queryParams = new URLSearchParams();
 
+      if (params?.status) queryParams.append("status", params.status);
+      if (params?.sort) queryParams.append("sort", params.sort);
+      if (params?.limit !== undefined)
+        queryParams.append("limit", params.limit.toString());
+      if (params?.offset !== undefined)
+        queryParams.append("offset", params.offset.toString());
+
+      const queryString = queryParams.toString();
+      const url = `/api/agent/${agentId}/competitions${queryString ? `?${queryString}` : ""}`;
+
+      const response = await this.axiosInstance.get(url);
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get agent competitions");
+    }
+  }
   /**
    * Login as admin (this method now expects the admin API key directly)
    */

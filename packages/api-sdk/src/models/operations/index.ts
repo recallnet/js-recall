@@ -12,6 +12,7 @@ export * from "./getapiadminreportsperformance.js";
 export * from "./getapiadminsearch.js";
 export * from "./getapiadminusers.js";
 export * from "./getapiagentagentid.js";
+export * from "./getapiagentagentidcompetitions.js";
 export * from "./getapiagentbalances.js";
 export * from "./getapiagentportfolio.js";
 export * from "./getapiagentprofile.js";
