@@ -730,6 +730,10 @@ export function configureAdminRoutes(
    *                         type: string
    *                         description: URL to the user's image
    *                         nullable: true
+   *                       metadata:
+   *                         type: object
+   *                         description: User metadata
+   *                         nullable: true
    *                       createdAt:
    *                         type: string
    *                         format: date-time

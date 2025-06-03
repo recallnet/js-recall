@@ -41,6 +41,7 @@ export function makeUserController(services: ServiceRegistry) {
             name: user.name,
             email: user.email,
             imageUrl: user.imageUrl,
+            metadata: user.metadata,
             status: user.status,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
@@ -69,7 +70,7 @@ export function makeUserController(services: ServiceRegistry) {
         }
         const {
           userId,
-          body: { name, imageUrl, email },
+          body: { name, imageUrl, email, metadata },
         } = data;
 
         // Get the current user
@@ -84,6 +85,7 @@ export function makeUserController(services: ServiceRegistry) {
           name,
           imageUrl,
           email,
+          metadata,
         };
 
         // Update the user using UserManager
@@ -102,6 +104,7 @@ export function makeUserController(services: ServiceRegistry) {
             name: updatedUser.name,
             email: updatedUser.email,
             imageUrl: updatedUser.imageUrl,
+            metadata: updatedUser.metadata,
             status: updatedUser.status,
             createdAt: updatedUser.createdAt,
             updatedAt: updatedUser.updatedAt,
