@@ -1,12 +1,12 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: 48446770a7acee66aa6b552645010c53
+  docChecksum: b0c6bcad71f57b2dba4ecf44f315ead2
   docVersion: 1.0.0
   speakeasyVersion: 1.555.2
   generationVersion: 2.620.2
-  releaseVersion: 0.1.9
-  configChecksum: bd3b9989cea9105f8f983430d3d4f578
+  releaseVersion: 0.1.10
+  configChecksum: 6cd589f11e48a9104dd96fee35c23fdb
 features:
   typescript:
     additionalDependencies: 0.1.0
@@ -38,6 +38,7 @@ generatedFiles:
   - docs/lib/utils/retryconfig.md
   - docs/models/components/security.md
   - docs/models/errors/errort.md
+  - docs/models/errors/getapiauthagentnonceinternalservererror.md
   - docs/models/errors/getapiauthnonceinternalservererror.md
   - docs/models/errors/postapiauthlogininternalservererror.md
   - docs/models/errors/postapiauthlogoutinternalservererror.md
@@ -76,6 +77,7 @@ generatedFiles:
   - docs/models/operations/getapiadminsearchresponse.md
   - docs/models/operations/getapiadminsearchstatus.md
   - docs/models/operations/getapiadminsearchuser.md
+  - docs/models/operations/getapiadminusersmetadata.md
   - docs/models/operations/getapiadminusersresponse.md
   - docs/models/operations/getapiadminusersuser.md
   - docs/models/operations/getapiagentagentidcompetitionscompetition.md
@@ -100,6 +102,8 @@ generatedFiles:
   - docs/models/operations/getapiagentsresponse.md
   - docs/models/operations/getapiagentsstatus.md
   - docs/models/operations/getapiagenttradesresponse.md
+  - docs/models/operations/getapiauthagentnonceresponse.md
+  - docs/models/operations/getapiauthagentnoncesecurity.md
   - docs/models/operations/getapiauthnonceresponse.md
   - docs/models/operations/getapicompetitionscompetition.md
   - docs/models/operations/getapicompetitionscompetitionidagentsagent.md
@@ -138,6 +142,13 @@ generatedFiles:
   - docs/models/operations/getapicompetitionsupcomingtype.md
   - docs/models/operations/getapihealthdetailedresponse.md
   - docs/models/operations/getapihealthresponse.md
+  - docs/models/operations/getapileaderboardagent.md
+  - docs/models/operations/getapileaderboardmetadata.md
+  - docs/models/operations/getapileaderboardpagination.md
+  - docs/models/operations/getapileaderboardrequest.md
+  - docs/models/operations/getapileaderboardresponse.md
+  - docs/models/operations/getapileaderboardstats.md
+  - docs/models/operations/getapileaderboardtype.md
   - docs/models/operations/getapipricechainresponse.md
   - docs/models/operations/getapipricequeryparamchain.md
   - docs/models/operations/getapipricerequest.md
@@ -161,6 +172,7 @@ generatedFiles:
   - docs/models/operations/getapiuseragentsresponse.md
   - docs/models/operations/getapiuseragentssecurity.md
   - docs/models/operations/getapiuseragentsstatus.md
+  - docs/models/operations/getapiuserprofilemetadata.md
   - docs/models/operations/getapiuserprofileresponse.md
   - docs/models/operations/getapiuserprofilesecurity.md
   - docs/models/operations/getapiuserprofilestatus.md
@@ -205,6 +217,7 @@ generatedFiles:
   - docs/models/operations/postapiadminusersrequest.md
   - docs/models/operations/postapiadminusersresponse.md
   - docs/models/operations/postapiadminusersuser.md
+  - docs/models/operations/postapiadminusersusermetadata.md
   - docs/models/operations/postapiagentresetapikeyresponse.md
   - docs/models/operations/postapiauthloginrequest.md
   - docs/models/operations/postapiauthloginresponse.md
@@ -236,6 +249,8 @@ generatedFiles:
   - docs/models/operations/putapiuseragentsagentidprofileresponse.md
   - docs/models/operations/putapiuseragentsagentidprofilesecurity.md
   - docs/models/operations/putapiuseragentsagentidprofilestatus.md
+  - docs/models/operations/putapiuserprofilemetadatarequest.md
+  - docs/models/operations/putapiuserprofilemetadataresponse.md
   - docs/models/operations/putapiuserprofilerequest.md
   - docs/models/operations/putapiuserprofileresponse.md
   - docs/models/operations/putapiuserprofilesecurity.md
@@ -251,13 +266,13 @@ generatedFiles:
   - docs/models/operations/token.md
   - docs/models/operations/trade.md
   - docs/models/operations/transaction.md
-  - docs/models/operations/usermetadata.md
   - docs/sdks/admin/README.md
   - docs/sdks/agent/README.md
   - docs/sdks/apisdk/README.md
   - docs/sdks/auth/README.md
   - docs/sdks/competition/README.md
   - docs/sdks/health/README.md
+  - docs/sdks/leaderboard/README.md
   - docs/sdks/price/README.md
   - docs/sdks/trade/README.md
   - docs/sdks/user/README.md
@@ -289,6 +304,7 @@ generatedFiles:
   - src/funcs/agentGetApiAgents.ts
   - src/funcs/agentPostApiAgentResetApiKey.ts
   - src/funcs/agentPutApiAgentProfile.ts
+  - src/funcs/authGetApiAuthAgentNonce.ts
   - src/funcs/authGetApiAuthNonce.ts
   - src/funcs/authPostApiAuthLogin.ts
   - src/funcs/authPostApiAuthLogout.ts
@@ -304,6 +320,7 @@ generatedFiles:
   - src/funcs/competitionPostApiCompetitionsCompetitionIdAgentsAgentId.ts
   - src/funcs/healthGetApiHealth.ts
   - src/funcs/healthGetApiHealthDetailed.ts
+  - src/funcs/leaderboardGetApiLeaderboard.ts
   - src/funcs/priceGetApiPrice.ts
   - src/funcs/priceGetApiPriceTokenInfo.ts
   - src/funcs/tradeGetApiTradeQuote.ts
@@ -385,6 +402,7 @@ generatedFiles:
   - src/mcp-server/tools/competitionPostApiCompetitionsCompetitionIdAgentsAgentId.ts
   - src/mcp-server/tools/healthGetApiHealth.ts
   - src/mcp-server/tools/healthGetApiHealthDetailed.ts
+  - src/mcp-server/tools/leaderboardGetApiLeaderboard.ts
   - src/mcp-server/tools/priceGetApiPrice.ts
   - src/mcp-server/tools/priceGetApiPriceTokenInfo.ts
   - src/mcp-server/tools/tradeGetApiTradeQuote.ts
@@ -393,6 +411,7 @@ generatedFiles:
   - src/models/components/security.ts
   - src/models/errors/apierror.ts
   - src/models/errors/error.ts
+  - src/models/errors/getapiauthagentnonce.ts
   - src/models/errors/getapiauthnonce.ts
   - src/models/errors/httpclienterrors.ts
   - src/models/errors/index.ts
@@ -415,6 +434,7 @@ generatedFiles:
   - src/models/operations/getapiagentprofile.ts
   - src/models/operations/getapiagents.ts
   - src/models/operations/getapiagenttrades.ts
+  - src/models/operations/getapiauthagentnonce.ts
   - src/models/operations/getapiauthnonce.ts
   - src/models/operations/getapicompetitions.ts
   - src/models/operations/getapicompetitionscompetitionid.ts
@@ -425,6 +445,7 @@ generatedFiles:
   - src/models/operations/getapicompetitionsupcoming.ts
   - src/models/operations/getapihealth.ts
   - src/models/operations/getapihealthdetailed.ts
+  - src/models/operations/getapileaderboard.ts
   - src/models/operations/getapiprice.ts
   - src/models/operations/getapipricetokeninfo.ts
   - src/models/operations/getapitradequote.ts
@@ -455,6 +476,7 @@ generatedFiles:
   - src/sdk/competition.ts
   - src/sdk/health.ts
   - src/sdk/index.ts
+  - src/sdk/leaderboard.ts
   - src/sdk/price.ts
   - src/sdk/sdk.ts
   - src/sdk/trade.ts
@@ -826,11 +848,11 @@ examples:
     speakeasy-default-get-/api/user/profile:
       responses:
         "200":
-          application/json: {"success": true, "user": {"walletAddress": "0x1234567890abcdef1234567890abcdef12345678", "name": "John Doe", "email": "john@example.com", "imageUrl": "https://example.com/avatar.jpg"}}
+          application/json: {"success": true, "user": {"walletAddress": "0x1234567890abcdef1234567890abcdef12345678", "name": "John Doe", "email": "john@example.com", "imageUrl": "https://example.com/avatar.jpg", "metadata": {}}}
   put_/api/user/profile:
     speakeasy-default-put-/api/user/profile:
       requestBody:
-        application/json: {"name": "John Doe", "imageUrl": "https://example.com/avatar.jpg", "email": "john@example.com"}
+        application/json: {"name": "John Doe", "imageUrl": "https://example.com/avatar.jpg", "email": "john@example.com", "metadata": {}}
       responses:
         "200":
           application/json: {"success": true}
@@ -923,5 +945,28 @@ examples:
       responses:
         "200":
           application/json: {"success": true, "competitions": [{"name": "DeFi Trading Championship", "description": "A competition focused on yield farming strategies."}]}
+  get_/api/auth/agent/nonce:
+    speakeasy-default-get-/api/auth/agent/nonce:
+      responses:
+        "200":
+          application/json: {"nonce": "8J0eXAiOiJ..."}
+        "500":
+          application/json: {}
+  post_/api/auth/verify:
+    speakeasy-default-post-/api/auth/verify:
+      requestBody:
+        application/json: {"message": "VERIFY_WALLET_OWNERSHIP\nTimestamp: 2024-01-15T10:30:00.000Z\nDomain: api.competitions.recall.network\nPurpose: WALLET_VERIFICATION\n", "signature": "0x123abc..."}
+      responses:
+        "200":
+          application/json: {"success": true, "walletAddress": "0x123...", "message": "Wallet verified successfully"}
+  get_/api/leaderboard:
+    speakeasy-default-get-/api/leaderboard:
+      parameters:
+        query:
+          limit: 50
+          offset: 0
+      responses:
+        "200":
+          application/json: {}
 examplesVersion: 1.0.2
 generatedTests: {}

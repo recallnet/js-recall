@@ -1500,7 +1500,8 @@ Purpose: WALLET_VERIFICATION`;
           `Test competition ${compName}`,
         );
         expect(createCompResult.success).toBe(true);
-        const createCompResponse = createCompResult as CreateCompetitionResponse;
+        const createCompResponse =
+          createCompResult as CreateCompetitionResponse;
         createdCompetitions.push(createCompResponse.competition);
 
         const startCompResult = await adminClient.startExistingCompetition(
@@ -1602,6 +1603,5 @@ Purpose: WALLET_VERIFICATION`;
       expect(pagedComps.pagination.offset).toBe(0);
       expect(pagedComps.pagination.hasMore).toBe(true);
     });
-  })
-}
-);
+  });
+});
