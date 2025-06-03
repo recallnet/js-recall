@@ -9,6 +9,11 @@ import {
   formatResult,
 } from "@recallnet/api-sdk/mcp-server/tools.js";
 
+// Import the proper response type
+type AgentNonceResponse = {
+  nonce: string;
+};
+
 /**
  * Create verification message and signature for agent wallet verification
  * @param privateKey The private key to sign with
@@ -114,7 +119,7 @@ Requires WALLET_PRIVATE_KEY environment variable to be set.`,
 
     try {
       // Step 1: Get a nonce for verification
-      const [nonceResult, nonceApiCall] = await authGetApiAuthAgentNonce(
+      const [nonceResult] = await authGetApiAuthAgentNonce(
         client,
         { agentApiKey: client._options.bearerAuth as string },
         { fetchOptions: { signal: extra.signal } },
@@ -132,7 +137,7 @@ Requires WALLET_PRIVATE_KEY environment variable to be set.`,
         };
       }
 
-      const nonce = (nonceResult.value as any).nonce;
+      const nonce = (nonceResult.value as AgentNonceResponse).nonce;
       if (!nonce) {
         return {
           content: [
