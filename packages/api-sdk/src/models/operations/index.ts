@@ -43,6 +43,7 @@ export * from "./postapiadminusers.js";
 export * from "./postapiagentresetapikey.js";
 export * from "./postapiauthlogin.js";
 export * from "./postapiauthlogout.js";
+export * from "./postapiauthverify.js";
 export * from "./postapicompetitionscompetitionidagentsagentid.js";
 export * from "./postapitradeexecute.js";
 export * from "./postapiuseragents.js";

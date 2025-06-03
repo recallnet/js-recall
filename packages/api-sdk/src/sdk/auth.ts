@@ -4,6 +4,7 @@
 import { authGetApiAuthNonce } from "../funcs/authGetApiAuthNonce.js";
 import { authPostApiAuthLogin } from "../funcs/authPostApiAuthLogin.js";
 import { authPostApiAuthLogout } from "../funcs/authPostApiAuthLogout.js";
+import { authPostApiAuthVerify } from "../funcs/authPostApiAuthVerify.js";
 import { ClientSDK, RequestOptions } from "../lib/sdks.js";
 import * as operations from "../models/operations/index.js";
 import { unwrapAsync } from "../types/fp.js";
@@ -32,6 +33,20 @@ export class Auth extends ClientSDK {
     options?: RequestOptions,
   ): Promise<operations.PostApiAuthLoginResponse> {
     return unwrapAsync(authPostApiAuthLogin(this, request, options));
+  }
+
+  /**
+   * Verify agent wallet ownership
+   *
+   * @remarks
+   * Verify wallet ownership for an authenticated agent via custom message signature
+   */
+  async postApiAuthVerify(
+    security: operations.PostApiAuthVerifySecurity,
+    request: operations.PostApiAuthVerifyRequest,
+    options?: RequestOptions,
+  ): Promise<operations.PostApiAuthVerifyResponse> {
+    return unwrapAsync(authPostApiAuthVerify(this, security, request, options));
   }
 
   /**

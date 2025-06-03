@@ -1,12 +1,12 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: fb287262025c0dee3a8ae6c44b33e7c9
+  docChecksum: eea0c1a7485de234299a696b978f3e77
   docVersion: 1.0.0
   speakeasyVersion: 1.555.0
   generationVersion: 2.618.0
-  releaseVersion: 0.1.8
-  configChecksum: c9d45d0ca17a90913b20a257507c253a
+  releaseVersion: 0.1.9
+  configChecksum: bd3b9989cea9105f8f983430d3d4f578
 features:
   typescript:
     additionalDependencies: 0.1.0
@@ -81,6 +81,7 @@ generatedFiles:
   - docs/models/operations/getapiagentagentidmetadata.md
   - docs/models/operations/getapiagentagentidrequest.md
   - docs/models/operations/getapiagentagentidresponse.md
+  - docs/models/operations/getapiagentagentidstats.md
   - docs/models/operations/getapiagentbalanceschain.md
   - docs/models/operations/getapiagentbalancesresponse.md
   - docs/models/operations/getapiagentportfoliochain.md
@@ -105,6 +106,7 @@ generatedFiles:
   - docs/models/operations/getapicompetitionscompetitionidcrosschaintradingtype.md
   - docs/models/operations/getapicompetitionscompetitionidrequest.md
   - docs/models/operations/getapicompetitionscompetitionidresponse.md
+  - docs/models/operations/getapicompetitionscompetitionidstats.md
   - docs/models/operations/getapicompetitionscompetitionidstatus.md
   - docs/models/operations/getapicompetitionscompetitionidtype.md
   - docs/models/operations/getapicompetitionscrosschaintradingtype.md
@@ -203,6 +205,9 @@ generatedFiles:
   - docs/models/operations/postapiauthloginrequest.md
   - docs/models/operations/postapiauthloginresponse.md
   - docs/models/operations/postapiauthlogoutresponse.md
+  - docs/models/operations/postapiauthverifyrequest.md
+  - docs/models/operations/postapiauthverifyresponse.md
+  - docs/models/operations/postapiauthverifysecurity.md
   - docs/models/operations/postapicompetitionscompetitionidagentsagentidrequest.md
   - docs/models/operations/postapicompetitionscompetitionidagentsagentidresponse.md
   - docs/models/operations/postapitradeexecuterequest.md
@@ -238,7 +243,6 @@ generatedFiles:
   - docs/models/operations/snapshot.md
   - docs/models/operations/sort.md
   - docs/models/operations/source.md
-  - docs/models/operations/stats.md
   - docs/models/operations/symbols.md
   - docs/models/operations/token.md
   - docs/models/operations/trade.md
@@ -283,6 +287,7 @@ generatedFiles:
   - src/funcs/authGetApiAuthNonce.ts
   - src/funcs/authPostApiAuthLogin.ts
   - src/funcs/authPostApiAuthLogout.ts
+  - src/funcs/authPostApiAuthVerify.ts
   - src/funcs/competitionDeleteApiCompetitionsCompetitionIdAgentsAgentId.ts
   - src/funcs/competitionGetApiCompetitions.ts
   - src/funcs/competitionGetApiCompetitionsCompetitionId.ts
@@ -430,6 +435,7 @@ generatedFiles:
   - src/models/operations/postapiagentresetapikey.ts
   - src/models/operations/postapiauthlogin.ts
   - src/models/operations/postapiauthlogout.ts
+  - src/models/operations/postapiauthverify.ts
   - src/models/operations/postapicompetitionscompetitionidagentsagentid.ts
   - src/models/operations/postapitradeexecute.ts
   - src/models/operations/postapiuseragents.ts
@@ -902,5 +908,12 @@ examples:
       responses:
         "200":
           application/json: {"name": "Trading Bot Alpha", "imageUrl": "https://example.com/bot-avatar.jpg", "metadata": {}}
+  post_/api/auth/verify:
+    speakeasy-default-post-/api/auth/verify:
+      requestBody:
+        application/json: {"message": "VERIFY_WALLET_OWNERSHIP\nTimestamp: 2024-01-15T10:30:00.000Z\nDomain: api.competitions.recall.network\nPurpose: WALLET_VERIFICATION\n", "signature": "0x123abc..."}
+      responses:
+        "200":
+          application/json: {"success": true, "walletAddress": "0x123...", "message": "Wallet verified successfully"}
 examplesVersion: 1.0.2
 generatedTests: {}

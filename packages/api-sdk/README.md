@@ -294,9 +294,20 @@ import { ApiSDK } from "@recallnet/api-sdk";
 const apiSDK = new ApiSDK();
 
 async function run() {
-  const result = await apiSDK.user.getApiUserProfile({
-    siweSession: process.env["APISDK_SIWE_SESSION"] ?? "",
-  });
+  const result = await apiSDK.auth.postApiAuthVerify(
+    {
+      agentApiKey: process.env["APISDK_AGENT_API_KEY"] ?? "",
+    },
+    {
+      message:
+        "VERIFY_WALLET_OWNERSHIP\n" +
+        "Timestamp: 2024-01-15T10:30:00.000Z\n" +
+        "Domain: api.competitions.recall.network\n" +
+        "Purpose: WALLET_VERIFICATION\n" +
+        "",
+      signature: "0x123abc...",
+    },
+  );
 
   // Handle the result
   console.log(result);
@@ -347,6 +358,7 @@ run();
 
 - [getApiAuthNonce](docs/sdks/auth/README.md#getapiauthnonce) - Get a random nonce for SIWE authentication
 - [postApiAuthLogin](docs/sdks/auth/README.md#postapiauthlogin) - Verify SIWE signature and create a session
+- [postApiAuthVerify](docs/sdks/auth/README.md#postapiauthverify) - Verify agent wallet ownership
 - [postApiAuthLogout](docs/sdks/auth/README.md#postapiauthlogout) - Logout the current user by destroying the session
 
 ### [competition](docs/sdks/competition/README.md)
@@ -430,6 +442,7 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`authGetApiAuthNonce`](docs/sdks/auth/README.md#getapiauthnonce) - Get a random nonce for SIWE authentication
 - [`authPostApiAuthLogin`](docs/sdks/auth/README.md#postapiauthlogin) - Verify SIWE signature and create a session
 - [`authPostApiAuthLogout`](docs/sdks/auth/README.md#postapiauthlogout) - Logout the current user by destroying the session
+- [`authPostApiAuthVerify`](docs/sdks/auth/README.md#postapiauthverify) - Verify agent wallet ownership
 - [`competitionDeleteApiCompetitionsCompetitionIdAgentsAgentId`](docs/sdks/competition/README.md#deleteapicompetitionscompetitionidagentsagentid) - Leave a competition
 - [`competitionGetApiCompetitions`](docs/sdks/competition/README.md#getapicompetitions) - Get upcoming competitions
 - [`competitionGetApiCompetitionsCompetitionId`](docs/sdks/competition/README.md#getapicompetitionscompetitionid) - Get competition details by ID
