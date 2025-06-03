@@ -107,7 +107,7 @@ export class BlobManager {
       iBlobsFacadeAddress as Record<number, Address>
     )[chainId];
     if (!deployedBlobManagerAddress) {
-      throw new Error(`No contract address found for chain ID ${chainId}}`);
+      throw new Error(`No contract address found for chain ID ${chainId}`);
     }
     this.contract = getContract({
       abi: iBlobsFacadeAbi,

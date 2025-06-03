@@ -124,7 +124,7 @@ export class CreditManager {
       iCreditFacadeAddress as Record<number, Address>
     )[chainId];
     if (!deployedCreditManagerAddress) {
-      throw new Error(`No contract address found for chain ID ${chainId}}`);
+      throw new Error(`No contract address found for chain ID ${chainId}`);
     }
     this.contract = getContract({
       abi: iCreditFacadeAbi,

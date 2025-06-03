@@ -214,7 +214,7 @@ export class BucketManager {
       iMachineFacadeAddress as Record<number, Address>
     )[chainId];
     if (!deployedBucketManagerAddress) {
-      throw new Error(`No contract address found for chain ID ${chainId}}`);
+      throw new Error(`No contract address found for chain ID ${chainId}`);
     }
     this.factoryContract = getContract({
       abi: iMachineFacadeAbi,

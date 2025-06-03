@@ -85,7 +85,7 @@ export class AccountManager {
       overrideSupplySourceAddress ??
       deployedSupplySourceAddress;
     if (!override) {
-      throw new Error(`No contract address found for chain ID ${chainId}}`);
+      throw new Error(`No contract address found for chain ID ${chainId}`);
     }
     return getContract({
       abi: recallErc20Abi,
@@ -208,7 +208,7 @@ export class AccountManager {
       overrideGatewayAddress ??
       deployedGatewayManagerFacetAddress;
     if (!override) {
-      throw new Error(`No contract address found for chain ID ${chainId}}`);
+      throw new Error(`No contract address found for chain ID ${chainId}`);
     }
     await this.approve(override, amount);
     const result = await this.getGatewayManager().fundWithToken(
@@ -246,7 +246,7 @@ export class AccountManager {
       overrideGatewayAddress ??
       deployedGatewayManagerFacetAddress;
     if (!override) {
-      throw new Error(`No contract address found for chain ID ${chainId}}`);
+      throw new Error(`No contract address found for chain ID ${chainId}`);
     }
     const result = await this.getGatewayManager().release(
       this.client.publicClient,
