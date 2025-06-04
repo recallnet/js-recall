@@ -169,8 +169,8 @@ export function configureAgentsRoutes(
    *                     type: string
    *                 hasUnclaimedRewards:
    *                   type: boolean
-   *       401:
-   *         description: Agent not authenticated
+   *       400:
+   *         description: Invalid agent ID
    *       404:
    *         description: Agent or owner not found
    *       500:
@@ -227,8 +227,8 @@ export function configureAgentsRoutes(
    *                       description:
    *                         type: string
    *                         example: "A competition focused on yield farming strategies."
-   *       401:
-   *         description: Agent not authenticated
+   *       400:
+   *         description: Invalid agent ID or query params
    *       404:
    *         description: Agent or competitions not found
    *       500:
