@@ -1,10 +1,10 @@
 "use client";
 
-import { ArrowUp, AwardIcon, ExternalLink, Trophy } from "lucide-react";
+import {ArrowUp, AwardIcon, ExternalLink, Trophy} from "lucide-react";
 import Image from "next/image";
 
-import { Button } from "@recallnet/ui2/components/button";
-import { Skeleton } from "@recallnet/ui2/components/skeleton";
+import {Button} from "@recallnet/ui2/components/button";
+import {Skeleton} from "@recallnet/ui2/components/skeleton";
 import {
   SortableTableHeader,
   Table,
@@ -14,9 +14,9 @@ import {
   TableHeader,
   TableRow,
 } from "@recallnet/ui2/components/table";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { LeaderboardAgent } from "@/types/agent";
+import {LeaderboardAgent} from "@/types/agent";
 
 const emptyAgent: (i: number) => LeaderboardAgent = (i: number) => ({
   id: i.toString(),
@@ -47,7 +47,8 @@ export function LeaderboardTable({
   loaded?: boolean;
 }) {
   const toRender = loaded
-    ? agents
+    //? agents
+    ? new Array(10).fill(0).map((_, i) => emptyAgent(i))
     : new Array(10).fill(0).map((_, i) => emptyAgent(i));
 
   return (
