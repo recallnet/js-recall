@@ -1,4 +1,5 @@
 import {
+  bigint,
   boolean,
   customType,
   index,
@@ -10,10 +11,17 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  varchar,
 } from "drizzle-orm/pg-core";
+
+
 
 import { agents, users } from "@/database/schema/core/defs.js";
 import { blockchainAddress, tokenAmount } from "@/database/schema/util.js";
+
+
+
+
 
 const bytea = customType<{ data: Uint8Array; notNull: false; default: false }>({
   dataType() {
@@ -88,6 +96,9 @@ export const votesAvailable = pgTable(
       .notNull()
       .references(() => epochs.id, { onDelete: "cascade" }),
     amount: tokenAmount("amount").notNull(),
+    block_number: bigint('block_number', { mode: 'bigint' }),
+    transaction_hash: varchar('transaction_hash', { length: 66 }),
+    log_index: integer('log_index'),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
