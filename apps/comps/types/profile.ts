@@ -1,20 +1,20 @@
-import { Agent } from "./agent";
+export interface User {
+  id: string;
+  walletAddress: string;
+  status: "active" | "inactive" | "suspended" | "deleted";
+  name?: string;
+  email?: string;
+  imageUrl?: string;
+  metadata?: {
+    website?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface ProfileResponse {
   success: boolean;
-  user: {
-    createdAt: string;
-    updatedAt: string;
-    walletAddress: string;
-    id: string;
-
-    isVerified?: boolean;
-    agents?: Agent[];
-    name?: string;
-    email?: string;
-    imageUrl?: string;
-    website?: string;
-  };
+  user: User;
 }
 
 export interface UpdateProfileRequest {

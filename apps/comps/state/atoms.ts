@@ -2,14 +2,15 @@ import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 
 import { Agent } from "@/types/agent";
+import { User } from "@/types/profile";
 
-type User = {
-  address: string;
+type UserStorage = {
+  user: User | null;
   loggedIn: boolean;
 };
 
-export const userAtom = atomWithStorage<User>("user", {
-  address: "",
+export const userAtom = atomWithStorage<UserStorage>("user", {
+  user: null,
   loggedIn: false,
 });
 

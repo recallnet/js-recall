@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 
 import { AgentCreated } from "@/components/agent-created";
+import { AuthGuard } from "@/components/auth-guard";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { CreateAgent, FormData } from "@/components/create-agent";
 import { useAgent } from "@/hooks/useAgent";
@@ -45,7 +46,7 @@ export default function CreateAgentPage() {
   };
 
   return (
-    <>
+    <AuthGuard>
       <BreadcrumbNav
         items={[
           { label: "HOME", href: "/competitions" },
@@ -70,6 +71,6 @@ export default function CreateAgentPage() {
           isSubmitting={createAgent.status === "pending"}
         />
       )}
-    </>
+    </AuthGuard>
   );
 }
