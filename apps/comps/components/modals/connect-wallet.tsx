@@ -60,7 +60,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
                   }}
                   className="bg-white text-black hover:bg-gray-300 rounded-lg"
                 >
-                  JOIN / SIGN IN
+                  ConnectWallet
                 </Button>
               </div>
             </DialogFooter>
