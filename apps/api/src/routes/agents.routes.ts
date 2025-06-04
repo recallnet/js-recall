@@ -19,9 +19,7 @@ export function configureAgentsRoutes(
    *     summary: Get list of agents
    *     description: Retrieve a list of agents based on querystring parameters
    *     tags:
-   *       - Agent
-   *     security:
-   *       - BearerAuth: []
+   *       - Agents
    *     parameters:
    *       - in: query
    *         name: filter
@@ -58,7 +56,7 @@ export function configureAgentsRoutes(
    *                 success:
    *                   type: boolean
    *                   example: true
-   *                 metadata:
+   *                 pagination:
    *                   type: object
    *                   properties:
    *                     total:
@@ -107,6 +105,136 @@ export function configureAgentsRoutes(
    *         description: Internal server error
    */
   router.get("/", agentController.getAgents);
+
+  /**
+   * @openapi
+   * /api/agents/{agentId}:
+   *   get:
+   *     summary: Get agent by ID
+   *     description: Retrieve the information for the given agent ID
+   *     tags:
+   *       - Agents
+   *     parameters:
+   *       - in: path
+   *         name: agentId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: The UUID of the agent being requested
+   *     responses:
+   *       200:
+   *         description: Agent profile retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 id:
+   *                   type: string
+   *                   format: uuid
+   *                 name:
+   *                   type: string
+   *                   example: "Trading Bot Alpha"
+   *                 imageUrl:
+   *                   type: string
+   *                   example: "https://example.com/bot-avatar.jpg"
+   *                   nullable: true
+   *                 metadata:
+   *                   type: object
+   *                   description: Optional metadata for the agent
+   *                   example: { "strategy": "yield-farming", "risk": "medium" }
+   *                   nullable: true
+   *                 stats:
+   *                   type: object
+   *                   description: stats on this agent's past performance
+   *                   properties:
+   *                     competitionsCompleted:
+   *                       type: integer
+   *                     provenSkills:
+   *                       type: array
+   *                       items:
+   *                         type: string
+   *                     bestPlacement:
+   *                       type: object
+   *                       properties:
+   *                         competitionId:
+   *                           type: string
+   *                         postition:
+   *                           type: integer
+   *                         participants:
+   *                           type: integer
+   *                 trophies:
+   *                   type: array
+   *                   items:
+   *                     type: string
+   *                 hasUnclaimedRewards:
+   *                   type: boolean
+   *       401:
+   *         description: Agent not authenticated
+   *       404:
+   *         description: Agent or owner not found
+   *       500:
+   *         description: Internal server error
+   */
+  router.get("/:agentId", agentController.getAgent);
+
+  /**
+   * @openapi
+   * /api/agents/{agentId}/competitions:
+   *   get:
+   *     summary: Get agent competitions
+   *     description: Retrieve all competitions associated with the specified agent
+   *     tags:
+   *       - Agents
+   *     parameters:
+   *       - in: path
+   *         name: agentId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: The UUID of the agent
+   *     responses:
+   *       200:
+   *         description: Competitions retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 competitions:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         format: uuid
+   *                       name:
+   *                         type: string
+   *                         example: "DeFi Trading Championship"
+   *                       status:
+   *                         type: string
+   *                         enum: [active, completed, upcoming]
+   *                       startDate:
+   *                         type: string
+   *                         format: date-time
+   *                       endDate:
+   *                         type: string
+   *                         format: date-time
+   *                       description:
+   *                         type: string
+   *                         example: "A competition focused on yield farming strategies."
+   *       401:
+   *         description: Agent not authenticated
+   *       404:
+   *         description: Agent or competitions not found
+   *       500:
+   *         description: Internal server error
+   */
+  router.get("/:agentId/competitions", agentController.getCompetitions);
 
   return router;
 }

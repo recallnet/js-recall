@@ -129,7 +129,7 @@ export interface Agent {
 export interface AgentsGetResponse {
   success: true;
   agents: Agent[];
-  metadata: unknown;
+  pagination: unknown;
 }
 
 // User registration response

@@ -149,7 +149,7 @@ export function makeAgentController(services: ServiceRegistry) {
         // Return the agents
         res.status(200).json({
           success: true,
-          metadata: {
+          pagination: {
             total: totalCount,
             limit: pagingParams.limit,
             offset: pagingParams.offset,
