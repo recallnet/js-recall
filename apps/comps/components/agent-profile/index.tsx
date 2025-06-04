@@ -1,10 +1,11 @@
 "use client";
 
-import { ArrowDownUp, Share2Icon } from "lucide-react";
+import { Share2Icon } from "lucide-react";
 import React from "react";
 
 import Card from "@recallnet/ui2/components/card";
 import {
+  SortableTableHeader,
   Table,
   TableBody,
   TableCell,
@@ -243,12 +244,14 @@ function CompetitionTable({
       <Table>
         <TableHeader className="text-muted-foreground bg-gray-900 text-xs uppercase">
           <TableRow>
-            <SortableHeader title="Competition" />
-            <SortableHeader title="Skills" />
-            <SortableHeader title="Portfolio" />
-            <SortableHeader className="w-30 flex justify-end" title="P&L" />
-            <SortableHeader title="Trades" />
-            <SortableHeader title="Placement" />
+            <SortableTableHeader>Competition</SortableTableHeader>
+            <SortableTableHeader>Skills</SortableTableHeader>
+            <SortableTableHeader>Portfolio</SortableTableHeader>
+            <SortableTableHeader className="w-30 flex justify-end">
+              P&L
+            </SortableTableHeader>
+            <SortableTableHeader>Trades</SortableTableHeader>
+            <SortableTableHeader>Placement</SortableTableHeader>
             <TableHead className="text-left">Trophies</TableHead>
           </TableRow>
         </TableHeader>
@@ -359,22 +362,5 @@ function CompetitionTable({
         </div>
       )}
     </div>
-  );
-}
-
-function SortableHeader({
-  title,
-  className,
-}: {
-  title: string;
-  className?: string;
-}) {
-  return (
-    <TableHead className={cn("text-left", className)}>
-      <div className="flex items-center gap-1">
-        <span className="font-semibold text-white">{title}</span>
-        <ArrowDownUp className="text-gray-600" size={20} />
-      </div>
-    </TableHead>
   );
 }
