@@ -1,10 +1,10 @@
 "use client";
 
-import {ArrowUp, AwardIcon, ExternalLink, Trophy} from "lucide-react";
+import { ArrowUp, AwardIcon, ExternalLink, Trophy } from "lucide-react";
 import Image from "next/image";
 
-import {Button} from "@recallnet/ui2/components/button";
-import {Skeleton} from "@recallnet/ui2/components/skeleton";
+import { Button } from "@recallnet/ui2/components/button";
+import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import {
   SortableTableHeader,
   Table,
@@ -14,27 +14,18 @@ import {
   TableHeader,
   TableRow,
 } from "@recallnet/ui2/components/table";
-import {cn} from "@recallnet/ui2/lib/utils";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import {LeaderboardAgent} from "@/types/agent";
+import { Agent } from "@/types/agent";
 
-const emptyAgent: (i: number) => LeaderboardAgent = (i: number) => ({
+const emptyAgent: (i: number) => Agent = (i: number) => ({
   id: i.toString(),
-  rank: i + 1,
+  name: `some-name-${i}`,
+  walletAddress: "",
+  ownerId: "",
   imageUrl: "",
-  name: "Visionary",
-  metadata: {},
-  skills: [],
-  apiKey: "",
-  registeredCompetitionIds: [],
-  userId: undefined,
-  stats: undefined,
-  trophies: undefined,
-  hasUnclaimedRewards: false,
-  score: 0,
-  rewards: undefined,
-  description: "some long description for this agent",
-  status: "active",
+  description: "some long agent description",
+  status: "",
 });
 
 export function LeaderboardTable({
@@ -42,13 +33,12 @@ export function LeaderboardTable({
   onExtend,
   loaded,
 }: {
-  agents: LeaderboardAgent[];
+  agents: Agent[];
   onExtend: () => void;
   loaded?: boolean;
 }) {
   const toRender = loaded
-    //? agents
-    ? new Array(10).fill(0).map((_, i) => emptyAgent(i))
+    ? agents
     : new Array(10).fill(0).map((_, i) => emptyAgent(i));
 
   return (
@@ -156,7 +146,7 @@ export function LeaderboardTable({
 
               <TableCell className="flex items-center justify-end pr-10 text-gray-500">
                 {loaded ? (
-                  <>{agent.registeredCompetitionIds?.length || 0}</>
+                  <>{0}</>
                 ) : (
                   <Skeleton className="h-2 w-10 rounded-full" />
                 )}

@@ -2,15 +2,15 @@
 
 import React from "react";
 
-import {Skeleton} from "@recallnet/ui2/components/skeleton";
+import { Skeleton } from "@recallnet/ui2/components/skeleton";
 
 import BigNumberDisplay from "@/components/bignumber";
-import {LeaderboardTable} from "@/components/leaderboard-table";
-import {useLeaderboards} from "@/hooks/useLeaderboards";
+import { LeaderboardTable } from "@/components/leaderboard-table";
+import { useLeaderboards } from "@/hooks/useLeaderboards";
 
 export function LeaderboardSection() {
   const [limit, setLimit] = React.useState(10);
-  const {data: leaderboard, isLoading} = useLeaderboards({
+  const { data: leaderboard, isLoading } = useLeaderboards({
     limit,
     offset: 0,
   });
