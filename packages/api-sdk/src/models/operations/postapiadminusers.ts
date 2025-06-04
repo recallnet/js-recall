@@ -54,7 +54,7 @@ export type PostApiAdminUsersRequest = {
 /**
  * Optional metadata for the user
  */
-export type UserMetadata = {};
+export type PostApiAdminUsersUserMetadata = {};
 
 export type PostApiAdminUsersUser = {
   /**
@@ -80,7 +80,7 @@ export type PostApiAdminUsersUser = {
   /**
    * Optional metadata for the user
    */
-  metadata?: UserMetadata | null | undefined;
+  metadata?: PostApiAdminUsersUserMetadata | null | undefined;
   /**
    * User status
    */
@@ -296,46 +296,52 @@ export function postApiAdminUsersRequestFromJSON(
 }
 
 /** @internal */
-export const UserMetadata$inboundSchema: z.ZodType<
-  UserMetadata,
+export const PostApiAdminUsersUserMetadata$inboundSchema: z.ZodType<
+  PostApiAdminUsersUserMetadata,
   z.ZodTypeDef,
   unknown
 > = z.object({});
 
 /** @internal */
-export type UserMetadata$Outbound = {};
+export type PostApiAdminUsersUserMetadata$Outbound = {};
 
 /** @internal */
-export const UserMetadata$outboundSchema: z.ZodType<
-  UserMetadata$Outbound,
+export const PostApiAdminUsersUserMetadata$outboundSchema: z.ZodType<
+  PostApiAdminUsersUserMetadata$Outbound,
   z.ZodTypeDef,
-  UserMetadata
+  PostApiAdminUsersUserMetadata
 > = z.object({});
 
 /**
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace UserMetadata$ {
-  /** @deprecated use `UserMetadata$inboundSchema` instead. */
-  export const inboundSchema = UserMetadata$inboundSchema;
-  /** @deprecated use `UserMetadata$outboundSchema` instead. */
-  export const outboundSchema = UserMetadata$outboundSchema;
-  /** @deprecated use `UserMetadata$Outbound` instead. */
-  export type Outbound = UserMetadata$Outbound;
+export namespace PostApiAdminUsersUserMetadata$ {
+  /** @deprecated use `PostApiAdminUsersUserMetadata$inboundSchema` instead. */
+  export const inboundSchema = PostApiAdminUsersUserMetadata$inboundSchema;
+  /** @deprecated use `PostApiAdminUsersUserMetadata$outboundSchema` instead. */
+  export const outboundSchema = PostApiAdminUsersUserMetadata$outboundSchema;
+  /** @deprecated use `PostApiAdminUsersUserMetadata$Outbound` instead. */
+  export type Outbound = PostApiAdminUsersUserMetadata$Outbound;
 }
 
-export function userMetadataToJSON(userMetadata: UserMetadata): string {
-  return JSON.stringify(UserMetadata$outboundSchema.parse(userMetadata));
+export function postApiAdminUsersUserMetadataToJSON(
+  postApiAdminUsersUserMetadata: PostApiAdminUsersUserMetadata,
+): string {
+  return JSON.stringify(
+    PostApiAdminUsersUserMetadata$outboundSchema.parse(
+      postApiAdminUsersUserMetadata,
+    ),
+  );
 }
 
-export function userMetadataFromJSON(
+export function postApiAdminUsersUserMetadataFromJSON(
   jsonString: string,
-): SafeParseResult<UserMetadata, SDKValidationError> {
+): SafeParseResult<PostApiAdminUsersUserMetadata, SDKValidationError> {
   return safeParse(
     jsonString,
-    (x) => UserMetadata$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'UserMetadata' from JSON`,
+    (x) => PostApiAdminUsersUserMetadata$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'PostApiAdminUsersUserMetadata' from JSON`,
   );
 }
 
@@ -350,7 +356,9 @@ export const PostApiAdminUsersUser$inboundSchema: z.ZodType<
   name: z.string().optional(),
   email: z.string().optional(),
   imageUrl: z.nullable(z.string()).optional(),
-  metadata: z.nullable(z.lazy(() => UserMetadata$inboundSchema)).optional(),
+  metadata: z
+    .nullable(z.lazy(() => PostApiAdminUsersUserMetadata$inboundSchema))
+    .optional(),
   status: z.string().optional(),
   createdAt: z
     .string()
@@ -371,7 +379,7 @@ export type PostApiAdminUsersUser$Outbound = {
   name?: string | undefined;
   email?: string | undefined;
   imageUrl?: string | null | undefined;
-  metadata?: UserMetadata$Outbound | null | undefined;
+  metadata?: PostApiAdminUsersUserMetadata$Outbound | null | undefined;
   status?: string | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
@@ -388,7 +396,9 @@ export const PostApiAdminUsersUser$outboundSchema: z.ZodType<
   name: z.string().optional(),
   email: z.string().optional(),
   imageUrl: z.nullable(z.string()).optional(),
-  metadata: z.nullable(z.lazy(() => UserMetadata$outboundSchema)).optional(),
+  metadata: z
+    .nullable(z.lazy(() => PostApiAdminUsersUserMetadata$outboundSchema))
+    .optional(),
   status: z.string().optional(),
   createdAt: z
     .date()

@@ -28,14 +28,14 @@ import { Result } from "../types/fp.js";
  * @remarks
  * Get comprehensive voting state information for a user in a specific competition
  */
-export function voteGetApiUserVotingStateCompetitionId(
+export function voteGetApiUserVotesCompetitionIdState(
   client: ApiSDKCore,
-  security: operations.GetApiUserVotingStateCompetitionIdSecurity,
-  request: operations.GetApiUserVotingStateCompetitionIdRequest,
+  security: operations.GetApiUserVotesCompetitionIdStateSecurity,
+  request: operations.GetApiUserVotesCompetitionIdStateRequest,
   options?: RequestOptions,
 ): APIPromise<
   Result<
-    operations.GetApiUserVotingStateCompetitionIdResponse,
+    operations.GetApiUserVotesCompetitionIdStateResponse,
     | APIError
     | SDKValidationError
     | UnexpectedClientError
@@ -50,13 +50,13 @@ export function voteGetApiUserVotingStateCompetitionId(
 
 async function $do(
   client: ApiSDKCore,
-  security: operations.GetApiUserVotingStateCompetitionIdSecurity,
-  request: operations.GetApiUserVotingStateCompetitionIdRequest,
+  security: operations.GetApiUserVotesCompetitionIdStateSecurity,
+  request: operations.GetApiUserVotesCompetitionIdStateRequest,
   options?: RequestOptions,
 ): Promise<
   [
     Result<
-      operations.GetApiUserVotingStateCompetitionIdResponse,
+      operations.GetApiUserVotesCompetitionIdStateResponse,
       | APIError
       | SDKValidationError
       | UnexpectedClientError
@@ -71,7 +71,7 @@ async function $do(
   const parsed = safeParse(
     request,
     (value) =>
-      operations.GetApiUserVotingStateCompetitionIdRequest$outboundSchema.parse(
+      operations.GetApiUserVotesCompetitionIdStateRequest$outboundSchema.parse(
         value,
       ),
     "Input validation failed",
@@ -89,7 +89,7 @@ async function $do(
     }),
   };
 
-  const path = pathToFunc("/api/user/voting-state/{competitionId}")(pathParams);
+  const path = pathToFunc("/api/user/votes/{competitionId}/state")(pathParams);
 
   const headers = new Headers(
     compactMap({
@@ -108,7 +108,7 @@ async function $do(
   const context = {
     options: client._options,
     baseURL: options?.serverURL ?? client._baseURL ?? "",
-    operationID: "get_/api/user/voting-state/{competitionId}",
+    operationID: "get_/api/user/votes/{competitionId}/state",
     oAuth2Scopes: null,
 
     resolvedSecurity: requestSecurity,
@@ -150,7 +150,7 @@ async function $do(
   const response = doResult.value;
 
   const [result] = await M.match<
-    operations.GetApiUserVotingStateCompetitionIdResponse,
+    operations.GetApiUserVotesCompetitionIdStateResponse,
     | APIError
     | SDKValidationError
     | UnexpectedClientError
@@ -161,7 +161,7 @@ async function $do(
   >(
     M.json(
       200,
-      operations.GetApiUserVotingStateCompetitionIdResponse$inboundSchema,
+      operations.GetApiUserVotesCompetitionIdStateResponse$inboundSchema,
     ),
     M.fail([400, 401, "4XX"]),
     M.fail([500, "5XX"]),
