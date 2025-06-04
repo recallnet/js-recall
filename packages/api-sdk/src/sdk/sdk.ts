@@ -4,9 +4,11 @@
 import { ClientSDK } from "../lib/sdks.js";
 import { Admin } from "./admin.js";
 import { Agent } from "./agent.js";
+import { Agents } from "./agents.js";
 import { Auth } from "./auth.js";
 import { Competition } from "./competition.js";
 import { Health } from "./health.js";
+import { Leaderboard } from "./leaderboard.js";
 import { Price } from "./price.js";
 import { Trade } from "./trade.js";
 import { User } from "./user.js";
@@ -22,6 +24,11 @@ export class ApiSDK extends ClientSDK {
     return (this._agent ??= new Agent(this._options));
   }
 
+  private _agents?: Agents;
+  get agents(): Agents {
+    return (this._agents ??= new Agents(this._options));
+  }
+
   private _auth?: Auth;
   get auth(): Auth {
     return (this._auth ??= new Auth(this._options));
@@ -35,6 +42,11 @@ export class ApiSDK extends ClientSDK {
   private _health?: Health;
   get health(): Health {
     return (this._health ??= new Health(this._options));
+  }
+
+  private _leaderboard?: Leaderboard;
+  get leaderboard(): Leaderboard {
+    return (this._leaderboard ??= new Leaderboard(this._options));
   }
 
   private _price?: Price;

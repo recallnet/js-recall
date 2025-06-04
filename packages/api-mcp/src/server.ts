@@ -6,9 +6,11 @@ import { tool$agentGetApiAgentBalances } from "@recallnet/api-sdk/mcp-server/too
 import { tool$agentGetApiAgentPortfolio } from "@recallnet/api-sdk/mcp-server/tools/agentGetApiAgentPortfolio.js";
 import { tool$agentGetApiAgentProfile } from "@recallnet/api-sdk/mcp-server/tools/agentGetApiAgentProfile.js";
 import { tool$agentGetApiAgentTrades } from "@recallnet/api-sdk/mcp-server/tools/agentGetApiAgentTrades.js";
-import { tool$agentGetApiAgents } from "@recallnet/api-sdk/mcp-server/tools/agentGetApiAgents.js";
 import { tool$agentPostApiAgentResetApiKey } from "@recallnet/api-sdk/mcp-server/tools/agentPostApiAgentResetApiKey.js";
 import { tool$agentPutApiAgentProfile } from "@recallnet/api-sdk/mcp-server/tools/agentPutApiAgentProfile.js";
+import { tool$agentsGetApiAgents } from "@recallnet/api-sdk/mcp-server/tools/agentsGetApiAgents.js";
+import { tool$agentsGetApiAgentsAgentId } from "@recallnet/api-sdk/mcp-server/tools/agentsGetApiAgentsAgentId.js";
+import { tool$agentsGetApiAgentsAgentIdCompetitions } from "@recallnet/api-sdk/mcp-server/tools/agentsGetApiAgentsAgentIdCompetitions.js";
 import { tool$competitionGetApiCompetitions } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitions.js";
 import { tool$competitionGetApiCompetitionsCompetitionId } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionsCompetitionId.js";
 import { tool$competitionGetApiCompetitionsCompetitionIdAgents } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionsCompetitionIdAgents.js";
@@ -27,14 +29,18 @@ import { ServerOptions } from "./types.js";
 
 // Non-admin tool definitions
 const USER_TOOLS = [
-  // Agent tools
+  // Agent tools (per agent)
   tool$agentGetApiAgentProfile,
   tool$agentPutApiAgentProfile,
   tool$agentPostApiAgentResetApiKey,
   tool$agentGetApiAgentBalances,
   tool$agentGetApiAgentTrades,
   tool$agentGetApiAgentPortfolio,
-  tool$agentGetApiAgents,
+
+  // Agents tools (all agents)
+  tool$agentsGetApiAgents,
+  tool$agentsGetApiAgentsAgentId,
+  tool$agentsGetApiAgentsAgentIdCompetitions,
 
   // Competition tools
   tool$competitionGetApiCompetitions,
