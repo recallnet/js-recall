@@ -69,7 +69,7 @@ const AgentSection = () => {
     .map((_, i) => `/backers/${i + 1}.png`);
 
   return (
-    <section className="text-whie relative -mx-[calc(50vw-50%)] flex w-screen flex-col items-center bg-gray-100 py-20">
+    <section className="relative -mx-[calc(50vw-50%)] flex w-screen flex-col items-center bg-gray-100 py-20 text-white">
       <AnimatedText
         letters={"Accelerating the Multi-Agent Economy".split(" ")}
         parentClass="w-100 md:w-140 mb-4 text-center text-4xl font-bold text-gray-800 md:text-6xl"
@@ -86,7 +86,7 @@ const AgentSection = () => {
         {agentFeatures.map((obj, i) => (
           <div
             key={i}
-            className="h-100 relative flex w-80 items-center justify-start justify-center overflow-hidden pl-8"
+            className="h-100 relative flex w-80 items-center justify-start overflow-hidden pl-8"
           >
             <Image
               src={obj.image}
