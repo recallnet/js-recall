@@ -17,6 +17,7 @@ import { migrateDb } from "@/database/db.js";
 import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
 import { authMiddleware } from "@/middleware/auth.middleware.js";
 import errorHandler from "@/middleware/errorHandler.js";
+import { optionalAuthMiddleware } from "@/middleware/optional-auth.middleware.js";
 import { rateLimiterMiddleware } from "@/middleware/rate-limiter.middleware.js";
 import { siweSessionMiddleware } from "@/middleware/siwe.middleware.js";
 import { configureAdminSetupRoutes } from "@/routes/admin-setup.routes.js";
@@ -115,6 +116,10 @@ app.use(
 app.use(rateLimiterMiddleware);
 
 const adminMiddleware = adminAuthMiddleware(services.adminManager);
+const optionalAuth = optionalAuthMiddleware(
+  services.agentManager,
+  services.adminManager,
+);
 
 const adminController = makeAdminController(services);
 const authController = makeAuthController(services);
@@ -133,6 +138,7 @@ const adminSetupRoutes = configureAdminSetupRoutes(adminController);
 const authRoutes = configureAuthRoutes(authController, siweSessionMiddleware);
 const competitionsRoutes = configureCompetitionsRoutes(
   competitionController,
+  optionalAuth,
   siweSessionMiddleware,
   authMiddleware(
     services.agentManager,

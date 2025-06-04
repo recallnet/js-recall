@@ -4,6 +4,7 @@ import { CompetitionController } from "@/controllers/competition.controller.js";
 
 export function configureCompetitionsRoutes(
   controller: CompetitionController,
+  optionalAuthMiddleware: RequestHandler,
   ...authMiddlewares: RequestHandler[]
 ) {
   const router = Router();
@@ -692,7 +693,11 @@ export function configureCompetitionsRoutes(
    *       500:
    *         description: Server error
    */
-  router.get("/:competitionId", controller.getCompetitionById);
+  router.get(
+    "/:competitionId",
+    optionalAuthMiddleware,
+    controller.getCompetitionById,
+  );
 
   /**
    * @openapi
