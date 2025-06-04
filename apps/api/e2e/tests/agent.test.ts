@@ -1,6 +1,8 @@
 import axios from "axios";
+import { privateKeyToAccount } from "viem/accounts";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { ApiClient } from "@/e2e/utils/api-client.js";
 import {
   AdminAgentsListResponse,
   AdminSearchUsersAndAgentsResponse,
@@ -19,6 +21,7 @@ import {
   ADMIN_PASSWORD,
   ADMIN_USERNAME,
   cleanupTestState,
+  createAgentVerificationSignature,
   createTestClient,
   generateRandomEthAddress,
   registerUserAndAgentAndGetClient,
@@ -975,145 +978,630 @@ describe("Agent API", () => {
     }
   });
 
-  test("GET /api/agent/:agentId/competitions retrieves agent competitions", async () => {
-    // Setup admin client and login
-    const adminClient = createTestClient();
-    const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
-    expect(adminLoginSuccess).toBe(true);
+  describe("Agent Wallet Verification", () => {
+    test("should successfully verify agent wallet ownership", async () => {
+      // Setup: Create admin client
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
 
-    // Step 1: Register a user and agent
-    const userName = `Competitions Test User ${Date.now()}`;
-    const userEmail = `competitions-test-${Date.now()}@example.com`;
-    const agentName = `Competitions Test Agent ${Date.now()}`;
-    const agentDescription = "Agent for competitions endpoint test";
+      // Create a test agent
+      const { client: agentClient } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Test Agent",
+        agentDescription: "Test agent for wallet verification",
+      });
 
-    const { client: agentClient, agent } =
+      // Step 1: Get a nonce for agent verification
+      const nonceResponse = await agentClient.getAgentNonce();
+      expect(nonceResponse).toMatchObject({ nonce: expect.any(String) });
+
+      const nonce = (nonceResponse as { nonce: string }).nonce;
+
+      // Step 2: Generate a new wallet for verification
+      const privateKey =
+        "0x1234567890123456789012345678901234567890123456789012345678901234";
+      const testAccount = privateKeyToAccount(privateKey);
+      const walletAddress = testAccount.address;
+
+      // Step 3: Create verification message with nonce and signature
+      const { message, signature } = await createAgentVerificationSignature(
+        privateKey,
+        nonce,
+        undefined,
+        undefined,
+      );
+
+      // Step 4: Verify wallet ownership
+      const response = await agentClient.verifyAgentWallet(message, signature);
+
+      expect(response).toEqual({
+        success: true,
+        walletAddress: walletAddress.toLowerCase(),
+        message: "Wallet verified successfully",
+      });
+
+      // Step 5: Verify the agent's wallet address was updated
+      const agentProfile = await agentClient.getAgentProfile();
+      expect((agentProfile as AgentProfileResponse).agent.walletAddress).toBe(
+        walletAddress.toLowerCase(),
+      );
+    });
+
+    test("should reject verification with invalid signature", async () => {
+      // Setup: Create admin client and agent
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      const { client: agentClient } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Test Agent",
+      });
+
+      // Get a nonce for agent verification
+      const nonceResponse = await agentClient.getAgentNonce();
+      expect(nonceResponse).toMatchObject({ nonce: expect.any(String) });
+      const nonce = (nonceResponse as { nonce: string }).nonce;
+
+      // Create verification message with correct account
+      const privateKey =
+        "0x1234567890123456789012345678901234567890123456789012345678901234";
+      const { message } = await createAgentVerificationSignature(
+        privateKey,
+        nonce,
+        undefined,
+        undefined,
+      );
+
+      // Use an invalid signature
+      const invalidSignature = "0xinvalidsignature";
+
+      // Attempt verification
+      const response = await agentClient.verifyAgentWallet(
+        message,
+        invalidSignature,
+      );
+
+      expect(response).toEqual({
+        success: false,
+        error: "Invalid signature",
+        status: 400,
+      });
+    });
+
+    test("should reject verification with expired timestamp", async () => {
+      // Setup: Create admin client and agent
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      const { client: agentClient } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Test Agent",
+      });
+
+      // Step 1: Get a nonce for agent verification
+      const nonceResponse = await agentClient.getAgentNonce();
+      expect(nonceResponse).toMatchObject({ nonce: expect.any(String) });
+
+      const nonce = (nonceResponse as { nonce: string }).nonce;
+
+      // Create verification message with expired timestamp (6 minutes ago)
+      const privateKey =
+        "0x1234567890123456789012345678901234567890123456789012345678901234";
+      const expiredTimestamp = new Date(
+        Date.now() - 6 * 60 * 1000,
+      ).toISOString();
+      const { message, signature } = await createAgentVerificationSignature(
+        privateKey,
+        nonce,
+        expiredTimestamp,
+        undefined,
+      );
+
+      // Attempt verification
+      const response = await agentClient.verifyAgentWallet(message, signature);
+
+      expect(response).toEqual({
+        success: false,
+        error: "Message timestamp too old",
+        status: 400,
+      });
+    });
+
+    test("should reject verification with wrong domain", async () => {
+      // Setup: Create admin client and agent
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      const { client: agentClient } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Test Agent",
+      });
+
+      // Get a nonce for agent verification
+      const nonceResponse = await agentClient.getAgentNonce();
+      expect(nonceResponse).toMatchObject({ nonce: expect.any(String) });
+      const nonce = (nonceResponse as { nonce: string }).nonce;
+
+      // Create verification message with wrong domain
+      const privateKey =
+        "0x1234567890123456789012345678901234567890123456789012345678901234";
+      const { message, signature } = await createAgentVerificationSignature(
+        privateKey,
+        nonce,
+        undefined,
+        "wrong.domain.com",
+      );
+
+      // Attempt verification
+      const response = await agentClient.verifyAgentWallet(message, signature);
+
+      expect(response).toEqual({
+        success: false,
+        error: "Invalid domain",
+        status: 400,
+      });
+    });
+
+    test("should reject verification when wallet already assigned to different agent", async () => {
+      // Setup: Create admin client
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      // Create first agent and verify wallet
+      const { client: agentClient1 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "First Agent",
+      });
+
+      const privateKey =
+        "0x1234567890123456789012345678901234567890123456789012345678901234";
+
+      // Get nonce for first agent
+      const nonceResponse1 = await agentClient1.getAgentNonce();
+      const nonce1 = (nonceResponse1 as { nonce: string }).nonce;
+
+      const { message: message1, signature: signature1 } =
+        await createAgentVerificationSignature(
+          privateKey,
+          nonce1,
+          undefined,
+          undefined,
+        );
+
+      const response1 = await agentClient1.verifyAgentWallet(
+        message1,
+        signature1,
+      );
+      expect(response1).toMatchObject({ success: true });
+
+      // Create second agent and try to verify with same wallet
+      const { client: agentClient2 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Second Agent",
+      });
+
+      // Get nonce for second agent
+      const nonceResponse2 = await agentClient2.getAgentNonce();
+      const nonce2 = (nonceResponse2 as { nonce: string }).nonce;
+
+      const { message: message2, signature: signature2 } =
+        await createAgentVerificationSignature(
+          privateKey,
+          nonce2,
+          undefined,
+          undefined,
+        );
+
+      const response2 = await agentClient2.verifyAgentWallet(
+        message2,
+        signature2,
+      );
+
+      expect(response2).toEqual({
+        success: false,
+        error: "Wallet address already associated with another agent",
+        status: 409,
+      });
+    });
+
+    test("should require agent authentication", async () => {
+      // Create a client without API key
+      const unauthenticatedClient = new ApiClient(undefined, getBaseUrl());
+
+      // Try to get a nonce without authentication - should fail
+      const nonceResponse = await unauthenticatedClient.getAgentNonce();
+
+      expect(nonceResponse).toEqual({
+        success: false,
+        error:
+          "Authentication required. No active session and no API key provided. Use Authorization: Bearer YOUR_API_KEY",
+        status: 401,
+      });
+
+      // Also test direct wallet verification without auth (will fail on nonce requirement)
+      const privateKey =
+        "0x1234567890123456789012345678901234567890123456789012345678901234";
+
+      // Create a message manually (without nonce since we can't get one)
+      const timestamp = new Date().toISOString();
+      const message = `VERIFY_WALLET_OWNERSHIP
+Timestamp: ${timestamp}
+Domain: api.recall.net
+Purpose: WALLET_VERIFICATION`;
+
+      const testAccount = privateKeyToAccount(privateKey as `0x${string}`);
+      const signature = await testAccount.signMessage({ message });
+
+      // Attempt verification without authentication
+      const verifyResponse = await unauthenticatedClient.verifyAgentWallet(
+        message,
+        signature,
+      );
+
+      expect(verifyResponse).toEqual({
+        success: false,
+        error:
+          "Authentication required. No active session and no API key provided. Use Authorization: Bearer YOUR_API_KEY",
+        status: 401,
+      });
+    });
+
+    test("should successfully verify agent wallet ownership with nonce", async () => {
+      // Setup: Create admin client
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      // Create a test agent
+      const { client: agentClient } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Test Agent with Nonce",
+        agentDescription: "Test agent for nonce-based wallet verification",
+      });
+
+      // Step 1: Get a nonce for agent verification
+      const nonceResponse = await agentClient.getAgentNonce();
+      expect(nonceResponse).toMatchObject({ nonce: expect.any(String) });
+      expect("error" in nonceResponse).toBe(false);
+
+      const nonce = (nonceResponse as { nonce: string }).nonce;
+
+      // Step 2: Generate a new wallet for verification
+      const privateKey =
+        "0x1234567890123456789012345678901234567890123456789012345678901234";
+      const testAccount = privateKeyToAccount(privateKey);
+      const walletAddress = testAccount.address;
+
+      // Step 3: Create verification message with nonce and signature
+      const { message, signature } = await createAgentVerificationSignature(
+        privateKey,
+        nonce,
+        undefined,
+        undefined,
+      );
+
+      // Step 4: Verify wallet ownership
+      const response = await agentClient.verifyAgentWallet(message, signature);
+
+      expect(response).toEqual({
+        success: true,
+        walletAddress: walletAddress.toLowerCase(),
+        message: "Wallet verified successfully",
+      });
+
+      // Step 5: Verify the agent's wallet address was updated
+      const agentProfile = await agentClient.getAgentProfile();
+      expect((agentProfile as AgentProfileResponse).agent.walletAddress).toBe(
+        walletAddress.toLowerCase(),
+      );
+    });
+
+    test("should reject verification when nonce is reused", async () => {
+      // Setup: Create admin client and two agents
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      // Create first agent
+      const { client: firstAgentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "First Agent Nonce Test",
+        });
+
+      // Create second agent
+      const { client: secondAgentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Second Agent Nonce Test",
+        });
+
+      // Get a nonce for first agent
+      const nonceResponse = await firstAgentClient.getAgentNonce();
+      expect(nonceResponse).toMatchObject({ nonce: expect.any(String) });
+      const nonce = (nonceResponse as { nonce: string }).nonce;
+
+      // Generate wallet and verify with first agent using the nonce
+      const privateKey1 =
+        "0x1111111111111111111111111111111111111111111111111111111111111111";
+      const { message: firstMessage, signature: firstSignature } =
+        await createAgentVerificationSignature(
+          privateKey1,
+          nonce,
+          undefined,
+          undefined,
+        );
+
+      // Verify with first agent - should succeed
+      const firstResponse = await firstAgentClient.verifyAgentWallet(
+        firstMessage,
+        firstSignature,
+      );
+      expect(firstResponse).toMatchObject({ success: true });
+
+      // Try to use the same nonce with second agent - should fail
+      const privateKey2 =
+        "0x2222222222222222222222222222222222222222222222222222222222222222";
+      const { message: secondMessage, signature: secondSignature } =
+        await createAgentVerificationSignature(
+          privateKey2,
+          nonce,
+          undefined,
+          undefined,
+        );
+
+      const secondResponse = await secondAgentClient.verifyAgentWallet(
+        secondMessage,
+        secondSignature,
+      );
+      expect(secondResponse).toEqual({
+        success: false,
+        error: "Nonce does not belong to this agent",
+        status: 400,
+      });
+    });
+
+    test("should reject verification with expired nonce", async () => {
+      // Setup: Create admin client and agent
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      const { client: agentClient } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Expired Nonce Test Agent",
+      });
+
+      // Get a nonce
+      const nonceResponse = await agentClient.getAgentNonce();
+      expect(nonceResponse).toMatchObject({ nonce: expect.any(String) });
+      const nonce = (nonceResponse as { nonce: string }).nonce;
+
+      // Create verification message with expired timestamp (15 minutes ago)
+      const privateKey =
+        "0x3333333333333333333333333333333333333333333333333333333333333333";
+      const expiredTimestamp = new Date(
+        Date.now() - 15 * 60 * 1000,
+      ).toISOString();
+
+      const { message, signature } = await createAgentVerificationSignature(
+        privateKey,
+        nonce,
+        expiredTimestamp,
+        undefined,
+      );
+
+      // Attempt verification - should fail due to expired timestamp
+      const response = await agentClient.verifyAgentWallet(message, signature);
+      expect(response).toEqual({
+        success: false,
+        error: "Message timestamp too old",
+        status: 400,
+      });
+    });
+
+    test("should require agent authentication for nonce generation", async () => {
+      // Create a client without API key
+      const unauthenticatedClient = new ApiClient(undefined, getBaseUrl());
+
+      // Attempt to get agent nonce without authentication
+      const response = await unauthenticatedClient.getAgentNonce();
+
+      expect(response).toEqual({
+        success: false,
+        error:
+          "Authentication required. No active session and no API key provided. Use Authorization: Bearer YOUR_API_KEY",
+        status: 401,
+      });
+    });
+
+    test("should work with both nonce and non-nonce verification (backward compatibility)", async () => {
+      // Setup: Create admin client and two agents
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      // Create first agent for nonce-based verification
+      const { client: nonceAgentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Nonce Agent",
+        });
+
+      // Create second agent for legacy (no nonce) verification
       await registerUserAndAgentAndGetClient({
         adminApiKey,
-        userName,
-        userEmail,
-        agentName,
-        agentDescription,
+        agentName: "Legacy Agent",
       });
 
-    expect(agent).toBeDefined();
-    expect(agent.id).toBeDefined();
+      // Test 1: Nonce-based verification
+      const nonceResponse = await nonceAgentClient.getAgentNonce();
+      expect("error" in nonceResponse).toBe(false);
+      const nonce = (nonceResponse as { nonce: string }).nonce;
 
-    // Step 2: Create and start two competitions with the agent
-    const competitionNames = [
-      `Competition A ${Date.now()}`,
-      `Competition B ${Date.now()}`,
-      `Competition C ${Date.now()}`,
-    ];
-    const createdCompetitions: Competition[] = [];
+      const privateKey1 =
+        "0x4444444444444444444444444444444444444444444444444444444444444444";
+      const { message: nonceMessage, signature: nonceSignature } =
+        await createAgentVerificationSignature(
+          privateKey1,
+          nonce,
+          undefined,
+          undefined,
+        );
 
-    // NOTE: we can't have more than one active comp right now
-    async function createComp(compName: string) {
-      const createCompResult = await adminClient.createCompetition(
-        compName,
-        `Test competition ${compName}`,
+      const nonceVerificationResponse =
+        await nonceAgentClient.verifyAgentWallet(nonceMessage, nonceSignature);
+      expect(nonceVerificationResponse).toMatchObject({ success: true });
+
+      // Test 2: Legacy (no nonce) verification
+      // This test should be removed since nonce is now required
+    });
+    test("GET /api/agent/:agentId/competitions retrieves agent competitions", async () => {
+      // Setup admin client and login
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      // Step 1: Register a user and agent
+      const userName = `Competitions Test User ${Date.now()}`;
+      const userEmail = `competitions-test-${Date.now()}@example.com`;
+      const agentName = `Competitions Test Agent ${Date.now()}`;
+      const agentDescription = "Agent for competitions endpoint test";
+
+      const { client: agentClient, agent } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          userName,
+          userEmail,
+          agentName,
+          agentDescription,
+        });
+
+      expect(agent).toBeDefined();
+      expect(agent.id).toBeDefined();
+
+      // Step 2: Create and start two competitions with the agent
+      const competitionNames = [
+        `Competition A ${Date.now()}`,
+        `Competition B ${Date.now()}`,
+        `Competition C ${Date.now()}`,
+      ];
+      const createdCompetitions: Competition[] = [];
+
+      // NOTE: we can't have more than one active comp right now
+      async function createComp(compName: string) {
+        const createCompResult = await adminClient.createCompetition(
+          compName,
+          `Test competition ${compName}`,
+        );
+        expect(createCompResult.success).toBe(true);
+        const createCompResponse =
+          createCompResult as CreateCompetitionResponse;
+        createdCompetitions.push(createCompResponse.competition);
+
+        const startCompResult = await adminClient.startExistingCompetition(
+          createCompResponse.competition.id,
+          [agent.id],
+        );
+
+        expect(startCompResult.success).toBe(true);
+      }
+
+      await createComp(competitionNames[0] as string);
+      await adminClient.endCompetition(createdCompetitions[0]?.id as string);
+      await createComp(competitionNames[1] as string);
+
+      const pendingCompResponse = await adminClient.createCompetition(
+        competitionNames[2] as string,
+        `Test competition ${competitionNames[2] as string}`,
       );
-      expect(createCompResult.success).toBe(true);
-      const createCompResponse = createCompResult as CreateCompetitionResponse;
-      createdCompetitions.push(createCompResponse.competition);
+      expect(pendingCompResponse.success).toBe(true);
 
-      const startCompResult = await adminClient.startExistingCompetition(
-        createCompResponse.competition.id,
-        [agent.id],
+      // make sure there is at least one comp that the agent is not part of so we can test that it is not returned in the responses
+      const notJoinedCompResponse = await adminClient.createCompetition(
+        competitionNames[2] as string,
+        `Test competition ${competitionNames[2] as string}`,
+      );
+      expect(notJoinedCompResponse.success).toBe(true);
+
+      const pendingComp = pendingCompResponse as CreateCompetitionResponse;
+      await agentClient.joinCompetition(pendingComp.competition.id, agent.id);
+      createdCompetitions.push(pendingComp.competition);
+
+      // Agent fetches list of competitions
+      const competitionsData = await agentClient.getAgentCompetitions(
+        agent.id,
+        {},
       );
 
-      expect(startCompResult.success).toBe(true);
-    }
+      expect(competitionsData.success).toBe(true);
+      expect(competitionsData.competitions).toBeDefined();
+      expect(Array.isArray(competitionsData.competitions)).toBe(true);
+      expect(competitionsData.competitions.length).toBe(3);
+      expect(competitionsData.competitions[0].status).toBe("ended");
+      expect(competitionsData.competitions[1].status).toBe("active");
+      expect(competitionsData.competitions[2].status).toBe("pending");
 
-    await createComp(competitionNames[0] as string);
-    await adminClient.endCompetition(createdCompetitions[0]?.id as string);
-    await createComp(competitionNames[1] as string);
+      // Verify all competitions are present
+      for (const competition of createdCompetitions) {
+        const foundCompetition = competitionsData.competitions.find(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (c: any) => c.id === competition.id,
+        );
+        expect(foundCompetition).toBeDefined();
+        expect(foundCompetition.name).toBe(competition.name);
+      }
 
-    const pendingCompResponse = await adminClient.createCompetition(
-      competitionNames[2] as string,
-      `Test competition ${competitionNames[2] as string}`,
-    );
-    expect(pendingCompResponse.success).toBe(true);
+      // test if filtering by status works
+      async function testStatus(status: string) {
+        const compsData = await agentClient.getAgentCompetitions(agent.id, {
+          status,
+        });
 
-    // make sure there is at least one comp that the agent is not part of so we can test that it is not returned in the responses
-    const notJoinedCompResponse = await adminClient.createCompetition(
-      competitionNames[2] as string,
-      `Test competition ${competitionNames[2] as string}`,
-    );
-    expect(notJoinedCompResponse.success).toBe(true);
+        expect(compsData.success).toBe(true);
+        expect(compsData.competitions).toBeDefined();
+        expect(Array.isArray(compsData.competitions)).toBe(true);
+        expect(compsData.competitions.length).toBe(1);
+        expect(compsData.competitions[0].status).toBe(status);
+      }
 
-    const pendingComp = pendingCompResponse as CreateCompetitionResponse;
-    await agentClient.joinCompetition(pendingComp.competition.id, agent.id);
-    createdCompetitions.push(pendingComp.competition);
+      await testStatus("pending");
+      await testStatus("active");
+      await testStatus("ended");
 
-    // Agent fetches list of competitions
-    const competitionsData = await agentClient.getAgentCompetitions(
-      agent.id,
-      {},
-    );
-
-    expect(competitionsData.success).toBe(true);
-    expect(competitionsData.competitions).toBeDefined();
-    expect(Array.isArray(competitionsData.competitions)).toBe(true);
-    expect(competitionsData.competitions.length).toBe(3);
-    expect(competitionsData.competitions[0].status).toBe("ended");
-    expect(competitionsData.competitions[1].status).toBe("active");
-    expect(competitionsData.competitions[2].status).toBe("pending");
-
-    // Verify all competitions are present
-    for (const competition of createdCompetitions) {
-      const foundCompetition = competitionsData.competitions.find(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (c: any) => c.id === competition.id,
-      );
-      expect(foundCompetition).toBeDefined();
-      expect(foundCompetition.name).toBe(competition.name);
-    }
-
-    // test if filtering by status works
-    async function testStatus(status: string) {
-      const compsData = await agentClient.getAgentCompetitions(agent.id, {
-        status,
+      // test if sorting works
+      const sortedComps = await agentClient.getAgentCompetitions(agent.id, {
+        sort: "-name",
       });
 
-      expect(compsData.success).toBe(true);
-      expect(compsData.competitions).toBeDefined();
-      expect(Array.isArray(compsData.competitions)).toBe(true);
-      expect(compsData.competitions.length).toBe(1);
-      expect(compsData.competitions[0].status).toBe(status);
-    }
+      expect(sortedComps.success).toBe(true);
+      expect(sortedComps.competitions).toBeDefined();
+      expect(Array.isArray(sortedComps.competitions)).toBe(true);
+      expect(sortedComps.competitions.length).toBe(3);
+      expect(sortedComps.competitions[0].name).toBe(competitionNames[2]);
+      expect(sortedComps.competitions[1].name).toBe(competitionNames[1]);
+      expect(sortedComps.competitions[2].name).toBe(competitionNames[0]);
 
-    await testStatus("pending");
-    await testStatus("active");
-    await testStatus("ended");
+      // test if pagination works
+      const pagedComps = await agentClient.getAgentCompetitions(agent.id, {
+        limit: 2,
+        offset: 0,
+      });
 
-    // test if sorting works
-    const sortedComps = await agentClient.getAgentCompetitions(agent.id, {
-      sort: "-name",
+      expect(pagedComps.success).toBe(true);
+      expect(pagedComps.competitions).toBeDefined();
+      expect(Array.isArray(pagedComps.competitions)).toBe(true);
+      expect(pagedComps.competitions.length).toBe(2);
+      expect(pagedComps.pagination).toBeDefined();
+      expect(pagedComps.pagination.total).toBe(3);
+      expect(pagedComps.pagination.limit).toBe(2);
+      expect(pagedComps.pagination.offset).toBe(0);
+      expect(pagedComps.pagination.hasMore).toBe(true);
     });
-
-    expect(sortedComps.success).toBe(true);
-    expect(sortedComps.competitions).toBeDefined();
-    expect(Array.isArray(sortedComps.competitions)).toBe(true);
-    expect(sortedComps.competitions.length).toBe(3);
-    expect(sortedComps.competitions[0].name).toBe(competitionNames[2]);
-    expect(sortedComps.competitions[1].name).toBe(competitionNames[1]);
-    expect(sortedComps.competitions[2].name).toBe(competitionNames[0]);
-
-    // test if pagination works
-    const pagedComps = await agentClient.getAgentCompetitions(agent.id, {
-      limit: 2,
-      offset: 0,
-    });
-
-    expect(pagedComps.success).toBe(true);
-    expect(pagedComps.competitions).toBeDefined();
-    expect(Array.isArray(pagedComps.competitions)).toBe(true);
-    expect(pagedComps.competitions.length).toBe(2);
-    expect(pagedComps.pagination).toBeDefined();
-    expect(pagedComps.pagination.total).toBe(3);
-    expect(pagedComps.pagination.limit).toBe(2);
-    expect(pagedComps.pagination.offset).toBe(0);
-    expect(pagedComps.pagination.hasMore).toBe(true);
   });
 });

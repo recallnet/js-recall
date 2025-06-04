@@ -12,6 +12,11 @@ export type PutApiUserProfileSecurity = {
   siweSession: string;
 };
 
+/**
+ * User's metadata
+ */
+export type PutApiUserProfileMetadataRequest = {};
+
 export type PutApiUserProfileRequest = {
   /**
    * User's display name
@@ -25,7 +30,13 @@ export type PutApiUserProfileRequest = {
    * User's email
    */
   email?: string | undefined;
+  /**
+   * User's metadata
+   */
+  metadata?: PutApiUserProfileMetadataRequest | undefined;
 };
+
+export type PutApiUserProfileMetadataResponse = {};
 
 export type PutApiUserProfileUser = {
   id?: string | undefined;
@@ -33,6 +44,7 @@ export type PutApiUserProfileUser = {
   name?: string | undefined;
   email?: string | null | undefined;
   imageUrl?: string | null | undefined;
+  metadata?: PutApiUserProfileMetadataResponse | null | undefined;
   status?: string | undefined;
   createdAt?: Date | undefined;
   updatedAt?: Date | undefined;
@@ -113,6 +125,56 @@ export function putApiUserProfileSecurityFromJSON(
 }
 
 /** @internal */
+export const PutApiUserProfileMetadataRequest$inboundSchema: z.ZodType<
+  PutApiUserProfileMetadataRequest,
+  z.ZodTypeDef,
+  unknown
+> = z.object({});
+
+/** @internal */
+export type PutApiUserProfileMetadataRequest$Outbound = {};
+
+/** @internal */
+export const PutApiUserProfileMetadataRequest$outboundSchema: z.ZodType<
+  PutApiUserProfileMetadataRequest$Outbound,
+  z.ZodTypeDef,
+  PutApiUserProfileMetadataRequest
+> = z.object({});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace PutApiUserProfileMetadataRequest$ {
+  /** @deprecated use `PutApiUserProfileMetadataRequest$inboundSchema` instead. */
+  export const inboundSchema = PutApiUserProfileMetadataRequest$inboundSchema;
+  /** @deprecated use `PutApiUserProfileMetadataRequest$outboundSchema` instead. */
+  export const outboundSchema = PutApiUserProfileMetadataRequest$outboundSchema;
+  /** @deprecated use `PutApiUserProfileMetadataRequest$Outbound` instead. */
+  export type Outbound = PutApiUserProfileMetadataRequest$Outbound;
+}
+
+export function putApiUserProfileMetadataRequestToJSON(
+  putApiUserProfileMetadataRequest: PutApiUserProfileMetadataRequest,
+): string {
+  return JSON.stringify(
+    PutApiUserProfileMetadataRequest$outboundSchema.parse(
+      putApiUserProfileMetadataRequest,
+    ),
+  );
+}
+
+export function putApiUserProfileMetadataRequestFromJSON(
+  jsonString: string,
+): SafeParseResult<PutApiUserProfileMetadataRequest, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) => PutApiUserProfileMetadataRequest$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'PutApiUserProfileMetadataRequest' from JSON`,
+  );
+}
+
+/** @internal */
 export const PutApiUserProfileRequest$inboundSchema: z.ZodType<
   PutApiUserProfileRequest,
   z.ZodTypeDef,
@@ -121,6 +183,9 @@ export const PutApiUserProfileRequest$inboundSchema: z.ZodType<
   name: z.string().optional(),
   imageUrl: z.string().optional(),
   email: z.string().optional(),
+  metadata: z
+    .lazy(() => PutApiUserProfileMetadataRequest$inboundSchema)
+    .optional(),
 });
 
 /** @internal */
@@ -128,6 +193,7 @@ export type PutApiUserProfileRequest$Outbound = {
   name?: string | undefined;
   imageUrl?: string | undefined;
   email?: string | undefined;
+  metadata?: PutApiUserProfileMetadataRequest$Outbound | undefined;
 };
 
 /** @internal */
@@ -139,6 +205,9 @@ export const PutApiUserProfileRequest$outboundSchema: z.ZodType<
   name: z.string().optional(),
   imageUrl: z.string().optional(),
   email: z.string().optional(),
+  metadata: z
+    .lazy(() => PutApiUserProfileMetadataRequest$outboundSchema)
+    .optional(),
 });
 
 /**
@@ -173,6 +242,57 @@ export function putApiUserProfileRequestFromJSON(
 }
 
 /** @internal */
+export const PutApiUserProfileMetadataResponse$inboundSchema: z.ZodType<
+  PutApiUserProfileMetadataResponse,
+  z.ZodTypeDef,
+  unknown
+> = z.object({});
+
+/** @internal */
+export type PutApiUserProfileMetadataResponse$Outbound = {};
+
+/** @internal */
+export const PutApiUserProfileMetadataResponse$outboundSchema: z.ZodType<
+  PutApiUserProfileMetadataResponse$Outbound,
+  z.ZodTypeDef,
+  PutApiUserProfileMetadataResponse
+> = z.object({});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace PutApiUserProfileMetadataResponse$ {
+  /** @deprecated use `PutApiUserProfileMetadataResponse$inboundSchema` instead. */
+  export const inboundSchema = PutApiUserProfileMetadataResponse$inboundSchema;
+  /** @deprecated use `PutApiUserProfileMetadataResponse$outboundSchema` instead. */
+  export const outboundSchema =
+    PutApiUserProfileMetadataResponse$outboundSchema;
+  /** @deprecated use `PutApiUserProfileMetadataResponse$Outbound` instead. */
+  export type Outbound = PutApiUserProfileMetadataResponse$Outbound;
+}
+
+export function putApiUserProfileMetadataResponseToJSON(
+  putApiUserProfileMetadataResponse: PutApiUserProfileMetadataResponse,
+): string {
+  return JSON.stringify(
+    PutApiUserProfileMetadataResponse$outboundSchema.parse(
+      putApiUserProfileMetadataResponse,
+    ),
+  );
+}
+
+export function putApiUserProfileMetadataResponseFromJSON(
+  jsonString: string,
+): SafeParseResult<PutApiUserProfileMetadataResponse, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) => PutApiUserProfileMetadataResponse$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'PutApiUserProfileMetadataResponse' from JSON`,
+  );
+}
+
+/** @internal */
 export const PutApiUserProfileUser$inboundSchema: z.ZodType<
   PutApiUserProfileUser,
   z.ZodTypeDef,
@@ -183,6 +303,9 @@ export const PutApiUserProfileUser$inboundSchema: z.ZodType<
   name: z.string().optional(),
   email: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
+  metadata: z
+    .nullable(z.lazy(() => PutApiUserProfileMetadataResponse$inboundSchema))
+    .optional(),
   status: z.string().optional(),
   createdAt: z
     .string()
@@ -203,6 +326,7 @@ export type PutApiUserProfileUser$Outbound = {
   name?: string | undefined;
   email?: string | null | undefined;
   imageUrl?: string | null | undefined;
+  metadata?: PutApiUserProfileMetadataResponse$Outbound | null | undefined;
   status?: string | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
@@ -219,6 +343,9 @@ export const PutApiUserProfileUser$outboundSchema: z.ZodType<
   name: z.string().optional(),
   email: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
+  metadata: z
+    .nullable(z.lazy(() => PutApiUserProfileMetadataResponse$outboundSchema))
+    .optional(),
   status: z.string().optional(),
   createdAt: z
     .date()

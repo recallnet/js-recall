@@ -1,6 +1,8 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "extends": ["//"],
+  "extends": [
+    "//"
+  ],
   "tasks": {
     "build": {
       "env": [
@@ -49,7 +51,8 @@
         "TEST_MODE",
         "TEST_PORT",
         "TEST_SOL_TOKEN_ADDRESS",
-        "npm_package_version"
+        "npm_package_version",
+        "API_DOMAIN"
       ]
     }
   }

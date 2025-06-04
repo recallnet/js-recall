@@ -202,6 +202,9 @@ jobs:
           NODE_ENV=test
           PORT=3001
 
+          # API Configuration
+          API_DOMAIN=http://localhost:3001
+
           # Test Security Secrets
           # Note: root encryption key is also used for sessions; requires a 32 character length
           ROOT_ENCRYPTION_KEY=test_root_encryption_key_with_32_characters

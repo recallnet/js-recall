@@ -13,8 +13,6 @@ targets:
         sourceNamespace: trading-simulator-api
         sourceRevisionDigest: sha256:06fae29391b01e7236d76e91a3b1aa3006643cf8d7b5b40b0007f07e735c80a7
         sourceBlobDigest: sha256:08efe4b885ccff19957dd5a572dae05e9cd15ad1d526d606411df9ad54a7eadc
-        codeSamplesNamespace: trading-simulator-api-typescript-code-samples
-        codeSamplesRevisionDigest: sha256:4fbc6d8cbf1f2c6fbe45a7405fb9c40515e0d3231e9f57d5b9f5392ca0243f7c
 workflow:
     workflowVersion: 1.0.0
     speakeasyVersion: latest

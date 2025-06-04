@@ -292,8 +292,8 @@ import { ApiSDK } from "@recallnet/api-sdk";
 const apiSDK = new ApiSDK();
 
 async function run() {
-  const result = await apiSDK.user.getApiUserProfile({
-    siweSession: process.env["APISDK_SIWE_SESSION"] ?? "",
+  const result = await apiSDK.auth.getApiAuthAgentNonce({
+    agentApiKey: process.env["APISDK_AGENT_API_KEY"] ?? "",
   });
 
   console.log(result);
@@ -344,7 +344,9 @@ run();
 ### [auth](docs/sdks/auth/README.md)
 
 - [getApiAuthNonce](docs/sdks/auth/README.md#getapiauthnonce) - Get a random nonce for SIWE authentication
+- [getApiAuthAgentNonce](docs/sdks/auth/README.md#getapiauthagentnonce) - Get a random nonce for agent wallet verification
 - [postApiAuthLogin](docs/sdks/auth/README.md#postapiauthlogin) - Verify SIWE signature and create a session
+- [postApiAuthVerify](docs/sdks/auth/README.md#postapiauthverify) - Verify agent wallet ownership
 - [postApiAuthLogout](docs/sdks/auth/README.md#postapiauthlogout) - Logout the current user by destroying the session
 
 ### [competition](docs/sdks/competition/README.md)
@@ -363,6 +365,10 @@ run();
 
 - [getApiHealth](docs/sdks/health/README.md#getapihealth) - Basic health check
 - [getApiHealthDetailed](docs/sdks/health/README.md#getapihealthdetailed) - Detailed health check
+
+### [leaderboard](docs/sdks/leaderboard/README.md)
+
+- [getApiLeaderboard](docs/sdks/leaderboard/README.md#getapileaderboard) - Get global leaderboard
 
 ### [price](docs/sdks/price/README.md)
 
@@ -426,9 +432,11 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`agentGetApiAgentTrades`](docs/sdks/agent/README.md#getapiagenttrades) - Get agent trade history
 - [`agentPostApiAgentResetApiKey`](docs/sdks/agent/README.md#postapiagentresetapikey) - Reset agent API key
 - [`agentPutApiAgentProfile`](docs/sdks/agent/README.md#putapiagentprofile) - Update authenticated agent profile
+- [`authGetApiAuthAgentNonce`](docs/sdks/auth/README.md#getapiauthagentnonce) - Get a random nonce for agent wallet verification
 - [`authGetApiAuthNonce`](docs/sdks/auth/README.md#getapiauthnonce) - Get a random nonce for SIWE authentication
 - [`authPostApiAuthLogin`](docs/sdks/auth/README.md#postapiauthlogin) - Verify SIWE signature and create a session
 - [`authPostApiAuthLogout`](docs/sdks/auth/README.md#postapiauthlogout) - Logout the current user by destroying the session
+- [`authPostApiAuthVerify`](docs/sdks/auth/README.md#postapiauthverify) - Verify agent wallet ownership
 - [`competitionDeleteApiCompetitionsCompetitionIdAgentsAgentId`](docs/sdks/competition/README.md#deleteapicompetitionscompetitionidagentsagentid) - Leave a competition
 - [`competitionGetApiCompetitions`](docs/sdks/competition/README.md#getapicompetitions) - Get upcoming competitions
 - [`competitionGetApiCompetitionsCompetitionId`](docs/sdks/competition/README.md#getapicompetitionscompetitionid) - Get competition details by ID
@@ -440,6 +448,7 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`competitionPostApiCompetitionsCompetitionIdAgentsAgentId`](docs/sdks/competition/README.md#postapicompetitionscompetitionidagentsagentid) - Join a competition
 - [`healthGetApiHealth`](docs/sdks/health/README.md#getapihealth) - Basic health check
 - [`healthGetApiHealthDetailed`](docs/sdks/health/README.md#getapihealthdetailed) - Detailed health check
+- [`leaderboardGetApiLeaderboard`](docs/sdks/leaderboard/README.md#getapileaderboard) - Get global leaderboard
 - [`priceGetApiPrice`](docs/sdks/price/README.md#getapiprice) - Get price for a token
 - [`priceGetApiPriceTokenInfo`](docs/sdks/price/README.md#getapipricetokeninfo) - Get detailed token information
 - [`tradeGetApiTradeQuote`](docs/sdks/trade/README.md#getapitradequote) - Get a quote for a trade
@@ -591,12 +600,16 @@ run();
   - `RequestAbortedError`: HTTP request was aborted by the client.
   - `InvalidRequestError`: Any input used to create a request is invalid.
   - `UnexpectedClientError`: Unrecognised or unexpected error.
-- Less common errors, applicable to a subset of methods:
-  - [`ErrorT`](docs/models/errors/errort.md): Invalid request parameters. Status code `400`. Applicable to 2 of 48 methods.\*
-  - [`UnauthorizedError`](docs/models/errors/unauthorizederror.md): Authentication failed. Status code `401`. Applicable to 1 of 48 methods.\*
-  - [`GetApiAuthNonceInternalServerError`](docs/models/errors/getapiauthnonceinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 48 methods.\*
-  - [`PostApiAuthLoginInternalServerError`](docs/models/errors/postapiauthlogininternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 48 methods.\*
-  - [`PostApiAuthLogoutInternalServerError`](docs/models/errors/postapiauthlogoutinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 48 methods.\*
+
+<details><summary>Less common errors, applicable to a subset of methods (6)</summary>
+
+- [`ErrorT`](docs/models/errors/errort.md): Invalid request parameters. Status code `400`. Applicable to 2 of 51 methods.\*
+- [`UnauthorizedError`](docs/models/errors/unauthorizederror.md): Authentication failed. Status code `401`. Applicable to 1 of 51 methods.\*
+- [`GetApiAuthNonceInternalServerError`](docs/models/errors/getapiauthnonceinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 51 methods.\*
+- [`GetApiAuthAgentNonceInternalServerError`](docs/models/errors/getapiauthagentnonceinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 51 methods.\*
+- [`PostApiAuthLoginInternalServerError`](docs/models/errors/postapiauthlogininternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 51 methods.\*
+- [`PostApiAuthLogoutInternalServerError`](docs/models/errors/postapiauthlogoutinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 51 methods.\*
+</details>
 
 \* Check [the method documentation](#available-resources-and-operations) to see if the error is applicable.
 

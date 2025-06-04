@@ -24,6 +24,12 @@ You can also provide these parameters as command line arguments:
 npx @recallnet/api-mcp --api-key your-api-key --api-server-url competitions-server-url
 ```
 
+**For wallet verification functionality**, you'll also need to provide your wallet's private key:
+
+```bash
+export WALLET_PRIVATE_KEY=0x1234567890abcdef...
+```
+
 Other supported options:
 
 ```bash
@@ -52,6 +58,7 @@ To add this MCP server to Cursor:
       "env": {
         "API_KEY": "your-api-key",
         "API_SERVER_URL": "competitions-server-url",
+        "WALLET_PRIVATE_KEY": "0x1234567890abcdef...",
         "LOG_LEVEL": "info"
       }
     }
@@ -84,6 +91,7 @@ To add this MCP server to Claude Desktop:
          "env": {
            "API_KEY": "your-api-key",
            "API_SERVER_URL": "competitions-server-url",
+           "WALLET_PRIVATE_KEY": "0x1234567890abcdef...",
            "LOG_LEVEL": "info"
          }
        }
@@ -111,6 +119,10 @@ The API MCP server exposes the following tools:
 - `accountGetApiAccountBalances` - Get account balances
 - `accountGetApiAccountTrades` - Get trade history
 - `accountGetApiAccountPortfolio` - Get portfolio
+
+### Auth Tools
+
+- `auth-post-api-auth-verify` - Automatically verify agent wallet ownership (uses configured private key to create and sign verification message)
 
 ### Competition Tools
 

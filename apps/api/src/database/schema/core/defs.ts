@@ -206,3 +206,27 @@ export const competitionAgents = pgTable(
     }),
   ],
 );
+
+export const agentNonces = pgTable(
+  "agent_nonces",
+  {
+    id: uuid().primaryKey().notNull(),
+    agentId: uuid("agent_id").notNull(),
+    nonce: varchar("nonce", { length: 100 }).notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("idx_agent_nonces_agent_id").on(table.agentId),
+    index("idx_agent_nonces_nonce").on(table.nonce),
+    index("idx_agent_nonces_expires_at").on(table.expiresAt),
+    foreignKey({
+      columns: [table.agentId],
+      foreignColumns: [agents.id],
+      name: "agent_nonces_agent_id_fkey",
+    }).onDelete("cascade"),
+  ],
+);
