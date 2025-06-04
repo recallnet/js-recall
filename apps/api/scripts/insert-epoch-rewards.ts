@@ -34,18 +34,20 @@ async function insertEpochAndRewards() {
     console.log(
       `${colors.cyan}╚════════════════════════════════════════════════════════════════╝${colors.reset}`,
     );
-    
+
     // Insert epoch
     const epochId = uuidv4();
-    
-    console.log(`\n${colors.blue}Inserting epoch with ID: ${colors.yellow}${epochId}${colors.reset}`);
-    
+
+    console.log(
+      `\n${colors.blue}Inserting epoch with ID: ${colors.yellow}${epochId}${colors.reset}`,
+    );
+
     await db.insert(epochs).values({
       id: epochId,
       startedAt: new Date(),
       endedAt: null,
     });
-        
+
     // Define reward data
     const rewardsData = [
       {
@@ -61,13 +63,15 @@ async function insertEpochAndRewards() {
         amount: BigInt("300000000000000000000"), // 300 tokens with 18 decimals
       },
     ];
-    
-    console.log(`\n${colors.blue}Inserting rewards for epoch: ${colors.yellow}${epochId}${colors.reset}`);
-    
+
+    console.log(
+      `\n${colors.blue}Inserting rewards for epoch: ${colors.yellow}${epochId}${colors.reset}`,
+    );
+
     // Insert rewards
     for (const reward of rewardsData) {
       const leafHash = createLeafNode(reward.address, reward.amount);
-      
+
       await db.insert(rewards).values({
         id: uuidv4(),
         epoch: epochId,
@@ -76,14 +80,21 @@ async function insertEpochAndRewards() {
         leafHash: new Uint8Array(leafHash),
         claimed: false,
       });
-      
-      console.log(`${colors.green}Inserted reward for address: ${colors.yellow}${reward.address}${colors.reset} with amount: ${colors.yellow}${reward.amount.toString()}${colors.reset}`);
+
+      console.log(
+        `${colors.green}Inserted reward for address: ${colors.yellow}${reward.address}${colors.reset} with amount: ${colors.yellow}${reward.amount.toString()}${colors.reset}`,
+      );
     }
-    
-    console.log(`\n${colors.green}Successfully inserted epoch and rewards.${colors.reset}`);
-    console.log(`${colors.green}Epoch ID: ${colors.yellow}${epochId}${colors.reset}`);
-    console.log(`${colors.green}You can now run: ${colors.yellow}pnpm rewards:allocate ${epochId}${colors.reset}`);
-    
+
+    console.log(
+      `\n${colors.green}Successfully inserted epoch and rewards.${colors.reset}`,
+    );
+    console.log(
+      `${colors.green}Epoch ID: ${colors.yellow}${epochId}${colors.reset}`,
+    );
+    console.log(
+      `${colors.green}You can now run: ${colors.yellow}pnpm rewards:allocate ${epochId}${colors.reset}`,
+    );
   } catch (error) {
     console.error(
       `\n${colors.red}Error inserting epoch and rewards:${colors.reset}`,

@@ -1,6 +1,6 @@
 {
-  "id": "01050e1d-6641-47c1-930d-79e7cb9e881d",
-  "prevId": "afd9fbeb-d5d7-4ae1-a4c3-2fc5368b91de",
+  "id": "fc544150-eb7f-40a8-b527-7468fc181502",
+  "prevId": "01050e1d-6641-47c1-930d-79e7cb9e881d",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1600,7 +1600,7 @@
         },
         "amount": {
           "name": "amount",
-          "type": "numeric(30, 18)",
+          "type": "numeric(78, 0)",
           "primaryKey": false,
           "notNull": true
         },
@@ -1911,7 +1911,7 @@
         },
         "amount": {
           "name": "amount",
-          "type": "numeric(30, 18)",
+          "type": "numeric(78, 0)",
           "primaryKey": false,
           "notNull": true
         },
@@ -2042,7 +2042,7 @@
         },
         "amount": {
           "name": "amount",
-          "type": "numeric(30, 18)",
+          "type": "numeric(78, 0)",
           "primaryKey": false,
           "notNull": true
         }
@@ -2159,7 +2159,7 @@
         },
         "amount": {
           "name": "amount",
-          "type": "numeric(30, 18)",
+          "type": "numeric(78, 0)",
           "primaryKey": false,
           "notNull": true
         },
@@ -2245,7 +2245,7 @@
         },
         "amount": {
           "name": "amount",
-          "type": "numeric(30, 18)",
+          "type": "numeric(78, 0)",
           "primaryKey": false,
           "notNull": true
         },

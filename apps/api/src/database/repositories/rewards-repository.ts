@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import { db } from "@/database/db.js";
 import {
@@ -52,21 +52,21 @@ export async function insertRewards(
  * @returns Array of inserted entries
  */
 export async function insertRewardsTree(
-  entries: { 
-    id?: string; 
-    epoch: string; 
-    level: number; 
-    idx: number; 
-    hash: Uint8Array 
+  entries: {
+    id?: string;
+    epoch: string;
+    level: number;
+    idx: number;
+    hash: Uint8Array;
   }[],
 ): Promise<SelectRewardsTree[]> {
   try {
     // Add UUID for each entry if not provided
-    const entriesWithIds = entries.map(entry => ({
+    const entriesWithIds = entries.map((entry) => ({
       ...entry,
       id: entry.id || crypto.randomUUID(),
     }));
-    
+
     return await db.insert(rewardsTree).values(entriesWithIds).returning();
   } catch (error) {
     console.error("[RewardsRepository] Error in insertRewardsTree:", error);
@@ -100,65 +100,20 @@ export async function insertRewardsRoot(
 }
 
 /**
- * Get Merkle proof for a specific leaf node in the rewards tree
- * @param epoch The epoch ID (UUID)
- * @param leafHash The hash of the leaf node to generate proof for
- * @returns Array of proof hashes as Uint8Array
+ * Get all nodes of a rewards tree for a specific epoch
+ * @param epochId The epoch ID (UUID) to get tree nodes for
+ * @returns Array of tree nodes with level, idx, and hash
  */
-export async function getMerkleProof(
-  epoch: string,
-  leafHash: Uint8Array,
-): Promise<Uint8Array[]> {
+export async function getRewardsTreeByEpoch(
+  epochId: string,
+): Promise<SelectRewardsTree[]> {
   try {
-    const result = await db.execute(sql`
-      WITH RECURSIVE proof_path AS (
-        -- Start with the leaf node by finding it by hash
-        SELECT 
-          level,
-          idx,
-          0 as depth
-        FROM rewards_tree
-        WHERE level = 0 
-          AND hash = ${leafHash}
-          AND epoch = ${epoch}
-        
-        UNION ALL
-        
-        -- Recursively find parent nodes up to the root
-        SELECT
-          rt.level,
-          rt.idx,
-          pp.depth + 1
-        FROM proof_path pp
-        JOIN rewards_tree rt
-          ON rt.level = pp.level + 1
-         AND rt.idx = (pp.idx / 2)
-         AND rt.epoch = ${epoch}
-      )
-      -- Get sibling nodes for the proof
-      SELECT
-        array_agg(sib.hash) as proof
-      FROM (
-        SELECT DISTINCT ON (s.level)
-          s.hash,
-          p.depth
-        FROM proof_path p
-        JOIN rewards_tree s
-          ON s.level = p.level
-         AND s.idx = CASE WHEN p.idx % 2 = 0
-                          THEN p.idx + 1
-                          ELSE p.idx - 1
-                     END
-         AND s.epoch = ${epoch}
-        WHERE s.hash IS NOT NULL
-        ORDER BY s.level, p.depth
-      ) sib;
-    `);
-
-    const proofArray = result.rows[0]?.proof as Uint8Array[] | null;
-    return proofArray || [];
+    return await db
+      .select()
+      .from(rewardsTree)
+      .where(eq(rewardsTree.epoch, epochId));
   } catch (error) {
-    console.error("[RewardsRepository] Error in getMerkleProof:", error);
+    console.error("[RewardsRepository] Error in getRewardsTreeByEpoch:", error);
     throw error;
   }
 }
