@@ -136,7 +136,7 @@ export function makeVoteController(services: ServiceRegistry) {
 
     /**
      * Get voting state for a user in a specific competition
-     * GET /api/user/voting-state/:competitionId
+     * GET /api/user/votes/:competitionId/state
      * @param req Express request with userId from session and competitionId in params
      * @param res Express response
      * @param next Express next function

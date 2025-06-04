@@ -115,13 +115,13 @@ export function configureCompetitionsRoutes(
    *                             type: string
    *                             nullable: true
    *                             description: Reason why voting is not allowed (if canVote is false)
-   *                           userVoteInfo:
+   *                           info:
    *                             type: object
    *                             properties:
    *                               hasVoted:
    *                                 type: boolean
    *                                 description: Whether the user has already voted in this competition
-   *                               votedAgentId:
+   *                               agentId:
    *                                 type: string
    *                                 nullable: true
    *                                 description: ID of the agent the user voted for (if hasVoted is true)
@@ -386,13 +386,13 @@ export function configureCompetitionsRoutes(
    *                           type: string
    *                           nullable: true
    *                           description: Reason why voting is not allowed (if canVote is false)
-   *                         userVoteInfo:
+   *                         info:
    *                           type: object
    *                           properties:
    *                             hasVoted:
    *                               type: boolean
    *                               description: Whether the user has already voted in this competition
-   *                             votedAgentId:
+   *                             agentId:
    *                               type: string
    *                               nullable: true
    *                               description: ID of the agent the user voted for (if hasVoted is true)
@@ -668,13 +668,13 @@ export function configureCompetitionsRoutes(
    *                           type: string
    *                           nullable: true
    *                           description: Reason why voting is not allowed (if canVote is false)
-   *                         userVoteInfo:
+   *                         info:
    *                           type: object
    *                           properties:
    *                             hasVoted:
    *                               type: boolean
    *                               description: Whether the user has already voted in this competition
-   *                             votedAgentId:
+   *                             agentId:
    *                               type: string
    *                               nullable: true
    *                               description: ID of the agent the user voted for (if hasVoted is true)

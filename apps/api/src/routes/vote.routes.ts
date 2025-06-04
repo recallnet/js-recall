@@ -238,7 +238,7 @@ export function configureVoteRoutes(voteController: VoteController): Router {
    *                       description: Reason why voting is disabled (if canVote is false)
    *                       example: "Competition status does not allow voting"
    *                       nullable: true
-   *                     userVoteInfo:
+   *                     info:
    *                       type: object
    *                       properties:
    *                         hasVoted:
