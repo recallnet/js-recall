@@ -1,6 +1,6 @@
 {
-  "id": "01050e1d-6641-47c1-930d-79e7cb9e881d",
-  "prevId": "afd9fbeb-d5d7-4ae1-a4c3-2fc5368b91de",
+  "id": "50b91af0-b5f1-41af-95fb-2365fa6243ee",
+  "prevId": "8235e22a-d2b3-4989-8ce5-b27ae180755e",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -694,6 +694,165 @@
           "nullsNotDistinct": false,
           "columns": [
             "wallet_address"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.votes": {
+      "name": "votes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "agent_id": {
+          "name": "agent_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "competition_id": {
+          "name": "competition_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_votes_competition_id": {
+          "name": "idx_votes_competition_id",
+          "columns": [
+            {
+              "expression": "competition_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_votes_agent_competition": {
+          "name": "idx_votes_agent_competition",
+          "columns": [
+            {
+              "expression": "agent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "competition_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_votes_user_competition": {
+          "name": "idx_votes_user_competition",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "competition_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "votes_user_id_fkey": {
+          "name": "votes_user_id_fkey",
+          "tableFrom": "votes",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "votes_agent_id_fkey": {
+          "name": "votes_agent_id_fkey",
+          "tableFrom": "votes",
+          "tableTo": "agents",
+          "columnsFrom": [
+            "agent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "votes_competition_id_fkey": {
+          "name": "votes_competition_id_fkey",
+          "tableFrom": "votes",
+          "tableTo": "competitions",
+          "columnsFrom": [
+            "competition_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "votes_user_agent_competition_key": {
+          "name": "votes_user_agent_competition_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "user_id",
+            "agent_id",
+            "competition_id"
           ]
         }
       },
@@ -1600,7 +1759,7 @@
         },
         "amount": {
           "name": "amount",
-          "type": "numeric(30, 18)",
+          "type": "numeric(78, 0)",
           "primaryKey": false,
           "notNull": true
         },
@@ -1911,7 +2070,7 @@
         },
         "amount": {
           "name": "amount",
-          "type": "numeric(30, 18)",
+          "type": "numeric(78, 0)",
           "primaryKey": false,
           "notNull": true
         },
@@ -2042,7 +2201,7 @@
         },
         "amount": {
           "name": "amount",
-          "type": "numeric(30, 18)",
+          "type": "numeric(78, 0)",
           "primaryKey": false,
           "notNull": true
         }
@@ -2159,7 +2318,7 @@
         },
         "amount": {
           "name": "amount",
-          "type": "numeric(30, 18)",
+          "type": "numeric(78, 0)",
           "primaryKey": false,
           "notNull": true
         },
@@ -2245,7 +2404,7 @@
         },
         "amount": {
           "name": "amount",
-          "type": "numeric(30, 18)",
+          "type": "numeric(78, 0)",
           "primaryKey": false,
           "notNull": true
         },

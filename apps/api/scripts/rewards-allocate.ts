@@ -47,17 +47,22 @@ async function allocateRewards() {
       `${colors.cyan}╚════════════════════════════════════════════════════════════════╝${colors.reset}`,
     );
 
-    console.log(`\n${colors.blue}Allocating rewards for epoch: ${colors.yellow}${epochId}${colors.reset}`);
-    
+    console.log(
+      `\n${colors.blue}Allocating rewards for epoch: ${colors.yellow}${epochId}${colors.reset}`,
+    );
+
     // Instantiate the RewardsService
     const rewardsService = new RewardsService();
-    
+
     // Call the allocate method
     await rewardsService.allocate(epochId);
-    
-    console.log(`\n${colors.green}Successfully allocated rewards for epoch: ${colors.yellow}${epochId}${colors.reset}`);
-    console.log(`${colors.green}Merkle tree has been built and stored in the database.${colors.reset}`);
-    
+
+    console.log(
+      `\n${colors.green}Successfully allocated rewards for epoch: ${colors.yellow}${epochId}${colors.reset}`,
+    );
+    console.log(
+      `${colors.green}Merkle tree has been built and stored in the database.${colors.reset}`,
+    );
   } catch (error) {
     console.error(
       `\n${colors.red}Error allocating rewards:${colors.reset}`,

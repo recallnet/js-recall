@@ -1,11 +1,11 @@
 import keccak256 from "keccak256";
-import { encodeAbiParameters } from "viem";
 import { MerkleTree } from "merkletreejs";
+import { encodeAbiParameters } from "viem";
 
 import { db } from "@/database/db.js";
 import {
   getRewardsByEpoch,
-  getMerkleProof,
+  getRewardsTreeByEpoch,
   insertRewards,
 } from "@/database/repositories/rewards-repository.js";
 import { rewardsRoots, rewardsTree } from "@/database/schema/voting/defs.js";
@@ -30,13 +30,13 @@ export class RewardsService {
 
   /**
    * Allocates rewards for a given epoch by building a Merkle Tree and storing it in the database
-   * 
+   *
    * This method:
    * 1. Retrieves all rewards for the specified epoch
    * 2. Builds a Merkle tree from the rewards (including a special "faux" leaf node)
    * 3. Stores all tree nodes and the root hash in the database
    * 4. Will eventually publish the root hash to the blockchain (TODO)
-   * 
+   *
    * @param epochId The epoch ID (UUID) to allocate rewards for
    * @throws Error if no rewards exist for the specified epoch
    */
@@ -50,7 +50,10 @@ export class RewardsService {
       }
 
       // Prepend a faux leaf
-      const leaves = [createFauxLeafNode(epochId), ...rewards.map((reward) => reward.leafHash)];
+      const leaves = [
+        createFauxLeafNode(epochId),
+        ...rewards.map((reward) => reward.leafHash),
+      ];
       const merkleTree = new MerkleTree(leaves, keccak256, {
         sortPairs: true,
         hashLeaves: false,
@@ -128,17 +131,58 @@ export class RewardsService {
   public async retrieveProof(
     epochId: string,
     address: `0x${string}`,
-    amount: bigint
+    amount: bigint,
   ): Promise<Uint8Array[]> {
     try {
-      const leafHashBuffer = createLeafNode(address, amount);
-      const leafHash = new Uint8Array(leafHashBuffer);
+      const leafHash = createLeafNode(address, amount);
+
+      const tree = await getRewardsTreeByEpoch(epochId);
       
-      const proof = await getMerkleProof(epochId, leafHash);
-      if (proof.length === 0) {
-        throw new Error(`No proof found for reward (address: ${address}, amount: ${amount}) in epoch ${epochId}`);
+      const treeNodes: { [level: number]: { [idx: number]: Uint8Array } } = {};
+      for (const { level, idx, hash } of tree) {
+        if (!treeNodes[level]) {
+          treeNodes[level] = {};
+        }
+        treeNodes[level][idx] = hash;
       }
-      
+
+      // Search for the leaf hash
+      let leafIdx: number | null = null;
+      for (const [idxStr, hash] of Object.entries(treeNodes[0] || {})) {
+        const idx = parseInt(idxStr);
+        if (areUint8ArraysEqual(hash, leafHash)) {
+          leafIdx = idx;
+          break;
+        }
+      }
+
+      if (leafIdx === null) {
+        throw new Error(
+          `No proof found for reward (address: ${address}, amount: ${amount}) in epoch ${epochId}`,
+        );
+      }
+
+      const proof: Uint8Array[] = [];
+      const maxLevel = Math.max(...Object.keys(treeNodes).map(Number));
+
+      let currentLevel = 0;
+      let currentIdx = leafIdx;
+      while (currentLevel < maxLevel) {
+        // Determine sibling index
+        const siblingIdx =
+          currentIdx % 2 === 0 ? currentIdx + 1 : currentIdx - 1;
+        const sibling = treeNodes[currentLevel]?.[siblingIdx];
+
+        // Add sibling to proof if it exists
+        if (sibling) {
+          proof.push(sibling);
+        }
+
+        // Move up to parent
+        currentIdx = Math.floor(currentIdx / 2);
+        currentLevel++;
+      }
+
       return proof;
     } catch (error) {
       console.error("[RewardsService] Error in retrieveProof:", error);
@@ -166,13 +210,9 @@ export class RewardsService {
 export function createLeafNode(address: `0x${string}`, amount: bigint): Buffer {
   return keccak256(
     encodeAbiParameters(
-      [
-        { type: "string" },
-        { type: "address" },
-        { type: "uint256" }
-      ],
-      ["rl", address, amount]
-    )
+      [{ type: "string" }, { type: "address" }, { type: "uint256" }],
+      ["rl", address, amount],
+    ),
   );
 }
 
@@ -185,12 +225,21 @@ export function createLeafNode(address: `0x${string}`, amount: bigint): Buffer {
 function createFauxLeafNode(epochId: string): Buffer {
   return keccak256(
     encodeAbiParameters(
+      [{ type: "string" }, { type: "address" }, { type: "uint256" }],
       [
-        { type: "string" },
-        { type: "address" },
-        { type: "uint256" }
+        epochId,
+        "0x0000000000000000000000000000000000000000" as `0x${string}`,
+        BigInt("0"),
       ],
-      [epochId, "0x0000000000000000000000000000000000000000" as `0x${string}`, BigInt("0")]
-    )
+    ),
   );
+}
+
+// Helper function to compare two Uint8Arrays
+function areUint8ArraysEqual(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
 }
