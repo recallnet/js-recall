@@ -20,8 +20,6 @@ export function configureCompetitionsRoutes(
    *       - Competition
    *     summary: Get upcoming competitions
    *     description: Get all competitions
-   *     security:
-   *       - BearerAuth: []
    *     parameters:
    *       - in: query
    *         name: status
@@ -498,8 +496,6 @@ export function configureCompetitionsRoutes(
    *       - Competition
    *     summary: Get competition details by ID
    *     description: Get detailed information about a specific competition including all metadata
-   *     security:
-   *       - BearerAuth: []
    *     parameters:
    *       - in: path
    *         name: competitionId
@@ -603,8 +599,6 @@ export function configureCompetitionsRoutes(
    *       - Competition
    *     summary: Get agents participating in a competition
    *     description: Get a list of all agents participating in a specific competition with their scores and positions
-   *     security:
-   *       - BearerAuth: []
    *     parameters:
    *       - in: path
    *         name: competitionId
