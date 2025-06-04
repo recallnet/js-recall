@@ -36,7 +36,11 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
             {/* Logo */}
             <Link href="/" className="flex items-center border-x p-1">
               <Avatar className="h-12 w-12">
-                <AvatarImage src="/favicon-32x32.png" alt="recallnet" />
+                <AvatarImage
+                  src="/logo_white.svg"
+                  alt="recallnet"
+                  className="p-2"
+                />
               </Avatar>
             </Link>
 
