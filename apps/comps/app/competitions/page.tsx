@@ -36,7 +36,7 @@ export default function CompetitionsPage() {
   // Fetch spotlight agents using the API hook
   const { data: agentsData } = useAgents({
     limit: 3,
-    sort: "-score",
+    sort: "name",
   });
 
   const currentCompetition =
