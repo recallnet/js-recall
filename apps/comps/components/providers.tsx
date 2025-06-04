@@ -48,7 +48,7 @@ function WalletProvider(props: { children: ReactNode }) {
           throw new Error("No address found in SIWE message");
         }
 
-        const res = await login({
+        login({
           message,
           signature,
           wallet: siweMessage.address,
