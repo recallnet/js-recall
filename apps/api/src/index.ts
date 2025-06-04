@@ -84,7 +84,7 @@ app.use(express.urlencoded({ extended: true }));
 // Define different types of protected routes with their authentication needs
 const agentApiKeyRoutes = ["/api/agent", "/api/trade", "/api/price"];
 
-const userSessionRoutes = ["/api/user", "/api/competitions"];
+const userSessionRoutes = ["/api/user"];
 
 // Apply agent API key authentication to agent routes
 app.use(
@@ -129,7 +129,16 @@ const leaderboardController = makeLeaderboardController(services);
 const adminRoutes = configureAdminRoutes(adminController, adminMiddleware);
 const adminSetupRoutes = configureAdminSetupRoutes(adminController);
 const authRoutes = configureAuthRoutes(authController, siweSessionMiddleware);
-const competitionsRoutes = configureCompetitionsRoutes(competitionController);
+const competitionsRoutes = configureCompetitionsRoutes(
+  competitionController,
+  siweSessionMiddleware,
+  authMiddleware(
+    services.agentManager,
+    services.userManager,
+    services.adminManager,
+    services.competitionManager,
+  ),
+);
 const docsRoutes = configureDocsRoutes(docsController);
 const healthRoutes = configureHealthRoutes(healthController);
 const priceRoutes = configurePriceRoutes(priceController);

@@ -4,13 +4,9 @@ import { CompetitionController } from "@/controllers/competition.controller.js";
 
 export function configureCompetitionsRoutes(
   controller: CompetitionController,
-  ...middlewares: RequestHandler[]
+  ...authMiddlewares: RequestHandler[]
 ) {
   const router = Router();
-
-  if (middlewares.length) {
-    router.use(...middlewares);
-  }
 
   /**
    * @openapi
@@ -262,7 +258,7 @@ export function configureCompetitionsRoutes(
    *       500:
    *         description: Server error
    */
-  router.get("/leaderboard", controller.getLeaderboard);
+  router.get("/leaderboard", ...authMiddlewares, controller.getLeaderboard);
 
   /**
    * @openapi
@@ -352,7 +348,7 @@ export function configureCompetitionsRoutes(
    *       500:
    *         description: Server error
    */
-  router.get("/status", controller.getStatus);
+  router.get("/status", ...authMiddlewares, controller.getStatus);
 
   /**
    * @openapi
@@ -417,7 +413,7 @@ export function configureCompetitionsRoutes(
    *       500:
    *         description: Server error
    */
-  router.get("/rules", controller.getRules);
+  router.get("/rules", ...authMiddlewares, controller.getRules);
 
   /**
    * @openapi
@@ -488,7 +484,11 @@ export function configureCompetitionsRoutes(
    *       500:
    *         description: Server error
    */
-  router.get("/upcoming", controller.getUpcomingCompetitions);
+  router.get(
+    "/upcoming",
+    ...authMiddlewares,
+    controller.getUpcomingCompetitions,
+  );
 
   /**
    * @openapi
@@ -787,7 +787,11 @@ export function configureCompetitionsRoutes(
    *       500:
    *         description: Server error
    */
-  router.post("/:competitionId/agents/:agentId", controller.joinCompetition);
+  router.post(
+    "/:competitionId/agents/:agentId",
+    ...authMiddlewares,
+    controller.joinCompetition,
+  );
 
   /**
    * @openapi
@@ -843,7 +847,11 @@ export function configureCompetitionsRoutes(
    *       500:
    *         description: Server error
    */
-  router.delete("/:competitionId/agents/:agentId", controller.leaveCompetition);
+  router.delete(
+    "/:competitionId/agents/:agentId",
+    ...authMiddlewares,
+    controller.leaveCompetition,
+  );
 
   return router;
 }

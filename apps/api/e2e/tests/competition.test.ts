@@ -2591,4 +2591,141 @@ describe("Competition API", () => {
       expect(joinResponse.error).toContain("does not match agent ID in URL");
     }
   });
+
+  describe("Public Competition Access (No Authentication Required)", () => {
+    test("should allow unauthenticated access to GET /competitions", async () => {
+      // Setup: Create test competition via admin
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+      await createTestCompetition(adminClient, "Public Test Competition");
+
+      // Test: Direct axios call without authentication
+      const response = await axios.get(`${getBaseUrl()}/api/competitions`);
+
+      expect(response.status).toBe(200);
+      expect(response.data.success).toBe(true);
+      expect(response.data.competitions).toBeDefined();
+      expect(Array.isArray(response.data.competitions)).toBe(true);
+    });
+
+    test("should allow unauthenticated access to GET /competitions/{id}", async () => {
+      // Setup: Create test competition via admin
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+      const { competition } = await createTestCompetition(
+        adminClient,
+        "Public Test Competition Details",
+      );
+
+      // Test: Direct axios call without authentication
+      const response = await axios.get(
+        `${getBaseUrl()}/api/competitions/${competition.id}`,
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.data.success).toBe(true);
+      expect(response.data.competition).toBeDefined();
+      expect(response.data.competition.id).toBe(competition.id);
+      expect(response.data.competition.name).toBe(
+        "Public Test Competition Details",
+      );
+    });
+
+    test("should allow unauthenticated access to GET /competitions/{id}/agents", async () => {
+      // Setup: Create competition with agents via admin
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const { agent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Public Test Agent",
+      });
+
+      const { competition } = await startTestCompetition(
+        adminClient,
+        "Public Competition with Agents",
+        [agent.id],
+      );
+
+      // Test: Direct axios call without authentication
+      const response = await axios.get(
+        `${getBaseUrl()}/api/competitions/${competition.id}/agents`,
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.data.success).toBe(true);
+      expect(response.data.competitionId).toBe(competition.id);
+      expect(response.data.agents).toBeDefined();
+      expect(Array.isArray(response.data.agents)).toBe(true);
+    });
+
+    test("should return 404 for non-existent competition in public endpoints", async () => {
+      const nonExistentId = "00000000-0000-0000-0000-000000000000";
+
+      // Test all three public endpoints with non-existent ID
+      await expect(
+        axios.get(`${getBaseUrl()}/api/competitions/${nonExistentId}`),
+      ).rejects.toMatchObject({
+        response: { status: 404 },
+      });
+
+      await expect(
+        axios.get(`${getBaseUrl()}/api/competitions/${nonExistentId}/agents`),
+      ).rejects.toMatchObject({
+        response: { status: 404 },
+      });
+    });
+
+    test("protected endpoints should still require authentication", async () => {
+      const protectedEndpoints = [
+        "/api/competitions/leaderboard",
+        "/api/competitions/status",
+        "/api/competitions/rules",
+        "/api/competitions/upcoming",
+      ];
+
+      // Test each protected endpoint without authentication
+      for (const endpoint of protectedEndpoints) {
+        await expect(
+          axios.get(`${getBaseUrl()}${endpoint}`),
+        ).rejects.toMatchObject({
+          response: { status: 401 },
+        });
+      }
+    });
+
+    test("join/leave competition endpoints should still require authentication", async () => {
+      // Setup: Create test competition and agent
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const { agent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Protected Test Agent",
+      });
+
+      const { competition } = await createTestCompetition(
+        adminClient,
+        "Protected Test Competition",
+      );
+
+      // Test: Join endpoint without authentication
+      await expect(
+        axios.post(
+          `${getBaseUrl()}/api/competitions/${competition.id}/agents/${agent.id}`,
+        ),
+      ).rejects.toMatchObject({
+        response: { status: 401 },
+      });
+
+      // Test: Leave endpoint without authentication
+      await expect(
+        axios.delete(
+          `${getBaseUrl()}/api/competitions/${competition.id}/agents/${agent.id}`,
+        ),
+      ).rejects.toMatchObject({
+        response: { status: 401 },
+      });
+    });
+  });
 });
