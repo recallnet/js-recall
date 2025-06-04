@@ -493,7 +493,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
                 return {
                   ...competition,
                   votingEnabled:
-                    votingState.canVote || votingState.userVoteInfo.hasVoted,
+                    votingState.canVote || votingState.info.hasVoted,
                   userVotingInfo: votingState,
                   totalVotes,
                 };
@@ -611,8 +611,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
                 competitionId,
               );
             userVotingInfo = votingState;
-            votingEnabled =
-              votingState.canVote || votingState.userVoteInfo.hasVoted;
+            votingEnabled = votingState.canVote || votingState.info.hasVoted;
           } catch (error) {
             console.warn(
               `[CompetitionController] Failed to get voting state for user ${userId} in competition ${competitionId}:`,
