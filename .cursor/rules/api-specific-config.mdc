@@ -47,6 +47,9 @@ alwaysApply: false
 - Authentication flows must be thoroughly tested
 - Performance-critical changes require load testing validation
 
+### Running Tests
+- To run tests using the e2e testing suite, you can use a format such as `cd apps/api && pnpm test:e2e name-of-test.test.ts`
+
 ## API Design Patterns
 
 ### Response Format Consistency

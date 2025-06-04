@@ -452,7 +452,9 @@ export function makeCompetitionController(services: ServiceRegistry) {
             `[CompetitionController] User ${userId} requesting competitions`,
           );
         } else {
-          throw new ApiError(401, "Authentication required");
+          console.log(
+            `[CompetitionController] Unauthenticated request for competitions (public access)`,
+          );
         }
 
         // Get all competitions, or those with a given status from the query params
@@ -516,7 +518,9 @@ export function makeCompetitionController(services: ServiceRegistry) {
             `[CompetitionController] User ${userId} requesting competition details`,
           );
         } else {
-          throw new ApiError(401, "Authentication required");
+          console.log(
+            `[CompetitionController] Unauthenticated request for competition details (public access)`,
+          );
         }
 
         // Get competition ID from path parameter
@@ -586,7 +590,9 @@ export function makeCompetitionController(services: ServiceRegistry) {
             `[CompetitionController] User ${userId} requesting competition agents`,
           );
         } else {
-          throw new ApiError(401, "Authentication required");
+          console.log(
+            `[CompetitionController] Unauthenticated request for competition agents (public access)`,
+          );
         }
 
         // Get competition ID from path parameter

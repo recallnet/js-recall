@@ -689,6 +689,39 @@ Retrieve the information for the given agent ID
 | --------------- | ------ |
 | BearerAuth      |        |
 
+### /api/agent/{agentId}/competitions
+
+#### GET
+
+##### Summary:
+
+Get agent competitions
+
+##### Description:
+
+Retrieve all competitions associated with the specified agent
+
+##### Parameters
+
+| Name    | Located in | Description           | Required | Schema |
+| ------- | ---------- | --------------------- | -------- | ------ |
+| agentId | path       | The UUID of the agent | Yes      | string |
+
+##### Responses
+
+| Code | Description                         |
+| ---- | ----------------------------------- |
+| 200  | Competitions retrieved successfully |
+| 401  | Agent not authenticated             |
+| 404  | Agent or competitions not found     |
+| 500  | Internal server error               |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
 ### /api/agents
 
 #### GET
