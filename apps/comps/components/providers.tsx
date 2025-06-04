@@ -8,7 +8,6 @@ import {
   darkTheme,
 } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useAtom } from "jotai";
 import React from "react";
 import { type ReactNode, useState } from "react";
 import { createSiweMessage, parseSiweMessage } from "viem/siwe";
