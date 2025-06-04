@@ -51,7 +51,6 @@ import { tool$competitionGetApiCompetitionsUpcoming } from "./tools/competitionG
 import { tool$competitionPostApiCompetitionsCompetitionIdAgentsAgentId } from "./tools/competitionPostApiCompetitionsCompetitionIdAgentsAgentId.js";
 import { tool$healthGetApiHealth } from "./tools/healthGetApiHealth.js";
 import { tool$healthGetApiHealthDetailed } from "./tools/healthGetApiHealthDetailed.js";
-import { tool$leaderboardGetApiLeaderboard } from "./tools/leaderboardGetApiLeaderboard.js";
 import { tool$priceGetApiPrice } from "./tools/priceGetApiPrice.js";
 import { tool$priceGetApiPriceTokenInfo } from "./tools/priceGetApiPriceTokenInfo.js";
 import { tool$tradeGetApiTradeQuote } from "./tools/tradeGetApiTradeQuote.js";
@@ -67,7 +66,7 @@ export function createMCPServer(deps: {
 }) {
   const server = new McpServer({
     name: "ApiSDK",
-    version: "0.1.10",
+    version: "0.1.9",
   });
 
   const client = new ApiSDKCore({
@@ -135,7 +134,6 @@ export function createMCPServer(deps: {
   tool(tool$competitionDeleteApiCompetitionsCompetitionIdAgentsAgentId);
   tool(tool$healthGetApiHealth);
   tool(tool$healthGetApiHealthDetailed);
-  tool(tool$leaderboardGetApiLeaderboard);
   tool(tool$priceGetApiPrice);
   tool(tool$priceGetApiPriceTokenInfo);
   tool(tool$tradePostApiTradeExecute);

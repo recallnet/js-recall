@@ -725,17 +725,17 @@ export interface AgentWithVotes extends Agent {
  */
 export interface UserVoteInfo {
   hasVoted: boolean;
-  votedAgentId?: string;
+  agentId?: string;
   votedAt?: Date;
 }
 
 /**
- * Competition voting state for a user
+ * Competition voting status for a user
  */
-export interface CompetitionVotingState {
+export interface CompetitionVotingStatus {
   canVote: boolean;
   reason?: string; // Why voting is disabled (e.g., "Competition not started", "User already voted")
-  userVoteInfo: UserVoteInfo;
+  info: UserVoteInfo;
 }
 
 /**
@@ -752,7 +752,7 @@ export interface VoteCount {
 export interface CompetitionWithVotes extends Competition {
   votingEnabled: boolean; // Based on competition status
   agents: AgentWithVotes[];
-  userVotingInfo?: CompetitionVotingState; // Only if user is authenticated
+  userVotingInfo?: CompetitionVotingStatus; // Only if user is authenticated
 }
 
 /**

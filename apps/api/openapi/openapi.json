@@ -6286,7 +6286,7 @@
         }
       }
     },
-    "/api/user/voting-state/{competitionId}": {
+    "/api/user/votes/{competitionId}/state": {
       "get": {
         "summary": "Get voting state for a competition",
         "description": "Get comprehensive voting state information for a user in a specific competition",
@@ -6345,7 +6345,7 @@
                               "description": "Whether the user has voted in this competition",
                               "example": false
                             },
-                            "votedAgentId": {
+                            "agentId": {
                               "type": "string",
                               "format": "uuid",
                               "description": "ID of the agent the user voted for (if hasVoted is true)",

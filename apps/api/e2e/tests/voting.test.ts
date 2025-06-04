@@ -401,7 +401,7 @@ describe("Voting API", () => {
     });
   });
 
-  describe("GET /api/user/voting-state/:competitionId", () => {
+  describe("GET /api/user/votes/:competitionId/state", () => {
     test("should return correct voting state for pending competition", async () => {
       // Setup admin client
       const adminClient = createTestClient();
@@ -442,8 +442,7 @@ describe("Voting API", () => {
         true,
       );
       expect(
-        (stateResponse as VotingStateResponse).votingState.userVoteInfo
-          .hasVoted,
+        (stateResponse as VotingStateResponse).votingState.info.hasVoted,
       ).toBe(false);
     });
 
@@ -487,12 +486,10 @@ describe("Voting API", () => {
         false,
       );
       expect(
-        (stateResponse as VotingStateResponse).votingState.userVoteInfo
-          .hasVoted,
+        (stateResponse as VotingStateResponse).votingState.info.hasVoted,
       ).toBe(true);
       expect(
-        (stateResponse as VotingStateResponse).votingState.userVoteInfo
-          .votedAgentId,
+        (stateResponse as VotingStateResponse).votingState.info.agentId,
       ).toBe(agent1.id);
       expect(
         (stateResponse as VotingStateResponse).votingState.reason,
@@ -541,8 +538,7 @@ describe("Voting API", () => {
         false,
       );
       expect(
-        (stateResponse as VotingStateResponse).votingState.userVoteInfo
-          .hasVoted,
+        (stateResponse as VotingStateResponse).votingState.info.hasVoted,
       ).toBe(true);
     });
   });
@@ -769,12 +765,8 @@ describe("Voting API", () => {
 
       // Verify user has voted
       expect(competitionDetails.userVotingInfo?.canVote).toBe(false);
-      expect(competitionDetails.userVotingInfo?.userVoteInfo.hasVoted).toBe(
-        true,
-      );
-      expect(competitionDetails.userVotingInfo?.userVoteInfo.votedAgentId).toBe(
-        agent1.id,
-      );
+      expect(competitionDetails.userVotingInfo?.info.hasVoted).toBe(true);
+      expect(competitionDetails.userVotingInfo?.info.agentId).toBe(agent1.id);
     });
   });
 });

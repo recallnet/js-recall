@@ -20,7 +20,7 @@ import {
 } from "@/database/schema/core/types.js";
 import {
   COMPETITION_STATUS,
-  CompetitionVotingState,
+  CompetitionVotingStatus,
   UserVoteInfo,
   VOTE_ERROR_TYPES,
   VoteError,
@@ -164,7 +164,7 @@ export class VoteManager {
   async getCompetitionVotingState(
     userId: string,
     competitionId: string,
-  ): Promise<CompetitionVotingState> {
+  ): Promise<CompetitionVotingStatus> {
     try {
       // Get competition to check status
       const competition = await findCompetitionById(competitionId);
@@ -172,7 +172,7 @@ export class VoteManager {
         return {
           canVote: false,
           reason: "Competition not found",
-          userVoteInfo: { hasVoted: false },
+          info: { hasVoted: false },
         };
       }
 
@@ -182,7 +182,7 @@ export class VoteManager {
         return {
           canVote: false,
           reason: `Competition status does not allow voting (${competition.status})`,
-          userVoteInfo: { hasVoted: false },
+          info: { hasVoted: false },
         };
       }
 
@@ -192,7 +192,7 @@ export class VoteManager {
 
       const userVoteInfo: UserVoteInfo = {
         hasVoted,
-        votedAgentId: userVote?.agentId,
+        agentId: userVote?.agentId,
         votedAt: userVote?.createdAt,
       };
 
@@ -200,13 +200,13 @@ export class VoteManager {
         return {
           canVote: false,
           reason: "You have already voted in this competition",
-          userVoteInfo,
+          info: userVoteInfo,
         };
       }
 
       return {
         canVote: true,
-        userVoteInfo,
+        info: userVoteInfo,
       };
     } catch (error) {
       console.error("[VoteManager] Error in getCompetitionVotingState:", error);

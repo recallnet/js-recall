@@ -198,7 +198,7 @@ export function configureVoteRoutes(voteController: VoteController): Router {
 
   /**
    * @openapi
-   * /api/user/voting-state/{competitionId}:
+   * /api/user/votes/{competitionId}/state:
    *   get:
    *     summary: Get voting state for a competition
    *     description: Get comprehensive voting state information for a user in a specific competition
@@ -245,7 +245,7 @@ export function configureVoteRoutes(voteController: VoteController): Router {
    *                           type: boolean
    *                           description: Whether the user has voted in this competition
    *                           example: false
-   *                         votedAgentId:
+   *                         agentId:
    *                           type: string
    *                           format: uuid
    *                           description: ID of the agent the user voted for (if hasVoted is true)
@@ -262,7 +262,7 @@ export function configureVoteRoutes(voteController: VoteController): Router {
    *       500:
    *         description: Internal server error
    */
-  router.get("/voting-state/:competitionId", voteController.getVotingState);
+  router.get("/votes/:competitionId/state", voteController.getVotingState);
 
   return router;
 }

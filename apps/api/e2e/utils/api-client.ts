@@ -1332,7 +1332,7 @@ export class ApiClient {
   ): Promise<VotingStateResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get(
-        `/api/user/voting-state/${encodeURIComponent(competitionId)}`,
+        `/api/user/votes/${encodeURIComponent(competitionId)}/state`,
       );
       return response.data;
     } catch (error) {

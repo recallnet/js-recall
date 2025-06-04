@@ -7,11 +7,9 @@ import { Agent } from "./agent.js";
 import { Auth } from "./auth.js";
 import { Competition } from "./competition.js";
 import { Health } from "./health.js";
-import { Leaderboard } from "./leaderboard.js";
 import { Price } from "./price.js";
 import { Trade } from "./trade.js";
 import { User } from "./user.js";
-import { Vote } from "./vote.js";
 
 export class ApiSDK extends ClientSDK {
   private _admin?: Admin;
@@ -39,11 +37,6 @@ export class ApiSDK extends ClientSDK {
     return (this._health ??= new Health(this._options));
   }
 
-  private _leaderboard?: Leaderboard;
-  get leaderboard(): Leaderboard {
-    return (this._leaderboard ??= new Leaderboard(this._options));
-  }
-
   private _price?: Price;
   get price(): Price {
     return (this._price ??= new Price(this._options));
@@ -57,10 +50,5 @@ export class ApiSDK extends ClientSDK {
   private _user?: User;
   get user(): User {
     return (this._user ??= new User(this._options));
-  }
-
-  private _vote?: Vote;
-  get vote(): Vote {
-    return (this._vote ??= new Vote(this._options));
   }
 }

@@ -1550,7 +1550,7 @@ Retrieve all votes cast by the authenticated user, optionally filtered by compet
 | --------------- | ------ |
 | SIWESession     |        |
 
-### /api/user/voting-state/{competitionId}
+### /api/user/votes/{competitionId}/state
 
 #### GET
 

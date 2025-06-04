@@ -728,7 +728,7 @@ export interface UserVotesResponse extends ApiResponse {
  */
 export interface UserVoteInfo {
   hasVoted: boolean;
-  votedAgentId?: string;
+  agentId?: string;
   votedAt?: string;
 }
 
@@ -738,7 +738,7 @@ export interface UserVoteInfo {
 export interface CompetitionVotingState {
   canVote: boolean;
   reason?: string;
-  userVoteInfo: UserVoteInfo;
+  info: UserVoteInfo;
 }
 
 /**
