@@ -97,13 +97,11 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
           </div>
 
           <div
-            className={cn("flex h-14 items-center", {
+            className={cn("flex h-full items-center", {
               [ACTIVE_BORDER_STYLE]: pathname === "/profile",
             })}
           >
-            <SIWEButton className="bg-sky-700 px-6 text-white hover:bg-sky-600">
-              JOIN / SIGN IN
-            </SIWEButton>
+            <SIWEButton>JOIN / SIGN IN</SIWEButton>
           </div>
         </div>
       </nav>

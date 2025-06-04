@@ -13,8 +13,8 @@ import {
   FormField,
   FormItem,
   FormMessage,
-} from "@recallnet/ui2/components/shadcn/form";
-import { Input } from "@recallnet/ui2/components/shadcn/input";
+} from "@recallnet/ui2/components/form";
+import { Input } from "@recallnet/ui2/components/input";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 const formSchema = z.object({

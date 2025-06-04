@@ -12,8 +12,8 @@ import {
   FormField,
   FormItem,
   FormMessage,
-} from "@recallnet/ui2/components/shadcn/form";
-import { Input } from "@recallnet/ui2/components/shadcn/input";
+} from "@recallnet/ui2/components/form";
+import { Input } from "@recallnet/ui2/components/input";
 
 import { FooterSection } from "@/components/footer-section";
 

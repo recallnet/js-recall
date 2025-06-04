@@ -1,8 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAtom } from "jotai";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
+import { DEFAULT_REDIRECT_URL } from "@/constants";
+import { useProfile } from "@/hooks/useProfile";
 import { ApiClient } from "@/lib/api-client";
-import { LoginRequest } from "@/types";
+import { userAtom } from "@/state/atoms";
+import { LoginRequest, ProfileResponse } from "@/types";
 
 const apiClient = new ApiClient();
 
@@ -44,40 +49,101 @@ export const useLogin = () => {
 export const useLogout = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const [, setUserAtom] = useAtom(userAtom);
 
   return useMutation({
     mutationFn: async () => {
       try {
+        // Call the logout API first
+        await apiClient.logout();
+      } catch (error) {
+        // Log API error but proceed with client-side cleanup
+        console.error("Logout API call failed:", error);
+      } finally {
         // Clear all queries from cache
-        queryClient.clear();
+        queryClient.clear(); // Clears all query data
+
+        setUserAtom({ user: null, loggedIn: false });
 
         // Clear local storage items
-        localStorage.clear();
-        sessionStorage.clear();
-
-        // Call the logout API
-        await apiClient.logout();
-
-        return true;
-      } catch (error) {
-        console.error("Logout error:", error);
-        throw error;
+        localStorage.removeItem("user");
       }
     },
     onSuccess: () => {
-      // Invalidate relevant queries after logout
       queryClient.invalidateQueries({ queryKey: ["profile"] });
-
-      // Redirect to home page
-      router.push("/");
+      router.push(DEFAULT_REDIRECT_URL);
     },
     onError: (error) => {
-      console.error("Logout failed:", error);
-      // Even if the API call fails, we should still clear local state
-      queryClient.clear();
-      localStorage.clear();
-      sessionStorage.clear();
-      router.push("/");
+      console.error(
+        "Logout mutation error (after API or during cleanup):",
+        error,
+      );
+      router.push(DEFAULT_REDIRECT_URL);
     },
   });
+};
+
+interface UserSessionState {
+  user: ProfileResponse["user"] | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+}
+
+export const useUserSession = (): UserSessionState => {
+  const [optimisticUserAtom, setOptimisticUserAtom] = useAtom(userAtom);
+  const queryClient = useQueryClient();
+
+  const {
+    data: profileData,
+    error: profileError,
+    isLoading: profileIsLoading,
+    isSuccess: profileIsSuccess,
+    isError: profileIsError,
+    isFetching: profileIsFetching,
+  } = useProfile();
+
+  const isAuthenticated = profileIsSuccess && !!profileData;
+
+  const isLoading =
+    profileIsLoading ||
+    (optimisticUserAtom.loggedIn && !profileIsSuccess && !profileIsError) ||
+    profileIsFetching;
+
+  useEffect(() => {
+    if (profileIsSuccess && profileData) {
+      if (
+        !optimisticUserAtom.loggedIn ||
+        optimisticUserAtom.user?.walletAddress !== profileData.walletAddress
+      ) {
+        setOptimisticUserAtom({
+          user: profileData,
+          loggedIn: true,
+        });
+      }
+    } else if (profileIsError) {
+      const isUnauthorized = (profileError as any)?.response?.status === 401;
+
+      if (isUnauthorized) {
+        if (optimisticUserAtom.loggedIn) {
+          setOptimisticUserAtom({ user: null, loggedIn: false });
+        }
+        queryClient.removeQueries({ queryKey: ["profile"] });
+      }
+    }
+  }, [
+    profileIsSuccess,
+    profileData,
+    profileIsError,
+    profileError,
+    optimisticUserAtom.loggedIn,
+    optimisticUserAtom.user?.walletAddress,
+    setOptimisticUserAtom,
+    queryClient,
+  ]);
+
+  return {
+    user: isAuthenticated ? profileData : null,
+    isAuthenticated,
+    isLoading,
+  };
 };
