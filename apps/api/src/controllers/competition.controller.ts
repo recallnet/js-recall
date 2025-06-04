@@ -467,13 +467,59 @@ export function makeCompetitionController(services: ServiceRegistry) {
             pagingParams,
           );
 
+        // If user is authenticated, enrich competitions with voting information
+        let enrichedCompetitions = competitions;
+        if (userId) {
+          enrichedCompetitions = await Promise.all(
+            competitions.map(async (competition) => {
+              try {
+                // Get voting state for this user and competition
+                const votingState =
+                  await services.voteManager.getCompetitionVotingState(
+                    userId,
+                    competition.id,
+                  );
+
+                // Get total vote counts for this competition (for display purposes)
+                const voteCountsMap =
+                  await services.voteManager.getVoteCountsByCompetition(
+                    competition.id,
+                  );
+                const totalVotes = Array.from(voteCountsMap.values()).reduce(
+                  (sum, count) => sum + count,
+                  0,
+                );
+
+                return {
+                  ...competition,
+                  votingEnabled:
+                    votingState.canVote || votingState.userVoteInfo.hasVoted,
+                  userVotingInfo: votingState,
+                  totalVotes,
+                };
+              } catch (error) {
+                // If there's an error getting vote data, just return the competition without vote info
+                console.warn(
+                  `[CompetitionController] Failed to get vote data for competition ${competition.id}:`,
+                  error,
+                );
+                return {
+                  ...competition,
+                  votingEnabled: false,
+                  totalVotes: 0,
+                };
+              }
+            }),
+          );
+        }
+
         // Calculate hasMore based on total and current page
         const hasMore = pagingParams.offset + pagingParams.limit < total;
 
         // Return the competitions with metadata
         res.status(200).json({
           success: true,
-          competitions: competitions,
+          competitions: enrichedCompetitions,
           pagination: {
             total: total,
             limit: pagingParams.limit,
@@ -546,10 +592,45 @@ export function makeCompetitionController(services: ServiceRegistry) {
           ]).size,
         };
 
+        // Get vote counts for this competition
+        const voteCountsMap =
+          await services.voteManager.getVoteCountsByCompetition(competitionId);
+        const totalVotes = Array.from(voteCountsMap.values()).reduce(
+          (sum, count) => sum + count,
+          0,
+        );
+
+        // If user is authenticated, get their voting state
+        let userVotingInfo = undefined;
+        let votingEnabled = false;
+        if (userId) {
+          try {
+            const votingState =
+              await services.voteManager.getCompetitionVotingState(
+                userId,
+                competitionId,
+              );
+            userVotingInfo = votingState;
+            votingEnabled =
+              votingState.canVote || votingState.userVoteInfo.hasVoted;
+          } catch (error) {
+            console.warn(
+              `[CompetitionController] Failed to get voting state for user ${userId} in competition ${competitionId}:`,
+              error,
+            );
+          }
+        }
+
         // Return the competition details
         res.status(200).json({
           success: true,
-          competition: { ...competition, stats },
+          competition: {
+            ...competition,
+            stats,
+            totalVotes,
+            votingEnabled,
+            userVotingInfo,
+          },
         });
       } catch (error) {
         next(error);
@@ -622,6 +703,10 @@ export function makeCompetitionController(services: ServiceRegistry) {
           ]),
         );
 
+        // Get vote counts for all agents in this competition
+        const voteCountsMap =
+          await services.voteManager.getVoteCountsByCompetition(competitionId);
+
         // Build the response with agent details and competition data
         const competitionAgents = await Promise.all(
           agents.map(async (agent) => {
@@ -629,6 +714,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
             const leaderboardData = leaderboardMap.get(agent.id);
             const score = leaderboardData?.score ?? 0;
             const position = leaderboardData?.position ?? 0;
+            const voteCount = voteCountsMap.get(agent.id) ?? 0;
 
             // Calculate PnL and 24h change metrics using the service
             const metrics =
@@ -654,6 +740,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
               pnlPercent: metrics.pnlPercent,
               change24h: metrics.change24h,
               change24hPercent: metrics.change24hPercent,
+              voteCount: voteCount,
             };
           }),
         );

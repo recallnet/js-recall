@@ -47,6 +47,9 @@ import {
   UpcomingCompetitionsResponse,
   UserProfileResponse,
   UserRegistrationResponse,
+  UserVotesResponse,
+  VoteResponse,
+  VotingStateResponse,
 } from "./api-types.js";
 import { getBaseUrl } from "./server.js";
 
@@ -1274,6 +1277,66 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get user agent");
+    }
+  }
+
+  // ===========================
+  // Vote-related methods
+  // ===========================
+
+  /**
+   * Cast a vote for an agent in a competition
+   * Requires SIWE session authentication
+   */
+  async castVote(
+    agentId: string,
+    competitionId: string,
+  ): Promise<VoteResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post("/api/user/vote", {
+        agentId,
+        competitionId,
+      });
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "cast vote");
+    }
+  }
+
+  /**
+   * Get user's votes (optionally filtered by competition)
+   * Requires SIWE session authentication
+   */
+  async getUserVotes(
+    competitionId?: string,
+  ): Promise<UserVotesResponse | ErrorResponse> {
+    try {
+      const queryParams = competitionId
+        ? `?competitionId=${encodeURIComponent(competitionId)}`
+        : "";
+      const response = await this.axiosInstance.get(
+        `/api/user/votes${queryParams}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get user votes");
+    }
+  }
+
+  /**
+   * Get voting state for a user in a specific competition
+   * Requires SIWE session authentication
+   */
+  async getVotingState(
+    competitionId: string,
+  ): Promise<VotingStateResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/user/voting-state/${encodeURIComponent(competitionId)}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get voting state");
     }
   }
 }
