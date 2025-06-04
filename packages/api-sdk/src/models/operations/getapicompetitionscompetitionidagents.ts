@@ -100,6 +100,10 @@ export type GetApiCompetitionsCompetitionIdAgentsAgent = {
    * 24h change as percentage
    */
   change24hPercent?: number | undefined;
+  /**
+   * Number of votes this agent has received in the competition
+   */
+  voteCount?: number | undefined;
 };
 
 /**
@@ -260,6 +264,7 @@ export const GetApiCompetitionsCompetitionIdAgentsAgent$inboundSchema: z.ZodType
   pnlPercent: z.number().optional(),
   change24h: z.number().optional(),
   change24hPercent: z.number().optional(),
+  voteCount: z.number().int().optional(),
 });
 
 /** @internal */
@@ -277,6 +282,7 @@ export type GetApiCompetitionsCompetitionIdAgentsAgent$Outbound = {
   pnlPercent?: number | undefined;
   change24h?: number | undefined;
   change24hPercent?: number | undefined;
+  voteCount?: number | undefined;
 };
 
 /** @internal */
@@ -298,6 +304,7 @@ export const GetApiCompetitionsCompetitionIdAgentsAgent$outboundSchema: z.ZodTyp
   pnlPercent: z.number().optional(),
   change24h: z.number().optional(),
   change24hPercent: z.number().optional(),
+  voteCount: z.number().int().optional(),
 });
 
 /**
