@@ -1,5 +1,11 @@
 # @recallnet/contracts
 
+## 0.0.7
+
+### Patch Changes
+
+- [#491](https://github.com/recallnet/js-recall/pull/491) [`8396e94`](https://github.com/recallnet/js-recall/commit/8396e9447eeb47a21de22d55eb316bfba8277c8e) Thanks [@dtbuchholz](https://github.com/dtbuchholz)! - update contracts for testnet v0.1.8
+
 ## 0.0.6
 
 ### Patch Changes

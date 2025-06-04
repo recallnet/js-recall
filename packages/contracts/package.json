@@ -1,6 +1,6 @@
 {
   "name": "@recallnet/contracts",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "license": "MIT AND Apache-2.0",
   "publishConfig": {
     "access": "public"
