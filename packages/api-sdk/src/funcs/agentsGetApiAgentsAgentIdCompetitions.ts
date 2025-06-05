@@ -28,13 +28,13 @@ import { Result } from "../types/fp.js";
  * @remarks
  * Retrieve all competitions associated with the specified agent
  */
-export function agentGetApiAgentAgentIdCompetitions(
+export function agentsGetApiAgentsAgentIdCompetitions(
   client: ApiSDKCore,
-  request: operations.GetApiAgentAgentIdCompetitionsRequest,
+  request: operations.GetApiAgentsAgentIdCompetitionsRequest,
   options?: RequestOptions,
 ): APIPromise<
   Result<
-    operations.GetApiAgentAgentIdCompetitionsResponse,
+    operations.GetApiAgentsAgentIdCompetitionsResponse,
     | APIError
     | SDKValidationError
     | UnexpectedClientError
@@ -49,12 +49,12 @@ export function agentGetApiAgentAgentIdCompetitions(
 
 async function $do(
   client: ApiSDKCore,
-  request: operations.GetApiAgentAgentIdCompetitionsRequest,
+  request: operations.GetApiAgentsAgentIdCompetitionsRequest,
   options?: RequestOptions,
 ): Promise<
   [
     Result<
-      operations.GetApiAgentAgentIdCompetitionsResponse,
+      operations.GetApiAgentsAgentIdCompetitionsResponse,
       | APIError
       | SDKValidationError
       | UnexpectedClientError
@@ -69,7 +69,7 @@ async function $do(
   const parsed = safeParse(
     request,
     (value) =>
-      operations.GetApiAgentAgentIdCompetitionsRequest$outboundSchema.parse(
+      operations.GetApiAgentsAgentIdCompetitionsRequest$outboundSchema.parse(
         value,
       ),
     "Input validation failed",
@@ -87,7 +87,7 @@ async function $do(
     }),
   };
 
-  const path = pathToFunc("/api/agent/{agentId}/competitions")(pathParams);
+  const path = pathToFunc("/api/agents/{agentId}/competitions")(pathParams);
 
   const headers = new Headers(
     compactMap({
@@ -102,7 +102,7 @@ async function $do(
   const context = {
     options: client._options,
     baseURL: options?.serverURL ?? client._baseURL ?? "",
-    operationID: "get_/api/agent/{agentId}/competitions",
+    operationID: "get_/api/agents/{agentId}/competitions",
     oAuth2Scopes: [],
 
     resolvedSecurity: requestSecurity,
@@ -134,7 +134,7 @@ async function $do(
 
   const doResult = await client._do(req, {
     context,
-    errorCodes: ["401", "404", "4XX", "500", "5XX"],
+    errorCodes: ["400", "404", "4XX", "500", "5XX"],
     retryConfig: context.retryConfig,
     retryCodes: context.retryCodes,
   });
@@ -144,7 +144,7 @@ async function $do(
   const response = doResult.value;
 
   const [result] = await M.match<
-    operations.GetApiAgentAgentIdCompetitionsResponse,
+    operations.GetApiAgentsAgentIdCompetitionsResponse,
     | APIError
     | SDKValidationError
     | UnexpectedClientError
@@ -155,9 +155,9 @@ async function $do(
   >(
     M.json(
       200,
-      operations.GetApiAgentAgentIdCompetitionsResponse$inboundSchema,
+      operations.GetApiAgentsAgentIdCompetitionsResponse$inboundSchema,
     ),
-    M.fail([401, 404, "4XX"]),
+    M.fail([400, 404, "4XX"]),
     M.fail([500, "5XX"]),
   )(response);
   if (!result.ok) {
