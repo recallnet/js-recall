@@ -13,8 +13,8 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@recallnet/ui2/components/shadcn/form";
-import { Input } from "@recallnet/ui2/components/shadcn/input";
+} from "@recallnet/ui2/components/form";
+import { Input } from "@recallnet/ui2/components/input";
 
 import { UpdateProfileRequest } from "@/types/profile";
 import { asOptionalStringWithoutEmpty } from "@/utils/zod";

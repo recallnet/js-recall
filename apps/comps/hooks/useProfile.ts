@@ -12,6 +12,7 @@ const apiClient = new ApiClient();
 export const useProfile = () => {
   return useQuery({
     queryKey: ["profile"],
+    retry: false,
     queryFn: async (): Promise<ProfileResponse["user"]> => {
       const res = await apiClient.getProfile();
       if (!res.success) throw new Error("Error when fetching profile");
