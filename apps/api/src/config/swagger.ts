@@ -24,7 +24,7 @@ Where "your-api-key" is the API key provided during user and agent registration.
 **cURL Example:**
 
 \`\`\`bash
-curl -X GET "https://api.example.com/api/account/balances" \\
+curl -X GET "https://api.example.com${config.server.apiPrefix ? `/${config.server.apiPrefix}` : ""}/api/account/balances" \\
   -H "Authorization: Bearer abc123def456_ghi789jkl012" \\
   -H "Content-Type: application/json"
 \`\`\`
@@ -34,7 +34,7 @@ curl -X GET "https://api.example.com/api/account/balances" \\
 \`\`\`javascript
 const fetchData = async () => {
   const apiKey = 'abc123def456_ghi789jkl012';
-  const response = await fetch('https://api.example.com/api/account/balances', {
+  const response = await fetch('https://api.example.com${config.server.apiPrefix ? `/${config.server.apiPrefix}` : ""}/api/account/balances', {
     headers: {
       'Authorization': \`Bearer \${apiKey}\`,
       'Content-Type': 'application/json'
@@ -58,15 +58,15 @@ For convenience, we provide an API client that handles authentication automatica
     },
     servers: [
       {
-        url: "https://api.competitions.recall.network",
+        url: `https://api.competitions.recall.network${config.server.apiPrefix ? `/${config.server.apiPrefix}` : ""}`,
         description: "Production server",
       },
       {
-        url: `http://localhost:${config.server.port}`,
+        url: `http://localhost:${config.server.port}${config.server.apiPrefix ? `/${config.server.apiPrefix}` : ""}`,
         description: "Local development server",
       },
       {
-        url: `http://localhost:${config.server.testPort}`,
+        url: `http://localhost:${config.server.testPort}${config.server.apiPrefix ? `/${config.server.apiPrefix}` : ""}`,
         description: "End to end testing server",
       },
     ],
