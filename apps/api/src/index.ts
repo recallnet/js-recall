@@ -38,8 +38,16 @@ import { configureLeaderboardRoutes } from "./routes/leaderboard.routes.js";
 // Create Express app
 const app = express();
 
+// Create the API router
+const apiRouter = express.Router();
+
 const PORT = config.server.port;
 let databaseInitialized = false;
+
+// Set up API prefix configuration
+const apiBasePath = config.server.apiPrefix
+  ? `/${config.server.apiPrefix}`
+  : "";
 
 // Only run migrations in development, not production
 if (process.env.NODE_ENV !== "production") {
@@ -84,9 +92,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Define different types of protected routes with their authentication needs
-const agentApiKeyRoutes = ["/api/agent", "/api/trade", "/api/price"];
+const agentApiKeyRoutes = [
+  `${apiBasePath}/api/agent`,
+  `${apiBasePath}/api/trade`,
+  `${apiBasePath}/api/price`,
+];
 
-const userSessionRoutes = ["/api/user"];
+const userSessionRoutes = [`${apiBasePath}/api/user`];
 
 // Apply agent API key authentication to agent routes
 app.use(
@@ -156,22 +168,34 @@ const agentRoutes = configureAgentRoutes(agentController);
 const agentsRoutes = configureAgentsRoutes(agentController);
 const leaderboardRoutes = configureLeaderboardRoutes(leaderboardController);
 
-// Apply routes
-app.use("/api/auth", authRoutes);
-app.use("/api/trade", tradeRoutes);
-app.use("/api/price", priceRoutes);
-app.use("/api/competitions", competitionsRoutes);
-app.use("/api/admin/setup", adminSetupRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/health", healthRoutes);
-app.use("/api/docs", docsRoutes);
-app.use("/api/user", userRoutes);
-app.use("/api/agent", agentRoutes);
-app.use("/api/agents", agentsRoutes);
-app.use("/api/leaderboard", leaderboardRoutes);
+// Apply routes to the API router
+apiRouter.use("/auth", authRoutes);
+apiRouter.use("/trade", tradeRoutes);
+apiRouter.use("/price", priceRoutes);
+apiRouter.use("/competitions", competitionsRoutes);
+apiRouter.use("/admin/setup", adminSetupRoutes);
+apiRouter.use("/admin", adminRoutes);
+apiRouter.use("/health", healthRoutes);
+apiRouter.use("/docs", docsRoutes);
+apiRouter.use("/user", userRoutes);
+apiRouter.use("/agent", agentRoutes);
+apiRouter.use("/agents", agentsRoutes);
+apiRouter.use("/leaderboard", leaderboardRoutes);
 
-// Legacy health check endpoint for backward compatibility
-app.get("/health", (_req, res) => {
+// Mount the API router with the prefix + /api path
+app.use(`${apiBasePath}/api`, apiRouter);
+
+// Health check endpoint
+app.get(`${apiBasePath}/health`, (_req, res) => {
+  res.status(200).json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    version: "1.0.0",
+  });
+});
+
+// Legacy
+app.get(`${apiBasePath}/api/health`, (_req, res) => {
   res.status(200).json({
     status: "ok",
     timestamp: new Date().toISOString(),
@@ -180,8 +204,8 @@ app.get("/health", (_req, res) => {
 });
 
 // Root endpoint redirects to API documentation
-app.get("/", (_req, res) => {
-  res.redirect("/api/docs");
+app.get(`${apiBasePath}`, (_req, res) => {
+  res.redirect(`${apiBasePath}/api/docs`);
 });
 
 // Apply error handler
@@ -195,6 +219,8 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(
     `Database: ${databaseInitialized ? "Connected" : "Error - Limited functionality"}`,
   );
-  console.log(`API documentation: http://localhost:${PORT}/api/docs`);
+  console.log(
+    `API documentation: http://localhost:${PORT}${apiBasePath}/api/docs`,
+  );
   console.log(`========================================\n`);
 });

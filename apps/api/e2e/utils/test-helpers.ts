@@ -279,7 +279,7 @@ export function generateRandomEthAddress(): string {
 export function getApiSdk(apiKey: string): InstanceType<typeof ApiSDK> {
   return new ApiSDK({
     bearerAuth: apiKey,
-    serverIdx: 2,
+    serverURL: getBaseUrl(),
   });
 }
 
