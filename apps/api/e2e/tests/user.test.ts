@@ -477,4 +477,44 @@ describe("User API", () => {
       "Invalid request format",
     );
   });
+
+  test("SIWE user can get competitions for their agents", async () => {
+    // Create a SIWE-authenticated client
+    const { client: siweClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Competition Test User",
+      userEmail: "competition-test@example.com",
+    });
+
+    // Create an agent via SIWE session
+    const createAgentResponse = await siweClient.createAgent(
+      "Competition Test Agent",
+      "Agent for testing competitions endpoint",
+    );
+    expect(createAgentResponse.success).toBe(true);
+
+    // Test: User can get competitions for their agents
+    const competitionsResponse = await siweClient.getUserCompetitions();
+
+    expect(competitionsResponse.success).toBe(true);
+    expect(competitionsResponse.userId).toBeDefined();
+    expect(competitionsResponse.competitions).toBeDefined();
+    expect(Array.isArray(competitionsResponse.competitions)).toBe(true);
+    expect(competitionsResponse.total).toBeDefined();
+    expect(competitionsResponse.pagination).toBeDefined();
+    expect(competitionsResponse.pagination.limit).toBe(10); // default limit
+    expect(competitionsResponse.pagination.offset).toBe(0); // default offset
+
+    // Test with query parameters
+    const competitionsWithParamsResponse = await siweClient.getUserCompetitions(
+      {
+        limit: 5,
+        offset: 0,
+        status: "active",
+      },
+    );
+
+    expect(competitionsWithParamsResponse.success).toBe(true);
+    expect(competitionsWithParamsResponse.pagination.limit).toBe(5);
+  });
 });

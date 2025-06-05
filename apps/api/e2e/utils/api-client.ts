@@ -1339,4 +1339,34 @@ export class ApiClient {
       return this.handleApiError(error, "get voting state");
     }
   }
+
+  /**
+   * Get competitions for user's agents
+   * Requires SIWE session authentication
+   */
+  async getUserCompetitions(params?: {
+    status?: string;
+    claimed?: boolean;
+    limit?: number;
+    offset?: number;
+    sort?: string;
+  }): Promise<any | ErrorResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.status) queryParams.append("status", params.status);
+      if (params?.claimed !== undefined)
+        queryParams.append("claimed", String(params.claimed));
+      if (params?.limit) queryParams.append("limit", String(params.limit));
+      if (params?.offset) queryParams.append("offset", String(params.offset));
+      if (params?.sort) queryParams.append("sort", params.sort);
+
+      const queryString = queryParams.toString();
+      const url = `/api/user/competitions${queryString ? `?${queryString}` : ""}`;
+
+      const response = await this.axiosInstance.get(url);
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get user competitions");
+    }
+  }
 }
