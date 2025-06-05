@@ -4,6 +4,7 @@ import { CompetitionController } from "@/controllers/competition.controller.js";
 
 export function configureCompetitionsRoutes(
   controller: CompetitionController,
+  optionalAuthMiddleware: RequestHandler,
   ...authMiddlewares: RequestHandler[]
 ) {
   const router = Router();
@@ -97,6 +98,39 @@ export function configureCompetitionsRoutes(
    *                         type: string
    *                         format: date-time
    *                         description: When the competition was last updated
+   *                       votingEnabled:
+   *                         type: boolean
+   *                         description: Whether voting is enabled for this competition (only present for authenticated users)
+   *                       totalVotes:
+   *                         type: integer
+   *                         description: Total number of votes cast in this competition (only present for authenticated users)
+   *                       userVotingInfo:
+   *                         type: object
+   *                         nullable: true
+   *                         description: User's voting state for this competition (only present for authenticated users)
+   *                         properties:
+   *                           canVote:
+   *                             type: boolean
+   *                             description: Whether the user can vote in this competition
+   *                           reason:
+   *                             type: string
+   *                             nullable: true
+   *                             description: Reason why voting is not allowed (if canVote is false)
+   *                           info:
+   *                             type: object
+   *                             properties:
+   *                               hasVoted:
+   *                                 type: boolean
+   *                                 description: Whether the user has already voted in this competition
+   *                               agentId:
+   *                                 type: string
+   *                                 nullable: true
+   *                                 description: ID of the agent the user voted for (if hasVoted is true)
+   *                               votedAt:
+   *                                 type: string
+   *                                 format: date-time
+   *                                 nullable: true
+   *                                 description: When the user cast their vote (if hasVoted is true)
    *                 pagination:
    *                   type: object
    *                   description: Pagination metadata
@@ -335,6 +369,39 @@ export function configureCompetitionsRoutes(
    *                       type: string
    *                       format: date-time
    *                       description: When the competition was last updated
+   *                     totalVotes:
+   *                       type: integer
+   *                       description: Total number of votes cast in this competition
+   *                     votingEnabled:
+   *                       type: boolean
+   *                       description: Whether voting is enabled for this competition (only present for authenticated users)
+   *                     userVotingInfo:
+   *                       type: object
+   *                       nullable: true
+   *                       description: User's voting state for this competition (only present for authenticated users)
+   *                       properties:
+   *                         canVote:
+   *                           type: boolean
+   *                           description: Whether the user can vote in this competition
+   *                         reason:
+   *                           type: string
+   *                           nullable: true
+   *                           description: Reason why voting is not allowed (if canVote is false)
+   *                         info:
+   *                           type: object
+   *                           properties:
+   *                             hasVoted:
+   *                               type: boolean
+   *                               description: Whether the user has already voted in this competition
+   *                             agentId:
+   *                               type: string
+   *                               nullable: true
+   *                               description: ID of the agent the user voted for (if hasVoted is true)
+   *                             votedAt:
+   *                               type: string
+   *                               format: date-time
+   *                               nullable: true
+   *                               description: When the user cast their vote (if hasVoted is true)
    *                 message:
    *                   type: string
    *                   description: Additional information about the competition status
@@ -584,6 +651,39 @@ export function configureCompetitionsRoutes(
    *                       type: string
    *                       format: date-time
    *                       description: When the competition was last updated
+   *                     totalVotes:
+   *                       type: integer
+   *                       description: Total number of votes cast in this competition
+   *                     votingEnabled:
+   *                       type: boolean
+   *                       description: Whether voting is enabled for this competition (only present for authenticated users)
+   *                     userVotingInfo:
+   *                       type: object
+   *                       nullable: true
+   *                       description: User's voting state for this competition (only present for authenticated users)
+   *                       properties:
+   *                         canVote:
+   *                           type: boolean
+   *                           description: Whether the user can vote in this competition
+   *                         reason:
+   *                           type: string
+   *                           nullable: true
+   *                           description: Reason why voting is not allowed (if canVote is false)
+   *                         info:
+   *                           type: object
+   *                           properties:
+   *                             hasVoted:
+   *                               type: boolean
+   *                               description: Whether the user has already voted in this competition
+   *                             agentId:
+   *                               type: string
+   *                               nullable: true
+   *                               description: ID of the agent the user voted for (if hasVoted is true)
+   *                             votedAt:
+   *                               type: string
+   *                               format: date-time
+   *                               nullable: true
+   *                               description: When the user cast their vote (if hasVoted is true)
    *       400:
    *         description: Bad request - Invalid competition ID format
    *       404:
@@ -593,7 +693,11 @@ export function configureCompetitionsRoutes(
    *       500:
    *         description: Server error
    */
-  router.get("/:competitionId", controller.getCompetitionById);
+  router.get(
+    "/:competitionId",
+    optionalAuthMiddleware,
+    controller.getCompetitionById,
+  );
 
   /**
    * @openapi
@@ -705,6 +809,9 @@ export function configureCompetitionsRoutes(
    *                       change24hPercent:
    *                         type: number
    *                         description: 24h change as percentage
+   *                       voteCount:
+   *                         type: integer
+   *                         description: Number of votes this agent has received in the competition
    *                 pagination:
    *                   type: object
    *                   description: Pagination metadata

@@ -12,10 +12,12 @@ import { makeLeaderboardController } from "@/controllers/leaderboard.controller.
 import { makePriceController } from "@/controllers/price.controller.js";
 import { makeTradeController } from "@/controllers/trade.controller.js";
 import { makeUserController } from "@/controllers/user.controller.js";
+import { makeVoteController } from "@/controllers/vote.controller.js";
 import { migrateDb } from "@/database/db.js";
 import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
 import { authMiddleware } from "@/middleware/auth.middleware.js";
 import errorHandler from "@/middleware/errorHandler.js";
+import { optionalAuthMiddleware } from "@/middleware/optional-auth.middleware.js";
 import { rateLimiterMiddleware } from "@/middleware/rate-limiter.middleware.js";
 import { siweSessionMiddleware } from "@/middleware/siwe.middleware.js";
 import { configureAdminSetupRoutes } from "@/routes/admin-setup.routes.js";
@@ -114,6 +116,10 @@ app.use(
 app.use(rateLimiterMiddleware);
 
 const adminMiddleware = adminAuthMiddleware(services.adminManager);
+const optionalAuth = optionalAuthMiddleware(
+  services.agentManager,
+  services.adminManager,
+);
 
 const adminController = makeAdminController(services);
 const authController = makeAuthController(services);
@@ -125,12 +131,14 @@ const tradeController = makeTradeController(services);
 const userController = makeUserController(services);
 const agentController = makeAgentController(services);
 const leaderboardController = makeLeaderboardController(services);
+const voteController = makeVoteController(services);
 
 const adminRoutes = configureAdminRoutes(adminController, adminMiddleware);
 const adminSetupRoutes = configureAdminSetupRoutes(adminController);
 const authRoutes = configureAuthRoutes(authController, siweSessionMiddleware);
 const competitionsRoutes = configureCompetitionsRoutes(
   competitionController,
+  optionalAuth,
   siweSessionMiddleware,
   authMiddleware(
     services.agentManager,
@@ -143,7 +151,7 @@ const docsRoutes = configureDocsRoutes(docsController);
 const healthRoutes = configureHealthRoutes(healthController);
 const priceRoutes = configurePriceRoutes(priceController);
 const tradeRoutes = configureTradeRoutes(tradeController);
-const userRoutes = configureUserRoutes(userController);
+const userRoutes = configureUserRoutes(userController, voteController);
 const agentRoutes = configureAgentRoutes(agentController);
 const agentsRoutes = configureAgentsRoutes(agentController);
 const leaderboardRoutes = configureLeaderboardRoutes(leaderboardController);

@@ -14,3 +14,6 @@ export type InsertCompetition = typeof defs.competitions.$inferInsert;
 
 export type SelectCompetitionAgent = typeof defs.competitionAgents.$inferSelect;
 export type InsertCompetitionAgent = typeof defs.competitionAgents.$inferInsert;
+
+export type SelectVote = typeof defs.votes.$inferSelect;
+export type InsertVote = typeof defs.votes.$inferInsert;
