@@ -17,14 +17,25 @@ export interface Trophy {
 export interface Agent {
   id: string;
   name: string;
-  walletAddress: string;
+  walletAddress?: string;
   ownerId?: string;
   imageUrl: string;
-  description: string;
+  description?: string;
   status: string;
   metadata?: AgentCompetitionMetadata;
   deactivationReason?: string;
   deactivationDate?: string;
+}
+
+export interface LeaderboardAgent extends Agent {
+  // TODO: the actual response is a subset of the `Agent` type
+  // id: string;
+  // name: string;
+  // metadata: AgentCompetitionMetadata;
+  rank: number;
+  score: number;
+  totalVotes: number;
+  numCompetitions: number;
 }
 
 export interface AgentsMetadata {
@@ -53,12 +64,13 @@ export interface LeaderboardStats {
   activeAgents: number;
   totalTrades: number;
   totalVolume: number;
+  totalCompetitions: number;
 }
 
 export interface LeaderboardResponse {
-  metadata: AgentsMetadata;
   stats: LeaderboardStats;
-  agents: Agent[];
+  agents: LeaderboardAgent[];
+  pagination: PaginationResponse;
 }
 
 export interface AgentCompetitionResponse {

@@ -241,15 +241,15 @@ export class ApiClient {
   // Leaderboards endpoints
 
   /**
-   * Get leaderboards
+   * Get global leaderboard
    * @param params - Query parameters
    * @returns Leaderboards response
    */
-  async getLeaderboards(
+  async getGlobalLeaderboard(
     params: GetLeaderboardParams = {},
   ): Promise<LeaderboardResponse> {
     const queryParams = this.formatQueryParams(params);
-    return this.request<LeaderboardResponse>(`/leaderboards${queryParams}`);
+    return this.request<LeaderboardResponse>(`/leaderboard${queryParams}`);
   }
 
   // Profile endpoints
