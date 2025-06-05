@@ -85,10 +85,10 @@ In another terminal, change into the `comps` directory (aka this directory):
 cd apps/comps
 ```
 
-Make sure to update the `.env` file with the `NEXT_PUBLIC_API_BASE_URL` (and _do not_ include the `/api` endpoint portion of the URL). You'll also need to set the `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` value.
+Make sure to update the `.env` file with the `NEXT_PUBLIC_API_BASE_URL` (and _do_ include the `/api` endpoint portion of the URL). You'll also need to set the `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` value. A free project id can be obtained from [WalletConnect Cloud](https://cloud.walletconnect.com/)
 
 ```bash
-NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3000/api
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_project_id
 ```
 
