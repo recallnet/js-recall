@@ -34,7 +34,7 @@ export interface LeaderboardAgent extends Agent {
   // metadata: AgentCompetitionMetadata;
   rank: number;
   score: number;
-  totalVotes: number;
+  voteCount: number;
   numCompetitions: number;
 }
 
@@ -94,6 +94,7 @@ export interface AgentCompetition {
   pnlPercent: number;
   change24h: number;
   change24hPercent: number;
+  voteCount: number;
 }
 
 export interface CreateAgentRequest {

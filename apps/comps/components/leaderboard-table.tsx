@@ -29,7 +29,7 @@ const emptyAgent: (i: number) => LeaderboardAgent = (i: number) => ({
   status: "",
   rank: i,
   score: 0,
-  totalVotes: 0,
+  voteCount: 0,
   numCompetitions: 0,
 });
 
@@ -175,7 +175,7 @@ export function LeaderboardTable({
               <TableCell className="flex items-center justify-end pr-10 text-gray-500 sm:pr-0">
                 {loaded ? (
                   // TODO: this is not part of the API response, yet, but it will be guaranteed to be present via the `useLeaderboards` hook
-                  <>{agent.totalVotes || 0}</>
+                  <>{agent.voteCount || 0}</>
                 ) : (
                   <Skeleton className="h-2 w-10 rounded-full" />
                 )}
