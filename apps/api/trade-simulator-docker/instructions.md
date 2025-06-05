@@ -44,8 +44,18 @@ Then run the container:
 docker run -p 3000:3000 --env-file apps/api/trade-simulator-docker/.env my-api-tag:latest
 ```
 
+## Health Checks
+
+The application provides health check endpoints that respect the `API_PREFIX` environment variable:
+
+- **No API_PREFIX**: Health checks available at `/health` and `/api/health`
+- **With API_PREFIX** (e.g., `API_PREFIX=testing-grounds`): Health checks at `/testing-grounds/health` and `/testing-grounds/api/health`
+
+The Docker Compose health check automatically adjusts to use the correct endpoint based on your `API_PREFIX` setting.
+
 ## Notes
 
 - This setup assumes PostgreSQL is running separately (not in Docker)
 - Make sure your `DATABASE_URL` points to your external PostgreSQL instance
 - The application will automatically handle database migrations on startup
+- Set `API_PREFIX` in your `.env` file if you need custom API routing (e.g., `API_PREFIX=testing-grounds`)

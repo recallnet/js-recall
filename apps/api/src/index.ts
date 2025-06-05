@@ -183,8 +183,17 @@ apiRouter.use("/leaderboard", leaderboardRoutes);
 // Mount the API router with the prefix + /api path
 app.use(`${apiBasePath}/api`, apiRouter);
 
-// Legacy health check endpoint for backward compatibility
+// Health check endpoint
 app.get(`${apiBasePath}/health`, (_req, res) => {
+  res.status(200).json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    version: "1.0.0",
+  });
+});
+
+// Legacy
+app.get(`${apiBasePath}/api/health`, (_req, res) => {
   res.status(200).json({
     status: "ok",
     timestamp: new Date().toISOString(),
