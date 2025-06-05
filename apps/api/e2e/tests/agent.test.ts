@@ -869,7 +869,7 @@ describe("Agent API", () => {
     }
   });
 
-  test("GET /api/agent/:agentId retrieves agent details", async () => {
+  test("GET /api/agents/:agentId retrieves agent details", async () => {
     // Setup admin client and login
     const adminClient = createTestClient();
     const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
@@ -910,7 +910,7 @@ describe("Agent API", () => {
     expect(agent.id).toBeDefined();
 
     // Make a GET request to fetch the agent details using the agent ID
-    const response = await axios.get(`${getBaseUrl()}/api/agent/${agent.id}`, {
+    const response = await axios.get(`${getBaseUrl()}/api/agents/${agent.id}`, {
       headers: {
         // Make sure that other agents/users can load details for a given agent id
         Authorization: `Bearer ${apiKey2}`,
@@ -933,7 +933,7 @@ describe("Agent API", () => {
     expect(agentData.agent.apiKey).not.toBeDefined();
   });
 
-  test("GET /api/agent/:agentId returns 400 with invalid agent id", async () => {
+  test("GET /api/agents/:agentId returns 400 with invalid agent id", async () => {
     // Setup admin client and login
     const adminClient = createTestClient();
     const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
@@ -957,7 +957,7 @@ describe("Agent API", () => {
 
     try {
       // Make a GET request to fetch the agent details using the agent ID
-      await axios.get(`${getBaseUrl()}/api/agent/foo123`, {
+      await axios.get(`${getBaseUrl()}/api/agents/foo123`, {
         headers: {
           // Make sure that other agents/users can load details for a given agent id
           Authorization: `Bearer ${apiKey}`,
@@ -975,7 +975,7 @@ describe("Agent API", () => {
     }
   });
 
-  test("GET /api/agent/:agentId/competitions retrieves agent competitions", async () => {
+  test("GET /api/agents/:agentId/competitions retrieves agent competitions", async () => {
     // Setup admin client and login
     const adminClient = createTestClient();
     const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);

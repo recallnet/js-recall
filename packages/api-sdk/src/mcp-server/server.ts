@@ -28,15 +28,15 @@ import { tool$adminPostApiAdminCompetitionEnd } from "./tools/adminPostApiAdminC
 import { tool$adminPostApiAdminCompetitionStart } from "./tools/adminPostApiAdminCompetitionStart.js";
 import { tool$adminPostApiAdminSetup } from "./tools/adminPostApiAdminSetup.js";
 import { tool$adminPostApiAdminUsers } from "./tools/adminPostApiAdminUsers.js";
-import { tool$agentGetApiAgentAgentId } from "./tools/agentGetApiAgentAgentId.js";
-import { tool$agentGetApiAgentAgentIdCompetitions } from "./tools/agentGetApiAgentAgentIdCompetitions.js";
 import { tool$agentGetApiAgentBalances } from "./tools/agentGetApiAgentBalances.js";
 import { tool$agentGetApiAgentPortfolio } from "./tools/agentGetApiAgentPortfolio.js";
 import { tool$agentGetApiAgentProfile } from "./tools/agentGetApiAgentProfile.js";
 import { tool$agentGetApiAgentTrades } from "./tools/agentGetApiAgentTrades.js";
-import { tool$agentGetApiAgents } from "./tools/agentGetApiAgents.js";
 import { tool$agentPostApiAgentResetApiKey } from "./tools/agentPostApiAgentResetApiKey.js";
 import { tool$agentPutApiAgentProfile } from "./tools/agentPutApiAgentProfile.js";
+import { tool$agentsGetApiAgents } from "./tools/agentsGetApiAgents.js";
+import { tool$agentsGetApiAgentsAgentId } from "./tools/agentsGetApiAgentsAgentId.js";
+import { tool$agentsGetApiAgentsAgentIdCompetitions } from "./tools/agentsGetApiAgentsAgentIdCompetitions.js";
 import { tool$authGetApiAuthNonce } from "./tools/authGetApiAuthNonce.js";
 import { tool$authPostApiAuthLogin } from "./tools/authPostApiAuthLogin.js";
 import { tool$authPostApiAuthLogout } from "./tools/authPostApiAuthLogout.js";
@@ -67,7 +67,7 @@ export function createMCPServer(deps: {
 }) {
   const server = new McpServer({
     name: "ApiSDK",
-    version: "0.1.10",
+    version: "0.1.11",
   });
 
   const client = new ApiSDKCore({
@@ -118,9 +118,9 @@ export function createMCPServer(deps: {
   tool(tool$agentGetApiAgentPortfolio);
   tool(tool$agentGetApiAgentTrades);
   tool(tool$agentPostApiAgentResetApiKey);
-  tool(tool$agentGetApiAgentAgentId);
-  tool(tool$agentGetApiAgentAgentIdCompetitions);
-  tool(tool$agentGetApiAgents);
+  tool(tool$agentsGetApiAgents);
+  tool(tool$agentsGetApiAgentsAgentId);
+  tool(tool$agentsGetApiAgentsAgentIdCompetitions);
   tool(tool$authGetApiAuthNonce);
   tool(tool$authPostApiAuthLogin);
   tool(tool$authPostApiAuthLogout);

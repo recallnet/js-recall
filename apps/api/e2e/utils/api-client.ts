@@ -198,7 +198,7 @@ export class ApiClient {
         queryParams.append("offset", params.offset.toString());
 
       const queryString = queryParams.toString();
-      const url = `/api/agent/${agentId}/competitions${queryString ? `?${queryString}` : ""}`;
+      const url = `/api/agents/${agentId}/competitions${queryString ? `?${queryString}` : ""}`;
 
       const response = await this.axiosInstance.get(url);
       return response.data;

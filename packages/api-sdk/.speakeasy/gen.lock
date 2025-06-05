@@ -1,12 +1,12 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: 9baf3b96bf59da9ce5d31b40ab900921
+  docChecksum: 42b590e076798a3a6e2824c62bfe313d
   docVersion: 1.0.0
-  speakeasyVersion: 1.555.2
+  speakeasyVersion: 1.555.3
   generationVersion: 2.620.2
-  releaseVersion: 0.1.10
-  configChecksum: 6cd589f11e48a9104dd96fee35c23fdb
+  releaseVersion: 0.1.11
+  configChecksum: c7938ea7c8abd06bce27b7c4c552b879
 features:
   typescript:
     additionalDependencies: 0.1.0
@@ -81,14 +81,6 @@ generatedFiles:
   - docs/models/operations/getapiadminusersmetadata.md
   - docs/models/operations/getapiadminusersresponse.md
   - docs/models/operations/getapiadminusersuser.md
-  - docs/models/operations/getapiagentagentidcompetitionscompetition.md
-  - docs/models/operations/getapiagentagentidcompetitionsrequest.md
-  - docs/models/operations/getapiagentagentidcompetitionsresponse.md
-  - docs/models/operations/getapiagentagentidcompetitionsstatus.md
-  - docs/models/operations/getapiagentagentidmetadata.md
-  - docs/models/operations/getapiagentagentidrequest.md
-  - docs/models/operations/getapiagentagentidresponse.md
-  - docs/models/operations/getapiagentagentidstats.md
   - docs/models/operations/getapiagentbalanceschain.md
   - docs/models/operations/getapiagentbalancesresponse.md
   - docs/models/operations/getapiagentportfoliochain.md
@@ -98,7 +90,15 @@ generatedFiles:
   - docs/models/operations/getapiagentprofileresponse.md
   - docs/models/operations/getapiagentprofilestatus.md
   - docs/models/operations/getapiagentsagent.md
-  - docs/models/operations/getapiagentsmetadata.md
+  - docs/models/operations/getapiagentsagentidcompetitionscompetition.md
+  - docs/models/operations/getapiagentsagentidcompetitionsrequest.md
+  - docs/models/operations/getapiagentsagentidcompetitionsresponse.md
+  - docs/models/operations/getapiagentsagentidcompetitionsstatus.md
+  - docs/models/operations/getapiagentsagentidmetadata.md
+  - docs/models/operations/getapiagentsagentidrequest.md
+  - docs/models/operations/getapiagentsagentidresponse.md
+  - docs/models/operations/getapiagentsagentidstats.md
+  - docs/models/operations/getapiagentspagination.md
   - docs/models/operations/getapiagentsrequest.md
   - docs/models/operations/getapiagentsresponse.md
   - docs/models/operations/getapiagentsstatus.md
@@ -284,6 +284,7 @@ generatedFiles:
   - docs/models/operations/votingstate.md
   - docs/sdks/admin/README.md
   - docs/sdks/agent/README.md
+  - docs/sdks/agents/README.md
   - docs/sdks/apisdk/README.md
   - docs/sdks/auth/README.md
   - docs/sdks/competition/README.md
@@ -312,15 +313,15 @@ generatedFiles:
   - src/funcs/adminPostApiAdminCompetitionStart.ts
   - src/funcs/adminPostApiAdminSetup.ts
   - src/funcs/adminPostApiAdminUsers.ts
-  - src/funcs/agentGetApiAgentAgentId.ts
-  - src/funcs/agentGetApiAgentAgentIdCompetitions.ts
   - src/funcs/agentGetApiAgentBalances.ts
   - src/funcs/agentGetApiAgentPortfolio.ts
   - src/funcs/agentGetApiAgentProfile.ts
   - src/funcs/agentGetApiAgentTrades.ts
-  - src/funcs/agentGetApiAgents.ts
   - src/funcs/agentPostApiAgentResetApiKey.ts
   - src/funcs/agentPutApiAgentProfile.ts
+  - src/funcs/agentsGetApiAgents.ts
+  - src/funcs/agentsGetApiAgentsAgentId.ts
+  - src/funcs/agentsGetApiAgentsAgentIdCompetitions.ts
   - src/funcs/authGetApiAuthNonce.ts
   - src/funcs/authPostApiAuthLogin.ts
   - src/funcs/authPostApiAuthLogout.ts
@@ -397,15 +398,15 @@ generatedFiles:
   - src/mcp-server/tools/adminPostApiAdminCompetitionStart.ts
   - src/mcp-server/tools/adminPostApiAdminSetup.ts
   - src/mcp-server/tools/adminPostApiAdminUsers.ts
-  - src/mcp-server/tools/agentGetApiAgentAgentId.ts
-  - src/mcp-server/tools/agentGetApiAgentAgentIdCompetitions.ts
   - src/mcp-server/tools/agentGetApiAgentBalances.ts
   - src/mcp-server/tools/agentGetApiAgentPortfolio.ts
   - src/mcp-server/tools/agentGetApiAgentProfile.ts
   - src/mcp-server/tools/agentGetApiAgentTrades.ts
-  - src/mcp-server/tools/agentGetApiAgents.ts
   - src/mcp-server/tools/agentPostApiAgentResetApiKey.ts
   - src/mcp-server/tools/agentPutApiAgentProfile.ts
+  - src/mcp-server/tools/agentsGetApiAgents.ts
+  - src/mcp-server/tools/agentsGetApiAgentsAgentId.ts
+  - src/mcp-server/tools/agentsGetApiAgentsAgentIdCompetitions.ts
   - src/mcp-server/tools/authGetApiAuthNonce.ts
   - src/mcp-server/tools/authPostApiAuthLogin.ts
   - src/mcp-server/tools/authPostApiAuthLogout.ts
@@ -445,12 +446,12 @@ generatedFiles:
   - src/models/operations/getapiadminreportsperformance.ts
   - src/models/operations/getapiadminsearch.ts
   - src/models/operations/getapiadminusers.ts
-  - src/models/operations/getapiagentagentid.ts
-  - src/models/operations/getapiagentagentidcompetitions.ts
   - src/models/operations/getapiagentbalances.ts
   - src/models/operations/getapiagentportfolio.ts
   - src/models/operations/getapiagentprofile.ts
   - src/models/operations/getapiagents.ts
+  - src/models/operations/getapiagentsagentid.ts
+  - src/models/operations/getapiagentsagentidcompetitions.ts
   - src/models/operations/getapiagenttrades.ts
   - src/models/operations/getapiauthnonce.ts
   - src/models/operations/getapicompetitions.ts
@@ -491,6 +492,7 @@ generatedFiles:
   - src/models/operations/putapiuserprofile.ts
   - src/sdk/admin.ts
   - src/sdk/agent.ts
+  - src/sdk/agents.ts
   - src/sdk/auth.ts
   - src/sdk/competition.ts
   - src/sdk/health.ts
@@ -1003,5 +1005,21 @@ examples:
       responses:
         "200":
           application/json: {"success": true, "votingState": {"canVote": true, "reason": "Competition status does not allow voting", "info": {"hasVoted": false}}}
+  get_/api/agents/{agentId}:
+    speakeasy-default-get-/api/agents/{agent-id}:
+      parameters:
+        path:
+          agentId: "<id>"
+      responses:
+        "200":
+          application/json: {"name": "Trading Bot Alpha", "imageUrl": "https://example.com/bot-avatar.jpg", "metadata": {}}
+  get_/api/agents/{agentId}/competitions:
+    speakeasy-default-get-/api/agents/{agent-id}/competitions:
+      parameters:
+        path:
+          agentId: "<id>"
+      responses:
+        "200":
+          application/json: {"success": true, "competitions": [{"name": "DeFi Trading Championship", "description": "A competition focused on yield farming strategies."}]}
 examplesVersion: 1.0.2
 generatedTests: {}

@@ -337,9 +337,12 @@ run();
 - [getApiAgentPortfolio](docs/sdks/agent/README.md#getapiagentportfolio) - Get agent portfolio
 - [getApiAgentTrades](docs/sdks/agent/README.md#getapiagenttrades) - Get agent trade history
 - [postApiAgentResetApiKey](docs/sdks/agent/README.md#postapiagentresetapikey) - Reset agent API key
-- [getApiAgentAgentId](docs/sdks/agent/README.md#getapiagentagentid) - Get agent by ID
-- [getApiAgentAgentIdCompetitions](docs/sdks/agent/README.md#getapiagentagentidcompetitions) - Get agent competitions
-- [getApiAgents](docs/sdks/agent/README.md#getapiagents) - Get list of agents
+
+### [agents](docs/sdks/agents/README.md)
+
+- [getApiAgents](docs/sdks/agents/README.md#getapiagents) - Get list of agents
+- [getApiAgentsAgentId](docs/sdks/agents/README.md#getapiagentsagentid) - Get agent by ID
+- [getApiAgentsAgentIdCompetitions](docs/sdks/agents/README.md#getapiagentsagentidcompetitions) - Get agent competitions
 
 ### [auth](docs/sdks/auth/README.md)
 
@@ -427,15 +430,15 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`adminPostApiAdminCompetitionStart`](docs/sdks/admin/README.md#postapiadmincompetitionstart) - Start a competition
 - [`adminPostApiAdminSetup`](docs/sdks/admin/README.md#postapiadminsetup) - Set up initial admin account
 - [`adminPostApiAdminUsers`](docs/sdks/admin/README.md#postapiadminusers) - Register a new user
-- [`agentGetApiAgentAgentId`](docs/sdks/agent/README.md#getapiagentagentid) - Get agent by ID
-- [`agentGetApiAgentAgentIdCompetitions`](docs/sdks/agent/README.md#getapiagentagentidcompetitions) - Get agent competitions
 - [`agentGetApiAgentBalances`](docs/sdks/agent/README.md#getapiagentbalances) - Get agent balances
 - [`agentGetApiAgentPortfolio`](docs/sdks/agent/README.md#getapiagentportfolio) - Get agent portfolio
 - [`agentGetApiAgentProfile`](docs/sdks/agent/README.md#getapiagentprofile) - Get authenticated agent profile
-- [`agentGetApiAgents`](docs/sdks/agent/README.md#getapiagents) - Get list of agents
 - [`agentGetApiAgentTrades`](docs/sdks/agent/README.md#getapiagenttrades) - Get agent trade history
 - [`agentPostApiAgentResetApiKey`](docs/sdks/agent/README.md#postapiagentresetapikey) - Reset agent API key
 - [`agentPutApiAgentProfile`](docs/sdks/agent/README.md#putapiagentprofile) - Update authenticated agent profile
+- [`agentsGetApiAgents`](docs/sdks/agents/README.md#getapiagents) - Get list of agents
+- [`agentsGetApiAgentsAgentId`](docs/sdks/agents/README.md#getapiagentsagentid) - Get agent by ID
+- [`agentsGetApiAgentsAgentIdCompetitions`](docs/sdks/agents/README.md#getapiagentsagentidcompetitions) - Get agent competitions
 - [`authGetApiAuthNonce`](docs/sdks/auth/README.md#getapiauthnonce) - Get a random nonce for SIWE authentication
 - [`authPostApiAuthLogin`](docs/sdks/auth/README.md#postapiauthlogin) - Verify SIWE signature and create a session
 - [`authPostApiAuthLogout`](docs/sdks/auth/README.md#postapiauthlogout) - Logout the current user by destroying the session

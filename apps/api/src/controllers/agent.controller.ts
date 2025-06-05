@@ -149,7 +149,7 @@ export function makeAgentController(services: ServiceRegistry) {
         // Return the agents
         res.status(200).json({
           success: true,
-          metadata: {
+          pagination: {
             total: totalCount,
             limit: pagingParams.limit,
             offset: pagingParams.offset,
@@ -479,12 +479,12 @@ export function makeAgentController(services: ServiceRegistry) {
           req.params.agentId,
         );
         if (!idSuccess) {
-          throw new Error("invalid agentId");
+          throw new ApiError(400, "Invalid agent ID");
         }
         const { success: paramsSuccess, data: params } =
           AgentCompetitionsParamsSchema.safeParse(req.query);
         if (!paramsSuccess) {
-          throw new Error("invalid sort filter page params");
+          throw new ApiError(400, "Invalid sort filter page params");
         }
 
         // Fetch all competitions associated with the agent
