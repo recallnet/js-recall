@@ -89,9 +89,7 @@ export const voteAssignments = pgTable(
 export const votesAvailable = pgTable(
   "votes_available",
   {
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+    address: varchar('address', { length: 50 }).notNull(),
     epoch: uuid()
       .notNull()
       .references(() => epochs.id, { onDelete: "cascade" }),
@@ -108,7 +106,7 @@ export const votesAvailable = pgTable(
   },
   (table) => [
     primaryKey({
-      columns: [table.userId, table.epoch],
+      columns: [table.address, table.epoch],
       name: "votes_available_pkey",
     }),
   ],
