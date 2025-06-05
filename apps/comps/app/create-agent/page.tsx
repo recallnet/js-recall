@@ -6,7 +6,7 @@ import { AgentCreated } from "@/components/agent-created";
 import { AuthGuard } from "@/components/auth-guard";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { CreateAgent, FormData } from "@/components/create-agent";
-import { useAgent } from "@/hooks/useAgent";
+import { useUserAgent } from "@/hooks/useAgent";
 import { useCreateAgent } from "@/hooks/useCreateAgent";
 
 export default function CreateAgentPage() {
@@ -18,7 +18,7 @@ export default function CreateAgentPage() {
     data: agent,
     isLoading: isAgentLoading,
     isError: isAgentError,
-  } = useAgent(createdAgentId || undefined);
+  } = useUserAgent(createdAgentId || undefined);
 
   const handleSubmit = async (data: FormData) => {
     try {

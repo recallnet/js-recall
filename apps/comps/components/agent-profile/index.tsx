@@ -191,10 +191,10 @@ export default function AgentProfile({ id }: { id: string }) {
               Upcoming
             </TabsTrigger>
             <TabsTrigger
-              value="complete"
+              value="ended"
               className={cn(
                 "rounded border border-gray-500 p-2 text-black",
-                selected === "complete"
+                selected === "ended"
                   ? "bg-gray-500 text-white"
                   : "text-gray-500",
               )}
@@ -224,7 +224,7 @@ export default function AgentProfile({ id }: { id: string }) {
           <TabsContent value="complete">
             <CompetitionTable
               competitions={agentCompetitionsData?.competitions.filter(
-                (c) => c.status === CompetitionStatus.Completed,
+                (c) => c.status === CompetitionStatus.Ended,
               )}
             />
           </TabsContent>

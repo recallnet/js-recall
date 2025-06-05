@@ -14,7 +14,7 @@ export const useLeaderboards = (params: GetLeaderboardParams = {}) =>
   useQuery({
     queryKey: ["leaderboards", params],
     queryFn: async (): Promise<LeaderboardResponse> => {
-      return apiClient.getLeaderboards(params);
+      return apiClient.getGlobalLeaderboard(params);
     },
     placeholderData: (prev) => prev,
   });

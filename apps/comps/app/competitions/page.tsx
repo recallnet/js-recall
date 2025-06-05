@@ -30,7 +30,7 @@ export default function CompetitionsPage() {
 
   const endedCompetitions =
     competitionsData?.competitions?.filter(
-      (comp) => comp.status === CompetitionStatus.Completed,
+      (comp) => comp.status === CompetitionStatus.Ended,
     ) || [];
 
   // Fetch spotlight agents using the API hook

@@ -1,7 +1,8 @@
 "use client";
 
-import { ArrowUp, AwardIcon, ExternalLink, Trophy } from "lucide-react";
+import { AwardIcon, ExternalLink, Trophy } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 import { Button } from "@recallnet/ui2/components/button";
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
@@ -16,9 +17,9 @@ import {
 } from "@recallnet/ui2/components/table";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { Agent } from "@/types/agent";
+import { LeaderboardAgent } from "@/types/agent";
 
-const emptyAgent: (i: number) => Agent = (i: number) => ({
+const emptyAgent: (i: number) => LeaderboardAgent = (i: number) => ({
   id: i.toString(),
   name: `some-name-${i}`,
   walletAddress: "",
@@ -26,6 +27,10 @@ const emptyAgent: (i: number) => Agent = (i: number) => ({
   imageUrl: "",
   description: "some long agent description",
   status: "",
+  rank: i,
+  score: 0,
+  voteCount: 0,
+  numCompetitions: 0,
 });
 
 export function LeaderboardTable({
@@ -33,7 +38,7 @@ export function LeaderboardTable({
   onExtend,
   loaded,
 }: {
-  agents: Agent[];
+  agents: LeaderboardAgent[];
   onExtend: () => void;
   loaded?: boolean;
 }) {
@@ -74,10 +79,11 @@ export function LeaderboardTable({
             >
               <TableCell className="xs:flex-row flex flex-col items-center gap-2 py-6">
                 <div className="flex gap-2">
-                  <ArrowUp size={20} className="text-green-500" />
-                  <span>3</span>
+                  {/* TODO: enable once we have official rankings & net change in rank */}
+                  {/* <ArrowUp size={20} className="text-green-500" />
+                  <span>3</span> */}
                 </div>
-                {i == 0 ? (
+                {i === 0 ? (
                   <div
                     className={cn(
                       "flex w-20 items-center justify-center gap-1 rounded p-2",
@@ -88,23 +94,35 @@ export function LeaderboardTable({
                     <Trophy size={17} />
                     <span>1st</span>
                   </div>
-                ) : i < 3 ? (
+                ) : i === 1 ? (
                   <div
                     className={cn(
                       "flex w-20 items-center justify-center gap-1 rounded p-2",
-                      ["bg-gray-700", "bg-[#1A0E05]"][i - 1],
-                      i == 1 ? "text-gray-300" : "text-[#C76E29]",
+                      "bg-gray-700",
+                      "text-gray-300",
                     )}
                   >
                     <AwardIcon size={17} />
-                    <span>{i == 1 ? "2nd" : "3rd"}</span>
+                    <span>2nd</span>
+                  </div>
+                ) : i === 2 ? (
+                  <div
+                    className={cn(
+                      "flex w-20 items-center justify-center gap-1 rounded p-2",
+                      "bg-[#1A0E05]",
+                      "text-[#C76E29]",
+                    )}
+                  >
+                    <AwardIcon size={17} />
+                    <span>3rd</span>
                   </div>
                 ) : (
                   <div className="mx-6 flex items-center justify-center rounded bg-gray-800 px-2 py-3">
-                    {i}
+                    {i + 1}
                   </div>
                 )}
-                <span className="text-gray-500">{"23,533"}</span>
+                {/* TODO: hide this until official "scores" are implemented; the API does return the data, but it's not elo-based */}
+                {/* <span className="text-gray-500">{agent.score}</span> */}
               </TableCell>
 
               <TableCell className="flex items-center justify-center">
@@ -130,9 +148,11 @@ export function LeaderboardTable({
                         <div className="font-medium leading-none text-white">
                           {agent.name}
                         </div>
-                        <p className="truncate whitespace-nowrap text-xs text-gray-400">
-                          {agent.description}
-                        </p>
+                        {agent.description && (
+                          <p className="truncate whitespace-nowrap text-xs text-gray-400">
+                            {agent.description}
+                          </p>
+                        )}
                       </>
                     ) : (
                       <>
@@ -146,7 +166,7 @@ export function LeaderboardTable({
 
               <TableCell className="flex items-center justify-end pr-10 text-gray-500">
                 {loaded ? (
-                  <>{0}</>
+                  <>{agent.numCompetitions}</>
                 ) : (
                   <Skeleton className="h-2 w-10 rounded-full" />
                 )}
@@ -154,14 +174,17 @@ export function LeaderboardTable({
 
               <TableCell className="flex items-center justify-end pr-10 text-gray-500 sm:pr-0">
                 {loaded ? (
-                  "22,550"
+                  // TODO: this is not part of the API response, yet, but it will be guaranteed to be present via the `useLeaderboards` hook
+                  <>{agent.voteCount || 0}</>
                 ) : (
                   <Skeleton className="h-2 w-10 rounded-full" />
                 )}
               </TableCell>
 
               <TableCell className="pr-15 flex items-center justify-end text-gray-500">
-                <ExternalLink />
+                <Link href={`/agents/${agent.id}`}>
+                  <ExternalLink />
+                </Link>
               </TableCell>
             </TableRow>
           ))}
