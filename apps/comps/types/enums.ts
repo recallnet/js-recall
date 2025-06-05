@@ -1,7 +1,7 @@
 export enum CompetitionStatus {
   Pending = "pending",
   Active = "active",
-  Completed = "completed",
+  Ended = "ended",
 }
 
 export enum CrossChainTradingType {
