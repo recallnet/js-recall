@@ -202,7 +202,7 @@ app.get(`${apiBasePath}/api/health`, (_req, res) => {
 });
 
 // Root endpoint redirects to API documentation
-app.get("/", (_req, res) => {
+app.get(`${apiBasePath}`, (_req, res) => {
   res.redirect(`${apiBasePath}/api/docs`);
 });
 
