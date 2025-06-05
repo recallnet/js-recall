@@ -3,9 +3,10 @@
 import React, { useState } from "react";
 
 import { AgentCreated } from "@/components/agent-created";
+import { AuthGuard } from "@/components/auth-guard";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { CreateAgent, FormData } from "@/components/create-agent";
-import { useAgent } from "@/hooks/useAgent";
+import { useUserAgent } from "@/hooks/useAgent";
 import { useCreateAgent } from "@/hooks/useCreateAgent";
 
 export default function CreateAgentPage() {
@@ -17,21 +18,21 @@ export default function CreateAgentPage() {
     data: agent,
     isLoading: isAgentLoading,
     isError: isAgentError,
-  } = useAgent(createdAgentId || undefined);
+  } = useUserAgent(createdAgentId || undefined);
 
   const handleSubmit = async (data: FormData) => {
     try {
       const result = await createAgent.mutateAsync({
         name: data.name,
         imageUrl: data.imageUrl,
-        email: data.email || "",
-        description: data.description || "",
+        email: data.email,
+        description: data.description,
         metadata: {
           walletAddress: data.walletAddress,
           skills: JSON.stringify(data.skills),
-          repositoryUrl: data.repositoryUrl || "",
-          x: data.x || "",
-          telegram: data.telegram || "",
+          repositoryUrl: data.repositoryUrl,
+          x: data.x,
+          telegram: data.telegram,
         },
       });
 
@@ -45,7 +46,7 @@ export default function CreateAgentPage() {
   };
 
   return (
-    <>
+    <AuthGuard>
       <BreadcrumbNav
         items={[
           { label: "HOME", href: "/competitions" },
@@ -70,6 +71,6 @@ export default function CreateAgentPage() {
           isSubmitting={createAgent.status === "pending"}
         />
       )}
-    </>
+    </AuthGuard>
   );
 }

@@ -12,6 +12,8 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { SIWEButton } from "@/components/siwe";
 
+const ACTIVE_BORDER_STYLE = "border-b-2 border-b-yellow-500";
+
 export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -34,12 +36,16 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
             {/* Logo */}
             <Link href="/" className="flex items-center border-x p-1">
               <Avatar className="h-12 w-12">
-                <AvatarImage src="/favicon-32x32.png" alt="recallnet" />
+                <AvatarImage
+                  src="/logo_white.svg"
+                  alt="recallnet"
+                  className="p-2"
+                />
               </Avatar>
             </Link>
 
             {/* Inline nav items for lg+ */}
-            <div className="hidden lg:flex">
+            <div className="hidden sm:flex">
               {navItems.map((item) => {
                 const isActive = pathname.startsWith(item.href);
                 return (
@@ -48,7 +54,7 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
                     key={item.href}
                     className={cn(
                       "px-15 flex h-14 items-center justify-center border-r",
-                      isActive ? "border-b-2 border-b-yellow-500" : "",
+                      isActive ? ACTIVE_BORDER_STYLE : "",
                     )}
                   >
                     <span
@@ -61,8 +67,8 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
               })}
             </div>
 
-            {/* Dropdown trigger for <lg */}
-            <div className="lg:hidden">
+            {/* Dropdown trigger for <sm */}
+            <div className="sm:hidden">
               <DropdownMenu.Root open={open} onOpenChange={setOpen}>
                 <DropdownMenu.Trigger asChild>
                   <Button className="bg-transparent text-white hover:bg-transparent">
@@ -94,10 +100,12 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
             </div>
           </div>
 
-          <div>
-            <SIWEButton className="bg-sky-700 px-6 py-5 text-white hover:bg-sky-600">
-              JOIN / SIGN IN
-            </SIWEButton>
+          <div
+            className={cn("flex h-full items-center", {
+              [ACTIVE_BORDER_STYLE]: pathname === "/profile",
+            })}
+          >
+            <SIWEButton>JOIN / SIGN IN</SIWEButton>
           </div>
         </div>
       </nav>

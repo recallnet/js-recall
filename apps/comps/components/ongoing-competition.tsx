@@ -33,7 +33,7 @@ export const OngoingCompetition: React.FC<OngoingCompetitionProps> = ({
   return (
     <div className="bg-card p-8">
       <div className="mb-30 flex items-start justify-between">
-        <StringList strings={["ONGOING", ...competition.type]} />
+        <StringList strings={["ONGOING", competition.type]} />
         <IconButton
           Icon={Share1Icon}
           aria-label="Share"

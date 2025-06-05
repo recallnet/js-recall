@@ -1,36 +1,25 @@
 import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
-import { zeroAddress } from "viem";
 
-import { LeaderboardAgent } from "@/types/agent";
+import { Agent } from "@/types/agent";
+import { User } from "@/types/profile";
 
-type User = {
-  address: string;
+type UserStorage = {
+  user: User | null;
   loggedIn: boolean;
 };
 
-export const userAtom = atomWithStorage<User>("user", {
-  address: "",
+export const userAtom = atomWithStorage<UserStorage>("user", {
+  user: null,
   loggedIn: false,
 });
 
-export const userAgentAtom = atom<LeaderboardAgent>({
+export const userAgentAtom = atom<Agent & { rank: number }>({
   id: "",
   name: "",
   imageUrl: "",
-  metadata: {
-    walletAddress: zeroAddress,
-  },
+  walletAddress: "",
   rank: 0,
-  skills: [],
-  apiKey: "",
-  registeredCompetitionIds: [],
-  userId: undefined,
-  stats: undefined,
-  trophies: undefined,
-  hasUnclaimedRewards: false,
-  score: 0,
-  rewards: undefined,
   description: "",
   status: "",
 });

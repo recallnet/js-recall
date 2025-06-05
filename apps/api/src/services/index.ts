@@ -4,11 +4,13 @@ import { AuthService } from "@/services/auth.service.js";
 import { BalanceManager } from "@/services/balance-manager.service.js";
 import { CompetitionManager } from "@/services/competition-manager.service.js";
 import { ConfigurationService } from "@/services/configuration.service.js";
+import { LeaderboardService } from "@/services/leaderboard.service.js";
 import { PortfolioSnapshotter } from "@/services/portfolio-snapshotter.service.js";
 import { PriceTracker } from "@/services/price-tracker.service.js";
 import { SchedulerService } from "@/services/scheduler.service.js";
 import { TradeSimulator } from "@/services/trade-simulator.service.js";
 import { UserManager } from "@/services/user-manager.service.js";
+import { VoteManager } from "@/services/vote-manager.service.js";
 
 /**
  * Service Registry
@@ -29,6 +31,8 @@ class ServiceRegistry {
   private _scheduler: SchedulerService;
   private _configurationService: ConfigurationService;
   private _portfolioSnapshotter: PortfolioSnapshotter;
+  private _leaderboardService: LeaderboardService;
+  private _voteManager: VoteManager;
 
   constructor() {
     // Initialize services in dependency order
@@ -60,6 +64,11 @@ class ServiceRegistry {
       this._agentManager,
       this._configurationService,
     );
+
+    this._leaderboardService = new LeaderboardService();
+
+    // Initialize vote manager (no dependencies)
+    this._voteManager = new VoteManager();
 
     // Initialize and start the scheduler
     this._scheduler = new SchedulerService(
@@ -98,6 +107,10 @@ class ServiceRegistry {
     return this._competitionManager;
   }
 
+  get leaderboardService(): LeaderboardService {
+    return this._leaderboardService;
+  }
+
   get portfolioSnapshotter(): PortfolioSnapshotter {
     return this._portfolioSnapshotter;
   }
@@ -121,6 +134,10 @@ class ServiceRegistry {
   get configurationService(): ConfigurationService {
     return this._configurationService;
   }
+
+  get voteManager(): VoteManager {
+    return this._voteManager;
+  }
 }
 
 // Export service types for convenience
@@ -136,6 +153,8 @@ export {
   ConfigurationService,
   ServiceRegistry,
   PortfolioSnapshotter,
+  LeaderboardService,
+  VoteManager,
 };
 
 export default ServiceRegistry;

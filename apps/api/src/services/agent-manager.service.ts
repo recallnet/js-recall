@@ -9,6 +9,7 @@ import {
   create,
   deactivateAgent,
   deleteAgent,
+  findAgentCompetitions,
   findAll,
   findByCompetition,
   findById,
@@ -22,6 +23,7 @@ import {
 } from "@/database/repositories/agent-repository.js";
 import { InsertAgent, SelectAgent } from "@/database/schema/core/types.js";
 import {
+  AgentCompetitionsParams,
   AgentMetadata,
   AgentSearchParams,
   ApiAuth,
@@ -767,6 +769,38 @@ export class AgentManager {
         error,
       );
       return { agents: [], total: 0 };
+    }
+  }
+
+  /**
+   * Get competitions for a specific agent
+   * @param agentId Agent ID
+   * @param params Agent competitions parameters
+   * @returns Object containing agents array and total count
+   */
+  async getCompetitionsForAgent(
+    agentId: string,
+    params: AgentCompetitionsParams,
+  ) {
+    try {
+      console.log(
+        `[AgentManager] Retrieving competitions for agent ${agentId} with params:`,
+        params,
+      );
+
+      // Get agents from repository
+      const results = await findAgentCompetitions(agentId, params);
+
+      console.log(
+        `[AgentManager] Found ${results.total} competitions for agent ${agentId}`,
+      );
+      return results;
+    } catch (error) {
+      console.error(
+        `[AgentManager] Error retrieving competitions for agent ${agentId}:`,
+        error,
+      );
+      return { competitions: [], total: 0 };
     }
   }
 

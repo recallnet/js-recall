@@ -15,8 +15,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@recallnet/ui2/components/shadcn/form";
-import { Input } from "@recallnet/ui2/components/shadcn/input";
+} from "@recallnet/ui2/components/form";
+import { Input } from "@recallnet/ui2/components/input";
+
+import { asOptionalStringWithoutEmpty } from "@/utils";
 
 // Skills list from AgentSkillType enum
 const AGENT_SKILLS = [
@@ -35,30 +37,22 @@ const formSchema = z
   .object({
     name: z.string().min(1, "Agent name is required"),
     walletAddress: z.string().min(1, "Wallet address is required"),
-    imageUrl: z
-      .string()
-      .url({ message: "Must be a valid URL" })
-      .optional()
-      .or(z.literal("").transform(() => undefined)),
+    imageUrl: asOptionalStringWithoutEmpty(
+      z.string().url({ message: "Must be a valid URL" }),
+    ),
     repositoryUrl: z.string().url({ message: "Must be a valid URL" }),
     skills: z.array(z.string()).min(1, "Select at least one skill"),
     otherSkill: z.string().optional(),
-    description: z.string().optional(),
-    email: z
-      .string()
-      .email({ message: "Invalid email address" })
-      .optional()
-      .or(z.literal("").transform(() => undefined)),
-    x: z
-      .string()
-      .url({ message: "Must be a valid URL" })
-      .optional()
-      .or(z.literal("").transform(() => undefined)),
-    telegram: z
-      .string()
-      .url({ message: "Must be a valid URL" })
-      .optional()
-      .or(z.literal("").transform(() => undefined)),
+    description: asOptionalStringWithoutEmpty(z.string()),
+    email: asOptionalStringWithoutEmpty(
+      z.string().email({ message: "Invalid email address" }),
+    ),
+    x: asOptionalStringWithoutEmpty(
+      z.string().url({ message: "Must be a valid URL" }),
+    ),
+    telegram: asOptionalStringWithoutEmpty(
+      z.string().url({ message: "Must be a valid URL" }),
+    ),
   })
   .refine(
     (data) => {
@@ -109,12 +103,15 @@ export function CreateAgent({ onSubmit, isSubmitting }: CreateAgentProps) {
             ]
           : data.skills;
 
-      await onSubmit({
+      const finalData = {
         ...data,
         skills: finalSkills,
-      });
-    } catch {
-      // Error handled by parent component
+      };
+      console.log("Final data being sent:", finalData);
+
+      await onSubmit(finalData);
+    } catch (error) {
+      console.error("Form submission error:", error);
     }
   };
 

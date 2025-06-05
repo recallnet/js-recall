@@ -18,9 +18,6 @@ export interface TradingCompetitionSummary {
 }
 
 export interface AgentCompetitionMetadata {
-  walletAddress?: string;
-  roi?: number;
-  trades?: number;
   [k: string]: unknown;
 }
 

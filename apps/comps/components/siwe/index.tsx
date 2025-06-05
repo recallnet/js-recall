@@ -11,11 +11,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@recallnet/ui2/components/shadcn/dropdown-menu";
+} from "@recallnet/ui2/components/dropdown-menu";
 
-import { useLogout } from "@/hooks";
-import { useProfile } from "@/hooks/useProfile";
+import { useLogout, useUserSession } from "@/hooks";
 
 import { Identicon } from "../identicon/index";
 
@@ -24,69 +24,70 @@ export const SIWEButton: React.FunctionComponent<
 > = () => {
   const router = useRouter();
   const logout = useLogout();
-  const { data: user, isError, refetch } = useProfile();
+  const { user } = useUserSession();
 
   const handleLogout = async () => {
     logout.mutate();
-    await refetch();
   };
+
+  if (user) {
+    return (
+      <div className="mx-3 flex items-center space-x-3">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <div className="ml-5 flex cursor-pointer items-center justify-between">
+              {user.imageUrl ? (
+                <Image
+                  src={user.imageUrl}
+                  alt="agent"
+                  className="pointer-events-none"
+                  width={25}
+                  height={25}
+                />
+              ) : (
+                <Identicon
+                  className="rounded-none"
+                  address={user.walletAddress}
+                />
+              )}
+              <div className="focus ml-3 text-xs font-medium text-white">
+                {user.walletAddress.slice(0, 6)}...
+                {user.walletAddress.slice(-4)}
+              </div>
+            </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-40 rounded-lg bg-black">
+            <DropdownMenuItem
+              onClick={() => router.push("/profile")}
+              className="cursor-pointer p-3 hover:bg-gray-800"
+            >
+              My Account
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="cursor-pointer p-3 hover:bg-gray-800"
+            >
+              <FaArrowRightFromBracket className="h-10 w-10 text-gray-600" />
+              Log-Out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    );
+  }
 
   return (
     <ConnectButton.Custom>
-      {({ openConnectModal }) => {
-        return user && !isError ? (
-          <div className="mx-3 flex items-center space-x-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <div className="ml-5 flex cursor-pointer items-center justify-between">
-                  {user.imageUrl ? (
-                    <Image
-                      src={user?.imageUrl || ""}
-                      alt="agent"
-                      className="pointer-events-none"
-                      width={25}
-                      height={25}
-                    />
-                  ) : (
-                    <Identicon
-                      className="rounded-none"
-                      address={user.walletAddress}
-                    />
-                  )}
-                  <div className="focus ml-3 text-xs font-medium text-white">
-                    {user.walletAddress.slice(0, 6)}...
-                    {user.walletAddress.slice(-4)}
-                  </div>
-                </div>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-40 bg-black">
-                <DropdownMenuItem
-                  onClick={() => router.push("/profile")}
-                  className="cursor-pointer hover:bg-gray-800"
-                >
-                  My Account
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  className="cursor-pointer hover:bg-gray-800"
-                >
-                  <FaArrowRightFromBracket className="h-10 w-10 text-gray-600" />
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        ) : (
-          <div className="flex items-center">
-            <Button
-              onClick={openConnectModal}
-              className="h-full bg-white px-10 px-6 py-5 text-black"
-            >
-              JOIN / SIGN IN
-            </Button>
-          </div>
-        );
-      }}
+      {({ openConnectModal }) => (
+        <Button
+          onClick={openConnectModal}
+          variant="ghost"
+          className="h-full px-6"
+        >
+          JOIN / SIGN IN
+        </Button>
+      )}
     </ConnectButton.Custom>
   );
 };

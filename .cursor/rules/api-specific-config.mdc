@@ -1,0 +1,122 @@
+---
+description: 
+globs: apps/api/**/*
+alwaysApply: false
+---
+# API Engineering Standards (apps/api)
+
+## Database & Schema Management
+
+### Database Schema Organization
+- All database schemas must be placed in `apps/api/src/database/schema/` with appropriate subdirectories (`core/`, `auth/`, etc.)
+- Schema files must export table definitions and be properly imported in `core/defs.ts`
+- Always generate migrations using `pnpm db:generate` after schema changes which will automatically create the sql migration files
+- Repository classes must be placed in `apps/api/src/database/repositories/` and follow the naming pattern `*-repository.ts`
+- Use the established repository pattern with dependency injection into manager services
+- Include proper indexes for foreign keys and frequently queried columns
+
+## Authentication & Security
+
+### Authentication Patterns
+- Agent authentication uses API keys via `Authorization: Bearer` header
+- User authentication uses session-based auth with SIWE (Sign-In With Ethereum)
+- Never mix authentication patterns - each endpoint should use one consistent method
+- All wallet verification must use nonce-based verification
+
+### Security Operations
+- Threat modeling required for new authentication flows
+- Audit trails required for critical business operations
+- Rate limiting required for all public endpoints
+- Circuit breaker patterns for external service dependencies
+
+## Testing Standards
+
+### E2E Test Organization
+- All E2E tests must be in `apps/api/e2e/tests/` directory
+- Test helpers must be in `apps/api/e2e/utils/` directory
+- Always reference and re-use existing test setup helpers (where applicable) - for example, in `apps/api/e2e/utils/test-helpers.ts`
+- When implementing a new test, always first look at existing test patterns in other test files - for example, `apps/api/e2e/tests/user.test.ts` for examples that use the user authentication flow, and `apps/api/e2e/tests/agent.test.ts` that use the agent authentication flow
+
+### Test Environment Requirements
+- Whenever in doubt about how tests in the e2e testing suite are set up, always reference `apps/api/e2e/setup.ts`, `apps/api/e2e/utils/test-setup.ts`, `apps/api/e2e/run-tests.ts`, and `apps/api/vitest.config.ts` to ensure you have a complete understanding of the environment
+
+### Testing Coverage Requirements
+- All new manager service methods must have corresponding tests
+- Wallet verification functionality must be tested with both success and failure scenarios
+- Database operations should be tested with edge cases (duplicates, constraints)
+- Authentication flows must be thoroughly tested
+- Performance-critical changes require load testing validation
+
+### Running Tests
+- To run tests using the e2e testing suite, you can use a format such as `cd apps/api && pnpm test:e2e name-of-test.test.ts`
+
+## API Design Patterns
+
+### Response Format Consistency
+- All API responses must include `success: boolean` field
+- Error responses must include `error: string` and `status: number` fields
+- Use consistent HTTP status codes (400 for validation, 401 for auth, 409 for conflicts)
+- Success responses should include relevant data fields and descriptive `message` when appropriate
+
+### Route Organization
+- Group routes by feature in `apps/api/src/routes/` (e.g., `agent.routes.ts`, `auth.routes.ts`)
+- Use middleware for authentication consistently across related endpoints
+- Keep route handlers thin - business logic belongs in manager services
+- Use TypeScript types for request/response validation
+
+### API Evolution & Compatibility
+- Breaking changes DO NOT require version increments and deprecation notices
+- Schema evolution must support gradual migration patterns
+- Client SDK updates coordinated with API changes
+
+## Service Layer Architecture
+
+### Manager Service Patterns
+- Business logic must be in manager services (`apps/api/src/services/*-manager.service.ts`)
+- Manager services should inject repository dependencies in constructor
+- Use dependency injection pattern established in `AppContext`
+- Keep manager methods focused on single responsibilities
+- Always handle errors gracefully and return consistent result objects
+
+### Code Reuse & Method Implementation
+- **Before implementing any new method**: Always search the codebase for similar existing functionality using semantic search or grep
+- **If a similar method exists but is not adequate**: You must explicitly explain why the existing method cannot be used or extended, including:
+  - What specific requirements the existing method doesn't meet
+  - Why extending/modifying the existing method isn't feasible
+  - Technical justification for creating a new method instead
+- **Staff-Level Engineering Approach**: When working on any code in `apps/api`, approach all design decisions and trade-off analysis as a staff backend engineer at a FAANG company would. This means:
+  - Evaluating all viable implementation options holistically
+  - Considering long-term maintainability, scalability, and team velocity
+  - Following industry best practices while making context-appropriate decisions
+  - Ensuring the chosen solution is the best fit for the specific situation at hand
+- **Document relationships**: If creating a new method that's similar to an existing one, document the relationship and differences in TSDoc comments
+
+### Configuration Management
+- Use `apps/api/src/config/index.ts` for centralized configuration
+- Environment variables should be loaded once at startup, not per-request
+- Validate required environment variables on application startup
+- Use configuration objects rather than direct `process.env` access in business logic
+
+## Performance & Scalability
+
+### Performance Requirements
+- API endpoints must respond within 200ms for 95th percentile
+- Critical business operations (wallet verification, trades) must emit metrics
+- Caching strategy required for frequently accessed data (user sessions, price data)
+- Retry logic with exponential backoff for transient failures
+- Capacity planning and scaling thresholds must be documented
+
+### Monitoring & Observability
+- All API endpoints must include structured logging with request IDs
+- Health check endpoints must validate all dependencies (DB, external APIs)
+- Business metric tracking and performance SLIs/SLOs required
+
+## Code Quality & Documentation
+
+### Documentation Requirements
+- All public manager service methods must have TSDoc comments
+- Include `@param` and `@returns` documentation
+- Document error conditions and side effects
+- Repository methods should document database operations and constraints
+- At the end of implementing a new feature, always check to see if this invalidates content in `apps/api/README.md` that must be updated
+- For any new environment variables, ensure that `apps/api/.env.example`, `apps/api/.env.test`, and `.github/workflows/api-ci.yml` has been updated to include it

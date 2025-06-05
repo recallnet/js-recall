@@ -9,6 +9,7 @@ import { getLatestPrice } from "@/database/repositories/price-repository.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
+  AgentCompetitionsParamsSchema,
   AgentFilterSchema,
   AuthenticatedRequest,
   PagingParamsSchema,
@@ -148,7 +149,7 @@ export function makeAgentController(services: ServiceRegistry) {
         // Return the agents
         res.status(200).json({
           success: true,
-          metadata: {
+          pagination: {
             total: totalCount,
             limit: pagingParams.limit,
             offset: pagingParams.offset,
@@ -460,6 +461,47 @@ export function makeAgentController(services: ServiceRegistry) {
         res.status(200).json({
           success: true,
           apiKey: result.apiKey,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get competitions associated with the url param agent
+     * @param req Express request with agentId from API key
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getCompetitions(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { success: idSuccess, data: agentId } = UuidSchema.safeParse(
+          req.params.agentId,
+        );
+        if (!idSuccess) {
+          throw new ApiError(400, "Invalid agent ID");
+        }
+        const { success: paramsSuccess, data: params } =
+          AgentCompetitionsParamsSchema.safeParse(req.query);
+        if (!paramsSuccess) {
+          throw new ApiError(400, "Invalid sort filter page params");
+        }
+
+        // Fetch all competitions associated with the agent
+        const results = await services.agentManager.getCompetitionsForAgent(
+          agentId,
+          params,
+        );
+
+        res.status(200).json({
+          success: true,
+          competitions: results.competitions,
+          pagination: {
+            limit: params.limit,
+            offset: params.offset,
+            total: results.total,
+            hasMore: params.limit + params.offset < results.total,
+          },
         });
       } catch (error) {
         next(error);

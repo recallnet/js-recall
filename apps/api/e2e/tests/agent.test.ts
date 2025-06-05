@@ -7,6 +7,7 @@ import {
   AgentMetadata,
   AgentProfileResponse,
   AgentsGetResponse,
+  Competition,
   CreateCompetitionResponse,
   PriceResponse,
   ResetApiKeyResponse,
@@ -868,7 +869,7 @@ describe("Agent API", () => {
     }
   });
 
-  test("GET /api/agent/:agentId retrieves agent details", async () => {
+  test("GET /api/agents/:agentId retrieves agent details", async () => {
     // Setup admin client and login
     const adminClient = createTestClient();
     const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
@@ -909,7 +910,7 @@ describe("Agent API", () => {
     expect(agent.id).toBeDefined();
 
     // Make a GET request to fetch the agent details using the agent ID
-    const response = await axios.get(`${getBaseUrl()}/api/agent/${agent.id}`, {
+    const response = await axios.get(`${getBaseUrl()}/api/agents/${agent.id}`, {
       headers: {
         // Make sure that other agents/users can load details for a given agent id
         Authorization: `Bearer ${apiKey2}`,
@@ -932,7 +933,7 @@ describe("Agent API", () => {
     expect(agentData.agent.apiKey).not.toBeDefined();
   });
 
-  test("GET /api/agent/:agentId returns 400 with invalid agent id", async () => {
+  test("GET /api/agents/:agentId returns 400 with invalid agent id", async () => {
     // Setup admin client and login
     const adminClient = createTestClient();
     const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
@@ -953,9 +954,10 @@ describe("Agent API", () => {
 
     expect(agent).toBeDefined();
     expect(agent.id).toBeDefined();
+
     try {
       // Make a GET request to fetch the agent details using the agent ID
-      await axios.get(`${getBaseUrl()}/api/agent/foo123`, {
+      await axios.get(`${getBaseUrl()}/api/agents/foo123`, {
         headers: {
           // Make sure that other agents/users can load details for a given agent id
           Authorization: `Bearer ${apiKey}`,
@@ -971,5 +973,147 @@ describe("Agent API", () => {
         throw error;
       }
     }
+  });
+
+  test("GET /api/agents/:agentId/competitions retrieves agent competitions", async () => {
+    // Setup admin client and login
+    const adminClient = createTestClient();
+    const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+    expect(adminLoginSuccess).toBe(true);
+
+    // Step 1: Register a user and agent
+    const userName = `Competitions Test User ${Date.now()}`;
+    const userEmail = `competitions-test-${Date.now()}@example.com`;
+    const agentName = `Competitions Test Agent ${Date.now()}`;
+    const agentDescription = "Agent for competitions endpoint test";
+
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        userName,
+        userEmail,
+        agentName,
+        agentDescription,
+      });
+
+    expect(agent).toBeDefined();
+    expect(agent.id).toBeDefined();
+
+    // Step 2: Create and start two competitions with the agent
+    const competitionNames = [
+      `Competition A ${Date.now()}`,
+      `Competition B ${Date.now()}`,
+      `Competition C ${Date.now()}`,
+    ];
+    const createdCompetitions: Competition[] = [];
+
+    // NOTE: we can't have more than one active comp right now
+    async function createComp(compName: string) {
+      const createCompResult = await adminClient.createCompetition(
+        compName,
+        `Test competition ${compName}`,
+      );
+      expect(createCompResult.success).toBe(true);
+      const createCompResponse = createCompResult as CreateCompetitionResponse;
+      createdCompetitions.push(createCompResponse.competition);
+
+      const startCompResult = await adminClient.startExistingCompetition(
+        createCompResponse.competition.id,
+        [agent.id],
+      );
+
+      expect(startCompResult.success).toBe(true);
+    }
+
+    await createComp(competitionNames[0] as string);
+    await adminClient.endCompetition(createdCompetitions[0]?.id as string);
+    await createComp(competitionNames[1] as string);
+
+    const pendingCompResponse = await adminClient.createCompetition(
+      competitionNames[2] as string,
+      `Test competition ${competitionNames[2] as string}`,
+    );
+    expect(pendingCompResponse.success).toBe(true);
+
+    // make sure there is at least one comp that the agent is not part of so we can test that it is not returned in the responses
+    const notJoinedCompResponse = await adminClient.createCompetition(
+      competitionNames[2] as string,
+      `Test competition ${competitionNames[2] as string}`,
+    );
+    expect(notJoinedCompResponse.success).toBe(true);
+
+    const pendingComp = pendingCompResponse as CreateCompetitionResponse;
+    await agentClient.joinCompetition(pendingComp.competition.id, agent.id);
+    createdCompetitions.push(pendingComp.competition);
+
+    // Agent fetches list of competitions
+    const competitionsData = await agentClient.getAgentCompetitions(
+      agent.id,
+      {},
+    );
+
+    expect(competitionsData.success).toBe(true);
+    expect(competitionsData.competitions).toBeDefined();
+    expect(Array.isArray(competitionsData.competitions)).toBe(true);
+    expect(competitionsData.competitions.length).toBe(3);
+    expect(competitionsData.competitions[0].status).toBe("ended");
+    expect(competitionsData.competitions[1].status).toBe("active");
+    expect(competitionsData.competitions[2].status).toBe("pending");
+
+    // Verify all competitions are present
+    for (const competition of createdCompetitions) {
+      const foundCompetition = competitionsData.competitions.find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (c: any) => c.id === competition.id,
+      );
+      expect(foundCompetition).toBeDefined();
+      expect(foundCompetition.name).toBe(competition.name);
+    }
+
+    // test if filtering by status works
+    async function testStatus(status: string) {
+      const compsData = await agentClient.getAgentCompetitions(agent.id, {
+        status,
+      });
+
+      expect(compsData.success).toBe(true);
+      expect(compsData.competitions).toBeDefined();
+      expect(Array.isArray(compsData.competitions)).toBe(true);
+      expect(compsData.competitions.length).toBe(1);
+      expect(compsData.competitions[0].status).toBe(status);
+    }
+
+    await testStatus("pending");
+    await testStatus("active");
+    await testStatus("ended");
+
+    // test if sorting works
+    const sortedComps = await agentClient.getAgentCompetitions(agent.id, {
+      sort: "-name",
+    });
+
+    expect(sortedComps.success).toBe(true);
+    expect(sortedComps.competitions).toBeDefined();
+    expect(Array.isArray(sortedComps.competitions)).toBe(true);
+    expect(sortedComps.competitions.length).toBe(3);
+    expect(sortedComps.competitions[0].name).toBe(competitionNames[2]);
+    expect(sortedComps.competitions[1].name).toBe(competitionNames[1]);
+    expect(sortedComps.competitions[2].name).toBe(competitionNames[0]);
+
+    // test if pagination works
+    const pagedComps = await agentClient.getAgentCompetitions(agent.id, {
+      limit: 2,
+      offset: 0,
+    });
+
+    expect(pagedComps.success).toBe(true);
+    expect(pagedComps.competitions).toBeDefined();
+    expect(Array.isArray(pagedComps.competitions)).toBe(true);
+    expect(pagedComps.competitions.length).toBe(2);
+    expect(pagedComps.pagination).toBeDefined();
+    expect(pagedComps.pagination.total).toBe(3);
+    expect(pagedComps.pagination.limit).toBe(2);
+    expect(pagedComps.pagination.offset).toBe(0);
+    expect(pagedComps.pagination.hasMore).toBe(true);
   });
 });

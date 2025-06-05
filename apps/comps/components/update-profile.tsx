@@ -13,24 +13,21 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@recallnet/ui2/components/shadcn/form";
-import { Input } from "@recallnet/ui2/components/shadcn/input";
+} from "@recallnet/ui2/components/form";
+import { Input } from "@recallnet/ui2/components/input";
 
 import { UpdateProfileRequest } from "@/types/profile";
+import { asOptionalStringWithoutEmpty } from "@/utils/zod";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email({ message: "Invalid email address" }),
-  website: z
-    .string()
-    .url({ message: "Must be a valid URL" })
-    .optional()
-    .or(z.literal("").transform(() => undefined)),
-  image: z
-    .string()
-    .url({ message: "Must be a valid URL" })
-    .optional()
-    .or(z.literal("").transform(() => undefined)),
+  website: asOptionalStringWithoutEmpty(
+    z.string().url({ message: "Must be a valid URL" }),
+  ),
+  image: asOptionalStringWithoutEmpty(
+    z.string().url({ message: "Must be a valid URL" }),
+  ),
 });
 
 export type FormData = z.infer<typeof formSchema>;
@@ -55,8 +52,7 @@ export const UpdateProfile: React.FC<UpdateProfileProps> = ({ onSubmit }) => {
       name: data.name,
       email: data.email,
       imageUrl: data.image || undefined,
-      // TODO: add metadata to the API
-      //metadata: data.website ? { website: data.website } : undefined,
+      metadata: data.website ? { website: data.website } : undefined,
     };
     onSubmit(transformedData);
   };

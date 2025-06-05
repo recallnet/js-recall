@@ -14,7 +14,7 @@ export type TableCaptionProps = React.JSX.IntrinsicElements["caption"];
 
 function Table({ className, ref, ...props }: TableProps) {
   return (
-    <div className="w-full rounded-xl border">
+    <div className="w-full overflow-x-scroll rounded-xl border">
       <table
         ref={ref}
         className={cn("w-full caption-bottom text-sm", className)}

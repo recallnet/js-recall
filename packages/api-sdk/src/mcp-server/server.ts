@@ -28,14 +28,15 @@ import { tool$adminPostApiAdminCompetitionEnd } from "./tools/adminPostApiAdminC
 import { tool$adminPostApiAdminCompetitionStart } from "./tools/adminPostApiAdminCompetitionStart.js";
 import { tool$adminPostApiAdminSetup } from "./tools/adminPostApiAdminSetup.js";
 import { tool$adminPostApiAdminUsers } from "./tools/adminPostApiAdminUsers.js";
-import { tool$agentGetApiAgentAgentId } from "./tools/agentGetApiAgentAgentId.js";
 import { tool$agentGetApiAgentBalances } from "./tools/agentGetApiAgentBalances.js";
 import { tool$agentGetApiAgentPortfolio } from "./tools/agentGetApiAgentPortfolio.js";
 import { tool$agentGetApiAgentProfile } from "./tools/agentGetApiAgentProfile.js";
 import { tool$agentGetApiAgentTrades } from "./tools/agentGetApiAgentTrades.js";
-import { tool$agentGetApiAgents } from "./tools/agentGetApiAgents.js";
 import { tool$agentPostApiAgentResetApiKey } from "./tools/agentPostApiAgentResetApiKey.js";
 import { tool$agentPutApiAgentProfile } from "./tools/agentPutApiAgentProfile.js";
+import { tool$agentsGetApiAgents } from "./tools/agentsGetApiAgents.js";
+import { tool$agentsGetApiAgentsAgentId } from "./tools/agentsGetApiAgentsAgentId.js";
+import { tool$agentsGetApiAgentsAgentIdCompetitions } from "./tools/agentsGetApiAgentsAgentIdCompetitions.js";
 import { tool$authGetApiAuthNonce } from "./tools/authGetApiAuthNonce.js";
 import { tool$authPostApiAuthLogin } from "./tools/authPostApiAuthLogin.js";
 import { tool$authPostApiAuthLogout } from "./tools/authPostApiAuthLogout.js";
@@ -50,6 +51,7 @@ import { tool$competitionGetApiCompetitionsUpcoming } from "./tools/competitionG
 import { tool$competitionPostApiCompetitionsCompetitionIdAgentsAgentId } from "./tools/competitionPostApiCompetitionsCompetitionIdAgentsAgentId.js";
 import { tool$healthGetApiHealth } from "./tools/healthGetApiHealth.js";
 import { tool$healthGetApiHealthDetailed } from "./tools/healthGetApiHealthDetailed.js";
+import { tool$leaderboardGetApiLeaderboard } from "./tools/leaderboardGetApiLeaderboard.js";
 import { tool$priceGetApiPrice } from "./tools/priceGetApiPrice.js";
 import { tool$priceGetApiPriceTokenInfo } from "./tools/priceGetApiPriceTokenInfo.js";
 import { tool$tradeGetApiTradeQuote } from "./tools/tradeGetApiTradeQuote.js";
@@ -65,7 +67,7 @@ export function createMCPServer(deps: {
 }) {
   const server = new McpServer({
     name: "ApiSDK",
-    version: "0.1.8",
+    version: "0.1.11",
   });
 
   const client = new ApiSDKCore({
@@ -116,8 +118,9 @@ export function createMCPServer(deps: {
   tool(tool$agentGetApiAgentPortfolio);
   tool(tool$agentGetApiAgentTrades);
   tool(tool$agentPostApiAgentResetApiKey);
-  tool(tool$agentGetApiAgentAgentId);
-  tool(tool$agentGetApiAgents);
+  tool(tool$agentsGetApiAgents);
+  tool(tool$agentsGetApiAgentsAgentId);
+  tool(tool$agentsGetApiAgentsAgentIdCompetitions);
   tool(tool$authGetApiAuthNonce);
   tool(tool$authPostApiAuthLogin);
   tool(tool$authPostApiAuthLogout);
@@ -132,6 +135,7 @@ export function createMCPServer(deps: {
   tool(tool$competitionDeleteApiCompetitionsCompetitionIdAgentsAgentId);
   tool(tool$healthGetApiHealth);
   tool(tool$healthGetApiHealthDetailed);
+  tool(tool$leaderboardGetApiLeaderboard);
   tool(tool$priceGetApiPrice);
   tool(tool$priceGetApiPriceTokenInfo);
   tool(tool$tradePostApiTradeExecute);

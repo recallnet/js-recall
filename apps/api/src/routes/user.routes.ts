@@ -1,13 +1,18 @@
 import { Router } from "express";
 
 import { UserController } from "@/controllers/user.controller.js";
+import { VoteController } from "@/controllers/vote.controller.js";
+import { configureVoteRoutes } from "@/routes/vote.routes.js";
 
 /**
  * Configure User Routes
  * Handles user-specific operations with SIWE session authentication
  * All routes require req.userId to be set by authentication middleware
  */
-export function configureUserRoutes(userController: UserController): Router {
+export function configureUserRoutes(
+  userController: UserController,
+  voteController: VoteController,
+): Router {
   const router = Router();
 
   /**
@@ -52,6 +57,9 @@ export function configureUserRoutes(userController: UserController): Router {
    *                     status:
    *                       type: string
    *                       enum: [active, inactive, suspended, deleted]
+   *                     metadata:
+   *                       type: object
+   *                       example: { "foo": "bar" }
    *                     createdAt:
    *                       type: string
    *                       format: date-time
@@ -96,6 +104,10 @@ export function configureUserRoutes(userController: UserController): Router {
    *                 type: string
    *                 description: User's email
    *                 example: "john@example.com"
+   *               metadata:
+   *                 type: object
+   *                 description: User's metadata
+   *                 example: { "foo": "bar" }
    *             additionalProperties: false
    *     responses:
    *       200:
@@ -124,6 +136,9 @@ export function configureUserRoutes(userController: UserController): Router {
    *                       nullable: true
    *                     imageUrl:
    *                       type: string
+   *                       nullable: true
+   *                     metadata:
+   *                       type: object
    *                       nullable: true
    *                     status:
    *                       type: string
@@ -510,6 +525,9 @@ export function configureUserRoutes(userController: UserController): Router {
    *         description: Internal server error
    */
   router.put("/agents/:agentId/profile", userController.updateAgentProfile);
+
+  // Include vote routes under user namespace
+  router.use(configureVoteRoutes(voteController));
 
   return router;
 }

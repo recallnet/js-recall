@@ -1,22 +1,10 @@
 import { PaginationResponse } from "./api";
-import {
-  AgentCompetitionMetadata,
-  Competition,
-  CompetitionResponse,
-  Reward,
-} from "./competition";
+import { AgentCompetitionMetadata, Competition } from "./competition";
 
 export interface BestPlacement {
   competitionId: string;
   position: number;
   participants: number;
-}
-
-export interface AgentStats {
-  eloAvg: number;
-  bestPlacement?: BestPlacement;
-  completedCompetitions: number;
-  provenSkills: string[];
 }
 
 export interface Trophy {
@@ -29,24 +17,25 @@ export interface Trophy {
 export interface Agent {
   id: string;
   name: string;
+  walletAddress?: string;
   ownerId?: string;
-  //must be removed if not returned by api
-  userId?: string;
   imageUrl: string;
-  description: string;
+  description?: string;
   status: string;
   metadata?: AgentCompetitionMetadata;
-  stats?: AgentStats;
-  trophies?: Trophy[];
-  skills: string[];
-  hasUnclaimedRewards?: boolean;
-  score?: number;
-  rewards?: Reward[];
-  apiKey: string;
-  registeredCompetitionIds: string[];
-
   deactivationReason?: string;
   deactivationDate?: string;
+}
+
+export interface LeaderboardAgent extends Agent {
+  // TODO: the actual response is a subset of the `Agent` type
+  // id: string;
+  // name: string;
+  // metadata: AgentCompetitionMetadata;
+  rank: number;
+  score: number;
+  voteCount: number;
+  numCompetitions: number;
 }
 
 export interface AgentsMetadata {
@@ -58,12 +47,12 @@ export interface AgentsMetadata {
 export interface UserAgentsResponse {
   success: boolean;
   userId: string;
-  agents: AgentResponse[];
+  agents: Agent[];
 }
 
 export interface AgentsResponse {
   metadata: AgentsMetadata;
-  agents: AgentResponse[];
+  agents: Agent[];
 }
 
 export interface AgentCompetitionsResponse {
@@ -75,12 +64,13 @@ export interface LeaderboardStats {
   activeAgents: number;
   totalTrades: number;
   totalVolume: number;
+  totalCompetitions: number;
 }
 
 export interface LeaderboardResponse {
-  metadata: AgentsMetadata;
   stats: LeaderboardStats;
   agents: LeaderboardAgent[];
+  pagination: PaginationResponse;
 }
 
 export interface AgentCompetitionResponse {
@@ -104,22 +94,7 @@ export interface AgentCompetition {
   pnlPercent: number;
   change24h: number;
   change24hPercent: number;
-}
-
-export interface AgentResponse extends Agent {
-  id: string;
-  name: string;
-  imageUrl: string;
-  stats?: AgentStats;
-  trophies?: Trophy[];
-  skills: string[];
-  hasUnclaimedRewards?: boolean;
-  score?: number;
-  rewards?: Reward[];
-}
-
-export interface LeaderboardAgent extends AgentResponse {
-  rank: number;
+  voteCount: number;
 }
 
 export interface CreateAgentRequest {
@@ -127,17 +102,12 @@ export interface CreateAgentRequest {
   imageUrl?: string;
   description?: string;
   email?: string;
-
-  //all of this is on metadata
-  //skills: string[];
-  //repositoryUrl?: string;
-  //walletAddress: string;
   metadata: {
-    [key: string]: string;
+    [key: string]: string | undefined;
   };
 }
 
 export interface CreateAgentResponse {
-  agent: Agent;
+  agent: Agent & { apiKey: string };
   success: boolean;
 }

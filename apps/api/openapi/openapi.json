@@ -1286,6 +1286,11 @@
                             "description": "URL to the user's image",
                             "nullable": true
                           },
+                          "metadata": {
+                            "type": "object",
+                            "description": "User metadata",
+                            "nullable": true
+                          },
                           "createdAt": {
                             "type": "string",
                             "format": "date-time",
@@ -2574,17 +2579,148 @@
         }
       }
     },
-    "/api/agent/{agentId}": {
+    "/api/agents": {
+      "get": {
+        "summary": "Get list of agents",
+        "description": "Retrieve a list of agents based on querystring parameters",
+        "tags": [
+          "Agents"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "filter",
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "description": "Optional filtering agents based on name or wallet address"
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "description": "Optional field to sort by (default value is `createdDate`)"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "description": "Optional field to choose max size of result set (default value is `10`)"
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "description": "Optional field to choose offset of result set (default value is `0`)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent profile retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "offset": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "agents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "ownerId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "walletAddress": {
+                            "type": "string",
+                            "example": "0x1234567890abcdef1234567890abcdef12345678"
+                          },
+                          "name": {
+                            "type": "string",
+                            "example": "Trading Bot Alpha"
+                          },
+                          "description": {
+                            "type": "string",
+                            "example": "AI agent focusing on DeFi yield farming"
+                          },
+                          "imageUrl": {
+                            "type": "string",
+                            "example": "https://example.com/bot-avatar.jpg"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "suspended",
+                              "deleted"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "404": {
+            "description": "Agents not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/agents/{agentId}": {
       "get": {
         "summary": "Get agent by ID",
         "description": "Retrieve the information for the given agent ID",
         "tags": [
-          "Agent"
-        ],
-        "security": [
-          {
-            "BearerAuth": []
-          }
+          "Agents"
         ],
         "parameters": [
           {
@@ -2670,8 +2806,8 @@
               }
             }
           },
-          "401": {
-            "description": "Agent not authenticated"
+          "400": {
+            "description": "Invalid agent ID"
           },
           "404": {
             "description": "Agent or owner not found"
@@ -2682,59 +2818,27 @@
         }
       }
     },
-    "/api/agents": {
+    "/api/agents/{agentId}/competitions": {
       "get": {
-        "summary": "Get list of agents",
-        "description": "Retrieve a list of agents based on querystring parameters",
+        "summary": "Get agent competitions",
+        "description": "Retrieve all competitions associated with the specified agent",
         "tags": [
-          "Agent"
-        ],
-        "security": [
-          {
-            "BearerAuth": []
-          }
+          "Agents"
         ],
         "parameters": [
           {
-            "in": "query",
-            "name": "filter",
+            "in": "path",
+            "name": "agentId",
             "schema": {
               "type": "string"
             },
-            "required": false,
-            "description": "Optional filtering agents based on name or wallet address"
-          },
-          {
-            "in": "query",
-            "name": "sort",
-            "schema": {
-              "type": "string"
-            },
-            "required": false,
-            "description": "Optional field to sort by (default value is `createdDate`)"
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "schema": {
-              "type": "string"
-            },
-            "required": false,
-            "description": "Optional field to choose max size of result set (default value is `10`)"
-          },
-          {
-            "in": "query",
-            "name": "offset",
-            "schema": {
-              "type": "string"
-            },
-            "required": false,
-            "description": "Optional field to choose offset of result set (default value is `0`)"
+            "required": true,
+            "description": "The UUID of the agent"
           }
         ],
         "responses": {
           "200": {
-            "description": "Agent profile retrieved successfully",
+            "description": "Competitions retrieved successfully",
             "content": {
               "application/json": {
                 "schema": {
@@ -2744,21 +2848,7 @@
                       "type": "boolean",
                       "example": true
                     },
-                    "metadata": {
-                      "type": "object",
-                      "properties": {
-                        "total": {
-                          "type": "integer"
-                        },
-                        "limit": {
-                          "type": "integer"
-                        },
-                        "offset": {
-                          "type": "integer"
-                        }
-                      }
-                    },
-                    "agents": {
+                    "competitions": {
                       "type": "array",
                       "items": {
                         "type": "object",
@@ -2767,41 +2857,29 @@
                             "type": "string",
                             "format": "uuid"
                           },
-                          "ownerId": {
-                            "type": "string",
-                            "format": "uuid"
-                          },
-                          "walletAddress": {
-                            "type": "string",
-                            "example": "0x1234567890abcdef1234567890abcdef12345678"
-                          },
                           "name": {
                             "type": "string",
-                            "example": "Trading Bot Alpha"
-                          },
-                          "description": {
-                            "type": "string",
-                            "example": "AI agent focusing on DeFi yield farming"
-                          },
-                          "imageUrl": {
-                            "type": "string",
-                            "example": "https://example.com/bot-avatar.jpg"
+                            "example": "DeFi Trading Championship"
                           },
                           "status": {
                             "type": "string",
                             "enum": [
                               "active",
-                              "suspended",
-                              "deleted"
+                              "completed",
+                              "upcoming"
                             ]
                           },
-                          "createdAt": {
+                          "startDate": {
                             "type": "string",
                             "format": "date-time"
                           },
-                          "updatedAt": {
+                          "endDate": {
                             "type": "string",
                             "format": "date-time"
+                          },
+                          "description": {
+                            "type": "string",
+                            "example": "A competition focused on yield farming strategies."
                           }
                         }
                       }
@@ -2811,11 +2889,11 @@
               }
             }
           },
-          "401": {
-            "description": "Not authenticated"
+          "400": {
+            "description": "Invalid agent ID or query params"
           },
           "404": {
-            "description": "Agents not found"
+            "description": "Agent or competitions not found"
           },
           "500": {
             "description": "Internal server error"
@@ -3134,6 +3212,50 @@
                             "type": "string",
                             "format": "date-time",
                             "description": "When the competition was last updated"
+                          },
+                          "votingEnabled": {
+                            "type": "boolean",
+                            "description": "Whether voting is enabled for this competition (only present for authenticated users)"
+                          },
+                          "totalVotes": {
+                            "type": "integer",
+                            "description": "Total number of votes cast in this competition (only present for authenticated users)"
+                          },
+                          "userVotingInfo": {
+                            "type": "object",
+                            "nullable": true,
+                            "description": "User's voting state for this competition (only present for authenticated users)",
+                            "properties": {
+                              "canVote": {
+                                "type": "boolean",
+                                "description": "Whether the user can vote in this competition"
+                              },
+                              "reason": {
+                                "type": "string",
+                                "nullable": true,
+                                "description": "Reason why voting is not allowed (if canVote is false)"
+                              },
+                              "info": {
+                                "type": "object",
+                                "properties": {
+                                  "hasVoted": {
+                                    "type": "boolean",
+                                    "description": "Whether the user has already voted in this competition"
+                                  },
+                                  "agentId": {
+                                    "type": "string",
+                                    "nullable": true,
+                                    "description": "ID of the agent the user voted for (if hasVoted is true)"
+                                  },
+                                  "votedAt": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "nullable": true,
+                                    "description": "When the user cast their vote (if hasVoted is true)"
+                                  }
+                                }
+                              }
+                            }
                           }
                         }
                       }
@@ -3468,6 +3590,50 @@
                           "type": "string",
                           "format": "date-time",
                           "description": "When the competition was last updated"
+                        },
+                        "totalVotes": {
+                          "type": "integer",
+                          "description": "Total number of votes cast in this competition"
+                        },
+                        "votingEnabled": {
+                          "type": "boolean",
+                          "description": "Whether voting is enabled for this competition (only present for authenticated users)"
+                        },
+                        "userVotingInfo": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "User's voting state for this competition (only present for authenticated users)",
+                          "properties": {
+                            "canVote": {
+                              "type": "boolean",
+                              "description": "Whether the user can vote in this competition"
+                            },
+                            "reason": {
+                              "type": "string",
+                              "nullable": true,
+                              "description": "Reason why voting is not allowed (if canVote is false)"
+                            },
+                            "info": {
+                              "type": "object",
+                              "properties": {
+                                "hasVoted": {
+                                  "type": "boolean",
+                                  "description": "Whether the user has already voted in this competition"
+                                },
+                                "agentId": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "ID of the agent the user voted for (if hasVoted is true)"
+                                },
+                                "votedAt": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "nullable": true,
+                                  "description": "When the user cast their vote (if hasVoted is true)"
+                                }
+                              }
+                            }
+                          }
                         }
                       }
                     },
@@ -3787,6 +3953,27 @@
                           "nullable": true,
                           "description": "Competition end date (null for pending/active competitions)"
                         },
+                        "stats": {
+                          "type": "object",
+                          "properties": {
+                            "totalTrades": {
+                              "type": "number",
+                              "description": "Total number of trades"
+                            },
+                            "totalAgents": {
+                              "type": "number",
+                              "description": "Total number of agents"
+                            },
+                            "totalVolume": {
+                              "type": "number",
+                              "description": "Total volume of trades in USD"
+                            },
+                            "uniqueTokens": {
+                              "type": "number",
+                              "description": "Total number of unique tokens traded"
+                            }
+                          }
+                        },
                         "createdAt": {
                           "type": "string",
                           "format": "date-time",
@@ -3796,6 +3983,50 @@
                           "type": "string",
                           "format": "date-time",
                           "description": "When the competition was last updated"
+                        },
+                        "totalVotes": {
+                          "type": "integer",
+                          "description": "Total number of votes cast in this competition"
+                        },
+                        "votingEnabled": {
+                          "type": "boolean",
+                          "description": "Whether voting is enabled for this competition (only present for authenticated users)"
+                        },
+                        "userVotingInfo": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "User's voting state for this competition (only present for authenticated users)",
+                          "properties": {
+                            "canVote": {
+                              "type": "boolean",
+                              "description": "Whether the user can vote in this competition"
+                            },
+                            "reason": {
+                              "type": "string",
+                              "nullable": true,
+                              "description": "Reason why voting is not allowed (if canVote is false)"
+                            },
+                            "info": {
+                              "type": "object",
+                              "properties": {
+                                "hasVoted": {
+                                  "type": "boolean",
+                                  "description": "Whether the user has already voted in this competition"
+                                },
+                                "agentId": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "ID of the agent the user voted for (if hasVoted is true)"
+                                },
+                                "votedAt": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "nullable": true,
+                                  "description": "When the user cast their vote (if hasVoted is true)"
+                                }
+                              }
+                            }
+                          }
                         }
                       }
                     }
@@ -3968,6 +4199,10 @@
                           "change24hPercent": {
                             "type": "number",
                             "description": "24h change as percentage"
+                          },
+                          "voteCount": {
+                            "type": "integer",
+                            "description": "Number of votes this agent has received in the competition"
                           }
                         }
                       }
@@ -4274,6 +4509,150 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/leaderboard": {
+      "get": {
+        "tags": [
+          "Leaderboard"
+        ],
+        "summary": "Get global leaderboard",
+        "description": "Get global leaderboard data across all relevant competitions",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "type",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "trading"
+              ]
+            },
+            "default": "trading"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Global leaderboard data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Whether the request was successful"
+                    },
+                    "stats": {
+                      "type": "object",
+                      "properties": {
+                        "activeAgents": {
+                          "type": "number",
+                          "description": "Total number of active agents"
+                        },
+                        "totalTrades": {
+                          "type": "number",
+                          "description": "Total number of trades"
+                        },
+                        "totalVolume": {
+                          "type": "number",
+                          "description": "Total volume of trades"
+                        },
+                        "totalCompetitions": {
+                          "type": "number",
+                          "description": "Total number of competitions"
+                        }
+                      }
+                    },
+                    "agents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Agent ID"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Agent name"
+                          },
+                          "imageUrl": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "URL of agent's image"
+                          },
+                          "metadata": {
+                            "type": "object",
+                            "description": "Agent metadata"
+                          },
+                          "rank": {
+                            "type": "number",
+                            "description": "Agent rank"
+                          },
+                          "score": {
+                            "type": "number",
+                            "description": "Agent score"
+                          },
+                          "numCompetitions": {
+                            "type": "number",
+                            "description": "Number of competitions the agent has participated in"
+                          }
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number",
+                          "description": "Total number of agents across all active and ended competitions"
+                        },
+                        "limit": {
+                          "type": "number",
+                          "description": "Number of agents per page"
+                        },
+                        "offset": {
+                          "type": "number",
+                          "description": "Number of agents to skip"
+                        },
+                        "hasMore": {
+                          "type": "boolean",
+                          "description": "Whether there are more agents to fetch"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters"
           },
           "500": {
             "description": "Server error"
@@ -4956,6 +5335,12 @@
                             "deleted"
                           ]
                         },
+                        "metadata": {
+                          "type": "object",
+                          "example": {
+                            "foo": "bar"
+                          }
+                        },
                         "createdAt": {
                           "type": "string",
                           "format": "date-time"
@@ -5014,6 +5399,13 @@
                     "type": "string",
                     "description": "User's email",
                     "example": "john@example.com"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "description": "User's metadata",
+                    "example": {
+                      "foo": "bar"
+                    }
                   }
                 },
                 "additionalProperties": false
@@ -5053,6 +5445,10 @@
                         },
                         "imageUrl": {
                           "type": "string",
+                          "nullable": true
+                        },
+                        "metadata": {
+                          "type": "object",
                           "nullable": true
                         },
                         "status": {
@@ -5606,6 +6002,360 @@
           },
           "404": {
             "description": "Agent not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/user/vote": {
+      "post": {
+        "summary": "Cast a vote for an agent in a competition",
+        "description": "Cast a vote for an agent participating in a competition. Users can only vote once per competition.",
+        "tags": [
+          "Vote"
+        ],
+        "security": [
+          {
+            "SIWESession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "agentId",
+                  "competitionId"
+                ],
+                "properties": {
+                  "agentId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "ID of the agent to vote for",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                  },
+                  "competitionId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "ID of the competition the agent is participating in",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Vote cast successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Vote cast successfully"
+                    },
+                    "vote": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "userId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "agentId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "competitionId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or voting not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "examples": {
+                        "competition_disabled": "Competition status does not allow voting",
+                        "agent_not_in_competition": "Agent does not participate in this competition",
+                        "voting_cutoff": "Voting period has ended for this competition"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "User not authenticated"
+          },
+          "404": {
+            "description": "Competition or agent not found"
+          },
+          "409": {
+            "description": "User has already voted in this competition",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "You have already voted in this competition"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/user/votes": {
+      "get": {
+        "summary": "Get user's votes",
+        "description": "Retrieve all votes cast by the authenticated user, optionally filtered by competition",
+        "tags": [
+          "Vote"
+        ],
+        "security": [
+          {
+            "SIWESession": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "competitionId",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Optional competition ID to filter votes by",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "description": "Number of votes to return per page"
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Number of votes to skip (for pagination)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Votes retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "votes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "agentId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "competitionId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer",
+                          "description": "Total number of votes"
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "description": "Number of votes per page"
+                        },
+                        "offset": {
+                          "type": "integer",
+                          "description": "Number of votes skipped"
+                        },
+                        "hasMore": {
+                          "type": "boolean",
+                          "description": "Whether there are more votes available"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query parameters"
+          },
+          "401": {
+            "description": "User not authenticated"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/user/votes/{competitionId}/state": {
+      "get": {
+        "summary": "Get voting state for a competition",
+        "description": "Get comprehensive voting state information for a user in a specific competition",
+        "tags": [
+          "Vote"
+        ],
+        "security": [
+          {
+            "SIWESession": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "competitionId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Competition ID to get voting state for",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Voting state retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "votingState": {
+                      "type": "object",
+                      "properties": {
+                        "canVote": {
+                          "type": "boolean",
+                          "description": "Whether the user can vote in this competition",
+                          "example": true
+                        },
+                        "reason": {
+                          "type": "string",
+                          "description": "Reason why voting is disabled (if canVote is false)",
+                          "example": "Competition status does not allow voting",
+                          "nullable": true
+                        },
+                        "info": {
+                          "type": "object",
+                          "properties": {
+                            "hasVoted": {
+                              "type": "boolean",
+                              "description": "Whether the user has voted in this competition",
+                              "example": false
+                            },
+                            "agentId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "description": "ID of the agent the user voted for (if hasVoted is true)",
+                              "nullable": true
+                            },
+                            "votedAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "description": "When the user voted (if hasVoted is true)",
+                              "nullable": true
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid competition ID"
+          },
+          "401": {
+            "description": "User not authenticated"
           },
           "500": {
             "description": "Internal server error"

@@ -27,6 +27,7 @@ import {
   CrossChainTradingType,
   DetailedHealthCheckResponse,
   ErrorResponse,
+  GlobalLeaderboardResponse,
   HealthCheckResponse,
   LeaderboardResponse,
   LoginResponse,
@@ -46,6 +47,9 @@ import {
   UpcomingCompetitionsResponse,
   UserProfileResponse,
   UserRegistrationResponse,
+  UserVotesResponse,
+  VoteResponse,
+  VotingStateResponse,
 } from "./api-types.js";
 import { getBaseUrl } from "./server.js";
 
@@ -173,7 +177,35 @@ export class ApiClient {
       return this.handleApiError(error, "create admin account");
     }
   }
+  async getAgentCompetitions(
+    agentId: string,
+    params?: {
+      status?: string;
+      sort?: string;
+      limit?: number;
+      offset?: number;
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ): Promise<any | ErrorResponse> {
+    try {
+      const queryParams = new URLSearchParams();
 
+      if (params?.status) queryParams.append("status", params.status);
+      if (params?.sort) queryParams.append("sort", params.sort);
+      if (params?.limit !== undefined)
+        queryParams.append("limit", params.limit.toString());
+      if (params?.offset !== undefined)
+        queryParams.append("offset", params.offset.toString());
+
+      const queryString = queryParams.toString();
+      const url = `/api/agents/${agentId}/competitions${queryString ? `?${queryString}` : ""}`;
+
+      const response = await this.axiosInstance.get(url);
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get agent competitions");
+    }
+  }
   /**
    * Login as admin (this method now expects the admin API key directly)
    */
@@ -392,6 +424,7 @@ export class ApiClient {
   async updateUserProfile(profileData: {
     name?: string;
     imageUrl?: string;
+    metadata?: Record<string, unknown>;
   }): Promise<UserProfileResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.put(
@@ -695,7 +728,9 @@ export class ApiClient {
   /**
    * Get competition leaderboard
    */
-  async getLeaderboard(): Promise<LeaderboardResponse | ErrorResponse> {
+  async getCompetitionLeaderboard(): Promise<
+    LeaderboardResponse | ErrorResponse
+  > {
     try {
       const response = await this.axiosInstance.get(
         "/api/competitions/leaderboard",
@@ -703,6 +738,28 @@ export class ApiClient {
       return response.data as LeaderboardResponse;
     } catch (error) {
       return this.handleApiError(error, "get leaderboard");
+    }
+  }
+
+  /**
+   * Get the global leaderboard (global rankings)
+   */
+  async getGlobalLeaderboard(params?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<GlobalLeaderboardResponse | ErrorResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.limit !== undefined)
+        queryParams.append("limit", params.limit.toString());
+      if (params?.offset !== undefined)
+        queryParams.append("offset", params.offset.toString());
+      const response = await this.axiosInstance.get(
+        `/api/leaderboard?${queryParams.toString()}`,
+      );
+      return response.data as GlobalLeaderboardResponse;
+    } catch (error) {
+      return this.handleApiError(error, "get leaderboards");
     }
   }
 
@@ -1220,6 +1277,66 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get user agent");
+    }
+  }
+
+  // ===========================
+  // Vote-related methods
+  // ===========================
+
+  /**
+   * Cast a vote for an agent in a competition
+   * Requires SIWE session authentication
+   */
+  async castVote(
+    agentId: string,
+    competitionId: string,
+  ): Promise<VoteResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post("/api/user/vote", {
+        agentId,
+        competitionId,
+      });
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "cast vote");
+    }
+  }
+
+  /**
+   * Get user's votes (optionally filtered by competition)
+   * Requires SIWE session authentication
+   */
+  async getUserVotes(
+    competitionId?: string,
+  ): Promise<UserVotesResponse | ErrorResponse> {
+    try {
+      const queryParams = competitionId
+        ? `?competitionId=${encodeURIComponent(competitionId)}`
+        : "";
+      const response = await this.axiosInstance.get(
+        `/api/user/votes${queryParams}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get user votes");
+    }
+  }
+
+  /**
+   * Get voting state for a user in a specific competition
+   * Requires SIWE session authentication
+   */
+  async getVotingState(
+    competitionId: string,
+  ): Promise<VotingStateResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/user/votes/${encodeURIComponent(competitionId)}/state`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get voting state");
     }
   }
 }
