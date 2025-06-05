@@ -400,6 +400,22 @@ export interface UpcomingCompetitionsResponse extends ApiResponse {
   };
 }
 
+// User competitions response
+export interface UserCompetitionsResponse extends ApiResponse {
+  success: true;
+  competitions: CompetitionWithAgents[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+}
+
+export interface CompetitionWithAgents extends Competition {
+  agents: (Agent & { rank: number })[];
+}
+
 // Competition rules response
 export interface CompetitionRulesResponse extends ApiResponse {
   competition: Competition;

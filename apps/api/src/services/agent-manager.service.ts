@@ -20,19 +20,25 @@ import {
   findByOwnerId,
   findByWallet,
   findInactiveAgents,
+  findUserAgentCompetitions,
   reactivateAgent,
   searchAgents,
   update,
 } from "@/database/repositories/agent-repository.js";
+import { getLatestPortfolioSnapshots } from "@/database/repositories/competition-repository.js";
 import { findByWalletAddress as findUserByWalletAddress } from "@/database/repositories/user-repository.js";
 import { InsertAgent, SelectAgent } from "@/database/schema/core/types.js";
+import { ApiError } from "@/middleware/errorHandler.js";
 import {
   AgentCompetitionsParams,
   AgentMetadata,
+  AgentPublic,
+  AgentPublicSchema,
   AgentSearchParams,
   ApiAuth,
   CompetitionAgentsParams,
   PagingParams,
+  PagingParamsSchema,
 } from "@/types/index.js";
 
 /**
@@ -809,6 +815,100 @@ export class AgentManager {
   }
 
   /**
+   * Get competitions for all agents owned by a user
+   * @param userId User ID
+   * @param params Agent competitions parameters
+   * @returns Object containing competitions array and total count
+   */
+  async getCompetitionsForUserAgents(
+    userId: string,
+    params: AgentCompetitionsParams,
+  ) {
+    try {
+      console.log(
+        `[AgentManager] Retrieving competitions for user ${userId} agents with params:`,
+        params,
+      );
+
+      const {
+        data: pagingParams,
+        success,
+        error,
+      } = PagingParamsSchema.safeParse(params);
+      if (!success) {
+        throw new ApiError(500, `cannot parse paging: ${error}`);
+      }
+      // Get all agents owned by this user
+      const userAgents = await this.getAgentsByOwner(userId, pagingParams);
+      const agentIds = userAgents.map((agent) => agent.id);
+
+      if (agentIds.length === 0) {
+        console.log(`[AgentManager] User ${userId} has no agents`);
+        return { competitions: [], total: 0 };
+      }
+
+      // Get competitions for all user's agents
+      const results = await findUserAgentCompetitions(agentIds, params);
+
+      // Group by competition to avoid duplicates and format the
+      // data to match what's expected by the client
+      const agentCompetitions = new Map();
+      results.competitions.forEach((data) => {
+        if (!data.competitions) return;
+        const comp =
+          agentCompetitions.get(data.competitions.id) || data.competitions;
+        const agent = data.agents ? this.sanitizeAgent(data.agents) : undefined;
+
+        if (!Array.isArray(comp.agents)) comp.agents = [];
+
+        if (
+          typeof agent?.id === "string" &&
+          !comp.agents.find((a: AgentPublic) => a.id === agent?.id)
+        ) {
+          comp.agents.push(agent);
+        }
+
+        agentCompetitions.set(data.competitions.id, comp);
+      });
+
+      // TODO: since rankings are not really done, need to make a bunch of db calls and get rankings
+      //  for every competition in this result set and make sure to append the agent's rank to the
+      //  response data.
+      await Promise.all(
+        Array.from(agentCompetitions.keys()).map(async (compId: string) => {
+          const agentComp = agentCompetitions.get(compId);
+          const snapshots = await getLatestPortfolioSnapshots(compId);
+          const rankings = snapshots.sort(
+            (a, b) => b.totalValue - a.totalValue,
+          );
+
+          for (const agent of agentComp.agents) {
+            // rank == 0 means no snapshots/rankings for competition yet
+            const rank =
+              rankings.findIndex((snap) => snap.agentId === agent.id) + 1;
+            // agent is a reference so we can set here
+            agent.rank = rank;
+          }
+        }),
+      );
+
+      console.log(
+        `[AgentManager] Found ${results.total} competitions containing agents owned by user ${userId}`,
+      );
+      return {
+        ...results,
+        competitions: Array.from(agentCompetitions.values()),
+      };
+    } catch (error) {
+      console.error(
+        `[AgentManager] Error retrieving competitions for user ${userId} agents:`,
+        error,
+      );
+      return { competitions: [], total: 0 };
+    }
+  }
+
+  /**
    * Get agents with paging and filtering
    */
   async getAgents({
@@ -850,19 +950,7 @@ export class AgentManager {
    * @returns The sanitized agent object
    */
   sanitizeAgent(agent: SelectAgent) {
-    return {
-      id: agent.id,
-      ownerId: agent.ownerId,
-      name: agent.name,
-      description: agent.description,
-      imageUrl: agent.imageUrl,
-      metadata: agent.metadata,
-      status: agent.status,
-      walletAddress: agent.walletAddress,
-      createdAt: agent.createdAt,
-      updatedAt: agent.updatedAt,
-      // Explicitly exclude apiKey and email for security
-    };
+    return AgentPublicSchema.parse(agent);
   }
 
   /**

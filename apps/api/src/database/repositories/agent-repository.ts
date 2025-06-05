@@ -6,6 +6,7 @@ import {
   count as drizzleCount,
   eq,
   ilike,
+  inArray,
 } from "drizzle-orm";
 
 import { db } from "@/database/db.js";
@@ -166,6 +167,78 @@ export async function findAgentCompetitions(
     };
   } catch (error) {
     console.error("[AgentRepository] Error in findAgentCompetitions:", error);
+    throw error;
+  }
+}
+
+/**
+ * Find competitions for multiple agents (used for user's agent competitions)
+ * @param agentIds Array of agent IDs
+ * @param params Agent competitions parameters
+ */
+export async function findUserAgentCompetitions(
+  agentIds: string[],
+  params: AgentCompetitionsParams,
+) {
+  try {
+    if (agentIds.length === 0) {
+      return {
+        competitions: [],
+        total: 0,
+      };
+    }
+
+    const { status, claimed } = params;
+
+    // Build where conditions
+    const whereConditions = [inArray(competitionAgents.agentId, agentIds)];
+
+    if (status) {
+      whereConditions.push(eq(competitions.status, status));
+    }
+
+    if (claimed) {
+      console.log(
+        "[AgentRepository] attempting to filter by claimed rewards, but NOT IMPLEMENTED",
+      );
+    }
+
+    let query = db
+      .select()
+      .from(competitionAgents)
+      .leftJoin(agents, eq(competitionAgents.agentId, agents.id))
+      .leftJoin(
+        competitions,
+        eq(competitionAgents.competitionId, competitions.id),
+      )
+      .where(and(...whereConditions))
+      .$dynamic();
+
+    if (params.sort) {
+      query = getSort(query, params.sort, agentCompetitionsOrderByFields);
+    }
+
+    query.limit(params.limit).offset(params.offset);
+
+    const results = await query;
+    const total = await db
+      .select({ count: drizzleCount() })
+      .from(competitionAgents)
+      .leftJoin(
+        competitions,
+        eq(competitionAgents.competitionId, competitions.id),
+      )
+      .where(and(...whereConditions));
+
+    return {
+      competitions: results,
+      total: total[0]?.count || 0,
+    };
+  } catch (error) {
+    console.error(
+      "[AgentRepository] Error in findUserAgentCompetitions:",
+      error,
+    );
     throw error;
   }
 }

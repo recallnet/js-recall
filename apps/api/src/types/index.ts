@@ -190,13 +190,14 @@ export interface AdminMetadata {
 /**
  * Agent's metadata
  */
-export interface AgentMetadata {
-  stats?: Record<string, unknown>;
-  skills?: string[];
-  trophies?: string[];
-  hasUnclaimedRewards?: boolean;
-  [key: string]: unknown;
-}
+export const AgentMetadataSchema = z.looseObject({
+  stats: z.record(z.string(), z.unknown()).optional(),
+  skills: z.array(z.string()).optional(),
+  trophies: z.array(z.string()).optional(),
+  hasUnclaimedRewards: z.boolean().optional(),
+});
+
+export type AgentMetadata = z.infer<typeof AgentMetadataSchema>;
 
 /**
  * User search parameters interface
@@ -238,24 +239,6 @@ export interface User {
   email?: string;
   imageUrl?: string;
   metadata?: UserMetadata;
-  status: ActorStatus;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-/**
- * Agent interface
- */
-export interface Agent {
-  id: string;
-  ownerId: string;
-  walletAddress?: string;
-  name: string;
-  email?: string;
-  description?: string;
-  imageUrl?: string;
-  apiKey: string;
-  metadata?: AgentMetadata;
   status: ActorStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -441,6 +424,30 @@ export const ActorStatusSchema = z.enum(ACTOR_STATUS_VALUES);
  * Status of a user, agent, or admin.
  */
 export type ActorStatus = z.infer<typeof ActorStatusSchema>;
+/**
+ * Agent information Object
+ */
+export const AgentSchema = z.object({
+  id: z.string(),
+  ownerId: z.string(),
+  name: z.string(),
+  walletAddress: z.nullish(z.string()),
+  email: z.nullish(z.email()),
+  description: z.nullish(z.string()),
+  imageUrl: z.nullish(z.url()),
+  apiKey: z.string(),
+  metadata: z.nullish(AgentMetadataSchema),
+  status: ActorStatusSchema,
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+export type Agent = z.infer<typeof AgentSchema>;
+
+/**
+ * Pulic Agent information Object, omits apiKey
+ */
+export const AgentPublicSchema = AgentSchema.omit({ apiKey: true });
+export type AgentPublic = z.infer<typeof AgentPublicSchema>;
 
 /**
  * Competition status values for zod or database enum.
