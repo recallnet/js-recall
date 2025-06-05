@@ -385,6 +385,7 @@ export function makeUserController(services: ServiceRegistry) {
             limit: params.limit,
             offset: params.offset,
             total: results.total,
+            hasMore: params.limit + params.offset < results.total,
           },
         });
       } catch (error) {

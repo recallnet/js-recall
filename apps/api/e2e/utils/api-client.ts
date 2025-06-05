@@ -45,6 +45,7 @@ import {
   TradeHistoryResponse,
   TradeResponse,
   UpcomingCompetitionsResponse,
+  UserCompetitionsResponse,
   UserProfileResponse,
   UserRegistrationResponse,
   UserVotesResponse,
@@ -1350,7 +1351,7 @@ export class ApiClient {
     limit?: number;
     offset?: number;
     sort?: string;
-  }): Promise<any | ErrorResponse> {
+  }): Promise<UserCompetitionsResponse | ErrorResponse> {
     try {
       const queryParams = new URLSearchParams();
       if (params?.status) queryParams.append("status", params.status);
