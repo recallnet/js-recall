@@ -45,7 +45,9 @@ const PORT = config.server.port;
 let databaseInitialized = false;
 
 // Set up API prefix configuration
-const apiBasePath = `/${config.server.apiPrefix}`;
+const apiBasePath = config.server.apiPrefix
+  ? `/${config.server.apiPrefix}`
+  : "";
 
 // Only run migrations in development, not production
 if (process.env.NODE_ENV !== "production") {
