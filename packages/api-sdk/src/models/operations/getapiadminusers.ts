@@ -7,11 +7,6 @@ import { safeParse } from "../../lib/schemas.js";
 import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 
-/**
- * User metadata
- */
-export type GetApiAdminUsersMetadata = {};
-
 export type GetApiAdminUsersUser = {
   /**
    * User ID
@@ -38,10 +33,6 @@ export type GetApiAdminUsersUser = {
    */
   imageUrl?: string | null | undefined;
   /**
-   * User metadata
-   */
-  metadata?: GetApiAdminUsersMetadata | null | undefined;
-  /**
    * Account creation timestamp
    */
   createdAt?: Date | undefined;
@@ -63,54 +54,6 @@ export type GetApiAdminUsersResponse = {
 };
 
 /** @internal */
-export const GetApiAdminUsersMetadata$inboundSchema: z.ZodType<
-  GetApiAdminUsersMetadata,
-  z.ZodTypeDef,
-  unknown
-> = z.object({});
-
-/** @internal */
-export type GetApiAdminUsersMetadata$Outbound = {};
-
-/** @internal */
-export const GetApiAdminUsersMetadata$outboundSchema: z.ZodType<
-  GetApiAdminUsersMetadata$Outbound,
-  z.ZodTypeDef,
-  GetApiAdminUsersMetadata
-> = z.object({});
-
-/**
- * @internal
- * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
- */
-export namespace GetApiAdminUsersMetadata$ {
-  /** @deprecated use `GetApiAdminUsersMetadata$inboundSchema` instead. */
-  export const inboundSchema = GetApiAdminUsersMetadata$inboundSchema;
-  /** @deprecated use `GetApiAdminUsersMetadata$outboundSchema` instead. */
-  export const outboundSchema = GetApiAdminUsersMetadata$outboundSchema;
-  /** @deprecated use `GetApiAdminUsersMetadata$Outbound` instead. */
-  export type Outbound = GetApiAdminUsersMetadata$Outbound;
-}
-
-export function getApiAdminUsersMetadataToJSON(
-  getApiAdminUsersMetadata: GetApiAdminUsersMetadata,
-): string {
-  return JSON.stringify(
-    GetApiAdminUsersMetadata$outboundSchema.parse(getApiAdminUsersMetadata),
-  );
-}
-
-export function getApiAdminUsersMetadataFromJSON(
-  jsonString: string,
-): SafeParseResult<GetApiAdminUsersMetadata, SDKValidationError> {
-  return safeParse(
-    jsonString,
-    (x) => GetApiAdminUsersMetadata$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'GetApiAdminUsersMetadata' from JSON`,
-  );
-}
-
-/** @internal */
 export const GetApiAdminUsersUser$inboundSchema: z.ZodType<
   GetApiAdminUsersUser,
   z.ZodTypeDef,
@@ -122,9 +65,6 @@ export const GetApiAdminUsersUser$inboundSchema: z.ZodType<
   email: z.nullable(z.string()).optional(),
   status: z.string().optional(),
   imageUrl: z.nullable(z.string()).optional(),
-  metadata: z
-    .nullable(z.lazy(() => GetApiAdminUsersMetadata$inboundSchema))
-    .optional(),
   createdAt: z
     .string()
     .datetime({ offset: true })
@@ -145,7 +85,6 @@ export type GetApiAdminUsersUser$Outbound = {
   email?: string | null | undefined;
   status?: string | undefined;
   imageUrl?: string | null | undefined;
-  metadata?: GetApiAdminUsersMetadata$Outbound | null | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
 };
@@ -162,9 +101,6 @@ export const GetApiAdminUsersUser$outboundSchema: z.ZodType<
   email: z.nullable(z.string()).optional(),
   status: z.string().optional(),
   imageUrl: z.nullable(z.string()).optional(),
-  metadata: z
-    .nullable(z.lazy(() => GetApiAdminUsersMetadata$outboundSchema))
-    .optional(),
   createdAt: z
     .date()
     .transform((v) => v.toISOString())

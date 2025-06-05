@@ -27,7 +27,7 @@ export type GetApiAgentsRequest = {
   offset?: string | undefined;
 };
 
-export type GetApiAgentsPagination = {
+export type GetApiAgentsMetadata = {
   total?: number | undefined;
   limit?: number | undefined;
   offset?: number | undefined;
@@ -57,7 +57,7 @@ export type GetApiAgentsAgent = {
  */
 export type GetApiAgentsResponse = {
   success?: boolean | undefined;
-  pagination?: GetApiAgentsPagination | undefined;
+  metadata?: GetApiAgentsMetadata | undefined;
   agents?: Array<GetApiAgentsAgent> | undefined;
 };
 
@@ -125,8 +125,8 @@ export function getApiAgentsRequestFromJSON(
 }
 
 /** @internal */
-export const GetApiAgentsPagination$inboundSchema: z.ZodType<
-  GetApiAgentsPagination,
+export const GetApiAgentsMetadata$inboundSchema: z.ZodType<
+  GetApiAgentsMetadata,
   z.ZodTypeDef,
   unknown
 > = z.object({
@@ -136,17 +136,17 @@ export const GetApiAgentsPagination$inboundSchema: z.ZodType<
 });
 
 /** @internal */
-export type GetApiAgentsPagination$Outbound = {
+export type GetApiAgentsMetadata$Outbound = {
   total?: number | undefined;
   limit?: number | undefined;
   offset?: number | undefined;
 };
 
 /** @internal */
-export const GetApiAgentsPagination$outboundSchema: z.ZodType<
-  GetApiAgentsPagination$Outbound,
+export const GetApiAgentsMetadata$outboundSchema: z.ZodType<
+  GetApiAgentsMetadata$Outbound,
   z.ZodTypeDef,
-  GetApiAgentsPagination
+  GetApiAgentsMetadata
 > = z.object({
   total: z.number().int().optional(),
   limit: z.number().int().optional(),
@@ -157,30 +157,30 @@ export const GetApiAgentsPagination$outboundSchema: z.ZodType<
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace GetApiAgentsPagination$ {
-  /** @deprecated use `GetApiAgentsPagination$inboundSchema` instead. */
-  export const inboundSchema = GetApiAgentsPagination$inboundSchema;
-  /** @deprecated use `GetApiAgentsPagination$outboundSchema` instead. */
-  export const outboundSchema = GetApiAgentsPagination$outboundSchema;
-  /** @deprecated use `GetApiAgentsPagination$Outbound` instead. */
-  export type Outbound = GetApiAgentsPagination$Outbound;
+export namespace GetApiAgentsMetadata$ {
+  /** @deprecated use `GetApiAgentsMetadata$inboundSchema` instead. */
+  export const inboundSchema = GetApiAgentsMetadata$inboundSchema;
+  /** @deprecated use `GetApiAgentsMetadata$outboundSchema` instead. */
+  export const outboundSchema = GetApiAgentsMetadata$outboundSchema;
+  /** @deprecated use `GetApiAgentsMetadata$Outbound` instead. */
+  export type Outbound = GetApiAgentsMetadata$Outbound;
 }
 
-export function getApiAgentsPaginationToJSON(
-  getApiAgentsPagination: GetApiAgentsPagination,
+export function getApiAgentsMetadataToJSON(
+  getApiAgentsMetadata: GetApiAgentsMetadata,
 ): string {
   return JSON.stringify(
-    GetApiAgentsPagination$outboundSchema.parse(getApiAgentsPagination),
+    GetApiAgentsMetadata$outboundSchema.parse(getApiAgentsMetadata),
   );
 }
 
-export function getApiAgentsPaginationFromJSON(
+export function getApiAgentsMetadataFromJSON(
   jsonString: string,
-): SafeParseResult<GetApiAgentsPagination, SDKValidationError> {
+): SafeParseResult<GetApiAgentsMetadata, SDKValidationError> {
   return safeParse(
     jsonString,
-    (x) => GetApiAgentsPagination$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'GetApiAgentsPagination' from JSON`,
+    (x) => GetApiAgentsMetadata$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetApiAgentsMetadata' from JSON`,
   );
 }
 
@@ -304,14 +304,14 @@ export const GetApiAgentsResponse$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   success: z.boolean().optional(),
-  pagination: z.lazy(() => GetApiAgentsPagination$inboundSchema).optional(),
+  metadata: z.lazy(() => GetApiAgentsMetadata$inboundSchema).optional(),
   agents: z.array(z.lazy(() => GetApiAgentsAgent$inboundSchema)).optional(),
 });
 
 /** @internal */
 export type GetApiAgentsResponse$Outbound = {
   success?: boolean | undefined;
-  pagination?: GetApiAgentsPagination$Outbound | undefined;
+  metadata?: GetApiAgentsMetadata$Outbound | undefined;
   agents?: Array<GetApiAgentsAgent$Outbound> | undefined;
 };
 
@@ -322,7 +322,7 @@ export const GetApiAgentsResponse$outboundSchema: z.ZodType<
   GetApiAgentsResponse
 > = z.object({
   success: z.boolean().optional(),
-  pagination: z.lazy(() => GetApiAgentsPagination$outboundSchema).optional(),
+  metadata: z.lazy(() => GetApiAgentsMetadata$outboundSchema).optional(),
   agents: z.array(z.lazy(() => GetApiAgentsAgent$outboundSchema)).optional(),
 });
 

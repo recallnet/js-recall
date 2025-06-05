@@ -23,8 +23,6 @@ export type GetApiUserProfileStatus = ClosedEnum<
   typeof GetApiUserProfileStatus
 >;
 
-export type GetApiUserProfileMetadata = {};
-
 export type GetApiUserProfileUser = {
   id?: string | undefined;
   walletAddress?: string | undefined;
@@ -32,7 +30,6 @@ export type GetApiUserProfileUser = {
   email?: string | undefined;
   imageUrl?: string | undefined;
   status?: GetApiUserProfileStatus | undefined;
-  metadata?: GetApiUserProfileMetadata | undefined;
   createdAt?: Date | undefined;
   updatedAt?: Date | undefined;
 };
@@ -133,54 +130,6 @@ export namespace GetApiUserProfileStatus$ {
 }
 
 /** @internal */
-export const GetApiUserProfileMetadata$inboundSchema: z.ZodType<
-  GetApiUserProfileMetadata,
-  z.ZodTypeDef,
-  unknown
-> = z.object({});
-
-/** @internal */
-export type GetApiUserProfileMetadata$Outbound = {};
-
-/** @internal */
-export const GetApiUserProfileMetadata$outboundSchema: z.ZodType<
-  GetApiUserProfileMetadata$Outbound,
-  z.ZodTypeDef,
-  GetApiUserProfileMetadata
-> = z.object({});
-
-/**
- * @internal
- * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
- */
-export namespace GetApiUserProfileMetadata$ {
-  /** @deprecated use `GetApiUserProfileMetadata$inboundSchema` instead. */
-  export const inboundSchema = GetApiUserProfileMetadata$inboundSchema;
-  /** @deprecated use `GetApiUserProfileMetadata$outboundSchema` instead. */
-  export const outboundSchema = GetApiUserProfileMetadata$outboundSchema;
-  /** @deprecated use `GetApiUserProfileMetadata$Outbound` instead. */
-  export type Outbound = GetApiUserProfileMetadata$Outbound;
-}
-
-export function getApiUserProfileMetadataToJSON(
-  getApiUserProfileMetadata: GetApiUserProfileMetadata,
-): string {
-  return JSON.stringify(
-    GetApiUserProfileMetadata$outboundSchema.parse(getApiUserProfileMetadata),
-  );
-}
-
-export function getApiUserProfileMetadataFromJSON(
-  jsonString: string,
-): SafeParseResult<GetApiUserProfileMetadata, SDKValidationError> {
-  return safeParse(
-    jsonString,
-    (x) => GetApiUserProfileMetadata$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'GetApiUserProfileMetadata' from JSON`,
-  );
-}
-
-/** @internal */
 export const GetApiUserProfileUser$inboundSchema: z.ZodType<
   GetApiUserProfileUser,
   z.ZodTypeDef,
@@ -192,7 +141,6 @@ export const GetApiUserProfileUser$inboundSchema: z.ZodType<
   email: z.string().optional(),
   imageUrl: z.string().optional(),
   status: GetApiUserProfileStatus$inboundSchema.optional(),
-  metadata: z.lazy(() => GetApiUserProfileMetadata$inboundSchema).optional(),
   createdAt: z
     .string()
     .datetime({ offset: true })
@@ -213,7 +161,6 @@ export type GetApiUserProfileUser$Outbound = {
   email?: string | undefined;
   imageUrl?: string | undefined;
   status?: string | undefined;
-  metadata?: GetApiUserProfileMetadata$Outbound | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
 };
@@ -230,7 +177,6 @@ export const GetApiUserProfileUser$outboundSchema: z.ZodType<
   email: z.string().optional(),
   imageUrl: z.string().optional(),
   status: GetApiUserProfileStatus$outboundSchema.optional(),
-  metadata: z.lazy(() => GetApiUserProfileMetadata$outboundSchema).optional(),
   createdAt: z
     .date()
     .transform((v) => v.toISOString())

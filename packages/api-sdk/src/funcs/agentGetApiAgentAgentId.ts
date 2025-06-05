@@ -28,13 +28,13 @@ import { Result } from "../types/fp.js";
  * @remarks
  * Retrieve the information for the given agent ID
  */
-export function agentsGetApiAgentsAgentId(
+export function agentGetApiAgentAgentId(
   client: ApiSDKCore,
-  request: operations.GetApiAgentsAgentIdRequest,
+  request: operations.GetApiAgentAgentIdRequest,
   options?: RequestOptions,
 ): APIPromise<
   Result<
-    operations.GetApiAgentsAgentIdResponse,
+    operations.GetApiAgentAgentIdResponse,
     | APIError
     | SDKValidationError
     | UnexpectedClientError
@@ -49,12 +49,12 @@ export function agentsGetApiAgentsAgentId(
 
 async function $do(
   client: ApiSDKCore,
-  request: operations.GetApiAgentsAgentIdRequest,
+  request: operations.GetApiAgentAgentIdRequest,
   options?: RequestOptions,
 ): Promise<
   [
     Result<
-      operations.GetApiAgentsAgentIdResponse,
+      operations.GetApiAgentAgentIdResponse,
       | APIError
       | SDKValidationError
       | UnexpectedClientError
@@ -68,8 +68,7 @@ async function $do(
 > {
   const parsed = safeParse(
     request,
-    (value) =>
-      operations.GetApiAgentsAgentIdRequest$outboundSchema.parse(value),
+    (value) => operations.GetApiAgentAgentIdRequest$outboundSchema.parse(value),
     "Input validation failed",
   );
   if (!parsed.ok) {
@@ -85,7 +84,7 @@ async function $do(
     }),
   };
 
-  const path = pathToFunc("/api/agents/{agentId}")(pathParams);
+  const path = pathToFunc("/api/agent/{agentId}")(pathParams);
 
   const headers = new Headers(
     compactMap({
@@ -100,7 +99,7 @@ async function $do(
   const context = {
     options: client._options,
     baseURL: options?.serverURL ?? client._baseURL ?? "",
-    operationID: "get_/api/agents/{agentId}",
+    operationID: "get_/api/agent/{agentId}",
     oAuth2Scopes: [],
 
     resolvedSecurity: requestSecurity,
@@ -132,7 +131,7 @@ async function $do(
 
   const doResult = await client._do(req, {
     context,
-    errorCodes: ["400", "404", "4XX", "500", "5XX"],
+    errorCodes: ["401", "404", "4XX", "500", "5XX"],
     retryConfig: context.retryConfig,
     retryCodes: context.retryCodes,
   });
@@ -142,7 +141,7 @@ async function $do(
   const response = doResult.value;
 
   const [result] = await M.match<
-    operations.GetApiAgentsAgentIdResponse,
+    operations.GetApiAgentAgentIdResponse,
     | APIError
     | SDKValidationError
     | UnexpectedClientError
@@ -151,8 +150,8 @@ async function $do(
     | RequestTimeoutError
     | ConnectionError
   >(
-    M.json(200, operations.GetApiAgentsAgentIdResponse$inboundSchema),
-    M.fail([400, 404, "4XX"]),
+    M.json(200, operations.GetApiAgentAgentIdResponse$inboundSchema),
+    M.fail([401, 404, "4XX"]),
     M.fail([500, "5XX"]),
   )(response);
   if (!result.ok) {

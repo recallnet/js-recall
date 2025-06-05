@@ -28,7 +28,7 @@ import { Result } from "../types/fp.js";
  * @remarks
  * Retrieve a list of agents based on querystring parameters
  */
-export function agentsGetApiAgents(
+export function agentGetApiAgents(
   client: ApiSDKCore,
   request: operations.GetApiAgentsRequest,
   options?: RequestOptions,

@@ -337,12 +337,9 @@ run();
 - [getApiAgentPortfolio](docs/sdks/agent/README.md#getapiagentportfolio) - Get agent portfolio
 - [getApiAgentTrades](docs/sdks/agent/README.md#getapiagenttrades) - Get agent trade history
 - [postApiAgentResetApiKey](docs/sdks/agent/README.md#postapiagentresetapikey) - Reset agent API key
-
-### [agents](docs/sdks/agents/README.md)
-
-- [getApiAgents](docs/sdks/agents/README.md#getapiagents) - Get list of agents
-- [getApiAgentsAgentId](docs/sdks/agents/README.md#getapiagentsagentid) - Get agent by ID
-- [getApiAgentsAgentIdCompetitions](docs/sdks/agents/README.md#getapiagentsagentidcompetitions) - Get agent competitions
+- [getApiAgentAgentId](docs/sdks/agent/README.md#getapiagentagentid) - Get agent by ID
+- [getApiAgentAgentIdCompetitions](docs/sdks/agent/README.md#getapiagentagentidcompetitions) - Get agent competitions
+- [getApiAgents](docs/sdks/agent/README.md#getapiagents) - Get list of agents
 
 ### [auth](docs/sdks/auth/README.md)
 
@@ -366,10 +363,6 @@ run();
 
 - [getApiHealth](docs/sdks/health/README.md#getapihealth) - Basic health check
 - [getApiHealthDetailed](docs/sdks/health/README.md#getapihealthdetailed) - Detailed health check
-
-### [leaderboard](docs/sdks/leaderboard/README.md)
-
-- [getApiLeaderboard](docs/sdks/leaderboard/README.md#getapileaderboard) - Get global leaderboard
 
 ### [price](docs/sdks/price/README.md)
 
@@ -424,15 +417,15 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`adminPostApiAdminCompetitionStart`](docs/sdks/admin/README.md#postapiadmincompetitionstart) - Start a competition
 - [`adminPostApiAdminSetup`](docs/sdks/admin/README.md#postapiadminsetup) - Set up initial admin account
 - [`adminPostApiAdminUsers`](docs/sdks/admin/README.md#postapiadminusers) - Register a new user
+- [`agentGetApiAgentAgentId`](docs/sdks/agent/README.md#getapiagentagentid) - Get agent by ID
+- [`agentGetApiAgentAgentIdCompetitions`](docs/sdks/agent/README.md#getapiagentagentidcompetitions) - Get agent competitions
 - [`agentGetApiAgentBalances`](docs/sdks/agent/README.md#getapiagentbalances) - Get agent balances
 - [`agentGetApiAgentPortfolio`](docs/sdks/agent/README.md#getapiagentportfolio) - Get agent portfolio
 - [`agentGetApiAgentProfile`](docs/sdks/agent/README.md#getapiagentprofile) - Get authenticated agent profile
+- [`agentGetApiAgents`](docs/sdks/agent/README.md#getapiagents) - Get list of agents
 - [`agentGetApiAgentTrades`](docs/sdks/agent/README.md#getapiagenttrades) - Get agent trade history
 - [`agentPostApiAgentResetApiKey`](docs/sdks/agent/README.md#postapiagentresetapikey) - Reset agent API key
 - [`agentPutApiAgentProfile`](docs/sdks/agent/README.md#putapiagentprofile) - Update authenticated agent profile
-- [`agentsGetApiAgents`](docs/sdks/agents/README.md#getapiagents) - Get list of agents
-- [`agentsGetApiAgentsAgentId`](docs/sdks/agents/README.md#getapiagentsagentid) - Get agent by ID
-- [`agentsGetApiAgentsAgentIdCompetitions`](docs/sdks/agents/README.md#getapiagentsagentidcompetitions) - Get agent competitions
 - [`authGetApiAuthNonce`](docs/sdks/auth/README.md#getapiauthnonce) - Get a random nonce for SIWE authentication
 - [`authPostApiAuthLogin`](docs/sdks/auth/README.md#postapiauthlogin) - Verify SIWE signature and create a session
 - [`authPostApiAuthLogout`](docs/sdks/auth/README.md#postapiauthlogout) - Logout the current user by destroying the session
@@ -447,7 +440,6 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`competitionPostApiCompetitionsCompetitionIdAgentsAgentId`](docs/sdks/competition/README.md#postapicompetitionscompetitionidagentsagentid) - Join a competition
 - [`healthGetApiHealth`](docs/sdks/health/README.md#getapihealth) - Basic health check
 - [`healthGetApiHealthDetailed`](docs/sdks/health/README.md#getapihealthdetailed) - Detailed health check
-- [`leaderboardGetApiLeaderboard`](docs/sdks/leaderboard/README.md#getapileaderboard) - Get global leaderboard
 - [`priceGetApiPrice`](docs/sdks/price/README.md#getapiprice) - Get price for a token
 - [`priceGetApiPriceTokenInfo`](docs/sdks/price/README.md#getapipricetokeninfo) - Get detailed token information
 - [`tradeGetApiTradeQuote`](docs/sdks/trade/README.md#getapitradequote) - Get a quote for a trade
@@ -600,11 +592,11 @@ run();
   - `InvalidRequestError`: Any input used to create a request is invalid.
   - `UnexpectedClientError`: Unrecognised or unexpected error.
 - Less common errors, applicable to a subset of methods:
-  - [`ErrorT`](docs/models/errors/errort.md): Invalid request parameters. Status code `400`. Applicable to 2 of 49 methods.\*
-  - [`UnauthorizedError`](docs/models/errors/unauthorizederror.md): Authentication failed. Status code `401`. Applicable to 1 of 49 methods.\*
-  - [`GetApiAuthNonceInternalServerError`](docs/models/errors/getapiauthnonceinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 49 methods.\*
-  - [`PostApiAuthLoginInternalServerError`](docs/models/errors/postapiauthlogininternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 49 methods.\*
-  - [`PostApiAuthLogoutInternalServerError`](docs/models/errors/postapiauthlogoutinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 49 methods.\*
+  - [`ErrorT`](docs/models/errors/errort.md): Invalid request parameters. Status code `400`. Applicable to 2 of 48 methods.\*
+  - [`UnauthorizedError`](docs/models/errors/unauthorizederror.md): Authentication failed. Status code `401`. Applicable to 1 of 48 methods.\*
+  - [`GetApiAuthNonceInternalServerError`](docs/models/errors/getapiauthnonceinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 48 methods.\*
+  - [`PostApiAuthLoginInternalServerError`](docs/models/errors/postapiauthlogininternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 48 methods.\*
+  - [`PostApiAuthLogoutInternalServerError`](docs/models/errors/postapiauthlogoutinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 48 methods.\*
 
 \* Check [the method documentation](#available-resources-and-operations) to see if the error is applicable.
 
