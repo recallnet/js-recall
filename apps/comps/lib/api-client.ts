@@ -190,6 +190,17 @@ export class ApiClient {
   }
 
   /**
+   * Get agent by ID owned by the authenticated user
+   * @param id - Agent ID
+   * @returns Agent details
+   */
+  async getUserAgent(id: string): Promise<{ success: boolean; agent: Agent }> {
+    return this.request<{ success: boolean; agent: Agent }>(
+      `/user/agents/${id}`,
+    );
+  }
+
+  /**
    * Get list of agents
    * @param params - Query parameters
    * @returns Agents response
@@ -200,14 +211,12 @@ export class ApiClient {
   }
 
   /**
-   * Get agent by ID
+   * Get agent by ID (unauthenticated)
    * @param id - Agent ID
    * @returns Agent details
    */
   async getAgent(id: string): Promise<{ success: boolean; agent: Agent }> {
-    return this.request<{ success: boolean; agent: Agent }>(
-      `/user/agents/${id}`,
-    );
+    return this.request<{ success: boolean; agent: Agent }>(`/agents/${id}`);
   }
 
   /**
