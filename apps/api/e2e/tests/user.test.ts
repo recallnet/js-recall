@@ -486,10 +486,6 @@ describe("User API", () => {
     const competitionsResponse =
       (await client1.getUserCompetitions()) as UserCompetitionsResponse;
 
-    console.log("\n\n\n\n\n");
-    console.log("competitionsResponse:", competitionsResponse);
-    console.log("\n\n\n\n\n");
-
     expect(competitionsResponse.success).toBe(true);
     expect(competitionsResponse.competitions).toBeDefined();
     expect(Array.isArray(competitionsResponse.competitions)).toBe(true);

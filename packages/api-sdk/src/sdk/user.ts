@@ -3,6 +3,7 @@
  */
 import { userGetApiUserAgents } from "../funcs/userGetApiUserAgents.js";
 import { userGetApiUserAgentsAgentId } from "../funcs/userGetApiUserAgentsAgentId.js";
+import { userGetApiUserCompetitions } from "../funcs/userGetApiUserCompetitions.js";
 import { userGetApiUserProfile } from "../funcs/userGetApiUserProfile.js";
 import { userPostApiUserAgents } from "../funcs/userPostApiUserAgents.js";
 import { userPutApiUserAgentsAgentIdProfile } from "../funcs/userPutApiUserAgentsAgentIdProfile.js";
@@ -95,6 +96,22 @@ export class User extends ClientSDK {
   ): Promise<operations.PutApiUserAgentsAgentIdProfileResponse> {
     return unwrapAsync(
       userPutApiUserAgentsAgentIdProfile(this, security, request, options),
+    );
+  }
+
+  /**
+   * Get competitions for user's agents
+   *
+   * @remarks
+   * Retrieve all competitions that the authenticated user's agents are participating in
+   */
+  async getApiUserCompetitions(
+    security: operations.GetApiUserCompetitionsSecurity,
+    request: operations.GetApiUserCompetitionsRequest,
+    options?: RequestOptions,
+  ): Promise<operations.GetApiUserCompetitionsResponse> {
+    return unwrapAsync(
+      userGetApiUserCompetitions(this, security, request, options),
     );
   }
 }

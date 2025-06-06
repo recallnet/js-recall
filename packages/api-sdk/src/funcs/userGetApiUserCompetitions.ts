@@ -7,7 +7,7 @@ import * as M from "../lib/matchers.js";
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
-import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
+import { resolveSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
 import { APISDKError } from "../models/errors/apisdkerror.js";
 import {
@@ -24,18 +24,19 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * Get upcoming competitions
+ * Get competitions for user's agents
  *
  * @remarks
- * Get all competitions
+ * Retrieve all competitions that the authenticated user's agents are participating in
  */
-export function competitionGetApiCompetitions(
+export function userGetApiUserCompetitions(
   client: ApiSDKCore,
-  request: operations.GetApiCompetitionsRequest,
+  security: operations.GetApiUserCompetitionsSecurity,
+  request: operations.GetApiUserCompetitionsRequest,
   options?: RequestOptions,
 ): APIPromise<
   Result<
-    operations.GetApiCompetitionsResponse,
+    operations.GetApiUserCompetitionsResponse,
     | APISDKError
     | ResponseValidationError
     | ConnectionError
@@ -46,17 +47,18 @@ export function competitionGetApiCompetitions(
     | SDKValidationError
   >
 > {
-  return new APIPromise($do(client, request, options));
+  return new APIPromise($do(client, security, request, options));
 }
 
 async function $do(
   client: ApiSDKCore,
-  request: operations.GetApiCompetitionsRequest,
+  security: operations.GetApiUserCompetitionsSecurity,
+  request: operations.GetApiUserCompetitionsRequest,
   options?: RequestOptions,
 ): Promise<
   [
     Result<
-      operations.GetApiCompetitionsResponse,
+      operations.GetApiUserCompetitionsResponse,
       | APISDKError
       | ResponseValidationError
       | ConnectionError
@@ -71,7 +73,8 @@ async function $do(
 > {
   const parsed = safeParse(
     request,
-    (value) => operations.GetApiCompetitionsRequest$outboundSchema.parse(value),
+    (value) =>
+      operations.GetApiUserCompetitionsRequest$outboundSchema.parse(value),
     "Input validation failed",
   );
   if (!parsed.ok) {
@@ -80,9 +83,10 @@ async function $do(
   const payload = parsed.value;
   const body = null;
 
-  const path = pathToFunc("/api/competitions")();
+  const path = pathToFunc("/api/user/competitions")();
 
   const query = encodeFormQuery({
+    claimed: payload.claimed,
     limit: payload.limit,
     offset: payload.offset,
     sort: payload.sort,
@@ -95,19 +99,23 @@ async function $do(
     }),
   );
 
-  const secConfig = await extractSecurity(client._options.bearerAuth);
-  const securityInput = secConfig == null ? {} : { bearerAuth: secConfig };
-  const requestSecurity = resolveGlobalSecurity(securityInput);
+  const requestSecurity = resolveSecurity([
+    {
+      fieldName: "Authorization",
+      type: "apiKey:header",
+      value: security?.siweSession,
+    },
+  ]);
 
   const context = {
     options: client._options,
     baseURL: options?.serverURL ?? client._baseURL ?? "",
-    operationID: "get_/api/competitions",
-    oAuth2Scopes: [],
+    operationID: "get_/api/user/competitions",
+    oAuth2Scopes: null,
 
     resolvedSecurity: requestSecurity,
 
-    securitySource: client._options.bearerAuth,
+    securitySource: security,
     retryConfig: options?.retries ||
       client._options.retryConfig || { strategy: "none" },
     retryCodes: options?.retryCodes || ["429", "500", "502", "503", "504"],
@@ -135,7 +143,7 @@ async function $do(
 
   const doResult = await client._do(req, {
     context,
-    errorCodes: ["401", "4XX", "500", "5XX"],
+    errorCodes: ["400", "401", "4XX", "500", "5XX"],
     retryConfig: context.retryConfig,
     retryCodes: context.retryCodes,
   });
@@ -145,7 +153,7 @@ async function $do(
   const response = doResult.value;
 
   const [result] = await M.match<
-    operations.GetApiCompetitionsResponse,
+    operations.GetApiUserCompetitionsResponse,
     | APISDKError
     | ResponseValidationError
     | ConnectionError
@@ -155,8 +163,8 @@ async function $do(
     | UnexpectedClientError
     | SDKValidationError
   >(
-    M.json(200, operations.GetApiCompetitionsResponse$inboundSchema),
-    M.fail([401, "4XX"]),
+    M.json(200, operations.GetApiUserCompetitionsResponse$inboundSchema),
+    M.fail([400, 401, "4XX"]),
     M.fail([500, "5XX"]),
   )(response, req);
   if (!result.ok) {

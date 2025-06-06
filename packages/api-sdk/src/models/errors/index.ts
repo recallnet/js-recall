@@ -9,4 +9,5 @@ export * from "./httpclienterrors.js";
 export * from "./postapiauthlogin.js";
 export * from "./postapiauthlogout.js";
 export * from "./postapiuservote.js";
+export * from "./responsevalidationerror.js";
 export * from "./sdkvalidationerror.js";
