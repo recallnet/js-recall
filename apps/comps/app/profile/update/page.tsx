@@ -11,7 +11,7 @@ import { useUpdateProfile } from "@/hooks/useProfile";
 import { useRedirectTo } from "@/hooks/useRedirectTo";
 import { UpdateProfileRequest } from "@/types/profile";
 
-export default function UpdateProfilePage() {
+function UpdateProfileView() {
   const updateProfile = useUpdateProfile();
   const { isProfileUpdated } = useUserSession();
   const { redirect } = useRedirectTo("/profile");
@@ -32,16 +32,22 @@ export default function UpdateProfilePage() {
   };
 
   return (
+    <AuthGuard skeleton={<ProfileSkeleton />}>
+      <BreadcrumbNav
+        items={[
+          { label: "HOME", href: "/competitions" },
+          { label: "USER PROFILE" },
+        ]}
+      />
+      <UpdateProfile onSubmit={handleUpdateProfile} />
+    </AuthGuard>
+  );
+}
+
+export default function UpdateProfilePage() {
+  return (
     <Suspense fallback={<ProfileSkeleton />}>
-      <AuthGuard skeleton={<ProfileSkeleton />}>
-        <BreadcrumbNav
-          items={[
-            { label: "HOME", href: "/competitions" },
-            { label: "USER PROFILE" },
-          ]}
-        />
-        <UpdateProfile onSubmit={handleUpdateProfile} />
-      </AuthGuard>
+      <UpdateProfileView />
     </Suspense>
   );
 }

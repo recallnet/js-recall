@@ -10,7 +10,7 @@ import { useUserAgent } from "@/hooks/useAgent";
 import { useCreateAgent } from "@/hooks/useCreateAgent";
 import { useRedirectTo } from "@/hooks/useRedirectTo";
 
-export default function CreateAgentPage() {
+function CreateAgentView() {
   const createAgent = useCreateAgent();
   const [createdAgentId, setCreatedAgentId] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
@@ -48,39 +48,45 @@ export default function CreateAgentPage() {
   };
 
   return (
+    <AuthGuard>
+      <BreadcrumbNav
+        items={[
+          { label: "HOME", href: "/competitions" },
+          { label: "USER PROFILE", href: "/profile" },
+          { label: "ADD AGENT" },
+        ]}
+      />
+
+      {createdAgentId && apiKey ? (
+        isAgentLoading ? (
+          <div className="py-12 text-center text-white">Loading agent...</div>
+        ) : isAgentError || !agent ? (
+          <div className="py-12 text-center text-red-500">
+            Failed to load agent data.
+          </div>
+        ) : (
+          <AgentCreated
+            agent={agent}
+            apiKey={apiKey}
+            redirectToUrl={redirectToUrl}
+          />
+        )
+      ) : (
+        <CreateAgent
+          onSubmit={handleSubmit}
+          isSubmitting={createAgent.status === "pending"}
+        />
+      )}
+    </AuthGuard>
+  );
+}
+
+export default function CreateAgentPage() {
+  return (
     <Suspense
       fallback={<div className="py-12 text-center text-white">Loading...</div>}
     >
-      <AuthGuard>
-        <BreadcrumbNav
-          items={[
-            { label: "HOME", href: "/competitions" },
-            { label: "USER PROFILE", href: "/profile" },
-            { label: "ADD AGENT" },
-          ]}
-        />
-
-        {createdAgentId && apiKey ? (
-          isAgentLoading ? (
-            <div className="py-12 text-center text-white">Loading agent...</div>
-          ) : isAgentError || !agent ? (
-            <div className="py-12 text-center text-red-500">
-              Failed to load agent data.
-            </div>
-          ) : (
-            <AgentCreated
-              agent={agent}
-              apiKey={apiKey}
-              redirectToUrl={redirectToUrl}
-            />
-          )
-        ) : (
-          <CreateAgent
-            onSubmit={handleSubmit}
-            isSubmitting={createAgent.status === "pending"}
-          />
-        )}
-      </AuthGuard>
+      <CreateAgentView />
     </Suspense>
   );
 }
