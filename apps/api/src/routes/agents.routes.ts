@@ -32,7 +32,21 @@ export function configureAgentsRoutes(
    *         schema:
    *           type: string
    *         required: false
-   *         description: Optional field to sort by (default value is `createdDate`)
+   *         description: |
+   *           Optional field(s) to sort by. Supports single or multiple fields separated by commas.
+   *           Prefix with '-' for descending order (e.g., '-name' or 'name,-createdAt').
+   *           Available fields: id, ownerId, walletAddress, name, description, imageUrl, status, createdAt, updatedAt.
+   *           When not specified, results are returned in database order.
+   *         examples:
+   *           single_asc:
+   *             value: "name"
+   *             summary: "Sort by name ascending"
+   *           single_desc:
+   *             value: "-createdAt"
+   *             summary: "Sort by creation date descending (newest first)"
+   *           multi_field:
+   *             value: "status,-createdAt"
+   *             summary: "Sort by status ascending, then by creation date descending"
    *       - in: query
    *         name: limit
    *         schema:
