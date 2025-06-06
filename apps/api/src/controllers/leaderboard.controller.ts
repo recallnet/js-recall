@@ -5,8 +5,8 @@ import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
   AgentMetadata,
-  AgentRank,
   CompetitionAgentsParamsSchema,
+  LeaderboardAgent,
   LeaderboardParamsSchema,
 } from "@/types/index.js";
 
@@ -48,7 +48,7 @@ export function makeLeaderboardController(services: ServiceRegistry) {
         }
 
         // Collect agents and their metrics across all competitions
-        const agentMetricsMap = new Map<string, AgentRank>();
+        const agentMetricsMap = new Map<string, LeaderboardAgent>();
 
         // Process each competition (need to get all agents in order to properly calculate metrics)
         await Promise.all(
@@ -82,6 +82,10 @@ export function makeLeaderboardController(services: ServiceRegistry) {
                 { score: entry.value, position: index + 1 },
               ]),
             );
+            const voteCounts =
+              await services.voteManager.getVoteCountsByCompetition(
+                competitionId,
+              );
 
             // Process each agent's metrics
             await Promise.all(
@@ -100,18 +104,26 @@ export function makeLeaderboardController(services: ServiceRegistry) {
                 const existingMetrics = agentMetricsMap.get(agent.id) || {
                   id: agent.id,
                   name: agent.name,
+                  description: agent.description || undefined,
                   imageUrl: agent.imageUrl || undefined,
                   metadata: agent.metadata as AgentMetadata,
                   rank: 0, // Will be calculated after sorting
-                  score: 0, // TODO: Use pnl percent as naive score until we have elo
+                  score: 0, // TODO: Use pnl percent as naive score until we have AgentRank
                   numCompetitions: 0,
+                  voteCount: 0, // Initialize with 0
                 };
+
+                // Get the vote count for the current agent in the current competition
+                const currentCompetitionVoteCount =
+                  voteCounts.get(agent.id) ?? 0;
 
                 // Accumulate metrics across competitions
                 agentMetricsMap.set(agent.id, {
                   ...existingMetrics,
                   score: existingMetrics.score + metrics.pnlPercent,
                   numCompetitions: existingMetrics.numCompetitions + 1,
+                  voteCount:
+                    existingMetrics.voteCount + currentCompetitionVoteCount,
                 });
               }),
             );
@@ -141,6 +153,7 @@ export function makeLeaderboardController(services: ServiceRegistry) {
             totalCompetitions: stats.totalCompetitions,
             totalTrades: stats.totalTrades,
             totalVolume: stats.totalVolume,
+            totalVotes: stats.totalVotes,
           },
           agents: paginatedRankings,
           pagination: {

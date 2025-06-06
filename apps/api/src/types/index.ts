@@ -170,12 +170,8 @@ export interface AgentRef {
  * User's metadata interface
  */
 export interface UserMetadata {
-  preferences?: {
-    notifications?: boolean;
-    theme?: "light" | "dark";
-  };
-  settings?: Record<string, unknown>;
-  custom?: Record<string, unknown>;
+  website?: string;
+  [key: string]: unknown;
 }
 
 /**
@@ -195,9 +191,10 @@ export interface AdminMetadata {
  * Agent's metadata
  */
 export interface AgentMetadata {
-  ref?: AgentRef;
-  description?: string;
-  social?: AgentSocial;
+  stats?: Record<string, unknown>;
+  skills?: string[];
+  trophies?: string[];
+  hasUnclaimedRewards?: boolean;
   [key: string]: unknown;
 }
 
@@ -656,11 +653,12 @@ export type LeaderboardParams = z.infer<typeof LeaderboardParamsSchema>;
 /**
  * Structure for an agent entry in the global leaderboard
  */
-export interface AgentRank
-  extends Pick<Agent, "id" | "name" | "imageUrl" | "metadata"> {
+export interface LeaderboardAgent
+  extends Pick<Agent, "id" | "name" | "description" | "imageUrl" | "metadata"> {
   rank: number;
   score: number;
   numCompetitions: number;
+  voteCount: number;
 }
 
 // ===========================
