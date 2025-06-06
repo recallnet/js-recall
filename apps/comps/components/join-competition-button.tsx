@@ -1,5 +1,4 @@
-import { useConnectModal } from "@rainbow-me/rainbowkit";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { type ComponentProps, useState } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
@@ -31,7 +30,6 @@ export function JoinCompetitionButton({
   const [activeModal, setActiveModal] = useState<
     "connectWallet" | "chooseAgent" | "setupAgent" | "createAccount" | null
   >(null);
-  const router = useRouter();
   const pathname = usePathname();
   const { mutate: joinCompetition, isPending: isJoining } =
     useJoinCompetition();

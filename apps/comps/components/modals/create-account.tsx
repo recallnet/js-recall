@@ -38,7 +38,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             You need an account to use this feature.
           </DialogDescription>
           <p className="mt-[-0.5rem] pl-8 text-sm text-gray-500">
-            You'll be asked to create an account.
+            You&apos;ll be asked to create an account.
           </p>
         </DialogHeader>
 

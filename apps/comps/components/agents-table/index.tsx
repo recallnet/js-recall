@@ -185,7 +185,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         size: 70,
       },
     ],
-    [],
+    [totalVotes],
   );
 
   const table = useReactTable({
