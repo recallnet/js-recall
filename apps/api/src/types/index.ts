@@ -635,6 +635,16 @@ export const UpdateAgentProfileSchema = z
   .strict();
 
 /**
+ * Get agent parameters schema
+ */
+export const GetUserAgentSchema = z
+  .object({
+    userId: z.uuid("Invalid user ID format"),
+    agentId: z.uuid("Invalid agent ID format"),
+  })
+  .strict();
+
+/**
  * UUID parameter schema
  */
 export const UuidSchema = z.uuid("Invalid uuid");
