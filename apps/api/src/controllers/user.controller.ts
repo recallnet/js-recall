@@ -10,6 +10,8 @@ import {
   UuidSchema,
 } from "@/types/index.js";
 
+import { ensurePaging, ensureUserId } from "./request-helpers.js";
+
 /**
  * User Controller
  * Handles user-specific operations with SIWE session authentication
@@ -159,14 +161,14 @@ export function makeUserController(services: ServiceRegistry) {
      */
     async getAgents(req: Request, res: Response, next: NextFunction) {
       try {
-        const { success, data, error } = UuidSchema.safeParse(req.userId);
-        if (!success) {
-          throw new ApiError(400, `Invalid request format: ${error.message}`);
-        }
-        const userId = data;
+        const userId = ensureUserId(req);
+        const paging = ensurePaging(req);
 
         // Get agents owned by this user
-        const agents = await services.agentManager.getAgentsByOwner(userId);
+        const agents = await services.agentManager.getAgentsByOwner(
+          userId,
+          paging,
+        );
 
         // Remove sensitive fields, but add back the email and deactivation since the user should see them
         const sanitizedAgents = agents.map((agent) => ({

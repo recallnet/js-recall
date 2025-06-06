@@ -9,7 +9,6 @@ import {
   AdminAgentsListResponse,
   AdminUserResponse,
   AdminUsersListResponse,
-  Agent,
   AgentApiKeyResponse,
   AgentMetadata,
   AgentProfileResponse,
@@ -27,6 +26,7 @@ import {
   CrossChainTradingType,
   DetailedHealthCheckResponse,
   ErrorResponse,
+  GetUserAgentsResponse,
   GlobalLeaderboardResponse,
   HealthCheckResponse,
   LeaderboardResponse,
@@ -1246,17 +1246,27 @@ export class ApiClient {
 
   /**
    * Get all agents owned by the authenticated user
+   * @param params Optional pagination and sorting parameters
    */
-  async getUserAgents(): Promise<
-    | {
-        success: boolean;
-        userId: string;
-        agents: Agent[];
-      }
-    | ErrorResponse
-  > {
+  async getUserAgents(params?: {
+    limit?: number;
+    offset?: number;
+    sort?: string;
+  }): Promise<GetUserAgentsResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/user/agents");
+      const queryParams = new URLSearchParams();
+      if (params?.limit !== undefined) {
+        queryParams.append("limit", params.limit.toString());
+      }
+      if (params?.offset !== undefined) {
+        queryParams.append("offset", params.offset.toString());
+      }
+      if (params?.sort) {
+        queryParams.append("sort", params.sort);
+      }
+
+      const url = `/api/user/agents${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
+      const response = await this.axiosInstance.get(url);
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get user agents");

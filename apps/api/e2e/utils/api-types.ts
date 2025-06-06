@@ -155,6 +155,13 @@ export interface AgentProfileResponse extends ApiResponse {
   };
 }
 
+// Get user agents response
+export interface GetUserAgentsResponse extends ApiResponse {
+  success: true;
+  userId: string;
+  agents: Agent[];
+}
+
 // Admin user response
 export interface AdminUserResponse extends ApiResponse {
   success: true;
