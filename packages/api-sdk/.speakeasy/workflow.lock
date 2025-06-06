@@ -1,9 +1,9 @@
-speakeasyVersion: 1.555.3
+speakeasyVersion: 1.557.0
 sources:
     Trading Simulator API:
         sourceNamespace: trading-simulator-api
-        sourceRevisionDigest: sha256:c59b115c156db06aa59cbcd09102bffc185432a0b7f303361c36bacbfe08d7d5
-        sourceBlobDigest: sha256:872356c6b06312a10a7826a0bd640b9cb2dd537bf76d7febac4e8e77871d0720
+        sourceRevisionDigest: sha256:1030ed6c7a3fcaef75ca065f4818921aebfdb54b04f412612a2de2601ca9a3ef
+        sourceBlobDigest: sha256:dc5b9e21f7d873b04d510d670237df7fa6c705c7cd1e091de13b75c4da0e14e7
         tags:
             - latest
             - 1.0.0
@@ -11,10 +11,10 @@ targets:
     api-sdk:
         source: Trading Simulator API
         sourceNamespace: trading-simulator-api
-        sourceRevisionDigest: sha256:c59b115c156db06aa59cbcd09102bffc185432a0b7f303361c36bacbfe08d7d5
-        sourceBlobDigest: sha256:872356c6b06312a10a7826a0bd640b9cb2dd537bf76d7febac4e8e77871d0720
+        sourceRevisionDigest: sha256:1030ed6c7a3fcaef75ca065f4818921aebfdb54b04f412612a2de2601ca9a3ef
+        sourceBlobDigest: sha256:dc5b9e21f7d873b04d510d670237df7fa6c705c7cd1e091de13b75c4da0e14e7
         codeSamplesNamespace: trading-simulator-api-typescript-code-samples
-        codeSamplesRevisionDigest: sha256:048fb86b0bdb3865d09d1e23c166cd7ec43e9f9929472193e85cfddf5fc9e1bc
+        codeSamplesRevisionDigest: sha256:c759bbcd0dfa6701fac734a4d82df22bcf861f78d67924e3abec493ae8a7b783
 workflow:
     workflowVersion: 1.0.0
     speakeasyVersion: latest

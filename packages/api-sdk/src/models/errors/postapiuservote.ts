@@ -3,6 +3,8 @@
  */
 import * as z from "zod";
 
+import { APISDKError } from "./apisdkerror.js";
+
 /**
  * User has already voted in this competition
  */
@@ -14,21 +16,23 @@ export type ConflictErrorData = {
 /**
  * User has already voted in this competition
  */
-export class ConflictError extends Error {
+export class ConflictError extends APISDKError {
   success?: boolean | undefined;
   error?: string | undefined;
 
   /** The original data that was passed to this error instance. */
   data$: ConflictErrorData;
 
-  constructor(err: ConflictErrorData) {
+  constructor(
+    err: ConflictErrorData,
+    httpMeta: { response: Response; request: Request; body: string },
+  ) {
     const message =
       "message" in err && typeof err.message === "string"
         ? err.message
         : `API error occurred: ${JSON.stringify(err)}`;
-    super(message);
+    super(message, httpMeta);
     this.data$ = err;
-
     if (err.success != null) this.success = err.success;
     if (err.error != null) this.error = err.error;
 
@@ -47,21 +51,23 @@ export type BadRequestErrorData = {
 /**
  * Invalid request or voting not allowed
  */
-export class BadRequestError extends Error {
+export class BadRequestError extends APISDKError {
   success?: boolean | undefined;
   error?: string | undefined;
 
   /** The original data that was passed to this error instance. */
   data$: BadRequestErrorData;
 
-  constructor(err: BadRequestErrorData) {
+  constructor(
+    err: BadRequestErrorData,
+    httpMeta: { response: Response; request: Request; body: string },
+  ) {
     const message =
       "message" in err && typeof err.message === "string"
         ? err.message
         : `API error occurred: ${JSON.stringify(err)}`;
-    super(message);
+    super(message, httpMeta);
     this.data$ = err;
-
     if (err.success != null) this.success = err.success;
     if (err.error != null) this.error = err.error;
 
@@ -78,9 +84,16 @@ export const ConflictError$inboundSchema: z.ZodType<
   .object({
     success: z.boolean().optional(),
     error: z.string().optional(),
+    request$: z.instanceof(Request),
+    response$: z.instanceof(Response),
+    body$: z.string(),
   })
   .transform((v) => {
-    return new ConflictError(v);
+    return new ConflictError(v, {
+      request: v.request$,
+      response: v.response$,
+      body: v.body$,
+    });
   });
 
 /** @internal */
@@ -126,9 +139,16 @@ export const BadRequestError$inboundSchema: z.ZodType<
   .object({
     success: z.boolean().optional(),
     error: z.string().optional(),
+    request$: z.instanceof(Request),
+    response$: z.instanceof(Response),
+    body$: z.string(),
   })
   .transform((v) => {
-    return new BadRequestError(v);
+    return new BadRequestError(v, {
+      request: v.request$,
+      response: v.response$,
+      body: v.body$,
+    });
   });
 
 /** @internal */

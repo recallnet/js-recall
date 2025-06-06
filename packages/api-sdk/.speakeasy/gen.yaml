@@ -20,7 +20,7 @@ generation:
     oAuth2ClientCredentialsEnabled: false
     oAuth2PasswordEnabled: false
 typescript:
-  version: 0.1.11
+  version: 0.1.12
   additionalDependencies:
     dependencies: {}
     devDependencies: {}
@@ -28,6 +28,7 @@ typescript:
   additionalPackageJSON:
     private: true
   author: Recall Contributors
+  baseErrorName: APISDKError
   clientServerStatusCodesAsErrors: true
   defaultErrorName: APIError
   enableCustomCodeRegions: false

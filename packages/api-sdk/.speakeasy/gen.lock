@@ -1,12 +1,12 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: 42b590e076798a3a6e2824c62bfe313d
+  docChecksum: 590954d114a9ed2569371eaae5a674dd
   docVersion: 1.0.0
-  speakeasyVersion: 1.555.3
-  generationVersion: 2.620.2
-  releaseVersion: 0.1.11
-  configChecksum: c7938ea7c8abd06bce27b7c4c552b879
+  speakeasyVersion: 1.557.0
+  generationVersion: 2.623.0
+  releaseVersion: 0.1.12
+  configChecksum: 4e71db37cd8e7e765acd877eef90edf9
 features:
   typescript:
     additionalDependencies: 0.1.0
@@ -177,6 +177,14 @@ generatedFiles:
   - docs/models/operations/getapiuseragentsresponse.md
   - docs/models/operations/getapiuseragentssecurity.md
   - docs/models/operations/getapiuseragentsstatus.md
+  - docs/models/operations/getapiusercompetitionscompetition.md
+  - docs/models/operations/getapiusercompetitionscompetitionstatus.md
+  - docs/models/operations/getapiusercompetitionscrosschaintradingtype.md
+  - docs/models/operations/getapiusercompetitionspagination.md
+  - docs/models/operations/getapiusercompetitionsqueryparamstatus.md
+  - docs/models/operations/getapiusercompetitionsrequest.md
+  - docs/models/operations/getapiusercompetitionsresponse.md
+  - docs/models/operations/getapiusercompetitionssecurity.md
   - docs/models/operations/getapiuserprofilemetadata.md
   - docs/models/operations/getapiuserprofileresponse.md
   - docs/models/operations/getapiuserprofilesecurity.md
@@ -343,6 +351,7 @@ generatedFiles:
   - src/funcs/tradePostApiTradeExecute.ts
   - src/funcs/userGetApiUserAgents.ts
   - src/funcs/userGetApiUserAgentsAgentId.ts
+  - src/funcs/userGetApiUserCompetitions.ts
   - src/funcs/userGetApiUserProfile.ts
   - src/funcs/userPostApiUserAgents.ts
   - src/funcs/userPutApiUserAgentsAgentIdProfile.ts
@@ -429,6 +438,7 @@ generatedFiles:
   - src/models/components/index.ts
   - src/models/components/security.ts
   - src/models/errors/apierror.ts
+  - src/models/errors/apisdkerror.ts
   - src/models/errors/error.ts
   - src/models/errors/getapiauthnonce.ts
   - src/models/errors/httpclienterrors.ts
@@ -436,6 +446,7 @@ generatedFiles:
   - src/models/errors/postapiauthlogin.ts
   - src/models/errors/postapiauthlogout.ts
   - src/models/errors/postapiuservote.ts
+  - src/models/errors/responsevalidationerror.ts
   - src/models/errors/sdkvalidationerror.ts
   - src/models/operations/deleteapiadminagentsagentid.ts
   - src/models/operations/deleteapicompetitionscompetitionidagentsagentid.ts
@@ -469,6 +480,7 @@ generatedFiles:
   - src/models/operations/getapitradequote.ts
   - src/models/operations/getapiuseragents.ts
   - src/models/operations/getapiuseragentsagentid.ts
+  - src/models/operations/getapiusercompetitions.ts
   - src/models/operations/getapiuserprofile.ts
   - src/models/operations/getapiuservotes.ts
   - src/models/operations/getapiuservotescompetitionidstate.ts
@@ -1021,5 +1033,14 @@ examples:
       responses:
         "200":
           application/json: {"success": true, "competitions": [{"name": "DeFi Trading Championship", "description": "A competition focused on yield farming strategies."}]}
+  get_/api/user/competitions:
+    speakeasy-default-get-/api/user/competitions:
+      parameters:
+        query:
+          limit: 10
+          offset: 0
+      responses:
+        "200":
+          application/json: {"success": true}
 examplesVersion: 1.0.2
 generatedTests: {}

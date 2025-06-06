@@ -17,6 +17,7 @@ import {
   findByOwnerId,
   findByWallet,
   findInactiveAgents,
+  findUserAgentCompetitions,
   reactivateAgent,
   searchAgents,
   update,
@@ -798,6 +799,47 @@ export class AgentManager {
     } catch (error) {
       console.error(
         `[AgentManager] Error retrieving competitions for agent ${agentId}:`,
+        error,
+      );
+      return { competitions: [], total: 0 };
+    }
+  }
+
+  /**
+   * Get competitions for all agents owned by a user
+   * @param userId User ID
+   * @param params Agent competitions parameters
+   * @returns Object containing competitions array and total count
+   */
+  async getCompetitionsForUserAgents(
+    userId: string,
+    params: AgentCompetitionsParams,
+  ) {
+    try {
+      console.log(
+        `[AgentManager] Retrieving competitions for user ${userId} agents with params:`,
+        params,
+      );
+
+      // Get all agents owned by this user
+      const userAgents = await this.getAgentsByOwner(userId);
+      const agentIds = userAgents.map((agent) => agent.id);
+
+      if (agentIds.length === 0) {
+        console.log(`[AgentManager] User ${userId} has no agents`);
+        return { competitions: [], total: 0 };
+      }
+
+      // Get competitions for all user's agents
+      const results = await findUserAgentCompetitions(agentIds, params);
+
+      console.log(
+        `[AgentManager] Found ${results.total} competitions for user ${userId} agents`,
+      );
+      return results;
+    } catch (error) {
+      console.error(
+        `[AgentManager] Error retrieving competitions for user ${userId} agents:`,
         error,
       );
       return { competitions: [], total: 0 };

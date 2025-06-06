@@ -7,6 +7,7 @@ import {
   Agent,
   AgentProfileResponse,
   ErrorResponse,
+  UserCompetitionsResponse,
   UserProfileResponse,
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
@@ -17,6 +18,7 @@ import {
   cleanupTestState,
   createSiweAuthenticatedClient,
   createTestClient,
+  generateTestCompetitions,
   registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
 
@@ -476,5 +478,32 @@ describe("User API", () => {
     expect((invalidFieldsResponse as ErrorResponse).error).toContain(
       "Invalid request format",
     );
+  });
+
+  test("SIWE user can get competitions for their agents", async () => {
+    const { client1 } = await generateTestCompetitions(adminApiKey);
+    // Test: User can get competitions for their agents
+    const competitionsResponse =
+      (await client1.getUserCompetitions()) as UserCompetitionsResponse;
+
+    expect(competitionsResponse.success).toBe(true);
+    expect(competitionsResponse.competitions).toBeDefined();
+    expect(Array.isArray(competitionsResponse.competitions)).toBe(true);
+    expect(competitionsResponse.competitions.length).toBe(10);
+    expect(competitionsResponse.pagination).toBeDefined();
+    expect(competitionsResponse.pagination.limit).toBe(10);
+    expect(competitionsResponse.pagination.offset).toBe(0);
+    expect(competitionsResponse.pagination.total).toBe(15);
+    expect(competitionsResponse.pagination.hasMore).toBe(true);
+
+    // Test with query parameters
+    const competitionsWithParamsResponse = (await client1.getUserCompetitions({
+      limit: 5,
+      offset: 0,
+      status: "active",
+    })) as UserCompetitionsResponse;
+
+    expect(competitionsWithParamsResponse.success).toBe(true);
+    expect(competitionsWithParamsResponse.pagination.limit).toBe(5);
   });
 });

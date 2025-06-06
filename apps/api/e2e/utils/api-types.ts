@@ -385,6 +385,18 @@ export interface UpcomingCompetitionsResponse extends ApiResponse {
   };
 }
 
+// User competitions response
+export interface UserCompetitionsResponse extends ApiResponse {
+  success: true;
+  competitions: Competition[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+}
+
 // Competition rules response
 export interface CompetitionRulesResponse extends ApiResponse {
   competition: Competition;

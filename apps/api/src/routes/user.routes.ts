@@ -526,6 +526,119 @@ export function configureUserRoutes(
    */
   router.put("/agents/:agentId/profile", userController.updateAgentProfile);
 
+  /**
+   * @openapi
+   * /api/user/competitions:
+   *   get:
+   *     summary: Get competitions for user's agents
+   *     description: Retrieve all competitions that the authenticated user's agents are participating in
+   *     tags:
+   *       - User
+   *     security:
+   *       - SIWESession: []
+   *     parameters:
+   *       - in: query
+   *         name: status
+   *         schema:
+   *           type: string
+   *           enum: [upcoming, active, ended]
+   *         description: Filter competitions by status
+   *       - in: query
+   *         name: claimed
+   *         schema:
+   *           type: boolean
+   *         description: Filter by claimed rewards status (not implemented)
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: integer
+   *           minimum: 1
+   *           maximum: 100
+   *           default: 10
+   *         description: Number of competitions to return
+   *       - in: query
+   *         name: offset
+   *         schema:
+   *           type: integer
+   *           minimum: 0
+   *           default: 0
+   *         description: Number of competitions to skip
+   *       - in: query
+   *         name: sort
+   *         schema:
+   *           type: string
+   *         description: Sort order (e.g., "startDate:desc", "name:asc")
+   *     responses:
+   *       200:
+   *         description: User agent competitions retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 userId:
+   *                   type: string
+   *                   format: uuid
+   *                 competitions:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         format: uuid
+   *                       name:
+   *                         type: string
+   *                       description:
+   *                         type: string
+   *                       externalUrl:
+   *                         type: string
+   *                         nullable: true
+   *                       imageUrl:
+   *                         type: string
+   *                         nullable: true
+   *                       status:
+   *                         type: string
+   *                         enum: [upcoming, active, ended]
+   *                       startDate:
+   *                         type: string
+   *                         format: date-time
+   *                       endDate:
+   *                         type: string
+   *                         format: date-time
+   *                       crossChainTradingType:
+   *                         type: string
+   *                         enum: [single_chain, cross_chain]
+   *                       createdAt:
+   *                         type: string
+   *                         format: date-time
+   *                       updatedAt:
+   *                         type: string
+   *                         format: date-time
+   *                 total:
+   *                   type: integer
+   *                   description: Total number of competitions
+   *                 pagination:
+   *                   type: object
+   *                   properties:
+   *                     limit:
+   *                       type: integer
+   *                     offset:
+   *                       type: integer
+   *                     total:
+   *                       type: integer
+   *       400:
+   *         description: Invalid query parameters
+   *       401:
+   *         description: User not authenticated
+   *       500:
+   *         description: Internal server error
+   */
+  router.get("/competitions", userController.getCompetitions);
+
   // Include vote routes under user namespace
   router.use(configureVoteRoutes(voteController));
 
