@@ -1116,4 +1116,102 @@ describe("Agent API", () => {
     expect(pagedComps.pagination.offset).toBe(0);
     expect(pagedComps.pagination.hasMore).toBe(true);
   });
+
+  test("can list and sort agents", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register multiple agents with different names for sorting test
+    const { client: clientA } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Charlie Agent",
+    });
+
+    await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Alpha Agent",
+    });
+
+    await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Beta Agent",
+    });
+
+    // Test 1: List agents without sorting (default order)
+    const defaultAgents = await clientA.getAgents({
+      limit: 10,
+      offset: 0,
+      sort: "",
+    });
+
+    expect(defaultAgents.success).toBe(true);
+    expect((defaultAgents as AgentsGetResponse).agents).toBeDefined();
+    expect(Array.isArray((defaultAgents as AgentsGetResponse).agents)).toBe(
+      true,
+    );
+    expect(
+      (defaultAgents as AgentsGetResponse).agents.length,
+    ).toBeGreaterThanOrEqual(3);
+
+    // Test 2: Sort by name ascending
+    const sortedAsc = await clientA.getAgents({
+      limit: 10,
+      offset: 0,
+      sort: "name",
+    });
+
+    expect(sortedAsc.success).toBe(true);
+    expect((sortedAsc as AgentsGetResponse).agents).toBeDefined();
+
+    // Find our test agents in the sorted list
+    const testAgents = (sortedAsc as AgentsGetResponse).agents.filter((agent) =>
+      ["Alpha Agent", "Beta Agent", "Charlie Agent"].includes(agent.name),
+    );
+    expect(testAgents.length).toBe(3);
+    expect(testAgents[0]?.name).toBe("Alpha Agent");
+    expect(testAgents[1]?.name).toBe("Beta Agent");
+    expect(testAgents[2]?.name).toBe("Charlie Agent");
+
+    // Test 3: Sort by name descending
+    const sortedDesc = await clientA.getAgents({
+      limit: 10,
+      offset: 0,
+      sort: "-name",
+    });
+
+    expect(sortedDesc.success).toBe(true);
+    expect((sortedDesc as AgentsGetResponse).agents).toBeDefined();
+
+    // Find our test agents in the descending sorted list
+    const testAgentsDesc = (sortedDesc as AgentsGetResponse).agents.filter(
+      (agent) =>
+        ["Alpha Agent", "Beta Agent", "Charlie Agent"].includes(agent.name),
+    );
+    expect(testAgentsDesc.length).toBe(3);
+    expect(testAgentsDesc[0]?.name).toBe("Charlie Agent");
+    expect(testAgentsDesc[1]?.name).toBe("Beta Agent");
+    expect(testAgentsDesc[2]?.name).toBe("Alpha Agent");
+
+    // Test 4: Sort by createdAt descending (newest first)
+    const sortedByDate = await clientA.getAgents({
+      limit: 10,
+      offset: 0,
+      sort: "-createdAt",
+    });
+
+    expect(sortedByDate.success).toBe(true);
+    expect((sortedByDate as AgentsGetResponse).agents).toBeDefined();
+    expect(
+      (sortedByDate as AgentsGetResponse).agents.length,
+    ).toBeGreaterThanOrEqual(3);
+
+    // Verify dates are in descending order
+    const agentsByDate = (sortedByDate as AgentsGetResponse).agents;
+    for (let i = 0; i < agentsByDate.length - 1; i++) {
+      const currentDate = new Date(agentsByDate[i]?.createdAt || "");
+      const nextDate = new Date(agentsByDate[i + 1]?.createdAt || "");
+      expect(currentDate.getTime()).toBeGreaterThanOrEqual(nextDate.getTime());
+    }
+  });
 });
