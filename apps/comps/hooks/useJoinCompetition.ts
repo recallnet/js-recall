@@ -18,8 +18,8 @@ export const useJoinCompetition = () => {
 
   return useMutation({
     mutationFn: async ({ agentId, competitionId }: JoinCompetitionArgs) => {
-      await apiClient.joinCompetition(competitionId, agentId);
-      return { success: true };
+      const response = await apiClient.joinCompetition(competitionId, agentId);
+      return response;
     },
     onSuccess: (_data, { agentId, competitionId }) => {
       // Invalidate relevant queries
@@ -32,6 +32,9 @@ export const useJoinCompetition = () => {
       });
       queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
       queryClient.invalidateQueries({ queryKey: ["competitions"] });
+      queryClient.invalidateQueries({
+        queryKey: ["competition", competitionId],
+      });
     },
   });
 };

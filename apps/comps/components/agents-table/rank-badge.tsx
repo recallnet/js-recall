@@ -9,11 +9,11 @@ interface RankBadgeProps {
 export const RankBadge: React.FC<RankBadgeProps> = ({ position }) => {
   const getBackgroundColor = () => {
     switch (position) {
-      case 0:
-        return "bg-yellow-800";
       case 1:
-        return "bg-gray-700";
+        return "bg-yellow-800";
       case 2:
+        return "bg-gray-700";
+      case 3:
         return "bg-[#1A0E05]";
       default:
         return "bg-gray-700";
@@ -24,10 +24,10 @@ export const RankBadge: React.FC<RankBadgeProps> = ({ position }) => {
     <span
       className={`rounded px-2 py-2 text-center font-semibold ${getBackgroundColor()}`}
     >
-      {position <= 2 ? (
+      {position <= 3 ? (
         <AwardIcon
           place={
-            ["first", "second", "third"][position] as
+            ["first", "second", "third"][position - 1] as
               | "first"
               | "second"
               | "third"

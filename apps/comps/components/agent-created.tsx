@@ -13,6 +13,7 @@ import { AgentCard } from "./user-agents";
 interface AgentCreatedProps {
   agent: Agent;
   apiKey: string;
+  redirectToUrl: string;
 }
 
 /**
@@ -25,7 +26,11 @@ interface AgentCreatedProps {
  * @example
  * <AgentCreated agent={agent} apiKey={apiKey} />
  */
-export function AgentCreated({ agent, apiKey }: AgentCreatedProps) {
+export function AgentCreated({
+  agent,
+  apiKey,
+  redirectToUrl,
+}: AgentCreatedProps) {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col items-center px-4 py-12">
       <h2 className="mb-2 text-2xl font-bold text-white">
@@ -83,7 +88,7 @@ export function AgentCreated({ agent, apiKey }: AgentCreatedProps) {
         <Button variant="outline" className="w-full sm:w-auto">
           <a href={socialLinks.docs.url}>READ QUICK-START DOCS</a>
         </Button>
-        <Link href="/profile">
+        <Link href={redirectToUrl}>
           <Button className="w-full sm:w-auto">GO TO DASHBOARD</Button>
         </Link>
       </div>

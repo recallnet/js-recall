@@ -12,6 +12,7 @@ import {
   GetCompetitionAgentsParams,
   GetCompetitionsParams,
   GetLeaderboardParams,
+  JoinCompetitionResponse,
   LeaderboardResponse,
   LoginRequest,
   LoginResponse,
@@ -55,11 +56,11 @@ export class ApiClient {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({
-        message: "An unknown error occurred",
+      const data = await response.json().catch(() => ({
+        error: "An unknown error occurred",
       }));
       throw new Error(
-        error.message || `Request failed with status ${response.status}`,
+        data.error || `Request failed with status ${response.status}`,
       );
     }
 
@@ -157,10 +158,16 @@ export class ApiClient {
    * @param competitionId - Competition ID
    * @param agentId - Agent ID
    */
-  async joinCompetition(competitionId: string, agentId: string): Promise<void> {
-    await this.request(`/competitions/${competitionId}/agents/${agentId}`, {
-      method: "POST",
-    });
+  async joinCompetition(
+    competitionId: string,
+    agentId: string,
+  ): Promise<JoinCompetitionResponse> {
+    return this.request<JoinCompetitionResponse>(
+      `/competitions/${competitionId}/agents/${agentId}`,
+      {
+        method: "POST",
+      },
+    );
   }
 
   /**

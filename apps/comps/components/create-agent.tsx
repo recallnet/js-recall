@@ -18,6 +18,7 @@ import {
 } from "@recallnet/ui2/components/form";
 import { Input } from "@recallnet/ui2/components/input";
 
+import { useRedirectTo } from "@/hooks/useRedirectTo";
 import { asOptionalStringWithoutEmpty } from "@/utils";
 
 // Skills list from AgentSkillType enum
@@ -91,6 +92,8 @@ export function CreateAgent({ onSubmit, isSubmitting }: CreateAgentProps) {
       telegram: "",
     },
   });
+
+  const { redirectToUrl } = useRedirectTo("/profile");
 
   const handleSubmit = async (data: FormData) => {
     try {
@@ -303,7 +306,7 @@ export function CreateAgent({ onSubmit, isSubmitting }: CreateAgentProps) {
             )}
           />
           <div className="flex justify-between pt-4">
-            <Link href="/profile">
+            <Link href={redirectToUrl}>
               <Button variant="outline">{"CANCEL"}</Button>
             </Link>
             <Button type="submit" disabled={isSubmitting}>
