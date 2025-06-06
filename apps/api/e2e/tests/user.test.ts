@@ -7,6 +7,7 @@ import {
   Agent,
   AgentProfileResponse,
   ErrorResponse,
+  UserCompetitionsResponse,
   UserProfileResponse,
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
@@ -17,6 +18,7 @@ import {
   cleanupTestState,
   createSiweAuthenticatedClient,
   createTestClient,
+  generateTestCompetitions,
   registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
 
@@ -479,40 +481,31 @@ describe("User API", () => {
   });
 
   test("SIWE user can get competitions for their agents", async () => {
-    // Create a SIWE-authenticated client
-    const { client: siweClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
-      userName: "Competition Test User",
-      userEmail: "competition-test@example.com",
-    });
-
-    // Create an agent via SIWE session
-    const createAgentResponse = await siweClient.createAgent(
-      "Competition Test Agent",
-      "Agent for testing competitions endpoint",
-    );
-    expect(createAgentResponse.success).toBe(true);
-
+    const { client1 } = await generateTestCompetitions(adminApiKey);
     // Test: User can get competitions for their agents
-    const competitionsResponse = await siweClient.getUserCompetitions();
+    const competitionsResponse =
+      (await client1.getUserCompetitions()) as UserCompetitionsResponse;
+
+    console.log("\n\n\n\n\n");
+    console.log("competitionsResponse:", competitionsResponse);
+    console.log("\n\n\n\n\n");
 
     expect(competitionsResponse.success).toBe(true);
-    expect(competitionsResponse.userId).toBeDefined();
     expect(competitionsResponse.competitions).toBeDefined();
     expect(Array.isArray(competitionsResponse.competitions)).toBe(true);
-    expect(competitionsResponse.total).toBeDefined();
+    expect(competitionsResponse.competitions.length).toBe(10);
     expect(competitionsResponse.pagination).toBeDefined();
-    expect(competitionsResponse.pagination.limit).toBe(10); // default limit
-    expect(competitionsResponse.pagination.offset).toBe(0); // default offset
+    expect(competitionsResponse.pagination.limit).toBe(10);
+    expect(competitionsResponse.pagination.offset).toBe(0);
+    expect(competitionsResponse.pagination.total).toBe(15);
+    expect(competitionsResponse.pagination.hasMore).toBe(true);
 
     // Test with query parameters
-    const competitionsWithParamsResponse = await siweClient.getUserCompetitions(
-      {
-        limit: 5,
-        offset: 0,
-        status: "active",
-      },
-    );
+    const competitionsWithParamsResponse = (await client1.getUserCompetitions({
+      limit: 5,
+      offset: 0,
+      status: "active",
+    })) as UserCompetitionsResponse;
 
     expect(competitionsWithParamsResponse.success).toBe(true);
     expect(competitionsWithParamsResponse.pagination.limit).toBe(5);

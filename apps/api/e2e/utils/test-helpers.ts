@@ -1,5 +1,6 @@
 import * as crypto from "crypto";
 import { getAddress } from "viem";
+import { expect } from "vitest";
 
 import { ApiSDK } from "@recallnet/api-sdk";
 
@@ -368,5 +369,69 @@ export async function createSiweAuthenticatedClient({
     },
     wallet: testWallet, // Include wallet info for potential future use
     loginData: loginResponse,
+  };
+}
+
+export async function generateTestCompetitions(adminApiKey: string) {
+  const adminClient = createTestClient();
+  const loginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+  expect(loginSuccess).toBe(true);
+
+  // Create an agent and user
+  const {
+    user: user1,
+    agent: agent1,
+    client: client1,
+  } = await registerUserAndAgentAndGetClient({ adminApiKey });
+
+  // Create a second and third user and agent so we can test that
+  //  responses only include the correct agents
+  const {
+    user: user2,
+    agent: agent2,
+    client: client2,
+  } = await registerUserAndAgentAndGetClient({ adminApiKey });
+
+  const {
+    user: user3,
+    agent: agent3,
+    client: client3,
+  } = await registerUserAndAgentAndGetClient({ adminApiKey });
+
+  const comps = [];
+  for (let i = 0; i < 20; i++) {
+    const result = await createTestCompetition(
+      adminClient,
+      `Competition ${i} ${Date.now()}`,
+    );
+
+    comps.push(result);
+
+    // ensure there is a mix of agents and competitions to test against
+    if (i < 15) {
+      await client1.joinCompetition(result.competition.id, agent1.id);
+      if (i % 2) {
+        await client2.joinCompetition(result.competition.id, agent2.id);
+      }
+      if (!(i % 3)) {
+        await client3.joinCompetition(result.competition.id, agent3.id);
+      }
+    } else {
+      await client2.joinCompetition(result.competition.id, agent2.id);
+      await client3.joinCompetition(result.competition.id, agent3.id);
+    }
+  }
+
+  return {
+    competitions: comps,
+    agent1,
+    agent2,
+    agent3,
+    client1,
+    client2,
+    client3,
+    user1,
+    user2,
+    user3,
   };
 }
