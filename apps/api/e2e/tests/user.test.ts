@@ -7,6 +7,7 @@ import {
   Agent,
   AgentProfileResponse,
   ErrorResponse,
+  GetUserAgentsResponse,
   UserProfileResponse,
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
@@ -262,11 +263,8 @@ describe("User API", () => {
     );
 
     // Test: User can list their agents via SIWE session
-    const agentsResponse = (await siweClient.getUserAgents()) as {
-      success: boolean;
-      userId: string;
-      agents: Agent[];
-    };
+    const agentsResponse =
+      (await siweClient.getUserAgents()) as GetUserAgentsResponse;
     expect(agentsResponse.success).toBe(true);
     expect(agentsResponse.agents).toBeDefined();
     expect(agentsResponse.agents.length).toBe(1);
@@ -476,5 +474,446 @@ describe("User API", () => {
     expect((invalidFieldsResponse as ErrorResponse).error).toContain(
       "Invalid request format",
     );
+  });
+
+  test("get user agents pagination works with default parameters", async () => {
+    // Create a SIWE-authenticated client
+    const { client: siweClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Pagination Test User",
+      userEmail: "pagination-test@example.com",
+    });
+
+    // Create 5 agents
+    const agentNames = [
+      "Agent Alpha",
+      "Agent Beta",
+      "Agent Charlie",
+      "Agent Delta",
+      "Agent Echo",
+    ];
+
+    for (const name of agentNames) {
+      const response = await siweClient.createAgent(
+        name,
+        `Description for ${name}`,
+      );
+      expect(response.success).toBe(true);
+      // Small delay to ensure different timestamps
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+
+    // Test default pagination (should return all agents)
+    const defaultResponse = await siweClient.getUserAgents();
+    expect(defaultResponse.success).toBe(true);
+    const defaultAgents = (defaultResponse as GetUserAgentsResponse).agents;
+    expect(defaultAgents).toHaveLength(5);
+    expect(Array.isArray(defaultAgents)).toBe(true);
+  });
+
+  test("user agents pagination respects limit parameter", async () => {
+    const { client: siweClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Limit Test User",
+      userEmail: "limit-test@example.com",
+    });
+
+    // Create 6 agents
+    for (let i = 1; i <= 6; i++) {
+      const response = await siweClient.createAgent(
+        `Agent ${i.toString().padStart(2, "0")}`,
+        `Description for Agent ${i}`,
+      );
+      expect(response.success).toBe(true);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+
+    // Test limit of 3
+    const limitedResponse = await siweClient.getUserAgents({ limit: 3 });
+    expect(limitedResponse.success).toBe(true);
+    const limitedAgents = (limitedResponse as GetUserAgentsResponse).agents;
+    expect(limitedAgents).toHaveLength(3);
+
+    // Test limit of 2
+    const limit2Response = await siweClient.getUserAgents({ limit: 2 });
+    expect(limit2Response.success).toBe(true);
+    const limit2Agents = (limit2Response as GetUserAgentsResponse).agents;
+    expect(limit2Agents).toHaveLength(2);
+
+    // Test limit larger than total
+    const largeLimitResponse = await siweClient.getUserAgents({ limit: 20 });
+    expect(largeLimitResponse.success).toBe(true);
+    const largeLimitAgents = (largeLimitResponse as GetUserAgentsResponse)
+      .agents;
+    expect(largeLimitAgents).toHaveLength(6);
+  });
+
+  test("user agents pagination respects offset parameter", async () => {
+    const { client: siweClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Offset Test User",
+      userEmail: "offset-test@example.com",
+    });
+
+    // Create 6 agents
+    for (let i = 1; i <= 6; i++) {
+      const response = await siweClient.createAgent(
+        `Agent ${i.toString().padStart(2, "0")}`,
+        `Description for Agent ${i}`,
+      );
+      expect(response.success).toBe(true);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+
+    // Get all agents first to establish baseline
+    const allResponse = await siweClient.getUserAgents();
+    expect(allResponse.success).toBe(true);
+    const allAgents = (allResponse as GetUserAgentsResponse).agents;
+    expect(allAgents).toHaveLength(6);
+
+    // Test offset of 2
+    const offset2Response = await siweClient.getUserAgents({ offset: 2 });
+    expect(offset2Response.success).toBe(true);
+    const offset2Agents = (offset2Response as GetUserAgentsResponse).agents;
+    expect(offset2Agents).toHaveLength(4);
+
+    // Test offset of 4
+    const offset4Response = await siweClient.getUserAgents({ offset: 4 });
+    expect(offset4Response.success).toBe(true);
+    const offset4Agents = (offset4Response as GetUserAgentsResponse).agents;
+    expect(offset4Agents).toHaveLength(2);
+
+    // Test offset larger than total
+    const largeOffsetResponse = await siweClient.getUserAgents({ offset: 10 });
+    expect(largeOffsetResponse.success).toBe(true);
+    const largeOffsetAgents = (largeOffsetResponse as GetUserAgentsResponse)
+      .agents;
+    expect(largeOffsetAgents).toHaveLength(0);
+  });
+
+  test("user agents pagination combines limit and offset correctly", async () => {
+    const { client: siweClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Limit Offset Test User",
+      userEmail: "limit-offset-test@example.com",
+    });
+
+    // Create 8 agents
+    for (let i = 1; i <= 8; i++) {
+      const response = await siweClient.createAgent(
+        `Agent ${i.toString().padStart(2, "0")}`,
+        `Description for Agent ${i}`,
+      );
+      expect(response.success).toBe(true);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+
+    // Test pagination: page 1 (offset 0, limit 3)
+    const page1Response = await siweClient.getUserAgents({
+      limit: 3,
+      offset: 0,
+    });
+    expect(page1Response.success).toBe(true);
+    const page1Agents = (page1Response as GetUserAgentsResponse).agents;
+    expect(page1Agents).toHaveLength(3);
+
+    // Test pagination: page 2 (offset 3, limit 3)
+    const page2Response = await siweClient.getUserAgents({
+      limit: 3,
+      offset: 3,
+    });
+    expect(page2Response.success).toBe(true);
+    const page2Agents = (page2Response as GetUserAgentsResponse).agents;
+    expect(page2Agents).toHaveLength(3);
+
+    // Test pagination: page 3 (offset 6, limit 3) - should only return 2 agents
+    const page3Response = await siweClient.getUserAgents({
+      limit: 3,
+      offset: 6,
+    });
+    expect(page3Response.success).toBe(true);
+    const page3Agents = (page3Response as GetUserAgentsResponse).agents;
+    expect(page3Agents).toHaveLength(2);
+
+    // Verify no overlap between pages by checking agent IDs
+    const page1Ids = page1Agents.map((a: Agent) => a.id);
+    const page2Ids = page2Agents.map((a: Agent) => a.id);
+    const page3Ids = page3Agents.map((a: Agent) => a.id);
+
+    const allPageIds = [...page1Ids, ...page2Ids, ...page3Ids];
+    const uniqueIds = new Set(allPageIds);
+    expect(uniqueIds.size).toBe(allPageIds.length); // No duplicates
+  });
+
+  test("user agents sorting works correctly", async () => {
+    const { client: siweClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Sort Test User",
+      userEmail: "sort-test@example.com",
+    });
+
+    // Create agents with names that will sort differently
+    const agentData = [
+      { name: "Zebra Agent", description: "Last alphabetically" },
+      { name: "Alpha Agent", description: "First alphabetically" },
+      { name: "Beta Agent", description: "Second alphabetically" },
+      { name: "Gamma Agent", description: "Third alphabetically" },
+    ];
+
+    for (const agent of agentData) {
+      const response = await siweClient.createAgent(
+        agent.name,
+        agent.description,
+      );
+      expect(response.success).toBe(true);
+      await new Promise((resolve) => setTimeout(resolve, 50)); // Larger delay for timestamp differentiation
+    }
+
+    // Test name ascending sort
+    const nameAscResponse = await siweClient.getUserAgents({ sort: "name" });
+    expect(nameAscResponse.success).toBe(true);
+    const nameAscAgents = (nameAscResponse as GetUserAgentsResponse).agents;
+    expect(nameAscAgents).toHaveLength(4);
+    expect(nameAscAgents[0]?.name).toBe("Alpha Agent");
+    expect(nameAscAgents[1]?.name).toBe("Beta Agent");
+    expect(nameAscAgents[2]?.name).toBe("Gamma Agent");
+    expect(nameAscAgents[3]?.name).toBe("Zebra Agent");
+
+    // Test name descending sort
+    const nameDescResponse = await siweClient.getUserAgents({ sort: "-name" });
+    expect(nameDescResponse.success).toBe(true);
+    const nameDescAgents = (nameDescResponse as GetUserAgentsResponse).agents;
+    expect(nameDescAgents).toHaveLength(4);
+    expect(nameDescAgents[0]?.name).toBe("Zebra Agent");
+    expect(nameDescAgents[1]?.name).toBe("Gamma Agent");
+    expect(nameDescAgents[2]?.name).toBe("Beta Agent");
+    expect(nameDescAgents[3]?.name).toBe("Alpha Agent");
+
+    // Test created date ascending sort (oldest first)
+    const createdAscResponse = await siweClient.getUserAgents({
+      sort: "createdAt",
+    });
+    expect(createdAscResponse.success).toBe(true);
+    const createdAscAgents = (createdAscResponse as GetUserAgentsResponse)
+      .agents;
+    expect(createdAscAgents).toHaveLength(4);
+    // First created should be "Zebra Agent" (created first in our loop)
+    expect(createdAscAgents[0]?.name).toBe("Zebra Agent");
+    expect(createdAscAgents[3]?.name).toBe("Gamma Agent");
+
+    // Test created date descending sort (newest first)
+    const createdDescResponse = await siweClient.getUserAgents({
+      sort: "-createdAt",
+    });
+    expect(createdDescResponse.success).toBe(true);
+    const createdDescAgents = (createdDescResponse as GetUserAgentsResponse)
+      .agents;
+    expect(createdDescAgents).toHaveLength(4);
+    // Last created should be "Gamma Agent" (created last in our loop)
+    expect(createdDescAgents[0]?.name).toBe("Gamma Agent");
+    expect(createdDescAgents[3]?.name).toBe("Zebra Agent");
+  });
+
+  test("user agents sorting combined with pagination", async () => {
+    const { client: siweClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Sort Pagination Test User",
+      userEmail: "sort-pagination-test@example.com",
+    });
+
+    // Create 6 agents with names that will sort predictably
+    const names = ["Hotel", "Alpha", "India", "Bravo", "Juliet", "Charlie"];
+
+    for (const name of names) {
+      const response = await siweClient.createAgent(
+        `${name} Agent`,
+        `Description for ${name}`,
+      );
+      expect(response.success).toBe(true);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+
+    // Get first page of 2, sorted by name ascending
+    const page1Response = await siweClient.getUserAgents({
+      sort: "name",
+      limit: 2,
+      offset: 0,
+    });
+    expect(page1Response.success).toBe(true);
+    const page1Agents = (page1Response as GetUserAgentsResponse).agents;
+    expect(page1Agents).toHaveLength(2);
+    expect(page1Agents[0]?.name).toBe("Alpha Agent");
+    expect(page1Agents[1]?.name).toBe("Bravo Agent");
+
+    // Get second page of 2, sorted by name ascending
+    const page2Response = await siweClient.getUserAgents({
+      sort: "name",
+      limit: 2,
+      offset: 2,
+    });
+    expect(page2Response.success).toBe(true);
+    const page2Agents = (page2Response as GetUserAgentsResponse).agents;
+    expect(page2Agents).toHaveLength(2);
+    expect(page2Agents[0]?.name).toBe("Charlie Agent");
+    expect(page2Agents[1]?.name).toBe("Hotel Agent");
+  });
+
+  test("user agents pagination only returns agents owned by authenticated user", async () => {
+    // Create two different users
+    const { client: user1Client } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "User 1",
+      userEmail: "user1@example.com",
+    });
+
+    const { client: user2Client } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "User 2",
+      userEmail: "user2@example.com",
+    });
+
+    // User 1 creates 3 agents
+    for (let i = 1; i <= 3; i++) {
+      const response = await user1Client.createAgent(
+        `User1 Agent ${i}`,
+        `Description ${i}`,
+      );
+      expect(response.success).toBe(true);
+    }
+
+    // User 2 creates 2 agents
+    for (let i = 1; i <= 2; i++) {
+      const response = await user2Client.createAgent(
+        `User2 Agent ${i}`,
+        `Description ${i}`,
+      );
+      expect(response.success).toBe(true);
+    }
+
+    // User 1 should only see their own agents
+    const user1Response = await user1Client.getUserAgents();
+    expect(user1Response.success).toBe(true);
+    const user1Agents = (user1Response as GetUserAgentsResponse).agents;
+    expect(user1Agents).toHaveLength(3);
+    user1Agents.forEach((agent: Agent) => {
+      expect(agent.name).toMatch(/^User1 Agent/);
+    });
+
+    // User 2 should only see their own agents
+    const user2Response = await user2Client.getUserAgents();
+    expect(user2Response.success).toBe(true);
+    const user2Agents = (user2Response as GetUserAgentsResponse).agents;
+    expect(user2Agents).toHaveLength(2);
+    user2Agents.forEach((agent: Agent) => {
+      expect(agent.name).toMatch(/^User2 Agent/);
+    });
+
+    // Test pagination isolation - User 1 with pagination
+    const user1PaginatedResponse = await user1Client.getUserAgents({
+      limit: 2,
+    });
+    expect(user1PaginatedResponse.success).toBe(true);
+    const user1PaginatedAgents = (
+      user1PaginatedResponse as GetUserAgentsResponse
+    ).agents;
+    expect(user1PaginatedAgents).toHaveLength(2);
+    user1PaginatedAgents.forEach((agent: Agent) => {
+      expect(agent.name).toMatch(/^User1 Agent/);
+    });
+  });
+
+  test("user agents API returns consistent structure with pagination", async () => {
+    const { client: siweClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Structure Test User",
+      userEmail: "structure-test@example.com",
+    });
+
+    // Create a couple of agents
+    const response1 = await siweClient.createAgent(
+      "Test Agent 1",
+      "Description 1",
+    );
+    expect(response1.success).toBe(true);
+    const response2 = await siweClient.createAgent(
+      "Test Agent 2",
+      "Description 2",
+    );
+    expect(response2.success).toBe(true);
+
+    // Test response structure with no pagination
+    const noPaginationResponse = await siweClient.getUserAgents();
+    expect(noPaginationResponse.success).toBe(true);
+    expect(
+      (noPaginationResponse as GetUserAgentsResponse).userId,
+    ).toBeDefined();
+    expect(
+      (noPaginationResponse as GetUserAgentsResponse).agents,
+    ).toBeDefined();
+    expect(
+      Array.isArray((noPaginationResponse as GetUserAgentsResponse).agents),
+    ).toBe(true);
+
+    // Test response structure with pagination
+    const paginatedResponse = await siweClient.getUserAgents({
+      limit: 1,
+      offset: 0,
+    });
+    expect(paginatedResponse.success).toBe(true);
+    expect((paginatedResponse as GetUserAgentsResponse).userId).toBeDefined();
+    expect((paginatedResponse as GetUserAgentsResponse).agents).toBeDefined();
+    expect(
+      Array.isArray((paginatedResponse as GetUserAgentsResponse).agents),
+    ).toBe(true);
+
+    // Verify agent structure (should not include API key for security)
+    const agents = (paginatedResponse as GetUserAgentsResponse).agents;
+    if (agents.length > 0) {
+      const agent = agents[0];
+      expect(agent?.id).toBeDefined();
+      expect(agent?.ownerId).toBeDefined();
+      expect(agent?.name).toBeDefined();
+      expect(agent?.status).toBeDefined();
+      expect(agent?.createdAt).toBeDefined();
+      expect(agent?.updatedAt).toBeDefined();
+      // API key should NOT be present in the response for security
+      expect(agent?.apiKey).toBeUndefined();
+    }
+  });
+
+  test("user agents pagination handles edge cases gracefully", async () => {
+    const { client: siweClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Edge Case Test User",
+      userEmail: "edge-case-test@example.com",
+    });
+
+    // Create a few agents
+    for (let i = 1; i <= 3; i++) {
+      const response = await siweClient.createAgent(
+        `Agent ${i}`,
+        `Description ${i}`,
+      );
+      expect(response.success).toBe(true);
+    }
+
+    // Test zero offset
+    const zeroOffsetResponse = await siweClient.getUserAgents({ offset: 0 });
+    expect(zeroOffsetResponse.success).toBe(true);
+    const zeroOffsetAgents = (zeroOffsetResponse as GetUserAgentsResponse)
+      .agents;
+    expect(zeroOffsetAgents).toHaveLength(3);
+
+    // Test minimum limit
+    const minLimitResponse = await siweClient.getUserAgents({ limit: 1 });
+    expect(minLimitResponse.success).toBe(true);
+    const minLimitAgents = (minLimitResponse as GetUserAgentsResponse).agents;
+    expect(minLimitAgents).toHaveLength(1);
+
+    // Test that pagination still works with empty sort string
+    const emptySortResponse = await siweClient.getUserAgents({ sort: "" });
+    expect(emptySortResponse.success).toBe(true);
+    const emptySortAgents = (emptySortResponse as GetUserAgentsResponse).agents;
+    expect(emptySortAgents).toHaveLength(3);
   });
 });
