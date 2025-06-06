@@ -14,14 +14,8 @@ import {
   varchar
 } from "drizzle-orm/pg-core";
 
-
-
 import { agents, users } from "@/database/schema/core/defs.js";
 import { blockchainAddress, tokenAmount } from "@/database/schema/util.js";
-
-
-
-
 
 const bytea = customType<{ data: Uint8Array; notNull: false; default: false }>({
   dataType() {
