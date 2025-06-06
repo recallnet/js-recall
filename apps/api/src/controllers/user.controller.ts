@@ -27,10 +27,7 @@ export function makeUserController(services: ServiceRegistry) {
       try {
         const { success, data, error } = UuidSchema.safeParse(req.userId);
         if (!success) {
-          throw new ApiError(
-            400,
-            `Invalid request format: ${error.message}, actual value: ${req.userId}`,
-          );
+          throw new ApiError(400, `Invalid request format: ${error.message}`);
         }
         const userId = data;
 
