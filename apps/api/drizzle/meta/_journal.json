@@ -36,55 +36,6 @@
       "when": 1749056023966,
       "tag": "0004_pink_mystique",
       "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1749141146775,
-      "tag": "0005_wet_gauntlet",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1749141338694,
-      "tag": "0006_messy_rumiko_fujikawa",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1749141451180,
-      "tag": "0007_perfect_moonstone",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1749227520311,
-      "tag": "0008_high_turbo",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1749227925142,
-      "tag": "0009_omniscient_veda",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1749228004385,
-      "tag": "0010_massive_shriek",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "7",
-      "when": 1749228722538,
-      "tag": "0011_boring_nightcrawler",
-      "breakpoints": true
     }
   ]
 }
