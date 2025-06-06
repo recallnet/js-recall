@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { Suspense, useEffect } from "react";
 
 import { AuthGuard } from "@/components/auth-guard";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
@@ -32,14 +32,16 @@ export default function UpdateProfilePage() {
   };
 
   return (
-    <AuthGuard skeleton={<ProfileSkeleton />}>
-      <BreadcrumbNav
-        items={[
-          { label: "HOME", href: "/competitions" },
-          { label: "USER PROFILE" },
-        ]}
-      />
-      <UpdateProfile onSubmit={handleUpdateProfile} />
-    </AuthGuard>
+    <Suspense fallback={<ProfileSkeleton />}>
+      <AuthGuard skeleton={<ProfileSkeleton />}>
+        <BreadcrumbNav
+          items={[
+            { label: "HOME", href: "/competitions" },
+            { label: "USER PROFILE" },
+          ]}
+        />
+        <UpdateProfile onSubmit={handleUpdateProfile} />
+      </AuthGuard>
+    </Suspense>
   );
 }

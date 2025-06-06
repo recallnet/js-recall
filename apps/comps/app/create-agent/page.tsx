@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
 
 import { AgentCreated } from "@/components/agent-created";
 import { AuthGuard } from "@/components/auth-guard";
@@ -48,35 +48,39 @@ export default function CreateAgentPage() {
   };
 
   return (
-    <AuthGuard>
-      <BreadcrumbNav
-        items={[
-          { label: "HOME", href: "/competitions" },
-          { label: "USER PROFILE", href: "/profile" },
-          { label: "ADD AGENT" },
-        ]}
-      />
-
-      {createdAgentId && apiKey ? (
-        isAgentLoading ? (
-          <div className="py-12 text-center text-white">Loading agent...</div>
-        ) : isAgentError || !agent ? (
-          <div className="py-12 text-center text-red-500">
-            Failed to load agent data.
-          </div>
-        ) : (
-          <AgentCreated
-            agent={agent}
-            apiKey={apiKey}
-            redirectToUrl={redirectToUrl}
-          />
-        )
-      ) : (
-        <CreateAgent
-          onSubmit={handleSubmit}
-          isSubmitting={createAgent.status === "pending"}
+    <Suspense
+      fallback={<div className="py-12 text-center text-white">Loading...</div>}
+    >
+      <AuthGuard>
+        <BreadcrumbNav
+          items={[
+            { label: "HOME", href: "/competitions" },
+            { label: "USER PROFILE", href: "/profile" },
+            { label: "ADD AGENT" },
+          ]}
         />
-      )}
-    </AuthGuard>
+
+        {createdAgentId && apiKey ? (
+          isAgentLoading ? (
+            <div className="py-12 text-center text-white">Loading agent...</div>
+          ) : isAgentError || !agent ? (
+            <div className="py-12 text-center text-red-500">
+              Failed to load agent data.
+            </div>
+          ) : (
+            <AgentCreated
+              agent={agent}
+              apiKey={apiKey}
+              redirectToUrl={redirectToUrl}
+            />
+          )
+        ) : (
+          <CreateAgent
+            onSubmit={handleSubmit}
+            isSubmitting={createAgent.status === "pending"}
+          />
+        )}
+      </AuthGuard>
+    </Suspense>
   );
 }
