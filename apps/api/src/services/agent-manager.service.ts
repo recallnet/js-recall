@@ -826,6 +826,8 @@ export class AgentManager {
 
   /**
    * Count agents with optional filter
+   * @param filter Filter by wallet address or name
+   * @returns Number of agents matching the filter
    */
   async countAgents(filter?: string) {
     if (filter?.length === 42) {
@@ -838,6 +840,11 @@ export class AgentManager {
     return count();
   }
 
+  /**
+   * Sanitize an agent object for public display
+   * @param agent The agent object to sanitize
+   * @returns The sanitized agent object
+   */
   sanitizeAgent(agent: SelectAgent) {
     return {
       id: agent.id,
@@ -850,20 +857,26 @@ export class AgentManager {
       walletAddress: agent.walletAddress,
       createdAt: agent.createdAt,
       updatedAt: agent.updatedAt,
-      // Explicitly exclude apiKey for security
+      // Explicitly exclude apiKey and email for security
     };
   }
 
+  /**
+   * Attach agent metrics to an agent object
+   * @param sanitizedAgent The sanitized agent object
+   * @returns The agent object with metrics attached
+   */
   attachAgentMetrics(
     sanitizedAgent: ReturnType<AgentManager["sanitizeAgent"]>,
   ) {
-    const metadata = sanitizedAgent.metadata as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const metadata = sanitizedAgent.metadata as AgentMetadata;
     const stats = metadata?.stats || {};
 
     return {
       ...sanitizedAgent,
       stats,
       trophies: metadata?.trophies || [],
+      skills: metadata?.skills || [],
       hasUnclaimedRewards: metadata?.hasUnclaimedRewards || false,
     };
   }

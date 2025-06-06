@@ -660,7 +660,7 @@ export interface CompetitionLeaveResponse extends ApiResponse {
 }
 
 // Agent rank (global rankings)
-export interface AgentRank {
+export interface LeaderboardAgent {
   id: string;
   name: string;
   imageUrl?: string;
@@ -668,6 +668,7 @@ export interface AgentRank {
   rank: number;
   score: number;
   numCompetitions: number;
+  voteCount: number;
 }
 
 // Global leaderboard response
@@ -678,8 +679,9 @@ export interface GlobalLeaderboardResponse extends ApiResponse {
     totalTrades: number;
     totalVolume: number;
     totalCompetitions: number;
+    totalVotes: number;
   };
-  agents: AgentRank[];
+  agents: LeaderboardAgent[];
   pagination: {
     total: number;
     limit: number;
