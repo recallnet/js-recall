@@ -1,0 +1,1 @@
+ALTER TABLE "stakes" ALTER COLUMN "amount" SET DATA TYPE numeric(78, 0);

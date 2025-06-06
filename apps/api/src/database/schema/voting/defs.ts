@@ -3,7 +3,7 @@ import {
   boolean,
   customType,
   index,
-  integer,
+  integer, numeric,
   pgTable,
   primaryKey,
   serial,
@@ -11,7 +11,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
-  varchar,
+  varchar
 } from "drizzle-orm/pg-core";
 
 
@@ -40,15 +40,17 @@ export const stakes = pgTable(
   "stakes",
   {
     id: uuid().primaryKey().notNull(),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    amount: tokenAmount("amount").notNull(),
+    tokenId: bigint('token_id', { mode: 'bigint' }).notNull(),
+    amount: numeric('amount', { precision: 78, scale: 0 }).notNull(),
     address: blockchainAddress("address").notNull(),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    withdrawalAt: timestamp("withdrawal_at", { withTimezone: true }),
-    withdrawnAt: timestamp("withdrawn_at", { withTimezone: true }),
-    epochCreated: uuid("epoch_created").references(() => epochs.id),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+    epochCreated: uuid("epoch_created").notNull().references(() => epochs.id),
+    stakedAt: timestamp('staked_at').notNull(),
+    canUnstakeAfter: timestamp('can_unstake_after').notNull(),
+    unstakedAt: timestamp('unstaked_at'),
+    canWithdrawAfter: timestamp('can_withdraw_after'),
+    withdrawnAt: timestamp('withdrawn_at'),
+    relockedAt: timestamp('relocked_at'),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
