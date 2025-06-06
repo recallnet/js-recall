@@ -87,6 +87,7 @@ interface UserSessionState {
   user: ProfileResponse["user"] | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isProfileUpdated: boolean;
 }
 
 export const useUserSession = (): UserSessionState => {
@@ -103,6 +104,7 @@ export const useUserSession = (): UserSessionState => {
   } = useProfile();
 
   const isAuthenticated = profileIsSuccess && !!profileData;
+  const isProfileUpdated = profileIsSuccess && !!profileData?.name;
 
   const isLoading =
     profileIsLoading ||
@@ -145,5 +147,6 @@ export const useUserSession = (): UserSessionState => {
     user: isAuthenticated ? profileData : null,
     isAuthenticated,
     isLoading,
+    isProfileUpdated,
   };
 };

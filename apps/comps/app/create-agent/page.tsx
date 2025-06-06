@@ -8,11 +8,13 @@ import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { CreateAgent, FormData } from "@/components/create-agent";
 import { useUserAgent } from "@/hooks/useAgent";
 import { useCreateAgent } from "@/hooks/useCreateAgent";
+import { useRedirectTo } from "@/hooks/useRedirectTo";
 
 export default function CreateAgentPage() {
   const createAgent = useCreateAgent();
   const [createdAgentId, setCreatedAgentId] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
+  const { redirectToUrl } = useRedirectTo("/profile");
 
   const {
     data: agent,
@@ -63,7 +65,11 @@ export default function CreateAgentPage() {
             Failed to load agent data.
           </div>
         ) : (
-          <AgentCreated agent={agent} apiKey={apiKey} />
+          <AgentCreated
+            agent={agent}
+            apiKey={apiKey}
+            redirectToUrl={redirectToUrl}
+          />
         )
       ) : (
         <CreateAgent

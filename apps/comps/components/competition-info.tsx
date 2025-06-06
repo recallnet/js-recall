@@ -47,9 +47,6 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
   const rewardAmount = 0;
   const rewardCurrency = "USD";
 
-  const totalTrades = 0;
-  const volume = 0;
-
   return (
     <section className={cn(className, "border text-white")}>
       <div className="grid grid-cols-2 border-b">
@@ -114,13 +111,13 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
       <div className="grid grid-cols-3">
         <div className="flex flex-col items-start justify-center gap-2 border-r p-[25px]">
           <CellTitle>Total Trades</CellTitle>
-          <span className="font-bold">{totalTrades}</span>
+          <span className="font-bold">{competition.stats.totalTrades}</span>
         </div>
         <div className="flex flex-col items-start justify-center gap-2 border-r p-[25px]">
           <CellTitle>Volume</CellTitle>
           <span className="font-bold">
             $
-            {volume.toLocaleString(undefined, {
+            {competition.stats.totalVolume.toLocaleString(undefined, {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}
@@ -128,7 +125,7 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
         </div>
         <div className="flex flex-col items-start justify-center gap-2 p-[25px]">
           <CellTitle>Tokens Traded</CellTitle>
-          <span className="font-bold">/</span>
+          <span className="font-bold">{competition.stats.uniqueTokens}</span>
         </div>
       </div>
     </section>

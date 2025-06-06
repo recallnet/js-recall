@@ -1,16 +1,16 @@
-import React from 'react';
-import {WalletIcon} from 'lucide-react';
-import {ConnectButton} from "@rainbow-me/rainbowkit";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { WalletIcon } from "lucide-react";
+import React from "react";
 
-import {Button} from "@recallnet/ui2/components/button"; // Path to your dialog component
+import { Button } from "@recallnet/ui2/components/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose,
+  DialogHeader,
+  DialogTitle,
 } from "@recallnet/ui2/components/dialog";
 
 interface ConnectWalletModalProps {
@@ -24,19 +24,19 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
 }) => {
   return (
     <ConnectButton.Custom>
-      {({openConnectModal}) => (
+      {({ openConnectModal }) => (
         <Dialog open={isOpen} onOpenChange={onClose}>
           <DialogContent className="w-[600px]">
             <DialogHeader className="text-start">
-              <DialogTitle className="flex justify-start gap-2 text-xl font-bold text-white">
+              <DialogTitle className="flex items-center justify-start gap-2 text-xl font-bold text-white">
                 <WalletIcon className="size-6 text-gray-700" />
                 Connect Your Wallet
               </DialogTitle>
-              <DialogDescription className="text-gray-400 pl-8">
+              <DialogDescription className="pl-8 text-gray-400">
                 To continue, please connect your wallet.
               </DialogDescription>
-              <p className="text-sm text-gray-500 mt-[-0.5rem] pl-8">
-                You’ll be asked to select your wallet provider.
+              <p className="mt-[-0.5rem] pl-8 text-sm text-gray-500">
+                You&apos;ll be asked to select your wallet provider.
               </p>
             </DialogHeader>
 
@@ -46,7 +46,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
               <DialogClose asChild>
                 <Button
                   variant="outline"
-                  className="bg-transparent text-gray-500 border-gray-700 hover:bg-gray-900 rounded-lg"
+                  className="rounded-lg border-gray-700 bg-transparent text-gray-500 hover:bg-gray-900"
                   onClick={() => onClose(false)}
                 >
                   Cancel
@@ -55,12 +55,12 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
               <div className="flex items-center">
                 <Button
                   onClick={() => {
-                    onClose(false)
-                    openConnectModal()
+                    onClose(false);
+                    openConnectModal();
                   }}
-                  className="bg-white text-black hover:bg-gray-300 rounded-lg"
+                  className="rounded-lg bg-white text-black hover:bg-gray-300"
                 >
-                  ConnectWallet
+                  Connect Wallet
                 </Button>
               </div>
             </DialogFooter>

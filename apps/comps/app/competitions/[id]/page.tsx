@@ -9,9 +9,11 @@ import { Button } from "@recallnet/ui2/components/button";
 
 import { AgentsTable } from "@/components/agents-table";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
+import { CountdownClock } from "@/components/clock";
 import { CompetitionCard } from "@/components/competition-card";
 import { CompetitionInfo } from "@/components/competition-info";
 import CompetitionSkeleton from "@/components/competition-skeleton";
+import { JoinCompetitionButton } from "@/components/join-competition-button";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
 import { getSocialLinksArray } from "@/data/social";
 import { useCompetition } from "@/hooks/useCompetition";
@@ -104,17 +106,36 @@ export default function CompetitionPage({
               <span className="font-semibold">Join Discord</span>{" "}
               <ArrowUpRight className="ml-2" size={18} />
             </Button>
-            <Button
+            <JoinCompetitionButton
+              competitionId={id}
+              variant="ghost"
+              className="w-1/2 justify-between uppercase"
+              disabled={competition.status !== "pending"}
+              size="lg"
+            >
+              <span className="font-semibold">Join Competition</span>{" "}
+              <ChevronRight className="ml-2" size={18} />
+            </JoinCompetitionButton>
+            {/* <Button
               variant="ghost"
               className="w-1/2 justify-between uppercase"
               size="lg"
             >
               <span className="font-semibold">Vote on an Agent</span>{" "}
               <ChevronRight className="ml-2" size={18} />
-            </Button>
+            </Button> */}
           </div>
         </div>
       </div>
+
+      {competition.status === "pending" && (
+        <div className="mt-12 flex flex-col items-center justify-center gap-2 text-center sm:flex-row">
+          <span className="text-2xl font-bold text-gray-400">
+            Competition starts in...
+          </span>
+          <CountdownClock targetDate={new Date(competition.startDate ?? "")} />
+        </div>
+      )}
 
       {agentsError || !agentsData ? (
         <div className="my-12 rounded border border-red-400 bg-red-100 bg-opacity-10 p-6 text-center">
@@ -136,6 +157,7 @@ export default function CompetitionPage({
           }}
           hasMore={agentsData.pagination.hasMore}
           pagination={agentsData.pagination}
+          totalVotes={competition.totalVotes}
         />
       )}
       <JoinSwarmSection socialLinks={getSocialLinksArray()} className="mt-12" />

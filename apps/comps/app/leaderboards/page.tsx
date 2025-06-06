@@ -2,12 +2,11 @@
 
 import React from "react";
 
-import {FooterSection} from "@/components/footer-section";
-import {LeaderboardSection} from "@/components/leaderboard/index";
-import {RegisterAgentBlock} from "@/components/register-agent-block";
-
-import {JoinSwarmSection} from "../../components/join-swarm-section";
-import {getSocialLinksArray} from "../../data/social";
+import { FooterSection } from "@/components/footer-section";
+import { JoinSwarmSection } from "@/components/join-swarm-section";
+import { LeaderboardSection } from "@/components/leaderboard/index";
+import { RegisterAgentBlock } from "@/components/register-agent-block";
+import { getSocialLinksArray } from "@/data/social";
 
 export default function LeaderboardPage() {
   return (

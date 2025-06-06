@@ -1,42 +1,44 @@
-import React from 'react';
-import {UserPlus} from 'lucide-react';
+import { UserPlus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import React from "react";
 
-import {Button} from "@recallnet/ui2/components/button"; // Path to your dialog component
+import { Button } from "@recallnet/ui2/components/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose,
+  DialogHeader,
+  DialogTitle,
 } from "@recallnet/ui2/components/dialog";
-import {useRouter} from 'next/navigation';
 
 interface CreateAccountModalProps {
   isOpen: boolean;
   onClose: (open: boolean) => void;
+  redirectTo: string;
 }
 
 export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   isOpen,
   onClose,
+  redirectTo,
 }) => {
-  const router = useRouter()
+  const router = useRouter();
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[600px]">
         <DialogHeader className="text-start">
-          <DialogTitle className="flex justify-start gap-2 text-xl font-bold text-white">
+          <DialogTitle className="flex items-center justify-start gap-2 text-xl font-bold text-white">
             <UserPlus className="size-6 text-gray-700" />
             Create Your Account
           </DialogTitle>
-          <DialogDescription className="text-gray-400 pl-8">
+          <DialogDescription className="pl-8 text-gray-400">
             You need an account to use this feature.
           </DialogDescription>
-          <p className="text-sm text-gray-500 mt-[-0.5rem] pl-8">
-            You’ll be asked to create an account.
+          <p className="mt-[-0.5rem] pl-8 text-sm text-gray-500">
+            You'll be asked to create an account.
           </p>
         </DialogHeader>
 
@@ -46,7 +48,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
           <DialogClose asChild>
             <Button
               variant="outline"
-              className="bg-transparent text-gray-500 border-gray-700 hover:bg-gray-900 rounded-lg"
+              className="rounded-lg border-gray-700 bg-transparent text-gray-500 hover:bg-gray-900"
               onClick={() => onClose(false)}
             >
               Cancel
@@ -55,10 +57,10 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
           <div className="flex items-center">
             <Button
               onClick={() => {
-                router.push('/profile')
-                onClose(false)
+                router.push(`/profile/update?redirectTo=${redirectTo}`);
+                onClose(false);
               }}
-              className="bg-white text-black hover:bg-gray-300 rounded-lg"
+              className="rounded-lg bg-white text-black hover:bg-gray-300"
             >
               Create Account
             </Button>
@@ -70,4 +72,3 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 };
 
 export default CreateAccountModal;
-
