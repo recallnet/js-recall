@@ -4,13 +4,23 @@
     "baseUrl": ".",
     "skipLibCheck": true,
     "module": "esnext",
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "paths": {
-      "@/*": ["./*"],
-      "@/types": ["types/index.ts"],
-      "@/utils/*": ["utils/*"],
-      "@/data-mock/*": ["data-mock/*"],
-      "@recallnet/ui2/*": ["../../packages/ui2/src/*"]
+      "@/*": [
+        "./*"
+      ],
+      "@/types": [
+        "types/index.ts"
+      ],
+      "@/utils/*": [
+        "utils/*"
+      ],
+      "@/data-mock/*": [
+        "data-mock/*"
+      ],
+      "@recallnet/ui2/*": [
+        "../../packages/ui2/src/*"
+      ]
     },
     "plugins": [
       {
@@ -27,5 +37,7 @@
     "components/create-agent.tsx",
     "../../packages/ui2/src/components/badge.tsx"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }
