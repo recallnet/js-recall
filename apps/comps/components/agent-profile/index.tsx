@@ -1,6 +1,6 @@
 "use client";
 
-import { Share2Icon } from "lucide-react";
+import {Share2Icon} from "lucide-react";
 import React from "react";
 
 import Card from "@recallnet/ui2/components/card";
@@ -19,23 +19,23 @@ import {
   TabsList,
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { Breadcrumbs } from "@/components/breadcrumb";
-import { Hexagon } from "@/components/hexagon";
+import {Breadcrumbs} from "@/components/breadcrumb";
+import {Hexagon} from "@/components/hexagon";
 import MirrorImage from "@/components/mirror-image";
-import { useAgent } from "@/hooks/useAgent";
-import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
-import { Competition, CompetitionStatus } from "@/types";
+import {useAgent} from "@/hooks/useAgent";
+import {useAgentCompetitions} from "@/hooks/useAgentCompetitions";
+import {Competition, CompetitionStatus} from "@/types";
 
-export default function AgentProfile({ id }: { id: string }) {
+export default function AgentProfile({id}: {id: string}) {
   const {
     data: agent,
     isLoading: isLoadingAgent,
     error: agentError,
   } = useAgent(id);
   const [selected, setSelected] = React.useState("all");
-  const { data: agentCompetitionsData, isLoading: isLoadingCompetitions } =
+  const {data: agentCompetitionsData, isLoading: isLoadingCompetitions} =
     useAgentCompetitions(id);
 
   if (isLoadingAgent || isLoadingCompetitions)
@@ -43,21 +43,21 @@ export default function AgentProfile({ id }: { id: string }) {
   if (agentError || !agent)
     return <div className="py-20 text-center">Agent not found</div>;
 
-  // const skills = agent.stats?.provenSkills || [];
+  const skills = agent.stats?.skills || [];
 
   return (
     <>
       <Breadcrumbs
         items={[
-          { title: "RECALL", href: "/" },
-          { title: "AGENTS", href: "/" },
-          { title: agent.name, href: "/" },
+          {title: "RECALL", href: "/"},
+          {title: "AGENTS", href: "/"},
+          {title: agent.name, href: "/"},
         ]}
       />
 
-      <div className="my-6 grid grid-cols-[300px_1fr_1fr] rounded-xl border-t border-gray-700 pt-5 sm:grid-rows-[65vh_1fr] md:grid-cols-[400px_1fr_1fr]">
+      <div className="my-6 grid grid-cols-[300px_1fr_1fr] rounded-xl border-t border-gray-700 pt-5 xs:grid-rows-[65vh_1fr] md:grid-cols-[400px_1fr_1fr]">
         <Card
-          className="col-span-3 flex h-[65vh] flex-col items-center justify-between bg-gray-900 p-8 sm:col-span-1 sm:mr-8"
+          className="col-span-3 flex h-[65vh] flex-col items-center justify-between bg-gray-900 p-8 xs:col-span-1 xs:mr-8"
           corner="top-left"
           cropSize={45}
         >
@@ -65,7 +65,7 @@ export default function AgentProfile({ id }: { id: string }) {
             <Share2Icon className="text-gray-600" size={30} />
           </div>
           <MirrorImage
-            image={agent.imageUrl || "/agent-image.png"}
+            image={agent.imageUrl || "/agent-placeholder.png"}
             width={160}
             height={160}
           />
@@ -73,76 +73,75 @@ export default function AgentProfile({ id }: { id: string }) {
             Calm accumulation of elite assets.
           </span>
         </Card>
-        <div className="flex-2 col-span-3 row-start-2 mt-5 flex shrink flex-col border border-gray-700 sm:col-span-2 sm:col-start-2 sm:row-start-1 sm:mt-0 sm:h-[65vh] lg:col-span-1 lg:col-start-2">
+        <div className="flex-2 col-span-3 row-start-2 mt-5 flex shrink flex-col border border-gray-700 xs:col-span-2 xs:col-start-2 xs:row-start-1 xs:mt-0 xs:h-[65vh] lg:col-span-1 lg:col-start-2">
           <div className="grow border-b border-gray-700 p-8">
-            <h1 className="text-4xl font-bold text-white">{agent.name}</h1>
-            <div className="mt-5 flex w-full justify-start gap-3">
-              <Hexagon className="h-10 w-10 bg-blue-500" />
-              <Hexagon className="h-10 w-10 bg-red-500" />
-              <Hexagon className="h-10 w-10 bg-yellow-500" />
+            <h1 className="text-4xl font-bold text-white truncate">{agent.name}</h1>
+            <div className="w-full mt-5 flex gap-3">
+              <span className="text-xl text-gray-400 font-semibold">Developed by</span>
+              <span className="text-xl text-gray-400 font-semibold text-white truncate">{agent.name}</span>
+            </div>
+            <div className="mt-8 flex w-full justify-start gap-3">
+              {
+                agent.metadata?.trophies.length > 0 ?
+                  agent.metadata?.trophies.map((_: unknown, i: number) => (
+                    <Hexagon className={`h-10 w-10 bg-${['blue-500', 'red-500', 'yellow-500'][i % 3]}`} />
+                  ))
+                  :
+                  <span className="text-gray-200">This agent hasn’t earned trophies yet.</span>
+              }
             </div>
           </div>
-          <div className="flex flex-col items-start border-b border-gray-700 p-6">
-            <span className="w-full text-left text-xs font-semibold uppercase text-gray-300">
+          <div className="flex flex-col items-start border-b border-gray-700 px-6 py-12 text-sm gap-2">
+            <span className="w-full text-left font-semibold uppercase text-gray-400">
               Best Placement
             </span>
-            <span className="text-primary-foreground w-full text-left text-lg font-bold">
-              {/* {agent.stats?.bestPlacement
+            <span className="text-gray-300 w-full text-left">
+              {agent.stats?.bestPlacement
                 ? `🥇 ${agent.stats.bestPlacement.position} of ${agent.stats.bestPlacement.participants}`
-                : "No placement"} */}
+                : "No completed yet"}
             </span>
           </div>
           <div className="flex w-full">
-            <div className="flex w-1/2 flex-col items-start border-r border-gray-700 p-6">
-              <span className="text-primary-foreground w-full text-left text-xs font-semibold uppercase">
-                ELO Rating
-              </span>
-              <span className="text-primary-foreground w-full text-left text-lg font-bold">
-                {/* {agent.stats?.eloAvg || 0} */}
-              </span>
-            </div>
             <div className="flex w-1/2 flex-col items-start p-6">
-              <span className="text-primary-foreground w-full text-left text-xs font-semibold uppercase">
+              <span className="text-gray-400 w-full text-left text-xs font-semibold uppercase">
                 Completed Comps
               </span>
               <span className="text-primary-foreground w-full text-left text-lg font-bold">
-                {/* {agent.stats?.completedCompetitions || 0} */}
+                {0}
+              </span>
+            </div>
+            <div className="flex w-1/2 flex-col items-start border-l border-gray-700 p-6">
+              <span className="text-gray-400 w-full text-left text-xs font-semibold uppercase">
+                ELO Rating
+              </span>
+              <span className="text-primary-foreground w-full text-left text-lg font-bold">
+                {0}
               </span>
             </div>
           </div>
         </div>
-        <div className="col-span-3 row-start-2 mt-8 hidden grid-rows-3 border-b border-l border-r border-t border-gray-700 text-sm sm:grid lg:col-start-3 lg:row-start-1 lg:mt-0 lg:h-[65vh] lg:border-l-0">
-          <div className="flex flex-1 flex-col items-start border-b border-gray-700 p-6">
-            <span className="font-semibold uppercase text-gray-500">
-              agent profile
+        <div className="col-span-3 row-start-2 mt-8 hidden lg:grid-rows-3 grid-rows-2 border-b border-l border-r border-t border-gray-700 text-sm xs:grid lg:col-start-3 lg:row-start-1 lg:mt-0 lg:h-[65vh] lg:border-l-0">
+          <div className="flex flex-col items-start border-b border-gray-700 p-6 gap-2 lg:row-span-2">
+            <span className="font-semibold uppercase text-gray-400">
+              agent description
             </span>
-            <span className="text-secondary-foreground">
-              Hunts analytics, prediction, and compute plays, backing teams that
-              ship fast and iterate often.
-            </span>
-          </div>
-          <div className="flex flex-1 flex-col items-start border-b border-gray-700 p-6">
-            <span className="font-semibold uppercase text-gray-500">
-              trading strategy
-            </span>
-            <span className="text-secondary-foreground">
-              Builds positions only in AI/ML/data tokens, scaling in around
-              major model releases and trimming on slowing dev activity.
+            <span className="text-gray-400">
+              {agent.description || "No profile created yet"}
             </span>
           </div>
-          <div className="flex flex-1 flex-col items-start p-6">
+          <div className="flex flex-col items-start p-6">
             <span className="w-full text-left font-semibold uppercase text-gray-500">
               Proven Skills
             </span>
-            <div className="mt-3 flex flex-wrap gap-3">
-              {/* {skills.map((skill, index) => (
+            <div className="mt-3 flex flex-wrap gap-3 text-gray-400">
+              {skills.length > 0 ? skills.map((skill, index) => (
                 <span
                   key={index}
                   className="rounded border border-gray-700 px-2 py-1 text-white"
                 >
                   {skill}
                 </span>
-              ))} */}
+              )) : "This agent hasnt showcased skills yet."}
             </div>
           </div>
         </div>
@@ -243,7 +242,7 @@ function CompetitionTable({
     <div className="overflow-hidden rounded border border-gray-800">
       <Table>
         <TableHeader className="text-muted-foreground bg-gray-900 text-xs uppercase">
-          <TableRow>
+          <TableRow className='grid grid-cols-7 w-full'>
             <SortableTableHeader>Competition</SortableTableHeader>
             <SortableTableHeader>Skills</SortableTableHeader>
             <SortableTableHeader>Portfolio</SortableTableHeader>
@@ -261,24 +260,24 @@ function CompetitionTable({
               const compStatus =
                 comp.status === CompetitionStatus.Active
                   ? {
-                      text: "On-going",
-                      style: "border-green-500 text-green-500",
-                    }
+                    text: "On-going",
+                    style: "border-green-500 text-green-500",
+                  }
                   : comp.status === CompetitionStatus.Pending
                     ? {
-                        text: "Upcoming",
-                        style: "border-blue-500 text-blue-500",
-                      }
+                      text: "Upcoming",
+                      style: "border-blue-500 text-blue-500",
+                    }
                     : {
-                        text: "Complete",
-                        style: "border-gray-500 text-gray-500",
-                      };
+                      text: "Complete",
+                      style: "border-gray-500 text-gray-500",
+                    };
 
               return (
-                <TableRow key={i}>
+                <TableRow key={i} className='grid grid-cols-7'>
                   <TableCell className="align-center">
                     <div className="flex flex-col">
-                      <span className="text-sm font-semibold text-gray-400">
+                      <span className="text-sm font-semibold text-gray-400 truncate">
                         {comp.name}
                       </span>
                       <span
