@@ -34,8 +34,8 @@ export const RegisterAgentBlock: React.FC = () => {
   const onSubmit = () => {};
 
   return (
-    <div className="relative left-1/2 right-1/2 ml-[-50vw] mr-[-50vw] w-screen bg-gray-900">
-      <div className="2xl:px-45 flex w-full flex-col items-center justify-around gap-10 px-10 py-12 lg:flex-row">
+    <div className="sm:px-35 relative left-1/2 right-1/2 ml-[-50vw] mr-[-50vw] w-screen bg-gray-900">
+      <div className="2xl:px-45 flex w-full flex-col items-center justify-around gap-10 px-10 py-12 md:flex-row">
         <Card
           corner="bottom-left"
           cropSize={50}
