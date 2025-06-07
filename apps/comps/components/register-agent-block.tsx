@@ -1,13 +1,13 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import {zodResolver} from "@hookform/resolvers/zod";
 import Image from "next/image";
 import React from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
+import {useForm} from "react-hook-form";
+import {z} from "zod";
 
-import { Button } from "@recallnet/ui2/components/button";
-import { Card } from "@recallnet/ui2/components/card";
+import {Button} from "@recallnet/ui2/components/button";
+import {Card} from "@recallnet/ui2/components/card";
 import {
   Form,
   FormControl,
@@ -15,7 +15,7 @@ import {
   FormItem,
   FormMessage,
 } from "@recallnet/ui2/components/form";
-import { Input } from "@recallnet/ui2/components/input";
+import {Input} from "@recallnet/ui2/components/input";
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -80,7 +80,7 @@ export const RegisterAgentBlock: React.FC = () => {
                 <FormField
                   control={form.control}
                   name="email"
-                  render={({ field }) => (
+                  render={({field}) => (
                     <FormItem>
                       <FormControl>
                         <div className="flex flex-col gap-5">
