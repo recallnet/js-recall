@@ -1,6 +1,6 @@
 {
-  "id": "f342f255-6cca-4d8a-bf51-2ab85882aecb",
-  "prevId": "50b91af0-b5f1-41af-95fb-2365fa6243ee",
+  "id": "8235e22a-d2b3-4989-8ce5-b27ae180755e",
+  "prevId": "01050e1d-6641-47c1-930d-79e7cb9e881d",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -190,124 +190,6 @@
           "nullsNotDistinct": false,
           "columns": [
             "api_key"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.agent_nonces": {
-      "name": "agent_nonces",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "agent_id": {
-          "name": "agent_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "nonce": {
-          "name": "nonce",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "expires_at": {
-          "name": "expires_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "used_at": {
-          "name": "used_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "idx_agent_nonces_agent_id": {
-          "name": "idx_agent_nonces_agent_id",
-          "columns": [
-            {
-              "expression": "agent_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_agent_nonces_nonce": {
-          "name": "idx_agent_nonces_nonce",
-          "columns": [
-            {
-              "expression": "nonce",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_agent_nonces_expires_at": {
-          "name": "idx_agent_nonces_expires_at",
-          "columns": [
-            {
-              "expression": "expires_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "agent_nonces_agent_id_fkey": {
-          "name": "agent_nonces_agent_id_fkey",
-          "tableFrom": "agent_nonces",
-          "tableTo": "agents",
-          "columnsFrom": [
-            "agent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "agent_nonces_nonce_unique": {
-          "name": "agent_nonces_nonce_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "nonce"
           ]
         }
       },
