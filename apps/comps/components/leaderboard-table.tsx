@@ -1,14 +1,11 @@
-"use client";
-
-import React from 'react'
-import {AwardIcon, ExternalLink, Trophy} from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { AwardIcon, ExternalLink, Trophy } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useMemo, useState } from "react";
 
-import {Button} from "@recallnet/ui2/components/button";
-import {ChevronLeft, ChevronRight} from "lucide-react";
-
-import {Skeleton} from "@recallnet/ui2/components/skeleton";
+import { Button } from "@recallnet/ui2/components/button";
+import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import {
   SortableTableHeader,
   Table,
@@ -18,11 +15,11 @@ import {
   TableHeader,
   TableRow,
 } from "@recallnet/ui2/components/table";
-import {cn} from "@recallnet/ui2/lib/utils";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import {LeaderboardAgent} from "@/types/agent";
+import { LeaderboardAgent } from "@/types/agent";
 
-const emptyAgent: (i: number) => LeaderboardAgent = (i: number) => ({
+const emptyAgent = (i: number): LeaderboardAgent => ({
   id: i.toString(),
   name: `some-name-${i}`,
   walletAddress: "",
@@ -41,6 +38,9 @@ const emptyAgent: (i: number) => LeaderboardAgent = (i: number) => ({
   },
 });
 
+type SortField = "rank" | "name" | "numCompetitions" | "voteCount" | null;
+type SortState = "none" | "asc" | "desc";
+
 export function LeaderboardTable({
   agents,
   onPageChange,
@@ -56,28 +56,76 @@ export function LeaderboardTable({
   itemsByPage?: number;
   loaded?: boolean;
 }) {
-  const pageNumbers = new Array(total / itemsByPage).fill(0).map((_, i) => i)
-  const toRender = loaded
-    ? agents
-    : new Array(10).fill(0).map((_, i) => emptyAgent(i));
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortDirection, setSortDirection] = useState<SortState>("none");
+
+  const toggleSort = (field: SortField) => {
+    if (sortField !== field) {
+      setSortField(field);
+      setSortDirection("asc");
+    } else {
+      setSortDirection((prev) =>
+        prev === "none" ? "asc" : prev === "asc" ? "desc" : "none",
+      );
+      if (sortDirection === "desc") setSortField(null);
+    }
+  };
+
+  const sortedAgents = useMemo(() => {
+    if (!loaded) return new Array(10).fill(0).map((_, i) => emptyAgent(i));
+    if (!sortField || sortDirection === "none") return agents;
+
+    const sorted = [...agents].sort((a, b) => {
+      const aVal = a[sortField] ?? "";
+      const bVal = b[sortField] ?? "";
+      if (typeof aVal === "string" && typeof bVal === "string") {
+        return aVal.localeCompare(bVal);
+      }
+      return (aVal as number) - (bVal as number);
+    });
+
+    return sortDirection === "asc" ? sorted : sorted.reverse();
+  }, [agents, loaded, sortField, sortDirection]);
+
+  const pageNumbers = new Array(Math.ceil(total / itemsByPage))
+    .fill(0)
+    .map((_, i) => i);
 
   return (
     <>
       <Table className="w-full">
         <TableHeader className="bg-gray-900">
           <TableRow className="grid w-full grid-cols-[1fr_2fr_1fr_1fr_1fr]">
-            <SortableTableHeader className="pl-10 text-white">
+            <SortableTableHeader
+              className="pl-10 text-white"
+              sortState={sortField === "rank" ? sortDirection : "none"}
+              onToggleSort={() => toggleSort("rank")}
+            >
               Rank
             </SortableTableHeader>
-            <SortableTableHeader className="xs:pl-20 pl-10 text-white">
+            <SortableTableHeader
+              className="xs:pl-20 pl-10 text-white"
+              sortState={sortField === "name" ? sortDirection : "none"}
+              onToggleSort={() => toggleSort("name")}
+            >
               Agent
             </SortableTableHeader>
-            <SortableTableHeader className="flex justify-end text-white">
+            <SortableTableHeader
+              className="flex justify-end text-white"
+              sortState={
+                sortField === "numCompetitions" ? sortDirection : "none"
+              }
+              onToggleSort={() => toggleSort("numCompetitions")}
+            >
               <div className="w-10 sm:w-full">
                 <p className="truncate">Competitions</p>
               </div>
             </SortableTableHeader>
-            <SortableTableHeader className="flex justify-end text-white">
+            <SortableTableHeader
+              className="flex justify-end text-white"
+              sortState={sortField === "voteCount" ? sortDirection : "none"}
+              onToggleSort={() => toggleSort("voteCount")}
+            >
               Votes
             </SortableTableHeader>
             <TableHead className="flex justify-end pr-10 text-white">
@@ -87,23 +135,16 @@ export function LeaderboardTable({
         </TableHeader>
 
         <TableBody>
-          {toRender.map((agent, i) => (
+          {sortedAgents.map((agent) => (
             <TableRow
               key={agent.id}
               className="grid grid-cols-[1fr_2fr_1fr_1fr_1fr]"
             >
               <TableCell className="xs:flex-row flex flex-col items-center gap-2 py-6">
-                <div className="flex gap-2">
-                  {/* TODO: enable once we have official rankings & net change in rank */}
-                  {/* <ArrowUp size={20} className="text-green-500" />
-                  <span>3</span> */}
-                </div>
                 {agent.rank === 1 ? (
                   <div
                     className={cn(
-                      "flex w-20 items-center justify-center gap-1 rounded p-2",
-                      "bg-[#594100]",
-                      "text-yellow-500",
+                      "flex w-20 items-center justify-center gap-1 rounded bg-[#594100] p-2 text-yellow-500",
                     )}
                   >
                     <Trophy size={17} />
@@ -112,9 +153,7 @@ export function LeaderboardTable({
                 ) : agent.rank === 2 ? (
                   <div
                     className={cn(
-                      "flex w-20 items-center justify-center gap-1 rounded p-2",
-                      "bg-gray-700",
-                      "text-gray-300",
+                      "flex w-20 items-center justify-center gap-1 rounded bg-gray-700 p-2 text-gray-300",
                     )}
                   >
                     <AwardIcon size={17} />
@@ -123,9 +162,7 @@ export function LeaderboardTable({
                 ) : agent.rank === 3 ? (
                   <div
                     className={cn(
-                      "flex w-20 items-center justify-center gap-1 rounded p-2",
-                      "bg-[#1A0E05]",
-                      "text-[#C76E29]",
+                      "flex w-20 items-center justify-center gap-1 rounded bg-[#1A0E05] p-2 text-[#C76E29]",
                     )}
                   >
                     <AwardIcon size={17} />
@@ -136,8 +173,6 @@ export function LeaderboardTable({
                     {agent.rank}
                   </div>
                 )}
-                {/* TODO: hide this until official "scores" are implemented; the API does return the data, but it's not elo-based */}
-                {/* <span className="text-gray-500">{agent.score}</span> */}
               </TableCell>
 
               <TableCell className="flex items-center justify-center">
@@ -181,7 +216,7 @@ export function LeaderboardTable({
 
               <TableCell className="flex items-center justify-end pr-10 text-gray-500">
                 {loaded ? (
-                  <>{agent.numCompetitions}</>
+                  agent.numCompetitions
                 ) : (
                   <Skeleton className="h-2 w-10 rounded-full" />
                 )}
@@ -189,8 +224,7 @@ export function LeaderboardTable({
 
               <TableCell className="flex items-center justify-end pr-10 text-gray-500 sm:pr-0">
                 {loaded ? (
-                  // TODO: this is not part of the API response, yet, but it will be guaranteed to be present via the `useLeaderboards` hook
-                  <>{agent.voteCount || 0}</>
+                  agent.voteCount || 0
                 ) : (
                   <Skeleton className="h-2 w-10 rounded-full" />
                 )}
@@ -208,7 +242,7 @@ export function LeaderboardTable({
 
       <div className="mt-6 flex items-center justify-center gap-2">
         <Button
-          className='bg-transparent hover:bg-gray-900 rounded-full'
+          className="rounded-full bg-transparent hover:bg-gray-900"
           size="icon"
           disabled={page === 1}
           onClick={() => onPageChange(page - 1)}
@@ -222,7 +256,7 @@ export function LeaderboardTable({
               "rounded px-3 py-1 text-sm font-medium",
               page === cur
                 ? "bg-white text-black"
-                : "text-gray-400 hover:text-white hover:bg-gray-700"
+                : "text-gray-400 hover:bg-gray-700 hover:text-white",
             )}
             onClick={() => onPageChange(cur)}
           >
@@ -230,9 +264,9 @@ export function LeaderboardTable({
           </button>
         ))}
         <Button
-          className='bg-transparent hover:bg-gray-900 rounded-full'
+          className="rounded-full bg-transparent hover:bg-gray-900"
           size="icon"
-          disabled={page === total}
+          disabled={page >= pageNumbers.length - 1}
           onClick={() => onPageChange(page + 1)}
         >
           <ChevronRight />
