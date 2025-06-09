@@ -191,14 +191,27 @@ export function makeAgentController(services: ServiceRegistry) {
           throw new ApiError(404, "Agent not found");
         }
 
+        // Get the owner user information
+        const owner = await services.userManager.getUser(agent.ownerId);
+
+        // Prepare owner info for public display (null if user not found)
+        const ownerInfo = owner
+          ? {
+              id: owner.id,
+              name: owner.name || null,
+              walletAddress: owner.walletAddress,
+            }
+          : null;
+
         const sanitizedAgent = services.agentManager.sanitizeAgent(agent);
         const computedAgent =
           services.agentManager.attachAgentMetrics(sanitizedAgent);
 
-        // Return the agent
+        // Return the agent with owner information
         res.status(200).json({
           success: true,
           agent: computedAgent,
+          owner: ownerInfo,
         });
       } catch (err) {
         next(err);

@@ -699,7 +699,7 @@ Get agent by ID
 
 ##### Description:
 
-Retrieve the information for the given agent ID
+Retrieve the information for the given agent ID including owner information
 
 ##### Parameters
 
