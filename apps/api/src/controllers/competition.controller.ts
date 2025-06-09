@@ -9,6 +9,7 @@ import {
   COMPETITION_STATUS,
   CompetitionAgentParamsSchema,
   CompetitionAgentsParamsSchema,
+  CompetitionLeaderboardParamsSchema,
   CompetitionStatusSchema,
   PagingParamsSchema,
 } from "@/types/index.js";
@@ -20,7 +21,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
    */
   return {
     /**
-     * Get competition leaderboard
+     * Get competition leaderboard with sorting and global metrics
      * Available to admins and competition participants
      * @param req AuthenticatedRequest object with agent authentication information
      * @param res Express response object
@@ -32,6 +33,14 @@ export function makeCompetitionController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
+        // Validate query parameters
+        const { success, data, error } =
+          CompetitionLeaderboardParamsSchema.safeParse(req.query);
+        if (!success) {
+          throw new ApiError(400, `Invalid request format: ${error.message}`);
+        }
+        const queryParams = data;
+
         // Get active competition or use competitionId from query
         const competitionId =
           (req.query.competitionId as string) ||
@@ -82,56 +91,18 @@ export function makeCompetitionController(services: ServiceRegistry) {
           }
         }
 
-        // Get leaderboard
-        const leaderboard =
-          await services.competitionManager.getLeaderboard(competitionId);
-
-        // Get all agents
-        const agents = await services.agentManager.getAllAgents();
-
-        // Create map of all agents
-        const agentMap = new Map(agents.map((agent) => [agent.id, agent]));
-
-        // Separate active and inactive agents
-        const activeLeaderboard = [];
-        const inactiveAgents = [];
-
-        // Process each agent in the leaderboard
-        for (const entry of leaderboard) {
-          const agent = agentMap.get(entry.agentId);
-          const isInactive = agent?.status !== "active";
-
-          const leaderboardEntry = {
-            agentId: entry.agentId,
-            agentName: agent ? agent.name : "Unknown Agent",
-            portfolioValue: entry.value,
-            active: !isInactive,
-            deactivationReason: isInactive ? agent?.deactivationReason : null,
-          };
-
-          if (isInactive) {
-            // Add to inactive agents without rank
-            inactiveAgents.push(leaderboardEntry);
-          } else {
-            // Add to active leaderboard
-            activeLeaderboard.push(leaderboardEntry);
-          }
-        }
-
-        // Assign ranks to active agents
-        const rankedActiveLeaderboard = activeLeaderboard.map(
-          (entry, index) => ({
-            rank: index + 1,
-            ...entry,
-          }),
-        );
+        // Call service layer for leaderboard with sorting and global metrics
+        const result =
+          await services.competitionManager.getLeaderboardWithSorting(
+            competitionId,
+            queryParams.sort,
+            { limit: queryParams.limit, offset: queryParams.offset },
+          );
 
         res.status(200).json({
           success: true,
           competition,
-          leaderboard: rankedActiveLeaderboard,
-          inactiveAgents: inactiveAgents,
-          hasInactiveAgents: inactiveAgents.length > 0,
+          ...result,
         });
       } catch (error) {
         next(error);

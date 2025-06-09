@@ -164,8 +164,8 @@ export function configureCompetitionsRoutes(
    *   get:
    *     tags:
    *       - Competition
-   *     summary: Get competition leaderboard
-   *     description: Get the leaderboard for the active competition or a specific competition. Access may be restricted to administrators only based on environment configuration.
+   *     summary: Get competition leaderboard with sorting
+   *     description: Get the leaderboard for the active competition or a specific competition with optional sorting and pagination. Access may be restricted to administrators only based on environment configuration.
    *     security:
    *       - BearerAuth: []
    *     parameters:
@@ -175,6 +175,30 @@ export function configureCompetitionsRoutes(
    *           type: string
    *         required: false
    *         description: Optional competition ID (if not provided, the active competition is used)
+   *       - in: query
+   *         name: sort
+   *         schema:
+   *           type: string
+   *           default: agentName
+   *         required: false
+   *         description: Optional field to sort by. Available fields are 'agentName', 'portfolioValue', 'competitions', 'votes'. Use '-' prefix for descending order (e.g., '-votes')
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: integer
+   *           minimum: 1
+   *           maximum: 100
+   *           default: 50
+   *         required: false
+   *         description: Optional maximum number of results to return
+   *       - in: query
+   *         name: offset
+   *         schema:
+   *           type: integer
+   *           minimum: 0
+   *           default: 0
+   *         required: false
+   *         description: Optional number of results to skip for pagination
    *     responses:
    *       200:
    *         description: Competition leaderboard
@@ -234,13 +258,13 @@ export function configureCompetitionsRoutes(
    *                       description: When the competition was last updated
    *                 leaderboard:
    *                   type: array
-   *                   description: Ranked list of active agents
+   *                   description: Ranked list of active agents (sorted according to sort parameter)
    *                   items:
    *                     type: object
    *                     properties:
    *                       rank:
    *                         type: integer
-   *                         description: Agent rank on the leaderboard
+   *                         description: Agent rank on the leaderboard (after sorting)
    *                       agentId:
    *                         type: string
    *                         description: Agent ID
@@ -257,6 +281,12 @@ export function configureCompetitionsRoutes(
    *                         type: string
    *                         nullable: true
    *                         description: Always null for active agents
+   *                       competitions:
+   *                         type: integer
+   *                         description: Total number of competitions this agent has participated in (global metric)
+   *                       votes:
+   *                         type: integer
+   *                         description: Total number of votes this agent has received across all competitions (global metric)
    *                 inactiveAgents:
    *                   type: array
    *                   description: List of deactivated agents (excluded from ranking)
@@ -281,6 +311,22 @@ export function configureCompetitionsRoutes(
    *                 hasInactiveAgents:
    *                   type: boolean
    *                   description: Indicates if any agents are inactive
+   *                 pagination:
+   *                   type: object
+   *                   description: Pagination metadata
+   *                   properties:
+   *                     total:
+   *                       type: integer
+   *                       description: Total number of active agents in the competition
+   *                     limit:
+   *                       type: integer
+   *                       description: Maximum number of results returned
+   *                     offset:
+   *                       type: integer
+   *                       description: Number of results skipped
+   *                     hasMore:
+   *                       type: boolean
+   *                       description: Whether there are more results available
    *       400:
    *         description: Bad request - No active competition and no competitionId provided
    *       401:

@@ -730,13 +730,21 @@ export class ApiClient {
   /**
    * Get competition leaderboard
    */
-  async getCompetitionLeaderboard(): Promise<
-    LeaderboardResponse | ErrorResponse
-  > {
+  async getCompetitionLeaderboard(
+    competitionId?: string,
+    sort?: string,
+    limit?: number,
+    offset?: number,
+  ): Promise<LeaderboardResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get(
-        "/api/competitions/leaderboard",
-      );
+      const params = new URLSearchParams();
+      if (competitionId) params.append("competitionId", competitionId);
+      if (sort) params.append("sort", sort);
+      if (limit !== undefined) params.append("limit", limit.toString());
+      if (offset !== undefined) params.append("offset", offset.toString());
+
+      const url = `/api/competitions/leaderboard${params.toString() ? `?${params.toString()}` : ""}`;
+      const response = await this.axiosInstance.get(url);
       return response.data as LeaderboardResponse;
     } catch (error) {
       return this.handleApiError(error, "get leaderboard");

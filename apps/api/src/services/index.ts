@@ -59,18 +59,19 @@ class ServiceRegistry {
     // Configuration service for dynamic settings
     this._configurationService = new ConfigurationService();
 
+    // Initialize vote manager (no dependencies)
+    this._voteManager = new VoteManager();
+
     this._competitionManager = new CompetitionManager(
       this._balanceManager,
       this._tradeSimulator,
       this._portfolioSnapshotter,
       this._agentManager,
       this._configurationService,
+      this._voteManager,
     );
 
     this._leaderboardService = new LeaderboardService();
-
-    // Initialize vote manager (no dependencies)
-    this._voteManager = new VoteManager();
 
     // Initialize and start the scheduler
     this._scheduler = new SchedulerService(

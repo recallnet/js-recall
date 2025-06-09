@@ -2728,4 +2728,211 @@ describe("Competition API", () => {
       });
     });
   });
+
+  describe("Leaderboard Sorting", () => {
+    test("should sort leaderboard by different criteria with global metrics", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register agents with different names to test alphabetical sorting
+      const { agent: agentAlpha } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Alpha Agent", // Should come first alphabetically
+      });
+      const { agent: agentZulu } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Zulu Agent", // Should come last alphabetically
+      });
+      const { agent: agentBeta } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Beta Agent", // Should come second alphabetically
+      });
+
+      // Start a competition with these agents
+      const competitionName = `Sorting Test Competition ${Date.now()}`;
+      await startTestCompetition(adminClient, competitionName, [
+        agentAlpha.id,
+        agentZulu.id,
+        agentBeta.id,
+      ]);
+
+      // Wait for competition to be fully set up
+      await wait(1000);
+
+      // Test 1: Default sort (agentName ascending)
+      console.log("Testing default sort (agentName ascending)");
+      const defaultResponse = await adminClient.getCompetitionLeaderboard();
+      expect("success" in defaultResponse && defaultResponse.success).toBe(
+        true,
+      );
+      if ("leaderboard" in defaultResponse && defaultResponse.leaderboard) {
+        const agents = defaultResponse.leaderboard;
+        expect(agents.length).toBe(3);
+
+        // Should be sorted alphabetically by agent name
+        expect(agents[0]?.agentName).toBe("Alpha Agent");
+        expect(agents[1]?.agentName).toBe("Beta Agent");
+        expect(agents[2]?.agentName).toBe("Zulu Agent");
+
+        // Ranks should be assigned sequentially after sorting
+        expect(agents[0]?.rank).toBe(1);
+        expect(agents[1]?.rank).toBe(2);
+        expect(agents[2]?.rank).toBe(3);
+      }
+
+      // Test 2: Sort by agentName descending
+      console.log("Testing agentName descending sort");
+      const nameDescResponse = await adminClient.getCompetitionLeaderboard(
+        undefined,
+        "-agentName",
+      );
+      expect("success" in nameDescResponse && nameDescResponse.success).toBe(
+        true,
+      );
+      if ("leaderboard" in nameDescResponse && nameDescResponse.leaderboard) {
+        const agents = nameDescResponse.leaderboard;
+        expect(agents[0]?.agentName).toBe("Zulu Agent");
+        expect(agents[1]?.agentName).toBe("Beta Agent");
+        expect(agents[2]?.agentName).toBe("Alpha Agent");
+      }
+
+      // Test 3: Sort by portfolioValue descending (should be default portfolio behavior)
+      console.log("Testing portfolioValue descending sort");
+      const portfolioDescResponse = await adminClient.getCompetitionLeaderboard(
+        undefined,
+        "-portfolioValue",
+      );
+      expect(
+        "success" in portfolioDescResponse && portfolioDescResponse.success,
+      ).toBe(true);
+      if (
+        "leaderboard" in portfolioDescResponse &&
+        portfolioDescResponse.leaderboard
+      ) {
+        const agents = portfolioDescResponse.leaderboard;
+        expect(agents.length).toBe(3);
+        // Portfolio values should be in descending order
+        for (let i = 0; i < agents.length - 1; i++) {
+          expect(agents[i]?.portfolioValue).toBeGreaterThanOrEqual(
+            agents[i + 1]?.portfolioValue || 0,
+          );
+        }
+      }
+
+      // Test 4: Sort by competitions ascending
+      console.log("Testing competitions ascending sort");
+      const competitionsAscResponse =
+        await adminClient.getCompetitionLeaderboard(undefined, "competitions");
+      expect(
+        "success" in competitionsAscResponse && competitionsAscResponse.success,
+      ).toBe(true);
+      if (
+        "leaderboard" in competitionsAscResponse &&
+        competitionsAscResponse.leaderboard
+      ) {
+        const agents = competitionsAscResponse.leaderboard;
+        expect(agents.length).toBe(3);
+        // Competitions should be in ascending order
+        for (let i = 0; i < agents.length - 1; i++) {
+          expect(agents[i]?.competitions).toBeLessThanOrEqual(
+            agents[i + 1]?.competitions || 0,
+          );
+        }
+      }
+
+      // Test 5: Sort by votes descending
+      console.log("Testing votes descending sort");
+      const votesDescResponse = await adminClient.getCompetitionLeaderboard(
+        undefined,
+        "-votes",
+      );
+      expect("success" in votesDescResponse && votesDescResponse.success).toBe(
+        true,
+      );
+      if ("leaderboard" in votesDescResponse && votesDescResponse.leaderboard) {
+        const agents = votesDescResponse.leaderboard;
+        expect(agents.length).toBe(3);
+        // Votes should be in descending order
+        for (let i = 0; i < agents.length - 1; i++) {
+          expect(agents[i]?.votes).toBeGreaterThanOrEqual(
+            agents[i + 1]?.votes || 0,
+          );
+        }
+      }
+
+      // Test 6: Verify enhanced response structure with global metrics
+      console.log("Verifying enhanced leaderboard response structure");
+      if ("leaderboard" in defaultResponse && defaultResponse.leaderboard) {
+        defaultResponse.leaderboard.forEach((agent) => {
+          // Existing fields
+          expect(agent.rank).toBeDefined();
+          expect(agent.agentId).toBeDefined();
+          expect(agent.agentName).toBeDefined();
+          expect(agent.portfolioValue).toBeDefined();
+          expect(agent.active).toBeDefined();
+
+          // New global metric fields
+          expect(agent.competitions).toBeDefined();
+          expect(agent.votes).toBeDefined();
+
+          // Type checks
+          expect(typeof agent.rank).toBe("number");
+          expect(typeof agent.agentId).toBe("string");
+          expect(typeof agent.agentName).toBe("string");
+          expect(typeof agent.portfolioValue).toBe("number");
+          expect(typeof agent.active).toBe("boolean");
+          expect(typeof agent.competitions).toBe("number");
+          expect(typeof agent.votes).toBe("number");
+
+          // Global metrics should be non-negative
+          expect(agent.competitions).toBeGreaterThanOrEqual(0);
+          expect(agent.votes).toBeGreaterThanOrEqual(0);
+        });
+      }
+
+      // Test 7: Verify pagination metadata
+      console.log("Verifying pagination metadata");
+      if ("pagination" in defaultResponse && defaultResponse.pagination) {
+        expect(defaultResponse.pagination.total).toBe(3);
+        expect(defaultResponse.pagination.limit).toBe(50); // Default limit
+        expect(defaultResponse.pagination.offset).toBe(0); // Default offset
+        expect(defaultResponse.pagination.hasMore).toBe(false); // Only 3 agents, less than limit
+      }
+
+      // Test 8: Test pagination with custom limit
+      console.log("Testing pagination with custom limit");
+      const paginatedResponse = await adminClient.getCompetitionLeaderboard(
+        undefined,
+        "agentName",
+        2,
+        0,
+      );
+      expect("success" in paginatedResponse && paginatedResponse.success).toBe(
+        true,
+      );
+      if (
+        "leaderboard" in paginatedResponse &&
+        paginatedResponse.leaderboard &&
+        "pagination" in paginatedResponse
+      ) {
+        expect(paginatedResponse.leaderboard.length).toBe(2);
+        expect(paginatedResponse.pagination?.total).toBe(3);
+        expect(paginatedResponse.pagination?.limit).toBe(2);
+        expect(paginatedResponse.pagination?.offset).toBe(0);
+        expect(paginatedResponse.pagination?.hasMore).toBe(true);
+      }
+
+      // Test 9: Verify inactive agents remain unaffected by sorting
+      console.log("Verifying active agent status");
+      if ("leaderboard" in defaultResponse && defaultResponse.leaderboard) {
+        defaultResponse.leaderboard.forEach((agent) => {
+          expect(agent.active).toBe(true);
+          expect(agent.deactivationReason).toBeNull();
+        });
+      }
+
+      console.log("✅ All leaderboard sorting tests passed");
+    });
+  });
 });
