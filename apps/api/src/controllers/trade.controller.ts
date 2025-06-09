@@ -189,7 +189,12 @@ export function makeTradeController(services: ServiceRegistry) {
           toTokenSpecificChain,
         );
 
-        if (!fromPrice || !toPrice) {
+        if (
+          !fromPrice ||
+          !toPrice ||
+          fromPrice.price == null ||
+          toPrice.price == null
+        ) {
           throw new ApiError(400, "Unable to determine price for tokens");
         }
 

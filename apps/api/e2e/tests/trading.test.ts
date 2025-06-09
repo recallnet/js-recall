@@ -2164,4 +2164,209 @@ describe("Trading API", () => {
     );
     expect(finalSolBalance).toBeLessThan(updatedSolBalance);
   });
+
+  test("trading to zero address burns tokens (EVM and Solana)", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent and get client
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Token Burn Test Agent",
+      });
+
+    // Start a competition with cross-chain trading enabled
+    const competitionName = `Token Burn Test ${Date.now()}`;
+    await adminClient.startCompetition({
+      name: competitionName,
+      agentIds: [agent.id],
+      tradingType: CROSS_CHAIN_TRADING_TYPE.ALLOW,
+    });
+
+    // Wait for balances to be properly initialized
+    await wait(500);
+
+    // Check initial balance
+    const initialBalanceResponse = await agentClient.getBalance();
+    expect(initialBalanceResponse.success).toBe(true);
+
+    // Get initial USDC balance on Solana
+    const svmUsdcAddress = config.specificChainTokens.svm.usdc;
+    const initialUsdcBalance = parseFloat(
+      (initialBalanceResponse as BalancesResponse).balances
+        .find((b) => b.tokenAddress === svmUsdcAddress)
+        ?.amount.toString() || "0",
+    );
+
+    console.log(`Initial USDC balance: ${initialUsdcBalance}`);
+    expect(initialUsdcBalance).toBeGreaterThan(0);
+
+    const tradeAmount = 100; // Trade 100 USDC
+
+    // Test 1: Burn tokens by trading to EVM zero address
+    const evmZeroAddress = "0x0000000000000000000000000000000000000000";
+    console.log(`Testing burn to EVM zero address: ${evmZeroAddress}`);
+
+    const evmBurnTradeResponse = await agentClient.executeTrade({
+      fromToken: svmUsdcAddress,
+      toToken: evmZeroAddress,
+      amount: tradeAmount.toString(),
+      fromChain: BlockchainType.SVM,
+      toChain: BlockchainType.EVM,
+      reason: "Burning tokens by trading to EVM zero address",
+    });
+
+    console.log(
+      `EVM burn trade response: ${JSON.stringify(evmBurnTradeResponse)}`,
+    );
+
+    // Trade should succeed
+    expect(evmBurnTradeResponse.success).toBe(true);
+
+    if (evmBurnTradeResponse.success) {
+      const transaction = (evmBurnTradeResponse as TradeResponse).transaction;
+
+      // Verify trade was recorded correctly
+      expect(transaction.fromToken).toBe(svmUsdcAddress);
+      expect(transaction.toToken).toBe(evmZeroAddress);
+      expect(parseFloat(transaction.fromAmount.toString())).toBe(tradeAmount);
+
+      // Key assertion: toAmount should be 0 (tokens burned)
+      expect(parseFloat(transaction.toAmount.toString())).toBe(0);
+
+      // Price should be 0 since we're burning
+      expect(parseFloat(transaction.price.toString())).toBe(0);
+
+      // Trade amount USD should reflect the value of tokens burned
+      expect(transaction.tradeAmountUsd).toBeGreaterThan(0);
+
+      console.log(
+        `Burn trade recorded - fromAmount: ${transaction.fromAmount}, toAmount: ${transaction.toAmount}, price: ${transaction.price}`,
+      );
+    }
+
+    await wait(500);
+
+    // Check updated balance after EVM burn
+    const afterEvmBurnBalanceResponse = await agentClient.getBalance();
+    const afterEvmBurnUsdcBalance = parseFloat(
+      (afterEvmBurnBalanceResponse as BalancesResponse).balances
+        .find((b) => b.tokenAddress === svmUsdcAddress)
+        ?.amount.toString() || "0",
+    );
+
+    // USDC balance should have decreased (tokens burned)
+    expect(afterEvmBurnUsdcBalance).toBe(initialUsdcBalance - tradeAmount);
+    console.log(
+      `USDC balance after EVM burn: ${afterEvmBurnUsdcBalance} (decreased by ${tradeAmount})`,
+    );
+
+    // Verify no balance was created for the zero address
+    const evmZeroBalance = parseFloat(
+      (afterEvmBurnBalanceResponse as BalancesResponse).balances
+        .find((b) => b.tokenAddress === evmZeroAddress)
+        ?.amount.toString() || "0",
+    );
+    expect(evmZeroBalance).toBe(0);
+
+    // Test 2: Burn tokens by trading to Solana zero address
+    const solanaZeroAddress = "11111111111111111111111111111111";
+    console.log(`Testing burn to Solana zero address: ${solanaZeroAddress}`);
+
+    const solanaBurnTradeResponse = await agentClient.executeTrade({
+      fromToken: svmUsdcAddress,
+      toToken: solanaZeroAddress,
+      amount: tradeAmount.toString(),
+      fromChain: BlockchainType.SVM,
+      toChain: BlockchainType.SVM,
+      reason: "Burning tokens by trading to Solana zero address",
+    });
+
+    console.log(
+      `Solana burn trade response: ${JSON.stringify(solanaBurnTradeResponse)}`,
+    );
+
+    // Trade should succeed
+    expect(solanaBurnTradeResponse.success).toBe(true);
+
+    if (solanaBurnTradeResponse.success) {
+      const transaction = (solanaBurnTradeResponse as TradeResponse)
+        .transaction;
+
+      // Verify trade was recorded correctly
+      expect(transaction.fromToken).toBe(svmUsdcAddress);
+      expect(transaction.toToken).toBe(solanaZeroAddress);
+      expect(parseFloat(transaction.fromAmount.toString())).toBe(tradeAmount);
+
+      // Key assertion: toAmount should be 0 (tokens burned)
+      expect(parseFloat(transaction.toAmount.toString())).toBe(0);
+
+      // Price should be 0 since we're burning
+      expect(parseFloat(transaction.price.toString())).toBe(0);
+
+      // Trade amount USD should reflect the value of tokens burned
+      expect(transaction.tradeAmountUsd).toBeGreaterThan(0);
+
+      console.log(
+        `Solana burn trade recorded - fromAmount: ${transaction.fromAmount}, toAmount: ${transaction.toAmount}, price: ${transaction.price}`,
+      );
+    }
+
+    await wait(500);
+
+    // Check final balance after both burns
+    const finalBalanceResponse = await agentClient.getBalance();
+    const finalUsdcBalance = parseFloat(
+      (finalBalanceResponse as BalancesResponse).balances
+        .find((b) => b.tokenAddress === svmUsdcAddress)
+        ?.amount.toString() || "0",
+    );
+
+    // USDC balance should have decreased by both burn amounts
+    expect(finalUsdcBalance).toBe(initialUsdcBalance - tradeAmount * 2);
+    console.log(
+      `Final USDC balance: ${finalUsdcBalance} (decreased by ${tradeAmount * 2} total)`,
+    );
+
+    // Verify no balance was created for the Solana zero address
+    const solanaZeroBalance = parseFloat(
+      (finalBalanceResponse as BalancesResponse).balances
+        .find((b) => b.tokenAddress === solanaZeroAddress)
+        ?.amount.toString() || "0",
+    );
+    expect(solanaZeroBalance).toBe(0);
+
+    // Test 3: Verify burn trades appear correctly in trade history
+    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    expect(tradeHistoryResponse.success).toBe(true);
+
+    const trades = (tradeHistoryResponse as TradeHistoryResponse).trades;
+
+    // Find our burn trades (most recent should be first)
+    const solanaBurnTrade = trades.find((t) => t.toToken === solanaZeroAddress);
+    const evmBurnTrade = trades.find((t) => t.toToken === evmZeroAddress);
+
+    expect(solanaBurnTrade).toBeDefined();
+    expect(evmBurnTrade).toBeDefined();
+
+    if (solanaBurnTrade) {
+      expect(parseFloat(solanaBurnTrade.toAmount.toString())).toBe(0);
+      expect(parseFloat(solanaBurnTrade.price.toString())).toBe(0);
+      expect(solanaBurnTrade.reason).toBe(
+        "Burning tokens by trading to Solana zero address",
+      );
+    }
+
+    if (evmBurnTrade) {
+      expect(parseFloat(evmBurnTrade.toAmount.toString())).toBe(0);
+      expect(parseFloat(evmBurnTrade.price.toString())).toBe(0);
+      expect(evmBurnTrade.reason).toBe(
+        "Burning tokens by trading to EVM zero address",
+      );
+    }
+
+    console.log("✅ All token burn tests passed!");
+  });
 });
