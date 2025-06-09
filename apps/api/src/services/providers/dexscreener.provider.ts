@@ -386,18 +386,18 @@ export class DexScreenerProvider implements PriceSource {
   }
 
   /**
-   * Check if a token address is a burn address (zero address)
+   * Check if a token address is a burn address (dead address)
    */
   private isBurnAddress(tokenAddress: string): boolean {
     const normalizedAddress = tokenAddress.toLowerCase();
 
-    // EVM zero address
-    if (normalizedAddress === "0x0000000000000000000000000000000000000000") {
+    // EVM dead address
+    if (normalizedAddress === "0x000000000000000000000000000000000000dead") {
       return true;
     }
 
-    // Solana zero address (System Program)
-    if (normalizedAddress === "11111111111111111111111111111111") {
+    // Solana dead address (incinerator)
+    if (normalizedAddress === "1nc1nerator11111111111111111111111111111111") {
       return true;
     }
 
