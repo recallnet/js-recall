@@ -186,7 +186,7 @@ export interface AdminAgentsListResponse extends ApiResponse {
   agents: Agent[];
 }
 
-// Agent API key response
+// Agent API key response (admin endpoint)
 export interface AgentApiKeyResponse extends ApiResponse {
   success: true;
   agent: {
@@ -194,6 +194,14 @@ export interface AgentApiKeyResponse extends ApiResponse {
     name: string;
     apiKey: string;
   };
+}
+
+// User agent API key response (user endpoint)
+export interface UserAgentApiKeyResponse extends ApiResponse {
+  success: true;
+  agentId: string;
+  agentName: string;
+  apiKey: string;
 }
 
 /**

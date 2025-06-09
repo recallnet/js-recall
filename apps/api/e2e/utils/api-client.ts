@@ -47,6 +47,7 @@ import {
   TradeHistoryResponse,
   TradeResponse,
   UpcomingCompetitionsResponse,
+  UserAgentApiKeyResponse,
   UserProfileResponse,
   UserRegistrationResponse,
   UserVotesResponse,
@@ -1323,6 +1324,23 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get user agent");
+    }
+  }
+
+  /**
+   * Get the API key for a specific agent owned by the authenticated user
+   * @param agentId ID of the agent to get the API key for
+   */
+  async getUserAgentApiKey(
+    agentId: string,
+  ): Promise<UserAgentApiKeyResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/user/agents/${agentId}/api-key`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get user agent API key");
     }
   }
 
