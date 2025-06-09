@@ -19,6 +19,8 @@
     "test:e2e:runner": "tsx e2e/run-tests.ts",
     "test:multi-chain": "vitest run src/services/providers/__tests__/multi-chain.provider.test.ts",
     "test:multi-chain:e2e": "vitest run e2e/tests/price/multi-chain-provider.test.ts",
+    "rewards:allocate": "tsx scripts/rewards-allocate.ts",
+    "rewards:insert-test-data": "tsx scripts/insert-epoch-rewards.ts",
     "db:gen-migrations": "NODE_OPTIONS='--import tsx' drizzle-kit generate",
     "db:check": "NODE_OPTIONS='--import tsx' drizzle-kit check",
     "db:migrate": "NODE_OPTIONS='--import tsx' drizzle-kit migrate",
@@ -67,12 +69,15 @@
     "express": "^4.18.2",
     "iron-session": "^8.0.4",
     "jsonwebtoken": "^9.0.2",
+    "keccak256": "^1.0.6",
+    "merkletreejs": "^0.5.2",
     "pg": "^8.10.0",
     "rate-limiter-flexible": "^2.4.1",
     "redis": "^4.6.5",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "uuid": "^9.0.0",
+    "viem": "^2.28.1",
     "zod": "^3.25.17"
   },
   "devDependencies": {
@@ -97,7 +102,6 @@
     "tsc-alias": "^1.8.16",
     "tsx": "^4.19.3",
     "typescript": "^5.7.3",
-    "viem": "^2.28.1",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.0.9"
   }
