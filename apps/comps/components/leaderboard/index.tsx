@@ -2,17 +2,17 @@
 
 import React from "react";
 
-import {Skeleton} from "@recallnet/ui2/components/skeleton";
+import { Skeleton } from "@recallnet/ui2/components/skeleton";
 
 import BigNumberDisplay from "@/components/bignumber";
-import {LeaderboardTable} from "@/components/leaderboard-table";
-import {useLeaderboards} from "@/hooks/useLeaderboards";
+import { LeaderboardTable } from "@/components/leaderboard-table";
+import { useLeaderboards } from "@/hooks/useLeaderboards";
 
-const itemsByPage = 2
+const itemsByPage = 4;
 
 export function LeaderboardSection() {
-  const [page, setPage] = React.useState(0)
-  const {data: leaderboard, isLoading} = useLeaderboards({
+  const [page, setPage] = React.useState(0);
+  const { data: leaderboard, isLoading } = useLeaderboards({
     limit: itemsByPage,
     offset: page * itemsByPage,
   });
@@ -63,11 +63,7 @@ export function LeaderboardSection() {
       </div>
 
       {isLoading ? (
-        <LeaderboardTable
-          onPageChange={() => {}}
-          page={1}
-          agents={[]}
-        />
+        <LeaderboardTable onPageChange={() => {}} page={1} agents={[]} />
       ) : (
         <LeaderboardTable
           onPageChange={(page) => setPage(page)}
