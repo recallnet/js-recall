@@ -43,6 +43,13 @@
       "when": 1749476181635,
       "tag": "0005_greedy_tag",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1749481467124,
+      "tag": "0006_woozy_corsair",
+      "breakpoints": true
     }
   ]
 }

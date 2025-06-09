@@ -137,7 +137,7 @@ export class RewardsService {
       const leafHash = createLeafNode(address, amount);
 
       const tree = await getRewardsTreeByEpoch(epochId);
-      
+
       const treeNodes: { [level: number]: { [idx: number]: Uint8Array } } = {};
       for (const { level, idx, hash } of tree) {
         if (!treeNodes[level]) {
