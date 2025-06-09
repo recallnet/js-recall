@@ -12,8 +12,8 @@ import {
   FormControl,
   FormField,
   FormItem,
-} from "@recallnet/ui2/components/shadcn/form";
-import { Input } from "@recallnet/ui2/components/shadcn/input";
+} from "@recallnet/ui2/components/form";
+import { Input } from "@recallnet/ui2/components/input";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { ProfileResponse, UpdateProfileRequest } from "@/types/profile";
@@ -32,13 +32,11 @@ type FormData = z.infer<typeof formSchema>;
 
 interface UserInfoSectionProps {
   user: ProfileResponse["user"];
-  isLoading: boolean;
   onSave: (data: Partial<UpdateProfileRequest>) => Promise<void>;
 }
 
 export default function UserInfoSection({
   user,
-  isLoading,
   onSave,
 }: UserInfoSectionProps) {
   const [editField, setEditField] = useState<"email" | "website" | null>(null);
@@ -48,7 +46,7 @@ export default function UserInfoSection({
 
     defaultValues: {
       email: user?.email || "",
-      website: user?.website || "",
+      website: user?.metadata?.website || "",
     },
   });
 
@@ -77,15 +75,15 @@ export default function UserInfoSection({
     <div className="flex w-full border">
       <ProfilePicture
         image={user?.imageUrl}
-        isLoading={isLoading}
         onSave={async (newUrl) => {
           await onSave({ imageUrl: newUrl });
         }}
+        className="w-90"
       />
       <div className="flex w-full flex-col items-start justify-center gap-5 p-4">
         <div className="flex items-center gap-3">
           <h2 className="text-4xl font-bold">{user?.name}</h2>
-          {user?.isVerified && <BadgeCheckIcon className="text-green-500" />}
+          {/*           {user?.isVerified && <BadgeCheckIcon className="text-green-500" />} */}
         </div>
 
         <Form {...form}>
@@ -158,7 +156,7 @@ export default function UserInfoSection({
                     className="h-5 w-5 cursor-pointer"
                     onClick={() => setEditField("website")}
                   />
-                  <span className="ml-8">{user?.website}</span>
+                  <span className="ml-8">{user?.metadata?.website}</span>
                 </>
               )}
             </div>
@@ -169,7 +167,7 @@ export default function UserInfoSection({
   );
 }
 
-const BadgeCheckIcon = ({ className }: { className?: string }) => {
+export const BadgeCheckIcon = ({ className }: { className?: string }) => {
   return (
     <svg
       className={cn("h-9 w-9", className)}

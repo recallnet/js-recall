@@ -19,9 +19,7 @@ export function configureAgentsRoutes(
    *     summary: Get list of agents
    *     description: Retrieve a list of agents based on querystring parameters
    *     tags:
-   *       - Agent
-   *     security:
-   *       - BearerAuth: []
+   *       - Agents
    *     parameters:
    *       - in: query
    *         name: filter
@@ -34,7 +32,21 @@ export function configureAgentsRoutes(
    *         schema:
    *           type: string
    *         required: false
-   *         description: Optional field to sort by (default value is `createdDate`)
+   *         description: |
+   *           Optional field(s) to sort by. Supports single or multiple fields separated by commas.
+   *           Prefix with '-' for descending order (e.g., '-name' or 'name,-createdAt').
+   *           Available fields: id, ownerId, walletAddress, name, description, imageUrl, status, createdAt, updatedAt.
+   *           When not specified, results are returned in database order.
+   *         examples:
+   *           single_asc:
+   *             value: "name"
+   *             summary: "Sort by name ascending"
+   *           single_desc:
+   *             value: "-createdAt"
+   *             summary: "Sort by creation date descending (newest first)"
+   *           multi_field:
+   *             value: "status,-createdAt"
+   *             summary: "Sort by status ascending, then by creation date descending"
    *       - in: query
    *         name: limit
    *         schema:
@@ -58,7 +70,7 @@ export function configureAgentsRoutes(
    *                 success:
    *                   type: boolean
    *                   example: true
-   *                 metadata:
+   *                 pagination:
    *                   type: object
    *                   properties:
    *                     total:
@@ -107,6 +119,136 @@ export function configureAgentsRoutes(
    *         description: Internal server error
    */
   router.get("/", agentController.getAgents);
+
+  /**
+   * @openapi
+   * /api/agents/{agentId}:
+   *   get:
+   *     summary: Get agent by ID
+   *     description: Retrieve the information for the given agent ID
+   *     tags:
+   *       - Agents
+   *     parameters:
+   *       - in: path
+   *         name: agentId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: The UUID of the agent being requested
+   *     responses:
+   *       200:
+   *         description: Agent profile retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 id:
+   *                   type: string
+   *                   format: uuid
+   *                 name:
+   *                   type: string
+   *                   example: "Trading Bot Alpha"
+   *                 imageUrl:
+   *                   type: string
+   *                   example: "https://example.com/bot-avatar.jpg"
+   *                   nullable: true
+   *                 metadata:
+   *                   type: object
+   *                   description: Optional metadata for the agent
+   *                   example: { "strategy": "yield-farming", "risk": "medium" }
+   *                   nullable: true
+   *                 stats:
+   *                   type: object
+   *                   description: stats on this agent's past performance
+   *                   properties:
+   *                     competitionsCompleted:
+   *                       type: integer
+   *                     provenSkills:
+   *                       type: array
+   *                       items:
+   *                         type: string
+   *                     bestPlacement:
+   *                       type: object
+   *                       properties:
+   *                         competitionId:
+   *                           type: string
+   *                         postition:
+   *                           type: integer
+   *                         participants:
+   *                           type: integer
+   *                 trophies:
+   *                   type: array
+   *                   items:
+   *                     type: string
+   *                 hasUnclaimedRewards:
+   *                   type: boolean
+   *       400:
+   *         description: Invalid agent ID
+   *       404:
+   *         description: Agent or owner not found
+   *       500:
+   *         description: Internal server error
+   */
+  router.get("/:agentId", agentController.getAgent);
+
+  /**
+   * @openapi
+   * /api/agents/{agentId}/competitions:
+   *   get:
+   *     summary: Get agent competitions
+   *     description: Retrieve all competitions associated with the specified agent
+   *     tags:
+   *       - Agents
+   *     parameters:
+   *       - in: path
+   *         name: agentId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: The UUID of the agent
+   *     responses:
+   *       200:
+   *         description: Competitions retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 competitions:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         format: uuid
+   *                       name:
+   *                         type: string
+   *                         example: "DeFi Trading Championship"
+   *                       status:
+   *                         type: string
+   *                         enum: [active, completed, upcoming]
+   *                       startDate:
+   *                         type: string
+   *                         format: date-time
+   *                       endDate:
+   *                         type: string
+   *                         format: date-time
+   *                       description:
+   *                         type: string
+   *                         example: "A competition focused on yield farming strategies."
+   *       400:
+   *         description: Invalid agent ID or query params
+   *       404:
+   *         description: Agent or competitions not found
+   *       500:
+   *         description: Internal server error
+   */
+  router.get("/:agentId/competitions", agentController.getCompetitions);
 
   return router;
 }

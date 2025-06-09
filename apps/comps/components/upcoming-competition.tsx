@@ -21,7 +21,7 @@ export const UpComingCompetition: React.FC<UpComingCompetitionProps> = ({
   return (
     <div className="bg-card p-8">
       <div className="mb-30 flex items-start justify-between">
-        <StringList strings={["UPCOMING", ...competition.type]} />
+        <StringList strings={["UPCOMING", competition.type]} />
         <IconButton
           Icon={Share1Icon}
           aria-label="Share"

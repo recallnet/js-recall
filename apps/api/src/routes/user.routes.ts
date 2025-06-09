@@ -1,13 +1,18 @@
 import { Router } from "express";
 
 import { UserController } from "@/controllers/user.controller.js";
+import { VoteController } from "@/controllers/vote.controller.js";
+import { configureVoteRoutes } from "@/routes/vote.routes.js";
 
 /**
  * Configure User Routes
  * Handles user-specific operations with SIWE session authentication
  * All routes require req.userId to be set by authentication middleware
  */
-export function configureUserRoutes(userController: UserController): Router {
+export function configureUserRoutes(
+  userController: UserController,
+  voteController: VoteController,
+): Router {
   const router = Router();
 
   /**
@@ -520,6 +525,9 @@ export function configureUserRoutes(userController: UserController): Router {
    *         description: Internal server error
    */
   router.put("/agents/:agentId/profile", userController.updateAgentProfile);
+
+  // Include vote routes under user namespace
+  router.use(configureVoteRoutes(voteController));
 
   return router;
 }

@@ -13,6 +13,7 @@ import {
   ADMIN_PASSWORD,
   ADMIN_USERNAME,
   cleanupTestState,
+  createSiweAuthenticatedClient,
   createTestClient,
   registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
@@ -88,6 +89,7 @@ describe("Leaderboard API", () => {
     expect(leaderboard.stats.totalTrades).toBe(2);
     expect(leaderboard.stats.totalVolume).toBeDefined();
     expect(leaderboard.stats.totalCompetitions).toBe(1);
+    expect(leaderboard.stats.totalVotes).toBe(0);
 
     const agents = leaderboard.agents;
     expect(agents).toHaveLength(2);
@@ -99,6 +101,7 @@ describe("Leaderboard API", () => {
       expect(agent.score).toBeDefined();
       expect(agent.numCompetitions).toBe(1);
       expect(agent.rank).toBeDefined();
+      expect(agent.voteCount).toBeDefined();
     }
 
     // Verify agents are ordered by rank
@@ -262,5 +265,70 @@ describe("Leaderboard API", () => {
     expect(leaderboard.agents).toHaveLength(2);
     expect(leaderboard.agents[0]?.numCompetitions).toBe(2);
     expect(leaderboard.agents[1]?.numCompetitions).toBe(2);
+  });
+
+  test("should get leaderboard votes per agent and total votes", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register multiple agents
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent One",
+    });
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent Two",
+    });
+
+    // Create and start a competition with multiple agents
+    const competitionName = `Agents Test Competition ${Date.now()}`;
+    const startResponse = (await adminClient.startCompetition({
+      name: competitionName,
+      description: "Test competition for agents endpoint",
+      agentIds: [agent1.id, agent2.id],
+      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+    })) as StartCompetitionResponse;
+    const firstCompetitionId = startResponse.competition.id;
+
+    // Create 2 users and vote for agent 1 and agent 2, respectively
+    const { client: siweClient1 } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "SIWE Test User",
+      userEmail: "siwe-test@example.com",
+    });
+    const { client: siweClient2 } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "SIWE Test User 2",
+      userEmail: "siwe-test2@example.com",
+    });
+    // Vote for each agent in the first competition
+    await siweClient1.castVote(agent1.id, firstCompetitionId);
+    await siweClient2.castVote(agent2.id, firstCompetitionId);
+
+    // End competition, create a new one, and vote again
+    await adminClient.endCompetition(firstCompetitionId);
+    const newCompetitionName = `Agents Test Competition ${Date.now()}`;
+    const newCompetitionId = (await adminClient.startCompetition({
+      name: newCompetitionName,
+      description: "Test competition for agents endpoint",
+      agentIds: [agent1.id, agent2.id],
+      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+    })) as StartCompetitionResponse;
+    const secondCompetitionId = newCompetitionId.competition.id;
+
+    // Vote for the *same* agent in the second competition
+    await siweClient1.castVote(agent1.id, secondCompetitionId);
+    await siweClient2.castVote(agent1.id, secondCompetitionId);
+
+    // Verify votes are counted correctly
+    const leaderboard =
+      (await siweClient1.getGlobalLeaderboard()) as GlobalLeaderboardResponse;
+    expect(leaderboard.success).toBe(true);
+    expect(leaderboard.stats.totalVotes).toBe(4);
+    const agents = leaderboard.agents.sort((a, b) => b.voteCount - a.voteCount);
+    expect(agents[0]?.voteCount).toBe(3);
+    expect(agents[1]?.voteCount).toBe(1);
   });
 });

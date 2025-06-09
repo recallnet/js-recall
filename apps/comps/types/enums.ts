@@ -1,13 +1,7 @@
 export enum CompetitionStatus {
   Pending = "pending",
   Active = "active",
-  Completed = "completed",
-}
-
-export enum LeaderboardTypes {
-  TRADING = "TRADING",
-  DERIVATIVES = "DERIVATIVES",
-  ANALYSIS = "SENTIMENT-ANALYSIS",
+  Ended = "ended",
 }
 
 export enum CrossChainTradingType {

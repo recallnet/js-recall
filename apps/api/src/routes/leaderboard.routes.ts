@@ -67,6 +67,9 @@ export function configureLeaderboardRoutes(
    *                     totalCompetitions:
    *                       type: number
    *                       description: Total number of competitions
+   *                     totalVotes:
+   *                       type: number
+   *                       description: Total number of votes
    *                 agents:
    *                   type: array
    *                   items:
@@ -94,6 +97,9 @@ export function configureLeaderboardRoutes(
    *                       numCompetitions:
    *                         type: number
    *                         description: Number of competitions the agent has participated in
+   *                       voteCount:
+   *                         type: number
+   *                         description: Number of votes the agent has received
    *                 pagination:
    *                   type: object
    *                   properties:

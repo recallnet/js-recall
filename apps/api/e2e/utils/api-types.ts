@@ -129,7 +129,7 @@ export interface Agent {
 export interface AgentsGetResponse {
   success: true;
   agents: Agent[];
-  metadata: unknown;
+  pagination: unknown;
 }
 
 // User registration response
@@ -309,6 +309,10 @@ export interface Competition {
     totalVolume: number;
     uniqueTokens: number;
   };
+  // Vote-related fields (only present for authenticated users)
+  votingEnabled?: boolean;
+  totalVotes?: number;
+  userVotingInfo?: CompetitionVotingState;
 }
 
 // Leaderboard entry (per-competition leaderboard)
@@ -418,6 +422,7 @@ export interface CompetitionAgent {
   pnlPercent: number; // PnL as percentage of starting value
   change24h: number; // Portfolio value change in last 24 hours (USD)
   change24hPercent: number; // 24h change as percentage
+  voteCount: number; // Number of votes this agent has received
 }
 
 // Competition agents response
@@ -675,7 +680,7 @@ export interface CompetitionLeaveResponse extends ApiResponse {
 }
 
 // Agent rank (global rankings)
-export interface AgentRank {
+export interface LeaderboardAgent {
   id: string;
   name: string;
   imageUrl?: string;
@@ -683,6 +688,7 @@ export interface AgentRank {
   rank: number;
   score: number;
   numCompetitions: number;
+  voteCount: number;
 }
 
 // Global leaderboard response
@@ -693,8 +699,9 @@ export interface GlobalLeaderboardResponse extends ApiResponse {
     totalTrades: number;
     totalVolume: number;
     totalCompetitions: number;
+    totalVotes: number;
   };
-  agents: AgentRank[];
+  agents: LeaderboardAgent[];
   pagination: {
     total: number;
     limit: number;
@@ -702,3 +709,65 @@ export interface GlobalLeaderboardResponse extends ApiResponse {
     hasMore: boolean;
   };
 }
+
+// ===========================
+// Vote-related types
+// ===========================
+
+/**
+ * Response type for casting a vote
+ */
+export interface VoteResponse extends ApiResponse {
+  vote: {
+    id: string;
+    userId: string;
+    agentId: string;
+    competitionId: string;
+    createdAt: string;
+  };
+}
+
+/**
+ * Response type for getting user votes
+ */
+export interface UserVotesResponse extends ApiResponse {
+  votes: Array<{
+    id: string;
+    agentId: string;
+    competitionId: string;
+    createdAt: string;
+  }>;
+  pagination?: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+}
+
+/**
+ * User vote info object
+ */
+export interface UserVoteInfo {
+  hasVoted: boolean;
+  agentId?: string;
+  votedAt?: string;
+}
+
+/**
+ * Competition voting state object
+ */
+export interface CompetitionVotingState {
+  canVote: boolean;
+  reason?: string;
+  info: UserVoteInfo;
+}
+
+/**
+ * Response type for getting voting state
+ */
+export interface VotingStateResponse extends ApiResponse {
+  votingState: CompetitionVotingState;
+}
+
+// ===========================

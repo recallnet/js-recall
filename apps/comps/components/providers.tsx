@@ -8,7 +8,6 @@ import {
   darkTheme,
 } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useAtom } from "jotai";
 import React from "react";
 import { type ReactNode, useState } from "react";
 import { createSiweMessage, parseSiweMessage } from "viem/siwe";
@@ -17,14 +16,12 @@ import { WagmiProvider } from "wagmi";
 import { ThemeProvider } from "@recallnet/ui2/components/theme-provider";
 
 import { useLogin, useLogout, useNonce } from "@/hooks/useAuth";
-import { userAtom } from "@/state/atoms";
 import { clientConfig } from "@/wagmi-config";
 
 const AUTHENTICATION_STATUS: AuthenticationStatus = "unauthenticated";
 const CONFIG = clientConfig();
 
 function WalletProvider(props: { children: ReactNode }) {
-  const [, setUser] = useAtom(userAtom);
   const { data: nonceData } = useNonce();
   const { mutateAsync: login } = useLogin();
   const { mutateAsync: logout } = useLogout();
@@ -51,13 +48,11 @@ function WalletProvider(props: { children: ReactNode }) {
           throw new Error("No address found in SIWE message");
         }
 
-        const res = await login({
+        login({
           message,
           signature,
           wallet: siweMessage.address,
         });
-
-        setUser({ address: res.wallet, loggedIn: true });
 
         return true;
       },
@@ -65,7 +60,7 @@ function WalletProvider(props: { children: ReactNode }) {
         await logout();
       },
     });
-  }, [setUser, nonceData, login, logout]);
+  }, [nonceData, login, logout]);
 
   return (
     <WagmiProvider config={CONFIG}>

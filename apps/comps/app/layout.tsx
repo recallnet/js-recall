@@ -20,8 +20,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${fontSans.variable} ${fontMono.variable} antialiased`}>
+    <html lang="en" suppressHydrationWarning className="overflow-x-hidden">
+      <body
+        className={`${fontSans.variable} ${fontMono.variable} bg-black antialiased`}
+      >
         <Analytics />
         <Providers>
           <Navbar>

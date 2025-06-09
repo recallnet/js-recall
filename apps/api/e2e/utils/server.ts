@@ -9,7 +9,9 @@ let serverProcess: ChildProcess | null = null;
 const PORT = process.env.TEST_PORT || "3001";
 // Allow configuring the host from environment (0.0.0.0 for Docker)
 const HOST = process.env.TEST_HOST || "localhost";
-const BASE_URL = `http://${HOST}:${PORT}`;
+// Include API prefix in base URL if set
+const API_PREFIX = process.env.API_PREFIX;
+const BASE_URL = `http://${HOST}:${PORT}${API_PREFIX ? `/${API_PREFIX}` : ""}`;
 
 /**
  * Start the server for testing

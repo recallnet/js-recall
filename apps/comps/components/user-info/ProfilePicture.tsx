@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
-import { Input } from "@recallnet/ui2/components/shadcn/input";
+import { Input } from "@recallnet/ui2/components/input";
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import { cn } from "@recallnet/ui2/lib/utils";
 
@@ -20,12 +20,14 @@ interface ProfilePictureProps {
   image?: string;
   isLoading?: boolean;
   onSave: (url: string) => Promise<void>;
+  className?: string;
 }
 
 export const ProfilePicture: React.FC<ProfilePictureProps> = ({
   image,
   isLoading,
   onSave,
+  className,
 }) => {
   const [showOverlay, setShowOverlay] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -74,8 +76,8 @@ export const ProfilePicture: React.FC<ProfilePictureProps> = ({
       tabIndex={0}
       aria-label="Change profile picture"
     >
-      <div className="flex flex-col items-center py-4">
-        <span className="flex gap-2 text-sm font-medium">
+      <div className="flex flex-col items-center px-2 py-4">
+        <span className="flex gap-2 text-xs font-medium">
           <SquarePen className="text-secondary-foreground mr-2 inline-block" />
           Profile Picture URL
         </span>
@@ -91,6 +93,7 @@ export const ProfilePicture: React.FC<ProfilePictureProps> = ({
       className={cn(
         "group relative flex h-[256px] w-[256px] flex-col items-center justify-center overflow-hidden border transition-all duration-300",
         isLoading && "animate-pulse",
+        className,
       )}
       onMouseEnter={() => setShowOverlay(true)}
       onMouseLeave={() => setShowOverlay(false)}

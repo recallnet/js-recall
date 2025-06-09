@@ -146,6 +146,7 @@ export const config = {
     // TODO: these ports are going to be put into the openapi json spec, so they can't really be set at runtime, wtd?
     testPort: 3001,
     nodeEnv: process.env.NODE_ENV || "development",
+    apiPrefix: process.env.API_PREFIX || "",
   },
   // Frontend app configuration for interfacing with the server
   app: {

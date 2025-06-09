@@ -58,6 +58,55 @@ export type GetApiCompetitionsCompetitionIdCrossChainTradingType = ClosedEnum<
   typeof GetApiCompetitionsCompetitionIdCrossChainTradingType
 >;
 
+export type GetApiCompetitionsCompetitionIdStats = {
+  /**
+   * Total number of trades
+   */
+  totalTrades?: number | undefined;
+  /**
+   * Total number of agents
+   */
+  totalAgents?: number | undefined;
+  /**
+   * Total volume of trades in USD
+   */
+  totalVolume?: number | undefined;
+  /**
+   * Total number of unique tokens traded
+   */
+  uniqueTokens?: number | undefined;
+};
+
+export type GetApiCompetitionsCompetitionIdInfo = {
+  /**
+   * Whether the user has already voted in this competition
+   */
+  hasVoted?: boolean | undefined;
+  /**
+   * ID of the agent the user voted for (if hasVoted is true)
+   */
+  agentId?: string | null | undefined;
+  /**
+   * When the user cast their vote (if hasVoted is true)
+   */
+  votedAt?: Date | null | undefined;
+};
+
+/**
+ * User's voting state for this competition (only present for authenticated users)
+ */
+export type GetApiCompetitionsCompetitionIdUserVotingInfo = {
+  /**
+   * Whether the user can vote in this competition
+   */
+  canVote?: boolean | undefined;
+  /**
+   * Reason why voting is not allowed (if canVote is false)
+   */
+  reason?: string | null | undefined;
+  info?: GetApiCompetitionsCompetitionIdInfo | undefined;
+};
+
 export type GetApiCompetitionsCompetitionIdCompetition = {
   /**
    * Competition ID
@@ -91,8 +140,8 @@ export type GetApiCompetitionsCompetitionIdCompetition = {
    * The type of cross-chain trading allowed in this competition
    */
   crossChainTradingType?:
-    | GetApiCompetitionsCompetitionIdCrossChainTradingType
-    | undefined;
+  | GetApiCompetitionsCompetitionIdCrossChainTradingType
+  | undefined;
   /**
    * Competition start date (null for pending competitions)
    */
@@ -109,6 +158,21 @@ export type GetApiCompetitionsCompetitionIdCompetition = {
    * When the competition was last updated
    */
   updatedAt?: Date | undefined;
+  /**
+   * Total number of votes cast in this competition
+   */
+  totalVotes?: number | undefined;
+  /**
+   * Whether voting is enabled for this competition (only present for authenticated users)
+   */
+  votingEnabled?: boolean | undefined;
+  /**
+   * User's voting state for this competition (only present for authenticated users)
+   */
+  userVotingInfo?:
+  | GetApiCompetitionsCompetitionIdUserVotingInfo
+  | null
+  | undefined;
 };
 
 /**
@@ -251,6 +315,220 @@ export namespace GetApiCompetitionsCompetitionIdCrossChainTradingType$ {
 }
 
 /** @internal */
+export const GetApiCompetitionsCompetitionIdStats$inboundSchema: z.ZodType<
+  GetApiCompetitionsCompetitionIdStats,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  totalTrades: z.number().optional(),
+  totalAgents: z.number().optional(),
+  totalVolume: z.number().optional(),
+  uniqueTokens: z.number().optional(),
+});
+
+/** @internal */
+export type GetApiCompetitionsCompetitionIdStats$Outbound = {
+  totalTrades?: number | undefined;
+  totalAgents?: number | undefined;
+  totalVolume?: number | undefined;
+  uniqueTokens?: number | undefined;
+};
+
+/** @internal */
+export const GetApiCompetitionsCompetitionIdStats$outboundSchema: z.ZodType<
+  GetApiCompetitionsCompetitionIdStats$Outbound,
+  z.ZodTypeDef,
+  GetApiCompetitionsCompetitionIdStats
+> = z.object({
+  totalTrades: z.number().optional(),
+  totalAgents: z.number().optional(),
+  totalVolume: z.number().optional(),
+  uniqueTokens: z.number().optional(),
+});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace GetApiCompetitionsCompetitionIdStats$ {
+  /** @deprecated use `GetApiCompetitionsCompetitionIdStats$inboundSchema` instead. */
+  export const inboundSchema =
+    GetApiCompetitionsCompetitionIdStats$inboundSchema;
+  /** @deprecated use `GetApiCompetitionsCompetitionIdStats$outboundSchema` instead. */
+  export const outboundSchema =
+    GetApiCompetitionsCompetitionIdStats$outboundSchema;
+  /** @deprecated use `GetApiCompetitionsCompetitionIdStats$Outbound` instead. */
+  export type Outbound = GetApiCompetitionsCompetitionIdStats$Outbound;
+}
+
+export function getApiCompetitionsCompetitionIdStatsToJSON(
+  getApiCompetitionsCompetitionIdStats: GetApiCompetitionsCompetitionIdStats,
+): string {
+  return JSON.stringify(
+    GetApiCompetitionsCompetitionIdStats$outboundSchema.parse(
+      getApiCompetitionsCompetitionIdStats,
+    ),
+  );
+}
+
+export function getApiCompetitionsCompetitionIdStatsFromJSON(
+  jsonString: string,
+): SafeParseResult<GetApiCompetitionsCompetitionIdStats, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) =>
+      GetApiCompetitionsCompetitionIdStats$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetApiCompetitionsCompetitionIdStats' from JSON`,
+  );
+}
+
+/** @internal */
+export const GetApiCompetitionsCompetitionIdInfo$inboundSchema: z.ZodType<
+  GetApiCompetitionsCompetitionIdInfo,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  hasVoted: z.boolean().optional(),
+  agentId: z.nullable(z.string()).optional(),
+  votedAt: z
+    .nullable(
+      z
+        .string()
+        .datetime({ offset: true })
+        .transform((v) => new Date(v)),
+    )
+    .optional(),
+});
+
+/** @internal */
+export type GetApiCompetitionsCompetitionIdInfo$Outbound = {
+  hasVoted?: boolean | undefined;
+  agentId?: string | null | undefined;
+  votedAt?: string | null | undefined;
+};
+
+/** @internal */
+export const GetApiCompetitionsCompetitionIdInfo$outboundSchema: z.ZodType<
+  GetApiCompetitionsCompetitionIdInfo$Outbound,
+  z.ZodTypeDef,
+  GetApiCompetitionsCompetitionIdInfo
+> = z.object({
+  hasVoted: z.boolean().optional(),
+  agentId: z.nullable(z.string()).optional(),
+  votedAt: z.nullable(z.date().transform((v) => v.toISOString())).optional(),
+});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace GetApiCompetitionsCompetitionIdInfo$ {
+  /** @deprecated use `GetApiCompetitionsCompetitionIdInfo$inboundSchema` instead. */
+  export const inboundSchema =
+    GetApiCompetitionsCompetitionIdInfo$inboundSchema;
+  /** @deprecated use `GetApiCompetitionsCompetitionIdInfo$outboundSchema` instead. */
+  export const outboundSchema =
+    GetApiCompetitionsCompetitionIdInfo$outboundSchema;
+  /** @deprecated use `GetApiCompetitionsCompetitionIdInfo$Outbound` instead. */
+  export type Outbound = GetApiCompetitionsCompetitionIdInfo$Outbound;
+}
+
+export function getApiCompetitionsCompetitionIdInfoToJSON(
+  getApiCompetitionsCompetitionIdInfo: GetApiCompetitionsCompetitionIdInfo,
+): string {
+  return JSON.stringify(
+    GetApiCompetitionsCompetitionIdInfo$outboundSchema.parse(
+      getApiCompetitionsCompetitionIdInfo,
+    ),
+  );
+}
+
+export function getApiCompetitionsCompetitionIdInfoFromJSON(
+  jsonString: string,
+): SafeParseResult<GetApiCompetitionsCompetitionIdInfo, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) =>
+      GetApiCompetitionsCompetitionIdInfo$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetApiCompetitionsCompetitionIdInfo' from JSON`,
+  );
+}
+
+/** @internal */
+export const GetApiCompetitionsCompetitionIdUserVotingInfo$inboundSchema: z.ZodType<
+  GetApiCompetitionsCompetitionIdUserVotingInfo,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  canVote: z.boolean().optional(),
+  reason: z.nullable(z.string()).optional(),
+  info: z
+    .lazy(() => GetApiCompetitionsCompetitionIdInfo$inboundSchema)
+    .optional(),
+});
+
+/** @internal */
+export type GetApiCompetitionsCompetitionIdUserVotingInfo$Outbound = {
+  canVote?: boolean | undefined;
+  reason?: string | null | undefined;
+  info?: GetApiCompetitionsCompetitionIdInfo$Outbound | undefined;
+};
+
+/** @internal */
+export const GetApiCompetitionsCompetitionIdUserVotingInfo$outboundSchema: z.ZodType<
+  GetApiCompetitionsCompetitionIdUserVotingInfo$Outbound,
+  z.ZodTypeDef,
+  GetApiCompetitionsCompetitionIdUserVotingInfo
+> = z.object({
+  canVote: z.boolean().optional(),
+  reason: z.nullable(z.string()).optional(),
+  info: z
+    .lazy(() => GetApiCompetitionsCompetitionIdInfo$outboundSchema)
+    .optional(),
+});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace GetApiCompetitionsCompetitionIdUserVotingInfo$ {
+  /** @deprecated use `GetApiCompetitionsCompetitionIdUserVotingInfo$inboundSchema` instead. */
+  export const inboundSchema =
+    GetApiCompetitionsCompetitionIdUserVotingInfo$inboundSchema;
+  /** @deprecated use `GetApiCompetitionsCompetitionIdUserVotingInfo$outboundSchema` instead. */
+  export const outboundSchema =
+    GetApiCompetitionsCompetitionIdUserVotingInfo$outboundSchema;
+  /** @deprecated use `GetApiCompetitionsCompetitionIdUserVotingInfo$Outbound` instead. */
+  export type Outbound = GetApiCompetitionsCompetitionIdUserVotingInfo$Outbound;
+}
+
+export function getApiCompetitionsCompetitionIdUserVotingInfoToJSON(
+  getApiCompetitionsCompetitionIdUserVotingInfo: GetApiCompetitionsCompetitionIdUserVotingInfo,
+): string {
+  return JSON.stringify(
+    GetApiCompetitionsCompetitionIdUserVotingInfo$outboundSchema.parse(
+      getApiCompetitionsCompetitionIdUserVotingInfo,
+    ),
+  );
+}
+
+export function getApiCompetitionsCompetitionIdUserVotingInfoFromJSON(
+  jsonString: string,
+): SafeParseResult<
+  GetApiCompetitionsCompetitionIdUserVotingInfo,
+  SDKValidationError
+> {
+  return safeParse(
+    jsonString,
+    (x) =>
+      GetApiCompetitionsCompetitionIdUserVotingInfo$inboundSchema.parse(
+        JSON.parse(x),
+      ),
+    `Failed to parse 'GetApiCompetitionsCompetitionIdUserVotingInfo' from JSON`,
+  );
+}
+
+/** @internal */
 export const GetApiCompetitionsCompetitionIdCompetition$inboundSchema: z.ZodType<
   GetApiCompetitionsCompetitionIdCompetition,
   z.ZodTypeDef,
@@ -291,6 +569,13 @@ export const GetApiCompetitionsCompetitionIdCompetition$inboundSchema: z.ZodType
     .datetime({ offset: true })
     .transform((v) => new Date(v))
     .optional(),
+  totalVotes: z.number().int().optional(),
+  votingEnabled: z.boolean().optional(),
+  userVotingInfo: z
+    .nullable(
+      z.lazy(() => GetApiCompetitionsCompetitionIdUserVotingInfo$inboundSchema),
+    )
+    .optional(),
 });
 
 /** @internal */
@@ -307,6 +592,12 @@ export type GetApiCompetitionsCompetitionIdCompetition$Outbound = {
   endDate?: string | null | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
+  totalVotes?: number | undefined;
+  votingEnabled?: boolean | undefined;
+  userVotingInfo?:
+  | GetApiCompetitionsCompetitionIdUserVotingInfo$Outbound
+  | null
+  | undefined;
 };
 
 /** @internal */
@@ -333,6 +624,15 @@ export const GetApiCompetitionsCompetitionIdCompetition$outboundSchema: z.ZodTyp
   updatedAt: z
     .date()
     .transform((v) => v.toISOString())
+    .optional(),
+  totalVotes: z.number().int().optional(),
+  votingEnabled: z.boolean().optional(),
+  userVotingInfo: z
+    .nullable(
+      z.lazy(
+        () => GetApiCompetitionsCompetitionIdUserVotingInfo$outboundSchema,
+      ),
+    )
     .optional(),
 });
 

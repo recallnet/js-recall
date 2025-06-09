@@ -38,6 +38,7 @@
         "MAX_TRADE_PERCENTAGE",
         "NODE_ENV",
         "NOVES_API_KEY",
+        "API_PREFIX",
         "PORTFOLIO_PRICE_FRESHNESS_MS",
         "PORTFOLIO_SNAPSHOT_INTERVAL_MS",
         "PORT",

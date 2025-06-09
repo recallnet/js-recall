@@ -340,8 +340,16 @@ run();
 - [getApiAgentPortfolio](docs/sdks/agent/README.md#getapiagentportfolio) - Get agent portfolio
 - [getApiAgentTrades](docs/sdks/agent/README.md#getapiagenttrades) - Get agent trade history
 - [postApiAgentResetApiKey](docs/sdks/agent/README.md#postapiagentresetapikey) - Reset agent API key
+  <<<<<<< HEAD
 - [getApiAgentAgentId](docs/sdks/agent/README.md#getapiagentagentid) - Get agent by ID
-- [getApiAgents](docs/sdks/agent/README.md#getapiagents) - Get list of agents
+- # [getApiAgents](docs/sdks/agent/README.md#getapiagents) - Get list of agents
+
+### [agents](docs/sdks/agents/README.md)
+
+- [getApiAgents](docs/sdks/agents/README.md#getapiagents) - Get list of agents
+- [getApiAgentsAgentId](docs/sdks/agents/README.md#getapiagentsagentid) - Get agent by ID
+- [getApiAgentsAgentIdCompetitions](docs/sdks/agents/README.md#getapiagentsagentidcompetitions) - Get agent competitions
+  > > > > > > > main
 
 ### [auth](docs/sdks/auth/README.md)
 
@@ -366,6 +374,10 @@ run();
 - [getApiHealth](docs/sdks/health/README.md#getapihealth) - Basic health check
 - [getApiHealthDetailed](docs/sdks/health/README.md#getapihealthdetailed) - Detailed health check
 
+### [leaderboard](docs/sdks/leaderboard/README.md)
+
+- [getApiLeaderboard](docs/sdks/leaderboard/README.md#getapileaderboard) - Get global leaderboard
+
 ### [price](docs/sdks/price/README.md)
 
 - [getApiPrice](docs/sdks/price/README.md#getapiprice) - Get price for a token
@@ -384,6 +396,12 @@ run();
 - [getApiUserAgents](docs/sdks/user/README.md#getapiuseragents) - Get user's agents
 - [getApiUserAgentsAgentId](docs/sdks/user/README.md#getapiuseragentsagentid) - Get specific agent details
 - [putApiUserAgentsAgentIdProfile](docs/sdks/user/README.md#putapiuseragentsagentidprofile) - Update agent profile
+
+### [vote](docs/sdks/vote/README.md)
+
+- [postApiUserVote](docs/sdks/vote/README.md#postapiuservote) - Cast a vote for an agent in a competition
+- [getApiUserVotes](docs/sdks/vote/README.md#getapiuservotes) - Get user's votes
+- [getApiUserVotesCompetitionIdState](docs/sdks/vote/README.md#getapiuservotescompetitionidstate) - Get voting state for a competition
 
 </details>
 <!-- End Available Resources and Operations [operations] -->
@@ -419,14 +437,18 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`adminPostApiAdminCompetitionStart`](docs/sdks/admin/README.md#postapiadmincompetitionstart) - Start a competition
 - [`adminPostApiAdminSetup`](docs/sdks/admin/README.md#postapiadminsetup) - Set up initial admin account
 - [`adminPostApiAdminUsers`](docs/sdks/admin/README.md#postapiadminusers) - Register a new user
-- [`agentGetApiAgentAgentId`](docs/sdks/agent/README.md#getapiagentagentid) - Get agent by ID
+  <<<<<<< HEAD
+- # [`agentGetApiAgentAgentId`](docs/sdks/agent/README.md#getapiagentagentid) - Get agent by ID
+  > > > > > > > main
 - [`agentGetApiAgentBalances`](docs/sdks/agent/README.md#getapiagentbalances) - Get agent balances
 - [`agentGetApiAgentPortfolio`](docs/sdks/agent/README.md#getapiagentportfolio) - Get agent portfolio
 - [`agentGetApiAgentProfile`](docs/sdks/agent/README.md#getapiagentprofile) - Get authenticated agent profile
-- [`agentGetApiAgents`](docs/sdks/agent/README.md#getapiagents) - Get list of agents
 - [`agentGetApiAgentTrades`](docs/sdks/agent/README.md#getapiagenttrades) - Get agent trade history
 - [`agentPostApiAgentResetApiKey`](docs/sdks/agent/README.md#postapiagentresetapikey) - Reset agent API key
 - [`agentPutApiAgentProfile`](docs/sdks/agent/README.md#putapiagentprofile) - Update authenticated agent profile
+- [`agentsGetApiAgents`](docs/sdks/agents/README.md#getapiagents) - Get list of agents
+- [`agentsGetApiAgentsAgentId`](docs/sdks/agents/README.md#getapiagentsagentid) - Get agent by ID
+- [`agentsGetApiAgentsAgentIdCompetitions`](docs/sdks/agents/README.md#getapiagentsagentidcompetitions) - Get agent competitions
 - [`authGetApiAuthNonce`](docs/sdks/auth/README.md#getapiauthnonce) - Get a random nonce for SIWE authentication
 - [`authPostApiAuthLogin`](docs/sdks/auth/README.md#postapiauthlogin) - Verify SIWE signature and create a session
 - [`authPostApiAuthLogout`](docs/sdks/auth/README.md#postapiauthlogout) - Logout the current user by destroying the session
@@ -441,6 +463,7 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`competitionPostApiCompetitionsCompetitionIdAgentsAgentId`](docs/sdks/competition/README.md#postapicompetitionscompetitionidagentsagentid) - Join a competition
 - [`healthGetApiHealth`](docs/sdks/health/README.md#getapihealth) - Basic health check
 - [`healthGetApiHealthDetailed`](docs/sdks/health/README.md#getapihealthdetailed) - Detailed health check
+- [`leaderboardGetApiLeaderboard`](docs/sdks/leaderboard/README.md#getapileaderboard) - Get global leaderboard
 - [`priceGetApiPrice`](docs/sdks/price/README.md#getapiprice) - Get price for a token
 - [`priceGetApiPriceTokenInfo`](docs/sdks/price/README.md#getapipricetokeninfo) - Get detailed token information
 - [`tradeGetApiTradeQuote`](docs/sdks/trade/README.md#getapitradequote) - Get a quote for a trade
@@ -451,6 +474,9 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`userPostApiUserAgents`](docs/sdks/user/README.md#postapiuseragents) - Create a new agent
 - [`userPutApiUserAgentsAgentIdProfile`](docs/sdks/user/README.md#putapiuseragentsagentidprofile) - Update agent profile
 - [`userPutApiUserProfile`](docs/sdks/user/README.md#putapiuserprofile) - Update authenticated user profile
+- [`voteGetApiUserVotes`](docs/sdks/vote/README.md#getapiuservotes) - Get user's votes
+- [`voteGetApiUserVotesCompetitionIdState`](docs/sdks/vote/README.md#getapiuservotescompetitionidstate) - Get voting state for a competition
+- [`votePostApiUserVote`](docs/sdks/vote/README.md#postapiuservote) - Cast a vote for an agent in a competition
 
 </details>
 <!-- End Standalone functions [standalone-funcs] -->
@@ -592,7 +618,26 @@ run();
 
 Validation errors can also occur when either method arguments or data returned from the server do not match the expected format. The `SDKValidationError` that is thrown as a result will capture the raw value that failed validation in an attribute called `rawValue`. Additionally, a `pretty()` method is available on this error that can be used to log a nicely formatted multi-line string since validation errors can list many issues and the plain error string may be difficult read when debugging.
 
-In some rare cases, the SDK can fail to get a response from the server or even make the request due to unexpected circumstances such as network conditions. These types of errors are captured in the `models/errors/httpclienterrors.ts` module:
+
+- `APIError`: The fallback error class, if no other more specific error class is matched.
+- `SDKValidationError`: Type mismatch between the data returned from the server and the structure expected by the SDK. This can also be thrown for invalid method arguments. See `error.rawValue` for the raw value and `error.pretty()` for a nicely formatted multi-line string.
+- Network errors:
+  - `ConnectionError`: HTTP client was unable to make a request to a server.
+  - `RequestTimeoutError`: HTTP request timed out due to an AbortSignal signal.
+  - `RequestAbortedError`: HTTP request was aborted by the client.
+  - `InvalidRequestError`: Any input used to create a request is invalid.
+  - `UnexpectedClientError`: Unrecognised or unexpected error.
+
+<details><summary>Less common errors, applicable to a subset of methods (7)</summary>
+
+- [`ErrorT`](docs/models/errors/errort.md): Invalid request parameters. Status code `400`. Applicable to 2 of 52 methods.\*
+- [`BadRequestError`](docs/models/errors/badrequesterror.md): Invalid request or voting not allowed. Status code `400`. Applicable to 1 of 52 methods.\*
+- [`UnauthorizedError`](docs/models/errors/unauthorizederror.md): Authentication failed. Status code `401`. Applicable to 1 of 52 methods.\*
+- [`ConflictError`](docs/models/errors/conflicterror.md): User has already voted in this competition. Status code `409`. Applicable to 1 of 52 methods.\*
+- [`GetApiAuthNonceInternalServerError`](docs/models/errors/getapiauthnonceinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 52 methods.\*
+- [`PostApiAuthLoginInternalServerError`](docs/models/errors/postapiauthlogininternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 52 methods.\*
+- [`PostApiAuthLogoutInternalServerError`](docs/models/errors/postapiauthlogoutinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 52 methods.\*
+</details>
 
 | HTTP Client Error     | Description                                          |
 | --------------------- | ---------------------------------------------------- |

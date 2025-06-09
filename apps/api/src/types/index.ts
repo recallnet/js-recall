@@ -170,12 +170,8 @@ export interface AgentRef {
  * User's metadata interface
  */
 export interface UserMetadata {
-  preferences?: {
-    notifications?: boolean;
-    theme?: "light" | "dark";
-  };
-  settings?: Record<string, unknown>;
-  custom?: Record<string, unknown>;
+  website?: string;
+  [key: string]: unknown;
 }
 
 /**
@@ -195,9 +191,10 @@ export interface AdminMetadata {
  * Agent's metadata
  */
 export interface AgentMetadata {
-  ref?: AgentRef;
-  description?: string;
-  social?: AgentSocial;
+  stats?: Record<string, unknown>;
+  skills?: string[];
+  trophies?: string[];
+  hasUnclaimedRewards?: boolean;
   [key: string]: unknown;
 }
 
@@ -638,6 +635,16 @@ export const UpdateAgentProfileSchema = z
   .strict();
 
 /**
+ * Get agent parameters schema
+ */
+export const GetUserAgentSchema = z
+  .object({
+    userId: z.uuid("Invalid user ID format"),
+    agentId: z.uuid("Invalid agent ID format"),
+  })
+  .strict();
+
+/**
  * UUID parameter schema
  */
 export const UuidSchema = z.uuid("Invalid uuid");
@@ -656,9 +663,145 @@ export type LeaderboardParams = z.infer<typeof LeaderboardParamsSchema>;
 /**
  * Structure for an agent entry in the global leaderboard
  */
-export interface AgentRank
-  extends Pick<Agent, "id" | "name" | "imageUrl" | "metadata"> {
+export interface LeaderboardAgent
+  extends Pick<Agent, "id" | "name" | "description" | "imageUrl" | "metadata"> {
   rank: number;
   score: number;
   numCompetitions: number;
+  voteCount: number;
 }
+
+// ===========================
+// Vote-related types and schemas
+// ===========================
+
+/**
+ * Vote interface for non-staking competition votes
+ */
+export interface Vote {
+  id: string;
+  userId: string;
+  agentId: string;
+  competitionId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Vote request body schema for creating votes
+ */
+export const CreateVoteBodySchema = z
+  .object({
+    agentId: z.uuid("Invalid agent ID format"),
+    competitionId: z.uuid("Invalid competition ID format"),
+  })
+  .strict();
+
+/**
+ * Create vote parameters schema (includes userId from auth)
+ */
+export const CreateVoteSchema = z
+  .object({
+    userId: z.uuid("Invalid user ID format"),
+    body: CreateVoteBodySchema,
+  })
+  .strict();
+
+export type CreateVoteRequest = z.infer<typeof CreateVoteSchema>;
+
+/**
+ * Vote response interface
+ */
+export interface VoteResponse {
+  id: string;
+  userId: string;
+  agentId: string;
+  competitionId: string;
+  createdAt: Date;
+}
+
+/**
+ * Agent with vote information
+ */
+export interface AgentWithVotes extends Agent {
+  voteCount: number;
+  userHasVoted?: boolean;
+}
+
+/**
+ * User's vote information for a competition
+ */
+export interface UserVoteInfo {
+  hasVoted: boolean;
+  agentId?: string;
+  votedAt?: Date;
+}
+
+/**
+ * Competition voting status for a user
+ */
+export interface CompetitionVotingStatus {
+  canVote: boolean;
+  reason?: string; // Why voting is disabled (e.g., "Competition not started", "User already voted")
+  info: UserVoteInfo;
+}
+
+/**
+ * Vote count result interface
+ */
+export interface VoteCount {
+  agentId: string;
+  voteCount: number;
+}
+
+/**
+ * Competition with voting information
+ */
+export interface CompetitionWithVotes extends Competition {
+  votingEnabled: boolean; // Based on competition status
+  agents: AgentWithVotes[];
+  userVotingInfo?: CompetitionVotingStatus; // Only if user is authenticated
+}
+
+/**
+ * Vote error types for specific error handling
+ */
+export const VOTE_ERROR_TYPES = {
+  COMPETITION_NOT_FOUND: "COMPETITION_NOT_FOUND",
+  AGENT_NOT_FOUND: "AGENT_NOT_FOUND",
+  AGENT_NOT_IN_COMPETITION: "AGENT_NOT_IN_COMPETITION",
+  COMPETITION_VOTING_DISABLED: "COMPETITION_VOTING_DISABLED",
+  USER_ALREADY_VOTED: "USER_ALREADY_VOTED",
+  VOTING_CUTOFF_EXCEEDED: "VOTING_CUTOFF_EXCEEDED",
+  DUPLICATE_VOTE: "DUPLICATE_VOTE",
+} as const;
+
+export type VoteErrorType = keyof typeof VOTE_ERROR_TYPES;
+
+/**
+ * Vote error interface
+ */
+export interface VoteError extends Error {
+  type: VoteErrorType;
+  code: number;
+}
+
+/**
+ * Voting state params schema for getting competition voting state
+ */
+export const VotingStateParamsSchema = z.object({
+  competitionId: z.uuid("Invalid competition ID format"),
+});
+
+export type VotingStateParams = z.infer<typeof VotingStateParamsSchema>;
+
+/**
+ * User votes query params schema
+ */
+export const UserVotesParamsSchema = z.object({
+  competitionId: z.uuid("Invalid competition ID format").optional(),
+  limit: z.coerce.number().min(1).max(100).default(50),
+  offset: z.coerce.number().min(0).default(0),
+});
+
+export type UserVotesParams = z.infer<typeof UserVotesParamsSchema>;

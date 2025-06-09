@@ -12,6 +12,7 @@ import {
   agents,
   competitionAgents,
   competitions,
+  votes,
 } from "@/database/schema/core/defs.js";
 import { trades } from "@/database/schema/trading/defs.js";
 import {
@@ -37,6 +38,7 @@ export async function getGlobalStats(type: CompetitionType): Promise<{
   totalTrades: number;
   totalVolume: number;
   totalCompetitions: number;
+  totalVotes: number;
   competitionIds: string[];
 }> {
   console.log("[CompetitionRepository] getGlobalStats called for type:", type);
@@ -61,6 +63,7 @@ export async function getGlobalStats(type: CompetitionType): Promise<{
       totalTrades: 0,
       totalVolume: 0,
       totalCompetitions: 0,
+      totalVotes: 0,
       competitionIds: [],
     };
   }
@@ -88,11 +91,19 @@ export async function getGlobalStats(type: CompetitionType): Promise<{
     .from(trades)
     .where(inArray(trades.competitionId, relevantCompetitionIds));
 
+  const voteStatsResult = await db
+    .select({
+      totalVotes: drizzleCount(votes.id),
+    })
+    .from(votes)
+    .where(inArray(votes.competitionId, relevantCompetitionIds));
+
   return {
     activeAgents: activeAgentsResult[0]?.count ?? 0,
     totalTrades: tradeStatsResult[0]?.totalTrades ?? 0,
     totalVolume: tradeStatsResult[0]?.totalVolume ?? 0,
     totalCompetitions: relevantCompetitions.length,
+    totalVotes: voteStatsResult[0]?.totalVotes ?? 0,
     competitionIds: relevantCompetitionIds,
   };
 }

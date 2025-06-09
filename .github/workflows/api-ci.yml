@@ -260,6 +260,9 @@ jobs:
           DISABLE_PARTICIPANT_LEADERBOARD_ACCESS=false
           EOF
 
+          # Optional: API prefix
+          API_PREFIX=testing
+
       - name: Run E2E tests
         working-directory: apps/api
         run: |
