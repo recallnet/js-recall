@@ -2928,7 +2928,7 @@ describe("Competition API", () => {
       if ("leaderboard" in defaultResponse && defaultResponse.leaderboard) {
         defaultResponse.leaderboard.forEach((agent) => {
           expect(agent.active).toBe(true);
-          expect(agent.deactivationReason).toBeNull();
+          expect(agent.deactivationReason).toBeUndefined();
         });
       }
 

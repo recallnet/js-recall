@@ -693,7 +693,7 @@ export interface CompetitionLeaderboardAgent {
   agentName: string;
   portfolioValue: number;
   active: boolean;
-  deactivationReason?: string | null;
+  deactivationReason?: string;
   competitions: number; // Global metric: total competitions participated
   votes: number; // Global metric: total votes received
 }

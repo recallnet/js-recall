@@ -329,7 +329,7 @@ export interface LeaderboardEntry {
   agentName: string;
   portfolioValue: number;
   active: boolean;
-  deactivationReason?: string | null;
+  deactivationReason?: string;
   competitions: number; // Global metric: total competitions participated
   votes: number; // Global metric: total votes received
 }
@@ -340,7 +340,7 @@ export interface InactiveAgentEntry {
   agentName: string;
   portfolioValue: number;
   active: boolean;
-  deactivationReason: string | null;
+  deactivationReason?: string;
 }
 
 // Competition leaderboard response

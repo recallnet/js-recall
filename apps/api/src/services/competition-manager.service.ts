@@ -29,6 +29,7 @@ import {
   COMPETITION_STATUS,
   COMPETITION_TYPE,
   CROSS_CHAIN_TRADING_TYPE,
+  Competition,
   CompetitionLeaderboardAgent,
   CompetitionStatus,
   CompetitionStatusSchema,
@@ -404,9 +405,10 @@ export class CompetitionManager {
         agentName: agent ? agent.name : "Unknown Agent",
         portfolioValue: entry.value,
         active: !isInactive,
-        deactivationReason: isInactive
-          ? agent?.deactivationReason || null
-          : null,
+        deactivationReason:
+          isInactive && agent?.deactivationReason
+            ? agent.deactivationReason
+            : undefined,
         competitions: metrics.competitions,
         votes: metrics.votes,
       };
@@ -464,18 +466,38 @@ export class CompetitionManager {
       metricsMap.set(agentId, { competitions: 0, votes: 0 });
     });
 
-    // Get all active/ended competitions to calculate global metrics
-    const allCompetitions = await this.getCompetitions(
-      undefined, // Get all competitions
-      {
-        limit: 1000, // High limit to get all competitions
-        offset: 0,
-        sort: "",
-      },
-    );
+    // Get all competitions to calculate global metrics using pagination
+    let allCompetitions: Competition[] = [];
+    let offset = 0;
+    const limit = 100; // Smaller limit for paginated retrieval
+
+    while (true) {
+      const page = await this.getCompetitions(
+        undefined, // Get all competitions
+        {
+          limit,
+          offset,
+          sort: "",
+        },
+      );
+      // Convert database null values to undefined for TypeScript consistency
+      const convertedCompetitions = page.competitions.map((comp) => ({
+        ...comp,
+        description: comp.description || undefined,
+        externalUrl: comp.externalUrl || undefined,
+        imageUrl: comp.imageUrl || undefined,
+        createdAt: comp.createdAt || new Date(),
+        updatedAt: comp.updatedAt || new Date(),
+      }));
+      allCompetitions = allCompetitions.concat(convertedCompetitions);
+      if (page.competitions.length < limit) {
+        break; // Exit loop if fewer competitions than limit are returned
+      }
+      offset += limit; // Increment offset for next page
+    }
 
     // Filter to only active and ended competitions for global metrics
-    const relevantCompetitions = allCompetitions.competitions.filter(
+    const relevantCompetitions = allCompetitions.filter(
       (comp) => comp.status === "active" || comp.status === "ended",
     );
 
