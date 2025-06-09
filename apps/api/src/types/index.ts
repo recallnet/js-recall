@@ -267,7 +267,7 @@ export interface Agent {
  */
 export interface OwnerInfo {
   id: string;
-  name?: string;
+  name: string | null;
   walletAddress: string;
 }
 

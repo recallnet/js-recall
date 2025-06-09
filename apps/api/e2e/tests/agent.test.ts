@@ -936,7 +936,13 @@ describe("Agent API", () => {
     expect(agentData.owner).toBeDefined();
     expect(agentData.owner.id).toBeDefined();
     expect(agentData.owner.walletAddress).toBeDefined();
-    expect(typeof agentData.owner.name).toBe("string");
+    // name can be string or null per the API contract
+    expect(["string", "object"].includes(typeof agentData.owner.name)).toBe(
+      true,
+    );
+    if (agentData.owner.name !== null) {
+      expect(typeof agentData.owner.name).toBe("string");
+    }
     // make sure public info is not exposed
     expect(agentData.agent.apiKey).not.toBeDefined();
   });
