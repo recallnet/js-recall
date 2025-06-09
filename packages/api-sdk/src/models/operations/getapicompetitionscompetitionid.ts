@@ -140,8 +140,8 @@ export type GetApiCompetitionsCompetitionIdCompetition = {
    * The type of cross-chain trading allowed in this competition
    */
   crossChainTradingType?:
-  | GetApiCompetitionsCompetitionIdCrossChainTradingType
-  | undefined;
+    | GetApiCompetitionsCompetitionIdCrossChainTradingType
+    | undefined;
   /**
    * Competition start date (null for pending competitions)
    */
@@ -150,6 +150,7 @@ export type GetApiCompetitionsCompetitionIdCompetition = {
    * Competition end date (null for pending/active competitions)
    */
   endDate?: Date | null | undefined;
+  stats?: GetApiCompetitionsCompetitionIdStats | undefined;
   /**
    * When the competition was created
    */
@@ -170,9 +171,9 @@ export type GetApiCompetitionsCompetitionIdCompetition = {
    * User's voting state for this competition (only present for authenticated users)
    */
   userVotingInfo?:
-  | GetApiCompetitionsCompetitionIdUserVotingInfo
-  | null
-  | undefined;
+    | GetApiCompetitionsCompetitionIdUserVotingInfo
+    | null
+    | undefined;
 };
 
 /**
@@ -559,6 +560,9 @@ export const GetApiCompetitionsCompetitionIdCompetition$inboundSchema: z.ZodType
         .transform((v) => new Date(v)),
     )
     .optional(),
+  stats: z
+    .lazy(() => GetApiCompetitionsCompetitionIdStats$inboundSchema)
+    .optional(),
   createdAt: z
     .string()
     .datetime({ offset: true })
@@ -590,14 +594,15 @@ export type GetApiCompetitionsCompetitionIdCompetition$Outbound = {
   crossChainTradingType?: string | undefined;
   startDate?: string | null | undefined;
   endDate?: string | null | undefined;
+  stats?: GetApiCompetitionsCompetitionIdStats$Outbound | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
   totalVotes?: number | undefined;
   votingEnabled?: boolean | undefined;
   userVotingInfo?:
-  | GetApiCompetitionsCompetitionIdUserVotingInfo$Outbound
-  | null
-  | undefined;
+    | GetApiCompetitionsCompetitionIdUserVotingInfo$Outbound
+    | null
+    | undefined;
 };
 
 /** @internal */
@@ -617,6 +622,9 @@ export const GetApiCompetitionsCompetitionIdCompetition$outboundSchema: z.ZodTyp
     GetApiCompetitionsCompetitionIdCrossChainTradingType$outboundSchema.optional(),
   startDate: z.nullable(z.date().transform((v) => v.toISOString())).optional(),
   endDate: z.nullable(z.date().transform((v) => v.toISOString())).optional(),
+  stats: z
+    .lazy(() => GetApiCompetitionsCompetitionIdStats$outboundSchema)
+    .optional(),
   createdAt: z
     .date()
     .transform((v) => v.toISOString())

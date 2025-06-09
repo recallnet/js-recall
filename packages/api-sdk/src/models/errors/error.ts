@@ -3,6 +3,8 @@
  */
 import * as z from "zod";
 
+import { APISDKError } from "./apisdkerror.js";
+
 export type ErrorTData = {
   /**
    * Error message
@@ -18,7 +20,7 @@ export type ErrorTData = {
   timestamp?: Date | undefined;
 };
 
-export class ErrorT extends Error {
+export class ErrorT extends APISDKError {
   /**
    * Error message
    */
@@ -35,14 +37,16 @@ export class ErrorT extends Error {
   /** The original data that was passed to this error instance. */
   data$: ErrorTData;
 
-  constructor(err: ErrorTData) {
+  constructor(
+    err: ErrorTData,
+    httpMeta: { response: Response; request: Request; body: string },
+  ) {
     const message =
       "message" in err && typeof err.message === "string"
         ? err.message
         : `API error occurred: ${JSON.stringify(err)}`;
-    super(message);
+    super(message, httpMeta);
     this.data$ = err;
-
     if (err.error != null) this.error = err.error;
     if (err.status != null) this.status = err.status;
     if (err.timestamp != null) this.timestamp = err.timestamp;
@@ -61,9 +65,16 @@ export const ErrorT$inboundSchema: z.ZodType<ErrorT, z.ZodTypeDef, unknown> = z
       .datetime({ offset: true })
       .transform((v) => new Date(v))
       .optional(),
+    request$: z.instanceof(Request),
+    response$: z.instanceof(Response),
+    body$: z.string(),
   })
   .transform((v) => {
-    return new ErrorT(v);
+    return new ErrorT(v, {
+      request: v.request$,
+      response: v.response$,
+      body: v.body$,
+    });
   });
 
 /** @internal */

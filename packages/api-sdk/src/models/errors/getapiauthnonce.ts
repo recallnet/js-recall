@@ -3,6 +3,8 @@
  */
 import * as z from "zod";
 
+import { APISDKError } from "./apisdkerror.js";
+
 /**
  * Internal server error
  */
@@ -13,20 +15,22 @@ export type GetApiAuthNonceInternalServerErrorData = {
 /**
  * Internal server error
  */
-export class GetApiAuthNonceInternalServerError extends Error {
+export class GetApiAuthNonceInternalServerError extends APISDKError {
   error?: string | undefined;
 
   /** The original data that was passed to this error instance. */
   data$: GetApiAuthNonceInternalServerErrorData;
 
-  constructor(err: GetApiAuthNonceInternalServerErrorData) {
+  constructor(
+    err: GetApiAuthNonceInternalServerErrorData,
+    httpMeta: { response: Response; request: Request; body: string },
+  ) {
     const message =
       "message" in err && typeof err.message === "string"
         ? err.message
         : `API error occurred: ${JSON.stringify(err)}`;
-    super(message);
+    super(message, httpMeta);
     this.data$ = err;
-
     if (err.error != null) this.error = err.error;
 
     this.name = "GetApiAuthNonceInternalServerError";
@@ -41,9 +45,16 @@ export const GetApiAuthNonceInternalServerError$inboundSchema: z.ZodType<
 > = z
   .object({
     error: z.string().optional(),
+    request$: z.instanceof(Request),
+    response$: z.instanceof(Response),
+    body$: z.string(),
   })
   .transform((v) => {
-    return new GetApiAuthNonceInternalServerError(v);
+    return new GetApiAuthNonceInternalServerError(v, {
+      request: v.request$,
+      response: v.response$,
+      body: v.body$,
+    });
   });
 
 /** @internal */

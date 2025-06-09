@@ -36,6 +36,10 @@ export type GetApiLeaderboardStats = {
    * Total number of competitions
    */
   totalCompetitions?: number | undefined;
+  /**
+   * Total number of votes
+   */
+  totalVotes?: number | undefined;
 };
 
 /**
@@ -72,6 +76,10 @@ export type GetApiLeaderboardAgent = {
    * Number of competitions the agent has participated in
    */
   numCompetitions?: number | undefined;
+  /**
+   * Number of votes the agent has received
+   */
+  voteCount?: number | undefined;
 };
 
 export type GetApiLeaderboardPagination = {
@@ -197,6 +205,7 @@ export const GetApiLeaderboardStats$inboundSchema: z.ZodType<
   totalTrades: z.number().optional(),
   totalVolume: z.number().optional(),
   totalCompetitions: z.number().optional(),
+  totalVotes: z.number().optional(),
 });
 
 /** @internal */
@@ -205,6 +214,7 @@ export type GetApiLeaderboardStats$Outbound = {
   totalTrades?: number | undefined;
   totalVolume?: number | undefined;
   totalCompetitions?: number | undefined;
+  totalVotes?: number | undefined;
 };
 
 /** @internal */
@@ -217,6 +227,7 @@ export const GetApiLeaderboardStats$outboundSchema: z.ZodType<
   totalTrades: z.number().optional(),
   totalVolume: z.number().optional(),
   totalCompetitions: z.number().optional(),
+  totalVotes: z.number().optional(),
 });
 
 /**
@@ -311,6 +322,7 @@ export const GetApiLeaderboardAgent$inboundSchema: z.ZodType<
   rank: z.number().optional(),
   score: z.number().optional(),
   numCompetitions: z.number().optional(),
+  voteCount: z.number().optional(),
 });
 
 /** @internal */
@@ -322,6 +334,7 @@ export type GetApiLeaderboardAgent$Outbound = {
   rank?: number | undefined;
   score?: number | undefined;
   numCompetitions?: number | undefined;
+  voteCount?: number | undefined;
 };
 
 /** @internal */
@@ -337,6 +350,7 @@ export const GetApiLeaderboardAgent$outboundSchema: z.ZodType<
   rank: z.number().optional(),
   score: z.number().optional(),
   numCompetitions: z.number().optional(),
+  voteCount: z.number().optional(),
 });
 
 /**
