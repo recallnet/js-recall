@@ -13,6 +13,18 @@ export type GetApiCompetitionsLeaderboardRequest = {
    * Optional competition ID (if not provided, the active competition is used)
    */
   competitionId?: string | undefined;
+  /**
+   * Optional field to sort by. Available fields are 'agentName', 'portfolioValue', 'competitions', 'votes'. Use '-' prefix for descending order (e.g., '-votes')
+   */
+  sort?: string | undefined;
+  /**
+   * Optional maximum number of results to return
+   */
+  limit?: number | undefined;
+  /**
+   * Optional number of results to skip for pagination
+   */
+  offset?: number | undefined;
 };
 
 /**
@@ -92,7 +104,7 @@ export type GetApiCompetitionsLeaderboardCompetition = {
 
 export type GetApiCompetitionsLeaderboardLeaderboard = {
   /**
-   * Agent rank on the leaderboard
+   * Agent rank on the leaderboard (after sorting)
    */
   rank?: number | undefined;
   /**
@@ -115,6 +127,14 @@ export type GetApiCompetitionsLeaderboardLeaderboard = {
    * Always null for active agents
    */
   deactivationReason?: string | null | undefined;
+  /**
+   * Total number of competitions this agent has participated in (global metric)
+   */
+  competitions?: number | undefined;
+  /**
+   * Total number of votes this agent has received across all competitions (global metric)
+   */
+  votes?: number | undefined;
 };
 
 export type InactiveAgent = {
@@ -141,6 +161,28 @@ export type InactiveAgent = {
 };
 
 /**
+ * Pagination metadata
+ */
+export type GetApiCompetitionsLeaderboardPagination = {
+  /**
+   * Total number of active agents in the competition
+   */
+  total?: number | undefined;
+  /**
+   * Maximum number of results returned
+   */
+  limit?: number | undefined;
+  /**
+   * Number of results skipped
+   */
+  offset?: number | undefined;
+  /**
+   * Whether there are more results available
+   */
+  hasMore?: boolean | undefined;
+};
+
+/**
  * Competition leaderboard
  */
 export type GetApiCompetitionsLeaderboardResponse = {
@@ -150,7 +192,7 @@ export type GetApiCompetitionsLeaderboardResponse = {
   success?: boolean | undefined;
   competition?: GetApiCompetitionsLeaderboardCompetition | undefined;
   /**
-   * Ranked list of active agents
+   * Ranked list of active agents (sorted according to sort parameter)
    */
   leaderboard?: Array<GetApiCompetitionsLeaderboardLeaderboard> | undefined;
   /**
@@ -161,6 +203,10 @@ export type GetApiCompetitionsLeaderboardResponse = {
    * Indicates if any agents are inactive
    */
   hasInactiveAgents?: boolean | undefined;
+  /**
+   * Pagination metadata
+   */
+  pagination?: GetApiCompetitionsLeaderboardPagination | undefined;
 };
 
 /** @internal */
@@ -170,11 +216,17 @@ export const GetApiCompetitionsLeaderboardRequest$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   competitionId: z.string().optional(),
+  sort: z.string().default("agentName"),
+  limit: z.number().int().default(50),
+  offset: z.number().int().default(0),
 });
 
 /** @internal */
 export type GetApiCompetitionsLeaderboardRequest$Outbound = {
   competitionId?: string | undefined;
+  sort: string;
+  limit: number;
+  offset: number;
 };
 
 /** @internal */
@@ -184,6 +236,9 @@ export const GetApiCompetitionsLeaderboardRequest$outboundSchema: z.ZodType<
   GetApiCompetitionsLeaderboardRequest
 > = z.object({
   competitionId: z.string().optional(),
+  sort: z.string().default("agentName"),
+  limit: z.number().int().default(50),
+  offset: z.number().int().default(0),
 });
 
 /**
@@ -401,6 +456,8 @@ export const GetApiCompetitionsLeaderboardLeaderboard$inboundSchema: z.ZodType<
   portfolioValue: z.number().optional(),
   active: z.boolean().optional(),
   deactivationReason: z.nullable(z.string()).optional(),
+  competitions: z.number().int().optional(),
+  votes: z.number().int().optional(),
 });
 
 /** @internal */
@@ -411,6 +468,8 @@ export type GetApiCompetitionsLeaderboardLeaderboard$Outbound = {
   portfolioValue?: number | undefined;
   active?: boolean | undefined;
   deactivationReason?: string | null | undefined;
+  competitions?: number | undefined;
+  votes?: number | undefined;
 };
 
 /** @internal */
@@ -425,6 +484,8 @@ export const GetApiCompetitionsLeaderboardLeaderboard$outboundSchema: z.ZodType<
   portfolioValue: z.number().optional(),
   active: z.boolean().optional(),
   deactivationReason: z.nullable(z.string()).optional(),
+  competitions: z.number().int().optional(),
+  votes: z.number().int().optional(),
 });
 
 /**
@@ -531,6 +592,79 @@ export function inactiveAgentFromJSON(
 }
 
 /** @internal */
+export const GetApiCompetitionsLeaderboardPagination$inboundSchema: z.ZodType<
+  GetApiCompetitionsLeaderboardPagination,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  total: z.number().int().optional(),
+  limit: z.number().int().optional(),
+  offset: z.number().int().optional(),
+  hasMore: z.boolean().optional(),
+});
+
+/** @internal */
+export type GetApiCompetitionsLeaderboardPagination$Outbound = {
+  total?: number | undefined;
+  limit?: number | undefined;
+  offset?: number | undefined;
+  hasMore?: boolean | undefined;
+};
+
+/** @internal */
+export const GetApiCompetitionsLeaderboardPagination$outboundSchema: z.ZodType<
+  GetApiCompetitionsLeaderboardPagination$Outbound,
+  z.ZodTypeDef,
+  GetApiCompetitionsLeaderboardPagination
+> = z.object({
+  total: z.number().int().optional(),
+  limit: z.number().int().optional(),
+  offset: z.number().int().optional(),
+  hasMore: z.boolean().optional(),
+});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace GetApiCompetitionsLeaderboardPagination$ {
+  /** @deprecated use `GetApiCompetitionsLeaderboardPagination$inboundSchema` instead. */
+  export const inboundSchema =
+    GetApiCompetitionsLeaderboardPagination$inboundSchema;
+  /** @deprecated use `GetApiCompetitionsLeaderboardPagination$outboundSchema` instead. */
+  export const outboundSchema =
+    GetApiCompetitionsLeaderboardPagination$outboundSchema;
+  /** @deprecated use `GetApiCompetitionsLeaderboardPagination$Outbound` instead. */
+  export type Outbound = GetApiCompetitionsLeaderboardPagination$Outbound;
+}
+
+export function getApiCompetitionsLeaderboardPaginationToJSON(
+  getApiCompetitionsLeaderboardPagination: GetApiCompetitionsLeaderboardPagination,
+): string {
+  return JSON.stringify(
+    GetApiCompetitionsLeaderboardPagination$outboundSchema.parse(
+      getApiCompetitionsLeaderboardPagination,
+    ),
+  );
+}
+
+export function getApiCompetitionsLeaderboardPaginationFromJSON(
+  jsonString: string,
+): SafeParseResult<
+  GetApiCompetitionsLeaderboardPagination,
+  SDKValidationError
+> {
+  return safeParse(
+    jsonString,
+    (x) =>
+      GetApiCompetitionsLeaderboardPagination$inboundSchema.parse(
+        JSON.parse(x),
+      ),
+    `Failed to parse 'GetApiCompetitionsLeaderboardPagination' from JSON`,
+  );
+}
+
+/** @internal */
 export const GetApiCompetitionsLeaderboardResponse$inboundSchema: z.ZodType<
   GetApiCompetitionsLeaderboardResponse,
   z.ZodTypeDef,
@@ -545,6 +679,9 @@ export const GetApiCompetitionsLeaderboardResponse$inboundSchema: z.ZodType<
     .optional(),
   inactiveAgents: z.array(z.lazy(() => InactiveAgent$inboundSchema)).optional(),
   hasInactiveAgents: z.boolean().optional(),
+  pagination: z
+    .lazy(() => GetApiCompetitionsLeaderboardPagination$inboundSchema)
+    .optional(),
 });
 
 /** @internal */
@@ -556,6 +693,7 @@ export type GetApiCompetitionsLeaderboardResponse$Outbound = {
     | undefined;
   inactiveAgents?: Array<InactiveAgent$Outbound> | undefined;
   hasInactiveAgents?: boolean | undefined;
+  pagination?: GetApiCompetitionsLeaderboardPagination$Outbound | undefined;
 };
 
 /** @internal */
@@ -577,6 +715,9 @@ export const GetApiCompetitionsLeaderboardResponse$outboundSchema: z.ZodType<
     .array(z.lazy(() => InactiveAgent$outboundSchema))
     .optional(),
   hasInactiveAgents: z.boolean().optional(),
+  pagination: z
+    .lazy(() => GetApiCompetitionsLeaderboardPagination$outboundSchema)
+    .optional(),
 });
 
 /**
