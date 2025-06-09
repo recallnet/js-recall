@@ -28,7 +28,7 @@ export type BestPlacement = {
 /**
  * stats on this agent's past performance
  */
-export type GetApiAgentAgentIdStats = {
+export type Stats = {
   competitionsCompleted?: number | undefined;
   provenSkills?: Array<string> | undefined;
   bestPlacement?: BestPlacement | undefined;
@@ -48,7 +48,7 @@ export type GetApiAgentAgentIdResponse = {
   /**
    * stats on this agent's past performance
    */
-  stats?: GetApiAgentAgentIdStats | undefined;
+  stats?: Stats | undefined;
   trophies?: Array<string> | undefined;
   hasUnclaimedRewards?: boolean | undefined;
 };
@@ -212,28 +212,25 @@ export function bestPlacementFromJSON(
 }
 
 /** @internal */
-export const GetApiAgentAgentIdStats$inboundSchema: z.ZodType<
-  GetApiAgentAgentIdStats,
-  z.ZodTypeDef,
-  unknown
-> = z.object({
-  competitionsCompleted: z.number().int().optional(),
-  provenSkills: z.array(z.string()).optional(),
-  bestPlacement: z.lazy(() => BestPlacement$inboundSchema).optional(),
-});
+export const Stats$inboundSchema: z.ZodType<Stats, z.ZodTypeDef, unknown> =
+  z.object({
+    competitionsCompleted: z.number().int().optional(),
+    provenSkills: z.array(z.string()).optional(),
+    bestPlacement: z.lazy(() => BestPlacement$inboundSchema).optional(),
+  });
 
 /** @internal */
-export type GetApiAgentAgentIdStats$Outbound = {
+export type Stats$Outbound = {
   competitionsCompleted?: number | undefined;
   provenSkills?: Array<string> | undefined;
   bestPlacement?: BestPlacement$Outbound | undefined;
 };
 
 /** @internal */
-export const GetApiAgentAgentIdStats$outboundSchema: z.ZodType<
-  GetApiAgentAgentIdStats$Outbound,
+export const Stats$outboundSchema: z.ZodType<
+  Stats$Outbound,
   z.ZodTypeDef,
-  GetApiAgentAgentIdStats
+  Stats
 > = z.object({
   competitionsCompleted: z.number().int().optional(),
   provenSkills: z.array(z.string()).optional(),
@@ -244,30 +241,26 @@ export const GetApiAgentAgentIdStats$outboundSchema: z.ZodType<
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace GetApiAgentAgentIdStats$ {
-  /** @deprecated use `GetApiAgentAgentIdStats$inboundSchema` instead. */
-  export const inboundSchema = GetApiAgentAgentIdStats$inboundSchema;
-  /** @deprecated use `GetApiAgentAgentIdStats$outboundSchema` instead. */
-  export const outboundSchema = GetApiAgentAgentIdStats$outboundSchema;
-  /** @deprecated use `GetApiAgentAgentIdStats$Outbound` instead. */
-  export type Outbound = GetApiAgentAgentIdStats$Outbound;
+export namespace Stats$ {
+  /** @deprecated use `Stats$inboundSchema` instead. */
+  export const inboundSchema = Stats$inboundSchema;
+  /** @deprecated use `Stats$outboundSchema` instead. */
+  export const outboundSchema = Stats$outboundSchema;
+  /** @deprecated use `Stats$Outbound` instead. */
+  export type Outbound = Stats$Outbound;
 }
 
-export function getApiAgentAgentIdStatsToJSON(
-  getApiAgentAgentIdStats: GetApiAgentAgentIdStats,
-): string {
-  return JSON.stringify(
-    GetApiAgentAgentIdStats$outboundSchema.parse(getApiAgentAgentIdStats),
-  );
+export function statsToJSON(stats: Stats): string {
+  return JSON.stringify(Stats$outboundSchema.parse(stats));
 }
 
-export function getApiAgentAgentIdStatsFromJSON(
+export function statsFromJSON(
   jsonString: string,
-): SafeParseResult<GetApiAgentAgentIdStats, SDKValidationError> {
+): SafeParseResult<Stats, SDKValidationError> {
   return safeParse(
     jsonString,
-    (x) => GetApiAgentAgentIdStats$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'GetApiAgentAgentIdStats' from JSON`,
+    (x) => Stats$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'Stats' from JSON`,
   );
 }
 
@@ -283,7 +276,7 @@ export const GetApiAgentAgentIdResponse$inboundSchema: z.ZodType<
   metadata: z
     .nullable(z.lazy(() => GetApiAgentAgentIdMetadata$inboundSchema))
     .optional(),
-  stats: z.lazy(() => GetApiAgentAgentIdStats$inboundSchema).optional(),
+  stats: z.lazy(() => Stats$inboundSchema).optional(),
   trophies: z.array(z.string()).optional(),
   hasUnclaimedRewards: z.boolean().optional(),
 });
@@ -294,7 +287,7 @@ export type GetApiAgentAgentIdResponse$Outbound = {
   name?: string | undefined;
   imageUrl?: string | null | undefined;
   metadata?: GetApiAgentAgentIdMetadata$Outbound | null | undefined;
-  stats?: GetApiAgentAgentIdStats$Outbound | undefined;
+  stats?: Stats$Outbound | undefined;
   trophies?: Array<string> | undefined;
   hasUnclaimedRewards?: boolean | undefined;
 };
@@ -311,7 +304,7 @@ export const GetApiAgentAgentIdResponse$outboundSchema: z.ZodType<
   metadata: z
     .nullable(z.lazy(() => GetApiAgentAgentIdMetadata$outboundSchema))
     .optional(),
-  stats: z.lazy(() => GetApiAgentAgentIdStats$outboundSchema).optional(),
+  stats: z.lazy(() => Stats$outboundSchema).optional(),
   trophies: z.array(z.string()).optional(),
   hasUnclaimedRewards: z.boolean().optional(),
 });

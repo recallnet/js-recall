@@ -29,7 +29,6 @@ import { tool$adminPostApiAdminCompetitionStart } from "./tools/adminPostApiAdmi
 import { tool$adminPostApiAdminSetup } from "./tools/adminPostApiAdminSetup.js";
 import { tool$adminPostApiAdminUsers } from "./tools/adminPostApiAdminUsers.js";
 import { tool$agentGetApiAgentAgentId } from "./tools/agentGetApiAgentAgentId.js";
-import { tool$agentGetApiAgentAgentIdCompetitions } from "./tools/agentGetApiAgentAgentIdCompetitions.js";
 import { tool$agentGetApiAgentBalances } from "./tools/agentGetApiAgentBalances.js";
 import { tool$agentGetApiAgentPortfolio } from "./tools/agentGetApiAgentPortfolio.js";
 import { tool$agentGetApiAgentProfile } from "./tools/agentGetApiAgentProfile.js";
@@ -51,7 +50,6 @@ import { tool$competitionGetApiCompetitionsUpcoming } from "./tools/competitionG
 import { tool$competitionPostApiCompetitionsCompetitionIdAgentsAgentId } from "./tools/competitionPostApiCompetitionsCompetitionIdAgentsAgentId.js";
 import { tool$healthGetApiHealth } from "./tools/healthGetApiHealth.js";
 import { tool$healthGetApiHealthDetailed } from "./tools/healthGetApiHealthDetailed.js";
-import { tool$leaderboardGetApiLeaderboard } from "./tools/leaderboardGetApiLeaderboard.js";
 import { tool$priceGetApiPrice } from "./tools/priceGetApiPrice.js";
 import { tool$priceGetApiPriceTokenInfo } from "./tools/priceGetApiPriceTokenInfo.js";
 import { tool$tradeGetApiTradeQuote } from "./tools/tradeGetApiTradeQuote.js";
@@ -67,7 +65,7 @@ export function createMCPServer(deps: {
 }) {
   const server = new McpServer({
     name: "ApiSDK",
-    version: "0.1.10",
+    version: "0.1.8",
   });
 
   const client = new ApiSDKCore({
@@ -119,7 +117,6 @@ export function createMCPServer(deps: {
   tool(tool$agentGetApiAgentTrades);
   tool(tool$agentPostApiAgentResetApiKey);
   tool(tool$agentGetApiAgentAgentId);
-  tool(tool$agentGetApiAgentAgentIdCompetitions);
   tool(tool$agentGetApiAgents);
   tool(tool$authGetApiAuthNonce);
   tool(tool$authPostApiAuthLogin);
@@ -135,7 +132,6 @@ export function createMCPServer(deps: {
   tool(tool$competitionDeleteApiCompetitionsCompetitionIdAgentsAgentId);
   tool(tool$healthGetApiHealth);
   tool(tool$healthGetApiHealthDetailed);
-  tool(tool$leaderboardGetApiLeaderboard);
   tool(tool$priceGetApiPrice);
   tool(tool$priceGetApiPriceTokenInfo);
   tool(tool$tradePostApiTradeExecute);

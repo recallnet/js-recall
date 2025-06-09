@@ -58,25 +58,6 @@ export type GetApiCompetitionsCompetitionIdCrossChainTradingType = ClosedEnum<
   typeof GetApiCompetitionsCompetitionIdCrossChainTradingType
 >;
 
-export type GetApiCompetitionsCompetitionIdStats = {
-  /**
-   * Total number of trades
-   */
-  totalTrades?: number | undefined;
-  /**
-   * Total number of agents
-   */
-  totalAgents?: number | undefined;
-  /**
-   * Total volume of trades in USD
-   */
-  totalVolume?: number | undefined;
-  /**
-   * Total number of unique tokens traded
-   */
-  uniqueTokens?: number | undefined;
-};
-
 export type GetApiCompetitionsCompetitionIdCompetition = {
   /**
    * Competition ID
@@ -120,7 +101,6 @@ export type GetApiCompetitionsCompetitionIdCompetition = {
    * Competition end date (null for pending/active competitions)
    */
   endDate?: Date | null | undefined;
-  stats?: GetApiCompetitionsCompetitionIdStats | undefined;
   /**
    * When the competition was created
    */
@@ -271,74 +251,6 @@ export namespace GetApiCompetitionsCompetitionIdCrossChainTradingType$ {
 }
 
 /** @internal */
-export const GetApiCompetitionsCompetitionIdStats$inboundSchema: z.ZodType<
-  GetApiCompetitionsCompetitionIdStats,
-  z.ZodTypeDef,
-  unknown
-> = z.object({
-  totalTrades: z.number().optional(),
-  totalAgents: z.number().optional(),
-  totalVolume: z.number().optional(),
-  uniqueTokens: z.number().optional(),
-});
-
-/** @internal */
-export type GetApiCompetitionsCompetitionIdStats$Outbound = {
-  totalTrades?: number | undefined;
-  totalAgents?: number | undefined;
-  totalVolume?: number | undefined;
-  uniqueTokens?: number | undefined;
-};
-
-/** @internal */
-export const GetApiCompetitionsCompetitionIdStats$outboundSchema: z.ZodType<
-  GetApiCompetitionsCompetitionIdStats$Outbound,
-  z.ZodTypeDef,
-  GetApiCompetitionsCompetitionIdStats
-> = z.object({
-  totalTrades: z.number().optional(),
-  totalAgents: z.number().optional(),
-  totalVolume: z.number().optional(),
-  uniqueTokens: z.number().optional(),
-});
-
-/**
- * @internal
- * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
- */
-export namespace GetApiCompetitionsCompetitionIdStats$ {
-  /** @deprecated use `GetApiCompetitionsCompetitionIdStats$inboundSchema` instead. */
-  export const inboundSchema =
-    GetApiCompetitionsCompetitionIdStats$inboundSchema;
-  /** @deprecated use `GetApiCompetitionsCompetitionIdStats$outboundSchema` instead. */
-  export const outboundSchema =
-    GetApiCompetitionsCompetitionIdStats$outboundSchema;
-  /** @deprecated use `GetApiCompetitionsCompetitionIdStats$Outbound` instead. */
-  export type Outbound = GetApiCompetitionsCompetitionIdStats$Outbound;
-}
-
-export function getApiCompetitionsCompetitionIdStatsToJSON(
-  getApiCompetitionsCompetitionIdStats: GetApiCompetitionsCompetitionIdStats,
-): string {
-  return JSON.stringify(
-    GetApiCompetitionsCompetitionIdStats$outboundSchema.parse(
-      getApiCompetitionsCompetitionIdStats,
-    ),
-  );
-}
-
-export function getApiCompetitionsCompetitionIdStatsFromJSON(
-  jsonString: string,
-): SafeParseResult<GetApiCompetitionsCompetitionIdStats, SDKValidationError> {
-  return safeParse(
-    jsonString,
-    (x) =>
-      GetApiCompetitionsCompetitionIdStats$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'GetApiCompetitionsCompetitionIdStats' from JSON`,
-  );
-}
-
-/** @internal */
 export const GetApiCompetitionsCompetitionIdCompetition$inboundSchema: z.ZodType<
   GetApiCompetitionsCompetitionIdCompetition,
   z.ZodTypeDef,
@@ -369,9 +281,6 @@ export const GetApiCompetitionsCompetitionIdCompetition$inboundSchema: z.ZodType
         .transform((v) => new Date(v)),
     )
     .optional(),
-  stats: z
-    .lazy(() => GetApiCompetitionsCompetitionIdStats$inboundSchema)
-    .optional(),
   createdAt: z
     .string()
     .datetime({ offset: true })
@@ -396,7 +305,6 @@ export type GetApiCompetitionsCompetitionIdCompetition$Outbound = {
   crossChainTradingType?: string | undefined;
   startDate?: string | null | undefined;
   endDate?: string | null | undefined;
-  stats?: GetApiCompetitionsCompetitionIdStats$Outbound | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
 };
@@ -418,9 +326,6 @@ export const GetApiCompetitionsCompetitionIdCompetition$outboundSchema: z.ZodTyp
     GetApiCompetitionsCompetitionIdCrossChainTradingType$outboundSchema.optional(),
   startDate: z.nullable(z.date().transform((v) => v.toISOString())).optional(),
   endDate: z.nullable(z.date().transform((v) => v.toISOString())).optional(),
-  stats: z
-    .lazy(() => GetApiCompetitionsCompetitionIdStats$outboundSchema)
-    .optional(),
   createdAt: z
     .date()
     .transform((v) => v.toISOString())
