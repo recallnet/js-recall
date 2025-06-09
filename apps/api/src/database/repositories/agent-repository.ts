@@ -266,9 +266,24 @@ export async function findById(id: string): Promise<SelectAgent | undefined> {
  * Find agents by owner ID
  * @param ownerId Owner ID to search for
  */
-export async function findByOwnerId(ownerId: string): Promise<SelectAgent[]> {
+export async function findByOwnerId(
+  ownerId: string,
+  pagingParams: PagingParams,
+): Promise<SelectAgent[]> {
   try {
-    return await db.select().from(agents).where(eq(agents.ownerId, ownerId));
+    let query = db
+      .select()
+      .from(agents)
+      .where(eq(agents.ownerId, ownerId))
+      .$dynamic();
+
+    if (pagingParams.sort) {
+      query = getSort(query, pagingParams.sort, agentOrderByFields);
+    }
+
+    query = query.limit(pagingParams.limit).offset(pagingParams.offset);
+
+    return query;
   } catch (error) {
     console.error("[AgentRepository] Error in findByOwnerId:", error);
     throw error;

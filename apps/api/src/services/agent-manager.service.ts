@@ -167,9 +167,9 @@ export class AgentManager {
    * @param ownerId The owner user ID
    * @returns Array of agents owned by the user
    */
-  async getAgentsByOwner(ownerId: string) {
+  async getAgentsByOwner(ownerId: string, pagingParams: PagingParams) {
     try {
-      return await findByOwnerId(ownerId);
+      return await findByOwnerId(ownerId, pagingParams);
     } catch (error) {
       console.error(
         `[AgentManager] Error retrieving agents for owner ${ownerId}:`,
