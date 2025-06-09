@@ -85,14 +85,14 @@ function TableCaption({ className, ref, ...props }: TableCaptionProps) {
 type SortState = "none" | "asc" | "desc";
 
 interface SortableTableHeaderProps extends TableHeadProps {
-  sortState: SortState;
-  onToggleSort: () => void;
+  sortState?: SortState;
+  onToggleSort?: () => void;
 }
 
 function SortableTableHeader({
   className,
-  sortState,
-  onToggleSort,
+  sortState = "none",
+  onToggleSort = () => 1,
   ...props
 }: SortableTableHeaderProps) {
   const iconSize = sortState === "none" ? 20 : 22;
