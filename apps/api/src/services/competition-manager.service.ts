@@ -466,10 +466,10 @@ export class CompetitionManager {
       metricsMap.set(agentId, { competitions: 0, votes: 0 });
     });
 
-    // Get all competitions to calculate global metrics using pagination
-    let allCompetitions: Competition[] = [];
+    // Get all active and ended competitions efficiently with a larger page size
+    const relevantCompetitions: Competition[] = [];
     let offset = 0;
-    const limit = 100; // Smaller limit for paginated retrieval
+    const limit = 1000; // Use larger limit to reduce database round trips
 
     while (true) {
       const page = await this.getCompetitions(
@@ -480,26 +480,26 @@ export class CompetitionManager {
           sort: "",
         },
       );
-      // Convert database null values to undefined for TypeScript consistency
-      const convertedCompetitions = page.competitions.map((comp) => ({
-        ...comp,
-        description: comp.description || undefined,
-        externalUrl: comp.externalUrl || undefined,
-        imageUrl: comp.imageUrl || undefined,
-        createdAt: comp.createdAt || new Date(),
-        updatedAt: comp.updatedAt || new Date(),
-      }));
-      allCompetitions = allCompetitions.concat(convertedCompetitions);
+
+      // Filter and convert only active/ended competitions
+      const filteredCompetitions = page.competitions
+        .filter((comp) => comp.status === "active" || comp.status === "ended")
+        .map((comp) => ({
+          ...comp,
+          description: comp.description || undefined,
+          externalUrl: comp.externalUrl || undefined,
+          imageUrl: comp.imageUrl || undefined,
+          createdAt: comp.createdAt || new Date(),
+          updatedAt: comp.updatedAt || new Date(),
+        }));
+
+      relevantCompetitions.push(...filteredCompetitions);
+
       if (page.competitions.length < limit) {
         break; // Exit loop if fewer competitions than limit are returned
       }
       offset += limit; // Increment offset for next page
     }
-
-    // Filter to only active and ended competitions for global metrics
-    const relevantCompetitions = allCompetitions.filter(
-      (comp) => comp.status === "active" || comp.status === "ended",
-    );
 
     // Process each competition to accumulate metrics
     await Promise.all(
@@ -570,10 +570,10 @@ export class CompetitionManager {
           bValue = b.votes;
           break;
         default:
-          // Default to portfolio value descending for unknown fields
+          // Default to portfolio value for unknown fields
           aValue = a.portfolioValue;
           bValue = b.portfolioValue;
-          return bValue - aValue;
+          break;
       }
 
       if (typeof aValue === "number" && typeof bValue === "number") {
