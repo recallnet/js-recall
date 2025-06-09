@@ -386,6 +386,25 @@ export class DexScreenerProvider implements PriceSource {
   }
 
   /**
+   * Check if a token address is a burn address (dead address)
+   */
+  private isBurnAddress(tokenAddress: string): boolean {
+    const normalizedAddress = tokenAddress.toLowerCase();
+
+    // EVM dead address
+    if (normalizedAddress === "0x000000000000000000000000000000000000dead") {
+      return true;
+    }
+
+    // Solana dead address (incinerator)
+    if (normalizedAddress === "1nc1nerator11111111111111111111111111111111") {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
    * Get the price of a token
    */
   async getPrice(
@@ -393,6 +412,27 @@ export class DexScreenerProvider implements PriceSource {
     chain: BlockchainType,
     specificChain: SpecificChain,
   ): Promise<PriceReport | null> {
+    // Handle burn addresses - always return price of 0
+    if (this.isBurnAddress(tokenAddress)) {
+      console.log(
+        `[DexScreenerProvider] Burn address detected: ${tokenAddress}, returning price of 0`,
+      );
+
+      // Determine chain if not provided
+      if (!chain) {
+        chain = this.determineChain(tokenAddress);
+      }
+
+      return {
+        price: 0,
+        symbol: "BURN",
+        token: tokenAddress,
+        timestamp: new Date(),
+        chain,
+        specificChain,
+      };
+    }
+
     // Check cache first
     const cachedPrice = this.getCachedPrice(tokenAddress, specificChain);
     if (cachedPrice !== null) {
@@ -454,6 +494,11 @@ export class DexScreenerProvider implements PriceSource {
     tokenAddress: string,
     specificChain: SpecificChain,
   ): Promise<boolean> {
+    // Always support burn addresses
+    if (this.isBurnAddress(tokenAddress)) {
+      return true;
+    }
+
     // Check cache first
     if (this.getCachedPrice(tokenAddress, specificChain) !== null) {
       return true;

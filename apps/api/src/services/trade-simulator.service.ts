@@ -181,7 +181,12 @@ export class TradeSimulator {
         `  To Token (${toToken}): ${JSON.stringify(toPrice, null, 4)} (${toTokenChain})`,
       );
 
-      if (!fromPrice?.price || !toPrice?.price) {
+      if (
+        !fromPrice ||
+        !toPrice ||
+        fromPrice.price == null ||
+        toPrice.price == null
+      ) {
         console.log(`[TradeSimulator] Missing price data:
             From Token Price: ${fromPrice}
             To Token Price: ${toPrice}
@@ -278,33 +283,60 @@ export class TradeSimulator {
         };
       }
 
-      // Apply slippage based on trade size
-      const baseSlippage = (fromValueUSD / 10000) * 0.05; // 0.05% per $10,000 (10x lower than before)
-      const actualSlippage = baseSlippage * (0.9 + Math.random() * 0.2); // ±10% randomness (reduced from ±20%)
-      const slippagePercentage = actualSlippage * 100;
+      // Handle burn address (price = 0) specially
+      let toAmount: number;
+      let exchangeRate: number;
+      let effectiveFromValueUSD: number;
 
-      // Calculate final amount with slippage
-      const effectiveFromValueUSD = fromValueUSD * (1 - actualSlippage);
-      const toAmount = effectiveFromValueUSD / toPrice.price;
+      if (toPrice.price === 0) {
+        // Burning tokens - toAmount is 0, no slippage calculation needed
+        toAmount = 0;
+        exchangeRate = 0;
+        effectiveFromValueUSD = fromValueUSD; // For accounting purposes, record the full USD value burned
+        console.log(
+          `[TradeSimulator] Burn transaction detected - tokens will be burned (toAmount = 0)`,
+        );
+      } else {
+        // Normal trade with slippage
+        const baseSlippage = (fromValueUSD / 10000) * 0.05; // 0.05% per $10,000 (10x lower than before)
+        const actualSlippage = baseSlippage * (0.9 + Math.random() * 0.2); // ±10% randomness (reduced from ±20%)
+
+        // Calculate final amount with slippage
+        effectiveFromValueUSD = fromValueUSD * (1 - actualSlippage);
+        toAmount = effectiveFromValueUSD / toPrice.price;
+        exchangeRate = toAmount / fromAmount;
+      }
 
       // Debug logging for price calculations
-      console.log(`[TradeSimulator] Trade calculation details:
+      if (toPrice.price === 0) {
+        console.log(`[TradeSimulator] Burn trade calculation details:
                 From Token (${fromToken}):
                 - Amount: ${fromAmount}
                 - Price: $${fromPrice.price}
                 - USD Value: $${fromValueUSD.toFixed(6)}
                 
-                Slippage:
-                - Base: ${(baseSlippage * 100).toFixed(4)}%
-                - Actual: ${slippagePercentage.toFixed(4)}%
-                - Effective USD Value: $${effectiveFromValueUSD.toFixed(6)}
+                Burn Details:
+                - To Token (${toToken}): BURN ADDRESS
+                - Price: $${toPrice.price}
+                - Amount Burned: ${toAmount}
+                - USD Value Burned: $${effectiveFromValueUSD.toFixed(6)}
 
+                Exchange Rate: 1 ${fromToken} = ${exchangeRate} ${toToken} (BURN)
+            `);
+      } else {
+        console.log(`[TradeSimulator] Trade calculation details:
+                From Token (${fromToken}):
+                - Amount: ${fromAmount}
+                - Price: $${fromPrice.price}
+                - USD Value: $${fromValueUSD.toFixed(6)}
+                
                 To Token (${toToken}):
                 - Price: $${toPrice.price}
                 - Calculated Amount: ${toAmount.toFixed(6)}
 
-                Exchange Rate: 1 ${fromToken} = ${(toAmount / fromAmount).toFixed(6)} ${toToken}
+                Exchange Rate: 1 ${fromToken} = ${exchangeRate.toFixed(6)} ${toToken}
             `);
+      }
 
       // Execute the trade
       await this.balanceManager.subtractAmount(
@@ -314,13 +346,21 @@ export class TradeSimulator {
         fromPrice.specificChain as SpecificChain,
         fromPrice.symbol,
       );
-      await this.balanceManager.addAmount(
-        agentId,
-        toToken,
-        toAmount,
-        toPrice.specificChain as SpecificChain,
-        toPrice.symbol,
-      );
+
+      // Only add balance for non-burn addresses (toAmount > 0)
+      if (toAmount > 0) {
+        await this.balanceManager.addAmount(
+          agentId,
+          toToken,
+          toAmount,
+          toPrice.specificChain as SpecificChain,
+          toPrice.symbol,
+        );
+      } else {
+        console.log(
+          `[TradeSimulator] Burn trade completed - no balance added for ${toToken}`,
+        );
+      }
 
       // Create trade record
       const trade: InsertTrade = {
@@ -330,7 +370,7 @@ export class TradeSimulator {
         toToken,
         fromAmount,
         toAmount,
-        price: toAmount / fromAmount, // Exchange rate
+        price: exchangeRate, // Exchange rate (0 for burns)
         toTokenSymbol: toPrice.symbol,
         fromTokenSymbol: fromPrice.symbol,
         tradeAmountUsd: fromValueUSD, // Store the USD value of the trade
