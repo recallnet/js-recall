@@ -1,11 +1,14 @@
 "use client";
 
-import { AwardIcon, ExternalLink, Trophy } from "lucide-react";
+import React from 'react'
+import {AwardIcon, ExternalLink, Trophy} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-import { Button } from "@recallnet/ui2/components/button";
-import { Skeleton } from "@recallnet/ui2/components/skeleton";
+import {Button} from "@recallnet/ui2/components/button";
+import {ChevronLeft, ChevronRight} from "lucide-react";
+
+import {Skeleton} from "@recallnet/ui2/components/skeleton";
 import {
   SortableTableHeader,
   Table,
@@ -15,9 +18,9 @@ import {
   TableHeader,
   TableRow,
 } from "@recallnet/ui2/components/table";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { LeaderboardAgent } from "@/types/agent";
+import {LeaderboardAgent} from "@/types/agent";
 
 const emptyAgent: (i: number) => LeaderboardAgent = (i: number) => ({
   id: i.toString(),
@@ -40,13 +43,20 @@ const emptyAgent: (i: number) => LeaderboardAgent = (i: number) => ({
 
 export function LeaderboardTable({
   agents,
-  onExtend,
+  onPageChange,
   loaded,
+  page,
+  total = 0,
+  itemsByPage = 1,
 }: {
   agents: LeaderboardAgent[];
-  onExtend: () => void;
+  onPageChange: (num: number) => void;
+  page: number;
+  total?: number;
+  itemsByPage?: number;
   loaded?: boolean;
 }) {
+  const pageNumbers = new Array(total / itemsByPage).fill(0).map((_, i) => i)
   const toRender = loaded
     ? agents
     : new Array(10).fill(0).map((_, i) => emptyAgent(i));
@@ -88,7 +98,7 @@ export function LeaderboardTable({
                   {/* <ArrowUp size={20} className="text-green-500" />
                   <span>3</span> */}
                 </div>
-                {i === 0 ? (
+                {agent.rank === 1 ? (
                   <div
                     className={cn(
                       "flex w-20 items-center justify-center gap-1 rounded p-2",
@@ -99,7 +109,7 @@ export function LeaderboardTable({
                     <Trophy size={17} />
                     <span>1st</span>
                   </div>
-                ) : i === 1 ? (
+                ) : agent.rank === 2 ? (
                   <div
                     className={cn(
                       "flex w-20 items-center justify-center gap-1 rounded p-2",
@@ -110,7 +120,7 @@ export function LeaderboardTable({
                     <AwardIcon size={17} />
                     <span>2nd</span>
                   </div>
-                ) : i === 2 ? (
+                ) : agent.rank === 3 ? (
                   <div
                     className={cn(
                       "flex w-20 items-center justify-center gap-1 rounded p-2",
@@ -122,8 +132,8 @@ export function LeaderboardTable({
                     <span>3rd</span>
                   </div>
                 ) : (
-                  <div className="mx-6 flex items-center justify-center rounded bg-gray-800 px-2 py-3">
-                    {i + 1}
+                  <div className="mx-6 flex items-center justify-center rounded bg-gray-800 p-2">
+                    {agent.rank}
                   </div>
                 )}
                 {/* TODO: hide this until official "scores" are implemented; the API does return the data, but it's not elo-based */}
@@ -196,9 +206,38 @@ export function LeaderboardTable({
         </TableBody>
       </Table>
 
-      <Button onClick={onExtend} className="mt-4 w-full" variant="outline">
-        SHOW MORE
-      </Button>
+      <div className="mt-6 flex items-center justify-center gap-2">
+        <Button
+          className='bg-transparent hover:bg-gray-900 rounded-full'
+          size="icon"
+          disabled={page === 1}
+          onClick={() => onPageChange(page - 1)}
+        >
+          <ChevronLeft />
+        </Button>
+        {pageNumbers.map((cur) => (
+          <button
+            key={cur}
+            className={cn(
+              "rounded px-3 py-1 text-sm font-medium",
+              page === cur
+                ? "bg-white text-black"
+                : "text-gray-400 hover:text-white hover:bg-gray-700"
+            )}
+            onClick={() => onPageChange(cur)}
+          >
+            {cur + 1}
+          </button>
+        ))}
+        <Button
+          className='bg-transparent hover:bg-gray-900 rounded-full'
+          size="icon"
+          disabled={page === total}
+          onClick={() => onPageChange(page + 1)}
+        >
+          <ChevronRight />
+        </Button>
+      </div>
     </>
   );
 }
