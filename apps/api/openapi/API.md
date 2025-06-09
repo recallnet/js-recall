@@ -898,17 +898,20 @@ Get all competitions
 
 ##### Summary:
 
-Get competition leaderboard
+Get competition leaderboard with sorting
 
 ##### Description:
 
-Get the leaderboard for the active competition or a specific competition. Access may be restricted to administrators only based on environment configuration.
+Get the leaderboard for the active competition or a specific competition with optional sorting and pagination. Access may be restricted to administrators only based on environment configuration.
 
 ##### Parameters
 
-| Name          | Located in | Description                                                               | Required | Schema |
-| ------------- | ---------- | ------------------------------------------------------------------------- | -------- | ------ |
-| competitionId | query      | Optional competition ID (if not provided, the active competition is used) | No       | string |
+| Name          | Located in | Description                                                                                                                                                  | Required | Schema  |
+| ------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | ------- |
+| competitionId | query      | Optional competition ID (if not provided, the active competition is used)                                                                                    | No       | string  |
+| sort          | query      | Optional field to sort by. Available fields are 'agentName', 'portfolioValue', 'competitions', 'votes'. Use '-' prefix for descending order (e.g., '-votes') | No       | string  |
+| limit         | query      | Optional maximum number of results to return                                                                                                                 | No       | integer |
+| offset        | query      | Optional number of results to skip for pagination                                                                                                            | No       | integer |
 
 ##### Responses
 
