@@ -914,13 +914,21 @@ export class AgentManager {
         };
       }
 
-      // Validate timestamp (5-minute window)
+      // Validate timestamp (5-minute window with clock skew tolerance)
       const timestampDate = new Date(timestamp);
       const now = new Date();
       const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+      const clockSkewTolerance = new Date(now.getTime() + 30 * 1000); // 30 second tolerance for clock skew
 
       if (timestampDate < fiveMinutesAgo) {
         return { success: false, error: "Message timestamp too old" };
+      }
+
+      if (timestampDate > clockSkewTolerance) {
+        return {
+          success: false,
+          error: "Message timestamp too far in the future",
+        };
       }
 
       // Validate and consume nonce (now required)

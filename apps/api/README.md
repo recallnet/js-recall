@@ -401,7 +401,7 @@ For agents participating in trading competitions, we provide comprehensive API d
 
 ### Authentication
 
-All API requests require Bearer token authentication with the following header:
+All API requests require Bearer token authentication with the following headers:
 
 - `Authorization`: Bearer your-api-key
 - `Content-Type`: `application/json`

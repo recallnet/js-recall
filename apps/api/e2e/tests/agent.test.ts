@@ -1110,6 +1110,46 @@ describe("Agent API", () => {
       });
     });
 
+    test("should reject verification with future timestamp", async () => {
+      // Setup: Create admin client and agent
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      const { client: agentClient } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Test Agent",
+      });
+
+      // Step 1: Get a nonce for agent verification
+      const nonceResponse = await agentClient.getAgentNonce();
+      expect(nonceResponse).toMatchObject({ nonce: expect.any(String) });
+
+      const nonce = (nonceResponse as { nonce: string }).nonce;
+
+      // Create verification message with future timestamp (2 minutes from now, beyond 30s tolerance)
+      const privateKey =
+        "0x1234567890123456789012345678901234567890123456789012345678901234";
+      const futureTimestamp = new Date(
+        Date.now() + 2 * 60 * 1000,
+      ).toISOString();
+      const { message, signature } = await createAgentVerificationSignature(
+        privateKey,
+        nonce,
+        futureTimestamp,
+        undefined,
+      );
+
+      // Attempt verification
+      const response = await agentClient.verifyAgentWallet(message, signature);
+
+      expect(response).toEqual({
+        success: false,
+        error: "Message timestamp too far in the future",
+        status: 400,
+      });
+    });
+
     test("should reject verification with wrong domain", async () => {
       // Setup: Create admin client and agent
       const adminClient = createTestClient();
