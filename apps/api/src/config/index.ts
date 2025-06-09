@@ -220,6 +220,9 @@ export const config = {
       apiKey: process.env.NOVES_API_KEY || "",
       enabled: !!process.env.NOVES_API_KEY,
     },
+    // Domain for API authentication and verification purposes
+    domain:
+      process.env.API_DOMAIN || "https://api.competitions.recall.network/",
   },
   priceCacheDuration: parseInt(process.env.PRICE_CACHE_MS || "30000", 10), // 30 seconds
   portfolio: {

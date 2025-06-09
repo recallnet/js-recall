@@ -1,7 +1,10 @@
 import * as crypto from "crypto";
+import { generateNonce } from "siwe";
 import { v4 as uuidv4 } from "uuid";
+import { recoverMessageAddress } from "viem";
 
 import { config } from "@/config/index.js";
+import * as agentNonceRepo from "@/database/repositories/agent-nonce-repository.js";
 import {
   count,
   countByName,
@@ -21,6 +24,7 @@ import {
   searchAgents,
   update,
 } from "@/database/repositories/agent-repository.js";
+import { findByWalletAddress as findUserByWalletAddress } from "@/database/repositories/user-repository.js";
 import { InsertAgent, SelectAgent } from "@/database/schema/core/types.js";
 import {
   AgentCompetitionsParams,
@@ -879,5 +883,284 @@ export class AgentManager {
       skills: metadata?.skills || [],
       hasUnclaimedRewards: metadata?.hasUnclaimedRewards || false,
     };
+  }
+
+  /**
+   * Verify wallet ownership for an agent via custom message signature
+   * @param agentId The agent ID to update
+   * @param message The verification message
+   * @param signature The signature of the message
+   * @returns Verification result
+   */
+  async verifyWalletOwnership(
+    agentId: string,
+    message: string,
+    signature: string,
+  ): Promise<{
+    success: boolean;
+    walletAddress?: string;
+    error?: string;
+  }> {
+    try {
+      // Parse custom message format
+      const parseResult = this.parseVerificationMessage(message);
+      if (!parseResult.success) {
+        return { success: false, error: parseResult.error };
+      }
+
+      const { timestamp, domain, purpose, nonce } = parseResult;
+
+      // Validate message content using config
+      if (domain !== config.api.domain) {
+        return { success: false, error: "Invalid domain" };
+      }
+
+      if (purpose !== "WALLET_VERIFICATION") {
+        return { success: false, error: "Invalid purpose" };
+      }
+
+      // Ensure we have all required fields (TypeScript safety)
+      if (!timestamp || !nonce) {
+        return {
+          success: false,
+          error: "Missing required fields in parsed message",
+        };
+      }
+
+      // Validate timestamp (5-minute window with clock skew tolerance)
+      const timestampDate = new Date(timestamp);
+      const now = new Date();
+      const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+      const clockSkewTolerance = new Date(now.getTime() + 30 * 1000); // 30 second tolerance for clock skew
+
+      if (timestampDate < fiveMinutesAgo) {
+        return { success: false, error: "Message timestamp too old" };
+      }
+
+      if (timestampDate > clockSkewTolerance) {
+        return {
+          success: false,
+          error: "Message timestamp too far in the future",
+        };
+      }
+
+      // Validate and consume nonce (now required)
+      const nonceValidation = await this.validateAndConsumeNonce(
+        agentId,
+        nonce,
+      );
+      if (!nonceValidation.success) {
+        return {
+          success: false,
+          error: nonceValidation.error || "Nonce validation failed",
+        };
+      }
+
+      // Verify signature and recover wallet address
+      let walletAddress: string;
+      try {
+        walletAddress = (
+          await recoverMessageAddress({
+            message,
+            signature: signature as `0x${string}`,
+          })
+        ).toLowerCase();
+      } catch (error) {
+        console.error("[AgentManager] Error recovering wallet address:", error);
+        return { success: false, error: "Invalid signature" };
+      }
+
+      // Check cross-table uniqueness
+      const existingUser = await findUserByWalletAddress(walletAddress);
+      if (existingUser) {
+        return {
+          success: false,
+          error: "Wallet address already associated with a user account",
+        };
+      }
+
+      const existingAgents = await findByWallet({
+        walletAddress,
+        pagingParams: { limit: 1, offset: 0, sort: "createdAt" },
+      });
+      const existingAgent = existingAgents[0];
+      if (existingAgent && existingAgent.id !== agentId) {
+        return {
+          success: false,
+          error: "Wallet address already associated with another agent",
+        };
+      }
+
+      // Get and update agent wallet address
+      const agent = await this.getAgent(agentId);
+      if (!agent) {
+        return { success: false, error: "Agent not found" };
+      }
+
+      const updatedAgent = await this.updateAgent({
+        ...agent,
+        walletAddress,
+      });
+
+      if (!updatedAgent) {
+        return {
+          success: false,
+          error: "Failed to update agent wallet address",
+        };
+      }
+
+      return { success: true, walletAddress };
+    } catch (error) {
+      console.error("[AgentManager] Error in verifyWalletOwnership:", error);
+      return { success: false, error: "Verification failed" };
+    }
+  }
+
+  /**
+   * Parse custom verification message format
+   */
+  private parseVerificationMessage(message: string): {
+    success: boolean;
+    timestamp?: string;
+    domain?: string;
+    purpose?: string;
+    nonce?: string;
+    error?: string;
+  } {
+    try {
+      const lines = message.trim().split("\n");
+
+      if (lines[0] !== "VERIFY_WALLET_OWNERSHIP") {
+        return { success: false, error: "Invalid message header" };
+      }
+
+      const timestampLine = lines.find((line) =>
+        line.startsWith("Timestamp: "),
+      );
+      const domainLine = lines.find((line) => line.startsWith("Domain: "));
+      const purposeLine = lines.find((line) => line.startsWith("Purpose: "));
+      const nonceLine = lines.find((line) => line.startsWith("Nonce: "));
+
+      if (!timestampLine || !domainLine || !purposeLine) {
+        return { success: false, error: "Missing required message fields" };
+      }
+
+      if (!nonceLine) {
+        return { success: false, error: "Nonce is required" };
+      }
+
+      const timestamp = timestampLine.replace("Timestamp: ", "");
+      const domain = domainLine.replace("Domain: ", "");
+      const purpose = purposeLine.replace("Purpose: ", "");
+      const nonce = nonceLine.replace("Nonce: ", "");
+
+      return {
+        success: true,
+        timestamp,
+        domain,
+        purpose,
+        nonce,
+      };
+    } catch (error) {
+      console.error(
+        "[AgentManager] Error parsing verification message:",
+        error,
+      );
+      return { success: false, error: "Failed to parse message" };
+    }
+  }
+
+  /**
+   * Generate a nonce for agent wallet verification
+   * @param agentId The agent ID requesting a nonce
+   * @returns Generated nonce
+   */
+  async generateNonceForAgent(agentId: string): Promise<{
+    success: boolean;
+    nonce?: string;
+    error?: string;
+  }> {
+    try {
+      // Generate a cryptographically secure nonce
+      const nonce = generateNonce();
+
+      // Set expiration time (10 minutes from now)
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+      // Clean up any existing nonces for this agent to keep table clean
+      await agentNonceRepo.deleteByAgentId(agentId);
+
+      // Store in database
+      await agentNonceRepo.create({
+        id: uuidv4(),
+        agentId,
+        nonce,
+        expiresAt,
+      });
+
+      return { success: true, nonce };
+    } catch (error) {
+      console.error("[AgentManager] Error generating nonce:", error);
+      return { success: false, error: "Failed to generate nonce" };
+    }
+  }
+
+  /**
+   * Validate and consume a nonce for agent wallet verification
+   * @param agentId The agent ID using the nonce
+   * @param nonce The nonce to validate and consume
+   * @returns Validation result
+   */
+  async validateAndConsumeNonce(
+    agentId: string,
+    nonce: string,
+  ): Promise<{
+    success: boolean;
+    error?: string;
+  }> {
+    try {
+      // Find the nonce
+      const nonceRecord = await agentNonceRepo.findByNonce(nonce);
+
+      if (!nonceRecord) {
+        return { success: false, error: "Invalid nonce" };
+      }
+
+      // Check if nonce belongs to the agent
+      if (nonceRecord.agentId !== agentId) {
+        return { success: false, error: "Nonce does not belong to this agent" };
+      }
+
+      // Check if nonce is already used
+      if (nonceRecord.usedAt) {
+        return { success: false, error: "Nonce already used" };
+      }
+
+      // Check if nonce is expired
+      if (new Date() > nonceRecord.expiresAt) {
+        return { success: false, error: "Nonce expired" };
+      }
+
+      // Mark nonce as used
+      await agentNonceRepo.markAsUsed(nonce);
+
+      return { success: true };
+    } catch (error) {
+      console.error("[AgentManager] Error validating nonce:", error);
+      return { success: false, error: "Failed to validate nonce" };
+    }
+  }
+
+  /**
+   * Clean up expired nonces (can be called by a background job)
+   * @returns Number of cleaned up nonces
+   */
+  async cleanupExpiredNonces(): Promise<number> {
+    try {
+      return await agentNonceRepo.deleteExpired();
+    } catch (error) {
+      console.error("[AgentManager] Error cleaning up expired nonces:", error);
+      return 0;
+    }
   }
 }

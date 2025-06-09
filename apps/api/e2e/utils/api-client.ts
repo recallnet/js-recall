@@ -12,7 +12,9 @@ import {
   Agent,
   AgentApiKeyResponse,
   AgentMetadata,
+  AgentNonceResponse,
   AgentProfileResponse,
+  AgentWalletVerificationResponse,
   AgentsGetResponse,
   ApiResponse,
   BalancesResponse,
@@ -1111,6 +1113,27 @@ export class ApiClient {
   }
 
   /**
+   * Verify agent wallet ownership via custom message signature
+   * @param message The verification message
+   * @param signature The signature of the message
+   * @returns A promise that resolves to the verification response
+   */
+  async verifyAgentWallet(
+    message: string,
+    signature: string,
+  ): Promise<AgentWalletVerificationResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post("/api/auth/verify", {
+        message,
+        signature,
+      });
+      return response.data as AgentWalletVerificationResponse;
+    } catch (error) {
+      return this.handleApiError(error, "verify agent wallet");
+    }
+  }
+
+  /**
    * Search users and agents (admin only)
    * @param searchParams Search parameters (email, name, walletAddress, status, searchType)
    */
@@ -1181,6 +1204,19 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get nonce");
+    }
+  }
+
+  /**
+   * Get a nonce for agent wallet verification
+   * @returns A promise that resolves to the agent nonce response
+   */
+  async getAgentNonce(): Promise<AgentNonceResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get("/api/auth/agent/nonce");
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get agent nonce");
     }
   }
 

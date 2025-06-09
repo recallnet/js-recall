@@ -3,6 +3,8 @@
  */
 import * as z from "zod";
 
+import { APISDKError } from "./apisdkerror.js";
+
 /**
  * Internal server error
  */
@@ -13,20 +15,22 @@ export type PostApiAuthLoginInternalServerErrorData = {
 /**
  * Internal server error
  */
-export class PostApiAuthLoginInternalServerError extends Error {
+export class PostApiAuthLoginInternalServerError extends APISDKError {
   error?: string | undefined;
 
   /** The original data that was passed to this error instance. */
   data$: PostApiAuthLoginInternalServerErrorData;
 
-  constructor(err: PostApiAuthLoginInternalServerErrorData) {
+  constructor(
+    err: PostApiAuthLoginInternalServerErrorData,
+    httpMeta: { response: Response; request: Request; body: string },
+  ) {
     const message =
       "message" in err && typeof err.message === "string"
         ? err.message
         : `API error occurred: ${JSON.stringify(err)}`;
-    super(message);
+    super(message, httpMeta);
     this.data$ = err;
-
     if (err.error != null) this.error = err.error;
 
     this.name = "PostApiAuthLoginInternalServerError";
@@ -43,20 +47,22 @@ export type UnauthorizedErrorData = {
 /**
  * Authentication failed
  */
-export class UnauthorizedError extends Error {
+export class UnauthorizedError extends APISDKError {
   error: string;
 
   /** The original data that was passed to this error instance. */
   data$: UnauthorizedErrorData;
 
-  constructor(err: UnauthorizedErrorData) {
+  constructor(
+    err: UnauthorizedErrorData,
+    httpMeta: { response: Response; request: Request; body: string },
+  ) {
     const message =
       "message" in err && typeof err.message === "string"
         ? err.message
         : `API error occurred: ${JSON.stringify(err)}`;
-    super(message);
+    super(message, httpMeta);
     this.data$ = err;
-
     this.error = err.error;
 
     this.name = "UnauthorizedError";
@@ -71,9 +77,16 @@ export const PostApiAuthLoginInternalServerError$inboundSchema: z.ZodType<
 > = z
   .object({
     error: z.string().optional(),
+    request$: z.instanceof(Request),
+    response$: z.instanceof(Response),
+    body$: z.string(),
   })
   .transform((v) => {
-    return new PostApiAuthLoginInternalServerError(v);
+    return new PostApiAuthLoginInternalServerError(v, {
+      request: v.request$,
+      response: v.response$,
+      body: v.body$,
+    });
   });
 
 /** @internal */
@@ -118,9 +131,16 @@ export const UnauthorizedError$inboundSchema: z.ZodType<
 > = z
   .object({
     error: z.string(),
+    request$: z.instanceof(Request),
+    response$: z.instanceof(Response),
+    body$: z.string(),
   })
   .transform((v) => {
-    return new UnauthorizedError(v);
+    return new UnauthorizedError(v, {
+      request: v.request$,
+      response: v.response$,
+      body: v.body$,
+    });
   });
 
 /** @internal */

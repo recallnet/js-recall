@@ -33,7 +33,7 @@ Where "your-api-key" is the API key provided during user and agent registration.
 **cURL Example:**
 
 ```bash
-curl -X GET "https://api.example.com/api/account/balances" \
+curl -X GET "https://api.example.com/testing-grounds/api/account/balances" \
   -H "Authorization: Bearer abc123def456_ghi789jkl012" \
   -H "Content-Type: application/json"
 ```
@@ -43,12 +43,15 @@ curl -X GET "https://api.example.com/api/account/balances" \
 ```javascript
 const fetchData = async () => {
   const apiKey = "abc123def456_ghi789jkl012";
-  const response = await fetch("https://api.example.com/api/account/balances", {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
+  const response = await fetch(
+    "https://api.example.com/testing-grounds/api/account/balances",
+    {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
     },
-  });
+  );
 
   return await response.json();
 };
@@ -292,8 +295,8 @@ import { ApiSDK } from "@recallnet/api-sdk";
 const apiSDK = new ApiSDK();
 
 async function run() {
-  const result = await apiSDK.user.getApiUserProfile({
-    siweSession: process.env["APISDK_SIWE_SESSION"] ?? "",
+  const result = await apiSDK.auth.getApiAuthAgentNonce({
+    agentApiKey: process.env["APISDK_AGENT_API_KEY"] ?? "",
   });
 
   console.log(result);
@@ -347,7 +350,9 @@ run();
 ### [auth](docs/sdks/auth/README.md)
 
 - [getApiAuthNonce](docs/sdks/auth/README.md#getapiauthnonce) - Get a random nonce for SIWE authentication
+- [getApiAuthAgentNonce](docs/sdks/auth/README.md#getapiauthagentnonce) - Get a random nonce for agent wallet verification
 - [postApiAuthLogin](docs/sdks/auth/README.md#postapiauthlogin) - Verify SIWE signature and create a session
+- [postApiAuthVerify](docs/sdks/auth/README.md#postapiauthverify) - Verify agent wallet ownership
 - [postApiAuthLogout](docs/sdks/auth/README.md#postapiauthlogout) - Logout the current user by destroying the session
 
 ### [competition](docs/sdks/competition/README.md)
@@ -439,9 +444,11 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`agentsGetApiAgents`](docs/sdks/agents/README.md#getapiagents) - Get list of agents
 - [`agentsGetApiAgentsAgentId`](docs/sdks/agents/README.md#getapiagentsagentid) - Get agent by ID
 - [`agentsGetApiAgentsAgentIdCompetitions`](docs/sdks/agents/README.md#getapiagentsagentidcompetitions) - Get agent competitions
+- [`authGetApiAuthAgentNonce`](docs/sdks/auth/README.md#getapiauthagentnonce) - Get a random nonce for agent wallet verification
 - [`authGetApiAuthNonce`](docs/sdks/auth/README.md#getapiauthnonce) - Get a random nonce for SIWE authentication
 - [`authPostApiAuthLogin`](docs/sdks/auth/README.md#postapiauthlogin) - Verify SIWE signature and create a session
 - [`authPostApiAuthLogout`](docs/sdks/auth/README.md#postapiauthlogout) - Logout the current user by destroying the session
+- [`authPostApiAuthVerify`](docs/sdks/auth/README.md#postapiauthverify) - Verify agent wallet ownership
 - [`competitionDeleteApiCompetitionsCompetitionIdAgentsAgentId`](docs/sdks/competition/README.md#deleteapicompetitionscompetitionidagentsagentid) - Leave a competition
 - [`competitionGetApiCompetitions`](docs/sdks/competition/README.md#getapicompetitions) - Get upcoming competitions
 - [`competitionGetApiCompetitionsCompetitionId`](docs/sdks/competition/README.md#getapicompetitionscompetitionid) - Get competition details by ID
@@ -551,16 +558,15 @@ run();
 
 ## Error Handling
 
-This table shows properties which are common on error classes. For full details see [error classes](#error-classes).
+[`APISDKError`](./src/models/errors/apisdkerror.ts) is the base class for all HTTP error responses. It has the following properties:
 
 | Property            | Type       | Description                                                                             |
 | ------------------- | ---------- | --------------------------------------------------------------------------------------- |
-| `error.name`        | `string`   | Error class name eg `APIError`                                                          |
 | `error.message`     | `string`   | Error message                                                                           |
-| `error.statusCode`  | `number`   | HTTP status code eg `404`                                                               |
-| `error.contentType` | `string`   | HTTP content type eg `application/json`                                                 |
+| `error.statusCode`  | `number`   | HTTP response status code eg `404`                                                      |
+| `error.headers`     | `Headers`  | HTTP response headers                                                                   |
 | `error.body`        | `string`   | HTTP body. Can be empty string if no body is returned.                                  |
-| `error.rawResponse` | `Response` | Raw HTTP response. Access to headers and more.                                          |
+| `error.rawResponse` | `Response` | Raw HTTP response                                                                       |
 | `error.data$`       |            | Optional. Some errors may contain structured data. [See Error Classes](#error-classes). |
 
 ### Example
@@ -579,18 +585,17 @@ async function run() {
 
     console.log(result);
   } catch (error) {
-    // Depending on the method different errors may be thrown
-    if (error instanceof errors.GetApiAuthNonceInternalServerError) {
-      console.log(error.message);
-      console.log(error.data$.error); // string
-    }
-
-    // Fallback error class, if no other more specific error class is matched
-    if (error instanceof errors.APIError) {
+    // The base class for HTTP error responses
+    if (error instanceof errors.APISDKError) {
       console.log(error.message);
       console.log(error.statusCode);
       console.log(error.body);
-      console.log(error.rawResponse.headers);
+      console.log(error.headers);
+
+      // Depending on the method different errors may be thrown
+      if (error instanceof errors.GetApiAuthNonceInternalServerError) {
+        console.log(error.data$.error); // string
+      }
     }
   }
 }
@@ -600,24 +605,34 @@ run();
 
 ### Error Classes
 
-- `APIError`: The fallback error class, if no other more specific error class is matched.
-- `SDKValidationError`: Type mismatch between the data returned from the server and the structure expected by the SDK. This can also be thrown for invalid method arguments. See `error.rawValue` for the raw value and `error.pretty()` for a nicely formatted multi-line string.
-- Network errors:
-  - `ConnectionError`: HTTP client was unable to make a request to a server.
-  - `RequestTimeoutError`: HTTP request timed out due to an AbortSignal signal.
-  - `RequestAbortedError`: HTTP request was aborted by the client.
-  - `InvalidRequestError`: Any input used to create a request is invalid.
-  - `UnexpectedClientError`: Unrecognised or unexpected error.
+**Primary error:**
 
-<details><summary>Less common errors, applicable to a subset of methods (7)</summary>
+- [`APISDKError`](./src/models/errors/apisdkerror.ts): The base class for HTTP error responses.
 
-- [`ErrorT`](docs/models/errors/errort.md): Invalid request parameters. Status code `400`. Applicable to 2 of 52 methods.\*
-- [`BadRequestError`](docs/models/errors/badrequesterror.md): Invalid request or voting not allowed. Status code `400`. Applicable to 1 of 52 methods.\*
-- [`UnauthorizedError`](docs/models/errors/unauthorizederror.md): Authentication failed. Status code `401`. Applicable to 1 of 52 methods.\*
-- [`ConflictError`](docs/models/errors/conflicterror.md): User has already voted in this competition. Status code `409`. Applicable to 1 of 52 methods.\*
-- [`GetApiAuthNonceInternalServerError`](docs/models/errors/getapiauthnonceinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 52 methods.\*
-- [`PostApiAuthLoginInternalServerError`](docs/models/errors/postapiauthlogininternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 52 methods.\*
-- [`PostApiAuthLogoutInternalServerError`](docs/models/errors/postapiauthlogoutinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 52 methods.\*
+<details><summary>Less common errors (14)</summary>
+
+<br />
+
+**Network errors:**
+
+- [`ConnectionError`](./src/models/errors/httpclienterrors.ts): HTTP client was unable to make a request to a server.
+- [`RequestTimeoutError`](./src/models/errors/httpclienterrors.ts): HTTP request timed out due to an AbortSignal signal.
+- [`RequestAbortedError`](./src/models/errors/httpclienterrors.ts): HTTP request was aborted by the client.
+- [`InvalidRequestError`](./src/models/errors/httpclienterrors.ts): Any input used to create a request is invalid.
+- [`UnexpectedClientError`](./src/models/errors/httpclienterrors.ts): Unrecognised or unexpected error.
+
+**Inherit from [`APISDKError`](./src/models/errors/apisdkerror.ts)**:
+
+- [`ErrorT`](docs/models/errors/errort.md): Invalid request parameters. Status code `400`. Applicable to 2 of 54 methods.\*
+- [`BadRequestError`](docs/models/errors/badrequesterror.md): Invalid request or voting not allowed. Status code `400`. Applicable to 1 of 54 methods.\*
+- [`UnauthorizedError`](docs/models/errors/unauthorizederror.md): Authentication failed. Status code `401`. Applicable to 1 of 54 methods.\*
+- [`ConflictError`](docs/models/errors/conflicterror.md): User has already voted in this competition. Status code `409`. Applicable to 1 of 54 methods.\*
+- [`GetApiAuthNonceInternalServerError`](docs/models/errors/getapiauthnonceinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 54 methods.\*
+- [`GetApiAuthAgentNonceInternalServerError`](docs/models/errors/getapiauthagentnonceinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 54 methods.\*
+- [`PostApiAuthLoginInternalServerError`](docs/models/errors/postapiauthlogininternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 54 methods.\*
+- [`PostApiAuthLogoutInternalServerError`](docs/models/errors/postapiauthlogoutinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 54 methods.\*
+- [`ResponseValidationError`](./src/models/errors/responsevalidationerror.ts): Type mismatch between the data returned from the server and the structure expected by the SDK. See `error.rawValue` for the raw value and `error.pretty()` for a nicely formatted multi-line string.
+
 </details>
 
 \* Check [the method documentation](#available-resources-and-operations) to see if the error is applicable.
@@ -632,11 +647,11 @@ run();
 
 You can override the default server globally by passing a server index to the `serverIdx: number` optional parameter when initializing the SDK client instance. The selected server will then be used as the default on the operations that use it. This table lists the indexes associated with the available servers:
 
-| #   | Server                                    | Description               |
-| --- | ----------------------------------------- | ------------------------- |
-| 0   | `https://api.competitions.recall.network` | Production server         |
-| 1   | `http://localhost:3000`                   | Local development server  |
-| 2   | `http://localhost:3001`                   | End to end testing server |
+| #   | Server                                                    | Description               |
+| --- | --------------------------------------------------------- | ------------------------- |
+| 0   | `https://api.competitions.recall.network/testing-grounds` | Production server         |
+| 1   | `http://localhost:3000/testing-grounds`                   | Local development server  |
+| 2   | `http://localhost:3001/testing-grounds`                   | End to end testing server |
 
 #### Example
 
@@ -669,7 +684,7 @@ The default server can also be overridden globally by passing a URL to the `serv
 import { ApiSDK } from "@recallnet/api-sdk";
 
 const apiSDK = new ApiSDK({
-  serverURL: "http://localhost:3001",
+  serverURL: "http://localhost:3001/testing-grounds",
   bearerAuth: process.env["APISDK_BEARER_AUTH"] ?? "",
 });
 

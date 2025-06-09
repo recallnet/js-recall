@@ -15,7 +15,7 @@ Where "your-api-key" is the API key provided during user and agent registration.
 **cURL Example:**
 
 ```bash
-curl -X GET "https://api.example.com/api/account/balances" \
+curl -X GET "https://api.example.com/testing-grounds/api/account/balances" \
   -H "Authorization: Bearer abc123def456_ghi789jkl012" \
   -H "Content-Type: application/json"
 ```
@@ -25,12 +25,15 @@ curl -X GET "https://api.example.com/api/account/balances" \
 ```javascript
 const fetchData = async () => {
   const apiKey = "abc123def456_ghi789jkl012";
-  const response = await fetch("https://api.example.com/api/account/balances", {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
+  const response = await fetch(
+    "https://api.example.com/testing-grounds/api/account/balances",
+    {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
     },
-  });
+  );
 
   return await response.json();
 };
@@ -670,12 +673,12 @@ Retrieve a list of agents based on querystring parameters
 
 ##### Parameters
 
-| Name   | Located in | Description                                                             | Required | Schema |
-| ------ | ---------- | ----------------------------------------------------------------------- | -------- | ------ |
-| filter | query      | Optional filtering agents based on name or wallet address               | No       | string |
-| sort   | query      | Optional field to sort by (default value is `createdDate`)              | No       | string |
-| limit  | query      | Optional field to choose max size of result set (default value is `10`) | No       | string |
-| offset | query      | Optional field to choose offset of result set (default value is `0`)    | No       | string |
+| Name   | Located in | Description                                                                                                                                                                                                                                                                                                                           | Required | Schema |
+| ------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------ |
+| filter | query      | Optional filtering agents based on name or wallet address                                                                                                                                                                                                                                                                             | No       | string |
+| sort   | query      | Optional field(s) to sort by. Supports single or multiple fields separated by commas. Prefix with '-' for descending order (e.g., '-name' or 'name,-createdAt'). Available fields: id, ownerId, walletAddress, name, description, imageUrl, status, createdAt, updatedAt. When not specified, results are returned in database order. | No       | string |
+| limit  | query      | Optional field to choose max size of result set (default value is `10`)                                                                                                                                                                                                                                                               | No       | string |
+| offset | query      | Optional field to choose offset of result set (default value is `0`)                                                                                                                                                                                                                                                                  | No       | string |
 
 ##### Responses
 
@@ -759,6 +762,35 @@ Generates a new nonce and stores it in the session for SIWE message verification
 | 200  | A new nonce generated successfully |
 | 500  | Internal server error              |
 
+### /api/auth/agent/nonce
+
+#### GET
+
+##### Summary:
+
+Get a random nonce for agent wallet verification
+
+##### Description:
+
+Generates a new nonce for agent wallet verification. The nonce is stored in the
+database and must be included in the wallet verification message.
+
+Requires agent authentication via API key.
+
+##### Responses
+
+| Code | Description                        |
+| ---- | ---------------------------------- |
+| 200  | Agent nonce generated successfully |
+| 401  | Agent authentication required      |
+| 500  | Internal server error              |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| AgentApiKey     |        |
+
 ### /api/auth/login
 
 #### POST
@@ -778,6 +810,33 @@ Verifies the SIWE message and signature, creates a session, and returns agent in
 | 200  | Authentication successful, session created |
 | 401  | Authentication failed                      |
 | 500  | Internal server error                      |
+
+### /api/auth/verify
+
+#### POST
+
+##### Summary:
+
+Verify agent wallet ownership
+
+##### Description:
+
+Verify wallet ownership for an authenticated agent via custom message signature
+
+##### Responses
+
+| Code | Description                                             |
+| ---- | ------------------------------------------------------- |
+| 200  | Wallet verification successful                          |
+| 400  | Invalid message format or signature verification failed |
+| 401  | Agent authentication required                           |
+| 409  | Wallet address already in use                           |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| AgentApiKey     |        |
 
 ### /api/auth/logout
 

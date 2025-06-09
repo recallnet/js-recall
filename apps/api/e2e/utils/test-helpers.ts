@@ -1,5 +1,6 @@
 import * as crypto from "crypto";
 import { getAddress } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 
 import { ApiSDK } from "@recallnet/api-sdk";
 
@@ -369,4 +370,34 @@ export async function createSiweAuthenticatedClient({
     wallet: testWallet, // Include wallet info for potential future use
     loginData: loginResponse,
   };
+}
+
+/**
+ * Create verification message and signature for testing agent wallet verification
+ * @param privateKey The private key to sign with
+ * @param nonce The nonce for verification (required)
+ * @param timestampOverride Optional timestamp override for testing
+ * @param domain Optional domain override for testing (defaults to api.recall.net)
+ * @returns Object with message and signature
+ */
+export async function createAgentVerificationSignature(
+  privateKey: string,
+  nonce: string,
+  timestampOverride?: string,
+  domain?: string,
+): Promise<{ message: string; signature: string }> {
+  const timestamp = timestampOverride || new Date().toISOString();
+
+  const verificationDomain = domain || "http://localhost:3001";
+
+  const message = `VERIFY_WALLET_OWNERSHIP
+Timestamp: ${timestamp}
+Domain: ${verificationDomain}
+Purpose: WALLET_VERIFICATION
+Nonce: ${nonce}`;
+
+  const account = privateKeyToAccount(privateKey as `0x${string}`);
+  const signature = await account.signMessage({ message });
+
+  return { message, signature };
 }

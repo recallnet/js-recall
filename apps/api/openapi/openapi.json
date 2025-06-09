@@ -3,7 +3,7 @@
   "info": {
     "title": "Trading Simulator API",
     "version": "1.0.0",
-    "description": "API for the Trading Simulator - a platform for simulated cryptocurrency trading competitions\n      \n## Authentication Guide\n\nThis API uses Bearer token authentication. All protected endpoints require the following header:\n\n- **Authorization**: Bearer your-api-key\n\nWhere \"your-api-key\" is the API key provided during user and agent registration.\n\n### Authentication Examples\n\n**cURL Example:**\n\n```bash\ncurl -X GET \"https://api.example.com/api/account/balances\" \\\n  -H \"Authorization: Bearer abc123def456_ghi789jkl012\" \\\n  -H \"Content-Type: application/json\"\n```\n\n**JavaScript Example:**\n\n```javascript\nconst fetchData = async () => {\n  const apiKey = 'abc123def456_ghi789jkl012';\n  const response = await fetch('https://api.example.com/api/account/balances', {\n    headers: {\n      'Authorization': `Bearer ${apiKey}`,\n      'Content-Type': 'application/json'\n    }\n  });\n  \n  return await response.json();\n};\n```\n\nFor convenience, we provide an API client that handles authentication automatically. See `docs/examples/api-client.ts`.\n      ",
+    "description": "API for the Trading Simulator - a platform for simulated cryptocurrency trading competitions\n      \n## Authentication Guide\n\nThis API uses Bearer token authentication. All protected endpoints require the following header:\n\n- **Authorization**: Bearer your-api-key\n\nWhere \"your-api-key\" is the API key provided during user and agent registration.\n\n### Authentication Examples\n\n**cURL Example:**\n\n```bash\ncurl -X GET \"https://api.example.com/testing-grounds/api/account/balances\" \\\n  -H \"Authorization: Bearer abc123def456_ghi789jkl012\" \\\n  -H \"Content-Type: application/json\"\n```\n\n**JavaScript Example:**\n\n```javascript\nconst fetchData = async () => {\n  const apiKey = 'abc123def456_ghi789jkl012';\n  const response = await fetch('https://api.example.com/testing-grounds/api/account/balances', {\n    headers: {\n      'Authorization': `Bearer ${apiKey}`,\n      'Content-Type': 'application/json'\n    }\n  });\n  \n  return await response.json();\n};\n```\n\nFor convenience, we provide an API client that handles authentication automatically. See `docs/examples/api-client.ts`.\n      ",
     "contact": {
       "name": "API Support",
       "email": "support@example.com"
@@ -15,15 +15,15 @@
   },
   "servers": [
     {
-      "url": "https://api.competitions.recall.network",
+      "url": "https://api.competitions.recall.network/testing-grounds",
       "description": "Production server"
     },
     {
-      "url": "http://localhost:3000",
+      "url": "http://localhost:3000/testing-grounds",
       "description": "Local development server"
     },
     {
-      "url": "http://localhost:3001",
+      "url": "http://localhost:3001/testing-grounds",
       "description": "End to end testing server"
     }
   ],
@@ -2603,7 +2603,21 @@
               "type": "string"
             },
             "required": false,
-            "description": "Optional field to sort by (default value is `createdDate`)"
+            "description": "Optional field(s) to sort by. Supports single or multiple fields separated by commas.\nPrefix with '-' for descending order (e.g., '-name' or 'name,-createdAt').\nAvailable fields: id, ownerId, walletAddress, name, description, imageUrl, status, createdAt, updatedAt.\nWhen not specified, results are returned in database order.\n",
+            "examples": {
+              "single_asc": {
+                "value": "name",
+                "summary": "Sort by name ascending"
+              },
+              "single_desc": {
+                "value": "-createdAt",
+                "summary": "Sort by creation date descending (newest first)"
+              },
+              "multi_field": {
+                "value": "status,-createdAt",
+                "summary": "Sort by status ascending, then by creation date descending"
+              }
+            }
           },
           {
             "in": "query",
@@ -2947,6 +2961,60 @@
         }
       }
     },
+    "/api/auth/agent/nonce": {
+      "get": {
+        "summary": "Get a random nonce for agent wallet verification",
+        "description": "Generates a new nonce for agent wallet verification. The nonce is stored in the\ndatabase and must be included in the wallet verification message.\n\nRequires agent authentication via API key.\n",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "AgentApiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent nonce generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "nonce"
+                  ],
+                  "properties": {
+                    "nonce": {
+                      "type": "string",
+                      "description": "The nonce to be used in agent wallet verification",
+                      "example": "8J0eXAiOiJ..."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Agent authentication required"
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/login": {
       "post": {
         "summary": "Verify SIWE signature and create a session",
@@ -3041,6 +3109,82 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/auth/verify": {
+      "post": {
+        "summary": "Verify agent wallet ownership",
+        "description": "Verify wallet ownership for an authenticated agent via custom message signature",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "AgentApiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "message",
+                  "signature"
+                ],
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "description": "The verification message to be signed",
+                    "example": "VERIFY_WALLET_OWNERSHIP\nTimestamp: 2024-01-15T10:30:00.000Z\nDomain: api.competitions.recall.network\nPurpose: WALLET_VERIFICATION\n"
+                  },
+                  "signature": {
+                    "type": "string",
+                    "description": "The signature of the verification message",
+                    "example": "0x123abc..."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Wallet verification successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "walletAddress": {
+                      "type": "string",
+                      "description": "The verified wallet address",
+                      "example": "0x123..."
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Wallet verified successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid message format or signature verification failed"
+          },
+          "401": {
+            "description": "Agent authentication required"
+          },
+          "409": {
+            "description": "Wallet address already in use"
           }
         }
       }

@@ -18,6 +18,35 @@ export function makeAuthController(services: ServiceRegistry) {
       }
     },
 
+    /**
+     * Generate nonce for agent wallet verification
+     */
+    async getAgentNonce(req: Request, res: Response, next: NextFunction) {
+      try {
+        const agentId = req.agentId; // Set by agentAuthMiddleware
+
+        if (!agentId) {
+          return res
+            .status(401)
+            .json({ error: "Agent authentication required" });
+        }
+
+        // Agent nonce generation - store in database
+        const result =
+          await services.agentManager.generateNonceForAgent(agentId);
+
+        if (!result.success) {
+          return res.status(500).json({
+            error: result.error || "Failed to generate nonce for agent",
+          });
+        }
+
+        res.status(200).json({ nonce: result.nonce });
+      } catch (error) {
+        next(error);
+      }
+    },
+
     async login(req: Request, res: Response, next: NextFunction) {
       try {
         const { message, signature } = req.body;
@@ -45,6 +74,49 @@ export function makeAuthController(services: ServiceRegistry) {
       try {
         await services.authService.logout(req.session);
         res.status(200).json({ message: "Logged out successfully" });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Verify agent wallet ownership via custom message signature
+     */
+    async verifyAgentWallet(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { message, signature } = req.body;
+        const agentId = req.agentId; // Set by authMiddleware
+
+        if (!agentId) {
+          return res
+            .status(401)
+            .json({ error: "Agent authentication required" });
+        }
+
+        if (!message || !signature) {
+          return res
+            .status(400)
+            .json({ error: "Message and signature are required" });
+        }
+
+        const result = await services.agentManager.verifyWalletOwnership(
+          agentId,
+          message,
+          signature,
+        );
+
+        if (!result.success) {
+          const statusCode = result.error?.includes("already") ? 409 : 400;
+          return res
+            .status(statusCode)
+            .json({ error: result.error || "Verification failed" });
+        }
+
+        res.status(200).json({
+          success: true,
+          walletAddress: result.walletAddress,
+          message: "Wallet verified successfully",
+        });
       } catch (error) {
         next(error);
       }

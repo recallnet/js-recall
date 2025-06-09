@@ -596,6 +596,13 @@ export interface NonceResponse {
 }
 
 /**
+ * Response from the agent nonce endpoint
+ */
+export interface AgentNonceResponse {
+  nonce: string;
+}
+
+/**
  * Response from the login endpoint
  */
 export interface LoginResponse {
@@ -608,6 +615,19 @@ export interface LoginResponse {
  * Response from the logout endpoint
  */
 export interface LogoutResponse {
+  message: string;
+}
+
+/**
+ * AGENT WALLET VERIFICATION TYPES
+ */
+
+/**
+ * Response from the agent wallet verification endpoint
+ */
+export interface AgentWalletVerificationResponse extends ApiResponse {
+  success: true;
+  walletAddress: string;
   message: string;
 }
 

@@ -3,7 +3,7 @@ import { SiweMessage, generateNonce } from "siwe";
 
 import {
   createUserFromWallet,
-  findByWalletAddress,
+  findByWalletAddress as findUserByWalletAddress,
 } from "@/database/repositories/user-repository.js";
 import { LoginResponse, SessionData } from "@/types/index.js";
 
@@ -54,7 +54,7 @@ export class AuthService {
 
       // Attempt to find the user that matches the verified wallet address
       const wallet = siweData.address;
-      let user = await findByWalletAddress(wallet);
+      let user = await findUserByWalletAddress(wallet);
       let userId = user?.id;
 
       if (!user) {

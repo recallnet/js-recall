@@ -1,12 +1,12 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: 42b590e076798a3a6e2824c62bfe313d
+  docChecksum: 40aeab4ef211cb972d65cc436ee7b176
   docVersion: 1.0.0
-  speakeasyVersion: 1.555.3
-  generationVersion: 2.620.2
-  releaseVersion: 0.1.11
-  configChecksum: c7938ea7c8abd06bce27b7c4c552b879
+  speakeasyVersion: 1.557.1
+  generationVersion: 2.623.2
+  releaseVersion: 0.1.12
+  configChecksum: 4e71db37cd8e7e765acd877eef90edf9
 features:
   typescript:
     additionalDependencies: 0.1.0
@@ -40,6 +40,7 @@ generatedFiles:
   - docs/models/errors/badrequesterror.md
   - docs/models/errors/conflicterror.md
   - docs/models/errors/errort.md
+  - docs/models/errors/getapiauthagentnonceinternalservererror.md
   - docs/models/errors/getapiauthnonceinternalservererror.md
   - docs/models/errors/postapiauthlogininternalservererror.md
   - docs/models/errors/postapiauthlogoutinternalservererror.md
@@ -103,6 +104,8 @@ generatedFiles:
   - docs/models/operations/getapiagentsresponse.md
   - docs/models/operations/getapiagentsstatus.md
   - docs/models/operations/getapiagenttradesresponse.md
+  - docs/models/operations/getapiauthagentnonceresponse.md
+  - docs/models/operations/getapiauthagentnoncesecurity.md
   - docs/models/operations/getapiauthnonceresponse.md
   - docs/models/operations/getapicompetitionscompetition.md
   - docs/models/operations/getapicompetitionscompetitionidagentsagent.md
@@ -236,6 +239,9 @@ generatedFiles:
   - docs/models/operations/postapiauthloginrequest.md
   - docs/models/operations/postapiauthloginresponse.md
   - docs/models/operations/postapiauthlogoutresponse.md
+  - docs/models/operations/postapiauthverifyrequest.md
+  - docs/models/operations/postapiauthverifyresponse.md
+  - docs/models/operations/postapiauthverifysecurity.md
   - docs/models/operations/postapicompetitionscompetitionidagentsagentidrequest.md
   - docs/models/operations/postapicompetitionscompetitionidagentsagentidresponse.md
   - docs/models/operations/postapitradeexecuterequest.md
@@ -322,9 +328,11 @@ generatedFiles:
   - src/funcs/agentsGetApiAgents.ts
   - src/funcs/agentsGetApiAgentsAgentId.ts
   - src/funcs/agentsGetApiAgentsAgentIdCompetitions.ts
+  - src/funcs/authGetApiAuthAgentNonce.ts
   - src/funcs/authGetApiAuthNonce.ts
   - src/funcs/authPostApiAuthLogin.ts
   - src/funcs/authPostApiAuthLogout.ts
+  - src/funcs/authPostApiAuthVerify.ts
   - src/funcs/competitionDeleteApiCompetitionsCompetitionIdAgentsAgentId.ts
   - src/funcs/competitionGetApiCompetitions.ts
   - src/funcs/competitionGetApiCompetitionsCompetitionId.ts
@@ -429,13 +437,16 @@ generatedFiles:
   - src/models/components/index.ts
   - src/models/components/security.ts
   - src/models/errors/apierror.ts
+  - src/models/errors/apisdkerror.ts
   - src/models/errors/error.ts
+  - src/models/errors/getapiauthagentnonce.ts
   - src/models/errors/getapiauthnonce.ts
   - src/models/errors/httpclienterrors.ts
   - src/models/errors/index.ts
   - src/models/errors/postapiauthlogin.ts
   - src/models/errors/postapiauthlogout.ts
   - src/models/errors/postapiuservote.ts
+  - src/models/errors/responsevalidationerror.ts
   - src/models/errors/sdkvalidationerror.ts
   - src/models/operations/deleteapiadminagentsagentid.ts
   - src/models/operations/deleteapicompetitionscompetitionidagentsagentid.ts
@@ -453,6 +464,7 @@ generatedFiles:
   - src/models/operations/getapiagentsagentid.ts
   - src/models/operations/getapiagentsagentidcompetitions.ts
   - src/models/operations/getapiagenttrades.ts
+  - src/models/operations/getapiauthagentnonce.ts
   - src/models/operations/getapiauthnonce.ts
   - src/models/operations/getapicompetitions.ts
   - src/models/operations/getapicompetitionscompetitionid.ts
@@ -483,6 +495,7 @@ generatedFiles:
   - src/models/operations/postapiagentresetapikey.ts
   - src/models/operations/postapiauthlogin.ts
   - src/models/operations/postapiauthlogout.ts
+  - src/models/operations/postapiauthverify.ts
   - src/models/operations/postapicompetitionscompetitionidagentsagentid.ts
   - src/models/operations/postapitradeexecute.ts
   - src/models/operations/postapiuseragents.ts
@@ -913,6 +926,27 @@ examples:
       responses:
         "200":
           application/json: {"success": true, "agents": [{"walletAddress": "0x1234567890abcdef1234567890abcdef12345678", "name": "Trading Bot Alpha", "description": "AI agent focusing on DeFi yield farming", "imageUrl": "https://example.com/bot-avatar.jpg"}, {"walletAddress": "0x1234567890abcdef1234567890abcdef12345678", "name": "Trading Bot Alpha", "description": "AI agent focusing on DeFi yield farming", "imageUrl": "https://example.com/bot-avatar.jpg"}, {"walletAddress": "0x1234567890abcdef1234567890abcdef12345678", "name": "Trading Bot Alpha", "description": "AI agent focusing on DeFi yield farming", "imageUrl": "https://example.com/bot-avatar.jpg"}]}
+    single_asc:
+      parameters:
+        query:
+          sort: "name"
+      responses:
+        "200":
+          application/json: {"success": true, "agents": [{"walletAddress": "0x1234567890abcdef1234567890abcdef12345678", "name": "Trading Bot Alpha", "description": "AI agent focusing on DeFi yield farming", "imageUrl": "https://example.com/bot-avatar.jpg"}]}
+    single_desc:
+      parameters:
+        query:
+          sort: "-createdAt"
+      responses:
+        "200":
+          application/json: {"success": true, "agents": [{"walletAddress": "0x1234567890abcdef1234567890abcdef12345678", "name": "Trading Bot Alpha", "description": "AI agent focusing on DeFi yield farming", "imageUrl": "https://example.com/bot-avatar.jpg"}]}
+    multi_field:
+      parameters:
+        query:
+          sort: "status,-createdAt"
+      responses:
+        "200":
+          application/json: {"success": true, "agents": [{"walletAddress": "0x1234567890abcdef1234567890abcdef12345678", "name": "Trading Bot Alpha", "description": "AI agent focusing on DeFi yield farming", "imageUrl": "https://example.com/bot-avatar.jpg"}]}
   get_/api/competitions/{competitionId}:
     speakeasy-default-get-/api/competitions/{competition-id}:
       parameters:
@@ -1021,5 +1055,19 @@ examples:
       responses:
         "200":
           application/json: {"success": true, "competitions": [{"name": "DeFi Trading Championship", "description": "A competition focused on yield farming strategies."}]}
+  get_/api/auth/agent/nonce:
+    speakeasy-default-get-/api/auth/agent/nonce:
+      responses:
+        "200":
+          application/json: {"nonce": "8J0eXAiOiJ..."}
+        "500":
+          application/json: {}
+  post_/api/auth/verify:
+    speakeasy-default-post-/api/auth/verify:
+      requestBody:
+        application/json: {"message": "VERIFY_WALLET_OWNERSHIP\nTimestamp: 2024-01-15T10:30:00.000Z\nDomain: api.competitions.recall.network\nPurpose: WALLET_VERIFICATION\n", "signature": "0x123abc..."}
+      responses:
+        "200":
+          application/json: {"success": true, "walletAddress": "0x123...", "message": "Wallet verified successfully"}
 examplesVersion: 1.0.2
 generatedTests: {}
