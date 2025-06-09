@@ -11,7 +11,7 @@
  * Subnet ID for the Recall Testnet.
  */
 export const TESTNET_SUBNET_ID =
-  "/r314159/t410fuh6vlhabj2cr7bq4t4j3crnkhp7gpmbxs444plq";
+  "/r314159/t410fw7bjz5yw5ofw3t775xym34ogube4kammzma6mgq";
 
 /**
  * Subnet ID for the Recall Localnet.
@@ -171,7 +171,7 @@ export const MAX_QUERY_LIMIT = 50;
  * Gateway Manager Facet contract address for the Testnet parent chain.
  */
 export const TESTNET_PARENT_GATEWAY_MANAGER_FACET_ADDRESS =
-  "0x7491B0e2C4aB0Fbee96151eE9B79d623C2176D70";
+  "0x63B59D98b99197863c9b0D8512C79AD667892ac5";
 
 /**
  * Gateway Manager Facet contract address for the Recall Testnet.
@@ -201,7 +201,7 @@ export const DEVNET_GATEWAY_MANAGER_FACET_ADDRESS =
  * Subnet Getter (Registry) Facet contract address for the Testnet parent chain.
  */
 export const TESTNET_PARENT_SUBNET_GETTER_FACET_ADDRESS =
-  "0x43808E00B1543ee71E8557fa0183aB5F4C0Dd62B";
+  "0x3e56a8a30762db79b5ddB099a51fe9eEa0CBE8Be";
 
 /**
  * Subnet Getter (Registry) Facet contract address for the Localnet parent chain.
@@ -231,7 +231,7 @@ export const DEVNET_SUBNET_GETTER_FACET_ADDRESS =
  * ERC20 contract address for the Testnet parent chain.
  */
 export const TESTNET_PARENT_ERC20_ADDRESS =
-  "0x0a698761AAbc10B401B0702dedf04DAB3bCA6E60";
+  "0x791ecd69Ce942167bEeEF4E2352B27727d9ad73f";
 
 /**
  * ERC20 contract address for the Localnet parent chain.
