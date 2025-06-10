@@ -1,12 +1,12 @@
 "use client";
 
-import {Share2Icon} from "lucide-react";
+import { Share2Icon } from "lucide-react";
 import React from "react";
 
 import Card from "@recallnet/ui2/components/card";
 import {
-  SortableTableHeader,
   SortState,
+  SortableTableHeader,
   Table,
   TableBody,
   TableCell,
@@ -20,40 +20,43 @@ import {
   TabsList,
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
-import {cn} from "@recallnet/ui2/lib/utils";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import {Hexagon} from "@/components/hexagon";
+import { Hexagon } from "@/components/hexagon";
 import MirrorImage from "@/components/mirror-image";
-import {useAgent} from "@/hooks/useAgent";
-import {useAgentCompetitions} from "@/hooks/useAgentCompetitions";
-import {Competition, CompetitionStatus} from "@/types";
-import {BreadcrumbNav} from "../breadcrumb-nav";
+import { useAgent } from "@/hooks/useAgent";
+import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
+import { Competition, CompetitionStatus } from "@/types";
 
-export default function AgentProfile({id}: {id: string}) {
+import { BreadcrumbNav } from "../breadcrumb-nav";
+
+export default function AgentProfile({ id }: { id: string }) {
   const {
     data: agent,
     isLoading: isLoadingAgent,
     error: agentError,
   } = useAgent(id);
   const [selected, setSelected] = React.useState("all");
-  const [sortState, setSorted] = React.useState({} as Record<string, SortState>)
+  const [sortState, setSorted] = React.useState(
+    {} as Record<string, SortState>,
+  );
   const sortString = React.useMemo(() => {
     return Object.entries(sortState).reduce((acc, [key, sort]) => {
-      if (sort !== 'none')
-        return acc + `,${sort == 'asc' ? '' : '-'}${key}`
-      return acc
-    }, '')
-  }, [sortState])
+      if (sort !== "none") return acc + `,${sort == "asc" ? "" : "-"}${key}`;
+      return acc;
+    }, "");
+  }, [sortState]);
 
-  const {data: agentCompetitionsData, isLoading: isLoadingCompetitions} =
-    useAgentCompetitions(id, {sort: sortString});
+  const { data: agentCompetitionsData, isLoading: isLoadingCompetitions } =
+    useAgentCompetitions(id, { sort: sortString });
 
   const handleSortChange = React.useCallback((field: string) => {
-    setSorted(sort => {
-      const cur = sort[field]
-      const nxt = !cur || cur == 'none' ? 'asc' : cur == 'asc' ? 'desc' : 'none'
-      return ({...sort, [field]: nxt})
-    })
+    setSorted((sort) => {
+      const cur = sort[field];
+      const nxt =
+        !cur || cur == "none" ? "asc" : cur == "asc" ? "desc" : "none";
+      return { ...sort, [field]: nxt };
+    });
   }, []);
 
   if (isLoadingAgent || isLoadingCompetitions)
@@ -68,9 +71,9 @@ export default function AgentProfile({id}: {id: string}) {
     <>
       <BreadcrumbNav
         items={[
-          {label: "RECALL", href: "/"},
-          {label: "AGENTS", href: "/competitions"},
-          {label: agent.name, href: '/'},
+          { label: "RECALL", href: "/" },
+          { label: "AGENTS", href: "/competitions" },
+          { label: agent.name, href: "/" },
         ]}
         className="mb-10"
       />
@@ -166,13 +169,13 @@ export default function AgentProfile({id}: {id: string}) {
             <div className="mt-3 flex flex-wrap gap-3 text-gray-400">
               {skills.length > 0
                 ? skills.map((skill, index) => (
-                  <span
-                    key={index}
-                    className="rounded border border-gray-700 px-2 py-1 text-white"
-                  >
-                    {skill}
-                  </span>
-                ))
+                    <span
+                      key={index}
+                      className="rounded border border-gray-700 px-2 py-1 text-white"
+                    >
+                      {skill}
+                    </span>
+                  ))
                 : "This agent hasnt showcased skills yet."}
             </div>
           </div>
@@ -289,38 +292,38 @@ function CompetitionTable({
           <TableRow className="grid w-full grid-cols-7">
             <SortableTableHeader
               onToggleSort={() => handleSortChange("name")}
-              sortState={sortState['name']}
+              sortState={sortState["name"]}
             >
               Competition
             </SortableTableHeader>
             <SortableTableHeader
               onToggleSort={() => handleSortChange("skills")}
-              sortState={sortState['skills']}
+              sortState={sortState["skills"]}
             >
               Skills
             </SortableTableHeader>
             <SortableTableHeader
               onToggleSort={() => handleSortChange("portfolio")}
-              sortState={sortState['portfolio']}
+              sortState={sortState["portfolio"]}
             >
               Portfolio
             </SortableTableHeader>
             <SortableTableHeader
               onToggleSort={() => handleSortChange("pnl")}
-              sortState={sortState['pnl']}
+              sortState={sortState["pnl"]}
               className="w-30 flex justify-end"
             >
               P&L
             </SortableTableHeader>
             <SortableTableHeader
               onToggleSort={() => handleSortChange("trades")}
-              sortState={sortState['trades']}
+              sortState={sortState["trades"]}
             >
               Trades
             </SortableTableHeader>
             <SortableTableHeader
               onToggleSort={() => handleSortChange("placement")}
-              sortState={sortState['placement']}
+              sortState={sortState["placement"]}
             >
               Placement
             </SortableTableHeader>
@@ -334,18 +337,18 @@ function CompetitionTable({
               const compStatus =
                 comp.status === CompetitionStatus.Active
                   ? {
-                    text: "On-going",
-                    style: "border-green-500 text-green-500",
-                  }
+                      text: "On-going",
+                      style: "border-green-500 text-green-500",
+                    }
                   : comp.status === CompetitionStatus.Pending
                     ? {
-                      text: "Upcoming",
-                      style: "border-blue-500 text-blue-500",
-                    }
+                        text: "Upcoming",
+                        style: "border-blue-500 text-blue-500",
+                      }
                     : {
-                      text: "Complete",
-                      style: "border-gray-500 text-gray-500",
-                    };
+                        text: "Complete",
+                        style: "border-gray-500 text-gray-500",
+                      };
 
               return (
                 <TableRow key={i} className="grid grid-cols-7">
@@ -417,4 +420,3 @@ function CompetitionTable({
     </div>
   );
 }
-
