@@ -1,3 +1,4 @@
+
 "use client";
 
 import {Share2Icon} from "lucide-react";
@@ -27,9 +28,9 @@ import MirrorImage from "@/components/mirror-image";
 import {useAgent} from "@/hooks/useAgent";
 import {useAgentCompetitions} from "@/hooks/useAgentCompetitions";
 import {Competition, CompetitionStatus} from "@/types";
-import {BreadcrumbNav} from "../breadcrumb-nav";
+import {BreadcrumbNav} from "@/components/breadcrumb-nav";
 
-export default function AgentProfile({id}: {id: string}) {
+export default function UserAgent({id}: {id: string}) {
   const {
     data: agent,
     isLoading: isLoadingAgent,
@@ -72,7 +73,6 @@ export default function AgentProfile({id}: {id: string}) {
           {label: "AGENTS", href: "/competitions"},
           {label: agent.name, href: '/'},
         ]}
-        className="mb-10"
       />
 
       <div className="xs:grid-rows-[65vh_1fr] my-6 grid grid-cols-[300px_1fr_1fr] rounded-xl md:grid-cols-[400px_1fr_1fr]">
