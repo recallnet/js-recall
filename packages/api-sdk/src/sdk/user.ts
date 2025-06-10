@@ -3,6 +3,7 @@
  */
 import { userGetApiUserAgents } from "../funcs/userGetApiUserAgents.js";
 import { userGetApiUserAgentsAgentId } from "../funcs/userGetApiUserAgentsAgentId.js";
+import { userGetApiUserAgentsAgentIdApiKey } from "../funcs/userGetApiUserAgentsAgentIdApiKey.js";
 import { userGetApiUserProfile } from "../funcs/userGetApiUserProfile.js";
 import { userPostApiUserAgents } from "../funcs/userPostApiUserAgents.js";
 import { userPutApiUserAgentsAgentIdProfile } from "../funcs/userPutApiUserAgentsAgentIdProfile.js";
@@ -79,6 +80,22 @@ export class User extends ClientSDK {
   ): Promise<operations.GetApiUserAgentsAgentIdResponse> {
     return unwrapAsync(
       userGetApiUserAgentsAgentId(this, security, request, options),
+    );
+  }
+
+  /**
+   * Get agent API key
+   *
+   * @remarks
+   * Retrieve the API key for a specific agent owned by the authenticated user. This endpoint provides access to sensitive credentials and should be used sparingly.
+   */
+  async getApiUserAgentsAgentIdApiKey(
+    security: operations.GetApiUserAgentsAgentIdApiKeySecurity,
+    request: operations.GetApiUserAgentsAgentIdApiKeyRequest,
+    options?: RequestOptions,
+  ): Promise<operations.GetApiUserAgentsAgentIdApiKeyResponse> {
+    return unwrapAsync(
+      userGetApiUserAgentsAgentIdApiKey(this, security, request, options),
     );
   }
 

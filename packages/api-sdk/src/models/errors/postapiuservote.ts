@@ -43,7 +43,7 @@ export class ConflictError extends APISDKError {
 /**
  * Invalid request or voting not allowed
  */
-export type BadRequestErrorData = {
+export type PostApiUserVoteBadRequestErrorData = {
   success?: boolean | undefined;
   error?: string | undefined;
 };
@@ -51,15 +51,15 @@ export type BadRequestErrorData = {
 /**
  * Invalid request or voting not allowed
  */
-export class BadRequestError extends APISDKError {
+export class PostApiUserVoteBadRequestError extends APISDKError {
   success?: boolean | undefined;
   error?: string | undefined;
 
   /** The original data that was passed to this error instance. */
-  data$: BadRequestErrorData;
+  data$: PostApiUserVoteBadRequestErrorData;
 
   constructor(
-    err: BadRequestErrorData,
+    err: PostApiUserVoteBadRequestErrorData,
     httpMeta: { response: Response; request: Request; body: string },
   ) {
     const message =
@@ -71,7 +71,7 @@ export class BadRequestError extends APISDKError {
     if (err.success != null) this.success = err.success;
     if (err.error != null) this.error = err.error;
 
-    this.name = "BadRequestError";
+    this.name = "PostApiUserVoteBadRequestError";
   }
 }
 
@@ -131,8 +131,8 @@ export namespace ConflictError$ {
 }
 
 /** @internal */
-export const BadRequestError$inboundSchema: z.ZodType<
-  BadRequestError,
+export const PostApiUserVoteBadRequestError$inboundSchema: z.ZodType<
+  PostApiUserVoteBadRequestError,
   z.ZodTypeDef,
   unknown
 > = z
@@ -144,7 +144,7 @@ export const BadRequestError$inboundSchema: z.ZodType<
     body$: z.string(),
   })
   .transform((v) => {
-    return new BadRequestError(v, {
+    return new PostApiUserVoteBadRequestError(v, {
       request: v.request$,
       response: v.response$,
       body: v.body$,
@@ -152,18 +152,18 @@ export const BadRequestError$inboundSchema: z.ZodType<
   });
 
 /** @internal */
-export type BadRequestError$Outbound = {
+export type PostApiUserVoteBadRequestError$Outbound = {
   success?: boolean | undefined;
   error?: string | undefined;
 };
 
 /** @internal */
-export const BadRequestError$outboundSchema: z.ZodType<
-  BadRequestError$Outbound,
+export const PostApiUserVoteBadRequestError$outboundSchema: z.ZodType<
+  PostApiUserVoteBadRequestError$Outbound,
   z.ZodTypeDef,
-  BadRequestError
+  PostApiUserVoteBadRequestError
 > = z
-  .instanceof(BadRequestError)
+  .instanceof(PostApiUserVoteBadRequestError)
   .transform((v) => v.data$)
   .pipe(
     z.object({
@@ -176,11 +176,11 @@ export const BadRequestError$outboundSchema: z.ZodType<
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace BadRequestError$ {
-  /** @deprecated use `BadRequestError$inboundSchema` instead. */
-  export const inboundSchema = BadRequestError$inboundSchema;
-  /** @deprecated use `BadRequestError$outboundSchema` instead. */
-  export const outboundSchema = BadRequestError$outboundSchema;
-  /** @deprecated use `BadRequestError$Outbound` instead. */
-  export type Outbound = BadRequestError$Outbound;
+export namespace PostApiUserVoteBadRequestError$ {
+  /** @deprecated use `PostApiUserVoteBadRequestError$inboundSchema` instead. */
+  export const inboundSchema = PostApiUserVoteBadRequestError$inboundSchema;
+  /** @deprecated use `PostApiUserVoteBadRequestError$outboundSchema` instead. */
+  export const outboundSchema = PostApiUserVoteBadRequestError$outboundSchema;
+  /** @deprecated use `PostApiUserVoteBadRequestError$Outbound` instead. */
+  export type Outbound = PostApiUserVoteBadRequestError$Outbound;
 }

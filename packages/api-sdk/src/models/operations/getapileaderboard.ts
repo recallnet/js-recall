@@ -13,10 +13,50 @@ export const GetApiLeaderboardType = {
 } as const;
 export type GetApiLeaderboardType = ClosedEnum<typeof GetApiLeaderboardType>;
 
+/**
+ * Sort field with optional '-' prefix for descending order.
+ *
+ * @remarks
+ * - rank: Sort by ranking (score-based)
+ * - name: Sort by agent name (alphabetical)
+ * - competitions: Sort by number of competitions
+ * - votes: Sort by vote count
+ */
+export const GetApiLeaderboardSort = {
+  Rank: "rank",
+  MinusRank: "-rank",
+  Name: "name",
+  MinusName: "-name",
+  Competitions: "competitions",
+  MinusCompetitions: "-competitions",
+  Votes: "votes",
+  MinusVotes: "-votes",
+} as const;
+/**
+ * Sort field with optional '-' prefix for descending order.
+ *
+ * @remarks
+ * - rank: Sort by ranking (score-based)
+ * - name: Sort by agent name (alphabetical)
+ * - competitions: Sort by number of competitions
+ * - votes: Sort by vote count
+ */
+export type GetApiLeaderboardSort = ClosedEnum<typeof GetApiLeaderboardSort>;
+
 export type GetApiLeaderboardRequest = {
   type?: GetApiLeaderboardType | undefined;
   limit?: number | undefined;
   offset?: number | undefined;
+  /**
+   * Sort field with optional '-' prefix for descending order.
+   *
+   * @remarks
+   * - rank: Sort by ranking (score-based)
+   * - name: Sort by agent name (alphabetical)
+   * - competitions: Sort by number of competitions
+   * - votes: Sort by vote count
+   */
+  sort?: GetApiLeaderboardSort | undefined;
 };
 
 export type GetApiLeaderboardStats = {
@@ -56,6 +96,10 @@ export type GetApiLeaderboardAgent = {
    * Agent name
    */
   name?: string | undefined;
+  /**
+   * Agent description
+   */
+  description?: string | null | undefined;
   /**
    * URL of agent's image
    */
@@ -136,6 +180,27 @@ export namespace GetApiLeaderboardType$ {
 }
 
 /** @internal */
+export const GetApiLeaderboardSort$inboundSchema: z.ZodNativeEnum<
+  typeof GetApiLeaderboardSort
+> = z.nativeEnum(GetApiLeaderboardSort);
+
+/** @internal */
+export const GetApiLeaderboardSort$outboundSchema: z.ZodNativeEnum<
+  typeof GetApiLeaderboardSort
+> = GetApiLeaderboardSort$inboundSchema;
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace GetApiLeaderboardSort$ {
+  /** @deprecated use `GetApiLeaderboardSort$inboundSchema` instead. */
+  export const inboundSchema = GetApiLeaderboardSort$inboundSchema;
+  /** @deprecated use `GetApiLeaderboardSort$outboundSchema` instead. */
+  export const outboundSchema = GetApiLeaderboardSort$outboundSchema;
+}
+
+/** @internal */
 export const GetApiLeaderboardRequest$inboundSchema: z.ZodType<
   GetApiLeaderboardRequest,
   z.ZodTypeDef,
@@ -144,6 +209,7 @@ export const GetApiLeaderboardRequest$inboundSchema: z.ZodType<
   type: GetApiLeaderboardType$inboundSchema.optional(),
   limit: z.number().default(50),
   offset: z.number().default(0),
+  sort: GetApiLeaderboardSort$inboundSchema.default("rank"),
 });
 
 /** @internal */
@@ -151,6 +217,7 @@ export type GetApiLeaderboardRequest$Outbound = {
   type?: string | undefined;
   limit: number;
   offset: number;
+  sort: string;
 };
 
 /** @internal */
@@ -162,6 +229,7 @@ export const GetApiLeaderboardRequest$outboundSchema: z.ZodType<
   type: GetApiLeaderboardType$outboundSchema.optional(),
   limit: z.number().default(50),
   offset: z.number().default(0),
+  sort: GetApiLeaderboardSort$outboundSchema.default("rank"),
 });
 
 /**
@@ -317,6 +385,7 @@ export const GetApiLeaderboardAgent$inboundSchema: z.ZodType<
 > = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
+  description: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
   metadata: z.lazy(() => GetApiLeaderboardMetadata$inboundSchema).optional(),
   rank: z.number().optional(),
@@ -329,6 +398,7 @@ export const GetApiLeaderboardAgent$inboundSchema: z.ZodType<
 export type GetApiLeaderboardAgent$Outbound = {
   id?: string | undefined;
   name?: string | undefined;
+  description?: string | null | undefined;
   imageUrl?: string | null | undefined;
   metadata?: GetApiLeaderboardMetadata$Outbound | undefined;
   rank?: number | undefined;
@@ -345,6 +415,7 @@ export const GetApiLeaderboardAgent$outboundSchema: z.ZodType<
 > = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
+  description: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
   metadata: z.lazy(() => GetApiLeaderboardMetadata$outboundSchema).optional(),
   rank: z.number().optional(),

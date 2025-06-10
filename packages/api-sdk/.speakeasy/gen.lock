@@ -1,12 +1,12 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: 40aeab4ef211cb972d65cc436ee7b176
+  docChecksum: b59a3446292aa6f9986c7498fab263d8
   docVersion: 1.0.0
-  speakeasyVersion: 1.557.1
-  generationVersion: 2.623.2
-  releaseVersion: 0.1.12
-  configChecksum: 4e71db37cd8e7e765acd877eef90edf9
+  speakeasyVersion: 1.559.0
+  generationVersion: 2.624.0
+  releaseVersion: 0.1.13
+  configChecksum: 785a24635b15357042ed2c0faa9cffcd
 features:
   typescript:
     additionalDependencies: 0.1.0
@@ -37,14 +37,19 @@ generatedFiles:
   - USAGE.md
   - docs/lib/utils/retryconfig.md
   - docs/models/components/security.md
-  - docs/models/errors/badrequesterror.md
   - docs/models/errors/conflicterror.md
   - docs/models/errors/errort.md
+  - docs/models/errors/forbiddenerror.md
   - docs/models/errors/getapiauthagentnonceinternalservererror.md
   - docs/models/errors/getapiauthnonceinternalservererror.md
+  - docs/models/errors/getapiuseragentsagentidapikeybadrequesterror.md
+  - docs/models/errors/getapiuseragentsagentidapikeyinternalservererror.md
+  - docs/models/errors/getapiuseragentsagentidapikeyunauthorizederror.md
+  - docs/models/errors/notfounderror.md
   - docs/models/errors/postapiauthlogininternalservererror.md
+  - docs/models/errors/postapiauthloginunauthorizederror.md
   - docs/models/errors/postapiauthlogoutinternalservererror.md
-  - docs/models/errors/unauthorizederror.md
+  - docs/models/errors/postapiuservotebadrequesterror.md
   - docs/models/operations/admin.md
   - docs/models/operations/agentmetadata.md
   - docs/models/operations/availablechains.md
@@ -88,14 +93,17 @@ generatedFiles:
   - docs/models/operations/getapiagentportfolioresponse.md
   - docs/models/operations/getapiagentprofileagent.md
   - docs/models/operations/getapiagentprofilemetadata.md
+  - docs/models/operations/getapiagentprofileowner.md
   - docs/models/operations/getapiagentprofileresponse.md
   - docs/models/operations/getapiagentprofilestatus.md
   - docs/models/operations/getapiagentsagent.md
+  - docs/models/operations/getapiagentsagentidagent.md
   - docs/models/operations/getapiagentsagentidcompetitionscompetition.md
   - docs/models/operations/getapiagentsagentidcompetitionsrequest.md
   - docs/models/operations/getapiagentsagentidcompetitionsresponse.md
   - docs/models/operations/getapiagentsagentidcompetitionsstatus.md
   - docs/models/operations/getapiagentsagentidmetadata.md
+  - docs/models/operations/getapiagentsagentidowner.md
   - docs/models/operations/getapiagentsagentidrequest.md
   - docs/models/operations/getapiagentsagentidresponse.md
   - docs/models/operations/getapiagentsagentidstats.md
@@ -112,6 +120,7 @@ generatedFiles:
   - docs/models/operations/getapicompetitionscompetitionidagentspagination.md
   - docs/models/operations/getapicompetitionscompetitionidagentsrequest.md
   - docs/models/operations/getapicompetitionscompetitionidagentsresponse.md
+  - docs/models/operations/getapicompetitionscompetitionidagentssort.md
   - docs/models/operations/getapicompetitionscompetitionidcompetition.md
   - docs/models/operations/getapicompetitionscompetitionidcrosschaintradingtype.md
   - docs/models/operations/getapicompetitionscompetitionidinfo.md
@@ -155,6 +164,7 @@ generatedFiles:
   - docs/models/operations/getapileaderboardpagination.md
   - docs/models/operations/getapileaderboardrequest.md
   - docs/models/operations/getapileaderboardresponse.md
+  - docs/models/operations/getapileaderboardsort.md
   - docs/models/operations/getapileaderboardstats.md
   - docs/models/operations/getapileaderboardtype.md
   - docs/models/operations/getapipricechainresponse.md
@@ -171,6 +181,9 @@ generatedFiles:
   - docs/models/operations/getapitradequoteresponse.md
   - docs/models/operations/getapiuseragentsagent.md
   - docs/models/operations/getapiuseragentsagentidagent.md
+  - docs/models/operations/getapiuseragentsagentidapikeyrequest.md
+  - docs/models/operations/getapiuseragentsagentidapikeyresponse.md
+  - docs/models/operations/getapiuseragentsagentidapikeysecurity.md
   - docs/models/operations/getapiuseragentsagentidmetadata.md
   - docs/models/operations/getapiuseragentsagentidrequest.md
   - docs/models/operations/getapiuseragentsagentidresponse.md
@@ -195,7 +208,6 @@ generatedFiles:
   - docs/models/operations/getapiuservotessecurity.md
   - docs/models/operations/getapiuservotesvote.md
   - docs/models/operations/inactiveagent.md
-  - docs/models/operations/owner.md
   - docs/models/operations/portfoliosnapshots.md
   - docs/models/operations/postapiadminagentsagentiddeactivateagent.md
   - docs/models/operations/postapiadminagentsagentiddeactivaterequest.md
@@ -281,7 +293,6 @@ generatedFiles:
   - docs/models/operations/searchtype.md
   - docs/models/operations/services.md
   - docs/models/operations/snapshot.md
-  - docs/models/operations/sort.md
   - docs/models/operations/source.md
   - docs/models/operations/symbols.md
   - docs/models/operations/token.md
@@ -351,6 +362,7 @@ generatedFiles:
   - src/funcs/tradePostApiTradeExecute.ts
   - src/funcs/userGetApiUserAgents.ts
   - src/funcs/userGetApiUserAgentsAgentId.ts
+  - src/funcs/userGetApiUserAgentsAgentIdApiKey.ts
   - src/funcs/userGetApiUserProfile.ts
   - src/funcs/userPostApiUserAgents.ts
   - src/funcs/userPutApiUserAgentsAgentIdProfile.ts
@@ -441,6 +453,7 @@ generatedFiles:
   - src/models/errors/error.ts
   - src/models/errors/getapiauthagentnonce.ts
   - src/models/errors/getapiauthnonce.ts
+  - src/models/errors/getapiuseragentsagentidapikey.ts
   - src/models/errors/httpclienterrors.ts
   - src/models/errors/index.ts
   - src/models/errors/postapiauthlogin.ts
@@ -481,6 +494,7 @@ generatedFiles:
   - src/models/operations/getapitradequote.ts
   - src/models/operations/getapiuseragents.ts
   - src/models/operations/getapiuseragentsagentid.ts
+  - src/models/operations/getapiuseragentsagentidapikey.ts
   - src/models/operations/getapiuserprofile.ts
   - src/models/operations/getapiuservotes.ts
   - src/models/operations/getapiuservotescompetitionidstate.ts
@@ -1007,6 +1021,7 @@ examples:
         query:
           limit: 50
           offset: 0
+          sort: "rank"
       responses:
         "200":
           application/json: {}
@@ -1046,7 +1061,7 @@ examples:
           agentId: "<id>"
       responses:
         "200":
-          application/json: {"name": "Trading Bot Alpha", "imageUrl": "https://example.com/bot-avatar.jpg", "metadata": {}}
+          application/json: {"success": true, "agent": {"name": "Trading Bot Alpha", "imageUrl": "https://example.com/bot-avatar.jpg", "metadata": {}}, "owner": {"name": "Alice Smith", "walletAddress": "0x1234567890abcdef1234567890abcdef12345678"}}
   get_/api/agents/{agentId}/competitions:
     speakeasy-default-get-/api/agents/{agent-id}/competitions:
       parameters:
@@ -1069,5 +1084,23 @@ examples:
       responses:
         "200":
           application/json: {"success": true, "walletAddress": "0x123...", "message": "Wallet verified successfully"}
+  get_/api/user/agents/{agentId}/api-key:
+    speakeasy-default-get-/api/user/agents/{agent-id}/api-key:
+      parameters:
+        path:
+          agentId: "a4d9b31a-07ac-498c-bee1-061653cda879"
+      responses:
+        "200":
+          application/json: {"success": true, "agentName": "Trading Bot Alpha", "apiKey": "1234567890abcdef_fedcba0987654321"}
+        "400":
+          application/json: {"success": false, "message": "Invalid request format: Agent ID is required"}
+        "401":
+          application/json: {"success": false, "message": "Authentication required"}
+        "403":
+          application/json: {"success": false, "message": "Access denied: You don't own this agent"}
+        "404":
+          application/json: {"success": false, "message": "Agent not found"}
+        "500":
+          application/json: {"success": false, "message": "Failed to decrypt API key"}
 examplesVersion: 1.0.2
 generatedTests: {}

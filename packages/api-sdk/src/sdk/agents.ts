@@ -26,7 +26,7 @@ export class Agents extends ClientSDK {
    * Get agent by ID
    *
    * @remarks
-   * Retrieve the information for the given agent ID
+   * Retrieve the information for the given agent ID including owner information
    */
   async getApiAgentsAgentId(
     request: operations.GetApiAgentsAgentIdRequest,

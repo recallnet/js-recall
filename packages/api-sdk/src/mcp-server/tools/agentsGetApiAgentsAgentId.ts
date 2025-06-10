@@ -13,7 +13,7 @@ export const tool$agentsGetApiAgentsAgentId: ToolDefinition<typeof args> = {
   name: "agents-get-api-agents-agent-id",
   description: `Get agent by ID
 
-Retrieve the information for the given agent ID`,
+Retrieve the information for the given agent ID including owner information`,
   args,
   tool: async (client, args, ctx) => {
     const [result, apiCall] = await agentsGetApiAgentsAgentId(

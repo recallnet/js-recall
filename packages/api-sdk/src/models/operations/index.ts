@@ -35,6 +35,7 @@ export * from "./getapipricetokeninfo.js";
 export * from "./getapitradequote.js";
 export * from "./getapiuseragents.js";
 export * from "./getapiuseragentsagentid.js";
+export * from "./getapiuseragentsagentidapikey.js";
 export * from "./getapiuserprofile.js";
 export * from "./getapiuservotes.js";
 export * from "./getapiuservotescompetitionidstate.js";

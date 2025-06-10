@@ -34,10 +34,7 @@ export type GetApiAgentsAgentIdStats = {
   bestPlacement?: BestPlacement | undefined;
 };
 
-/**
- * Agent profile retrieved successfully
- */
-export type GetApiAgentsAgentIdResponse = {
+export type GetApiAgentsAgentIdAgent = {
   id?: string | undefined;
   name?: string | undefined;
   imageUrl?: string | null | undefined;
@@ -51,6 +48,36 @@ export type GetApiAgentsAgentIdResponse = {
   stats?: GetApiAgentsAgentIdStats | undefined;
   trophies?: Array<string> | undefined;
   hasUnclaimedRewards?: boolean | undefined;
+};
+
+/**
+ * Owner information for the agent (for "Developed by" section)
+ */
+export type GetApiAgentsAgentIdOwner = {
+  /**
+   * Owner user ID
+   */
+  id?: string | undefined;
+  /**
+   * Owner display name
+   */
+  name?: string | null | undefined;
+  /**
+   * Owner wallet address
+   */
+  walletAddress?: string | undefined;
+};
+
+/**
+ * Agent profile retrieved successfully
+ */
+export type GetApiAgentsAgentIdResponse = {
+  success?: boolean | undefined;
+  agent?: GetApiAgentsAgentIdAgent | undefined;
+  /**
+   * Owner information for the agent (for "Developed by" section)
+   */
+  owner?: GetApiAgentsAgentIdOwner | null | undefined;
 };
 
 /** @internal */
@@ -274,8 +301,8 @@ export function getApiAgentsAgentIdStatsFromJSON(
 }
 
 /** @internal */
-export const GetApiAgentsAgentIdResponse$inboundSchema: z.ZodType<
-  GetApiAgentsAgentIdResponse,
+export const GetApiAgentsAgentIdAgent$inboundSchema: z.ZodType<
+  GetApiAgentsAgentIdAgent,
   z.ZodTypeDef,
   unknown
 > = z.object({
@@ -291,7 +318,7 @@ export const GetApiAgentsAgentIdResponse$inboundSchema: z.ZodType<
 });
 
 /** @internal */
-export type GetApiAgentsAgentIdResponse$Outbound = {
+export type GetApiAgentsAgentIdAgent$Outbound = {
   id?: string | undefined;
   name?: string | undefined;
   imageUrl?: string | null | undefined;
@@ -302,10 +329,10 @@ export type GetApiAgentsAgentIdResponse$Outbound = {
 };
 
 /** @internal */
-export const GetApiAgentsAgentIdResponse$outboundSchema: z.ZodType<
-  GetApiAgentsAgentIdResponse$Outbound,
+export const GetApiAgentsAgentIdAgent$outboundSchema: z.ZodType<
+  GetApiAgentsAgentIdAgent$Outbound,
   z.ZodTypeDef,
-  GetApiAgentsAgentIdResponse
+  GetApiAgentsAgentIdAgent
 > = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
@@ -316,6 +343,130 @@ export const GetApiAgentsAgentIdResponse$outboundSchema: z.ZodType<
   stats: z.lazy(() => GetApiAgentsAgentIdStats$outboundSchema).optional(),
   trophies: z.array(z.string()).optional(),
   hasUnclaimedRewards: z.boolean().optional(),
+});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace GetApiAgentsAgentIdAgent$ {
+  /** @deprecated use `GetApiAgentsAgentIdAgent$inboundSchema` instead. */
+  export const inboundSchema = GetApiAgentsAgentIdAgent$inboundSchema;
+  /** @deprecated use `GetApiAgentsAgentIdAgent$outboundSchema` instead. */
+  export const outboundSchema = GetApiAgentsAgentIdAgent$outboundSchema;
+  /** @deprecated use `GetApiAgentsAgentIdAgent$Outbound` instead. */
+  export type Outbound = GetApiAgentsAgentIdAgent$Outbound;
+}
+
+export function getApiAgentsAgentIdAgentToJSON(
+  getApiAgentsAgentIdAgent: GetApiAgentsAgentIdAgent,
+): string {
+  return JSON.stringify(
+    GetApiAgentsAgentIdAgent$outboundSchema.parse(getApiAgentsAgentIdAgent),
+  );
+}
+
+export function getApiAgentsAgentIdAgentFromJSON(
+  jsonString: string,
+): SafeParseResult<GetApiAgentsAgentIdAgent, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) => GetApiAgentsAgentIdAgent$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetApiAgentsAgentIdAgent' from JSON`,
+  );
+}
+
+/** @internal */
+export const GetApiAgentsAgentIdOwner$inboundSchema: z.ZodType<
+  GetApiAgentsAgentIdOwner,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  id: z.string().optional(),
+  name: z.nullable(z.string()).optional(),
+  walletAddress: z.string().optional(),
+});
+
+/** @internal */
+export type GetApiAgentsAgentIdOwner$Outbound = {
+  id?: string | undefined;
+  name?: string | null | undefined;
+  walletAddress?: string | undefined;
+};
+
+/** @internal */
+export const GetApiAgentsAgentIdOwner$outboundSchema: z.ZodType<
+  GetApiAgentsAgentIdOwner$Outbound,
+  z.ZodTypeDef,
+  GetApiAgentsAgentIdOwner
+> = z.object({
+  id: z.string().optional(),
+  name: z.nullable(z.string()).optional(),
+  walletAddress: z.string().optional(),
+});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace GetApiAgentsAgentIdOwner$ {
+  /** @deprecated use `GetApiAgentsAgentIdOwner$inboundSchema` instead. */
+  export const inboundSchema = GetApiAgentsAgentIdOwner$inboundSchema;
+  /** @deprecated use `GetApiAgentsAgentIdOwner$outboundSchema` instead. */
+  export const outboundSchema = GetApiAgentsAgentIdOwner$outboundSchema;
+  /** @deprecated use `GetApiAgentsAgentIdOwner$Outbound` instead. */
+  export type Outbound = GetApiAgentsAgentIdOwner$Outbound;
+}
+
+export function getApiAgentsAgentIdOwnerToJSON(
+  getApiAgentsAgentIdOwner: GetApiAgentsAgentIdOwner,
+): string {
+  return JSON.stringify(
+    GetApiAgentsAgentIdOwner$outboundSchema.parse(getApiAgentsAgentIdOwner),
+  );
+}
+
+export function getApiAgentsAgentIdOwnerFromJSON(
+  jsonString: string,
+): SafeParseResult<GetApiAgentsAgentIdOwner, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) => GetApiAgentsAgentIdOwner$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetApiAgentsAgentIdOwner' from JSON`,
+  );
+}
+
+/** @internal */
+export const GetApiAgentsAgentIdResponse$inboundSchema: z.ZodType<
+  GetApiAgentsAgentIdResponse,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  success: z.boolean().optional(),
+  agent: z.lazy(() => GetApiAgentsAgentIdAgent$inboundSchema).optional(),
+  owner: z
+    .nullable(z.lazy(() => GetApiAgentsAgentIdOwner$inboundSchema))
+    .optional(),
+});
+
+/** @internal */
+export type GetApiAgentsAgentIdResponse$Outbound = {
+  success?: boolean | undefined;
+  agent?: GetApiAgentsAgentIdAgent$Outbound | undefined;
+  owner?: GetApiAgentsAgentIdOwner$Outbound | null | undefined;
+};
+
+/** @internal */
+export const GetApiAgentsAgentIdResponse$outboundSchema: z.ZodType<
+  GetApiAgentsAgentIdResponse$Outbound,
+  z.ZodTypeDef,
+  GetApiAgentsAgentIdResponse
+> = z.object({
+  success: z.boolean().optional(),
+  agent: z.lazy(() => GetApiAgentsAgentIdAgent$outboundSchema).optional(),
+  owner: z
+    .nullable(z.lazy(() => GetApiAgentsAgentIdOwner$outboundSchema))
+    .optional(),
 });
 
 /**
