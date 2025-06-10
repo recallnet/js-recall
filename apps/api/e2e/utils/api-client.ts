@@ -749,6 +749,7 @@ export class ApiClient {
   async getGlobalLeaderboard(params?: {
     limit?: number;
     offset?: number;
+    sort?: string;
   }): Promise<GlobalLeaderboardResponse | ErrorResponse> {
     try {
       const queryParams = new URLSearchParams();
@@ -756,6 +757,7 @@ export class ApiClient {
         queryParams.append("limit", params.limit.toString());
       if (params?.offset !== undefined)
         queryParams.append("offset", params.offset.toString());
+      if (params?.sort !== undefined) queryParams.append("sort", params.sort);
       const response = await this.axiosInstance.get(
         `/api/leaderboard?${queryParams.toString()}`,
       );

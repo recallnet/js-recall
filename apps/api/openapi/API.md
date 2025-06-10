@@ -1201,11 +1201,12 @@ Get global leaderboard data across all relevant competitions
 
 ##### Parameters
 
-| Name   | Located in | Description | Required | Schema |
-| ------ | ---------- | ----------- | -------- | ------ |
-| type   | query      |             | No       | string |
-| limit  | query      |             | No       | number |
-| offset | query      |             | No       | number |
+| Name   | Located in | Description                                                                                                                                                                                                          | Required | Schema |
+| ------ | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------ |
+| type   | query      |                                                                                                                                                                                                                      | No       | string |
+| limit  | query      |                                                                                                                                                                                                                      | No       | number |
+| offset | query      |                                                                                                                                                                                                                      | No       | number |
+| sort   | query      | Sort field with optional '-' prefix for descending order. - rank: Sort by ranking (score-based) - name: Sort by agent name (alphabetical) - competitions: Sort by number of competitions - votes: Sort by vote count | No       | string |
 
 ##### Responses
 

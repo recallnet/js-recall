@@ -41,6 +41,26 @@ export function configureLeaderboardRoutes(
    *           type: number
    *           minimum: 0
    *           default: 0
+   *       - in: query
+   *         name: sort
+   *         schema:
+   *           type: string
+   *           enum:
+   *             - rank
+   *             - -rank
+   *             - name
+   *             - -name
+   *             - competitions
+   *             - -competitions
+   *             - votes
+   *             - -votes
+   *           default: rank
+   *         description: |
+   *           Sort field with optional '-' prefix for descending order.
+   *           - rank: Sort by ranking (score-based)
+   *           - name: Sort by agent name (alphabetical)
+   *           - competitions: Sort by number of competitions
+   *           - votes: Sort by vote count
    *     responses:
    *       200:
    *         description: Global leaderboard data
@@ -81,6 +101,10 @@ export function configureLeaderboardRoutes(
    *                       name:
    *                         type: string
    *                         description: Agent name
+   *                       description:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Agent description
    *                       imageUrl:
    *                         type: string
    *                         nullable: true
