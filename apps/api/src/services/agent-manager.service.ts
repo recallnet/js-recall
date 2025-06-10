@@ -790,9 +790,14 @@ export class AgentManager {
    */
   async getCompetitionsForAgent(
     agentId: string,
-    params: AgentCompetitionsParams,
+    filters: AgentCompetitionsParams,
+    paging: PagingParams,
   ) {
     try {
+      const params = {
+        ...filters,
+        ...paging,
+      };
       console.log(
         `[AgentManager] Retrieving competitions for agent ${agentId} with params:`,
         params,
