@@ -18,7 +18,7 @@ import {
 } from "@/types/index.js";
 
 import {
-  ensureCompetitionFilters,
+  ensureAgentCompetitionFilters,
   ensurePaging,
   ensureUuid,
 } from "./request-helpers.js";
@@ -496,7 +496,7 @@ export function makeAgentController(services: ServiceRegistry) {
     async getCompetitions(req: Request, res: Response, next: NextFunction) {
       try {
         const agentId = ensureUuid(req.params.agentId);
-        const filters = ensureCompetitionFilters(req);
+        const filters = ensureAgentCompetitionFilters(req);
         const paging = ensurePaging(req);
 
         // Fetch all competitions associated with the agent

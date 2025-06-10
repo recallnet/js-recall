@@ -31,7 +31,7 @@ export function ensurePaging(req: Request) {
 
   return data;
 }
-export function ensureCompetitionFilters(req: Request) {
+export function ensureAgentCompetitionFilters(req: Request) {
   const { success, data } = AgentCompetitionsParamsSchema.safeParse(req.query);
   if (!success) {
     throw new ApiError(400, "Invalid sort filter page params");
