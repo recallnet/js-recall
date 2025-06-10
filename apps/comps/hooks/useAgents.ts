@@ -1,7 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiClient } from "@/lib/api-client";
-import { AgentsResponse, GetAgentsParams } from "@/types";
+import {
+  AgentsResponse,
+  GetAgentsParams,
+  UpdateAgentRequest,
+  UpdateAgentResponse,
+} from "@/types";
 
 const apiClient = new ApiClient();
 
@@ -32,3 +37,22 @@ export const useUserAgents = (params: GetAgentsParams = {}) =>
     },
     placeholderData: (prev) => prev,
   });
+
+/**
+ * Hook to update agents
+ * @param body Body fields to update
+ * @returns
+ */
+export const useUpdateAgent = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: UpdateAgentRequest) => {
+      return apiClient.updateAgent(data);
+    },
+    onSuccess: () => {
+      // Invalidate profile query to get updated data
+      queryClient.invalidateQueries({ queryKey: ["agents"] });
+    },
+  });
+};

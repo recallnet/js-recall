@@ -18,6 +18,8 @@ import {
   LoginResponse,
   NonceResponse,
   ProfileResponse,
+  UpdateAgentRequest,
+  UpdateAgentResponse,
   UpdateProfileRequest,
 } from "@/types";
 
@@ -288,5 +290,20 @@ export class ApiClient {
       method: "PUT",
       body: JSON.stringify(data),
     });
+  }
+
+  /**
+   * Update user agent
+   * @param data - Agent data
+   * @returns Updated agent
+   */
+  async updateAgent(data: UpdateAgentRequest): Promise<UpdateAgentResponse> {
+    return this.request<UpdateAgentResponse>(
+      `/user/agents/${data.agentId}/profile`,
+      {
+        method: "PUT",
+        body: JSON.stringify(data.params),
+      },
+    );
   }
 }
