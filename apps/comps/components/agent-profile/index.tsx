@@ -288,7 +288,7 @@ export default function AgentProfile({
             canClaim={isUserAgent}
             competitions={competitions || []}
           />
-        </Tabs>
+        </Tabs >
       </div >
     </>
   );
