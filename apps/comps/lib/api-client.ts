@@ -215,8 +215,8 @@ export class ApiClient {
    * @param id - Agent ID
    * @returns Agent details
    */
-  async getUserAgent(id: string): Promise<{ success: boolean; agent: Agent }> {
-    return this.request<{ success: boolean; agent: Agent }>(
+  async getUserAgent(id: string): Promise<{success: boolean; agent: Agent}> {
+    return this.request<{success: boolean; agent: Agent}>(
       `/user/agents/${id}`,
     );
   }

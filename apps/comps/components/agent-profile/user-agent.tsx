@@ -1,13 +1,23 @@
-
 "use client";
 
-import {Share2Icon} from "lucide-react";
+import { Share2Icon } from "lucide-react";
+import { SquarePen } from "lucide-react";
 import React from "react";
 
+import { Button } from "@recallnet/ui2/components/button";
 import Card from "@recallnet/ui2/components/card";
 import {
-  SortableTableHeader,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@recallnet/ui2/components/dialog";
+import { Input } from "@recallnet/ui2/components/input";
+import {
   SortState,
+  SortableTableHeader,
   Table,
   TableBody,
   TableCell,
@@ -21,57 +31,92 @@ import {
   TabsList,
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
-import {cn} from "@recallnet/ui2/lib/utils";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import {Hexagon} from "@/components/hexagon";
+import { BreadcrumbNav } from "@/components/breadcrumb-nav";
+import { Hexagon } from "@/components/hexagon";
 import MirrorImage from "@/components/mirror-image";
-import {useAgent} from "@/hooks/useAgent";
-import {useAgentCompetitions} from "@/hooks/useAgentCompetitions";
-import {Competition, CompetitionStatus} from "@/types";
-import {BreadcrumbNav} from "@/components/breadcrumb-nav";
+import { useUpdateAgent } from "@/hooks";
+import { useAgent } from "@/hooks/useAgent";
+import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
+import { Competition, CompetitionStatus, CrossChainTradingType } from "@/types";
 
-export default function UserAgent({id}: {id: string}) {
+export default function UserAgent({ id }: { id: string }) {
   const {
     data: agent,
     isLoading: isLoadingAgent,
     error: agentError,
   } = useAgent(id);
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [image, setImage] = React.useState(
+    agent?.imageUrl || "/agent-placeholder.png",
+  );
+  const [inputImage, setInputImage] = React.useState("");
+  const updateAgent = useUpdateAgent();
+
   const [selected, setSelected] = React.useState("all");
-  const [sortState, setSorted] = React.useState({} as Record<string, SortState>)
+  const [sortState, setSorted] = React.useState(
+    {} as Record<string, SortState>,
+  );
   const sortString = React.useMemo(() => {
     return Object.entries(sortState).reduce((acc, [key, sort]) => {
-      if (sort !== 'none')
-        return acc + `,${sort == 'asc' ? '' : '-'}${key}`
-      return acc
-    }, '')
-  }, [sortState])
+      if (sort !== "none")
+        return (
+          acc + `${acc.length > 0 ? "," : ""}${sort == "asc" ? "" : "-"}${key}`
+        );
+      return acc;
+    }, "");
+  }, [sortState]);
 
-  const {data: agentCompetitionsData, isLoading: isLoadingCompetitions} =
-    useAgentCompetitions(id, {sort: sortString});
+  const skills = agent?.stats?.skills || [];
+  const trophies = (agent?.metadata?.trophies || []) as string[];
+
+  const { data: agentCompetitionsData, isLoading: isLoadingCompetitions } =
+    useAgentCompetitions(id, { sort: sortString });
 
   const handleSortChange = React.useCallback((field: string) => {
-    setSorted(sort => {
-      const cur = sort[field]
-      const nxt = !cur || cur == 'none' ? 'asc' : cur == 'asc' ? 'desc' : 'none'
-      return ({...sort, [field]: nxt})
-    })
+    setSorted((sort) => {
+      const cur = sort[field];
+      const nxt =
+        !cur || cur == "none" ? "asc" : cur == "asc" ? "desc" : "none";
+      return { ...sort, [field]: nxt };
+    });
   }, []);
+
+  const handleSave = async () => {
+    if (!agent) return;
+
+    try {
+      await updateAgent.mutateAsync({
+        agentId: agent.id,
+        params: {
+          imageUrl: inputImage,
+        },
+      });
+    } catch (error) {
+      console.error("Failed to update agent:", error);
+    }
+
+    setImage(inputImage);
+    setDialogOpen(false);
+  };
+
+  React.useEffect(() => {
+    if (dialogOpen) setInputImage(inputImage);
+  }, [dialogOpen, inputImage]);
 
   if (isLoadingAgent || isLoadingCompetitions)
     return <div className="py-20 text-center">Loading agent data...</div>;
   if (agentError || !agent)
     return <div className="py-20 text-center">Agent not found</div>;
 
-  const skills = agent.stats?.skills || [];
-  const trophies = (agent.metadata?.trophies || []) as string[];
-
   return (
     <>
       <BreadcrumbNav
         items={[
-          {label: "RECALL", href: "/"},
-          {label: "AGENTS", href: "/competitions"},
-          {label: agent.name, href: '/'},
+          { label: "RECALL", href: "/" },
+          { label: "AGENTS", href: "/competitions" },
+          { label: agent.name, href: "/" },
         ]}
       />
 
@@ -84,11 +129,50 @@ export default function UserAgent({id}: {id: string}) {
           <div className="flex w-full justify-end">
             <Share2Icon className="text-gray-600" size={30} />
           </div>
-          <MirrorImage
-            image={agent.imageUrl || "/agent-placeholder.png"}
-            width={160}
-            height={160}
-          />
+          <MirrorImage image={image} width={160} height={160}>
+            <div
+              className="bg-card absolute flex h-full w-full cursor-pointer flex-col justify-center overflow-hidden rounded-full px-3 opacity-0 transition-all duration-300 hover:opacity-100"
+              onClick={() => setDialogOpen(true)}
+            >
+              <div className="flex items-center gap-2 px-2 py-4">
+                <SquarePen className="text-secondary-foreground mr-2 inline-block" />
+                <span className="text-xs font-medium">Agent Picture URL</span>
+              </div>
+            </div>
+          </MirrorImage>
+
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Agent Picture URL</DialogTitle>
+              </DialogHeader>
+              <div className="mt-2 flex flex-col gap-2">
+                <Input
+                  id="profile-url"
+                  type="url"
+                  placeholder="https://example.com/avatar.png"
+                  value={inputImage}
+                  onChange={(e) => setInputImage(e.target.value)}
+                  autoFocus
+                />
+                <span className="text-secondary-foreground mt-1 text-xs">
+                  Public PNG/JPG · Square ≥ 256 × 256 px
+                </span>
+              </div>
+              <DialogFooter className="mt-4">
+                <DialogClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DialogClose>
+                <Button
+                  variant="modal"
+                  onClick={handleSave}
+                  disabled={!inputImage || inputImage === image}
+                >
+                  Save
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           <span className="w-50 mt-20 text-center text-lg text-gray-400">
             Calm accumulation of elite assets.
           </span>
@@ -166,13 +250,13 @@ export default function UserAgent({id}: {id: string}) {
             <div className="mt-3 flex flex-wrap gap-3 text-gray-400">
               {skills.length > 0
                 ? skills.map((skill, index) => (
-                  <span
-                    key={index}
-                    className="rounded border border-gray-700 px-2 py-1 text-white"
-                  >
-                    {skill}
-                  </span>
-                ))
+                    <span
+                      key={index}
+                      className="rounded border border-gray-700 px-2 py-1 text-white"
+                    >
+                      {skill}
+                    </span>
+                  ))
                 : "This agent hasnt showcased skills yet."}
             </div>
           </div>
@@ -282,49 +366,67 @@ function CompetitionTable({
   handleSortChange: (field: string) => void;
   sortState: Record<string, SortState>;
 }) {
+  competitions = [
+    {
+      id: "lksdjf",
+      name: "name",
+      description: "some fuckin desc",
+      externalUrl: "/",
+      imageUrl: "/",
+      type: "trading",
+      status: CompetitionStatus.Active,
+      crossChainTradingType: CrossChainTradingType.Allow,
+      startDate: new Date().toISOString(),
+      endDate: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ];
+
   return (
     <div className="overflow-hidden rounded border border-gray-800">
       <Table>
         <TableHeader className="text-muted-foreground bg-gray-900 text-xs uppercase">
-          <TableRow className="grid w-full grid-cols-7">
+          <TableRow className="grid w-full grid-cols-8">
             <SortableTableHeader
               onToggleSort={() => handleSortChange("name")}
-              sortState={sortState['name']}
+              sortState={sortState["name"]}
             >
               Competition
             </SortableTableHeader>
             <SortableTableHeader
               onToggleSort={() => handleSortChange("skills")}
-              sortState={sortState['skills']}
+              sortState={sortState["skills"]}
             >
               Skills
             </SortableTableHeader>
             <SortableTableHeader
               onToggleSort={() => handleSortChange("portfolio")}
-              sortState={sortState['portfolio']}
+              sortState={sortState["portfolio"]}
             >
               Portfolio
             </SortableTableHeader>
             <SortableTableHeader
               onToggleSort={() => handleSortChange("pnl")}
-              sortState={sortState['pnl']}
+              sortState={sortState["pnl"]}
               className="w-30 flex justify-end"
             >
               P&L
             </SortableTableHeader>
             <SortableTableHeader
               onToggleSort={() => handleSortChange("trades")}
-              sortState={sortState['trades']}
+              sortState={sortState["trades"]}
             >
               Trades
             </SortableTableHeader>
             <SortableTableHeader
               onToggleSort={() => handleSortChange("placement")}
-              sortState={sortState['placement']}
+              sortState={sortState["placement"]}
             >
               Placement
             </SortableTableHeader>
-            <TableHead className="text-left">Trophies</TableHead>
+            <TableHead>Trophies</TableHead>
+            <TableHead className="text-left">Reward</TableHead>
           </TableRow>
         </TableHeader>
 
@@ -334,21 +436,21 @@ function CompetitionTable({
               const compStatus =
                 comp.status === CompetitionStatus.Active
                   ? {
-                    text: "On-going",
-                    style: "border-green-500 text-green-500",
-                  }
+                      text: "On-going",
+                      style: "border-green-500 text-green-500",
+                    }
                   : comp.status === CompetitionStatus.Pending
                     ? {
-                      text: "Upcoming",
-                      style: "border-blue-500 text-blue-500",
-                    }
+                        text: "Upcoming",
+                        style: "border-blue-500 text-blue-500",
+                      }
                     : {
-                      text: "Complete",
-                      style: "border-gray-500 text-gray-500",
-                    };
+                        text: "Complete",
+                        style: "border-gray-500 text-gray-500",
+                      };
 
               return (
-                <TableRow key={i} className="grid grid-cols-7">
+                <TableRow key={i} className="grid grid-cols-8">
                   <TableCell className="flex flex-col justify-center">
                     <span className="truncate text-sm font-semibold text-gray-400">
                       {comp.name}
@@ -381,6 +483,9 @@ function CompetitionTable({
                     <Hexagon className="h-8 w-8 bg-blue-500" />
                     <Hexagon className="h-8 w-8 bg-green-500" />
                     <Hexagon className="h-8 w-8 bg-yellow-500" />
+                  </TableCell>
+                  <TableCell className="align-center h-25 flex items-center gap-2">
+                    <Button className="rounded bg-sky-700 px-7">Claim</Button>
                   </TableCell>
                 </TableRow>
               );
@@ -417,4 +522,3 @@ function CompetitionTable({
     </div>
   );
 }
-
