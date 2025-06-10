@@ -932,6 +932,17 @@ describe("Agent API", () => {
     expect(Array.isArray(agentData.agent.trophies)).toBe(true);
     expect(agentData.agent.hasUnclaimedRewards).toBe(false);
     expect(agentData.agent.stats).toBeDefined();
+    // Validate owner information is included
+    expect(agentData.owner).toBeDefined();
+    expect(agentData.owner.id).toBeDefined();
+    expect(agentData.owner.walletAddress).toBeDefined();
+    // name can be string or null per the API contract
+    expect(["string", "object"].includes(typeof agentData.owner.name)).toBe(
+      true,
+    );
+    if (agentData.owner.name !== null) {
+      expect(typeof agentData.owner.name).toBe("string");
+    }
     // make sure public info is not exposed
     expect(agentData.agent.apiKey).not.toBeDefined();
   });

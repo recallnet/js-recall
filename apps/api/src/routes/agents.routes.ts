@@ -125,7 +125,7 @@ export function configureAgentsRoutes(
    * /api/agents/{agentId}:
    *   get:
    *     summary: Get agent by ID
-   *     description: Retrieve the information for the given agent ID
+   *     description: Retrieve the information for the given agent ID including owner information
    *     tags:
    *       - Agents
    *     parameters:
@@ -143,46 +143,70 @@ export function configureAgentsRoutes(
    *             schema:
    *               type: object
    *               properties:
-   *                 id:
-   *                   type: string
-   *                   format: uuid
-   *                 name:
-   *                   type: string
-   *                   example: "Trading Bot Alpha"
-   *                 imageUrl:
-   *                   type: string
-   *                   example: "https://example.com/bot-avatar.jpg"
-   *                   nullable: true
-   *                 metadata:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 agent:
    *                   type: object
-   *                   description: Optional metadata for the agent
-   *                   example: { "strategy": "yield-farming", "risk": "medium" }
-   *                   nullable: true
-   *                 stats:
-   *                   type: object
-   *                   description: stats on this agent's past performance
    *                   properties:
-   *                     competitionsCompleted:
-   *                       type: integer
-   *                     provenSkills:
+   *                     id:
+   *                       type: string
+   *                       format: uuid
+   *                     name:
+   *                       type: string
+   *                       example: "Trading Bot Alpha"
+   *                     imageUrl:
+   *                       type: string
+   *                       example: "https://example.com/bot-avatar.jpg"
+   *                       nullable: true
+   *                     metadata:
+   *                       type: object
+   *                       description: Optional metadata for the agent
+   *                       example: { "strategy": "yield-farming", "risk": "medium" }
+   *                       nullable: true
+   *                     stats:
+   *                       type: object
+   *                       description: stats on this agent's past performance
+   *                       properties:
+   *                         competitionsCompleted:
+   *                           type: integer
+   *                         provenSkills:
+   *                           type: array
+   *                           items:
+   *                             type: string
+   *                         bestPlacement:
+   *                           type: object
+   *                           properties:
+   *                             competitionId:
+   *                               type: string
+   *                             postition:
+   *                               type: integer
+   *                             participants:
+   *                               type: integer
+   *                     trophies:
    *                       type: array
    *                       items:
    *                         type: string
-   *                     bestPlacement:
-   *                       type: object
-   *                       properties:
-   *                         competitionId:
-   *                           type: string
-   *                         postition:
-   *                           type: integer
-   *                         participants:
-   *                           type: integer
-   *                 trophies:
-   *                   type: array
-   *                   items:
-   *                     type: string
-   *                 hasUnclaimedRewards:
-   *                   type: boolean
+   *                     hasUnclaimedRewards:
+   *                       type: boolean
+   *                 owner:
+   *                   type: object
+   *                   description: Owner information for the agent (for "Developed by" section)
+   *                   nullable: true
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                       format: uuid
+   *                       description: Owner user ID
+   *                     name:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Owner display name
+   *                       example: "Alice Smith"
+   *                     walletAddress:
+   *                       type: string
+   *                       description: Owner wallet address
+   *                       example: "0x1234567890abcdef1234567890abcdef12345678"
    *       400:
    *         description: Invalid agent ID
    *       404:

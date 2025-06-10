@@ -262,6 +262,34 @@ export interface Agent {
 }
 
 /**
+ * Owner information subset for public agent profiles
+ * Contains only public fields from User
+ */
+export interface OwnerInfo {
+  id: string;
+  name: string | null;
+  walletAddress: string;
+}
+
+/**
+ * Agent with owner information for public display
+ * Extends the sanitized agent data with owner details
+ */
+export interface AgentWithOwner {
+  id: string;
+  ownerId: string;
+  name: string;
+  description?: string;
+  imageUrl?: string;
+  metadata?: AgentMetadata;
+  status: ActorStatus;
+  walletAddress?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  owner: OwnerInfo | null;
+}
+
+/**
  * Admin interface
  */
 export interface Admin {
