@@ -1,6 +1,6 @@
 {
   "name": "@recallnet/api-sdk",
-  "version": "0.1.13",
+  "version": "0.1.12",
   "author": "Recall Contributors",
   "private": true,
   "type": "module",

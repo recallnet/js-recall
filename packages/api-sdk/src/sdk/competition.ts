@@ -29,10 +29,10 @@ export class Competition extends ClientSDK {
   }
 
   /**
-   * Get competition leaderboard with sorting
+   * Get competition leaderboard
    *
    * @remarks
-   * Get the leaderboard for the active competition or a specific competition with optional sorting and pagination. Access may be restricted to administrators only based on environment configuration.
+   * Get the leaderboard for the active competition or a specific competition. Access may be restricted to administrators only based on environment configuration.
    */
   async getApiCompetitionsLeaderboard(
     request: operations.GetApiCompetitionsLeaderboardRequest,

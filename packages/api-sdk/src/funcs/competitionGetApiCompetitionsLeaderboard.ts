@@ -24,10 +24,10 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * Get competition leaderboard with sorting
+ * Get competition leaderboard
  *
  * @remarks
- * Get the leaderboard for the active competition or a specific competition with optional sorting and pagination. Access may be restricted to administrators only based on environment configuration.
+ * Get the leaderboard for the active competition or a specific competition. Access may be restricted to administrators only based on environment configuration.
  */
 export function competitionGetApiCompetitionsLeaderboard(
   client: ApiSDKCore,
@@ -87,9 +87,6 @@ async function $do(
 
   const query = encodeFormQuery({
     competitionId: payload.competitionId,
-    limit: payload.limit,
-    offset: payload.offset,
-    sort: payload.sort,
   });
 
   const headers = new Headers(

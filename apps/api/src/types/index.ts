@@ -518,19 +518,6 @@ export type AgentCompetitionsParams = z.infer<
 >;
 
 /**
- * Query string parameters for competition leaderboard endpoint
- */
-export const CompetitionLeaderboardParamsSchema = z.object({
-  sort: z.string().default("agentName"),
-  limit: z.coerce.number().min(1).max(100).default(50),
-  offset: z.coerce.number().min(0).default(0),
-});
-
-export type CompetitionLeaderboardParams = z.infer<
-  typeof CompetitionLeaderboardParamsSchema
->;
-
-/**
  * Update user profile parameters schema
  */
 export const UpdateUserProfileBodySchema = z
@@ -682,20 +669,6 @@ export interface LeaderboardAgent
   score: number;
   numCompetitions: number;
   voteCount: number;
-}
-
-/**
- * Structure for an agent entry in a competition leaderboard
- */
-export interface CompetitionLeaderboardAgent {
-  rank: number;
-  agentId: string;
-  agentName: string;
-  portfolioValue: number;
-  active: boolean;
-  deactivationReason?: string;
-  competitions: number; // Global metric: total competitions participated
-  votes: number; // Global metric: total votes received
 }
 
 // ===========================

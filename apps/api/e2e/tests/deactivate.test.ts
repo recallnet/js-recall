@@ -398,7 +398,7 @@ describe("Agent Deactivation API", () => {
     );
     expect(agent3FinalEntry).toBeDefined();
     expect(agent3FinalEntry?.active).toBe(true);
-    expect(agent3FinalEntry?.deactivationReason).toBeUndefined();
+    expect(agent3FinalEntry?.deactivationReason).toBeNull();
     expect(agent3FinalEntry?.rank).toBeDefined(); // Should have a rank assigned
 
     // Verify the hasInactiveAgents flag is false

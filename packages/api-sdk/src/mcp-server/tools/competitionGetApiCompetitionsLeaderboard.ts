@@ -13,9 +13,9 @@ export const tool$competitionGetApiCompetitionsLeaderboard: ToolDefinition<
   typeof args
 > = {
   name: "competition-get-api-competitions-leaderboard",
-  description: `Get competition leaderboard with sorting
+  description: `Get competition leaderboard
 
-Get the leaderboard for the active competition or a specific competition with optional sorting and pagination. Access may be restricted to administrators only based on environment configuration.`,
+Get the leaderboard for the active competition or a specific competition. Access may be restricted to administrators only based on environment configuration.`,
   args,
   tool: async (client, args, ctx) => {
     const [result, apiCall] = await competitionGetApiCompetitionsLeaderboard(

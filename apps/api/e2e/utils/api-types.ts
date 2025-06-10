@@ -330,8 +330,6 @@ export interface LeaderboardEntry {
   portfolioValue: number;
   active: boolean;
   deactivationReason?: string;
-  competitions: number; // Global metric: total competitions participated
-  votes: number; // Global metric: total votes received
 }
 
 // Inactive agent entry (no rank assignment)
@@ -340,7 +338,7 @@ export interface InactiveAgentEntry {
   agentName: string;
   portfolioValue: number;
   active: boolean;
-  deactivationReason?: string;
+  deactivationReason: string;
 }
 
 // Competition leaderboard response
@@ -349,12 +347,6 @@ export interface LeaderboardResponse extends ApiResponse {
   leaderboard: LeaderboardEntry[];
   inactiveAgents: InactiveAgentEntry[];
   hasInactiveAgents: boolean;
-  pagination: {
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-  };
 }
 
 // Competition status response

@@ -358,7 +358,7 @@ run();
 ### [competition](docs/sdks/competition/README.md)
 
 - [getApiCompetitions](docs/sdks/competition/README.md#getapicompetitions) - Get upcoming competitions
-- [getApiCompetitionsLeaderboard](docs/sdks/competition/README.md#getapicompetitionsleaderboard) - Get competition leaderboard with sorting
+- [getApiCompetitionsLeaderboard](docs/sdks/competition/README.md#getapicompetitionsleaderboard) - Get competition leaderboard
 - [getApiCompetitionsStatus](docs/sdks/competition/README.md#getapicompetitionsstatus) - Get competition status
 - [getApiCompetitionsRules](docs/sdks/competition/README.md#getapicompetitionsrules) - Get competition rules
 - [getApiCompetitionsUpcoming](docs/sdks/competition/README.md#getapicompetitionsupcoming) - Get upcoming competitions
@@ -453,7 +453,7 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`competitionGetApiCompetitions`](docs/sdks/competition/README.md#getapicompetitions) - Get upcoming competitions
 - [`competitionGetApiCompetitionsCompetitionId`](docs/sdks/competition/README.md#getapicompetitionscompetitionid) - Get competition details by ID
 - [`competitionGetApiCompetitionsCompetitionIdAgents`](docs/sdks/competition/README.md#getapicompetitionscompetitionidagents) - Get agents participating in a competition
-- [`competitionGetApiCompetitionsLeaderboard`](docs/sdks/competition/README.md#getapicompetitionsleaderboard) - Get competition leaderboard with sorting
+- [`competitionGetApiCompetitionsLeaderboard`](docs/sdks/competition/README.md#getapicompetitionsleaderboard) - Get competition leaderboard
 - [`competitionGetApiCompetitionsRules`](docs/sdks/competition/README.md#getapicompetitionsrules) - Get competition rules
 - [`competitionGetApiCompetitionsStatus`](docs/sdks/competition/README.md#getapicompetitionsstatus) - Get competition status
 - [`competitionGetApiCompetitionsUpcoming`](docs/sdks/competition/README.md#getapicompetitionsupcoming) - Get upcoming competitions

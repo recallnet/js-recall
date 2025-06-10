@@ -1,12 +1,12 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: 5ad37c2013a49f09a74a841124d1df1a
+  docChecksum: 40aeab4ef211cb972d65cc436ee7b176
   docVersion: 1.0.0
-  speakeasyVersion: 1.558.0
+  speakeasyVersion: 1.557.1
   generationVersion: 2.623.2
-  releaseVersion: 0.1.13
-  configChecksum: 785a24635b15357042ed2c0faa9cffcd
+  releaseVersion: 0.1.12
+  configChecksum: 4e71db37cd8e7e765acd877eef90edf9
 features:
   typescript:
     additionalDependencies: 0.1.0
@@ -125,7 +125,6 @@ generatedFiles:
   - docs/models/operations/getapicompetitionsinfo.md
   - docs/models/operations/getapicompetitionsleaderboardcompetition.md
   - docs/models/operations/getapicompetitionsleaderboardleaderboard.md
-  - docs/models/operations/getapicompetitionsleaderboardpagination.md
   - docs/models/operations/getapicompetitionsleaderboardrequest.md
   - docs/models/operations/getapicompetitionsleaderboardresponse.md
   - docs/models/operations/getapicompetitionsleaderboardstatus.md
@@ -763,11 +762,6 @@ examples:
           application/json: {"pagination": {"total": 25, "limit": 10, "offset": 0, "hasMore": true}}
   get_/api/competitions/leaderboard:
     speakeasy-default-get-/api/competitions/leaderboard:
-      parameters:
-        query:
-          sort: "agentName"
-          limit: 50
-          offset: 0
       responses:
         "200":
           application/json: {}

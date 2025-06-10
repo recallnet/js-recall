@@ -22,15 +22,12 @@ import {
   ConfigurationService,
   PortfolioSnapshotter,
   TradeSimulator,
-  VoteManager,
 } from "@/services/index.js";
 import {
   ACTOR_STATUS,
   COMPETITION_STATUS,
   COMPETITION_TYPE,
   CROSS_CHAIN_TRADING_TYPE,
-  Competition,
-  CompetitionLeaderboardAgent,
   CompetitionStatus,
   CompetitionStatusSchema,
   CompetitionType,
@@ -49,7 +46,6 @@ export class CompetitionManager {
   private activeCompetitionCache: string | null = null;
   private agentManager: AgentManager;
   private configurationService: ConfigurationService;
-  private voteManager: VoteManager;
 
   constructor(
     balanceManager: BalanceManager,
@@ -57,14 +53,12 @@ export class CompetitionManager {
     portfolioSnapshotter: PortfolioSnapshotter,
     agentManager: AgentManager,
     configurationService: ConfigurationService,
-    voteManager: VoteManager,
   ) {
     this.balanceManager = balanceManager;
     this.tradeSimulator = tradeSimulator;
     this.portfolioSnapshotter = portfolioSnapshotter;
     this.agentManager = agentManager;
     this.configurationService = configurationService;
-    this.voteManager = voteManager;
     // Load active competition on initialization
     this.loadActiveCompetition();
   }
@@ -350,244 +344,6 @@ export class CompetitionManager {
       );
       return [];
     }
-  }
-
-  /**
-   * Get competition leaderboard with sorting, global metrics, and pagination
-   * @param competitionId Competition ID
-   * @param sortField Sort field (e.g., "agentName", "-votes", "portfolioValue")
-   * @param pagination Pagination parameters
-   * @returns Enhanced leaderboard with global metrics, sorted and paginated
-   */
-  async getLeaderboardWithSorting(
-    competitionId: string,
-    sortField: string = "agentName",
-    pagination: { limit: number; offset: number },
-  ): Promise<{
-    leaderboard: CompetitionLeaderboardAgent[];
-    inactiveAgents: Omit<CompetitionLeaderboardAgent, "rank">[];
-    hasInactiveAgents: boolean;
-    pagination: {
-      total: number;
-      limit: number;
-      offset: number;
-      hasMore: boolean;
-    };
-  }> {
-    // Get basic leaderboard data
-    const leaderboard = await this.getLeaderboard(competitionId);
-
-    // Get all agents
-    const agents = await this.agentManager.getAllAgents();
-    const agentMap = new Map(agents.map((agent) => [agent.id, agent]));
-
-    // Get all agent IDs in the leaderboard
-    const agentIds = leaderboard.map((entry) => entry.agentId);
-
-    // Calculate global metrics for all agents in the competition
-    const globalMetrics = await this.calculateGlobalMetrics(agentIds);
-
-    // Separate active and inactive agents with enhanced data
-    const activeLeaderboard: CompetitionLeaderboardAgent[] = [];
-    const inactiveAgents: Omit<CompetitionLeaderboardAgent, "rank">[] = [];
-
-    // Process each agent in the leaderboard
-    for (const entry of leaderboard) {
-      const agent = agentMap.get(entry.agentId);
-      const isInactive = agent?.status !== "active";
-      const metrics = globalMetrics.get(entry.agentId) || {
-        competitions: 0,
-        votes: 0,
-      };
-
-      const leaderboardEntry = {
-        agentId: entry.agentId,
-        agentName: agent ? agent.name : "Unknown Agent",
-        portfolioValue: entry.value,
-        active: !isInactive,
-        deactivationReason:
-          isInactive && agent?.deactivationReason
-            ? agent.deactivationReason
-            : undefined,
-        competitions: metrics.competitions,
-        votes: metrics.votes,
-      };
-
-      if (isInactive) {
-        // Add to inactive agents without rank
-        inactiveAgents.push(leaderboardEntry);
-      } else {
-        // Add to active leaderboard with temporary rank (will be updated after sorting)
-        activeLeaderboard.push({ rank: 0, ...leaderboardEntry });
-      }
-    }
-
-    // Sort active leaderboard according to the specified sort parameter
-    const sortedActiveLeaderboard = this.sortLeaderboard(
-      activeLeaderboard,
-      sortField,
-    );
-
-    // Apply pagination
-    const total = sortedActiveLeaderboard.length;
-    const paginatedLeaderboard = sortedActiveLeaderboard.slice(
-      pagination.offset,
-      pagination.offset + pagination.limit,
-    );
-
-    return {
-      leaderboard: paginatedLeaderboard,
-      inactiveAgents,
-      hasInactiveAgents: inactiveAgents.length > 0,
-      pagination: {
-        total,
-        limit: pagination.limit,
-        offset: pagination.offset,
-        hasMore: pagination.offset + pagination.limit < total,
-      },
-    };
-  }
-
-  /**
-   * Helper function to calculate global metrics for agents
-   * @param agentIds Array of agent IDs to calculate metrics for
-   * @returns Map of agentId to {competitions, votes} global metrics
-   */
-  private async calculateGlobalMetrics(
-    agentIds: string[],
-  ): Promise<Map<string, { competitions: number; votes: number }>> {
-    const metricsMap = new Map<
-      string,
-      { competitions: number; votes: number }
-    >();
-
-    // Initialize all agents with zero metrics
-    agentIds.forEach((agentId) => {
-      metricsMap.set(agentId, { competitions: 0, votes: 0 });
-    });
-
-    // Get all active and ended competitions efficiently with a larger page size
-    const relevantCompetitions: Competition[] = [];
-    let offset = 0;
-    const limit = 1000; // Use larger limit to reduce database round trips
-
-    while (true) {
-      const page = await this.getCompetitions(
-        undefined, // Get all competitions
-        {
-          limit,
-          offset,
-          sort: "",
-        },
-      );
-
-      // Filter and convert only active/ended competitions
-      const filteredCompetitions = page.competitions
-        .filter((comp) => comp.status === "active" || comp.status === "ended")
-        .map((comp) => ({
-          ...comp,
-          description: comp.description || undefined,
-          externalUrl: comp.externalUrl || undefined,
-          imageUrl: comp.imageUrl || undefined,
-          createdAt: comp.createdAt || new Date(),
-          updatedAt: comp.updatedAt || new Date(),
-        }));
-
-      relevantCompetitions.push(...filteredCompetitions);
-
-      if (page.competitions.length < limit) {
-        break; // Exit loop if fewer competitions than limit are returned
-      }
-      offset += limit; // Increment offset for next page
-    }
-
-    // Process each competition to accumulate metrics
-    await Promise.all(
-      relevantCompetitions.map(async (competition) => {
-        // Get agents in this competition
-        const { agents } = await this.agentManager.getAgentsForCompetition(
-          competition.id,
-          { limit: 1000, offset: 0, sort: "", filter: undefined },
-        );
-
-        // Get vote counts for this competition
-        const voteCounts = await this.voteManager.getVoteCountsByCompetition(
-          competition.id,
-        );
-
-        // Update metrics for each agent in this competition
-        agents.forEach((agent) => {
-          if (agentIds.includes(agent.id)) {
-            const currentMetrics = metricsMap.get(agent.id)!;
-            const voteCount = voteCounts.get(agent.id) || 0;
-
-            metricsMap.set(agent.id, {
-              competitions: currentMetrics.competitions + 1,
-              votes: currentMetrics.votes + voteCount,
-            });
-          }
-        });
-      }),
-    );
-
-    return metricsMap;
-  }
-
-  /**
-   * Helper function to sort leaderboard entries
-   * @param entries Array of leaderboard entries to sort
-   * @param sortField Sort field string (e.g., "agentName", "-votes")
-   * @returns Sorted array of leaderboard entries
-   */
-  private sortLeaderboard(
-    entries: CompetitionLeaderboardAgent[],
-    sortField: string,
-  ): CompetitionLeaderboardAgent[] {
-    const isDescending = sortField.startsWith("-");
-    const field = isDescending ? sortField.slice(1) : sortField;
-
-    const sorted = [...entries].sort((a, b) => {
-      let aValue: string | number;
-      let bValue: string | number;
-
-      switch (field) {
-        case "agentName":
-          aValue = a.agentName.toLowerCase();
-          bValue = b.agentName.toLowerCase();
-          return isDescending
-            ? bValue.localeCompare(aValue)
-            : aValue.localeCompare(bValue);
-        case "portfolioValue":
-          aValue = a.portfolioValue;
-          bValue = b.portfolioValue;
-          break;
-        case "competitions":
-          aValue = a.competitions;
-          bValue = b.competitions;
-          break;
-        case "votes":
-          aValue = a.votes;
-          bValue = b.votes;
-          break;
-        default:
-          // Default to portfolio value for unknown fields
-          aValue = a.portfolioValue;
-          bValue = b.portfolioValue;
-          break;
-      }
-
-      if (typeof aValue === "number" && typeof bValue === "number") {
-        return isDescending ? bValue - aValue : aValue - bValue;
-      }
-
-      return 0;
-    });
-
-    // Re-assign ranks after sorting
-    return sorted.map((entry, index) => ({
-      ...entry,
-      rank: index + 1,
-    }));
   }
 
   /**
