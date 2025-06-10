@@ -50,6 +50,13 @@
       "when": 1749481467124,
       "tag": "0006_woozy_corsair",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1749576861430,
+      "tag": "0007_big_gargoyle",
+      "breakpoints": true
     }
   ]
 }
