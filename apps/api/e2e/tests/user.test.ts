@@ -8,6 +8,7 @@ import {
   AgentProfileResponse,
   ErrorResponse,
   GetUserAgentsResponse,
+  UserAgentApiKeyResponse,
   UserProfileResponse,
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
@@ -915,5 +916,206 @@ describe("User API", () => {
     expect(emptySortResponse.success).toBe(true);
     const emptySortAgents = (emptySortResponse as GetUserAgentsResponse).agents;
     expect(emptySortAgents).toHaveLength(3);
+  });
+
+  describe("User Agent API Key Access", () => {
+    test("user can retrieve their own agent's API key", async () => {
+      // Create a SIWE authenticated user client
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "API Key Test User",
+        userEmail: "api-key-test@example.com",
+      });
+
+      // Create an agent for this user
+      const agentResponse = await userClient.createAgent(
+        "Test Agent for API Key",
+        "Agent description for API key testing",
+      );
+      expect(agentResponse.success).toBe(true);
+      const agent = (agentResponse as AgentProfileResponse).agent;
+
+      // Get the agent's API key
+      const apiKeyResponse = await userClient.getUserAgentApiKey(agent.id);
+      expect(apiKeyResponse.success).toBe(true);
+
+      const keyData = apiKeyResponse as UserAgentApiKeyResponse;
+      expect(keyData.agentId).toBe(agent.id);
+      expect(keyData.agentName).toBe(agent.name);
+      expect(keyData.apiKey).toBeDefined();
+      expect(typeof keyData.apiKey).toBe("string");
+      expect(keyData.apiKey.length).toBeGreaterThan(0);
+    });
+
+    test("user cannot retrieve API key for agent they don't own", async () => {
+      // Create two different users
+      const { client: user1Client } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "User 1",
+        userEmail: "user1-apikey@example.com",
+      });
+
+      const { client: user2Client } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "User 2",
+        userEmail: "user2-apikey@example.com",
+      });
+
+      // User 1 creates an agent
+      const agentResponse = await user1Client.createAgent(
+        "User 1 Agent",
+        "Agent owned by User 1",
+      );
+      expect(agentResponse.success).toBe(true);
+      const agent = (agentResponse as AgentProfileResponse).agent;
+
+      // User 2 tries to get User 1's agent API key
+      const apiKeyResponse = await user2Client.getUserAgentApiKey(agent.id);
+      expect(apiKeyResponse.success).toBe(false);
+
+      const errorResponse = apiKeyResponse as ErrorResponse;
+      expect(errorResponse.status).toBe(403);
+      expect(errorResponse.error).toContain("Access denied");
+    });
+
+    test("unauthenticated user cannot retrieve any agent API key", async () => {
+      // Create an agent first
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Agent Owner",
+        userEmail: "agent-owner@example.com",
+      });
+
+      const agentResponse = await userClient.createAgent(
+        "Test Agent",
+        "Agent for unauthorized access test",
+      );
+      expect(agentResponse.success).toBe(true);
+      const agent = (agentResponse as AgentProfileResponse).agent;
+
+      // Create unauthenticated client
+      const unauthenticatedClient = createTestClient();
+
+      // Try to get the agent's API key without authentication
+      const apiKeyResponse = await unauthenticatedClient.getUserAgentApiKey(
+        agent.id,
+      );
+      expect(apiKeyResponse.success).toBe(false);
+
+      const errorResponse = apiKeyResponse as ErrorResponse;
+      expect(errorResponse.status).toBe(401);
+    });
+
+    test("user gets 404 for non-existent agent API key", async () => {
+      // Create a SIWE authenticated user client
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "404 Test User",
+        userEmail: "404-test@example.com",
+      });
+
+      // Try to get API key for non-existent agent
+      const fakeAgentId = "00000000-0000-0000-0000-000000000000";
+      const apiKeyResponse = await userClient.getUserAgentApiKey(fakeAgentId);
+      expect(apiKeyResponse.success).toBe(false);
+
+      const errorResponse = apiKeyResponse as ErrorResponse;
+      expect(errorResponse.status).toBe(404);
+      expect(errorResponse.error).toContain("Agent not found");
+    });
+
+    test("user gets 400 for invalid agent ID format", async () => {
+      // Create a SIWE authenticated user client
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Invalid ID Test User",
+        userEmail: "invalid-id-test@example.com",
+      });
+
+      // Try to get API key with invalid UUID format
+      const invalidAgentId = "not-a-valid-uuid";
+      const apiKeyResponse =
+        await userClient.getUserAgentApiKey(invalidAgentId);
+      expect(apiKeyResponse.success).toBe(false);
+
+      const errorResponse = apiKeyResponse as ErrorResponse;
+      expect(errorResponse.status).toBe(400);
+      expect(errorResponse.error).toContain("Invalid request format");
+    });
+
+    test("API key endpoint returns consistent format", async () => {
+      // Create a SIWE authenticated user client
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Format Test User",
+        userEmail: "format-test@example.com",
+      });
+
+      // Create an agent
+      const agentResponse = await userClient.createAgent(
+        "Format Test Agent",
+        "Agent for format consistency testing",
+      );
+      expect(agentResponse.success).toBe(true);
+      const agent = (agentResponse as AgentProfileResponse).agent;
+
+      // Get the agent's API key
+      const apiKeyResponse = await userClient.getUserAgentApiKey(agent.id);
+      expect(apiKeyResponse.success).toBe(true);
+
+      const keyData = apiKeyResponse as UserAgentApiKeyResponse;
+
+      // Verify response structure
+      expect(keyData).toHaveProperty("success");
+      expect(keyData).toHaveProperty("agentId");
+      expect(keyData).toHaveProperty("agentName");
+      expect(keyData).toHaveProperty("apiKey");
+
+      // Verify types
+      expect(typeof keyData.success).toBe("boolean");
+      expect(typeof keyData.agentId).toBe("string");
+      expect(typeof keyData.agentName).toBe("string");
+      expect(typeof keyData.apiKey).toBe("string");
+
+      // Verify values match agent data
+      expect(keyData.agentId).toBe(agent.id);
+      expect(keyData.agentName).toBe(agent.name);
+    });
+
+    test("retrieved API key works for agent authentication", async () => {
+      // Create a SIWE authenticated user client
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Auth Test User",
+        userEmail: "auth-test@example.com",
+      });
+
+      // Create an agent
+      const agentResponse = await userClient.createAgent(
+        "Auth Test Agent",
+        "Agent for authentication testing",
+      );
+      expect(agentResponse.success).toBe(true);
+      const agent = (agentResponse as AgentProfileResponse).agent;
+
+      // Get the agent's API key
+      const apiKeyResponse = await userClient.getUserAgentApiKey(agent.id);
+      expect(apiKeyResponse.success).toBe(true);
+
+      const keyData = apiKeyResponse as UserAgentApiKeyResponse;
+
+      // Create a new client using the retrieved API key
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+      const agentClient = adminClient.createAgentClient(keyData.apiKey);
+
+      // Verify the agent client can authenticate and get its profile
+      const profileResponse = await agentClient.getAgentProfile();
+      expect(profileResponse.success).toBe(true);
+
+      const profileData = profileResponse as AgentProfileResponse;
+      expect(profileData.agent.id).toBe(agent.id);
+      expect(profileData.agent.name).toBe(agent.name);
+    });
   });
 });

@@ -1493,6 +1493,41 @@ Retrieve details of a specific agent owned by the authenticated user
 | --------------- | ------ |
 | SIWESession     |        |
 
+### /api/user/agents/{agentId}/api-key
+
+#### GET
+
+##### Summary:
+
+Get agent API key
+
+##### Description:
+
+Retrieve the API key for a specific agent owned by the authenticated user. This endpoint provides access to sensitive credentials and should be used sparingly.
+
+##### Parameters
+
+| Name    | Located in | Description                                | Required | Schema        |
+| ------- | ---------- | ------------------------------------------ | -------- | ------------- |
+| agentId | path       | The ID of the agent to get the API key for | Yes      | string (uuid) |
+
+##### Responses
+
+| Code | Description                                      |
+| ---- | ------------------------------------------------ |
+| 200  | API key retrieved successfully                   |
+| 400  | Invalid agent ID format                          |
+| 401  | User not authenticated                           |
+| 403  | Access denied (user doesn't own this agent)      |
+| 404  | Agent not found                                  |
+| 500  | Internal server error (e.g., decryption failure) |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| SIWESession     |        |
+
 ### /api/user/agents/{agentId}/profile
 
 #### PUT

@@ -235,6 +235,63 @@ export function makeUserController(services: ServiceRegistry) {
     },
 
     /**
+     * Get API key for a specific agent owned by the authenticated user
+     * @param req Express request with userId from session and agentId parameter
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getAgentApiKey(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { success, data, error } = GetUserAgentSchema.safeParse({
+          userId: req.userId,
+          agentId: req.params.agentId,
+        });
+        if (!success) {
+          throw new ApiError(400, `Invalid request format: ${error.message}`);
+        }
+        const { userId, agentId } = data;
+
+        // Get the agent to verify ownership
+        const agent = await services.agentManager.getAgent(agentId);
+
+        if (!agent) {
+          throw new ApiError(404, "Agent not found");
+        }
+
+        // Verify ownership
+        if (agent.ownerId !== userId) {
+          throw new ApiError(403, "Access denied: You don't own this agent");
+        }
+
+        // Get the decrypted API key using existing admin infrastructure
+        const result =
+          await services.agentManager.getDecryptedApiKeyById(agentId);
+
+        if (!result.success) {
+          // If there was an error, use the error code and message from the service
+          throw new ApiError(
+            result.errorCode || 500,
+            result.errorMessage || "Unknown error",
+          );
+        }
+
+        // Audit log for security tracking
+        console.log(
+          `[AUDIT] User ${userId} accessed API key for agent ${agentId}`,
+        );
+
+        res.status(200).json({
+          success: true,
+          agentId,
+          agentName: agent.name,
+          apiKey: result.apiKey,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
      * Update profile for a specific agent owned by the authenticated user
      * Limited to name, description, and imageUrl only
      * @param req Express request with userId from session and agentId parameter
