@@ -85,39 +85,36 @@ function TableCaption({ className, ref, ...props }: TableCaptionProps) {
   );
 }
 
+export type SortState = "none" | "asc" | "desc";
+
+export interface SortableTableHeaderProps extends TableHeadProps {
+  sortState?: SortState;
+  onToggleSort?: () => void;
+}
+
 function SortableTableHeader({
   className,
-  ref,
-  isSorted = false,
+  sortState = "none",
+  onToggleSort = () => 1,
   ...props
-}: TableHeadProps & { isSorted?: boolean | "asc" | "desc" }) {
+}: SortableTableHeaderProps) {
+  const iconSize = sortState === "none" ? 20 : 22;
+  const iconClass = cn(
+    "transition-transform duration-200",
+    sortState === "none" && "text-secondary-foreground",
+    sortState !== "none" && "text-white",
+    sortState === "desc" && "rotate-180",
+  );
+
   return (
     <TableHead
-      ref={ref}
-      className={cn("hover:bg-card/70 cursor-pointer text-left", className)}
+      onClick={onToggleSort}
+      className={cn("hover:bg-accent/50 cursor-pointer text-left", className)}
       {...props}
     >
       <div className="flex items-center gap-1">
         <span className="font-semibold">{props.children}</span>
-        {isSorted === false ? (
-          <ArrowDownUp
-            className="text-secondary-foreground"
-            size={20}
-            strokeWidth={1}
-          />
-        ) : isSorted === "asc" ? (
-          <ArrowUp
-            className="text-secondary-foreground"
-            size={20}
-            strokeWidth={2}
-          />
-        ) : (
-          <ArrowDown
-            className="text-secondary-foreground"
-            size={20}
-            strokeWidth={2}
-          />
-        )}
+        <ArrowDownUp className={iconClass} size={iconSize} />
       </div>
     </TableHead>
   );

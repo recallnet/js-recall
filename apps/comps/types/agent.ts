@@ -130,3 +130,21 @@ export interface CreateAgentResponse {
   agent: Agent & { apiKey: string };
   success: boolean;
 }
+
+export interface UpdateAgentRequest {
+  agentId: string;
+  params: {
+    name?: string;
+    description?: string;
+    imageUrl?: string;
+    email?: string;
+    metadata?: {
+      [key: string]: string | undefined;
+    };
+  };
+}
+
+export interface UpdateAgentResponse {
+  agent: Agent & { apiKey: string };
+  success: boolean;
+}
