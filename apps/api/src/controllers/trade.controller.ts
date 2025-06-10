@@ -24,7 +24,7 @@ export function makeTradeController(services: ServiceRegistry) {
           amount,
           reason,
           slippageTolerance,
-          // New parameters for chain specification
+          // parameters for chain specification
           fromChain,
           fromSpecificChain,
           toChain,

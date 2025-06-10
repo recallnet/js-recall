@@ -826,7 +826,7 @@ describe("Competition API", () => {
     expect(startExistingResponse.competition.imageUrl).toBe(imageUrl);
   });
 
-  // New test cases for GET /competitions/{competitionId}
+  // test cases for GET /competitions/{competitionId}
   test("should get competition details by ID", async () => {
     // Setup admin client
     const adminClient = createTestClient();
@@ -945,7 +945,7 @@ describe("Competition API", () => {
     expect(competitionDetail.endDate).toBeNull();
   });
 
-  // New test cases for GET /competitions/{competitionId}/agents
+  // test cases for GET /competitions/{competitionId}/agents
   test("should get competition agents with scores and positions", async () => {
     // Setup admin client
     const adminClient = createTestClient();
@@ -1132,7 +1132,7 @@ describe("Competition API", () => {
     });
   });
 
-  // New test cases for SIWE user authentication
+  // test cases for SIWE user authentication
   test("SIWE users can access competition details endpoint", async () => {
     // Setup admin client
     const adminClient = createTestClient();
@@ -1972,7 +1972,7 @@ describe("Competition API", () => {
     expect(validResponse.success).toBe(true);
   });
 
-  // New test cases for join/leave competition functionality
+  // test cases for join/leave competition functionality
   test("user can join competition on behalf of their agent", async () => {
     // Setup admin client
     const adminClient = createTestClient();
