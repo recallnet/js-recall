@@ -1,14 +1,19 @@
 import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { config } from "@/config/index.js";
 import {
   AdminSearchUsersAndAgentsResponse,
   AdminUsersListResponse,
   Agent,
   AgentProfileResponse,
+  CROSS_CHAIN_TRADING_TYPE,
   ErrorResponse,
   GetUserAgentsResponse,
+  StartCompetitionResponse,
+  TradeResponse,
   UserAgentApiKeyResponse,
+  UserCompetitionsResponse,
   UserProfileResponse,
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
@@ -19,7 +24,9 @@ import {
   cleanupTestState,
   createSiweAuthenticatedClient,
   createTestClient,
+  generateTestCompetitions,
   registerUserAndAgentAndGetClient,
+  wait,
 } from "@/e2e/utils/test-helpers.js";
 
 describe("User API", () => {
@@ -1117,5 +1124,143 @@ describe("User API", () => {
       expect(profileData.agent.id).toBe(agent.id);
       expect(profileData.agent.name).toBe(agent.name);
     });
+  });
+
+  test("SIWE user can get competitions for their agents", async () => {
+    const { client1, user1 } = await generateTestCompetitions(adminApiKey);
+    // Test: User can get competitions for their agents
+    const competitionsResponse =
+      (await client1.getUserCompetitions()) as UserCompetitionsResponse;
+
+    expect(competitionsResponse.success).toBe(true);
+    expect(competitionsResponse.competitions).toBeDefined();
+    expect(Array.isArray(competitionsResponse.competitions)).toBe(true);
+    expect(competitionsResponse.competitions.length).toBe(10);
+    expect(competitionsResponse.pagination).toBeDefined();
+    expect(competitionsResponse.pagination.limit).toBe(10);
+    expect(competitionsResponse.pagination.offset).toBe(0);
+    expect(competitionsResponse.pagination.total).toBe(15);
+    expect(competitionsResponse.pagination.hasMore).toBe(true);
+
+    for (const comp of competitionsResponse.competitions) {
+      expect(comp.agents).toBeDefined();
+      expect(Array.isArray(comp.agents)).toBe(true);
+      expect(comp.agents.every((agent) => agent.ownerId === user1.id)).toBe(
+        true,
+      );
+      expect(
+        comp.agents.every((agent) =>
+          expect(agent.rank).toBeGreaterThanOrEqual(0),
+        ),
+      );
+    }
+
+    // Test with query parameters
+    const competitionsWithParamsResponse = (await client1.getUserCompetitions({
+      limit: 5,
+      offset: 0,
+    })) as UserCompetitionsResponse;
+
+    expect(competitionsWithParamsResponse.success).toBe(true);
+    expect(competitionsWithParamsResponse.pagination.limit).toBe(5);
+  });
+
+  test("user can get competitions for their agents with correct rank", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register three agents
+    const { client: client1, agent: agent1 } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent One",
+      });
+
+    const { client: client2, agent: agent2 } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent Two",
+      });
+
+    const { client: client3, agent: agent3 } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent Three",
+      });
+
+    // Create and start a competition with three agents
+    const competitionName = `Ranking Test Competition ${Date.now()}`;
+    const startResponse = (await adminClient.startCompetition({
+      name: competitionName,
+      description: "Test competition with three agents for testing ranking",
+      agentIds: [agent1.id, agent2.id, agent3.id],
+      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+    })) as StartCompetitionResponse;
+    expect(startResponse.success).toBe(true);
+
+    const competition = startResponse.competition;
+    expect(competition).toBeDefined();
+
+    // Make trades with different outcomes to create distinct rankings
+    // Agent 1: Bad trade (loses money) - should be ranked 3rd (worst)
+    await client1.executeTrade({
+      fromToken: config.specificChainTokens.eth.usdc,
+      toToken: "0x0000000000000000000000000000000000000000", // Zero address trade
+      amount: "100",
+      reason: "Bad trade for Agent 1",
+    });
+
+    // Agent 2: Good trade (USDC to USDT) - should be ranked 1st (best)
+    const tradeResult2 = (await client2.executeTrade({
+      fromToken: config.specificChainTokens.eth.usdc,
+      toToken: config.specificChainTokens.eth.usdt,
+      amount: "50",
+      reason: "Good trade for Agent 2",
+    })) as TradeResponse;
+
+    // Agent 3: Medium trade (smaller amount) - should be ranked 2nd (middle)
+    await client3.executeTrade({
+      fromToken: config.specificChainTokens.eth.usdc,
+      toToken: config.specificChainTokens.eth.usdt,
+      amount: "10",
+      reason: "Medium trade for Agent 3",
+    });
+
+    // In order to correctly assert the rankings we need to know if the
+    // usdc -> usdt trade is positive or negative as of the latest snapshot
+    const twoMoreThanThree = tradeResult2.transaction.price > 1;
+
+    // Wait to ensure snapshots are taken
+    await wait(1500);
+
+    // Get agent competitions for each user
+    const response1 =
+      (await client1.getUserCompetitions()) as UserCompetitionsResponse;
+
+    const response2 =
+      (await client2.getUserCompetitions()) as UserCompetitionsResponse;
+
+    const response3 =
+      (await client3.getUserCompetitions()) as UserCompetitionsResponse;
+
+    expect(response2.competitions[0]?.id).toBe(competition.id);
+    expect(response2.competitions[0]?.agents.length).toBe(1);
+    expect(response2.competitions[0]?.agents[0]?.id).toBe(agent2.id);
+    expect(response2.competitions[0]?.agents[0]?.rank).toBe(
+      twoMoreThanThree ? 1 : 2,
+    );
+
+    expect(response3.competitions[0]?.id).toBe(competition.id);
+    expect(response3.competitions[0]?.agents.length).toBe(1);
+    expect(response3.competitions[0]?.agents[0]?.id).toBe(agent3.id);
+    expect(response3.competitions[0]?.agents[0]?.rank).toBe(
+      twoMoreThanThree ? 2 : 1,
+    );
+
+    expect(response1.competitions[0]?.id).toBe(competition.id);
+    expect(response1.competitions[0]?.agents.length).toBe(1);
+    expect(response1.competitions[0]?.agents[0]?.id).toBe(agent1.id);
+    expect(response1.competitions[0]?.agents[0]?.rank).toBe(3);
   });
 });

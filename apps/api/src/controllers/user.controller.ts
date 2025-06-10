@@ -3,6 +3,7 @@ import { NextFunction, Request, Response } from "express";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
+  AgentCompetitionsParamsSchema,
   CreateAgentSchema,
   GetUserAgentSchema,
   UpdateUserAgentProfileSchema,
@@ -359,6 +360,49 @@ export function makeUserController(services: ServiceRegistry) {
         res.status(200).json({
           success: true,
           agent: sanitizedAgent,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get all competitions that the authenticated user's agents are participating in
+     * @param req Express request with userId from session and optional query params
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getCompetitions(req: Request, res: Response, next: NextFunction) {
+      try {
+        const userId = req.userId as string;
+
+        // Parse and validate query parameters
+        const {
+          success,
+          data: params,
+          error,
+        } = AgentCompetitionsParamsSchema.safeParse(req.query);
+        if (!success) {
+          throw new ApiError(400, `Invalid query parameters: ${error.message}`);
+        }
+
+        // Get competitions for all user's agents
+        const results =
+          await services.agentManager.getCompetitionsForUserAgents(
+            userId,
+            params,
+          );
+
+        res.status(200).json({
+          success: true,
+          competitions: results.competitions,
+          total: results.total,
+          pagination: {
+            limit: params.limit,
+            offset: params.offset,
+            total: results.total,
+            hasMore: params.limit + params.offset < results.total,
+          },
         });
       } catch (error) {
         next(error);
