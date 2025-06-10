@@ -3,21 +3,30 @@
 import React from "react";
 
 import AgentProfile from "@/components/agent-profile";
-import { FooterSection } from "@/components/footer-section";
-import { JoinSwarmSection } from "@/components/join-swarm-section";
-import { RegisterAgentBlock } from "@/components/register-agent-block";
-import { getSocialLinksArray } from "@/data/social";
+import {FooterSection} from "@/components/footer-section";
+import {JoinSwarmSection} from "@/components/join-swarm-section";
+import {RegisterAgentBlock} from "@/components/register-agent-block";
+import {getSocialLinksArray} from "@/data/social";
+import {useUserAgents} from "@/hooks/useAgents";
+import UserAgent from "@/components/agent-profile/user-agent";
 
-export default function LeaderboardPage({
+export default function AgentPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{id: string}>;
 }) {
-  const { id } = React.use(params);
+  const {id} = React.use(params);
+  const {data: userAgents} = useUserAgents();
+  const isUserAgent = userAgents?.agents.some((a) => a.id === id)
 
   return (
     <>
-      <AgentProfile id={id} />
+      {
+        isUserAgent ?
+          <UserAgent id={id} />
+          :
+          <AgentProfile id={id} />
+      }
 
       <RegisterAgentBlock />
 
