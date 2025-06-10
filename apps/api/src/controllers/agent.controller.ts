@@ -18,6 +18,8 @@ import {
   UuidSchema,
 } from "@/types/index.js";
 
+import { ensureUuid } from "./request-helpers.js";
+
 /**
  * Agent Controller
  * Handles agent-specific trading operations with agent API key authentication
@@ -490,12 +492,7 @@ export function makeAgentController(services: ServiceRegistry) {
      */
     async getCompetitions(req: Request, res: Response, next: NextFunction) {
       try {
-        const { success: idSuccess, data: agentId } = UuidSchema.safeParse(
-          req.params.agentId,
-        );
-        if (!idSuccess) {
-          throw new ApiError(400, "Invalid agent ID");
-        }
+        const agentId = ensureUuid(req.params.agentId);
         const { success: paramsSuccess, data: params } =
           AgentCompetitionsParamsSchema.safeParse(req.query);
         if (!paramsSuccess) {

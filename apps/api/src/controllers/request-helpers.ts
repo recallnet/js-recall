@@ -1,13 +1,22 @@
 import { Request } from "express";
 
 import { ApiError } from "@/middleware/errorHandler.js";
-import { PagingParamsSchema } from "@/types/index.js";
+import { PagingParamsSchema, UuidSchema } from "@/types/index.js";
 
 export function ensureUserId(req: Request) {
   if (!req.userId) {
     throw new ApiError(400, "must be authenticated as a user");
   }
   return req.userId;
+}
+
+export function ensureUuid(uuid: string | undefined) {
+  const { success, data: id } = UuidSchema.safeParse(uuid);
+  if (!success) {
+    throw new ApiError(400, "Invalid UUID");
+  }
+
+  return id;
 }
 
 export function ensurePaging(req: Request) {
