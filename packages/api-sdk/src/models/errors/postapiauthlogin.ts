@@ -40,21 +40,21 @@ export class PostApiAuthLoginInternalServerError extends APISDKError {
 /**
  * Authentication failed
  */
-export type UnauthorizedErrorData = {
+export type PostApiAuthLoginUnauthorizedErrorData = {
   error: string;
 };
 
 /**
  * Authentication failed
  */
-export class UnauthorizedError extends APISDKError {
+export class PostApiAuthLoginUnauthorizedError extends APISDKError {
   error: string;
 
   /** The original data that was passed to this error instance. */
-  data$: UnauthorizedErrorData;
+  data$: PostApiAuthLoginUnauthorizedErrorData;
 
   constructor(
-    err: UnauthorizedErrorData,
+    err: PostApiAuthLoginUnauthorizedErrorData,
     httpMeta: { response: Response; request: Request; body: string },
   ) {
     const message =
@@ -65,7 +65,7 @@ export class UnauthorizedError extends APISDKError {
     this.data$ = err;
     this.error = err.error;
 
-    this.name = "UnauthorizedError";
+    this.name = "PostApiAuthLoginUnauthorizedError";
   }
 }
 
@@ -124,8 +124,8 @@ export namespace PostApiAuthLoginInternalServerError$ {
 }
 
 /** @internal */
-export const UnauthorizedError$inboundSchema: z.ZodType<
-  UnauthorizedError,
+export const PostApiAuthLoginUnauthorizedError$inboundSchema: z.ZodType<
+  PostApiAuthLoginUnauthorizedError,
   z.ZodTypeDef,
   unknown
 > = z
@@ -136,7 +136,7 @@ export const UnauthorizedError$inboundSchema: z.ZodType<
     body$: z.string(),
   })
   .transform((v) => {
-    return new UnauthorizedError(v, {
+    return new PostApiAuthLoginUnauthorizedError(v, {
       request: v.request$,
       response: v.response$,
       body: v.body$,
@@ -144,17 +144,17 @@ export const UnauthorizedError$inboundSchema: z.ZodType<
   });
 
 /** @internal */
-export type UnauthorizedError$Outbound = {
+export type PostApiAuthLoginUnauthorizedError$Outbound = {
   error: string;
 };
 
 /** @internal */
-export const UnauthorizedError$outboundSchema: z.ZodType<
-  UnauthorizedError$Outbound,
+export const PostApiAuthLoginUnauthorizedError$outboundSchema: z.ZodType<
+  PostApiAuthLoginUnauthorizedError$Outbound,
   z.ZodTypeDef,
-  UnauthorizedError
+  PostApiAuthLoginUnauthorizedError
 > = z
-  .instanceof(UnauthorizedError)
+  .instanceof(PostApiAuthLoginUnauthorizedError)
   .transform((v) => v.data$)
   .pipe(
     z.object({
@@ -166,11 +166,12 @@ export const UnauthorizedError$outboundSchema: z.ZodType<
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace UnauthorizedError$ {
-  /** @deprecated use `UnauthorizedError$inboundSchema` instead. */
-  export const inboundSchema = UnauthorizedError$inboundSchema;
-  /** @deprecated use `UnauthorizedError$outboundSchema` instead. */
-  export const outboundSchema = UnauthorizedError$outboundSchema;
-  /** @deprecated use `UnauthorizedError$Outbound` instead. */
-  export type Outbound = UnauthorizedError$Outbound;
+export namespace PostApiAuthLoginUnauthorizedError$ {
+  /** @deprecated use `PostApiAuthLoginUnauthorizedError$inboundSchema` instead. */
+  export const inboundSchema = PostApiAuthLoginUnauthorizedError$inboundSchema;
+  /** @deprecated use `PostApiAuthLoginUnauthorizedError$outboundSchema` instead. */
+  export const outboundSchema =
+    PostApiAuthLoginUnauthorizedError$outboundSchema;
+  /** @deprecated use `PostApiAuthLoginUnauthorizedError$Outbound` instead. */
+  export type Outbound = PostApiAuthLoginUnauthorizedError$Outbound;
 }

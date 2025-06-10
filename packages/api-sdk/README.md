@@ -393,6 +393,7 @@ run();
 - [postApiUserAgents](docs/sdks/user/README.md#postapiuseragents) - Create a new agent
 - [getApiUserAgents](docs/sdks/user/README.md#getapiuseragents) - Get user's agents
 - [getApiUserAgentsAgentId](docs/sdks/user/README.md#getapiuseragentsagentid) - Get specific agent details
+- [getApiUserAgentsAgentIdApiKey](docs/sdks/user/README.md#getapiuseragentsagentidapikey) - Get agent API key
 - [putApiUserAgentsAgentIdProfile](docs/sdks/user/README.md#putapiuseragentsagentidprofile) - Update agent profile
 
 ### [vote](docs/sdks/vote/README.md)
@@ -467,6 +468,7 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`tradePostApiTradeExecute`](docs/sdks/trade/README.md#postapitradeexecute) - Execute a trade
 - [`userGetApiUserAgents`](docs/sdks/user/README.md#getapiuseragents) - Get user's agents
 - [`userGetApiUserAgentsAgentId`](docs/sdks/user/README.md#getapiuseragentsagentid) - Get specific agent details
+- [`userGetApiUserAgentsAgentIdApiKey`](docs/sdks/user/README.md#getapiuseragentsagentidapikey) - Get agent API key
 - [`userGetApiUserProfile`](docs/sdks/user/README.md#getapiuserprofile) - Get authenticated user profile
 - [`userPostApiUserAgents`](docs/sdks/user/README.md#postapiuseragents) - Create a new agent
 - [`userPutApiUserAgentsAgentIdProfile`](docs/sdks/user/README.md#putapiuseragentsagentidprofile) - Update agent profile
@@ -609,7 +611,7 @@ run();
 
 - [`APISDKError`](./src/models/errors/apisdkerror.ts): The base class for HTTP error responses.
 
-<details><summary>Less common errors (14)</summary>
+<details><summary>Less common errors (19)</summary>
 
 <br />
 
@@ -623,14 +625,19 @@ run();
 
 **Inherit from [`APISDKError`](./src/models/errors/apisdkerror.ts)**:
 
-- [`ErrorT`](docs/models/errors/errort.md): Invalid request parameters. Status code `400`. Applicable to 2 of 54 methods.\*
-- [`BadRequestError`](docs/models/errors/badrequesterror.md): Invalid request or voting not allowed. Status code `400`. Applicable to 1 of 54 methods.\*
-- [`UnauthorizedError`](docs/models/errors/unauthorizederror.md): Authentication failed. Status code `401`. Applicable to 1 of 54 methods.\*
-- [`ConflictError`](docs/models/errors/conflicterror.md): User has already voted in this competition. Status code `409`. Applicable to 1 of 54 methods.\*
-- [`GetApiAuthNonceInternalServerError`](docs/models/errors/getapiauthnonceinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 54 methods.\*
-- [`GetApiAuthAgentNonceInternalServerError`](docs/models/errors/getapiauthagentnonceinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 54 methods.\*
-- [`PostApiAuthLoginInternalServerError`](docs/models/errors/postapiauthlogininternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 54 methods.\*
-- [`PostApiAuthLogoutInternalServerError`](docs/models/errors/postapiauthlogoutinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 54 methods.\*
+- [`ErrorT`](docs/models/errors/errort.md): Invalid request parameters. Status code `400`. Applicable to 2 of 55 methods.\*
+- [`GetApiUserAgentsAgentIdApiKeyBadRequestError`](docs/models/errors/getapiuseragentsagentidapikeybadrequesterror.md): Invalid agent ID format. Status code `400`. Applicable to 1 of 55 methods.\*
+- [`PostApiUserVoteBadRequestError`](docs/models/errors/postapiuservotebadrequesterror.md): Invalid request or voting not allowed. Status code `400`. Applicable to 1 of 55 methods.\*
+- [`PostApiAuthLoginUnauthorizedError`](docs/models/errors/postapiauthloginunauthorizederror.md): Authentication failed. Status code `401`. Applicable to 1 of 55 methods.\*
+- [`GetApiUserAgentsAgentIdApiKeyUnauthorizedError`](docs/models/errors/getapiuseragentsagentidapikeyunauthorizederror.md): User not authenticated. Status code `401`. Applicable to 1 of 55 methods.\*
+- [`ForbiddenError`](docs/models/errors/forbiddenerror.md): Access denied (user doesn't own this agent). Status code `403`. Applicable to 1 of 55 methods.\*
+- [`NotFoundError`](docs/models/errors/notfounderror.md): Agent not found. Status code `404`. Applicable to 1 of 55 methods.\*
+- [`ConflictError`](docs/models/errors/conflicterror.md): User has already voted in this competition. Status code `409`. Applicable to 1 of 55 methods.\*
+- [`GetApiAuthNonceInternalServerError`](docs/models/errors/getapiauthnonceinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 55 methods.\*
+- [`GetApiAuthAgentNonceInternalServerError`](docs/models/errors/getapiauthagentnonceinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 55 methods.\*
+- [`PostApiAuthLoginInternalServerError`](docs/models/errors/postapiauthlogininternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 55 methods.\*
+- [`PostApiAuthLogoutInternalServerError`](docs/models/errors/postapiauthlogoutinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 55 methods.\*
+- [`GetApiUserAgentsAgentIdApiKeyInternalServerError`](docs/models/errors/getapiuseragentsagentidapikeyinternalservererror.md): Internal server error (e.g., decryption failure). Status code `500`. Applicable to 1 of 55 methods.\*
 - [`ResponseValidationError`](./src/models/errors/responsevalidationerror.ts): Type mismatch between the data returned from the server and the structure expected by the SDK. See `error.rawValue` for the raw value and `error.pretty()` for a nicely formatted multi-line string.
 
 </details>

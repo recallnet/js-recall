@@ -40,7 +40,7 @@ export type GetApiAgentProfileAgent = {
   updatedAt?: Date | undefined;
 };
 
-export type Owner = {
+export type GetApiAgentProfileOwner = {
   id?: string | undefined;
   walletAddress?: string | undefined;
   name?: string | undefined;
@@ -54,7 +54,7 @@ export type Owner = {
 export type GetApiAgentProfileResponse = {
   success?: boolean | undefined;
   agent?: GetApiAgentProfileAgent | undefined;
-  owner?: Owner | undefined;
+  owner?: GetApiAgentProfileOwner | undefined;
 };
 
 /** @internal */
@@ -229,17 +229,20 @@ export function getApiAgentProfileAgentFromJSON(
 }
 
 /** @internal */
-export const Owner$inboundSchema: z.ZodType<Owner, z.ZodTypeDef, unknown> =
-  z.object({
-    id: z.string().optional(),
-    walletAddress: z.string().optional(),
-    name: z.string().optional(),
-    email: z.string().optional(),
-    imageUrl: z.string().optional(),
-  });
+export const GetApiAgentProfileOwner$inboundSchema: z.ZodType<
+  GetApiAgentProfileOwner,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  id: z.string().optional(),
+  walletAddress: z.string().optional(),
+  name: z.string().optional(),
+  email: z.string().optional(),
+  imageUrl: z.string().optional(),
+});
 
 /** @internal */
-export type Owner$Outbound = {
+export type GetApiAgentProfileOwner$Outbound = {
   id?: string | undefined;
   walletAddress?: string | undefined;
   name?: string | undefined;
@@ -248,10 +251,10 @@ export type Owner$Outbound = {
 };
 
 /** @internal */
-export const Owner$outboundSchema: z.ZodType<
-  Owner$Outbound,
+export const GetApiAgentProfileOwner$outboundSchema: z.ZodType<
+  GetApiAgentProfileOwner$Outbound,
   z.ZodTypeDef,
-  Owner
+  GetApiAgentProfileOwner
 > = z.object({
   id: z.string().optional(),
   walletAddress: z.string().optional(),
@@ -264,26 +267,30 @@ export const Owner$outboundSchema: z.ZodType<
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace Owner$ {
-  /** @deprecated use `Owner$inboundSchema` instead. */
-  export const inboundSchema = Owner$inboundSchema;
-  /** @deprecated use `Owner$outboundSchema` instead. */
-  export const outboundSchema = Owner$outboundSchema;
-  /** @deprecated use `Owner$Outbound` instead. */
-  export type Outbound = Owner$Outbound;
+export namespace GetApiAgentProfileOwner$ {
+  /** @deprecated use `GetApiAgentProfileOwner$inboundSchema` instead. */
+  export const inboundSchema = GetApiAgentProfileOwner$inboundSchema;
+  /** @deprecated use `GetApiAgentProfileOwner$outboundSchema` instead. */
+  export const outboundSchema = GetApiAgentProfileOwner$outboundSchema;
+  /** @deprecated use `GetApiAgentProfileOwner$Outbound` instead. */
+  export type Outbound = GetApiAgentProfileOwner$Outbound;
 }
 
-export function ownerToJSON(owner: Owner): string {
-  return JSON.stringify(Owner$outboundSchema.parse(owner));
+export function getApiAgentProfileOwnerToJSON(
+  getApiAgentProfileOwner: GetApiAgentProfileOwner,
+): string {
+  return JSON.stringify(
+    GetApiAgentProfileOwner$outboundSchema.parse(getApiAgentProfileOwner),
+  );
 }
 
-export function ownerFromJSON(
+export function getApiAgentProfileOwnerFromJSON(
   jsonString: string,
-): SafeParseResult<Owner, SDKValidationError> {
+): SafeParseResult<GetApiAgentProfileOwner, SDKValidationError> {
   return safeParse(
     jsonString,
-    (x) => Owner$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'Owner' from JSON`,
+    (x) => GetApiAgentProfileOwner$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetApiAgentProfileOwner' from JSON`,
   );
 }
 
@@ -295,14 +302,14 @@ export const GetApiAgentProfileResponse$inboundSchema: z.ZodType<
 > = z.object({
   success: z.boolean().optional(),
   agent: z.lazy(() => GetApiAgentProfileAgent$inboundSchema).optional(),
-  owner: z.lazy(() => Owner$inboundSchema).optional(),
+  owner: z.lazy(() => GetApiAgentProfileOwner$inboundSchema).optional(),
 });
 
 /** @internal */
 export type GetApiAgentProfileResponse$Outbound = {
   success?: boolean | undefined;
   agent?: GetApiAgentProfileAgent$Outbound | undefined;
-  owner?: Owner$Outbound | undefined;
+  owner?: GetApiAgentProfileOwner$Outbound | undefined;
 };
 
 /** @internal */
@@ -313,7 +320,7 @@ export const GetApiAgentProfileResponse$outboundSchema: z.ZodType<
 > = z.object({
   success: z.boolean().optional(),
   agent: z.lazy(() => GetApiAgentProfileAgent$outboundSchema).optional(),
-  owner: z.lazy(() => Owner$outboundSchema).optional(),
+  owner: z.lazy(() => GetApiAgentProfileOwner$outboundSchema).optional(),
 });
 
 /**

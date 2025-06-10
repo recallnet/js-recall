@@ -11,6 +11,7 @@ import { tool$agentPutApiAgentProfile } from "@recallnet/api-sdk/mcp-server/tool
 import { tool$agentsGetApiAgents } from "@recallnet/api-sdk/mcp-server/tools/agentsGetApiAgents.js";
 import { tool$agentsGetApiAgentsAgentId } from "@recallnet/api-sdk/mcp-server/tools/agentsGetApiAgentsAgentId.js";
 import { tool$agentsGetApiAgentsAgentIdCompetitions } from "@recallnet/api-sdk/mcp-server/tools/agentsGetApiAgentsAgentIdCompetitions.js";
+import { tool$competitionDeleteApiCompetitionsCompetitionIdAgentsAgentId } from "@recallnet/api-sdk/mcp-server/tools/competitionDeleteApiCompetitionsCompetitionIdAgentsAgentId.js";
 import { tool$competitionGetApiCompetitions } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitions.js";
 import { tool$competitionGetApiCompetitionsCompetitionId } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionsCompetitionId.js";
 import { tool$competitionGetApiCompetitionsCompetitionIdAgents } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionsCompetitionIdAgents.js";
@@ -18,8 +19,10 @@ import { tool$competitionGetApiCompetitionsLeaderboard } from "@recallnet/api-sd
 import { tool$competitionGetApiCompetitionsRules } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionsRules.js";
 import { tool$competitionGetApiCompetitionsStatus } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionsStatus.js";
 import { tool$competitionGetApiCompetitionsUpcoming } from "@recallnet/api-sdk/mcp-server/tools/competitionGetApiCompetitionsUpcoming.js";
+import { tool$competitionPostApiCompetitionsCompetitionIdAgentsAgentId } from "@recallnet/api-sdk/mcp-server/tools/competitionPostApiCompetitionsCompetitionIdAgentsAgentId.js";
 import { tool$healthGetApiHealth } from "@recallnet/api-sdk/mcp-server/tools/healthGetApiHealth.js";
 import { tool$healthGetApiHealthDetailed } from "@recallnet/api-sdk/mcp-server/tools/healthGetApiHealthDetailed.js";
+import { tool$leaderboardGetApiLeaderboard } from "@recallnet/api-sdk/mcp-server/tools/leaderboardGetApiLeaderboard.js";
 import { tool$priceGetApiPrice } from "@recallnet/api-sdk/mcp-server/tools/priceGetApiPrice.js";
 import { tool$priceGetApiPriceTokenInfo } from "@recallnet/api-sdk/mcp-server/tools/priceGetApiPriceTokenInfo.js";
 import { tool$tradeGetApiTradeQuote } from "@recallnet/api-sdk/mcp-server/tools/tradeGetApiTradeQuote.js";
@@ -59,10 +62,15 @@ const USER_TOOLS = [
   tool$competitionGetApiCompetitionsStatus,
   tool$competitionGetApiCompetitionsRules,
   tool$competitionGetApiCompetitionsUpcoming,
+  tool$competitionPostApiCompetitionsCompetitionIdAgentsAgentId,
+  tool$competitionDeleteApiCompetitionsCompetitionIdAgentsAgentId,
 
   // Health check tools
   tool$healthGetApiHealth,
   tool$healthGetApiHealthDetailed,
+
+  // Leaderboard tools
+  tool$leaderboardGetApiLeaderboard,
 
   // Price tools
   tool$priceGetApiPrice,

@@ -11,7 +11,7 @@ import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 /**
  * Sort order for results
  */
-export const Sort = {
+export const GetApiCompetitionsCompetitionIdAgentsSort = {
   Position: "position",
   Name: "name",
   NameDesc: "name_desc",
@@ -22,7 +22,9 @@ export const Sort = {
 /**
  * Sort order for results
  */
-export type Sort = ClosedEnum<typeof Sort>;
+export type GetApiCompetitionsCompetitionIdAgentsSort = ClosedEnum<
+  typeof GetApiCompetitionsCompetitionIdAgentsSort
+>;
 
 export type GetApiCompetitionsCompetitionIdAgentsRequest = {
   /**
@@ -36,7 +38,7 @@ export type GetApiCompetitionsCompetitionIdAgentsRequest = {
   /**
    * Sort order for results
    */
-  sort?: Sort | undefined;
+  sort?: GetApiCompetitionsCompetitionIdAgentsSort | undefined;
   /**
    * Maximum number of results to return
    */
@@ -151,22 +153,26 @@ export type GetApiCompetitionsCompetitionIdAgentsResponse = {
 };
 
 /** @internal */
-export const Sort$inboundSchema: z.ZodNativeEnum<typeof Sort> =
-  z.nativeEnum(Sort);
+export const GetApiCompetitionsCompetitionIdAgentsSort$inboundSchema: z.ZodNativeEnum<
+  typeof GetApiCompetitionsCompetitionIdAgentsSort
+> = z.nativeEnum(GetApiCompetitionsCompetitionIdAgentsSort);
 
 /** @internal */
-export const Sort$outboundSchema: z.ZodNativeEnum<typeof Sort> =
-  Sort$inboundSchema;
+export const GetApiCompetitionsCompetitionIdAgentsSort$outboundSchema: z.ZodNativeEnum<
+  typeof GetApiCompetitionsCompetitionIdAgentsSort
+> = GetApiCompetitionsCompetitionIdAgentsSort$inboundSchema;
 
 /**
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace Sort$ {
-  /** @deprecated use `Sort$inboundSchema` instead. */
-  export const inboundSchema = Sort$inboundSchema;
-  /** @deprecated use `Sort$outboundSchema` instead. */
-  export const outboundSchema = Sort$outboundSchema;
+export namespace GetApiCompetitionsCompetitionIdAgentsSort$ {
+  /** @deprecated use `GetApiCompetitionsCompetitionIdAgentsSort$inboundSchema` instead. */
+  export const inboundSchema =
+    GetApiCompetitionsCompetitionIdAgentsSort$inboundSchema;
+  /** @deprecated use `GetApiCompetitionsCompetitionIdAgentsSort$outboundSchema` instead. */
+  export const outboundSchema =
+    GetApiCompetitionsCompetitionIdAgentsSort$outboundSchema;
 }
 
 /** @internal */
@@ -177,7 +183,9 @@ export const GetApiCompetitionsCompetitionIdAgentsRequest$inboundSchema: z.ZodTy
 > = z.object({
   competitionId: z.string(),
   filter: z.string().optional(),
-  sort: Sort$inboundSchema.default("position"),
+  sort: GetApiCompetitionsCompetitionIdAgentsSort$inboundSchema.default(
+    "position",
+  ),
   limit: z.number().int().default(50),
   offset: z.number().int().default(0),
 });
@@ -199,7 +207,9 @@ export const GetApiCompetitionsCompetitionIdAgentsRequest$outboundSchema: z.ZodT
 > = z.object({
   competitionId: z.string(),
   filter: z.string().optional(),
-  sort: Sort$outboundSchema.default("position"),
+  sort: GetApiCompetitionsCompetitionIdAgentsSort$outboundSchema.default(
+    "position",
+  ),
   limit: z.number().int().default(50),
   offset: z.number().int().default(0),
 });

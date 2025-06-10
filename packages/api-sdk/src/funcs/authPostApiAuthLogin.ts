@@ -37,7 +37,7 @@ export function authPostApiAuthLogin(
 ): APIPromise<
   Result<
     operations.PostApiAuthLoginResponse,
-    | errors.UnauthorizedError
+    | errors.PostApiAuthLoginUnauthorizedError
     | errors.PostApiAuthLoginInternalServerError
     | APISDKError
     | ResponseValidationError
@@ -60,7 +60,7 @@ async function $do(
   [
     Result<
       operations.PostApiAuthLoginResponse,
-      | errors.UnauthorizedError
+      | errors.PostApiAuthLoginUnauthorizedError
       | errors.PostApiAuthLoginInternalServerError
       | APISDKError
       | ResponseValidationError
@@ -148,7 +148,7 @@ async function $do(
 
   const [result] = await M.match<
     operations.PostApiAuthLoginResponse,
-    | errors.UnauthorizedError
+    | errors.PostApiAuthLoginUnauthorizedError
     | errors.PostApiAuthLoginInternalServerError
     | APISDKError
     | ResponseValidationError
@@ -160,7 +160,7 @@ async function $do(
     | SDKValidationError
   >(
     M.json(200, operations.PostApiAuthLoginResponse$inboundSchema),
-    M.jsonErr(401, errors.UnauthorizedError$inboundSchema),
+    M.jsonErr(401, errors.PostApiAuthLoginUnauthorizedError$inboundSchema),
     M.jsonErr(500, errors.PostApiAuthLoginInternalServerError$inboundSchema),
     M.fail("4XX"),
     M.fail("5XX"),

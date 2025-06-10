@@ -27,7 +27,7 @@ import { Result } from "../types/fp.js";
  * Get agent by ID
  *
  * @remarks
- * Retrieve the information for the given agent ID
+ * Retrieve the information for the given agent ID including owner information
  */
 export function agentsGetApiAgentsAgentId(
   client: ApiSDKCore,

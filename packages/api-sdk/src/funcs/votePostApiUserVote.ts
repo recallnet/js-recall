@@ -38,7 +38,7 @@ export function votePostApiUserVote(
 ): APIPromise<
   Result<
     operations.PostApiUserVoteResponse,
-    | errors.BadRequestError
+    | errors.PostApiUserVoteBadRequestError
     | errors.ConflictError
     | APISDKError
     | ResponseValidationError
@@ -62,7 +62,7 @@ async function $do(
   [
     Result<
       operations.PostApiUserVoteResponse,
-      | errors.BadRequestError
+      | errors.PostApiUserVoteBadRequestError
       | errors.ConflictError
       | APISDKError
       | ResponseValidationError
@@ -154,7 +154,7 @@ async function $do(
 
   const [result] = await M.match<
     operations.PostApiUserVoteResponse,
-    | errors.BadRequestError
+    | errors.PostApiUserVoteBadRequestError
     | errors.ConflictError
     | APISDKError
     | ResponseValidationError
@@ -166,7 +166,7 @@ async function $do(
     | SDKValidationError
   >(
     M.json(201, operations.PostApiUserVoteResponse$inboundSchema),
-    M.jsonErr(400, errors.BadRequestError$inboundSchema),
+    M.jsonErr(400, errors.PostApiUserVoteBadRequestError$inboundSchema),
     M.jsonErr(409, errors.ConflictError$inboundSchema),
     M.fail([401, 404, "4XX"]),
     M.fail([500, "5XX"]),
