@@ -67,10 +67,15 @@ class ServiceRegistry {
       this._configurationService,
     );
 
-    this._leaderboardService = new LeaderboardService();
-
     // Initialize vote manager (no dependencies)
     this._voteManager = new VoteManager();
+
+    // Initialize LeaderboardService with required dependencies
+    this._leaderboardService = new LeaderboardService(
+      this._agentManager,
+      this._competitionManager,
+      this._voteManager,
+    );
 
     // Initialize and start the scheduler
     this._scheduler = new SchedulerService(

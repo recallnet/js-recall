@@ -22,7 +22,7 @@ export enum BlockchainType {
   EVM = "evm",
 }
 
-// New type for specific chains
+// type for specific chains
 export type SpecificChain =
   | "eth" // Ethereum Mainnet
   | "polygon" // Polygon
@@ -650,12 +650,27 @@ export const GetUserAgentSchema = z
 export const UuidSchema = z.uuid("Invalid uuid");
 
 /**
+ * Supported sort fields for global leaderboard
+ */
+export const LEADERBOARD_SORT_FIELDS = [
+  "rank",
+  "-rank",
+  "name",
+  "-name",
+  "competitions",
+  "-competitions",
+  "votes",
+  "-votes",
+] as const;
+
+/**
  * Query string parameters for global leaderboard rankings
  */
 export const LeaderboardParamsSchema = z.object({
   type: z.enum(COMPETITION_TYPE_VALUES).default(COMPETITION_TYPE.TRADING),
   limit: z.coerce.number().min(1).max(100).default(50),
   offset: z.coerce.number().min(0).default(0),
+  sort: z.string().optional().default("rank"), // Default to rank ascending
 });
 
 export type LeaderboardParams = z.infer<typeof LeaderboardParamsSchema>;
