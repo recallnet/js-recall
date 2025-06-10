@@ -17,8 +17,12 @@ export const agentRank = pgTable(
   {
     id: uuid().primaryKey().notNull(),
     agentId: uuid("agent_id").notNull(),
-    mu: numeric("mu", { precision: 6, scale: 2 }).notNull(),
-    sigma: numeric("sigma", { precision: 6, scale: 2 }).notNull(),
+    mu: numeric("mu", { precision: 6, scale: 2, mode: "number" }).notNull(),
+    sigma: numeric("sigma", {
+      precision: 6,
+      scale: 2,
+      mode: "number",
+    }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -45,8 +49,12 @@ export const agentRankHistory = pgTable(
     id: uuid().primaryKey().notNull(),
     agentId: uuid("agent_id").notNull(),
     competitionId: uuid("competition_id").notNull(),
-    mu: numeric("mu", { precision: 6, scale: 2 }).notNull(),
-    sigma: numeric("sigma", { precision: 6, scale: 2 }).notNull(),
+    mu: numeric("mu", { precision: 6, scale: 2, mode: "number" }).notNull(),
+    sigma: numeric("sigma", {
+      precision: 6,
+      scale: 2,
+      mode: "number",
+    }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

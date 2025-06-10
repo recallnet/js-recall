@@ -1,7 +1,9 @@
 import {
   foreignKey,
   index,
+  integer,
   jsonb,
+  numeric,
   pgEnum,
   pgTable,
   primaryKey,
@@ -275,5 +277,46 @@ export const votes = pgTable(
       table.agentId,
       table.competitionId,
     ),
+  ],
+);
+
+/**
+ * Stores competitions final leaderboard results when it ends
+ */
+export const competitionsLeaderboard = pgTable(
+  "competitions_leaderboard",
+  {
+    id: uuid().primaryKey().notNull(),
+    agentId: uuid("agent_id").notNull(),
+    competitionId: uuid("competition_id").notNull(),
+    rank: integer("rank").notNull(),
+    score: numeric("score", {
+      precision: 30,
+      scale: 15,
+      mode: "number",
+    }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_competitions_leaderboard_agent_id").on(table.agentId),
+    index("idx_competitions_leaderboard_competition_id").on(
+      table.competitionId,
+    ),
+    index("idx_competitions_leaderboard_agent_competition").on(
+      table.agentId,
+      table.competitionId,
+    ),
+    foreignKey({
+      columns: [table.agentId],
+      foreignColumns: [agents.id],
+      name: "competitions_leaderboard_agent_id_fkey",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.competitionId],
+      foreignColumns: [competitions.id],
+      name: "competitions_leaderboard_competition_id_fkey",
+    }).onDelete("cascade"),
   ],
 );
