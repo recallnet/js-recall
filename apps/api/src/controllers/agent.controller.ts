@@ -210,7 +210,7 @@ export function makeAgentController(services: ServiceRegistry) {
 
         const sanitizedAgent = services.agentManager.sanitizeAgent(agent);
         const computedAgent =
-          services.agentManager.attachAgentMetrics(sanitizedAgent);
+          await services.agentManager.attachAgentMetrics(sanitizedAgent);
 
         // Return the agent with owner information
         res.status(200).json({

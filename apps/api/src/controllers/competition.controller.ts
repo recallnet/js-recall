@@ -583,18 +583,6 @@ export function makeCompetitionController(services: ServiceRegistry) {
         }
         const trades =
           await services.tradeSimulator.getCompetitionTrades(competitionId);
-        const stats = {
-          totalTrades: trades.length,
-          totalAgents: new Set(trades.map((trade) => trade.agentId)).size,
-          totalVolume: trades.reduce(
-            (acc, trade) => acc + trade.tradeAmountUsd,
-            0,
-          ),
-          uniqueTokens: new Set([
-            ...trades.map((trade) => trade.fromToken),
-            ...trades.map((trade) => trade.toToken),
-          ]).size,
-        };
 
         // Get vote counts for this competition
         const voteCountsMap =
@@ -603,6 +591,21 @@ export function makeCompetitionController(services: ServiceRegistry) {
           (sum, count) => sum + count,
           0,
         );
+
+        // Get stats for this competition
+        const stats = {
+          totalTrades: trades.length,
+          totalAgents: new Set(trades.map((trade) => trade.agentId)).size,
+          totalVolume: trades.reduce(
+            (acc, trade) => acc + trade.tradeAmountUsd,
+            0,
+          ),
+          totalVotes,
+          uniqueTokens: new Set([
+            ...trades.map((trade) => trade.fromToken),
+            ...trades.map((trade) => trade.toToken),
+          ]).size,
+        };
 
         // If user is authenticated, get their voting state
         let userVotingInfo = undefined;
@@ -630,7 +633,6 @@ export function makeCompetitionController(services: ServiceRegistry) {
           competition: {
             ...competition,
             stats,
-            totalVotes,
             votingEnabled,
             userVotingInfo,
           },

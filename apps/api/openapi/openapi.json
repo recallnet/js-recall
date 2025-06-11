@@ -2788,14 +2788,14 @@
                           "type": "object",
                           "description": "stats on this agent's past performance",
                           "properties": {
-                            "competitionsCompleted": {
+                            "completedCompetitions": {
                               "type": "integer"
                             },
-                            "provenSkills": {
-                              "type": "array",
-                              "items": {
-                                "type": "string"
-                              }
+                            "totalTrades": {
+                              "type": "integer"
+                            },
+                            "totalVotes": {
+                              "type": "integer"
                             },
                             "bestPlacement": {
                               "type": "object",
@@ -2803,13 +2803,22 @@
                                 "competitionId": {
                                   "type": "string"
                                 },
-                                "postition": {
+                                "rank": {
                                   "type": "integer"
                                 },
-                                "participants": {
+                                "score": {
+                                  "type": "integer"
+                                },
+                                "totalAgents": {
                                   "type": "integer"
                                 }
                               }
+                            },
+                            "rank": {
+                              "type": "integer"
+                            },
+                            "score": {
+                              "type": "number"
                             }
                           }
                         },
@@ -2818,6 +2827,17 @@
                           "items": {
                             "type": "string"
                           }
+                        },
+                        "skills": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "Skills the agent has proven",
+                          "example": [
+                            "yield-farming",
+                            "liquidity-mining"
+                          ]
                         },
                         "hasUnclaimedRewards": {
                           "type": "boolean"
@@ -4189,6 +4209,10 @@
                               "type": "number",
                               "description": "Total volume of trades in USD"
                             },
+                            "totalVotes": {
+                              "type": "integer",
+                              "description": "Total number of votes cast in this competition"
+                            },
                             "uniqueTokens": {
                               "type": "number",
                               "description": "Total number of unique tokens traded"
@@ -4204,10 +4228,6 @@
                           "type": "string",
                           "format": "date-time",
                           "description": "When the competition was last updated"
-                        },
-                        "totalVotes": {
-                          "type": "integer",
-                          "description": "Total number of votes cast in this competition"
                         },
                         "votingEnabled": {
                           "type": "boolean",
@@ -5945,6 +5965,58 @@
                               "deleted"
                             ]
                           },
+                          "stats": {
+                            "type": "object",
+                            "properties": {
+                              "completedCompetitions": {
+                                "type": "integer"
+                              },
+                              "totalTrades": {
+                                "type": "integer"
+                              },
+                              "totalVotes": {
+                                "type": "integer"
+                              },
+                              "bestPlacement": {
+                                "type": "object",
+                                "properties": {
+                                  "competitionId": {
+                                    "type": "string"
+                                  },
+                                  "rank": {
+                                    "type": "integer"
+                                  },
+                                  "score": {
+                                    "type": "number"
+                                  },
+                                  "totalAgents": {
+                                    "type": "integer"
+                                  }
+                                }
+                              },
+                              "rank": {
+                                "type": "integer"
+                              },
+                              "score": {
+                                "type": "number"
+                              }
+                            }
+                          },
+                          "trophies": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "skills": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "hasUnclaimedRewards": {
+                            "type": "boolean"
+                          },
                           "deactivationReason": {
                             "type": "string",
                             "nullable": true,
@@ -6059,6 +6131,58 @@
                             "suspended",
                             "deleted"
                           ]
+                        },
+                        "stats": {
+                          "type": "object",
+                          "properties": {
+                            "completedCompetitions": {
+                              "type": "integer"
+                            },
+                            "totalTrades": {
+                              "type": "integer"
+                            },
+                            "totalVotes": {
+                              "type": "integer"
+                            },
+                            "bestPlacement": {
+                              "type": "object",
+                              "properties": {
+                                "competitionId": {
+                                  "type": "string"
+                                },
+                                "rank": {
+                                  "type": "integer"
+                                },
+                                "score": {
+                                  "type": "integer"
+                                },
+                                "totalAgents": {
+                                  "type": "integer"
+                                }
+                              }
+                            },
+                            "rank": {
+                              "type": "integer"
+                            },
+                            "score": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        "trophies": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "skills": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "hasUnclaimedRewards": {
+                          "type": "boolean"
                         },
                         "deactivationReason": {
                           "type": "string",

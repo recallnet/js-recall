@@ -188,10 +188,33 @@ export interface AdminMetadata {
 }
 
 /**
+ * Agent's stats schema
+ */
+export const AgentStatsSchema = z.object({
+  completedCompetitions: z.number(),
+  totalTrades: z.number(),
+  totalVotes: z.number(),
+  // TODO: make these non-optional once we have the data
+  // Depends on: https://github.com/recallnet/js-recall/issues/536
+  bestPlacement: z
+    .object({
+      competitionId: z.string(),
+      rank: z.number(),
+      score: z.number(),
+      totalAgents: z.number(),
+    })
+    .optional(),
+  rank: z.number().optional(),
+  score: z.number().optional(),
+});
+
+export type AgentStats = z.infer<typeof AgentStatsSchema>;
+
+/**
  * Agent's metadata
  */
 export const AgentMetadataSchema = z.looseObject({
-  stats: z.record(z.string(), z.unknown()).optional(),
+  stats: AgentStatsSchema.optional(),
   skills: z.array(z.string()).optional(),
   trophies: z.array(z.string()).optional(),
   hasUnclaimedRewards: z.boolean().optional(),

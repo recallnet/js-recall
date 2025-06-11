@@ -7,6 +7,7 @@ import { config } from "@/config/index.js";
 import * as agentNonceRepo from "@/database/repositories/agent-nonce-repository.js";
 import {
   count,
+  countAgentCompetitionsForStatus,
   countByName,
   countByWallet,
   create,
@@ -25,8 +26,13 @@ import {
   searchAgents,
   update,
 } from "@/database/repositories/agent-repository.js";
-import { getLatestPortfolioSnapshots } from "@/database/repositories/competition-repository.js";
+import {
+  findBestPlacementForAgent,
+  getLatestPortfolioSnapshots,
+} from "@/database/repositories/competition-repository.js";
+import { countAgentTrades } from "@/database/repositories/trade-repository.js";
 import { findByWalletAddress as findUserByWalletAddress } from "@/database/repositories/user-repository.js";
+import { countTotalVotesForAgent } from "@/database/repositories/vote-repository.js";
 import { InsertAgent, SelectAgent } from "@/database/schema/core/types.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import {
@@ -35,6 +41,7 @@ import {
   AgentPublic,
   AgentPublicSchema,
   AgentSearchParams,
+  AgentStats,
   ApiAuth,
   CompetitionAgentsParams,
   PagingParams,
@@ -182,6 +189,27 @@ export class AgentManager {
         error,
       );
       return [];
+    }
+  }
+
+  /**
+   * Get the best placement of an agent across all competitions
+   * @param agentId The agent ID
+   * @returns The agent best placement
+   */
+  async getAgentBestPlacement(agentId: string) {
+    try {
+      const bestPlacement = await findBestPlacementForAgent(agentId);
+      if (!bestPlacement) {
+        return null;
+      }
+      return bestPlacement;
+    } catch (error) {
+      console.error(
+        `[AgentManager] Error retrieving agent rank for ${agentId}:`,
+        error,
+      );
+      return null;
     }
   }
 
@@ -963,11 +991,28 @@ export class AgentManager {
    * @param sanitizedAgent The sanitized agent object
    * @returns The agent object with metrics attached
    */
-  attachAgentMetrics(
+  async attachAgentMetrics(
     sanitizedAgent: ReturnType<AgentManager["sanitizeAgent"]>,
   ) {
     const metadata = sanitizedAgent.metadata as AgentMetadata;
-    const stats = metadata?.stats || {};
+    const completedCompetitions = await countAgentCompetitionsForStatus(
+      sanitizedAgent.id,
+      ["ended"], // Only get completed competitions
+    );
+    const totalVotes = await countTotalVotesForAgent(sanitizedAgent.id);
+    const totalTrades = await countAgentTrades(sanitizedAgent.id);
+    const bestPlacement =
+      (await this.getAgentBestPlacement(sanitizedAgent.id)) || undefined;
+    const stats = {
+      completedCompetitions,
+      totalVotes,
+      totalTrades,
+      bestPlacement,
+    } as AgentStats;
+    // TODO: this needs the `agent_rank` and global rankings
+    // Depends on: https://github.com/recallnet/js-recall/issues/550
+    // stats.rank = 0;
+    // stats.score = 0;
 
     return {
       ...sanitizedAgent,

@@ -116,7 +116,19 @@ export interface Agent {
   email?: string;
   apiKey?: string; // Only included in certain admin responses
   metadata?: AgentMetadata;
-  stats?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  stats?: {
+    completedCompetitions: number;
+    totalTrades: number;
+    totalVotes: number;
+    bestPlacement?: {
+      competitionId: string;
+      position: number;
+      participants: number;
+    };
+    rank?: number;
+    score?: number;
+  };
+  skills?: string[];
   hasUnclaimedRewards?: boolean;
   trophies?: string[];
   status: ActorStatus;
@@ -124,6 +136,11 @@ export interface Agent {
   deactivationDate?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PublicAgentResponse {
+  success: true;
+  agent: Agent;
 }
 
 export interface AgentsGetResponse {
@@ -322,11 +339,11 @@ export interface Competition {
     totalTrades: number;
     totalAgents: number;
     totalVolume: number;
+    totalVotes: number;
     uniqueTokens: number;
   };
   // Vote-related fields (only present for authenticated users)
   votingEnabled?: boolean;
-  totalVotes?: number;
   userVotingInfo?: CompetitionVotingState;
 }
 

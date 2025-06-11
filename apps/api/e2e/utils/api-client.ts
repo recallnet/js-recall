@@ -38,6 +38,7 @@ import {
   PortfolioResponse,
   PriceHistoryResponse,
   PriceResponse,
+  PublicAgentResponse,
   QuoteResponse,
   ResetApiKeyResponse,
   SpecificChain,
@@ -649,6 +650,21 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get admin agent");
+    }
+  }
+
+  /**
+   * Get specific agent details (admin only)
+   * @param agentId ID of the agent to retrieve
+   */
+  async getPublicAgent(
+    agentId: string,
+  ): Promise<PublicAgentResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(`/api/agents/${agentId}`);
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get public agent");
     }
   }
 
