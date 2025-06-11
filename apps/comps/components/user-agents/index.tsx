@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import React from "react";
 import { FaAward, FaTrophy } from "react-icons/fa";
 
 import { displayAddress } from "@recallnet/address-utils/display";
@@ -16,11 +15,10 @@ import {
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import { cn } from "@recallnet/ui2/lib/utils";
 
+import BigNumberDisplay from "@/components/bignumber";
+import MirrorImage from "@/components/mirror-image";
 import { useUserAgents } from "@/hooks/useAgents";
 import { Agent } from "@/types";
-
-import BigNumberDisplay from "../bignumber";
-import MirrorImage from "../mirror-image";
 
 export default function UserAgentsSection() {
   const { data: agentsData, isLoading } = useUserAgents();

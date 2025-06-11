@@ -27,11 +27,13 @@ import {
 } from "@recallnet/ui2/components/table";
 
 import { AgentCompetition, PaginationResponse } from "@/types";
+import { formatPercentage } from "@/utils/format";
 
 import { RankBadge } from "./rank-badge";
 
 export interface AgentsTableProps {
   agents: AgentCompetition[];
+  totalVotes: number;
   onFilterChange: (filter: string) => void;
   onSortChange: (sort: string) => void;
   onLoadMore: () => void;
@@ -41,6 +43,7 @@ export interface AgentsTableProps {
 
 export const AgentsTable: React.FC<AgentsTableProps> = ({
   agents,
+  totalVotes,
   onFilterChange,
   onSortChange,
   onLoadMore,
@@ -154,10 +157,14 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       {
         id: "votes",
         header: () => "Votes",
-        cell: () => (
+        cell: ({ row }) => (
           <div className="flex flex-col items-end">
-            <span className="text-secondary-foreground font-semibold">0</span>
-            <span className="text-xs text-slate-400">(0%)</span>
+            <span className="text-secondary-foreground font-semibold">
+              {row.original.voteCount}
+            </span>
+            <span className="text-xs text-slate-400">
+              ({formatPercentage(row.original.voteCount, totalVotes)})
+            </span>
           </div>
         ),
         enableSorting: false,
@@ -178,7 +185,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         size: 70,
       },
     ],
-    [],
+    [totalVotes],
   );
 
   const table = useReactTable({
@@ -338,12 +345,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       </div>
       {hasMore && (
         <div className="mt-4 flex justify-center">
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-slate-600 bg-transparent text-white hover:bg-slate-800"
-            onClick={onLoadMore}
-          >
+          <Button variant="outline" size="sm" onClick={onLoadMore}>
             Show More
           </Button>
         </div>

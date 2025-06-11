@@ -48,6 +48,20 @@ export interface Competition {
   endDate: string | null;
   createdAt: string;
   updatedAt: string;
+  stats: {
+    totalTrades: number;
+    totalAgents: number;
+    totalVolume: number;
+    uniqueTokens: number;
+  };
+  totalVotes: number;
+  votingEnabled: boolean;
+  userVotingInfo: {
+    canVote: boolean;
+    info: {
+      hasVoted: boolean;
+    };
+  };
 }
 
 export interface CompetitionResponse {
@@ -64,4 +78,9 @@ export interface CompetitionsMetadata {
 export interface CompetitionsResponse {
   pagination: PaginationResponse;
   competitions: Competition[];
+}
+
+export interface JoinCompetitionResponse {
+  success: boolean;
+  message: string;
 }

@@ -1,39 +1,35 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import React, { useEffect } from "react";
+import React, { Suspense, useEffect } from "react";
 
 import { AuthGuard } from "@/components/auth-guard";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import ProfileSkeleton from "@/components/profile-skeleton";
-import UserAgentsSection from "@/components/user-agents";
-import UserInfoSection from "@/components/user-info";
+import { UpdateProfile } from "@/components/update-profile";
 import { useUserSession } from "@/hooks/useAuth";
 import { useUpdateProfile } from "@/hooks/useProfile";
+import { useRedirectTo } from "@/hooks/useRedirectTo";
 import { UpdateProfileRequest } from "@/types/profile";
 
-export default function ProfilePage() {
-  const { user, isProfileUpdated } = useUserSession();
-  const router = useRouter();
+function UpdateProfileView() {
   const updateProfile = useUpdateProfile();
+  const { isProfileUpdated } = useUserSession();
+  const { redirect } = useRedirectTo("/profile");
 
   useEffect(() => {
-    if (!isProfileUpdated) {
-      router.push("/profile/update");
+    if (isProfileUpdated) {
+      redirect();
     }
-  }, [isProfileUpdated, router]);
+  }, [isProfileUpdated, redirect]);
 
   const handleUpdateProfile = async (data: UpdateProfileRequest) => {
     try {
       await updateProfile.mutateAsync(data);
+      redirect();
     } catch (error) {
       console.error("Failed to update profile:", error);
     }
   };
-
-  if (!user) {
-    return <ProfileSkeleton />;
-  }
 
   return (
     <AuthGuard skeleton={<ProfileSkeleton />}>
@@ -43,8 +39,15 @@ export default function ProfilePage() {
           { label: "USER PROFILE" },
         ]}
       />
-      <UserInfoSection user={user} onSave={handleUpdateProfile} />
-      <UserAgentsSection />
+      <UpdateProfile onSubmit={handleUpdateProfile} />
     </AuthGuard>
+  );
+}
+
+export default function UpdateProfilePage() {
+  return (
+    <Suspense fallback={<ProfileSkeleton />}>
+      <UpdateProfileView />
+    </Suspense>
   );
 }
