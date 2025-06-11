@@ -64,6 +64,13 @@
       "when": 1749646942299,
       "tag": "0008_previous_scarecrow",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1749650902314,
+      "tag": "0009_lush_the_hunter",
+      "breakpoints": true
     }
   ]
 }
