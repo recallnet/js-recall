@@ -1,4 +1,4 @@
-
+import { Button } from "@recallnet/ui2/components/button";
 import {
   SortState,
   SortableTableHeader,
@@ -9,11 +9,10 @@ import {
   TableHeader,
   TableRow,
 } from "@recallnet/ui2/components/table";
-import {cn} from "@recallnet/ui2/lib/utils";
-import {Button} from "@recallnet/ui2/components/button";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import {Competition, CompetitionStatus} from "@/types";
-import {Hexagon} from "@/components/hexagon";
+import { Hexagon } from "@/components/hexagon";
+import { Competition, CompetitionStatus } from "@/types";
 
 export function CompetitionTable({
   competitions,
@@ -24,7 +23,6 @@ export function CompetitionTable({
   handleSortChange: (field: string) => void;
   sortState: Record<string, SortState>;
 }) {
-
   return (
     <div className="overflow-hidden rounded border border-gray-800">
       <Table>
@@ -78,18 +76,18 @@ export function CompetitionTable({
               const compStatus =
                 comp.status === CompetitionStatus.Active
                   ? {
-                    text: "On-going",
-                    style: "border-green-500 text-green-500",
-                  }
+                      text: "On-going",
+                      style: "border-green-500 text-green-500",
+                    }
                   : comp.status === CompetitionStatus.Pending
                     ? {
-                      text: "Upcoming",
-                      style: "border-blue-500 text-blue-500",
-                    }
+                        text: "Upcoming",
+                        style: "border-blue-500 text-blue-500",
+                      }
                     : {
-                      text: "Complete",
-                      style: "border-gray-500 text-gray-500",
-                    };
+                        text: "Complete",
+                        style: "border-gray-500 text-gray-500",
+                      };
 
               return (
                 <TableRow key={i} className="grid grid-cols-8">
@@ -165,4 +163,4 @@ export function CompetitionTable({
   );
 }
 
-export default CompetitionTable
+export default CompetitionTable;
