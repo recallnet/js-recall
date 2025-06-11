@@ -1,11 +1,11 @@
 "use client";
 
-import {AwardIcon, ExternalLink, Trophy} from "lucide-react";
+import { AwardIcon, ExternalLink, Trophy } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-import {Button} from "@recallnet/ui2/components/button";
-import {Skeleton} from "@recallnet/ui2/components/skeleton";
+import { Button } from "@recallnet/ui2/components/button";
+import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import {
   SortableTableHeader,
   Table,
@@ -15,9 +15,9 @@ import {
   TableHeader,
   TableRow,
 } from "@recallnet/ui2/components/table";
-import {cn} from "@recallnet/ui2/lib/utils";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import {LeaderboardAgent} from "@/types/agent";
+import { LeaderboardAgent } from "@/types/agent";
 
 const emptyAgent: (i: number) => LeaderboardAgent = (i: number) => ({
   id: i.toString(),

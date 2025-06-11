@@ -1,7 +1,11 @@
-import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+<<<<<<< HEAD
 import {ApiClient} from "@/lib/api-client";
 import {useUser} from "@/state/atoms";
+=======
+import { ApiClient } from "@/lib/api-client";
+>>>>>>> bcc2719 (feat: agent profile api key and share modal)
 import {
   AgentApiKeyResponse,
   AgentsResponse,
@@ -58,6 +62,20 @@ export const useAgentApiKey = (agentId: string) =>
   });
 
 /**
+ * Hook to fetch agents with pagination and filtering
+ * @param params Query parameters for agents endpoint
+ * @returns Query result with agents data
+ */
+export const useAgentApiKey = (agentId: string) =>
+  useQuery({
+    queryKey: ["agent", "api-key", agentId],
+    queryFn: async (): Promise<AgentApiKeyResponse> => {
+      return apiClient.getAgentApiKey(agentId);
+    },
+    placeholderData: (prev) => prev,
+  });
+
+/**
  * Hook to update agents
  * @param body Body fields to update
  * @returns
@@ -70,7 +88,7 @@ export const useUpdateAgent = () => {
     },
     onSuccess: () => {
       // Invalidate profile query to get updated data
-      queryClient.invalidateQueries({queryKey: ["agent"]});
+      queryClient.invalidateQueries({ queryKey: ["agent"] });
     },
   });
 };

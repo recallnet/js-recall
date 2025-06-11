@@ -1,4 +1,4 @@
-import {useCopyToClipboard} from "@uidotdev/usehooks";
+import { useCopyToClipboard } from "@uidotdev/usehooks";
 import {
   CopyIcon,
   EyeIcon,
@@ -6,15 +6,15 @@ import {
   KeyIcon,
   WalletIcon,
 } from "lucide-react";
-import {useState} from "react";
+import { useState } from "react";
 
-import {Tooltip} from "@recallnet/ui2/components/tooltip";
-import {cn} from "@recallnet/ui2/lib/utils";
+import { Tooltip } from "@recallnet/ui2/components/tooltip";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import {useAgentApiKey} from "@/hooks";
-import {Agent} from "@/types";
+import { useAgentApiKey } from "@/hooks";
+import { Agent } from "@/types";
 
-import {Clipboard} from "../clipboard";
+import { Clipboard } from "../clipboard";
 
 export const AgentInfo = ({
   agent,
@@ -25,7 +25,7 @@ export const AgentInfo = ({
 }) => {
   const [copiedText, copyToClipboard] = useCopyToClipboard();
   const [showWalletAddress, setShowWalletAddress] = useState(false);
-  const {data: apiKey, isLoading} = useAgentApiKey(agent.id);
+  const { data: apiKey, isLoading } = useAgentApiKey(agent.id);
 
   const handleCopy = async (text: string) => {
     copyToClipboard(text);
@@ -89,4 +89,3 @@ export const AgentInfo = ({
 };
 
 export default AgentInfo;
-

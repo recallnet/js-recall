@@ -1,7 +1,7 @@
-import {useAtom} from "jotai";
-import {atomWithStorage} from "jotai/utils";
+import { useAtom } from "jotai";
+import { atomWithStorage } from "jotai/utils";
 
-import {User} from "@/types/profile";
+import { User } from "@/types/profile";
 
 export type AuthStatus =
   | "unauthenticated" // No active session
