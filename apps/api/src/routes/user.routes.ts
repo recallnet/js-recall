@@ -321,9 +321,11 @@ export function configureUserRoutes(
    *                             properties:
    *                               competitionId:
    *                                 type: string
-   *                               position:
+   *                               rank:
    *                                 type: integer
-   *                               participants:
+   *                               score:
+   *                                 type: number
+   *                               totalAgents:
    *                                 type: integer
    *                           rank:
    *                             type: integer
@@ -433,9 +435,11 @@ export function configureUserRoutes(
    *                           properties:
    *                             competitionId:
    *                               type: string
-   *                             position:
+   *                             rank:
    *                               type: integer
-   *                             participants:
+   *                             score:
+   *                               type: integer
+   *                             totalAgents:
    *                               type: integer
    *                         rank:
    *                           type: integer

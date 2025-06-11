@@ -199,8 +199,9 @@ export const AgentStatsSchema = z.object({
   bestPlacement: z
     .object({
       competitionId: z.string(),
-      position: z.number(),
-      participants: z.number(),
+      rank: z.number(),
+      score: z.number(),
+      totalAgents: z.number(),
     })
     .optional(),
   rank: z.number().optional(),

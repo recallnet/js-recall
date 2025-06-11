@@ -179,9 +179,11 @@ export function configureAgentsRoutes(
    *                           properties:
    *                             competitionId:
    *                               type: string
-   *                             position:
+   *                             rank:
    *                               type: integer
-   *                             participants:
+   *                             score:
+   *                               type: integer
+   *                             totalAgents:
    *                               type: integer
    *                         rank:
    *                           type: integer

@@ -138,6 +138,11 @@ export interface Agent {
   updatedAt: string;
 }
 
+export interface PublicAgentResponse {
+  success: true;
+  agent: Agent;
+}
+
 export interface AgentsGetResponse {
   success: true;
   agents: Agent[];
