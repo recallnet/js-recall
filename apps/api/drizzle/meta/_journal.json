@@ -57,6 +57,13 @@
       "when": 1749585012925,
       "tag": "0007_complete_blindfold",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1749646942299,
+      "tag": "0008_previous_scarecrow",
+      "breakpoints": true
     }
   ]
 }

@@ -172,12 +172,16 @@ export function makeUserController(services: ServiceRegistry) {
         );
 
         // Remove sensitive fields, but add back the email and deactivation since the user should see them
-        const sanitizedAgents = agents.map((agent) => ({
-          ...services.agentManager.sanitizeAgent(agent),
-          email: agent.email,
-          deactivationReason: agent.deactivationReason,
-          deactivationDate: agent.deactivationDate,
-        }));
+        const sanitizedAgents = await Promise.all(
+          agents.map(async (agent) => ({
+            ...(await services.agentManager.attachAgentMetrics(
+              services.agentManager.sanitizeAgent(agent),
+            )),
+            email: agent.email,
+            deactivationReason: agent.deactivationReason,
+            deactivationDate: agent.deactivationDate,
+          })),
+        );
 
         res.status(200).json({
           success: true,
@@ -219,8 +223,9 @@ export function makeUserController(services: ServiceRegistry) {
         }
 
         // Remove sensitive fields, but add back the email and deactivation since the user should see them
-        const sanitizedAgent = {
-          ...services.agentManager.sanitizeAgent(agent),
+        const sanitizedAgent = services.agentManager.sanitizeAgent(agent);
+        const computedAgent = {
+          ...(await services.agentManager.attachAgentMetrics(sanitizedAgent)),
           email: agent.email,
           deactivationReason: agent.deactivationReason,
           deactivationDate: agent.deactivationDate,
@@ -228,7 +233,7 @@ export function makeUserController(services: ServiceRegistry) {
 
         res.status(200).json({
           success: true,
-          agent: sanitizedAgent,
+          agent: computedAgent,
         });
       } catch (error) {
         next(error);

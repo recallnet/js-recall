@@ -1,6 +1,7 @@
 import {
   AnyColumn,
   and,
+  asc,
   desc,
   count as drizzleCount,
   eq,
@@ -13,6 +14,7 @@ import { db } from "@/database/db.js";
 import {
   competitionAgents,
   competitions,
+  competitionsLeaderboard,
 } from "@/database/schema/core/defs.js";
 import { InsertCompetition } from "@/database/schema/core/types.js";
 import {
@@ -524,6 +526,43 @@ export async function findByStatus({
     return { competitions: competitionResults, total };
   } catch (error) {
     console.error("[CompetitionRepository] Error in findByStatus:", error);
+    throw error;
+  }
+}
+
+/**
+ * Find the best placement of an agent across all competitions
+ * @param agentId The agent ID
+ * @returns The agent best placement
+ */
+export async function findBestPlacementForAgent(agentId: string) {
+  try {
+    const [result] = await db
+      .select()
+      .from(competitionsLeaderboard)
+      .where(eq(competitionsLeaderboard.agentId, agentId))
+      .orderBy(asc(competitionsLeaderboard.rank))
+      .limit(1);
+    if (!result) {
+      return result;
+    }
+    const agents = await db
+      .select({
+        count: drizzleCount(),
+      })
+      .from(competitionAgents)
+      .where(eq(competitionAgents.competitionId, result.competitionId));
+    return {
+      competitionId: result.competitionId,
+      rank: result.rank,
+      score: result.score,
+      totalAgents: agents[0]?.count ?? 0,
+    };
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in findAgentBestCompetitionRank:",
+      error,
+    );
     throw error;
   }
 }

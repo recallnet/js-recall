@@ -1,8 +1,10 @@
 import {
+  bigint,
   boolean,
   customType,
   index,
   integer,
+  numeric,
   pgTable,
   primaryKey,
   serial,
@@ -10,6 +12,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  varchar,
 } from "drizzle-orm/pg-core";
 
 import { agents, users } from "@/database/schema/core/defs.js";
@@ -32,15 +35,19 @@ export const stakes = pgTable(
   "stakes",
   {
     id: uuid().primaryKey().notNull(),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    amount: tokenAmount("amount").notNull(),
+    tokenId: bigint("token_id", { mode: "bigint" }).notNull(),
+    amount: numeric("amount", { precision: 78, scale: 0 }).notNull(),
     address: blockchainAddress("address").notNull(),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    withdrawalAt: timestamp("withdrawal_at", { withTimezone: true }),
-    withdrawnAt: timestamp("withdrawn_at", { withTimezone: true }),
-    epochCreated: uuid("epoch_created").references(() => epochs.id),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+    epochCreated: uuid("epoch_created")
+      .notNull()
+      .references(() => epochs.id),
+    stakedAt: timestamp("staked_at").notNull(),
+    canUnstakeAfter: timestamp("can_unstake_after").notNull(),
+    unstakedAt: timestamp("unstaked_at"),
+    canWithdrawAfter: timestamp("can_withdraw_after"),
+    withdrawnAt: timestamp("withdrawn_at"),
+    relockedAt: timestamp("relocked_at"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -81,13 +88,14 @@ export const voteAssignments = pgTable(
 export const votesAvailable = pgTable(
   "votes_available",
   {
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+    address: varchar("address", { length: 50 }).notNull(),
     epoch: uuid()
       .notNull()
       .references(() => epochs.id, { onDelete: "cascade" }),
     amount: tokenAmount("amount").notNull(),
+    blockNumber: bigint("block_number", { mode: "bigint" }),
+    transactionHash: varchar("transaction_hash", { length: 66 }),
+    logIndex: integer("log_index"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -97,7 +105,7 @@ export const votesAvailable = pgTable(
   },
   (table) => [
     primaryKey({
-      columns: [table.userId, table.epoch],
+      columns: [table.address, table.epoch],
       name: "votes_available_pkey",
     }),
   ],

@@ -2,6 +2,7 @@ import axios from "axios";
 import { privateKeyToAccount } from "viem/accounts";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { config } from "@/config/index.js";
 import { ApiClient } from "@/e2e/utils/api-client.js";
 import {
   AdminAgentsListResponse,
@@ -12,6 +13,7 @@ import {
   Competition,
   CreateCompetitionResponse,
   PriceResponse,
+  PublicAgentResponse,
   ResetApiKeyResponse,
   UserRegistrationResponse,
 } from "@/e2e/utils/api-types.js";
@@ -932,6 +934,12 @@ describe("Agent API", () => {
     expect(Array.isArray(agentData.agent.trophies)).toBe(true);
     expect(agentData.agent.hasUnclaimedRewards).toBe(false);
     expect(agentData.agent.stats).toBeDefined();
+    expect(agentData.agent.stats?.completedCompetitions).toBe(0);
+    expect(agentData.agent.stats?.totalTrades).toBe(0);
+    expect(agentData.agent.stats?.totalVotes).toBe(0);
+    expect(agentData.agent.stats?.bestPlacement).toBeUndefined();
+    expect(agentData.agent.stats?.rank).toBeUndefined();
+    expect(agentData.agent.stats?.score).toBeUndefined();
     // Validate owner information is included
     expect(agentData.owner).toBeDefined();
     expect(agentData.owner.id).toBeDefined();
@@ -1749,5 +1757,64 @@ Purpose: WALLET_VERIFICATION`;
       const nextDate = new Date(agentsByDate[i + 1]?.createdAt || "");
       expect(currentDate.getTime()).toBeGreaterThanOrEqual(nextDate.getTime());
     }
+  });
+
+  test("agent has stats in agent profile", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+    expect(adminLoginSuccess).toBe(true);
+
+    // Step 1: Register a user and agent
+    const agentName = `Test Agent ${Date.now()}`;
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName,
+      });
+    expect(agent).toBeDefined();
+    expect(agent.id).toBeDefined();
+
+    // Step 2: Create and start first competition with the agent
+    const firstCompName = `Competition 1 ${Date.now()}`;
+    const createCompResult = await adminClient.createCompetition(
+      firstCompName,
+      "First test competition",
+    );
+    expect(createCompResult.success).toBe(true);
+    const createCompResponse = createCompResult as CreateCompetitionResponse;
+    const firstCompetitionId = createCompResponse.competition.id;
+
+    // Start the first competition with our agent
+    await adminClient.startExistingCompetition(firstCompetitionId, [agent.id]);
+    await agentClient.executeTrade({
+      fromToken: config.specificChainTokens.eth.usdc,
+      toToken: "0x0000000000000000000000000000000000000000", // Effectively make agent 1 lose
+      amount: "100",
+      reason: "Test trade",
+    });
+    await adminClient.endCompetition(firstCompetitionId);
+
+    // Get agent profile info and check skills
+    const agentProfile = (await agentClient.getPublicAgent(
+      agent.id,
+    )) as PublicAgentResponse;
+    expect(agentProfile.success).toBe(true);
+    expect(agentProfile.agent.stats?.completedCompetitions).toBeGreaterThan(0);
+    expect(agentProfile.agent.stats?.totalTrades).toBeGreaterThan(0);
+    expect(agentProfile.agent.stats?.totalVotes).toBe(0);
+    // TODO: once `competitions_leaderboard` is implemented, we can test this
+    // expect(agentProfile.agent.stats?.bestPlacement).toBeDefined();
+    // expect(agentProfile.agent.stats?.bestPlacement?.competitionId).toBe(
+    //   firstCompetitionId,
+    // );
+    // expect(agentProfile.agent.stats?.bestPlacement?.position).toBe(1);
+    // expect(
+    //   agentProfile.agent.stats?.bestPlacement?.participants,
+    // ).toBeGreaterThan(0);
+    // TODO: this needs the `agent_rank` and global rankings
+    // Depends on: https://github.com/recallnet/js-recall/issues/550
+    // expect(agentProfile.agent.stats?.rank).toBeGreaterThan(0);
+    // expect(agentProfile.agent.stats?.score).toBeGreaterThan(0);
   });
 });

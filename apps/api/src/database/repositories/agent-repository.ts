@@ -20,6 +20,7 @@ import {
   AgentCompetitionsParams,
   AgentSearchParams,
   CompetitionAgentsParams,
+  CompetitionStatus,
   PagingParams,
 } from "@/types/index.js";
 
@@ -676,6 +677,34 @@ export async function countByName(name: string): Promise<number> {
     return result?.count ?? 0;
   } catch (error) {
     console.error("[AgentRepository] Error in countByName:", error);
+    throw error;
+  }
+}
+
+/**
+ * Count competitions for a given agent
+ */
+export async function countAgentCompetitionsForStatus(
+  agentId: string,
+  status: CompetitionStatus[],
+): Promise<number> {
+  try {
+    const [result] = await db
+      .select({ count: drizzleCount() })
+      .from(competitionAgents)
+      .leftJoin(
+        competitions,
+        eq(competitionAgents.competitionId, competitions.id),
+      )
+      .where(
+        and(
+          eq(competitionAgents.agentId, agentId),
+          inArray(competitions.status, status),
+        ),
+      );
+    return result?.count ?? 0;
+  } catch (error) {
+    console.error("[AgentRepository] Error in countAgentCompetitions:", error);
     throw error;
   }
 }
