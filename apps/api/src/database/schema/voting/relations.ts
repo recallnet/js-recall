@@ -59,8 +59,8 @@ export const voteAssignmentsRelations = relations(
 
 export const votesAvailableRelations = relations(votesAvailable, ({ one }) => ({
   user: one(users, {
-    fields: [votesAvailable.userId],
-    references: [users.id],
+    fields: [votesAvailable.address],
+    references: [users.walletAddress],
   }),
   epoch: one(epochs, {
     fields: [votesAvailable.epoch],
