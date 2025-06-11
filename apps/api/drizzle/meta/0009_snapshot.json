@@ -1,5 +1,5 @@
 {
-  "id": "f4569b9a-7772-4f9c-aa7a-00dee3cbb7ee",
+  "id": "8ab45d06-27fa-47d1-92a5-7a7f912ce8a0",
   "prevId": "6ae6ba11-3b17-4d6b-9423-a5ba377c8fe9",
   "version": "7",
   "dialect": "postgresql",
@@ -2729,9 +2729,9 @@
           "primaryKey": true,
           "notNull": true
         },
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
+        "token_id": {
+          "name": "token_id",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": true
         },
@@ -2747,27 +2747,51 @@
           "primaryKey": false,
           "notNull": true
         },
-        "expires_at": {
-          "name": "expires_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "withdrawal_at": {
-          "name": "withdrawal_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "withdrawn_at": {
-          "name": "withdrawn_at",
-          "type": "timestamp with time zone",
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "epoch_created": {
           "name": "epoch_created",
           "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "staked_at": {
+          "name": "staked_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "can_unstake_after": {
+          "name": "can_unstake_after",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unstaked_at": {
+          "name": "unstaked_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "can_withdraw_after": {
+          "name": "can_withdraw_after",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "withdrawn_at": {
+          "name": "withdrawn_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "relocked_at": {
+          "name": "relocked_at",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
@@ -2971,9 +2995,9 @@
       "name": "votes_available",
       "schema": "",
       "columns": {
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
+        "address": {
+          "name": "address",
+          "type": "varchar(50)",
           "primaryKey": false,
           "notNull": true
         },
@@ -2988,6 +3012,24 @@
           "type": "numeric(78, 0)",
           "primaryKey": false,
           "notNull": true
+        },
+        "block_number": {
+          "name": "block_number",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "transaction_hash": {
+          "name": "transaction_hash",
+          "type": "varchar(66)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "log_index": {
+          "name": "log_index",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -3006,19 +3048,6 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "votes_available_user_id_users_id_fk": {
-          "name": "votes_available_user_id_users_id_fk",
-          "tableFrom": "votes_available",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
         "votes_available_epoch_epochs_id_fk": {
           "name": "votes_available_epoch_epochs_id_fk",
           "tableFrom": "votes_available",
@@ -3037,7 +3066,7 @@
         "votes_available_pkey": {
           "name": "votes_available_pkey",
           "columns": [
-            "user_id",
+            "address",
             "epoch"
           ]
         }
