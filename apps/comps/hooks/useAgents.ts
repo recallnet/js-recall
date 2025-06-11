@@ -1,6 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 
-import { ApiClient } from "@/lib/api-client";
+import {ApiClient} from "@/lib/api-client";
 import {
   AgentsResponse,
   GetAgentsParams,
@@ -52,7 +52,7 @@ export const useUpdateAgent = () => {
     },
     onSuccess: () => {
       // Invalidate profile query to get updated data
-      queryClient.invalidateQueries({ queryKey: ["agents"] });
+      queryClient.invalidateQueries({queryKey: ["agent"]});
     },
   });
 };

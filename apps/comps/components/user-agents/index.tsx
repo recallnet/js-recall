@@ -2,26 +2,29 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FaAward, FaTrophy } from "react-icons/fa";
+import React from "react";
+import {FaAward, FaTrophy} from "react-icons/fa";
 
-import { displayAddress } from "@recallnet/address-utils/display";
-import { Button } from "@recallnet/ui2/components/button";
+import {displayAddress} from "@recallnet/address-utils/display";
+import {Button} from "@recallnet/ui2/components/button";
 import Card from "@recallnet/ui2/components/card";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@recallnet/ui2/components/collapsible";
-import { Skeleton } from "@recallnet/ui2/components/skeleton";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {Skeleton} from "@recallnet/ui2/components/skeleton";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import BigNumberDisplay from "@/components/bignumber";
-import MirrorImage from "@/components/mirror-image";
-import { useUserAgents } from "@/hooks/useAgents";
-import { Agent } from "@/types";
+import {useUserAgents} from "@/hooks/useAgents";
+import {Agent} from "@/types";
+
+import BigNumberDisplay from "../bignumber";
+import MirrorImage from "../mirror-image";
+import {useRouter} from "next/navigation";
 
 export default function UserAgentsSection() {
-  const { data: agentsData, isLoading } = useUserAgents();
+  const {data: agentsData, isLoading} = useUserAgents();
   const agents = isLoading || !agentsData?.agents ? [] : agentsData.agents;
   const nAgents = agents.length;
   let agentList = <NoAgents />;
@@ -45,11 +48,11 @@ export default function UserAgentsSection() {
         >
           {isLoading
             ? new Array(nAgents)
-                .fill(0)
-                .map((_, i) => <AgentCard key={i} agent={i} isLoading />)
+              .fill(0)
+              .map((_, i) => <AgentCard key={i} agent={i} isLoading />)
             : agents.map((agent, i) => (
-                <AgentCard key={i} agent={agent} isLoading={false} />
-              ))}
+              <AgentCard key={i} agent={agent} isLoading={false} />
+            ))}
         </div>
         <AgentsSummary
           isLoading={isLoading}
@@ -130,7 +133,7 @@ const AgentsSummary: React.FunctionComponent<{
   best: string;
   completedComps: number;
   highest: number;
-}> = ({ best, nAgents = 0, isLoading, completedComps, highest, className }) => {
+}> = ({best, nAgents = 0, isLoading, completedComps, highest, className}) => {
   const borderRules = "sm:border-l-1";
 
   return (
@@ -223,6 +226,7 @@ export const AgentCard: React.FunctionComponent<AgentCardProps> = ({
   isLoading,
 }) => {
   const size = "min-w-70 max-w-80 md:max-w-70 h-95";
+  const router = useRouter()
 
   if (isLoading || typeof agent === "number")
     return <Skeleton className={size} />;
@@ -231,9 +235,10 @@ export const AgentCard: React.FunctionComponent<AgentCardProps> = ({
     <Card
       corner="top-left"
       cropSize={50}
+      onClick={() => router.push(`/agents/${agent.id}`)}
       className={cn(
         className,
-        `${size} flex flex-col items-center justify-center gap-2 bg-gray-800 px-5`,
+        `${size} flex flex-col items-center justify-center gap-2 bg-gray-800 px-5 cursor-pointer`,
       )}
     >
       <span className="text-gray-400">
