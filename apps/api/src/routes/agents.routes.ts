@@ -231,6 +231,38 @@ export function configureAgentsRoutes(
    *           type: string
    *         required: true
    *         description: The UUID of the agent
+   *       - in: query
+   *         name: sort
+   *         schema:
+   *           type: string
+   *         required: false
+   *         description: |
+   *           Optional field(s) to sort by. Supports single or multiple fields separated by commas.
+   *           Prefix with '-' for descending order (e.g., '-name' or 'name,-createdAt').
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: string
+   *         required: false
+   *         description: Optional field to choose max size of result set (default value is `10`)
+   *       - in: query
+   *         name: offset
+   *         schema:
+   *           type: string
+   *         required: false
+   *         description: Optional field to choose offset of result set (default value is `0`)
+   *       - in: query
+   *         name: status
+   *         schema:
+   *           type: string
+   *         required: false
+   *         description: Optional field to filter results to only include competitions with given status.
+   *       - in: query
+   *         name: claimed
+   *         schema:
+   *           type: boolean
+   *         required: false
+   *         description: Optional field to filter results to only include competitions with rewards that have been claimed if value is true, or unclaimed if value is false.
    *     responses:
    *       200:
    *         description: Competitions retrieved successfully

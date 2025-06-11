@@ -9,7 +9,6 @@ import { getLatestPrice } from "@/database/repositories/price-repository.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
-  AgentCompetitionsParamsSchema,
   AgentFilterSchema,
   AuthenticatedRequest,
   PagingParamsSchema,
@@ -17,6 +16,12 @@ import {
   UpdateAgentProfileSchema,
   UuidSchema,
 } from "@/types/index.js";
+
+import {
+  ensureAgentCompetitionFilters,
+  ensurePaging,
+  ensureUuid,
+} from "./request-helpers.js";
 
 /**
  * Agent Controller
@@ -490,32 +495,25 @@ export function makeAgentController(services: ServiceRegistry) {
      */
     async getCompetitions(req: Request, res: Response, next: NextFunction) {
       try {
-        const { success: idSuccess, data: agentId } = UuidSchema.safeParse(
-          req.params.agentId,
-        );
-        if (!idSuccess) {
-          throw new ApiError(400, "Invalid agent ID");
-        }
-        const { success: paramsSuccess, data: params } =
-          AgentCompetitionsParamsSchema.safeParse(req.query);
-        if (!paramsSuccess) {
-          throw new ApiError(400, "Invalid sort filter page params");
-        }
+        const agentId = ensureUuid(req.params.agentId);
+        const filters = ensureAgentCompetitionFilters(req);
+        const paging = ensurePaging(req);
 
         // Fetch all competitions associated with the agent
         const results = await services.agentManager.getCompetitionsForAgent(
           agentId,
-          params,
+          filters,
+          paging,
         );
 
         res.status(200).json({
           success: true,
           competitions: results.competitions,
           pagination: {
-            limit: params.limit,
-            offset: params.offset,
+            limit: paging.limit,
+            offset: paging.offset,
             total: results.total,
-            hasMore: params.limit + params.offset < results.total,
+            hasMore: paging.limit + paging.offset < results.total,
           },
         });
       } catch (error) {
