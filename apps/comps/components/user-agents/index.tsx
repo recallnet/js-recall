@@ -2,29 +2,29 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import {useRouter} from "next/navigation";
 import React from "react";
-import { FaAward, FaTrophy } from "react-icons/fa";
+import {FaAward, FaTrophy} from "react-icons/fa";
 
-import { displayAddress } from "@recallnet/address-utils/display";
-import { Button } from "@recallnet/ui2/components/button";
+import {displayAddress} from "@recallnet/address-utils/display";
+import {Button} from "@recallnet/ui2/components/button";
 import Card from "@recallnet/ui2/components/card";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@recallnet/ui2/components/collapsible";
-import { Skeleton } from "@recallnet/ui2/components/skeleton";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {Skeleton} from "@recallnet/ui2/components/skeleton";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { useUserAgents } from "@/hooks/useAgents";
-import { Agent } from "@/types";
+import {useUserAgents} from "@/hooks/useAgents";
+import {Agent} from "@/types";
 
 import BigNumberDisplay from "../bignumber";
 import MirrorImage from "../mirror-image";
 
 export default function UserAgentsSection() {
-  const { data: agentsData, isLoading } = useUserAgents();
+  const {data: agentsData, isLoading} = useUserAgents();
   const agents = isLoading || !agentsData?.agents ? [] : agentsData.agents;
   const nAgents = agents.length;
   let agentList = <NoAgents />;
@@ -48,11 +48,11 @@ export default function UserAgentsSection() {
         >
           {isLoading
             ? new Array(nAgents)
-                .fill(0)
-                .map((_, i) => <AgentCard key={i} agent={i} isLoading />)
+              .fill(0)
+              .map((_, i) => <AgentCard key={i} agent={i} isLoading />)
             : agents.map((agent, i) => (
-                <AgentCard key={i} agent={agent} isLoading={false} />
-              ))}
+              <AgentCard key={i} agent={agent} isLoading={false} />
+            ))}
         </div>
         <AgentsSummary
           isLoading={isLoading}
@@ -133,7 +133,7 @@ const AgentsSummary: React.FunctionComponent<{
   best: string;
   completedComps: number;
   highest: number;
-}> = ({ best, nAgents = 0, isLoading, completedComps, highest, className }) => {
+}> = ({best, nAgents = 0, isLoading, completedComps, highest, className}) => {
   const borderRules = "sm:border-l-1";
 
   return (

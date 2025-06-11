@@ -1,10 +1,10 @@
 "use client";
 
-import { Share2Icon } from "lucide-react";
-import { SquarePen } from "lucide-react";
+import {Share2Icon} from "lucide-react";
+import {SquarePen} from "lucide-react";
 import React from "react";
 
-import { Button } from "@recallnet/ui2/components/button";
+import {Button} from "@recallnet/ui2/components/button";
 import Card from "@recallnet/ui2/components/card";
 import {
   Dialog,
@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
-import { Input } from "@recallnet/ui2/components/input";
+import {Input} from "@recallnet/ui2/components/input";
 import {
   SortState,
   SortableTableHeader,
@@ -31,17 +31,17 @@ import {
   TabsList,
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { BreadcrumbNav } from "@/components/breadcrumb-nav";
-import { Hexagon } from "@/components/hexagon";
+import {BreadcrumbNav} from "@/components/breadcrumb-nav";
+import {Hexagon} from "@/components/hexagon";
 import MirrorImage from "@/components/mirror-image";
-import { useUpdateAgent } from "@/hooks";
-import { useAgent } from "@/hooks/useAgent";
-import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
-import { Competition, CompetitionStatus, CrossChainTradingType } from "@/types";
+import {useUpdateAgent} from "@/hooks";
+import {useAgent} from "@/hooks/useAgent";
+import {useAgentCompetitions} from "@/hooks/useAgentCompetitions";
+import {Competition, CompetitionStatus, CrossChainTradingType} from "@/types";
 
-export default function UserAgent({ id }: { id: string }) {
+export default function UserAgent({id}: {id: string}) {
   const {
     data: agent,
     isLoading: isLoadingAgent,
@@ -71,15 +71,15 @@ export default function UserAgent({ id }: { id: string }) {
   const skills = agent?.stats?.skills || [];
   const trophies = (agent?.metadata?.trophies || []) as string[];
 
-  const { data: agentCompetitionsData, isLoading: isLoadingCompetitions } =
-    useAgentCompetitions(id, { sort: sortString });
+  const {data: agentCompetitionsData, isLoading: isLoadingCompetitions} =
+    useAgentCompetitions(id, {sort: sortString});
 
   const handleSortChange = React.useCallback((field: string) => {
     setSorted((sort) => {
       const cur = sort[field];
       const nxt =
         !cur || cur == "none" ? "asc" : cur == "asc" ? "desc" : "none";
-      return { ...sort, [field]: nxt };
+      return {...sort, [field]: nxt};
     });
   }, []);
 
@@ -114,9 +114,9 @@ export default function UserAgent({ id }: { id: string }) {
     <>
       <BreadcrumbNav
         items={[
-          { label: "RECALL", href: "/" },
-          { label: "AGENTS", href: "/competitions" },
-          { label: agent.name, href: "/" },
+          {label: "RECALL", href: "/"},
+          {label: "AGENTS", href: "/competitions"},
+          {label: agent.name, href: "/"},
         ]}
       />
 
@@ -236,9 +236,11 @@ export default function UserAgent({ id }: { id: string }) {
         </div>
         <div className="xs:grid col-span-3 row-start-2 mt-8 hidden grid-rows-2 border-b border-l border-r border-t border-gray-700 text-sm lg:col-start-3 lg:row-start-1 lg:mt-0 lg:h-[65vh] lg:grid-rows-3 lg:border-l-0">
           <div className="flex flex-col items-start gap-2 border-b border-gray-700 p-6 lg:row-span-2">
-            <span className="font-semibold uppercase text-gray-400">
-              agent description
-            </span>
+            <EditAgentField title='Agent Profile' value={agent.description || ''} onSave={handleSaveChange('description')}>
+              <span className="font-semibold uppercase text-gray-400">
+                agent description
+              </span>
+            </EditAgentField>
             <span className="text-gray-400">
               {agent.description || "No profile created yet"}
             </span>
@@ -250,13 +252,13 @@ export default function UserAgent({ id }: { id: string }) {
             <div className="mt-3 flex flex-wrap gap-3 text-gray-400">
               {skills.length > 0
                 ? skills.map((skill, index) => (
-                    <span
-                      key={index}
-                      className="rounded border border-gray-700 px-2 py-1 text-white"
-                    >
-                      {skill}
-                    </span>
-                  ))
+                  <span
+                    key={index}
+                    className="rounded border border-gray-700 px-2 py-1 text-white"
+                  >
+                    {skill}
+                  </span>
+                ))
                 : "This agent hasnt showcased skills yet."}
             </div>
           </div>
@@ -436,18 +438,18 @@ function CompetitionTable({
               const compStatus =
                 comp.status === CompetitionStatus.Active
                   ? {
-                      text: "On-going",
-                      style: "border-green-500 text-green-500",
-                    }
+                    text: "On-going",
+                    style: "border-green-500 text-green-500",
+                  }
                   : comp.status === CompetitionStatus.Pending
                     ? {
-                        text: "Upcoming",
-                        style: "border-blue-500 text-blue-500",
-                      }
+                      text: "Upcoming",
+                      style: "border-blue-500 text-blue-500",
+                    }
                     : {
-                        text: "Complete",
-                        style: "border-gray-500 text-gray-500",
-                      };
+                      text: "Complete",
+                      style: "border-gray-500 text-gray-500",
+                    };
 
               return (
                 <TableRow key={i} className="grid grid-cols-8">
