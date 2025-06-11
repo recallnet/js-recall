@@ -13,7 +13,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
   content,
   position = 'top',
   className = '',
-  tooltipClassName = ''
+  tooltipClassName = '',
 }) => {
   const getPositionClasses = () => {
     switch (position) {
@@ -31,27 +31,27 @@ export const Tooltip: React.FC<TooltipProps> = ({
   };
 
   return (
-    <div className={`group relative inline-block ${className}`}>
-      {children}
+    <div className={`relative inline-block group ${className}`}>
+      <span className="inline-block">{children}</span>
       <div
         className={`
           absolute
           ${getPositionClasses()}
           min-w-max
           p-2
-          bg-gray-800
+          rounded-xl
+          bg-gray-900
           text-white
           text-sm
-          rounded-md
           shadow-lg
           opacity-0
-          group-hover:opacity-100
           invisible
+          group-hover:opacity-100
           group-hover:visible
-          transition-opacity
+          transition-all
           duration-200
-          pointer-events-none /* Allows clicks to pass through when hidden */
-          z-50 /* Ensure it appears above other content */
+          pointer-events-none
+          z-50
           ${tooltipClassName}
         `}
       >
@@ -62,3 +62,4 @@ export const Tooltip: React.FC<TooltipProps> = ({
 };
 
 export default Tooltip;
+
