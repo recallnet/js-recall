@@ -2,8 +2,9 @@ import { and, count as drizzleCount, eq, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
 import { db } from "@/database/db.js";
-import { votes } from "@/database/schema/core/defs.js";
+import { competitions, votes } from "@/database/schema/core/defs.js";
 import { InsertVote, SelectVote } from "@/database/schema/core/types.js";
+import { COMPETITION_STATUS } from "@/types/index.js";
 
 /**
  * Vote Repository
@@ -308,6 +309,31 @@ export async function count(): Promise<number> {
     return result?.count || 0;
   } catch (error) {
     console.error("[VoteRepository] Error in count:", error);
+    throw error;
+  }
+}
+
+/**
+ * Count the total number of votes an agent received across all finished competitions
+ * @param agentId The agent ID
+ * @returns Total number of votes for the agent across all finished competitions
+ */
+export async function countTotalVotesByAgent(agentId: string): Promise<number> {
+  try {
+    const [result] = await db
+      .select({ count: drizzleCount() })
+      .from(votes)
+      .innerJoin(competitions, eq(votes.competitionId, competitions.id))
+      .where(
+        and(
+          eq(votes.agentId, agentId),
+          eq(competitions.status, COMPETITION_STATUS.ENDED),
+        ),
+      );
+
+    return result?.count || 0;
+  } catch (error) {
+    console.error("[VoteRepository] Error in countTotalVotesByAgent:", error);
     throw error;
   }
 }

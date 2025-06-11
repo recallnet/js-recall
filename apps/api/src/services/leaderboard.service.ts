@@ -1,26 +1,21 @@
+import { getAllAgentRanks } from "@/database/repositories/agentrank-repository.js";
+import { countAgentCompetitions } from "@/database/repositories/competition-repository.js";
 import { getGlobalStats } from "@/database/repositories/leaderboard-repository.js";
+import { countTotalVotesByAgent } from "@/database/repositories/vote-repository.js";
 import {
-  AgentMetadata,
-  CompetitionAgentsParamsSchema,
   CompetitionType,
   LeaderboardAgent,
   LeaderboardParams,
 } from "@/types/index.js";
 
 import { AgentManager } from "./agent-manager.service.js";
-import { CompetitionManager } from "./competition-manager.service.js";
-import { VoteManager } from "./vote-manager.service.js";
 
 /**
  * Leaderboard Service
  * Handles global leaderboard data with sorting and pagination across all competitions
  */
 export class LeaderboardService {
-  constructor(
-    private agentManager: AgentManager,
-    private competitionManager: CompetitionManager,
-    private voteManager: VoteManager,
-  ) {}
+  constructor(private agentManager: AgentManager) {}
 
   /**
    * Get global leaderboard data with sorting and pagination
@@ -31,15 +26,12 @@ export class LeaderboardService {
     try {
       // Get global stats (existing functionality)
       const stats = await getGlobalStats(params.type);
-
       if (stats.competitionIds.length === 0) {
         return this.emptyLeaderboardResponse(params);
       }
 
       // Calculate global metrics for all agents across competitions
-      const globalMetrics = await this.calculateGlobalMetrics(
-        stats.competitionIds,
-      );
+      const globalMetrics = await this.calculateGlobalMetrics();
 
       // Sort agents based on requested sort field
       const sortedAgents = this.sortAgents(
@@ -83,145 +75,31 @@ export class LeaderboardService {
 
   /**
    * Calculate global metrics for all agents across multiple competitions
-   * @param competitionIds List of competition IDs to process
    * @returns Map of agent ID to accumulated metrics
    */
-  private async calculateGlobalMetrics(
-    competitionIds: string[],
-  ): Promise<Map<string, LeaderboardAgent>> {
+  private async calculateGlobalMetrics(): Promise<
+    Map<string, LeaderboardAgent>
+  > {
     const agentMetricsMap = new Map<string, LeaderboardAgent>();
 
-    // Process each competition
-    await Promise.all(
-      competitionIds.map(async (competitionId) => {
-        try {
-          // CRITICAL: Use pagination loop instead of hardcoded limits
-          const allAgents =
-            await this.getAllAgentsForCompetition(competitionId);
+    // TODO: this is not scalable. It should be paginated.
+    const agentRanks = await getAllAgentRanks();
 
-          // Get leaderboard data for scoring
-          const leaderboard =
-            await this.competitionManager.getLeaderboard(competitionId);
-          const leaderboardMap = new Map(
-            leaderboard.map((entry, index) => [
-              entry.agentId,
-              { score: entry.value, position: index + 1 },
-            ]),
-          );
+    for (const { id, name, score } of agentRanks) {
+      const voteCount = await countTotalVotesByAgent(id);
+      const numCompetitions = await countAgentCompetitions(id);
 
-          // Get vote counts for this competition
-          const voteCounts =
-            await this.voteManager.getVoteCountsByCompetition(competitionId);
-
-          // Process each agent's metrics
-          await Promise.all(
-            allAgents.map(async (agent) => {
-              try {
-                const leaderboardData = leaderboardMap.get(agent.id);
-                const score = leaderboardData?.score ?? 0;
-
-                const metrics =
-                  await this.competitionManager.calculateAgentMetrics(
-                    competitionId,
-                    agent.id,
-                    score,
-                  );
-
-                // Get or initialize agent's accumulated metrics
-                const existingMetrics = agentMetricsMap.get(agent.id) || {
-                  id: agent.id,
-                  name: agent.name,
-                  description: agent.description || undefined,
-                  imageUrl: agent.imageUrl || undefined,
-                  metadata: agent.metadata as AgentMetadata,
-                  rank: 0, // Will be calculated after sorting
-                  score: 0,
-                  numCompetitions: 0,
-                  voteCount: 0,
-                };
-
-                // Get vote count for current agent in current competition
-                const currentCompetitionVoteCount =
-                  voteCounts.get(agent.id) ?? 0;
-
-                // Accumulate metrics across competitions
-                agentMetricsMap.set(agent.id, {
-                  ...existingMetrics,
-                  score: existingMetrics.score + metrics.pnlPercent,
-                  numCompetitions: existingMetrics.numCompetitions + 1,
-                  voteCount:
-                    existingMetrics.voteCount + currentCompetitionVoteCount,
-                });
-              } catch (error) {
-                console.warn(
-                  `[LeaderboardService] Failed to process agent ${agent.id} in competition ${competitionId}:`,
-                  error,
-                );
-                // Continue processing other agents
-              }
-            }),
-          );
-        } catch (error) {
-          console.warn(
-            `[LeaderboardService] Failed to process competition ${competitionId}:`,
-            error,
-          );
-          // Continue processing other competitions
-        }
-      }),
-    );
-
-    return agentMetricsMap;
-  }
-
-  /**
-   * Get all agents for a competition with automatic pagination
-   * @param competitionId Competition ID
-   * @returns Array of all agents in the competition
-   */
-  private async getAllAgentsForCompetition(competitionId: string) {
-    const allAgents = [];
-    let offset = 0;
-    const limit = 100; // Smaller batch size for memory efficiency
-
-    while (true) {
-      try {
-        const compsQueryParams = CompetitionAgentsParamsSchema.parse({
-          limit,
-          offset,
-        });
-
-        const { agents, total } =
-          await this.agentManager.getAgentsForCompetition(
-            competitionId,
-            compsQueryParams,
-          );
-
-        if (agents.length === 0) break;
-
-        allAgents.push(...agents);
-        offset += limit;
-
-        // Safety check to prevent infinite loops
-        if (allAgents.length > 10000) {
-          console.warn(
-            `[LeaderboardService] Too many agents in competition ${competitionId}, limiting to first 10000`,
-          );
-          break;
-        }
-
-        // If we've fetched all agents, break
-        if (allAgents.length >= total) break;
-      } catch (error) {
-        console.error(
-          `[LeaderboardService] Failed to fetch agents for competition ${competitionId} at offset ${offset}:`,
-          error,
-        );
-        break;
-      }
+      agentMetricsMap.set(id, {
+        rank: 0,
+        id: id,
+        name: name,
+        score: score,
+        numCompetitions: numCompetitions,
+        voteCount: voteCount,
+      });
     }
 
-    return allAgents;
+    return agentMetricsMap;
   }
 
   /**

@@ -461,6 +461,37 @@ export async function count() {
 }
 
 /**
+ * Count the number of finished competitions an agent has participated in
+ * @param agentId The ID of the agent
+ * @returns The number of finished competitions the agent has participated in
+ */
+export async function countAgentCompetitions(agentId: string): Promise<number> {
+  try {
+    const [result] = await db
+      .select({ count: drizzleCount() })
+      .from(competitionAgents)
+      .innerJoin(
+        competitions,
+        eq(competitionAgents.competitionId, competitions.id),
+      )
+      .where(
+        and(
+          eq(competitionAgents.agentId, agentId),
+          eq(competitions.status, COMPETITION_STATUS.ENDED),
+        ),
+      );
+
+    return result?.count ?? 0;
+  } catch (error) {
+    console.error(
+      `[CompetitionRepository] Error counting competitions for agent ${agentId}:`,
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
  * Find competitions by status, or default to all competitions if no status is provided
  * @param status Competition status
  * @param params Pagination parameters

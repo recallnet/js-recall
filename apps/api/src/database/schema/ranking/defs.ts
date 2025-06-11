@@ -1,9 +1,10 @@
 import {
+  doublePrecision,
   foreignKey,
   index,
-  numeric,
   pgTable,
   timestamp,
+  unique,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -17,12 +18,9 @@ export const agentRank = pgTable(
   {
     id: uuid().primaryKey().notNull(),
     agentId: uuid("agent_id").notNull(),
-    mu: numeric("mu", { precision: 6, scale: 2, mode: "number" }).notNull(),
-    sigma: numeric("sigma", {
-      precision: 6,
-      scale: 2,
-      mode: "number",
-    }).notNull(),
+    mu: doublePrecision("mu").notNull(),
+    sigma: doublePrecision("sigma").notNull(),
+    ordinal: doublePrecision("ordinal").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -32,6 +30,7 @@ export const agentRank = pgTable(
   },
   (table) => [
     index("idx_agent_rank_agent_id").on(table.agentId),
+    unique("unique_agent_rank_agent_id").on(table.agentId),
     foreignKey({
       columns: [table.agentId],
       foreignColumns: [agents.id],
@@ -49,12 +48,9 @@ export const agentRankHistory = pgTable(
     id: uuid().primaryKey().notNull(),
     agentId: uuid("agent_id").notNull(),
     competitionId: uuid("competition_id").notNull(),
-    mu: numeric("mu", { precision: 6, scale: 2, mode: "number" }).notNull(),
-    sigma: numeric("sigma", {
-      precision: 6,
-      scale: 2,
-      mode: "number",
-    }).notNull(),
+    mu: doublePrecision("mu").notNull(),
+    sigma: doublePrecision("sigma").notNull(),
+    ordinal: doublePrecision("ordinal").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
