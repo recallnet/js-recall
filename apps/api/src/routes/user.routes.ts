@@ -307,6 +307,38 @@ export function configureUserRoutes(
    *                       status:
    *                         type: string
    *                         enum: [active, inactive, suspended, deleted]
+   *                       stats:
+   *                         type: object
+   *                         properties:
+   *                           completedCompetitions:
+   *                             type: integer
+   *                           totalTrades:
+   *                             type: integer
+   *                           totalVotes:
+   *                             type: integer
+   *                           bestPlacement:
+   *                             type: object
+   *                             properties:
+   *                               competitionId:
+   *                                 type: string
+   *                               position:
+   *                                 type: integer
+   *                               participants:
+   *                                 type: integer
+   *                           rank:
+   *                             type: integer
+   *                           score:
+   *                             type: number
+   *                       trophies:
+   *                         type: array
+   *                         items:
+   *                           type: string
+   *                       skills:
+   *                         type: array
+   *                         items:
+   *                           type: string
+   *                       hasUnclaimedRewards:
+   *                         type: boolean
    *                       deactivationReason:
    *                         type: string
    *                         nullable: true
@@ -387,6 +419,38 @@ export function configureUserRoutes(
    *                     status:
    *                       type: string
    *                       enum: [active, inactive, suspended, deleted]
+   *                     stats:
+   *                       type: object
+   *                       properties:
+   *                         completedCompetitions:
+   *                           type: integer
+   *                         totalTrades:
+   *                           type: integer
+   *                         totalVotes:
+   *                           type: integer
+   *                         bestPlacement:
+   *                           type: object
+   *                           properties:
+   *                             competitionId:
+   *                               type: string
+   *                             position:
+   *                               type: integer
+   *                             participants:
+   *                               type: integer
+   *                         rank:
+   *                           type: integer
+   *                         score:
+   *                           type: number
+   *                     trophies:
+   *                       type: array
+   *                       items:
+   *                         type: string
+   *                     skills:
+   *                       type: array
+   *                       items:
+   *                         type: string
+   *                     hasUnclaimedRewards:
+   *                       type: boolean
    *                     deactivationReason:
    *                       type: string
    *                       nullable: true

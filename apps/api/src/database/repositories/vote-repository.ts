@@ -157,6 +157,28 @@ export async function countVotesByAgent(
 }
 
 /**
+ * Count votes for a specific agent in a competition
+ * @param agentId The agent ID
+ * @param competitionId The competition ID
+ * @returns Number of votes for the agent in the competition
+ */
+export async function countTotalVotesForAgent(
+  agentId: string,
+): Promise<number> {
+  try {
+    const [result] = await db
+      .select({ count: drizzleCount() })
+      .from(votes)
+      .where(eq(votes.agentId, agentId));
+
+    return result?.count || 0;
+  } catch (error) {
+    console.error("[VoteRepository] Error in countTotalVotesForAgent:", error);
+    throw error;
+  }
+}
+
+/**
  * Get vote counts for all agents in a competition
  * @param competitionId The competition ID
  * @returns Array of objects with agentId and voteCount

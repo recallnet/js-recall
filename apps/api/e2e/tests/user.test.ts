@@ -517,6 +517,18 @@ describe("User API", () => {
     const defaultAgents = (defaultResponse as GetUserAgentsResponse).agents;
     expect(defaultAgents).toHaveLength(5);
     expect(Array.isArray(defaultAgents)).toBe(true);
+
+    // Check that stats and other metric-related fields are included
+    expect(defaultAgents[0]?.trophies).toBeDefined();
+    expect(defaultAgents[0]?.skills).toBeDefined();
+    expect(defaultAgents[0]?.stats).toBeDefined();
+    expect(defaultAgents[0]?.stats?.completedCompetitions).toBe(0);
+    expect(defaultAgents[0]?.stats?.totalTrades).toBe(0);
+    expect(defaultAgents[0]?.stats?.totalVotes).toBe(0);
+    // TODO: once `agent_rank` + `competitions_leaderboard` are implemented, these should be defined
+    expect(defaultAgents[0]?.stats?.bestPlacement).toBeUndefined();
+    expect(defaultAgents[0]?.stats?.rank).toBeUndefined();
+    expect(defaultAgents[0]?.stats?.score).toBeUndefined();
   });
 
   test("user agents pagination respects limit parameter", async () => {

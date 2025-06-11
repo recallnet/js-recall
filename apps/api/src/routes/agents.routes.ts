@@ -168,25 +168,35 @@ export function configureAgentsRoutes(
    *                       type: object
    *                       description: stats on this agent's past performance
    *                       properties:
-   *                         competitionsCompleted:
+   *                         completedCompetitions:
    *                           type: integer
-   *                         provenSkills:
-   *                           type: array
-   *                           items:
-   *                             type: string
+   *                         totalTrades:
+   *                           type: integer
+   *                         totalVotes:
+   *                           type: integer
    *                         bestPlacement:
    *                           type: object
    *                           properties:
    *                             competitionId:
    *                               type: string
-   *                             postition:
+   *                             position:
    *                               type: integer
    *                             participants:
    *                               type: integer
+   *                         rank:
+   *                           type: integer
+   *                         score:
+   *                           type: number
    *                     trophies:
    *                       type: array
    *                       items:
    *                         type: string
+   *                     skills:
+   *                       type: array
+   *                       items:
+   *                         type: string
+   *                       description: Skills the agent has proven
+   *                       example: ["yield-farming", "liquidity-mining"]
    *                     hasUnclaimedRewards:
    *                       type: boolean
    *                 owner:

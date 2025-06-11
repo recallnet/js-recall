@@ -932,6 +932,13 @@ describe("Agent API", () => {
     expect(Array.isArray(agentData.agent.trophies)).toBe(true);
     expect(agentData.agent.hasUnclaimedRewards).toBe(false);
     expect(agentData.agent.stats).toBeDefined();
+    expect(agentData.agent.stats?.completedCompetitions).toBe(0);
+    expect(agentData.agent.stats?.totalTrades).toBe(0);
+    expect(agentData.agent.stats?.totalVotes).toBe(0);
+    // TODO: once `agent_rank` + `competitions_leaderboard` are implemented, these should be defined
+    expect(agentData.agent.stats?.bestPlacement).toBeUndefined();
+    expect(agentData.agent.stats?.rank).toBeUndefined();
+    expect(agentData.agent.stats?.score).toBeUndefined();
     // Validate owner information is included
     expect(agentData.owner).toBeDefined();
     expect(agentData.owner.id).toBeDefined();

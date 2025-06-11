@@ -116,7 +116,19 @@ export interface Agent {
   email?: string;
   apiKey?: string; // Only included in certain admin responses
   metadata?: AgentMetadata;
-  stats?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  stats?: {
+    completedCompetitions: number;
+    totalTrades: number;
+    totalVotes: number;
+    bestPlacement?: {
+      competitionId: string;
+      position: number;
+      participants: number;
+    };
+    rank?: number;
+    score?: number;
+  };
+  skills?: string[];
   hasUnclaimedRewards?: boolean;
   trophies?: string[];
   status: ActorStatus;
