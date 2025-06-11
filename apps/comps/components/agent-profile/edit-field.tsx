@@ -1,6 +1,7 @@
-import React, {useState, useEffect} from "react";
-import {SquarePen} from "lucide-react";
-import {Button} from "@recallnet/ui2/components/button";
+import { SquarePen } from "lucide-react";
+import React, { useEffect, useState } from "react";
+
+import { Button } from "@recallnet/ui2/components/button";
 import {
   Dialog,
   DialogClose,
@@ -9,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
-import {Input} from "@recallnet/ui2/components/input";
+import { Input } from "@recallnet/ui2/components/input";
 
 interface EditAgentFieldProps {
   title: string;
@@ -42,10 +43,10 @@ export const EditAgentField: React.FC<EditAgentFieldProps> = ({
 
   return (
     <>
-      <div className="flex gap-3 items-center w-fit">
+      <div className="flex w-fit items-center gap-3">
         {children}
         <div
-          className="top-2 right-2 cursor-pointer bg-card/70 rounded-full p-1"
+          className="bg-card/70 right-2 top-2 cursor-pointer rounded-full p-1"
           onClick={() => setDialogOpen(true)}
         >
           <SquarePen className="text-secondary-foreground" size={18} />
@@ -68,12 +69,12 @@ export const EditAgentField: React.FC<EditAgentFieldProps> = ({
           </div>
           <DialogFooter className="mt-4">
             <DialogClose asChild>
-              <Button className="bg-transparent border border-gray-700 rounded text-gray-300 hover:bg-gray-900">
+              <Button className="rounded border border-gray-700 bg-transparent text-gray-300 hover:bg-gray-900">
                 Cancel
               </Button>
             </DialogClose>
             <Button
-              className="bg-white text-black hover:bg-gray-200 rounded"
+              className="rounded bg-white text-black hover:bg-gray-200"
               onClick={handleSave}
               disabled={!inputValue || inputValue === localValue}
             >
@@ -85,4 +86,3 @@ export const EditAgentField: React.FC<EditAgentFieldProps> = ({
     </>
   );
 };
-

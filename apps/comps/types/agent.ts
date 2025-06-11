@@ -148,3 +148,10 @@ export interface UpdateAgentResponse {
   agent: Agent & { apiKey: string };
   success: boolean;
 }
+
+export interface AgentApiKeyResponse {
+  success: boolean;
+  agentId: string;
+  agentName: string;
+  apiKey: string;
+}
