@@ -760,7 +760,7 @@ describe("Voting API", () => {
 
       // Verify vote-related fields are present
       expect(competitionDetails.votingEnabled).toBeDefined();
-      expect(competitionDetails.totalVotes).toBeDefined();
+      expect(competitionDetails.stats?.totalVotes).toBeDefined();
       expect(competitionDetails.userVotingInfo).toBeDefined();
 
       // Verify user has voted

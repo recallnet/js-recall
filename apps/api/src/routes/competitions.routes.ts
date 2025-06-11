@@ -640,6 +640,9 @@ export function configureCompetitionsRoutes(
    *                         totalVolume:
    *                           type: number
    *                           description: Total volume of trades in USD
+   *                         totalVotes:
+   *                           type: integer
+   *                           description: Total number of votes cast in this competition
    *                         uniqueTokens:
    *                           type: number
    *                           description: Total number of unique tokens traded
@@ -651,9 +654,6 @@ export function configureCompetitionsRoutes(
    *                       type: string
    *                       format: date-time
    *                       description: When the competition was last updated
-   *                     totalVotes:
-   *                       type: integer
-   *                       description: Total number of votes cast in this competition
    *                     votingEnabled:
    *                       type: boolean
    *                       description: Whether voting is enabled for this competition (only present for authenticated users)

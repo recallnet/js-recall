@@ -322,11 +322,11 @@ export interface Competition {
     totalTrades: number;
     totalAgents: number;
     totalVolume: number;
+    totalVotes: number;
     uniqueTokens: number;
   };
   // Vote-related fields (only present for authenticated users)
   votingEnabled?: boolean;
-  totalVotes?: number;
   userVotingInfo?: CompetitionVotingState;
 }
 
