@@ -49,6 +49,7 @@ export const useUserAgents = (params: GetAgentsParams = {}) => {
   export const useUpdateAgent = () => {
     const queryClient = useQueryClient();
 
+<<<<<<< HEAD
     return useMutation({
       mutationFn: async (data: UpdateAgentRequest) => {
         return apiClient.updateAgent(data);
@@ -59,3 +60,15 @@ export const useUserAgents = (params: GetAgentsParams = {}) => {
       },
     });
   };
+=======
+  return useMutation({
+    mutationFn: async (data: UpdateAgentRequest) => {
+      return apiClient.updateAgent(data);
+    },
+    onSuccess: () => {
+      // Invalidate profile query to get updated data
+      queryClient.invalidateQueries({queryKey: ["agent"]});
+    },
+  });
+};
+>>>>>>> db3960d (feat: edit fields)

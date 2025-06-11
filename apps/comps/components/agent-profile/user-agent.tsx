@@ -21,6 +21,8 @@ import {CompetitionStatus} from "@/types";
 import {CompetitionTable} from "./comps-table";
 import {AgentImage} from "./agent-image";
 import {AgentInfo} from "./agent-info";
+import {useUpdateAgent} from "@/hooks";
+import {EditAgentField} from "./edit-field";
 
 export default function UserAgent({id}: {id: string}) {
   const {
@@ -28,6 +30,7 @@ export default function UserAgent({id}: {id: string}) {
     isLoading: isLoadingAgent,
     error: agentError,
   } = useAgent(id);
+  const updateAgent = useUpdateAgent();
 
   const [selected, setSelected] = React.useState("all");
   const [sortState, setSorted] = React.useState(
@@ -58,6 +61,21 @@ export default function UserAgent({id}: {id: string}) {
     });
   }, []);
 
+  const handleSaveChange = (field: 'imageUrl' | 'description' | 'name') => async (value: unknown) => {
+    if (!agent) return;
+
+    try {
+      await updateAgent.mutateAsync({
+        agentId: agent.id,
+        params: {
+          [field]: value,
+        },
+      });
+    } catch (error) {
+      console.error("Failed to update agent:", error);
+    }
+  };
+
   if (isLoadingAgent || isLoadingCompetitions)
     return <div className="py-20 text-center">Loading agent data...</div>;
   if (agentError || !agent)
@@ -82,7 +100,7 @@ export default function UserAgent({id}: {id: string}) {
           <div className="flex w-full justify-end">
             <Share2Icon className="text-gray-600" size={30} />
           </div>
-          <AgentImage agent={agent} />
+          <AgentImage agentImage={agent?.imageUrl || "/agent-placeholder.png"} onSave={handleSaveChange('imageUrl')} />
           <span className="w-50 mt-20 text-center text-lg text-gray-400">
             Calm accumulation of elite assets.
           </span>
@@ -90,9 +108,11 @@ export default function UserAgent({id}: {id: string}) {
         <div className="flex-2 xs:col-span-2 xs:col-start-2 xs:row-start-1 xs:mt-0 xs:h-[65vh] col-span-3 row-start-2 mt-5 flex shrink flex-col border border-gray-700 lg:col-span-1 lg:col-start-2">
           <div className="grow border-b border-gray-700 p-8 flex flex-col justify-between">
             <div className="flex flex-col gap-5">
-              <h1 className="truncate text-4xl font-bold text-white">
-                {agent.name}
-              </h1>
+              <EditAgentField title='Agent Name' value={agent.name || ''} onSave={handleSaveChange('name')}>
+                <h1 className="truncate text-4xl font-bold text-white max-w-3/4">
+                  {agent.name}
+                </h1>
+              </EditAgentField>
               <div className="mt-8 flex w-full justify-start gap-3">
                 {trophies.length > 0 ? (
                   trophies.map((_: unknown, i: number) => (
@@ -141,9 +161,11 @@ export default function UserAgent({id}: {id: string}) {
         </div>
         <div className="xs:grid col-span-3 row-start-2 mt-8 hidden grid-rows-2 border-b border-l border-r border-t border-gray-700 text-sm lg:col-start-3 lg:row-start-1 lg:mt-0 lg:h-[65vh] lg:grid-rows-3 lg:border-l-0">
           <div className="flex flex-col items-start gap-2 border-b border-gray-700 p-6 lg:row-span-2">
-            <span className="font-semibold uppercase text-gray-400">
-              agent description
-            </span>
+            <EditAgentField title='Agent Profile' value={agent.description || ''} onSave={handleSaveChange('description')}>
+              <span className="font-semibold uppercase text-gray-400">
+                agent description
+              </span>
+            </EditAgentField>
             <span className="text-gray-400">
               {agent.description || "No profile created yet"}
             </span>
