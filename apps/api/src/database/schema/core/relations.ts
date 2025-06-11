@@ -1,6 +1,6 @@
 import { relations } from "drizzle-orm/relations";
 
-import { objectIndex } from "@/database/schema/sync/defs.js";
+import { objectIndex } from "@/database/schema/syncing/defs.js";
 import {
   stakes,
   voteAssignments,
