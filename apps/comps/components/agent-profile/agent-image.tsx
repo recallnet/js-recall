@@ -1,8 +1,7 @@
-
-import {SquarePen} from "lucide-react";
+import { SquarePen } from "lucide-react";
 import React from "react";
-import {Button} from "@recallnet/ui2/components/button";
 
+import { Button } from "@recallnet/ui2/components/button";
 import {
   Dialog,
   DialogClose,
@@ -11,18 +10,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
-import {Input} from "@recallnet/ui2/components/input";
+import { Input } from "@recallnet/ui2/components/input";
+
 import MirrorImage from "@/components/mirror-image";
 
-export const AgentImage = ({agentImage, onSave}: {agentImage: string; onSave: (imageUrl: string) => void}) => {
+export const AgentImage = ({
+  agentImage,
+  onSave,
+}: {
+  agentImage: string;
+  onSave: (imageUrl: string) => void;
+}) => {
   const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [image, setImage] = React.useState(
-    agentImage
-  );
+  const [image, setImage] = React.useState(agentImage);
   const [inputImage, setInputImage] = React.useState("");
 
   const handleSave = async () => {
-    onSave(inputImage)
+    onSave(inputImage);
     setImage(inputImage);
     setDialogOpen(false);
   };
@@ -35,17 +39,18 @@ export const AgentImage = ({agentImage, onSave}: {agentImage: string; onSave: (i
     <>
       <MirrorImage image={image} width={160} height={160}>
         <div
-          className="group absolute flex h-full w-full cursor-pointer flex-col justify-center overflow-hidden rounded-full opacity-0 transition-opacity duration-300 hover:opacity-100 bg-card/70 justify-end"
+          className="bg-card/70 group absolute flex h-full w-full cursor-pointer flex-col justify-end justify-center overflow-hidden rounded-full opacity-0 transition-opacity duration-300 hover:opacity-100"
           onClick={() => setDialogOpen(true)}
         >
-          <div
-            className="h-1/2 w-full translate-y-20 transition-all duration-700 group-hover:translate-y-0 flex flex-col items-center justify-start gap-1 bg-card px-3 pt-2"
-          >
+          <div className="bg-card flex h-1/2 w-full translate-y-20 flex-col items-center justify-start gap-1 px-3 pt-2 transition-all duration-700 group-hover:translate-y-0">
             <div className="flex items-center text-xs font-medium">
-              <SquarePen className="text-gray-500 mr-2 inline-block" size={17} />
+              <SquarePen
+                className="mr-2 inline-block text-gray-500"
+                size={17}
+              />
               <span>Picture URL</span>
             </div>
-            <span className="text-gray-500 text-xs">Public image</span>
+            <span className="text-xs text-gray-500">Public image</span>
           </div>
         </div>
       </MirrorImage>
@@ -70,10 +75,12 @@ export const AgentImage = ({agentImage, onSave}: {agentImage: string; onSave: (i
           </div>
           <DialogFooter className="mt-4">
             <DialogClose asChild>
-              <Button className='bg-transparent border border-gray-700 rounded text-gray-300 hover:bg-gray-900'>Cancel</Button>
+              <Button className="rounded border border-gray-700 bg-transparent text-gray-300 hover:bg-gray-900">
+                Cancel
+              </Button>
             </DialogClose>
             <Button
-              className="bg-white text-black hover:bg-gray-200 rounded"
+              className="rounded bg-white text-black hover:bg-gray-200"
               onClick={handleSave}
               disabled={!inputImage || inputImage === image}
             >
@@ -83,5 +90,5 @@ export const AgentImage = ({agentImage, onSave}: {agentImage: string; onSave: (i
         </DialogContent>
       </Dialog>
     </>
-  )
-}
+  );
+};

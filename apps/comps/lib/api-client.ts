@@ -1,5 +1,6 @@
 import {
   Agent,
+  AgentApiKeyResponse,
   AgentCompetitionResponse,
   AgentCompetitionsResponse,
   AgentsResponse,
@@ -197,6 +198,15 @@ export class ApiClient {
   async getUserAgents(params: GetAgentsParams = {}): Promise<AgentsResponse> {
     const queryParams = this.formatQueryParams(params);
     return this.request<AgentsResponse>(`/user/agents${queryParams}`);
+  }
+
+  /**
+   * Get agent api key
+   * @param params - Query parameters
+   * @returns Agents response
+   */
+  async getAgentApiKey(agentId: string): Promise<AgentApiKeyResponse> {
+    return this.request<AgentApiKeyResponse>(`/user/agents/${agentId}/api-key`);
   }
 
   /**
