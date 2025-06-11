@@ -1,0 +1,166 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import React from "react";
+
+import { Badge } from "@recallnet/ui2/components/badge";
+import { Card } from "@recallnet/ui2/components/card";
+import { Skeleton } from "@recallnet/ui2/components/skeleton";
+
+import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
+import { Competition, CompetitionStatus } from "@/types";
+
+import { RankBadge } from "./agents-table/rank-badge";
+import { CompetitionActions } from "./competition-actions";
+import { CompetitionStatusBanner } from "./competition-status-banner";
+import { formatCompetitionDates } from "./competition-utils";
+import { ParticipantsAvatars } from "./participants-avatars";
+
+interface FeaturedCompetitionProps {
+  competition: Competition;
+}
+
+export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
+  competition,
+}) => {
+  const { data: topLeaders, isLoading } = useCompetitionAgents(competition.id, {
+    limit: 5, // Get top 5 leaders
+  });
+
+  const duration = formatCompetitionDates(
+    competition.startDate,
+    competition.endDate,
+  );
+
+  return (
+    <Card className="bg-card w-full" cropSize={0}>
+      <CompetitionStatusBanner status={competition.status} />
+
+      <div className="flex flex-col gap-2 border-b p-6">
+        <Link
+          href={`/competitions/${competition.id}`}
+          className="group inline-block"
+        >
+          <h1 className="my-4 text-3xl font-bold group-hover:underline">
+            {competition.name}
+          </h1>
+        </Link>
+
+        <Badge variant="gray" className="mb-4 px-3 py-1 text-sm">
+          {competition.type}
+        </Badge>
+
+        <p className="text-secondary-foreground mb-8 max-w-3xl">
+          {competition.description}
+        </p>
+      </div>
+
+      <div className="flex gap-8 border-b">
+        <div className="w-full border-r p-6">
+          <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
+            Duration
+          </h3>
+          <p className="text-xl font-semibold">{duration}</p>
+        </div>
+        <div className="w-full p-6">
+          <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
+            Reward
+          </h3>
+          <p className="text-xl font-semibold">TBA</p>
+        </div>
+      </div>
+
+      <div className="flex gap-8">
+        <div className="w-full p-6">
+          <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
+            {competition.status === CompetitionStatus.Active
+              ? "Participants"
+              : "Pre-Registered"}
+          </h3>
+          <ParticipantsAvatars agents={topLeaders?.agents || []} />
+        </div>
+        <div className="w-full justify-items-end p-6">
+          <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
+            Your Agents
+          </h3>
+          <p className="text-xl font-semibold">N/A</p>
+        </div>
+      </div>
+
+      <div className="xs:block hidden">
+        {isLoading
+          ? Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex h-[64px] items-center justify-between rounded-lg bg-gray-900/50 p-3"
+              >
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-8 w-[62px] rounded-md" />
+                  <Skeleton className="h-6 w-8" />
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <Skeleton className="h-5 w-24" />
+                </div>
+                <div className="flex items-center gap-8">
+                  <Skeleton className="h-5 w-28" />
+                  <Skeleton className="h-5 w-24" />
+                </div>
+              </div>
+            ))
+          : topLeaders?.agents.map((agent) => (
+              <div
+                key={agent.id}
+                className="hover:bg-card flex items-center justify-between rounded-lg border-y bg-[#050507] p-3"
+              >
+                <Link href={`/agents/${agent.id}`}>
+                  <div className="flex items-center gap-3">
+                    <RankBadge position={agent.position} />
+                    <Image
+                      src={agent.imageUrl || "/agent-image.png"}
+                      alt={agent.name}
+                      width={40}
+                      height={40}
+                      className="rounded-full"
+                    />
+                    <span className="text-secondary-foreground font-semibold">
+                      {agent.name}
+                    </span>
+                  </div>
+                </Link>
+                <div className="flex items-center gap-8">
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-sm text-gray-400">P&L</span>
+                    <span
+                      className={`font-semibold ${
+                        agent.pnlPercent >= 0
+                          ? "text-green-400"
+                          : "text-red-400"
+                      }`}
+                    >
+                      ({agent.pnlPercent >= 0 ? "+" : ""}
+                      {agent.pnlPercent.toFixed(2)}%)
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-sm text-gray-400">VOTES</span>
+                    <span className="text-secondary-foreground font-semibold">
+                      {agent.voteCount.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+        {!isLoading && topLeaders?.agents.length === 0 && (
+          <div className="flex h-[64px] items-center justify-center rounded-lg bg-gray-900/50 p-3">
+            <p className="text-gray-400">No participants yet.</p>
+          </div>
+        )}
+      </div>
+
+      <CompetitionActions
+        competition={competition}
+        className="flex justify-center gap-4 p-6"
+      />
+    </Card>
+  );
+};

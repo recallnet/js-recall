@@ -31,7 +31,7 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
   return (
     <>
       <nav className="flex w-full justify-center border-b bg-black">
-        <div className="mx-auto flex w-full max-w-screen-lg items-center justify-between px-5 sm:px-20">
+        <div className="mx-auto flex w-full max-w-screen-lg items-center justify-between px-10 sm:px-20">
           <div className="flex items-center">
             {/* Logo */}
             <Link href="/" className="flex items-center border-x p-1">
@@ -45,7 +45,7 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
             </Link>
 
             {/* Inline nav items for lg+ */}
-            <div className="hidden sm:flex">
+            <div className="xs:flex hidden">
               {navItems.map((item) => {
                 const isActive = pathname.startsWith(item.href);
                 return (
@@ -58,7 +58,7 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
                     )}
                   >
                     <span
-                      className={`text-xs font-medium text-white transition-colors`}
+                      className={`font-mono text-xs font-medium tracking-widest text-white transition-colors`}
                     >
                       {item.label}
                     </span>
@@ -68,7 +68,7 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
             </div>
 
             {/* Dropdown trigger for <sm */}
-            <div className="sm:hidden">
+            <div className="xs:hidden">
               <DropdownMenu.Root open={open} onOpenChange={setOpen}>
                 <DropdownMenu.Trigger asChild>
                   <Button className="bg-transparent text-white hover:bg-transparent">
@@ -110,7 +110,7 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
         </div>
       </nav>
 
-      <div className="mx-auto flex w-full max-w-screen-lg justify-center px-5 pt-10 sm:px-20">
+      <div className="mx-auto flex w-full max-w-screen-lg justify-center px-10 pt-10 sm:px-20">
         {children}
       </div>
     </>

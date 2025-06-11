@@ -21,7 +21,7 @@ export const JoinSwarmSection: React.FC<JoinSwarmSectionProps> = ({
       <h2 className="mb-6 text-3xl font-bold md:text-4xl">Join the swarm</h2>
 
       <hr className="my-6" />
-      <div className="place-items-around grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="place-items-around xs:grid-cols-4 grid grid-cols-2 gap-4">
         {socialLinks.map((link) => (
           <SocialLinkCard
             className="min-w-40 2xl:w-80"

@@ -86,10 +86,10 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground font-mono tracking-wider;
+    @apply bg-background text-foreground font-sans tracking-wider;
   }
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-sans;
+  button {
+    @apply font-mono;
   }
   /* Added this because shadcn/ui removed button pointer behavior with Tailwind v4 */
   button:not([disabled]),

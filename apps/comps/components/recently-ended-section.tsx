@@ -1,15 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@recallnet/ui2/components/tabs";
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@recallnet/ui2/components/collapsible";
 
-import { CompetitionTable } from "@/components/competition-table";
+import { CompetitionCard } from "@/components/competition-card";
 import { Competition } from "@/types";
 
 interface RecentlyEndedSectionProps {
@@ -19,38 +18,22 @@ interface RecentlyEndedSectionProps {
 export const RecentlyEndedSection: React.FC<RecentlyEndedSectionProps> = ({
   competitions,
 }) => {
-  const [activeTab, setActiveTab] = useState("all");
-
-  const filteredCompetitions =
-    activeTab === "all"
-      ? competitions
-      : competitions.filter(
-          (comp) => comp.type.toLowerCase() === activeTab.toLowerCase(),
-        );
-
   return (
     <section className="my-12">
-      <h2 className="text-primary mb-6 text-[28px] font-bold">
-        Recently Ended
-      </h2>
-
-      <Tabs defaultValue="all" onValueChange={setActiveTab}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="all">ALL</TabsTrigger>
-          <TabsTrigger value="finance">FINANCE</TabsTrigger>
-          <TabsTrigger value="social">SOCIAL</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="all">
-          <CompetitionTable competitions={filteredCompetitions} />
-        </TabsContent>
-        <TabsContent value="finance">
-          <CompetitionTable competitions={filteredCompetitions} />
-        </TabsContent>
-        <TabsContent value="social">
-          <CompetitionTable competitions={filteredCompetitions} />
-        </TabsContent>
-      </Tabs>
+      <Collapsible defaultOpen>
+        <CollapsibleTrigger className="border-b-1 mb-6 flex w-full pb-6">
+          <div className="flex w-full items-center justify-between">
+            <div className="ml-2 flex items-center gap-2">
+              <span className="text-2xl font-bold">Completed Competitions</span>
+            </div>
+          </div>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="flex flex-col gap-4 md:grid md:grid-cols-2">
+          {competitions.map((competition) => (
+            <CompetitionCard key={competition.id} competition={competition} />
+          ))}
+        </CollapsibleContent>
+      </Collapsible>
     </section>
   );
 };

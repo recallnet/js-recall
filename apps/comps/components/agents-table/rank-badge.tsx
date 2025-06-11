@@ -21,8 +21,8 @@ export const RankBadge: React.FC<RankBadgeProps> = ({ position }) => {
   };
 
   return (
-    <span
-      className={`rounded px-2 py-2 text-center font-semibold ${getBackgroundColor()}`}
+    <div
+      className={`min-w-19 flex items-center justify-center rounded py-2 font-semibold ${getBackgroundColor()}`}
     >
       {position <= 3 ? (
         <AwardIcon
@@ -36,6 +36,6 @@ export const RankBadge: React.FC<RankBadgeProps> = ({ position }) => {
       ) : (
         position
       )}
-    </span>
+    </div>
   );
 };
