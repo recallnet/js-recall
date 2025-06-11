@@ -2,6 +2,8 @@ import * as coreDefs from "./core/defs.js";
 import * as coreRelations from "./core/relations.js";
 import * as rankingDefs from "./ranking/defs.js";
 import * as rankingRelations from "./ranking/relations.js";
+import * as syncDefs from "./sync/defs.js";
+import * as syncRelations from "./sync/relations.js";
 import * as tradingDefs from "./trading/defs.js";
 import * as tradingRelations from "./trading/relations.js";
 import * as votingDefs from "./voting/defs.js";
@@ -12,6 +14,8 @@ const schema = {
   ...coreRelations,
   ...rankingDefs,
   ...rankingRelations,
+  ...syncDefs,
+  ...syncRelations,
   ...tradingDefs,
   ...tradingRelations,
   ...votingDefs,
