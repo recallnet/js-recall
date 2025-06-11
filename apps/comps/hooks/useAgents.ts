@@ -1,7 +1,8 @@
-import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import {ApiClient} from "@/lib/api-client";
+import { ApiClient } from "@/lib/api-client";
 import {
+  AgentApiKeyResponse,
   AgentsResponse,
   GetAgentsParams,
   UpdateAgentRequest,
@@ -39,6 +40,20 @@ export const useUserAgents = (params: GetAgentsParams = {}) =>
   });
 
 /**
+ * Hook to fetch agents with pagination and filtering
+ * @param params Query parameters for agents endpoint
+ * @returns Query result with agents data
+ */
+export const useAgentApiKey = (agentId: string) =>
+  useQuery({
+    queryKey: ["agent", "api-key", agentId],
+    queryFn: async (): Promise<AgentApiKeyResponse> => {
+      return apiClient.getAgentApiKey(agentId);
+    },
+    placeholderData: (prev) => prev,
+  });
+
+/**
  * Hook to update agents
  * @param body Body fields to update
  * @returns
@@ -52,7 +67,7 @@ export const useUpdateAgent = () => {
     },
     onSuccess: () => {
       // Invalidate profile query to get updated data
-      queryClient.invalidateQueries({queryKey: ["agent"]});
+      queryClient.invalidateQueries({ queryKey: ["agent"] });
     },
   });
 };
