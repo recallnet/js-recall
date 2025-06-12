@@ -6,11 +6,13 @@ import {
 } from "@/database/repositories/agent-repository.js";
 import {
   addAgentToCompetition,
+  batchInsertLeaderboard,
   create as createCompetition,
   findActive,
   findAll,
   findById,
   findByStatus,
+  findLeaderboardByCompetition,
   getCompetitionAgents,
   getLatestPortfolioSnapshots,
   removeAgentFromCompetition,
@@ -263,6 +265,18 @@ export class CompetitionManager {
     await this.configurationService.loadCompetitionSettings();
     console.log(`[CompetitionManager] Reloaded configuration settings`);
 
+    const leaderboard = await this.getLeaderboard(competitionId);
+    const leaderboardEntries = leaderboard.map((entry, index) => ({
+      agentId: entry.agentId,
+      competitionId,
+      rank: index + 1, // 1-based ranking
+      score: entry.value, // Use the portfolio value as the score
+    }));
+
+    if (leaderboardEntries.length > 0) {
+      await batchInsertLeaderboard(leaderboardEntries);
+    }
+
     return competition;
   }
 
@@ -307,7 +321,21 @@ export class CompetitionManager {
    */
   async getLeaderboard(competitionId: string) {
     try {
-      // Try to get from recent portfolio snapshots first
+      // First try to get from the competitions_leaderboard table
+      const leaderboardEntries =
+        await findLeaderboardByCompetition(competitionId);
+      if (leaderboardEntries.length > 0) {
+        return leaderboardEntries.map((entry) => ({
+          agentId: entry.agentId,
+          value: entry.score,
+        }));
+      }
+
+      console.log(
+        `[CompetitionManager] No leaderboard found in database for competition ${competitionId}, calculating from snapshots or current values`,
+      );
+
+      // If no leaderboard entries, try to get from recent portfolio snapshots
       const snapshots = await getLatestPortfolioSnapshots(competitionId);
 
       if (snapshots.length > 0) {

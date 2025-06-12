@@ -9,6 +9,7 @@ import {
   max,
   sql,
 } from "drizzle-orm";
+import { v4 as uuidv4 } from "uuid";
 
 import { db } from "@/database/db.js";
 import {
@@ -16,7 +17,10 @@ import {
   competitions,
   competitionsLeaderboard,
 } from "@/database/schema/core/defs.js";
-import { InsertCompetition } from "@/database/schema/core/types.js";
+import {
+  InsertCompetition,
+  InsertCompetitionsLeaderboard,
+} from "@/database/schema/core/types.js";
 import {
   portfolioSnapshots,
   portfolioTokenValues,
@@ -592,6 +596,64 @@ export async function findBestPlacementForAgent(agentId: string) {
   } catch (error) {
     console.error(
       "[CompetitionRepository] Error in findAgentBestCompetitionRank:",
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
+ * Insert multiple leaderboard entries in a batch operation
+ * @param entries Array of leaderboard entries to insert
+ * @returns Array of inserted leaderboard entries
+ */
+export async function batchInsertLeaderboard(
+  entries: Omit<InsertCompetitionsLeaderboard, "id">[],
+) {
+  if (!entries.length) {
+    return [];
+  }
+
+  try {
+    console.log(
+      `[CompetitionRepository] Batch inserting ${entries.length} leaderboard entries`,
+    );
+
+    const valuesToInsert = entries.map((entry) => ({
+      ...entry,
+      id: uuidv4(),
+    }));
+
+    const results = await db
+      .insert(competitionsLeaderboard)
+      .values(valuesToInsert)
+      .returning();
+
+    return results;
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error batch inserting leaderboard entries:",
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
+ * Find leaderboard entries for a specific competition
+ * @param competitionId The competition ID
+ * @returns Array of leaderboard entries sorted by rank
+ */
+export async function findLeaderboardByCompetition(competitionId: string) {
+  try {
+    return await db
+      .select()
+      .from(competitionsLeaderboard)
+      .where(eq(competitionsLeaderboard.competitionId, competitionId))
+      .orderBy(competitionsLeaderboard.rank);
+  } catch (error) {
+    console.error(
+      `[CompetitionRepository] Error finding leaderboard for competition ${competitionId}:`,
       error,
     );
     throw error;
