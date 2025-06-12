@@ -202,6 +202,12 @@ export async function applyBaselineIfNeeded(
   force: boolean = false,
 ): Promise<void> {
   try {
+    // Check if baseline file exists first - gracefully skip if missing
+    if (!fs.existsSync(BASELINE_SQL_PATH)) {
+      console.log("[Baseline] No baseline.sql found, skipping baseline step.");
+      return;
+    }
+
     if (!force && (await isBaselineApplied())) {
       console.log("[Baseline] ✅ Baseline already applied, skipping");
       return;
@@ -237,13 +243,10 @@ export async function prepareProductionDatabase(): Promise<void> {
   console.log("[Baseline] 🏭 Preparing production database...");
 
   try {
-    if (fs.existsSync(BASELINE_SQL_PATH)) {
-      console.log("[Baseline] Found baseline.sql, applying baseline...");
-      await applyBaseline();
-    } else {
-      console.log("[Baseline] No baseline.sql found, skipping baseline step.");
-    }
-    // Always run migrations after baseline or if baseline is missing
+    // Use the same logic as development - apply baseline if needed
+    await applyBaselineIfNeeded();
+
+    // Always run migrations after baseline
     await migrateDb();
     console.log("[Baseline] ✅ Production database prepared successfully");
   } catch (error) {
