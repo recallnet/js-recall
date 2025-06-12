@@ -312,7 +312,7 @@ describe("Agent API", () => {
       });
     }
 
-    // Test that sort, limit, and offest work
+    // Test that sort, limit, and offset work
     const agentsResponse = await adminClient.getAgents({
       limit: 2,
       offset: 1,
