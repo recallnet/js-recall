@@ -13,8 +13,12 @@ import {
   AgentSearchParams,
   COMPETITION_STATUS,
   CROSS_CHAIN_TRADING_TYPE,
+  CompetitionStatus,
+  CompetitionType,
   UserSearchParams,
 } from "@/types/index.js";
+
+import { ensureCompetitionUpdate, ensureUuid } from "./request-helpers.js";
 
 // TODO: need user deactivation logic
 
@@ -512,8 +516,16 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async createCompetition(req: Request, res: Response, next: NextFunction) {
       try {
-        const { name, description, tradingType, externalUrl, imageUrl, type } =
-          req.body;
+        const {
+          name,
+          description,
+          tradingType,
+          externalUrl,
+          imageUrl,
+          type,
+          votingStartDate,
+          votingEndDate,
+        } = req.body;
 
         // Validate required parameters
         if (!name) {
@@ -528,6 +540,8 @@ export function makeAdminController(services: ServiceRegistry) {
           externalUrl,
           imageUrl,
           type,
+          votingStartDate ? new Date(votingStartDate) : undefined,
+          votingEndDate ? new Date(votingEndDate) : undefined,
         );
 
         // Return the created competition
@@ -555,6 +569,8 @@ export function makeAdminController(services: ServiceRegistry) {
           tradingType,
           externalUrl,
           imageUrl,
+          votingStartDate,
+          votingEndDate,
         } = req.body;
 
         // Validate required parameters
@@ -620,6 +636,9 @@ export function makeAdminController(services: ServiceRegistry) {
             tradingType || CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
             externalUrl,
             imageUrl,
+            undefined, // type parameter (will use default)
+            votingStartDate ? new Date(votingStartDate) : undefined,
+            votingEndDate ? new Date(votingEndDate) : undefined,
           );
         }
 
@@ -670,6 +689,38 @@ export function makeAdminController(services: ServiceRegistry) {
           success: true,
           competition: endedCompetition,
           leaderboard,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async updateCompetition(req: Request, res: Response, next: NextFunction) {
+      try {
+        const competitionId = ensureUuid(req.params.competitionId);
+        const updates = ensureCompetitionUpdate(req);
+
+        // Check if there are any updates to apply
+        if (Object.keys(updates).length === 0) {
+          throw new ApiError(400, "No valid fields provided for update");
+        }
+
+        // Update the competition
+        const updatedCompetition =
+          await services.competitionManager.updateCompetition(
+            competitionId,
+            updates,
+          );
+
+        // Return the updated competition
+        res.status(200).json({
+          success: true,
+          competition: updatedCompetition,
         });
       } catch (error) {
         next(error);

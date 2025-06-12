@@ -59,6 +59,16 @@ export function configureAdminRoutes(
    *                 type: string
    *                 description: URL to competition image
    *                 example: https://example.com/competition-image.jpg
+   *               votingStartDate:
+   *                 type: string
+   *                 format: date-time
+   *                 description: Start date for voting (ISO 8601 format)
+   *                 example: "2024-01-15T00:00:00Z"
+   *               votingEndDate:
+   *                 type: string
+   *                 format: date-time
+   *                 description: End date for voting (ISO 8601 format)
+   *                 example: "2024-01-30T23:59:59Z"
    *     responses:
    *       201:
    *         description: Competition created successfully
@@ -154,6 +164,16 @@ export function configureAdminRoutes(
    *                 type: string
    *                 description: URL to competition image (used when creating a new competition)
    *                 example: https://example.com/competition-image.jpg
+   *               votingStartDate:
+   *                 type: string
+   *                 format: date-time
+   *                 description: Start date for voting (ISO 8601 format, used when creating a new competition)
+   *                 example: "2024-01-15T00:00:00Z"
+   *               votingEndDate:
+   *                 type: string
+   *                 format: date-time
+   *                 description: End date for voting (ISO 8601 format, used when creating a new competition)
+   *                 example: "2024-01-30T23:59:59Z"
    *               agentIds:
    *                 type: array
    *                 items:
@@ -338,6 +358,139 @@ export function configureAdminRoutes(
    *         description: Server error
    */
   router.post("/competition/end", controller.endCompetition);
+
+  /**
+   * @openapi
+   * /api/admin/competition/{competitionId}:
+   *   put:
+   *     tags:
+   *       - Admin
+   *     summary: Update a competition
+   *     description: Update competition fields (excludes startDate, endDate, status)
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: ID of the competition to update
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               name:
+   *                 type: string
+   *                 description: Competition name
+   *                 example: Updated Spring 2023 Trading Competition
+   *               description:
+   *                 type: string
+   *                 description: Competition description
+   *                 example: An updated trading competition for the spring semester
+   *               type:
+   *                 type: string
+   *                 description: The type of competition
+   *                 enum: [trading]
+   *                 example: trading
+   *               externalUrl:
+   *                 type: string
+   *                 description: External URL for competition details
+   *                 example: https://example.com/competition
+   *               imageUrl:
+   *                 type: string
+   *                 description: URL to competition image
+   *                 example: https://example.com/image.jpg
+   *               votingStartDate:
+   *                 type: string
+   *                 format: date-time
+   *                 description: Voting start date
+   *                 example: 2023-05-01T00:00:00Z
+   *               votingEndDate:
+   *                 type: string
+   *                 format: date-time
+   *                 description: Voting end date
+   *                 example: 2023-05-07T23:59:59Z
+   *     responses:
+   *       200:
+   *         description: Competition updated successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 competition:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                       description: Competition ID
+   *                     name:
+   *                       type: string
+   *                       description: Competition name
+   *                     description:
+   *                       type: string
+   *                       description: Competition description
+   *                     type:
+   *                       type: string
+   *                       enum: [trading]
+   *                       description: The type of competition
+   *                     externalUrl:
+   *                       type: string
+   *                       description: External URL for competition details
+   *                       nullable: true
+   *                     imageUrl:
+   *                       type: string
+   *                       description: URL to competition image
+   *                       nullable: true
+   *                     startDate:
+   *                       type: string
+   *                       format: date-time
+   *                       description: Competition start date
+   *                       nullable: true
+   *                     endDate:
+   *                       type: string
+   *                       format: date-time
+   *                       description: Competition end date
+   *                       nullable: true
+   *                     votingStartDate:
+   *                       type: string
+   *                       format: date-time
+   *                       description: Voting start date
+   *                       nullable: true
+   *                     votingEndDate:
+   *                       type: string
+   *                       format: date-time
+   *                       description: Voting end date
+   *                       nullable: true
+   *                     status:
+   *                       type: string
+   *                       enum: [pending, active, ended]
+   *                       description: Competition status
+   *                     createdAt:
+   *                       type: string
+   *                       format: date-time
+   *                       description: Competition creation date
+   *                     updatedAt:
+   *                       type: string
+   *                       format: date-time
+   *                       description: Competition last update date
+   *       400:
+   *         description: Bad request - Missing competitionId, no valid fields provided, or attempting to update restricted fields (startDate, endDate, status)
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       404:
+   *         description: Competition not found
+   *       500:
+   *         description: Server error
+   */
+  router.put("/competition/:competitionId", controller.updateCompetition);
 
   /**
    * @openapi

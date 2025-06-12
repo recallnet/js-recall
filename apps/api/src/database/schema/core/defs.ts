@@ -168,6 +168,8 @@ export const competitions = pgTable(
     imageUrl: text("image_url"),
     startDate: timestamp("start_date", { withTimezone: true }),
     endDate: timestamp("end_date", { withTimezone: true }),
+    votingStartDate: timestamp("voting_start_date", { withTimezone: true }),
+    votingEndDate: timestamp("voting_end_date", { withTimezone: true }),
     status: competitionStatus("status").notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,

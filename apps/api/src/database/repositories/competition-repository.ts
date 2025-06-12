@@ -135,22 +135,26 @@ export async function update(
 ) {
   try {
     const result = await db.transaction(async (tx) => {
-      const [comp] = await tx
+      const q1 = tx
         .update(competitions)
         .set({
           ...competition,
-          updatedAt: competition.updatedAt || new Date(),
+          updatedAt: new Date(),
         })
         .where(eq(competitions.id, competition.id))
         .returning();
 
-      const [tradingComp] = await tx
+      const [comp] = await q1;
+
+      const q2 = tx
         .update(tradingCompetitions)
         .set({
           ...competition,
         })
         .where(eq(tradingCompetitions.competitionId, competition.id))
         .returning();
+
+      const [tradingComp] = await q2;
 
       return { ...comp!, ...tradingComp! };
     });

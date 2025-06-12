@@ -34,6 +34,7 @@ import {
   CompetitionStatus,
   CompetitionStatusSchema,
   CompetitionType,
+  CompetitionUpdate,
   CrossChainTradingType,
   PagingParams,
 } from "@/types/index.js";
@@ -103,6 +104,8 @@ export class CompetitionManager {
     externalUrl?: string,
     imageUrl?: string,
     type: CompetitionType = COMPETITION_TYPE.TRADING,
+    votingStartDate?: Date,
+    votingEndDate?: Date,
   ) {
     const id = uuidv4();
     const competition = {
@@ -113,6 +116,8 @@ export class CompetitionManager {
       imageUrl,
       startDate: null,
       endDate: null,
+      votingStartDate: votingStartDate || null,
+      votingEndDate: votingEndDate || null,
       status: COMPETITION_STATUS.PENDING,
       crossChainTradingType: tradingType,
       type,
@@ -511,6 +516,45 @@ export class CompetitionManager {
       status,
       params: pagingParams,
     });
+  }
+
+  /**
+   * Update a competition
+   * @param competitionId The competition ID
+   * @param updates The fields to update
+   * @returns The updated competition
+   */
+  async updateCompetition(competitionId: string, updates: CompetitionUpdate) {
+    // Get the existing competition
+    const existingCompetition = await findById(competitionId);
+    if (!existingCompetition) {
+      throw new Error(`Competition not found: ${competitionId}`);
+    }
+
+    // Prepare the update object
+
+    for (const key of Object.keys(updates)) {
+      const typedKey = key as keyof typeof updates;
+      if (
+        typeof existingCompetition[typedKey] !== "undefined" &&
+        typeof updates[typedKey] !== "undefined"
+      ) {
+        // @ts-expect-error
+        existingCompetition[typedKey] = updates[typedKey];
+      }
+    }
+
+    // Update the competition
+    const updatedCompetition = await updateCompetition(existingCompetition);
+
+    console.log(`[CompetitionManager] Updated competition: ${competitionId}`);
+
+    // Clear cache if this was the active competition
+    if (this.activeCompetitionCache === competitionId) {
+      this.activeCompetitionCache = null;
+    }
+
+    return updatedCompetition;
   }
 
   /**

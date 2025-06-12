@@ -352,6 +352,8 @@ export interface Competition {
   imageUrl?: string;
   startDate: Date | null;
   endDate: Date | null;
+  votingStartDate: Date | null;
+  votingEndDate: Date | null;
   status: CompetitionStatus;
   crossChainTradingType: CrossChainTradingType; // Controls cross-chain trading behavior
   type: CompetitionType;
@@ -603,6 +605,21 @@ export const UpdateUserProfileSchema = z
   .strict();
 
 /**
+ * Update competition object schema
+ */
+export const CompetitionUpdateSchema = z.strictObject({
+  name: z.string().optional(),
+  description: z.string().optional(),
+  type: CompetitionTypeSchema.optional(),
+  externalUrl: z.string().optional(),
+  imageUrl: z.string().optional(),
+  votingStartDate: z.date().optional(),
+  votingEndDate: z.date().optional(),
+});
+
+export type CompetitionUpdate = z.infer<typeof CompetitionUpdateSchema>;
+
+/**
  * Create agent parameters schema
  */
 export const CreateAgentBodySchema = z
@@ -845,6 +862,8 @@ export const VOTE_ERROR_TYPES = {
   AGENT_NOT_FOUND: "AGENT_NOT_FOUND",
   AGENT_NOT_IN_COMPETITION: "AGENT_NOT_IN_COMPETITION",
   COMPETITION_VOTING_DISABLED: "COMPETITION_VOTING_DISABLED",
+  VOTING_NOT_STARTED: "VOTING_NOT_STARTED",
+  VOTING_ENDED: "VOTING_ENDED",
   USER_ALREADY_VOTED: "USER_ALREADY_VOTED",
   VOTING_CUTOFF_EXCEEDED: "VOTING_CUTOFF_EXCEEDED",
   DUPLICATE_VOTE: "DUPLICATE_VOTE",
