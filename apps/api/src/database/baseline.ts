@@ -6,7 +6,7 @@ import process from "process";
 import { fileURLToPath } from "url";
 
 import { config } from "../config/index.js";
-import { db } from "./db.js";
+import { db, migrateDb } from "./db.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -237,8 +237,14 @@ export async function prepareProductionDatabase(): Promise<void> {
   console.log("[Baseline] 🏭 Preparing production database...");
 
   try {
-    // Always apply baseline in production setup (assume fresh database)
-    await applyBaseline();
+    if (fs.existsSync(BASELINE_SQL_PATH)) {
+      console.log("[Baseline] Found baseline.sql, applying baseline...");
+      await applyBaseline();
+    } else {
+      console.log("[Baseline] No baseline.sql found, skipping baseline step.");
+    }
+    // Always run migrations after baseline or if baseline is missing
+    await migrateDb();
     console.log("[Baseline] ✅ Production database prepared successfully");
   } catch (error) {
     console.error(
