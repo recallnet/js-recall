@@ -177,11 +177,36 @@ export class VoteManager {
       }
 
       // Check if voting is allowed based on competition status
-      const votingAllowed = this.checkCompetitionVotingStatus(competition);
-      if (!votingAllowed) {
+      const votingEnabledStatuses: Array<SelectCompetition["status"]> = [
+        COMPETITION_STATUS.PENDING, // "almost ready to start" - can vote
+        COMPETITION_STATUS.ACTIVE, // "has started" - can vote
+      ];
+
+      if (!votingEnabledStatuses.includes(competition.status)) {
         return {
           canVote: false,
           reason: `Competition status does not allow voting (${competition.status})`,
+          info: { hasVoted: false },
+        };
+      }
+
+      // Check voting dates if they are set
+      const now = new Date();
+
+      // If voting start date is set and we haven't reached it, voting is not allowed
+      if (competition.votingStartDate && now < competition.votingStartDate) {
+        return {
+          canVote: false,
+          reason: `Voting has not started yet. Voting begins on ${competition.votingStartDate.toISOString()}`,
+          info: { hasVoted: false },
+        };
+      }
+
+      // If voting end date is set and we've passed it, voting is not allowed
+      if (competition.votingEndDate && now > competition.votingEndDate) {
+        return {
+          canVote: false,
+          reason: `Voting has ended. Voting ended on ${competition.votingEndDate.toISOString()}`,
           info: { hasVoted: false },
         };
       }
@@ -276,13 +301,40 @@ export class VoteManager {
       throw error;
     }
 
-    // Check if competition allows voting based on status
-    const votingAllowed = this.checkCompetitionVotingStatus(competition);
-    if (!votingAllowed) {
+    // Check if competition status allows voting
+    const votingEnabledStatuses: Array<SelectCompetition["status"]> = [
+      COMPETITION_STATUS.PENDING, // "almost ready to start" - can vote
+      COMPETITION_STATUS.ACTIVE, // "has started" - can vote
+    ];
+
+    if (!votingEnabledStatuses.includes(competition.status)) {
       const error = new Error(
         `Competition status does not allow voting: ${competition.status}`,
       ) as VoteError;
       error.type = VOTE_ERROR_TYPES.COMPETITION_VOTING_DISABLED;
+      error.code = 400;
+      throw error;
+    }
+
+    // Check voting dates if they are set
+    const now = new Date();
+
+    // If voting start date is set and we haven't reached it, voting is not allowed
+    if (competition.votingStartDate && now < competition.votingStartDate) {
+      const error = new Error(
+        `Voting has not started yet. Voting begins on ${competition.votingStartDate.toISOString()}`,
+      ) as VoteError;
+      error.type = VOTE_ERROR_TYPES.VOTING_NOT_STARTED;
+      error.code = 400;
+      throw error;
+    }
+
+    // If voting end date is set and we've passed it, voting is not allowed
+    if (competition.votingEndDate && now > competition.votingEndDate) {
+      const error = new Error(
+        `Voting has ended. Voting ended on ${competition.votingEndDate.toISOString()}`,
+      ) as VoteError;
+      error.type = VOTE_ERROR_TYPES.VOTING_ENDED;
       error.code = 400;
       throw error;
     }
@@ -302,8 +354,9 @@ export class VoteManager {
   /**
    * Check if competition status allows voting
    * Based on issue #408: voting allowed for "pending" OR "active" status
+   * Note: Voting date checks are handled separately in validation methods
    * @param competition The competition record
-   * @returns True if voting is allowed
+   * @returns True if competition status allows voting
    */
   private checkCompetitionVotingStatus(
     competition: SelectCompetition,
