@@ -9,7 +9,7 @@ import { Card } from "@recallnet/ui2/components/card";
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
-import { Competition, CompetitionStatus, UserCompetition } from "@/types";
+import { CompetitionStatus, UserCompetition } from "@/types";
 
 import { formatCompetitionDates } from "../utils/competition-utils";
 import { RankBadge } from "./agents-table/rank-badge";
