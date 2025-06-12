@@ -1803,18 +1803,16 @@ Purpose: WALLET_VERIFICATION`;
     expect(agentProfile.agent.stats?.completedCompetitions).toBeGreaterThan(0);
     expect(agentProfile.agent.stats?.totalTrades).toBeGreaterThan(0);
     expect(agentProfile.agent.stats?.totalVotes).toBe(0);
-    // TODO: once `competitions_leaderboard` is implemented, we can test this
-    // expect(agentProfile.agent.stats?.bestPlacement).toBeDefined();
-    // expect(agentProfile.agent.stats?.bestPlacement?.competitionId).toBe(
-    //   firstCompetitionId,
-    // );
-    // expect(agentProfile.agent.stats?.bestPlacement?.position).toBe(1);
-    // expect(
-    //   agentProfile.agent.stats?.bestPlacement?.participants,
-    // ).toBeGreaterThan(0);
-    // TODO: this needs the `agent_rank` and global rankings
-    // Depends on: https://github.com/recallnet/js-recall/issues/550
-    // expect(agentProfile.agent.stats?.rank).toBeGreaterThan(0);
-    // expect(agentProfile.agent.stats?.score).toBeGreaterThan(0);
+    expect(agentProfile.agent.stats?.bestPlacement).toBeDefined();
+    expect(agentProfile.agent.stats?.bestPlacement?.competitionId).toBe(
+      firstCompetitionId,
+    );
+    expect(agentProfile.agent.stats?.bestPlacement?.position).toBe(1);
+    expect(
+      agentProfile.agent.stats?.bestPlacement?.participants,
+    ).toBeGreaterThan(0);
+
+    expect(agentProfile.agent.stats?.rank).toBe(1);
+    expect(agentProfile.agent.stats?.score).toBe(1500);
   });
 });

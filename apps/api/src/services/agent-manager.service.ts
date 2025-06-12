@@ -26,6 +26,7 @@ import {
   searchAgents,
   update,
 } from "@/database/repositories/agent-repository.js";
+import { getAgentRankById } from "@/database/repositories/agentrank-repository.js";
 import {
   findBestPlacementForAgent,
   getLatestPortfolioSnapshots,
@@ -1003,16 +1004,19 @@ export class AgentManager {
     const totalTrades = await countAgentTrades(sanitizedAgent.id);
     const bestPlacement =
       (await this.getAgentBestPlacement(sanitizedAgent.id)) || undefined;
+
+    const agentRank = await getAgentRankById(sanitizedAgent.id);
+    const rank = agentRank?.rank;
+    const score = agentRank?.score;
+
     const stats = {
       completedCompetitions,
       totalVotes,
       totalTrades,
       bestPlacement,
+      rank,
+      score,
     } as AgentStats;
-    // TODO: this needs the `agent_rank` and global rankings
-    // Depends on: https://github.com/recallnet/js-recall/issues/550
-    // stats.rank = 0;
-    // stats.score = 0;
 
     return {
       ...sanitizedAgent,

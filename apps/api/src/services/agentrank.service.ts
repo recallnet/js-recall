@@ -1,0 +1,107 @@
+import { Rating, rate, rating } from "openskill";
+
+import * as agentRankRepo from "@/database/repositories/agentrank-repository.js";
+import * as competitionRepo from "@/database/repositories/competition-repository.js";
+
+/**
+ * Agent Rank Service
+ * Manages agent ranking calculations and updates
+ */
+export class AgentRankService {
+  /**
+   * Update agent ranks when a competition ends
+   * @param competitionId The ID of the competition that ended
+   * @returns Promise resolving to void
+   */
+  async updateAgentRanksForCompetition(competitionId: string): Promise<void> {
+    console.log(
+      `[AgentRankService] Updating agent ranks for ended competition: ${competitionId}`,
+    );
+
+    try {
+      const leaderboard =
+        await competitionRepo.findLeaderboardByCompetition(competitionId);
+      if (!leaderboard || leaderboard.length === 0) {
+        console.warn(
+          `[AgentRankService] No leaderboard entries found for competition ${competitionId}`,
+        );
+        return;
+      }
+
+      const currentRanks = await agentRankRepo.getAllAgentRanks();
+
+      const ratings: Record<string, Rating> = {};
+
+      // Initialize ratings for all agents in the leaderboard
+      for (const entry of leaderboard) {
+        const agentId = entry.agentId;
+        const existingRank = currentRanks.find((rank) => rank.id === agentId);
+        if (existingRank) {
+          ratings[agentId] = rating({
+            mu: existingRank.mu,
+            sigma: existingRank.sigma,
+          });
+        } else {
+          ratings[agentId] = rating(); // use default
+        }
+      }
+
+      const teams = leaderboard.map((entry) => [ratings[entry.agentId]!]);
+
+      // Update ratings using the PlackettLuce model
+      const updatedRatings = rate(teams);
+
+      const batchUpdateData = leaderboard.map((entry, index) => {
+        const agentId = entry.agentId;
+        const r = updatedRatings[index]![0]!;
+
+        // Calculate ordinal score scaled to match ELO range
+        const value = ordinal(r, { alpha: 24, target: 1500 });
+
+        return {
+          agentId,
+          mu: r.mu,
+          sigma: r.sigma,
+          ordinal: value,
+        };
+      });
+
+      const updatedRanks = await agentRankRepo.batchUpdateAgentRanks(
+        batchUpdateData,
+        competitionId,
+      );
+
+      console.log(
+        `[AgentRankService] Successfully updated ranks for ${updatedRanks.length} agents from competition ${competitionId}`,
+      );
+    } catch (error) {
+      console.error(
+        `[AgentRankService] Error updating agent ranks for competition ${competitionId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+}
+
+/**
+ * Compute a conservative "ordinal" skill estimate:
+ *   α · [ (μ − z·σ) + target / α ]
+ *
+ * - `z`      controls how many standard deviations below μ you want
+ *            (3 ⇒ ≈ 99.7 % confidence).
+ * - `alpha`  scales the entire metric.
+ * - `target` shifts the baseline toward a desired floor/goal.
+ */
+function ordinal(
+  { mu, sigma }: Rating,
+  options: {
+    z?: number;
+    alpha?: number;
+    target?: number;
+  } = {},
+): number {
+  const { z = 3.0, alpha = 1, target = 0 } = options;
+
+  return alpha * (mu - z * sigma + target / alpha);
+}

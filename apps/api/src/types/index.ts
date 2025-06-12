@@ -194,8 +194,6 @@ export const AgentStatsSchema = z.object({
   completedCompetitions: z.number(),
   totalTrades: z.number(),
   totalVotes: z.number(),
-  // TODO: make these non-optional once we have the data
-  // Depends on: https://github.com/recallnet/js-recall/issues/536
   bestPlacement: z
     .object({
       competitionId: z.string(),

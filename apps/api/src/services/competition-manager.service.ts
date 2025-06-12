@@ -20,6 +20,7 @@ import {
 } from "@/database/repositories/competition-repository.js";
 import {
   AgentManager,
+  AgentRankService,
   BalanceManager,
   ConfigurationService,
   PortfolioSnapshotter,
@@ -48,6 +49,7 @@ export class CompetitionManager {
   private activeCompetitionCache: string | null = null;
   private agentManager: AgentManager;
   private configurationService: ConfigurationService;
+  private agentRankService: AgentRankService;
 
   constructor(
     balanceManager: BalanceManager,
@@ -55,12 +57,14 @@ export class CompetitionManager {
     portfolioSnapshotter: PortfolioSnapshotter,
     agentManager: AgentManager,
     configurationService: ConfigurationService,
+    agentRankService: AgentRankService,
   ) {
     this.balanceManager = balanceManager;
     this.tradeSimulator = tradeSimulator;
     this.portfolioSnapshotter = portfolioSnapshotter;
     this.agentManager = agentManager;
     this.configurationService = configurationService;
+    this.agentRankService = agentRankService;
     // Load active competition on initialization
     this.loadActiveCompetition();
   }
@@ -276,6 +280,9 @@ export class CompetitionManager {
     if (leaderboardEntries.length > 0) {
       await batchInsertLeaderboard(leaderboardEntries);
     }
+
+    // Update agent ranks based on competition results
+    await this.agentRankService.updateAgentRanksForCompetition(competitionId);
 
     return competition;
   }

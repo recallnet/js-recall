@@ -589,9 +589,9 @@ export async function findBestPlacementForAgent(agentId: string) {
       .where(eq(competitionAgents.competitionId, result.competitionId));
     return {
       competitionId: result.competitionId,
-      rank: result.rank,
+      position: result.rank,
       score: result.score,
-      totalAgents: agents[0]?.count ?? 0,
+      participants: agents[0]?.count ?? 0,
     };
   } catch (error) {
     console.error(
