@@ -734,6 +734,16 @@ export function configureUserRoutes(
    *         schema:
    *           type: string
    *         description: Sort order (e.g., "startDate:desc", "name:asc")
+   *       - in: query
+   *         name: status
+   *         schema:
+   *           type: string
+   *         description: Optional filter for the competition status. Possible values ("ended", "active", "pending")
+   *       - in: query
+   *         name: claimed
+   *         schema:
+   *           type: boolean
+   *         description: Optional filter for agents with claimed (claimed=true) or unclaimed rewards (claimed=false). Note, because rewards are not implemented, THIS IS NOT IMPLEMENTED YET.
    *     responses:
    *       200:
    *         description: User agent competitions retrieved successfully
