@@ -71,9 +71,7 @@ class ServiceRegistry {
     this._voteManager = new VoteManager();
 
     // Initialize LeaderboardService with required dependencies
-    this._leaderboardService = new LeaderboardService(
-      this._agentManager,
-    );
+    this._leaderboardService = new LeaderboardService(this._agentManager);
 
     // Initialize and start the scheduler
     this._scheduler = new SchedulerService(
