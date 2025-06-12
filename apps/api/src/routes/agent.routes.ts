@@ -43,6 +43,8 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *                     walletAddress:
    *                       type: string
    *                       example: "0x1234567890abcdef1234567890abcdef12345678"
+   *                     isVerified:
+   *                       type: boolean
    *                     name:
    *                       type: string
    *                       example: "Trading Bot Alpha"
@@ -146,6 +148,8 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *                       format: uuid
    *                     walletAddress:
    *                       type: string
+   *                     isVerified:
+   *                       type: boolean
    *                     name:
    *                       type: string
    *                     description:

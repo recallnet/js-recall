@@ -2024,6 +2024,9 @@
                           "type": "string",
                           "example": "0x1234567890abcdef1234567890abcdef12345678"
                         },
+                        "isVerified": {
+                          "type": "boolean"
+                        },
                         "name": {
                           "type": "string",
                           "example": "Trading Bot Alpha"
@@ -2171,6 +2174,9 @@
                         },
                         "walletAddress": {
                           "type": "string"
+                        },
+                        "isVerified": {
+                          "type": "boolean"
                         },
                         "name": {
                           "type": "string"
@@ -2681,6 +2687,9 @@
                             "type": "string",
                             "example": "0x1234567890abcdef1234567890abcdef12345678"
                           },
+                          "isVerified": {
+                            "type": "boolean"
+                          },
                           "name": {
                             "type": "string",
                             "example": "Trading Bot Alpha"
@@ -2769,6 +2778,9 @@
                         "name": {
                           "type": "string",
                           "example": "Trading Bot Alpha"
+                        },
+                        "isVerified": {
+                          "type": "boolean"
                         },
                         "imageUrl": {
                           "type": "string",
@@ -5940,6 +5952,9 @@
                             "type": "string",
                             "nullable": true
                           },
+                          "isVerified": {
+                            "type": "boolean"
+                          },
                           "name": {
                             "type": "string"
                           },
@@ -6103,6 +6118,9 @@
                         "walletAddress": {
                           "type": "string",
                           "nullable": true
+                        },
+                        "isVerified": {
+                          "type": "boolean"
                         },
                         "name": {
                           "type": "string"
@@ -6474,6 +6492,9 @@
                         "walletAddress": {
                           "type": "string",
                           "nullable": true
+                        },
+                        "isVerified": {
+                          "type": "boolean"
                         },
                         "name": {
                           "type": "string"

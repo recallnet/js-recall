@@ -93,6 +93,8 @@ export function configureAgentsRoutes(
    *                       walletAddress:
    *                         type: string
    *                         example: "0x1234567890abcdef1234567890abcdef12345678"
+   *                       isVerified:
+   *                         type: boolean
    *                       name:
    *                         type: string
    *                         example: "Trading Bot Alpha"
@@ -155,6 +157,8 @@ export function configureAgentsRoutes(
    *                     name:
    *                       type: string
    *                       example: "Trading Bot Alpha"
+   *                     isVerified:
+   *                       type: boolean
    *                     imageUrl:
    *                       type: string
    *                       example: "https://example.com/bot-avatar.jpg"
