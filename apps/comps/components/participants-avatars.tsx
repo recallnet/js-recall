@@ -1,10 +1,6 @@
-import Image from "next/image";
-import Link from "next/link";
-
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { Identicon } from "@/components/identicon";
-import { getRankColor } from "@/lib/rank-colors";
+import { AgentAvatar } from "@/components/agent-avatar";
 import { Agent, AgentCompetition } from "@/types/agent";
 import { UserAgentCompetition } from "@/types/competition";
 
@@ -31,27 +27,13 @@ export function ParticipantsAvatars({
   return (
     <div className={cn("flex items-center gap-2", className)}>
       {displayAgents.map((agent, index) => (
-        <Link
+        <AgentAvatar
           key={agent.id}
-          href={`/agents/${agent.id}`}
-          className={cn(
-            "group relative transition-transform duration-200 hover:z-10 hover:scale-110",
-            showRank && "rounded-full border-2",
-            showRank && getRankColor(index + 1),
-          )}
-          title={agent.name}
-        >
-          {agent.imageUrl ? (
-            <Image
-              src={agent.imageUrl}
-              alt={agent.name}
-              fill
-              className="h-8 w-8 rounded-full object-cover"
-            />
-          ) : (
-            <Identicon address={agent.id} className="h-8 w-8" size={32} />
-          )}
-        </Link>
+          agent={agent}
+          showRank={showRank}
+          rank={showRank ? index + 1 : undefined}
+          size={32}
+        />
       ))}
       {remainingCount > 0 && (
         <div className="text-secondary-foreground flex h-8 items-center justify-center rounded-full bg-gray-800 px-2 text-sm">

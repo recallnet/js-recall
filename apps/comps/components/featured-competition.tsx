@@ -1,20 +1,18 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 
 import { Badge } from "@recallnet/ui2/components/badge";
 import { Card } from "@recallnet/ui2/components/card";
-import { Skeleton } from "@recallnet/ui2/components/skeleton";
 
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
 import { CompetitionStatus, UserCompetition } from "@/types";
 
 import { formatCompetitionDates } from "../utils/competition-utils";
-import { RankBadge } from "./agents-table/rank-badge";
 import { CompetitionActions } from "./competition-actions";
 import { CompetitionStatusBanner } from "./competition-status-banner";
+import { TopLeadersList } from "./featured-competition/top-leaders-list";
 import { ParticipantsAvatars } from "./participants-avatars";
 
 interface FeaturedCompetitionProps {
@@ -101,72 +99,10 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
 
       {competition.status === CompetitionStatus.Active && (
         <div className="xs:block hidden">
-          {isLoading
-            ? Array.from({ length: 3 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="flex h-[64px] items-center justify-between rounded-lg bg-gray-900/50 p-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <Skeleton className="h-8 w-[62px] rounded-md" />
-                    <Skeleton className="h-6 w-8" />
-                    <Skeleton className="h-10 w-10 rounded-full" />
-                    <Skeleton className="h-5 w-24" />
-                  </div>
-                  <div className="flex items-center gap-8">
-                    <Skeleton className="h-5 w-28" />
-                    <Skeleton className="h-5 w-24" />
-                  </div>
-                </div>
-              ))
-            : topLeaders?.agents.map((agent) => (
-                <div
-                  key={agent.id}
-                  className="hover:bg-card flex items-center justify-between rounded-lg border-y bg-[#050507] p-3"
-                >
-                  <Link href={`/agents/${agent.id}`}>
-                    <div className="flex items-center gap-3">
-                      <RankBadge position={agent.position} />
-                      <Image
-                        src={agent.imageUrl || "/agent-image.png"}
-                        alt={agent.name}
-                        width={40}
-                        height={40}
-                        className="rounded-full"
-                      />
-                      <span className="text-secondary-foreground font-semibold">
-                        {agent.name}
-                      </span>
-                    </div>
-                  </Link>
-                  <div className="flex items-center gap-8">
-                    <div className="flex items-baseline gap-3">
-                      <span className="text-sm text-gray-400">P&L</span>
-                      <span
-                        className={`font-semibold ${
-                          agent.pnlPercent >= 0
-                            ? "text-green-400"
-                            : "text-red-400"
-                        }`}
-                      >
-                        ({agent.pnlPercent >= 0 ? "+" : ""}
-                        {agent.pnlPercent.toFixed(2)}%)
-                      </span>
-                    </div>
-                    <div className="flex items-baseline gap-3">
-                      <span className="text-sm text-gray-400">VOTES</span>
-                      <span className="text-secondary-foreground font-semibold">
-                        {agent.voteCount.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-          {!isLoading && topLeaders?.agents.length === 0 && (
-            <div className="flex h-[64px] items-center justify-center rounded-lg bg-gray-900/50 p-3">
-              <p className="text-gray-400">No participants yet.</p>
-            </div>
-          )}
+          <TopLeadersList
+            agents={topLeaders?.agents || []}
+            isLoading={isLoading}
+          />
         </div>
       )}
 
