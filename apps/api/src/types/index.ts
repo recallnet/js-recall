@@ -447,6 +447,7 @@ export const ActorStatusSchema = z.enum(ACTOR_STATUS_VALUES);
  * Status of a user, agent, or admin.
  */
 export type ActorStatus = z.infer<typeof ActorStatusSchema>;
+
 /**
  * Agent information Object
  */
@@ -469,7 +470,9 @@ export type Agent = z.infer<typeof AgentSchema>;
 /**
  * Pulic Agent information Object, omits apiKey
  */
-export const AgentPublicSchema = AgentSchema.omit({ apiKey: true });
+export const AgentPublicSchema = AgentSchema.omit({ apiKey: true }).extend({
+  isVerified: z.boolean(),
+});
 export type AgentPublic = z.infer<typeof AgentPublicSchema>;
 
 /**

@@ -277,6 +277,7 @@ describe("User API", () => {
     expect(agentsResponse.agents).toBeDefined();
     expect(agentsResponse.agents.length).toBe(1);
     expect(agentsResponse.agents[0]?.name).toBe("SIWE Created Agent");
+    expect(agentsResponse.agents[0]?.isVerified).toBe(false);
 
     // Test: User can get a specific agent via SIWE session
     const agentId = (createAgentResponse as AgentProfileResponse).agent.id;

@@ -10,7 +10,7 @@ const swaggerOptions: swaggerJsdoc.Options = {
       title: "Trading Simulator API",
       version: "1.0.0",
       description: `API for the Trading Simulator - a platform for simulated cryptocurrency trading competitions
-      
+
 ## Authentication Guide
 
 This API uses Bearer token authentication. All protected endpoints require the following header:
@@ -40,7 +40,7 @@ const fetchData = async () => {
       'Content-Type': 'application/json'
     }
   });
-  
+
   return await response.json();
 };
 \`\`\`

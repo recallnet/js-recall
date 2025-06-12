@@ -110,6 +110,7 @@ export interface Agent {
   id: string;
   ownerId: string;
   walletAddress?: string;
+  isVerified: boolean;
   name: string;
   description?: string;
   imageUrl?: string;

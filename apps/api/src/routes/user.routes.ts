@@ -293,6 +293,8 @@ export function configureUserRoutes(
    *                       walletAddress:
    *                         type: string
    *                         nullable: true
+   *                       isVerified:
+   *                         type: boolean
    *                       name:
    *                         type: string
    *                       description:
@@ -404,6 +406,8 @@ export function configureUserRoutes(
    *                     walletAddress:
    *                       type: string
    *                       nullable: true
+   *                     isVerified:
+   *                       type: boolean
    *                     name:
    *                       type: string
    *                     email:
@@ -660,6 +664,8 @@ export function configureUserRoutes(
    *                     walletAddress:
    *                       type: string
    *                       nullable: true
+   *                     isVerified:
+   *                       type: boolean
    *                     name:
    *                       type: string
    *                     email:
