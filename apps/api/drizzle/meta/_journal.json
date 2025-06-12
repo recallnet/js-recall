@@ -71,6 +71,13 @@
       "when": 1749682968332,
       "tag": "0009_lying_lucky_pierre",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1749732168978,
+      "tag": "0010_tidy_stryfe",
+      "breakpoints": true
     }
   ]
 }

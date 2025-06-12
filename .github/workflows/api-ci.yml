@@ -47,6 +47,21 @@ jobs:
       - name: Build everything
         run: pnpm build
 
+      - name: Check for uncommitted database migrations
+        working-directory: apps/api
+        run: |
+          # Generate migrations based on current schema
+          pnpm db:gen-migrations
+          
+          # Check if there are any uncommitted changes
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo "::error::Uncommitted migration files detected. Please run 'pnpm db:gen-migrations' locally and commit the generated files."
+            git status
+            exit 1
+          else
+            echo "No uncommitted migration files detected."
+          fi
+
       - name: Run unit tests
         working-directory: apps/api
         run: |
