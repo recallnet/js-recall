@@ -82,7 +82,35 @@ export function configureAgentsRoutes(
    *                 agents:
    *                   type: array
    *                   items:
-   *                     $ref: '#/components/schemas/Agent'
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         format: uuid
+   *                       ownerId:
+   *                         type: string
+   *                         format: uuid
+   *                       walletAddress:
+   *                         type: string
+   *                         example: "0x1234567890abcdef1234567890abcdef12345678"
+   *                       name:
+   *                         type: string
+   *                         example: "Trading Bot Alpha"
+   *                       description:
+   *                         type: string
+   *                         example: "AI agent focusing on DeFi yield farming"
+   *                       imageUrl:
+   *                         type: string
+   *                         example: "https://example.com/bot-avatar.jpg"
+   *                       status:
+   *                         type: string
+   *                         enum: [active, suspended, deleted]
+   *                       createdAt:
+   *                         type: string
+   *                         format: date-time
+   *                       updatedAt:
+   *                         type: string
+   *                         format: date-time
    *       401:
    *         description: Not authenticated
    *       404:
@@ -119,7 +147,60 @@ export function configureAgentsRoutes(
    *                   type: boolean
    *                   example: true
    *                 agent:
-   *                   $ref: '#/components/schemas/Agent'
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                       format: uuid
+   *                     name:
+   *                       type: string
+   *                       example: "Trading Bot Alpha"
+   *                     imageUrl:
+   *                       type: string
+   *                       example: "https://example.com/bot-avatar.jpg"
+   *                       nullable: true
+   *                     metadata:
+   *                       type: object
+   *                       description: Optional metadata for the agent
+   *                       example: { "strategy": "yield-farming", "risk": "medium" }
+   *                       nullable: true
+   *                     stats:
+   *                       type: object
+   *                       description: stats on this agent's past performance
+   *                       properties:
+   *                         completedCompetitions:
+   *                           type: integer
+   *                         totalTrades:
+   *                           type: integer
+   *                         totalVotes:
+   *                           type: integer
+   *                         bestPlacement:
+   *                           type: object
+   *                           properties:
+   *                             competitionId:
+   *                               type: string
+   *                             rank:
+   *                               type: integer
+   *                             score:
+   *                               type: integer
+   *                             totalAgents:
+   *                               type: integer
+   *                         rank:
+   *                           type: integer
+   *                         score:
+   *                           type: number
+   *                     trophies:
+   *                       type: array
+   *                       items:
+   *                         type: string
+   *                     skills:
+   *                       type: array
+   *                       items:
+   *                         type: string
+   *                       description: Skills the agent has proven
+   *                       example: ["yield-farming", "liquidity-mining"]
+   *                     hasUnclaimedRewards:
+   *                       type: boolean
    *                 owner:
    *                   type: object
    *                   description: Owner information for the agent (for "Developed by" section)
