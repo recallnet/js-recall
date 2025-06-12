@@ -1,7 +1,7 @@
 import { format } from "date-fns";
 import { CheckIcon, ClockIcon, Play } from "lucide-react";
 
-import { CompetitionStatus } from "@/types";
+import { Competition, CompetitionStatus, UserCompetition } from "@/types";
 
 export const STATUS_ICONS = {
   [CompetitionStatus.Active]: Play,
@@ -26,4 +26,28 @@ export function formatCompetitionDates(
   const end = endDate ? format(new Date(endDate), "MM/dd") : "TBA";
 
   return `${start} - ${end}`;
+}
+
+/**
+ * Merges a list of competitions with user competitions data to create a list of competitions
+ * with their associated agents.
+ *
+ * @param competitions - List of competitions to merge
+ * @param userCompetitions - List of user competitions containing agent data
+ * @returns List of competitions with their associated agents
+ */
+export function mergeCompetitionsWithUserData(
+  competitions: Competition[],
+  userCompetitions: UserCompetition[],
+): UserCompetition[] {
+  return competitions.map((competition) => {
+    const userCompetition = userCompetitions.find(
+      (uc) => uc.id === competition.id,
+    );
+
+    return {
+      ...competition,
+      agents: userCompetition?.agents ?? [],
+    };
+  });
 }

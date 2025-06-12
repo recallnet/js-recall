@@ -5,15 +5,15 @@ import React from "react";
 
 import { cn } from "@recallnet/ui2/lib/utils";
 
+import { CompetitionsCollapsible } from "@/components/competitions-collapsible";
 import CompetitionsSkeleton from "@/components/competitions-skeleton";
 import { FeaturedCompetition } from "@/components/featured-competition";
 import { FooterSection } from "@/components/footer-section";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
-import { RecentlyEndedSection } from "@/components/recently-ended-section";
-import { StartingSoonSection } from "@/components/starting-soon-section";
 import { getSocialLinksArray } from "@/data/social";
-import { useCompetitions } from "@/hooks/useCompetitions";
+import { useCompetitions, useUserCompetitions } from "@/hooks/useCompetitions";
 import { CompetitionStatus } from "@/types";
+import { mergeCompetitionsWithUserData } from "@/utils/competition-utils";
 
 export default function CompetitionsPage() {
   const { data: activeCompetitions, isLoading: isLoadingActiveCompetitions } =
@@ -33,10 +33,14 @@ export default function CompetitionsPage() {
       status: CompetitionStatus.Ended,
     });
 
+  const { data: userCompetitions, isLoading: isLoadingUserCompetitions } =
+    useUserCompetitions();
+
   if (
     isLoadingActiveCompetitions ||
     isLoadingUpcomingCompetitions ||
-    isLoadingEndedCompetitions
+    isLoadingEndedCompetitions ||
+    isLoadingUserCompetitions
   ) {
     return <CompetitionsSkeleton />;
   }
@@ -45,11 +49,20 @@ export default function CompetitionsPage() {
     activeCompetitions?.competitions?.[0] ||
     upcomingCompetitions?.competitions?.[0];
 
+  const featuredCompetitionWithAgents = featuredCompetition
+    ? mergeCompetitionsWithUserData(
+        [featuredCompetition],
+        userCompetitions?.competitions ?? [],
+      )[0]
+    : null;
+
   return (
     <div className="relative">
-      <div className="absolute z-0 h-[814px] w-full sm:hidden">
-        <Video />
-      </div>
+      {featuredCompetitionWithAgents && (
+        <div className="absolute z-0 h-[814px] w-full sm:hidden">
+          <Video />
+        </div>
+      )}
 
       <div className="relative flex flex-col gap-8 sm:flex-row">
         <div className="absolute z-0 h-full w-full">
@@ -57,7 +70,7 @@ export default function CompetitionsPage() {
         </div>
         <div className="z-10 mb-10 flex w-full flex-col items-center justify-between gap-8">
           <div className="mt-30 sm:mt-15 flex max-w-[434px] flex-col items-center gap-2">
-            <span className="text-primary-foreground text-7xl font-bold">
+            <span className="text-primary-foreground text-center text-7xl font-bold">
               Join. Vote.
             </span>
             <span className="text-primary-foreground text-9xl font-bold">
@@ -73,16 +86,38 @@ export default function CompetitionsPage() {
             </span>
           </p>
         </div>
-        {featuredCompetition && (
-          <FeaturedCompetition competition={featuredCompetition} />
+        {featuredCompetitionWithAgents && (
+          <FeaturedCompetition competition={featuredCompetitionWithAgents} />
         )}
       </div>
 
+      {userCompetitions?.competitions && (
+        <CompetitionsCollapsible
+          title="Your Competitions"
+          competitions={userCompetitions.competitions}
+          emptyMessage="No competitions"
+        />
+      )}
+
       {upcomingCompetitions?.competitions && (
-        <StartingSoonSection competitions={upcomingCompetitions.competitions} />
+        <CompetitionsCollapsible
+          title="Upcoming Competitions"
+          competitions={mergeCompetitionsWithUserData(
+            upcomingCompetitions.competitions,
+            userCompetitions?.competitions ?? [],
+          )}
+          emptyMessage="No upcoming competitions"
+        />
       )}
       {endedCompetitions?.competitions && (
-        <RecentlyEndedSection competitions={endedCompetitions.competitions} />
+        <CompetitionsCollapsible
+          title="Completed Competitions"
+          competitions={mergeCompetitionsWithUserData(
+            endedCompetitions.competitions,
+            userCompetitions?.competitions ?? [],
+          )}
+          emptyMessage="No completed competitions"
+        />
       )}
 
       <JoinSwarmSection socialLinks={getSocialLinksArray()} />

@@ -9,16 +9,16 @@ import { Card } from "@recallnet/ui2/components/card";
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
-import { Competition, CompetitionStatus } from "@/types";
+import { Competition, CompetitionStatus, UserCompetition } from "@/types";
 
+import { formatCompetitionDates } from "../utils/competition-utils";
 import { RankBadge } from "./agents-table/rank-badge";
 import { CompetitionActions } from "./competition-actions";
 import { CompetitionStatusBanner } from "./competition-status-banner";
-import { formatCompetitionDates } from "./competition-utils";
 import { ParticipantsAvatars } from "./participants-avatars";
 
 interface FeaturedCompetitionProps {
-  competition: Competition;
+  competition: UserCompetition;
 }
 
 export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
@@ -78,13 +78,21 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
               ? "Participants"
               : "Pre-Registered"}
           </h3>
-          <ParticipantsAvatars agents={topLeaders?.agents || []} />
+          {topLeaders?.agents.length ? (
+            <ParticipantsAvatars agents={topLeaders?.agents} />
+          ) : (
+            <span className="text-sm">-</span>
+          )}
         </div>
         <div className="w-full justify-items-end p-6">
           <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
             Your Agents
           </h3>
-          <p className="text-xl font-semibold">N/A</p>
+          {competition.agents.length > 0 ? (
+            <ParticipantsAvatars agents={competition.agents} />
+          ) : (
+            <span className="text-sm">-</span>
+          )}
         </div>
       </div>
 

@@ -41,7 +41,6 @@ export const CompetitionActions: React.FC<CompetitionActionsProps> = ({
           competitionId={competition.id}
           size="lg"
           className="w-full uppercase"
-          disabled
         >
           Join
         </JoinCompetitionButton>

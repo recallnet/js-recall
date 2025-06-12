@@ -19,6 +19,7 @@ import {
   NonceResponse,
   ProfileResponse,
   UpdateProfileRequest,
+  UserCompetitionsResponse,
 } from "@/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
@@ -288,5 +289,19 @@ export class ApiClient {
       method: "PUT",
       body: JSON.stringify(data),
     });
+  }
+
+  /**
+   * Get competitions for the authenticated user
+   * @param params - Query parameters
+   * @returns Competitions response
+   */
+  async getUserCompetitions(
+    params: GetCompetitionsParams = {},
+  ): Promise<UserCompetitionsResponse> {
+    const queryParams = this.formatQueryParams(params);
+    return this.request<UserCompetitionsResponse>(
+      `/user/competitions${queryParams}`,
+    );
   }
 }

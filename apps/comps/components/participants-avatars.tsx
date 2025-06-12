@@ -3,11 +3,12 @@ import Link from "next/link";
 
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { AgentCompetition } from "../types/agent";
+import { Agent, AgentCompetition } from "../types/agent";
+import { UserAgentCompetition } from "../types/competition";
 import { Identicon } from "./identicon";
 
 interface ParticipantsAvatarsProps {
-  agents: AgentCompetition[];
+  agents: Agent[] | UserAgentCompetition[] | AgentCompetition[];
   maxDisplay?: number;
   className?: string;
 }
@@ -31,6 +32,7 @@ export function ParticipantsAvatars({
           key={agent.id}
           href={`/agents/${agent.id}`}
           className="group relative transition-transform duration-200 hover:z-10 hover:scale-110"
+          title={agent.name}
         >
           {agent.imageUrl ? (
             <Image

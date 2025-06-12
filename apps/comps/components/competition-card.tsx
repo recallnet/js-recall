@@ -9,15 +9,15 @@ import { Card } from "@recallnet/ui2/components/card";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
-import { Competition } from "@/types";
+import { UserCompetition } from "@/types";
 
+import { formatCompetitionDates } from "../utils/competition-utils";
 import { CompetitionActions } from "./competition-actions";
 import { CompetitionStatusBanner } from "./competition-status-banner";
-import { formatCompetitionDates } from "./competition-utils";
 import { ParticipantsAvatars } from "./participants-avatars";
 
 interface CompetitionCardProps {
-  competition: Competition;
+  competition: UserCompetition;
   className?: string;
 }
 
@@ -44,14 +44,21 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
 
       <div className="flex h-full w-full">
         <div className="flex w-full flex-col gap-2 border-r">
-          <Link
-            href={`/competitions/${competition.id}`}
-            className="group inline-block p-6"
-          >
-            <h1 className="text-3xl font-bold group-hover:underline">
-              {competition.name}
-            </h1>
-          </Link>
+          <div className="flex w-full items-start justify-between align-top">
+            <Link
+              href={`/competitions/${competition.id}`}
+              className="group inline-block p-6"
+            >
+              <h1 className="text-3xl font-bold group-hover:underline">
+                {competition.name}
+              </h1>
+            </Link>
+
+            <ParticipantsAvatars
+              agents={competition.agents}
+              className="pr-6 pt-6"
+            />
+          </div>
 
           <Badge variant="gray" className="ml-6 px-3 py-1 text-sm">
             {competition.type}

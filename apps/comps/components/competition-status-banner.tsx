@@ -6,8 +6,8 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { CompetitionStatus } from "@/types";
 
+import { STATUS_ICONS } from "../utils/competition-utils";
 import { getCompetitionStatusConfig } from "./competition-status-badge";
-import { STATUS_ICONS } from "./competition-utils";
 
 export interface CompetitionStatusBannerProps {
   status: CompetitionStatus;

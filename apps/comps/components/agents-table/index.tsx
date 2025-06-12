@@ -33,7 +33,7 @@ import { RankBadge } from "./rank-badge";
 
 export interface AgentsTableProps {
   agents: AgentCompetition[];
-  totalVotes: number;
+  totalVotes?: number;
   onFilterChange: (filter: string) => void;
   onSortChange: (sort: string) => void;
   onLoadMore: () => void;
@@ -163,7 +163,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               {row.original.voteCount}
             </span>
             <span className="text-xs text-slate-400">
-              ({formatPercentage(row.original.voteCount, totalVotes)})
+              ({formatPercentage(row.original.voteCount, totalVotes ?? 0)})
             </span>
           </div>
         ),

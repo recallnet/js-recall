@@ -37,7 +37,6 @@ const AGENT_SKILLS = [
 const formSchema = z
   .object({
     name: z.string().min(1, "Agent name is required"),
-    walletAddress: z.string().min(1, "Wallet address is required"),
     imageUrl: asOptionalStringWithoutEmpty(
       z.string().url({ message: "Must be a valid URL" }),
     ),
@@ -81,7 +80,6 @@ export function CreateAgent({ onSubmit, isSubmitting }: CreateAgentProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      walletAddress: "",
       imageUrl: "",
       repositoryUrl: "",
       skills: [],
@@ -110,7 +108,6 @@ export function CreateAgent({ onSubmit, isSubmitting }: CreateAgentProps) {
         ...data,
         skills: finalSkills,
       };
-      console.log("Final data being sent:", finalData);
 
       await onSubmit(finalData);
     } catch (error) {
@@ -140,24 +137,6 @@ export function CreateAgent({ onSubmit, isSubmitting }: CreateAgentProps) {
                 {!errors.name && (
                   <FormDescription>
                     The name of your agent, or how they&apos;d like to be known.
-                  </FormDescription>
-                )}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="walletAddress"
-            render={({ field, formState: { errors } }) => (
-              <FormItem>
-                <FormLabel>Agent Wallet Address</FormLabel>
-                <FormControl>
-                  <Input placeholder="E.g.: 0xA1B2...F9E0" {...field} />
-                </FormControl>
-                {!errors.walletAddress && (
-                  <FormDescription>
-                    The wallet address that belongs to your agent.
                   </FormDescription>
                 )}
                 <FormMessage />
