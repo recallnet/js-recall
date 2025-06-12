@@ -206,44 +206,7 @@ export function configureUserRoutes(
    *                   type: boolean
    *                   example: true
    *                 agent:
-   *                   type: object
-   *                   properties:
-   *                     id:
-   *                       type: string
-   *                       format: uuid
-   *                     ownerId:
-   *                       type: string
-   *                       format: uuid
-   *                     walletAddress:
-   *                       type: string
-   *                       nullable: true
-   *                     name:
-   *                       type: string
-   *                     email:
-   *                       type: string
-   *                       nullable: true
-   *                     description:
-   *                       type: string
-   *                       nullable: true
-   *                     imageUrl:
-   *                       type: string
-   *                       nullable: true
-   *                     apiKey:
-   *                       type: string
-   *                       description: The API key for this agent (store this securely)
-   *                       example: "1234567890abcdef_fedcba0987654321"
-   *                     metadata:
-   *                       type: object
-   *                       nullable: true
-   *                     status:
-   *                       type: string
-   *                       enum: [active, inactive, suspended, deleted]
-   *                     createdAt:
-   *                       type: string
-   *                       format: date-time
-   *                     updatedAt:
-   *                       type: string
-   *                       format: date-time
+   *                   $ref: '#/components/schemas/Agent'
    *       400:
    *         description: Invalid input (name is required)
    *       401:
@@ -282,80 +245,7 @@ export function configureUserRoutes(
    *                 agents:
    *                   type: array
    *                   items:
-   *                     type: object
-   *                     properties:
-   *                       id:
-   *                         type: string
-   *                         format: uuid
-   *                       ownerId:
-   *                         type: string
-   *                         format: uuid
-   *                       walletAddress:
-   *                         type: string
-   *                         nullable: true
-   *                       name:
-   *                         type: string
-   *                       description:
-   *                         type: string
-   *                         nullable: true
-   *                       email:
-   *                         type: string
-   *                       imageUrl:
-   *                         type: string
-   *                       metadata:
-   *                         type: object
-   *                       status:
-   *                         type: string
-   *                         enum: [active, inactive, suspended, deleted]
-   *                       stats:
-   *                         type: object
-   *                         properties:
-   *                           completedCompetitions:
-   *                             type: integer
-   *                           totalTrades:
-   *                             type: integer
-   *                           totalVotes:
-   *                             type: integer
-   *                           bestPlacement:
-   *                             type: object
-   *                             properties:
-   *                               competitionId:
-   *                                 type: string
-   *                               rank:
-   *                                 type: integer
-   *                               score:
-   *                                 type: number
-   *                               totalAgents:
-   *                                 type: integer
-   *                           rank:
-   *                             type: integer
-   *                           score:
-   *                             type: number
-   *                       trophies:
-   *                         type: array
-   *                         items:
-   *                           type: string
-   *                       skills:
-   *                         type: array
-   *                         items:
-   *                           type: string
-   *                       hasUnclaimedRewards:
-   *                         type: boolean
-   *                       deactivationReason:
-   *                         type: string
-   *                         nullable: true
-   *                         description: Reason for deactivation (if status is inactive)
-   *                       deactivationDate:
-   *                         type: string
-   *                         format: date-time
-   *                         nullable: true
-   *                         description: Date when agent was deactivated (if status is inactive)
-   *                       createdAt:
-   *                         type: string
-   *                         format: date-time
-   *                       updatedAt:
-   *                         type: string
-   *                         format: date-time
+   *                     $ref: '#/components/schemas/Agent'
    *       401:
    *         description: User not authenticated
    *       500:
@@ -393,83 +283,7 @@ export function configureUserRoutes(
    *                   type: boolean
    *                   example: true
    *                 agent:
-   *                   type: object
-   *                   properties:
-   *                     id:
-   *                       type: string
-   *                       format: uuid
-   *                     ownerId:
-   *                       type: string
-   *                       format: uuid
-   *                     walletAddress:
-   *                       type: string
-   *                       nullable: true
-   *                     name:
-   *                       type: string
-   *                     email:
-   *                       type: string
-   *                       nullable: true
-   *                     description:
-   *                       type: string
-   *                       nullable: true
-   *                     imageUrl:
-   *                       type: string
-   *                       nullable: true
-   *                     metadata:
-   *                       type: object
-   *                       nullable: true
-   *                     status:
-   *                       type: string
-   *                       enum: [active, inactive, suspended, deleted]
-   *                     stats:
-   *                       type: object
-   *                       properties:
-   *                         completedCompetitions:
-   *                           type: integer
-   *                         totalTrades:
-   *                           type: integer
-   *                         totalVotes:
-   *                           type: integer
-   *                         bestPlacement:
-   *                           type: object
-   *                           properties:
-   *                             competitionId:
-   *                               type: string
-   *                             rank:
-   *                               type: integer
-   *                             score:
-   *                               type: integer
-   *                             totalAgents:
-   *                               type: integer
-   *                         rank:
-   *                           type: integer
-   *                         score:
-   *                           type: number
-   *                     trophies:
-   *                       type: array
-   *                       items:
-   *                         type: string
-   *                     skills:
-   *                       type: array
-   *                       items:
-   *                         type: string
-   *                     hasUnclaimedRewards:
-   *                       type: boolean
-   *                     deactivationReason:
-   *                       type: string
-   *                       nullable: true
-   *                       description: Reason for deactivation (if status is inactive)
-   *                     deactivationDate:
-   *                       type: string
-   *                       format: date-time
-   *                       nullable: true
-   *                       description: Date when agent was deactivated (if status is inactive)
-   *                     createdAt:
-   *                       type: string
-   *                       format: date-time
-   *                     updatedAt:
-   *                       type: string
-   *                       format: date-time
+   *                   $ref: '#/components/schemas/Agent'
    *       400:
    *         description: Agent ID is required
    *       401:
@@ -649,47 +463,7 @@ export function configureUserRoutes(
    *                   type: boolean
    *                   example: true
    *                 agent:
-   *                   type: object
-   *                   properties:
-   *                     id:
-   *                       type: string
-   *                       format: uuid
-   *                     ownerId:
-   *                       type: string
-   *                       format: uuid
-   *                     walletAddress:
-   *                       type: string
-   *                       nullable: true
-   *                     name:
-   *                       type: string
-   *                     email:
-   *                       type: string
-   *                       nullable: true
-   *                     description:
-   *                       type: string
-   *                     imageUrl:
-   *                       type: string
-   *                     metadata:
-   *                       type: object
-   *                       nullable: true
-   *                     status:
-   *                       type: string
-   *                       enum: [active, inactive, suspended, deleted]
-   *                     deactivationReason:
-   *                       type: string
-   *                       nullable: true
-   *                       description: Reason for deactivation (if status is inactive)
-   *                     deactivationDate:
-   *                       type: string
-   *                       format: date-time
-   *                       nullable: true
-   *                       description: Date when agent was deactivated (if status is inactive)
-   *                     createdAt:
-   *                       type: string
-   *                       format: date-time
-   *                     updatedAt:
-   *                       type: string
-   *                       format: date-time
+   *                   $ref: '#/components/schemas/Agent'
    *       400:
    *         description: Invalid fields provided or missing agentId
    *       401:
@@ -784,40 +558,7 @@ export function configureUserRoutes(
    *                       agents:
    *                         type: array
    *                         items:
-   *                           type: object
-   *                           properties:
-   *                             id:
-   *                               type: string
-   *                               format: uuid
-   *                             ownerId:
-   *                               type: string
-   *                               format: uuid
-   *                             name:
-   *                               type: string
-   *                             walletAddress:
-   *                               type: string
-   *                             email:
-   *                               type: string
-   *                               format: email
-   *                             description:
-   *                               type: string
-   *                             imageUrl:
-   *                               type: string
-   *                             apiKey:
-   *                               type: string
-   *                             metadata:
-   *                               type: object
-   *                               description: Optional metadata for the agent
-   *                               example: { "strategy": "yield-farming", "risk": "medium" }
-   *                               nullable: true
-   *                             status:
-   *                               type: string
-   *                             createdAt:
-   *                               type: string
-   *                               format: date-time
-   *                             updatedAt:
-   *                               type: string
-   *                               format: date-time
+   *                           $ref: '#/components/schemas/Agent'
    *                 total:
    *                   type: integer
    *                   description: Total number of competitions

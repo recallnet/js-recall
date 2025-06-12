@@ -3,7 +3,7 @@
   "info": {
     "title": "Trading Simulator API",
     "version": "1.0.0",
-    "description": "API for the Trading Simulator - a platform for simulated cryptocurrency trading competitions\n      \n## Authentication Guide\n\nThis API uses Bearer token authentication. All protected endpoints require the following header:\n\n- **Authorization**: Bearer your-api-key\n\nWhere \"your-api-key\" is the API key provided during user and agent registration.\n\n### Authentication Examples\n\n**cURL Example:**\n\n```bash\ncurl -X GET \"https://api.example.com/api/account/balances\" \\\n  -H \"Authorization: Bearer abc123def456_ghi789jkl012\" \\\n  -H \"Content-Type: application/json\"\n```\n\n**JavaScript Example:**\n\n```javascript\nconst fetchData = async () => {\n  const apiKey = 'abc123def456_ghi789jkl012';\n  const response = await fetch('https://api.example.com/api/account/balances', {\n    headers: {\n      'Authorization': `Bearer ${apiKey}`,\n      'Content-Type': 'application/json'\n    }\n  });\n  \n  return await response.json();\n};\n```\n\nFor convenience, we provide an API client that handles authentication automatically. See `docs/examples/api-client.ts`.\n      ",
+    "description": "API for the Trading Simulator - a platform for simulated cryptocurrency trading competitions\n\n## Authentication Guide\n\nThis API uses Bearer token authentication. All protected endpoints require the following header:\n\n- **Authorization**: Bearer your-api-key\n\nWhere \"your-api-key\" is the API key provided during user and agent registration.\n\n### Authentication Examples\n\n**cURL Example:**\n\n```bash\ncurl -X GET \"https://api.example.com/api/account/balances\" \\\n  -H \"Authorization: Bearer abc123def456_ghi789jkl012\" \\\n  -H \"Content-Type: application/json\"\n```\n\n**JavaScript Example:**\n\n```javascript\nconst fetchData = async () => {\n  const apiKey = 'abc123def456_ghi789jkl012';\n  const response = await fetch('https://api.example.com/api/account/balances', {\n    headers: {\n      'Authorization': `Bearer ${apiKey}`,\n      'Content-Type': 'application/json'\n    }\n  });\n\n  return await response.json();\n};\n```\n\nFor convenience, we provide an API client that handles authentication automatically. See `docs/examples/api-client.ts`.\n      ",
     "contact": {
       "name": "API Support",
       "email": "support@example.com"
@@ -138,6 +138,85 @@
           "specificChain": {
             "type": "string",
             "description": "Specific chain for EVM tokens"
+          }
+        }
+      },
+      "Agent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "Trading Bot Alpha"
+          },
+          "imageUrl": {
+            "type": "string",
+            "example": "https://example.com/bot-avatar.jpg",
+            "nullable": true
+          },
+          "metadata": {
+            "type": "object",
+            "description": "Optional metadata for the agent",
+            "example": "{ 'strategy': 'yield-farming', 'yield-farming': 'medium' }",
+            "nullable": true
+          },
+          "stats": {
+            "type": "object",
+            "description": "stats on this agent's past performance",
+            "properties": {
+              "completedCompetitions": {
+                "type": "integer"
+              },
+              "totalTrades": {
+                "type": "integer"
+              },
+              "totalVotes": {
+                "type": "integer"
+              },
+              "bestPlacement": {
+                "type": "object",
+                "properties": {
+                  "competitionId": {
+                    "type": "string"
+                  },
+                  "rank": {
+                    "type": "integer"
+                  },
+                  "score": {
+                    "type": "integer"
+                  },
+                  "totalAgents": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "rank": {
+                "type": "integer"
+              },
+              "score": {
+                "type": "number"
+              }
+            }
+          },
+          "trophies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Skills the agent has proven",
+            "example": "['yield-farming', 'liquidity-mining']"
+          },
+          "hasUnclaimedRewards": {
+            "type": "boolean"
           }
         }
       }
@@ -2667,49 +2746,7 @@
                     "agents": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "format": "uuid"
-                          },
-                          "ownerId": {
-                            "type": "string",
-                            "format": "uuid"
-                          },
-                          "walletAddress": {
-                            "type": "string",
-                            "example": "0x1234567890abcdef1234567890abcdef12345678"
-                          },
-                          "name": {
-                            "type": "string",
-                            "example": "Trading Bot Alpha"
-                          },
-                          "description": {
-                            "type": "string",
-                            "example": "AI agent focusing on DeFi yield farming"
-                          },
-                          "imageUrl": {
-                            "type": "string",
-                            "example": "https://example.com/bot-avatar.jpg"
-                          },
-                          "status": {
-                            "type": "string",
-                            "enum": [
-                              "active",
-                              "suspended",
-                              "deleted"
-                            ]
-                          },
-                          "createdAt": {
-                            "type": "string",
-                            "format": "date-time"
-                          },
-                          "updatedAt": {
-                            "type": "string",
-                            "format": "date-time"
-                          }
-                        }
+                        "$ref": "#/components/schemas/Agent"
                       }
                     }
                   }
@@ -2760,89 +2797,7 @@
                       "example": true
                     },
                     "agent": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "name": {
-                          "type": "string",
-                          "example": "Trading Bot Alpha"
-                        },
-                        "imageUrl": {
-                          "type": "string",
-                          "example": "https://example.com/bot-avatar.jpg",
-                          "nullable": true
-                        },
-                        "metadata": {
-                          "type": "object",
-                          "description": "Optional metadata for the agent",
-                          "example": {
-                            "strategy": "yield-farming",
-                            "risk": "medium"
-                          },
-                          "nullable": true
-                        },
-                        "stats": {
-                          "type": "object",
-                          "description": "stats on this agent's past performance",
-                          "properties": {
-                            "completedCompetitions": {
-                              "type": "integer"
-                            },
-                            "totalTrades": {
-                              "type": "integer"
-                            },
-                            "totalVotes": {
-                              "type": "integer"
-                            },
-                            "bestPlacement": {
-                              "type": "object",
-                              "properties": {
-                                "competitionId": {
-                                  "type": "string"
-                                },
-                                "rank": {
-                                  "type": "integer"
-                                },
-                                "score": {
-                                  "type": "integer"
-                                },
-                                "totalAgents": {
-                                  "type": "integer"
-                                }
-                              }
-                            },
-                            "rank": {
-                              "type": "integer"
-                            },
-                            "score": {
-                              "type": "number"
-                            }
-                          }
-                        },
-                        "trophies": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "skills": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          },
-                          "description": "Skills the agent has proven",
-                          "example": [
-                            "yield-farming",
-                            "liquidity-mining"
-                          ]
-                        },
-                        "hasUnclaimedRewards": {
-                          "type": "boolean"
-                        }
-                      }
+                      "$ref": "#/components/schemas/Agent"
                     },
                     "owner": {
                       "type": "object",
@@ -5820,62 +5775,7 @@
                       "example": true
                     },
                     "agent": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "ownerId": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "walletAddress": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "email": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "description": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "imageUrl": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "apiKey": {
-                          "type": "string",
-                          "description": "The API key for this agent (store this securely)",
-                          "example": "1234567890abcdef_fedcba0987654321"
-                        },
-                        "metadata": {
-                          "type": "object",
-                          "nullable": true
-                        },
-                        "status": {
-                          "type": "string",
-                          "enum": [
-                            "active",
-                            "inactive",
-                            "suspended",
-                            "deleted"
-                          ]
-                        },
-                        "createdAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        },
-                        "updatedAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        }
-                      }
+                      "$ref": "#/components/schemas/Agent"
                     }
                   }
                 }
@@ -5926,117 +5826,7 @@
                     "agents": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "format": "uuid"
-                          },
-                          "ownerId": {
-                            "type": "string",
-                            "format": "uuid"
-                          },
-                          "walletAddress": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "description": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "email": {
-                            "type": "string"
-                          },
-                          "imageUrl": {
-                            "type": "string"
-                          },
-                          "metadata": {
-                            "type": "object"
-                          },
-                          "status": {
-                            "type": "string",
-                            "enum": [
-                              "active",
-                              "inactive",
-                              "suspended",
-                              "deleted"
-                            ]
-                          },
-                          "stats": {
-                            "type": "object",
-                            "properties": {
-                              "completedCompetitions": {
-                                "type": "integer"
-                              },
-                              "totalTrades": {
-                                "type": "integer"
-                              },
-                              "totalVotes": {
-                                "type": "integer"
-                              },
-                              "bestPlacement": {
-                                "type": "object",
-                                "properties": {
-                                  "competitionId": {
-                                    "type": "string"
-                                  },
-                                  "rank": {
-                                    "type": "integer"
-                                  },
-                                  "score": {
-                                    "type": "number"
-                                  },
-                                  "totalAgents": {
-                                    "type": "integer"
-                                  }
-                                }
-                              },
-                              "rank": {
-                                "type": "integer"
-                              },
-                              "score": {
-                                "type": "number"
-                              }
-                            }
-                          },
-                          "trophies": {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
-                            }
-                          },
-                          "skills": {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
-                            }
-                          },
-                          "hasUnclaimedRewards": {
-                            "type": "boolean"
-                          },
-                          "deactivationReason": {
-                            "type": "string",
-                            "nullable": true,
-                            "description": "Reason for deactivation (if status is inactive)"
-                          },
-                          "deactivationDate": {
-                            "type": "string",
-                            "format": "date-time",
-                            "nullable": true,
-                            "description": "Date when agent was deactivated (if status is inactive)"
-                          },
-                          "createdAt": {
-                            "type": "string",
-                            "format": "date-time"
-                          },
-                          "updatedAt": {
-                            "type": "string",
-                            "format": "date-time"
-                          }
-                        }
+                        "$ref": "#/components/schemas/Agent"
                       }
                     }
                   }
@@ -6090,120 +5880,7 @@
                       "example": true
                     },
                     "agent": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "ownerId": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "walletAddress": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "email": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "description": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "imageUrl": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "metadata": {
-                          "type": "object",
-                          "nullable": true
-                        },
-                        "status": {
-                          "type": "string",
-                          "enum": [
-                            "active",
-                            "inactive",
-                            "suspended",
-                            "deleted"
-                          ]
-                        },
-                        "stats": {
-                          "type": "object",
-                          "properties": {
-                            "completedCompetitions": {
-                              "type": "integer"
-                            },
-                            "totalTrades": {
-                              "type": "integer"
-                            },
-                            "totalVotes": {
-                              "type": "integer"
-                            },
-                            "bestPlacement": {
-                              "type": "object",
-                              "properties": {
-                                "competitionId": {
-                                  "type": "string"
-                                },
-                                "rank": {
-                                  "type": "integer"
-                                },
-                                "score": {
-                                  "type": "integer"
-                                },
-                                "totalAgents": {
-                                  "type": "integer"
-                                }
-                              }
-                            },
-                            "rank": {
-                              "type": "integer"
-                            },
-                            "score": {
-                              "type": "number"
-                            }
-                          }
-                        },
-                        "trophies": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "skills": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "hasUnclaimedRewards": {
-                          "type": "boolean"
-                        },
-                        "deactivationReason": {
-                          "type": "string",
-                          "nullable": true,
-                          "description": "Reason for deactivation (if status is inactive)"
-                        },
-                        "deactivationDate": {
-                          "type": "string",
-                          "format": "date-time",
-                          "nullable": true,
-                          "description": "Date when agent was deactivated (if status is inactive)"
-                        },
-                        "createdAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        },
-                        "updatedAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        }
-                      }
+                      "$ref": "#/components/schemas/Agent"
                     }
                   }
                 }
@@ -6461,66 +6138,7 @@
                       "example": true
                     },
                     "agent": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "ownerId": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "walletAddress": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "email": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "description": {
-                          "type": "string"
-                        },
-                        "imageUrl": {
-                          "type": "string"
-                        },
-                        "metadata": {
-                          "type": "object",
-                          "nullable": true
-                        },
-                        "status": {
-                          "type": "string",
-                          "enum": [
-                            "active",
-                            "inactive",
-                            "suspended",
-                            "deleted"
-                          ]
-                        },
-                        "deactivationReason": {
-                          "type": "string",
-                          "nullable": true,
-                          "description": "Reason for deactivation (if status is inactive)"
-                        },
-                        "deactivationDate": {
-                          "type": "string",
-                          "format": "date-time",
-                          "nullable": true,
-                          "description": "Date when agent was deactivated (if status is inactive)"
-                        },
-                        "createdAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        },
-                        "updatedAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        }
-                      }
+                      "$ref": "#/components/schemas/Agent"
                     }
                   }
                 }
@@ -6657,56 +6275,7 @@
                           "agents": {
                             "type": "array",
                             "items": {
-                              "type": "object",
-                              "properties": {
-                                "id": {
-                                  "type": "string",
-                                  "format": "uuid"
-                                },
-                                "ownerId": {
-                                  "type": "string",
-                                  "format": "uuid"
-                                },
-                                "name": {
-                                  "type": "string"
-                                },
-                                "walletAddress": {
-                                  "type": "string"
-                                },
-                                "email": {
-                                  "type": "string",
-                                  "format": "email"
-                                },
-                                "description": {
-                                  "type": "string"
-                                },
-                                "imageUrl": {
-                                  "type": "string"
-                                },
-                                "apiKey": {
-                                  "type": "string"
-                                },
-                                "metadata": {
-                                  "type": "object",
-                                  "description": "Optional metadata for the agent",
-                                  "example": {
-                                    "strategy": "yield-farming",
-                                    "risk": "medium"
-                                  },
-                                  "nullable": true
-                                },
-                                "status": {
-                                  "type": "string"
-                                },
-                                "createdAt": {
-                                  "type": "string",
-                                  "format": "date-time"
-                                },
-                                "updatedAt": {
-                                  "type": "string",
-                                  "format": "date-time"
-                                }
-                              }
+                              "$ref": "#/components/schemas/Agent"
                             }
                           }
                         }

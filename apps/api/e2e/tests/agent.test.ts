@@ -90,15 +90,16 @@ describe("Agent API", () => {
     expect(apiKey).toBeDefined();
 
     // Verify agent client is authenticated
-    const profileResponse = await agentClient.getAgentProfile();
+    const profileResponse =
+      (await agentClient.getAgentProfile()) as AgentProfileResponse;
     expect(profileResponse.success).toBe(true);
-    expect((profileResponse as AgentProfileResponse).agent).toBeDefined();
-    expect((profileResponse as AgentProfileResponse).agent.id).toBe(agent.id);
-    expect((profileResponse as AgentProfileResponse).agent.name).toBe(
-      agentName,
-    );
-    expect((profileResponse as AgentProfileResponse).owner).toBeDefined();
-    expect((profileResponse as AgentProfileResponse).owner.id).toBe(user.id);
+    expect(profileResponse.agent).toBeDefined();
+    expect(profileResponse.agent.id).toBe(agent.id);
+    expect(profileResponse.agent.name).toBe(agentName);
+    // the admin helper above adds a walletAddress to (verifies) the agent
+    expect(profileResponse.agent.isVerified).toBe(true);
+    expect(profileResponse.owner).toBeDefined();
+    expect(profileResponse.owner.id).toBe(user.id);
   });
 
   test("agents can update their profile information", async () => {
@@ -1183,10 +1184,12 @@ describe("Agent API", () => {
       });
 
       // Step 5: Verify the agent's wallet address was updated
-      const agentProfile = await agentClient.getAgentProfile();
-      expect((agentProfile as AgentProfileResponse).agent.walletAddress).toBe(
+      const agentProfile =
+        (await agentClient.getAgentProfile()) as AgentProfileResponse;
+      expect(agentProfile.agent.walletAddress).toBe(
         walletAddress.toLowerCase(),
       );
+      expect(agentProfile.agent.isVerified).toBe(true);
     });
 
     test("should reject verification with invalid signature", async () => {
@@ -1496,10 +1499,12 @@ Purpose: WALLET_VERIFICATION`;
       });
 
       // Step 5: Verify the agent's wallet address was updated
-      const agentProfile = await agentClient.getAgentProfile();
-      expect((agentProfile as AgentProfileResponse).agent.walletAddress).toBe(
+      const agentProfile =
+        (await agentClient.getAgentProfile()) as AgentProfileResponse;
+      expect(agentProfile.agent.walletAddress).toBe(
         walletAddress.toLowerCase(),
       );
+      expect(agentProfile.agent.isVerified).toBe(true);
     });
 
     test("should reject verification when nonce is reused", async () => {

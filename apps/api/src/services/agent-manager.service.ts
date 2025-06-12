@@ -983,7 +983,10 @@ export class AgentManager {
    * @returns The sanitized agent object
    */
   sanitizeAgent(agent: SelectAgent) {
-    return AgentPublicSchema.parse(agent);
+    return AgentPublicSchema.parse({
+      ...agent,
+      isVerified: !!agent.walletAddress,
+    });
   }
 
   /**

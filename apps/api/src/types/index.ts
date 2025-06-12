@@ -469,7 +469,9 @@ export type Agent = z.infer<typeof AgentSchema>;
 /**
  * Pulic Agent information Object, omits apiKey
  */
-export const AgentPublicSchema = AgentSchema.omit({ apiKey: true });
+export const AgentPublicSchema = AgentSchema.omit({ apiKey: true }).extend({
+  isVerified: z.boolean(),
+});
 export type AgentPublic = z.infer<typeof AgentPublicSchema>;
 
 /**

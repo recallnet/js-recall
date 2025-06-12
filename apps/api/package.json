@@ -82,6 +82,7 @@
   },
   "devDependencies": {
     "@elizaos/core": "^0.25.9",
+    "@recallnet/api-sdk": "workspace:*",
     "@recallnet/eslint-config": "workspace:^",
     "@recallnet/typescript-config": "workspace:*",
     "@types/bcrypt": "^5.0.0",
