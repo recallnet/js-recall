@@ -3,20 +3,23 @@ import Link from "next/link";
 
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { Agent, AgentCompetition } from "../types/agent";
-import { UserAgentCompetition } from "../types/competition";
-import { Identicon } from "./identicon";
+import { Identicon } from "@/components/identicon";
+import { getRankColor } from "@/lib/rank-colors";
+import { Agent, AgentCompetition } from "@/types/agent";
+import { UserAgentCompetition } from "@/types/competition";
 
 interface ParticipantsAvatarsProps {
   agents: Agent[] | UserAgentCompetition[] | AgentCompetition[];
   maxDisplay?: number;
   className?: string;
+  showRank?: boolean;
 }
 
 export function ParticipantsAvatars({
   agents,
   maxDisplay = 3,
   className,
+  showRank = false,
 }: ParticipantsAvatarsProps) {
   const displayAgents = agents.slice(0, maxDisplay);
   const remainingCount = Math.max(0, agents.length - maxDisplay);
@@ -27,11 +30,15 @@ export function ParticipantsAvatars({
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      {displayAgents.map((agent) => (
+      {displayAgents.map((agent, index) => (
         <Link
           key={agent.id}
           href={`/agents/${agent.id}`}
-          className="group relative transition-transform duration-200 hover:z-10 hover:scale-110"
+          className={cn(
+            "group relative transition-transform duration-200 hover:z-10 hover:scale-110",
+            showRank && "rounded-full border-2",
+            showRank && getRankColor(index + 1),
+          )}
           title={agent.name}
         >
           {agent.imageUrl ? (

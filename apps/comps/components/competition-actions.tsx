@@ -48,6 +48,21 @@ export const CompetitionActions: React.FC<CompetitionActionsProps> = ({
     );
   }
 
+  if (competition.status === CompetitionStatus.Active) {
+    return (
+      <div className={containerClasses}>
+        <Button
+          variant="outline"
+          size="lg"
+          className="w-full uppercase"
+          disabled
+        >
+          Vote
+        </Button>
+      </div>
+    );
+  }
+
   if (competition.status === CompetitionStatus.Ended) {
     return (
       <div className={containerClasses}>

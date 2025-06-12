@@ -9,7 +9,7 @@ import { Card } from "@recallnet/ui2/components/card";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
-import { UserCompetition } from "@/types";
+import { CompetitionStatus, UserCompetition } from "@/types";
 
 import { formatCompetitionDates } from "../utils/competition-utils";
 import { CompetitionActions } from "./competition-actions";
@@ -57,6 +57,7 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
             <ParticipantsAvatars
               agents={competition.agents}
               className="pr-6 pt-6"
+              showRank={competition.status !== CompetitionStatus.Pending}
             />
           </div>
 
@@ -71,6 +72,7 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
           <ParticipantsAvatars
             agents={topLeaders?.agents || []}
             className="px-6 py-2"
+            showRank={competition.status !== CompetitionStatus.Pending}
           />
 
           <hr />

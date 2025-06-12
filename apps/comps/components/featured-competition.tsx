@@ -71,7 +71,7 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
         </div>
       </div>
 
-      <div className="flex gap-8">
+      <div className="flex gap-8 border-b">
         <div className="w-full p-6">
           <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
             {competition.status === CompetitionStatus.Active
@@ -79,7 +79,10 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
               : "Pre-Registered"}
           </h3>
           {topLeaders?.agents.length ? (
-            <ParticipantsAvatars agents={topLeaders?.agents} />
+            <ParticipantsAvatars
+              agents={topLeaders?.agents}
+              showRank={competition.status === CompetitionStatus.Active}
+            />
           ) : (
             <span className="text-sm">-</span>
           )}
@@ -96,74 +99,76 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
         </div>
       </div>
 
-      <div className="xs:block hidden">
-        {isLoading
-          ? Array.from({ length: 3 }).map((_, i) => (
-              <div
-                key={i}
-                className="flex h-[64px] items-center justify-between rounded-lg bg-gray-900/50 p-3"
-              >
-                <div className="flex items-center gap-3">
-                  <Skeleton className="h-8 w-[62px] rounded-md" />
-                  <Skeleton className="h-6 w-8" />
-                  <Skeleton className="h-10 w-10 rounded-full" />
-                  <Skeleton className="h-5 w-24" />
-                </div>
-                <div className="flex items-center gap-8">
-                  <Skeleton className="h-5 w-28" />
-                  <Skeleton className="h-5 w-24" />
-                </div>
-              </div>
-            ))
-          : topLeaders?.agents.map((agent) => (
-              <div
-                key={agent.id}
-                className="hover:bg-card flex items-center justify-between rounded-lg border-y bg-[#050507] p-3"
-              >
-                <Link href={`/agents/${agent.id}`}>
+      {competition.status === CompetitionStatus.Active && (
+        <div className="xs:block hidden">
+          {isLoading
+            ? Array.from({ length: 3 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex h-[64px] items-center justify-between rounded-lg bg-gray-900/50 p-3"
+                >
                   <div className="flex items-center gap-3">
-                    <RankBadge position={agent.position} />
-                    <Image
-                      src={agent.imageUrl || "/agent-image.png"}
-                      alt={agent.name}
-                      width={40}
-                      height={40}
-                      className="rounded-full"
-                    />
-                    <span className="text-secondary-foreground font-semibold">
-                      {agent.name}
-                    </span>
+                    <Skeleton className="h-8 w-[62px] rounded-md" />
+                    <Skeleton className="h-6 w-8" />
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <Skeleton className="h-5 w-24" />
                   </div>
-                </Link>
-                <div className="flex items-center gap-8">
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-sm text-gray-400">P&L</span>
-                    <span
-                      className={`font-semibold ${
-                        agent.pnlPercent >= 0
-                          ? "text-green-400"
-                          : "text-red-400"
-                      }`}
-                    >
-                      ({agent.pnlPercent >= 0 ? "+" : ""}
-                      {agent.pnlPercent.toFixed(2)}%)
-                    </span>
-                  </div>
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-sm text-gray-400">VOTES</span>
-                    <span className="text-secondary-foreground font-semibold">
-                      {agent.voteCount.toLocaleString()}
-                    </span>
+                  <div className="flex items-center gap-8">
+                    <Skeleton className="h-5 w-28" />
+                    <Skeleton className="h-5 w-24" />
                   </div>
                 </div>
-              </div>
-            ))}
-        {!isLoading && topLeaders?.agents.length === 0 && (
-          <div className="flex h-[64px] items-center justify-center rounded-lg bg-gray-900/50 p-3">
-            <p className="text-gray-400">No participants yet.</p>
-          </div>
-        )}
-      </div>
+              ))
+            : topLeaders?.agents.map((agent) => (
+                <div
+                  key={agent.id}
+                  className="hover:bg-card flex items-center justify-between rounded-lg border-y bg-[#050507] p-3"
+                >
+                  <Link href={`/agents/${agent.id}`}>
+                    <div className="flex items-center gap-3">
+                      <RankBadge position={agent.position} />
+                      <Image
+                        src={agent.imageUrl || "/agent-image.png"}
+                        alt={agent.name}
+                        width={40}
+                        height={40}
+                        className="rounded-full"
+                      />
+                      <span className="text-secondary-foreground font-semibold">
+                        {agent.name}
+                      </span>
+                    </div>
+                  </Link>
+                  <div className="flex items-center gap-8">
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-sm text-gray-400">P&L</span>
+                      <span
+                        className={`font-semibold ${
+                          agent.pnlPercent >= 0
+                            ? "text-green-400"
+                            : "text-red-400"
+                        }`}
+                      >
+                        ({agent.pnlPercent >= 0 ? "+" : ""}
+                        {agent.pnlPercent.toFixed(2)}%)
+                      </span>
+                    </div>
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-sm text-gray-400">VOTES</span>
+                      <span className="text-secondary-foreground font-semibold">
+                        {agent.voteCount.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+          {!isLoading && topLeaders?.agents.length === 0 && (
+            <div className="flex h-[64px] items-center justify-center rounded-lg bg-gray-900/50 p-3">
+              <p className="text-gray-400">No participants yet.</p>
+            </div>
+          )}
+        </div>
+      )}
 
       <CompetitionActions
         competition={competition}
