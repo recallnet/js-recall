@@ -1,5 +1,4 @@
 import Image from "next/image";
-import Link from "next/link";
 
 import { cn } from "@recallnet/ui2/lib/utils";
 
@@ -23,27 +22,32 @@ export function AgentAvatar({
   className,
   size = 32,
 }: AgentAvatarProps) {
-  return (
-    <Link
-      href={`/agents/${agent.id}`}
-      className={cn(
-        "group relative transition-transform duration-200 hover:z-10 hover:scale-110",
-        showRank && "rounded-full border-2",
-        showRank && rank && getRankColor(rank),
-        className,
-      )}
-      title={agent.name}
-    >
-      {agent.imageUrl ? (
-        <Image
-          src={agent.imageUrl}
-          alt={agent.name}
-          fill
-          className="h-8 w-8 rounded-full object-cover"
-        />
-      ) : (
-        <Identicon address={agent.id} className="h-8 w-8" size={size} />
-      )}
-    </Link>
+  const commonClasses = cn(
+    "group relative h-8 w-8 transition-transform duration-200 hover:z-10 hover:scale-110",
+    showRank && "h-9 w-9 rounded-full border-2",
+    showRank && rank && getRankColor(rank),
+    className,
   );
+
+  if (agent.imageUrl) {
+    return (
+      <Image
+        src={agent.imageUrl}
+        alt={agent.name}
+        fill
+        className={cn("rounded-full object-cover", commonClasses)}
+        title={agent.name}
+      />
+    );
+  }
+
+  const identicon = (
+    <Identicon
+      address={agent.id}
+      className={cn("", commonClasses)}
+      size={size}
+    />
+  );
+
+  return identicon;
 }

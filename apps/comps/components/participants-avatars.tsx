@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AgentAvatar } from "@/components/agent-avatar";
@@ -27,13 +29,15 @@ export function ParticipantsAvatars({
   return (
     <div className={cn("flex items-center gap-2", className)}>
       {displayAgents.map((agent, index) => (
-        <AgentAvatar
-          key={agent.id}
-          agent={agent}
-          showRank={showRank}
-          rank={showRank ? index + 1 : undefined}
-          size={32}
-        />
+        <Link href={`/agents/${agent.id}`} key={agent.id}>
+          <AgentAvatar
+            key={agent.id}
+            agent={agent}
+            showRank={showRank}
+            rank={showRank ? index + 1 : undefined}
+            size={32}
+          />
+        </Link>
       ))}
       {remainingCount > 0 && (
         <div className="text-secondary-foreground flex h-8 items-center justify-center rounded-full bg-gray-800 px-2 text-sm">
