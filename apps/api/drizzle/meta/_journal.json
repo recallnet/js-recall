@@ -64,6 +64,13 @@
       "when": 1749646942299,
       "tag": "0008_previous_scarecrow",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1749682968332,
+      "tag": "0009_lying_lucky_pierre",
+      "breakpoints": true
     }
   ]
 }
