@@ -447,6 +447,7 @@ export const ActorStatusSchema = z.enum(ACTOR_STATUS_VALUES);
  * Status of a user, agent, or admin.
  */
 export type ActorStatus = z.infer<typeof ActorStatusSchema>;
+
 /**
  * Agent information Object
  */

@@ -185,6 +185,7 @@ For convenience, we provide an API client that handles authentication automatica
             },
           },
         },
+
         Agent: {
           type: "object",
           properties: {
@@ -192,77 +193,106 @@ For convenience, we provide an API client that handles authentication automatica
               type: "string",
               format: "uuid",
             },
+            ownerId: {
+              type: "string",
+              format: "uuid",
+            },
             name: {
               type: "string",
               example: "Trading Bot Alpha",
             },
+            walletAddress: {
+              type: "string",
+              format: "hexadecimal",
+              description: "Wallet address of the agent",
+              nullable: true,
+            },
+            isVerified: {
+              type: "boolean",
+              description: "field indicating if the agent is verified",
+            },
+            email: {
+              type: "string",
+              format: "email",
+              nullable: true,
+            },
+            description: {
+              type: "string",
+              nullable: true,
+            },
             imageUrl: {
               type: "string",
+              format: "uri",
               example: "https://example.com/bot-avatar.jpg",
               nullable: true,
             },
+            status: {
+              type: "string",
+              description:
+                "One of three possible values: active, inactive, suspended, or deleted",
+            },
             metadata: {
               type: "object",
-              description: "Optional metadata for the agent",
-              example:
-                "{ 'strategy': 'yield-farming', 'yield-farming': 'medium' }",
+              description: "Optional nullable metadata for the agent",
               nullable: true,
-            },
-            stats: {
-              type: "object",
-              description: "stats on this agent's past performance",
               properties: {
-                completedCompetitions: {
-                  type: "integer",
-                },
-                totalTrades: {
-                  type: "integer",
-                },
-                totalVotes: {
-                  type: "integer",
-                },
-                bestPlacement: {
+                stats: {
                   type: "object",
                   properties: {
-                    competitionId: {
-                      type: "string",
+                    completedCompetitions: {
+                      type: "number",
+                    },
+                    totalTrades: {
+                      type: "number",
+                    },
+                    totalVotes: {
+                      type: "number",
+                    },
+                    // TODO: make these non-optional once we have the data
+                    // Depends on: https://github.com/recallnet/js-recall/issues/536
+                    bestPlacement: {
+                      type: "object",
+                      properties: {
+                        competitionId: {
+                          type: "string",
+                        },
+                        rank: {
+                          type: "number",
+                        },
+                        score: {
+                          type: "number",
+                        },
+                        totalAgents: {
+                          type: "number",
+                        },
+                      },
                     },
                     rank: {
-                      type: "integer",
+                      type: "number",
                     },
                     score: {
-                      type: "integer",
-                    },
-                    totalAgents: {
-                      type: "integer",
+                      type: "number",
                     },
                   },
                 },
-                rank: {
-                  type: "integer",
+                skills: {
+                  type: "array",
+                  items: {
+                    type: "string",
+                  },
                 },
-                score: {
-                  type: "number",
+                trophies: {
+                  type: "array",
+                  items: {
+                    type: "string",
+                  },
+                },
+                hasUnclaimedRewards: {
+                  type: "boolean",
                 },
               },
             },
-            trophies: {
-              type: "array",
-              items: {
-                type: "string",
-              },
-            },
-            skills: {
-              type: "array",
-              items: {
-                type: "string",
-              },
-              description: "Skills the agent has proven",
-              example: "['yield-farming', 'liquidity-mining']",
-            },
-            hasUnclaimedRewards: {
-              type: "boolean",
-            },
+            // end metadata
           },
         },
       },
