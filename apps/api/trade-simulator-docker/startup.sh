@@ -16,9 +16,9 @@ done
 
 # Check if we need to run migrations
 if ! check_db_initialized; then
-    echo "Database not initialized, running migrations..."
-    cd /workdir/apps/api && pnpm db:migrate
-    echo "Migrations completed"
+    echo "Database not initialized, running baseline and migrations..."
+    cd /workdir/apps/api && pnpm db:prepare-production
+    echo "Baseline and migrations completed"
 else
     echo "Database already initialized, skipping migrations"
 fi

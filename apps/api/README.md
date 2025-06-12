@@ -135,68 +135,129 @@ The application uses a layered architecture:
 - PostgreSQL (v13+)
 - npm or yarn
 
-### Installation
+## Baseline Migrations for Legacy Data
 
-1. Clone the repository:
+The trading simulator includes a baseline migration system designed to handle legacy database states and historical data that predates the current Drizzle migration system.
 
-   ```
-   git clone https://github.com/recallnet/trade-sim
-   cd trade-sim
-   ```
+### What are Baseline Migrations?
 
-2. Install dependencies:
+Baseline migrations allow you to:
 
-   ```
-   npm install
-   ```
+- Apply a foundational SQL file that represents a historical database state
+- Ensure legacy data is loaded before incremental Drizzle migrations are applied
+- Prepare production databases with existing data structures
+- Maintain consistency between development and production environments
 
-3. Set up your environment configuration:
+### How it Works
 
-   ```
-   cp .env.example .env
-   ```
+The baseline system automatically:
 
-   Open the `.env` file in your editor and configure the following:
+1. **Checks for fresh databases** - Only applies baseline to databases without existing migrations
+2. **Applies baseline SQL** - Executes your legacy SQL file in a transaction
+3. **Tracks application** - Creates a marker table to prevent re-application
+4. **Runs normal migrations** - Continues with standard Drizzle migrations
 
-   - Database connection details
-   - Initial token balances for different chains
-   - Cross-chain trading settings (enabled/disabled)
-   - EVM chains to support
-   - Price tracking and portfolio snapshot intervals
+### Setting Up Baseline Migrations
 
-   This step is critical as it determines how your trading simulator will be configured.
+1. **Place your legacy SQL file** in the baseline directory:
 
-4. Run the automated setup:
-
-   ```
-   pnpm setup:all
+   ```bash
+   # Your legacy SQL file goes here
+   apps/api/baseline/baseline.sql
    ```
 
-   This command will:
+2. **Replace the placeholder content** with your actual SQL:
 
-   - Generate secure random values for security secrets (ROOT_ENCRYPTION_KEY)
-   - Initialize the database schema with all necessary tables
-   - Build the application
-   - Start a temporary server
-   - Set up the admin account (with interactive prompts)
-   - Provide final instructions
+   ```sql
+   -- Example baseline.sql content
+   CREATE TABLE legacy_table (
+     id SERIAL PRIMARY KEY,
+     data JSONB NOT NULL,
+     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+   );
 
-   Alternatively, you can run the steps separately if you need more control:
+   INSERT INTO legacy_table (data) VALUES
+   ('{"type": "legacy", "value": 1}'),
+   ('{"type": "legacy", "value": 2}');
 
-   ```
-   pnpm generate:secrets  # Generate security secrets
-   pnpm db:migrate        # Initialize the database with full schema
-   pnpm build             # Build the application
-   pnpm start             # Start the server
-   pnpm setup:admin       # Set up the admin account (in a separate terminal)
+   -- Add any other legacy schema and data here
    ```
 
-5. Start the development server:
-   ```
-   pnpm dev
+### Usage Scenarios
+
+#### Development Environment
+
+The baseline is automatically applied during normal development:
+
+```bash
+# Normal development migration - baseline applied automatically if needed
+pnpm db:migrate
+```
+
+#### Production Database Setup
+
+For production deployments, use the dedicated preparation script:
+
+```bash
+# Prepare a fresh production database with baseline + migrations
+pnpm db:prepare-production
+```
+
+### 🚀 Production Database Preparation: Step-by-Step
+
+To prepare your production database from scratch, **follow these steps in order**:
+
+1. **Ensure your environment is configured**
+
+   - Copy `.env.example` to `.env` and fill in all required values (especially database connection details).
+   - Make sure your PostgreSQL server is running and accessible.
+
+2. **Place your baseline SQL file**
+
+   - Put your legacy SQL dump at:
+     ```
+     apps/api/baseline/baseline.sql
+     ```
+   - This file should contain your full schema and data as of the baseline (no DROP statements).
+
+3. **Install dependencies** (if not already done)
+
+   ```sh
+   pnpm install
    ```
 
-The server will be available at http://localhost:3000 by default.
+4. **Prepare the production database**
+
+   - This will:
+     - Apply the baseline SQL (using `psql` for full compatibility)
+     - Run all Drizzle migrations after the baseline
+   - Run:
+     ```sh
+     pnpm db:prepare-production
+     ```
+   - This step may take a while for large SQL files. You will see progress updates in the terminal.
+
+5. **Verify the database**
+
+   - Check your database to ensure all tables and data are present.
+   - Look for the `__baseline_applied__` marker table to confirm the baseline was applied.
+
+6. **Continue with the rest of your production setup**
+   - Build and start the application as needed:
+     ```sh
+     pnpm build
+     pnpm start
+     ```
+
+---
+
+**Note:**
+
+- The baseline is only applied if the database is fresh (no migrations yet).
+- All future schema changes must be made using Drizzle migrations, not by editing the baseline.
+- If you need to reset the production database, drop all tables and repeat these steps.
+
+---
 
 ## Admin Setup Guide
 

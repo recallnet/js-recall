@@ -59,3 +59,14 @@ The Docker Compose health check automatically adjusts to use the correct endpoin
 - Make sure your `DATABASE_URL` points to your external PostgreSQL instance
 - The application will automatically handle database migrations on startup
 - Set `API_PREFIX` in your `.env` file if you need custom API routing (e.g., `API_PREFIX=testing-grounds`)
+
+## Baseline SQL and Production Database Preparation
+
+- On first run, the application will automatically apply your baseline SQL file (if present at `apps/api/baseline/baseline.sql`) and then run all migrations.
+- This is handled by the `pnpm db:prepare-production` command, which is now used in the Docker startup process.
+- **To initialize a new production database:**
+  1. Place your baseline SQL file at `apps/api/baseline/baseline.sql`.
+  2. Ensure your `.env` is configured with the correct `DATABASE_URL`.
+  3. Start the application with Docker Compose or Docker Run as described above.
+  4. The baseline and all migrations will be applied automatically if the database is fresh.
+- If the database is already initialized, only new migrations will be applied on subsequent runs.
