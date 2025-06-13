@@ -1807,9 +1807,9 @@ Purpose: WALLET_VERIFICATION`;
     expect(agentProfile.agent.stats?.bestPlacement?.competitionId).toBe(
       firstCompetitionId,
     );
-    expect(agentProfile.agent.stats?.bestPlacement?.position).toBe(1);
+    expect(agentProfile.agent.stats?.bestPlacement?.rank).toBe(1);
     expect(
-      agentProfile.agent.stats?.bestPlacement?.participants,
+      agentProfile.agent.stats?.bestPlacement?.totalAgents,
     ).toBeGreaterThan(0);
 
     expect(agentProfile.agent.stats?.rank).toBe(1);
