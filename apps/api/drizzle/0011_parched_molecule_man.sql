@@ -1,0 +1,1 @@
+ALTER TABLE "object_index" ADD COLUMN "data" text NOT NULL;

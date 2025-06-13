@@ -526,7 +526,6 @@ describe("User API", () => {
     expect(defaultAgents[0]?.stats?.completedCompetitions).toBe(0);
     expect(defaultAgents[0]?.stats?.totalTrades).toBe(0);
     expect(defaultAgents[0]?.stats?.totalVotes).toBe(0);
-    // TODO: once `agent_rank` + `competitions_leaderboard` are implemented, these should be defined
     expect(defaultAgents[0]?.stats?.bestPlacement).toBeUndefined();
     expect(defaultAgents[0]?.stats?.rank).toBeUndefined();
     expect(defaultAgents[0]?.stats?.score).toBeUndefined();
