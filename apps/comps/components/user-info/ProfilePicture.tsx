@@ -91,7 +91,7 @@ export const ProfilePicture: React.FC<ProfilePictureProps> = ({
   return (
     <div
       className={cn(
-        "group relative flex h-[256px] w-[256px] flex-col items-center justify-center overflow-hidden border transition-all duration-300",
+        "group relative flex h-[256px] w-[256px] flex-col items-center justify-center overflow-hidden transition-all duration-300",
         isLoading && "animate-pulse",
         className,
       )}

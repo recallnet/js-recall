@@ -1,3 +1,4 @@
+import { Slot } from "@radix-ui/react-slot";
 import { type VariantProps, cva } from "class-variance-authority";
 
 import { cn } from "@recallnet/ui2/lib/utils";
@@ -10,7 +11,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-blue-600 font-semibold uppercase text-white hover:bg-blue-700",
+          "bg-blue-600 font-semibold uppercase text-white hover:bg-[#003D7A]",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline:
@@ -35,20 +36,52 @@ const buttonVariants = cva(
   },
 );
 
+interface ButtonProps {
+  variant?: VariantProps<typeof buttonVariants>["variant"];
+  size?: VariantProps<typeof buttonVariants>["size"];
+  className?: string;
+  children: React.ReactNode;
+  /**
+   * When `asChild` is true, the button will behave as a *slot* – it will
+   * simply merge its props and class names onto the immediate child element
+   * you pass, instead of rendering its own element. This is the preferred
+   * pattern when you need to style a different underlying element (e.g. a
+   * `next/link` component) without introducing an extra DOM node that could
+   * violate HTML semantics such as nesting an `<a>` inside another `<a>`.
+   *
+   * See: https://www.radix-ui.com/primitives/docs/utilities/slot
+   */
+  asChild?: boolean;
+  as?: "button" | "a";
+  href?: string;
+  [key: string]: any;
+}
+
 function Button({
   className,
   variant,
   size,
+  asChild,
+  as = "button",
+  href,
   children,
   ...props
-}: React.ComponentProps<"button"> & VariantProps<typeof buttonVariants>) {
+}: ButtonProps) {
+  // When `asChild` is provided we render a Radix `Slot` so the caller can
+  // pass any element (e.g. `next/link`) and still get our styling.
+  const Comp: React.ElementType = asChild ? Slot : as;
+
   return (
-    <button
+    <Comp
+      // Merge variant-based styles with the incoming className
       className={cn(buttonVariants({ variant, size, className }))}
+      // Only set `href` when we are *actually* rendering an <a> ourselves.
+      // When `asChild` is true the consumer is responsible for providing it.
+      {...(!asChild && as === "a" ? { href } : {})}
       {...props}
     >
       {children}
-    </button>
+    </Comp>
   );
 }
 

@@ -80,7 +80,7 @@ export default function UserInfoSection({
         }}
         className="w-90"
       />
-      <div className="flex w-full flex-col items-start justify-center gap-5 p-4">
+      <div className="flex w-full flex-col items-start justify-center gap-5 border-l p-4">
         <div className="flex items-center gap-3">
           <h2 className="text-4xl font-bold">{user?.name}</h2>
           {/*           {user?.isVerified && <BadgeCheckIcon className="text-green-500" />} */}

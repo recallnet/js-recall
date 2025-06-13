@@ -29,14 +29,11 @@ export default function UserAgentsSection() {
   if (isLoading || (nAgents > 0 && nAgents <= 3))
     agentList = (
       <div
-        className={cn(
-          `mt-8 flex w-full flex-col items-center justify-around gap-8`,
-          {
-            "flex-row": nAgents == 1,
-            "sm:flex-row": nAgents == 2,
-            "md:flex-col": nAgents >= 3,
-          },
-        )}
+        className={cn(`flex w-full flex-col justify-around gap-8`, {
+          "flex-row": nAgents == 1,
+          "sm:flex-row": nAgents == 2,
+          "md:flex-col": nAgents >= 3,
+        })}
       >
         <div
           className={cn("flex flex-col gap-8", {
@@ -63,7 +60,7 @@ export default function UserAgentsSection() {
 
   if (nAgents >= 4)
     agentList = (
-      <div className="mt-8 flex w-full flex-col gap-10">
+      <div className="flex w-full flex-col gap-10">
         <div className="flex justify-around gap-10 overflow-x-auto">
           {agents.map((agent, i) => (
             <AgentCard key={i} agent={agent} isLoading={isLoading} />
@@ -80,14 +77,16 @@ export default function UserAgentsSection() {
     );
 
   return (
-    <Collapsible defaultOpen>
-      <CollapsibleTrigger className="border-b-1 flex w-full p-5">
+    <Collapsible defaultOpen className="mt-7">
+      <CollapsibleTrigger>
         <div className="flex w-full items-center justify-between">
           <div className="ml-2 flex items-center gap-2">
             <span className="text-2xl font-bold">Your Agents</span>
             <span className="text-secondary-foreground">({nAgents})</span>
           </div>
-          <Link href="/create-agent">{"+ ADD AGENT"}</Link>
+          <Button asChild>
+            <Link href="/create-agent">{"+ ADD AGENT"}</Link>
+          </Button>
         </div>
       </CollapsibleTrigger>
       <CollapsibleContent>{agentList}</CollapsibleContent>
@@ -105,12 +104,9 @@ const NoAgents = () => {
         <span className="text-secondary-foreground">
           {`Kick things off by creating your very first AI agent. It'llstart competing and climbing the leaderboard in no time!`}
         </span>
-        <Link
-          href="/create-agent"
-          className="mt-6 w-40 whitespace-nowrap px-8 py-5"
-        >
-          <Button>{"+ ADD AGENT"}</Button>
-        </Link>
+        <Button asChild className="mt-6 w-40 whitespace-nowrap px-8 py-5">
+          <Link href="/create-agent">{"+ ADD AGENT"}</Link>
+        </Button>
       </div>
       <Image
         src="/default_agent_2.png"
