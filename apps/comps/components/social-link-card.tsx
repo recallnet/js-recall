@@ -31,10 +31,11 @@ export const SocialLinkCard: React.FC<SocialLinkCardProps> = ({
             alt={`${socialLink.name} icon`}
             width={24}
             height={24}
+            className="h-auto w-auto"
           />
         </div>
         <div className="flex items-center justify-between">
-          <h3 className="text-primary mt-auto text-lg font-bold">
+          <h3 className="text-primary mt-auto font-mono text-lg font-bold">
             {socialLink.name}
           </h3>
           <ArrowRightIcon className="text-primary h-5 w-5" />

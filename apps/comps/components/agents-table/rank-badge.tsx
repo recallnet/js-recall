@@ -1,5 +1,7 @@
 import React from "react";
 
+import { cn } from "@recallnet/ui2/lib/utils";
+
 import { AwardIcon } from "./award-icon";
 
 interface RankBadgeProps {
@@ -7,22 +9,16 @@ interface RankBadgeProps {
 }
 
 export const RankBadge: React.FC<RankBadgeProps> = ({ position }) => {
-  const getBackgroundColor = () => {
-    switch (position) {
-      case 1:
-        return "bg-yellow-800";
-      case 2:
-        return "bg-gray-700";
-      case 3:
-        return "bg-[#1A0E05]";
-      default:
-        return "bg-gray-700";
-    }
-  };
-
   return (
-    <span
-      className={`rounded px-2 py-2 text-center font-semibold ${getBackgroundColor()}`}
+    <div
+      className={cn(
+        "min-w-19 flex items-center justify-center rounded py-2 font-semibold",
+        {
+          "bg-yellow-800": position === 1,
+          "bg-gray-700": position === 2 || position > 3,
+          "bg-[#1A0E05]": position === 3,
+        },
+      )}
     >
       {position <= 3 ? (
         <AwardIcon
@@ -36,6 +32,6 @@ export const RankBadge: React.FC<RankBadgeProps> = ({ position }) => {
       ) : (
         position
       )}
-    </span>
+    </div>
   );
 };

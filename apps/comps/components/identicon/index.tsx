@@ -5,11 +5,13 @@ import { cn } from "@recallnet/ui2/lib/utils";
 export function Identicon({
   address,
   className,
+  size = 40,
 }: {
   address: string;
   className?: string;
+  size?: number;
 }) {
-  const svg = toSvg(address, 40, {
+  const svg = toSvg(address, size, {
     padding: 0.9,
     hues: [227],
     lightness: {

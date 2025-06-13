@@ -103,7 +103,8 @@ export interface CreateAgentRequest {
   description?: string;
   email?: string;
   metadata: {
-    [key: string]: string | undefined;
+    [key: string]: string | string[] | undefined;
+    skills: string[];
   };
 }
 

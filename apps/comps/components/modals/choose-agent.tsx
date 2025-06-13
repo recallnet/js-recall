@@ -39,8 +39,8 @@ export const ChooseAgentModal: React.FC<ChooseAgentModalProps> = ({
   const [selectedAgentId, setSelectedAgentId] = useState<string>();
   const pathname = usePathname();
 
-  const selectedAgent = agents.find((agent) => agent.id === selectedAgentId);
-  const isVerified = !!selectedAgent?.walletAddress;
+  //const selectedAgent = agents.find((agent) => agent.id === selectedAgentId);
+  const isVerified = true; // !!selectedAgent?.walletAddress;
 
   const handleContinue = () => {
     if (selectedAgentId && isVerified) {

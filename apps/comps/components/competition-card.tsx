@@ -1,18 +1,23 @@
 "use client";
 
-import { Share1Icon } from "@radix-ui/react-icons";
 import Image from "next/image";
+import Link from "next/link";
 import React from "react";
 
 import { Badge } from "@recallnet/ui2/components/badge";
 import { Card } from "@recallnet/ui2/components/card";
-import { IconButton } from "@recallnet/ui2/components/icon-button";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { Competition } from "@/types";
+import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
+import { CompetitionStatus, UserCompetition } from "@/types";
+
+import { formatCompetitionDates } from "../utils/competition-utils";
+import { CompetitionActions } from "./competition-actions";
+import { CompetitionStatusBanner } from "./competition-status-banner";
+import { ParticipantsAvatars } from "./participants-avatars";
 
 interface CompetitionCardProps {
-  competition: Competition;
+  competition: UserCompetition;
   className?: string;
 }
 
@@ -20,32 +25,91 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
   competition,
   className,
 }) => {
+  const { data: topLeaders } = useCompetitionAgents(competition.id, {
+    limit: 5,
+  });
+
+  const duration = formatCompetitionDates(
+    competition.startDate,
+    competition.endDate,
+  );
+
   return (
     <Card
       cropSize={35}
-      corner="bottom-left"
-      className={cn("bg-card flex flex-col p-4", className)}
+      corner="bottom-right"
+      className={cn("bg-card flex w-full flex-col", className)}
     >
-      <div className="flex h-1/2 flex-col">
-        <div className="flex items-start justify-between">
-          <div className="flex gap-2">
-            <Badge>{competition.type}</Badge>
+      <CompetitionStatusBanner status={competition.status} />
+
+      <div className="flex h-full w-full">
+        <div className="flex w-full flex-col gap-2 border-r">
+          <div className="flex w-full items-start justify-between align-top">
+            <Link
+              href={`/competitions/${competition.id}`}
+              className="group inline-block p-6"
+            >
+              <h1 className="text-3xl font-bold group-hover:underline">
+                {competition.name}
+              </h1>
+            </Link>
+
+            <ParticipantsAvatars
+              agents={competition.agents}
+              className="pr-6 pt-6"
+              showRank={competition.status !== CompetitionStatus.Pending}
+            />
           </div>
-          <IconButton
-            Icon={Share1Icon}
-            aria-label="Share"
-            iconClassName="text-primary"
+
+          <Badge variant="gray" className="ml-6 px-3 py-1 text-sm">
+            {competition.type}
+          </Badge>
+
+          <p className="text-secondary-foreground max-h-50 mb-auto overflow-y-auto text-ellipsis px-6 py-2">
+            {competition.description}
+          </p>
+
+          <ParticipantsAvatars
+            agents={topLeaders?.agents || []}
+            className="px-6 py-2"
+            showRank={competition.status !== CompetitionStatus.Pending}
           />
+
+          <hr />
+
+          <CompetitionActions competition={competition} className="px-6 py-4" />
         </div>
-        <h1 className="mb-6 mt-4 text-4xl font-bold">{competition.name}</h1>
-      </div>
-      <div className="relative hidden h-1/2 justify-end sm:flex">
-        <Image
-          src={competition.imageUrl || "/competition-placeholder.png"}
-          alt={competition.name}
-          fill
-          className="object-contain"
-        />
+
+        <div className="flex w-full flex-col">
+          <div className="flex w-full">
+            <div className="w-full border-r p-6">
+              <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
+                Duration
+              </h3>
+              <p className="text-xl font-semibold">{duration}</p>
+            </div>
+            <div className="w-full p-6">
+              <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
+                Reward
+              </h3>
+              <p className="text-xl font-semibold">TBA</p>
+            </div>
+          </div>
+          <div className="relative h-full w-full">
+            {competition.imageUrl && (
+              <Image
+                src={competition.imageUrl}
+                alt="Competition"
+                fill={true}
+                className="object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = "none";
+                }}
+              />
+            )}
+          </div>
+        </div>
       </div>
     </Card>
   );

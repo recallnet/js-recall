@@ -30,8 +30,7 @@ function CreateAgentView() {
         email: data.email,
         description: data.description,
         metadata: {
-          walletAddress: data.walletAddress,
-          skills: JSON.stringify(data.skills),
+          skills: data.skills,
           repositoryUrl: data.repositoryUrl,
           x: data.x,
           telegram: data.telegram,

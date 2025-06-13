@@ -1,3 +1,4 @@
+import { Agent } from "./agent";
 import { PaginationResponse } from "./api";
 import { CompetitionStatus, CrossChainTradingType } from "./enums";
 
@@ -54,7 +55,7 @@ export interface Competition {
     totalVolume: number;
     uniqueTokens: number;
   };
-  totalVotes: number;
+  totalVotes?: number;
   votingEnabled: boolean;
   userVotingInfo: {
     canVote: boolean;
@@ -78,6 +79,21 @@ export interface CompetitionsMetadata {
 export interface CompetitionsResponse {
   pagination: PaginationResponse;
   competitions: Competition[];
+}
+
+export interface UserCompetitionsResponse {
+  success: boolean;
+  total: number;
+  pagination: PaginationResponse;
+  competitions: UserCompetition[];
+}
+
+export interface UserAgentCompetition extends Agent {
+  rank: number;
+}
+
+export interface UserCompetition extends Competition {
+  agents: UserAgentCompetition[];
 }
 
 export interface JoinCompetitionResponse {

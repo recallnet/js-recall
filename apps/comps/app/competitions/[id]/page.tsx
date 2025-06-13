@@ -8,11 +8,12 @@ import React from "react";
 import { Button } from "@recallnet/ui2/components/button";
 
 import { AgentsTable } from "@/components/agents-table";
+import { BasicCompetitionCard } from "@/components/basic-competition-card";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { CountdownClock } from "@/components/clock";
-import { CompetitionCard } from "@/components/competition-card";
 import { CompetitionInfo } from "@/components/competition-info";
 import CompetitionSkeleton from "@/components/competition-skeleton";
+import { FooterSection } from "@/components/footer-section";
 import { JoinCompetitionButton } from "@/components/join-competition-button";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
 import { getSocialLinksArray } from "@/data/social";
@@ -94,7 +95,7 @@ export default function CompetitionPage({
         className="mb-10"
       />
       <div className="flex w-full flex-col gap-5 md:flex-row">
-        <CompetitionCard competition={competition} className="md:w-1/2" />
+        <BasicCompetitionCard competition={competition} className="md:w-1/2" />
         <div className="md:w-1/2">
           <CompetitionInfo competition={competition} />
           <div className="mt-5 flex w-full flex-row justify-center gap-4">
@@ -128,12 +129,12 @@ export default function CompetitionPage({
         </div>
       </div>
 
-      {competition.status === "pending" && (
+      {competition.status === "pending" && competition.startDate && (
         <div className="mt-12 flex flex-col items-center justify-center gap-2 text-center sm:flex-row">
           <span className="text-2xl font-bold text-gray-400">
             Competition starts in...
           </span>
-          <CountdownClock targetDate={new Date(competition.startDate ?? "")} />
+          <CountdownClock targetDate={new Date(competition.startDate)} />
         </div>
       )}
 
@@ -161,6 +162,7 @@ export default function CompetitionPage({
         />
       )}
       <JoinSwarmSection socialLinks={getSocialLinksArray()} className="mt-12" />
+      <FooterSection />
     </>
   );
 }

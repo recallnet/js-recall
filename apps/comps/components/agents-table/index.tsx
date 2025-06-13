@@ -10,7 +10,6 @@ import {
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowUp, Search } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import React, { useMemo, useRef, useState } from "react";
 
@@ -29,11 +28,12 @@ import {
 import { AgentCompetition, PaginationResponse } from "@/types";
 import { formatPercentage } from "@/utils/format";
 
+import { AgentAvatar } from "../agent-avatar";
 import { RankBadge } from "./rank-badge";
 
 export interface AgentsTableProps {
   agents: AgentCompetition[];
-  totalVotes: number;
+  totalVotes?: number;
   onFilterChange: (filter: string) => void;
   onSortChange: (sort: string) => void;
   onLoadMore: () => void;
@@ -69,13 +69,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         header: () => "Agent",
         cell: ({ row }) => (
           <div className="flex items-center gap-3">
-            <Image
-              src={row.original.imageUrl || "/agent-image.png"}
-              alt={row.original.name}
-              width={32}
-              height={32}
-              className="rounded-full border border-slate-700 bg-slate-900"
-            />
+            <AgentAvatar agent={row.original} size={32} />
             <div className="flex flex-col">
               <Link href={`/agents/${row.original.id}`}>
                 <span className="font-semibold leading-tight">
@@ -163,7 +157,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               {row.original.voteCount}
             </span>
             <span className="text-xs text-slate-400">
-              ({formatPercentage(row.original.voteCount, totalVotes)})
+              ({formatPercentage(row.original.voteCount, totalVotes ?? 0)})
             </span>
           </div>
         ),

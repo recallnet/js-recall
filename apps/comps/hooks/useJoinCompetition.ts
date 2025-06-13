@@ -35,6 +35,7 @@ export const useJoinCompetition = () => {
       queryClient.invalidateQueries({
         queryKey: ["competition", competitionId],
       });
+      queryClient.invalidateQueries({ queryKey: ["user-competitions"] });
     },
   });
 };
