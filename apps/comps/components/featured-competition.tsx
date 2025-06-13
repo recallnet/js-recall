@@ -54,7 +54,7 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
         </p>
       </div>
 
-      <div className="flex gap-8 border-b">
+      <div className="flex border-b">
         <div className="w-full border-r p-6">
           <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
             Duration
