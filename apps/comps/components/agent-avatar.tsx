@@ -38,7 +38,8 @@ export function AgentAvatar({
       <Image
         src={agent.imageUrl}
         alt={agent.name}
-        fill
+        width={size}
+        height={size}
         className={cn("rounded-full object-cover", commonClasses)}
         title={agent.name}
       />
