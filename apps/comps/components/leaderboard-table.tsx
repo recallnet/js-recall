@@ -31,7 +31,11 @@ const emptyAgent: (i: number) => LeaderboardAgent = (i: number) => ({
   score: 0,
   voteCount: 0,
   numCompetitions: 0,
-  stats: {},
+  stats: {
+    totalVotes: 0,
+    totalTrades: 0,
+    completedCompetitions: 0,
+  },
 });
 
 export function LeaderboardTable({

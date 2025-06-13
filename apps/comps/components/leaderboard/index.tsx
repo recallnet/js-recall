@@ -17,7 +17,7 @@ export function LeaderboardSection() {
 
   return (
     <div className="mb-10">
-      <h1 className="text-primary mb-4 text-5xl font-bold md:text-6xl">
+      <h1 className="mb-4 text-5xl font-bold text-white md:text-6xl">
         Global Leaderboard
       </h1>
       <div className="mb-6 grid grid-cols-1 gap-5 sm:grid-cols-3">

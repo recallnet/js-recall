@@ -24,11 +24,27 @@ export interface Agent {
   status: string;
   stats: {
     bestPlacement?: { position: string; participants: string };
-    skills?: string[];
+
+    totalVotes: number;
+    totalTrades: number;
+    completedCompetitions: number;
   };
+
+  skills?: string[];
   metadata?: AgentCompetitionMetadata;
+  trophies?: string[];
   deactivationReason?: string;
   deactivationDate?: string;
+}
+
+export interface AgentWithOwnerResponse {
+  success: boolean;
+  agent: Agent;
+  owner: {
+    id: string;
+    name: string;
+    walletAddress: string;
+  };
 }
 
 export interface LeaderboardAgent extends Agent {
