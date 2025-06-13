@@ -1,7 +1,8 @@
-import {atom, useAtom} from "jotai";
-import {atomWithStorage} from "jotai/utils";
+import { atom, useAtom } from "jotai";
+import { atomWithStorage } from "jotai/utils";
 
-import {User} from "@/types/profile";
+import { Agent } from "@/types/agent";
+import { User } from "@/types/profile";
 
 export type AuthStatus =
   | "unauthenticated" // No active session
@@ -24,16 +25,6 @@ export type UserStorage = {
 export const userAtom = atomWithStorage<UserStorage>("user", {
   user: null,
   status: "unauthenticated",
-});
-
-export const userAgentAtom = atom<Agent & {rank: number}>({
-  id: "",
-  name: "",
-  imageUrl: "",
-  walletAddress: "",
-  rank: 0,
-  description: "",
-  status: "",
 });
 
 export const useUser = (): UserStorage => {
