@@ -71,6 +71,7 @@
     "jsonwebtoken": "^9.0.2",
     "keccak256": "^1.0.6",
     "merkletreejs": "^0.5.2",
+    "openskill": "^4.1.0",
     "pg": "^8.10.0",
     "rate-limiter-flexible": "^2.4.1",
     "redis": "^4.6.5",

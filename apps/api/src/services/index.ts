@@ -1,5 +1,6 @@
 import { AdminManager } from "@/services/admin-manager.service.js";
 import { AgentManager } from "@/services/agent-manager.service.js";
+import { AgentRankService } from "@/services/agentrank.service.js";
 import { AuthService } from "@/services/auth.service.js";
 import { BalanceManager } from "@/services/balance-manager.service.js";
 import { CompetitionManager } from "@/services/competition-manager.service.js";
@@ -33,6 +34,7 @@ class ServiceRegistry {
   private _portfolioSnapshotter: PortfolioSnapshotter;
   private _leaderboardService: LeaderboardService;
   private _voteManager: VoteManager;
+  private _agentRankService: AgentRankService;
 
   constructor() {
     // Initialize services in dependency order
@@ -59,16 +61,20 @@ class ServiceRegistry {
     // Configuration service for dynamic settings
     this._configurationService = new ConfigurationService();
 
+    // Initialize agent rank service (no dependencies)
+    this._agentRankService = new AgentRankService();
+
+    // Initialize vote manager (no dependencies)
+    this._voteManager = new VoteManager();
+
     this._competitionManager = new CompetitionManager(
       this._balanceManager,
       this._tradeSimulator,
       this._portfolioSnapshotter,
       this._agentManager,
       this._configurationService,
+      this._agentRankService,
     );
-
-    // Initialize vote manager (no dependencies)
-    this._voteManager = new VoteManager();
 
     // Initialize LeaderboardService with required dependencies
     this._leaderboardService = new LeaderboardService(this._agentManager);
@@ -141,22 +147,27 @@ class ServiceRegistry {
   get voteManager(): VoteManager {
     return this._voteManager;
   }
+
+  get agentRankService(): AgentRankService {
+    return this._agentRankService;
+  }
 }
 
 // Export service types for convenience
 export {
+  AdminManager,
+  AgentManager,
+  AgentRankService,
   AuthService,
   BalanceManager,
-  PriceTracker,
-  TradeSimulator,
   CompetitionManager,
-  UserManager,
-  AgentManager,
-  AdminManager,
   ConfigurationService,
-  ServiceRegistry,
-  PortfolioSnapshotter,
   LeaderboardService,
+  PortfolioSnapshotter,
+  PriceTracker,
+  ServiceRegistry,
+  TradeSimulator,
+  UserManager,
   VoteManager,
 };
 

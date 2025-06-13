@@ -123,8 +123,8 @@ export interface Agent {
     totalVotes: number;
     bestPlacement?: {
       competitionId: string;
-      position: number;
-      participants: number;
+      rank: number;
+      totalAgents: number;
     };
     rank?: number;
     score?: number;

@@ -2,7 +2,6 @@ import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { config } from "@/config/index.js";
-import { updateAgentRank } from "@/database/repositories/agentrank-repository.js";
 import {
   CROSS_CHAIN_TRADING_TYPE,
   GlobalLeaderboardResponse,
@@ -83,27 +82,6 @@ describe("Leaderboard API", () => {
 
     await adminClient.endCompetition(startResponse.competition.id);
 
-    // Inject fake agent rank data because we don't have the update logic yet
-    await updateAgentRank(
-      {
-        agentId: agent1.id,
-        mu: 30.1,
-        sigma: 7.9,
-        ordinal: 1200,
-      },
-      startResponse.competition.id,
-    );
-
-    await updateAgentRank(
-      {
-        agentId: agent2.id,
-        mu: 30.1,
-        sigma: 7.9,
-        ordinal: 1500,
-      },
-      startResponse.competition.id,
-    );
-
     // Get global leaderboard
     const leaderboard =
       (await agentClient1.getGlobalLeaderboard()) as GlobalLeaderboardResponse;
@@ -133,8 +111,8 @@ describe("Leaderboard API", () => {
     expect(ranks).toEqual([...ranks].sort((a, b) => a - b));
 
     // Verify agent score
-    expect(leaderboard.agents[0]?.score).toBe(1500);
-    expect(leaderboard.agents[1]?.score).toBe(1200);
+    expect(leaderboard.agents[0]?.score).toBe(1582.529098428072);
+    expect(leaderboard.agents[1]?.score).toBe(1456.0379920213372);
   });
 
   test("should use query params to filter leaderboard", async () => {
@@ -181,28 +159,6 @@ describe("Leaderboard API", () => {
 
     await adminClient.endCompetition(startResponse.competition.id);
 
-    // Inject fake agent rank data because we don't have the update logic yet
-    // Agent 1 loses, so it has lower score
-    await updateAgentRank(
-      {
-        agentId: agent1.id,
-        mu: 30.1,
-        sigma: 7.9,
-        ordinal: 1200,
-      },
-      startResponse.competition.id,
-    );
-
-    await updateAgentRank(
-      {
-        agentId: agent2.id,
-        mu: 30.1,
-        sigma: 7.9,
-        ordinal: 1500,
-      },
-      startResponse.competition.id,
-    );
-
     // Get global leaderboard
     const leaderboard = (await agentClient1.getGlobalLeaderboard({
       limit: 1,
@@ -231,7 +187,7 @@ describe("Leaderboard API", () => {
     }
 
     // Verify agent rank/score
-    expect(leaderboard.agents[0]?.score).toBe(1200);
+    expect(leaderboard.agents[0]?.score).toBe(1456.0379920213372);
     expect(leaderboard.agents[0]?.rank).toBe(2);
 
     // Verify agents are ordered by rank
@@ -308,28 +264,6 @@ describe("Leaderboard API", () => {
     // End second competition
     await adminClient.endCompetition(startResponse2.competition.id);
 
-    // Inject fake agent rank data because we don't have the update logic yet
-    // Agent 1 loses, so it has lower score
-    await updateAgentRank(
-      {
-        agentId: agent1.id,
-        mu: 30.1,
-        sigma: 7.9,
-        ordinal: 1200,
-      },
-      startResponse.competition.id,
-    );
-
-    await updateAgentRank(
-      {
-        agentId: agent2.id,
-        mu: 30.1,
-        sigma: 7.9,
-        ordinal: 1500,
-      },
-      startResponse.competition.id,
-    );
-
     // Get global leaderboard
     const leaderboard =
       (await agentClient1.getGlobalLeaderboard()) as GlobalLeaderboardResponse;
@@ -346,8 +280,8 @@ describe("Leaderboard API", () => {
     expect(leaderboard.agents).toHaveLength(2);
     expect(leaderboard.agents[0]?.numCompetitions).toBe(2);
     expect(leaderboard.agents[1]?.numCompetitions).toBe(2);
-    expect(leaderboard.agents[0]?.score).toBe(1500);
-    expect(leaderboard.agents[1]?.score).toBe(1200);
+    expect(leaderboard.agents[0]?.score).toBe(1648.5496736664295);
+    expect(leaderboard.agents[1]?.score).toBe(1425.0675004914583);
     expect(leaderboard.agents[0]?.rank).toBe(1);
     expect(leaderboard.agents[1]?.rank).toBe(2);
   });
@@ -409,27 +343,6 @@ describe("Leaderboard API", () => {
 
     // End second competition
     await adminClient.endCompetition(secondCompetitionId);
-
-    // Inject fake agent rank data because we don't have the update logic yet
-    await updateAgentRank(
-      {
-        agentId: agent1.id,
-        mu: 30.1,
-        sigma: 7.9,
-        ordinal: 1500,
-      },
-      startResponse.competition.id,
-    );
-
-    await updateAgentRank(
-      {
-        agentId: agent2.id,
-        mu: 30.1,
-        sigma: 7.9,
-        ordinal: 1500,
-      },
-      startResponse.competition.id,
-    );
 
     // Verify votes are counted correctly
     const leaderboard =
@@ -552,37 +465,6 @@ describe("Leaderboard API", () => {
     await voter1.castVote(agent2.id, startResponse2.competition.id);
 
     await adminClient.endCompetition(startResponse2.competition.id);
-
-    // Inject fake agent rank data because we don't have the update logic yet
-    await updateAgentRank(
-      {
-        agentId: agent1.id,
-        mu: 30.1,
-        sigma: 7.9,
-        ordinal: 1500,
-      },
-      startResponse2.competition.id,
-    );
-
-    await updateAgentRank(
-      {
-        agentId: agent2.id,
-        mu: 30.1,
-        sigma: 7.9,
-        ordinal: 1400,
-      },
-      startResponse2.competition.id,
-    );
-
-    await updateAgentRank(
-      {
-        agentId: agent3.id,
-        mu: 30.1,
-        sigma: 7.9,
-        ordinal: 1300,
-      },
-      startResponse2.competition.id,
-    );
 
     // Test 1: Default sorting (by rank ascending)
     const defaultSort =
