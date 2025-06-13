@@ -11,7 +11,7 @@ Simple Docker deployment for the Multi-Chain Trading Simulator.
 
 ### 1. Create Environment File
 
-Create a `.env` file in `apps/api/trade-simulator-docker/` with your configuration, similar to [.env.example](../.env.example).
+Create a `.env` file in `apps/api/trade-simulator-docker/` with your configuration, similar to [.env.example](.env.example).
 
 ### 2. Run the Application
 
@@ -60,13 +60,40 @@ The Docker Compose health check automatically adjusts to use the correct endpoin
 - The application will automatically handle database migrations on startup
 - Set `API_PREFIX` in your `.env` file if you need custom API routing (e.g., `API_PREFIX=testing-grounds`)
 
-## Baseline SQL and Production Database Preparation
+## Database Initialization Options
 
-- On first run, the application will automatically apply your baseline SQL file (if present at `apps/api/baseline/baseline.sql`) and then run all migrations.
-- This is handled by the `pnpm db:prepare-production` command, which is now used in the Docker startup process.
-- **To initialize a new production database:**
-  1. Place your baseline SQL file at `apps/api/baseline/baseline.sql`.
-  2. Ensure your `.env` is configured with the correct `DATABASE_URL`.
-  3. Start the application with Docker Compose or Docker Run as described above.
-  4. The baseline and all migrations will be applied automatically if the database is fresh.
-- If the database is already initialized, only new migrations will be applied on subsequent runs.
+The Docker container supports two database initialization modes controlled by the `RUN_BACKFILL` environment variable:
+
+### Legacy/Production Setup (Default)
+
+```bash
+RUN_BACKFILL=true  # Default if not specified
+```
+
+- Applies baseline SQL file (if present at `apps/api/baseline/baseline.sql`)
+- Then runs all Drizzle migrations
+- Use this for production deployments with historical data
+
+### Modern/Clean Setup
+
+```bash
+RUN_BACKFILL=false
+```
+
+- Runs only Drizzle migrations (no baseline)
+- Use this for fresh deployments without legacy data
+
+### Setup Instructions
+
+**For legacy/production databases:**
+
+1. Place your baseline SQL file at `apps/api/baseline/baseline.sql`
+2. Set `RUN_BACKFILL=true` in your `.env` (or omit it, as this is the default)
+3. Start the container - baseline and migrations will be applied automatically
+
+**For modern/clean databases:**
+
+1. Set `RUN_BACKFILL=false` in your `.env`
+2. Start the container - only Drizzle migrations will be applied
+
+**Note:** If the database is already initialized, the container will skip migration steps on subsequent runs regardless of the `RUN_BACKFILL` setting.

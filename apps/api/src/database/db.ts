@@ -11,7 +11,7 @@ import { fileURLToPath } from "url";
 import { config } from "@/config/index.js";
 import schema from "@/database/schema/index.js";
 
-import { applyBaselineIfNeeded } from "./baseline.js";
+import { applyBaselineIfNeeded } from "../../scripts/baseline.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

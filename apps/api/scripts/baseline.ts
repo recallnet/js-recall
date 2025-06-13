@@ -5,8 +5,8 @@ import path from "path";
 import process from "process";
 import { fileURLToPath } from "url";
 
-import { config } from "../config/index.js";
-import { db, migrateDb } from "./db.js";
+import { config } from "../src/config/index.js";
+import { db, migrateDb } from "../src/database/db.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

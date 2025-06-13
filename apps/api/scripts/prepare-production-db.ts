@@ -1,5 +1,4 @@
-import { prepareProductionDatabase } from "@/database/baseline.js";
-import { migrateDb } from "@/database/db.js";
+import { prepareProductionDatabase } from "@/scripts/baseline.js";
 
 /**
  * Production Database Preparation Script
@@ -17,12 +16,8 @@ async function main() {
   try {
     console.log("🏭 Starting production database preparation...");
 
-    // Apply the baseline SQL
+    // Apply the baseline SQL and run migrations
     await prepareProductionDatabase();
-
-    // Run all migrations after baseline
-    console.log("📦 Running database migrations...");
-    await migrateDb();
 
     console.log("✅ Production database preparation completed successfully!");
     process.exit(0);

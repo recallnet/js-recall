@@ -1,0 +1,414 @@
+[
+    {
+        "id": "1d245884-32b1-40d8-b2d4-e7daf9ea5851",
+        "name": "fly to moon"
+    },
+    {
+        "id": "6ce9ea99-7512-4ed1-892e-105a19949826",
+        "name": "Yield Yeti"
+    },
+    {
+        "id": "31787422-701d-4571-927b-342ed0611ca3",
+        "name": "SignalPulse"
+    },
+    {
+        "id": "9781931b-4821-4e84-89bc-2ba26d490acb",
+        "name": "Helix Beacon"
+    },
+    {
+        "id": "f2ba4778-e000-474a-bdcd-cc408ca4af94",
+        "name": "Crosswave Cipher"
+    },
+    {
+        "id": "ec49fc72-c792-4469-a20b-fc4479067587",
+        "name": "Hauser Catalyst"
+    },
+    {
+        "id": "ca4585a1-e094-4c2b-8a07-5fbc9228f69d",
+        "name": "Foundation Anchor"
+    },
+    {
+        "id": "f9e613f6-4c6e-4e8d-a276-a677015cfff2",
+        "name": "Kuato Oracle"
+    },
+    {
+        "id": "3255e1a0-0e25-4d7d-86a5-c7f263f4dea9",
+        "name": "Yield Foundry"
+    },
+    {
+        "id": "0d3c356a-8338-45a6-b21a-dc26a075807e",
+        "name": "Game Mirage"
+    },
+    {
+        "id": "ff48d6ed-8a68-4ac2-9ee8-d23e53547561",
+        "name": "Reactor Core"
+    },
+    {
+        "id": "0b14fb86-4d1f-4fbd-bc38-5f4ed474ff39",
+        "name": "Solo Team"
+    },
+    {
+        "id": "620bba2c-e08e-48ed-af98-1b9a3a1c6e3f",
+        "name": "Twin Orbit"
+    },
+    {
+        "id": "a291160e-3b2a-4578-a792-99d6d3ece069",
+        "name": "Johnny Meme Express"
+    },
+    {
+        "id": "4071c1e2-0ec4-499a-b693-b95b8f21bc77",
+        "name": "Firstlight Sniper"
+    },
+    {
+        "id": "7b588f96-85c9-4e42-b59c-4025c209333c",
+        "name": "Benny Sol Cipher"
+    },
+    {
+        "id": "18d38bd3-0016-4608-aa66-be05f79fbbf9",
+        "name": "Sol Steady Whale"
+    },
+    {
+        "id": "b1c5ca12-04d1-4ff2-9323-637a6c005ae2",
+        "name": "Sol Game Nexus"
+    },
+    {
+        "id": "e429878c-2d5f-4148-90e3-3cb1c5c22756",
+        "name": "Mars Sol Forge"
+    },
+    {
+        "id": "b2794b55-f5c9-4f86-ab43-7b162bce0163",
+        "name": "MsHieuWish"
+    },
+    {
+        "id": "69ec6ace-61f0-4463-b178-234fbfeb1977",
+        "name": "Carrera"
+    },
+    {
+        "id": "69285e00-11e1-4cf3-884b-cc5763a80b04",
+        "name": "DK"
+    },
+    {
+        "id": "342d205f-ab8f-45e9-9b24-7b0033e63cc8",
+        "name": "Liquidity Recall"
+    },
+    {
+        "id": "be8bf949-eab2-46d9-9bce-c0f11d13383c",
+        "name": "TriMeme Rover"
+    },
+    {
+        "id": "8bd26829-2b48-48bf-b4dc-dcc9357dc16e",
+        "name": "SOGAR"
+    },
+    {
+        "id": "71068495-d94c-4c8c-98b6-f49a79c8d40c",
+        "name": "Quaid Blue Ledger"
+    },
+    {
+        "id": "a8b73bbe-14d8-48f3-bb8e-404799faba08",
+        "name": "Richter Guardian"
+    },
+    {
+        "id": "87ad41b4-a08f-42d8-ab80-08a125c951e4",
+        "name": "ETH Anchor"
+    },
+    {
+        "id": "6419cdb3-192d-4e2c-9d99-8e523466ef7c",
+        "name": "Quaid Dreamer"
+    },
+    {
+        "id": "4ea61ce8-cf5b-4b7c-ada1-e65e5b8fe732",
+        "name": "Sol Yield Forge"
+    },
+    {
+        "id": "236c8609-aa78-4542-84d8-22e7a48e19cb",
+        "name": "Sol Shred Nomad"
+    },
+    {
+        "id": "37482738-50f3-4a90-95f0-72581e8ce3c6",
+        "name": "PNG"
+    },
+    {
+        "id": "93cfa4de-a6c5-4918-a6e7-9a222d0be7e9",
+        "name": "Pemulung Airdrop "
+    },
+    {
+        "id": "d65cfc98-18ae-4870-a4c7-5c1e9915739a",
+        "name": "Test Name"
+    },
+    {
+        "id": "f30e3047-88fe-4ac3-b092-42af3874d7e0",
+        "name": "Hasan"
+    },
+    {
+        "id": "9e99b1ec-658e-48ea-b2dd-936ecf11dd6c",
+        "name": "My Team"
+    },
+    {
+        "id": "fd813ca0-1ea7-4a04-960b-1d8d11767b04",
+        "name": "Bang Pateng Community"
+    },
+    {
+        "id": "65d2a994-e105-498e-abb8-3a190f40e1b7",
+        "name": "one for all"
+    },
+    {
+        "id": "97491443-76d8-4226-9ed2-58161257353c",
+        "name": "0x GM"
+    },
+    {
+        "id": "40ddc349-1fc4-4328-8995-83f7b5dc6676",
+        "name": "Alpha Agents"
+    },
+    {
+        "id": "464dd75d-7fec-4625-aa0e-fdd3c47d4f67",
+        "name": "Maqomlabs"
+    },
+    {
+        "id": "9946dbb5-db2f-4b94-9d0b-fc434402faa6",
+        "name": "AlgoForge"
+    },
+    {
+        "id": "01821109-2433-47b1-a94c-03b4bfffb7d3",
+        "name": "Loothunter"
+    },
+    {
+        "id": "7455872c-bd06-4b0e-8c28-aae08ebfb26b",
+        "name": "Twenty One Pilot Team"
+    },
+    {
+        "id": "1dc06900-8a06-4860-8543-9019416298a3",
+        "name": "Mahirs Team"
+    },
+    {
+        "id": "707d38f5-1289-456c-ad07-4635ca8048d9",
+        "name": "MonsterCry"
+    },
+    {
+        "id": "04039ca7-ca12-4398-afac-b35aa0df0675",
+        "name": "The Recall Team"
+    },
+    {
+        "id": "777f6b7a-41ba-47b9-a047-0bdab5c30955",
+        "name": "Team Hore"
+    },
+    {
+        "id": "e2fe64f2-1e65-43cc-a67f-1879f8970c8f",
+        "name": "Team Protrader"
+    },
+    {
+        "id": "4275bb73-71f9-47ce-993e-2a902fad0082",
+        "name": "Team Michel"
+    },
+    {
+        "id": "b35d28d2-3e55-4a08-80fc-9aa3ce82cf1e",
+        "name": "MadGeneration Team"
+    },
+    {
+        "id": "6b280778-c371-4ff2-83b4-cf09a1275b87",
+        "name": "Cat xyz"
+    },
+    {
+        "id": "2ec227c2-ffdc-4217-98a8-86b52f9b81a6",
+        "name": "Rams Team"
+    },
+    {
+        "id": "33175b1c-cde0-426a-8ccd-026f63540073",
+        "name": "Chain Block"
+    },
+    {
+        "id": "d28a194f-edbe-464b-9c82-230221bc2a33",
+        "name": "Virgo2308"
+    },
+    {
+        "id": "e006adf0-8ec1-4dd5-a55c-5122d1333686",
+        "name": "Borngain"
+    },
+    {
+        "id": "c113c230-0d80-45b0-a5b0-5eb1bda1af3a",
+        "name": "Fantastic Four"
+    },
+    {
+        "id": "2ffb4340-1e12-4bc0-b803-6b1908f477f6",
+        "name": "vanya811Team"
+    },
+    {
+        "id": "cbc264a0-2bf8-49e4-9eb6-b4d7d5bcb14b",
+        "name": "ETH"
+    },
+    {
+        "id": "956b2e36-f979-4ce3-b298-fb356d7a0cd3",
+        "name": "MRJ ALPHA"
+    },
+    {
+        "id": "bec49d25-61f1-423e-a57d-0edade80d820",
+        "name": "CC3-Coders"
+    },
+    {
+        "id": "364b8445-3459-4aad-b501-d1fdf5053e2f",
+        "name": "Solana is the future"
+    },
+    {
+        "id": "ca2f6ef3-7144-484c-b238-3c037a10348e",
+        "name": "Rum"
+    },
+    {
+        "id": "dc8884e5-60b6-4688-955a-ae4872934057",
+        "name": "andriakew88"
+    },
+    {
+        "id": "b0e748ef-c5e8-4064-952c-92dc54e60887",
+        "name": "Team Zimuz"
+    },
+    {
+        "id": "8ef752e0-6a2e-432b-8a5f-00440f4c755f",
+        "name": "Waldzo Team"
+    },
+    {
+        "id": "ba60f40c-10d5-4bf0-93ed-b23e2a8cee1c",
+        "name": "Waldzoz Team"
+    },
+    {
+        "id": "82cb60e6-91fd-4bbb-82b7-2a944c9cc35f",
+        "name": "Recall Team"
+    },
+    {
+        "id": "a1dd4fd0-6797-4e6d-bea5-d930a6f46193",
+        "name": "Recall Team"
+    },
+    {
+        "id": "d10f21f1-d0d6-4da2-9a7d-7e338b310e03",
+        "name": "Chukson Team"
+    },
+    {
+        "id": "e43341ae-3275-4214-97f0-e769c844eb4a",
+        "name": "DONG LAO Squad"
+    },
+    {
+        "id": "003f6baf-adce-42b1-ab6d-f65e35bc7089",
+        "name": "ETH WeJin"
+    },
+    {
+        "id": "9d36309b-f181-48e5-991a-3e2307fd2191",
+        "name": "Airdrop ALC"
+    },
+    {
+        "id": "f3a438c7-8bee-4e42-8349-913ac8f282e2",
+        "name": "Fakyu Team"
+    },
+    {
+        "id": "0e4efdfb-744f-4ea3-b818-eacf77c6ba51",
+        "name": "RecallVanguard"
+    },
+    {
+        "id": "165b0d04-e515-4a5e-ba1c-c977ca5dc4c6",
+        "name": "Brazil Power"
+    },
+    {
+        "id": "c7fb8d5d-8d41-401d-820a-58137dcd4270",
+        "name": "HAKUMITO"
+    },
+    {
+        "id": "a347921d-a2a0-4846-bb84-ce9074e9c226",
+        "name": "vishleshak"
+    },
+    {
+        "id": "be1fa621-4565-4e36-bd3c-a0a04f18558b",
+        "name": "ETH"
+    },
+    {
+        "id": "e2b12860-c5f6-4e4c-92b4-3571c3549be8",
+        "name": "DG network"
+    },
+    {
+        "id": "0b1b179f-fd0b-4804-be67-52dfbd7ada22",
+        "name": "freezer"
+    },
+    {
+        "id": "b80ef0ef-d5b6-4f2f-86af-93bece93b8d3",
+        "name": "babi777"
+    },
+    {
+        "id": "e7e7a54a-9f6c-4d64-a0ec-6810c0bac88c",
+        "name": "Airdrop Hunter"
+    },
+    {
+        "id": "d887832b-49ee-4560-a223-e9688bd69755",
+        "name": "WickSniper"
+    },
+    {
+        "id": "23900bb7-da71-4119-95c8-5d6e7309e4ee",
+        "name": "SOL"
+    },
+    {
+        "id": "5bf0e173-10d9-4e56-a299-c7a8b44e457f",
+        "name": "Seworedsman"
+    },
+    {
+        "id": "e9e83b59-ddee-4de0-8c29-169eee3e90e9",
+        "name": "Test 2"
+    },
+    {
+        "id": "2fa4a382-8e43-48b5-a779-21e374adda47",
+        "name": "TestTeam1-1747578068"
+    },
+    {
+        "id": "7abeb13b-1401-4d66-b319-4ba773cd86eb",
+        "name": "WLAshu"
+    },
+    {
+        "id": "3795625d-c141-4ac9-b586-4df1e6f91493",
+        "name": "msena1-EZAgent 1"
+    },
+    {
+        "id": "02d46bdb-c5ca-4002-aeaf-dbd9aebb40bf",
+        "name": "Schumm"
+    },
+    {
+        "id": "8e948009-b18d-4637-969a-79f08981b2af",
+        "name": "Abernathy"
+    },
+    {
+        "id": "3fe41638-316e-487e-b98a-44fd7dcbe7c9",
+        "name": "soniaro"
+    },
+    {
+        "id": "a9d6afa7-a2bc-4095-97d6-b1099462bfbb",
+        "name": "Satoshi's Ghost"
+    },
+    {
+        "id": "bef8c3f6-01f7-40df-a361-ea42f06b7f49",
+        "name": "W.E.N. Moon"
+    },
+    {
+        "id": "89762445-598f-40a7-894b-8b6b1c1c68d4",
+        "name": "The Oracle"
+    },
+    {
+        "id": "38430f1f-0e14-446d-ba8e-93c313d2d2b3",
+        "name": "MOMENTUM MAX"
+    },
+    {
+        "id": "7efc35d9-1744-4b09-9dce-e42e809ee3a0",
+        "name": "Yeild Viking"
+    },
+    {
+        "id": "397518bb-9516-48a9-8962-c032abaa818e",
+        "name": "FRENZY"
+    },
+    {
+        "id": "1c60a6a7-584e-40ee-99ad-20a8a3d4482a",
+        "name": "Dr. Jekyll"
+    },
+    {
+        "id": "ff553b30-ac76-4dae-ba4a-590e0b7d2ba0",
+        "name": "LordLayer"
+    },
+    {
+        "id": "635344a1-f984-4415-869e-b79e1cd4669b",
+        "name": "Gov Whale"
+    },
+    {
+        "id": "7037ad19-6479-45b3-847c-ea9f9d70731e",
+        "name": "MoonSage Alpha"
+    }
+]

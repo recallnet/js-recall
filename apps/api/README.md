@@ -187,10 +187,17 @@ The baseline system automatically:
 
 #### Development Environment
 
-The baseline is automatically applied during normal development:
+The baseline is automatically applied when you start the development server:
 
 ```bash
-# Normal development migration - baseline applied automatically if needed
+# Start development server - baseline applied automatically if needed
+pnpm dev
+```
+
+If you need to run migrations manually without starting the server, use:
+
+```bash
+# Manual migration (does NOT include baseline - use only if baseline already applied)
 pnpm db:migrate
 ```
 
@@ -1265,11 +1272,18 @@ This will create the following secrets:
 
 #### 4. Database Initialization
 
-Initialize the database with:
+For any fresh database setup (development or production):
 
 ```bash
-pnpm db:migrate
+pnpm db:prepare-production
 ```
+
+This command will:
+
+- Apply the baseline SQL (legacy data/schema) if needed
+- Run all Drizzle migrations after the baseline
+
+**Note:** `pnpm db:migrate` (Drizzle-only) should only be used if you're certain the baseline has already been applied to your database.
 
 #### 5. Build the Application
 
