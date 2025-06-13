@@ -32,6 +32,7 @@ export const objectIndex = pgTable(
     objectLastModifiedAt: timestamp("object_last_modified_at", {
       withTimezone: true,
     }).notNull(),
+    data: text("data").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
