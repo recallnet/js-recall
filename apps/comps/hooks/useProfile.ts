@@ -11,7 +11,7 @@ const apiClient = new ApiClient();
  * @returns Query result with profile data
  */
 export const useProfile = () => {
-  const user = useUser();
+  const { status } = useUser();
 
   return useQuery({
     queryKey: ["profile"],
@@ -20,7 +20,7 @@ export const useProfile = () => {
       if (!res.success) throw new Error("Error when fetching profile");
       return res.user;
     },
-    enabled: user.loggedIn,
+    enabled: status === "authenticating" || status === "authenticated",
   });
 };
 

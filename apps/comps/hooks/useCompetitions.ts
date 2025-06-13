@@ -30,14 +30,14 @@ export const useCompetitions = (params: GetCompetitionsParams = {}) =>
  * @returns Query result with user's competitions data
  */
 export const useUserCompetitions = (params: GetCompetitionsParams = {}) => {
-  const user = useUser();
+  const { status } = useUser();
 
   return useQuery({
     queryKey: ["user-competitions", params],
     queryFn: async (): Promise<UserCompetitionsResponse> => {
       return apiClient.getUserCompetitions(params);
     },
-    enabled: user.loggedIn,
+    enabled: status === "authenticated",
     placeholderData: (prev) => prev,
   });
 };

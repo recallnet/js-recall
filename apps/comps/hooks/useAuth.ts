@@ -30,13 +30,16 @@ export const useNonce = () => {
  */
 export const useLogin = () => {
   const queryClient = useQueryClient();
+  const [, setUserAtom] = useAtom(userAtom);
 
   return useMutation({
     mutationFn: async (data: LoginRequest) => {
       return apiClient.login(data);
     },
     onSuccess: () => {
-      // Invalidate relevant queries after login
+      setUserAtom({ user: null, status: "authenticating" });
+
+      // Trigger profile refetch
       queryClient.invalidateQueries({ queryKey: ["profile"] });
     },
   });
@@ -63,7 +66,7 @@ export const useLogout = () => {
         // Clear all queries from cache
         queryClient.clear(); // Clears all query data
 
-        setUserAtom({ user: null, loggedIn: false });
+        setUserAtom({ user: null, status: "unauthenticated" });
 
         // Clear local storage items
         localStorage.removeItem("user");
@@ -91,7 +94,7 @@ interface UserSessionState {
 }
 
 export const useUserSession = (): UserSessionState => {
-  const [optimisticUserAtom, setOptimisticUserAtom] = useAtom(userAtom);
+  const [authState, setAuthState] = useAtom(userAtom);
   const queryClient = useQueryClient();
 
   const {
@@ -103,32 +106,23 @@ export const useUserSession = (): UserSessionState => {
     isFetching: profileIsFetching,
   } = useProfile();
 
-  const isAuthenticated = profileIsSuccess && !!profileData;
-  const isProfileUpdated = profileIsSuccess && !!profileData?.name;
+  const isAuthenticated = authState.status === "authenticated";
+  const isProfileUpdated = isAuthenticated && !!authState.user?.name;
 
   const isLoading =
+    authState.status === "authenticating" ||
     profileIsLoading ||
-    (optimisticUserAtom.loggedIn && !profileIsSuccess && !profileIsError) ||
     profileIsFetching;
 
+  // React to profile query outcomes ------------------------------------------------
   useEffect(() => {
     if (profileIsSuccess && profileData) {
-      if (
-        !optimisticUserAtom.loggedIn ||
-        optimisticUserAtom.user?.walletAddress !== profileData.walletAddress
-      ) {
-        setOptimisticUserAtom({
-          user: profileData,
-          loggedIn: true,
-        });
-      }
+      // Upgrade to authenticated with the full user
+      setAuthState({ user: profileData, status: "authenticated" });
     } else if (profileIsError) {
       const isUnauthorized = (profileError as any)?.response?.status === 401;
-
       if (isUnauthorized) {
-        if (optimisticUserAtom.loggedIn) {
-          setOptimisticUserAtom({ user: null, loggedIn: false });
-        }
+        setAuthState({ user: null, status: "unauthenticated" });
         queryClient.removeQueries({ queryKey: ["profile"] });
       }
     }
@@ -137,14 +131,12 @@ export const useUserSession = (): UserSessionState => {
     profileData,
     profileIsError,
     profileError,
-    optimisticUserAtom.loggedIn,
-    optimisticUserAtom.user?.walletAddress,
-    setOptimisticUserAtom,
+    setAuthState,
     queryClient,
   ]);
 
   return {
-    user: isAuthenticated ? profileData : null,
+    user: authState.user,
     isAuthenticated,
     isLoading,
     isProfileUpdated,

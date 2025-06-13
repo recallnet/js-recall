@@ -26,14 +26,14 @@ export const useAgents = (params: GetAgentsParams = {}) =>
  * @returns Query result with agents data
  */
 export const useUserAgents = (params: GetAgentsParams = {}) => {
-  const user = useUser();
+  const { status } = useUser();
 
   return useQuery({
     queryKey: ["agents", params],
     queryFn: async (): Promise<AgentsResponse> => {
       return apiClient.getUserAgents(params);
     },
-    enabled: user.loggedIn,
+    enabled: status === "authenticated",
     placeholderData: (prev) => prev,
   });
 };
