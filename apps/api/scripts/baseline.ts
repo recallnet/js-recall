@@ -26,7 +26,7 @@ const __dirname = path.dirname(__filename);
  * Path to the baseline SQL file
  * Place your legacy SQL file here
  */
-const rootDir = path.resolve(__dirname, "../..");
+const rootDir = path.resolve(__dirname, "..");
 const BASELINE_SQL_PATH = path.join(rootDir, "baseline", "baseline.sql");
 
 /**
