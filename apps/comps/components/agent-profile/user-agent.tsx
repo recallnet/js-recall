@@ -26,11 +26,9 @@ import { EditAgentField } from "./edit-field";
 import { ShareAgent } from "./share-agent";
 
 export default function UserAgent({ id }: { id: string }) {
-  const {
-    data: agent,
-    isLoading: isLoadingAgent,
-    error: agentError,
-  } = useAgent(id);
+  const { data, isLoading: isLoadingAgent, error: agentError } = useAgent(id);
+  const { agent } = data || {};
+
   const updateAgent = useUpdateAgent();
 
   const [selected, setSelected] = React.useState("all");
@@ -47,8 +45,8 @@ export default function UserAgent({ id }: { id: string }) {
     }, "");
   }, [sortState]);
 
-  const skills = agent?.stats?.skills || [];
-  const trophies = (agent?.metadata?.trophies || []) as string[];
+  const skills = agent?.skills || [];
+  const trophies = (agent?.trophies || []) as string[];
 
   const { data: agentCompetitionsData, isLoading: isLoadingCompetitions } =
     useAgentCompetitions(id, { sort: sortString });
@@ -155,15 +153,15 @@ export default function UserAgent({ id }: { id: string }) {
                 Completed Comps
               </span>
               <span className="text-primary-foreground w-full text-left text-lg font-bold">
-                {0}
+                {agent.stats.completedCompetitions}
               </span>
             </div>
             <div className="flex w-1/2 flex-col items-start border-l border-gray-700 p-6">
               <span className="w-full text-left text-xs font-semibold uppercase text-gray-400">
-                ELO Rating
+                ELO
               </span>
-              <span className="text-primary-foreground w-full text-left text-lg font-bold">
-                {0}
+              <span className="w-full text-left text-gray-300">
+                Not rated yet
               </span>
             </div>
           </div>

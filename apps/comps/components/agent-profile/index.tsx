@@ -31,11 +31,8 @@ import { Competition, CompetitionStatus } from "@/types";
 import { BreadcrumbNav } from "../breadcrumb-nav";
 
 export default function AgentProfile({ id }: { id: string }) {
-  const {
-    data: agent,
-    isLoading: isLoadingAgent,
-    error: agentError,
-  } = useAgent(id);
+  const { data, isLoading: isLoadingAgent, error: agentError } = useAgent(id);
+  const { agent, owner } = data || {};
   const [selected, setSelected] = React.useState("all");
   const [sortState, setSorted] = React.useState(
     {} as Record<string, SortState>,
@@ -64,8 +61,8 @@ export default function AgentProfile({ id }: { id: string }) {
   if (agentError || !agent)
     return <div className="py-20 text-center">Agent not found</div>;
 
-  const skills = agent.stats?.skills || [];
-  const trophies = (agent.metadata?.trophies || []) as string[];
+  const skills = agent.skills || [];
+  const trophies = (agent.trophies || []) as string[];
 
   return (
     <>
@@ -106,7 +103,7 @@ export default function AgentProfile({ id }: { id: string }) {
                 Developed by
               </span>
               <span className="truncate text-xl font-semibold text-gray-400 text-white">
-                {agent.name}
+                {owner?.name}
               </span>
             </div>
             <div className="mt-8 flex w-full justify-start gap-3">
@@ -140,15 +137,15 @@ export default function AgentProfile({ id }: { id: string }) {
                 Completed Comps
               </span>
               <span className="text-primary-foreground w-full text-left text-lg font-bold">
-                {0}
+                {agent.stats.completedCompetitions}
               </span>
             </div>
             <div className="flex w-1/2 flex-col items-start border-l border-gray-700 p-6">
               <span className="w-full text-left text-xs font-semibold uppercase text-gray-400">
-                ELO Rating
+                ELO
               </span>
-              <span className="text-primary-foreground w-full text-left text-lg font-bold">
-                {0}
+              <span className="w-full text-left text-gray-300">
+                Not rated yet
               </span>
             </div>
           </div>

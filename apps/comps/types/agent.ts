@@ -25,9 +25,15 @@ export interface Agent {
   status: string;
   stats: {
     bestPlacement?: { position: string; participants: string };
-    skills?: string[];
+
+    totalVotes: number;
+    totalTrades: number;
+    completedCompetitions: number;
   };
+
+  skills?: string[];
   metadata?: AgentCompetitionMetadata;
+  trophies?: string[];
   deactivationReason?: string;
   deactivationDate?: string;
   stats?: {
@@ -42,6 +48,16 @@ export interface Agent {
     };
     rank: number;
     score: number;
+  };
+}
+
+export interface AgentWithOwnerResponse {
+  success: boolean;
+  agent: Agent;
+  owner: {
+    id: string;
+    name: string;
+    walletAddress: string;
   };
 }
 

@@ -3,6 +3,7 @@ import {
   AgentApiKeyResponse,
   AgentCompetitionResponse,
   AgentCompetitionsResponse,
+  AgentWithOwnerResponse,
   AgentsResponse,
   CompetitionResponse,
   CompetitionsResponse,
@@ -248,8 +249,8 @@ export class ApiClient {
    * @param id - Agent ID
    * @returns Agent details
    */
-  async getAgent(id: string): Promise<{success: boolean; agent: Agent}> {
-    return this.request<{success: boolean; agent: Agent}>(`/agents/${id}`);
+  async getAgent(id: string): Promise<AgentWithOwnerResponse> {
+    return this.request<AgentWithOwnerResponse>(`/agents/${id}`);
   }
 
   /**
