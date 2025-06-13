@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiClient } from "@/lib/api-client";
+import { useUser } from "@/state/atoms";
 import { ProfileResponse, UpdateProfileRequest } from "@/types/profile";
 
 const apiClient = new ApiClient();
@@ -10,14 +11,16 @@ const apiClient = new ApiClient();
  * @returns Query result with profile data
  */
 export const useProfile = () => {
+  const user = useUser();
+
   return useQuery({
     queryKey: ["profile"],
-    retry: false,
     queryFn: async (): Promise<ProfileResponse["user"]> => {
       const res = await apiClient.getProfile();
       if (!res.success) throw new Error("Error when fetching profile");
       return res.user;
     },
+    enabled: user.loggedIn,
   });
 };
 

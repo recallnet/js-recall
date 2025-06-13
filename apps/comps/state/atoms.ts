@@ -1,4 +1,4 @@
-import { atom } from "jotai";
+import { atom, useAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 
 import { Agent } from "@/types/agent";
@@ -23,3 +23,8 @@ export const userAgentAtom = atom<Agent & { rank: number }>({
   description: "",
   status: "",
 });
+
+export const useUser = (): UserStorage => {
+  const [user] = useAtom(userAtom);
+  return user;
+};

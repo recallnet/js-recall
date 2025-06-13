@@ -1,6 +1,6 @@
 import React from "react";
 
-import { getRankColor } from "@/lib/rank-colors";
+import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AwardIcon } from "./award-icon";
 
@@ -11,7 +11,14 @@ interface RankBadgeProps {
 export const RankBadge: React.FC<RankBadgeProps> = ({ position }) => {
   return (
     <div
-      className={`min-w-19 flex items-center justify-center rounded py-2 font-semibold ${getRankColor(position).replace("border-", "bg-")}`}
+      className={cn(
+        "min-w-19 flex items-center justify-center rounded py-2 font-semibold",
+        {
+          "bg-yellow-800": position === 1,
+          "bg-gray-700": position === 2 || position > 3,
+          "bg-[#1A0E05]": position === 3,
+        },
+      )}
     >
       {position <= 3 ? (
         <AwardIcon

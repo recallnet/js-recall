@@ -1,5 +1,5 @@
 import Link from "next/link";
-import React from "react";
+import React, { useMemo } from "react";
 
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 
@@ -17,6 +17,8 @@ export const TopLeadersList: React.FC<TopLeadersListProps> = ({
   agents,
   isLoading,
 }) => {
+  const topThreeAgents = useMemo(() => agents.slice(0, 3), [agents]);
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-4 gap-4 rounded-lg border-y bg-[#050507] p-3">
@@ -45,7 +47,7 @@ export const TopLeadersList: React.FC<TopLeadersListProps> = ({
 
   return (
     <div className="flex flex-col gap-4 rounded-lg border-y bg-[#050507] p-3">
-      {agents.map((agent) => (
+      {topThreeAgents.map((agent) => (
         <div
           key={agent.id}
           className="hover:bg-card col-span-4 grid grid-cols-[70px_1fr_auto_auto] gap-4"

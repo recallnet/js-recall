@@ -3,7 +3,6 @@ import Image from "next/image";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Identicon } from "@/components/identicon";
-import { getRankColor } from "@/lib/rank-colors";
 import { Agent, AgentCompetition } from "@/types/agent";
 import { UserAgentCompetition } from "@/types/competition";
 
@@ -24,8 +23,13 @@ export function AgentAvatar({
 }: AgentAvatarProps) {
   const commonClasses = cn(
     "group relative h-8 w-8 transition-transform duration-200 hover:z-10 hover:scale-110",
-    showRank && "h-9 w-9 rounded-full border-2",
-    showRank && rank && getRankColor(rank),
+    showRank && "h-9 w-9 rounded-full border-2 bg-gray-700",
+    showRank &&
+      rank && {
+        "border-yellow-800": rank === 1,
+        "border-gray-700": rank === 2 || rank > 3,
+        "border-[#1A0E05]": rank === 3,
+      },
     className,
   );
 

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { ApiClient } from "@/lib/api-client";
+import { useUser } from "@/state/atoms";
 import {
   CompetitionsResponse,
   GetCompetitionsParams,
@@ -28,11 +29,15 @@ export const useCompetitions = (params: GetCompetitionsParams = {}) =>
  * @param params Query parameters for user competitions endpoint
  * @returns Query result with user's competitions data
  */
-export const useUserCompetitions = (params: GetCompetitionsParams = {}) =>
-  useQuery({
+export const useUserCompetitions = (params: GetCompetitionsParams = {}) => {
+  const user = useUser();
+
+  return useQuery({
     queryKey: ["user-competitions", params],
     queryFn: async (): Promise<UserCompetitionsResponse> => {
       return apiClient.getUserCompetitions(params);
     },
+    enabled: user.loggedIn,
     placeholderData: (prev) => prev,
   });
+};
