@@ -7,10 +7,18 @@ export const MirrorImage: React.FunctionComponent<{
   width: number;
   height: number;
   className?: string;
-}> = ({ image, width, height, className }) => {
+  children?: React.ReactNode;
+}> = ({ image, width, height, className, children }) => {
   return (
     <div className={cn(className, "relative w-fit")}>
-      <Image src={image} alt="avatar" width={width} height={height} />
+      {children}
+      <Image
+        src={image}
+        alt="avatar"
+        width={width}
+        height={height}
+        className="rounded-full"
+      />
       <div
         className="pointer-events-none absolute left-0 top-full -z-10 w-full overflow-hidden"
         style={{ height }}

@@ -82,16 +82,36 @@ function TableCaption({ className, ref, ...props }: TableCaptionProps) {
   );
 }
 
-function SortableTableHeader({ className, ref, ...props }: TableHeadProps) {
+export type SortState = "none" | "asc" | "desc";
+
+export interface SortableTableHeaderProps extends TableHeadProps {
+  sortState?: SortState;
+  onToggleSort?: () => void;
+}
+
+function SortableTableHeader({
+  className,
+  sortState = "none",
+  onToggleSort = () => 1,
+  ...props
+}: SortableTableHeaderProps) {
+  const iconSize = sortState === "none" ? 20 : 22;
+  const iconClass = cn(
+    "transition-transform duration-200",
+    sortState === "none" && "text-secondary-foreground",
+    sortState !== "none" && "text-white",
+    sortState === "desc" && "rotate-180",
+  );
+
   return (
     <TableHead
-      ref={ref}
+      onClick={onToggleSort}
       className={cn("hover:bg-accent/50 cursor-pointer text-left", className)}
       {...props}
     >
       <div className="flex items-center gap-1">
         <span className="font-semibold">{props.children}</span>
-        <ArrowDownUp className="text-secondary-foreground" size={20} />
+        <ArrowDownUp className={iconClass} size={iconSize} />
       </div>
     </TableHead>
   );

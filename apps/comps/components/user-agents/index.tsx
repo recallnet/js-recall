@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import React from "react";
 import { FaAward, FaTrophy } from "react-icons/fa";
 
 import { displayAddress } from "@recallnet/address-utils/display";
@@ -15,10 +17,11 @@ import {
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import BigNumberDisplay from "@/components/bignumber";
-import MirrorImage from "@/components/mirror-image";
 import { useUserAgents } from "@/hooks/useAgents";
 import { Agent } from "@/types";
+
+import BigNumberDisplay from "../bignumber";
+import MirrorImage from "../mirror-image";
 
 export default function UserAgentsSection() {
   const { data: agentsData, isLoading } = useUserAgents();
@@ -223,6 +226,7 @@ export const AgentCard: React.FunctionComponent<AgentCardProps> = ({
   isLoading,
 }) => {
   const size = "min-w-70 max-w-80 md:max-w-70 h-95";
+  const router = useRouter();
 
   if (isLoading || typeof agent === "number")
     return <Skeleton className={size} />;
@@ -231,9 +235,10 @@ export const AgentCard: React.FunctionComponent<AgentCardProps> = ({
     <Card
       corner="top-left"
       cropSize={50}
+      onClick={() => router.push(`/agents/${agent.id}`)}
       className={cn(
         className,
-        `${size} flex flex-col items-center justify-center gap-2 bg-gray-800 px-5`,
+        `${size} flex cursor-pointer flex-col items-center justify-center gap-2 bg-gray-800 px-5`,
       )}
     >
       <span className="text-gray-400">
