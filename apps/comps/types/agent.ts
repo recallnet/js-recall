@@ -18,6 +18,7 @@ export interface Agent {
   id: string;
   name: string;
   walletAddress?: string;
+  isVerified: boolean;
   ownerId?: string;
   imageUrl: string;
   description?: string;
@@ -25,6 +26,19 @@ export interface Agent {
   metadata?: AgentCompetitionMetadata;
   deactivationReason?: string;
   deactivationDate?: string;
+  stats?: {
+    completedCompetitions: number;
+    totalVotes: number;
+    totalTrades: number;
+    bestPlacement?: {
+      competitionId: string;
+      rank: number;
+      score: number;
+      totalAgents: number;
+    };
+    rank: number;
+    score: number;
+  };
 }
 
 export interface LeaderboardAgent extends Agent {

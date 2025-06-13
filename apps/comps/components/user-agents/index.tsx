@@ -1,8 +1,9 @@
 "use client";
 
+import { Award, Trophy } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { FaAward, FaTrophy } from "react-icons/fa";
+import { useMemo } from "react";
 
 import { displayAddress } from "@recallnet/address-utils/display";
 import { Button } from "@recallnet/ui2/components/button";
@@ -19,12 +20,42 @@ import BigNumberDisplay from "@/components/bignumber";
 import MirrorImage from "@/components/mirror-image";
 import { useUserAgents } from "@/hooks/useAgents";
 import { Agent } from "@/types";
+import { formatCompactNumber, toOrdinal } from "@/utils/format";
+
+import { VerificationBadge } from "../verification-badge";
 
 export default function UserAgentsSection() {
   const { data: agentsData, isLoading } = useUserAgents();
   const agents = isLoading || !agentsData?.agents ? [] : agentsData.agents;
   const nAgents = agents.length;
   let agentList = <NoAgents />;
+
+  const bestPlacement = useMemo(
+    () =>
+      agents.reduce(
+        (acc, agent) => {
+          if (agent.stats?.bestPlacement?.rank) {
+            return agent.stats.bestPlacement.rank < acc.rank
+              ? agent.stats.bestPlacement
+              : acc;
+          }
+          return acc;
+        },
+        agents[0]?.stats?.bestPlacement ?? {
+          competitionId: "",
+          rank: 0,
+          score: 0,
+          totalAgents: 0,
+        },
+      ),
+    [agents],
+  );
+
+  const completedComps = useMemo(() => {
+    return agents.reduce((acc, agent) => {
+      return acc + (agent.stats?.completedCompetitions ?? 0);
+    }, 0);
+  }, [agents]);
 
   if (isLoading || (nAgents > 0 && nAgents <= 3))
     agentList = (
@@ -51,9 +82,9 @@ export default function UserAgentsSection() {
         <AgentsSummary
           isLoading={isLoading}
           nAgents={nAgents}
-          best="-"
-          completedComps={0}
-          highest={0}
+          bestPlacement={bestPlacement}
+          completedComps={completedComps}
+          highest={null}
         />
       </div>
     );
@@ -69,9 +100,9 @@ export default function UserAgentsSection() {
         <AgentsSummary
           isLoading={isLoading}
           nAgents={nAgents}
-          best="1st of 2054"
-          completedComps={10}
-          highest={2400}
+          bestPlacement={bestPlacement}
+          completedComps={completedComps}
+          highest={null}
         />
       </div>
     );
@@ -123,10 +154,17 @@ const AgentsSummary: React.FunctionComponent<{
   className?: string;
   nAgents?: number;
   isLoading?: boolean;
-  best: string;
+  bestPlacement?: NonNullable<Agent["stats"]>["bestPlacement"];
   completedComps: number;
-  highest: number;
-}> = ({ best, nAgents = 0, isLoading, completedComps, highest, className }) => {
+  highest: number | null;
+}> = ({
+  bestPlacement,
+  nAgents = 0,
+  isLoading,
+  completedComps,
+  highest,
+  className,
+}) => {
   const borderRules = "sm:border-l-1";
 
   return (
@@ -150,15 +188,21 @@ const AgentsSummary: React.FunctionComponent<{
         {isLoading ? (
           <Skeleton className="w-30 h-2" />
         ) : (
-          <span className="uppercase text-gray-500">BEST PLACEMENT</span>
+          <span className="text-secondary-foreground uppercase">
+            BEST PLACEMENT
+          </span>
         )}
         <div className="flex items-center gap-3 text-2xl font-semibold">
           {isLoading ? (
             <Skeleton className="w-30 mt-2 h-5" />
           ) : (
             <>
-              <FaTrophy className="text-yellow-500" />
-              <span className="text-white">{best}</span>
+              <Trophy className="text-yellow-500" />
+              <span className="text-white">
+                {bestPlacement?.rank
+                  ? `${toOrdinal(bestPlacement.rank)} of ${bestPlacement.totalAgents}`
+                  : "N/A"}
+              </span>
             </>
           )}
         </div>
@@ -176,7 +220,9 @@ const AgentsSummary: React.FunctionComponent<{
           </>
         ) : (
           <>
-            <span className="uppercase text-gray-500">completed comps</span>
+            <span className="text-secondary-foreground uppercase">
+              completed comps
+            </span>
             <span className="text-2xl font-semibold text-white">
               {completedComps}
             </span>
@@ -185,7 +231,7 @@ const AgentsSummary: React.FunctionComponent<{
       </div>
       <div
         className={cn(
-          "flex w-full flex-col items-start gap-2 border-gray-700 p-8",
+          "flex w-full flex-col items-start gap-2 border p-8",
           borderRules,
         )}
       >
@@ -196,9 +242,15 @@ const AgentsSummary: React.FunctionComponent<{
           </>
         ) : (
           <>
-            <span className="uppercase text-gray-500">highest p&l</span>
+            <span className="text-secondary-foreground uppercase">
+              highest p&l
+            </span>
             <span className="text-2xl font-semibold">
-              $<BigNumberDisplay value={highest.toString()} decimals={0} />
+              {highest ? (
+                <BigNumberDisplay value={highest.toString()} decimals={0} />
+              ) : (
+                "N/A"
+              )}
             </span>
           </>
         )}
@@ -229,30 +281,41 @@ export const AgentCard: React.FunctionComponent<AgentCardProps> = ({
       cropSize={50}
       className={cn(
         className,
-        `${size} flex flex-col items-center justify-center gap-2 bg-gray-800 px-5`,
+        `${size} flex flex-col items-center justify-center gap-2 px-5`,
       )}
     >
-      <span className="text-gray-400">
-        {agent.walletAddress ? displayAddress(agent.walletAddress) : "-"}
+      <span className="text-secondary-foreground font-mono">
+        {agent.walletAddress ? displayAddress(agent.walletAddress) : " "}
       </span>
+      {agent.isVerified && (
+        <VerificationBadge className="absolute right-3 top-3" />
+      )}
       <MirrorImage
         className="mb-10"
         width={130}
         height={130}
         image="/default_agent.png"
       />
-      <div className="flex w-full items-center justify-center gap-3 text-sm text-gray-400">
-        <FaAward /> <span>{"-"}</span>
+      <div className="text-secondary-foreground flex w-full items-center justify-center gap-1 text-sm">
+        <Award />
+        <span>
+          {agent.stats?.bestPlacement?.rank
+            ? `${toOrdinal(agent.stats?.bestPlacement?.rank)}`
+            : "N/A"}
+        </span>
       </div>
-      <span className="text-center text-2xl font-bold text-gray-400">
-        {agent.name.length > 20 ? `${agent.name.slice(0, 10)}...` : agent.name}
+      <span
+        className="text-secondary-foreground w-full truncate text-center text-2xl font-bold"
+        title={agent.name}
+      >
+        {agent.name}
       </span>
-      <div className="flex justify-center gap-3 text-gray-400">
-        <div className="text-nowrap rounded border border-gray-700 p-2">
-          ROI -
+      <div className="flex justify-center gap-3">
+        <div className="text-secondary-foreground text-nowrap rounded border p-2">
+          ROI N/A
         </div>
-        <div className="text-nowrap rounded border border-gray-700 p-2">
-          Trades -
+        <div className="text-secondary-foreground text-nowrap rounded border p-2">
+          Trades {formatCompactNumber(agent.stats?.totalTrades ?? 0)}
         </div>
       </div>
     </Card>

@@ -14,7 +14,7 @@ export default function ProfileSkeleton() {
       {/* Profile Info Section */}
       <div className="flex w-full border">
         {/* Profile Picture */}
-        <Skeleton className="h-[256px] w-[256px] rounded-md" />
+        <Skeleton className="h-[256px] w-[353px] rounded-md" />
         <div className="flex w-full flex-col items-start justify-center gap-5 p-4">
           {/* Name + Verified */}
           <div className="flex items-center gap-3">

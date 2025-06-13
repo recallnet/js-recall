@@ -58,7 +58,10 @@ export const TopLeadersList: React.FC<TopLeadersListProps> = ({
             className="flex items-center gap-3"
           >
             <AgentAvatar agent={agent} size={32} />
-            <span className="text-secondary-foreground font-semibold">
+            <span
+              className="text-secondary-foreground w-full truncate font-semibold"
+              title={agent.name}
+            >
               {agent.name}
             </span>
           </Link>
