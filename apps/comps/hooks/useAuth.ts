@@ -46,13 +46,27 @@ export const useLogin = () => {
 };
 
 /**
+ * Hook to perform client-side cleanup when user is logged out or unauthorized
+ * @returns Function to perform cleanup
+ */
+export const useClientCleanup = () => {
+  const queryClient = useQueryClient();
+  const [, setUserAtom] = useAtom(userAtom);
+
+  return () => {
+    // Clear all queries from cache
+    queryClient.clear();
+    setUserAtom({ user: null, status: "unauthenticated" });
+  };
+};
+
+/**
  * Hook to logout
  * @returns Mutation for logging out
  */
 export const useLogout = () => {
-  const queryClient = useQueryClient();
   const router = useRouter();
-  const [, setUserAtom] = useAtom(userAtom);
+  const cleanup = useClientCleanup();
 
   return useMutation({
     mutationFn: async () => {
@@ -63,17 +77,10 @@ export const useLogout = () => {
         // Log API error but proceed with client-side cleanup
         console.error("Logout API call failed:", error);
       } finally {
-        // Clear all queries from cache
-        queryClient.clear(); // Clears all query data
-
-        setUserAtom({ user: null, status: "unauthenticated" });
-
-        // Clear local storage items
-        localStorage.removeItem("user");
+        cleanup();
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
       router.push(DEFAULT_REDIRECT_URL);
     },
     onError: (error) => {
