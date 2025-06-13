@@ -13,6 +13,7 @@ import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { CountdownClock } from "@/components/clock";
 import { CompetitionInfo } from "@/components/competition-info";
 import CompetitionSkeleton from "@/components/competition-skeleton";
+import { FooterSection } from "@/components/footer-section";
 import { JoinCompetitionButton } from "@/components/join-competition-button";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
 import { getSocialLinksArray } from "@/data/social";
@@ -161,6 +162,7 @@ export default function CompetitionPage({
         />
       )}
       <JoinSwarmSection socialLinks={getSocialLinksArray()} className="mt-12" />
+      <FooterSection />
     </>
   );
 }
