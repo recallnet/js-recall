@@ -1,5 +1,6 @@
 import {
   Agent,
+  AgentApiKeyResponse,
   AgentCompetitionResponse,
   AgentCompetitionsResponse,
   AgentsResponse,
@@ -18,6 +19,8 @@ import {
   LoginResponse,
   NonceResponse,
   ProfileResponse,
+  UpdateAgentRequest,
+  UpdateAgentResponse,
   UpdateProfileRequest,
 } from "@/types";
 
@@ -197,6 +200,15 @@ export class ApiClient {
   }
 
   /**
+   * Get agent api key
+   * @param params - Query parameters
+   * @returns Agents response
+   */
+  async getAgentApiKey(agentId: string): Promise<AgentApiKeyResponse> {
+    return this.request<AgentApiKeyResponse>(`/user/agents/${agentId}/api-key`);
+  }
+
+  /**
    * Get agent by ID owned by the authenticated user
    * @param id - Agent ID
    * @returns Agent details
@@ -288,5 +300,20 @@ export class ApiClient {
       method: "PUT",
       body: JSON.stringify(data),
     });
+  }
+
+  /**
+   * Update user agent
+   * @param data - Agent data
+   * @returns Updated agent
+   */
+  async updateAgent(data: UpdateAgentRequest): Promise<UpdateAgentResponse> {
+    return this.request<UpdateAgentResponse>(
+      `/user/agents/${data.agentId}/profile`,
+      {
+        method: "PUT",
+        body: JSON.stringify(data.params),
+      },
+    );
   }
 }

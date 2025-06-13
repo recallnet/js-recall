@@ -3,17 +3,40 @@
 import React from "react";
 
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
+import { SortState } from "@recallnet/ui2/components/table";
 
 import BigNumberDisplay from "@/components/bignumber";
 import { LeaderboardTable } from "@/components/leaderboard-table";
 import { useLeaderboards } from "@/hooks/useLeaderboards";
 
+const itemsByPage = 4;
+
 export function LeaderboardSection() {
-  const [limit, setLimit] = React.useState(10);
+  const [page, setPage] = React.useState(0);
+  const [sortState, setSorted] = React.useState(
+    {} as Record<string, SortState>,
+  );
+  const sortString = React.useMemo(() => {
+    return Object.entries(sortState).reduce((acc, [key, sort]) => {
+      if (sort !== "none") return acc + `,${sort == "asc" ? "" : "-"}${key}`;
+      return acc;
+    }, "");
+  }, [sortState]);
+
   const { data: leaderboard, isLoading } = useLeaderboards({
-    limit,
-    offset: 0,
+    limit: itemsByPage,
+    offset: page * itemsByPage,
+    sort: sortString,
   });
+
+  const handleSortChange = React.useCallback((field: string) => {
+    setSorted((sort) => {
+      const cur = sort[field];
+      const nxt =
+        !cur || cur == "none" ? "asc" : cur == "asc" ? "desc" : "none";
+      return { ...sort, [field]: nxt };
+    });
+  }, []);
 
   return (
     <div className="mb-10">
@@ -62,13 +85,21 @@ export function LeaderboardSection() {
 
       {isLoading ? (
         <LeaderboardTable
-          onExtend={() => setLimit((prev) => prev + 10)}
+          handleSortChange={handleSortChange}
+          sortState={sortState}
+          onPageChange={() => {}}
+          page={1}
           agents={[]}
         />
       ) : (
         <LeaderboardTable
-          onExtend={() => setLimit((prev) => prev + 10)}
+          handleSortChange={handleSortChange}
+          sortState={sortState}
+          onPageChange={(page) => setPage(page)}
           agents={leaderboard?.agents || []}
+          page={page}
+          itemsByPage={itemsByPage}
+          total={leaderboard?.pagination.total}
           loaded
         />
       )}

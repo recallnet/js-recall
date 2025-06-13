@@ -1,5 +1,4 @@
-"use client";
-
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AwardIcon, ExternalLink, Trophy } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -19,50 +18,65 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { LeaderboardAgent } from "@/types/agent";
 
-const emptyAgent: (i: number) => LeaderboardAgent = (i: number) => ({
-  id: i.toString(),
-  name: `some-name-${i}`,
-  walletAddress: "",
-  ownerId: "",
-  imageUrl: "",
-  description: "some long agent description",
-  status: "",
-  rank: i,
-  score: 0,
-  voteCount: 0,
-  numCompetitions: 0,
-});
+type SortState = "none" | "asc" | "desc";
 
 export function LeaderboardTable({
   agents,
-  onExtend,
+  onPageChange,
   loaded,
+  page,
+  total = 0,
+  itemsByPage = 1,
+  handleSortChange,
+  sortState,
 }: {
   agents: LeaderboardAgent[];
-  onExtend: () => void;
+  onPageChange: (num: number) => void;
+  page: number;
+  total?: number;
+  itemsByPage?: number;
   loaded?: boolean;
+
+  handleSortChange: (field: string) => void;
+  sortState: Record<string, SortState>;
 }) {
-  const toRender = loaded
-    ? agents
-    : new Array(10).fill(0).map((_, i) => emptyAgent(i));
+  const pageNumbers = new Array(Math.ceil(total / itemsByPage))
+    .fill(0)
+    .map((_, i) => i);
 
   return (
     <>
       <Table className="w-full">
         <TableHeader className="bg-gray-900">
           <TableRow className="grid w-full grid-cols-[1fr_2fr_1fr_1fr_1fr]">
-            <SortableTableHeader className="pl-10 text-white">
+            <SortableTableHeader
+              className="pl-10 text-white"
+              onToggleSort={() => handleSortChange("rank")}
+              sortState={sortState["rank"]}
+            >
               Rank
             </SortableTableHeader>
-            <SortableTableHeader className="xs:pl-20 pl-10 text-white">
+            <SortableTableHeader
+              className="xs:pl-20 pl-10 text-white"
+              onToggleSort={() => handleSortChange("name")}
+              sortState={sortState["name"]}
+            >
               Agent
             </SortableTableHeader>
-            <SortableTableHeader className="flex justify-end text-white">
+            <SortableTableHeader
+              className="flex justify-end text-white"
+              onToggleSort={() => handleSortChange("competitions")}
+              sortState={sortState["competitions"]}
+            >
               <div className="w-10 sm:w-full">
                 <p className="truncate">Competitions</p>
               </div>
             </SortableTableHeader>
-            <SortableTableHeader className="flex justify-end text-white">
+            <SortableTableHeader
+              className="flex justify-end text-white"
+              onToggleSort={() => handleSortChange("votes")}
+              sortState={sortState["votes"]}
+            >
               Votes
             </SortableTableHeader>
             <TableHead className="flex justify-end pr-10 text-white">
@@ -72,57 +86,44 @@ export function LeaderboardTable({
         </TableHeader>
 
         <TableBody>
-          {toRender.map((agent, i) => (
+          {agents.map((agent) => (
             <TableRow
               key={agent.id}
               className="grid grid-cols-[1fr_2fr_1fr_1fr_1fr]"
             >
               <TableCell className="xs:flex-row flex flex-col items-center gap-2 py-6">
-                <div className="flex gap-2">
-                  {/* TODO: enable once we have official rankings & net change in rank */}
-                  {/* <ArrowUp size={20} className="text-green-500" />
-                  <span>3</span> */}
-                </div>
-                {i === 0 ? (
+                {agent.rank === 1 ? (
                   <div
                     className={cn(
-                      "flex w-20 items-center justify-center gap-1 rounded p-2",
-                      "bg-[#594100]",
-                      "text-yellow-500",
+                      "flex w-20 items-center justify-center gap-1 rounded bg-[#594100] p-2 text-yellow-500",
                     )}
                   >
                     <Trophy size={17} />
                     <span>1st</span>
                   </div>
-                ) : i === 1 ? (
+                ) : agent.rank === 2 ? (
                   <div
                     className={cn(
-                      "flex w-20 items-center justify-center gap-1 rounded p-2",
-                      "bg-gray-700",
-                      "text-gray-300",
+                      "flex w-20 items-center justify-center gap-1 rounded bg-gray-700 p-2 text-gray-300",
                     )}
                   >
                     <AwardIcon size={17} />
                     <span>2nd</span>
                   </div>
-                ) : i === 2 ? (
+                ) : agent.rank === 3 ? (
                   <div
                     className={cn(
-                      "flex w-20 items-center justify-center gap-1 rounded p-2",
-                      "bg-[#1A0E05]",
-                      "text-[#C76E29]",
+                      "flex w-20 items-center justify-center gap-1 rounded bg-[#1A0E05] p-2 text-[#C76E29]",
                     )}
                   >
                     <AwardIcon size={17} />
                     <span>3rd</span>
                   </div>
                 ) : (
-                  <div className="mx-6 flex items-center justify-center rounded bg-gray-800 px-2 py-3">
-                    {i + 1}
+                  <div className="mx-6 flex items-center justify-center rounded bg-gray-800 p-2">
+                    {agent.rank}
                   </div>
                 )}
-                {/* TODO: hide this until official "scores" are implemented; the API does return the data, but it's not elo-based */}
-                {/* <span className="text-gray-500">{agent.score}</span> */}
               </TableCell>
 
               <TableCell className="flex items-center justify-center">
@@ -166,7 +167,7 @@ export function LeaderboardTable({
 
               <TableCell className="flex items-center justify-end pr-10 text-gray-500">
                 {loaded ? (
-                  <>{agent.numCompetitions}</>
+                  agent.numCompetitions
                 ) : (
                   <Skeleton className="h-2 w-10 rounded-full" />
                 )}
@@ -174,8 +175,7 @@ export function LeaderboardTable({
 
               <TableCell className="flex items-center justify-end pr-10 text-gray-500 sm:pr-0">
                 {loaded ? (
-                  // TODO: this is not part of the API response, yet, but it will be guaranteed to be present via the `useLeaderboards` hook
-                  <>{agent.voteCount || 0}</>
+                  agent.voteCount || 0
                 ) : (
                   <Skeleton className="h-2 w-10 rounded-full" />
                 )}
@@ -191,9 +191,38 @@ export function LeaderboardTable({
         </TableBody>
       </Table>
 
-      <Button onClick={onExtend} className="mt-4 w-full" variant="outline">
-        SHOW MORE
-      </Button>
+      <div className="mt-6 flex items-center justify-center gap-2">
+        <Button
+          className="rounded-full bg-transparent hover:bg-gray-900"
+          size="icon"
+          disabled={page === 1}
+          onClick={() => onPageChange(page - 1)}
+        >
+          <ChevronLeft />
+        </Button>
+        {pageNumbers.map((cur) => (
+          <button
+            key={cur}
+            className={cn(
+              "rounded px-3 py-1 text-sm font-medium",
+              page === cur
+                ? "bg-white text-black"
+                : "text-gray-400 hover:bg-gray-700 hover:text-white",
+            )}
+            onClick={() => onPageChange(cur)}
+          >
+            {cur + 1}
+          </button>
+        ))}
+        <Button
+          className="rounded-full bg-transparent hover:bg-gray-900"
+          size="icon"
+          disabled={page >= pageNumbers.length - 1}
+          onClick={() => onPageChange(page + 1)}
+        >
+          <ChevronRight />
+        </Button>
+      </div>
     </>
   );
 }

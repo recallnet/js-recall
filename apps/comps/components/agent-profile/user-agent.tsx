@@ -1,19 +1,9 @@
 "use client";
 
-import { Share2Icon } from "lucide-react";
 import React from "react";
 
 import Card from "@recallnet/ui2/components/card";
-import {
-  SortState,
-  SortableTableHeader,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@recallnet/ui2/components/table";
+import { SortState } from "@recallnet/ui2/components/table";
 import {
   Tabs,
   TabsContent,
@@ -22,30 +12,43 @@ import {
 } from "@recallnet/ui2/components/tabs";
 import { cn } from "@recallnet/ui2/lib/utils";
 
+import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { Hexagon } from "@/components/hexagon";
-import MirrorImage from "@/components/mirror-image";
+import { useUpdateAgent } from "@/hooks";
 import { useAgent } from "@/hooks/useAgent";
 import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
-import { Competition, CompetitionStatus } from "@/types";
+import { CompetitionStatus } from "@/types";
 
-import { BreadcrumbNav } from "../breadcrumb-nav";
+import { AgentImage } from "./agent-image";
+import { AgentInfo } from "./agent-info";
+import { CompetitionTable } from "./comps-table";
+import { EditAgentField } from "./edit-field";
+import { ShareAgent } from "./share-agent";
 
-export default function AgentProfile({ id }: { id: string }) {
+export default function UserAgent({ id }: { id: string }) {
   const {
     data: agent,
     isLoading: isLoadingAgent,
     error: agentError,
   } = useAgent(id);
+  const updateAgent = useUpdateAgent();
+
   const [selected, setSelected] = React.useState("all");
   const [sortState, setSorted] = React.useState(
     {} as Record<string, SortState>,
   );
   const sortString = React.useMemo(() => {
     return Object.entries(sortState).reduce((acc, [key, sort]) => {
-      if (sort !== "none") return acc + `,${sort == "asc" ? "" : "-"}${key}`;
+      if (sort !== "none")
+        return (
+          acc + `${acc.length > 0 ? "," : ""}${sort == "asc" ? "" : "-"}${key}`
+        );
       return acc;
     }, "");
   }, [sortState]);
+
+  const skills = agent?.stats?.skills || [];
+  const trophies = (agent?.metadata?.trophies || []) as string[];
 
   const { data: agentCompetitionsData, isLoading: isLoadingCompetitions } =
     useAgentCompetitions(id, { sort: sortString });
@@ -59,13 +62,26 @@ export default function AgentProfile({ id }: { id: string }) {
     });
   }, []);
 
+  const handleSaveChange =
+    (field: "imageUrl" | "description" | "name") => async (value: unknown) => {
+      if (!agent) return;
+
+      try {
+        await updateAgent.mutateAsync({
+          agentId: agent.id,
+          params: {
+            [field]: value,
+          },
+        });
+      } catch (error) {
+        console.error("Failed to update agent:", error);
+      }
+    };
+
   if (isLoadingAgent || isLoadingCompetitions)
     return <div className="py-20 text-center">Loading agent data...</div>;
   if (agentError || !agent)
     return <div className="py-20 text-center">Agent not found</div>;
-
-  const skills = agent.stats?.skills || [];
-  const trophies = (agent.metadata?.trophies || []) as string[];
 
   return (
     <>
@@ -75,7 +91,6 @@ export default function AgentProfile({ id }: { id: string }) {
           { label: "AGENTS", href: "/competitions" },
           { label: agent.name, href: "/" },
         ]}
-        className="mb-10"
       />
 
       <div className="xs:grid-rows-[65vh_1fr] my-6 grid grid-cols-[300px_1fr_1fr] rounded-xl md:grid-cols-[400px_1fr_1fr]">
@@ -85,44 +100,44 @@ export default function AgentProfile({ id }: { id: string }) {
           cropSize={45}
         >
           <div className="flex w-full justify-end">
-            <Share2Icon className="text-gray-600" size={30} />
+            <ShareAgent agentId={agent.id} />
           </div>
-          <MirrorImage
-            image={agent.imageUrl || "/agent-placeholder.png"}
-            width={160}
-            height={160}
+          <AgentImage
+            agentImage={agent?.imageUrl || "/agent-placeholder.png"}
+            onSave={handleSaveChange("imageUrl")}
           />
           <span className="w-50 mt-20 text-center text-lg text-gray-400">
             Calm accumulation of elite assets.
           </span>
         </Card>
         <div className="flex-2 xs:col-span-2 xs:col-start-2 xs:row-start-1 xs:mt-0 xs:h-[65vh] col-span-3 row-start-2 mt-5 flex shrink flex-col border border-gray-700 lg:col-span-1 lg:col-start-2">
-          <div className="grow border-b border-gray-700 p-8">
-            <h1 className="truncate text-4xl font-bold text-white">
-              {agent.name}
-            </h1>
-            <div className="mt-5 flex w-full gap-3">
-              <span className="text-xl font-semibold text-gray-400">
-                Developed by
-              </span>
-              <span className="truncate text-xl font-semibold text-gray-400 text-white">
-                {agent.name}
-              </span>
+          <div className="flex grow flex-col justify-between border-b border-gray-700 p-8">
+            <div className="flex flex-col gap-5">
+              <EditAgentField
+                title="Agent Name"
+                value={agent.name || ""}
+                onSave={handleSaveChange("name")}
+              >
+                <h1 className="max-w-3/4 truncate text-4xl font-bold text-white">
+                  {agent.name}
+                </h1>
+              </EditAgentField>
+              <div className="mt-8 flex w-full justify-start gap-3">
+                {trophies.length > 0 ? (
+                  trophies.map((_: unknown, i: number) => (
+                    <Hexagon
+                      key={i}
+                      className={`h-10 w-10 bg-${["blue-500", "red-500", "yellow-500"][i % 3]}`}
+                    />
+                  ))
+                ) : (
+                  <span className="text-gray-200">
+                    This agent hasn’t earned trophies yet.
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="mt-8 flex w-full justify-start gap-3">
-              {trophies.length > 0 ? (
-                trophies.map((_: unknown, i: number) => (
-                  <Hexagon
-                    key={i}
-                    className={`h-10 w-10 bg-${["blue-500", "red-500", "yellow-500"][i % 3]}`}
-                  />
-                ))
-              ) : (
-                <span className="text-gray-200">
-                  This agent hasn’t earned trophies yet.
-                </span>
-              )}
-            </div>
+            <AgentInfo agent={agent} />
           </div>
           <div className="flex flex-col items-start gap-2 border-b border-gray-700 px-6 py-12 text-sm">
             <span className="w-full text-left font-semibold uppercase text-gray-400">
@@ -155,9 +170,15 @@ export default function AgentProfile({ id }: { id: string }) {
         </div>
         <div className="xs:grid col-span-3 row-start-2 mt-8 hidden grid-rows-2 border-b border-l border-r border-t border-gray-700 text-sm lg:col-start-3 lg:row-start-1 lg:mt-0 lg:h-[65vh] lg:grid-rows-3 lg:border-l-0">
           <div className="flex flex-col items-start gap-2 border-b border-gray-700 p-6 lg:row-span-2">
-            <span className="font-semibold uppercase text-gray-400">
-              agent description
-            </span>
+            <EditAgentField
+              title="Agent Profile"
+              value={agent.description || ""}
+              onSave={handleSaveChange("description")}
+            >
+              <span className="font-semibold uppercase text-gray-400">
+                agent description
+              </span>
+            </EditAgentField>
             <span className="text-gray-400">
               {agent.description || "No profile created yet"}
             </span>
@@ -273,150 +294,5 @@ export default function AgentProfile({ id }: { id: string }) {
         </Tabs>
       </div>
     </>
-  );
-}
-
-function CompetitionTable({
-  competitions,
-  handleSortChange,
-  sortState,
-}: {
-  competitions: Competition[] | undefined;
-  handleSortChange: (field: string) => void;
-  sortState: Record<string, SortState>;
-}) {
-  return (
-    <div className="overflow-hidden rounded border border-gray-800">
-      <Table>
-        <TableHeader className="text-muted-foreground bg-gray-900 text-xs uppercase">
-          <TableRow className="grid w-full grid-cols-7">
-            <SortableTableHeader
-              onToggleSort={() => handleSortChange("name")}
-              sortState={sortState["name"]}
-            >
-              Competition
-            </SortableTableHeader>
-            <SortableTableHeader
-              onToggleSort={() => handleSortChange("skills")}
-              sortState={sortState["skills"]}
-            >
-              Skills
-            </SortableTableHeader>
-            <SortableTableHeader
-              onToggleSort={() => handleSortChange("portfolio")}
-              sortState={sortState["portfolio"]}
-            >
-              Portfolio
-            </SortableTableHeader>
-            <SortableTableHeader
-              onToggleSort={() => handleSortChange("pnl")}
-              sortState={sortState["pnl"]}
-              className="w-30 flex justify-end"
-            >
-              P&L
-            </SortableTableHeader>
-            <SortableTableHeader
-              onToggleSort={() => handleSortChange("trades")}
-              sortState={sortState["trades"]}
-            >
-              Trades
-            </SortableTableHeader>
-            <SortableTableHeader
-              onToggleSort={() => handleSortChange("placement")}
-              sortState={sortState["placement"]}
-            >
-              Placement
-            </SortableTableHeader>
-            <TableHead className="text-left">Trophies</TableHead>
-          </TableRow>
-        </TableHeader>
-
-        <TableBody>
-          {competitions && competitions.length > 0 ? (
-            competitions.slice(0, 10).map((comp, i) => {
-              const compStatus =
-                comp.status === CompetitionStatus.Active
-                  ? {
-                      text: "On-going",
-                      style: "border-green-500 text-green-500",
-                    }
-                  : comp.status === CompetitionStatus.Pending
-                    ? {
-                        text: "Upcoming",
-                        style: "border-blue-500 text-blue-500",
-                      }
-                    : {
-                        text: "Complete",
-                        style: "border-gray-500 text-gray-500",
-                      };
-
-              return (
-                <TableRow key={i} className="grid grid-cols-7">
-                  <TableCell className="flex flex-col justify-center">
-                    <span className="truncate text-sm font-semibold text-gray-400">
-                      {comp.name}
-                    </span>
-                    <span
-                      className={cn(
-                        "mt-1 w-fit rounded border px-2 py-0.5 text-xs font-medium",
-                        compStatus.style,
-                      )}
-                    >
-                      {compStatus.text}
-                    </span>
-                  </TableCell>
-                  <TableCell className="flex flex-wrap items-center gap-2">
-                    {/* Future skills mapping */}
-                  </TableCell>
-                  <TableCell className="text-md flex items-center font-medium text-gray-400">
-                    $0<span className="ml-2 text-xs">USDC</span>
-                  </TableCell>
-                  <TableCell className="w-30 flex items-center justify-center font-medium">
-                    <span className="flex flex-col text-gray-400">0$</span>
-                  </TableCell>
-                  <TableCell className="w-30 text-md fond-semibold flex items-center text-center text-gray-400">
-                    0
-                  </TableCell>
-                  <TableCell className="w-30 flex items-center text-center text-gray-400">
-                    0/0
-                  </TableCell>
-                  <TableCell className="align-center h-25 flex items-center gap-2">
-                    <Hexagon className="h-8 w-8 bg-blue-500" />
-                    <Hexagon className="h-8 w-8 bg-green-500" />
-                    <Hexagon className="h-8 w-8 bg-yellow-500" />
-                  </TableCell>
-                </TableRow>
-              );
-            })
-          ) : (
-            <TableRow>
-              <TableCell colSpan={7} className="p-5 text-center">
-                <div className="flex flex-col">
-                  <span className="font-bold text-gray-400">
-                    This agent hasn’t joined any competitions yet
-                  </span>
-                  <span className="text-gray-600">
-                    Participated competitions will appear here once the agent
-                    enters one.
-                  </span>
-                </div>
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-
-      {competitions && competitions.length > 10 && (
-        <div className="max-h-[600px] overflow-y-auto">
-          <Table>
-            <TableBody>
-              {competitions.slice(10).map((comp, i) => (
-                <TableRow key={i}>{/* Same structure */}</TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-    </div>
   );
 }

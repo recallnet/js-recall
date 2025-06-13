@@ -22,6 +22,10 @@ export interface Agent {
   imageUrl: string;
   description?: string;
   status: string;
+  stats: {
+    bestPlacement?: { position: string; participants: string };
+    skills?: string[];
+  };
   metadata?: AgentCompetitionMetadata;
   deactivationReason?: string;
   deactivationDate?: string;
@@ -110,4 +114,29 @@ export interface CreateAgentRequest {
 export interface CreateAgentResponse {
   agent: Agent & { apiKey: string };
   success: boolean;
+}
+
+export interface UpdateAgentRequest {
+  agentId: string;
+  params: {
+    name?: string;
+    description?: string;
+    imageUrl?: string;
+    email?: string;
+    metadata?: {
+      [key: string]: string | undefined;
+    };
+  };
+}
+
+export interface UpdateAgentResponse {
+  agent: Agent & { apiKey: string };
+  success: boolean;
+}
+
+export interface AgentApiKeyResponse {
+  success: boolean;
+  agentId: string;
+  agentName: string;
+  apiKey: string;
 }
