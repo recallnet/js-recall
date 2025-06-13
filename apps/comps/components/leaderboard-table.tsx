@@ -2,7 +2,6 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AwardIcon, ExternalLink, Trophy } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
@@ -19,26 +18,6 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { LeaderboardAgent } from "@/types/agent";
 
-const emptyAgent = (i: number): LeaderboardAgent => ({
-  id: i.toString(),
-  name: `some-name-${i}`,
-  walletAddress: "",
-  ownerId: "",
-  imageUrl: "",
-  description: "some long agent description",
-  status: "",
-  rank: i,
-  score: 0,
-  voteCount: 0,
-  numCompetitions: 0,
-  stats: {
-    totalVotes: 0,
-    totalTrades: 0,
-    completedCompetitions: 0,
-  },
-});
-
-type SortField = "rank" | "name" | "numCompetitions" | "voteCount" | null;
 type SortState = "none" | "asc" | "desc";
 
 export function LeaderboardTable({
@@ -48,6 +27,8 @@ export function LeaderboardTable({
   page,
   total = 0,
   itemsByPage = 1,
+  handleSortChange,
+  sortState,
 }: {
   agents: LeaderboardAgent[];
   onPageChange: (num: number) => void;
@@ -55,38 +36,10 @@ export function LeaderboardTable({
   total?: number;
   itemsByPage?: number;
   loaded?: boolean;
+
+  handleSortChange: (field: string) => void;
+  sortState: Record<string, SortState>;
 }) {
-  const [sortField, setSortField] = useState<SortField>(null);
-  const [sortDirection, setSortDirection] = useState<SortState>("none");
-
-  const toggleSort = (field: SortField) => {
-    if (sortField !== field) {
-      setSortField(field);
-      setSortDirection("asc");
-    } else {
-      setSortDirection((prev) =>
-        prev === "none" ? "asc" : prev === "asc" ? "desc" : "none",
-      );
-      if (sortDirection === "desc") setSortField(null);
-    }
-  };
-
-  const sortedAgents = useMemo(() => {
-    if (!loaded) return new Array(10).fill(0).map((_, i) => emptyAgent(i));
-    if (!sortField || sortDirection === "none") return agents;
-
-    const sorted = [...agents].sort((a, b) => {
-      const aVal = a[sortField] ?? "";
-      const bVal = b[sortField] ?? "";
-      if (typeof aVal === "string" && typeof bVal === "string") {
-        return aVal.localeCompare(bVal);
-      }
-      return (aVal as number) - (bVal as number);
-    });
-
-    return sortDirection === "asc" ? sorted : sorted.reverse();
-  }, [agents, loaded, sortField, sortDirection]);
-
   const pageNumbers = new Array(Math.ceil(total / itemsByPage))
     .fill(0)
     .map((_, i) => i);
@@ -98,24 +51,22 @@ export function LeaderboardTable({
           <TableRow className="grid w-full grid-cols-[1fr_2fr_1fr_1fr_1fr]">
             <SortableTableHeader
               className="pl-10 text-white"
-              sortState={sortField === "rank" ? sortDirection : "none"}
-              onToggleSort={() => toggleSort("rank")}
+              onToggleSort={() => handleSortChange("rank")}
+              sortState={sortState["rank"]}
             >
               Rank
             </SortableTableHeader>
             <SortableTableHeader
               className="xs:pl-20 pl-10 text-white"
-              sortState={sortField === "name" ? sortDirection : "none"}
-              onToggleSort={() => toggleSort("name")}
+              onToggleSort={() => handleSortChange("name")}
+              sortState={sortState["name"]}
             >
               Agent
             </SortableTableHeader>
             <SortableTableHeader
               className="flex justify-end text-white"
-              sortState={
-                sortField === "numCompetitions" ? sortDirection : "none"
-              }
-              onToggleSort={() => toggleSort("numCompetitions")}
+              onToggleSort={() => handleSortChange("competitions")}
+              sortState={sortState["competitions"]}
             >
               <div className="w-10 sm:w-full">
                 <p className="truncate">Competitions</p>
@@ -123,8 +74,8 @@ export function LeaderboardTable({
             </SortableTableHeader>
             <SortableTableHeader
               className="flex justify-end text-white"
-              sortState={sortField === "voteCount" ? sortDirection : "none"}
-              onToggleSort={() => toggleSort("voteCount")}
+              onToggleSort={() => handleSortChange("votes")}
+              sortState={sortState["votes"]}
             >
               Votes
             </SortableTableHeader>
@@ -135,7 +86,7 @@ export function LeaderboardTable({
         </TableHeader>
 
         <TableBody>
-          {sortedAgents.map((agent) => (
+          {agents.map((agent) => (
             <TableRow
               key={agent.id}
               className="grid grid-cols-[1fr_2fr_1fr_1fr_1fr]"
