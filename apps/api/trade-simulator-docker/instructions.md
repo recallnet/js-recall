@@ -11,7 +11,7 @@ Simple Docker deployment for the Multi-Chain Trading Simulator.
 
 ### 1. Create Environment File
 
-Create a `.env` file in `apps/api/trade-simulator-docker/` with your configuration, similar to [.env.example](../.env.example).
+Create a `.env` file in `apps/api/trade-simulator-docker/` with your configuration, similar to [.env.example](.env.example).
 
 ### 2. Run the Application
 
@@ -59,3 +59,41 @@ The Docker Compose health check automatically adjusts to use the correct endpoin
 - Make sure your `DATABASE_URL` points to your external PostgreSQL instance
 - The application will automatically handle database migrations on startup
 - Set `API_PREFIX` in your `.env` file if you need custom API routing (e.g., `API_PREFIX=testing-grounds`)
+
+## Database Initialization Options
+
+The Docker container supports two database initialization modes controlled by the `RUN_BACKFILL` environment variable:
+
+### Legacy/Production Setup (Default)
+
+```bash
+RUN_BACKFILL=true  # Default if not specified
+```
+
+- Applies baseline SQL file (if present at `apps/api/baseline/baseline.sql`)
+- Then runs all Drizzle migrations
+- Use this for production deployments with historical data
+
+### Modern/Clean Setup
+
+```bash
+RUN_BACKFILL=false
+```
+
+- Runs only Drizzle migrations (no baseline)
+- Use this for fresh deployments without legacy data
+
+### Setup Instructions
+
+**For legacy/production databases:**
+
+1. Place your baseline SQL file at `apps/api/baseline/baseline.sql`
+2. Set `RUN_BACKFILL=true` in your `.env` (or omit it, as this is the default)
+3. Start the container - baseline and migrations will be applied automatically
+
+**For modern/clean databases:**
+
+1. Set `RUN_BACKFILL=false` in your `.env`
+2. Start the container - only Drizzle migrations will be applied
+
+**Note:** If the database is already initialized, the container will skip migration steps on subsequent runs regardless of the `RUN_BACKFILL` setting.

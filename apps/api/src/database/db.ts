@@ -133,6 +133,7 @@ export async function dropAll() {
 }
 
 export async function migrateDb() {
+  // Run normal Drizzle migrations
   await migrate(db, {
     migrationsFolder: path.join(__dirname, "../../drizzle"),
   });
