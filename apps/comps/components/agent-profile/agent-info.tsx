@@ -1,3 +1,4 @@
+import { useCopyToClipboard } from "@uidotdev/usehooks";
 import {
   CopyIcon,
   EyeIcon,
@@ -5,19 +6,19 @@ import {
   KeyIcon,
   WalletIcon,
 } from "lucide-react";
-import {useState} from "react";
-import {useCopyToClipboard} from "@uidotdev/usehooks";
+import { useState } from "react";
 
-import {Tooltip} from "@recallnet/ui2/components/tooltip";
+import { Tooltip } from "@recallnet/ui2/components/tooltip";
 
-import {useAgentApiKey} from "@/hooks";
-import {Agent} from "@/types";
-import {Clipboard} from "../clipboard";
+import { useAgentApiKey } from "@/hooks";
+import { Agent } from "@/types";
 
-export const AgentInfo = ({agent}: {agent: Agent}) => {
+import { Clipboard } from "../clipboard";
+
+export const AgentInfo = ({ agent }: { agent: Agent }) => {
   const [copiedText, copyToClipboard] = useCopyToClipboard();
   const [showWalletAddress, setShowWalletAddress] = useState(false);
-  const {data: apiKey, isLoading} = useAgentApiKey(agent.id);
+  const { data: apiKey, isLoading } = useAgentApiKey(agent.id);
 
   const handleCopy = async (text: string) => {
     copyToClipboard(text);
@@ -40,7 +41,7 @@ export const AgentInfo = ({agent}: {agent: Agent}) => {
           )}
           <Tooltip content={copiedText === apiKey?.apiKey ? "Copied!" : "Copy"}>
             <CopyIcon
-              className="flex-shrink-0 cursor-pointer translate-y-1"
+              className="flex-shrink-0 translate-y-1 cursor-pointer"
               onClick={() => handleCopy(apiKey?.apiKey || "")}
             />
           </Tooltip>
@@ -62,7 +63,10 @@ export const AgentInfo = ({agent}: {agent: Agent}) => {
         <Tooltip content="Agent Wallet">
           <WalletIcon />
         </Tooltip>
-        <Clipboard text={agent.walletAddress || ""} className='py-1 px-2 max-w-[400px] flex-grow' />
+        <Clipboard
+          text={agent.walletAddress || ""}
+          className="max-w-[400px] flex-grow px-2 py-1"
+        />
       </div>
     </div>
   );

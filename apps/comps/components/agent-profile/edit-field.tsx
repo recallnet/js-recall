@@ -1,7 +1,7 @@
-import {SquarePen} from "lucide-react";
-import React, {useEffect, useState} from "react";
+import { SquarePen } from "lucide-react";
+import React, { useEffect, useState } from "react";
 
-import {Button} from "@recallnet/ui2/components/button";
+import { Button } from "@recallnet/ui2/components/button";
 import {
   Dialog,
   DialogClose,
@@ -10,8 +10,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
-import {Input} from "@recallnet/ui2/components/input";
-import {Textarea} from "@recallnet/ui2/components/textarea";
+import { Input } from "@recallnet/ui2/components/input";
+import { Textarea } from "@recallnet/ui2/components/textarea";
 
 interface EditAgentFieldProps {
   title: string;
@@ -61,25 +61,24 @@ export const EditAgentField: React.FC<EditAgentFieldProps> = ({
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>
-          <div className="mt-2 flex flex-col gap-2 min-w-70">
-            {
-              useTextarea ?
-                <Textarea
-                  type="text"
-                  placeholder={placeholder}
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  autoFocus
-                />
-                :
-                <Input
-                  type="text"
-                  placeholder={placeholder}
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  autoFocus
-                />
-            }
+          <div className="min-w-70 mt-2 flex flex-col gap-2">
+            {useTextarea ? (
+              <Textarea
+                type="text"
+                placeholder={placeholder}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                autoFocus
+              />
+            ) : (
+              <Input
+                type="text"
+                placeholder={placeholder}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                autoFocus
+              />
+            )}
           </div>
           <DialogFooter className="mt-4">
             <DialogClose asChild>
