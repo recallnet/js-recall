@@ -63,11 +63,10 @@ export default function AgentPage({
       <RegisterAgentBlock />
 
       <JoinSwarmSection
-        className="relative left-1/2 right-1/2 ml-[-50vw] mr-[-50vw] w-screen bg-black px-10 py-10 text-white md:px-40"
         socialLinks={getSocialLinksArray()}
       />
 
-      <FooterSection className="relative left-1/2 right-1/2 ml-[-50vw] mr-[-50vw] w-screen px-10 py-5 text-gray-500 md:px-40" />
+      <FooterSection />
     </>
   );
 }
