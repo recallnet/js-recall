@@ -8,9 +8,9 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@recallnet/ui2/components/breadcrumb";
-import {cn} from "@recallnet/ui2/lib/utils";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import {BackButton} from "@/components/back-button";
+import { BackButton } from "@/components/back-button";
 
 interface BreadcrumbItem {
   label: string;
@@ -22,7 +22,7 @@ interface BreadcrumbNavProps {
   className?: string;
 }
 
-export function BreadcrumbNav({items, className}: BreadcrumbNavProps) {
+export function BreadcrumbNav({ items, className }: BreadcrumbNavProps) {
   return (
     <div className={cn("flex items-center gap-4 border-b pb-5", className)}>
       <BackButton />
@@ -32,7 +32,9 @@ export function BreadcrumbNav({items, className}: BreadcrumbNavProps) {
             <React.Fragment key={item.label}>
               <BreadcrumbItem className="uppercase">
                 {item.href ? (
-                  <BreadcrumbLink className="uppercase" href={item.href}>{item.label}</BreadcrumbLink>
+                  <BreadcrumbLink className="uppercase" href={item.href}>
+                    {item.label}
+                  </BreadcrumbLink>
                 ) : (
                   <BreadcrumbPage>{item.label}</BreadcrumbPage>
                 )}

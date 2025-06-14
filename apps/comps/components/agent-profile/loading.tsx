@@ -1,50 +1,63 @@
-
 "use client";
 
-import {Skeleton} from "@recallnet/ui2/components/skeleton";
-import {cn} from "@recallnet/ui2/lib/utils";
+import { Skeleton } from "@recallnet/ui2/components/skeleton";
+import { cn } from "@recallnet/ui2/lib/utils";
 
 export const LoadingAgentProfile = () => {
-  const rounded = 'rounded-3xl'
+  const rounded = "rounded-3xl";
 
   return (
     <>
-      <div className="w-full flex gap-2 mb-6">
-        <Skeleton className="h-[10px] rounded-full w-7 mr-2" />
-        <Skeleton className="h-[10px] rounded-full w-10" />
-        <Skeleton className="h-[10px] rounded-full w-5" />
-        <Skeleton className="h-[10px] rounded-full w-20" />
-        <Skeleton className="h-[10px] rounded-full w-5" />
-        <Skeleton className="h-[10px] rounded-full w-20" />
+      <div className="mb-6 flex w-full gap-2">
+        <Skeleton className="mr-2 h-[10px] w-7 rounded-full" />
+        <Skeleton className="h-[10px] w-10 rounded-full" />
+        <Skeleton className="h-[10px] w-5 rounded-full" />
+        <Skeleton className="h-[10px] w-20 rounded-full" />
+        <Skeleton className="h-[10px] w-5 rounded-full" />
+        <Skeleton className="h-[10px] w-20 rounded-full" />
       </div>
       <div className="w-full border-t border-gray-900"></div>
 
-      <div className="grid-cols-2 xs:grid-cols-4 grid-rows-[12vh_12vh_12vh_12vh] my-6 grid sm:grid-cols-6 rounded-xl gap-5">
-        <Skeleton className={cn("w-full col-span-2 row-span-4 h-full xs:block hidden", rounded)} />
+      <div className="xs:grid-cols-4 my-6 grid grid-cols-2 grid-rows-[12vh_12vh_12vh_12vh] gap-5 rounded-xl sm:grid-cols-6">
+        <Skeleton
+          className={cn(
+            "xs:block col-span-2 row-span-4 hidden h-full w-full",
+            rounded,
+          )}
+        />
 
-        <Skeleton className={cn("col-span-2 row-span-2 w-full h-full", rounded)} />
-        <Skeleton className={cn("col-span-2 row-span-2 w-full h-full sm:block hidden", rounded)} />
-        <Skeleton className={cn("col-span-2 w-full h-full", rounded)} />
-        <Skeleton className={cn("sm:col-span-2 sm:row-span-2 w-full h-full", rounded)} />
+        <Skeleton
+          className={cn("col-span-2 row-span-2 h-full w-full", rounded)}
+        />
+        <Skeleton
+          className={cn(
+            "col-span-2 row-span-2 hidden h-full w-full sm:block",
+            rounded,
+          )}
+        />
+        <Skeleton className={cn("col-span-2 h-full w-full", rounded)} />
+        <Skeleton
+          className={cn("h-full w-full sm:col-span-2 sm:row-span-2", rounded)}
+        />
 
-        <Skeleton className={cn("w-full h-full sm:block hidden", rounded)} />
-        <Skeleton className={cn("w-full h-full", rounded)} />
+        <Skeleton className={cn("hidden h-full w-full sm:block", rounded)} />
+        <Skeleton className={cn("h-full w-full", rounded)} />
       </div>
 
-      <div className="mt-10 grid grid-row-8 gap-4 mb-10">
-        <Skeleton className={cn("w-15 h-[10px] mb-4", rounded)} />
-        <div className="w-full flex gap-2 mb-6">
-          <Skeleton className="h-[10px] rounded-full w-5" />
-          <Skeleton className="h-[10px] rounded-full w-20" />
-          <Skeleton className="h-[10px] rounded-full w-5" />
-          <Skeleton className="h-[10px] rounded-full w-20" />
+      <div className="grid-row-8 mb-10 mt-10 grid gap-4">
+        <Skeleton className={cn("w-15 mb-4 h-[10px]", rounded)} />
+        <div className="mb-6 flex w-full gap-2">
+          <Skeleton className="h-[10px] w-5 rounded-full" />
+          <Skeleton className="h-[10px] w-20 rounded-full" />
+          <Skeleton className="h-[10px] w-5 rounded-full" />
+          <Skeleton className="h-[10px] w-20 rounded-full" />
         </div>
-        <Skeleton className={cn("w-full h-5 mb-5", rounded)} />
-        <Skeleton className={cn("w-full h-10", rounded)} />
-        <Skeleton className={cn("w-full h-10", rounded)} />
-        <Skeleton className={cn("w-full h-10", rounded)} />
-        <Skeleton className={cn("w-full h-10", rounded)} />
+        <Skeleton className={cn("mb-5 h-5 w-full", rounded)} />
+        <Skeleton className={cn("h-10 w-full", rounded)} />
+        <Skeleton className={cn("h-10 w-full", rounded)} />
+        <Skeleton className={cn("h-10 w-full", rounded)} />
+        <Skeleton className={cn("h-10 w-full", rounded)} />
       </div>
     </>
   );
-}
+};

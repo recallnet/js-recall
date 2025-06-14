@@ -1,5 +1,5 @@
-import {Share2Icon} from "lucide-react";
-import {useState} from "react";
+import { Share2Icon } from "lucide-react";
+import { useState } from "react";
 import {
   SiDiscord,
   SiReddit,
@@ -14,9 +14,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
-import {Clipboard} from "../clipboard";
 
-export const ShareAgent = ({agentId}: {agentId: string}) => {
+import { Clipboard } from "../clipboard";
+
+export const ShareAgent = ({ agentId }: { agentId: string }) => {
   const [open, setOpen] = useState(false);
   const shareUrl = `https://recall.network/agents/${agentId}`;
 
