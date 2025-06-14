@@ -5,22 +5,22 @@ import {
   KeyIcon,
   WalletIcon,
 } from "lucide-react";
-import { useState } from "react";
+import {useState} from "react";
+import {useCopyToClipboard} from "@uidotdev/usehooks";
 
-import { Tooltip } from "@recallnet/ui2/components/tooltip";
+import {Tooltip} from "@recallnet/ui2/components/tooltip";
 
-import { useAgentApiKey } from "@/hooks";
-import { Agent } from "@/types";
+import {useAgentApiKey} from "@/hooks";
+import {Agent} from "@/types";
 
-export const AgentInfo = ({ agent }: { agent: Agent }) => {
+export const AgentInfo = ({agent}: {agent: Agent}) => {
+  const [copiedText, copyToClipboard] = useCopyToClipboard();
   const [showWalletAddress, setShowWalletAddress] = useState(false);
-  const [copiedField, setCopiedField] = useState<"key" | "wallet" | null>(null);
-  const { data: apiKey, isLoading } = useAgentApiKey(agent.id);
+  const {data: apiKey, isLoading} = useAgentApiKey(agent.id);
 
-  const handleCopy = async (text: string, field: "key" | "wallet") => {
-    await navigator.clipboard.writeText(text);
-    setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 1500);
+  const handleCopy = async (text: string) => {
+    copyToClipboard(text);
+    setTimeout(() => copyToClipboard(null), 1500);
   };
 
   return (
@@ -37,10 +37,10 @@ export const AgentInfo = ({ agent }: { agent: Agent }) => {
               ••••••••••••••••••••••••••••••••••••••••
             </span>
           )}
-          <Tooltip content={copiedField === "key" ? "Copied!" : "Copy"}>
+          <Tooltip content={copiedText === apiKey?.apiKey ? "Copied!" : "Copy"}>
             <CopyIcon
               className="flex-shrink-0 cursor-pointer"
-              onClick={() => handleCopy(agent.walletAddress || "", "key")}
+              onClick={() => handleCopy(apiKey?.apiKey || "")}
             />
           </Tooltip>
         </div>
@@ -65,10 +65,10 @@ export const AgentInfo = ({ agent }: { agent: Agent }) => {
           <span className="min-w-0 flex-grow truncate">
             {agent.walletAddress}
           </span>
-          <Tooltip content={copiedField === "wallet" ? "Copied!" : "Copy"}>
+          <Tooltip content={copiedText === agent.walletAddress ? "Copied!" : "Copy"}>
             <CopyIcon
               className="flex-shrink-0 cursor-pointer"
-              onClick={() => handleCopy(agent.walletAddress || "", "wallet")}
+              onClick={() => handleCopy(agent.walletAddress || "")}
             />
           </Tooltip>
         </div>
