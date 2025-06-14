@@ -32,7 +32,9 @@ export function BreadcrumbNav({ items, className }: BreadcrumbNavProps) {
             <React.Fragment key={item.label}>
               <BreadcrumbItem className="uppercase">
                 {item.href ? (
-                  <BreadcrumbLink href={item.href}>{item.label}</BreadcrumbLink>
+                  <BreadcrumbLink className="uppercase" href={item.href}>
+                    {item.label}
+                  </BreadcrumbLink>
                 ) : (
                   <BreadcrumbPage>{item.label}</BreadcrumbPage>
                 )}

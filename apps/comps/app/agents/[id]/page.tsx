@@ -2,31 +2,59 @@
 
 import React from "react";
 
+import { SortState } from "@recallnet/ui2/components/table";
+
 import AgentProfile from "@/components/agent-profile";
+import { LoadingAgentProfile } from "@/components/agent-profile/loading";
 import { FooterSection } from "@/components/footer-section";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
 import { RegisterAgentBlock } from "@/components/register-agent-block";
 import { getSocialLinksArray } from "@/data/social";
+import { useAgent } from "@/hooks/useAgent";
+import { AgentWithOwnerResponse } from "@/types";
 
-export default function LeaderboardPage({
+export default function AgentPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = React.use(params);
 
+  const [status, setCompStatus] = React.useState("all");
+  const [sortState, setSorted] = React.useState(
+    {} as Record<string, SortState>,
+  );
+  const { data, isLoading: isLoadingAgent } = useAgent(id);
+  const { agent, owner } = data || ({} as unknown as AgentWithOwnerResponse);
+
+  const handleSortChange = React.useCallback((field: string) => {
+    setSorted((sort) => {
+      const cur = sort[field];
+      const nxt =
+        !cur || cur == "none" ? "asc" : cur == "asc" ? "desc" : "none";
+      return { [field]: nxt };
+    });
+  }, []);
+
+  if (isLoadingAgent) return <LoadingAgentProfile />;
+
   return (
     <>
-      <AgentProfile id={id} />
+      <AgentProfile
+        id={id}
+        agent={agent}
+        owner={owner}
+        handleSortChange={handleSortChange}
+        sortState={sortState}
+        status={status}
+        setStatus={setCompStatus}
+      />
 
       <RegisterAgentBlock />
 
-      <JoinSwarmSection
-        className="px-30 relative left-1/2 right-1/2 ml-[-50vw] mr-[-50vw] w-screen bg-black py-10 text-white"
-        socialLinks={getSocialLinksArray()}
-      />
+      <JoinSwarmSection socialLinks={getSocialLinksArray()} />
 
-      <FooterSection className="xl:px-30 relative left-1/2 right-1/2 ml-[-50vw] mr-[-50vw] w-screen px-10 py-5 text-gray-500" />
+      <FooterSection />
     </>
   );
 }

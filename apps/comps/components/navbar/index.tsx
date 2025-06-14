@@ -110,7 +110,7 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
         </div>
       </nav>
 
-      <div className="mx-auto flex w-full max-w-screen-lg justify-center px-10 pt-10 sm:px-20">
+      <div className="mx-auto flex w-full max-w-screen-lg justify-center px-5 pt-10 sm:px-20">
         {children}
       </div>
     </>
