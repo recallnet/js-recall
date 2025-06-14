@@ -1,5 +1,5 @@
-import { CopyIcon, Share2Icon } from "lucide-react";
-import { useState } from "react";
+import {CopyIcon, Share2Icon} from "lucide-react";
+import {useState} from "react";
 import {
   SiDiscord,
   SiReddit,
@@ -16,7 +16,7 @@ import {
 } from "@recallnet/ui2/components/dialog";
 import Tooltip from "@recallnet/ui2/components/tooltip";
 
-export const ShareAgent = ({ agentId }: { agentId: string }) => {
+export const ShareAgent = ({agentId}: {agentId: string}) => {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const shareUrl = `https://recall.network/agents/${agentId}`;
@@ -88,10 +88,10 @@ export const ShareAgent = ({ agentId }: { agentId: string }) => {
             ))}
           </div>
 
-          <div className="mt-1 border-t border-gray-800" />
+          <div className="mt-1 border-t" />
 
           <div className="text-xl font-bold text-white">Copy Link</div>
-          <div className="flex items-center justify-between overflow-hidden rounded border border-gray-800 px-3 py-2">
+          <div className="flex items-center justify-between overflow-hidden rounded border px-3 py-2">
             <p className="truncate text-sm text-gray-500">{shareUrl}</p>
             <Tooltip content={copied ? "Copied!" : "Copy"}>
               <CopyIcon

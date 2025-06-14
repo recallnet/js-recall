@@ -23,41 +23,32 @@ export default function AgentPage({
   const {data: userAgents} = useUserAgents();
   const isUserAgent = userAgents?.agents.some((a) => a.id === id);
 
+  const [status, setCompStatus] = React.useState("all");
   const [sortState, setSorted] = React.useState(
     {} as Record<string, SortState>,
   );
-  const sortString = React.useMemo(() => {
-    return Object.entries(sortState).reduce((acc, [key, sort]) => {
-      if (sort !== "none") return acc + `,${sort == "asc" ? "" : "-"}${key}`;
-      return acc;
-    }, "");
-  }, [sortState]);
-
   const {data, isLoading: isLoadingAgent} = useAgent(id);
-  const {data: compsData, isLoading: isLoadingCompetitions} =
-    useAgentCompetitions(id, {sort: sortString});
   const {agent, owner} = data || {};
-  const loading = isLoadingAgent || isLoadingCompetitions
 
   const handleSortChange = React.useCallback((field: string) => {
     setSorted((sort) => {
       const cur = sort[field];
       const nxt =
         !cur || cur == "none" ? "asc" : cur == "asc" ? "desc" : "none";
-      return {...sort, [field]: nxt};
+      return {[field]: nxt};
     });
   }, []);
 
-  if (loading)
+  if (isLoadingAgent)
     return <LoadingAgentProfile />
 
   return (
     <>
       {
         isUserAgent ?
-          <UserAgent id={id} competitions={compsData?.competitions || []} agent={agent} owner={owner} handleSortChange={handleSortChange} sortState={sortState} />
+          <UserAgent id={id} agent={agent} handleSortChange={handleSortChange} sortState={sortState} status={status} setStatus={setCompStatus} />
           :
-          <AgentProfile id={id} competitions={compsData?.competitions || []} agent={agent} owner={owner} handleSortChange={handleSortChange} sortState={sortState} />
+          <AgentProfile id={id} agent={agent} owner={owner} handleSortChange={handleSortChange} sortState={sortState} status={status} setStatus={setCompStatus} />
       }
 
       <RegisterAgentBlock />

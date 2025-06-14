@@ -19,21 +19,19 @@ export const LoadingAgentProfile = () => {
       </div>
       <div className="w-full border-t border-gray-900"></div>
 
-      <div className="xs:grid-rows-[45vh_1fr] my-6 grid grid-cols-[300px_1fr_1fr] rounded-xl md:grid-cols-[400px_1fr_1fr] gap-5">
-        <Skeleton className={cn("w-full row-span-2 h-full", rounded)} />
-        <div className="xs:col-span-2 xs:col-start-2 xs:row-start-1 xs:mt-0 col-span-3 row-start-2 mt-5 lg:col-span-1 lg:col-start-2 grid grid-rows-4 grid-cols-2 gap-5">
-          <Skeleton className={cn("col-span-2 row-span-2 w-full h-full", rounded)} />
-          <Skeleton className={cn("col-span-2 w-full h-full", rounded)} />
-          <Skeleton className={cn("w-full h-full", rounded)} />
-          <Skeleton className={cn("w-full h-full", rounded)} />
-        </div>
-        <div className="xs:grid col-span-3 row-start-2 mt-8 hidden grid-rows-2 text-sm lg:col-start-3 lg:row-start-1 lg:mt-0 lg:grid-rows-2 gap-5">
-          <Skeleton className={cn("w-full h-full", rounded)} />
-          <Skeleton className={cn("w-full h-full", rounded)} />
-        </div>
+      <div className="grid-cols-2 xs:grid-cols-4 grid-rows-[12vh_12vh_12vh_12vh] my-6 grid sm:grid-cols-6 rounded-xl gap-5">
+        <Skeleton className={cn("w-full col-span-2 row-span-4 h-full xs:block hidden", rounded)} />
+
+        <Skeleton className={cn("col-span-2 row-span-2 w-full h-full", rounded)} />
+        <Skeleton className={cn("col-span-2 row-span-2 w-full h-full sm:block hidden", rounded)} />
+        <Skeleton className={cn("col-span-2 w-full h-full", rounded)} />
+        <Skeleton className={cn("sm:col-span-2 sm:row-span-2 w-full h-full", rounded)} />
+
+        <Skeleton className={cn("w-full h-full sm:block hidden", rounded)} />
+        <Skeleton className={cn("w-full h-full", rounded)} />
       </div>
 
-      <div className="mt-10 grid grid-row-8 gap-4">
+      <div className="mt-10 grid grid-row-8 gap-4 mb-10">
         <Skeleton className={cn("w-15 h-[10px] mb-4", rounded)} />
         <div className="w-full flex gap-2 mb-6">
           <Skeleton className="h-[10px] rounded-full w-5" />
