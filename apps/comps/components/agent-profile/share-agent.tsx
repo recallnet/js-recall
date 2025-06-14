@@ -1,4 +1,4 @@
-import {CopyIcon, Share2Icon} from "lucide-react";
+import {Share2Icon} from "lucide-react";
 import {useState} from "react";
 import {
   SiDiscord,
@@ -7,7 +7,6 @@ import {
   SiWhatsapp,
   SiX,
 } from "react-icons/si";
-import {useCopyToClipboard} from "@uidotdev/usehooks";
 
 import {
   Dialog,
@@ -15,19 +14,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
-import Tooltip from "@recallnet/ui2/components/tooltip";
+import {Clipboard} from "../clipboard";
 
 export const ShareAgent = ({agentId}: {agentId: string}) => {
   const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [_, copyToClipboard] = useCopyToClipboard();
   const shareUrl = `https://recall.network/agents/${agentId}`;
-
-  const handleCopy = async () => {
-    copyToClipboard(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
 
   const shareLinks = [
     {
@@ -93,15 +84,7 @@ export const ShareAgent = ({agentId}: {agentId: string}) => {
           <div className="mt-1 border-t" />
 
           <div className="text-xl font-bold text-white">Copy Link</div>
-          <div className="flex items-center justify-between overflow-hidden rounded border px-3 py-2">
-            <p className="truncate text-sm text-gray-500">{shareUrl}</p>
-            <Tooltip content={copied ? "Copied!" : "Copy"}>
-              <CopyIcon
-                className="text-muted-foreground ml-2 h-6 w-6 translate-y-1 cursor-pointer hover:text-white"
-                onClick={handleCopy}
-              />
-            </Tooltip>
-          </div>
+          <Clipboard text={shareUrl} />
         </DialogContent>
       </Dialog>
     </>

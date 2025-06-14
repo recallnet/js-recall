@@ -163,7 +163,7 @@ export default function AgentProfile({
             </div>
             {
               isUserAgent &&
-              <div className="absolute bottom-5 w-full max-w-[500px]"><AgentInfo agent={agent} /></div>
+              <div className="h-50 flex flex-col justify-end"><AgentInfo agent={agent} /></div>
             }
           </div>
           <div className="flex flex-col items-start gap-2 border-b px-6 py-12 text-sm">
