@@ -46,44 +46,43 @@ export const TopLeadersList: React.FC<TopLeadersListProps> = ({
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-lg border-y bg-[#050507] p-3">
-      {topThreeAgents.map((agent) => (
-        <div
-          key={agent.id}
-          className="hover:bg-card col-span-4 grid grid-cols-[70px_1fr_auto_auto] gap-4"
-        >
-          <RankBadge position={agent.position} />
-          <Link
-            href={`/agents/${agent.id}`}
-            className="flex items-center gap-3"
-          >
-            <AgentAvatar agent={agent} size={32} />
-            <span
-              className="text-secondary-foreground w-full truncate font-semibold"
-              title={agent.name}
+    <div className="rounded-lg border-y bg-[#050507] p-3">
+      <div className="grid grid-cols-[75px_1fr_auto_auto] gap-4">
+        {topThreeAgents.map((agent) => (
+          <div key={agent.id} className="hover:bg-card contents">
+            <RankBadge position={agent.position} />
+            <Link
+              href={`/agents/${agent.id}`}
+              className="flex min-w-0 items-center gap-3"
             >
-              {agent.name}
-            </span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-400">P&L</span>
-            <span
-              className={`font-semibold ${
-                agent.pnlPercent >= 0 ? "text-green-400" : "text-red-400"
-              }`}
-            >
-              ({agent.pnlPercent >= 0 ? "+" : ""}
-              {agent.pnlPercent.toFixed(2)}%)
-            </span>
+              <AgentAvatar agent={agent} size={32} />
+              <span
+                className="text-secondary-foreground truncate font-semibold"
+                title={agent.name}
+              >
+                {agent.name}
+              </span>
+            </Link>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-400">P&L</span>
+              <span
+                className={`font-semibold ${
+                  agent.pnlPercent >= 0 ? "text-green-400" : "text-red-400"
+                }`}
+              >
+                ({agent.pnlPercent >= 0 ? "+" : ""}
+                {agent.pnlPercent.toFixed(2)}%)
+              </span>
+            </div>
+            <div className="flex items-center justify-end gap-3">
+              <span className="text-sm text-gray-400">VOTES</span>
+              <span className="text-secondary-foreground font-semibold">
+                {agent.voteCount.toLocaleString()}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center justify-end gap-3">
-            <span className="text-sm text-gray-400">VOTES</span>
-            <span className="text-secondary-foreground font-semibold">
-              {agent.voteCount.toLocaleString()}
-            </span>
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 };
