@@ -1,6 +1,6 @@
 "use client";
 
-import { Share2Icon } from "lucide-react";
+import {Share2Icon} from "lucide-react";
 import React from "react";
 
 import Card from "@recallnet/ui2/components/card";
@@ -20,57 +20,25 @@ import {
   TabsList,
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { Hexagon } from "@/components/hexagon";
+import {Hexagon} from "@/components/hexagon";
 import MirrorImage from "@/components/mirror-image";
-import { useAgent } from "@/hooks/useAgent";
-import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
-import { Competition, CompetitionStatus } from "@/types";
+import {Agent, AgentWithOwnerResponse, Competition, CompetitionStatus} from "@/types";
+import {BreadcrumbNav} from "../breadcrumb-nav";
 
-import { BreadcrumbNav } from "../breadcrumb-nav";
-
-export default function AgentProfile({ id }: { id: string }) {
-  const { data, isLoading: isLoadingAgent, error: agentError } = useAgent(id);
-  const { agent, owner } = data || {};
+export default function AgentProfile({id, agent, competitions, owner, handleSortChange, sortState}: {id: string; agent: Agent; owner: AgentWithOwnerResponse['owner']; competitions: Competition[]; handleSortChange: (field: string) => void; sortState: Record<string, SortState>}) {
   const [selected, setSelected] = React.useState("all");
-  const [sortState, setSorted] = React.useState(
-    {} as Record<string, SortState>,
-  );
-  const sortString = React.useMemo(() => {
-    return Object.entries(sortState).reduce((acc, [key, sort]) => {
-      if (sort !== "none") return acc + `,${sort == "asc" ? "" : "-"}${key}`;
-      return acc;
-    }, "");
-  }, [sortState]);
-
-  const { data: agentCompetitionsData, isLoading: isLoadingCompetitions } =
-    useAgentCompetitions(id, { sort: sortString });
-
-  const handleSortChange = React.useCallback((field: string) => {
-    setSorted((sort) => {
-      const cur = sort[field];
-      const nxt =
-        !cur || cur == "none" ? "asc" : cur == "asc" ? "desc" : "none";
-      return { ...sort, [field]: nxt };
-    });
-  }, []);
-
-  if (isLoadingAgent || isLoadingCompetitions)
-    return <div className="py-20 text-center">Loading agent data...</div>;
-  if (agentError || !agent)
-    return <div className="py-20 text-center">Agent not found</div>;
-
-  const skills = agent.skills || [];
-  const trophies = (agent.trophies || []) as string[];
+  const skills = agent?.skills || [];
+  const trophies = (agent?.trophies || []) as string[];
 
   return (
     <>
       <BreadcrumbNav
         items={[
-          { label: "RECALL", href: "/" },
-          { label: "AGENTS", href: "/competitions" },
-          { label: agent.name, href: "/" },
+          {label: "RECALL", href: "/"},
+          {label: "AGENTS", href: "/competitions"},
+          {label: agent.name, href: "/"},
         ]}
         className="mb-10"
       />
@@ -166,13 +134,13 @@ export default function AgentProfile({ id }: { id: string }) {
             <div className="mt-3 flex flex-wrap gap-3 text-gray-400">
               {skills.length > 0
                 ? skills.map((skill, index) => (
-                    <span
-                      key={index}
-                      className="rounded border border-gray-700 px-2 py-1 text-white"
-                    >
-                      {skill}
-                    </span>
-                  ))
+                  <span
+                    key={index}
+                    className="rounded border border-gray-700 px-2 py-1 text-white"
+                  >
+                    {skill}
+                  </span>
+                ))
                 : "This agent hasnt showcased skills yet."}
             </div>
           </div>
@@ -237,14 +205,14 @@ export default function AgentProfile({ id }: { id: string }) {
             <CompetitionTable
               handleSortChange={handleSortChange}
               sortState={sortState}
-              competitions={agentCompetitionsData?.competitions || []}
+              competitions={competitions || []}
             />
           </TabsContent>
           <TabsContent value="ongoing">
             <CompetitionTable
               handleSortChange={handleSortChange}
               sortState={sortState}
-              competitions={agentCompetitionsData?.competitions.filter(
+              competitions={competitions.filter(
                 (c) => c.status === CompetitionStatus.Active,
               )}
             />
@@ -253,7 +221,7 @@ export default function AgentProfile({ id }: { id: string }) {
             <CompetitionTable
               handleSortChange={handleSortChange}
               sortState={sortState}
-              competitions={agentCompetitionsData?.competitions.filter(
+              competitions={competitions.filter(
                 (c) => c.status === CompetitionStatus.Pending,
               )}
             />
@@ -262,7 +230,7 @@ export default function AgentProfile({ id }: { id: string }) {
             <CompetitionTable
               handleSortChange={handleSortChange}
               sortState={sortState}
-              competitions={agentCompetitionsData?.competitions.filter(
+              competitions={competitions.filter(
                 (c) => c.status === CompetitionStatus.Ended,
               )}
             />
@@ -334,18 +302,18 @@ function CompetitionTable({
               const compStatus =
                 comp.status === CompetitionStatus.Active
                   ? {
-                      text: "On-going",
-                      style: "border-green-500 text-green-500",
-                    }
+                    text: "On-going",
+                    style: "border-green-500 text-green-500",
+                  }
                   : comp.status === CompetitionStatus.Pending
                     ? {
-                        text: "Upcoming",
-                        style: "border-blue-500 text-blue-500",
-                      }
+                      text: "Upcoming",
+                      style: "border-blue-500 text-blue-500",
+                    }
                     : {
-                        text: "Complete",
-                        style: "border-gray-500 text-gray-500",
-                      };
+                      text: "Complete",
+                      style: "border-gray-500 text-gray-500",
+                    };
 
               return (
                 <TableRow key={i} className="grid grid-cols-7">

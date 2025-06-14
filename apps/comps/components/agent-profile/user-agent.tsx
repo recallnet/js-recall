@@ -3,62 +3,31 @@
 import React from "react";
 
 import Card from "@recallnet/ui2/components/card";
-import { SortState } from "@recallnet/ui2/components/table";
+import {SortState} from "@recallnet/ui2/components/table";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { BreadcrumbNav } from "@/components/breadcrumb-nav";
-import { Hexagon } from "@/components/hexagon";
-import { useUpdateAgent } from "@/hooks";
-import { useAgent } from "@/hooks/useAgent";
-import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
-import { CompetitionStatus } from "@/types";
+import {BreadcrumbNav} from "@/components/breadcrumb-nav";
+import {Hexagon} from "@/components/hexagon";
+import {useUpdateAgent} from "@/hooks";
+import {Agent, AgentWithOwnerResponse, Competition, CompetitionStatus} from "@/types";
 
-import { AgentImage } from "./agent-image";
-import { AgentInfo } from "./agent-info";
-import { CompetitionTable } from "./comps-table";
-import { EditAgentField } from "./edit-field";
-import { ShareAgent } from "./share-agent";
+import {AgentImage} from "./agent-image";
+import {AgentInfo} from "./agent-info";
+import {CompetitionTable} from "./comps-table";
+import {EditAgentField} from "./edit-field";
+import {ShareAgent} from "./share-agent";
 
-export default function UserAgent({ id }: { id: string }) {
-  const { data, isLoading: isLoadingAgent, error: agentError } = useAgent(id);
-  const { agent } = data || {};
-
-  const updateAgent = useUpdateAgent();
-
+export default function UserAgent({id, agent, competitions, owner, handleSortChange, sortState}: {id: string; agent: Agent; owner: AgentWithOwnerResponse['owner']; competitions: Competition[]; handleSortChange: (field: string) => void; sortState: Record<string, SortState>}) {
   const [selected, setSelected] = React.useState("all");
-  const [sortState, setSorted] = React.useState(
-    {} as Record<string, SortState>,
-  );
-  const sortString = React.useMemo(() => {
-    return Object.entries(sortState).reduce((acc, [key, sort]) => {
-      if (sort !== "none")
-        return (
-          acc + `${acc.length > 0 ? "," : ""}${sort == "asc" ? "" : "-"}${key}`
-        );
-      return acc;
-    }, "");
-  }, [sortState]);
-
   const skills = agent?.skills || [];
   const trophies = (agent?.trophies || []) as string[];
-
-  const { data: agentCompetitionsData, isLoading: isLoadingCompetitions } =
-    useAgentCompetitions(id, { sort: sortString });
-
-  const handleSortChange = React.useCallback((field: string) => {
-    setSorted((sort) => {
-      const cur = sort[field];
-      const nxt =
-        !cur || cur == "none" ? "asc" : cur == "asc" ? "desc" : "none";
-      return { ...sort, [field]: nxt };
-    });
-  }, []);
+  const updateAgent = useUpdateAgent();
 
   const handleSaveChange =
     (field: "imageUrl" | "description" | "name") => async (value: unknown) => {
@@ -76,18 +45,13 @@ export default function UserAgent({ id }: { id: string }) {
       }
     };
 
-  if (isLoadingAgent || isLoadingCompetitions)
-    return <div className="py-20 text-center">Loading agent data...</div>;
-  if (agentError || !agent)
-    return <div className="py-20 text-center">Agent not found</div>;
-
   return (
     <>
       <BreadcrumbNav
         items={[
-          { label: "RECALL", href: "/" },
-          { label: "AGENTS", href: "/competitions" },
-          { label: agent.name, href: "/" },
+          {label: "RECALL", href: "/"},
+          {label: "AGENTS", href: "/competitions"},
+          {label: agent.name, href: "/"},
         ]}
       />
 
@@ -116,7 +80,7 @@ export default function UserAgent({ id }: { id: string }) {
                 value={agent.name || ""}
                 onSave={handleSaveChange("name")}
               >
-                <h1 className="max-w-3/4 truncate text-4xl font-bold text-white">
+                <h1 className="max-w-[90%] truncate text-4xl font-bold text-white">
                   {agent.name}
                 </h1>
               </EditAgentField>
@@ -188,13 +152,13 @@ export default function UserAgent({ id }: { id: string }) {
             <div className="mt-3 flex flex-wrap gap-3 text-gray-400">
               {skills.length > 0
                 ? skills.map((skill, index) => (
-                    <span
-                      key={index}
-                      className="rounded border border-gray-700 px-2 py-1 text-white"
-                    >
-                      {skill}
-                    </span>
-                  ))
+                  <span
+                    key={index}
+                    className="rounded border border-gray-700 px-2 py-1 text-white"
+                  >
+                    {skill}
+                  </span>
+                ))
                 : "This agent hasnt showcased skills yet."}
             </div>
           </div>
@@ -259,14 +223,14 @@ export default function UserAgent({ id }: { id: string }) {
             <CompetitionTable
               handleSortChange={handleSortChange}
               sortState={sortState}
-              competitions={agentCompetitionsData?.competitions || []}
+              competitions={competitions || []}
             />
           </TabsContent>
           <TabsContent value="ongoing">
             <CompetitionTable
               handleSortChange={handleSortChange}
               sortState={sortState}
-              competitions={agentCompetitionsData?.competitions.filter(
+              competitions={competitions.filter(
                 (c) => c.status === CompetitionStatus.Active,
               )}
             />
@@ -275,7 +239,7 @@ export default function UserAgent({ id }: { id: string }) {
             <CompetitionTable
               handleSortChange={handleSortChange}
               sortState={sortState}
-              competitions={agentCompetitionsData?.competitions.filter(
+              competitions={competitions.filter(
                 (c) => c.status === CompetitionStatus.Pending,
               )}
             />
@@ -284,7 +248,7 @@ export default function UserAgent({ id }: { id: string }) {
             <CompetitionTable
               handleSortChange={handleSortChange}
               sortState={sortState}
-              competitions={agentCompetitionsData?.competitions.filter(
+              competitions={competitions.filter(
                 (c) => c.status === CompetitionStatus.Ended,
               )}
             />
