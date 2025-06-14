@@ -12,6 +12,7 @@ import {Tooltip} from "@recallnet/ui2/components/tooltip";
 
 import {useAgentApiKey} from "@/hooks";
 import {Agent} from "@/types";
+import {Clipboard} from "../clipboard";
 
 export const AgentInfo = ({agent}: {agent: Agent}) => {
   const [copiedText, copyToClipboard] = useCopyToClipboard();
@@ -61,17 +62,7 @@ export const AgentInfo = ({agent}: {agent: Agent}) => {
         <Tooltip content="Agent Wallet">
           <WalletIcon />
         </Tooltip>
-        <div className="flex h-[40px] max-w-[400px] flex-grow items-center gap-2 p-2">
-          <span className="min-w-0 flex-grow truncate">
-            {agent.walletAddress}
-          </span>
-          <Tooltip content={copiedText === agent.walletAddress ? "Copied!" : "Copy"}>
-            <CopyIcon
-              className="flex-shrink-0 cursor-pointer"
-              onClick={() => handleCopy(agent.walletAddress || "")}
-            />
-          </Tooltip>
-        </div>
+        <Clipboard text={agent.walletAddress || ""} className='py-1 px-2 max-w-[400px] flex-grow' />
       </div>
     </div>
   );
