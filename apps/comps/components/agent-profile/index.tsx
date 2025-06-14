@@ -199,6 +199,7 @@ export default function AgentProfile({
           <div className="flex flex-col items-start gap-2 border-b p-6 lg:row-span-2">
             {isUserAgent ?
               <EditAgentField
+                useTextarea
                 title="Agent Profile"
                 value={agent.description || ""}
                 onSave={handleSaveChange("description")}
