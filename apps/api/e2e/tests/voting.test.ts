@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 import {
   CompetitionAgentsResponse,
   CompetitionDetailResponse,
+  CreateCompetitionResponse,
   ErrorResponse,
   UserVotesResponse,
   VoteResponse,
@@ -767,6 +768,159 @@ describe("Voting API", () => {
       expect(competitionDetails.userVotingInfo?.canVote).toBe(false);
       expect(competitionDetails.userVotingInfo?.info.hasVoted).toBe(true);
       expect(competitionDetails.userVotingInfo?.info.agentId).toBe(agent1.id);
+    });
+  });
+
+  describe("Voting date restrictions", () => {
+    test("should prevent voting before voting start date", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register agent
+      const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent Future Vote",
+      });
+
+      // Create competition with voting start date in the future
+      const now = new Date();
+      const futureDate = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
+      const competitionName = `Future Voting Test ${Date.now()}`;
+
+      const createResponse = await adminClient.createCompetition(
+        competitionName,
+        "Test competition with future voting date",
+        "disallowAll",
+        undefined, // externalUrl
+        undefined, // imageUrl
+        "trading", // type
+        futureDate.toISOString(), // votingStartDate
+        undefined, // votingEndDate
+      );
+
+      expect(createResponse.success).toBe(true);
+      const competition = (createResponse as CreateCompetitionResponse)
+        .competition;
+
+      // Add agent to competition
+      await adminClient.startExistingCompetition(competition.id, [agent1.id]);
+
+      // Create user
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Future Vote User",
+        userEmail: "future-vote@test.com",
+      });
+
+      // Try to vote - should fail
+      const voteResponse = await userClient.castVote(agent1.id, competition.id);
+      expect(voteResponse.success).toBe(false);
+      expect((voteResponse as ErrorResponse).error).toContain(
+        "Voting has not started yet",
+      );
+    });
+
+    test("should prevent voting after voting end date", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register agent
+      const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent Past Vote",
+      });
+
+      // Create competition with voting end date in the past
+      const now = new Date();
+      const pastDate = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
+      const competitionName = `Past Voting Test ${Date.now()}`;
+
+      const createResponse = await adminClient.createCompetition(
+        competitionName,
+        "Test competition with past voting date",
+        "disallowAll",
+        undefined, // externalUrl
+        undefined, // imageUrl
+        "trading", // type
+        undefined, // votingStartDate
+        pastDate.toISOString(), // votingEndDate
+      );
+
+      expect(createResponse.success).toBe(true);
+      const competition = (createResponse as CreateCompetitionResponse)
+        .competition;
+
+      // Add agent to competition
+      await adminClient.startExistingCompetition(competition.id, [agent1.id]);
+
+      // Create user
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Past Vote User",
+        userEmail: "past-vote@test.com",
+      });
+
+      // Try to vote - should fail
+      const voteResponse = await userClient.castVote(agent1.id, competition.id);
+      expect(voteResponse.success).toBe(false);
+      expect((voteResponse as ErrorResponse).error).toContain(
+        "Voting has ended",
+      );
+    });
+
+    test("should allow voting within voting date range", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register agent
+      const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent Valid Vote",
+      });
+
+      // Create competition with voting dates that include now
+      const now = new Date();
+      const startDate = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
+      const endDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
+      const competitionName = `Valid Voting Test ${Date.now()}`;
+
+      const createResponse = await adminClient.createCompetition(
+        competitionName,
+        "Test competition with valid voting date range",
+        "disallowAll",
+        undefined, // externalUrl
+        undefined, // imageUrl
+        "trading", // type
+        startDate.toISOString(), // votingStartDate
+        endDate.toISOString(), // votingEndDate
+      );
+
+      expect(createResponse.success).toBe(true);
+      const competition = (createResponse as CreateCompetitionResponse)
+        .competition;
+
+      // Add agent to competition
+      await adminClient.startExistingCompetition(competition.id, [agent1.id]);
+
+      // Create user
+      const { client: userClient, user } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Valid Vote User",
+        userEmail: "valid-vote@test.com",
+      });
+
+      // Vote should succeed
+      const voteResponse = await userClient.castVote(agent1.id, competition.id);
+      expect(voteResponse.success).toBe(true);
+      expect((voteResponse as VoteResponse).vote).toBeDefined();
+      expect((voteResponse as VoteResponse).vote.userId).toBe(user.id);
+      expect((voteResponse as VoteResponse).vote.agentId).toBe(agent1.id);
+      expect((voteResponse as VoteResponse).vote.competitionId).toBe(
+        competition.id,
+      );
     });
   });
 });

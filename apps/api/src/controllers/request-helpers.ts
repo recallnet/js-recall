@@ -3,6 +3,7 @@ import { Request } from "express";
 import { ApiError } from "@/middleware/errorHandler.js";
 import {
   AgentCompetitionsParamsSchema,
+  CompetitionUpdateSchema,
   PagingParamsSchema,
   UuidSchema,
 } from "@/types/index.js";
@@ -35,6 +36,15 @@ export function ensureAgentCompetitionFilters(req: Request) {
   const { success, data } = AgentCompetitionsParamsSchema.safeParse(req.query);
   if (!success) {
     throw new ApiError(400, "Invalid sort filter page params");
+  }
+
+  return data;
+}
+
+export function ensureCompetitionUpdate(req: Request) {
+  const { success, data } = CompetitionUpdateSchema.safeParse(req.body);
+  if (!success) {
+    throw new ApiError(400, "Invalid competition update request body");
   }
 
   return data;

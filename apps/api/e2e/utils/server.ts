@@ -31,17 +31,21 @@ export async function startServer(): Promise<Server> {
 
       // Start the server script in a separate process
       // Use the index.ts file which is the main entry point
-      serverProcess = spawn("npx", ["tsx", "src/index.ts"], {
-        env: {
-          ...process.env,
-          NODE_ENV: "test",
-          PORT: testPort,
-          HOST: testHost,
-          TEST_MODE: "true",
+      serverProcess = spawn(
+        "npx",
+        ["tsx", /*"--inspect-brk",*/ "src/index.ts"],
+        {
+          env: {
+            ...process.env,
+            NODE_ENV: "test",
+            PORT: testPort,
+            HOST: testHost,
+            TEST_MODE: "true",
+          },
+          stdio: "inherit",
+          detached: true,
         },
-        stdio: "inherit",
-        detached: true,
-      });
+      );
 
       // Create a mock server object that we can use to track and shut down the server
       const mockServer = {
@@ -66,7 +70,7 @@ export async function startServer(): Promise<Server> {
       });
 
       // Wait for the server to be ready
-      waitForServerReady(30, 500) // 30 retries, 500ms interval = 15 seconds max
+      waitForServerReady(30_000, 500) // 30 retries, 500ms interval = 15 seconds max
         .then(() => {
           console.log(`Server started and ready on ${testHost}:${testPort}`);
           resolve(mockServer);

@@ -63,12 +63,16 @@ export function makeVoteController(services: ServiceRegistry) {
           if (voteError instanceof Error && "type" in voteError) {
             const error = voteError as VoteError;
             switch (error.type) {
+              // TODO: it's a bit cumbersome to have to keep all these cases in
+              //  sync with all the voting error types. Can we just do somthing
+              //  like `throw new ApiError(error.code, error.message);`?
               case VOTE_ERROR_TYPES.COMPETITION_NOT_FOUND:
               case VOTE_ERROR_TYPES.AGENT_NOT_FOUND:
                 throw new ApiError(404, error.message);
               case VOTE_ERROR_TYPES.AGENT_NOT_IN_COMPETITION:
               case VOTE_ERROR_TYPES.COMPETITION_VOTING_DISABLED:
-              case VOTE_ERROR_TYPES.VOTING_CUTOFF_EXCEEDED:
+              case VOTE_ERROR_TYPES.VOTING_NOT_STARTED:
+              case VOTE_ERROR_TYPES.VOTING_ENDED:
                 throw new ApiError(400, error.message);
               case VOTE_ERROR_TYPES.USER_ALREADY_VOTED:
               case VOTE_ERROR_TYPES.DUPLICATE_VOTE:
