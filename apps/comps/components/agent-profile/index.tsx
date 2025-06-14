@@ -24,21 +24,75 @@ import {cn} from "@recallnet/ui2/lib/utils";
 
 import {Hexagon} from "@/components/hexagon";
 import MirrorImage from "@/components/mirror-image";
-import {Agent, AgentWithOwnerResponse, Competition, CompetitionStatus} from "@/types";
+import {Agent, AgentWithOwnerResponse, Competition, CompetitionStatus, CrossChainTradingType} from "@/types";
 import {BreadcrumbNav} from "../breadcrumb-nav";
+import {useAgentCompetitions} from "@/hooks/useAgentCompetitions";
 
-export default function AgentProfile({id, agent, competitions, owner, handleSortChange, sortState}: {id: string; agent: Agent; owner: AgentWithOwnerResponse['owner']; competitions: Competition[]; handleSortChange: (field: string) => void; sortState: Record<string, SortState>}) {
-  const [selected, setSelected] = React.useState("all");
+export default function AgentProfile({
+  id,
+  agent,
+  owner,
+  handleSortChange,
+  sortState,
+  setStatus
+}: {
+  id: string;
+  agent: Agent;
+  owner: AgentWithOwnerResponse['owner'];
+  handleSortChange: (field: string) => void;
+  sortState: Record<string, SortState>;
+  setStatus: (status: string) => void;
+  status: string;
+}) {
   const skills = agent?.skills || [];
   const trophies = (agent?.trophies || []) as string[];
+
+  const sortString = React.useMemo(() => {
+    return Object.entries(sortState).reduce((acc, [key, sort]) => {
+      if (sort !== "none") return acc + `,${sort == "asc" ? "" : "-"}${key}`;
+      return acc;
+    }, "");
+  }, [sortState]);
+
+  const comp = {
+    id: 'id',
+    name: "name",
+    description: "description",
+    externalUrl: "externalUrl",
+    imageUrl: "imageUrl",
+    type: "type",
+    status: CompetitionStatus.Active,
+    crossChainTradingType: CrossChainTradingType.Allow,
+    startDate: null,
+    endDate: null,
+    createdAt: "createdAt",
+    updatedAt: "updatedAt",
+    stats: {
+      totalTrades: 0,
+      totalAgents: 0,
+      totalVolume: 0,
+      uniqueTokens: 0,
+    },
+    votingEnabled: true,
+    userVotingInfo: {
+      canVote: true,
+      info: {
+        hasVoted: true,
+      }
+    }
+  }
+
+  const {data: compsData} =
+    useAgentCompetitions(id, {sort: sortString, status});
+  const competitions = compsData?.competitions || []
 
   return (
     <>
       <BreadcrumbNav
         items={[
-          {label: "RECALL", href: "/"},
+          {label: "RECALL"},
           {label: "AGENTS", href: "/competitions"},
-          {label: agent.name, href: "/"},
+          {label: agent.name},
         ]}
         className="mb-10"
       />
@@ -61,8 +115,8 @@ export default function AgentProfile({id, agent, competitions, owner, handleSort
             Calm accumulation of elite assets.
           </span>
         </Card>
-        <div className="flex-2 xs:col-span-2 xs:col-start-2 xs:row-start-1 xs:mt-0 xs:h-[65vh] col-span-3 row-start-2 mt-5 flex shrink flex-col border border-gray-700 lg:col-span-1 lg:col-start-2">
-          <div className="grow border-b border-gray-700 p-8">
+        <div className="flex-2 xs:col-span-2 xs:col-start-2 xs:row-start-1 xs:mt-0 xs:h-[65vh] col-span-3 row-start-2 mt-5 flex shrink flex-col border lg:col-span-1 lg:col-start-2">
+          <div className="grow border-b p-8">
             <h1 className="truncate text-4xl font-bold text-white">
               {agent.name}
             </h1>
@@ -89,7 +143,7 @@ export default function AgentProfile({id, agent, competitions, owner, handleSort
               )}
             </div>
           </div>
-          <div className="flex flex-col items-start gap-2 border-b border-gray-700 px-6 py-12 text-sm">
+          <div className="flex flex-col items-start gap-2 border-b px-6 py-12 text-sm">
             <span className="w-full text-left font-semibold uppercase text-gray-400">
               Best Placement
             </span>
@@ -108,7 +162,7 @@ export default function AgentProfile({id, agent, competitions, owner, handleSort
                 {agent.stats.completedCompetitions}
               </span>
             </div>
-            <div className="flex w-1/2 flex-col items-start border-l border-gray-700 p-6">
+            <div className="flex w-1/2 flex-col items-start border-l p-6">
               <span className="w-full text-left text-xs font-semibold uppercase text-gray-400">
                 ELO
               </span>
@@ -118,8 +172,8 @@ export default function AgentProfile({id, agent, competitions, owner, handleSort
             </div>
           </div>
         </div>
-        <div className="xs:grid col-span-3 row-start-2 mt-8 hidden grid-rows-2 border-b border-l border-r border-t border-gray-700 text-sm lg:col-start-3 lg:row-start-1 lg:mt-0 lg:h-[65vh] lg:grid-rows-3 lg:border-l-0">
-          <div className="flex flex-col items-start gap-2 border-b border-gray-700 p-6 lg:row-span-2">
+        <div className="xs:grid col-span-3 row-start-2 mt-8 hidden grid-rows-2 border-b border-l border-r border-t text-sm lg:col-start-3 lg:row-start-1 lg:mt-0 lg:h-[65vh] lg:grid-rows-3 lg:border-l-0">
+          <div className="flex flex-col items-start gap-2 border-b p-6 lg:row-span-2">
             <span className="font-semibold uppercase text-gray-400">
               agent description
             </span>
@@ -136,7 +190,7 @@ export default function AgentProfile({id, agent, competitions, owner, handleSort
                 ? skills.map((skill, index) => (
                   <span
                     key={index}
-                    className="rounded border border-gray-700 px-2 py-1 text-white"
+                    className="rounded border px-2 py-1 text-white"
                   >
                     {skill}
                   </span>
@@ -155,14 +209,14 @@ export default function AgentProfile({id, agent, competitions, owner, handleSort
         <Tabs
           defaultValue="all"
           className="w-full"
-          onValueChange={(value: string) => setSelected(value)}
+          onValueChange={setStatus}
         >
           <TabsList className="mb-4 flex flex-wrap gap-2">
             <TabsTrigger
               value="all"
               className={cn(
                 "rounded border border-white p-2 text-black",
-                selected === "all" ? "bg-white" : "text-white",
+                status === "all" ? "bg-white" : "text-white",
               )}
             >
               All
@@ -171,7 +225,7 @@ export default function AgentProfile({id, agent, competitions, owner, handleSort
               value="ongoing"
               className={cn(
                 "rounded border border-green-500 p-2",
-                selected === "ongoing"
+                status === "ongoing"
                   ? "bg-green-500 text-white"
                   : "text-green-500",
               )}
@@ -182,7 +236,7 @@ export default function AgentProfile({id, agent, competitions, owner, handleSort
               value="upcoming"
               className={cn(
                 "rounded border border-blue-500 p-2 text-black",
-                selected === "upcoming"
+                status === "upcoming"
                   ? "bg-blue-500 text-white"
                   : "text-blue-500",
               )}
@@ -192,8 +246,8 @@ export default function AgentProfile({id, agent, competitions, owner, handleSort
             <TabsTrigger
               value="ended"
               className={cn(
-                "rounded border border-gray-500 p-2 text-black",
-                selected === "ended"
+                "rounded border p-2 text-black",
+                status === "ended"
                   ? "bg-gray-500 text-white"
                   : "text-gray-500",
               )}
@@ -201,40 +255,12 @@ export default function AgentProfile({id, agent, competitions, owner, handleSort
               Complete
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="all">
-            <CompetitionTable
-              handleSortChange={handleSortChange}
-              sortState={sortState}
-              competitions={competitions || []}
-            />
-          </TabsContent>
-          <TabsContent value="ongoing">
-            <CompetitionTable
-              handleSortChange={handleSortChange}
-              sortState={sortState}
-              competitions={competitions.filter(
-                (c) => c.status === CompetitionStatus.Active,
-              )}
-            />
-          </TabsContent>
-          <TabsContent value="upcoming">
-            <CompetitionTable
-              handleSortChange={handleSortChange}
-              sortState={sortState}
-              competitions={competitions.filter(
-                (c) => c.status === CompetitionStatus.Pending,
-              )}
-            />
-          </TabsContent>
-          <TabsContent value="complete">
-            <CompetitionTable
-              handleSortChange={handleSortChange}
-              sortState={sortState}
-              competitions={competitions.filter(
-                (c) => c.status === CompetitionStatus.Ended,
-              )}
-            />
-          </TabsContent>
+          <CompetitionTable
+            handleSortChange={handleSortChange}
+            sortState={sortState}
+            isLoading={false}
+            competitions={competitions || []}
+          />
         </Tabs>
       </div>
     </>
@@ -245,13 +271,16 @@ function CompetitionTable({
   competitions,
   handleSortChange,
   sortState,
+  isLoading,
 }: {
   competitions: Competition[] | undefined;
   handleSortChange: (field: string) => void;
   sortState: Record<string, SortState>;
+  isLoading: boolean;
 }) {
+  console.log({isLoading})
   return (
-    <div className="overflow-hidden rounded border border-gray-800">
+    <div className="overflow-hidden rounded border">
       <Table>
         <TableHeader className="text-muted-foreground bg-gray-900 text-xs uppercase">
           <TableRow className="grid w-full grid-cols-7">
@@ -297,7 +326,7 @@ function CompetitionTable({
         </TableHeader>
 
         <TableBody>
-          {competitions && competitions.length > 0 ? (
+          {!isLoading && competitions && competitions.length > 0 ? (
             competitions.slice(0, 10).map((comp, i) => {
               const compStatus =
                 comp.status === CompetitionStatus.Active
@@ -356,15 +385,20 @@ function CompetitionTable({
           ) : (
             <TableRow>
               <TableCell colSpan={7} className="p-5 text-center">
-                <div className="flex flex-col">
-                  <span className="font-bold text-gray-400">
-                    This agent hasn’t joined any competitions yet
-                  </span>
-                  <span className="text-gray-600">
-                    Participated competitions will appear here once the agent
-                    enters one.
-                  </span>
-                </div>
+                {
+                  isLoading ?
+                    <div>LOADING</div>
+                    :
+                    <div className="flex flex-col">
+                      <span className="font-bold text-gray-400">
+                        This agent hasn’t joined any competitions yet
+                      </span>
+                      <span className="text-gray-600">
+                        Participated competitions will appear here once the agent
+                        enters one.
+                      </span>
+                    </div>
+                }
               </TableCell>
             </TableRow>
           )}

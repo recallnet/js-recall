@@ -1,7 +1,7 @@
-import { SquarePen } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import {SquarePen} from "lucide-react";
+import React, {useEffect, useState} from "react";
 
-import { Button } from "@recallnet/ui2/components/button";
+import {Button} from "@recallnet/ui2/components/button";
 import {
   Dialog,
   DialogClose,
@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
-import { Input } from "@recallnet/ui2/components/input";
+import {Input} from "@recallnet/ui2/components/input";
 
 interface EditAgentFieldProps {
   title: string;
@@ -69,7 +69,7 @@ export const EditAgentField: React.FC<EditAgentFieldProps> = ({
           </div>
           <DialogFooter className="mt-4">
             <DialogClose asChild>
-              <Button className="rounded border border-gray-700 bg-transparent text-gray-300 hover:bg-gray-900">
+              <Button className="rounded border bg-transparent text-gray-300 hover:bg-gray-900">
                 Cancel
               </Button>
             </DialogClose>

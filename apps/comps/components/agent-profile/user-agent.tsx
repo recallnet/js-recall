@@ -22,12 +22,36 @@ import {AgentInfo} from "./agent-info";
 import {CompetitionTable} from "./comps-table";
 import {EditAgentField} from "./edit-field";
 import {ShareAgent} from "./share-agent";
+import {useAgentCompetitions} from "@/hooks/useAgentCompetitions";
 
-export default function UserAgent({id, agent, competitions, owner, handleSortChange, sortState}: {id: string; agent: Agent; owner: AgentWithOwnerResponse['owner']; competitions: Competition[]; handleSortChange: (field: string) => void; sortState: Record<string, SortState>}) {
-  const [selected, setSelected] = React.useState("all");
+export default function UserAgent({
+  id,
+  agent,
+  handleSortChange,
+  sortState,
+  setStatus
+}: {
+  id: string;
+  agent: Agent;
+  handleSortChange: (field: string) => void;
+  sortState: Record<string, SortState>;
+  setStatus: (status: string) => void;
+  status: string;
+}) {
   const skills = agent?.skills || [];
   const trophies = (agent?.trophies || []) as string[];
   const updateAgent = useUpdateAgent();
+
+  const sortString = React.useMemo(() => {
+    return Object.entries(sortState).reduce((acc, [key, sort]) => {
+      if (sort !== "none") return acc + `,${sort == "asc" ? "" : "-"}${key}`;
+      return acc;
+    }, "");
+  }, [sortState]);
+
+  const {data: compsData, isLoading: isLoadingCompetitions} =
+    useAgentCompetitions(id, {sort: sortString, status});
+  const competitions = compsData?.competitions || []
 
   const handleSaveChange =
     (field: "imageUrl" | "description" | "name") => async (value: unknown) => {
@@ -49,9 +73,9 @@ export default function UserAgent({id, agent, competitions, owner, handleSortCha
     <>
       <BreadcrumbNav
         items={[
-          {label: "RECALL", href: "/"},
+          {label: "RECALL"},
           {label: "AGENTS", href: "/competitions"},
-          {label: agent.name, href: "/"},
+          {label: agent.name},
         ]}
       />
 
@@ -72,8 +96,8 @@ export default function UserAgent({id, agent, competitions, owner, handleSortCha
             Calm accumulation of elite assets.
           </span>
         </Card>
-        <div className="flex-2 xs:col-span-2 xs:col-start-2 xs:row-start-1 xs:mt-0 xs:h-[65vh] col-span-3 row-start-2 mt-5 flex shrink flex-col border border-gray-700 lg:col-span-1 lg:col-start-2">
-          <div className="flex grow flex-col justify-between border-b border-gray-700 p-8">
+        <div className="flex-2 xs:col-span-2 xs:col-start-2 xs:row-start-1 xs:mt-0 xs:h-[65vh] col-span-3 row-start-2 mt-5 flex shrink flex-col border lg:col-span-1 lg:col-start-2">
+          <div className="flex grow flex-col justify-between border-b p-8">
             <div className="flex flex-col gap-5">
               <EditAgentField
                 title="Agent Name"
@@ -101,7 +125,7 @@ export default function UserAgent({id, agent, competitions, owner, handleSortCha
             </div>
             <AgentInfo agent={agent} />
           </div>
-          <div className="flex flex-col items-start gap-2 border-b border-gray-700 px-6 py-12 text-sm">
+          <div className="flex flex-col items-start gap-2 border-b px-6 py-12 text-sm">
             <span className="w-full text-left font-semibold uppercase text-gray-400">
               Best Placement
             </span>
@@ -120,7 +144,7 @@ export default function UserAgent({id, agent, competitions, owner, handleSortCha
                 {agent.stats.completedCompetitions}
               </span>
             </div>
-            <div className="flex w-1/2 flex-col items-start border-l border-gray-700 p-6">
+            <div className="flex w-1/2 flex-col items-start border-l p-6">
               <span className="w-full text-left text-xs font-semibold uppercase text-gray-400">
                 ELO
               </span>
@@ -130,8 +154,8 @@ export default function UserAgent({id, agent, competitions, owner, handleSortCha
             </div>
           </div>
         </div>
-        <div className="xs:grid col-span-3 row-start-2 mt-8 hidden grid-rows-2 border-b border-l border-r border-t border-gray-700 text-sm lg:col-start-3 lg:row-start-1 lg:mt-0 lg:h-[65vh] lg:grid-rows-3 lg:border-l-0">
-          <div className="flex flex-col items-start gap-2 border-b border-gray-700 p-6 lg:row-span-2">
+        <div className="xs:grid col-span-3 row-start-2 mt-8 hidden grid-rows-2 border-b border-l border-r border-t text-sm lg:col-start-3 lg:row-start-1 lg:mt-0 lg:h-[65vh] lg:grid-rows-3 lg:border-l-0">
+          <div className="flex flex-col items-start gap-2 border-b p-6 lg:row-span-2">
             <EditAgentField
               title="Agent Profile"
               value={agent.description || ""}
@@ -154,7 +178,7 @@ export default function UserAgent({id, agent, competitions, owner, handleSortCha
                 ? skills.map((skill, index) => (
                   <span
                     key={index}
-                    className="rounded border border-gray-700 px-2 py-1 text-white"
+                    className="rounded border px-2 py-1 text-white"
                   >
                     {skill}
                   </span>
@@ -173,14 +197,14 @@ export default function UserAgent({id, agent, competitions, owner, handleSortCha
         <Tabs
           defaultValue="all"
           className="w-full"
-          onValueChange={(value: string) => setSelected(value)}
+          onValueChange={setStatus}
         >
           <TabsList className="mb-4 flex flex-wrap gap-2">
             <TabsTrigger
               value="all"
               className={cn(
                 "rounded border border-white p-2 text-black",
-                selected === "all" ? "bg-white" : "text-white",
+                status === "all" ? "bg-white" : "text-white",
               )}
             >
               All
@@ -189,7 +213,7 @@ export default function UserAgent({id, agent, competitions, owner, handleSortCha
               value="ongoing"
               className={cn(
                 "rounded border border-green-500 p-2",
-                selected === "ongoing"
+                status === "ongoing"
                   ? "bg-green-500 text-white"
                   : "text-green-500",
               )}
@@ -200,7 +224,7 @@ export default function UserAgent({id, agent, competitions, owner, handleSortCha
               value="upcoming"
               className={cn(
                 "rounded border border-blue-500 p-2 text-black",
-                selected === "upcoming"
+                status === "upcoming"
                   ? "bg-blue-500 text-white"
                   : "text-blue-500",
               )}
@@ -210,8 +234,8 @@ export default function UserAgent({id, agent, competitions, owner, handleSortCha
             <TabsTrigger
               value="ended"
               className={cn(
-                "rounded border border-gray-500 p-2 text-black",
-                selected === "ended"
+                "rounded border p-2 text-black",
+                status === "ended"
                   ? "bg-gray-500 text-white"
                   : "text-gray-500",
               )}
@@ -219,40 +243,11 @@ export default function UserAgent({id, agent, competitions, owner, handleSortCha
               Complete
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="all">
-            <CompetitionTable
-              handleSortChange={handleSortChange}
-              sortState={sortState}
-              competitions={competitions || []}
-            />
-          </TabsContent>
-          <TabsContent value="ongoing">
-            <CompetitionTable
-              handleSortChange={handleSortChange}
-              sortState={sortState}
-              competitions={competitions.filter(
-                (c) => c.status === CompetitionStatus.Active,
-              )}
-            />
-          </TabsContent>
-          <TabsContent value="upcoming">
-            <CompetitionTable
-              handleSortChange={handleSortChange}
-              sortState={sortState}
-              competitions={competitions.filter(
-                (c) => c.status === CompetitionStatus.Pending,
-              )}
-            />
-          </TabsContent>
-          <TabsContent value="complete">
-            <CompetitionTable
-              handleSortChange={handleSortChange}
-              sortState={sortState}
-              competitions={competitions.filter(
-                (c) => c.status === CompetitionStatus.Ended,
-              )}
-            />
-          </TabsContent>
+          <CompetitionTable
+            handleSortChange={handleSortChange}
+            sortState={sortState}
+            competitions={competitions || []}
+          />
         </Tabs>
       </div>
     </>
