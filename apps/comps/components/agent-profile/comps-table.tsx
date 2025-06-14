@@ -18,16 +18,18 @@ export function CompetitionTable({
   competitions,
   handleSortChange,
   sortState,
+  canClaim,
 }: {
   competitions: Competition[] | undefined;
   handleSortChange: (field: string) => void;
   sortState: Record<string, SortState>;
+  canClaim: boolean;
 }) {
   return (
     <div className="overflow-hidden rounded border">
       <Table>
         <TableHeader className="text-muted-foreground bg-gray-900 text-xs uppercase">
-          <TableRow className="grid w-full grid-cols-8">
+          <TableRow className={cn("grid w-full", canClaim ? " grid-cols-8" : "grid-cols-7")}>
             <SortableTableHeader
               onToggleSort={() => handleSortChange("name")}
               sortState={sortState["name"]}
@@ -66,7 +68,9 @@ export function CompetitionTable({
               Placement
             </SortableTableHeader>
             <TableHead>Trophies</TableHead>
-            <TableHead className="text-left">Reward</TableHead>
+            {
+              canClaim && <TableHead className="text-left">Reward</TableHead>
+            }
           </TableRow>
         </TableHeader>
 
@@ -124,9 +128,12 @@ export function CompetitionTable({
                     <Hexagon className="h-8 w-8 bg-green-500" />
                     <Hexagon className="h-8 w-8 bg-yellow-500" />
                   </TableCell>
-                  <TableCell className="align-center h-25 flex items-center gap-2">
-                    <Button className="rounded bg-sky-700 px-7">Claim</Button>
-                  </TableCell>
+                  {
+                    canClaim &&
+                    <TableCell className="align-center h-25 flex items-center gap-2">
+                      <Button className="rounded bg-sky-700 px-7">Claim</Button>
+                    </TableCell>
+                  }
                 </TableRow>
               );
             })

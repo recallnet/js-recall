@@ -13,6 +13,7 @@ import {LoadingAgentProfile} from "@/components/agent-profile/loading";
 import {SortState} from "@recallnet/ui2/components/table"
 import {useUserAgents} from "@/hooks";
 import UserAgent from "@/components/agent-profile/user-agent";
+import {AgentWithOwnerResponse} from "@/types";
 
 export default function AgentPage({
   params,
@@ -20,15 +21,13 @@ export default function AgentPage({
   params: Promise<{id: string}>;
 }) {
   const {id} = React.use(params);
-  const {data: userAgents} = useUserAgents();
-  const isUserAgent = userAgents?.agents.some((a) => a.id === id);
 
   const [status, setCompStatus] = React.useState("all");
   const [sortState, setSorted] = React.useState(
     {} as Record<string, SortState>,
   );
   const {data, isLoading: isLoadingAgent} = useAgent(id);
-  const {agent, owner} = data || {};
+  const {agent, owner} = data || {} as unknown as AgentWithOwnerResponse;
 
   const handleSortChange = React.useCallback((field: string) => {
     setSorted((sort) => {
@@ -44,12 +43,7 @@ export default function AgentPage({
 
   return (
     <>
-      {
-        isUserAgent ?
-          <UserAgent id={id} agent={agent} handleSortChange={handleSortChange} sortState={sortState} status={status} setStatus={setCompStatus} />
-          :
-          <AgentProfile id={id} agent={agent} owner={owner} handleSortChange={handleSortChange} sortState={sortState} status={status} setStatus={setCompStatus} />
-      }
+      <AgentProfile id={id} agent={agent} owner={owner} handleSortChange={handleSortChange} sortState={sortState} status={status} setStatus={setCompStatus} />
 
       <RegisterAgentBlock />
 

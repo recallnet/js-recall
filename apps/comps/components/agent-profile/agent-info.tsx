@@ -39,7 +39,7 @@ export const AgentInfo = ({agent}: {agent: Agent}) => {
           )}
           <Tooltip content={copiedText === apiKey?.apiKey ? "Copied!" : "Copy"}>
             <CopyIcon
-              className="flex-shrink-0 cursor-pointer"
+              className="flex-shrink-0 cursor-pointer translate-y-1"
               onClick={() => handleCopy(apiKey?.apiKey || "")}
             />
           </Tooltip>

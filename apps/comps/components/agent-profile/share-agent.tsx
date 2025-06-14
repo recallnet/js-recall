@@ -7,6 +7,7 @@ import {
   SiWhatsapp,
   SiX,
 } from "react-icons/si";
+import {useCopyToClipboard} from "@uidotdev/usehooks";
 
 import {
   Dialog,
@@ -19,10 +20,11 @@ import Tooltip from "@recallnet/ui2/components/tooltip";
 export const ShareAgent = ({agentId}: {agentId: string}) => {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [_, copyToClipboard] = useCopyToClipboard();
   const shareUrl = `https://recall.network/agents/${agentId}`;
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(shareUrl);
+    copyToClipboard(shareUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
