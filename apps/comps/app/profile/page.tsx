@@ -13,15 +13,15 @@ import { useUpdateProfile } from "@/hooks/useProfile";
 import { UpdateProfileRequest } from "@/types/profile";
 
 export default function ProfilePage() {
-  const { user, isProfileUpdated } = useUserSession();
+  const { user, isProfileUpdated, isLoading } = useUserSession();
   const router = useRouter();
   const updateProfile = useUpdateProfile();
 
   useEffect(() => {
-    if (!isProfileUpdated) {
+    if (!isLoading && !isProfileUpdated) {
       router.push("/profile/update");
     }
-  }, [isProfileUpdated, router]);
+  }, [isLoading, isProfileUpdated, router]);
 
   const handleUpdateProfile = async (data: UpdateProfileRequest) => {
     try {

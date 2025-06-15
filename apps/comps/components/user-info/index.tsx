@@ -90,7 +90,7 @@ export default function UserInfoSection({
             className="w-full space-y-4"
           >
             {/* Email row */}
-            <div className="text-secondary-foreground flex items-center gap-4">
+            <div className="text-secondary-foreground flex flex-wrap items-center gap-4">
               <span className="text-foreground w-20 font-semibold">E-mail</span>
               {editField === "email" ? (
                 <div className="flex items-center gap-2">
@@ -118,13 +118,13 @@ export default function UserInfoSection({
                     className="h-5 w-5 cursor-pointer"
                     onClick={() => setEditField("email")}
                   />
-                  <span className="ml-8">{user?.email}</span>
+                  <span>{user?.email}</span>
                 </>
               )}
             </div>
 
             {/* Website row */}
-            <div className="text-secondary-foreground flex items-center gap-4">
+            <div className="text-secondary-foreground flex flex-wrap items-center gap-4">
               <span className="text-foreground w-20 font-semibold">
                 Website
               </span>
@@ -154,7 +154,7 @@ export default function UserInfoSection({
                     className="h-5 w-5 cursor-pointer"
                     onClick={() => setEditField("website")}
                   />
-                  <span className="ml-8">{user?.metadata?.website}</span>
+                  <span>{user?.metadata?.website}</span>
                 </>
               )}
             </div>

@@ -18,6 +18,7 @@ export const useProfile = () => {
 
   return useQuery({
     queryKey: ["profile"],
+    staleTime: 1000,
     queryFn: async (): Promise<ProfileResponse["user"]> => {
       try {
         const res = await apiClient.getProfile();

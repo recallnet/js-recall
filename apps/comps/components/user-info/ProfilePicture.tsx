@@ -106,7 +106,7 @@ export const ProfilePicture: React.FC<ProfilePictureProps> = ({
       ) : (
         <Avatar className="h-full w-full">
           <AvatarImage
-            src={url || "/agent-placeholder.png"}
+            src={url}
             alt="Profile picture"
             className="h-full w-full object-cover"
           />

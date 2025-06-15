@@ -102,48 +102,29 @@ interface UserSessionState {
 
 export const useUserSession = (): UserSessionState => {
   const [authState, setAuthState] = useAtom(userAtom);
-  const queryClient = useQueryClient();
 
   const {
     data: profileData,
-    error: profileError,
     isLoading: profileIsLoading,
     isSuccess: profileIsSuccess,
-    isError: profileIsError,
-    isFetching: profileIsFetching,
+    isPending: profileIsPending,
   } = useProfile();
 
   const isAuthenticated = authState.status === "authenticated";
-  const isProfileUpdated = isAuthenticated && !!authState.user?.name;
-
+  const isProfileUpdated = isAuthenticated && !!profileData?.name;
   const isLoading =
     authState.status === "authenticating" ||
     profileIsLoading ||
-    profileIsFetching;
+    profileIsPending;
 
-  // React to profile query outcomes ------------------------------------------------
   useEffect(() => {
     if (profileIsSuccess && profileData) {
-      // Upgrade to authenticated with the full user
       setAuthState({ user: profileData, status: "authenticated" });
-    } else if (profileIsError) {
-      const isUnauthorized = (profileError as any)?.response?.status === 401;
-      if (isUnauthorized) {
-        setAuthState({ user: null, status: "unauthenticated" });
-        queryClient.removeQueries({ queryKey: ["profile"] });
-      }
     }
-  }, [
-    profileIsSuccess,
-    profileData,
-    profileIsError,
-    profileError,
-    setAuthState,
-    queryClient,
-  ]);
+  }, [profileIsSuccess, profileData, setAuthState]);
 
   return {
-    user: authState.user,
+    user: profileData ?? authState.user,
     isAuthenticated,
     isLoading,
     isProfileUpdated,

@@ -35,6 +35,7 @@ export const userAgentAtom = atom<Agent & { rank: number }>({
   rank: 0,
   description: "",
   status: "",
+  isVerified: false,
 });
 
 export const useUser = (): UserStorage => {

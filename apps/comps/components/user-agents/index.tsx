@@ -26,9 +26,14 @@ import { VerificationBadge } from "../verification-badge";
 
 export default function UserAgentsSection() {
   const { data: agentsData, isLoading } = useUserAgents();
-  const agents = isLoading || !agentsData?.agents ? [] : agentsData.agents;
-  const nAgents = agents.length;
   let agentList = <NoAgents />;
+
+  const agents = useMemo(
+    () => (isLoading || !agentsData?.agents ? [] : agentsData.agents),
+    [agentsData, isLoading],
+  );
+
+  const nAgents = agents.length;
 
   const bestPlacement = useMemo(
     () =>
@@ -62,13 +67,13 @@ export default function UserAgentsSection() {
       <div
         className={cn(`flex w-full flex-col justify-around gap-8`, {
           "flex-row": nAgents == 1,
-          "sm:flex-row": nAgents == 2,
+          "xs:flex-row": nAgents == 2,
           "md:flex-col": nAgents >= 3,
         })}
       >
         <div
           className={cn("flex flex-col gap-8", {
-            "sm:flex-row": nAgents > 1,
+            "xs:flex-row flex-wrap": nAgents > 1,
           })}
         >
           {isLoading
@@ -165,17 +170,17 @@ const AgentsSummary: React.FunctionComponent<{
   highest,
   className,
 }) => {
-  const borderRules = "sm:border-l-1";
+  const borderRules = "xs:border-l-1";
 
   return (
     <div
       className={cn(
         className,
-        "flex w-full flex-col justify-around border sm:flex-row",
+        "xs:flex-row flex w-full flex-col justify-around border",
         {
           "h-95 flex-row": isLoading,
-          "sm:flex-row": nAgents >= 3,
-          "sm:flex-col": nAgents < 3,
+          "xs:flex-row": nAgents >= 3,
+          "xs:flex-col": nAgents < 3,
         },
       )}
     >
@@ -270,7 +275,7 @@ export const AgentCard: React.FunctionComponent<AgentCardProps> = ({
   agent,
   isLoading,
 }) => {
-  const size = "min-w-70 max-w-80 md:max-w-70 h-95";
+  const size = "w-70 h-95";
 
   if (isLoading || typeof agent === "number")
     return <Skeleton className={size} />;
@@ -294,7 +299,7 @@ export const AgentCard: React.FunctionComponent<AgentCardProps> = ({
         className="mb-10"
         width={130}
         height={130}
-        image="/default_agent.png"
+        image={agent.imageUrl || "/default_agent.png"}
       />
       <div className="text-secondary-foreground flex w-full items-center justify-center gap-1 text-sm">
         <Award />
