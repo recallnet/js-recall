@@ -3,22 +3,22 @@
 import React from "react";
 
 import Card from "@recallnet/ui2/components/card";
-import { SortState } from "@recallnet/ui2/components/table";
-import { Tabs, TabsList, TabsTrigger } from "@recallnet/ui2/components/tabs";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {SortState} from "@recallnet/ui2/components/table";
+import {Tabs, TabsList, TabsTrigger} from "@recallnet/ui2/components/tabs";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { Hexagon } from "@/components/hexagon";
+import {Hexagon} from "@/components/hexagon";
 import MirrorImage from "@/components/mirror-image";
-import { useUpdateAgent, useUserAgents } from "@/hooks";
-import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
-import { Agent, AgentWithOwnerResponse } from "@/types";
+import {useUpdateAgent, useUserAgents} from "@/hooks";
+import {useAgentCompetitions} from "@/hooks/useAgentCompetitions";
+import {Agent, AgentWithOwnerResponse} from "@/types";
 
-import { BreadcrumbNav } from "../breadcrumb-nav";
-import { AgentImage } from "./agent-image";
+import {BreadcrumbNav} from "../breadcrumb-nav";
+import {AgentImage} from "./agent-image";
 import AgentInfo from "./agent-info";
 import CompetitionTable from "./comps-table";
-import { EditAgentField } from "./edit-field";
-import { ShareAgent } from "./share-agent";
+import {EditAgentField} from "./edit-field";
+import {ShareAgent} from "./share-agent";
 
 const ITEMS_BY_PAGE = 10;
 
@@ -41,13 +41,13 @@ export default function AgentProfile({
   const [page, setPage] = React.useState(0);
   const skills = agent?.skills || [];
   const trophies = (agent?.trophies || []) as string[];
-  const { data: userAgents } = useUserAgents();
+  const {data: userAgents} = useUserAgents();
   const isUserAgent = userAgents?.agents.some((a) => a.id === id) || false;
   const updateAgent = useUpdateAgent();
 
   const sortString = React.useMemo(() => {
     return Object.entries(sortState).reduce((acc, [key, sort]) => {
-      if (sort !== "none") return acc + `,${sort == "asc" ? "" : "-"}${key}`;
+      if (sort !== "none") return acc + `${sort == "asc" ? "" : "-"}${key}`;
       return acc;
     }, "");
   }, [sortState]);
@@ -68,22 +68,23 @@ export default function AgentProfile({
       }
     };
 
-  const { data: compsData } = useAgentCompetitions(id, {
+  console.log({sortString})
+  const {data: compsData} = useAgentCompetitions(id, {
     sort: sortString,
     status,
     limit: ITEMS_BY_PAGE,
     offset: page * ITEMS_BY_PAGE,
   });
   const competitions = compsData?.competitions || [];
-  const { total } = compsData?.pagination || { total: 0 };
+  const {total} = compsData?.pagination || {total: 0};
 
   return (
     <>
       <BreadcrumbNav
         items={[
-          { label: "RECALL" },
-          { label: "AGENTS", href: "/competitions" },
-          { label: agent.name },
+          {label: "RECALL"},
+          {label: "AGENTS", href: "/competitions"},
+          {label: agent.name},
         ]}
         className="mb-10"
       />
@@ -113,8 +114,8 @@ export default function AgentProfile({
             Calm accumulation of elite assets.
           </span>
         </Card>
-        <div className="flex-2 xs:col-span-2 xs:col-start-2 xs:row-start-1 xs:mt-0 xs:h-[65vh] col-span-3 row-start-2 mt-5 flex shrink flex-col border lg:col-span-1 lg:col-start-2">
-          <div className="relative grow border-b p-8">
+        <div className="flex-2 xs:col-span-2 xs:col-start-2 xs:row-start-1 xs:mt-0 col-span-3 row-start-2 mt-5 flex shrink flex-col border lg:col-span-1 lg:col-start-2">
+          <div className="relative grow border-b p-8 w-full">
             {isUserAgent ? (
               <EditAgentField
                 title="Agent Name"
@@ -155,9 +156,7 @@ export default function AgentProfile({
               )}
             </div>
             {isUserAgent && (
-              <div className="h-50 flex flex-col justify-end">
-                <AgentInfo agent={agent} />
-              </div>
+              <AgentInfo className="mt-15 w-full" agent={agent} />
             )}
           </div>
           <div className="flex flex-col items-start gap-2 border-b px-6 py-12 text-sm">
@@ -207,7 +206,7 @@ export default function AgentProfile({
                 agent description
               </span>
             )}
-            <span className="text-secondary-foreground">
+            <span className="text-secondary-foreground break-all">
               {agent.description || "No profile created yet"}
             </span>
           </div>
@@ -215,16 +214,16 @@ export default function AgentProfile({
             <span className="text-secondary-foreground w-full text-left font-semibold uppercase">
               Proven Skills
             </span>
-            <div className="text-secondary-foreground mt-3 flex flex-wrap gap-3">
+            <div className="text-secondary-foreground mt-3 flex flex-wrap gap-3 break-all">
               {skills.length > 0
                 ? skills.map((skill, index) => (
-                    <span
-                      key={index}
-                      className="text-primary-foreground rounded border px-2 py-1"
-                    >
-                      {skill}
-                    </span>
-                  ))
+                  <span
+                    key={index}
+                    className="text-primary-foreground rounded border px-2 py-1"
+                  >
+                    {skill}
+                  </span>
+                ))
                 : "This agent hasnt showcased skills yet."}
             </div>
           </div>

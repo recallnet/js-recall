@@ -1,7 +1,7 @@
-import { SquarePen } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import {SquarePen} from "lucide-react";
+import React, {useEffect, useState} from "react";
 
-import { Button } from "@recallnet/ui2/components/button";
+import {Button} from "@recallnet/ui2/components/button";
 import {
   Dialog,
   DialogClose,
@@ -10,8 +10,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
-import { Input } from "@recallnet/ui2/components/input";
-import { Textarea } from "@recallnet/ui2/components/textarea";
+import {Input} from "@recallnet/ui2/components/input";
+import {Textarea} from "@recallnet/ui2/components/textarea";
 
 interface EditAgentFieldProps {
   title: string;
@@ -46,7 +46,7 @@ export const EditAgentField: React.FC<EditAgentFieldProps> = ({
 
   return (
     <>
-      <div className="flex w-fit items-center gap-3">
+      <div className="flex w-full items-center gap-3">
         {children}
         <div
           className="bg-card/70 right-2 top-2 cursor-pointer rounded-full p-1"

@@ -1,4 +1,4 @@
-import { useCopyToClipboard } from "@uidotdev/usehooks";
+import {useCopyToClipboard} from "@uidotdev/usehooks";
 import {
   CopyIcon,
   EyeIcon,
@@ -6,19 +6,20 @@ import {
   KeyIcon,
   WalletIcon,
 } from "lucide-react";
-import { useState } from "react";
+import {useState} from "react";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { Tooltip } from "@recallnet/ui2/components/tooltip";
+import {Tooltip} from "@recallnet/ui2/components/tooltip";
 
-import { useAgentApiKey } from "@/hooks";
-import { Agent } from "@/types";
+import {useAgentApiKey} from "@/hooks";
+import {Agent} from "@/types";
 
-import { Clipboard } from "../clipboard";
+import {Clipboard} from "../clipboard";
 
-export const AgentInfo = ({ agent }: { agent: Agent }) => {
+export const AgentInfo = ({agent, className}: {agent: Agent; className?: string;}) => {
   const [copiedText, copyToClipboard] = useCopyToClipboard();
   const [showWalletAddress, setShowWalletAddress] = useState(false);
-  const { data: apiKey, isLoading } = useAgentApiKey(agent.id);
+  const {data: apiKey, isLoading} = useAgentApiKey(agent.id);
 
   const handleCopy = async (text: string) => {
     copyToClipboard(text);
@@ -26,17 +27,17 @@ export const AgentInfo = ({ agent }: { agent: Agent }) => {
   };
 
   return (
-    <div className="text-secondary-foreground flex w-full flex-col justify-center gap-3">
-      <div className="flex w-full items-center gap-3">
+    <div className={cn("text-secondary-foreground flex w-full flex-col justify-center gap-3", className)}>
+      <div className="flex max-w-[470px] w-full items-center gap-3">
         <Tooltip content="Agent Key">
           <KeyIcon />
         </Tooltip>
-        <div className="flex h-[40px] max-w-[400px] flex-grow items-center gap-2 border p-2">
+        <div className="flex h-[40px] items-center gap-2 border p-2 w-full overflow-hidden rounded">
           {showWalletAddress || isLoading ? (
-            <span className="min-w-0 flex-grow truncate">{apiKey?.apiKey}</span>
+            <span className="flex-grow truncate">{apiKey?.apiKey}</span>
           ) : (
-            <span className="min-w-0 flex-grow truncate">
-              ••••••••••••••••••••••••••••••••••••••••
+            <span className="flex-grow truncate">
+              ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
             </span>
           )}
           <Tooltip content={copiedText === apiKey?.apiKey ? "Copied!" : "Copy"}>
@@ -59,13 +60,19 @@ export const AgentInfo = ({ agent }: { agent: Agent }) => {
         )}
       </div>
 
-      <div className="flex w-full items-center gap-3">
+      <div className="flex max-w-[470px] w-full items-center gap-3">
         <Tooltip content="Agent Wallet">
           <WalletIcon />
         </Tooltip>
         <Clipboard
           text={agent.walletAddress || ""}
-          className="max-w-[400px] flex-grow px-2 py-1"
+          className="flex-grow px-2 py-1 w-full"
+        />
+        {
+          // just to align components
+        }
+        <EyeIcon
+          className="opacity-0"
         />
       </div>
     </div>
