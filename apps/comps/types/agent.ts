@@ -1,5 +1,5 @@
-import { PaginationResponse } from "./api";
-import { AgentCompetitionMetadata, Competition } from "./competition";
+import {PaginationResponse} from "./api";
+import {AgentCompetitionMetadata, Competition} from "./competition";
 
 export interface BestPlacement {
   competitionId: string;
@@ -41,19 +41,6 @@ export interface Agent {
   trophies?: string[];
   deactivationReason?: string;
   deactivationDate?: string;
-  stats?: {
-    completedCompetitions: number;
-    totalVotes: number;
-    totalTrades: number;
-    bestPlacement?: {
-      competitionId: string;
-      rank: number;
-      score: number;
-      totalAgents: number;
-    };
-    rank: number;
-    score: number;
-  };
 }
 
 export interface AgentWithOwnerResponse {
@@ -148,7 +135,7 @@ export interface CreateAgentRequest {
 }
 
 export interface CreateAgentResponse {
-  agent: Agent & { apiKey: string };
+  agent: Agent & {apiKey: string};
   success: boolean;
 }
 
@@ -166,7 +153,7 @@ export interface UpdateAgentRequest {
 }
 
 export interface UpdateAgentResponse {
-  agent: Agent & { apiKey: string };
+  agent: Agent & {apiKey: string};
   success: boolean;
 }
 

@@ -1,10 +1,10 @@
 import Link from "next/link";
 
-import { cn } from "@recallnet/ui2/lib/utils";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { AgentAvatar } from "@/components/agent-avatar";
-import { Agent, AgentCompetition } from "@/types/agent";
-import { UserAgentCompetition } from "@/types/competition";
+import {AgentAvatar} from "@/components/agent-avatar";
+import {Agent, AgentCompetition} from "@/types/agent";
+import {UserAgentCompetition} from "@/types/competition";
 
 interface ParticipantsAvatarsProps {
   agents: Agent[] | UserAgentCompetition[] | AgentCompetition[];
@@ -57,7 +57,7 @@ function getRank(
   }
 
   if ("stats" in agent && agent.stats) {
-    return agent.stats.rank;
+    return agent.stats.bestPlacement?.rank || 0;
   }
 
   return index + 1;

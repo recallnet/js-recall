@@ -8,13 +8,13 @@ import {
   getFilteredRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { useVirtualizer } from "@tanstack/react-virtual";
-import { ArrowUp, Search } from "lucide-react";
+import {useVirtualizer} from "@tanstack/react-virtual";
+import {ArrowUp, Search} from "lucide-react";
 import Link from "next/link";
-import React, { useMemo, useRef, useState } from "react";
+import React, {useMemo, useRef, useState} from "react";
 
-import { Button } from "@recallnet/ui2/components/button";
-import { Input } from "@recallnet/ui2/components/input";
+import {Button} from "@recallnet/ui2/components/button";
+import {Input} from "@recallnet/ui2/components/input";
 import {
   SortableTableHeader,
   Table,
@@ -25,11 +25,11 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import { AgentCompetition, PaginationResponse } from "@/types";
-import { formatPercentage } from "@/utils/format";
+import {AgentCompetition, PaginationResponse} from "@/types";
+import {formatPercentage} from "@/utils/format";
 
-import { AgentAvatar } from "../agent-avatar";
-import { RankBadge } from "./rank-badge";
+import {AgentAvatar} from "../agent-avatar";
+import {RankBadge} from "./rank-badge";
 
 export interface AgentsTableProps {
   agents: AgentCompetition[];
@@ -59,7 +59,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         id: "rank",
         accessorKey: "position",
         header: () => "Rank",
-        cell: ({ row }) => <RankBadge position={row.original.position} />,
+        cell: ({row}) => <RankBadge position={row.original.position} />,
         enableSorting: true,
         size: 100,
       },
@@ -67,7 +67,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         id: "name",
         accessorKey: "name",
         header: () => "Agent",
-        cell: ({ row }) => (
+        cell: ({row}) => (
           <div className="flex min-w-0 items-center gap-3">
             <AgentAvatar agent={row.original} size={32} />
             <div className="flex min-w-0 flex-1 flex-col">
@@ -91,7 +91,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         id: "portfolio",
         accessorKey: "portfolioValue",
         header: () => "Portfolio",
-        cell: ({ row }) => (
+        cell: ({row}) => (
           <span className="text-secondary-foreground font-semibold">
             {row.original.portfolioValue.toLocaleString("en-US", {
               style: "currency",
@@ -107,7 +107,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         id: "pnl",
         accessorKey: "pnl",
         header: () => "P&L",
-        cell: ({ row }) => {
+        cell: ({row}) => {
           const pnlColor =
             row.original.pnlPercent >= 0 ? "text-green-400" : "text-red-400";
           return (
@@ -134,7 +134,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         id: "change24h",
         accessorKey: "change24h",
         header: () => "24h",
-        cell: ({ row }) => {
+        cell: ({row}) => {
           const percentColor =
             row.original.change24hPercent >= 0
               ? "text-green-500"
@@ -154,7 +154,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       {
         id: "votes",
         header: () => "Votes",
-        cell: ({ row }) => (
+        cell: ({row}) => (
           <div className="flex flex-col items-end">
             <span className="text-secondary-foreground font-semibold">
               {row.original.voteCount}
@@ -245,38 +245,38 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow
                 key={headerGroup.id}
-                style={{ display: "flex", width: "100%" }}
+                style={{display: "flex", width: "100%"}}
               >
                 {headerGroup.headers.map((header) =>
                   header.column.getCanSort() ? (
                     <SortableTableHeader
                       key={header.id}
                       colSpan={header.colSpan}
-                      isSorted={header.column.getIsSorted()}
-                      style={{ width: header.getSize() }}
+                      sortState={header.column.getIsSorted() ? 'asc' : 'none'}
+                      style={{width: header.getSize()}}
                       className={header.column.columnDef.meta?.className}
                       onClick={header.column.getToggleSortingHandler()}
                     >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
                     </SortableTableHeader>
                   ) : (
                     <TableHead
                       key={header.id}
                       colSpan={header.colSpan}
-                      style={{ width: header.getSize() }}
+                      style={{width: header.getSize()}}
                       className={header.column.columnDef.meta?.className}
                     >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
                     </TableHead>
                   ),
                 )}
@@ -310,7 +310,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                     <TableCell
                       key={cell.id}
                       className={`flex items-center ${cell.column.columnDef.meta?.className ?? ""}`}
-                      style={{ width: cell.column.getSize() }}
+                      style={{width: cell.column.getSize()}}
                     >
                       {flexRender(
                         cell.column.columnDef.cell,
