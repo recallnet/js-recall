@@ -1463,6 +1463,21 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "idx_object_index_created_at": {
+          "name": "idx_object_index_created_at",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {

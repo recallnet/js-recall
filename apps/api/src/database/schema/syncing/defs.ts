@@ -40,6 +40,7 @@ export const objectIndex = pgTable(
       table.competitionId,
       table.agentId,
     ),
+    index("idx_object_index_created_at").on(table.createdAt),
     // Foreign keys
     foreignKey({
       columns: [table.competitionId],
