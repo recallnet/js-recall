@@ -9,7 +9,7 @@ import BigNumberDisplay from "@/components/bignumber";
 import { LeaderboardTable } from "@/components/leaderboard-table";
 import { useLeaderboards } from "@/hooks/useLeaderboards";
 
-const itemsByPage = 4;
+const itemsByPage = 10;
 
 export function LeaderboardSection() {
   const [page, setPage] = React.useState(0);
