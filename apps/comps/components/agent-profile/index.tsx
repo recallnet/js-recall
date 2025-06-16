@@ -3,22 +3,24 @@
 import React from "react";
 
 import Card from "@recallnet/ui2/components/card";
-import {SortState} from "@recallnet/ui2/components/table";
-import {Tabs, TabsList, TabsTrigger} from "@recallnet/ui2/components/tabs";
-import {cn} from "@recallnet/ui2/lib/utils";
+import { SortState } from "@recallnet/ui2/components/table";
+import { Tabs, TabsList, TabsTrigger } from "@recallnet/ui2/components/tabs";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import {Hexagon} from "@/components/hexagon";
+import { Hexagon } from "@/components/hexagon";
 import MirrorImage from "@/components/mirror-image";
-import {useUpdateAgent, useUserAgents} from "@/hooks";
-import {useAgentCompetitions} from "@/hooks/useAgentCompetitions";
-import {Agent, AgentWithOwnerResponse} from "@/types";
+import { useUpdateAgent, useUserAgents } from "@/hooks";
+import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
+import { Agent, AgentWithOwnerResponse } from "@/types";
 
-import {BreadcrumbNav} from "../breadcrumb-nav";
-import {AgentImage} from "./agent-image";
+import { BreadcrumbNav } from "../breadcrumb-nav";
+import { AgentImage } from "./agent-image";
 import AgentInfo from "./agent-info";
 import CompetitionTable from "./comps-table";
-import {EditAgentField} from "./edit-field";
-import {ShareAgent} from "./share-agent";
+import { EditAgentField } from "./edit-field";
+import { ShareAgent } from "./share-agent";
+
+const ITEMS_BY_PAGE = 10;
 
 export default function AgentProfile({
   id,
@@ -36,9 +38,10 @@ export default function AgentProfile({
   setStatus: (status: string) => void;
   status: string;
 }) {
+  const [page, setPage] = React.useState(0);
   const skills = agent?.skills || [];
   const trophies = (agent?.trophies || []) as string[];
-  const {data: userAgents} = useUserAgents();
+  const { data: userAgents } = useUserAgents();
   const isUserAgent = userAgents?.agents.some((a) => a.id === id) || false;
   const updateAgent = useUpdateAgent();
 
@@ -65,19 +68,22 @@ export default function AgentProfile({
       }
     };
 
-  const {data: compsData} = useAgentCompetitions(id, {
+  const { data: compsData } = useAgentCompetitions(id, {
     sort: sortString,
     status,
+    limit: ITEMS_BY_PAGE,
+    offset: page * ITEMS_BY_PAGE,
   });
   const competitions = compsData?.competitions || [];
+  const { total } = compsData?.pagination || { total: 0 };
 
   return (
     <>
       <BreadcrumbNav
         items={[
-          {label: "RECALL"},
-          {label: "AGENTS", href: "/competitions"},
-          {label: agent.name},
+          { label: "RECALL" },
+          { label: "AGENTS", href: "/competitions" },
+          { label: agent.name },
         ]}
         className="mb-10"
       />
@@ -103,7 +109,7 @@ export default function AgentProfile({
               height={160}
             />
           )}
-          <span className="w-50 mt-20 text-center text-lg text-secondary-foreground">
+          <span className="w-50 text-secondary-foreground mt-20 text-center text-lg">
             Calm accumulation of elite assets.
           </span>
         </Card>
@@ -115,21 +121,21 @@ export default function AgentProfile({
                 value={agent.name || ""}
                 onSave={handleSaveChange("name")}
               >
-                <h1 className="max-w-[90%] truncate text-4xl font-bold text-primary-foreground">
+                <h1 className="text-primary-foreground max-w-[90%] truncate text-4xl font-bold">
                   {agent.name}
                 </h1>
               </EditAgentField>
             ) : (
-              <h1 className="truncate text-4xl font-bold text-primary-foreground">
+              <h1 className="text-primary-foreground truncate text-4xl font-bold">
                 {agent.name}
               </h1>
             )}
             {!isUserAgent && (
               <div className="mt-5 flex w-full gap-3">
-                <span className="text-xl font-semibold text-secondary-foreground">
+                <span className="text-secondary-foreground text-xl font-semibold">
                   Developed by
                 </span>
-                <span className="truncate text-xl font-semibold text-secondary-foreground text-primary-foreground">
+                <span className="text-secondary-foreground text-primary-foreground truncate text-xl font-semibold">
                   {owner?.name}
                 </span>
               </div>
@@ -155,10 +161,10 @@ export default function AgentProfile({
             )}
           </div>
           <div className="flex flex-col items-start gap-2 border-b px-6 py-12 text-sm">
-            <span className="w-full text-left font-semibold uppercase text-secondary-foreground">
+            <span className="text-secondary-foreground w-full text-left font-semibold uppercase">
               Best Placement
             </span>
-            <span className="w-full text-left text-secondary-foreground">
+            <span className="text-secondary-foreground w-full text-left">
               {agent.stats?.bestPlacement
                 ? `🥇 ${agent.stats.bestPlacement.position} of ${agent.stats.bestPlacement.participants}`
                 : "No completed yet"}
@@ -166,7 +172,7 @@ export default function AgentProfile({
           </div>
           <div className="flex w-full">
             <div className="flex w-1/2 flex-col items-start p-6">
-              <span className="w-full text-left text-xs font-semibold uppercase text-secondary-foreground">
+              <span className="text-secondary-foreground w-full text-left text-xs font-semibold uppercase">
                 Completed Comps
               </span>
               <span className="text-primary-foreground w-full text-left text-lg font-bold">
@@ -174,10 +180,10 @@ export default function AgentProfile({
               </span>
             </div>
             <div className="flex w-1/2 flex-col items-start border-l p-6">
-              <span className="w-full text-left text-xs font-semibold uppercase text-secondary-foreground">
+              <span className="text-secondary-foreground w-full text-left text-xs font-semibold uppercase">
                 ELO
               </span>
-              <span className="w-full text-left text-secondary-foreground">
+              <span className="text-secondary-foreground w-full text-left">
                 Not rated yet
               </span>
             </div>
@@ -192,12 +198,12 @@ export default function AgentProfile({
                 value={agent.description || ""}
                 onSave={handleSaveChange("description")}
               >
-                <span className="font-semibold uppercase text-secondary-foreground">
+                <span className="text-secondary-foreground font-semibold uppercase">
                   agent description
                 </span>
               </EditAgentField>
             ) : (
-              <span className="font-semibold uppercase text-secondary-foreground">
+              <span className="text-secondary-foreground font-semibold uppercase">
                 agent description
               </span>
             )}
@@ -206,19 +212,19 @@ export default function AgentProfile({
             </span>
           </div>
           <div className="flex flex-col items-start p-6">
-            <span className="w-full text-left font-semibold uppercase text-secondary-foreground">
+            <span className="text-secondary-foreground w-full text-left font-semibold uppercase">
               Proven Skills
             </span>
-            <div className="mt-3 flex flex-wrap gap-3 text-secondary-foreground">
+            <div className="text-secondary-foreground mt-3 flex flex-wrap gap-3">
               {skills.length > 0
                 ? skills.map((skill, index) => (
-                  <span
-                    key={index}
-                    className="rounded border px-2 py-1 text-primary-foreground"
-                  >
-                    {skill}
-                  </span>
-                ))
+                    <span
+                      key={index}
+                      className="text-primary-foreground rounded border px-2 py-1"
+                    >
+                      {skill}
+                    </span>
+                  ))
                 : "This agent hasnt showcased skills yet."}
             </div>
           </div>
@@ -246,7 +252,7 @@ export default function AgentProfile({
               className={cn(
                 "rounded border border-green-500 p-2",
                 status === "ongoing"
-                  ? "bg-green-500 text-primary-foreground"
+                  ? "text-primary-foreground bg-green-500"
                   : "text-green-500",
               )}
             >
@@ -257,7 +263,7 @@ export default function AgentProfile({
               className={cn(
                 "rounded border border-blue-500 p-2 text-black",
                 status === "upcoming"
-                  ? "bg-blue-500 text-primary-foreground"
+                  ? "text-primary-foreground bg-blue-500"
                   : "text-blue-500",
               )}
             >
@@ -267,13 +273,18 @@ export default function AgentProfile({
               value="ended"
               className={cn(
                 "rounded border p-2 text-black",
-                status === "ended" ? "bg-gray-500 text-primary-foreground" : "text-secondary-foreground",
+                status === "ended"
+                  ? "text-primary-foreground bg-gray-500"
+                  : "text-secondary-foreground",
               )}
             >
               Complete
             </TabsTrigger>
           </TabsList>
           <CompetitionTable
+            page={page}
+            total={total}
+            onPageChange={setPage}
             handleSortChange={handleSortChange}
             sortState={sortState}
             canClaim={isUserAgent}
