@@ -23,17 +23,6 @@ export const userAtom = atomWithStorage<UserStorage>(
   },
 );
 
-export const userAgentAtom = atom<Agent & { rank: number }>({
-  id: "",
-  name: "",
-  imageUrl: "",
-  walletAddress: "",
-  rank: 0,
-  description: "",
-  status: "",
-  isVerified: false,
-});
-
 export const useUser = (): UserStorage => {
   const [user] = useAtom(userAtom);
   return user;

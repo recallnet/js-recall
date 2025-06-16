@@ -252,7 +252,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                     <SortableTableHeader
                       key={header.id}
                       colSpan={header.colSpan}
-                      isSorted={header.column.getIsSorted()}
+                      sortState={header.column.getIsSorted() ? "asc" : "none"}
                       style={{ width: header.getSize() }}
                       className={header.column.columnDef.meta?.className}
                       onClick={header.column.getToggleSortingHandler()}

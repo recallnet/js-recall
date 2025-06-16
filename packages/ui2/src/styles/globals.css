@@ -47,7 +47,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --breakpoint-*: initial;
-  --breakpoint-xs: 48rem;
+  --breakpoint-xs: 42rem;
   --breakpoint-sm: 64rem;
   --breakpoint-md: 80rem;
   --breakpoint-lg: 90rem;
