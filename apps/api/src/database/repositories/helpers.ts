@@ -3,6 +3,15 @@ import { PgSelect } from "drizzle-orm/pg-core";
 
 import { ApiError } from "@/middleware/errorHandler.js";
 
+/**
+ * Apply sorting to a Drizzle query based on sort string
+ * @param query The Drizzle query to apply sorting to
+ * @param sortString Comma-separated sort fields with optional direction.
+ *                   Use "-field" for descending, "field" for ascending.
+ *                   Examples: "name", "-createdAt", "name,-createdAt"
+ * @param orderByOptions Available fields that can be sorted by
+ * @returns The query with sorting applied
+ */
 export function getSort<T extends PgSelect>(
   query: T,
   sortString: string,
@@ -20,22 +29,28 @@ export function getSort<T extends PgSelect>(
     );
   }
 
+  // Collect all ordering criteria
+  const orderByCriteria = [];
+
   for (let i = 0; i < parts.length; i++) {
-    let part = parts[i];
+    const part = parts[i];
     if (typeof part !== "string") {
       throw new ApiError(400, "cannot build sort with undefined");
     }
 
+    // Standard format: "-field" for desc, "field" for asc
     const isDesc = part.startsWith("-");
-    const column = isDesc ? (part = part.slice(1)) : part;
+    const column = isDesc ? part.slice(1) : part;
 
     const orderBy = orderByOptions[column];
     if (typeof orderBy === "undefined") {
-      throw new ApiError(400, `cannot sort by field: '${part}'`);
+      throw new ApiError(400, `cannot sort by field: '${column}'`);
     }
 
-    query = isDesc ? query.orderBy(desc(orderBy)) : query.orderBy(asc(orderBy));
+    // Add to criteria array instead of applying immediately
+    orderByCriteria.push(isDesc ? desc(orderBy) : asc(orderBy));
   }
 
-  return query;
+  // Apply all ordering criteria in a single orderBy call
+  return query.orderBy(...orderByCriteria);
 }

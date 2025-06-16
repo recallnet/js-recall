@@ -1288,7 +1288,7 @@ describe("User API", () => {
 
       // Test invalid sort field - should throw 400 error (this exposes the bug)
       const invalidSortResponse = await userClient.getUserCompetitions({
-        sort: "agentName:asc",
+        sort: "agentName",
       });
       expect(invalidSortResponse.success).toBe(false);
       expect((invalidSortResponse as ErrorResponse).status).toBe(400);
@@ -1298,7 +1298,7 @@ describe("User API", () => {
 
       // Test another invalid sort field that users might expect to work
       const invalidSort2Response = await userClient.getUserCompetitions({
-        sort: "agent.name:desc",
+        sort: "-agent.name",
       });
       expect(invalidSort2Response.success).toBe(false);
       expect((invalidSort2Response as ErrorResponse).status).toBe(400);
@@ -1528,7 +1528,7 @@ describe("User API", () => {
 
       // Test name ascending sort (should work)
       const nameAscResponse = await userClient.getUserCompetitions({
-        sort: "name:asc",
+        sort: "name",
       });
       expect(nameAscResponse.success).toBe(true);
       const nameAscComps = (nameAscResponse as UserCompetitionsResponse)
@@ -1540,7 +1540,7 @@ describe("User API", () => {
 
       // Test createdAt descending sort (should work)
       const createdDescResponse = await userClient.getUserCompetitions({
-        sort: "createdAt:desc",
+        sort: "-createdAt",
       });
       expect(createdDescResponse.success).toBe(true);
       const createdDescComps = (createdDescResponse as UserCompetitionsResponse)

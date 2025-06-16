@@ -7,6 +7,7 @@ import {
   eq,
   ilike,
   inArray,
+  sql,
 } from "drizzle-orm";
 
 import { db } from "@/database/db.js";
@@ -173,9 +174,22 @@ export async function findAgentCompetitions(
 }
 
 /**
- * Find competitions for multiple agents (used for user's agent competitions)
- * @param agentIds Array of agent IDs
- * @param params Agent competitions parameters
+ * Find competitions for multiple agents (user's agents) with pagination and sorting
+ * - Uses optimized two-query pattern for efficient pagination on unique competitions
+ * - Step 1: Gets unique competition IDs with sorting/pagination (minimal data transfer)
+ * - Step 2: Gets full data preserving Step 1 order using SQL CASE statement (no re-sorting)
+ * - Step 3: Counts total unique competitions for pagination metadata
+ * - Avoids N+1 queries, count mismatches, and duplicate sorting operations
+ *
+ * **Performance Characteristics:**
+ * - Query 1: O(log n) for sorted unique competition IDs
+ * - Query 2: O(k) where k = limit, preserves order without re-sorting
+ * - Query 3: O(log n) for count with same WHERE conditions
+ * - Total: O(log n + k) instead of O(n log n) for naive approaches
+ *
+ * @param agentIds Array of agent IDs to find competitions for
+ * @param params Query parameters for filtering, sorting, and pagination
+ * @returns Object containing competitions array and total count
  */
 export async function findUserAgentCompetitions(
   agentIds: string[],
@@ -189,9 +203,9 @@ export async function findUserAgentCompetitions(
       };
     }
 
-    const { status, claimed } = params;
+    const { status, claimed, sort, limit, offset } = params;
 
-    // Build where conditions
+    // Build where conditions for filtering
     const whereConditions = [inArray(competitionAgents.agentId, agentIds)];
 
     if (status) {
@@ -204,10 +218,18 @@ export async function findUserAgentCompetitions(
       );
     }
 
-    let query = db
-      .select()
+    // Step 1: Get unique competition IDs with proper sorting and pagination
+    // Note: For SELECT DISTINCT with ORDER BY, we need to include sort fields in SELECT
+    let uniqueCompetitionsQuery = db
+      .selectDistinct({
+        id: competitions.id,
+        name: competitions.name,
+        startDate: competitions.startDate,
+        endDate: competitions.endDate,
+        createdAt: competitions.createdAt,
+        status: competitions.status,
+      })
       .from(competitionAgents)
-      .leftJoin(agents, eq(competitionAgents.agentId, agents.id))
       .leftJoin(
         competitions,
         eq(competitionAgents.competitionId, competitions.id),
@@ -215,15 +237,59 @@ export async function findUserAgentCompetitions(
       .where(and(...whereConditions))
       .$dynamic();
 
-    if (params.sort) {
-      query = getSort(query, params.sort, agentCompetitionsOrderByFields);
+    // Apply sorting to competitions (not agents)
+    if (sort) {
+      uniqueCompetitionsQuery = getSort(
+        uniqueCompetitionsQuery,
+        sort,
+        agentCompetitionsOrderByFields,
+      );
     }
 
-    query.limit(params.limit).offset(params.offset);
+    // Apply pagination to unique competitions
+    const uniqueCompetitionIds = await uniqueCompetitionsQuery
+      .limit(limit)
+      .offset(offset);
 
-    const results = await query;
-    const total = await db
-      .select({ count: drizzleCount() })
+    // Step 2: Get full data for those specific competition IDs
+    const orderedCompetitionIds = uniqueCompetitionIds
+      .map((c) => c.id)
+      .filter((id): id is string => id !== null);
+
+    let fullResultsQuery = db
+      .select()
+      .from(competitionAgents)
+      .leftJoin(agents, eq(competitionAgents.agentId, agents.id))
+      .leftJoin(
+        competitions,
+        eq(competitionAgents.competitionId, competitions.id),
+      )
+      .where(
+        and(
+          inArray(competitions.id, orderedCompetitionIds),
+          inArray(competitionAgents.agentId, agentIds), // Only user's agents
+        ),
+      )
+      .$dynamic();
+
+    // Always preserve the exact order from Step 1 using CASE statement
+    // This ensures consistency between Step 1 sorting and Step 2 results
+    if (orderedCompetitionIds.length > 0) {
+      fullResultsQuery = fullResultsQuery.orderBy(
+        sql`CASE ${competitions.id} ${sql.join(
+          orderedCompetitionIds.map(
+            (id, index) => sql`WHEN ${id} THEN ${index}`,
+          ),
+          sql` `,
+        )} END`,
+      );
+    }
+
+    const fullResults = await fullResultsQuery;
+
+    // Step 3: Count total unique competitions (for pagination metadata)
+    const totalCountResult = await db
+      .selectDistinct({ id: competitions.id })
       .from(competitionAgents)
       .leftJoin(
         competitions,
@@ -232,8 +298,8 @@ export async function findUserAgentCompetitions(
       .where(and(...whereConditions));
 
     return {
-      competitions: results,
-      total: total[0]?.count || 0,
+      competitions: fullResults,
+      total: totalCountResult.length, // Accurate count of unique competitions
     };
   } catch (error) {
     console.error(

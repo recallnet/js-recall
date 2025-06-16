@@ -864,16 +864,42 @@ export class AgentManager {
         params,
       );
 
+      // Service layer validates business inputs
       const {
-        data: pagingParams,
+        data: validatedParams,
         success,
         error,
       } = PagingParamsSchema.safeParse(params);
       if (!success) {
-        throw new ApiError(500, `cannot parse paging: ${error}`);
+        throw new ApiError(400, `Invalid pagination parameters: ${error}`);
       }
-      // Get all agents owned by this user
-      const userAgents = await this.getAgentsByOwner(userId, pagingParams);
+
+      // Validate sort parameter early (before checking if user has agents)
+      // This ensures consistent error handling regardless of user's agent count
+      if (validatedParams.sort) {
+        const validSortFields = [
+          "name",
+          "startDate",
+          "endDate",
+          "createdAt",
+          "status",
+        ];
+        const sortParts = validatedParams.sort.split(",");
+
+        for (const part of sortParts) {
+          const fieldName = part.startsWith("-") ? part.slice(1) : part;
+          if (!validSortFields.includes(fieldName)) {
+            throw new ApiError(400, `cannot sort by field: '${fieldName}'`);
+          }
+        }
+      }
+
+      // Get user agents (no competition sort - we're sorting competitions, not agents)
+      const userAgents = await this.getAgentsByOwner(userId, {
+        sort: "",
+        limit: 100,
+        offset: 0,
+      });
       const agentIds = userAgents.map((agent) => agent.id);
 
       if (agentIds.length === 0) {
@@ -881,16 +907,28 @@ export class AgentManager {
         return { competitions: [], total: 0 };
       }
 
-      // Get competitions for all user's agents
-      const results = await findUserAgentCompetitions(agentIds, params);
+      // Combine validated pagination with other parameters
+      const competitionParams = {
+        ...params, // Keep business fields (status, claimed, etc.)
+        ...validatedParams, // Use validated pagination (sort, limit, offset)
+      };
 
-      // Group by competition to avoid duplicates and format the
-      // data to match what's expected by the client
+      // Repository handles data access with validated parameters
+      const results = await findUserAgentCompetitions(
+        agentIds,
+        competitionParams,
+      );
+
+      // Group by competition to avoid duplicates while preserving sort order
+      // Track order of competitions as they appear in sorted results
       const agentCompetitions = new Map();
+      const competitionOrder: string[] = [];
+
       results.competitions.forEach((data) => {
         if (!data.competitions) return;
-        const comp =
-          agentCompetitions.get(data.competitions.id) || data.competitions;
+
+        const competitionId = data.competitions.id;
+        const comp = agentCompetitions.get(competitionId) || data.competitions;
         const agent = data.agents ? this.sanitizeAgent(data.agents) : undefined;
 
         if (!Array.isArray(comp.agents)) comp.agents = [];
@@ -902,7 +940,12 @@ export class AgentManager {
           comp.agents.push(agent);
         }
 
-        agentCompetitions.set(data.competitions.id, comp);
+        // Track order only on first encounter to preserve sort order
+        if (!agentCompetitions.has(competitionId)) {
+          competitionOrder.push(competitionId);
+        }
+
+        agentCompetitions.set(competitionId, comp);
       });
 
       // TODO: since rankings are not really done, need to make a bunch of db calls and get rankings
@@ -929,15 +972,38 @@ export class AgentManager {
       console.log(
         `[AgentManager] Found ${results.total} competitions containing agents owned by user ${userId}`,
       );
+
+      // Return competitions in the original sorted order
+      const sortedCompetitions = competitionOrder.map((id) =>
+        agentCompetitions.get(id),
+      );
+
+      console.log(
+        `[AgentManager] DEBUG - Competition order:`,
+        competitionOrder,
+      );
+      console.log(
+        `[AgentManager] DEBUG - Final competitions:`,
+        sortedCompetitions.map((c) => ({
+          name: c?.name,
+          createdAt: c?.createdAt,
+        })),
+      );
+
       return {
         ...results,
-        competitions: Array.from(agentCompetitions.values()),
+        competitions: sortedCompetitions,
       };
     } catch (error) {
       console.error(
         `[AgentManager] Error retrieving competitions for user ${userId} agents:`,
         error,
       );
+      // Re-throw ApiErrors (validation errors) to be handled by controller
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      // For other errors, return empty result
       return { competitions: [], total: 0 };
     }
   }
