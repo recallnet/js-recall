@@ -18,6 +18,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import BigNumberDisplay from "@/components/bignumber";
 import MirrorImage from "@/components/mirror-image";
+import { useCompetition } from "@/hooks";
 import { useUserAgents } from "@/hooks/useAgents";
 import { Agent } from "@/types";
 import { formatCompactNumber, toOrdinal } from "@/utils/format";
@@ -170,6 +171,7 @@ const AgentsSummary: React.FunctionComponent<{
   highest,
   className,
 }) => {
+  const { data: competition } = useCompetition(bestPlacement?.competitionId);
   const borderRules = "xs:border-l-1";
 
   return (
@@ -197,16 +199,21 @@ const AgentsSummary: React.FunctionComponent<{
             BEST PLACEMENT
           </span>
         )}
-        <div className="flex items-center gap-3 text-2xl font-semibold">
+        <div className="flex flex-col gap-3">
           {isLoading ? (
             <Skeleton className="w-30 mt-2 h-5" />
           ) : (
             <>
-              <Trophy className="text-yellow-500" />
-              <span className="text-white">
-                {bestPlacement?.rank
-                  ? `${toOrdinal(bestPlacement.rank)} of ${bestPlacement.totalAgents}`
-                  : "N/A"}
+              <div className="flex items-center gap-3">
+                <Trophy className="text-2xl text-yellow-500" />
+                <span className="text-2xl font-semibold text-white">
+                  {bestPlacement?.rank
+                    ? `${toOrdinal(bestPlacement.rank)} of ${bestPlacement.totalAgents} `
+                    : "N/A"}
+                </span>
+              </div>
+              <span className="text-secondary-foreground">
+                {competition?.name}
               </span>
             </>
           )}
