@@ -54,7 +54,7 @@ interface ButtonProps {
   asChild?: boolean;
   as?: "button" | "a";
   href?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 function Button({
