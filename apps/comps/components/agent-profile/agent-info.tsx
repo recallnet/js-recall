@@ -1,4 +1,4 @@
-import {useCopyToClipboard} from "@uidotdev/usehooks";
+import { useCopyToClipboard } from "@uidotdev/usehooks";
 import {
   CopyIcon,
   EyeIcon,
@@ -6,27 +6,27 @@ import {
   KeyIcon,
   WalletIcon,
 } from "lucide-react";
-import {useState} from "react";
+import { useState } from "react";
 
-import {Tooltip} from "@recallnet/ui2/components/tooltip";
+import { Tooltip } from "@recallnet/ui2/components/tooltip";
 
-import {useAgentApiKey} from "@/hooks";
-import {Agent} from "@/types";
+import { useAgentApiKey } from "@/hooks";
+import { Agent } from "@/types";
 
-import {Clipboard} from "../clipboard";
+import { Clipboard } from "../clipboard";
 
-export const AgentInfo = ({agent}: {agent: Agent}) => {
+export const AgentInfo = ({ agent }: { agent: Agent }) => {
   const [copiedText, copyToClipboard] = useCopyToClipboard();
   const [showWalletAddress, setShowWalletAddress] = useState(false);
-  const {data: apiKey, isLoading} = useAgentApiKey(agent.id);
+  const { data: apiKey, isLoading } = useAgentApiKey(agent.id);
 
   const handleCopy = async (text: string) => {
     copyToClipboard(text);
-    setTimeout(() => copyToClipboard(null), 1500);
+    setTimeout(() => copyToClipboard(""), 1500);
   };
 
   return (
-    <div className="flex w-full flex-col justify-center gap-3 text-secondary-foreground">
+    <div className="text-secondary-foreground flex w-full flex-col justify-center gap-3">
       <div className="flex w-full items-center gap-3">
         <Tooltip content="Agent Key">
           <KeyIcon />
