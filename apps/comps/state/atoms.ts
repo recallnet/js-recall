@@ -4,28 +4,24 @@ import { atomWithStorage } from "jotai/utils";
 import { Agent } from "@/types/agent";
 import { User } from "@/types/profile";
 
-export type AuthStatus =
-  | "unauthenticated" // No active session
-  | "authenticating" // Wallet signature has succeeded – waiting for profile
-  | "authenticated"; // Profile successfully fetched
+export type AuthStatus = "unauthenticated" | "authenticated";
 
 export type UserStorage = {
-  /**
-   * The authenticated user profile. It is
-   * `null` while we are either unauthenticated or still fetching the full
-   * profile (status === "authenticating").
-   */
   user: User | null;
-  /**
-   * Finite-state machine that represents the current auth state.
-   */
   status: AuthStatus;
 };
 
-export const userAtom = atomWithStorage<UserStorage>("user", {
-  user: null,
-  status: "unauthenticated",
-});
+export const userAtom = atomWithStorage<UserStorage>(
+  "user",
+  {
+    user: null,
+    status: "unauthenticated",
+  },
+  undefined,
+  {
+    getOnInit: true,
+  },
+);
 
 export const userAgentAtom = atom<Agent & { rank: number }>({
   id: "",

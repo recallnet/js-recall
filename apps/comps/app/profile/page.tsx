@@ -7,6 +7,7 @@ import { AuthGuard } from "@/components/auth-guard";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import ProfileSkeleton from "@/components/profile-skeleton";
 import UserAgentsSection from "@/components/user-agents";
+import UserCompetitionsSection from "@/components/user-competitions";
 import UserInfoSection from "@/components/user-info";
 import { useUserSession } from "@/hooks/useAuth";
 import { useUpdateProfile } from "@/hooks/useProfile";
@@ -31,10 +32,6 @@ export default function ProfilePage() {
     }
   };
 
-  if (!user) {
-    return <ProfileSkeleton />;
-  }
-
   return (
     <AuthGuard skeleton={<ProfileSkeleton />}>
       <BreadcrumbNav
@@ -43,7 +40,8 @@ export default function ProfilePage() {
           { label: "USER PROFILE" },
         ]}
       />
-      <UserInfoSection user={user} onSave={handleUpdateProfile} />
+      <UserInfoSection user={user!} onSave={handleUpdateProfile} />
+      <UserCompetitionsSection />
       <UserAgentsSection />
     </AuthGuard>
   );

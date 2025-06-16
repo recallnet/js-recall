@@ -37,7 +37,7 @@ export const useLogin = () => {
       return apiClient.login(data);
     },
     onSuccess: () => {
-      setUserAtom({ user: null, status: "authenticating" });
+      setUserAtom({ user: null, status: "authenticated" });
 
       // Trigger profile refetch
       queryClient.invalidateQueries({ queryKey: ["profile"] });
@@ -105,17 +105,12 @@ export const useUserSession = (): UserSessionState => {
 
   const {
     data: profileData,
-    isLoading: profileIsLoading,
     isSuccess: profileIsSuccess,
-    isPending: profileIsPending,
+    isLoading: profileIsLoading,
   } = useProfile();
 
   const isAuthenticated = authState.status === "authenticated";
   const isProfileUpdated = isAuthenticated && !!profileData?.name;
-  const isLoading =
-    authState.status === "authenticating" ||
-    profileIsLoading ||
-    profileIsPending;
 
   useEffect(() => {
     if (profileIsSuccess && profileData) {
@@ -124,9 +119,9 @@ export const useUserSession = (): UserSessionState => {
   }, [profileIsSuccess, profileData, setAuthState]);
 
   return {
-    user: profileData ?? authState.user,
+    user: authState.user,
     isAuthenticated,
-    isLoading,
     isProfileUpdated,
+    isLoading: profileIsLoading,
   };
 };

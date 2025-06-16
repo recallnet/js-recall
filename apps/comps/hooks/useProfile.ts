@@ -31,7 +31,7 @@ export const useProfile = () => {
         throw error;
       }
     },
-    enabled: status === "authenticating" || status === "authenticated",
+    enabled: status === "authenticated",
   });
 };
 

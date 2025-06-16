@@ -5,16 +5,15 @@ import {
   SortingState,
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ArrowUp, Search } from "lucide-react";
+import { format } from "date-fns";
+import { SquareArrowOutUpRight } from "lucide-react";
 import Link from "next/link";
 import React, { useMemo, useRef, useState } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
-import { Input } from "@recallnet/ui2/components/input";
 import {
   SortableTableHeader,
   Table,
@@ -25,172 +24,154 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import { AgentCompetition, PaginationResponse } from "@/types";
-import { formatPercentage } from "@/utils/format";
+import { PaginationResponse, UserCompetition } from "@/types";
 
-import { AgentAvatar } from "../agent-avatar";
-import { RankBadge } from "./rank-badge";
+import { RankBadge } from "./agents-table/rank-badge";
+import { CompetitionStatusBadge } from "./competition-status-badge";
+import { ParticipantsAvatars } from "./participants-avatars";
 
-export interface AgentsTableProps {
-  agents: AgentCompetition[];
-  totalVotes?: number;
-  onFilterChange: (filter: string) => void;
+export interface CompetitionsTableProps {
+  competitions: UserCompetition[];
   onSortChange: (sort: string) => void;
   onLoadMore: () => void;
   hasMore: boolean;
   pagination: PaginationResponse;
 }
 
-export const AgentsTable: React.FC<AgentsTableProps> = ({
-  agents,
-  totalVotes,
-  onFilterChange,
+export const CompetitionsTable: React.FC<CompetitionsTableProps> = ({
+  competitions,
   onSortChange,
   onLoadMore,
   hasMore,
-  pagination,
 }) => {
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
 
-  const columns = useMemo<ColumnDef<AgentCompetition>[]>(
+  const columns = useMemo<ColumnDef<UserCompetition>[]>(
     () => [
-      {
-        id: "rank",
-        accessorKey: "position",
-        header: () => "Rank",
-        cell: ({ row }) => <RankBadge position={row.original.position} />,
-        enableSorting: true,
-        size: 100,
-      },
       {
         id: "name",
         accessorKey: "name",
-        header: () => "Agent",
+        header: () => "Competition",
         cell: ({ row }) => (
-          <div className="flex min-w-0 items-center gap-3">
-            <AgentAvatar agent={row.original} size={32} />
-            <div className="flex min-w-0 flex-1 flex-col">
-              <Link href={`/agents/${row.original.id}`}>
-                <span className="font-semibold leading-tight">
-                  {row.original.name}
-                </span>
-              </Link>
-              <span className="text-secondary-foreground block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-xs">
-                {row.original.description}
-              </span>
-            </div>
+          <div className="flex flex-col">
+            <span className="text-secondary-foreground font-semibold leading-tight">
+              {row.original.name}
+            </span>
+            <span className="text-secondary-foreground/70 max-w-[200px] truncate text-xs">
+              {row.original.description}
+            </span>
           </div>
         ),
         enableSorting: true,
+        size: 200,
+      },
+      {
+        id: "status",
+        header: () => "Status",
+        cell: ({ row }) => (
+          <CompetitionStatusBadge status={row.original.status} />
+        ),
+        enableSorting: false,
+        size: 120,
         meta: {
-          className: "flex-1",
+          className: "content-center",
         },
       },
       {
-        id: "portfolio",
-        accessorKey: "portfolioValue",
-        header: () => "Portfolio",
+        id: "agent",
+        header: () => "Agent",
+        cell: ({ row }) => {
+          const agents = row.original.agents;
+          if (agents.length === 1 && agents[0]) {
+            const agent = agents[0];
+            return (
+              <div className="flex min-w-0 items-center gap-3">
+                <ParticipantsAvatars agents={[agent]} maxDisplay={1} />
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <Link href={`/agents/${agent.id}`}>
+                    <span className="text-secondary-foreground font-semibold leading-tight">
+                      {agent.name}
+                    </span>
+                  </Link>
+                  <span className="text-secondary-foreground/70 block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-xs">
+                    {agent.description}
+                  </span>
+                </div>
+              </div>
+            );
+          } else if (agents.length > 1) {
+            return <ParticipantsAvatars agents={agents} maxDisplay={3} />;
+          }
+        },
+        enableSorting: false,
+        meta: {
+          className: "flex-1 content-center",
+        },
+      },
+      {
+        id: "date",
+        header: () => "Date",
         cell: ({ row }) => (
-          <span className="text-secondary-foreground font-semibold">
-            {row.original.portfolioValue.toLocaleString("en-US", {
-              style: "currency",
-              currency: "USD",
-              maximumFractionDigits: 2,
-            })}
+          <span>
+            {row.original.startDate
+              ? format(new Date(row.original.startDate), "MM/dd")
+              : "TBA"}
           </span>
         ),
-        enableSorting: true,
-        size: 140,
+        enableSorting: false,
+        meta: {
+          className: "hidden lg:flex items-center",
+        },
       },
       {
-        id: "pnl",
-        accessorKey: "pnl",
-        header: () => "P&L",
+        id: "rank",
+        header: () => "Rank",
         cell: ({ row }) => {
-          const pnlColor =
-            row.original.pnlPercent >= 0 ? "text-green-400" : "text-red-400";
-          return (
-            <div className="flex flex-col">
-              <span className={`text-secondary-foreground font-semibold`}>
-                {row.original.pnlPercent >= 0 ? "+" : ""}
-                {row.original.pnl.toLocaleString("en-US", {
-                  style: "currency",
-                  currency: "USD",
-                  maximumFractionDigits: 2,
-                })}
-              </span>
-              <span className={`text-xs ${pnlColor}`}>
-                ({row.original.pnlPercent >= 0 ? "+" : ""}
-                {row.original.pnlPercent.toFixed(2)}%)
-              </span>
-            </div>
+          const agent = row.original.agents[0];
+          return agent ? (
+            <RankBadge position={agent.rank} />
+          ) : (
+            <span className="text-xs text-slate-400">-</span>
           );
         },
-        enableSorting: true,
-        size: 140,
-      },
-      {
-        id: "change24h",
-        accessorKey: "change24h",
-        header: () => "24h",
-        cell: ({ row }) => {
-          const percentColor =
-            row.original.change24hPercent >= 0
-              ? "text-green-500"
-              : "text-red-500";
-          return (
-            <div className="flex flex-col">
-              <span className={`text-xs ${percentColor}`}>
-                {row.original.change24hPercent >= 0 ? "+" : ""}
-                {row.original.change24hPercent.toFixed(2)}%
-              </span>
-            </div>
-          );
+        enableSorting: false,
+        size: 120,
+        meta: {
+          className: "content-center",
         },
-        enableSorting: true,
-        size: 100,
       },
       {
-        id: "votes",
-        header: () => "Votes",
+        id: "view",
+        header: () => "View",
         cell: ({ row }) => (
-          <div className="flex flex-col items-end">
-            <span className="text-secondary-foreground font-semibold">
-              {row.original.voteCount}
-            </span>
-            <span className="text-xs text-slate-400">
-              ({formatPercentage(row.original.voteCount, totalVotes ?? 0)})
-            </span>
+          <div className="flex w-full justify-center">
+            <Link
+              href={`/competitions/${row.original.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <SquareArrowOutUpRight
+                className="text-secondary-foreground cursor-pointer hover:text-white"
+                size={20}
+              />
+            </Link>
           </div>
         ),
         enableSorting: false,
-        size: 80,
-      },
-      {
-        id: "vote",
-        header: () => "Vote",
-        cell: () => (
-          <div className="flex w-full justify-center">
-            <ArrowUp
-              className="text-secondary-foreground cursor-pointer hover:text-white"
-              size={20}
-            />
-          </div>
-        ),
-        size: 70,
+        meta: {
+          className: "content-center justify-center",
+        },
       },
     ],
-    [totalVotes],
+    [],
   );
 
   const table = useReactTable({
-    data: agents,
+    data: competitions,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     columnResizeMode: "onChange",
-    manualFiltering: true,
     manualSorting: true,
     enableSorting: true,
     state: {
@@ -200,42 +181,29 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       const newSorting =
         typeof updater === "function" ? updater(sorting) : updater;
       setSorting(newSorting);
-
-      // Convert sorting state to server-side sort format
+      // Only the first column is sortable
       const sortString = newSorting
+        .filter((sort) => sort.id === "name")
         .map((sort) => `${sort.desc ? "-" : ""}${sort.id}`)
         .join(",");
-
       onSortChange(sortString);
     },
   });
 
-  // Virtualizer setup: show 10 rows at a time, each 64px tall
+  // Virtualizer setup: show 10 rows at a time, each 68px tall
   const rowVirtualizer = useVirtualizer({
     count: table.getRowModel().rows.length,
     getScrollElement: () => tableContainerRef.current,
-    estimateSize: () => 68, // row height
+    estimateSize: () => 68,
     overscan: 5,
   });
 
   return (
-    <div className="mt-12 w-full">
-      <h2 className="mb-5 text-2xl font-bold">
-        Competition Leaderboard ({pagination.total})
-      </h2>
-      <div className="mb-5 flex w-full items-center gap-2 rounded-2xl border px-3 py-2 md:w-1/2">
-        <Search className="text-secondary-foreground mr-1 h-5" />
-        <Input
-          className="border-none bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-          placeholder="Search for an agent..."
-          onChange={(e) => onFilterChange(e.target.value)}
-          aria-label="Search for an agent"
-        />
-      </div>
+    <div className="w-full">
       <div
         ref={tableContainerRef}
         style={{
-          maxHeight: "680px", // 10 rows × 68px height
+          maxHeight: "680px",
           overflowY: "auto",
           position: "relative",
         }}
@@ -252,10 +220,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                     <SortableTableHeader
                       key={header.id}
                       colSpan={header.colSpan}
-                      isSorted={header.column.getIsSorted()}
                       style={{ width: header.getSize() }}
-                      className={header.column.columnDef.meta?.className}
                       onClick={header.column.getToggleSortingHandler()}
+                      isSorted={header.column.getIsSorted()}
+                      className={header.column.columnDef.meta?.className}
                     >
                       {header.isPlaceholder
                         ? null
@@ -309,8 +277,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
-                      className={`flex items-center ${cell.column.columnDef.meta?.className ?? ""}`}
                       style={{ width: cell.column.getSize() }}
+                      className={cell.column.columnDef.meta?.className}
                     >
                       {flexRender(
                         cell.column.columnDef.cell,

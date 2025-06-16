@@ -313,7 +313,7 @@ export const AgentCard: React.FunctionComponent<AgentCardProps> = ({
         className="text-secondary-foreground w-full truncate text-center text-2xl font-bold"
         title={agent.name}
       >
-        {agent.name}
+        <Link href={`/agents/${agent.id}`}>{agent.name}</Link>
       </span>
       <div className="flex justify-center gap-3">
         <div className="text-secondary-foreground text-nowrap rounded border p-2">
