@@ -1,6 +1,6 @@
-import {ChevronLeft, ChevronRight} from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
-import {Button} from "@recallnet/ui2/components/button";
+import { Button } from "@recallnet/ui2/components/button";
 import {
   SortState,
   SortableTableHeader,
@@ -11,10 +11,10 @@ import {
   TableHeader,
   TableRow,
 } from "@recallnet/ui2/components/table";
-import {cn} from "@recallnet/ui2/lib/utils";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import {Hexagon} from "@/components/hexagon";
-import {Competition, CompetitionStatus} from "@/types";
+import { Hexagon } from "@/components/hexagon";
+import { Competition, CompetitionStatus } from "@/types";
 
 export function CompetitionTable({
   competitions,
@@ -77,21 +77,22 @@ export function CompetitionTable({
                 const compStatus =
                   comp.status === CompetitionStatus.Active
                     ? {
-                      text: "On-going",
-                      style: "border-green-500 text-green-500",
-                    }
+                        text: "On-going",
+                        style: "border-green-500 text-green-500",
+                      }
                     : comp.status === CompetitionStatus.Pending
                       ? {
-                        text: "Upcoming",
-                        style: "border-blue-500 text-blue-500",
-                      }
+                          text: "Upcoming",
+                          style: "border-blue-500 text-blue-500",
+                        }
                       : {
-                        text: "Complete",
-                        style: "border-gray-500 text-secondary-foreground",
-                      };
+                          text: "Complete",
+                          style: "border-gray-500 text-secondary-foreground",
+                        };
 
                 return (
-                  <TableRow key={i}
+                  <TableRow
+                    key={i}
                     className={cn(
                       "grid w-full",
                       canClaim ? "grid-cols-8" : "grid-cols-7",
