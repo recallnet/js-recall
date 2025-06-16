@@ -1,4 +1,4 @@
-import { desc, count as drizzleCount, eq } from "drizzle-orm";
+import { and, desc, count as drizzleCount, eq } from "drizzle-orm";
 
 import { db } from "@/database/db.js";
 import { trades } from "@/database/schema/trading/defs.js";
@@ -114,6 +114,37 @@ export async function countAgentTrades(agentId: string) {
     return result?.count ?? 0;
   } catch (error) {
     console.error("[TradeRepository] Error in countAgentTrades:", error);
+    throw error;
+  }
+}
+
+/**
+ * Count trades for an agent in a specific competition
+ * @param agentId Agent ID
+ * @param competitionId Competition ID
+ * @returns Number of trades for the agent in the competition
+ */
+export async function countAgentTradesInCompetition(
+  agentId: string,
+  competitionId: string,
+): Promise<number> {
+  try {
+    const [result] = await db
+      .select({ count: drizzleCount() })
+      .from(trades)
+      .where(
+        and(
+          eq(trades.agentId, agentId),
+          eq(trades.competitionId, competitionId),
+        ),
+      );
+
+    return result?.count ?? 0;
+  } catch (error) {
+    console.error(
+      "[TradeRepository] Error in countAgentTradesInCompetition:",
+      error,
+    );
     throw error;
   }
 }

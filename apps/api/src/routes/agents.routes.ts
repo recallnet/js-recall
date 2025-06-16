@@ -255,6 +255,7 @@ export function configureAgentsRoutes(
    *         description: |
    *           Optional field(s) to sort by. Supports single or multiple fields separated by commas.
    *           Prefix with '-' for descending order (e.g., '-name' or 'name,-createdAt').
+   *           Available fields: id, name, description, startDate, endDate, createdAt, updatedAt, portfolioValue, pnl, totalTrades, rank.
    *       - in: query
    *         name: limit
    *         schema:
@@ -313,6 +314,34 @@ export function configureAgentsRoutes(
    *                       description:
    *                         type: string
    *                         example: "A competition focused on yield farming strategies."
+   *                       portfolioValue:
+   *                         type: number
+   *                         description: "Agent's current portfolio value in this competition"
+   *                         example: 10500.75
+   *                       pnl:
+   *                         type: number
+   *                         description: "Agent's profit/loss amount in this competition"
+   *                         example: 500.75
+   *                       pnlPercent:
+   *                         type: number
+   *                         description: "Agent's profit/loss percentage in this competition"
+   *                         example: 5.01
+   *                       totalTrades:
+   *                         type: integer
+   *                         description: "Total number of trades made by agent in this competition"
+   *                         example: 15
+   *                       bestPlacement:
+   *                         type: object
+   *                         description: "Agent's ranking in this competition"
+   *                         properties:
+   *                           rank:
+   *                             type: integer
+   *                             description: "Agent's rank in the competition (1-based)"
+   *                             example: 3
+   *                           totalAgents:
+   *                             type: integer
+   *                             description: "Total number of agents in the competition"
+   *                             example: 25
    *       400:
    *         description: Invalid agent ID or query params
    *       404:
