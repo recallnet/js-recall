@@ -978,18 +978,6 @@ export class AgentManager {
         agentCompetitions.get(id),
       );
 
-      console.log(
-        `[AgentManager] DEBUG - Competition order:`,
-        competitionOrder,
-      );
-      console.log(
-        `[AgentManager] DEBUG - Final competitions:`,
-        sortedCompetitions.map((c) => ({
-          name: c?.name,
-          createdAt: c?.createdAt,
-        })),
-      );
-
       return {
         ...results,
         competitions: sortedCompetitions,
