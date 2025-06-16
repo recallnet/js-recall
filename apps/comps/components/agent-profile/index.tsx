@@ -164,7 +164,7 @@ export default function AgentProfile({
             </span>
             <span className="text-secondary-foreground w-full text-left">
               {agent.stats?.bestPlacement
-                ? `🥇 ${agent.stats.bestPlacement.position} of ${agent.stats.bestPlacement.participants}`
+                ? `🥇 ${agent.stats.bestPlacement.rank} of ${agent.stats.bestPlacement.totalAgents}`
                 : "No completed yet"}
             </span>
           </div>

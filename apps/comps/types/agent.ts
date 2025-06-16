@@ -23,7 +23,12 @@ export interface Agent {
   description?: string;
   status: string;
   stats: {
-    bestPlacement?: { position: string; participants: string };
+    bestPlacement?: {
+      competitionId: string;
+      rank: number;
+      score: number;
+      totalAgents: number;
+    };
 
     totalVotes: number;
     totalTrades: number;
