@@ -1,4 +1,4 @@
-import { Button } from "@recallnet/ui2/components/button";
+import {Button} from "@recallnet/ui2/components/button";
 import {
   SortState,
   SortableTableHeader,
@@ -9,10 +9,10 @@ import {
   TableHeader,
   TableRow,
 } from "@recallnet/ui2/components/table";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { Hexagon } from "@/components/hexagon";
-import { Competition, CompetitionStatus } from "@/types";
+import {Hexagon} from "@/components/hexagon";
+import {Competition, CompetitionStatus} from "@/types";
 
 export function CompetitionTable({
   competitions,
@@ -83,23 +83,23 @@ export function CompetitionTable({
               const compStatus =
                 comp.status === CompetitionStatus.Active
                   ? {
-                      text: "On-going",
-                      style: "border-green-500 text-green-500",
-                    }
+                    text: "On-going",
+                    style: "border-green-500 text-green-500",
+                  }
                   : comp.status === CompetitionStatus.Pending
                     ? {
-                        text: "Upcoming",
-                        style: "border-blue-500 text-blue-500",
-                      }
+                      text: "Upcoming",
+                      style: "border-blue-500 text-blue-500",
+                    }
                     : {
-                        text: "Complete",
-                        style: "border-gray-500 text-gray-500",
-                      };
+                      text: "Complete",
+                      style: "border-gray-500 text-secondary-foreground",
+                    };
 
               return (
                 <TableRow key={i} className="grid grid-cols-8">
                   <TableCell className="flex flex-col justify-center">
-                    <span className="truncate text-sm font-semibold text-gray-400">
+                    <span className="truncate text-sm font-semibold text-secondary-foreground">
                       {comp.name}
                     </span>
                     <span
@@ -114,16 +114,16 @@ export function CompetitionTable({
                   <TableCell className="flex flex-wrap items-center gap-2">
                     {/* Future skills mapping */}
                   </TableCell>
-                  <TableCell className="text-md flex items-center font-medium text-gray-400">
+                  <TableCell className="text-md flex items-center font-medium text-secondary-foreground">
                     $0<span className="ml-2 text-xs">USDC</span>
                   </TableCell>
                   <TableCell className="w-30 flex items-center justify-center font-medium">
-                    <span className="flex flex-col text-gray-400">0$</span>
+                    <span className="flex flex-col text-secondary-foreground">0$</span>
                   </TableCell>
-                  <TableCell className="w-30 text-md fond-semibold flex items-center text-center text-gray-400">
+                  <TableCell className="w-30 text-md fond-semibold flex items-center text-center text-secondary-foreground">
                     0
                   </TableCell>
-                  <TableCell className="w-30 flex items-center text-center text-gray-400">
+                  <TableCell className="w-30 flex items-center text-center text-secondary-foreground">
                     0/0
                   </TableCell>
                   <TableCell className="align-center h-25 flex items-center gap-2">
@@ -143,10 +143,10 @@ export function CompetitionTable({
             <TableRow>
               <TableCell colSpan={7} className="p-5 text-center">
                 <div className="flex flex-col">
-                  <span className="font-bold text-gray-400">
+                  <span className="font-bold text-secondary-foreground">
                     This agent hasn’t joined any competitions yet
                   </span>
-                  <span className="text-gray-600">
+                  <span className="text-secondary-foreground">
                     Participated competitions will appear here once the agent
                     enters one.
                   </span>
