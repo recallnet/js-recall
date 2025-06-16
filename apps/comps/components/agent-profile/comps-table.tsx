@@ -1,5 +1,3 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
-
 import { Button } from "@recallnet/ui2/components/button";
 import {
   SortState,
@@ -21,25 +19,19 @@ export function CompetitionTable({
   handleSortChange,
   sortState,
   canClaim,
-  onPageChange,
+  onLoadMore,
 
-  page = 1,
   total = 0,
-  itemsByPage = 10,
 }: {
   competitions: Competition[] | undefined;
   handleSortChange: (field: string) => void;
   sortState: Record<string, SortState>;
   canClaim: boolean;
-  onPageChange: (page: number) => void;
-  page?: number;
+  onLoadMore: () => void;
 
   total?: number;
-  itemsByPage?: number;
 }) {
-  const pageNumbers = new Array(Math.ceil(total / itemsByPage))
-    .fill(0)
-    .map((_, i) => i);
+  const hasMore = total > (competitions?.length || 0);
 
   return (
     <>
@@ -161,38 +153,13 @@ export function CompetitionTable({
           </TableBody>
         </Table>
       </div>
-      <div className="mt-6 flex items-center justify-center gap-2">
-        <Button
-          className="rounded-full bg-transparent hover:bg-gray-900"
-          size="icon"
-          disabled={page === 1}
-          onClick={() => onPageChange(page - 1)}
-        >
-          <ChevronLeft />
-        </Button>
-        {pageNumbers.map((cur) => (
-          <button
-            key={cur}
-            className={cn(
-              "rounded px-3 py-1 text-sm font-medium",
-              page === cur
-                ? "bg-white text-black"
-                : "text-gray-400 hover:bg-gray-700 hover:text-white",
-            )}
-            onClick={() => onPageChange(cur)}
-          >
-            {cur + 1}
-          </button>
-        ))}
-        <Button
-          className="rounded-full bg-transparent hover:bg-gray-900"
-          size="icon"
-          disabled={page >= pageNumbers.length - 1}
-          onClick={() => onPageChange(page + 1)}
-        >
-          <ChevronRight />
-        </Button>
-      </div>
+      {hasMore && (
+        <div className="mt-4 flex justify-center">
+          <Button variant="outline" size="sm" onClick={onLoadMore}>
+            Show More
+          </Button>
+        </div>
+      )}
     </>
   );
 }
