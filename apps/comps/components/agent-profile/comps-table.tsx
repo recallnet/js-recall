@@ -1,6 +1,6 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import {ChevronLeft, ChevronRight} from "lucide-react";
 
-import { Button } from "@recallnet/ui2/components/button";
+import {Button} from "@recallnet/ui2/components/button";
 import {
   SortState,
   SortableTableHeader,
@@ -11,10 +11,10 @@ import {
   TableHeader,
   TableRow,
 } from "@recallnet/ui2/components/table";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { Hexagon } from "@/components/hexagon";
-import { Competition, CompetitionStatus } from "@/types";
+import {Hexagon} from "@/components/hexagon";
+import {Competition, CompetitionStatus} from "@/types";
 
 export function CompetitionTable({
   competitions,
@@ -58,37 +58,14 @@ export function CompetitionTable({
               >
                 Competition
               </SortableTableHeader>
-              <SortableTableHeader
-                onToggleSort={() => handleSortChange("skills")}
-                sortState={sortState["skills"]}
-              >
-                Skills
-              </SortableTableHeader>
-              <SortableTableHeader
-                onToggleSort={() => handleSortChange("portfolio")}
-                sortState={sortState["portfolio"]}
-              >
-                Portfolio
-              </SortableTableHeader>
-              <SortableTableHeader
-                onToggleSort={() => handleSortChange("pnl")}
-                sortState={sortState["pnl"]}
-                className="w-30 flex justify-end"
-              >
-                P&L
-              </SortableTableHeader>
-              <SortableTableHeader
-                onToggleSort={() => handleSortChange("trades")}
-                sortState={sortState["trades"]}
-              >
-                Trades
-              </SortableTableHeader>
-              <SortableTableHeader
-                onToggleSort={() => handleSortChange("placement")}
-                sortState={sortState["placement"]}
-              >
-                Placement
-              </SortableTableHeader>
+              {
+                //some fields have sorted removed until they are supported by the api
+              }
+              <TableHead>Skills</TableHead>
+              <TableHead>Portfolio</TableHead>
+              <TableHead className="w-30 flex justify-end">P&L</TableHead>
+              <TableHead>Trades</TableHead>
+              <TableHead>Placement</TableHead>
               <TableHead>Trophies</TableHead>
               {canClaim && <TableHead className="text-left">Reward</TableHead>}
             </TableRow>
@@ -100,21 +77,26 @@ export function CompetitionTable({
                 const compStatus =
                   comp.status === CompetitionStatus.Active
                     ? {
-                        text: "On-going",
-                        style: "border-green-500 text-green-500",
-                      }
+                      text: "On-going",
+                      style: "border-green-500 text-green-500",
+                    }
                     : comp.status === CompetitionStatus.Pending
                       ? {
-                          text: "Upcoming",
-                          style: "border-blue-500 text-blue-500",
-                        }
+                        text: "Upcoming",
+                        style: "border-blue-500 text-blue-500",
+                      }
                       : {
-                          text: "Complete",
-                          style: "border-gray-500 text-secondary-foreground",
-                        };
+                        text: "Complete",
+                        style: "border-gray-500 text-secondary-foreground",
+                      };
 
                 return (
-                  <TableRow key={i} className="grid grid-cols-8">
+                  <TableRow key={i}
+                    className={cn(
+                      "grid w-full",
+                      canClaim ? "grid-cols-8" : "grid-cols-7",
+                    )}
+                  >
                     <TableCell className="flex flex-col justify-center">
                       <span className="text-secondary-foreground truncate text-sm font-semibold">
                         {comp.name}
