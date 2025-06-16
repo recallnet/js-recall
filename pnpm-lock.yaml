@@ -1290,6 +1290,9 @@ importers:
       '@types/react-dom':
         specifier: ^19
         version: 19.1.5(@types/react@19.1.4)
+      eslint:
+        specifier: ^9.19.0
+        version: 9.27.0(jiti@2.4.2)
       tailwindcss:
         specifier: ^4.0.8
         version: 4.1.7

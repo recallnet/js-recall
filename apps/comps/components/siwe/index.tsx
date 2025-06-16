@@ -1,10 +1,10 @@
 "use client";
 
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { LogOut } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import React from "react";
-import { FaArrowRightFromBracket } from "react-icons/fa6";
 
 import { Button } from "@recallnet/ui2/components/button";
 import {
@@ -68,7 +68,7 @@ export const SIWEButton: React.FunctionComponent<
               onClick={handleLogout}
               className="cursor-pointer p-3 hover:bg-gray-800"
             >
-              <FaArrowRightFromBracket className="h-10 w-10 text-gray-600" />
+              <LogOut className="h-10 w-10 text-gray-600" />
               Log-Out
             </DropdownMenuItem>
           </DropdownMenuContent>

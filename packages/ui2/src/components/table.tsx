@@ -1,4 +1,4 @@
-import { ArrowDownUp } from "lucide-react";
+import { ArrowDown, ArrowDownUp, ArrowUp } from "lucide-react";
 import * as React from "react";
 
 import { cn } from "@recallnet/ui2/lib/utils";
@@ -14,19 +14,24 @@ export type TableCaptionProps = React.JSX.IntrinsicElements["caption"];
 
 function Table({ className, ref, ...props }: TableProps) {
   return (
-    <div className="w-full overflow-x-scroll rounded-xl border">
-      <table
-        ref={ref}
-        className={cn("w-full caption-bottom text-sm", className)}
-        {...props}
-      />
-    </div>
+    <table
+      ref={ref}
+      className={cn(
+        "w-full caption-bottom border-separate border-spacing-0 overflow-hidden rounded-xl border text-sm",
+        className,
+      )}
+      {...props}
+    />
   );
 }
 
 function TableHeader({ className, ref, ...props }: TableHeaderProps) {
   return (
-    <thead ref={ref} className={cn("[&_tr]:border-0", className)} {...props} />
+    <thead
+      ref={ref}
+      className={cn("bg-card [&_tr]:border-0", className)}
+      {...props}
+    />
   );
 }
 
@@ -67,9 +72,7 @@ function TableHead({ className, ref, ...props }: TableHeadProps) {
 }
 
 function TableCell({ className, ref, ...props }: TableCellProps) {
-  return (
-    <td ref={ref} className={cn("p-4 align-middle", className)} {...props} />
-  );
+  return <td ref={ref} className={cn("p-4", className)} {...props} />;
 }
 
 function TableCaption({ className, ref, ...props }: TableCaptionProps) {
@@ -82,16 +85,39 @@ function TableCaption({ className, ref, ...props }: TableCaptionProps) {
   );
 }
 
-function SortableTableHeader({ className, ref, ...props }: TableHeadProps) {
+function SortableTableHeader({
+  className,
+  ref,
+  isSorted = false,
+  ...props
+}: TableHeadProps & { isSorted?: boolean | "asc" | "desc" }) {
   return (
     <TableHead
       ref={ref}
-      className={cn("hover:bg-accent/50 cursor-pointer text-left", className)}
+      className={cn("hover:bg-card/70 cursor-pointer text-left", className)}
       {...props}
     >
       <div className="flex items-center gap-1">
         <span className="font-semibold">{props.children}</span>
-        <ArrowDownUp className="text-secondary-foreground" size={20} />
+        {isSorted === false ? (
+          <ArrowDownUp
+            className="text-secondary-foreground"
+            size={20}
+            strokeWidth={1}
+          />
+        ) : isSorted === "asc" ? (
+          <ArrowUp
+            className="text-secondary-foreground"
+            size={20}
+            strokeWidth={2}
+          />
+        ) : (
+          <ArrowDown
+            className="text-secondary-foreground"
+            size={20}
+            strokeWidth={2}
+          />
+        )}
       </div>
     </TableHead>
   );

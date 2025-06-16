@@ -6,10 +6,12 @@ export function Identicon({
   address,
   className,
   size = 40,
+  title,
 }: {
   address: string;
   className?: string;
   size?: number;
+  title?: string;
 }) {
   const svg = toSvg(address, size, {
     padding: 0.9,
@@ -28,6 +30,7 @@ export function Identicon({
     <div
       dangerouslySetInnerHTML={{ __html: svg }}
       className={cn("h-10 w-10 rounded-full bg-gray-700", className)}
+      title={title}
     />
   );
 }

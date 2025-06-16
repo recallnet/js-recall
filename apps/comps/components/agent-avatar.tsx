@@ -35,14 +35,24 @@ export function AgentAvatar({
 
   if (agent.imageUrl) {
     return (
-      <Image
-        src={agent.imageUrl}
-        alt={agent.name}
-        width={size}
-        height={size}
-        className={cn("rounded-full object-cover", commonClasses)}
-        title={agent.name}
-      />
+      <div
+        className={cn("relative", commonClasses)}
+        style={{
+          width: size,
+          height: size,
+          minWidth: size,
+          minHeight: size,
+        }}
+      >
+        <Image
+          src={agent.imageUrl}
+          alt={agent.name}
+          fill
+          sizes={`${size}px`}
+          className="rounded-full object-cover"
+          title={agent.name}
+        />
+      </div>
     );
   }
 
@@ -51,6 +61,7 @@ export function AgentAvatar({
       address={agent.id}
       className={cn("", commonClasses)}
       size={size}
+      title={agent.name}
     />
   );
 

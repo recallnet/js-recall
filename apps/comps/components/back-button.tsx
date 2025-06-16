@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeftIcon } from "@radix-ui/react-icons";
+import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React from "react";
 
@@ -15,7 +15,7 @@ export const BackButton: React.FC<BackButtonProps> = ({ className }) => {
 
   return (
     <IconButton
-      Icon={ArrowLeftIcon}
+      Icon={ArrowLeft}
       aria-label="Back"
       className={`text-secondary-foreground ${className || ""}`}
       onClick={() => router.back()}
