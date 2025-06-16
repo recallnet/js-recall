@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowDownUp, ArrowUp } from "lucide-react";
+import { ArrowDownUp } from "lucide-react";
 import * as React from "react";
 
 import { cn } from "@recallnet/ui2/lib/utils";
