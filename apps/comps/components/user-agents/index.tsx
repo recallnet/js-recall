@@ -4,8 +4,7 @@ import { Award, Trophy } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React from "react";
-import { FaAward, FaTrophy } from "react-icons/fa";
+import { useMemo } from "react";
 
 import { displayAddress } from "@recallnet/address-utils/display";
 import { Button } from "@recallnet/ui2/components/button";
@@ -18,16 +17,17 @@ import {
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import { cn } from "@recallnet/ui2/lib/utils";
 
+import BigNumberDisplay from "@/components/bignumber";
+import MirrorImage from "@/components/mirror-image";
+import { useCompetition } from "@/hooks";
 import { useUserAgents } from "@/hooks/useAgents";
 import { Agent } from "@/types";
+import { formatCompactNumber, toOrdinal } from "@/utils/format";
 
-import BigNumberDisplay from "../bignumber";
-import MirrorImage from "../mirror-image";
+import { VerificationBadge } from "../verification-badge";
 
 export default function UserAgentsSection() {
   const { data: agentsData, isLoading } = useUserAgents();
-  const agents = isLoading || !agentsData?.agents ? [] : agentsData.agents;
-  const nAgents = agents.length;
   let agentList = <NoAgents />;
 
   const agents = useMemo(
@@ -163,9 +163,17 @@ const AgentsSummary: React.FunctionComponent<{
   isLoading?: boolean;
   bestPlacement?: NonNullable<Agent["stats"]>["bestPlacement"];
   completedComps: number;
-  highest: number;
-}> = ({ best, nAgents = 0, isLoading, completedComps, highest, className }) => {
-  const borderRules = "sm:border-l-1";
+  highest: number | null;
+}> = ({
+  bestPlacement,
+  nAgents = 0,
+  isLoading,
+  completedComps,
+  highest,
+  className,
+}) => {
+  const { data: competition } = useCompetition(bestPlacement?.competitionId);
+  const borderRules = "xs:border-l-1";
 
   return (
     <div
@@ -275,7 +283,7 @@ export const AgentCard: React.FunctionComponent<AgentCardProps> = ({
   agent,
   isLoading,
 }) => {
-  const size = "min-w-70 max-w-80 md:max-w-70 h-95";
+  const size = "w-70 h-95";
   const router = useRouter();
 
   if (isLoading || typeof agent === "number")
@@ -288,7 +296,7 @@ export const AgentCard: React.FunctionComponent<AgentCardProps> = ({
       onClick={() => router.push(`/agents/${agent.id}`)}
       className={cn(
         className,
-        `${size} flex cursor-pointer flex-col items-center justify-center gap-2 bg-gray-800 px-5`,
+        `${size} flex cursor-pointer flex-col items-center justify-center gap-2 px-5`,
       )}
     >
       <span className="text-secondary-foreground font-mono">
