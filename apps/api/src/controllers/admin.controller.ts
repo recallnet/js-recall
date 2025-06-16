@@ -13,6 +13,7 @@ import {
   AgentSearchParams,
   COMPETITION_STATUS,
   CROSS_CHAIN_TRADING_TYPE,
+  UserSearchParams,
 } from "@/types/index.js";
 
 import { ensureCompetitionUpdate, ensureUuid } from "./request-helpers.js";
