@@ -5,7 +5,6 @@ import { Menu } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { FaBars } from "react-icons/fa6";
 
 import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
 import { Button } from "@recallnet/ui2/components/button";
