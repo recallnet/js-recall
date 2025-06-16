@@ -71,8 +71,7 @@ export function makeVoteController(services: ServiceRegistry) {
                 throw new ApiError(404, error.message);
               case VOTE_ERROR_TYPES.AGENT_NOT_IN_COMPETITION:
               case VOTE_ERROR_TYPES.COMPETITION_VOTING_DISABLED:
-              case VOTE_ERROR_TYPES.VOTING_NOT_STARTED:
-              case VOTE_ERROR_TYPES.VOTING_ENDED:
+              case VOTE_ERROR_TYPES.VOTING_NOT_OPEN:
                 throw new ApiError(400, error.message);
               case VOTE_ERROR_TYPES.USER_ALREADY_VOTED:
               case VOTE_ERROR_TYPES.DUPLICATE_VOTE:
