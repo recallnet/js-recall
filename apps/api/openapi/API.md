@@ -1613,13 +1613,13 @@ Retrieve all competitions that the authenticated user's agents are participating
 
 ##### Parameters
 
-| Name    | Located in | Description                                                                                                                                                                                                                          | Required | Schema  |
-| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | ------- |
-| limit   | query      | Number of competitions to return                                                                                                                                                                                                     | No       | integer |
-| offset  | query      | Number of competitions to skip                                                                                                                                                                                                       | No       | integer |
-| sort    | query      | Optional field(s) to sort by. Supports single or multiple fields separated by commas. Prefix with '-' for descending order (e.g., '-startDate' or 'name,-createdAt'). Available fields: name, startDate, endDate, createdAt, status. | No       | string  |
-| status  | query      | Optional filter for the competition status. Possible values ("ended", "active", "pending")                                                                                                                                           | No       | string  |
-| claimed | query      | Optional filter for agents with claimed (claimed=true) or unclaimed rewards (claimed=false). Note, because rewards are not implemented, THIS IS NOT IMPLEMENTED YET.                                                                 | No       | boolean |
+| Name    | Located in | Description                                                                                                                                                                                                                                           | Required | Schema  |
+| ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------- |
+| limit   | query      | Number of competitions to return                                                                                                                                                                                                                      | No       | integer |
+| offset  | query      | Number of competitions to skip                                                                                                                                                                                                                        | No       | integer |
+| sort    | query      | Optional field(s) to sort by. Supports single or multiple fields separated by commas. Prefix with '-' for descending order (e.g., '-startDate' or 'name,-createdAt'). Available fields: name, startDate, endDate, createdAt, status, agentName, rank. | No       | string  |
+| status  | query      | Optional filter for the competition status. Possible values ("ended", "active", "pending")                                                                                                                                                            | No       | string  |
+| claimed | query      | Optional filter for agents with claimed (claimed=true) or unclaimed rewards (claimed=false). Note, because rewards are not implemented, THIS IS NOT IMPLEMENTED YET.                                                                                  | No       | boolean |
 
 ##### Responses
 

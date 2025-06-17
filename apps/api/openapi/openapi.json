@@ -6542,7 +6542,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Optional field(s) to sort by. Supports single or multiple fields separated by commas.\nPrefix with '-' for descending order (e.g., '-startDate' or 'name,-createdAt').\nAvailable fields: name, startDate, endDate, createdAt, status.\n"
+            "description": "Optional field(s) to sort by. Supports single or multiple fields separated by commas.\nPrefix with '-' for descending order (e.g., '-startDate' or 'name,-createdAt').\nAvailable fields: name, startDate, endDate, createdAt, status, agentName, rank.\n"
           },
           {
             "in": "query",
