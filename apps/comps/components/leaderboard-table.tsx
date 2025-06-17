@@ -24,7 +24,7 @@ export function LeaderboardTable({
   handleSortChange,
   sortState,
   onLoadMore,
-  total = 0,
+  hasMore = false,
 }: {
   agents: LeaderboardAgent[];
   loaded?: boolean;
@@ -32,10 +32,8 @@ export function LeaderboardTable({
   handleSortChange: (field: string) => void;
   sortState: Record<string, SortState>;
   onLoadMore: () => void;
-  total?: number;
+  hasMore?: boolean;
 }) {
-  const hasMore = total > (agents?.length || 0);
-
   return (
     <>
       <Table className="w-full">

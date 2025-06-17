@@ -16,9 +16,10 @@ export function LeaderboardSection() {
   const [sortState, setSorted] = React.useState(
     {} as Record<string, SortState>,
   );
+
   const sortString = React.useMemo(() => {
     return Object.entries(sortState).reduce((acc, [key, sort]) => {
-      if (sort !== "none") return acc + `,${sort == "asc" ? "" : "-"}${key}`;
+      if (sort !== "none") return acc + `${sort == "asc" ? "" : "-"}${key}`;
       return acc;
     }, "");
   }, [sortState]);
@@ -34,7 +35,7 @@ export function LeaderboardSection() {
       const cur = sort[field];
       const nxt =
         !cur || cur == "none" ? "asc" : cur == "asc" ? "desc" : "none";
-      return { ...sort, [field]: nxt };
+      return { [field]: nxt };
     });
   }, []);
 
@@ -96,7 +97,7 @@ export function LeaderboardSection() {
           sortState={sortState}
           agents={leaderboard?.agents || []}
           onLoadMore={() => setOffset((prev: number) => prev + limit)}
-          total={leaderboard?.pagination.total}
+          hasMore={leaderboard?.pagination.hasMore}
           loaded
         />
       )}
