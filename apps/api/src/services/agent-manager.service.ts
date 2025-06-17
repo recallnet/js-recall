@@ -954,13 +954,13 @@ export class AgentManager {
         ...validatedParams, // Use validated pagination (sort, limit, offset)
       };
 
-      // Repository handles data access with validated parameters
+      // Use optimized repository method that handles both database and computed sorting efficiently
       const results = await findUserAgentCompetitions(
         agentIds,
         competitionParams,
       );
 
-      // Handle computed field sorting if needed
+      // Handle computed field sorting if needed (optimized version still needs service-layer sorting for computed fields)
       if (results.isComputedSort && validatedParams.sort) {
         // Group competitions first, then sort them
         const agentCompetitions = new Map();
@@ -990,15 +990,27 @@ export class AgentManager {
         // Get all unique competitions for sorting
         const allCompetitions = Array.from(agentCompetitions.values());
 
-        // Add rankings to competitions for sorting using the existing getAgentCompetitionRanking function
+        // Add rankings to competitions for sorting - optimized version includes leaderboard data
         await Promise.all(
           allCompetitions.map(async (comp) => {
             for (const agent of comp.agents) {
-              const rankResult = await getAgentCompetitionRanking(
-                agent.id,
-                comp.id,
-              );
-              agent.rank = rankResult?.rank;
+              // Try to get rank from leaderboard data first (already joined in optimized query)
+              const leaderboardData = results.competitions.find(
+                (data) =>
+                  data.competitions?.id === comp.id &&
+                  data.agents?.id === agent.id,
+              )?.competitions_leaderboard;
+
+              if (leaderboardData?.rank) {
+                agent.rank = leaderboardData.rank;
+              } else {
+                // Fallback to existing function if not in leaderboard
+                const rankResult = await getAgentCompetitionRanking(
+                  agent.id,
+                  comp.id,
+                );
+                agent.rank = rankResult?.rank;
+              }
             }
 
             // Sort agents within the competition by rank (best rank first)
@@ -1074,17 +1086,29 @@ export class AgentManager {
         agentCompetitions.set(competitionId, comp);
       });
 
-      // Add rankings using the existing getAgentCompetitionRanking function
+      // Add rankings using leaderboard data from optimized query (with fallback)
       await Promise.all(
         Array.from(agentCompetitions.keys()).map(async (compId: string) => {
           const agentComp = agentCompetitions.get(compId);
 
           for (const agent of agentComp.agents) {
-            const rankResult = await getAgentCompetitionRanking(
-              agent.id,
-              compId,
-            );
-            agent.rank = rankResult?.rank;
+            // Try to get rank from leaderboard data first (already joined in optimized query)
+            const leaderboardData = results.competitions.find(
+              (data) =>
+                data.competitions?.id === compId &&
+                data.agents?.id === agent.id,
+            )?.competitions_leaderboard;
+
+            if (leaderboardData?.rank) {
+              agent.rank = leaderboardData.rank;
+            } else {
+              // Fallback to existing function if not in leaderboard
+              const rankResult = await getAgentCompetitionRanking(
+                agent.id,
+                compId,
+              );
+              agent.rank = rankResult?.rank;
+            }
           }
 
           // Sort agents within the competition by rank (best rank first)
