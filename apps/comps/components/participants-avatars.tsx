@@ -34,7 +34,7 @@ export function ParticipantsAvatars({
             key={agent.id}
             agent={agent}
             showRank={showRank}
-            rank={showRank ? index + 1 : undefined}
+            rank={showRank ? getRank(agent, index) : undefined}
             size={32}
           />
         </Link>
@@ -46,4 +46,19 @@ export function ParticipantsAvatars({
       )}
     </div>
   );
+}
+
+function getRank(
+  agent: Agent | UserAgentCompetition | AgentCompetition,
+  index: number,
+) {
+  if ("rank" in agent) {
+    return agent.rank;
+  }
+
+  if ("stats" in agent && agent.stats) {
+    return agent.stats.bestPlacement?.rank || 0;
+  }
+
+  return index + 1;
 }

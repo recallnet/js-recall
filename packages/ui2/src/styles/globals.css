@@ -5,33 +5,11 @@
 
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
 :root {
   --radius: 0.25rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.59 0.2415 29.52);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-}
-
-.dark {
   --background: oklch(0.1163 0.0062 285.4);
   --foreground: oklch(1 0 0);
-  --card: oklch(0.17 0.02 250);
+  --card: oklch(0.212 0.0134 258.37);
   --card-foreground: oklch(1 0 0);
   --popover: oklch(0.17 0.02 250);
   --popover-foreground: oklch(1 0 0);
@@ -69,7 +47,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --breakpoint-*: initial;
-  --breakpoint-xs: 48rem;
+  --breakpoint-xs: 42rem;
   --breakpoint-sm: 64rem;
   --breakpoint-md: 80rem;
   --breakpoint-lg: 90rem;

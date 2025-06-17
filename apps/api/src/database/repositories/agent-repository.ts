@@ -58,6 +58,14 @@ const agentCompetitionsOrderByFields: Record<string, AnyColumn> = {
   updatedAt: competitions.updatedAt,
 };
 
+// Computed fields that need to be sorted at the service layer
+export const COMPUTED_SORT_FIELDS = [
+  "portfolioValue",
+  "pnl",
+  "totalTrades",
+  "rank",
+] as const;
+
 /**
  * Create a new agent
  * @param agent Agent to create
@@ -147,11 +155,24 @@ export async function findAgentCompetitions(
       .where(and(...whereConditions))
       .$dynamic();
 
-    if (params.sort) {
+    // Check if sorting by computed fields (handled at service layer)
+    const isComputedSort =
+      params.sort &&
+      COMPUTED_SORT_FIELDS.some(
+        (field) =>
+          params.sort!.includes(field) || params.sort!.includes(`-${field}`),
+      );
+
+    // Only apply database sorting for non-computed fields
+    if (params.sort && !isComputedSort) {
       query = getSort(query, params.sort, agentCompetitionsOrderByFields);
     }
 
-    query.limit(params.limit).offset(params.offset);
+    // For computed sorting, we'll need to get all results and sort at service layer
+    // So we don't apply limit/offset here if sorting by computed fields
+    if (!isComputedSort) {
+      query = query.limit(params.limit).offset(params.offset);
+    }
 
     const results = await query;
     const total = await db
@@ -166,6 +187,7 @@ export async function findAgentCompetitions(
     return {
       competitions: results.map((data) => data.competitions),
       total: total[0]?.count || 0,
+      isComputedSort, // Flag to indicate service layer needs to handle sorting
     };
   } catch (error) {
     console.error("[AgentRepository] Error in findAgentCompetitions:", error);

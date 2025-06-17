@@ -19,20 +19,6 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { LeaderboardAgent } from "@/types/agent";
 
-const emptyAgent: (i: number) => LeaderboardAgent = (i: number) => ({
-  id: i.toString(),
-  name: `some-name-${i}`,
-  walletAddress: "",
-  ownerId: "",
-  imageUrl: "",
-  description: "some long agent description",
-  status: "",
-  rank: i,
-  score: 0,
-  voteCount: 0,
-  numCompetitions: 0,
-});
-
 export function LeaderboardTable({
   agents,
   onExtend,
@@ -42,9 +28,7 @@ export function LeaderboardTable({
   onExtend: () => void;
   loaded?: boolean;
 }) {
-  const toRender = loaded
-    ? agents
-    : new Array(10).fill(0).map((_, i) => emptyAgent(i));
+  const toRender = agents;
 
   return (
     <>

@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { ApiClient } from "@/lib/api-client";
+import { ApiClient, UnauthorizedError } from "@/lib/api-client";
 import { useUser } from "@/state/atoms";
 import { ProfileResponse, UpdateProfileRequest } from "@/types/profile";
+
+import { useClientCleanup } from "./useAuth";
 
 const apiClient = new ApiClient();
 
@@ -12,15 +14,24 @@ const apiClient = new ApiClient();
  */
 export const useProfile = () => {
   const { status } = useUser();
+  const cleanup = useClientCleanup();
 
   return useQuery({
     queryKey: ["profile"],
+    staleTime: 1000,
     queryFn: async (): Promise<ProfileResponse["user"]> => {
-      const res = await apiClient.getProfile();
-      if (!res.success) throw new Error("Error when fetching profile");
-      return res.user;
+      try {
+        const res = await apiClient.getProfile();
+        if (!res.success) throw new Error("Error when fetching profile");
+        return res.user;
+      } catch (error) {
+        if (error instanceof UnauthorizedError) {
+          cleanup();
+        }
+        throw error;
+      }
     },
-    enabled: status === "authenticating" || status === "authenticated",
+    enabled: status === "authenticated",
   });
 };
 

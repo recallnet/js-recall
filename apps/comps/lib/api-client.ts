@@ -1,7 +1,9 @@
 import {
   Agent,
+  AgentApiKeyResponse,
   AgentCompetitionResponse,
   AgentCompetitionsResponse,
+  AgentWithOwnerResponse,
   AgentsResponse,
   CompetitionResponse,
   CompetitionsResponse,
@@ -18,11 +20,23 @@ import {
   LoginResponse,
   NonceResponse,
   ProfileResponse,
+  UpdateAgentRequest,
+  UpdateAgentResponse,
   UpdateProfileRequest,
   UserCompetitionsResponse,
 } from "@/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+
+/**
+ * Custom error class for unauthorized (401) responses
+ */
+export class UnauthorizedError extends Error {
+  constructor(message: string = "Unauthorized access") {
+    super(message);
+    this.name = "UnauthorizedError";
+  }
+}
 
 /**
  * API client for interactions with the competitions API
@@ -57,6 +71,9 @@ export class ApiClient {
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new UnauthorizedError();
+      }
       const data = await response.json().catch(() => ({
         error: "An unknown error occurred",
       }));
@@ -198,6 +215,15 @@ export class ApiClient {
   }
 
   /**
+   * Get agent api key
+   * @param params - Query parameters
+   * @returns Agents response
+   */
+  async getAgentApiKey(agentId: string): Promise<AgentApiKeyResponse> {
+    return this.request<AgentApiKeyResponse>(`/user/agents/${agentId}/api-key`);
+  }
+
+  /**
    * Get agent by ID owned by the authenticated user
    * @param id - Agent ID
    * @returns Agent details
@@ -223,8 +249,8 @@ export class ApiClient {
    * @param id - Agent ID
    * @returns Agent details
    */
-  async getAgent(id: string): Promise<{ success: boolean; agent: Agent }> {
-    return this.request<{ success: boolean; agent: Agent }>(`/agents/${id}`);
+  async getAgent(id: string): Promise<AgentWithOwnerResponse> {
+    return this.request<AgentWithOwnerResponse>(`/agents/${id}`);
   }
 
   /**
@@ -302,6 +328,21 @@ export class ApiClient {
     const queryParams = this.formatQueryParams(params);
     return this.request<UserCompetitionsResponse>(
       `/user/competitions${queryParams}`,
+    );
+  }
+
+  /**
+   * Update user agent
+   * @param data - Agent data
+   * @returns Updated agent
+   **/
+  async updateAgent(data: UpdateAgentRequest): Promise<UpdateAgentResponse> {
+    return this.request<UpdateAgentResponse>(
+      `/user/agents/${data.agentId}/profile`,
+      {
+        method: "PUT",
+        body: JSON.stringify(data.params),
+      },
     );
   }
 }

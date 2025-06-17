@@ -68,21 +68,24 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         accessorKey: "name",
         header: () => "Agent",
         cell: ({ row }) => (
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <AgentAvatar agent={row.original} size={32} />
-            <div className="flex flex-col">
+            <div className="flex min-w-0 flex-1 flex-col">
               <Link href={`/agents/${row.original.id}`}>
                 <span className="font-semibold leading-tight">
                   {row.original.name}
                 </span>
               </Link>
-              <span className="text-secondary-foreground max-w-[150px] truncate text-xs">
+              <span className="text-secondary-foreground block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-xs">
                 {row.original.description}
               </span>
             </div>
           </div>
         ),
         enableSorting: true,
+        meta: {
+          className: "flex-1",
+        },
       },
       {
         id: "portfolio",
@@ -175,7 +178,6 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             />
           </div>
         ),
-        meta: { isActions: true },
         size: 70,
       },
     ],
@@ -250,13 +252,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                     <SortableTableHeader
                       key={header.id}
                       colSpan={header.colSpan}
-                      style={
-                        header.column.id === "actions"
-                          ? { flex: 1 }
-                          : header.column.id === "name"
-                            ? { flex: 1 }
-                            : { width: header.getSize() }
-                      }
+                      sortState={header.column.getIsSorted() ? "asc" : "none"}
+                      style={{ width: header.getSize() }}
+                      className={header.column.columnDef.meta?.className}
                       onClick={header.column.getToggleSortingHandler()}
                     >
                       {header.isPlaceholder
@@ -270,13 +268,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                     <TableHead
                       key={header.id}
                       colSpan={header.colSpan}
-                      style={
-                        header.column.id === "actions"
-                          ? { flex: 1 }
-                          : header.column.id === "name"
-                            ? { flex: 1 }
-                            : { width: header.getSize() }
-                      }
+                      style={{ width: header.getSize() }}
+                      className={header.column.columnDef.meta?.className}
                     >
                       {header.isPlaceholder
                         ? null
@@ -316,14 +309,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
-                      className="flex items-center"
-                      style={
-                        cell.column.id === "actions"
-                          ? { flex: 1, justifyContent: "flex-end" }
-                          : cell.column.id === "name"
-                            ? { flex: 1 }
-                            : { width: cell.column.getSize() }
-                      }
+                      className={`flex items-center ${cell.column.columnDef.meta?.className ?? ""}`}
+                      style={{ width: cell.column.getSize() }}
                     >
                       {flexRender(
                         cell.column.columnDef.cell,

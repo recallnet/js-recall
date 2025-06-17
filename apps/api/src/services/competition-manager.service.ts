@@ -17,7 +17,9 @@ import {
   getLatestPortfolioSnapshots,
   removeAgentFromCompetition,
   update as updateCompetition,
+  updateOne,
 } from "@/database/repositories/competition-repository.js";
+import { UpdateCompetition } from "@/database/schema/core/types.js";
 import {
   AgentManager,
   AgentRankService,
@@ -103,6 +105,8 @@ export class CompetitionManager {
     externalUrl?: string,
     imageUrl?: string,
     type: CompetitionType = COMPETITION_TYPE.TRADING,
+    votingStartDate?: Date,
+    votingEndDate?: Date,
   ) {
     const id = uuidv4();
     const competition = {
@@ -113,6 +117,8 @@ export class CompetitionManager {
       imageUrl,
       startDate: null,
       endDate: null,
+      votingStartDate: votingStartDate || null,
+      votingEndDate: votingEndDate || null,
       status: COMPETITION_STATUS.PENDING,
       crossChainTradingType: tradingType,
       type,
@@ -511,6 +517,32 @@ export class CompetitionManager {
       status,
       params: pagingParams,
     });
+  }
+
+  /**
+   * Update a competition
+   * @param competitionId The competition ID
+   * @param updates The fields to update
+   * @returns The updated competition
+   */
+  async updateCompetition(competitionId: string, updates: UpdateCompetition) {
+    // Get the existing competition
+    const existingCompetition = await findById(competitionId);
+    if (!existingCompetition) {
+      throw new Error(`Competition not found: ${competitionId}`);
+    }
+
+    // Update the competition
+    const updatedCompetition = await updateOne(competitionId, updates);
+
+    console.log(`[CompetitionManager] Updated competition: ${competitionId}`);
+
+    // Clear cache if this was the active competition
+    if (this.activeCompetitionCache === competitionId) {
+      this.activeCompetitionCache = null;
+    }
+
+    return updatedCompetition;
   }
 
   /**

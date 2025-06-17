@@ -18,13 +18,39 @@ export interface Agent {
   id: string;
   name: string;
   walletAddress?: string;
+  isVerified: boolean;
   ownerId?: string;
   imageUrl: string;
   description?: string;
   status: string;
+  stats: {
+    bestPlacement?: {
+      competitionId: string;
+      rank: number;
+      score: number;
+      totalAgents: number;
+    };
+
+    totalVotes: number;
+    totalTrades: number;
+    completedCompetitions: number;
+  };
+
+  skills?: string[];
   metadata?: AgentCompetitionMetadata;
+  trophies?: string[];
   deactivationReason?: string;
   deactivationDate?: string;
+}
+
+export interface AgentWithOwnerResponse {
+  success: boolean;
+  agent: Agent;
+  owner: {
+    id: string;
+    name: string;
+    walletAddress: string;
+  };
 }
 
 export interface LeaderboardAgent extends Agent {
@@ -111,4 +137,29 @@ export interface CreateAgentRequest {
 export interface CreateAgentResponse {
   agent: Agent & { apiKey: string };
   success: boolean;
+}
+
+export interface UpdateAgentRequest {
+  agentId: string;
+  params: {
+    name?: string;
+    description?: string;
+    imageUrl?: string;
+    email?: string;
+    metadata?: {
+      [key: string]: string | undefined;
+    };
+  };
+}
+
+export interface UpdateAgentResponse {
+  agent: Agent & { apiKey: string };
+  success: boolean;
+}
+
+export interface AgentApiKeyResponse {
+  success: boolean;
+  agentId: string;
+  agentName: string;
+  apiKey: string;
 }

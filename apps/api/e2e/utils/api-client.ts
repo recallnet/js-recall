@@ -344,6 +344,9 @@ export class ApiClient {
     tradingType?: CrossChainTradingType,
     externalUrl?: string,
     imageUrl?: string,
+    type?: string,
+    votingStartDate?: string,
+    votingEndDate?: string,
   ): Promise<CreateCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
@@ -354,6 +357,9 @@ export class ApiClient {
           tradingType,
           externalUrl,
           imageUrl,
+          type,
+          votingStartDate,
+          votingEndDate,
         },
       );
 

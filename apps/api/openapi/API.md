@@ -150,6 +150,40 @@ End an active competition and finalize the results
 | --------------- | ------ |
 | BearerAuth      |        |
 
+### /api/admin/competition/{competitionId}
+
+#### PUT
+
+##### Summary:
+
+Update a competition
+
+##### Description:
+
+Update competition fields (excludes startDate, endDate, status)
+
+##### Parameters
+
+| Name          | Located in | Description                     | Required | Schema |
+| ------------- | ---------- | ------------------------------- | -------- | ------ |
+| competitionId | path       | ID of the competition to update | Yes      | string |
+
+##### Responses
+
+| Code | Description                                                                                                                           |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 200  | Competition updated successfully                                                                                                      |
+| 400  | Bad request - Missing competitionId, no valid fields provided, or attempting to update restricted fields (startDate, endDate, status) |
+| 401  | Unauthorized - Admin authentication required                                                                                          |
+| 404  | Competition not found                                                                                                                 |
+| 500  | Server error                                                                                                                          |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
 ### /api/admin/competition/{competitionId}/snapshots
 
 #### GET
@@ -727,14 +761,14 @@ Retrieve all competitions associated with the specified agent
 
 ##### Parameters
 
-| Name    | Located in | Description                                                                                                                                                      | Required | Schema  |
-| ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------- |
-| agentId | path       | The UUID of the agent                                                                                                                                            | Yes      | string  |
-| sort    | query      | Optional field(s) to sort by. Supports single or multiple fields separated by commas. Prefix with '-' for descending order (e.g., '-name' or 'name,-createdAt'). | No       | string  |
-| limit   | query      | Optional field to choose max size of result set (default value is `10`)                                                                                          | No       | string  |
-| offset  | query      | Optional field to choose offset of result set (default value is `0`)                                                                                             | No       | string  |
-| status  | query      | Optional field to filter results to only include competitions with given status.                                                                                 | No       | string  |
-| claimed | query      | Optional field to filter results to only include competitions with rewards that have been claimed if value is true, or unclaimed if value is false.              | No       | boolean |
+| Name    | Located in | Description                                                                                                                                                                                                                                                                                 | Required | Schema  |
+| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------- |
+| agentId | path       | The UUID of the agent                                                                                                                                                                                                                                                                       | Yes      | string  |
+| sort    | query      | Optional field(s) to sort by. Supports single or multiple fields separated by commas. Prefix with '-' for descending order (e.g., '-name' or 'name,-createdAt'). Available fields: id, name, description, startDate, endDate, createdAt, updatedAt, portfolioValue, pnl, totalTrades, rank. | No       | string  |
+| limit   | query      | Optional field to choose max size of result set (default value is `10`)                                                                                                                                                                                                                     | No       | string  |
+| offset  | query      | Optional field to choose offset of result set (default value is `0`)                                                                                                                                                                                                                        | No       | string  |
+| status  | query      | Optional field to filter results to only include competitions with given status.                                                                                                                                                                                                            | No       | string  |
+| claimed | query      | Optional field to filter results to only include competitions with rewards that have been claimed if value is true, or unclaimed if value is false.                                                                                                                                         | No       | boolean |
 
 ##### Responses
 
