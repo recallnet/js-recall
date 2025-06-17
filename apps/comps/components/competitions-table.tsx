@@ -222,7 +222,7 @@ export const CompetitionsTable: React.FC<CompetitionsTableProps> = ({
                       colSpan={header.colSpan}
                       style={{ width: header.getSize() }}
                       onClick={header.column.getToggleSortingHandler()}
-                      isSorted={header.column.getIsSorted()}
+                      sortState={header.column.getIsSorted() ? "asc" : "none"}
                       className={header.column.columnDef.meta?.className}
                     >
                       {header.isPlaceholder

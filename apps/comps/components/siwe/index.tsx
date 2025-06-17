@@ -80,13 +80,12 @@ export const SIWEButton: React.FunctionComponent<
   return (
     <ConnectButton.Custom>
       {({ openConnectModal }) => (
-        <Button
+        <div
           onClick={openConnectModal}
-          variant="ghost"
-          className="h-full px-6"
+          className="flex h-full cursor-pointer items-center justify-center bg-white px-6 text-black hover:bg-gray-200"
         >
           JOIN / SIGN IN
-        </Button>
+        </div>
       )}
     </ConnectButton.Custom>
   );

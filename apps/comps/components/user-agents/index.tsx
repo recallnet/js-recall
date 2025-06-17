@@ -3,6 +3,7 @@
 import { Award, Trophy } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 
 import { displayAddress } from "@recallnet/address-utils/display";
@@ -283,6 +284,7 @@ export const AgentCard: React.FunctionComponent<AgentCardProps> = ({
   isLoading,
 }) => {
   const size = "w-70 h-95";
+  const router = useRouter();
 
   if (isLoading || typeof agent === "number")
     return <Skeleton className={size} />;
@@ -291,9 +293,10 @@ export const AgentCard: React.FunctionComponent<AgentCardProps> = ({
     <Card
       corner="top-left"
       cropSize={50}
+      onClick={() => router.push(`/agents/${agent.id}`)}
       className={cn(
         className,
-        `${size} flex flex-col items-center justify-center gap-2 px-5`,
+        `${size} flex cursor-pointer flex-col items-center justify-center gap-2 px-5`,
       )}
     >
       <span className="text-secondary-foreground font-mono">

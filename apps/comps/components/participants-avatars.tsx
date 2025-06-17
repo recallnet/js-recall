@@ -57,7 +57,7 @@ function getRank(
   }
 
   if ("stats" in agent && agent.stats) {
-    return agent.stats.rank;
+    return agent.stats.bestPlacement?.rank || 0;
   }
 
   return index + 1;

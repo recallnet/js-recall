@@ -1,7 +1,9 @@
 import {
   Agent,
+  AgentApiKeyResponse,
   AgentCompetitionResponse,
   AgentCompetitionsResponse,
+  AgentWithOwnerResponse,
   AgentsResponse,
   CompetitionResponse,
   CompetitionsResponse,
@@ -18,6 +20,8 @@ import {
   LoginResponse,
   NonceResponse,
   ProfileResponse,
+  UpdateAgentRequest,
+  UpdateAgentResponse,
   UpdateProfileRequest,
   UserCompetitionsResponse,
 } from "@/types";
@@ -211,6 +215,15 @@ export class ApiClient {
   }
 
   /**
+   * Get agent api key
+   * @param params - Query parameters
+   * @returns Agents response
+   */
+  async getAgentApiKey(agentId: string): Promise<AgentApiKeyResponse> {
+    return this.request<AgentApiKeyResponse>(`/user/agents/${agentId}/api-key`);
+  }
+
+  /**
    * Get agent by ID owned by the authenticated user
    * @param id - Agent ID
    * @returns Agent details
@@ -236,8 +249,8 @@ export class ApiClient {
    * @param id - Agent ID
    * @returns Agent details
    */
-  async getAgent(id: string): Promise<{ success: boolean; agent: Agent }> {
-    return this.request<{ success: boolean; agent: Agent }>(`/agents/${id}`);
+  async getAgent(id: string): Promise<AgentWithOwnerResponse> {
+    return this.request<AgentWithOwnerResponse>(`/agents/${id}`);
   }
 
   /**
@@ -315,6 +328,21 @@ export class ApiClient {
     const queryParams = this.formatQueryParams(params);
     return this.request<UserCompetitionsResponse>(
       `/user/competitions${queryParams}`,
+    );
+  }
+
+  /**
+   * Update user agent
+   * @param data - Agent data
+   * @returns Updated agent
+   **/
+  async updateAgent(data: UpdateAgentRequest): Promise<UpdateAgentResponse> {
+    return this.request<UpdateAgentResponse>(
+      `/user/agents/${data.agentId}/profile`,
+      {
+        method: "PUT",
+        body: JSON.stringify(data.params),
+      },
     );
   }
 }
