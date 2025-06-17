@@ -9,11 +9,13 @@ import {
   CompetitionsResponse,
   CreateAgentRequest,
   CreateAgentResponse,
+  CreateVoteRequest,
   GetAgentCompetitionsParams,
   GetAgentsParams,
   GetCompetitionAgentsParams,
   GetCompetitionsParams,
   GetLeaderboardParams,
+  GetVotesParams,
   JoinCompetitionResponse,
   LeaderboardResponse,
   LoginRequest,
@@ -24,6 +26,9 @@ import {
   UpdateAgentResponse,
   UpdateProfileRequest,
   UserCompetitionsResponse,
+  VoteResponse,
+  VotesResponse,
+  VotingStateResponse,
 } from "@/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
@@ -343,6 +348,39 @@ export class ApiClient {
         method: "PUT",
         body: JSON.stringify(data.params),
       },
+    );
+  }
+
+  /**
+   * Create a vote for an agent in a competition
+   * @param data - Vote creation data
+   * @returns Vote response
+   */
+  async createVote(data: CreateVoteRequest): Promise<VoteResponse> {
+    return this.request<VoteResponse>("/user/vote", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Get user votes
+   * @param params - Query parameters
+   * @returns Votes response
+   */
+  async getVotes(params: GetVotesParams = {}): Promise<VotesResponse> {
+    const queryParams = this.formatQueryParams(params);
+    return this.request<VotesResponse>(`/user/votes${queryParams}`);
+  }
+
+  /**
+   * Get voting state for a competition
+   * @param competitionId - Competition ID
+   * @returns Voting state response
+   */
+  async getVotingState(competitionId: string): Promise<VotingStateResponse> {
+    return this.request<VotingStateResponse>(
+      `/user/votes/${competitionId}/state`,
     );
   }
 }

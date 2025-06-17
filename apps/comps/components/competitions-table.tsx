@@ -25,6 +25,7 @@ import {
 } from "@recallnet/ui2/components/table";
 
 import { PaginationResponse, UserCompetition } from "@/types";
+import { getSortState } from "@/utils/table";
 
 import { RankBadge } from "./agents-table/rank-badge";
 import { CompetitionStatusBadge } from "./competition-status-badge";
@@ -222,7 +223,7 @@ export const CompetitionsTable: React.FC<CompetitionsTableProps> = ({
                       colSpan={header.colSpan}
                       style={{ width: header.getSize() }}
                       onClick={header.column.getToggleSortingHandler()}
-                      sortState={header.column.getIsSorted() ? "asc" : "none"}
+                      sortState={getSortState(header.column.getIsSorted())}
                       className={header.column.columnDef.meta?.className}
                     >
                       {header.isPlaceholder

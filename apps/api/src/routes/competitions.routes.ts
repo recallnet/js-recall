@@ -156,7 +156,7 @@ export function configureCompetitionsRoutes(
    *       500:
    *         description: Server error
    */
-  router.get("/", controller.getCompetitions);
+  router.get("/", optionalAuthMiddleware, controller.getCompetitions);
 
   /**
    * @openapi

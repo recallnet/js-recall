@@ -1,6 +1,7 @@
 "use client";
 
-import { useDebounce } from "@uidotdev/usehooks";
+import { useDebounce, useWindowScroll } from "@uidotdev/usehooks";
+import { isFuture } from "date-fns";
 import { ArrowUpRight, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import React from "react";
@@ -16,6 +17,7 @@ import CompetitionSkeleton from "@/components/competition-skeleton";
 import { FooterSection } from "@/components/footer-section";
 import { JoinCompetitionButton } from "@/components/join-competition-button";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
+import { UserVote } from "@/components/user-vote";
 import { getSocialLinksArray } from "@/data/social";
 import { useCompetition } from "@/hooks/useCompetition";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
@@ -27,6 +29,8 @@ export default function CompetitionPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = React.use(params);
+  const agentsTableRef = React.useRef<HTMLDivElement>(null);
+  const [, scrollTo] = useWindowScroll();
   const [agentsFilter, setAgentsFilter] = React.useState("");
   const [agentsSort, setAgentsSort] = React.useState("");
   const [agentsLimit] = React.useState(10);
@@ -117,14 +121,25 @@ export default function CompetitionPage({
               <span className="font-semibold">Join Competition</span>{" "}
               <ChevronRight className="ml-2" size={18} />
             </JoinCompetitionButton>
-            {/* <Button
-              variant="ghost"
-              className="w-1/2 justify-between uppercase"
-              size="lg"
-            >
-              <span className="font-semibold">Vote on an Agent</span>{" "}
-              <ChevronRight className="ml-2" size={18} />
-            </Button> */}
+            {competition.userVotingInfo?.canVote ? (
+              <Button
+                disabled={!competition.votingEnabled}
+                variant="ghost"
+                className="w-1/2 justify-between uppercase"
+                size="lg"
+                onClick={() => {
+                  if (agentsTableRef.current) {
+                    scrollTo({
+                      top: agentsTableRef.current.offsetTop,
+                      behavior: "smooth",
+                    });
+                  }
+                }}
+              >
+                <span className="font-semibold">Vote on an Agent</span>{" "}
+                <ChevronRight className="ml-2" size={18} />
+              </Button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -138,6 +153,28 @@ export default function CompetitionPage({
         </div>
       )}
 
+      {competition.status !== "ended" &&
+        !competition.votingEnabled &&
+        competition.votingStartDate &&
+        isFuture(new Date(competition.votingStartDate)) && (
+          <div className="mt-12 flex flex-col items-center justify-center gap-2 text-center sm:flex-row">
+            <span className="text-2xl font-bold text-gray-400">
+              Voting begins in...
+            </span>
+            <CountdownClock
+              targetDate={new Date(competition.votingStartDate)}
+            />
+          </div>
+        )}
+
+      {competition.userVotingInfo?.info.agentId ? (
+        <UserVote
+          agentId={competition.userVotingInfo.info.agentId}
+          competitionId={id}
+          totalVotes={competition.stats.totalVotes}
+        />
+      ) : null}
+
       {agentsError || !agentsData ? (
         <div className="my-12 rounded border border-red-400 bg-red-100 bg-opacity-10 p-6 text-center">
           <h2 className="text-xl font-semibold text-red-400">
@@ -150,6 +187,8 @@ export default function CompetitionPage({
         </div>
       ) : (
         <AgentsTable
+          ref={agentsTableRef}
+          competition={competition}
           agents={allAgents}
           onFilterChange={setAgentsFilter}
           onSortChange={setAgentsSort}
@@ -158,7 +197,7 @@ export default function CompetitionPage({
           }}
           hasMore={agentsData.pagination.hasMore}
           pagination={agentsData.pagination}
-          totalVotes={competition.totalVotes}
+          totalVotes={competition.stats.totalVotes}
         />
       )}
       <JoinSwarmSection socialLinks={getSocialLinksArray()} className="mt-12" />

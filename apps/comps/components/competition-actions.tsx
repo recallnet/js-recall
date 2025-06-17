@@ -10,6 +10,43 @@ import { Competition, CompetitionStatus } from "@/types";
 
 import { JoinCompetitionButton } from "./join-competition-button";
 
+interface VoteButtonProps {
+  competitionId: string;
+  votingEnabled: boolean;
+  className?: string;
+}
+
+const VoteButton: React.FC<VoteButtonProps> = ({
+  competitionId,
+  votingEnabled,
+  className,
+}) => {
+  if (votingEnabled) {
+    return (
+      <Link href={`/competitions/${competitionId}`} className="w-full">
+        <Button
+          variant="outline"
+          size="lg"
+          className={cn("w-full uppercase", className)}
+        >
+          Vote
+        </Button>
+      </Link>
+    );
+  }
+
+  return (
+    <Button
+      variant="outline"
+      size="lg"
+      className={cn("w-full uppercase", className)}
+      disabled
+    >
+      Vote
+    </Button>
+  );
+};
+
 export interface CompetitionActionsProps {
   competition: Competition;
   /** Optional container classes */
@@ -29,14 +66,10 @@ export const CompetitionActions: React.FC<CompetitionActionsProps> = ({
   if (competition.status === CompetitionStatus.Pending) {
     return (
       <div className={containerClasses}>
-        <Button
-          variant="outline"
-          size="lg"
-          className="w-full uppercase"
-          disabled
-        >
-          Vote
-        </Button>
+        <VoteButton
+          competitionId={competition.id}
+          votingEnabled={competition.votingEnabled}
+        />
         <JoinCompetitionButton
           competitionId={competition.id}
           size="lg"
@@ -51,14 +84,10 @@ export const CompetitionActions: React.FC<CompetitionActionsProps> = ({
   if (competition.status === CompetitionStatus.Active) {
     return (
       <div className={containerClasses}>
-        <Button
-          variant="outline"
-          size="lg"
-          className="w-full uppercase"
-          disabled
-        >
-          Vote
-        </Button>
+        <VoteButton
+          competitionId={competition.id}
+          votingEnabled={competition.votingEnabled}
+        />
       </div>
     );
   }
@@ -66,7 +95,7 @@ export const CompetitionActions: React.FC<CompetitionActionsProps> = ({
   if (competition.status === CompetitionStatus.Ended) {
     return (
       <div className={containerClasses}>
-        <Link href={`/competitions/${competition.id}`}>
+        <Link href={`/competitions/${competition.id}`} className="">
           <Button variant="outline" size="lg" className="w-full uppercase">
             See Results
           </Button>

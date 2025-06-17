@@ -68,7 +68,7 @@ export const IconButton = ({
   return (
     <button
       ref={ref}
-      className={`rounded-full p-2 hover:bg-slate-700 ${className}`}
+      className={`rounded-full p-2 enabled:hover:bg-slate-700 disabled:opacity-50 ${className}`}
       type="button"
       {...props}
     >

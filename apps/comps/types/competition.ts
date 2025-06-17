@@ -53,14 +53,19 @@ export interface Competition {
     totalTrades: number;
     totalAgents: number;
     totalVolume: number;
+    totalVotes: number;
     uniqueTokens: number;
   };
-  totalVotes?: number;
   votingEnabled: boolean;
-  userVotingInfo: {
+  votingStartDate: string | null;
+  votingEndDate: string | null;
+  userVotingInfo?: {
     canVote: boolean;
+    reason?: string;
     info: {
       hasVoted: boolean;
+      agentId?: string;
+      votedAt?: string;
     };
   };
 }

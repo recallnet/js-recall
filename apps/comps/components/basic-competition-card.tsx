@@ -35,6 +35,7 @@ export const BasicCompetitionCard: React.FC<BasicCompetitionCardProps> = ({
             Icon={Share1Icon}
             aria-label="Share"
             iconClassName="text-primary"
+            disabled
           />
         </div>
         <h1 className="mb-6 mt-4 text-4xl font-bold">{competition.name}</h1>

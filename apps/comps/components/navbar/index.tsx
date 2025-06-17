@@ -105,7 +105,7 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
               [ACTIVE_BORDER_STYLE]: pathname === "/profile",
             })}
           >
-            <SIWEButton>JOIN / SIGN IN</SIWEButton>
+            <SIWEButton />
           </div>
         </div>
       </nav>
