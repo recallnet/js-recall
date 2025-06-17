@@ -20,6 +20,7 @@ import {
 import {
   InsertCompetition,
   InsertCompetitionsLeaderboard,
+  UpdateCompetition,
 } from "@/database/schema/core/types.js";
 import {
   portfolioSnapshots,
@@ -126,7 +127,7 @@ export async function create(
 }
 
 /**
- * Update an existing competition
+ * Update an existing competition and trading_competition in a transaction
  * @param competition Competition to update
  */
 export async function update(
@@ -157,6 +158,36 @@ export async function update(
     return result;
   } catch (error) {
     console.error("[CompetitionRepository] Error in update:", error);
+    throw error;
+  }
+}
+
+/**
+ * Update a single competition by ID
+ * @param competitionId Competition ID
+ * @param updateData Update data for the competition
+ */
+export async function updateOne(
+  competitionId: string,
+  updateData: UpdateCompetition,
+) {
+  try {
+    const [result] = await db
+      .update(competitions)
+      .set({
+        ...updateData,
+        updatedAt: updateData.updatedAt || new Date(),
+      })
+      .where(eq(competitions.id, competitionId))
+      .returning();
+
+    if (!result) {
+      throw new Error(`Competition with ID ${competitionId} not found`);
+    }
+
+    return result;
+  } catch (error) {
+    console.error("[CompetitionRepository] Error in updateOne:", error);
     throw error;
   }
 }

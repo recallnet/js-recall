@@ -612,4 +612,251 @@ describe("Admin API", () => {
       "TEST: ✅ Cannot decrypt admin API key with default encryption key - new key was generated!",
     );
   });
+
+  test("should update a competition as admin", async () => {
+    const client = createTestClient(getBaseUrl());
+    await client.loginAsAdmin(adminApiKey);
+
+    // First create a competition
+    const createResponse = await axios.post(
+      `${getBaseUrl()}/api/admin/competition/create`,
+      {
+        name: "Test Competition for Update",
+        description: "Original description",
+        type: "trading",
+        externalUrl: "https://example.com",
+        imageUrl: "https://example.com/image.jpg",
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminApiKey}`,
+        },
+      },
+    );
+
+    expect(createResponse.status).toBe(201);
+    expect(createResponse.data.success).toBe(true);
+    expect(createResponse.data.competition).toBeDefined();
+    const competitionId = createResponse.data.competition.id;
+
+    // Now update the competition
+    const updateResponse = await axios.put(
+      `${getBaseUrl()}/api/admin/competition/${competitionId}`,
+      {
+        name: "Updated Test Competition",
+        description: "Updated description",
+        externalUrl: "https://updated.com",
+        imageUrl: "https://updated.com/image.jpg",
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminApiKey}`,
+        },
+      },
+    );
+
+    expect(updateResponse.status).toBe(200);
+    expect(updateResponse.data.success).toBe(true);
+    expect(updateResponse.data.competition).toBeDefined();
+    expect(updateResponse.data.competition.name).toBe(
+      "Updated Test Competition",
+    );
+    expect(updateResponse.data.competition.description).toBe(
+      "Updated description",
+    );
+    expect(updateResponse.data.competition.externalUrl).toBe(
+      "https://updated.com",
+    );
+    expect(updateResponse.data.competition.imageUrl).toBe(
+      "https://updated.com/image.jpg",
+    );
+    expect(updateResponse.data.competition.id).toBe(competitionId);
+  }, 2400_000);
+
+  test("should not allow competition update without admin auth", async () => {
+    const client = createTestClient(getBaseUrl());
+    await client.loginAsAdmin(adminApiKey);
+
+    // Create a competition first
+    const createResponse = await axios.post(
+      `${getBaseUrl()}/api/admin/competition/create`,
+      {
+        name: "Test Competition for Auth Test",
+        description: "Test description",
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminApiKey}`,
+        },
+      },
+    );
+
+    expect(createResponse.status).toBe(201);
+    const competitionId = createResponse.data.competition.id;
+
+    // Try to update without auth - should fail
+    try {
+      await axios.put(
+        `${getBaseUrl()}/api/admin/competition/${competitionId}`,
+        {
+          name: "Should not work",
+        },
+      );
+      expect(true).toBe(false); // Should not reach here
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        expect(error.response.status).toBe(401);
+      } else {
+        throw error;
+      }
+    }
+  });
+
+  test("should return error for non-existent competition update", async () => {
+    const client = createTestClient(getBaseUrl());
+    await client.loginAsAdmin(adminApiKey);
+
+    const nonExistentId = "00000000-0000-0000-0000-000000000000";
+
+    try {
+      await axios.put(
+        `${getBaseUrl()}/api/admin/competition/${nonExistentId}`,
+        {
+          name: "This should fail",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${adminApiKey}`,
+          },
+        },
+      );
+      expect(true).toBe(false); // Should not reach here
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        // Will be 500 because the service throws an error for not found
+        expect(error.response.status).toBe(500);
+      } else {
+        throw error;
+      }
+    }
+  });
+
+  test("should validate competition type and reject restricted field updates", async () => {
+    const client = createTestClient(getBaseUrl());
+    await client.loginAsAdmin(adminApiKey);
+
+    // Create a competition first
+    const createResponse = await axios.post(
+      `${getBaseUrl()}/api/admin/competition/create`,
+      {
+        name: "Test Competition for Validation",
+        description: "Test description",
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminApiKey}`,
+        },
+      },
+    );
+
+    expect(createResponse.status).toBe(201);
+    const competitionId = createResponse.data.competition.id;
+
+    // Try to update with invalid type
+    try {
+      await axios.put(
+        `${getBaseUrl()}/api/admin/competition/${competitionId}`,
+        {
+          type: "invalid_type",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${adminApiKey}`,
+          },
+        },
+      );
+      expect(true).toBe(false); // Should not reach here
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        expect(error.response.status).toBe(400);
+      } else {
+        throw error;
+      }
+    }
+
+    // Try to update status (should be rejected as restricted field)
+    try {
+      await axios.put(
+        `${getBaseUrl()}/api/admin/competition/${competitionId}`,
+        {
+          status: "active",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${adminApiKey}`,
+          },
+        },
+      );
+      expect(true).toBe(false); // Should not reach here
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        expect(error.response.status).toBe(403);
+        expect(error.response.data.error).toContain(
+          "Invalid competition update, attempting to update forbidden field",
+        );
+      } else {
+        throw error;
+      }
+    }
+
+    // Try to update startDate (should be rejected as restricted field)
+    try {
+      await axios.put(
+        `${getBaseUrl()}/api/admin/competition/${competitionId}`,
+        {
+          startDate: new Date().toISOString(),
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${adminApiKey}`,
+          },
+        },
+      );
+      expect(true).toBe(false); // Should not reach here
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        expect(error.response.status).toBe(400);
+        expect(error.response.data.error).toContain(
+          "Invalid competition update request body",
+        );
+      } else {
+        throw error;
+      }
+    }
+
+    // Try to update endDate (should be rejected as restricted field)
+    try {
+      await axios.put(
+        `${getBaseUrl()}/api/admin/competition/${competitionId}`,
+        {
+          endDate: new Date().toISOString(),
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${adminApiKey}`,
+          },
+        },
+      );
+      expect(true).toBe(false); // Should not reach here
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        expect(error.response.status).toBe(400);
+        expect(error.response.data.error).toContain(
+          "Invalid competition update request body",
+        );
+      } else {
+        throw error;
+      }
+    }
+  });
 });
