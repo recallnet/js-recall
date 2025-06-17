@@ -1908,11 +1908,13 @@ Purpose: WALLET_VERIFICATION`;
         expect(typeof testCompetition.totalTrades).toBe("number");
         expect(testCompetition.totalTrades).toBe(2); // We executed 2 trades
         expect(testCompetition.bestPlacement).toBeDefined();
-        expect(testCompetition.bestPlacement.rank).toBeDefined();
-        expect(typeof testCompetition.bestPlacement.rank).toBe("number");
-        expect(testCompetition.bestPlacement.totalAgents).toBeDefined();
-        expect(typeof testCompetition.bestPlacement.totalAgents).toBe("number");
-        expect(testCompetition.bestPlacement.totalAgents).toBe(2); // 2 agents in competition
+        expect(testCompetition.bestPlacement?.rank).toBeDefined();
+        expect(typeof testCompetition.bestPlacement?.rank).toBe("number");
+        expect(testCompetition.bestPlacement?.totalAgents).toBeDefined();
+        expect(typeof testCompetition.bestPlacement?.totalAgents).toBe(
+          "number",
+        );
+        expect(testCompetition.bestPlacement?.totalAgents).toBe(2); // 2 agents in competition
       }
     });
 
@@ -2090,8 +2092,8 @@ Purpose: WALLET_VERIFICATION`;
         expect(testCompetition.pnlPercent).toBe(0); // No trades = 0% P&L
         expect(testCompetition.totalTrades).toBe(0); // No trades = 0
         expect(testCompetition.bestPlacement).toBeDefined();
-        expect(testCompetition.bestPlacement.rank).toBeGreaterThan(0); // Should have a rank
-        expect(testCompetition.bestPlacement.totalAgents).toBe(1); // Only 1 agent
+        expect(testCompetition.bestPlacement?.rank).toBeGreaterThan(0); // Should have a rank
+        expect(testCompetition.bestPlacement?.totalAgents).toBe(1); // Only 1 agent
       }
     });
 
@@ -2282,8 +2284,8 @@ Purpose: WALLET_VERIFICATION`;
           rankingResults.push({
             agentIndex: i + 1,
             agentId: agents[i]?.id,
-            rank: testCompetition.bestPlacement.rank,
-            totalAgents: testCompetition.bestPlacement.totalAgents,
+            rank: testCompetition.bestPlacement?.rank,
+            totalAgents: testCompetition.bestPlacement?.totalAgents,
             totalTrades: testCompetition.totalTrades,
             portfolioValue: testCompetition.portfolioValue,
             pnl: testCompetition.pnl,
@@ -2333,7 +2335,9 @@ Purpose: WALLET_VERIFICATION`;
       );
 
       // All ranks should be valid (1-4) and unique
-      const ranks = rankingResults.map((r) => r.rank);
+      const ranks = rankingResults
+        .map((r) => r.rank)
+        .filter((rank): rank is number => rank !== undefined);
       expect(ranks.every((rank) => rank >= 1 && rank <= 4)).toBe(true);
       expect(new Set(ranks).size).toBe(4); // All ranks should be unique
 
@@ -2467,7 +2471,7 @@ Purpose: WALLET_VERIFICATION`;
 
       for (let i = 0; i < agent1CompsSorted.length; i++) {
         expect(agent1CompsSorted[i]?.totalTrades).toBe(i + 1);
-        expect(agent1CompsSorted[i]?.bestPlacement.totalAgents).toBe(2);
+        expect(agent1CompsSorted[i]?.bestPlacement?.totalAgents).toBe(2);
       }
 
       // Verify agent 2's alternating pattern (2, 1, 2, 1, 2 trades respectively)
@@ -2478,7 +2482,7 @@ Purpose: WALLET_VERIFICATION`;
       for (let i = 0; i < agent2CompsSorted.length; i++) {
         const expectedTrades = i % 2 === 0 ? 2 : 1; // Even: 2 trades, Odd: 1 trade
         expect(agent2CompsSorted[i]?.totalTrades).toBe(expectedTrades);
-        expect(agent2CompsSorted[i]?.bestPlacement.totalAgents).toBe(2);
+        expect(agent2CompsSorted[i]?.bestPlacement?.totalAgents).toBe(2);
       }
 
       // Verify that metrics are competition-specific, not aggregated
@@ -2500,10 +2504,10 @@ Purpose: WALLET_VERIFICATION`;
       expect(comp5Agent1?.portfolioValue).toBeDefined();
 
       // Rankings should be calculated per competition
-      expect(comp1Agent1?.bestPlacement.rank).toBeGreaterThanOrEqual(1);
-      expect(comp1Agent1?.bestPlacement.rank).toBeLessThanOrEqual(2);
-      expect(comp5Agent1?.bestPlacement.rank).toBeGreaterThanOrEqual(1);
-      expect(comp5Agent1?.bestPlacement.rank).toBeLessThanOrEqual(2);
+      expect(comp1Agent1?.bestPlacement?.rank).toBeGreaterThanOrEqual(1);
+      expect(comp1Agent1?.bestPlacement?.rank).toBeLessThanOrEqual(2);
+      expect(comp5Agent1?.bestPlacement?.rank).toBeGreaterThanOrEqual(1);
+      expect(comp5Agent1?.bestPlacement?.rank).toBeLessThanOrEqual(2);
 
       // Verify competition status affects metrics calculation
       const endedComps = agent1TestComps.filter((comp) =>
@@ -2523,8 +2527,8 @@ Purpose: WALLET_VERIFICATION`;
         expect(comp.pnlPercent).toBeDefined();
         expect(comp.totalTrades).toBeDefined();
         expect(comp.bestPlacement).toBeDefined();
-        expect(comp.bestPlacement.rank).toBeGreaterThanOrEqual(1);
-        expect(comp.bestPlacement.totalAgents).toBe(2);
+        expect(comp.bestPlacement?.rank).toBeGreaterThanOrEqual(1);
+        expect(comp.bestPlacement?.totalAgents).toBe(2);
       });
 
       // Verify agent 2's performance varies by strategy
