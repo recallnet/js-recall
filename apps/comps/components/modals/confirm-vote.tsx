@@ -102,7 +102,7 @@ export const ConfirmVoteModal: React.FC<ConfirmVoteModalProps> = ({
               />
               <div className="flex w-full flex-col gap-2">
                 <div className="flex items-center gap-2">
-                  <VerificationBadge className="text-secondary-foreground" />
+                  <VerificationBadge className="stroke-[var(--color-secondary-foreground)]" />
                   <span className="text-lg font-bold">You&apos;ve Voted!</span>
                 </div>
                 <div className="pl-8">
