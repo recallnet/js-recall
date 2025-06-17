@@ -819,4 +819,32 @@ export interface VotingStateResponse extends ApiResponse {
   votingState: CompetitionVotingState;
 }
 
+/**
+ * Enhanced competition with agent-specific metrics
+ */
+export interface EnhancedCompetition extends Competition {
+  portfolioValue: number;
+  pnl: number;
+  pnlPercent: number;
+  totalTrades: number;
+  bestPlacement?: {
+    rank: number;
+    totalAgents: number;
+  };
+}
+
+/**
+ * Agent competitions response with enhanced metrics
+ */
+export interface AgentCompetitionsResponse extends ApiResponse {
+  success: true;
+  competitions: EnhancedCompetition[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+}
+
 // ===========================

@@ -362,6 +362,47 @@ export interface Competition {
 }
 
 /**
+ * Agent-specific metrics for a competition
+ */
+export interface CompetitionMetrics {
+  portfolioValue: number;
+  pnl: number;
+  pnlPercent: number;
+  totalTrades: number;
+  bestPlacement?: {
+    rank: number;
+    totalAgents: number;
+  };
+}
+
+/**
+ * Enhanced competition with agent-specific metrics
+ * Based on SelectCompetition from database (without crossChainTradingType)
+ */
+export interface EnhancedCompetition {
+  id: string;
+  name: string;
+  description: string | null;
+  type: CompetitionType;
+  externalUrl: string | null;
+  imageUrl: string | null;
+  startDate: Date | null;
+  endDate: Date | null;
+  status: CompetitionStatus;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+  // Agent-specific metrics
+  portfolioValue: number;
+  pnl: number;
+  pnlPercent: number;
+  totalTrades: number;
+  bestPlacement?: {
+    rank: number;
+    totalAgents: number;
+  };
+}
+
+/**
  * Agent's portfolio value
  */
 export interface PortfolioValue {

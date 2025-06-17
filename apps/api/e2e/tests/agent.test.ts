@@ -7,11 +7,13 @@ import { ApiClient } from "@/e2e/utils/api-client.js";
 import {
   AdminAgentsListResponse,
   AdminSearchUsersAndAgentsResponse,
+  AgentCompetitionsResponse,
   AgentMetadata,
   AgentProfileResponse,
   AgentsGetResponse,
   Competition,
   CreateCompetitionResponse,
+  EnhancedCompetition,
   PriceResponse,
   PublicAgentResponse,
   ResetApiKeyResponse,
@@ -1794,7 +1796,7 @@ Purpose: WALLET_VERIFICATION`;
     await adminClient.startExistingCompetition(firstCompetitionId, [agent.id]);
     await agentClient.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
-      toToken: "0x0000000000000000000000000000000000000000", // Effectively make agent 1 lose
+      toToken: "0x000000000000000000000000000000000000dead", // Burn address - make agent 1 lose
       amount: "100",
       reason: "Test trade",
     });
@@ -1819,5 +1821,746 @@ Purpose: WALLET_VERIFICATION`;
 
     expect(agentProfile.agent.stats?.rank).toBe(1);
     expect(agentProfile.agent.stats?.score).toBe(1500);
+  });
+
+  describe("Enhanced Agent Competitions Endpoint", () => {
+    test("should return competitions with agent-specific metrics", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      // Register multiple agents for competition
+      const { client: agentClient1, agent: agent1 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Test Agent 1",
+        });
+
+      const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Test Agent 2",
+      });
+
+      // Create and start a competition
+      const compName = `Enhanced Metrics Test ${Date.now()}`;
+      const createCompResult = await adminClient.createCompetition(
+        compName,
+        "Test competition for enhanced metrics",
+      );
+      expect(createCompResult.success).toBe(true);
+      const createCompResponse = createCompResult as CreateCompetitionResponse;
+      const competitionId = createCompResponse.competition.id;
+
+      // Start the competition with both agents
+      await adminClient.startExistingCompetition(competitionId, [
+        agent1.id,
+        agent2.id,
+      ]);
+
+      // Execute some trades for agent1 to generate metrics
+      await agentClient1.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: config.specificChainTokens.eth.eth,
+        amount: "100",
+        reason: "Test trade 1",
+      });
+
+      await agentClient1.executeTrade({
+        fromToken: config.specificChainTokens.eth.eth,
+        toToken: config.specificChainTokens.eth.usdc,
+        amount: "0.01",
+        reason: "Test trade 2",
+      });
+
+      // Wait for portfolio snapshots to be created
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Get agent competitions with enhanced metrics
+      const competitionsResponse = await agentClient1.getAgentCompetitions(
+        agent1.id,
+        {
+          limit: 10,
+          offset: 0,
+        },
+      );
+
+      expect(competitionsResponse.success).toBe(true);
+      const response = competitionsResponse as AgentCompetitionsResponse;
+      expect(Array.isArray(response.competitions)).toBe(true);
+      expect(response.competitions.length).toBeGreaterThan(0);
+
+      // Find our test competition
+      const testCompetition = response.competitions.find(
+        (comp: EnhancedCompetition) => comp.id === competitionId,
+      );
+      expect(testCompetition).toBeDefined();
+
+      // Verify enhanced metrics are present
+      if (testCompetition) {
+        expect(testCompetition.portfolioValue).toBeDefined();
+        expect(typeof testCompetition.portfolioValue).toBe("number");
+        expect(testCompetition.pnl).toBeDefined();
+        expect(typeof testCompetition.pnl).toBe("number");
+        expect(testCompetition.pnlPercent).toBeDefined();
+        expect(typeof testCompetition.pnlPercent).toBe("number");
+        expect(testCompetition.totalTrades).toBeDefined();
+        expect(typeof testCompetition.totalTrades).toBe("number");
+        expect(testCompetition.totalTrades).toBe(2); // We executed 2 trades
+        expect(testCompetition.bestPlacement).toBeDefined();
+        expect(testCompetition.bestPlacement?.rank).toBeDefined();
+        expect(typeof testCompetition.bestPlacement?.rank).toBe("number");
+        expect(testCompetition.bestPlacement?.totalAgents).toBeDefined();
+        expect(typeof testCompetition.bestPlacement?.totalAgents).toBe(
+          "number",
+        );
+        expect(testCompetition.bestPlacement?.totalAgents).toBe(2); // 2 agents in competition
+      }
+    });
+
+    test("should handle sorting by computed fields", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      // Register an agent
+      const { client: agentClient, agent } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Sorting Test Agent",
+        });
+
+      // Create multiple competitions
+      const comp1Name = `Competition A ${Date.now()}`;
+      const comp2Name = `Competition B ${Date.now()}`;
+
+      const createComp1Result = await adminClient.createCompetition(
+        comp1Name,
+        "First competition for sorting test",
+      );
+      expect(createComp1Result.success).toBe(true);
+      const comp1Id = (createComp1Result as CreateCompetitionResponse)
+        .competition.id;
+
+      const createComp2Result = await adminClient.createCompetition(
+        comp2Name,
+        "Second competition for sorting test",
+      );
+      expect(createComp2Result.success).toBe(true);
+      const comp2Id = (createComp2Result as CreateCompetitionResponse)
+        .competition.id;
+
+      // Start comp1 first (respecting single active competition constraint)
+      await adminClient.startExistingCompetition(comp1Id, [agent.id]);
+
+      // Execute different numbers of trades in each competition
+      // Competition 1: 1 trade
+      await agentClient.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: config.specificChainTokens.eth.eth,
+        amount: "100",
+        reason: "Comp 1 trade",
+      });
+
+      // End comp1 and start comp2 (respecting single active competition constraint)
+      await adminClient.endCompetition(comp1Id);
+      await adminClient.startExistingCompetition(comp2Id, [agent.id]);
+      await agentClient.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: config.specificChainTokens.eth.eth,
+        amount: "50",
+        reason: "Comp 2 trade 1",
+      });
+      await agentClient.executeTrade({
+        fromToken: config.specificChainTokens.eth.eth,
+        toToken: config.specificChainTokens.eth.usdc,
+        amount: "0.01",
+        reason: "Comp 2 trade 2",
+      });
+      await agentClient.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: config.specificChainTokens.eth.eth,
+        amount: "75",
+        reason: "Comp 2 trade 3",
+      });
+
+      // Wait for portfolio snapshots
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Test sorting by totalTrades descending
+      const sortedByTrades = await agentClient.getAgentCompetitions(agent.id, {
+        limit: 10,
+        offset: 0,
+        sort: "-totalTrades",
+      });
+
+      expect(sortedByTrades.success).toBe(true);
+      const tradesResponse = sortedByTrades as AgentCompetitionsResponse;
+      expect(Array.isArray(tradesResponse.competitions)).toBe(true);
+
+      // Find our test competitions
+      const testComps = tradesResponse.competitions.filter(
+        (comp: EnhancedCompetition) => [comp1Id, comp2Id].includes(comp.id),
+      );
+      expect(testComps.length).toBe(2);
+
+      // Verify sorting: competition with more trades should come first
+      const firstComp = testComps[0];
+      const secondComp = testComps[1];
+      if (firstComp && secondComp) {
+        expect(firstComp.totalTrades).toBeGreaterThanOrEqual(
+          secondComp.totalTrades,
+        );
+      }
+
+      // Test sorting by portfolioValue ascending
+      const sortedByPortfolio = await agentClient.getAgentCompetitions(
+        agent.id,
+        {
+          limit: 10,
+          offset: 0,
+          sort: "portfolioValue",
+        },
+      );
+
+      expect(sortedByPortfolio.success).toBe(true);
+      const portfolioResponse = sortedByPortfolio as AgentCompetitionsResponse;
+      expect(Array.isArray(portfolioResponse.competitions)).toBe(true);
+
+      // Verify portfolio values are in ascending order
+      for (let i = 0; i < portfolioResponse.competitions.length - 1; i++) {
+        const currentComp = portfolioResponse.competitions[i];
+        const nextComp = portfolioResponse.competitions[i + 1];
+        if (currentComp && nextComp) {
+          expect(currentComp.portfolioValue).toBeLessThanOrEqual(
+            nextComp.portfolioValue,
+          );
+        }
+      }
+    });
+
+    test("should handle edge cases gracefully", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      // Register an agent
+      const { client: agentClient, agent } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Edge Case Test Agent",
+        });
+
+      // Create a competition but don't execute any trades
+      const compName = `No Trades Competition ${Date.now()}`;
+      const createCompResult = await adminClient.createCompetition(
+        compName,
+        "Competition with no trades for edge case testing",
+      );
+      expect(createCompResult.success).toBe(true);
+      const competitionId = (createCompResult as CreateCompetitionResponse)
+        .competition.id;
+
+      // Start the competition with just this agent
+      await adminClient.startExistingCompetition(competitionId, [agent.id]);
+
+      // Get competitions without any trades or portfolio snapshots
+      const competitionsResponse = await agentClient.getAgentCompetitions(
+        agent.id,
+        {
+          limit: 10,
+          offset: 0,
+        },
+      );
+
+      expect(competitionsResponse.success).toBe(true);
+      const edgeResponse = competitionsResponse as AgentCompetitionsResponse;
+      expect(Array.isArray(edgeResponse.competitions)).toBe(true);
+
+      // Find our test competition
+      const testCompetition = edgeResponse.competitions.find(
+        (comp: EnhancedCompetition) => comp.id === competitionId,
+      );
+      expect(testCompetition).toBeDefined();
+
+      // Verify default values for edge cases
+      if (testCompetition) {
+        expect(testCompetition.portfolioValue).toBeGreaterThan(0); // Agents start with initial balances
+        expect(testCompetition.pnl).toBe(0); // No trades = 0 P&L
+        expect(testCompetition.pnlPercent).toBe(0); // No trades = 0% P&L
+        expect(testCompetition.totalTrades).toBe(0); // No trades = 0
+        expect(testCompetition.bestPlacement).toBeDefined();
+        expect(testCompetition.bestPlacement?.rank).toBeGreaterThan(0); // Should have a rank
+        expect(testCompetition.bestPlacement?.totalAgents).toBe(1); // Only 1 agent
+      }
+    });
+
+    test("should handle invalid sort fields gracefully", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      // Register an agent
+      const { client: agentClient, agent } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Invalid Sort Test Agent",
+        });
+
+      // Test with invalid sort field - should not crash
+      const invalidSortResponse = await agentClient.getAgentCompetitions(
+        agent.id,
+        {
+          limit: 10,
+          offset: 0,
+          sort: "invalidField",
+        },
+      );
+
+      expect(invalidSortResponse.success).toBe(true);
+      const invalidResponse = invalidSortResponse as AgentCompetitionsResponse;
+      expect(Array.isArray(invalidResponse.competitions)).toBe(true);
+
+      // Test with empty sort field
+      const emptySortResponse = await agentClient.getAgentCompetitions(
+        agent.id,
+        {
+          limit: 10,
+          offset: 0,
+          sort: "",
+        },
+      );
+
+      expect(emptySortResponse.success).toBe(true);
+      const emptyResponse = emptySortResponse as AgentCompetitionsResponse;
+      expect(Array.isArray(emptyResponse.competitions)).toBe(true);
+    });
+
+    test("should maintain backward compatibility with existing sorting", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      // Register an agent
+      const { client: agentClient, agent } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Backward Compatibility Test Agent",
+        });
+
+      // Test existing database field sorting still works
+      const sortByNameResponse = await agentClient.getAgentCompetitions(
+        agent.id,
+        {
+          limit: 10,
+          offset: 0,
+          sort: "name",
+        },
+      );
+
+      expect(sortByNameResponse.success).toBe(true);
+      const nameResponse = sortByNameResponse as AgentCompetitionsResponse;
+      expect(Array.isArray(nameResponse.competitions)).toBe(true);
+
+      // Test sorting by createdAt
+      const sortByDateResponse = await agentClient.getAgentCompetitions(
+        agent.id,
+        {
+          limit: 10,
+          offset: 0,
+          sort: "-createdAt",
+        },
+      );
+
+      expect(sortByDateResponse.success).toBe(true);
+      const dateResponse = sortByDateResponse as AgentCompetitionsResponse;
+      expect(Array.isArray(dateResponse.competitions)).toBe(true);
+    });
+  });
+
+  describe("Multi-Agent Ranking and Cross-Competition Tests", () => {
+    test("should calculate multi-agent rankings accurately with different performance levels", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      // Register 4 agents for comprehensive ranking test
+      const agents: Array<{ id: string }> = [];
+      const agentClients: ApiClient[] = [];
+
+      for (let i = 1; i <= 4; i++) {
+        const { client, agent } = await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: `Ranking Test Agent ${i}`,
+        });
+        agents.push(agent);
+        agentClients.push(client);
+      }
+
+      // Create a competition with all 4 agents
+      const compName = `Multi-Agent Ranking Test ${Date.now()}`;
+      const createCompResult = await adminClient.createCompetition(
+        compName,
+        "Competition for testing multi-agent ranking accuracy",
+      );
+      expect(createCompResult.success).toBe(true);
+      const competitionId = (createCompResult as CreateCompetitionResponse)
+        .competition.id;
+
+      // Start competition with all agents
+      await adminClient.startExistingCompetition(
+        competitionId,
+        agents.map((agent) => agent.id),
+      );
+
+      // Execute different trading strategies to create distinct performance levels
+      // Agent 1: Top performer (keeps valuable assets - ETH)
+      for (let i = 0; i < 3; i++) {
+        await agentClients[0]?.executeTrade({
+          fromToken: config.specificChainTokens.eth.usdc,
+          toToken: config.specificChainTokens.eth.eth, // ETH - valuable
+          amount: "100",
+          reason: `Agent 1 smart trade ${i + 1} - buying ETH`,
+        });
+      }
+
+      // Agent 2: Medium performer (mixed strategy - some good, some bad trades)
+      await agentClients[1]?.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: config.specificChainTokens.eth.eth, // ETH - good trade
+        amount: "100",
+        reason: "Agent 2 good trade - buying ETH",
+      });
+      await agentClients[1]?.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead", // Burn address - bad trade
+        amount: "50",
+        reason: "Agent 2 bad trade - burning tokens",
+      });
+
+      // Agent 3: Poor performer (burns most tokens)
+      await agentClients[2]?.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead", // Burn address - terrible trade
+        amount: "200",
+        reason: "Agent 3 terrible trade - burning large amount",
+      });
+
+      // Agent 4: Worst performer (burns everything)
+      await agentClients[3]?.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead", // Burn address - catastrophic trade
+        amount: "500",
+        reason: "Agent 4 catastrophic trade - burning everything",
+      });
+
+      // Wait for portfolio snapshots to be created
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Check rankings for each agent
+      const rankingResults = [];
+      for (let i = 0; i < 4; i++) {
+        const competitionsResponse = await agentClients[
+          i
+        ]?.getAgentCompetitions(agents[i]!.id, {
+          limit: 10,
+          offset: 0,
+        });
+
+        expect(competitionsResponse.success).toBe(true);
+        const response = competitionsResponse as AgentCompetitionsResponse;
+
+        const testCompetition = response.competitions.find(
+          (comp: EnhancedCompetition) => comp.id === competitionId,
+        );
+        expect(testCompetition).toBeDefined();
+
+        if (testCompetition) {
+          rankingResults.push({
+            agentIndex: i + 1,
+            agentId: agents[i]?.id,
+            rank: testCompetition.bestPlacement?.rank,
+            totalAgents: testCompetition.bestPlacement?.totalAgents,
+            totalTrades: testCompetition.totalTrades,
+            portfolioValue: testCompetition.portfolioValue,
+            pnl: testCompetition.pnl,
+          });
+        }
+      }
+
+      // Verify ranking logic
+      expect(rankingResults.length).toBe(4);
+
+      // All agents should see the same total agent count
+      rankingResults.forEach((result) => {
+        expect(result.totalAgents).toBe(4);
+      });
+
+      // Verify trade counts match expected strategies
+      const agent1Result = rankingResults.find((r) => r.agentIndex === 1);
+      const agent2Result = rankingResults.find((r) => r.agentIndex === 2);
+      const agent3Result = rankingResults.find((r) => r.agentIndex === 3);
+      const agent4Result = rankingResults.find((r) => r.agentIndex === 4);
+
+      expect(agent1Result).toBeDefined();
+      expect(agent2Result).toBeDefined();
+      expect(agent3Result).toBeDefined();
+      expect(agent4Result).toBeDefined();
+
+      expect(agent1Result?.totalTrades).toBe(3); // Top performer
+      expect(agent2Result?.totalTrades).toBe(2); // Medium performer
+      expect(agent3Result?.totalTrades).toBe(1); // Poor performer
+      expect(agent4Result?.totalTrades).toBe(1); // Worst performer
+
+      // Verify performance-based ranking: agents who kept valuable assets should rank better
+      // Agent 1 (bought ETH) should have better portfolio value than agents who burned tokens
+      expect(agent1Result?.portfolioValue).toBeGreaterThan(
+        agent3Result!.portfolioValue,
+      );
+      expect(agent1Result?.portfolioValue).toBeGreaterThan(
+        agent4Result!.portfolioValue,
+      );
+
+      // Agent 2 (mixed strategy) should perform better than pure burn agents
+      expect(agent2Result?.portfolioValue).toBeGreaterThan(
+        agent3Result!.portfolioValue,
+      );
+      expect(agent2Result?.portfolioValue).toBeGreaterThan(
+        agent4Result!.portfolioValue,
+      );
+
+      // All ranks should be valid (1-4) and unique
+      const ranks = rankingResults
+        .map((r) => r.rank)
+        .filter((rank): rank is number => rank !== undefined);
+      expect(ranks.every((rank) => rank >= 1 && rank <= 4)).toBe(true);
+      expect(new Set(ranks).size).toBe(4); // All ranks should be unique
+
+      // Log results for debugging
+      console.log("Multi-agent ranking results:", rankingResults);
+    });
+
+    test("should handle cross-competition metrics correctly (4 ended + 1 active)", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      // Register 2 agents for cross-competition testing
+      const { client: agentClient1, agent: agent1 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Cross-Competition Agent 1",
+        });
+
+      const { client: agentClient2, agent: agent2 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Cross-Competition Agent 2",
+        });
+
+      // Create and run 5 competitions sequentially (4 to end, 1 to keep active)
+      // This respects the single active competition constraint
+      const competitions: string[] = [];
+
+      for (let i = 1; i <= 5; i++) {
+        const compName = `Cross-Competition Test ${i} ${Date.now()}`;
+        const createCompResult = await adminClient.createCompetition(
+          compName,
+          `Competition ${i} for cross-competition testing`,
+        );
+        expect(createCompResult.success).toBe(true);
+        const competitionId = (createCompResult as CreateCompetitionResponse)
+          .competition.id;
+        competitions.push(competitionId);
+
+        // Start this competition with both agents
+        await adminClient.startExistingCompetition(competitionId, [
+          agent1.id,
+          agent2.id,
+        ]);
+
+        // Execute trades in this competition with different patterns
+        // Agent 1: Escalating strategy (more trades in later competitions)
+        for (let j = 0; j < i; j++) {
+          await agentClient1.executeTrade({
+            fromToken: config.specificChainTokens.eth.usdc,
+            toToken: config.specificChainTokens.eth.eth, // ETH
+            amount: "100",
+            reason: `Agent 1 trade ${j + 1} in competition ${i}`,
+          });
+        }
+
+        // Agent 2: Alternating strategy (good/bad competitions)
+        if ((i - 1) % 2 === 0) {
+          // Even competitions: good trades (buy ETH)
+          for (let j = 0; j < 2; j++) {
+            await agentClient2.executeTrade({
+              fromToken: config.specificChainTokens.eth.usdc,
+              toToken: config.specificChainTokens.eth.eth, // ETH
+              amount: "50",
+              reason: `Agent 2 good trade ${j + 1} in competition ${i}`,
+            });
+          }
+        } else {
+          // Odd competitions: bad trades (burn tokens)
+          await agentClient2.executeTrade({
+            fromToken: config.specificChainTokens.eth.usdc,
+            toToken: "0x000000000000000000000000000000000000dead", // Burn
+            amount: "100",
+            reason: `Agent 2 bad trade in competition ${i}`,
+          });
+        }
+
+        // End this competition if it's not the last one (keep the 5th active)
+        if (i < 5) {
+          await adminClient.endCompetition(competitionId);
+        }
+      }
+
+      // Wait for portfolio snapshots
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Get competitions for agent 1
+      const agent1Competitions = await agentClient1.getAgentCompetitions(
+        agent1.id,
+        {
+          limit: 10,
+          offset: 0,
+          sort: "-totalTrades",
+        },
+      );
+
+      expect(agent1Competitions.success).toBe(true);
+      const agent1Response = agent1Competitions as AgentCompetitionsResponse;
+
+      // Filter to our test competitions
+      const agent1TestComps = agent1Response.competitions.filter(
+        (comp: EnhancedCompetition) => competitions.includes(comp.id),
+      );
+      expect(agent1TestComps.length).toBe(5);
+
+      // Get competitions for agent 2
+      const agent2Competitions = await agentClient2.getAgentCompetitions(
+        agent2.id,
+        {
+          limit: 10,
+          offset: 0,
+          sort: "-totalTrades",
+        },
+      );
+
+      expect(agent2Competitions.success).toBe(true);
+      const agent2Response = agent2Competitions as AgentCompetitionsResponse;
+
+      // Filter to our test competitions
+      const agent2TestComps = agent2Response.competitions.filter(
+        (comp: EnhancedCompetition) => competitions.includes(comp.id),
+      );
+      expect(agent2TestComps.length).toBe(5);
+
+      // Verify agent 1's escalating trade pattern (1, 2, 3, 4, 5 trades respectively)
+      const agent1CompsSorted = agent1TestComps.sort(
+        (a, b) => competitions.indexOf(a.id) - competitions.indexOf(b.id),
+      );
+
+      for (let i = 0; i < agent1CompsSorted.length; i++) {
+        expect(agent1CompsSorted[i]?.totalTrades).toBe(i + 1);
+        expect(agent1CompsSorted[i]?.bestPlacement?.totalAgents).toBe(2);
+      }
+
+      // Verify agent 2's alternating pattern (2, 1, 2, 1, 2 trades respectively)
+      const agent2CompsSorted = agent2TestComps.sort(
+        (a, b) => competitions.indexOf(a.id) - competitions.indexOf(b.id),
+      );
+
+      for (let i = 0; i < agent2CompsSorted.length; i++) {
+        const expectedTrades = i % 2 === 0 ? 2 : 1; // Even: 2 trades, Odd: 1 trade
+        expect(agent2CompsSorted[i]?.totalTrades).toBe(expectedTrades);
+        expect(agent2CompsSorted[i]?.bestPlacement?.totalAgents).toBe(2);
+      }
+
+      // Verify that metrics are competition-specific, not aggregated
+      const comp1Agent1 = agent1TestComps.find(
+        (comp) => comp.id === competitions[0],
+      );
+      const comp5Agent1 = agent1TestComps.find(
+        (comp) => comp.id === competitions[4],
+      );
+
+      expect(comp1Agent1).toBeDefined();
+      expect(comp5Agent1).toBeDefined();
+
+      expect(comp1Agent1?.totalTrades).toBe(1);
+      expect(comp5Agent1?.totalTrades).toBe(5);
+
+      // Portfolio values should be independent per competition
+      expect(comp1Agent1?.portfolioValue).toBeDefined();
+      expect(comp5Agent1?.portfolioValue).toBeDefined();
+
+      // Rankings should be calculated per competition
+      expect(comp1Agent1?.bestPlacement?.rank).toBeGreaterThanOrEqual(1);
+      expect(comp1Agent1?.bestPlacement?.rank).toBeLessThanOrEqual(2);
+      expect(comp5Agent1?.bestPlacement?.rank).toBeGreaterThanOrEqual(1);
+      expect(comp5Agent1?.bestPlacement?.rank).toBeLessThanOrEqual(2);
+
+      // Verify competition status affects metrics calculation
+      const endedComps = agent1TestComps.filter((comp) =>
+        competitions.slice(0, 4).includes(comp.id),
+      );
+      const activeComps = agent1TestComps.filter((comp) =>
+        competitions.slice(4).includes(comp.id),
+      );
+
+      expect(endedComps.length).toBe(4);
+      expect(activeComps.length).toBe(1);
+
+      // All competitions should have valid metrics regardless of status
+      [...endedComps, ...activeComps].forEach((comp) => {
+        expect(comp.portfolioValue).toBeDefined();
+        expect(comp.pnl).toBeDefined();
+        expect(comp.pnlPercent).toBeDefined();
+        expect(comp.totalTrades).toBeDefined();
+        expect(comp.bestPlacement).toBeDefined();
+        expect(comp.bestPlacement?.rank).toBeGreaterThanOrEqual(1);
+        expect(comp.bestPlacement?.totalAgents).toBe(2);
+      });
+
+      // Verify agent 2's performance varies by strategy
+      // Even competitions (good trades) should have better portfolio values than odd ones (burn trades)
+      const agent2EvenComps = agent2CompsSorted.filter((_, i) => i % 2 === 0);
+      const agent2OddComps = agent2CompsSorted.filter((_, i) => i % 2 === 1);
+
+      // Even competitions should generally have better portfolio values
+      agent2EvenComps.forEach((evenComp) => {
+        if (evenComp) {
+          agent2OddComps.forEach((oddComp) => {
+            if (oddComp) {
+              expect(evenComp.portfolioValue).toBeGreaterThanOrEqual(
+                oddComp.portfolioValue,
+              );
+            }
+          });
+        }
+      });
+
+      console.log("Cross-competition test results:", {
+        agent1Comps: agent1CompsSorted.map((c) => ({
+          id: c.id,
+          trades: c.totalTrades,
+          portfolio: c.portfolioValue,
+        })),
+        agent2Comps: agent2CompsSorted.map((c) => ({
+          id: c.id,
+          trades: c.totalTrades,
+          portfolio: c.portfolioValue,
+        })),
+      });
+    });
   });
 });

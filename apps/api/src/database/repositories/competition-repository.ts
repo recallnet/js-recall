@@ -461,6 +461,53 @@ export async function getAgentPortfolioSnapshots(
 }
 
 /**
+ * Get agent's ranking in a specific competition
+ * @param agentId Agent ID
+ * @param competitionId Competition ID
+ * @returns Object with rank and totalAgents, or undefined if no ranking data available
+ */
+export async function getAgentCompetitionRanking(
+  agentId: string,
+  competitionId: string,
+): Promise<{ rank: number; totalAgents: number } | undefined> {
+  try {
+    // Get all latest portfolio snapshots for the competition
+    const snapshots = await getLatestPortfolioSnapshots(competitionId);
+
+    if (snapshots.length === 0) {
+      return undefined; // No snapshots = no ranking data
+    }
+
+    // Sort by totalValue descending to determine rankings
+    const sortedSnapshots = snapshots.sort(
+      (a, b) => Number(b.totalValue) - Number(a.totalValue),
+    );
+
+    // Find the agent's position (1-based ranking)
+    const agentIndex = sortedSnapshots.findIndex(
+      (snapshot) => snapshot.agentId === agentId,
+    );
+
+    // If agent not found in snapshots, return undefined
+    if (agentIndex === -1) {
+      return undefined; // Agent not found in snapshots = no ranking
+    }
+
+    return {
+      rank: agentIndex + 1, // Convert to 1-based ranking
+      totalAgents: sortedSnapshots.length,
+    };
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in getAgentCompetitionRanking:",
+      error,
+    );
+    // Return undefined on error - no reliable ranking data
+    return undefined;
+  }
+}
+
+/**
  * Get portfolio token values for a snapshot
  * @param snapshotId Snapshot ID
  */
