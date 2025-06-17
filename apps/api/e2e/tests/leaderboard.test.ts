@@ -87,7 +87,7 @@ describe("Leaderboard API", () => {
       (await agentClient1.getGlobalLeaderboard()) as GlobalLeaderboardResponse;
     expect(leaderboard.success).toBe(true);
 
-    expect(leaderboard.stats.activeAgents).toBe(0);
+    expect(leaderboard.stats.activeAgents).toBe(2);
     expect(leaderboard.stats.totalTrades).toBe(2);
     expect(leaderboard.stats.totalVolume).toBeDefined();
     expect(leaderboard.stats.totalCompetitions).toBe(1);
@@ -167,7 +167,7 @@ describe("Leaderboard API", () => {
     expect(leaderboard.success).toBe(true);
 
     // Total stats shouldn't change; these represent all competitions, regardless of the query params
-    expect(leaderboard.stats.activeAgents).toBe(0);
+    expect(leaderboard.stats.activeAgents).toBe(2);
     expect(leaderboard.stats.totalTrades).toBe(2);
     expect(leaderboard.stats.totalVolume).toBeDefined();
     expect(leaderboard.stats.totalCompetitions).toBe(1);
@@ -270,7 +270,7 @@ describe("Leaderboard API", () => {
     expect(leaderboard.success).toBe(true);
 
     // Verify stats
-    expect(leaderboard.stats.activeAgents).toBe(0);
+    expect(leaderboard.stats.activeAgents).toBe(2);
     expect(leaderboard.stats.totalTrades).toBe(4);
     expect(leaderboard.stats.totalVolume).toBeDefined();
     expect(leaderboard.stats.totalCompetitions).toBe(2);

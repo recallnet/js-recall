@@ -339,6 +339,18 @@
                     "type": "string",
                     "description": "URL to competition image",
                     "example": "https://example.com/competition-image.jpg"
+                  },
+                  "votingStartDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Start date for voting (ISO 8601 format)",
+                    "example": "2024-01-15T00:00:00Z"
+                  },
+                  "votingEndDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "End date for voting (ISO 8601 format)",
+                    "example": "2024-01-30T23:59:59Z"
                   }
                 }
               }
@@ -477,6 +489,18 @@
                     "type": "string",
                     "description": "URL to competition image (used when creating a new competition)",
                     "example": "https://example.com/competition-image.jpg"
+                  },
+                  "votingStartDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Start date for voting (ISO 8601 format, used when creating a new competition)",
+                    "example": "2024-01-15T00:00:00Z"
+                  },
+                  "votingEndDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "End date for voting (ISO 8601 format, used when creating a new competition)",
+                    "example": "2024-01-30T23:59:59Z"
                   },
                   "agentIds": {
                     "type": "array",
