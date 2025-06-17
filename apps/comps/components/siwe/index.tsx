@@ -19,9 +19,7 @@ import { useLogout, useUserSession } from "@/hooks";
 
 import { Identicon } from "../identicon/index";
 
-export const SIWEButton: React.FunctionComponent<
-  React.ComponentProps<typeof Button>
-> = () => {
+export const SIWEButton: React.FunctionComponent = () => {
   const router = useRouter();
   const logout = useLogout();
   const { user } = useUserSession();
@@ -80,12 +78,13 @@ export const SIWEButton: React.FunctionComponent<
   return (
     <ConnectButton.Custom>
       {({ openConnectModal }) => (
-        <div
+        <Button
           onClick={openConnectModal}
-          className="flex h-full cursor-pointer items-center justify-center bg-white px-6 text-black hover:bg-gray-200"
+          variant="ghost"
+          className="h-full px-6"
         >
           JOIN / SIGN IN
-        </div>
+        </Button>
       )}
     </ConnectButton.Custom>
   );
