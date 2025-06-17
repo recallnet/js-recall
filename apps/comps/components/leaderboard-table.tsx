@@ -1,4 +1,3 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AwardIcon, ExternalLink, Trophy } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -6,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@recallnet/ui2/components/button";
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import {
+  SortState,
   SortableTableHeader,
   Table,
   TableBody,
@@ -20,25 +20,21 @@ import { LeaderboardAgent } from "@/types/agent";
 
 export function LeaderboardTable({
   agents,
-  onPageChange,
   loaded,
-  page,
-  total = 0,
-  itemsByPage = 1,
   handleSortChange,
   sortState,
+  onLoadMore,
+  total = 0,
 }: {
   agents: LeaderboardAgent[];
-  onPageChange: (num: number) => void;
-  page: number;
-  total?: number;
-  itemsByPage?: number;
   loaded?: boolean;
 
   handleSortChange: (field: string) => void;
   sortState: Record<string, SortState>;
+  onLoadMore: () => void;
+  total?: number;
 }) {
-  const toRender = agents;
+  const hasMore = total > (agents?.length || 0);
 
   return (
     <>
@@ -188,36 +184,13 @@ export function LeaderboardTable({
       </Table>
 
       <div className="mt-6 flex items-center justify-center gap-2">
-        <Button
-          className="rounded-full bg-transparent hover:bg-gray-900"
-          size="icon"
-          disabled={page === 1}
-          onClick={() => onPageChange(page - 1)}
-        >
-          <ChevronLeft />
-        </Button>
-        {pageNumbers.map((cur) => (
-          <button
-            key={cur}
-            className={cn(
-              "rounded px-3 py-1 text-sm font-medium",
-              page === cur
-                ? "bg-white text-black"
-                : "text-gray-400 hover:bg-gray-700 hover:text-white",
-            )}
-            onClick={() => onPageChange(cur)}
-          >
-            {cur + 1}
-          </button>
-        ))}
-        <Button
-          className="rounded-full bg-transparent hover:bg-gray-900"
-          size="icon"
-          disabled={page >= pageNumbers.length - 1}
-          onClick={() => onPageChange(page + 1)}
-        >
-          <ChevronRight />
-        </Button>
+        {hasMore && (
+          <div className="mt-4 flex justify-center">
+            <Button variant="outline" size="sm" onClick={onLoadMore}>
+              Show More
+            </Button>
+          </div>
+        )}
       </div>
     </>
   );

@@ -9,10 +9,10 @@ import BigNumberDisplay from "@/components/bignumber";
 import { LeaderboardTable } from "@/components/leaderboard-table";
 import { useLeaderboards } from "@/hooks/useLeaderboards";
 
-const itemsByPage = 10;
+const limit = 10;
 
 export function LeaderboardSection() {
-  const [page, setPage] = React.useState(0);
+  const [offset, setOffset] = React.useState(0);
   const [sortState, setSorted] = React.useState(
     {} as Record<string, SortState>,
   );
@@ -24,8 +24,8 @@ export function LeaderboardSection() {
   }, [sortState]);
 
   const { data: leaderboard, isLoading } = useLeaderboards({
-    limit: itemsByPage,
-    offset: page * itemsByPage,
+    limit,
+    offset,
     sort: sortString,
   });
 
@@ -87,18 +87,15 @@ export function LeaderboardSection() {
         <LeaderboardTable
           handleSortChange={handleSortChange}
           sortState={sortState}
-          onPageChange={() => {}}
-          page={1}
+          onLoadMore={() => 1}
           agents={[]}
         />
       ) : (
         <LeaderboardTable
           handleSortChange={handleSortChange}
           sortState={sortState}
-          onPageChange={(page) => setPage(page)}
           agents={leaderboard?.agents || []}
-          page={page}
-          itemsByPage={itemsByPage}
+          onLoadMore={() => setOffset((prev: number) => prev + limit)}
           total={leaderboard?.pagination.total}
           loaded
         />

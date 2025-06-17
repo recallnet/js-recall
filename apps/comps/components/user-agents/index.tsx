@@ -4,7 +4,6 @@ import { Award, Trophy } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-
 import { useMemo } from "react";
 
 import { displayAddress } from "@recallnet/address-utils/display";
@@ -26,9 +25,6 @@ import { Agent } from "@/types";
 import { formatCompactNumber, toOrdinal } from "@/utils/format";
 
 import { VerificationBadge } from "../verification-badge";
-
-import BigNumberDisplay from "../bignumber";
-import MirrorImage from "../mirror-image";
 
 export default function UserAgentsSection() {
   const { data: agentsData, isLoading } = useUserAgents();
