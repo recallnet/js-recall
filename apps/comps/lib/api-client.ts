@@ -29,6 +29,16 @@ import {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
 /**
+ * Custom error class for unauthorized (401) responses
+ */
+export class UnauthorizedError extends Error {
+  constructor(message: string = "Unauthorized access") {
+    super(message);
+    this.name = "UnauthorizedError";
+  }
+}
+
+/**
  * API client for interactions with the competitions API
  */
 export class ApiClient {
@@ -61,6 +71,9 @@ export class ApiClient {
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new UnauthorizedError();
+      }
       const data = await response.json().catch(() => ({
         error: "An unknown error occurred",
       }));

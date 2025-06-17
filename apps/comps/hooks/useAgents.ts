@@ -44,7 +44,7 @@ export const useUserAgents = (params: GetAgentsParams = {}) => {
 };
 
 /**
- * Hook to fetch agent api key
+ * Hook to fetch agents with pagination and filtering
  * @param params Query parameters for agents endpoint
  * @returns Query result with agents data
  */

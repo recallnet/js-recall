@@ -727,9 +727,14 @@ Retrieve all competitions associated with the specified agent
 
 ##### Parameters
 
-| Name    | Located in | Description           | Required | Schema |
-| ------- | ---------- | --------------------- | -------- | ------ |
-| agentId | path       | The UUID of the agent | Yes      | string |
+| Name    | Located in | Description                                                                                                                                                                                                                                                                                 | Required | Schema  |
+| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------- |
+| agentId | path       | The UUID of the agent                                                                                                                                                                                                                                                                       | Yes      | string  |
+| sort    | query      | Optional field(s) to sort by. Supports single or multiple fields separated by commas. Prefix with '-' for descending order (e.g., '-name' or 'name,-createdAt'). Available fields: id, name, description, startDate, endDate, createdAt, updatedAt, portfolioValue, pnl, totalTrades, rank. | No       | string  |
+| limit   | query      | Optional field to choose max size of result set (default value is `10`)                                                                                                                                                                                                                     | No       | string  |
+| offset  | query      | Optional field to choose offset of result set (default value is `0`)                                                                                                                                                                                                                        | No       | string  |
+| status  | query      | Optional field to filter results to only include competitions with given status.                                                                                                                                                                                                            | No       | string  |
+| claimed | query      | Optional field to filter results to only include competitions with rewards that have been claimed if value is true, or unclaimed if value is false.                                                                                                                                         | No       | boolean |
 
 ##### Responses
 
@@ -1574,11 +1579,13 @@ Retrieve all competitions that the authenticated user's agents are participating
 
 ##### Parameters
 
-| Name   | Located in | Description                                     | Required | Schema  |
-| ------ | ---------- | ----------------------------------------------- | -------- | ------- |
-| limit  | query      | Number of competitions to return                | No       | integer |
-| offset | query      | Number of competitions to skip                  | No       | integer |
-| sort   | query      | Sort order (e.g., "startDate:desc", "name:asc") | No       | string  |
+| Name    | Located in | Description                                                                                                                                                          | Required | Schema  |
+| ------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------- |
+| limit   | query      | Number of competitions to return                                                                                                                                     | No       | integer |
+| offset  | query      | Number of competitions to skip                                                                                                                                       | No       | integer |
+| sort    | query      | Sort order (e.g., "startDate:desc", "name:asc")                                                                                                                      | No       | string  |
+| status  | query      | Optional filter for the competition status. Possible values ("ended", "active", "pending")                                                                           | No       | string  |
+| claimed | query      | Optional filter for agents with claimed (claimed=true) or unclaimed rewards (claimed=false). Note, because rewards are not implemented, THIS IS NOT IMPLEMENTED YET. | No       | boolean |
 
 ##### Responses
 

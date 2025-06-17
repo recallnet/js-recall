@@ -352,11 +352,54 @@ export interface Competition {
   imageUrl?: string;
   startDate: Date | null;
   endDate: Date | null;
+  votingStartDate: Date | null;
+  votingEndDate: Date | null;
   status: CompetitionStatus;
   crossChainTradingType: CrossChainTradingType; // Controls cross-chain trading behavior
   type: CompetitionType;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/**
+ * Agent-specific metrics for a competition
+ */
+export interface CompetitionMetrics {
+  portfolioValue: number;
+  pnl: number;
+  pnlPercent: number;
+  totalTrades: number;
+  bestPlacement?: {
+    rank: number;
+    totalAgents: number;
+  };
+}
+
+/**
+ * Enhanced competition with agent-specific metrics
+ * Based on SelectCompetition from database (without crossChainTradingType)
+ */
+export interface EnhancedCompetition {
+  id: string;
+  name: string;
+  description: string | null;
+  type: CompetitionType;
+  externalUrl: string | null;
+  imageUrl: string | null;
+  startDate: Date | null;
+  endDate: Date | null;
+  status: CompetitionStatus;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+  // Agent-specific metrics
+  portfolioValue: number;
+  pnl: number;
+  pnlPercent: number;
+  totalTrades: number;
+  bestPlacement?: {
+    rank: number;
+    totalAgents: number;
+  };
 }
 
 /**
@@ -522,6 +565,20 @@ export const CompetitionTypeSchema = z.enum(COMPETITION_TYPE_VALUES);
  * Status of a competition.
  */
 export type CompetitionType = z.infer<typeof CompetitionTypeSchema>;
+
+export const CompetitionAllowedUpdateSchema = z.strictObject({
+  name: z.string().optional(),
+  description: z.string().optional(),
+  type: CompetitionTypeSchema.optional(),
+  externalUrl: z.string().optional(),
+  imageUrl: z.string().optional(),
+  votingStartDate: z.date().optional(),
+  votingEndDate: z.date().optional(),
+});
+
+export type CompetitionAllowedUpdate = z.infer<
+  typeof CompetitionAllowedUpdateSchema
+>;
 
 /**
  * Query string parameters that handle sorting and pagination
@@ -845,6 +902,7 @@ export const VOTE_ERROR_TYPES = {
   AGENT_NOT_FOUND: "AGENT_NOT_FOUND",
   AGENT_NOT_IN_COMPETITION: "AGENT_NOT_IN_COMPETITION",
   COMPETITION_VOTING_DISABLED: "COMPETITION_VOTING_DISABLED",
+  VOTING_NOT_OPEN: "VOTING_NOT_OPEN",
   USER_ALREADY_VOTED: "USER_ALREADY_VOTED",
   VOTING_CUTOFF_EXCEEDED: "VOTING_CUTOFF_EXCEEDED",
   DUPLICATE_VOTE: "DUPLICATE_VOTE",

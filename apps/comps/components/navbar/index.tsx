@@ -1,10 +1,10 @@
 "use client";
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import { Menu } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { FaBars } from "react-icons/fa6";
 
 import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
 import { Button } from "@recallnet/ui2/components/button";
@@ -72,7 +72,7 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
               <DropdownMenu.Root open={open} onOpenChange={setOpen}>
                 <DropdownMenu.Trigger asChild>
                   <Button className="bg-transparent text-white hover:bg-transparent">
-                    <FaBars />
+                    <Menu />
                   </Button>
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Portal>
@@ -110,7 +110,7 @@ export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
         </div>
       </nav>
 
-      <div className="mx-auto flex w-full max-w-screen-lg justify-center px-5 pt-10 sm:px-10 md:px-0">
+      <div className="mx-auto flex w-full max-w-screen-lg justify-center px-5 pt-10 sm:px-20">
         {children}
       </div>
     </>

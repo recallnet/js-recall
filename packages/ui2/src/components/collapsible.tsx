@@ -13,14 +13,15 @@ const CollapsibleTrigger = ({
   children,
   ...props
 }: React.ComponentProps<typeof CollapsiblePrimitive.Trigger>) => (
-  <CollapsiblePrimitive.Trigger
-    className={cn("flex w-full items-center", className)}
-    {...props}
-  >
-    <CollapsiblePrimitive.CollapsibleTrigger asChild>
-      <ChevronDown className="text-secondary-foreground h-6 w-6 transition-transform duration-200 data-[state=open]:rotate-180" />
-    </CollapsiblePrimitive.CollapsibleTrigger>
-    {children}
+  <CollapsiblePrimitive.Trigger asChild>
+    <button
+      type="button"
+      className={cn("group flex w-full items-center", className)}
+      {...props}
+    >
+      <ChevronDown className="text-secondary-foreground duration-400 h-6 w-6 transition-transform group-data-[state=closed]:-rotate-90" />
+      {children}
+    </button>
   </CollapsiblePrimitive.Trigger>
 );
 
@@ -30,7 +31,7 @@ const CollapsibleContent = ({
 }: React.ComponentProps<typeof CollapsiblePrimitive.Content>) => (
   <CollapsiblePrimitive.Content
     className={cn(
-      "data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up overflow-hidden",
+      "duration-400 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 mt-7 overflow-hidden border-t pt-7",
       className,
     )}
     {...props}

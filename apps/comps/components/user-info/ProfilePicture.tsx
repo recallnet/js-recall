@@ -91,7 +91,7 @@ export const ProfilePicture: React.FC<ProfilePictureProps> = ({
   return (
     <div
       className={cn(
-        "group relative flex h-[256px] w-[256px] flex-col items-center justify-center overflow-hidden border transition-all duration-300",
+        "group relative flex h-[256px] w-[256px] flex-col items-center justify-center overflow-hidden transition-all duration-300",
         isLoading && "animate-pulse",
         className,
       )}
@@ -106,7 +106,7 @@ export const ProfilePicture: React.FC<ProfilePictureProps> = ({
       ) : (
         <Avatar className="h-full w-full">
           <AvatarImage
-            src={url || "/agent-placeholder.png"}
+            src={url}
             alt="Profile picture"
             className="h-full w-full object-cover"
           />

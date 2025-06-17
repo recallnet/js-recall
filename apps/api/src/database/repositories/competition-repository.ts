@@ -20,6 +20,7 @@ import {
 import {
   InsertCompetition,
   InsertCompetitionsLeaderboard,
+  UpdateCompetition,
 } from "@/database/schema/core/types.js";
 import {
   portfolioSnapshots,
@@ -126,7 +127,7 @@ export async function create(
 }
 
 /**
- * Update an existing competition
+ * Update an existing competition and trading_competition in a transaction
  * @param competition Competition to update
  */
 export async function update(
@@ -157,6 +158,36 @@ export async function update(
     return result;
   } catch (error) {
     console.error("[CompetitionRepository] Error in update:", error);
+    throw error;
+  }
+}
+
+/**
+ * Update a single competition by ID
+ * @param competitionId Competition ID
+ * @param updateData Update data for the competition
+ */
+export async function updateOne(
+  competitionId: string,
+  updateData: UpdateCompetition,
+) {
+  try {
+    const [result] = await db
+      .update(competitions)
+      .set({
+        ...updateData,
+        updatedAt: updateData.updatedAt || new Date(),
+      })
+      .where(eq(competitions.id, competitionId))
+      .returning();
+
+    if (!result) {
+      throw new Error(`Competition with ID ${competitionId} not found`);
+    }
+
+    return result;
+  } catch (error) {
+    console.error("[CompetitionRepository] Error in updateOne:", error);
     throw error;
   }
 }
@@ -426,6 +457,53 @@ export async function getAgentPortfolioSnapshots(
       error,
     );
     throw error;
+  }
+}
+
+/**
+ * Get agent's ranking in a specific competition
+ * @param agentId Agent ID
+ * @param competitionId Competition ID
+ * @returns Object with rank and totalAgents, or undefined if no ranking data available
+ */
+export async function getAgentCompetitionRanking(
+  agentId: string,
+  competitionId: string,
+): Promise<{ rank: number; totalAgents: number } | undefined> {
+  try {
+    // Get all latest portfolio snapshots for the competition
+    const snapshots = await getLatestPortfolioSnapshots(competitionId);
+
+    if (snapshots.length === 0) {
+      return undefined; // No snapshots = no ranking data
+    }
+
+    // Sort by totalValue descending to determine rankings
+    const sortedSnapshots = snapshots.sort(
+      (a, b) => Number(b.totalValue) - Number(a.totalValue),
+    );
+
+    // Find the agent's position (1-based ranking)
+    const agentIndex = sortedSnapshots.findIndex(
+      (snapshot) => snapshot.agentId === agentId,
+    );
+
+    // If agent not found in snapshots, return undefined
+    if (agentIndex === -1) {
+      return undefined; // Agent not found in snapshots = no ranking
+    }
+
+    return {
+      rank: agentIndex + 1, // Convert to 1-based ranking
+      totalAgents: sortedSnapshots.length,
+    };
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in getAgentCompetitionRanking:",
+      error,
+    );
+    // Return undefined on error - no reliable ranking data
+    return undefined;
   }
 }
 

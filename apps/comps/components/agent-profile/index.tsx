@@ -20,7 +20,7 @@ import CompetitionTable from "./comps-table";
 import { EditAgentField } from "./edit-field";
 import { ShareAgent } from "./share-agent";
 
-const ITEMS_BY_PAGE = 10;
+const limit = 10;
 
 export default function AgentProfile({
   id,
@@ -38,7 +38,7 @@ export default function AgentProfile({
   setStatus: (status: string) => void;
   status: string;
 }) {
-  const [page, setPage] = React.useState(0);
+  const [offset, setOffset] = React.useState(0);
   const skills = agent?.skills || [];
   const trophies = (agent?.trophies || []) as string[];
   const { data: userAgents } = useUserAgents();
@@ -71,8 +71,8 @@ export default function AgentProfile({
   const { data: compsData } = useAgentCompetitions(id, {
     sort: sortString,
     status,
-    limit: ITEMS_BY_PAGE,
-    offset: page * ITEMS_BY_PAGE,
+    limit,
+    offset,
   });
   const competitions = compsData?.competitions || [];
   const { total } = compsData?.pagination || { total: 0 };
@@ -88,9 +88,9 @@ export default function AgentProfile({
         className="mb-10"
       />
 
-      <div className="xs:grid-rows-[65vh_1fr] my-6 grid grid-cols-[300px_1fr_1fr] rounded-xl md:grid-cols-[400px_1fr_1fr]">
+      <div className="xs:grid-rows-[500px_1fr] my-6 grid grid-cols-[300px_1fr_1fr] rounded-xl md:grid-cols-[400px_1fr_1fr]">
         <Card
-          className="xs:col-span-1 xs:mr-8 col-span-3 flex h-[65vh] flex-col items-center justify-between bg-gray-900 p-8"
+          className="xs:col-span-1 xs:mr-8 col-span-3 flex h-[500px] flex-col items-center justify-between bg-gray-900 p-8"
           corner="top-left"
           cropSize={45}
         >
@@ -158,7 +158,7 @@ export default function AgentProfile({
               <AgentInfo className="mt-15 w-full" agent={agent} />
             )}
           </div>
-          <div className="flex flex-col items-start gap-2 border-b px-6 py-12 text-sm">
+          <div className="flex flex-col items-start gap-2 border-b px-6 py-6 text-sm">
             <span className="text-secondary-foreground w-full text-left font-semibold uppercase">
               Best Placement
             </span>
@@ -169,7 +169,7 @@ export default function AgentProfile({
             </span>
           </div>
           <div className="flex w-full">
-            <div className="flex w-1/2 flex-col items-start p-6">
+            <div className="flex w-1/2 flex-col items-start p-5">
               <span className="text-secondary-foreground w-full text-left text-xs font-semibold uppercase">
                 Completed Comps
               </span>
@@ -177,7 +177,7 @@ export default function AgentProfile({
                 {agent.stats.completedCompetitions}
               </span>
             </div>
-            <div className="flex w-1/2 flex-col items-start border-l p-6">
+            <div className="flex w-1/2 flex-col items-start border-l p-5">
               <span className="text-secondary-foreground w-full text-left text-xs font-semibold uppercase">
                 ELO
               </span>
@@ -187,7 +187,7 @@ export default function AgentProfile({
             </div>
           </div>
         </div>
-        <div className="xs:grid col-span-3 row-start-2 mt-8 hidden grid-rows-2 border-b border-l border-r border-t text-sm lg:col-start-3 lg:row-start-1 lg:mt-0 lg:h-[65vh] lg:grid-rows-3 lg:border-l-0">
+        <div className="xs:grid col-span-3 row-start-2 mt-8 hidden grid-rows-2 border-b border-l border-r border-t text-sm lg:col-start-3 lg:row-start-1 lg:mt-0 lg:grid-rows-3 lg:border-l-0">
           <div className="flex flex-col items-start gap-2 border-b p-6 lg:row-span-2">
             {isUserAgent ? (
               <EditAgentField
@@ -280,9 +280,8 @@ export default function AgentProfile({
             </TabsTrigger>
           </TabsList>
           <CompetitionTable
-            page={page}
             total={total}
-            onPageChange={setPage}
+            onLoadMore={() => setOffset((prev: number) => prev + limit)}
             handleSortChange={handleSortChange}
             sortState={sortState}
             canClaim={isUserAgent}

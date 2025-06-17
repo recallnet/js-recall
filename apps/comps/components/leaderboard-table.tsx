@@ -18,8 +18,6 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { LeaderboardAgent } from "@/types/agent";
 
-type SortState = "none" | "asc" | "desc";
-
 export function LeaderboardTable({
   agents,
   onPageChange,
@@ -40,9 +38,7 @@ export function LeaderboardTable({
   handleSortChange: (field: string) => void;
   sortState: Record<string, SortState>;
 }) {
-  const pageNumbers = new Array(Math.ceil(total / itemsByPage))
-    .fill(0)
-    .map((_, i) => i);
+  const toRender = agents;
 
   return (
     <>

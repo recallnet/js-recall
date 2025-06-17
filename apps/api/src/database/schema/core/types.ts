@@ -1,3 +1,6 @@
+import { createUpdateSchema } from "drizzle-zod";
+import { z } from "zod/v4";
+
 import * as defs from "./defs.js";
 
 export type SelectUser = typeof defs.users.$inferSelect;
@@ -11,6 +14,8 @@ export type InsertAdmin = typeof defs.admins.$inferInsert;
 
 export type SelectCompetition = typeof defs.competitions.$inferSelect;
 export type InsertCompetition = typeof defs.competitions.$inferInsert;
+export const UpdateCompetitionSchema = createUpdateSchema(defs.competitions);
+export type UpdateCompetition = z.infer<typeof UpdateCompetitionSchema>;
 
 export type SelectCompetitionAgent = typeof defs.competitionAgents.$inferSelect;
 export type InsertCompetitionAgent = typeof defs.competitionAgents.$inferInsert;

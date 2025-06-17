@@ -37,7 +37,7 @@ export const useLogin = () => {
       return apiClient.login(data);
     },
     onSuccess: () => {
-      setUserAtom({ user: null, status: "authenticating" });
+      setUserAtom({ user: null, status: "authenticated" });
 
       // Trigger profile refetch
       queryClient.invalidateQueries({ queryKey: ["profile"] });
@@ -46,13 +46,27 @@ export const useLogin = () => {
 };
 
 /**
+ * Hook to perform client-side cleanup when user is logged out or unauthorized
+ * @returns Function to perform cleanup
+ */
+export const useClientCleanup = () => {
+  const queryClient = useQueryClient();
+  const [, setUserAtom] = useAtom(userAtom);
+
+  return () => {
+    // Clear all queries from cache
+    queryClient.clear();
+    setUserAtom({ user: null, status: "unauthenticated" });
+  };
+};
+
+/**
  * Hook to logout
  * @returns Mutation for logging out
  */
 export const useLogout = () => {
-  const queryClient = useQueryClient();
   const router = useRouter();
-  const [, setUserAtom] = useAtom(userAtom);
+  const cleanup = useClientCleanup();
 
   return useMutation({
     mutationFn: async () => {
@@ -63,17 +77,10 @@ export const useLogout = () => {
         // Log API error but proceed with client-side cleanup
         console.error("Logout API call failed:", error);
       } finally {
-        // Clear all queries from cache
-        queryClient.clear(); // Clears all query data
-
-        setUserAtom({ user: null, status: "unauthenticated" });
-
-        // Clear local storage items
-        localStorage.removeItem("user");
+        cleanup();
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
       router.push(DEFAULT_REDIRECT_URL);
     },
     onError: (error) => {
@@ -95,50 +102,26 @@ interface UserSessionState {
 
 export const useUserSession = (): UserSessionState => {
   const [authState, setAuthState] = useAtom(userAtom);
-  const queryClient = useQueryClient();
 
   const {
     data: profileData,
-    error: profileError,
-    isLoading: profileIsLoading,
     isSuccess: profileIsSuccess,
-    isError: profileIsError,
-    isFetching: profileIsFetching,
+    isLoading: profileIsLoading,
   } = useProfile();
 
   const isAuthenticated = authState.status === "authenticated";
-  const isProfileUpdated = isAuthenticated && !!authState.user?.name;
+  const isProfileUpdated = isAuthenticated && !!profileData?.name;
 
-  const isLoading =
-    authState.status === "authenticating" ||
-    profileIsLoading ||
-    profileIsFetching;
-
-  // React to profile query outcomes ------------------------------------------------
   useEffect(() => {
     if (profileIsSuccess && profileData) {
-      // Upgrade to authenticated with the full user
       setAuthState({ user: profileData, status: "authenticated" });
-    } else if (profileIsError) {
-      const isUnauthorized = (profileError as any)?.response?.status === 401;
-      if (isUnauthorized) {
-        setAuthState({ user: null, status: "unauthenticated" });
-        queryClient.removeQueries({ queryKey: ["profile"] });
-      }
     }
-  }, [
-    profileIsSuccess,
-    profileData,
-    profileIsError,
-    profileError,
-    setAuthState,
-    queryClient,
-  ]);
+  }, [profileIsSuccess, profileData, setAuthState]);
 
   return {
     user: authState.user,
     isAuthenticated,
-    isLoading,
     isProfileUpdated,
+    isLoading: profileIsLoading,
   };
 };

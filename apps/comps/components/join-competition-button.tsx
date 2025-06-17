@@ -1,5 +1,5 @@
 import { usePathname } from "next/navigation";
-import { type ComponentProps, useState } from "react";
+import { type ComponentProps, type ReactNode, useState } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 import { toast } from "@recallnet/ui2/components/toast";
@@ -17,6 +17,7 @@ interface JoinCompetitionButtonProps
   extends Omit<ComponentProps<typeof Button>, "variant"> {
   competitionId: string;
   variant?: ComponentProps<typeof Button>["variant"];
+  children?: ReactNode;
 }
 
 export function JoinCompetitionButton({

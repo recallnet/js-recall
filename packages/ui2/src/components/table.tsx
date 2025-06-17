@@ -14,19 +14,24 @@ export type TableCaptionProps = React.JSX.IntrinsicElements["caption"];
 
 function Table({ className, ref, ...props }: TableProps) {
   return (
-    <div className="w-full overflow-x-scroll rounded-xl border">
-      <table
-        ref={ref}
-        className={cn("w-full caption-bottom text-sm", className)}
-        {...props}
-      />
-    </div>
+    <table
+      ref={ref}
+      className={cn(
+        "w-full caption-bottom border-separate border-spacing-0 overflow-hidden rounded-xl border text-sm",
+        className,
+      )}
+      {...props}
+    />
   );
 }
 
 function TableHeader({ className, ref, ...props }: TableHeaderProps) {
   return (
-    <thead ref={ref} className={cn("[&_tr]:border-0", className)} {...props} />
+    <thead
+      ref={ref}
+      className={cn("bg-card [&_tr]:border-0", className)}
+      {...props}
+    />
   );
 }
 
@@ -67,9 +72,7 @@ function TableHead({ className, ref, ...props }: TableHeadProps) {
 }
 
 function TableCell({ className, ref, ...props }: TableCellProps) {
-  return (
-    <td ref={ref} className={cn("p-4 align-middle", className)} {...props} />
-  );
+  return <td ref={ref} className={cn("p-4", className)} {...props} />;
 }
 
 function TableCaption({ className, ref, ...props }: TableCaptionProps) {

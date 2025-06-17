@@ -24,7 +24,7 @@ export const CompetitionsCollapsible: React.FC<
   return (
     <section className="my-12">
       <Collapsible defaultOpen={defaultOpen}>
-        <CollapsibleTrigger className="border-b-1 mb-6 flex w-full pb-6">
+        <CollapsibleTrigger>
           <div className="flex w-full items-center justify-between">
             <div className="ml-2 flex items-center gap-2">
               <span className="text-2xl font-bold">{title}</span>

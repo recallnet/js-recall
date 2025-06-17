@@ -29,12 +29,21 @@ import {
 import { getAgentRankById } from "@/database/repositories/agentrank-repository.js";
 import {
   findBestPlacementForAgent,
+  getAgentCompetitionRanking,
+  getAgentPortfolioSnapshots,
   getLatestPortfolioSnapshots,
 } from "@/database/repositories/competition-repository.js";
-import { countAgentTrades } from "@/database/repositories/trade-repository.js";
+import {
+  countAgentTrades,
+  countAgentTradesInCompetition,
+} from "@/database/repositories/trade-repository.js";
 import { findByWalletAddress as findUserByWalletAddress } from "@/database/repositories/user-repository.js";
 import { countTotalVotesForAgent } from "@/database/repositories/vote-repository.js";
-import { InsertAgent, SelectAgent } from "@/database/schema/core/types.js";
+import {
+  InsertAgent,
+  SelectAgent,
+  SelectCompetition,
+} from "@/database/schema/core/types.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import {
   AgentCompetitionsParams,
@@ -45,6 +54,7 @@ import {
   AgentStats,
   ApiAuth,
   CompetitionAgentsParams,
+  EnhancedCompetition,
   PagingParams,
   PagingParamsSchema,
 } from "@/types/index.js";
@@ -832,13 +842,43 @@ export class AgentManager {
         params,
       );
 
-      // Get agents from repository
+      // Get competitions from repository
       const results = await findAgentCompetitions(agentId, params);
+
+      // Filter out null competitions upfront to optimize processing
+      const validCompetitions = results.competitions.filter(
+        (comp): comp is SelectCompetition => comp !== null,
+      );
+
+      // Attach metrics to each valid competition
+      const enhancedCompetitions = await Promise.all(
+        validCompetitions.map(
+          async (competition) =>
+            await this.attachCompetitionMetrics(competition, agentId),
+        ),
+      );
+
+      // Handle computed field sorting if needed
+      let finalCompetitions = enhancedCompetitions;
+      if (results.isComputedSort && params.sort) {
+        finalCompetitions = this.sortCompetitionsByComputedField(
+          enhancedCompetitions, // No need to filter again
+          params.sort,
+        );
+
+        // Apply pagination for computed sorting
+        const startIndex = params.offset || 0;
+        const endIndex = startIndex + (params.limit || 10);
+        finalCompetitions = finalCompetitions.slice(startIndex, endIndex);
+      }
 
       console.log(
         `[AgentManager] Found ${results.total} competitions for agent ${agentId}`,
       );
-      return results;
+      return {
+        competitions: finalCompetitions,
+        total: results.total,
+      };
     } catch (error) {
       console.error(
         `[AgentManager] Error retrieving competitions for agent ${agentId}:`,
@@ -1028,6 +1068,130 @@ export class AgentManager {
       skills: metadata?.skills || [],
       hasUnclaimedRewards: metadata?.hasUnclaimedRewards || false,
     };
+  }
+
+  /**
+   * Attach agent-specific metrics to a competition object
+   * @param competition The competition object to enhance
+   * @param agentId The agent ID for metrics calculation
+   * @returns Enhanced competition with agent metrics
+   */
+  async attachCompetitionMetrics(
+    competition: SelectCompetition,
+    agentId: string,
+  ): Promise<EnhancedCompetition> {
+    try {
+      // Get portfolio value (latest snapshot for agent in competition)
+      const agentSnapshots = await getAgentPortfolioSnapshots(
+        competition.id,
+        agentId,
+      );
+      const latestSnapshot = agentSnapshots?.[0]; // Already ordered by timestamp desc
+      const portfolioValue = latestSnapshot
+        ? Number(latestSnapshot.totalValue)
+        : 0;
+
+      // Calculate PnL (similar to calculateAgentMetrics pattern)
+      let pnl = 0;
+      let pnlPercent = 0;
+      if (agentSnapshots && agentSnapshots.length > 1) {
+        const startingValue = Number(
+          agentSnapshots[agentSnapshots.length - 1]?.totalValue || 0,
+        );
+        const currentValue = Number(agentSnapshots[0]?.totalValue || 0);
+        pnl = currentValue - startingValue;
+        pnlPercent = startingValue > 0 ? (pnl / startingValue) * 100 : 0;
+      }
+
+      // Get total trades for agent in this competition
+      const totalTrades = await countAgentTradesInCompetition(
+        agentId,
+        competition.id,
+      );
+
+      // Get agent's ranking in this competition
+      const bestPlacement = await getAgentCompetitionRanking(
+        agentId,
+        competition.id,
+      );
+
+      return {
+        ...competition,
+        portfolioValue,
+        pnl,
+        pnlPercent,
+        totalTrades,
+        bestPlacement,
+      };
+    } catch (error) {
+      console.error(
+        `[AgentManager] Error attaching competition metrics for agent ${agentId} in competition ${competition.id}:`,
+        error,
+      );
+      // Return competition with default values on error
+      return {
+        ...competition,
+        portfolioValue: 0,
+        pnl: 0,
+        pnlPercent: 0,
+        totalTrades: 0,
+        bestPlacement: undefined, // No valid ranking data on error
+      };
+    }
+  }
+
+  /**
+   * Sort competitions by computed fields
+   * @param competitions Array of competitions with metrics
+   * @param sortString Sort string (e.g., "portfolioValue", "-pnl")
+   * @returns Sorted competitions array
+   */
+  private sortCompetitionsByComputedField(
+    competitions: EnhancedCompetition[],
+    sortString: string,
+  ): EnhancedCompetition[] {
+    const parts = sortString.split(",");
+    const sortField = parts[0];
+    if (!sortField) return competitions;
+
+    const isDesc = sortField.startsWith("-");
+    const field = isDesc ? sortField.slice(1) : sortField;
+
+    return competitions.sort((a, b) => {
+      let aValue: number;
+      let bValue: number;
+
+      switch (field) {
+        case "portfolioValue":
+          aValue = a.portfolioValue || 0;
+          bValue = b.portfolioValue || 0;
+          break;
+        case "pnl":
+          aValue = a.pnl || 0;
+          bValue = b.pnl || 0;
+          break;
+        case "totalTrades":
+          aValue = a.totalTrades || 0;
+          bValue = b.totalTrades || 0;
+          break;
+        case "rank": {
+          // Handle undefined bestPlacement: push to end of results
+          const aRank = a.bestPlacement?.rank;
+          const bRank = b.bestPlacement?.rank;
+
+          if (aRank === undefined && bRank === undefined) return 0;
+          if (aRank === undefined) return 1; // a goes to end
+          if (bRank === undefined) return -1; // b goes to end
+
+          // For rank, lower is better, so reverse the comparison
+          return isDesc ? aRank - bRank : bRank - aRank;
+        }
+        default:
+          return 0;
+      }
+
+      return isDesc ? bValue - aValue : aValue - bValue;
+    });
   }
 
   /**

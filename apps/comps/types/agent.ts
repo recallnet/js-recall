@@ -18,6 +18,7 @@ export interface Agent {
   id: string;
   name: string;
   walletAddress?: string;
+  isVerified: boolean;
   ownerId?: string;
   imageUrl: string;
   description?: string;
