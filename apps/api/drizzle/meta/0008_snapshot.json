@@ -153,44 +153,32 @@
         "admins_username_unique": {
           "name": "admins_username_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "username"
-          ]
+          "columns": ["username"]
         },
         "admins_email_unique": {
           "name": "admins_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         },
         "admins_api_key_unique": {
           "name": "admins_api_key_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "api_key"
-          ]
+          "columns": ["api_key"]
         },
         "admins_username_key": {
           "name": "admins_username_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "username"
-          ]
+          "columns": ["username"]
         },
         "admins_email_key": {
           "name": "admins_email_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         },
         "admins_api_key_key": {
           "name": "admins_api_key_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "api_key"
-          ]
+          "columns": ["api_key"]
         }
       },
       "policies": {},
@@ -291,12 +279,8 @@
           "name": "agent_nonces_agent_id_fkey",
           "tableFrom": "agent_nonces",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agent_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -306,9 +290,7 @@
         "agent_nonces_nonce_unique": {
           "name": "agent_nonces_nonce_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "nonce"
-          ]
+          "columns": ["nonce"]
         }
       },
       "policies": {},
@@ -475,12 +457,8 @@
           "name": "agents_owner_id_fkey",
           "tableFrom": "agents",
           "tableTo": "users",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -490,38 +468,27 @@
         "agents_wallet_address_unique": {
           "name": "agents_wallet_address_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "wallet_address"
-          ]
+          "columns": ["wallet_address"]
         },
         "agents_email_unique": {
           "name": "agents_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         },
         "agents_owner_id_name_key": {
           "name": "agents_owner_id_name_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "owner_id",
-            "name"
-          ]
+          "columns": ["owner_id", "name"]
         },
         "agents_api_key_key": {
           "name": "agents_api_key_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "api_key"
-          ]
+          "columns": ["api_key"]
         },
         "agents_wallet_address_key": {
           "name": "agents_wallet_address_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "wallet_address"
-          ]
+          "columns": ["wallet_address"]
         }
       },
       "policies": {},
@@ -558,12 +525,8 @@
           "name": "competition_agents_competition_id_fkey",
           "tableFrom": "competition_agents",
           "tableTo": "competitions",
-          "columnsFrom": [
-            "competition_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["competition_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -571,12 +534,8 @@
           "name": "competition_agents_agent_id_fkey",
           "tableFrom": "competition_agents",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agent_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -584,10 +543,7 @@
       "compositePrimaryKeys": {
         "competition_agents_pkey": {
           "name": "competition_agents_pkey",
-          "columns": [
-            "competition_id",
-            "agent_id"
-          ]
+          "columns": ["competition_id", "agent_id"]
         }
       },
       "uniqueConstraints": {},
@@ -795,12 +751,8 @@
           "name": "competitions_leaderboard_agent_id_fkey",
           "tableFrom": "competitions_leaderboard",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agent_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -808,12 +760,8 @@
           "name": "competitions_leaderboard_competition_id_fkey",
           "tableFrom": "competitions_leaderboard",
           "tableTo": "competitions",
-          "columnsFrom": [
-            "competition_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["competition_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -925,23 +873,17 @@
         "users_wallet_address_unique": {
           "name": "users_wallet_address_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "wallet_address"
-          ]
+          "columns": ["wallet_address"]
         },
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         },
         "users_wallet_address_key": {
           "name": "users_wallet_address_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "wallet_address"
-          ]
+          "columns": ["wallet_address"]
         }
       },
       "policies": {},
@@ -1055,12 +997,8 @@
           "name": "votes_user_id_fkey",
           "tableFrom": "votes",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1068,12 +1006,8 @@
           "name": "votes_agent_id_fkey",
           "tableFrom": "votes",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agent_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1081,12 +1015,8 @@
           "name": "votes_competition_id_fkey",
           "tableFrom": "votes",
           "tableTo": "competitions",
-          "columnsFrom": [
-            "competition_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["competition_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1096,11 +1026,7 @@
         "votes_user_agent_competition_key": {
           "name": "votes_user_agent_competition_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "user_id",
-            "agent_id",
-            "competition_id"
-          ]
+          "columns": ["user_id", "agent_id", "competition_id"]
         }
       },
       "policies": {},
@@ -1172,12 +1098,8 @@
           "name": "agent_rank_agent_id_fkey",
           "tableFrom": "agent_rank",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agent_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1288,12 +1210,8 @@
           "name": "agent_rank_history_agent_id_fkey",
           "tableFrom": "agent_rank_history",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agent_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1301,12 +1219,8 @@
           "name": "agent_rank_history_competition_id_fkey",
           "tableFrom": "agent_rank_history",
           "tableTo": "competitions",
-          "columnsFrom": [
-            "competition_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["competition_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1409,12 +1323,8 @@
           "name": "balances_agent_id_fkey",
           "tableFrom": "balances",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agent_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1424,10 +1334,7 @@
         "balances_agent_id_token_address_key": {
           "name": "balances_agent_id_token_address_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "agent_id",
-            "token_address"
-          ]
+          "columns": ["agent_id", "token_address"]
         }
       },
       "policies": {},
@@ -1513,12 +1420,8 @@
           "name": "portfolio_snapshots_agent_id_fkey",
           "tableFrom": "portfolio_snapshots",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agent_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1526,12 +1429,8 @@
           "name": "portfolio_snapshots_competition_id_fkey",
           "tableFrom": "portfolio_snapshots",
           "tableTo": "competitions",
-          "columnsFrom": [
-            "competition_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["competition_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1633,12 +1532,8 @@
           "tableFrom": "portfolio_token_values",
           "tableTo": "portfolio_snapshots",
           "schemaTo": "trading_comps",
-          "columnsFrom": [
-            "portfolio_snapshot_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["portfolio_snapshot_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2061,12 +1956,8 @@
           "name": "trades_agent_id_fkey",
           "tableFrom": "trades",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agent_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2074,12 +1965,8 @@
           "name": "trades_competition_id_fkey",
           "tableFrom": "trades",
           "tableTo": "competitions",
-          "columnsFrom": [
-            "competition_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["competition_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2131,12 +2018,8 @@
           "name": "trading_competitions_competitionId_competitions_id_fk",
           "tableFrom": "trading_competitions",
           "tableTo": "competitions",
-          "columnsFrom": [
-            "competitionId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["competitionId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -2183,9 +2066,7 @@
         "epochs_number_unique": {
           "name": "epochs_number_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "number"
-          ]
+          "columns": ["number"]
         }
       },
       "policies": {},
@@ -2285,12 +2166,8 @@
           "name": "rewards_epoch_epochs_id_fk",
           "tableFrom": "rewards",
           "tableTo": "epochs",
-          "columnsFrom": [
-            "epoch"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["epoch"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2359,12 +2236,8 @@
           "name": "rewards_roots_epoch_epochs_id_fk",
           "tableFrom": "rewards_roots",
           "tableTo": "epochs",
-          "columnsFrom": [
-            "epoch"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["epoch"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2493,12 +2366,8 @@
           "name": "rewards_tree_epoch_epochs_id_fk",
           "tableFrom": "rewards_tree",
           "tableTo": "epochs",
-          "columnsFrom": [
-            "epoch"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["epoch"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2622,12 +2491,8 @@
           "name": "stakes_user_id_users_id_fk",
           "tableFrom": "stakes",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2635,12 +2500,8 @@
           "name": "stakes_epoch_created_epochs_id_fk",
           "tableFrom": "stakes",
           "tableTo": "epochs",
-          "columnsFrom": [
-            "epoch_created"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["epoch_created"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2730,12 +2591,8 @@
           "name": "vote_assignments_stake_id_stakes_id_fk",
           "tableFrom": "vote_assignments",
           "tableTo": "stakes",
-          "columnsFrom": [
-            "stake_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["stake_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2743,12 +2600,8 @@
           "name": "vote_assignments_user_id_users_id_fk",
           "tableFrom": "vote_assignments",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2756,12 +2609,8 @@
           "name": "vote_assignments_epoch_epochs_id_fk",
           "tableFrom": "vote_assignments",
           "tableTo": "epochs",
-          "columnsFrom": [
-            "epoch"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["epoch"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2769,11 +2618,7 @@
       "compositePrimaryKeys": {
         "vote_assignments_pkey": {
           "name": "vote_assignments_pkey",
-          "columns": [
-            "stake_id",
-            "user_id",
-            "epoch"
-          ]
+          "columns": ["stake_id", "user_id", "epoch"]
         }
       },
       "uniqueConstraints": {},
@@ -2842,12 +2687,8 @@
           "name": "votes_available_epoch_epochs_id_fk",
           "tableFrom": "votes_available",
           "tableTo": "epochs",
-          "columnsFrom": [
-            "epoch"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["epoch"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2855,10 +2696,7 @@
       "compositePrimaryKeys": {
         "votes_available_pkey": {
           "name": "votes_available_pkey",
-          "columns": [
-            "address",
-            "epoch"
-          ]
+          "columns": ["address", "epoch"]
         }
       },
       "uniqueConstraints": {},
@@ -2952,12 +2790,8 @@
           "name": "votes_performed_user_id_users_id_fk",
           "tableFrom": "votes_performed",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2965,12 +2799,8 @@
           "name": "votes_performed_agent_id_agents_id_fk",
           "tableFrom": "votes_performed",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agent_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2978,12 +2808,8 @@
           "name": "votes_performed_epoch_epochs_id_fk",
           "tableFrom": "votes_performed",
           "tableTo": "epochs",
-          "columnsFrom": [
-            "epoch"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["epoch"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2991,11 +2817,7 @@
       "compositePrimaryKeys": {
         "votes_performed_pkey": {
           "name": "votes_performed_pkey",
-          "columns": [
-            "user_id",
-            "agent_id",
-            "epoch"
-          ]
+          "columns": ["user_id", "agent_id", "epoch"]
         }
       },
       "uniqueConstraints": {},
@@ -3008,37 +2830,22 @@
     "public.actor_status": {
       "name": "actor_status",
       "schema": "public",
-      "values": [
-        "active",
-        "inactive",
-        "suspended",
-        "deleted"
-      ]
+      "values": ["active", "inactive", "suspended", "deleted"]
     },
     "public.competition_status": {
       "name": "competition_status",
       "schema": "public",
-      "values": [
-        "pending",
-        "active",
-        "ended"
-      ]
+      "values": ["pending", "active", "ended"]
     },
     "public.competition_type": {
       "name": "competition_type",
       "schema": "public",
-      "values": [
-        "trading"
-      ]
+      "values": ["trading"]
     },
     "trading_comps.cross_chain_trading_type": {
       "name": "cross_chain_trading_type",
       "schema": "trading_comps",
-      "values": [
-        "disallowAll",
-        "disallowXParent",
-        "allow"
-      ]
+      "values": ["disallowAll", "disallowXParent", "allow"]
     }
   },
   "schemas": {

@@ -1,22 +1,14 @@
 {
   "$schema": "https://typedoc.org/schema.json",
   "out": "docs",
-  "plugin": [
-    "typedoc-plugin-markdown",
-    "typedoc-plugin-coverage"
-  ],
+  "plugin": ["typedoc-plugin-markdown", "typedoc-plugin-coverage"],
   "theme": "default",
   "excludePrivate": true,
   "excludeProtected": true,
   "excludeInternal": true,
   "includeVersion": true,
   "categorizeByGroup": true,
-  "categoryOrder": [
-    "Functions",
-    "Types",
-    "Interfaces",
-    "Variables"
-  ],
+  "categoryOrder": ["Functions", "Types", "Interfaces", "Variables"],
   "searchInComments": true,
   "readme": "README.md",
   "validation": {
