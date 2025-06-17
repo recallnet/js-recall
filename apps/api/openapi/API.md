@@ -150,6 +150,40 @@ End an active competition and finalize the results
 | --------------- | ------ |
 | BearerAuth      |        |
 
+### /api/admin/competition/{competitionId}
+
+#### PUT
+
+##### Summary:
+
+Update a competition
+
+##### Description:
+
+Update competition fields (excludes startDate, endDate, status)
+
+##### Parameters
+
+| Name          | Located in | Description                     | Required | Schema |
+| ------------- | ---------- | ------------------------------- | -------- | ------ |
+| competitionId | path       | ID of the competition to update | Yes      | string |
+
+##### Responses
+
+| Code | Description                                                                                                                           |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 200  | Competition updated successfully                                                                                                      |
+| 400  | Bad request - Missing competitionId, no valid fields provided, or attempting to update restricted fields (startDate, endDate, status) |
+| 401  | Unauthorized - Admin authentication required                                                                                          |
+| 404  | Competition not found                                                                                                                 |
+| 500  | Server error                                                                                                                          |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
 ### /api/admin/competition/{competitionId}/snapshots
 
 #### GET
@@ -1579,13 +1613,13 @@ Retrieve all competitions that the authenticated user's agents are participating
 
 ##### Parameters
 
-| Name    | Located in | Description                                                                                                                                                          | Required | Schema  |
-| ------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------- |
-| limit   | query      | Number of competitions to return                                                                                                                                     | No       | integer |
-| offset  | query      | Number of competitions to skip                                                                                                                                       | No       | integer |
-| sort    | query      | Sort order (e.g., "startDate:desc", "name:asc")                                                                                                                      | No       | string  |
-| status  | query      | Optional filter for the competition status. Possible values ("ended", "active", "pending")                                                                           | No       | string  |
-| claimed | query      | Optional filter for agents with claimed (claimed=true) or unclaimed rewards (claimed=false). Note, because rewards are not implemented, THIS IS NOT IMPLEMENTED YET. | No       | boolean |
+| Name    | Located in | Description                                                                                                                                                                                                                                           | Required | Schema  |
+| ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------- |
+| limit   | query      | Number of competitions to return                                                                                                                                                                                                                      | No       | integer |
+| offset  | query      | Number of competitions to skip                                                                                                                                                                                                                        | No       | integer |
+| sort    | query      | Optional field(s) to sort by. Supports single or multiple fields separated by commas. Prefix with '-' for descending order (e.g., '-startDate' or 'name,-createdAt'). Available fields: name, startDate, endDate, createdAt, status, agentName, rank. | No       | string  |
+| status  | query      | Optional filter for the competition status. Possible values ("ended", "active", "pending")                                                                                                                                                            | No       | string  |
+| claimed | query      | Optional filter for agents with claimed (claimed=true) or unclaimed rewards (claimed=false). Note, because rewards are not implemented, THIS IS NOT IMPLEMENTED YET.                                                                                  | No       | boolean |
 
 ##### Responses
 

@@ -7,6 +7,7 @@ import {
   eq,
   ilike,
   inArray,
+  sql,
 } from "drizzle-orm";
 
 import { db } from "@/database/db.js";
@@ -14,6 +15,7 @@ import {
   agents,
   competitionAgents,
   competitions,
+  competitionsLeaderboard,
 } from "@/database/schema/core/defs.js";
 import { InsertAgent, SelectAgent } from "@/database/schema/core/types.js";
 import {
@@ -63,6 +65,7 @@ export const COMPUTED_SORT_FIELDS = [
   "pnl",
   "totalTrades",
   "rank",
+  "agentName",
 ] as const;
 
 /**
@@ -190,78 +193,6 @@ export async function findAgentCompetitions(
     };
   } catch (error) {
     console.error("[AgentRepository] Error in findAgentCompetitions:", error);
-    throw error;
-  }
-}
-
-/**
- * Find competitions for multiple agents (used for user's agent competitions)
- * @param agentIds Array of agent IDs
- * @param params Agent competitions parameters
- */
-export async function findUserAgentCompetitions(
-  agentIds: string[],
-  params: AgentCompetitionsParams,
-) {
-  try {
-    if (agentIds.length === 0) {
-      return {
-        competitions: [],
-        total: 0,
-      };
-    }
-
-    const { status, claimed } = params;
-
-    // Build where conditions
-    const whereConditions = [inArray(competitionAgents.agentId, agentIds)];
-
-    if (status) {
-      whereConditions.push(eq(competitions.status, status));
-    }
-
-    if (claimed) {
-      console.log(
-        "[AgentRepository] attempting to filter by claimed rewards, but NOT IMPLEMENTED",
-      );
-    }
-
-    let query = db
-      .select()
-      .from(competitionAgents)
-      .leftJoin(agents, eq(competitionAgents.agentId, agents.id))
-      .leftJoin(
-        competitions,
-        eq(competitionAgents.competitionId, competitions.id),
-      )
-      .where(and(...whereConditions))
-      .$dynamic();
-
-    if (params.sort) {
-      query = getSort(query, params.sort, agentCompetitionsOrderByFields);
-    }
-
-    query.limit(params.limit).offset(params.offset);
-
-    const results = await query;
-    const total = await db
-      .select({ count: drizzleCount() })
-      .from(competitionAgents)
-      .leftJoin(
-        competitions,
-        eq(competitionAgents.competitionId, competitions.id),
-      )
-      .where(and(...whereConditions));
-
-    return {
-      competitions: results,
-      total: total[0]?.count || 0,
-    };
-  } catch (error) {
-    console.error(
-      "[AgentRepository] Error in findUserAgentCompetitions:",
-      error,
-    );
     throw error;
   }
 }
@@ -739,6 +670,152 @@ export async function findInactiveAgents(): Promise<SelectAgent[]> {
     return await db.select().from(agents).where(eq(agents.status, "suspended"));
   } catch (error) {
     console.error("[AgentRepository] Error in findInactiveAgents:", error);
+    throw error;
+  }
+}
+
+/**
+ * Find competitions for multiple agents (user's agents) with all sorting handled at database level
+ * This replaces the inefficient approach of loading all data into memory for computed sorting
+ * @param agentIds Array of agent IDs to find competitions for
+ * @param params Query parameters for filtering, sorting, and pagination
+ * @returns Object containing competitions array, total count, and computed sort flag
+ */
+export async function findUserAgentCompetitions(
+  agentIds: string[],
+  params: AgentCompetitionsParams,
+) {
+  try {
+    if (agentIds.length === 0) {
+      return {
+        competitions: [],
+        total: 0,
+      };
+    }
+
+    const { status, claimed, sort, limit, offset } = params;
+
+    // Build where conditions for filtering
+    const whereConditions = [inArray(competitionAgents.agentId, agentIds)];
+
+    if (status) {
+      whereConditions.push(eq(competitions.status, status));
+    }
+
+    if (claimed) {
+      console.log(
+        "[AgentRepository] attempting to filter by claimed rewards, but NOT IMPLEMENTED",
+      );
+    }
+
+    // Check if sorting by computed fields
+    const isComputedSort =
+      sort &&
+      COMPUTED_SORT_FIELDS.some(
+        (field) => sort.includes(field) || sort.includes(`-${field}`),
+      );
+
+    // Step 1: Get unique competition IDs
+    let uniqueCompetitionsQuery = db
+      .selectDistinct({
+        id: competitions.id,
+        name: competitions.name,
+        startDate: competitions.startDate,
+        endDate: competitions.endDate,
+        createdAt: competitions.createdAt,
+        status: competitions.status,
+      })
+      .from(competitionAgents)
+      .leftJoin(
+        competitions,
+        eq(competitionAgents.competitionId, competitions.id),
+      )
+      .where(and(...whereConditions))
+      .$dynamic();
+
+    // Only apply database sorting for non-computed fields
+    if (sort && !isComputedSort) {
+      uniqueCompetitionsQuery = getSort(
+        uniqueCompetitionsQuery,
+        sort,
+        agentCompetitionsOrderByFields,
+      );
+    }
+
+    // For computed sorting, we need to get all results first, then sort at service layer
+    const uniqueCompetitionIds = !isComputedSort
+      ? await uniqueCompetitionsQuery.limit(limit).offset(offset)
+      : await uniqueCompetitionsQuery;
+
+    // Step 2: Get full data for those specific competition IDs
+    const orderedCompetitionIds = uniqueCompetitionIds
+      .map((c) => c.id)
+      .filter((id) => id !== null);
+
+    if (orderedCompetitionIds.length === 0) {
+      return {
+        competitions: [],
+        total: 0,
+      };
+    }
+
+    let fullResultsQuery = db
+      .select()
+      .from(competitionAgents)
+      .leftJoin(agents, eq(competitionAgents.agentId, agents.id))
+      .leftJoin(
+        competitions,
+        eq(competitionAgents.competitionId, competitions.id),
+      )
+      .leftJoin(
+        competitionsLeaderboard,
+        and(
+          eq(competitionsLeaderboard.agentId, agents.id),
+          eq(competitionsLeaderboard.competitionId, competitions.id),
+        ),
+      )
+      .where(
+        and(
+          inArray(competitions.id, orderedCompetitionIds),
+          inArray(competitionAgents.agentId, agentIds), // Only user's agents
+        ),
+      )
+      .$dynamic();
+
+    // Always preserve the exact order from Step 1 using CASE statement
+    if (orderedCompetitionIds.length > 0) {
+      fullResultsQuery = fullResultsQuery.orderBy(
+        sql`CASE ${competitions.id} ${sql.join(
+          orderedCompetitionIds.map(
+            (id, index) => sql`WHEN ${id} THEN ${index}`,
+          ),
+          sql` `,
+        )} END`,
+      );
+    }
+
+    const fullResults = await fullResultsQuery;
+
+    // Step 3: Count total unique competitions (for pagination metadata)
+    const totalCountResult = await db
+      .selectDistinct({ id: competitions.id })
+      .from(competitionAgents)
+      .leftJoin(
+        competitions,
+        eq(competitionAgents.competitionId, competitions.id),
+      )
+      .where(and(...whereConditions));
+
+    return {
+      competitions: fullResults,
+      total: totalCountResult.length,
+      isComputedSort, // Flag to indicate service layer needs to handle sorting
+    };
+  } catch (error) {
+    console.error(
+      "[AgentRepository] Error in findUserAgentCompetitionsOptimized:",
+      error,
+    );
     throw error;
   }
 }

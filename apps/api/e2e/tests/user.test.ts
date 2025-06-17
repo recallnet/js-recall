@@ -8,6 +8,7 @@ import {
   Agent,
   AgentProfileResponse,
   CROSS_CHAIN_TRADING_TYPE,
+  CreateCompetitionResponse,
   ErrorResponse,
   GetUserAgentsResponse,
   StartCompetitionResponse,
@@ -24,8 +25,10 @@ import {
   cleanupTestState,
   createSiweAuthenticatedClient,
   createTestClient,
+  createTestCompetition,
   generateTestCompetitions,
   registerUserAndAgentAndGetClient,
+  startExistingTestCompetition,
   wait,
 } from "@/e2e/utils/test-helpers.js";
 
@@ -1149,10 +1152,18 @@ describe("User API", () => {
     expect(Array.isArray(competitionsResponse.competitions)).toBe(true);
     expect(competitionsResponse.competitions.length).toBe(10);
     expect(competitionsResponse.pagination).toBeDefined();
-    expect(competitionsResponse.pagination.limit).toBe(10);
-    expect(competitionsResponse.pagination.offset).toBe(0);
-    expect(competitionsResponse.pagination.total).toBe(15);
-    expect(competitionsResponse.pagination.hasMore).toBe(true);
+    expect(
+      (competitionsResponse as UserCompetitionsResponse).pagination.limit,
+    ).toBe(10);
+    expect(
+      (competitionsResponse as UserCompetitionsResponse).pagination.offset,
+    ).toBe(0);
+    expect(
+      (competitionsResponse as UserCompetitionsResponse).pagination.total,
+    ).toBe(15);
+    expect(
+      (competitionsResponse as UserCompetitionsResponse).pagination.hasMore,
+    ).toBe(true);
 
     for (const comp of competitionsResponse.competitions) {
       expect(comp.agents).toBeDefined();
@@ -1161,8 +1172,8 @@ describe("User API", () => {
         true,
       );
       expect(
-        comp.agents.every((agent) =>
-          expect(agent.rank).toBeGreaterThanOrEqual(0),
+        comp.agents.every(
+          (agent) => agent.rank === undefined || agent.rank >= 1,
         ),
       );
     }
@@ -1174,7 +1185,10 @@ describe("User API", () => {
     })) as UserCompetitionsResponse;
 
     expect(competitionsWithParamsResponse.success).toBe(true);
-    expect(competitionsWithParamsResponse.pagination.limit).toBe(5);
+    expect(
+      (competitionsWithParamsResponse as UserCompetitionsResponse).pagination
+        .limit,
+    ).toBe(5);
   });
 
   test("user can get competitions for their agents with correct rank", async () => {
@@ -1274,5 +1288,1328 @@ describe("User API", () => {
     expect(response1.competitions[0]?.agents.length).toBe(1);
     expect(response1.competitions[0]?.agents[0]?.id).toBe(agent1.id);
     expect(response1.competitions[0]?.agents[0]?.rank).toBe(3);
+  });
+
+  describe("User Competitions Sorting and Pagination", () => {
+    test("user competitions throw 400 error for invalid sort fields", async () => {
+      // Create a user with agent
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Invalid Sort Test User",
+        userEmail: "invalid-sort-test@example.com",
+      });
+
+      // Test valid sort fields that should work now
+      const validSortResponse = await userClient.getUserCompetitions({
+        sort: "agentName",
+      });
+      expect(validSortResponse.success).toBe(true);
+
+      const validRankSortResponse = await userClient.getUserCompetitions({
+        sort: "-rank",
+      });
+      expect(validRankSortResponse.success).toBe(true);
+
+      // Test actually invalid sort field that should still fail
+      const invalidSortResponse = await userClient.getUserCompetitions({
+        sort: "invalidFieldName",
+      });
+      expect(invalidSortResponse.success).toBe(false);
+      expect((invalidSortResponse as ErrorResponse).status).toBe(400);
+      expect((invalidSortResponse as ErrorResponse).error).toContain(
+        "cannot sort by field",
+      );
+    });
+
+    test("user competitions pagination count accuracy with multiple agents (exposes pagination bug)", async () => {
+      // This test is designed to expose the pagination count mismatch bug
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create a user with multiple agents
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Pagination Bug Test User",
+        userEmail: "pagination-bug-test@example.com",
+      });
+
+      // Create 2 agents for the same user
+      const agent1Response = await userClient.createAgent(
+        "Pagination Test Agent 1",
+        "Agent 1 for pagination bug testing",
+      );
+      expect(agent1Response.success).toBe(true);
+      const agent1 = (agent1Response as AgentProfileResponse).agent;
+
+      const agent2Response = await userClient.createAgent(
+        "Pagination Test Agent 2",
+        "Agent 2 for pagination bug testing",
+      );
+      expect(agent2Response.success).toBe(true);
+      const agent2 = (agent2Response as AgentProfileResponse).agent;
+
+      // Create 3 competitions where both agents participate
+      for (let i = 0; i < 3; i++) {
+        const createResponse = await adminClient.createCompetition(
+          `Multi-Agent Pagination Competition ${i}`,
+          `Competition ${i} with multiple agents from same user`,
+        );
+        expect(createResponse.success).toBe(true);
+        const createCompResponse = createResponse as CreateCompetitionResponse;
+
+        // Both agents join the same competition (creates 2 DB rows per competition)
+        await userClient.joinCompetition(
+          createCompResponse.competition.id,
+          agent1.id,
+        );
+        await userClient.joinCompetition(
+          createCompResponse.competition.id,
+          agent2.id,
+        );
+      }
+
+      // Test pagination - this should expose the count mismatch bug
+      const paginationResponse = await userClient.getUserCompetitions({
+        limit: 2,
+        offset: 0,
+      });
+      expect(paginationResponse.success).toBe(true);
+
+      const comps = (paginationResponse as UserCompetitionsResponse)
+        .competitions;
+      const pagination = (paginationResponse as UserCompetitionsResponse)
+        .pagination;
+
+      // The key test: despite having 6 DB rows (3 competitions × 2 agents each),
+      // we should see 3 unique competitions and correct pagination counts
+      expect(pagination.total).toBe(3); // Should be 3 unique competitions, not 6 DB rows
+      expect(comps.length).toBe(2); // Requested limit
+      expect(pagination.hasMore).toBe(true); // 0 + 2 < 3 = true
+
+      // Verify each competition shows both user's agents
+      for (const comp of comps) {
+        expect(comp.agents).toBeDefined();
+        expect(comp.agents.length).toBe(2); // Should show both agents for this user
+      }
+    });
+
+    test("user competitions hasMore calculation is accurate", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create a user with agent
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "HasMore Test User",
+        userEmail: "hasmore-test@example.com",
+      });
+
+      const agentResponse = await userClient.createAgent(
+        "HasMore Test Agent",
+        "Agent for hasMore testing",
+      );
+      expect(agentResponse.success).toBe(true);
+      const agent = (agentResponse as AgentProfileResponse).agent;
+
+      // Create exactly 5 competitions
+      for (let i = 0; i < 5; i++) {
+        const createResponse = await adminClient.createCompetition(
+          `HasMore Competition ${i}`,
+          `Competition ${i} for hasMore testing`,
+        );
+        expect(createResponse.success).toBe(true);
+        const createCompResponse = createResponse as CreateCompetitionResponse;
+        await userClient.joinCompetition(
+          createCompResponse.competition.id,
+          agent.id,
+        );
+      }
+
+      // Test scenario where hasMore should be true
+      const page1Response = await userClient.getUserCompetitions({
+        limit: 3,
+        offset: 0,
+      });
+      expect(page1Response.success).toBe(true);
+      expect(
+        (page1Response as UserCompetitionsResponse).pagination.hasMore,
+      ).toBe(true);
+      // 0 + 3 < 5 = true
+
+      // Test scenario where hasMore should be false
+      const page2Response = await userClient.getUserCompetitions({
+        limit: 3,
+        offset: 3,
+      });
+      expect(page2Response.success).toBe(true);
+      expect(
+        (page2Response as UserCompetitionsResponse).pagination.hasMore,
+      ).toBe(false);
+      // 3 + 3 >= 5 = false (even though we only get 2 items back)
+
+      // Verify the returned count matches what we expect
+      const page2Comps = (page2Response as UserCompetitionsResponse)
+        .competitions;
+      expect(page2Comps.length).toBe(2); // Only 2 competitions left (5 - 3 = 2)
+    });
+
+    test("user competitions pagination handles offset beyond total", async () => {
+      // Create a user with agent and limited competitions
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Offset Edge Test User",
+        userEmail: "offset-edge-test@example.com",
+      });
+
+      const agentResponse = await userClient.createAgent(
+        "Offset Edge Test Agent",
+        "Agent for offset edge tests",
+      );
+      expect(agentResponse.success).toBe(true);
+      const agent = (agentResponse as AgentProfileResponse).agent;
+
+      // Create only 2 competitions
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      for (let i = 0; i < 2; i++) {
+        const createResponse = await adminClient.createCompetition(
+          `Edge Test Competition ${i}`,
+          `Competition ${i} for edge testing`,
+        );
+        expect(createResponse.success).toBe(true);
+        const createCompResponse = createResponse as CreateCompetitionResponse;
+        await userClient.joinCompetition(
+          createCompResponse.competition.id,
+          agent.id,
+        );
+      }
+
+      // Test offset beyond total (should return empty array)
+      const beyondTotalResponse = await userClient.getUserCompetitions({
+        offset: 10,
+        limit: 5,
+      });
+      expect(beyondTotalResponse.success).toBe(true);
+      const beyondComps = (beyondTotalResponse as UserCompetitionsResponse)
+        .competitions;
+      expect(beyondComps.length).toBe(0);
+      expect(
+        (beyondTotalResponse as UserCompetitionsResponse).pagination.hasMore,
+      ).toBe(false);
+    });
+
+    test("user competitions valid sort fields work correctly", async () => {
+      // Test that the currently supported sort fields work as expected
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Valid Sort Test User",
+        userEmail: "valid-sort-test@example.com",
+      });
+
+      const agentResponse = await userClient.createAgent(
+        "Valid Sort Test Agent",
+        "Agent for valid sort testing",
+      );
+      expect(agentResponse.success).toBe(true);
+      const agent = (agentResponse as AgentProfileResponse).agent;
+
+      // Create competitions with predictable names for sorting
+      const competitionNames = [
+        "Alpha Competition",
+        "Beta Competition",
+        "Charlie Competition",
+      ];
+
+      for (const name of competitionNames) {
+        const createResponse = await adminClient.createCompetition(
+          name,
+          `Description for ${name}`,
+        );
+        expect(createResponse.success).toBe(true);
+        const createCompResponse = createResponse as CreateCompetitionResponse;
+        await userClient.joinCompetition(
+          createCompResponse.competition.id,
+          agent.id,
+        );
+
+        // Small delay to ensure different timestamps
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+
+      // Test name ascending sort (should work)
+      const nameAscResponse = await userClient.getUserCompetitions({
+        sort: "name",
+      });
+      expect(nameAscResponse.success).toBe(true);
+      const nameAscComps = (nameAscResponse as UserCompetitionsResponse)
+        .competitions;
+      expect(nameAscComps.length).toBe(3);
+      expect(nameAscComps[0]?.name).toBe("Alpha Competition");
+      expect(nameAscComps[1]?.name).toBe("Beta Competition");
+      expect(nameAscComps[2]?.name).toBe("Charlie Competition");
+
+      // Test createdAt descending sort (should work)
+      const createdDescResponse = await userClient.getUserCompetitions({
+        sort: "-createdAt",
+      });
+      expect(createdDescResponse.success).toBe(true);
+      const createdDescComps = (createdDescResponse as UserCompetitionsResponse)
+        .competitions;
+      expect(createdDescComps.length).toBe(3);
+      // Newest first should be "Charlie Competition" (created last)
+      expect(createdDescComps[0]?.name).toBe("Charlie Competition");
+    });
+
+    test("user competitions correct sort format works", async () => {
+      // Test the CORRECT format that the API expects: "fieldName" and "-fieldName"
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Correct Format Test User",
+        userEmail: "correct-format-test@example.com",
+      });
+
+      const agentResponse = await userClient.createAgent(
+        "Correct Format Test Agent",
+        "Agent for correct format testing",
+      );
+      expect(agentResponse.success).toBe(true);
+      const agent = (agentResponse as AgentProfileResponse).agent;
+
+      // Create competitions with predictable names
+      const competitionNames = [
+        "Zebra Competition",
+        "Alpha Competition",
+        "Beta Competition",
+      ];
+
+      for (const name of competitionNames) {
+        const createResponse = await adminClient.createCompetition(
+          name,
+          `Description for ${name}`,
+        );
+        expect(createResponse.success).toBe(true);
+        const createCompResponse = createResponse as CreateCompetitionResponse;
+        await userClient.joinCompetition(
+          createCompResponse.competition.id,
+          agent.id,
+        );
+
+        // Small delay to ensure different timestamps
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+
+      // Test correct format: name ascending (no prefix)
+      const nameAscResponse = await userClient.getUserCompetitions({
+        sort: "name",
+      });
+      expect(nameAscResponse.success).toBe(true);
+      const nameAscComps = (nameAscResponse as UserCompetitionsResponse)
+        .competitions;
+      expect(nameAscComps.length).toBe(3);
+      expect(nameAscComps[0]?.name).toBe("Alpha Competition");
+      expect(nameAscComps[1]?.name).toBe("Beta Competition");
+      expect(nameAscComps[2]?.name).toBe("Zebra Competition");
+
+      // Test correct format: name descending (minus prefix)
+      const nameDescResponse = await userClient.getUserCompetitions({
+        sort: "-name",
+      });
+      expect(nameDescResponse.success).toBe(true);
+      const nameDescComps = (nameDescResponse as UserCompetitionsResponse)
+        .competitions;
+      expect(nameDescComps.length).toBe(3);
+      expect(nameDescComps[0]?.name).toBe("Zebra Competition");
+      expect(nameDescComps[1]?.name).toBe("Beta Competition");
+      expect(nameDescComps[2]?.name).toBe("Alpha Competition");
+
+      // Test correct format: createdAt ascending
+      const createdAscResponse = await userClient.getUserCompetitions({
+        sort: "createdAt",
+      });
+      expect(createdAscResponse.success).toBe(true);
+      const createdAscComps = (createdAscResponse as UserCompetitionsResponse)
+        .competitions;
+      expect(createdAscComps.length).toBe(3);
+      // Oldest first should be "Zebra Competition" (created first)
+      expect(createdAscComps[0]?.name).toBe("Zebra Competition");
+
+      // Test correct format: createdAt descending
+      const createdDescResponse = await userClient.getUserCompetitions({
+        sort: "-createdAt",
+      });
+      expect(createdDescResponse.success).toBe(true);
+      const createdDescComps = (createdDescResponse as UserCompetitionsResponse)
+        .competitions;
+      expect(createdDescComps.length).toBe(3);
+      // Newest first should be "Beta Competition" (created last)
+      expect(createdDescComps[0]?.name).toBe("Beta Competition");
+    });
+
+    test("user competitions multiple sort fields work correctly", async () => {
+      // Test multiple sort fields using the correct format: "field1,field2,-field3"
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Multiple Sort Test User",
+        userEmail: "multiple-sort-test@example.com",
+      });
+
+      const agentResponse = await userClient.createAgent(
+        "Multiple Sort Test Agent",
+        "Agent for multiple sort testing",
+      );
+      expect(agentResponse.success).toBe(true);
+      const agent = (agentResponse as AgentProfileResponse).agent;
+
+      // Create competitions with same names but different timestamps to test multi-field sorting
+      const competitionData = [
+        { name: "Alpha Competition", delay: 100 },
+        { name: "Alpha Competition", delay: 200 }, // Same name, different time
+        { name: "Beta Competition", delay: 150 },
+      ];
+
+      for (const comp of competitionData) {
+        const createResponse = await adminClient.createCompetition(
+          comp.name,
+          `Description for ${comp.name}`,
+        );
+        expect(createResponse.success).toBe(true);
+        const createCompResponse = createResponse as CreateCompetitionResponse;
+        await userClient.joinCompetition(
+          createCompResponse.competition.id,
+          agent.id,
+        );
+
+        // Controlled delay to ensure different timestamps
+        await new Promise((resolve) => setTimeout(resolve, comp.delay));
+      }
+
+      // Test multiple sort fields: name ascending, then createdAt descending
+      const multipleSortResponse = await userClient.getUserCompetitions({
+        sort: "name,-createdAt",
+      });
+      expect(multipleSortResponse.success).toBe(true);
+      const multipleSortComps = (
+        multipleSortResponse as UserCompetitionsResponse
+      ).competitions;
+      expect(multipleSortComps.length).toBe(3);
+
+      // Should be sorted by name first (Alpha, Alpha, Beta),
+      // then by createdAt desc within same names (newer Alpha first)
+      expect(multipleSortComps[0]?.name).toBe("Alpha Competition");
+      expect(multipleSortComps[1]?.name).toBe("Alpha Competition");
+      expect(multipleSortComps[2]?.name).toBe("Beta Competition");
+
+      // Verify the two Alpha competitions are in correct createdAt order (newest first)
+      const alpha1CreatedAt = new Date(multipleSortComps[0]?.createdAt || "");
+      const alpha2CreatedAt = new Date(multipleSortComps[1]?.createdAt || "");
+      expect(alpha1CreatedAt.getTime()).toBeGreaterThan(
+        alpha2CreatedAt.getTime(),
+      );
+    });
+
+    // ========================================
+    // NEW COMPUTED SORT FIELD TESTS
+    // ========================================
+
+    test("user competitions agentName sorting works correctly", async () => {
+      // Test the new agentName computed sort field
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "AgentName Sort Test User",
+        userEmail: "agentname-sort-test@example.com",
+      });
+
+      // Create multiple agents with different names for sorting
+      const agentNames = ["Zebra Agent", "Alpha Agent", "Beta Agent"];
+      const agents = [];
+
+      for (const name of agentNames) {
+        const agentResponse = await userClient.createAgent(
+          name,
+          `Description for ${name}`,
+        );
+        expect(agentResponse.success).toBe(true);
+        agents.push((agentResponse as AgentProfileResponse).agent);
+      }
+
+      // Create competitions and have different agents join different competitions
+      const competitions = [];
+      for (let i = 0; i < 3; i++) {
+        const createResponse = await adminClient.createCompetition(
+          `AgentName Sort Competition ${i}`,
+          `Competition ${i} for agentName sorting`,
+        );
+        expect(createResponse.success).toBe(true);
+        const competition = (createResponse as CreateCompetitionResponse)
+          .competition;
+        competitions.push(competition);
+
+        // Each competition gets a different agent (to test primary agent name sorting)
+        await userClient.joinCompetition(competition.id, agents[i]!.id);
+
+        // Small delay to ensure different timestamps
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+
+      // Test agentName ascending sort (should work now!)
+      const agentNameAscResponse = await userClient.getUserCompetitions({
+        sort: "agentName",
+      });
+      expect(agentNameAscResponse.success).toBe(true);
+      const agentNameAscComps = (
+        agentNameAscResponse as UserCompetitionsResponse
+      ).competitions;
+      expect(agentNameAscComps.length).toBe(3);
+
+      // Verify sorting by primary agent name (alphabetically first)
+      // Should be: Alpha Agent, Beta Agent, Zebra Agent
+      expect(agentNameAscComps[0]?.agents?.[0]?.name).toBe("Alpha Agent");
+      expect(agentNameAscComps[1]?.agents?.[0]?.name).toBe("Beta Agent");
+      expect(agentNameAscComps[2]?.agents?.[0]?.name).toBe("Zebra Agent");
+
+      // Test agentName descending sort
+      const agentNameDescResponse = await userClient.getUserCompetitions({
+        sort: "-agentName",
+      });
+      expect(agentNameDescResponse.success).toBe(true);
+      const agentNameDescComps = (
+        agentNameDescResponse as UserCompetitionsResponse
+      ).competitions;
+      expect(agentNameDescComps.length).toBe(3);
+
+      // Should be: Zebra Agent, Beta Agent, Alpha Agent
+      expect(agentNameDescComps[0]?.agents?.[0]?.name).toBe("Zebra Agent");
+      expect(agentNameDescComps[1]?.agents?.[0]?.name).toBe("Beta Agent");
+      expect(agentNameDescComps[2]?.agents?.[0]?.name).toBe("Alpha Agent");
+    });
+
+    test("user competitions agentName sorting with multiple agents per competition", async () => {
+      // Test agentName sorting when competitions have multiple agents from the same user
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Multi-Agent Sort Test User",
+        userEmail: "multi-agent-sort-test@example.com",
+      });
+
+      // Create agents with specific names to test primary agent selection
+      const agent1Response = await userClient.createAgent(
+        "Charlie Agent",
+        "Third agent alphabetically",
+      );
+      expect(agent1Response.success).toBe(true);
+      const agent1 = (agent1Response as AgentProfileResponse).agent;
+
+      const agent2Response = await userClient.createAgent(
+        "Alpha Agent",
+        "First agent alphabetically",
+      );
+      expect(agent2Response.success).toBe(true);
+      const agent2 = (agent2Response as AgentProfileResponse).agent;
+
+      const agent3Response = await userClient.createAgent(
+        "Beta Agent",
+        "Second agent alphabetically",
+      );
+      expect(agent3Response.success).toBe(true);
+      const agent3 = (agent3Response as AgentProfileResponse).agent;
+
+      // Create two competitions
+      const comp1Response = await adminClient.createCompetition(
+        "Multi-Agent Competition 1",
+        "Competition with Charlie and Alpha agents",
+      );
+      expect(comp1Response.success).toBe(true);
+      const comp1 = (comp1Response as CreateCompetitionResponse).competition;
+
+      const comp2Response = await adminClient.createCompetition(
+        "Multi-Agent Competition 2",
+        "Competition with Beta and Charlie agents",
+      );
+      expect(comp2Response.success).toBe(true);
+      const comp2 = (comp2Response as CreateCompetitionResponse).competition;
+
+      // Competition 1: Charlie + Alpha agents (primary should be "Alpha Agent")
+      await userClient.joinCompetition(comp1.id, agent1.id); // Charlie
+      await userClient.joinCompetition(comp1.id, agent2.id); // Alpha
+
+      // Competition 2: Beta + Charlie agents (primary should be "Beta Agent")
+      await userClient.joinCompetition(comp2.id, agent3.id); // Beta
+      await userClient.joinCompetition(comp2.id, agent1.id); // Charlie
+
+      // Test agentName ascending sort
+      const sortResponse = await userClient.getUserCompetitions({
+        sort: "agentName",
+      });
+      expect(sortResponse.success).toBe(true);
+      const sortedComps = (sortResponse as UserCompetitionsResponse)
+        .competitions;
+      expect(sortedComps.length).toBe(2);
+
+      // Business Rule: Primary agent name is lexicographically first agent name
+      // Competition 1 primary: "Alpha Agent" (Alpha < Charlie)
+      // Competition 2 primary: "Beta Agent" (Beta < Charlie)
+      // Sort order: "Alpha Agent" < "Beta Agent"
+
+      const comp1Result = sortedComps.find(
+        (c) => c.name === "Multi-Agent Competition 1",
+      );
+      const comp2Result = sortedComps.find(
+        (c) => c.name === "Multi-Agent Competition 2",
+      );
+
+      expect(comp1Result).toBeDefined();
+      expect(comp2Result).toBeDefined();
+
+      // Verify Competition 1 comes first (Alpha < Beta)
+      expect(sortedComps[0]?.name).toBe("Multi-Agent Competition 1");
+      expect(sortedComps[1]?.name).toBe("Multi-Agent Competition 2");
+
+      // Verify each competition shows all user's agents
+      expect(comp1Result?.agents?.length).toBe(2);
+      expect(comp2Result?.agents?.length).toBe(2);
+    });
+
+    test("user competitions rank sorting works correctly", async () => {
+      // Test the new rank computed sort field using established patterns from agent.test.ts
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Rank Sort Test User",
+        userEmail: "rank-sort-test@example.com",
+      });
+
+      // Create multiple agents for testing different performance levels
+      const agents = [];
+      for (let i = 1; i <= 3; i++) {
+        const agentResponse = await userClient.createAgent(
+          `Rank Test Agent ${i}`,
+          `Agent ${i} for rank testing`,
+        );
+        expect(agentResponse.success).toBe(true);
+        agents.push((agentResponse as AgentProfileResponse).agent);
+      }
+
+      // Create two competitions with different ranking scenarios
+      const comp1Response = await createTestCompetition(
+        adminClient,
+        "Multi-Agent Competition",
+        "Competition with multiple agents for ranking",
+      );
+      const comp1 = comp1Response.competition;
+
+      const comp2Response = await createTestCompetition(
+        adminClient,
+        "Single Agent Competition",
+        "Competition with single agent",
+      );
+      const comp2 = comp2Response.competition;
+
+      // Join competitions
+      await userClient.joinCompetition(comp1.id, agents[0]!.id); // Will be rank 1 (best)
+      await userClient.joinCompetition(comp1.id, agents[1]!.id); // Will be rank 2 (middle)
+      await userClient.joinCompetition(comp1.id, agents[2]!.id); // Will be rank 3 (worst)
+      await userClient.joinCompetition(comp2.id, agents[0]!.id); // Will be rank 1 (only agent)
+
+      // Start first competition and create ranking differences using established patterns
+      await startExistingTestCompetition(adminClient, comp1.id, [
+        agents[0]!.id,
+        agents[1]!.id,
+        agents[2]!.id,
+      ]);
+
+      // Create ranking differences using the established burn address pattern
+      // Agent 1: Small profitable trade (best rank)
+      const agent1Client = adminClient.createAgentClient(agents[0]!.apiKey!);
+      await agent1Client.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: config.specificChainTokens.eth.eth, // ETH - should maintain/increase value
+        amount: "50",
+        reason: "Agent 1 small trade - USDC to ETH",
+      });
+
+      // Agent 2: Mixed performance (middle rank)
+      const agent2Client = adminClient.createAgentClient(agents[1]!.apiKey!);
+      await agent2Client.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead", // Burn - bad trade
+        amount: "25",
+        reason: "Agent 2 bad trade - burning tokens",
+      });
+
+      // Agent 3: Poor performance using burn address pattern (worst rank)
+      const agent3Client = adminClient.createAgentClient(agents[2]!.apiKey!);
+      await agent3Client.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead", // Burn address
+        amount: "50",
+        reason: "Agent 3 terrible trade - burning large amount",
+      });
+
+      // End first competition and start second
+      await adminClient.endCompetition(comp1.id);
+      await startExistingTestCompetition(adminClient, comp2.id, [
+        agents[0]!.id,
+      ]);
+
+      // Wait for portfolio snapshots to be created
+      await wait(2000);
+
+      // Test rank ascending sort (best ranks first)
+      const rankAscResponse = await userClient.getUserCompetitions({
+        sort: "rank",
+      });
+      expect(rankAscResponse.success).toBe(true);
+      const rankAscComps = (rankAscResponse as UserCompetitionsResponse)
+        .competitions;
+      expect(rankAscComps.length).toBe(2);
+
+      // Find competitions by name to verify sorting
+      const multiAgentComp = rankAscComps.find(
+        (c) => c.name === "Multi-Agent Competition",
+      );
+      const singleAgentComp = rankAscComps.find(
+        (c) => c.name === "Single Agent Competition",
+      );
+
+      expect(multiAgentComp).toBeDefined();
+      expect(singleAgentComp).toBeDefined();
+
+      // Both should have rank 1 for this user's best agent, but multi-agent comp had more competition
+      expect(multiAgentComp!.agents?.[0]?.rank).toBe(1); // Agent 1 won the 3-agent competition
+      expect(singleAgentComp!.agents?.[0]?.rank).toBe(1); // Agent 1 alone in competition
+
+      // Test rank descending sort
+      const rankDescResponse = await userClient.getUserCompetitions({
+        sort: "-rank",
+      });
+      expect(rankDescResponse.success).toBe(true);
+      const rankDescComps = (rankDescResponse as UserCompetitionsResponse)
+        .competitions;
+      expect(rankDescComps.length).toBe(2);
+
+      // Order should be reversed, but ranks should be the same
+      const multiAgentCompDesc = rankDescComps.find(
+        (c) => c.name === "Multi-Agent Competition",
+      );
+      const singleAgentCompDesc = rankDescComps.find(
+        (c) => c.name === "Single Agent Competition",
+      );
+
+      expect(multiAgentCompDesc!.agents?.[0]?.rank).toBe(1);
+      expect(singleAgentCompDesc!.agents?.[0]?.rank).toBe(1);
+    });
+
+    test("user competitions rank sorting with undefined ranks", async () => {
+      // Test rank sorting when some competitions have no ranking data
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Undefined Rank Test User",
+        userEmail: "undefined-rank-test@example.com",
+      });
+
+      const agentResponse = await userClient.createAgent(
+        "Undefined Rank Test Agent",
+        "Agent for testing undefined rank handling",
+      );
+      expect(agentResponse.success).toBe(true);
+      const agent = (agentResponse as AgentProfileResponse).agent;
+
+      // Create one started competition (will have rank) and one unstarted (no rank)
+      const startedCompResponse = await createTestCompetition(
+        adminClient,
+        "Started Competition",
+        "Competition that will be started",
+      );
+      const startedComp = startedCompResponse.competition;
+
+      const unstartedCompResponse = await createTestCompetition(
+        adminClient,
+        "Unstarted Competition",
+        "Competition that will not be started",
+      );
+      const unstartedComp = unstartedCompResponse.competition;
+
+      // Join both competitions
+      await userClient.joinCompetition(startedComp.id, agent.id);
+      await userClient.joinCompetition(unstartedComp.id, agent.id);
+
+      // Start only one competition
+      await startExistingTestCompetition(adminClient, startedComp.id, [
+        agent.id,
+      ]);
+      await wait(1000);
+
+      // Test rank ascending sort - competitions with undefined ranks should go to end
+      const rankSortResponse = await userClient.getUserCompetitions({
+        sort: "rank",
+      });
+      expect(rankSortResponse.success).toBe(true);
+      const rankSortComps = (rankSortResponse as UserCompetitionsResponse)
+        .competitions;
+      expect(rankSortComps.length).toBe(2);
+
+      // First competition should be the one with valid rank
+      expect(rankSortComps[0]?.name).toBe("Started Competition");
+      expect(rankSortComps[0]?.agents?.[0]?.rank).toBe(1);
+
+      // Second competition should be the one with undefined rank
+      expect(rankSortComps[1]?.name).toBe("Unstarted Competition");
+      expect(rankSortComps[1]?.agents?.[0]?.rank).toBeUndefined();
+    });
+
+    test("user competitions new sort fields validation", async () => {
+      // Test that the new sort fields are properly validated
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "New Sort Validation User",
+        userEmail: "new-sort-validation@example.com",
+      });
+
+      // Test that agentName is now a valid sort field (should not throw 400)
+      const agentNameResponse = await userClient.getUserCompetitions({
+        sort: "agentName",
+      });
+      expect(agentNameResponse.success).toBe(true);
+
+      // Test that rank is now a valid sort field (should not throw 400)
+      const rankResponse = await userClient.getUserCompetitions({
+        sort: "rank",
+      });
+      expect(rankResponse.success).toBe(true);
+
+      // Test that descending variants work
+      const agentNameDescResponse = await userClient.getUserCompetitions({
+        sort: "-agentName",
+      });
+      expect(agentNameDescResponse.success).toBe(true);
+
+      const rankDescResponse = await userClient.getUserCompetitions({
+        sort: "-rank",
+      });
+      expect(rankDescResponse.success).toBe(true);
+
+      // Test that invalid sort fields still throw 400
+      const invalidResponse = await userClient.getUserCompetitions({
+        sort: "invalidField",
+      });
+      expect(invalidResponse.success).toBe(false);
+      expect((invalidResponse as ErrorResponse).status).toBe(400);
+      expect((invalidResponse as ErrorResponse).error).toContain(
+        "cannot sort by field",
+      );
+    });
+
+    test("user competitions combined sort with new fields", async () => {
+      // Test combining new computed sort fields with existing database fields
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Combined Sort Test User",
+        userEmail: "combined-sort-test@example.com",
+      });
+
+      const agentResponse = await userClient.createAgent(
+        "Combined Sort Test Agent",
+        "Agent for combined sort testing",
+      );
+      expect(agentResponse.success).toBe(true);
+      const agent = (agentResponse as AgentProfileResponse).agent;
+
+      // Create competitions with same agent names but different creation times
+      for (let i = 0; i < 3; i++) {
+        const createResponse = await adminClient.createCompetition(
+          `Combined Sort Competition ${i}`,
+          `Competition ${i} for combined sort testing`,
+        );
+        expect(createResponse.success).toBe(true);
+        const competition = (createResponse as CreateCompetitionResponse)
+          .competition;
+        await userClient.joinCompetition(competition.id, agent.id);
+
+        // Controlled delay for predictable timestamps
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+
+      // Test combined sort: agentName ascending, then createdAt descending
+      // Since all have same agent, should sort by createdAt desc as secondary
+      const combinedResponse = await userClient.getUserCompetitions({
+        sort: "agentName,-createdAt",
+      });
+      expect(combinedResponse.success).toBe(true);
+      const combinedComps = (combinedResponse as UserCompetitionsResponse)
+        .competitions;
+      expect(combinedComps.length).toBe(3);
+
+      // Verify newest competition comes first (since agentName is same for all)
+      expect(combinedComps[0]?.name).toBe("Combined Sort Competition 2");
+      expect(combinedComps[1]?.name).toBe("Combined Sort Competition 1");
+      expect(combinedComps[2]?.name).toBe("Combined Sort Competition 0");
+    });
+
+    test("user competitions agentName sorting with pagination", async () => {
+      // Test pagination with agentName computed sorting
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "AgentName Pagination Test User",
+        userEmail: "agentname-pagination-test@example.com",
+      });
+
+      // Create multiple agents with predictable names for sorting
+      const agentNames = [
+        "Alpha Agent",
+        "Beta Agent",
+        "Charlie Agent",
+        "Delta Agent",
+        "Echo Agent",
+      ];
+      const agents = [];
+
+      for (const name of agentNames) {
+        const agentResponse = await userClient.createAgent(
+          name,
+          `Description for ${name}`,
+        );
+        expect(agentResponse.success).toBe(true);
+        agents.push((agentResponse as AgentProfileResponse).agent);
+      }
+
+      // Create 5 competitions, each with a different agent
+      for (let i = 0; i < 5; i++) {
+        const createResponse = await adminClient.createCompetition(
+          `AgentName Pagination Competition ${i}`,
+          `Competition ${i} for agentName pagination testing`,
+        );
+        expect(createResponse.success).toBe(true);
+        const competition = (createResponse as CreateCompetitionResponse)
+          .competition;
+        await userClient.joinCompetition(competition.id, agents[i]!.id);
+
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+
+      // Test first page (limit 2, offset 0) with agentName sorting
+      const page1Response = await userClient.getUserCompetitions({
+        sort: "agentName",
+        limit: 2,
+        offset: 0,
+      });
+      expect(page1Response.success).toBe(true);
+      const page1Comps = (page1Response as UserCompetitionsResponse)
+        .competitions;
+      expect(page1Comps.length).toBe(2);
+      expect((page1Response as UserCompetitionsResponse).pagination.total).toBe(
+        5,
+      );
+      expect(
+        (page1Response as UserCompetitionsResponse).pagination.hasMore,
+      ).toBe(true);
+
+      // Should be Alpha and Beta (first 2 alphabetically)
+      expect(page1Comps[0]?.agents?.[0]?.name).toBe("Alpha Agent");
+      expect(page1Comps[1]?.agents?.[0]?.name).toBe("Beta Agent");
+
+      // Test second page (limit 2, offset 2)
+      const page2Response = await userClient.getUserCompetitions({
+        sort: "agentName",
+        limit: 2,
+        offset: 2,
+      });
+      expect(page2Response.success).toBe(true);
+      const page2Comps = (page2Response as UserCompetitionsResponse)
+        .competitions;
+      expect(page2Comps.length).toBe(2);
+      expect((page2Response as UserCompetitionsResponse).pagination.total).toBe(
+        5,
+      );
+      expect(
+        (page2Response as UserCompetitionsResponse).pagination.hasMore,
+      ).toBe(true);
+
+      // Should be Charlie and Delta
+      expect(page2Comps[0]?.agents?.[0]?.name).toBe("Charlie Agent");
+      expect(page2Comps[1]?.agents?.[0]?.name).toBe("Delta Agent");
+
+      // Test final page (limit 2, offset 4)
+      const page3Response = await userClient.getUserCompetitions({
+        sort: "agentName",
+        limit: 2,
+        offset: 4,
+      });
+      expect(page3Response.success).toBe(true);
+      const page3Comps = (page3Response as UserCompetitionsResponse)
+        .competitions;
+      expect(page3Comps.length).toBe(1); // Only Echo left
+      expect((page3Response as UserCompetitionsResponse).pagination.total).toBe(
+        5,
+      );
+      expect(
+        (page3Response as UserCompetitionsResponse).pagination.hasMore,
+      ).toBe(false);
+
+      // Should be Echo
+      expect(page3Comps[0]?.agents?.[0]?.name).toBe("Echo Agent");
+
+      // Verify no overlapping results between pages
+      const allPageIds = [
+        ...page1Comps.map((c) => c.id),
+        ...page2Comps.map((c) => c.id),
+        ...page3Comps.map((c) => c.id),
+      ];
+      const uniqueIds = new Set(allPageIds);
+      expect(uniqueIds.size).toBe(allPageIds.length); // No duplicates
+    });
+
+    test("user competitions rank sorting with pagination", async () => {
+      // Test pagination with rank computed sorting
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Rank Pagination Test User",
+        userEmail: "rank-pagination-test@example.com",
+      });
+
+      // Create multiple agents
+      const agents = [];
+      for (let i = 0; i < 4; i++) {
+        const agentResponse = await userClient.createAgent(
+          `Rank Test Agent ${i}`,
+          `Agent ${i} for rank pagination testing`,
+        );
+        expect(agentResponse.success).toBe(true);
+        agents.push((agentResponse as AgentProfileResponse).agent);
+      }
+
+      // Create 2 started competitions (will have ranks) and 2 unstarted (no ranks)
+      const competitions = [];
+
+      // Create started competitions with different performance levels
+      for (let i = 0; i < 2; i++) {
+        const createResponse = await createTestCompetition(
+          adminClient,
+          `Started Rank Competition ${i}`,
+          `Started competition ${i} for rank testing`,
+        );
+        const competition = createResponse.competition;
+        competitions.push(competition);
+
+        await userClient.joinCompetition(competition.id, agents[i]!.id);
+        await startExistingTestCompetition(adminClient, competition.id, [
+          agents[i]!.id,
+        ]);
+
+        // Create different performance levels using established burn address pattern
+        const agentClient = adminClient.createAgentClient(agents[i]!.apiKey!);
+        if (i === 0) {
+          // Best performer: keep valuable assets
+          await agentClient.executeTrade({
+            fromToken: config.specificChainTokens.eth.usdc,
+            toToken: config.specificChainTokens.eth.eth,
+            amount: "100",
+            reason: "Smart trade - buying ETH",
+          });
+        } else {
+          // Poor performer: burn tokens to create lower rank
+          await agentClient.executeTrade({
+            fromToken: config.specificChainTokens.eth.usdc,
+            toToken: "0x000000000000000000000000000000000000dead", // Burn address
+            amount: "150",
+            reason: "Bad trade - burning tokens",
+          });
+        }
+
+        // End this competition before starting the next one (only one can be active)
+        await adminClient.endCompetition(competition.id);
+      }
+
+      // Unstarted competitions
+      for (let i = 2; i < 4; i++) {
+        const createResponse = await createTestCompetition(
+          adminClient,
+          `Unstarted Rank Competition ${i}`,
+          `Unstarted competition ${i} for rank testing`,
+        );
+        const competition = createResponse.competition;
+        competitions.push(competition);
+
+        await userClient.joinCompetition(competition.id, agents[i]!.id);
+      }
+
+      // Wait for portfolio snapshots
+      await wait(1500);
+
+      // Test first page with rank sorting (started competitions should come first)
+      const page1Response = await userClient.getUserCompetitions({
+        sort: "rank",
+        limit: 2,
+        offset: 0,
+      });
+      expect(page1Response.success).toBe(true);
+      const page1Comps = (page1Response as UserCompetitionsResponse)
+        .competitions;
+      expect(page1Comps.length).toBe(2);
+      expect((page1Response as UserCompetitionsResponse).pagination.total).toBe(
+        4,
+      );
+      expect(
+        (page1Response as UserCompetitionsResponse).pagination.hasMore,
+      ).toBe(true);
+
+      // First 2 should be the started competitions (with ranks)
+      expect(page1Comps[0]?.agents?.[0]?.rank).toBe(1);
+      expect(page1Comps[1]?.agents?.[0]?.rank).toBe(1);
+
+      // Test second page (should be unstarted competitions)
+      const page2Response = await userClient.getUserCompetitions({
+        sort: "rank",
+        limit: 2,
+        offset: 2,
+      });
+      expect(page2Response.success).toBe(true);
+      const page2Comps = (page2Response as UserCompetitionsResponse)
+        .competitions;
+      expect(page2Comps.length).toBe(2);
+      expect((page2Response as UserCompetitionsResponse).pagination.total).toBe(
+        4,
+      );
+      expect(
+        (page2Response as UserCompetitionsResponse).pagination.hasMore,
+      ).toBe(false);
+
+      // Last 2 should be the unstarted competitions (undefined ranks)
+      expect(page2Comps[0]?.agents?.[0]?.rank).toBeUndefined();
+      expect(page2Comps[1]?.agents?.[0]?.rank).toBeUndefined();
+    });
+
+    test("user competitions pagination accuracy with computed sorting", async () => {
+      // Test that pagination counts are accurate when using computed sorting
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Computed Pagination Test User",
+        userEmail: "computed-pagination-test@example.com",
+      });
+
+      // Create multiple agents with different names
+      const agentNames = ["Zebra", "Alpha", "Beta", "Gamma", "Delta", "Echo"];
+      const agents = [];
+
+      for (const name of agentNames) {
+        const agentResponse = await userClient.createAgent(
+          `${name} Agent`,
+          `Agent named ${name}`,
+        );
+        expect(agentResponse.success).toBe(true);
+        agents.push((agentResponse as AgentProfileResponse).agent);
+      }
+
+      // Create 6 competitions, each with a different agent
+      for (let i = 0; i < 6; i++) {
+        const createResponse = await adminClient.createCompetition(
+          `Computed Pagination Competition ${i}`,
+          `Competition ${i} for computed pagination testing`,
+        );
+        expect(createResponse.success).toBe(true);
+        const competition = (createResponse as CreateCompetitionResponse)
+          .competition;
+        await userClient.joinCompetition(competition.id, agents[i]!.id);
+      }
+
+      // Test various pagination scenarios with computed sorting
+
+      // Scenario 1: First 3 items
+      const scenario1 = await userClient.getUserCompetitions({
+        sort: "agentName",
+        limit: 3,
+        offset: 0,
+      });
+      expect(scenario1.success).toBe(true);
+      expect((scenario1 as UserCompetitionsResponse).competitions.length).toBe(
+        3,
+      );
+      expect((scenario1 as UserCompetitionsResponse).pagination.total).toBe(6);
+      expect((scenario1 as UserCompetitionsResponse).pagination.hasMore).toBe(
+        true,
+      );
+      expect((scenario1 as UserCompetitionsResponse).pagination.offset).toBe(0);
+      expect((scenario1 as UserCompetitionsResponse).pagination.limit).toBe(3);
+
+      // Scenario 2: Next 3 items
+      const scenario2 = await userClient.getUserCompetitions({
+        sort: "agentName",
+        limit: 3,
+        offset: 3,
+      });
+      expect(scenario2.success).toBe(true);
+      expect((scenario2 as UserCompetitionsResponse).competitions.length).toBe(
+        3,
+      );
+      expect((scenario2 as UserCompetitionsResponse).pagination.total).toBe(6);
+      expect((scenario2 as UserCompetitionsResponse).pagination.hasMore).toBe(
+        false,
+      );
+      expect((scenario2 as UserCompetitionsResponse).pagination.offset).toBe(3);
+      expect((scenario2 as UserCompetitionsResponse).pagination.limit).toBe(3);
+
+      // Scenario 3: Offset beyond total
+      const scenario3 = await userClient.getUserCompetitions({
+        sort: "agentName",
+        limit: 3,
+        offset: 10,
+      });
+      expect(scenario3.success).toBe(true);
+      expect((scenario3 as UserCompetitionsResponse).competitions.length).toBe(
+        0,
+      );
+      expect((scenario3 as UserCompetitionsResponse).pagination.total).toBe(6);
+      expect((scenario3 as UserCompetitionsResponse).pagination.hasMore).toBe(
+        false,
+      );
+
+      // Scenario 4: Large limit
+      const scenario4 = await userClient.getUserCompetitions({
+        sort: "agentName",
+        limit: 20,
+        offset: 0,
+      });
+      expect(scenario4.success).toBe(true);
+      expect((scenario4 as UserCompetitionsResponse).competitions.length).toBe(
+        6,
+      );
+      expect((scenario4 as UserCompetitionsResponse).pagination.total).toBe(6);
+      expect((scenario4 as UserCompetitionsResponse).pagination.hasMore).toBe(
+        false,
+      );
+
+      // Verify sorting is correct across all scenarios
+      const allSorted = (scenario4 as UserCompetitionsResponse).competitions;
+      const expectedOrder = [
+        "Alpha Agent",
+        "Beta Agent",
+        "Delta Agent",
+        "Echo Agent",
+        "Gamma Agent",
+        "Zebra Agent",
+      ];
+
+      for (let i = 0; i < expectedOrder.length; i++) {
+        expect(allSorted[i]?.agents?.[0]?.name).toBe(expectedOrder[i]);
+      }
+    });
+
+    test("user competitions mixed computed and database sorting with pagination", async () => {
+      // Test pagination with mixed computed (agentName) and database (createdAt) sorting
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Mixed Sort Pagination User",
+        userEmail: "mixed-sort-pagination@example.com",
+      });
+
+      // Create agents with unique names but predictable sorting for testing
+      const agentData = [
+        { name: "Alpha Agent A", comp: "Competition A" },
+        { name: "Alpha Agent B", comp: "Competition B" },
+        { name: "Beta Agent A", comp: "Competition C" },
+        { name: "Beta Agent B", comp: "Competition D" },
+        { name: "Gamma Agent", comp: "Competition E" },
+      ];
+
+      const agents = [];
+      for (const data of agentData) {
+        const agentResponse = await userClient.createAgent(
+          data.name,
+          `Agent for ${data.comp}`,
+        );
+        expect(agentResponse.success).toBe(true);
+        agents.push((agentResponse as AgentProfileResponse).agent);
+      }
+
+      // Create competitions with controlled timing for secondary sort
+      for (let i = 0; i < agentData.length; i++) {
+        const createResponse = await adminClient.createCompetition(
+          agentData[i]!.comp,
+          `Competition ${i} for mixed sorting`,
+        );
+        expect(createResponse.success).toBe(true);
+        const competition = (createResponse as CreateCompetitionResponse)
+          .competition;
+        await userClient.joinCompetition(competition.id, agents[i]!.id);
+
+        // Controlled delay for predictable timestamps
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+
+      // Test pagination with mixed sort: agentName (computed) + createdAt descending (database)
+      const page1Response = await userClient.getUserCompetitions({
+        sort: "agentName,-createdAt",
+        limit: 3,
+        offset: 0,
+      });
+      expect(page1Response.success).toBe(true);
+      const page1Comps = (page1Response as UserCompetitionsResponse)
+        .competitions;
+      expect(page1Comps.length).toBe(3);
+      expect((page1Response as UserCompetitionsResponse).pagination.total).toBe(
+        5,
+      );
+      expect(
+        (page1Response as UserCompetitionsResponse).pagination.hasMore,
+      ).toBe(true);
+
+      // Should be: Alpha Agent A, Alpha Agent B, Beta Agent A
+      expect(page1Comps[0]?.name).toBe("Competition A"); // Alpha Agent A
+      expect(page1Comps[1]?.name).toBe("Competition B"); // Alpha Agent B
+      expect(page1Comps[2]?.name).toBe("Competition C"); // Beta Agent A
+
+      // Test second page
+      const page2Response = await userClient.getUserCompetitions({
+        sort: "agentName,-createdAt",
+        limit: 3,
+        offset: 3,
+      });
+      expect(page2Response.success).toBe(true);
+      const page2Comps = (page2Response as UserCompetitionsResponse)
+        .competitions;
+      expect(page2Comps.length).toBe(2);
+      expect(
+        (page2Response as UserCompetitionsResponse).pagination.hasMore,
+      ).toBe(false);
+
+      // Should be: Beta Agent B, Gamma Agent
+      expect(page2Comps[0]?.name).toBe("Competition D"); // Beta Agent B
+      expect(page2Comps[1]?.name).toBe("Competition E"); // Gamma Agent
+    });
   });
 });

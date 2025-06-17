@@ -31,7 +31,6 @@ import {
   findBestPlacementForAgent,
   getAgentCompetitionRanking,
   getAgentPortfolioSnapshots,
-  getLatestPortfolioSnapshots,
 } from "@/database/repositories/competition-repository.js";
 import {
   countAgentTrades,
@@ -904,16 +903,44 @@ export class AgentManager {
         params,
       );
 
+      // Service layer validates business inputs
       const {
-        data: pagingParams,
+        data: validatedParams,
         success,
         error,
       } = PagingParamsSchema.safeParse(params);
       if (!success) {
-        throw new ApiError(500, `cannot parse paging: ${error}`);
+        throw new ApiError(400, `Invalid pagination parameters: ${error}`);
       }
-      // Get all agents owned by this user
-      const userAgents = await this.getAgentsByOwner(userId, pagingParams);
+
+      // Validate sort parameter early (before checking if user has agents)
+      // This ensures consistent error handling regardless of user's agent count
+      if (validatedParams.sort) {
+        const validSortFields = [
+          "name",
+          "startDate",
+          "endDate",
+          "createdAt",
+          "status",
+          "agentName",
+          "rank",
+        ];
+        const sortParts = validatedParams.sort.split(",");
+
+        for (const part of sortParts) {
+          const fieldName = part.startsWith("-") ? part.slice(1) : part;
+          if (!validSortFields.includes(fieldName)) {
+            throw new ApiError(400, `cannot sort by field: '${fieldName}'`);
+          }
+        }
+      }
+
+      // Get user agents (no competition sort - we're sorting competitions, not agents)
+      const userAgents = await this.getAgentsByOwner(userId, {
+        sort: "",
+        limit: 100,
+        offset: 0,
+      });
       const agentIds = userAgents.map((agent) => agent.id);
 
       if (agentIds.length === 0) {
@@ -921,16 +948,125 @@ export class AgentManager {
         return { competitions: [], total: 0 };
       }
 
-      // Get competitions for all user's agents
-      const results = await findUserAgentCompetitions(agentIds, params);
+      // Combine validated pagination with other parameters
+      const competitionParams = {
+        ...params, // Keep business fields (status, claimed, etc.)
+        ...validatedParams, // Use validated pagination (sort, limit, offset)
+      };
 
-      // Group by competition to avoid duplicates and format the
-      // data to match what's expected by the client
+      // Use optimized repository method that handles both database and computed sorting efficiently
+      const results = await findUserAgentCompetitions(
+        agentIds,
+        competitionParams,
+      );
+
+      // Handle computed field sorting if needed (optimized version still needs service-layer sorting for computed fields)
+      if (results.isComputedSort && validatedParams.sort) {
+        // Group competitions first, then sort them
+        const agentCompetitions = new Map();
+
+        results.competitions.forEach((data) => {
+          if (!data.competitions) return;
+
+          const competitionId = data.competitions.id;
+          const comp =
+            agentCompetitions.get(competitionId) || data.competitions;
+          const agent = data.agents
+            ? this.sanitizeAgent(data.agents)
+            : undefined;
+
+          if (!Array.isArray(comp.agents)) comp.agents = [];
+
+          if (
+            typeof agent?.id === "string" &&
+            !comp.agents.find((a: AgentPublic) => a.id === agent?.id)
+          ) {
+            comp.agents.push(agent);
+          }
+
+          agentCompetitions.set(competitionId, comp);
+        });
+
+        // Get all unique competitions for sorting
+        const allCompetitions = Array.from(agentCompetitions.values());
+
+        // Add rankings to competitions for sorting - optimized version includes leaderboard data
+        await Promise.all(
+          allCompetitions.map(async (comp) => {
+            for (const agent of comp.agents) {
+              // Try to get rank from leaderboard data first (already joined in optimized query)
+              const leaderboardData = results.competitions.find(
+                (data) =>
+                  data.competitions?.id === comp.id &&
+                  data.agents?.id === agent.id,
+              )?.competitions_leaderboard;
+
+              if (leaderboardData?.rank) {
+                agent.rank = leaderboardData.rank;
+              } else {
+                // Fallback to existing function if not in leaderboard
+                const rankResult = await getAgentCompetitionRanking(
+                  agent.id,
+                  comp.id,
+                );
+                agent.rank = rankResult?.rank;
+              }
+            }
+
+            // Sort agents within the competition by rank (best rank first)
+            comp.agents.sort(
+              (
+                a: AgentPublic & { rank?: number },
+                b: AgentPublic & { rank?: number },
+              ) => {
+                const aRank = a.rank;
+                const bRank = b.rank;
+
+                // Handle undefined ranks - put them at the end
+                if (aRank === undefined && bRank === undefined) return 0;
+                if (aRank === undefined) return 1;
+                if (bRank === undefined) return -1;
+
+                // Lower rank number = better performance
+                return aRank - bRank;
+              },
+            );
+          }),
+        );
+
+        // Sort competitions using computed fields
+        const sortedCompetitions = this.sortCompetitionsByComputedField(
+          allCompetitions,
+          validatedParams.sort,
+        );
+
+        // Apply pagination manually for computed sorting
+        const startIndex = validatedParams.offset || 0;
+        const endIndex = startIndex + (validatedParams.limit || 10);
+        const paginatedCompetitions = sortedCompetitions.slice(
+          startIndex,
+          endIndex,
+        );
+
+        return {
+          competitions: paginatedCompetitions,
+          total: results.total,
+          hasMore: endIndex < results.total,
+          limit: validatedParams.limit || 10,
+          offset: validatedParams.offset || 0,
+        };
+      }
+
+      // Group by competition to avoid duplicates while preserving sort order
+      // Track order of competitions as they appear in sorted results
       const agentCompetitions = new Map();
+      const competitionOrder: string[] = [];
+
       results.competitions.forEach((data) => {
         if (!data.competitions) return;
-        const comp =
-          agentCompetitions.get(data.competitions.id) || data.competitions;
+
+        const competitionId = data.competitions.id;
+        const comp = agentCompetitions.get(competitionId) || data.competitions;
         const agent = data.agents ? this.sanitizeAgent(data.agents) : undefined;
 
         if (!Array.isArray(comp.agents)) comp.agents = [];
@@ -942,42 +1078,83 @@ export class AgentManager {
           comp.agents.push(agent);
         }
 
-        agentCompetitions.set(data.competitions.id, comp);
+        // Track order only on first encounter to preserve sort order
+        if (!agentCompetitions.has(competitionId)) {
+          competitionOrder.push(competitionId);
+        }
+
+        agentCompetitions.set(competitionId, comp);
       });
 
-      // TODO: since rankings are not really done, need to make a bunch of db calls and get rankings
-      //  for every competition in this result set and make sure to append the agent's rank to the
-      //  response data.
+      // Add rankings using leaderboard data from optimized query (with fallback)
       await Promise.all(
         Array.from(agentCompetitions.keys()).map(async (compId: string) => {
           const agentComp = agentCompetitions.get(compId);
-          const snapshots = await getLatestPortfolioSnapshots(compId);
-          const rankings = snapshots.sort(
-            (a, b) => b.totalValue - a.totalValue,
-          );
 
           for (const agent of agentComp.agents) {
-            // rank == 0 means no snapshots/rankings for competition yet
-            const rank =
-              rankings.findIndex((snap) => snap.agentId === agent.id) + 1;
-            // agent is a reference so we can set here
-            agent.rank = rank;
+            // Try to get rank from leaderboard data first (already joined in optimized query)
+            const leaderboardData = results.competitions.find(
+              (data) =>
+                data.competitions?.id === compId &&
+                data.agents?.id === agent.id,
+            )?.competitions_leaderboard;
+
+            if (leaderboardData?.rank) {
+              agent.rank = leaderboardData.rank;
+            } else {
+              // Fallback to existing function if not in leaderboard
+              const rankResult = await getAgentCompetitionRanking(
+                agent.id,
+                compId,
+              );
+              agent.rank = rankResult?.rank;
+            }
           }
+
+          // Sort agents within the competition by rank (best rank first)
+          agentComp.agents.sort(
+            (
+              a: AgentPublic & { rank?: number },
+              b: AgentPublic & { rank?: number },
+            ) => {
+              const aRank = a.rank;
+              const bRank = b.rank;
+
+              // Handle undefined ranks - put them at the end
+              if (aRank === undefined && bRank === undefined) return 0;
+              if (aRank === undefined) return 1;
+              if (bRank === undefined) return -1;
+
+              // Lower rank number = better performance
+              return aRank - bRank;
+            },
+          );
         }),
       );
 
       console.log(
         `[AgentManager] Found ${results.total} competitions containing agents owned by user ${userId}`,
       );
+
+      // Return competitions in the original sorted order
+      const sortedCompetitions = competitionOrder.map((id) =>
+        agentCompetitions.get(id),
+      );
+
       return {
         ...results,
-        competitions: Array.from(agentCompetitions.values()),
+        competitions: sortedCompetitions,
       };
     } catch (error) {
       console.error(
         `[AgentManager] Error retrieving competitions for user ${userId} agents:`,
         error,
       );
+      // Re-throw ApiErrors (validation errors) to be handled by controller
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      // For other errors, return empty result
       return { competitions: [], total: 0 };
     }
   }
@@ -1142,55 +1319,134 @@ export class AgentManager {
 
   /**
    * Sort competitions by computed fields
-   * @param competitions Array of competitions with metrics
-   * @param sortString Sort string (e.g., "portfolioValue", "-pnl")
+   * @param competitions Array of competitions with metrics and agents
+   * @param sortString Sort string (e.g., "portfolioValue", "-pnl", "agentName,-createdAt")
    * @returns Sorted competitions array
    */
   private sortCompetitionsByComputedField(
-    competitions: EnhancedCompetition[],
+    competitions: (EnhancedCompetition & { agents?: AgentPublic[] })[],
     sortString: string,
-  ): EnhancedCompetition[] {
+  ): (EnhancedCompetition & { agents?: AgentPublic[] })[] {
     const parts = sortString.split(",");
-    const sortField = parts[0];
-    if (!sortField) return competitions;
-
-    const isDesc = sortField.startsWith("-");
-    const field = isDesc ? sortField.slice(1) : sortField;
+    if (parts.length === 0) return competitions;
 
     return competitions.sort((a, b) => {
-      let aValue: number;
-      let bValue: number;
+      // Process each sort field in order
+      for (const sortField of parts) {
+        if (!sortField) continue;
 
-      switch (field) {
-        case "portfolioValue":
-          aValue = a.portfolioValue || 0;
-          bValue = b.portfolioValue || 0;
-          break;
-        case "pnl":
-          aValue = a.pnl || 0;
-          bValue = b.pnl || 0;
-          break;
-        case "totalTrades":
-          aValue = a.totalTrades || 0;
-          bValue = b.totalTrades || 0;
-          break;
-        case "rank": {
-          // Handle undefined bestPlacement: push to end of results
-          const aRank = a.bestPlacement?.rank;
-          const bRank = b.bestPlacement?.rank;
+        const isDesc = sortField.startsWith("-");
+        const field = isDesc ? sortField.slice(1) : sortField;
+        let comparison = 0;
 
-          if (aRank === undefined && bRank === undefined) return 0;
-          if (aRank === undefined) return 1; // a goes to end
-          if (bRank === undefined) return -1; // b goes to end
+        switch (field) {
+          case "portfolioValue": {
+            const aValue = a.portfolioValue || 0;
+            const bValue = b.portfolioValue || 0;
+            comparison = isDesc ? bValue - aValue : aValue - bValue;
+            break;
+          }
+          case "pnl": {
+            const aValue = a.pnl || 0;
+            const bValue = b.pnl || 0;
+            comparison = isDesc ? bValue - aValue : aValue - bValue;
+            break;
+          }
+          case "totalTrades": {
+            const aValue = a.totalTrades || 0;
+            const bValue = b.totalTrades || 0;
+            comparison = isDesc ? bValue - aValue : aValue - bValue;
+            break;
+          }
+          case "rank": {
+            // Handle undefined ranks: push to end of results
+            const aAgent = a.agents?.[0];
+            const bAgent = b.agents?.[0];
+            const aRank =
+              aAgent && "rank" in aAgent && typeof aAgent.rank === "number"
+                ? aAgent.rank
+                : undefined;
+            const bRank =
+              bAgent && "rank" in bAgent && typeof bAgent.rank === "number"
+                ? bAgent.rank
+                : undefined;
 
-          // For rank, lower is better, so reverse the comparison
-          return isDesc ? aRank - bRank : bRank - aRank;
+            if (aRank === undefined && bRank === undefined) {
+              comparison = 0;
+            } else if (aRank === undefined) {
+              comparison = 1; // a goes to end
+            } else if (bRank === undefined) {
+              comparison = -1; // b goes to end
+            } else {
+              // For rank, lower is better (rank 1 > rank 2 > rank 3)
+              comparison = isDesc ? bRank - aRank : aRank - bRank;
+            }
+            break;
+          }
+          case "agentName": {
+            // Sort by agent name (first agent's name in each competition)
+            const aName = a.agents?.[0]?.name || "";
+            const bName = b.agents?.[0]?.name || "";
+            comparison = aName.localeCompare(bName);
+            comparison = isDesc ? -comparison : comparison;
+            break;
+          }
+          case "createdAt": {
+            // Database field - sort by competition creation date
+            const aDate = a.createdAt ? new Date(a.createdAt) : new Date(0);
+            const bDate = b.createdAt ? new Date(b.createdAt) : new Date(0);
+            comparison = isDesc
+              ? bDate.getTime() - aDate.getTime()
+              : aDate.getTime() - bDate.getTime();
+            break;
+          }
+          case "startDate": {
+            // Database field - sort by competition start date
+            const aDate = a.startDate ? new Date(a.startDate) : new Date(0);
+            const bDate = b.startDate ? new Date(b.startDate) : new Date(0);
+            comparison = isDesc
+              ? bDate.getTime() - aDate.getTime()
+              : aDate.getTime() - bDate.getTime();
+            break;
+          }
+          case "endDate": {
+            // Database field - sort by competition end date
+            const aDate = a.endDate ? new Date(a.endDate) : new Date(0);
+            const bDate = b.endDate ? new Date(b.endDate) : new Date(0);
+            comparison = isDesc
+              ? bDate.getTime() - aDate.getTime()
+              : aDate.getTime() - bDate.getTime();
+            break;
+          }
+          case "name": {
+            // Database field - sort by competition name
+            const aName = a.name || "";
+            const bName = b.name || "";
+            comparison = aName.localeCompare(bName);
+            comparison = isDesc ? -comparison : comparison;
+            break;
+          }
+          case "status": {
+            // Database field - sort by competition status
+            const aStatus = a.status || "";
+            const bStatus = b.status || "";
+            comparison = aStatus.localeCompare(bStatus);
+            comparison = isDesc ? -comparison : comparison;
+            break;
+          }
+          default:
+            comparison = 0;
         }
-        default:
-          return 0;
+
+        // If this field produces a non-zero comparison, use it
+        if (comparison !== 0) {
+          return comparison;
+        }
+        // Otherwise, continue to the next sort field
       }
 
-      return isDesc ? bValue - aValue : aValue - bValue;
+      // All fields were equal
+      return 0;
     });
   }
 

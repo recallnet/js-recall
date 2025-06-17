@@ -743,7 +743,10 @@ export function configureUserRoutes(
    *         name: sort
    *         schema:
    *           type: string
-   *         description: Sort order (e.g., "startDate:desc", "name:asc")
+   *         description: |
+   *           Optional field(s) to sort by. Supports single or multiple fields separated by commas.
+   *           Prefix with '-' for descending order (e.g., '-startDate' or 'name,-createdAt').
+   *           Available fields: name, startDate, endDate, createdAt, status, agentName, rank.
    *       - in: query
    *         name: status
    *         schema:
