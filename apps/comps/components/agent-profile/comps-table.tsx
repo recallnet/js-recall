@@ -19,8 +19,8 @@ export function CompetitionTable({
   handleSortChange,
   sortState,
   canClaim,
-  onLoadMore,
 
+  onLoadMore,
   total = 0,
 }: {
   competitions: Competition[] | undefined;

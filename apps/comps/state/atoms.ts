@@ -1,7 +1,6 @@
-import { atom, useAtom } from "jotai";
+import { useAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 
-import { Agent } from "@/types/agent";
 import { User } from "@/types/profile";
 
 export type AuthStatus = "unauthenticated" | "authenticated";
