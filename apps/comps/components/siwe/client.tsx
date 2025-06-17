@@ -1,0 +1,96 @@
+"use client";
+
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { LogOut } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import React from "react";
+
+import { Button } from "@recallnet/ui2/components/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@recallnet/ui2/components/dropdown-menu";
+
+import { useLogout, useUserSession } from "@/hooks";
+
+import { Identicon } from "../identicon/index";
+
+/**
+ * Client-only SIWE button component that handles user authentication state
+ * This component is hydration-safe and will only render on the client
+ */
+export const SIWEButtonClient: React.FunctionComponent<
+  React.ComponentProps<typeof Button>
+> = () => {
+  const router = useRouter();
+  const logout = useLogout();
+  const { user } = useUserSession();
+
+  const handleLogout = async () => {
+    logout.mutate();
+  };
+
+  if (user) {
+    return (
+      <div className="mx-3 flex items-center space-x-3">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <div className="ml-5 flex cursor-pointer items-center justify-between">
+              {user.imageUrl ? (
+                <Image
+                  src={user.imageUrl}
+                  alt="agent"
+                  className="pointer-events-none"
+                  width={25}
+                  height={25}
+                />
+              ) : (
+                <Identicon
+                  className="rounded-none"
+                  address={user.walletAddress}
+                />
+              )}
+              <div className="focus ml-3 text-xs font-medium text-white">
+                {user.walletAddress.slice(0, 6)}...
+                {user.walletAddress.slice(-4)}
+              </div>
+            </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-40 rounded-lg bg-black">
+            <DropdownMenuItem
+              onClick={() => router.push("/profile")}
+              className="cursor-pointer p-3 hover:bg-gray-800"
+            >
+              My Account
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="cursor-pointer p-3 hover:bg-gray-800"
+            >
+              <LogOut className="h-10 w-10 text-gray-600" />
+              Log-Out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    );
+  }
+
+  return (
+    <ConnectButton.Custom>
+      {({ openConnectModal }) => (
+        <div
+          onClick={openConnectModal}
+          className="flex h-full cursor-pointer items-center justify-center bg-white px-6 text-black hover:bg-gray-200"
+        >
+          JOIN / SIGN IN
+        </div>
+      )}
+    </ConnectButton.Custom>
+  );
+};
