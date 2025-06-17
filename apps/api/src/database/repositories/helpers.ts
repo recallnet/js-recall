@@ -44,7 +44,7 @@ export function getSort<T extends PgSelect>(
 
     const orderBy = orderByOptions[column];
     if (typeof orderBy === "undefined") {
-      throw new ApiError(400, `cannot sort by field: '${column}'`);
+      throw new ApiError(400, `cannot sort by field: '${part}'`);
     }
 
     // Add to criteria array instead of applying immediately

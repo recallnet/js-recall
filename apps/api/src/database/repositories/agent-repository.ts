@@ -64,6 +64,7 @@ export const COMPUTED_SORT_FIELDS = [
   "pnl",
   "totalTrades",
   "rank",
+  "agentName",
 ] as const;
 
 /**
@@ -240,6 +241,13 @@ export async function findUserAgentCompetitions(
       );
     }
 
+    // Check if sorting by computed fields (handled at service layer)
+    const isComputedSort =
+      sort &&
+      COMPUTED_SORT_FIELDS.some(
+        (field) => sort.includes(field) || sort.includes(`-${field}`),
+      );
+
     // Step 1: Get unique competition IDs with proper sorting and pagination
     // Note: For SELECT DISTINCT with ORDER BY, we need to include sort fields in SELECT
     let uniqueCompetitionsQuery = db
@@ -259,8 +267,8 @@ export async function findUserAgentCompetitions(
       .where(and(...whereConditions))
       .$dynamic();
 
-    // Apply sorting to competitions (not agents)
-    if (sort) {
+    // Only apply database sorting for non-computed fields
+    if (sort && !isComputedSort) {
       uniqueCompetitionsQuery = getSort(
         uniqueCompetitionsQuery,
         sort,
@@ -268,10 +276,11 @@ export async function findUserAgentCompetitions(
       );
     }
 
-    // Apply pagination to unique competitions
-    const uniqueCompetitionIds = await uniqueCompetitionsQuery
-      .limit(limit)
-      .offset(offset);
+    // For computed sorting, we'll need to get all results and sort at service layer
+    // So we don't apply limit/offset here if sorting by computed fields
+    const uniqueCompetitionIds = !isComputedSort
+      ? await uniqueCompetitionsQuery.limit(limit).offset(offset)
+      : await uniqueCompetitionsQuery;
 
     // Step 2: Get full data for those specific competition IDs
     const orderedCompetitionIds = uniqueCompetitionIds
@@ -322,6 +331,7 @@ export async function findUserAgentCompetitions(
     return {
       competitions: fullResults,
       total: totalCountResult.length, // Accurate count of unique competitions
+      isComputedSort, // Flag to indicate service layer needs to handle sorting
     };
   } catch (error) {
     console.error(
