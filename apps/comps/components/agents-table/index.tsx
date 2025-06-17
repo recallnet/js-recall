@@ -3,6 +3,7 @@
 import {
   ColumnDef,
   SortingState,
+  VisibilityState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
@@ -11,9 +12,10 @@ import {
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowUp, Search } from "lucide-react";
 import Link from "next/link";
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
+import { IconButton } from "@recallnet/ui2/components/icon-button";
 import { Input } from "@recallnet/ui2/components/input";
 import {
   SortableTableHeader,
@@ -24,8 +26,12 @@ import {
   TableHeader,
   TableRow,
 } from "@recallnet/ui2/components/table";
+import { toast } from "@recallnet/ui2/components/toast";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import { AgentCompetition, PaginationResponse } from "@/types";
+import { useUserSession } from "@/hooks";
+import { useVote } from "@/hooks/useVote";
+import { AgentCompetition, Competition, PaginationResponse } from "@/types";
 import { formatPercentage } from "@/utils/format";
 import { getSortState } from "@/utils/table";
 
@@ -36,28 +42,64 @@ import { RankBadge } from "./rank-badge";
 export interface AgentsTableProps {
   agents: AgentCompetition[];
   totalVotes?: number;
+  competition: Competition;
   onFilterChange: (filter: string) => void;
   onSortChange: (sort: string) => void;
   onLoadMore: () => void;
   hasMore: boolean;
   pagination: PaginationResponse;
+  ref: React.RefObject<HTMLDivElement | null>;
 }
 
 export const AgentsTable: React.FC<AgentsTableProps> = ({
   agents,
   totalVotes,
+  competition,
   onFilterChange,
   onSortChange,
   onLoadMore,
   hasMore,
   pagination,
+  ref,
 }) => {
+  const { isAuthenticated } = useUserSession();
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
+    vote: isAuthenticated,
+  });
   const [selectedAgent, setSelectedAgent] = useState<AgentCompetition | null>(
     null,
   );
   const [isVoteModalOpen, setIsVoteModalOpen] = useState(false);
+  const { mutate: vote, isPending: isPendingVote } = useVote();
+
+  useEffect(() => {
+    setColumnVisibility({
+      vote: isAuthenticated,
+    });
+  }, [isAuthenticated]);
+
+  const handleVote = async () => {
+    if (!selectedAgent) return;
+
+    vote(
+      {
+        agentId: selectedAgent.id,
+        competitionId: competition.id,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Vote cast successfully!");
+        },
+        onError: (error) => {
+          toast.error(
+            error instanceof Error ? error.message : "Failed to cast vote",
+          );
+        },
+      },
+    );
+  };
 
   const columns = useMemo<ColumnDef<AgentCompetition>[]>(
     () => [
@@ -76,13 +118,16 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         cell: ({ row }) => (
           <div className="flex min-w-0 items-center gap-3">
             <AgentAvatar agent={row.original} size={32} />
-            <div className="flex min-w-0 flex-1 flex-col">
-              <Link href={`/agents/${row.original.id}`}>
-                <span className="font-semibold leading-tight">
+            <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+              <Link
+                href={`/agents/${row.original.id}`}
+                className="block w-full overflow-hidden"
+              >
+                <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap font-semibold leading-tight">
                   {row.original.name}
                 </span>
               </Link>
-              <span className="text-secondary-foreground block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-xs">
+              <span className="text-secondary-foreground block w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs">
                 {row.original.description}
               </span>
             </div>
@@ -172,26 +217,36 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         ),
         enableSorting: false,
         size: 80,
+        meta: {
+          className: "flex justify-end",
+        },
       },
       {
         id: "vote",
         header: () => "Vote",
         cell: ({ row }) => (
-          <div className="flex w-full justify-center">
-            <ArrowUp
-              className="text-secondary-foreground cursor-pointer hover:text-white"
-              size={20}
-              onClick={() => {
-                setSelectedAgent(row.original);
-                setIsVoteModalOpen(true);
-              }}
-            />
-          </div>
+          <IconButton
+            className={cn(
+              competition.userVotingInfo?.info.agentId === row.original.id
+                ? "text-blue-500 [&:disabled]:opacity-100"
+                : "text-secondary-foreground",
+            )}
+            Icon={ArrowUp}
+            disabled={!competition.userVotingInfo?.canVote}
+            onClick={() => {
+              setSelectedAgent(row.original);
+              setIsVoteModalOpen(true);
+            }}
+          />
         ),
         size: 70,
       },
     ],
-    [totalVotes],
+    [
+      totalVotes,
+      competition.userVotingInfo?.canVote,
+      competition.userVotingInfo?.info.agentId,
+    ],
   );
 
   const table = useReactTable({
@@ -205,7 +260,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     enableSorting: true,
     state: {
       sorting,
+      columnVisibility,
     },
+    onColumnVisibilityChange: setColumnVisibility,
     onSortingChange: (updater) => {
       const newSorting =
         typeof updater === "function" ? updater(sorting) : updater;
@@ -229,7 +286,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   });
 
   return (
-    <div className="mt-12 w-full">
+    <div className="mt-12 w-full" ref={ref}>
       <h2 className="mb-5 text-2xl font-bold">
         Competition Leaderboard ({pagination.total})
       </h2>
@@ -348,10 +405,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           if (!open) setSelectedAgent(null);
         }}
         agentName={selectedAgent?.name ?? ""}
-        onVote={async () => {
-          // TODO: Implement the actual vote action here
-          console.log("Voting for agent:", selectedAgent?.id);
-        }}
+        onVote={handleVote}
+        isLoading={isPendingVote}
       />
     </div>
   );
