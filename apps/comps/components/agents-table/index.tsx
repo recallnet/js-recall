@@ -27,8 +27,10 @@ import {
 
 import { AgentCompetition, PaginationResponse } from "@/types";
 import { formatPercentage } from "@/utils/format";
+import { getSortState } from "@/utils/table";
 
 import { AgentAvatar } from "../agent-avatar";
+import ConfirmVoteModal from "../modals/confirm-vote";
 import { RankBadge } from "./rank-badge";
 
 export interface AgentsTableProps {
@@ -52,6 +54,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 }) => {
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [selectedAgent, setSelectedAgent] = useState<AgentCompetition | null>(
+    null,
+  );
+  const [isVoteModalOpen, setIsVoteModalOpen] = useState(false);
 
   const columns = useMemo<ColumnDef<AgentCompetition>[]>(
     () => [
@@ -170,11 +176,15 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       {
         id: "vote",
         header: () => "Vote",
-        cell: () => (
+        cell: ({ row }) => (
           <div className="flex w-full justify-center">
             <ArrowUp
               className="text-secondary-foreground cursor-pointer hover:text-white"
               size={20}
+              onClick={() => {
+                setSelectedAgent(row.original);
+                setIsVoteModalOpen(true);
+              }}
             />
           </div>
         ),
@@ -252,7 +262,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                     <SortableTableHeader
                       key={header.id}
                       colSpan={header.colSpan}
-                      sortState={header.column.getIsSorted() ? "asc" : "none"}
+                      sortState={getSortState(header.column.getIsSorted())}
                       style={{ width: header.getSize() }}
                       className={header.column.columnDef.meta?.className}
                       onClick={header.column.getToggleSortingHandler()}
@@ -331,6 +341,18 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           </Button>
         </div>
       )}
+      <ConfirmVoteModal
+        isOpen={isVoteModalOpen}
+        onClose={(open) => {
+          setIsVoteModalOpen(open);
+          if (!open) setSelectedAgent(null);
+        }}
+        agentName={selectedAgent?.name ?? ""}
+        onVote={async () => {
+          // TODO: Implement the actual vote action here
+          console.log("Voting for agent:", selectedAgent?.id);
+        }}
+      />
     </div>
   );
 };
