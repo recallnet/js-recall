@@ -320,6 +320,8 @@ export function configureUserRoutes(
    *                             type: integer
    *                           bestPlacement:
    *                             type: object
+   *                             nullable: true
+   *                             description: "Best placement across all competitions (null if no ranking data available)"
    *                             properties:
    *                               competitionId:
    *                                 type: string
@@ -436,6 +438,8 @@ export function configureUserRoutes(
    *                           type: integer
    *                         bestPlacement:
    *                           type: object
+   *                           nullable: true
+   *                           description: "Best placement across all competitions (null if no ranking data available)"
    *                           properties:
    *                             competitionId:
    *                               type: string

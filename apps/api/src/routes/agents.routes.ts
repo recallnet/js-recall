@@ -180,6 +180,8 @@ export function configureAgentsRoutes(
    *                           type: integer
    *                         bestPlacement:
    *                           type: object
+   *                           nullable: true
+   *                           description: "Best placement across all competitions (null if no ranking data available)"
    *                           properties:
    *                             competitionId:
    *                               type: string
@@ -332,7 +334,8 @@ export function configureAgentsRoutes(
    *                         example: 15
    *                       bestPlacement:
    *                         type: object
-   *                         description: "Agent's ranking in this competition"
+   *                         nullable: true
+   *                         description: "Agent's ranking in this competition (null if no ranking data available)"
    *                         properties:
    *                           rank:
    *                             type: integer

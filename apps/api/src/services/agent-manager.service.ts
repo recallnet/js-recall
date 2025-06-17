@@ -845,23 +845,24 @@ export class AgentManager {
       // Get competitions from repository
       const results = await findAgentCompetitions(agentId, params);
 
-      // Attach metrics to each competition
+      // Filter out null competitions upfront to optimize processing
+      const validCompetitions = results.competitions.filter(
+        (comp): comp is SelectCompetition => comp !== null,
+      );
+
+      // Attach metrics to each valid competition
       const enhancedCompetitions = await Promise.all(
-        results.competitions.map(async (competition) => {
-          if (!competition) return competition;
-          return await this.attachCompetitionMetrics(competition, agentId);
-        }),
+        validCompetitions.map(
+          async (competition) =>
+            await this.attachCompetitionMetrics(competition, agentId),
+        ),
       );
 
       // Handle computed field sorting if needed
       let finalCompetitions = enhancedCompetitions;
       if (results.isComputedSort && params.sort) {
-        // Filter out null values before sorting
-        const validCompetitions = enhancedCompetitions.filter(
-          (comp): comp is EnhancedCompetition => comp !== null,
-        );
         finalCompetitions = this.sortCompetitionsByComputedField(
-          validCompetitions,
+          enhancedCompetitions, // No need to filter again
           params.sort,
         );
 
@@ -1134,7 +1135,7 @@ export class AgentManager {
         pnl: 0,
         pnlPercent: 0,
         totalTrades: 0,
-        bestPlacement: { rank: 0, totalAgents: 0 },
+        bestPlacement: undefined, // No valid ranking data on error
       };
     }
   }
@@ -1173,11 +1174,18 @@ export class AgentManager {
           aValue = a.totalTrades || 0;
           bValue = b.totalTrades || 0;
           break;
-        case "rank":
-          aValue = a.bestPlacement?.rank || 0;
-          bValue = b.bestPlacement?.rank || 0;
+        case "rank": {
+          // Handle undefined bestPlacement: push to end of results
+          const aRank = a.bestPlacement?.rank;
+          const bRank = b.bestPlacement?.rank;
+
+          if (aRank === undefined && bRank === undefined) return 0;
+          if (aRank === undefined) return 1; // a goes to end
+          if (bRank === undefined) return -1; // b goes to end
+
           // For rank, lower is better, so reverse the comparison
-          return isDesc ? aValue - bValue : bValue - aValue;
+          return isDesc ? aRank - bRank : bRank - aRank;
+        }
         default:
           return 0;
       }

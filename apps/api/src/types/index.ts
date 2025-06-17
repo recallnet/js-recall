@@ -367,7 +367,7 @@ export interface CompetitionMetrics {
   pnl: number;
   pnlPercent: number;
   totalTrades: number;
-  bestPlacement: {
+  bestPlacement?: {
     rank: number;
     totalAgents: number;
   };
@@ -394,7 +394,7 @@ export interface EnhancedCompetition {
   pnl: number;
   pnlPercent: number;
   totalTrades: number;
-  bestPlacement: {
+  bestPlacement?: {
     rank: number;
     totalAgents: number;
   };

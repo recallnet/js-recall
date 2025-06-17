@@ -827,7 +827,7 @@ export interface EnhancedCompetition extends Competition {
   pnl: number;
   pnlPercent: number;
   totalTrades: number;
-  bestPlacement: {
+  bestPlacement?: {
     rank: number;
     totalAgents: number;
   };

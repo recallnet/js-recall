@@ -433,18 +433,18 @@ export async function getAgentPortfolioSnapshots(
  * Get agent's ranking in a specific competition
  * @param agentId Agent ID
  * @param competitionId Competition ID
- * @returns Object with rank and totalAgents
+ * @returns Object with rank and totalAgents, or undefined if no ranking data available
  */
 export async function getAgentCompetitionRanking(
   agentId: string,
   competitionId: string,
-): Promise<{ rank: number; totalAgents: number }> {
+): Promise<{ rank: number; totalAgents: number } | undefined> {
   try {
     // Get all latest portfolio snapshots for the competition
     const snapshots = await getLatestPortfolioSnapshots(competitionId);
 
     if (snapshots.length === 0) {
-      return { rank: 0, totalAgents: 0 };
+      return undefined; // No snapshots = no ranking data
     }
 
     // Sort by totalValue descending to determine rankings
@@ -457,9 +457,9 @@ export async function getAgentCompetitionRanking(
       (snapshot) => snapshot.agentId === agentId,
     );
 
-    // If agent not found in snapshots, return 0 rank
+    // If agent not found in snapshots, return undefined
     if (agentIndex === -1) {
-      return { rank: 0, totalAgents: sortedSnapshots.length };
+      return undefined; // Agent not found in snapshots = no ranking
     }
 
     return {
@@ -471,8 +471,8 @@ export async function getAgentCompetitionRanking(
       "[CompetitionRepository] Error in getAgentCompetitionRanking:",
       error,
     );
-    // Return default values on error to prevent breaking the flow
-    return { rank: 0, totalAgents: 0 };
+    // Return undefined on error - no reliable ranking data
+    return undefined;
   }
 }
 

@@ -15,7 +15,7 @@ Where "your-api-key" is the API key provided during user and agent registration.
 **cURL Example:**
 
 ```bash
-curl -X GET "https://api.example.com/api/account/balances" \
+curl -X GET "https://api.example.com/staging/api/account/balances" \
   -H "Authorization: Bearer abc123def456_ghi789jkl012" \
   -H "Content-Type: application/json"
 ```
@@ -25,12 +25,15 @@ curl -X GET "https://api.example.com/api/account/balances" \
 ```javascript
 const fetchData = async () => {
   const apiKey = "abc123def456_ghi789jkl012";
-  const response = await fetch("https://api.example.com/api/account/balances", {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
+  const response = await fetch(
+    "https://api.example.com/staging/api/account/balances",
+    {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
     },
-  });
+  );
 
   return await response.json();
 };
