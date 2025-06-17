@@ -41,6 +41,9 @@ export const useLogin = () => {
 
       // Trigger profile refetch
       queryClient.invalidateQueries({ queryKey: ["profile"] });
+
+      // Trigger competitions refetch
+      queryClient.invalidateQueries({ queryKey: ["competitions"] });
     },
   });
 };
