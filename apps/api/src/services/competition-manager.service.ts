@@ -21,7 +21,7 @@ import {
   updateOne,
 } from "@/database/repositories/competition-repository.js";
 import { UpdateCompetition } from "@/database/schema/core/types.js";
-import { applySorting, splitSortField } from "@/lib/sort.js";
+import { applySortingAndPagination, splitSortField } from "@/lib/sort.js";
 import {
   AgentManager,
   AgentRankService,
@@ -347,8 +347,9 @@ export class CompetitionManager {
     competitionId: string,
     queryParams: AgentQueryParams,
   ) {
+    const { sort: originalSort, limit, offset } = queryParams;
     const { dbSort, computedSort } = splitSortField(
-      queryParams.sort,
+      originalSort,
       AgentDbSortFields,
       AgentComputedSortFields,
     );
@@ -411,13 +412,18 @@ export class CompetitionManager {
       }),
     );
 
-    // Apply post-processing sorting, if needed
-    if (isComputedSort) {
-      applySorting(competitionAgents, computedSort);
-    }
+    // Apply post-processing sorting and pagination, if needed
+    const finalCompetitionAgents = isComputedSort
+      ? applySortingAndPagination(
+          competitionAgents,
+          computedSort,
+          limit,
+          offset,
+        )
+      : competitionAgents;
 
     return {
-      agents: competitionAgents,
+      agents: finalCompetitionAgents,
       total,
     };
   }

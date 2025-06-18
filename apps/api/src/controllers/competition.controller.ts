@@ -13,7 +13,11 @@ import {
 } from "@/types/index.js";
 import { AgentQuerySchema } from "@/types/sort/agent.js";
 
-import { checkIsAdmin, ensureUuid } from "./request-helpers.js";
+import {
+  buildPaginationResponse,
+  checkIsAdmin,
+  ensureUuid,
+} from "./request-helpers.js";
 
 export function makeCompetitionController(services: ServiceRegistry) {
   /**
@@ -709,12 +713,11 @@ export function makeCompetitionController(services: ServiceRegistry) {
           success: true,
           competitionId,
           agents,
-          pagination: {
+          pagination: buildPaginationResponse(
             total,
-            limit: queryParams.limit,
-            offset: queryParams.offset,
-            hasMore: queryParams.offset + queryParams.limit < total,
-          },
+            queryParams.limit,
+            queryParams.offset,
+          ),
         });
       } catch (error) {
         next(error);

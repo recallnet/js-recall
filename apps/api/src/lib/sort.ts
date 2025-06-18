@@ -74,7 +74,7 @@ export function splitSortField<
 export function applySorting<T extends Record<string, unknown>>(
   items: T[],
   sortField: string,
-): void {
+): T[] {
   const isDescending = sortField.startsWith("-");
   const fieldName = isDescending ? sortField.slice(1) : sortField;
 
@@ -108,4 +108,40 @@ export function applySorting<T extends Record<string, unknown>>(
     const comparison = aStr.localeCompare(bStr);
     return isDescending ? -comparison : comparison;
   });
+  return items;
+}
+
+/**
+ * Apply pagination to an array of items
+ * @template T The type of objects being paginated
+ * @param items Array of items to paginate
+ * @param limit The number of items to return
+ * @param offset The index of the first item to return
+ * @returns The paginated array
+ */
+export function applyPagination<T extends Record<string, unknown>>(
+  items: T[],
+  limit?: number,
+  offset?: number,
+): T[] {
+  return items.slice(offset || 0, (offset || 0) + (limit || 0));
+}
+
+/**
+ * Apply sorting and pagination to an array of items. Typically used for computed sorting.
+ * @template T The type of objects being sorted and paginated
+ * @param items Array of items to sort and paginate
+ * @param sortField Sort field string (e.g., "name", "-createdAt")
+ * @param limit The number of items to return
+ * @param offset The index of the first item to return
+ * @returns The sorted and paginated array
+ */
+export function applySortingAndPagination<T extends Record<string, unknown>>(
+  items: T[],
+  sortField: string,
+  limit: number,
+  offset: number,
+): T[] {
+  const sortedItems = applySorting(items, sortField);
+  return applyPagination(sortedItems, limit, offset);
 }

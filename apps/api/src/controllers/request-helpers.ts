@@ -105,3 +105,23 @@ export function ensureCompetitionUpdate(req: Request) {
 export function checkIsAdmin(req: Request) {
   return req.isAdmin === true;
 }
+
+/**
+ * Build a pagination response object
+ * @param total The total number of items
+ * @param limit The number of items to return
+ * @param offset The index of the first item to return
+ * @returns The pagination response object
+ */
+export function buildPaginationResponse(
+  total: number,
+  limit: number,
+  offset: number,
+) {
+  return {
+    total,
+    limit,
+    offset,
+    hasMore: offset + limit < total,
+  };
+}

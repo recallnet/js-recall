@@ -2029,6 +2029,103 @@ describe("Competition API", () => {
     expect(voteCountDescResponse.success).toBe(true);
   });
 
+  test("should handle computed sorting with pagination limits", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register 6 agents to test pagination
+    const agents = [];
+    for (let i = 1; i <= 6; i++) {
+      const { agent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: `Pagination Test Agent ${i}`,
+      });
+      agents.push(agent);
+    }
+
+    // Start a competition with all agents
+    const competitionName = `Pagination Test Competition ${Date.now()}`;
+    const startResult = await startTestCompetition(
+      adminClient,
+      competitionName,
+      agents.map((a) => a.id),
+    );
+    const competitionId = startResult.competition.id;
+
+    // Create a client for testing
+    const { client } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Pagination Test Client Agent",
+    });
+
+    // Test 1: Database sorting
+    const dbSortResponse = (await client.getCompetitionAgents(competitionId, {
+      sort: "name", // Database field (no computed fields)
+      limit: 3,
+      offset: 0,
+    })) as CompetitionAgentsResponse;
+
+    expect(dbSortResponse.success).toBe(true);
+    expect(dbSortResponse.agents.length).toBe(3);
+    expect(dbSortResponse.pagination.limit).toBe(3);
+    expect(dbSortResponse.pagination.offset).toBe(0);
+    expect(dbSortResponse.pagination.total).toBe(6);
+    expect(dbSortResponse.pagination.hasMore).toBe(true);
+
+    // Test 2: Computed sorting
+    const computedSortResponse = (await client.getCompetitionAgents(
+      competitionId,
+      {
+        sort: "position", // Computed field
+        limit: 3,
+        offset: 0,
+      },
+    )) as CompetitionAgentsResponse;
+
+    expect(computedSortResponse.success).toBe(true);
+
+    expect(computedSortResponse.agents.length).toBe(3);
+    expect(computedSortResponse.pagination.limit).toBe(3);
+    expect(computedSortResponse.pagination.offset).toBe(0);
+    expect(computedSortResponse.pagination.total).toBe(6);
+    expect(computedSortResponse.pagination.hasMore).toBe(true);
+
+    // Test 3: Try different computed fields to confirm the bug affects all computed sorting
+    const testFields = [
+      "score",
+      "pnl",
+      "pnlPercent",
+      "change24h",
+      "change24hPercent",
+      "voteCount",
+    ];
+
+    for (const field of testFields) {
+      const response = (await client.getCompetitionAgents(competitionId, {
+        sort: field,
+        limit: 2,
+        offset: 0,
+      })) as CompetitionAgentsResponse;
+
+      expect(response.success).toBe(true);
+      expect(response.agents.length).toBe(2);
+      expect(response.pagination.limit).toBe(2);
+    }
+
+    // Test 4: Demonstrate that offset is also ignored
+    const offsetResponse = (await client.getCompetitionAgents(competitionId, {
+      sort: "position",
+      limit: 2,
+      offset: 3, // Should skip first 3 agents
+    })) as CompetitionAgentsResponse;
+
+    expect(offsetResponse.success).toBe(true);
+    expect(offsetResponse.agents.length).toBe(2);
+    expect(offsetResponse.pagination.offset).toBe(3);
+    expect(offsetResponse.pagination.limit).toBe(2);
+  });
+
   test("should combine filtering, sorting, and pagination", async () => {
     // Setup admin client
     const adminClient = createTestClient();
