@@ -39,6 +39,10 @@ export function LeaderboardSection() {
     });
   }, []);
 
+  const handlePageChange = (page: number) => {
+    setOffset(limit * (page - 1));
+  };
+
   return (
     <div className="mb-10">
       <h1 className="mb-4 text-5xl font-bold text-white md:text-6xl">
@@ -88,7 +92,7 @@ export function LeaderboardSection() {
         <LeaderboardTable
           handleSortChange={handleSortChange}
           sortState={sortState}
-          onLoadMore={() => 1}
+          onPageChange={() => 1}
           agents={[]}
         />
       ) : (
@@ -96,9 +100,8 @@ export function LeaderboardSection() {
           handleSortChange={handleSortChange}
           sortState={sortState}
           agents={leaderboard?.agents || []}
-          onLoadMore={() => setOffset((prev: number) => prev + limit)}
-          hasMore={leaderboard?.pagination.hasMore}
-          loaded
+          onPageChange={handlePageChange}
+          pagination={leaderboard?.pagination}
         />
       )}
     </div>
