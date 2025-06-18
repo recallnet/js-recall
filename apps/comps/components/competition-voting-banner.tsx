@@ -1,7 +1,5 @@
 "use client";
 
-import "./competition-voting-banner.css";
-
 import { X } from "lucide-react";
 import React, { useState } from "react";
 
@@ -54,39 +52,43 @@ export const CompetitionVotingBanner: React.FC<
   return (
     <div
       className={cn(
-        "competition-voting-banner-outer",
-        config.variant === "green" && "competition-voting-banner-green",
-        config.variant === "blue" && "competition-voting-banner-blue",
-        config.variant === "gray" && "competition-voting-banner-gray",
+        // Base styling for outer container
+        "sticky z-50 flex transform-gpu items-center justify-start overflow-hidden shadow-lg will-change-transform",
+        // Full-width positioning using negative margins
+        "ml-[calc(-50vw+50%)] w-screen",
+        // Color variants
+        config.variant === "green" && "bg-green-600",
+        config.variant === "blue" && "bg-blue-600",
+        config.variant === "gray" && "bg-gray-600",
         className,
       )}
       style={{
         height: "80px", // Full height - this is what the banner starts at
-        top: "-48px", // Negative top = inner height - outer height = 32px - 80px = -48px
+        top: "-72px", // Negative top = inner height - outer height = 32px - 80px = -48px
         // This makes the outer container slide "above" the viewport as user scrolls
       }}
     >
       <div
-        className="competition-voting-banner-inner"
+        className="sticky top-0 flex w-full transform-gpu items-center justify-start gap-3 px-4 text-white transition-all duration-200 ease-out will-change-transform md:px-24"
         style={{
-          height: "32px", // Shrunk height - this is the final collapsed state
+          height: "8px", // Shrunk height - this is the final collapsed state
           top: "0", // Sticks to top of viewport when outer container slides up
         }}
       >
         {/* Content that appears in full height */}
-        <div className="competition-voting-banner-content">
+        <div className="flex flex-1 gap-3 overflow-hidden">
           {config.subTitle && (
-            <span className="competition-voting-banner-text text-md font-medium opacity-90">
+            <span className="text-md overflow-hidden text-ellipsis whitespace-nowrap font-medium opacity-90 transition-opacity duration-150 ease-out">
               {config.subTitle}
             </span>
           )}
           {config.description && (
-            <span className="competition-voting-banner-text text-md max-w-2xl opacity-80">
+            <span className="text-md max-w-2xl overflow-hidden text-ellipsis whitespace-nowrap opacity-80 transition-opacity duration-150 ease-out">
               {config.description}
             </span>
           )}
           {config.untilTime && (
-            <span className="competition-voting-banner-text max-w-2xl opacity-80">
+            <span className="max-w-2xl overflow-hidden text-ellipsis whitespace-nowrap opacity-80 transition-opacity duration-150 ease-out">
               <CountdownClock
                 className="text-md"
                 showDuration={true}
@@ -97,7 +99,7 @@ export const CompetitionVotingBanner: React.FC<
         </div>
 
         {/* Phase indicator - positioned absolutely */}
-        <div className="competition-voting-banner-phase">
+        <div className="absolute right-4 top-1/2 hidden -translate-y-1/2 whitespace-nowrap font-medium opacity-90 sm:block md:right-24">
           <span className="text-md">
             Phase:{" "}
             <span
@@ -122,10 +124,10 @@ export const CompetitionVotingBanner: React.FC<
         {/* Close button */}
         <button
           onClick={handleClose}
-          className="competition-voting-banner-close"
+          className="absolute right-4 top-1/2 -translate-y-1/2 transform-gpu rounded-full p-1 opacity-80 transition-all duration-150 ease-out hover:bg-white/20"
           aria-label="Close banner"
         >
-          <X className="competition-voting-banner-close-icon" />
+          <X className="h-4 w-4 transition-transform duration-150 ease-out" />
         </button>
       </div>
     </div>
