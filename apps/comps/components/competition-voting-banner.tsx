@@ -23,12 +23,21 @@ export const CompetitionVotingBanner: React.FC<
     competition,
     competition.userVotingInfo?.info?.hasVoted || false,
   );
+  const [displayConfig, setDisplayConfig] = useState(config);
 
   const [isVisible, setIsVisible] = useState(true);
 
   const handleClose = () => {
     setIsVisible(false);
     onClose?.();
+  };
+
+  const countdownFinished = () => {
+    const config = getCompetitionVotingConfig(
+      competition,
+      competition.userVotingInfo?.info?.hasVoted || false,
+    );
+    setDisplayConfig(config);
   };
 
   if (!isVisible || competition.status === CompetitionStatus.Ended) {
@@ -43,9 +52,9 @@ export const CompetitionVotingBanner: React.FC<
         // Full-width positioning using negative margins
         "ml-[calc(-50vw+50%)] w-screen",
         // Color variants
-        config.variant === "green" && "bg-green-600",
-        config.variant === "blue" && "bg-blue-600",
-        config.variant === "gray" && "bg-gray-600",
+        displayConfig.variant === "green" && "bg-green-600",
+        displayConfig.variant === "blue" && "bg-blue-600",
+        displayConfig.variant === "gray" && "bg-gray-600",
         className,
       )}
       style={{
@@ -63,22 +72,23 @@ export const CompetitionVotingBanner: React.FC<
       >
         {/* Content that appears in full height */}
         <div className="flex flex-1 gap-3 overflow-hidden">
-          {config.subTitle && (
+          {displayConfig.subTitle && (
             <span className="text-md overflow-hidden text-ellipsis whitespace-nowrap font-medium opacity-90 transition-opacity duration-150 ease-out">
-              {config.subTitle}
+              {displayConfig.subTitle}
             </span>
           )}
-          {config.description && (
+          {displayConfig.description && (
             <span className="text-md max-w-2xl overflow-hidden text-ellipsis whitespace-nowrap opacity-80 transition-opacity duration-150 ease-out">
-              {config.description}
+              {displayConfig.description}
             </span>
           )}
-          {config.untilTime && (
+          {displayConfig.untilTime && (
             <span className="max-w-2xl overflow-hidden text-ellipsis whitespace-nowrap opacity-80 transition-opacity duration-150 ease-out">
               <CountdownClock
                 className="text-md"
                 showDuration={true}
-                targetDate={config.untilTime}
+                targetDate={displayConfig.untilTime}
+                onFinish={countdownFinished}
               />
             </span>
           )}
@@ -91,7 +101,8 @@ export const CompetitionVotingBanner: React.FC<
             <span
               className={cn(
                 "pl-4 opacity-60",
-                config.phase === "registration" && "font-bold opacity-100",
+                displayConfig.phase === "registration" &&
+                  "font-bold opacity-100",
               )}
             >
               Registration
@@ -99,7 +110,7 @@ export const CompetitionVotingBanner: React.FC<
             <span
               className={cn(
                 "pl-4 opacity-60",
-                config.phase === "voting" && "font-bold opacity-100",
+                displayConfig.phase === "voting" && "font-bold opacity-100",
               )}
             >
               Voting
