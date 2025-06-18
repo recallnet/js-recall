@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import {
   findById as findAgentById,
+  findByCompetition,
   isAgentInCompetition,
 } from "@/database/repositories/agent-repository.js";
 import {
@@ -20,6 +21,7 @@ import {
   updateOne,
 } from "@/database/repositories/competition-repository.js";
 import { UpdateCompetition } from "@/database/schema/core/types.js";
+import { applySorting, splitSortField } from "@/lib/sort.js";
 import {
   AgentManager,
   AgentRankService,
@@ -27,6 +29,7 @@ import {
   ConfigurationService,
   PortfolioSnapshotter,
   TradeSimulator,
+  VoteManager,
 } from "@/services/index.js";
 import {
   ACTOR_STATUS,
@@ -39,6 +42,11 @@ import {
   CrossChainTradingType,
   PagingParams,
 } from "@/types/index.js";
+import {
+  AgentComputedSortFields,
+  AgentDbSortFields,
+  AgentQueryParams,
+} from "@/types/sort/agent.js";
 
 /**
  * Competition Manager Service
@@ -52,6 +60,7 @@ export class CompetitionManager {
   private agentManager: AgentManager;
   private configurationService: ConfigurationService;
   private agentRankService: AgentRankService;
+  private voteManager: VoteManager;
 
   constructor(
     balanceManager: BalanceManager,
@@ -60,6 +69,7 @@ export class CompetitionManager {
     agentManager: AgentManager,
     configurationService: ConfigurationService,
     agentRankService: AgentRankService,
+    voteManager: VoteManager,
   ) {
     this.balanceManager = balanceManager;
     this.tradeSimulator = tradeSimulator;
@@ -67,6 +77,7 @@ export class CompetitionManager {
     this.agentManager = agentManager;
     this.configurationService = configurationService;
     this.agentRankService = agentRankService;
+    this.voteManager = voteManager;
     // Load active competition on initialization
     this.loadActiveCompetition();
   }
@@ -325,6 +336,90 @@ export class CompetitionManager {
       this.activeCompetitionCache = activeCompetition.id;
     }
     return activeCompetition;
+  }
+
+  /**
+   * Get the agents in a competition and attach relevant metrics
+   * @param competitionId The competition ID
+   * @returns Array of agent IDs
+   */
+  async getCompetitionAgentsWithMetrics(
+    competitionId: string,
+    queryParams: AgentQueryParams,
+  ) {
+    const { dbSort, computedSort } = splitSortField(
+      queryParams.sort,
+      AgentDbSortFields,
+      AgentComputedSortFields,
+    );
+    const dbQueryParams = {
+      ...queryParams,
+      sort: dbSort,
+    };
+    const isComputedSort = computedSort !== undefined;
+    const { agents, total } = await findByCompetition(
+      competitionId,
+      dbQueryParams,
+      isComputedSort,
+    );
+
+    // Get leaderboard data for the competition to get scores and positions
+    const leaderboard = await this.getLeaderboard(competitionId);
+    const leaderboardMap = new Map(
+      leaderboard.map((entry, index) => [
+        entry.agentId,
+        { score: entry.value, position: index + 1 },
+      ]),
+    );
+
+    // Get vote counts for all agents in this competition
+    const voteCountsMap =
+      await this.voteManager.getVoteCountsByCompetition(competitionId);
+
+    // Build the response with agent details and competition data
+    const competitionAgents = await Promise.all(
+      agents.map(async (agent) => {
+        const isActive = agent.status === "active";
+        const leaderboardData = leaderboardMap.get(agent.id);
+        const score = leaderboardData?.score ?? 0;
+        const position = leaderboardData?.position ?? 0;
+        const voteCount = voteCountsMap.get(agent.id) ?? 0;
+
+        // Calculate PnL and 24h change metrics using the service
+        const metrics = await this.calculateAgentMetrics(
+          competitionId,
+          agent.id,
+          score,
+        );
+
+        return {
+          id: agent.id,
+          name: agent.name,
+          description: agent.description,
+          imageUrl: agent.imageUrl,
+          score: score,
+          active: isActive,
+          deactivationReason: !isActive ? agent.deactivationReason : null,
+          position: position,
+          portfolioValue: score,
+          pnl: metrics.pnl,
+          pnlPercent: metrics.pnlPercent,
+          change24h: metrics.change24h,
+          change24hPercent: metrics.change24hPercent,
+          voteCount: voteCount,
+        };
+      }),
+    );
+
+    // Apply post-processing sorting, if needed
+    if (isComputedSort) {
+      applySorting(competitionAgents, computedSort);
+    }
+
+    return {
+      agents: competitionAgents,
+      total,
+    };
   }
 
   /**

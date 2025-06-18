@@ -74,6 +74,7 @@ class ServiceRegistry {
       this._agentManager,
       this._configurationService,
       this._agentRankService,
+      this._voteManager,
     );
 
     // Initialize LeaderboardService with required dependencies

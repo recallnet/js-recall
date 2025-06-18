@@ -52,11 +52,11 @@ import {
   AgentSearchParams,
   AgentStats,
   ApiAuth,
-  CompetitionAgentsParams,
   EnhancedCompetition,
   PagingParams,
   PagingParamsSchema,
 } from "@/types/index.js";
+import { AgentQueryParams } from "@/types/sort/agent.js";
 
 /**
  * Agent Manager Service
@@ -796,7 +796,7 @@ export class AgentManager {
    */
   async getAgentsForCompetition(
     competitionId: string,
-    params: CompetitionAgentsParams,
+    params: AgentQueryParams,
   ) {
     try {
       console.log(
@@ -805,12 +805,12 @@ export class AgentManager {
       );
 
       // Get agents from repository
-      const result = await findByCompetition(competitionId, params);
+      const { agents, total } = await findByCompetition(competitionId, params);
 
       console.log(
-        `[AgentManager] Found ${result.agents.length} agents for competition ${competitionId}`,
+        `[AgentManager] Found ${agents.length} agents for competition ${competitionId}`,
       );
-      return result;
+      return { agents, total };
     } catch (error) {
       console.error(
         `[AgentManager] Error retrieving agents for competition ${competitionId}:`,

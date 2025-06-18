@@ -8,10 +8,12 @@ import {
   AuthenticatedRequest,
   COMPETITION_STATUS,
   CompetitionAgentParamsSchema,
-  CompetitionAgentsParamsSchema,
   CompetitionStatusSchema,
   PagingParamsSchema,
 } from "@/types/index.js";
+import { AgentQuerySchema } from "@/types/sort/agent.js";
+
+import { checkIsAdmin, ensureUuid } from "./request-helpers.js";
 
 export function makeCompetitionController(services: ServiceRegistry) {
   /**
@@ -648,6 +650,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
      * @param res Express response
      * @param next Express next function
      */
+    // TODO: There are problems with post-processing sorting by rank or score: https://github.com/recallnet/js-recall/issues/620
     async getCompetitionAgents(
       req: AuthenticatedRequest,
       res: Response,
@@ -656,7 +659,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
       try {
         const agentId = req.agentId;
         const userId = req.userId;
-        const isAdmin = req.isAdmin === true;
+        const isAdmin = checkIsAdmin(req);
 
         // Authentication check
         if (isAdmin) {
@@ -678,13 +681,14 @@ export function makeCompetitionController(services: ServiceRegistry) {
         }
 
         // Get competition ID from path parameter
-        const competitionId = req.params.competitionId;
-        if (!competitionId) {
-          throw new ApiError(400, "Competition ID is required");
-        }
+        const competitionId = ensureUuid(req.params.competitionId);
 
         // Parse query parameters
-        const queryParams = CompetitionAgentsParamsSchema.parse(req.query);
+        const parseQueryParams = AgentQuerySchema.safeParse(req.query);
+        if (!parseQueryParams.success) {
+          throw new ApiError(400, "Invalid request format");
+        }
+        const queryParams = parseQueryParams.data;
 
         // Check if competition exists
         const competition =
@@ -695,73 +699,16 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Get agents for the competition with pagination
         const { agents, total } =
-          await services.agentManager.getAgentsForCompetition(
+          await services.competitionManager.getCompetitionAgentsWithMetrics(
             competitionId,
             queryParams,
           );
 
-        // Get leaderboard data for the competition to get scores and positions
-        const leaderboard =
-          await services.competitionManager.getLeaderboard(competitionId);
-        const leaderboardMap = new Map(
-          leaderboard.map((entry, index) => [
-            entry.agentId,
-            { score: entry.value, position: index + 1 },
-          ]),
-        );
-
-        // Get vote counts for all agents in this competition
-        const voteCountsMap =
-          await services.voteManager.getVoteCountsByCompetition(competitionId);
-
-        // Build the response with agent details and competition data
-        const competitionAgents = await Promise.all(
-          agents.map(async (agent) => {
-            const isActive = agent.status === "active";
-            const leaderboardData = leaderboardMap.get(agent.id);
-            const score = leaderboardData?.score ?? 0;
-            const position = leaderboardData?.position ?? 0;
-            const voteCount = voteCountsMap.get(agent.id) ?? 0;
-
-            // Calculate PnL and 24h change metrics using the service
-            const metrics =
-              await services.competitionManager.calculateAgentMetrics(
-                competitionId,
-                agent.id,
-                score,
-              );
-
-            return {
-              id: agent.id,
-              name: agent.name,
-              description: agent.description || null,
-              imageUrl: agent.imageUrl || null,
-              score: score,
-              position: position,
-              portfolioValue: score,
-              active: isActive,
-              deactivationReason: !isActive
-                ? agent.deactivationReason || null
-                : null,
-              pnl: metrics.pnl,
-              pnlPercent: metrics.pnlPercent,
-              change24h: metrics.change24h,
-              change24hPercent: metrics.change24hPercent,
-              voteCount: voteCount,
-            };
-          }),
-        );
-
-        // Apply position-based sorting if requested
-        if (queryParams.sort === "position") {
-          competitionAgents.sort((a, b) => a.position - b.position);
-        }
-
         // Return the competition agents with pagination metadata
         res.status(200).json({
           success: true,
-          competitionId: competitionId,
-          agents: competitionAgents,
+          competitionId,
+          agents,
           pagination: {
             total,
             limit: queryParams.limit,

@@ -1,8 +1,6 @@
 import {
   AnyColumn,
   and,
-  asc,
-  desc,
   count as drizzleCount,
   eq,
   ilike,
@@ -21,10 +19,10 @@ import { InsertAgent, SelectAgent } from "@/database/schema/core/types.js";
 import {
   AgentCompetitionsParams,
   AgentSearchParams,
-  CompetitionAgentsParams,
   CompetitionStatus,
   PagingParams,
 } from "@/types/index.js";
+import { AgentQueryParams } from "@/types/sort/agent.js";
 
 import { getSort } from "./helpers.js";
 import { PartialExcept } from "./types.js";
@@ -131,7 +129,7 @@ export async function findAgentCompetitions(
   params: AgentCompetitionsParams,
 ) {
   try {
-    const { status, claimed } = params;
+    const { status, claimed, sort, limit, offset } = params;
 
     // Build where conditions
     const whereConditions = [eq(competitionAgents.agentId, agentId)];
@@ -159,21 +157,20 @@ export async function findAgentCompetitions(
 
     // Check if sorting by computed fields (handled at service layer)
     const isComputedSort =
-      params.sort &&
+      sort &&
       COMPUTED_SORT_FIELDS.some(
-        (field) =>
-          params.sort!.includes(field) || params.sort!.includes(`-${field}`),
+        (field) => sort!.includes(field) || sort!.includes(`-${field}`),
       );
 
     // Only apply database sorting for non-computed fields
-    if (params.sort && !isComputedSort) {
-      query = getSort(query, params.sort, agentCompetitionsOrderByFields);
+    if (sort && !isComputedSort) {
+      query = getSort(query, sort, agentCompetitionsOrderByFields);
     }
 
     // For computed sorting, we'll need to get all results and sort at service layer
     // So we don't apply limit/offset here if sorting by computed fields
     if (!isComputedSort) {
-      query = query.limit(params.limit).offset(params.offset);
+      query = query.limit(limit).offset(offset);
     }
 
     const results = await query;
@@ -201,11 +198,13 @@ export async function findAgentCompetitions(
  * Find agents participating in a specific competition with pagination and sorting
  * @param competitionId Competition ID
  * @param params Query parameters for filtering, sorting, and pagination
+ * @param isComputedSort Whether computed sorting is handled at the service layer (needs "full" results)
  * @returns Object containing agents array and total count
  */
 export async function findByCompetition(
   competitionId: string,
-  params: CompetitionAgentsParams,
+  params: AgentQueryParams,
+  isComputedSort: boolean = false,
 ): Promise<{ agents: SelectAgent[]; total: number }> {
   try {
     const { filter, sort, limit, offset } = params;
@@ -219,54 +218,50 @@ export async function findByCompetition(
       whereConditions.push(ilike(agents.name, `%${filter}%`));
     }
 
-    // Determine sort order
-    let orderBy;
-    switch (sort?.toLowerCase()) {
-      case "name":
-        orderBy = asc(agents.name);
-        break;
-      case "name_desc":
-        orderBy = desc(agents.name);
-        break;
-      case "created":
-        orderBy = asc(agents.createdAt);
-        break;
-      case "created_desc":
-        orderBy = desc(agents.createdAt);
-        break;
-      case "status":
-        orderBy = asc(agents.status);
-        break;
-      default:
-        // Default to name ascending
-        orderBy = asc(agents.name);
-        break;
-    }
-
-    // Query for agents with pagination
-    const agentsResult = await db
+    let query = db
       .select()
       .from(agents)
       .innerJoin(competitionAgents, eq(agents.id, competitionAgents.agentId))
+      .innerJoin(
+        competitions,
+        eq(competitionAgents.competitionId, competitions.id),
+      )
       .where(and(...whereConditions))
-      .orderBy(orderBy)
-      .limit(limit)
-      .offset(offset);
+      .$dynamic();
+
+    // Only apply database sorting for non-computed fields
+    if (sort) {
+      query = getSort(query, sort, agentOrderByFields);
+    }
+
+    // TODO: this is a hack to allow for computed sorting at the service layer. We don't apply
+    // limit/offset because the service layer will sort the results in post-query logic.
+    // See https://github.com/recallnet/js-recall/issues/620
+    if (!isComputedSort) {
+      query = query.limit(limit).offset(offset);
+    }
+
+    // Query for agents with pagination
+    const agentsResult = await query;
 
     // Query for total count
     const countResult = await db
       .select({ count: drizzleCount() })
       .from(agents)
       .innerJoin(competitionAgents, eq(agents.id, competitionAgents.agentId))
+      .innerJoin(
+        competitions,
+        eq(competitionAgents.competitionId, competitions.id),
+      )
       .where(and(...whereConditions));
 
     const total = countResult[0]?.count ?? 0;
 
     // Extract agent data from the joined result
-    const agents_data = agentsResult.map((row) => row.agents);
+    const agentsData = agentsResult.map((row) => row.agents);
 
     return {
-      agents: agents_data,
+      agents: agentsData,
       total,
     };
   } catch (error) {
