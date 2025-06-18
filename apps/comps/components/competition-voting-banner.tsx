@@ -10,20 +10,6 @@ import { Competition } from "@/types";
 import CountdownClock from "./clock";
 import { getCompetitionVotingConfig } from "./competition-voting-config";
 
-/**
- * CompetitionVotingBanner uses a CSS-only shrinking header technique.
- *
- * How it works:
- * 1. Outer container has a larger height (80px) and negative top positioning (-48px)
- * 2. Inner container has a smaller height (32px) and top: 0
- * 3. As user scrolls, the outer container slides up due to negative top value
- * 4. Inner container sticks to viewport top, creating shrinking effect
- * 5. The difference (80px - 32px = 48px) determines shrink amount
- *
- * This eliminates the need for JavaScript scroll listeners and provides
- * better performance than the previous implementation.
- */
-
 export interface CompetitionVotingBannerProps {
   competition: Competition;
   className?: string;
@@ -64,7 +50,7 @@ export const CompetitionVotingBanner: React.FC<
       )}
       style={{
         height: "80px", // Full height - this is what the banner starts at
-        top: "-72px", // Negative top = inner height - outer height = 32px - 80px = -48px
+        top: "-72px", // Negative top = inner height - outer height = 8px - 80px = -72px
         // This makes the outer container slide "above" the viewport as user scrolls
       }}
     >
@@ -98,7 +84,7 @@ export const CompetitionVotingBanner: React.FC<
           )}
         </div>
 
-        {/* Phase indicator - positioned absolutely */}
+        {/* Phase indicator - hidden on small screens */}
         <div className="absolute right-4 top-1/2 hidden -translate-y-1/2 whitespace-nowrap font-medium opacity-90 sm:block md:right-24">
           <span className="text-md">
             Phase:{" "}
