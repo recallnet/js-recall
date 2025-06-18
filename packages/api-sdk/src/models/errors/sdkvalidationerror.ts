@@ -90,7 +90,7 @@ export function formatZodError(err: z.ZodError, level = 0): string {
       case "invalid_union": {
         const len = issue.unionErrors.length;
         append(
-          `│   ✖︎ Attemped to deserialize into one of ${len} union members:`,
+          `│   ✖︎ Attempted to deserialize into one of ${len} union members:`,
         );
         issue.unionErrors.forEach((err, i) => {
           append(`│   ✖︎ Member ${i + 1} of ${len}`);
