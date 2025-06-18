@@ -1,7 +1,9 @@
 "use client";
 
+import "./competition-voting-banner.css";
+
 import { X } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 
 import { cn } from "@recallnet/ui2/lib/utils";
 
@@ -9,6 +11,20 @@ import { Competition } from "@/types";
 
 import CountdownClock from "./clock";
 import { getCompetitionVotingConfig } from "./competition-voting-config";
+
+/**
+ * CompetitionVotingBanner uses a CSS-only shrinking header technique.
+ *
+ * How it works:
+ * 1. Outer container has a larger height (80px) and negative top positioning (-48px)
+ * 2. Inner container has a smaller height (32px) and top: 0
+ * 3. As user scrolls, the outer container slides up due to negative top value
+ * 4. Inner container sticks to viewport top, creating shrinking effect
+ * 5. The difference (80px - 32px = 48px) determines shrink amount
+ *
+ * This eliminates the need for JavaScript scroll listeners and provides
+ * better performance than the previous implementation.
+ */
 
 export interface CompetitionVotingBannerProps {
   competition: Competition;
@@ -24,35 +40,7 @@ export const CompetitionVotingBanner: React.FC<
     competition.userVotingInfo?.info?.hasVoted || false,
   );
 
-  const [scrollY, setScrollY] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrollY(window.scrollY);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  // Calculate height based on scroll position
-  // Full height at scroll 0, minimum 5px at scroll 200px or more
-  const maxHeight = 80; // py-4 vs py-3
-  const minHeight = 8;
-  const scrollThreshold = 200;
-
-  const currentHeight = Math.max(
-    minHeight,
-    maxHeight - (scrollY / scrollThreshold) * (maxHeight - minHeight),
-  );
-
-  // Calculate opacity for content based on height
-  const contentOpacity = Math.max(
-    0,
-    (currentHeight - minHeight) / (maxHeight - minHeight),
-  );
-  const showContent = contentOpacity > 0.1;
 
   const handleClose = () => {
     setIsVisible(false);
@@ -62,41 +50,43 @@ export const CompetitionVotingBanner: React.FC<
   if (!isVisible) {
     return null;
   }
+
   return (
     <div
       className={cn(
-        "sticky top-0 z-50 flex items-center justify-start gap-3 overflow-hidden px-24 text-white shadow-lg transition-all duration-200 ease-out",
-        "ml-[calc(-50vw+50%)] w-screen",
-        config.variant === "green" && "bg-green-600",
-        config.variant === "blue" && "bg-blue-600",
-        config.variant === "gray" && "bg-gray-600",
+        "competition-voting-banner-outer",
+        config.variant === "green" && "competition-voting-banner-green",
+        config.variant === "blue" && "competition-voting-banner-blue",
+        config.variant === "gray" && "competition-voting-banner-gray",
         className,
       )}
       style={{
-        height: `${currentHeight}px`,
-        minHeight: `${minHeight}px`,
+        height: "80px", // Full height - this is what the banner starts at
+        top: "-48px", // Negative top = inner height - outer height = 32px - 80px = -48px
+        // This makes the outer container slide "above" the viewport as user scrolls
       }}
     >
       <div
-        className={cn(
-          "flex gap-3 transition-opacity duration-200",
-          showContent && "flex-col",
-        )}
-        style={{ opacity: contentOpacity }}
+        className="competition-voting-banner-inner"
+        style={{
+          height: "32px", // Shrunk height - this is the final collapsed state
+          top: "0", // Sticks to top of viewport when outer container slides up
+        }}
       >
-        <div className="flex gap-3">
-          {showContent && config.subTitle && (
-            <span className="text-md font-medium opacity-90">
+        {/* Content that appears in full height */}
+        <div className="competition-voting-banner-content">
+          {config.subTitle && (
+            <span className="competition-voting-banner-text text-md font-medium opacity-90">
               {config.subTitle}
             </span>
           )}
-          {showContent && config.description && (
-            <span className="text-md max-w-2xl opacity-80">
+          {config.description && (
+            <span className="competition-voting-banner-text text-md max-w-2xl opacity-80">
               {config.description}
             </span>
           )}
-          {showContent && config.untilTime && (
-            <span className="max-w-2xl opacity-80">
+          {config.untilTime && (
+            <span className="competition-voting-banner-text max-w-2xl opacity-80">
               <CountdownClock
                 className="text-md"
                 showDuration={true}
@@ -105,53 +95,39 @@ export const CompetitionVotingBanner: React.FC<
             </span>
           )}
         </div>
-      </div>
 
-      <div
-        className="absolute right-24 top-1/2 hidden -translate-y-1/2 sm:block"
-        style={{ opacity: contentOpacity }}
-      >
-        <span
-          className={cn(
-            "text-md font-medium transition-opacity duration-200",
-            showContent ? "opacity-90" : "opacity-40",
-          )}
-        >
-          Phase:{" "}
-          <span
-            className={cn(
-              "pl-4 opacity-60",
-              config.phase === "registration" && "font-bold opacity-100",
-            )}
-          >
-            Registration
-          </span>{" "}
-          <span
-            className={cn(
-              "pl-4 opacity-60",
-              config.phase === "voting" && "font-bold opacity-100",
-            )}
-          >
-            Voting
+        {/* Phase indicator - positioned absolutely */}
+        <div className="competition-voting-banner-phase">
+          <span className="text-md">
+            Phase:{" "}
+            <span
+              className={cn(
+                "pl-4 opacity-60",
+                config.phase === "registration" && "font-bold opacity-100",
+              )}
+            >
+              Registration
+            </span>{" "}
+            <span
+              className={cn(
+                "pl-4 opacity-60",
+                config.phase === "voting" && "font-bold opacity-100",
+              )}
+            >
+              Voting
+            </span>
           </span>
-        </span>
-      </div>
+        </div>
 
-      <button
-        onClick={handleClose}
-        className={cn(
-          "absolute right-4 top-1/2 -translate-y-1/2 rounded-full p-1 transition-all duration-200 hover:bg-white/20",
-          showContent ? "opacity-80" : "opacity-60",
-        )}
-        aria-label="Close banner"
-      >
-        <X
-          className={cn(
-            "transition-all duration-200",
-            showContent ? "h-4 w-4" : "h-3 w-3",
-          )}
-        />
-      </button>
+        {/* Close button */}
+        <button
+          onClick={handleClose}
+          className="competition-voting-banner-close"
+          aria-label="Close banner"
+        >
+          <X className="competition-voting-banner-close-icon" />
+        </button>
+      </div>
     </div>
   );
 };

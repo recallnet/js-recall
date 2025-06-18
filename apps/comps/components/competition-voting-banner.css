@@ -1,0 +1,128 @@
+/* CSS-only shrinking banner styles */
+.competition-voting-banner-outer {
+  /* Outer container that slides up as user scrolls */
+  position: sticky;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  overflow: hidden;
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.1),
+    0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+  /* Full-width positioning */
+  margin-left: calc(-50vw + 50%);
+  width: 100vw;
+
+  /* GPU acceleration for smoother animations */
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.competition-voting-banner-inner {
+  /* Inner container that sticks to the top */
+  position: sticky;
+  top: 0;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  padding-left: 6rem;
+  padding-right: 6rem;
+  color: white;
+
+  /* GPU acceleration for smoother animations */
+  will-change: transform;
+  transform: translateZ(0);
+  transition:
+    transform 0.2s ease-out,
+    opacity 0.2s ease-out;
+}
+
+/* Content fade and text overflow handling */
+.competition-voting-banner-content {
+  display: flex;
+  gap: 0.75rem;
+  overflow: hidden;
+  flex: 1;
+  contain: layout style;
+}
+
+.competition-voting-banner-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 1;
+  transition: opacity 0.15s ease-out;
+  contain: layout style;
+}
+
+/* Color variants */
+.competition-voting-banner-green {
+  background-color: rgb(22 163 74); /* green-600 */
+}
+
+.competition-voting-banner-blue {
+  background-color: rgb(37 99 235); /* blue-600 */
+}
+
+.competition-voting-banner-gray {
+  background-color: rgb(75 85 99); /* gray-600 */
+}
+
+/* Phase indicator positioning */
+.competition-voting-banner-phase {
+  position: absolute;
+  right: 6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: none;
+  white-space: nowrap;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+@media (min-width: 640px) {
+  .competition-voting-banner-phase {
+    display: block;
+  }
+}
+
+/* Close button */
+.competition-voting-banner-close {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%) translateZ(0);
+  border-radius: 9999px;
+  padding: 0.25rem;
+  opacity: 0.8;
+  transition:
+    background-color 0.15s ease-out,
+    opacity 0.15s ease-out;
+  will-change: background-color, opacity;
+}
+
+.competition-voting-banner-close:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.competition-voting-banner-close-icon {
+  height: 1rem;
+  width: 1rem;
+  transition: transform 0.15s ease-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .competition-voting-banner-inner {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .competition-voting-banner-phase {
+    right: 3rem;
+  }
+}
