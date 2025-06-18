@@ -5,7 +5,7 @@ import React, { useState } from "react";
 
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { Competition } from "@/types";
+import { Competition, CompetitionStatus } from "@/types";
 
 import CountdownClock from "./clock";
 import { getCompetitionVotingConfig } from "./competition-voting-config";
@@ -31,7 +31,7 @@ export const CompetitionVotingBanner: React.FC<
     onClose?.();
   };
 
-  if (!isVisible) {
+  if (!isVisible || competition.status === CompetitionStatus.Ended) {
     return null;
   }
 
