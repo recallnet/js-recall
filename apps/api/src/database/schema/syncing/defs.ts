@@ -19,8 +19,8 @@ export const objectIndex = pgTable(
   "object_index",
   {
     id: uuid().primaryKey().notNull(),
-    competitionId: uuid("competition_id").notNull(),
-    agentId: uuid("agent_id").notNull(),
+    competitionId: uuid("competition_id"),
+    agentId: uuid("agent_id"),
     dataType: varchar("data_type", { length: 100 }).notNull(),
     data: text("data").notNull(),
     sizeBytes: bigint("size_bytes", { mode: "number" }),
@@ -45,11 +45,11 @@ export const objectIndex = pgTable(
       columns: [table.competitionId],
       foreignColumns: [competitions.id],
       name: "object_index_competition_id_fkey",
-    }).onDelete("cascade"),
+    }).onDelete("set null"),
     foreignKey({
       columns: [table.agentId],
       foreignColumns: [agents.id],
       name: "object_index_agent_id_fkey",
-    }).onDelete("cascade"),
+    }).onDelete("set null"),
   ],
 );
