@@ -4346,13 +4346,24 @@
             "name": "sort",
             "schema": {
               "type": "string",
+              "description": "Optional field(s) to sort by. Supports single or multiple fields separated by commas.\nPrefix with '-' for descending order (e.g., '-name' or '-position').\nDefault is 'position' ascending.\n",
               "enum": [
                 "position",
+                "-position",
+                "score",
+                "-score",
+                "pnl",
+                "-pnl",
+                "pnlPercent",
+                "-pnlPercent",
+                "change24h",
+                "-change24h",
+                "change24hPercent",
+                "-change24hPercent",
+                "voteCount",
+                "-voteCount",
                 "name",
-                "name_desc",
-                "created",
-                "created_desc",
-                "status"
+                "-name"
               ],
               "default": "position"
             },
