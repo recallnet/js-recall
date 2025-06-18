@@ -1384,10 +1384,26 @@ export class AgentManager {
             break;
           }
           case "agentName": {
-            // Sort by agent name (first agent's name in each competition)
-            const aName = a.agents?.[0]?.name || "";
-            const bName = b.agents?.[0]?.name || "";
-            comparison = aName.localeCompare(bName);
+            // Sort by the lexicographically FIRST agent name that belongs to the
+            // authenticated user within each competition. This guarantees a
+            // deterministic "primary" agent name irrespective of the order in
+            // which agents were joined or returned from the database. Without
+            // this, the primary agent could change between requests causing
+            // flaky ordering in the UI and in automated tests.
+            const primaryNameA =
+              (a.agents?.length ?? 0) > 0
+                ? (a.agents
+                    ?.map((ag) => ag.name ?? "")
+                    .sort((x, y) => x.localeCompare(y))[0] ?? "")
+                : "";
+            const primaryNameB =
+              (b.agents?.length ?? 0) > 0
+                ? (b.agents
+                    ?.map((ag) => ag.name ?? "")
+                    .sort((x, y) => x.localeCompare(y))[0] ?? "")
+                : "";
+
+            comparison = primaryNameA.localeCompare(primaryNameB);
             comparison = isDesc ? -comparison : comparison;
             break;
           }
