@@ -3,22 +3,23 @@
 import React from "react";
 
 import Card from "@recallnet/ui2/components/card";
-import { SortState } from "@recallnet/ui2/components/table";
-import { Tabs, TabsList, TabsTrigger } from "@recallnet/ui2/components/tabs";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {SortState} from "@recallnet/ui2/components/table";
+import {Tabs, TabsList, TabsTrigger} from "@recallnet/ui2/components/tabs";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { Hexagon } from "@/components/hexagon";
+import {Hexagon} from "@/components/hexagon";
 import MirrorImage from "@/components/mirror-image";
-import { useUpdateAgent, useUserAgents } from "@/hooks";
-import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
-import { Agent, AgentWithOwnerResponse } from "@/types";
+import {useUpdateAgent, useUserAgents} from "@/hooks";
+import {useAgentCompetitions} from "@/hooks/useAgentCompetitions";
+import {Agent, AgentWithOwnerResponse} from "@/types";
 
-import { BreadcrumbNav } from "../breadcrumb-nav";
-import { AgentImage } from "./agent-image";
+import {BreadcrumbNav} from "../breadcrumb-nav";
+import {AgentImage} from "./agent-image";
 import AgentInfo from "./agent-info";
 import CompetitionTable from "./comps-table";
-import { EditAgentField } from "./edit-field";
-import { ShareAgent } from "./share-agent";
+import {EditAgentField} from "./edit-field";
+import {EditSkillsField} from "./edit-skills-field";
+import {ShareAgent} from "./share-agent";
 
 const limit = 10;
 
@@ -41,7 +42,7 @@ export default function AgentProfile({
   const [offset, setOffset] = React.useState(0);
   const skills = agent?.skills || [];
   const trophies = (agent?.trophies || []) as string[];
-  const { data: userAgents } = useUserAgents();
+  const {data: userAgents} = useUserAgents();
   const isUserAgent = userAgents?.agents.some((a) => a.id === id) || false;
   const updateAgent = useUpdateAgent();
 
@@ -68,22 +69,22 @@ export default function AgentProfile({
       }
     };
 
-  const { data: compsData } = useAgentCompetitions(id, {
+  const {data: compsData} = useAgentCompetitions(id, {
     sort: sortString,
     status,
     limit,
     offset,
   });
   const competitions = compsData?.competitions || [];
-  const { total } = compsData?.pagination || { total: 0 };
+  const {total} = compsData?.pagination || {total: 0};
 
   return (
     <>
       <BreadcrumbNav
         items={[
-          { label: "RECALL" },
-          { label: "AGENTS", href: "/competitions" },
-          { label: agent.name },
+          {label: "RECALL"},
+          {label: "AGENTS", href: "/competitions"},
+          {label: agent.name},
         ]}
         className="mb-10"
       />
@@ -210,19 +211,25 @@ export default function AgentProfile({
             </span>
           </div>
           <div className="flex flex-col items-start p-6">
-            <span className="text-secondary-foreground w-full text-left font-semibold uppercase">
-              Proven Skills
-            </span>
+            <EditSkillsField
+              title="Agent Skills"
+              value={agent.skills || []}
+              onSave={handleSaveChange("description")}
+            >
+              <span className="text-secondary-foreground w-full text-left font-semibold uppercase">
+                Proven Skills
+              </span>
+            </EditSkillsField>
             <div className="text-secondary-foreground mt-3 flex flex-wrap gap-3 break-all">
               {skills.length > 0
                 ? skills.map((skill, index) => (
-                    <span
-                      key={index}
-                      className="text-primary-foreground rounded border px-2 py-1"
-                    >
-                      {skill}
-                    </span>
-                  ))
+                  <span
+                    key={index}
+                    className="text-primary-foreground rounded border px-2 py-1"
+                  >
+                    {skill}
+                  </span>
+                ))
                 : "This agent hasnt showcased skills yet."}
             </div>
           </div>

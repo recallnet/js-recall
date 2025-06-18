@@ -1,4 +1,4 @@
-import { useCopyToClipboard } from "@uidotdev/usehooks";
+import {useCopyToClipboard} from "@uidotdev/usehooks";
 import {
   CopyIcon,
   EyeIcon,
@@ -6,15 +6,15 @@ import {
   KeyIcon,
   WalletIcon,
 } from "lucide-react";
-import { useState } from "react";
+import {useState} from "react";
 
-import { Tooltip } from "@recallnet/ui2/components/tooltip";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {Tooltip} from "@recallnet/ui2/components/tooltip";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { useAgentApiKey } from "@/hooks";
-import { Agent } from "@/types";
+import {useAgentApiKey} from "@/hooks";
+import {Agent} from "@/types";
 
-import { Clipboard } from "../clipboard";
+import {Clipboard} from "../clipboard";
 
 export const AgentInfo = ({
   agent,
@@ -24,8 +24,8 @@ export const AgentInfo = ({
   className?: string;
 }) => {
   const [copiedText, copyToClipboard] = useCopyToClipboard();
-  const [showWalletAddress, setShowWalletAddress] = useState(false);
-  const { data: apiKey, isLoading } = useAgentApiKey(agent.id);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const {data: apiKey, isLoading} = useAgentApiKey(agent.id);
 
   const handleCopy = async (text: string) => {
     copyToClipboard(text);
@@ -40,11 +40,11 @@ export const AgentInfo = ({
       )}
     >
       <div className="flex w-full max-w-[470px] items-center gap-3">
-        <Tooltip content="Agent Key">
+        <Tooltip content="Agent API Key">
           <KeyIcon />
         </Tooltip>
         <div className="flex h-[40px] w-full items-center gap-2 overflow-hidden rounded border p-2">
-          {showWalletAddress || isLoading ? (
+          {showApiKey || isLoading ? (
             <span className="flex-grow truncate">{apiKey?.apiKey}</span>
           ) : (
             <span className="flex-grow truncate">
@@ -58,21 +58,21 @@ export const AgentInfo = ({
             />
           </Tooltip>
         </div>
-        {showWalletAddress ? (
+        {showApiKey ? (
           <EyeIcon
             className="flex-shrink-0 cursor-pointer"
-            onClick={() => setShowWalletAddress(false)}
+            onClick={() => setShowApiKey(false)}
           />
         ) : (
           <EyeOffIcon
             className="flex-shrink-0 cursor-pointer"
-            onClick={() => setShowWalletAddress(true)}
+            onClick={() => setShowApiKey(true)}
           />
         )}
       </div>
 
       <div className="flex w-full max-w-[470px] items-center gap-3">
-        <Tooltip content="Agent Wallet">
+        <Tooltip content="Agent Wallet Address">
           <WalletIcon />
         </Tooltip>
         <Clipboard
