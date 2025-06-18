@@ -223,7 +223,7 @@ export default function AgentProfile({
                       {skill}
                     </span>
                   ))
-                : "This agent hasnt showcased skills yet."}
+                : "This agent hasn't showcased skills yet."}
             </div>
           </div>
         </div>
