@@ -2,8 +2,6 @@ import { AwardIcon, ExternalLink, Trophy } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-import { Button } from "@recallnet/ui2/components/button";
-import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import {
   SortState,
   SortableTableHeader,
@@ -18,24 +16,36 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { LeaderboardAgent } from "@/types/agent";
 
+import { Pagination } from "./pagination/index";
+
 export function LeaderboardTable({
   agents,
-  loaded,
   handleSortChange,
   sortState,
-  onLoadMore,
-  hasMore = false,
+  onPageChange,
+  pagination = {
+    total: 0,
+    limit: 0,
+    offset: 0,
+  },
 }: {
   agents: LeaderboardAgent[];
-  loaded?: boolean;
-
   handleSortChange: (field: string) => void;
   sortState: Record<string, SortState>;
-  onLoadMore: () => void;
-  hasMore?: boolean;
+  pagination?: {
+    total: number;
+    limit: number;
+    offset: number;
+  };
+  onPageChange: (page: number) => void;
 }) {
+  const page =
+    pagination.limit > 0
+      ? Math.floor(pagination.offset / pagination.limit) + 1
+      : 1;
+
   return (
-    <>
+    <div className="flex flex-col items-end">
       <Table className="w-full">
         <TableHeader className="bg-gray-900">
           <TableRow className="grid w-full grid-cols-[1fr_2fr_1fr_1fr_1fr]">
@@ -118,57 +128,36 @@ export function LeaderboardTable({
 
               <TableCell className="flex items-center justify-center">
                 <div className="flex items-center gap-2">
-                  {loaded ? (
-                    agent.imageUrl?.length > 0 ? (
-                      <Image
-                        src={agent.imageUrl || "/agent-image.png"}
-                        alt="avatar"
-                        className="rounded-full"
-                        width={35}
-                        height={35}
-                      />
-                    ) : (
-                      <div className="h-9 w-9 rounded-full bg-gray-500" />
-                    )
+                  {agent.imageUrl?.length > 0 ? (
+                    <Image
+                      src={agent.imageUrl || "/agent-image.png"}
+                      alt="avatar"
+                      className="rounded-full"
+                      width={35}
+                      height={35}
+                    />
                   ) : (
-                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <div className="h-9 w-9 rounded-full bg-gray-500" />
                   )}
                   <div className="md:w-70 w-40 text-left text-sm">
-                    {loaded ? (
-                      <>
-                        <div className="font-medium leading-none text-white">
-                          {agent.name}
-                        </div>
-                        {agent.description && (
-                          <p className="truncate whitespace-nowrap text-xs text-gray-400">
-                            {agent.description}
-                          </p>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <Skeleton className="h-2 w-20 rounded-full" />
-                        <Skeleton className="w-30 mt-2 h-2 rounded-full" />
-                      </>
+                    <div className="font-medium leading-none text-white">
+                      {agent.name}
+                    </div>
+                    {agent.description && (
+                      <p className="truncate whitespace-nowrap text-xs text-gray-400">
+                        {agent.description}
+                      </p>
                     )}
                   </div>
                 </div>
               </TableCell>
 
               <TableCell className="flex items-center justify-end pr-10 text-gray-500">
-                {loaded ? (
-                  agent.numCompetitions
-                ) : (
-                  <Skeleton className="h-2 w-10 rounded-full" />
-                )}
+                {agent.numCompetitions}
               </TableCell>
 
               <TableCell className="flex items-center justify-end pr-10 text-gray-500 sm:pr-0">
-                {loaded ? (
-                  agent.voteCount || 0
-                ) : (
-                  <Skeleton className="h-2 w-10 rounded-full" />
-                )}
+                {agent.voteCount || 0}
               </TableCell>
 
               <TableCell className="pr-15 flex items-center justify-end text-gray-500">
@@ -181,15 +170,12 @@ export function LeaderboardTable({
         </TableBody>
       </Table>
 
-      <div className="mt-6 flex items-center justify-center gap-2">
-        {hasMore && (
-          <div className="mt-4 flex justify-center">
-            <Button variant="outline" size="sm" onClick={onLoadMore}>
-              Show More
-            </Button>
-          </div>
-        )}
-      </div>
-    </>
+      <Pagination
+        totalItems={pagination.total}
+        currentPage={page}
+        itemsPerPage={pagination.limit}
+        onPageChange={onPageChange}
+      />
+    </div>
   );
 }
