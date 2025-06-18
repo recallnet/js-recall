@@ -90,7 +90,7 @@ export default function CompetitionPage({
   }
 
   return (
-    <>
+    <div style={{ marginTop: "-40px" }}>
       <CompetitionVotingBanner competition={competition} />
       <BreadcrumbNav
         items={[
@@ -98,7 +98,7 @@ export default function CompetitionPage({
           { label: "Competitions", href: "/competitions" },
           { label: competition.name },
         ]}
-        className="mb-10"
+        className="mb-10 mt-10"
       />
       <div className="mb-20 flex w-full flex-col gap-5 md:flex-row">
         <BasicCompetitionCard competition={competition} className="md:w-1/2" />
@@ -207,6 +207,6 @@ export default function CompetitionPage({
       )}
       <JoinSwarmSection socialLinks={getSocialLinksArray()} className="mt-12" />
       <FooterSection />
-    </>
+    </div>
   );
 }
