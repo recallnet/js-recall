@@ -30,7 +30,7 @@ export function getCompetitionVotingConfig(
   if (hasVoted) {
     if (status === CompetitionStatus.Pending) {
       return {
-        subTitle: "Counting Votes!",
+        subTitle: "Counting votes!",
         description: compStartDate ? "Competition starts in..." : "",
         variant: "gray",
         untilTime: compStartDate,
@@ -39,7 +39,7 @@ export function getCompetitionVotingConfig(
     }
     if (status === CompetitionStatus.Active) {
       return {
-        subTitle: "Counting Votes!",
+        subTitle: "Counting votes!",
         description: compEndDate ? "Competition ends in..." : "",
         variant: "gray",
         untilTime: compEndDate,
@@ -47,6 +47,8 @@ export function getCompetitionVotingConfig(
       };
     }
     if (status === CompetitionStatus.Ended) {
+      // NOTE: we should never get here since the banner is hidden if the
+      //  comp is ended.
       return {
         subTitle: "Votes are counted!",
         description: "Competition ended and the votes are counted...",
@@ -71,8 +73,8 @@ export function getCompetitionVotingConfig(
   //  isn't a comp start time, then registration is not open.
   if (!compStartDate) {
     return {
-      subTitle: "Get Ready!",
-      description: "Registration opens in...",
+      subTitle: "Get ready!",
+      description: `Registration ${votingStart ? "opens in..." : "soon"}`,
       variant: "green",
       untilTime: votingStart,
       phase: "registration",
@@ -90,7 +92,7 @@ export function getCompetitionVotingConfig(
   }
   if (votingEnd && now > votingEnd) {
     return {
-      subTitle: "Counting Votes!",
+      subTitle: "Counting votes!",
       description: compEndDate ? "Competition ends in..." : "",
       variant: "gray",
       untilTime: compEndDate,
