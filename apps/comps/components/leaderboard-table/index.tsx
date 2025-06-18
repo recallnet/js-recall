@@ -1,4 +1,4 @@
-import {AwardIcon, ExternalLink, Trophy} from "lucide-react";
+import { AwardIcon, ExternalLink, Trophy } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -12,11 +12,10 @@ import {
   TableHeader,
   TableRow,
 } from "@recallnet/ui2/components/table";
-import {cn} from "@recallnet/ui2/lib/utils";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import {LeaderboardAgent} from "@/types/agent";
-
-import {Pagination} from "@/components/pagination/index";
+import { Pagination } from "@/components/pagination/index";
+import { LeaderboardAgent } from "@/types/agent";
 
 export function LeaderboardTable({
   agents,
@@ -48,13 +47,19 @@ export function LeaderboardTable({
     <div className="flex flex-col items-end">
       <Table className="w-full">
         <TableHeader className="bg-gray-900">
-          <TableRow className="grid w-full grid-cols-[1fr_2fr_1fr_1fr_1fr]">
+          <TableRow className="grid w-full grid-cols-[1fr_1fr_2fr_1fr_1fr_1fr]">
             <SortableTableHeader
-              className="pl-10 text-white"
+              className="mr-15 pl-20 text-white"
               onToggleSort={() => handleSortChange("rank")}
               sortState={sortState["rank"]}
             >
               Rank
+            </SortableTableHeader>
+            <SortableTableHeader
+              onToggleSort={() => handleSortChange("name")}
+              sortState={sortState["name"]}
+            >
+              AgentRank
             </SortableTableHeader>
             <SortableTableHeader
               className="xs:pl-20 pl-10 text-white"
@@ -89,9 +94,9 @@ export function LeaderboardTable({
           {agents.map((agent) => (
             <TableRow
               key={agent.id}
-              className="grid grid-cols-[1fr_2fr_1fr_1fr_1fr]"
+              className="grid grid-cols-[1fr_1fr_2fr_1fr_1fr_1fr]"
             >
-              <TableCell className="xs:flex-row flex flex-col items-center gap-2 py-6">
+              <TableCell className="xs:flex-row mr-10 flex flex-col items-center gap-2 py-6 pl-20">
                 {agent.rank === 1 ? (
                   <div
                     className={cn(
@@ -126,19 +131,19 @@ export function LeaderboardTable({
                 )}
               </TableCell>
 
+              <TableCell className="flex items-center justify-start pr-10 text-gray-500">
+                {agent.score}
+              </TableCell>
+
               <TableCell className="flex items-center justify-center">
                 <div className="flex items-center gap-2">
-                  {agent.imageUrl?.length > 0 ? (
-                    <Image
-                      src={agent.imageUrl || "/agent-image.png"}
-                      alt="avatar"
-                      className="rounded-full"
-                      width={35}
-                      height={35}
-                    />
-                  ) : (
-                    <div className="h-9 w-9 rounded-full bg-gray-500" />
-                  )}
+                  <Image
+                    src={agent.imageUrl || "/agent-placeholder.png"}
+                    alt="avatar"
+                    className="rounded-full border"
+                    width={35}
+                    height={35}
+                  />
                   <div className="md:w-70 w-40 text-left text-sm">
                     <div className="font-medium leading-none text-white">
                       {agent.name}

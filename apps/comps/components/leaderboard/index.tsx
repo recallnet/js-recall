@@ -2,13 +2,12 @@
 
 import React from "react";
 
-import {Skeleton} from "@recallnet/ui2/components/skeleton";
-import {SortState} from "@recallnet/ui2/components/table";
+import { SortState } from "@recallnet/ui2/components/table";
 
 import BigNumberDisplay from "@/components/bignumber";
-import {LeaderboardTable} from "@/components/leaderboard-table";
-import {useLeaderboards} from "@/hooks/useLeaderboards";
-import {LoadingLeaderboard} from "@/components/leaderboard/loading";
+import { LeaderboardTable } from "@/components/leaderboard-table";
+import { LoadingLeaderboard } from "@/components/leaderboard/loading";
+import { useLeaderboards } from "@/hooks/useLeaderboards";
 
 const limit = 10;
 
@@ -25,7 +24,7 @@ export function LeaderboardSection() {
     }, "");
   }, [sortState]);
 
-  const {data: leaderboard, isLoading} = useLeaderboards({
+  const { data: leaderboard, isLoading } = useLeaderboards({
     limit,
     offset,
     sort: sortString,
@@ -36,7 +35,7 @@ export function LeaderboardSection() {
       const cur = sort[field];
       const nxt =
         !cur || cur == "none" ? "asc" : cur == "asc" ? "desc" : "none";
-      return {[field]: nxt};
+      return { [field]: nxt };
     });
   }, []);
 
@@ -44,8 +43,7 @@ export function LeaderboardSection() {
     setOffset(limit * (page - 1));
   };
 
-  if (isLoading)
-    return <LoadingLeaderboard />
+  if (isLoading) return <LoadingLeaderboard />;
 
   return (
     <div className="mb-10">
@@ -57,57 +55,36 @@ export function LeaderboardSection() {
           <span className="text-sm font-bold uppercase text-gray-400">
             Active Agents
           </span>
-          {isLoading ? (
-            <Skeleton />
-          ) : (
-            <span className="text-lg text-white">
-              {leaderboard?.stats.activeAgents}
-            </span>
-          )}
+          <span className="text-lg font-bold text-white">
+            {leaderboard?.stats.activeAgents}
+          </span>
         </div>
         <div className="flex items-center justify-between border border-gray-700 px-6 py-3">
           <span className="text-sm font-bold uppercase text-gray-400">
             Total Trades
           </span>
-          {isLoading ? (
-            <Skeleton />
-          ) : (
-            <span className="text-lg text-white">
-              {leaderboard?.stats.totalTrades}
-            </span>
-          )}
+          <span className="text-lg font-bold text-white">
+            {leaderboard?.stats.totalTrades}
+          </span>
         </div>
         <div className="flex items-center justify-between border border-gray-700 px-6 py-3">
           <span className="text-sm uppercase">Volume traded</span>
-          {isLoading ? (
-            <Skeleton />
-          ) : (
-            <span className="text-lg text-white">
-              <BigNumberDisplay
-                value={leaderboard?.stats.totalVolume.toString() || ""}
-                decimals={0}
-              />
-            </span>
-          )}
+          <span className="text-lg font-bold text-white">
+            <BigNumberDisplay
+              value={leaderboard?.stats.totalVolume.toString() || ""}
+              decimals={0}
+            />
+          </span>
         </div>
       </div>
 
-      {isLoading ? (
-        <LeaderboardTable
-          handleSortChange={handleSortChange}
-          sortState={sortState}
-          onPageChange={() => 1}
-          agents={[]}
-        />
-      ) : (
-        <LeaderboardTable
-          handleSortChange={handleSortChange}
-          sortState={sortState}
-          agents={leaderboard?.agents || []}
-          onPageChange={handlePageChange}
-          pagination={leaderboard?.pagination}
-        />
-      )}
+      <LeaderboardTable
+        handleSortChange={handleSortChange}
+        sortState={sortState}
+        agents={leaderboard?.agents || []}
+        onPageChange={handlePageChange}
+        pagination={leaderboard?.pagination}
+      />
     </div>
   );
 }
