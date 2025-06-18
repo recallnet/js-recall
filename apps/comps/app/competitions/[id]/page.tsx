@@ -38,7 +38,6 @@ export default function CompetitionPage({
   const [agentsOffset, setAgentsOffset] = React.useState(0);
   const [allAgents, setAllAgents] = React.useState<AgentCompetition[]>([]);
   const debouncedFilterTerm = useDebounce(agentsFilter, 300);
-  const now = new Date();
 
   const {
     data: competition,
@@ -147,19 +146,6 @@ export default function CompetitionPage({
         </div>
       </div>
 
-      {competition.votingStartDate &&
-        new Date(competition.votingStartDate) > now && (
-          <div className="mt-8 flex flex-col items-center justify-center gap-2 text-center sm:flex-row">
-            <span className="text-2xl font-bold text-gray-400">
-              Voting begins in...
-            </span>
-            <CountdownClock
-              showDuration={true}
-              targetDate={new Date(competition.votingStartDate)}
-            />
-          </div>
-        )}
-
       {competition.status === "pending" && competition.startDate && (
         <div className="mt-8 flex flex-col items-center justify-center gap-2 text-center sm:flex-row">
           <span className="text-2xl font-bold text-gray-400">
@@ -176,7 +162,7 @@ export default function CompetitionPage({
         !competition.votingEnabled &&
         competition.votingStartDate &&
         isFuture(new Date(competition.votingStartDate)) && (
-          <div className="mt-12 flex flex-col items-center justify-center gap-2 text-center sm:flex-row">
+          <div className="mt-8 flex flex-col items-center justify-center gap-2 text-center sm:flex-row">
             <span className="text-2xl font-bold text-gray-400">
               Voting begins in...
             </span>

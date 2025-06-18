@@ -67,7 +67,7 @@ export const CountdownClock: React.FC<CountdownClockProps> = ({
     const intervalId = setInterval(updateCountdown, 1000);
 
     return () => clearInterval(intervalId); // Cleanup on unmount
-  }, [targetDate]);
+  }, [showDuration, targetDate]);
 
   const addLeadingZeros = (num: number) => {
     return num.toString().padStart(2, "0");

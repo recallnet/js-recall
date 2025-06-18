@@ -1,5 +1,3 @@
-import { Badge } from "@recallnet/ui2/components/badge";
-
 import { Competition, CompetitionStatus } from "@/types";
 
 type VotingStatusConfig = {
@@ -33,7 +31,7 @@ export function getCompetitionVotingConfig(
     if (status === CompetitionStatus.Pending) {
       return {
         subTitle: "Counting Votes!",
-        description: "Competition starts in...",
+        description: compStartDate ? "Competition starts in..." : "",
         variant: "gray",
         untilTime: compStartDate,
         phase: null,
@@ -42,7 +40,7 @@ export function getCompetitionVotingConfig(
     if (status === CompetitionStatus.Active) {
       return {
         subTitle: "Counting Votes!",
-        description: "Competition ends in...",
+        description: compEndDate ? "Competition ends in..." : "",
         variant: "gray",
         untilTime: compEndDate,
         phase: null,
@@ -81,16 +79,7 @@ export function getCompetitionVotingConfig(
     };
   }
 
-  if (!votingStart || !votingEnd) {
-    return {
-      subTitle: "Voting not available",
-      description: "",
-      variant: "gray",
-      untilTime: null,
-      phase: null,
-    };
-  }
-  if (votingStart > now) {
+  if (votingStart && now < votingStart) {
     return {
       subTitle: "Get ready!",
       description: "Voting opens in...",
@@ -99,21 +88,21 @@ export function getCompetitionVotingConfig(
       phase: "voting",
     };
   }
-  if (votingStart < now && votingEnd > now) {
+  if (votingEnd && now > votingEnd) {
     return {
-      subTitle: "Vote now!",
-      description: "Voting closing in...",
-      variant: "blue",
-      untilTime: votingEnd,
-      phase: "voting",
+      subTitle: "Counting Votes!",
+      description: compEndDate ? "Competition ends in..." : "",
+      variant: "gray",
+      untilTime: compEndDate,
+      phase: null,
     };
   }
 
   return {
-    subTitle: "Voting not available",
-    description: "",
-    variant: "gray",
-    untilTime: null,
-    phase: null,
+    subTitle: "Vote now!",
+    description: `Voting ${votingEnd ? "closing in..." : "is open"}`,
+    variant: "blue",
+    untilTime: votingEnd,
+    phase: "voting",
   };
 }

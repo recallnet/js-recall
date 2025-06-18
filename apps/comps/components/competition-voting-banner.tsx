@@ -108,7 +108,7 @@ export const CompetitionVotingBanner: React.FC<
       </div>
 
       <div
-        className="absolute right-24 top-1/2 -translate-y-1/2"
+        className="absolute right-24 top-1/2 hidden -translate-y-1/2 sm:block"
         style={{ opacity: contentOpacity }}
       >
         <span
