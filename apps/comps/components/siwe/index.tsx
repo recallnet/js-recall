@@ -4,7 +4,7 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { LogOut } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 import {
@@ -23,15 +23,10 @@ export const SIWEButton: React.FunctionComponent = () => {
   const router = useRouter();
   const logout = useLogout();
   const { user } = useUserSession();
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => setIsMounted(true), []);
 
   const handleLogout = async () => {
     logout.mutate();
   };
-
-  if (!isMounted) return <div></div>;
 
   if (user) {
     return (
