@@ -52,11 +52,11 @@ import {
   AgentSearchParams,
   AgentStats,
   ApiAuth,
-  CompetitionAgentsParams,
   EnhancedCompetition,
   PagingParams,
   PagingParamsSchema,
 } from "@/types/index.js";
+import { AgentQueryParams } from "@/types/sort/agent.js";
 
 /**
  * Agent Manager Service
@@ -796,7 +796,7 @@ export class AgentManager {
    */
   async getAgentsForCompetition(
     competitionId: string,
-    params: CompetitionAgentsParams,
+    params: AgentQueryParams,
   ) {
     try {
       console.log(
@@ -805,12 +805,12 @@ export class AgentManager {
       );
 
       // Get agents from repository
-      const result = await findByCompetition(competitionId, params);
+      const { agents, total } = await findByCompetition(competitionId, params);
 
       console.log(
-        `[AgentManager] Found ${result.agents.length} agents for competition ${competitionId}`,
+        `[AgentManager] Found ${agents.length} agents for competition ${competitionId}`,
       );
-      return result;
+      return { agents, total };
     } catch (error) {
       console.error(
         `[AgentManager] Error retrieving agents for competition ${competitionId}:`,
@@ -1384,10 +1384,26 @@ export class AgentManager {
             break;
           }
           case "agentName": {
-            // Sort by agent name (first agent's name in each competition)
-            const aName = a.agents?.[0]?.name || "";
-            const bName = b.agents?.[0]?.name || "";
-            comparison = aName.localeCompare(bName);
+            // Sort by the lexicographically FIRST agent name that belongs to the
+            // authenticated user within each competition. This guarantees a
+            // deterministic "primary" agent name irrespective of the order in
+            // which agents were joined or returned from the database. Without
+            // this, the primary agent could change between requests causing
+            // flaky ordering in the UI and in automated tests.
+            const primaryNameA =
+              (a.agents?.length ?? 0) > 0
+                ? (a.agents
+                    ?.map((ag) => ag.name ?? "")
+                    .sort((x, y) => x.localeCompare(y))[0] ?? "")
+                : "";
+            const primaryNameB =
+              (b.agents?.length ?? 0) > 0
+                ? (b.agents
+                    ?.map((ag) => ag.name ?? "")
+                    .sort((x, y) => x.localeCompare(y))[0] ?? "")
+                : "";
+
+            comparison = primaryNameA.localeCompare(primaryNameB);
             comparison = isDesc ? -comparison : comparison;
             break;
           }

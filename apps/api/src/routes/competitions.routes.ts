@@ -726,7 +726,11 @@ export function configureCompetitionsRoutes(
    *         name: sort
    *         schema:
    *           type: string
-   *           enum: [position, name, name_desc, created, created_desc, status]
+   *           description: |
+   *             Optional field(s) to sort by. Supports single or multiple fields separated by commas.
+   *             Prefix with '-' for descending order (e.g., '-name' or '-position').
+   *             Default is 'position' ascending.
+   *           enum: [position, -position, score, -score, pnl, -pnl, pnlPercent, -pnlPercent, change24h, -change24h, change24hPercent, -change24hPercent, voteCount, -voteCount, name, -name]
    *           default: position
    *         required: false
    *         description: Sort order for results
