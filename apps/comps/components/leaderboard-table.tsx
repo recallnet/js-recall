@@ -39,7 +39,10 @@ export function LeaderboardTable({
   };
   onPageChange: (page: number) => void;
 }) {
-  const page = pagination.offset / pagination.limit + 1;
+  const page =
+    pagination.limit > 0
+      ? Math.floor(pagination.offset / pagination.limit) + 1
+      : 1;
 
   return (
     <div className="flex flex-col items-end">
