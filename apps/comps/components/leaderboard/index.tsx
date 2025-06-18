@@ -68,7 +68,9 @@ export function LeaderboardSection() {
           </span>
         </div>
         <div className="flex items-center justify-between border border-gray-700 px-6 py-3">
-          <span className="text-sm uppercase">Volume traded</span>
+          <span className="text-sm font-bold uppercase text-gray-400">
+            Volume traded
+          </span>
           <span className="text-lg font-bold text-white">
             <BigNumberDisplay
               value={leaderboard?.stats.totalVolume.toString() || ""}
