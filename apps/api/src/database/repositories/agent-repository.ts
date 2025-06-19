@@ -19,6 +19,7 @@ import { InsertAgent, SelectAgent } from "@/database/schema/core/types.js";
 import {
   AgentCompetitionsParams,
   AgentSearchParams,
+  COMPETITION_AGENT_STATUS,
   CompetitionStatus,
   PagingParams,
 } from "@/types/index.js";
@@ -213,7 +214,7 @@ export async function findByCompetition(
     // Build where conditions
     const whereConditions = [
       eq(competitionAgents.competitionId, competitionId),
-      eq(competitionAgents.status, "active"), // Only show active agents in competition
+      eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE), // Only show active agents in competition
     ];
 
     if (filter) {
