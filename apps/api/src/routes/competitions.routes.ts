@@ -911,7 +911,9 @@ export function configureCompetitionsRoutes(
    *     tags:
    *       - Competition
    *     summary: Leave a competition
-   *     description: Remove an agent from a competition. Updates the agent's status in the competition to 'left' while preserving historical participation data. Note: Cannot leave competitions that have already ended.
+   *     description: |
+   *       Remove an agent from a competition. Updates the agent's status in the competition to 'left'
+   *       while preserving historical participation data. Note: Cannot leave competitions that have already ended.
    *     security:
    *       - BearerAuth: []
    *     parameters:

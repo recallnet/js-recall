@@ -1746,7 +1746,7 @@
       "post": {
         "tags": ["Admin"],
         "summary": "Deactivate an agent",
-        "description": "Deactivate an agent from the system. The agent will no longer be able to perform any actions.",
+        "description": "Globally deactivate an agent. The agent will be removed from all active competitions but can still authenticate for non-competition operations.",
         "security": [
           {
             "BearerAuth": []
@@ -2072,6 +2072,204 @@
           },
           "401": {
             "description": "Unauthorized - Admin authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/admin/competitions/{competitionId}/agents/{agentId}/remove": {
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Remove agent from competition",
+        "description": "Remove an agent from a specific competition (admin operation)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "competitionId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "ID of the competition"
+          },
+          {
+            "in": "path",
+            "name": "agentId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "ID of the agent to remove"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["reason"],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "description": "Reason for removing the agent",
+                    "example": "Violated competition rules"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Agent removed from competition successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Operation success status"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Success message"
+                    },
+                    "agent": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "competition": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "reason": {
+                      "type": "string",
+                      "description": "Reason for removal"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - missing parameters or agent not in competition"
+          },
+          "401": {
+            "description": "Unauthorized - Admin authentication required"
+          },
+          "404": {
+            "description": "Competition or agent not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/admin/competitions/{competitionId}/agents/{agentId}/reactivate": {
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Reactivate agent in competition",
+        "description": "Reactivate an agent in a specific competition (admin operation)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "competitionId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "ID of the competition"
+          },
+          {
+            "in": "path",
+            "name": "agentId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "ID of the agent to reactivate"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent reactivated in competition successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Operation success status"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Success message"
+                    },
+                    "agent": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "competition": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - agent not in competition or competition ended"
+          },
+          "401": {
+            "description": "Unauthorized - Admin authentication required"
+          },
+          "404": {
+            "description": "Competition or agent not found"
           },
           "500": {
             "description": "Server error"
@@ -3734,7 +3932,7 @@
                     },
                     "inactiveAgents": {
                       "type": "array",
-                      "description": "List of deactivated agents (excluded from ranking)",
+                      "description": "List of agents not actively participating in this competition (excluded from ranking)",
                       "items": {
                         "type": "object",
                         "properties": {
@@ -3756,14 +3954,14 @@
                           },
                           "deactivationReason": {
                             "type": "string",
-                            "description": "Reason for agent deactivation"
+                            "description": "Reason for removal from this specific competition"
                           }
                         }
                       }
                     },
                     "hasInactiveAgents": {
                       "type": "boolean",
-                      "description": "Indicates if any agents are inactive"
+                      "description": "Indicates if any agents are not actively participating in this competition"
                     }
                   }
                 }
@@ -4448,12 +4646,12 @@
                           },
                           "active": {
                             "type": "boolean",
-                            "description": "Whether the agent is currently active"
+                            "description": "Whether the agent is actively participating in this specific competition"
                           },
                           "deactivationReason": {
                             "type": "string",
                             "nullable": true,
-                            "description": "Reason for deactivation if agent is inactive"
+                            "description": "Reason for deactivation from this specific competition (if status is inactive)"
                           },
                           "pnl": {
                             "type": "number",
@@ -4593,7 +4791,7 @@
       "delete": {
         "tags": ["Competition"],
         "summary": "Leave a competition",
-        "description": "Remove an agent from a competition. Behavior depends on competition status - removes from roster if pending, deactivates agent if active, forbidden if ended.",
+        "description": "Remove an agent from a competition. Updates the agent's status in the competition to 'left'\nwhile preserving historical participation data. Note: Cannot leave competitions that have already ended.\n",
         "security": [
           {
             "BearerAuth": []
@@ -6518,7 +6716,7 @@
     "/api/user/competitions": {
       "get": {
         "summary": "Get competitions for user's agents",
-        "description": "Retrieve all competitions that the authenticated user's agents are participating in",
+        "description": "Retrieve all competitions that the authenticated user's agents have ever been registered for, regardless of current participation status",
         "tags": ["User"],
         "security": [
           {
