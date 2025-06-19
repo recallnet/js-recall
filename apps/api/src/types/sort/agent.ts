@@ -33,6 +33,7 @@ export type TAgentDbSortFields = z.infer<typeof AgentDbSortFields>;
 export const AGENT_COMPUTED_FIELDS = [
   "position",
   "score",
+  "portfolioValue",
   "pnl",
   "pnlPercent",
   "change24h",

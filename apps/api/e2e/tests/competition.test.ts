@@ -1760,7 +1760,7 @@ describe("Competition API", () => {
     expect(noMatchResponse.pagination.total).toBe(0);
   });
 
-  test("should support sorting competition agents", async () => {
+  test.only("should support sorting competition agents", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -1880,6 +1880,40 @@ describe("Competition API", () => {
     );
     expect(scoreDescResponse.agents[1]!.score).toBeGreaterThanOrEqual(
       scoreDescResponse.agents[2]!.score,
+    );
+
+    // Test sorting by portfolioValue (ascending)
+    const portfolioValueAscResponse = (await client.getCompetitionAgents(
+      competitionId,
+      {
+        sort: "portfolioValue",
+      },
+    )) as CompetitionAgentsResponse;
+    expect(portfolioValueAscResponse.success).toBe(true);
+    expect(
+      portfolioValueAscResponse.agents[0]!.portfolioValue,
+    ).toBeLessThanOrEqual(portfolioValueAscResponse.agents[1]!.portfolioValue);
+    expect(
+      portfolioValueAscResponse.agents[1]!.portfolioValue,
+    ).toBeLessThanOrEqual(portfolioValueAscResponse.agents[2]!.portfolioValue);
+
+    // Test sorting by portfolioValue (descending)
+    const portfolioValueDescResponse = (await client.getCompetitionAgents(
+      competitionId,
+      {
+        sort: "-portfolioValue",
+      },
+    )) as CompetitionAgentsResponse;
+    expect(portfolioValueDescResponse.success).toBe(true);
+    expect(
+      portfolioValueDescResponse.agents[0]!.portfolioValue,
+    ).toBeGreaterThanOrEqual(
+      portfolioValueDescResponse.agents[1]!.portfolioValue,
+    );
+    expect(
+      portfolioValueDescResponse.agents[1]!.portfolioValue,
+    ).toBeGreaterThanOrEqual(
+      portfolioValueDescResponse.agents[2]!.portfolioValue,
     );
 
     // Check PnL (ascending)
