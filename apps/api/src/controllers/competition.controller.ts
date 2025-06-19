@@ -1,7 +1,7 @@
 import { NextFunction, Response } from "express";
 
 import { config } from "@/config/index.js";
-import { isAgentInCompetition } from "@/database/repositories/agent-repository.js";
+// Removed direct repository import - using service layer instead
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
@@ -75,15 +75,16 @@ export function makeCompetitionController(services: ServiceRegistry) {
               "Authentication required to view leaderboard",
             );
           }
-          // AgentId is present, verify participation
-          const isAgentInCompetitionResult = await isAgentInCompetition(
-            agentId,
-            competitionId,
-          );
-          if (!isAgentInCompetitionResult) {
+          // AgentId is present, verify active participation
+          const isAgentActiveInCompetitionResult =
+            await services.competitionManager.isAgentActiveInCompetition(
+              competitionId,
+              agentId,
+            );
+          if (!isAgentActiveInCompetitionResult) {
             throw new ApiError(
               403,
-              "Forbidden: Your agent is not participating in this competition.",
+              "Forbidden: Your agent is not actively participating in this competition.",
             );
           }
         }
@@ -98,24 +99,42 @@ export function makeCompetitionController(services: ServiceRegistry) {
         // Create map of all agents
         const agentMap = new Map(agents.map((agent) => [agent.id, agent]));
 
-        // Separate active and inactive agents
+        // Separate active and inactive agents based on per-competition status
         const activeLeaderboard = [];
         const inactiveAgents = [];
 
         // Process each agent in the leaderboard
         for (const entry of leaderboard) {
           const agent = agentMap.get(entry.agentId);
-          const isInactive = agent?.status !== "active";
+          // Check per-competition status instead of global agent status
+          const isActiveInCompetition =
+            await services.competitionManager.isAgentActiveInCompetition(
+              competitionId,
+              entry.agentId,
+            );
+
+          // Get the actual deactivation reason from the database if inactive
+          let deactivationReason = null;
+          if (!isActiveInCompetition) {
+            const competitionRecord =
+              await services.competitionManager.getAgentCompetitionRecord(
+                competitionId,
+                entry.agentId,
+              );
+            deactivationReason =
+              competitionRecord?.deactivationReason ||
+              "Not actively participating in this competition";
+          }
 
           const leaderboardEntry = {
             agentId: entry.agentId,
             agentName: agent ? agent.name : "Unknown Agent",
             portfolioValue: entry.value,
-            active: !isInactive,
-            deactivationReason: isInactive ? agent?.deactivationReason : null,
+            active: isActiveInCompetition,
+            deactivationReason,
           };
 
-          if (isInactive) {
+          if (!isActiveInCompetition) {
             // Add to inactive agents without rank
             inactiveAgents.push(leaderboardEntry);
           } else {
@@ -209,14 +228,15 @@ export function makeCompetitionController(services: ServiceRegistry) {
           });
         }
 
-        // Check if the agent is part of the competition
-        const isAgentInCompetitionResult = await isAgentInCompetition(
-          agentId,
-          activeCompetition.id,
-        );
+        // Check if the agent is actively participating in the competition
+        const isAgentActiveInCompetitionResult =
+          await services.competitionManager.isAgentActiveInCompetition(
+            activeCompetition.id,
+            agentId,
+          );
 
-        // If agent is not in competition and not an admin, return limited info
-        if (!isAgentInCompetitionResult) {
+        // If agent is not actively participating and not an admin, return limited info
+        if (!isAgentActiveInCompetitionResult) {
           console.log(
             `[CompetitionController] Agent ${agentId} is not in competition ${activeCompetition.id}`,
           );
@@ -300,14 +320,15 @@ export function makeCompetitionController(services: ServiceRegistry) {
               "No active competition found to get rules for.",
             );
           }
-          const isAgentInCompetitionResult = await isAgentInCompetition(
-            agentId,
-            activeCompetition.id,
-          );
-          if (!isAgentInCompetitionResult) {
+          const isAgentActiveInCompetitionResult =
+            await services.competitionManager.isAgentActiveInCompetition(
+              activeCompetition.id,
+              agentId,
+            );
+          if (!isAgentActiveInCompetitionResult) {
             throw new ApiError(
               403,
-              "Forbidden: Your agent is not participating in the active competition.",
+              "Forbidden: Your agent is not actively participating in the active competition.",
             );
           }
         }
@@ -803,11 +824,11 @@ export function makeCompetitionController(services: ServiceRegistry) {
                 "Cannot join competition that has already started/ended",
               ),
             );
-          } else if (error.message.includes("already registered")) {
+          } else if (error.message.includes("already actively registered")) {
             next(
               new ApiError(
                 403,
-                "Agent is already registered for this competition",
+                "Agent is already actively registered for this competition",
               ),
             );
           } else if (error.message.includes("not eligible")) {
@@ -902,10 +923,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
                 "Cannot leave competition that has already ended",
               ),
             );
-          } else if (error.message.includes("not registered")) {
-            next(
-              new ApiError(403, "Agent is not registered for this competition"),
-            );
+          } else if (error.message.includes("not in this competition")) {
+            next(new ApiError(403, "Agent is not in this competition"));
           } else {
             next(error);
           }

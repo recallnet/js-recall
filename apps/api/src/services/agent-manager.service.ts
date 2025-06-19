@@ -45,6 +45,7 @@ import {
 } from "@/database/schema/core/types.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import {
+  ACTOR_STATUS,
   AgentCompetitionsParams,
   AgentMetadata,
   AgentPublic,
@@ -267,19 +268,23 @@ export class AgentManager {
           const decryptedKey = this.decryptApiKey(agent.apiKey);
 
           if (decryptedKey === apiKey) {
-            // Found matching agent, check if inactive
-            if (agent.status !== "active") {
+            // Found matching agent, check if globally suspended/deleted
+            // Note: We now allow "inactive" agents to authenticate for non-competition operations
+            if (
+              agent.status === ACTOR_STATUS.SUSPENDED ||
+              agent.status === ACTOR_STATUS.DELETED
+            ) {
               // Cache the deactivation info
               this.inactiveAgentsCache.set(agent.id, {
                 reason: agent.deactivationReason || "No reason provided",
                 date: agent.deactivationDate || new Date(),
               });
               throw new Error(
-                `Your agent has been deactivated from the competition: ${agent.deactivationReason}`,
+                `Your agent has been ${agent.status}: ${agent.deactivationReason}`,
               );
             }
 
-            // Add to cache
+            // Add to cache (now includes inactive agents for per-competition checking)
             this.apiKeyCache.set(apiKey, {
               agentId: agent.id,
               key: apiKey,

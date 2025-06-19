@@ -718,7 +718,7 @@ export function configureUserRoutes(
    * /api/user/competitions:
    *   get:
    *     summary: Get competitions for user's agents
-   *     description: Retrieve all competitions that the authenticated user's agents are participating in
+   *     description: Retrieve all competitions that the authenticated user's agents have ever been registered for, regardless of current participation status
    *     tags:
    *       - User
    *     security:

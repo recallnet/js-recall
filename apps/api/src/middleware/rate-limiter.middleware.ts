@@ -77,8 +77,21 @@ export const rateLimiterMiddleware = async (
       return next();
     }
 
-    // Get agent ID from request (set by auth middleware)
-    const agentId = req.agentId || "anonymous";
+    // Get agent ID from request (set by auth middleware) or Authorization header
+    let agentId = req.agentId || "anonymous";
+
+    // If no agentId from auth middleware, try to extract from Authorization header
+    if (agentId === "anonymous" && req.headers.authorization) {
+      const authHeader = req.headers.authorization;
+      if (authHeader.startsWith("Bearer ")) {
+        const token = authHeader.substring(7);
+        // Extract agent ID from token (format: agentId_apiKey)
+        const underscoreIndex = token.indexOf("_");
+        if (underscoreIndex > 0) {
+          agentId = token.substring(0, underscoreIndex);
+        }
+      }
+    }
 
     // For debugging in development and testing
     const isDev =

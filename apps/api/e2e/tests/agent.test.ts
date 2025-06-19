@@ -2481,7 +2481,7 @@ Purpose: WALLET_VERIFICATION`;
       console.log("Multi-agent ranking results:", rankingResults);
     });
 
-    test("should handle cross-competition metrics correctly (4 ended + 1 active)", async () => {
+    test("should handle cross-competition metrics correctly (2 ended + 1 active)", async () => {
       // Setup admin client
       const adminClient = createTestClient();
       const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
@@ -2500,11 +2500,11 @@ Purpose: WALLET_VERIFICATION`;
           agentName: "Cross-Competition Agent 2",
         });
 
-      // Create and run 5 competitions sequentially (4 to end, 1 to keep active)
-      // This respects the single active competition constraint
+      // Create and run 3 competitions sequentially (2 to end, 1 to keep active)
+      // This respects the single active competition constraint while reducing API calls
       const competitions: string[] = [];
 
-      for (let i = 1; i <= 5; i++) {
+      for (let i = 1; i <= 3; i++) {
         const compName = `Cross-Competition Test ${i} ${Date.now()}`;
         const createCompResult = await adminClient.createCompetition(
           compName,
@@ -2522,7 +2522,7 @@ Purpose: WALLET_VERIFICATION`;
         ]);
 
         // Execute trades in this competition with different patterns
-        // Agent 1: Escalating strategy (more trades in later competitions)
+        // Agent 1: Escalating strategy (1, 2, 3 trades respectively)
         for (let j = 0; j < i; j++) {
           await agentClient1.executeTrade({
             fromToken: config.specificChainTokens.eth.usdc,
@@ -2553,8 +2553,8 @@ Purpose: WALLET_VERIFICATION`;
           });
         }
 
-        // End this competition if it's not the last one (keep the 5th active)
-        if (i < 5) {
+        // End this competition if it's not the last one (keep the 3rd active)
+        if (i < 3) {
           await adminClient.endCompetition(competitionId);
         }
       }
@@ -2579,7 +2579,7 @@ Purpose: WALLET_VERIFICATION`;
       const agent1TestComps = agent1Response.competitions.filter(
         (comp: EnhancedCompetition) => competitions.includes(comp.id),
       );
-      expect(agent1TestComps.length).toBe(5);
+      expect(agent1TestComps.length).toBe(3);
 
       // Get competitions for agent 2
       const agent2Competitions = await agentClient2.getAgentCompetitions(
@@ -2598,9 +2598,9 @@ Purpose: WALLET_VERIFICATION`;
       const agent2TestComps = agent2Response.competitions.filter(
         (comp: EnhancedCompetition) => competitions.includes(comp.id),
       );
-      expect(agent2TestComps.length).toBe(5);
+      expect(agent2TestComps.length).toBe(3);
 
-      // Verify agent 1's escalating trade pattern (1, 2, 3, 4, 5 trades respectively)
+      // Verify agent 1's escalating trade pattern (1, 2, 3 trades respectively)
       const agent1CompsSorted = agent1TestComps.sort(
         (a, b) => competitions.indexOf(a.id) - competitions.indexOf(b.id),
       );
@@ -2610,7 +2610,7 @@ Purpose: WALLET_VERIFICATION`;
         expect(agent1CompsSorted[i]?.bestPlacement?.totalAgents).toBe(2);
       }
 
-      // Verify agent 2's alternating pattern (2, 1, 2, 1, 2 trades respectively)
+      // Verify agent 2's alternating pattern (2, 1, 2 trades respectively)
       const agent2CompsSorted = agent2TestComps.sort(
         (a, b) => competitions.indexOf(a.id) - competitions.indexOf(b.id),
       );
@@ -2625,35 +2625,35 @@ Purpose: WALLET_VERIFICATION`;
       const comp1Agent1 = agent1TestComps.find(
         (comp) => comp.id === competitions[0],
       );
-      const comp5Agent1 = agent1TestComps.find(
-        (comp) => comp.id === competitions[4],
+      const comp3Agent1 = agent1TestComps.find(
+        (comp) => comp.id === competitions[2],
       );
 
       expect(comp1Agent1).toBeDefined();
-      expect(comp5Agent1).toBeDefined();
+      expect(comp3Agent1).toBeDefined();
 
       expect(comp1Agent1?.totalTrades).toBe(1);
-      expect(comp5Agent1?.totalTrades).toBe(5);
+      expect(comp3Agent1?.totalTrades).toBe(3);
 
       // Portfolio values should be independent per competition
       expect(comp1Agent1?.portfolioValue).toBeDefined();
-      expect(comp5Agent1?.portfolioValue).toBeDefined();
+      expect(comp3Agent1?.portfolioValue).toBeDefined();
 
       // Rankings should be calculated per competition
       expect(comp1Agent1?.bestPlacement?.rank).toBeGreaterThanOrEqual(1);
       expect(comp1Agent1?.bestPlacement?.rank).toBeLessThanOrEqual(2);
-      expect(comp5Agent1?.bestPlacement?.rank).toBeGreaterThanOrEqual(1);
-      expect(comp5Agent1?.bestPlacement?.rank).toBeLessThanOrEqual(2);
+      expect(comp3Agent1?.bestPlacement?.rank).toBeGreaterThanOrEqual(1);
+      expect(comp3Agent1?.bestPlacement?.rank).toBeLessThanOrEqual(2);
 
       // Verify competition status affects metrics calculation
       const endedComps = agent1TestComps.filter((comp) =>
-        competitions.slice(0, 4).includes(comp.id),
+        competitions.slice(0, 2).includes(comp.id),
       );
       const activeComps = agent1TestComps.filter((comp) =>
-        competitions.slice(4).includes(comp.id),
+        competitions.slice(2).includes(comp.id),
       );
 
-      expect(endedComps.length).toBe(4);
+      expect(endedComps.length).toBe(2);
       expect(activeComps.length).toBe(1);
 
       // All competitions should have valid metrics regardless of status

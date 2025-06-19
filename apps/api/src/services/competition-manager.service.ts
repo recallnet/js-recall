@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from "uuid";
 import {
   findById as findAgentById,
   findByCompetition,
-  isAgentInCompetition,
 } from "@/database/repositories/agent-repository.js";
 import {
   addAgentToCompetition,
@@ -14,9 +13,12 @@ import {
   findById,
   findByStatus,
   findLeaderboardByCompetition,
+  getAgentCompetitionRecord,
+  getAllCompetitionAgents,
   getCompetitionAgents,
   getLatestPortfolioSnapshots,
-  removeAgentFromCompetition,
+  isAgentActiveInCompetition,
+  updateAgentCompetitionStatus,
   update as updateCompetition,
   updateOne,
 } from "@/database/repositories/competition-repository.js";
@@ -33,9 +35,11 @@ import {
 } from "@/services/index.js";
 import {
   ACTOR_STATUS,
+  COMPETITION_AGENT_STATUS,
   COMPETITION_STATUS,
   COMPETITION_TYPE,
   CROSS_CHAIN_TRADING_TYPE,
+  CompetitionAgentStatus,
   CompetitionStatus,
   CompetitionStatusSchema,
   CompetitionType,
@@ -190,12 +194,25 @@ export class CompetitionManager {
       // Reset balances
       await this.balanceManager.resetAgentBalances(agentId);
 
-      // Register agent in the competition
+      // Register agent in the competition (automatically sets status to 'active')
       await addAgentToCompetition(competitionId, agentId);
 
-      // Use the agent manager service to reactivate agents - this properly clears the cache
-      await this.agentManager.reactivateAgent(agentId);
-      console.log(`[CompetitionManager] Activated agent: ${agentId}`);
+      // Ensure agent is globally active (but don't force reactivation)
+      const agent = await findAgentById(agentId);
+      if (!agent) {
+        throw new Error(`Agent not found: ${agentId}`);
+      }
+
+      if (agent.status !== ACTOR_STATUS.ACTIVE) {
+        await this.agentManager.reactivateAgent(agentId);
+        console.log(
+          `[CompetitionManager] Reactivated globally inactive agent: ${agentId}`,
+        );
+      }
+
+      console.log(
+        `[CompetitionManager] Agent ${agentId} ready for competition`,
+      );
     }
 
     // Update competition status
@@ -251,19 +268,21 @@ export class CompetitionManager {
     // Get agents in the competition
     const competitionAgents = await getCompetitionAgents(competitionId);
 
-    // Deactivate all agents in the competition
+    // Mark all agents as inactive in this competition (but keep them globally active)
     console.log(
-      `[CompetitionManager] Deactivating ${competitionAgents.length} agents for ended competition`,
+      `[CompetitionManager] Marking ${competitionAgents.length} agents as inactive for ended competition`,
     );
     for (const agentId of competitionAgents) {
       try {
-        await this.agentManager.deactivateAgent(
+        await updateAgentCompetitionStatus(
+          competitionId,
           agentId,
-          `Competition ${competition.name} (${competitionId}) ended`,
+          COMPETITION_AGENT_STATUS.INACTIVE,
+          `Competition ${competition.name} completed`,
         );
       } catch (error) {
         console.error(
-          `[CompetitionManager] Error deactivating agent ${agentId}:`,
+          `[CompetitionManager] Error updating agent ${agentId} competition status:`,
           error,
         );
       }
@@ -691,13 +710,15 @@ export class CompetitionManager {
       throw new Error("Cannot join competition that has already started/ended");
     }
 
-    // 6. Check if agent is already registered
-    const isAlreadyInCompetition = await isAgentInCompetition(
-      agentId,
+    // 6. Check if agent is already actively registered
+    const isAlreadyActive = await isAgentActiveInCompetition(
       competitionId,
+      agentId,
     );
-    if (isAlreadyInCompetition) {
-      throw new Error("Agent is already registered for this competition");
+    if (isAlreadyActive) {
+      throw new Error(
+        "Agent is already actively registered for this competition",
+      );
     }
 
     // Add agent to competition
@@ -740,39 +761,177 @@ export class CompetitionManager {
       throw new Error("Agent does not belong to requesting user");
     }
 
-    // 4. Check if agent is registered for the competition
-    const isInCompetition = await isAgentInCompetition(agentId, competitionId);
+    // 4. Check if agent is in the competition (any status)
+    const isInCompetition = await this.isAgentInCompetition(
+      competitionId,
+      agentId,
+    );
     if (!isInCompetition) {
-      throw new Error("Agent is not registered for this competition");
+      throw new Error("Agent is not in this competition");
     }
 
     // 5. Handle based on competition status
     if (competition.status === COMPETITION_STATUS.ENDED) {
       throw new Error("Cannot leave competition that has already ended");
     } else if (competition.status === COMPETITION_STATUS.ACTIVE) {
-      // During active competition: deactivate the agent
-      await this.agentManager.deactivateAgent(
-        agentId,
-        `Left competition ${competition.name} (${competitionId})`,
-      );
-      console.log(
-        `[CompetitionManager] Deactivated agent ${agentId} for leaving active competition ${competitionId}`,
-      );
-    } else if (competition.status === COMPETITION_STATUS.PENDING) {
-      // During pending competition: just remove from roster
-      const wasRemoved = await removeAgentFromCompetition(
+      // During active competition: mark agent as left in this competition
+      await updateAgentCompetitionStatus(
         competitionId,
         agentId,
+        COMPETITION_AGENT_STATUS.LEFT,
+        `Left competition ${competition.name}`,
       );
-      if (!wasRemoved) {
-        console.warn(
-          `[CompetitionManager] Agent ${agentId} was not found in competition ${competitionId} roster`,
-        );
-      }
+      console.log(
+        `[CompetitionManager] Marked agent ${agentId} as left from active competition ${competitionId}`,
+      );
+    } else if (competition.status === COMPETITION_STATUS.PENDING) {
+      // During pending competition: mark as left (preserving history)
+      await updateAgentCompetitionStatus(
+        competitionId,
+        agentId,
+        COMPETITION_AGENT_STATUS.LEFT,
+        `Left competition ${competition.name} before it started`,
+      );
+      console.log(
+        `[CompetitionManager] Marked agent ${agentId} as left from pending competition ${competitionId}`,
+      );
     }
 
     console.log(
       `[CompetitionManager] Successfully processed leave request for agent ${agentId} from competition ${competitionId}`,
     );
+  }
+
+  /**
+   * Check if an agent is in a competition (any status)
+   * @param competitionId The competition ID
+   * @param agentId The agent ID
+   * @returns True if agent is in competition, false otherwise
+   */
+  async isAgentInCompetition(
+    competitionId: string,
+    agentId: string,
+  ): Promise<boolean> {
+    // Use the repository method to check if agent has any record in the competition
+    const record = await getAgentCompetitionRecord(competitionId, agentId);
+    return record !== null;
+  }
+
+  /**
+   * Remove an agent from a competition (admin operation)
+   * @param competitionId The competition ID
+   * @param agentId The agent ID
+   * @param reason Optional reason for removal
+   */
+  async removeAgentFromCompetition(
+    competitionId: string,
+    agentId: string,
+    reason?: string,
+  ): Promise<void> {
+    // Check if agent is in the competition
+    const isInCompetition = await this.isAgentInCompetition(
+      competitionId,
+      agentId,
+    );
+    if (!isInCompetition) {
+      throw new Error("Agent is not in this competition");
+    }
+
+    // Get competition details
+    const competition = await findById(competitionId);
+    if (!competition) {
+      throw new Error("Competition not found");
+    }
+
+    // Update agent status in competition to 'removed'
+    await updateAgentCompetitionStatus(
+      competitionId,
+      agentId,
+      COMPETITION_AGENT_STATUS.REMOVED,
+      reason || "Removed by admin",
+    );
+
+    console.log(
+      `[CompetitionManager] Admin removed agent ${agentId} from competition ${competitionId}`,
+    );
+  }
+
+  /**
+   * Reactivate an agent in a competition (admin operation)
+   * @param competitionId The competition ID
+   * @param agentId The agent ID
+   */
+  async reactivateAgentInCompetition(
+    competitionId: string,
+    agentId: string,
+  ): Promise<void> {
+    // Check if agent is in the competition
+    const isInCompetition = await this.isAgentInCompetition(
+      competitionId,
+      agentId,
+    );
+    if (!isInCompetition) {
+      throw new Error("Agent is not in this competition");
+    }
+
+    // Get competition details
+    const competition = await findById(competitionId);
+    if (!competition) {
+      throw new Error("Competition not found");
+    }
+
+    // Update agent status in competition to 'active'
+    await updateAgentCompetitionStatus(
+      competitionId,
+      agentId,
+      COMPETITION_AGENT_STATUS.ACTIVE,
+      "Reactivated by admin",
+    );
+
+    console.log(
+      `[CompetitionManager] Admin reactivated agent ${agentId} in competition ${competitionId}`,
+    );
+  }
+
+  /**
+   * Check if an agent is actively participating in a competition
+   * @param competitionId The competition ID
+   * @param agentId The agent ID
+   * @returns True if agent is actively participating, false otherwise
+   */
+  async isAgentActiveInCompetition(
+    competitionId: string,
+    agentId: string,
+  ): Promise<boolean> {
+    return await isAgentActiveInCompetition(competitionId, agentId);
+  }
+
+  /**
+   * Get an agent's competition record with deactivation details
+   * @param competitionId The competition ID
+   * @param agentId The agent ID
+   * @returns The agent's competition record or null if not found
+   */
+  async getAgentCompetitionRecord(
+    competitionId: string,
+    agentId: string,
+  ): Promise<{
+    status: CompetitionAgentStatus;
+    deactivationReason: string | null;
+    deactivatedAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+  } | null> {
+    return await getAgentCompetitionRecord(competitionId, agentId);
+  }
+
+  /**
+   * Get all agents that have ever participated in a competition, regardless of status
+   * This is useful for retrieving portfolio snapshots for all agents including inactive ones
+   * @param competitionId The competition ID
+   * @returns Array of agent IDs
+   */
+  async getAllCompetitionAgents(competitionId: string): Promise<string[]> {
+    return await getAllCompetitionAgents(competitionId);
   }
 }

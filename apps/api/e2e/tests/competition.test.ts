@@ -1,10 +1,10 @@
 import axios from "axios";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
-import { agents } from "@/database/schema/core/defs.js";
+import { agents, competitionAgents } from "@/database/schema/core/defs.js";
 import {
   AgentProfileResponse,
   CROSS_CHAIN_TRADING_TYPE,
@@ -414,7 +414,7 @@ describe("Competition API", () => {
     expect(profileResponse.agent).toBeDefined();
   });
 
-  test("agents are deactivated when a competition ends", async () => {
+  test("agents remain globally active when competition ends but are marked inactive in that competition", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -423,11 +423,11 @@ describe("Competition API", () => {
     const { client: agentClient, agent } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
-        agentName: "Agent To Deactivate",
+        agentName: "Agent Competition End Test",
       });
 
     // Start a competition with the agent
-    const competitionName = `Deactivation Test ${Date.now()}`;
+    const competitionName = `Competition End Test ${Date.now()}`;
     const startResponse = await startTestCompetition(
       adminClient,
       competitionName,
@@ -445,20 +445,15 @@ describe("Competition API", () => {
     )) as EndCompetitionResponse;
     expect(endResponse.success).toBe(true);
 
-    // Wait a moment for deactivation to process
+    // Wait a moment for status update to process
     await wait(100);
 
-    // Agent should now be deactivated and unable to access endpoints
-    try {
-      await agentClient.getAgentProfile();
-      // Should not reach here if properly deactivated
-      expect(false).toBe(true);
-    } catch (error) {
-      // Expect error due to inactive status
-      expect(error).toBeDefined();
-    }
+    // NEW BEHAVIOR: Agent should still be able to access endpoints (globally active)
+    const postEndProfileResponse =
+      (await agentClient.getAgentProfile()) as AgentProfileResponse;
+    expect(postEndProfileResponse.success).toBe(true);
 
-    // Verify through database that agent is deactivated
+    // Verify through database that agent remains globally active
     const agentRecord = await db
       .select()
       .from(agents)
@@ -466,9 +461,26 @@ describe("Competition API", () => {
       .limit(1);
 
     expect(agentRecord.length).toBe(1);
-    expect(agentRecord[0]?.status).toBe("inactive");
-    expect(agentRecord[0]?.deactivationReason).toMatch(/Competition .+ ended/);
-    expect(agentRecord[0]?.deactivationDate).toBeDefined();
+    expect(agentRecord[0]?.status).toBe("active"); // Should remain globally active
+
+    // Verify agent is marked as inactive in the specific competition
+    const competitionAgentRecord = await db
+      .select()
+      .from(competitionAgents)
+      .where(
+        and(
+          eq(competitionAgents.competitionId, startResponse.competition.id),
+          eq(competitionAgents.agentId, agent.id),
+        ),
+      )
+      .limit(1);
+
+    expect(competitionAgentRecord.length).toBe(1);
+    expect(competitionAgentRecord[0]?.status).toBe("inactive");
+    expect(competitionAgentRecord[0]?.deactivationReason).toMatch(
+      /Competition .+ completed/,
+    );
+    expect(competitionAgentRecord[0]?.deactivatedAt).toBeDefined();
   });
 
   test("agents can get list of upcoming competitions", async () => {
@@ -2367,13 +2379,33 @@ describe("Competition API", () => {
       expect(leaveResponse.message).toBe("Successfully left competition");
     }
 
-    // Verify agent is no longer in competition
+    // NEW BEHAVIOR: Agent should still exist in competition_agents table with "left" status
+    // but should NOT appear in the active competition agents API response
+    // Check per-competition status in database
+    const competitionAgentRecord = await db
+      .select()
+      .from(competitionAgents)
+      .where(
+        and(
+          eq(competitionAgents.competitionId, competition.id),
+          eq(competitionAgents.agentId, agent.id),
+        ),
+      )
+      .limit(1);
+
+    expect(competitionAgentRecord.length).toBe(1);
+    expect(competitionAgentRecord[0]?.status).toBe("left");
+    expect(competitionAgentRecord[0]?.deactivationReason).toContain(
+      "Left competition",
+    );
+
+    // Agent should NOT appear in competition agents API response (only active agents shown)
     const agentsAfter = await adminClient.getCompetitionAgents(competition.id);
     if ("agents" in agentsAfter) {
       const agentInCompetition = agentsAfter.agents.find(
         (a) => a.id === agent.id,
       );
-      expect(agentInCompetition).toBeUndefined();
+      expect(agentInCompetition).toBeUndefined(); // Should not appear in active list
     }
   });
 
@@ -2538,7 +2570,7 @@ describe("Competition API", () => {
       false,
     );
     if ("error" in secondJoinResponse) {
-      expect(secondJoinResponse.error).toContain("already registered");
+      expect(secondJoinResponse.error).toContain("already actively registered");
     }
   });
 
@@ -2584,7 +2616,7 @@ describe("Competition API", () => {
     }
   });
 
-  test("leaving active competition deactivates agent", async () => {
+  test("leaving active competition marks agent as left in that competition but keeps them globally active", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -2619,17 +2651,32 @@ describe("Competition API", () => {
     );
     expect("success" in leaveResponse && leaveResponse.success).toBe(true);
 
-    // Check that agent is now deactivated by trying to get its profile
-    // The agent should still exist but be marked as inactive
+    // NEW BEHAVIOR: Agent should remain globally active
     const agentProfileResponse = await userClient.getUserAgent(agent.id);
     expect(agentProfileResponse.success).toBe(true);
     if ("agent" in agentProfileResponse) {
-      // Agent should be deactivated (status changed to inactive)
-      expect(agentProfileResponse.agent.status).toBe("inactive");
-      expect(agentProfileResponse.agent.deactivationReason).toContain(
-        "Left competition",
-      );
+      // Agent should remain globally active
+      expect(agentProfileResponse.agent.status).toBe("active");
     }
+
+    // Verify agent is marked as "left" in the specific competition
+    const competitionAgentRecord = await db
+      .select()
+      .from(competitionAgents)
+      .where(
+        and(
+          eq(competitionAgents.competitionId, competition.id),
+          eq(competitionAgents.agentId, agent.id),
+        ),
+      )
+      .limit(1);
+
+    expect(competitionAgentRecord.length).toBe(1);
+    expect(competitionAgentRecord[0]?.status).toBe("left");
+    expect(competitionAgentRecord[0]?.deactivationReason).toContain(
+      "Left competition",
+    );
+    expect(competitionAgentRecord[0]?.deactivatedAt).toBeDefined();
   });
 
   test("user cannot leave ended competition", async () => {
@@ -2672,7 +2719,9 @@ describe("Competition API", () => {
     expect("success" in leaveResponse && leaveResponse.success).toBe(false);
     if ("error" in leaveResponse) {
       // When a competition ends, we should get an error about the competition being ended
-      expect(leaveResponse.error).toContain("already ended");
+      expect(leaveResponse.error).toContain(
+        "Cannot leave competition that has already ended",
+      );
     }
   });
 
@@ -2753,7 +2802,7 @@ describe("Competition API", () => {
     );
     expect("success" in leaveResponse && leaveResponse.success).toBe(false);
     if ("error" in leaveResponse) {
-      expect(leaveResponse.error).toContain("not registered");
+      expect(leaveResponse.error).toContain("not in this competition");
     }
   });
 

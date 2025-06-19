@@ -212,6 +212,7 @@ export async function findByCompetition(
     // Build where conditions
     const whereConditions = [
       eq(competitionAgents.competitionId, competitionId),
+      eq(competitionAgents.status, "active"), // Only show active agents in competition
     ];
 
     if (filter) {
