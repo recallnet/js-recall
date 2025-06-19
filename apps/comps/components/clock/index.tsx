@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import { cn } from "@recallnet/ui2/lib/utils";
 
@@ -34,12 +34,12 @@ export const CountdownClock: React.FC<CountdownClockProps> = ({
     return num.toString().padStart(2, "0");
   };
 
-  const finished = () => {
+  const finished = useCallback(() => {
     setDelay(null);
     onFinish?.();
-  };
+  }, [onFinish]);
 
-  const updateDisplay = () => {
+  const updateDisplay = useCallback(() => {
     if (isCountdownFinished) {
       // This gives the view 1 second to display finished state before calling
       // the onFinish. If `onFinish` does nothing the interval remains paused.
@@ -82,14 +82,11 @@ export const CountdownClock: React.FC<CountdownClockProps> = ({
     // reset duration
     setDuration("");
     setTimeLeft({ hours, minutes, seconds });
-  };
+  }, [finished, isCountdownFinished, showDuration, targetDate]);
 
   useEffect(() => {
     const now = new Date();
     const difference = targetDate.getTime() - now.getTime();
-
-    // do initial display update so the banner doesn't show 00:00:00 for the first second
-    updateDisplay();
 
     if (difference > 1000) {
       setDelay(1000);
@@ -97,6 +94,11 @@ export const CountdownClock: React.FC<CountdownClockProps> = ({
     }
   }, [targetDate]);
 
+  // do initial display update so the banner doesn't show 00:00:00 for the first second
+  // NOTE: our linting rules require the deps array to have `updateDisplay` as a dep,
+  // which misses the point of only making this call on mount or if targetDate changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(updateDisplay, [targetDate]);
   useInterval(updateDisplay, delay);
 
   if (isCountdownFinished) {
