@@ -133,7 +133,7 @@ export function LeaderboardTable({
                           <span>3rd</span>
                         </div>
                       ) : (
-                        <div className="ml-7 flex items-center justify-center rounded bg-gray-800 p-2">
+                        <div className="flex w-20 items-center justify-center rounded bg-gray-800 p-2">
                           {agent.rank}
                         </div>
                       )}
