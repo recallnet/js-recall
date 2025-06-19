@@ -203,7 +203,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         size: 100,
       },
       {
-        id: "votes",
+        id: "voteCount",
+        accessorKey: "voteCount",
         header: () => "Votes",
         cell: ({ row }) => (
           <div className="flex flex-col items-end">
@@ -215,7 +216,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             </span>
           </div>
         ),
-        enableSorting: false,
+        enableSorting: true,
         size: 80,
         meta: {
           className: "flex justify-end",
