@@ -14,6 +14,7 @@ import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { CountdownClock } from "@/components/clock";
 import { CompetitionInfo } from "@/components/competition-info";
 import CompetitionSkeleton from "@/components/competition-skeleton";
+import { CompetitionVotingBanner } from "@/components/competition-voting-banner";
 import { FooterSection } from "@/components/footer-section";
 import { JoinCompetitionButton } from "@/components/join-competition-button";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
@@ -89,16 +90,17 @@ export default function CompetitionPage({
   }
 
   return (
-    <>
+    <div style={{ marginTop: "-40px" }}>
+      <CompetitionVotingBanner competition={competition} />
       <BreadcrumbNav
         items={[
           { label: "Recall", href: "/" },
           { label: "Competitions", href: "/competitions" },
           { label: competition.name },
         ]}
-        className="mb-10"
+        className="mb-10 mt-10"
       />
-      <div className="flex w-full flex-col gap-5 md:flex-row">
+      <div className="mb-20 flex w-full flex-col gap-5 md:flex-row">
         <BasicCompetitionCard competition={competition} className="md:w-1/2" />
         <div className="md:w-1/2">
           <CompetitionInfo competition={competition} />
@@ -145,11 +147,14 @@ export default function CompetitionPage({
       </div>
 
       {competition.status === "pending" && competition.startDate && (
-        <div className="mt-12 flex flex-col items-center justify-center gap-2 text-center sm:flex-row">
+        <div className="mt-8 flex flex-col items-center justify-center gap-2 text-center sm:flex-row">
           <span className="text-2xl font-bold text-gray-400">
             Competition starts in...
           </span>
-          <CountdownClock targetDate={new Date(competition.startDate)} />
+          <CountdownClock
+            showDuration={true}
+            targetDate={new Date(competition.startDate)}
+          />
         </div>
       )}
 
@@ -157,7 +162,7 @@ export default function CompetitionPage({
         !competition.votingEnabled &&
         competition.votingStartDate &&
         isFuture(new Date(competition.votingStartDate)) && (
-          <div className="mt-12 flex flex-col items-center justify-center gap-2 text-center sm:flex-row">
+          <div className="mt-8 flex flex-col items-center justify-center gap-2 text-center sm:flex-row">
             <span className="text-2xl font-bold text-gray-400">
               Voting begins in...
             </span>
@@ -202,6 +207,6 @@ export default function CompetitionPage({
       )}
       <JoinSwarmSection socialLinks={getSocialLinksArray()} className="mt-12" />
       <FooterSection />
-    </>
+    </div>
   );
 }
