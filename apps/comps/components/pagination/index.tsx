@@ -44,6 +44,10 @@ export const Pagination: React.FC<PaginationProps> = ({
     pages.push(totalPages);
   }
 
+  const handlePrev = () => {
+    if (canGoLeft) onPageChange(currentPage - 1);
+  };
+
   const handleNext = () => {
     if (canGoRight) onPageChange(currentPage + 1);
   };
@@ -51,7 +55,7 @@ export const Pagination: React.FC<PaginationProps> = ({
   return (
     <div className="mt-6 flex items-center justify-center gap-1">
       <ChevronLeft
-        onClick={handleNext}
+        onClick={handlePrev}
         className={cn(
           "mr-3 text-gray-500",
           canGoLeft ? "cursor-pointer" : "text-gray-700",
