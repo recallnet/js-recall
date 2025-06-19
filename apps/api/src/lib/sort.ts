@@ -48,19 +48,13 @@ export function splitSortField<
   dbSort: z.infer<TDbSort> | undefined;
   computedSort: z.infer<TPostProcessSort> | undefined;
 } {
-  if (!sortField) {
-    return { dbSort: undefined, computedSort: undefined };
-  }
-  const dbSortResult = dbSortSchema.safeParse(sortField).success
-    ? sortField
-    : undefined;
-  const computedSortResult = computeSortSchema.safeParse(sortField).success
-    ? sortField
-    : undefined;
-
+  const dbSortResult = dbSortSchema.safeParse(sortField);
+  const computedSortResult = computeSortSchema.safeParse(sortField);
   return {
-    dbSort: dbSortResult,
-    computedSort: computedSortResult,
+    dbSort: dbSortResult.success ? dbSortResult.data : undefined,
+    computedSort: computedSortResult.success
+      ? computedSortResult.data
+      : undefined,
   };
 }
 

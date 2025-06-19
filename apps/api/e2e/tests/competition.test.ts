@@ -1760,7 +1760,7 @@ describe("Competition API", () => {
     expect(noMatchResponse.pagination.total).toBe(0);
   });
 
-  test.only("should support sorting competition agents", async () => {
+  test("should support sorting competition agents", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -1804,6 +1804,16 @@ describe("Competition API", () => {
     const services = new ServiceRegistry();
     await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
 
+    // Test sorting by default (position)
+    const positionDefaultResponse = (await client.getCompetitionAgents(
+      competitionId,
+    )) as CompetitionAgentsResponse;
+
+    expect(positionDefaultResponse.success).toBe(true);
+    expect(positionDefaultResponse.agents[0]!.position).toBe(1);
+    expect(positionDefaultResponse.agents[1]!.position).toBe(2);
+    expect(positionDefaultResponse.agents[2]!.position).toBe(3);
+
     // Test sorting by name (ascending)
     const nameAscResponse = (await client.getCompetitionAgents(competitionId, {
       sort: "name",
@@ -1830,7 +1840,7 @@ describe("Competition API", () => {
     expect(nameDescOrder[1]).toBe("Beta Sort Agent");
     expect(nameDescOrder[2]).toBe("Alpha Sort Agent");
 
-    // Test sorting by position (default)
+    // Test sorting by position
     const positionAscResponse = (await client.getCompetitionAgents(
       competitionId,
       {
