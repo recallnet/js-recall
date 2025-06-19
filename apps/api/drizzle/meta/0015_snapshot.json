@@ -1,6 +1,6 @@
 {
-  "id": "9a3f6212-c9bb-42b4-819b-1c725662ee53",
-  "prevId": "24d017e3-7ce5-4138-b296-ad3d3095f26b",
+  "id": "e65bae2c-653c-46e9-803f-85964118ba7d",
+  "prevId": "9a3f6212-c9bb-42b4-819b-1c725662ee53",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -511,15 +511,103 @@
           "primaryKey": false,
           "notNull": true
         },
+        "status": {
+          "name": "status",
+          "type": "competition_agent_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "deactivation_reason": {
+          "name": "deactivation_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deactivated_at": {
+          "name": "deactivated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_competition_agents_status": {
+          "name": "idx_competition_agents_status",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_competition_agents_competition_id": {
+          "name": "idx_competition_agents_competition_id",
+          "columns": [
+            {
+              "expression": "competition_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_competition_agents_agent_id": {
+          "name": "idx_competition_agents_agent_id",
+          "columns": [
+            {
+              "expression": "agent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_competition_agents_deactivated_at": {
+          "name": "idx_competition_agents_deactivated_at",
+          "columns": [
+            {
+              "expression": "deactivated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "competition_agents_competition_id_fkey": {
           "name": "competition_agents_competition_id_fkey",
@@ -3030,6 +3118,11 @@
       "name": "actor_status",
       "schema": "public",
       "values": ["active", "inactive", "suspended", "deleted"]
+    },
+    "public.competition_agent_status": {
+      "name": "competition_agent_status",
+      "schema": "public",
+      "values": ["active", "inactive", "left", "removed"]
     },
     "public.competition_status": {
       "name": "competition_status",

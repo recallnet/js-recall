@@ -545,6 +545,40 @@ export const CompetitionStatusSchema = z.enum(COMPETITION_STATUS_VALUES);
 export type CompetitionStatus = z.infer<typeof CompetitionStatusSchema>;
 
 /**
+ * Competition agent status values for zod or database enum.
+ */
+export const COMPETITION_AGENT_STATUS_VALUES = [
+  "active",
+  "inactive",
+  "left",
+  "removed",
+] as const;
+
+/**
+ * Competition agent statuses.
+ */
+export const COMPETITION_AGENT_STATUS = {
+  ACTIVE: "active",
+  INACTIVE: "inactive",
+  LEFT: "left",
+  REMOVED: "removed",
+} as const;
+
+/**
+ * Zod schema for the status of an agent within a competition.
+ */
+export const CompetitionAgentStatusSchema = z.enum(
+  COMPETITION_AGENT_STATUS_VALUES,
+);
+
+/**
+ * Status of an agent within a competition.
+ */
+export type CompetitionAgentStatus = z.infer<
+  typeof CompetitionAgentStatusSchema
+>;
+
+/**
  * Competition status values for zod or database enum.
  */
 export const COMPETITION_TYPE_VALUES = ["trading"] as const;

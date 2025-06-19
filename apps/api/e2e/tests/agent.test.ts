@@ -1820,6 +1820,145 @@ Purpose: WALLET_VERIFICATION`;
     expect(agentProfile.agent.stats?.score).toBe(1500);
   });
 
+  describe("Per-Competition Agent Status", () => {
+    test("agent can access API after leaving active competition", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      // Register agent
+      const { client: agentClient, agent } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Leave Competition Test Agent",
+        });
+
+      // Create and start competition
+      const compName = `Leave Competition Test ${Date.now()}`;
+      const createCompResult = await adminClient.createCompetition(
+        compName,
+        "Test competition for leave functionality",
+      );
+      expect(createCompResult.success).toBe(true);
+      const competitionId = (createCompResult as CreateCompetitionResponse)
+        .competition.id;
+
+      await adminClient.startExistingCompetition(competitionId, [agent.id]);
+
+      // Verify agent can access API while in active competition
+      const profileResponse1 = await agentClient.getAgentProfile();
+      expect(profileResponse1.success).toBe(true);
+
+      // Agent leaves active competition
+      await agentClient.leaveCompetition(competitionId, agent.id);
+
+      // CRITICAL TEST: Agent should still be able to access API
+      const profileResponse2 = await agentClient.getAgentProfile();
+      expect(profileResponse2.success).toBe(true);
+
+      // Agent should be able to update profile
+      const updateResponse = await agentClient.updateAgentProfile({
+        description: "Updated after leaving competition",
+      });
+      expect(updateResponse.success).toBe(true);
+    });
+
+    test("agent maintains API access after competition ends", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      // Register agent
+      const { client: agentClient, agent } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Competition End Agent",
+        });
+
+      // Create and start competition
+      const compName = `Competition End Test ${Date.now()}`;
+      const createCompResult = await adminClient.createCompetition(
+        compName,
+        "Test competition for end functionality",
+      );
+      expect(createCompResult.success).toBe(true);
+      const competitionId = (createCompResult as CreateCompetitionResponse)
+        .competition.id;
+
+      await adminClient.startExistingCompetition(competitionId, [agent.id]);
+
+      // Verify agent can access API during competition
+      const profileResponse1 = await agentClient.getAgentProfile();
+      expect(profileResponse1.success).toBe(true);
+
+      // End competition
+      await adminClient.endCompetition(competitionId);
+
+      // CRITICAL TEST: Agent should maintain API access after competition ends
+      const profileResponse2 = await agentClient.getAgentProfile();
+      expect(profileResponse2.success).toBe(true);
+
+      // Agent should be able to perform other operations
+      const balanceResponse = await agentClient.getBalance();
+      expect(balanceResponse.success).toBe(true);
+    });
+
+    test("competition history is preserved when agent leaves", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      // Register agent
+      const { client: agentClient, agent } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "History Test Agent",
+        });
+
+      // Create and start competition
+      const compName = `History Test ${Date.now()}`;
+      const createCompResult = await adminClient.createCompetition(
+        compName,
+        "Test competition for history preservation",
+      );
+      expect(createCompResult.success).toBe(true);
+      const competitionId = (createCompResult as CreateCompetitionResponse)
+        .competition.id;
+
+      await adminClient.startExistingCompetition(competitionId, [agent.id]);
+
+      // Execute a trade to create history
+      await agentClient.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: config.specificChainTokens.eth.eth,
+        amount: "100",
+        reason: "Trade before leaving",
+      });
+
+      // Agent leaves competition
+      await agentClient.leaveCompetition(competitionId, agent.id);
+
+      // CRITICAL TEST: Historical data should still be accessible
+      const competitionsResponse = await agentClient.getAgentCompetitions(
+        agent.id,
+        {},
+      );
+      expect(competitionsResponse.success).toBe(true);
+
+      const leftCompetition = competitionsResponse.competitions.find(
+        (c: EnhancedCompetition) => c.id === competitionId,
+      );
+
+      expect(leftCompetition).toBeDefined();
+      expect(leftCompetition?.totalTrades).toBe(1);
+      // Note: We'll need to add agent status field to competition response
+      // expect(leftCompetition?.agentStatus).toBe("left");
+    });
+  });
+
   describe("Enhanced Agent Competitions Endpoint", () => {
     test("should return competitions with agent-specific metrics", async () => {
       // Setup admin client
