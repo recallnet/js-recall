@@ -203,10 +203,14 @@ export class CompetitionManager {
         throw new Error(`Agent not found: ${agentId}`);
       }
 
-      if (agent.status !== ACTOR_STATUS.ACTIVE) {
+      if (agent.status === ACTOR_STATUS.INACTIVE) {
         await this.agentManager.reactivateAgent(agentId);
         console.log(
           `[CompetitionManager] Reactivated globally inactive agent: ${agentId}`,
+        );
+      } else if (agent.status !== ACTOR_STATUS.ACTIVE) {
+        throw new Error(
+          `Cannot start competition with agent ${agentId}: agent status is ${agent.status}`,
         );
       }
 

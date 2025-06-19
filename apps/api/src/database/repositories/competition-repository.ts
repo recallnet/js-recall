@@ -464,7 +464,7 @@ export async function updateAgentCompetitionStatus(
       updatedAt: new Date(),
     };
 
-    // Add deactivation fields when moving to inactive status
+    // Add deactivation fields when moving to inactive status, clear them when reactivating
     const updateData =
       status !== COMPETITION_AGENT_STATUS.ACTIVE
         ? {
@@ -472,7 +472,11 @@ export async function updateAgentCompetitionStatus(
             deactivationReason: reason || `Status changed to ${status}`,
             deactivatedAt: new Date(),
           }
-        : baseUpdateData;
+        : {
+            ...baseUpdateData,
+            deactivationReason: null,
+            deactivatedAt: null,
+          };
 
     const result = await db
       .update(competitionAgents)
