@@ -3,23 +3,24 @@
 import React from "react";
 
 import Card from "@recallnet/ui2/components/card";
-import { SortState } from "@recallnet/ui2/components/table";
-import { Tabs, TabsList, TabsTrigger } from "@recallnet/ui2/components/tabs";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {SortState} from "@recallnet/ui2/components/table";
+import {Tabs, TabsList, TabsTrigger} from "@recallnet/ui2/components/tabs";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { Hexagon } from "@/components/hexagon";
+import {Hexagon} from "@/components/hexagon";
 import MirrorImage from "@/components/mirror-image";
-import { useUpdateAgent, useUserAgents } from "@/hooks";
-import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
-import { Agent, AgentWithOwnerResponse } from "@/types";
+import {useUpdateAgent, useUserAgents} from "@/hooks";
+import {useAgentCompetitions} from "@/hooks/useAgentCompetitions";
+import {Agent, AgentWithOwnerResponse} from "@/types";
 
-import { BreadcrumbNav } from "../breadcrumb-nav";
-import { AgentImage } from "./agent-image";
+import {BreadcrumbNav} from "../breadcrumb-nav";
+import {AgentImage} from "./agent-image";
 import AgentInfo from "./agent-info";
 import CompetitionTable from "./comps-table";
-import { EditAgentField } from "./edit-field";
-import { EditSkillsField } from "./edit-skills-field";
-import { ShareAgent } from "./share-agent";
+import {EditAgentField} from "./edit-field";
+import {EditSkillsField} from "./edit-skills-field";
+import {ShareAgent} from "./share-agent";
+import {AgentVerifiedBadge} from "./verify-badge";
 
 const limit = 10;
 
@@ -42,7 +43,7 @@ export default function AgentProfile({
   const [offset, setOffset] = React.useState(0);
   const skills = agent?.skills || [];
   const trophies = (agent?.trophies || []) as string[];
-  const { data: userAgents } = useUserAgents();
+  const {data: userAgents} = useUserAgents();
   const isUserAgent = userAgents?.agents.some((a) => a.id === id) || false;
   const updateAgent = useUpdateAgent();
 
@@ -55,40 +56,40 @@ export default function AgentProfile({
 
   const handleSaveChange =
     (field: "imageUrl" | "description" | "name" | "skills") =>
-    async (value: unknown) => {
-      if (!agent) return;
+      async (value: unknown) => {
+        if (!agent) return;
 
-      try {
-        await updateAgent.mutateAsync({
-          agentId: agent.id,
-          params:
-            field === "skills"
-              ? { metadata: { skills: value as string[] } }
-              : {
+        try {
+          await updateAgent.mutateAsync({
+            agentId: agent.id,
+            params:
+              field === "skills"
+                ? {metadata: {skills: value as string[]}}
+                : {
                   [field]: value,
                 },
-        });
-      } catch (error) {
-        console.error("Failed to update agent:", error);
-      }
-    };
+          });
+        } catch (error) {
+          console.error("Failed to update agent:", error);
+        }
+      };
 
-  const { data: compsData } = useAgentCompetitions(id, {
+  const {data: compsData} = useAgentCompetitions(id, {
     sort: sortString,
     status,
     limit,
     offset,
   });
   const competitions = compsData?.competitions || [];
-  const { total } = compsData?.pagination || { total: 0 };
+  const {total} = compsData?.pagination || {total: 0};
 
   return (
     <>
       <BreadcrumbNav
         items={[
-          { label: "RECALL" },
-          { label: "AGENTS", href: "/competitions" },
-          { label: agent.name },
+          {label: "RECALL"},
+          {label: "AGENTS", href: "/competitions"},
+          {label: agent.name},
         ]}
         className="mb-10"
       />
@@ -126,13 +127,17 @@ export default function AgentProfile({
                 value={agent.name || ""}
                 onSave={handleSaveChange("name")}
               >
-                <h1 className="text-primary-foreground max-w-[90%] truncate text-4xl font-bold">
-                  {agent.name}
-                </h1>
+                <>
+                  <h1 className="text-primary-foreground max-w-[90%] truncate text-4xl font-bold">
+                    {agent.name}
+                  </h1>
+                  <AgentVerifiedBadge verified={Boolean(agent.walletAddress)} />
+                </>
               </EditAgentField>
             ) : (
               <h1 className="text-primary-foreground truncate text-4xl font-bold">
                 {agent.name}
+                <AgentVerifiedBadge verified={Boolean(agent.walletAddress)} />
               </h1>
             )}
             {!isUserAgent && (
@@ -193,7 +198,12 @@ export default function AgentProfile({
           </div>
         </div>
         <div className="xs:grid col-span-3 row-start-2 mt-8 hidden grid-rows-2 border-b border-l border-r border-t text-sm lg:col-start-3 lg:row-start-1 lg:mt-0 lg:grid-rows-3 lg:border-l-0">
-          <div className="flex flex-col items-start gap-2 border-b p-6 lg:row-span-2">
+          <div
+            className={cn(
+              "flex flex-col items-start gap-2 border-b p-6",
+              agent.skills && agent.skills?.length > 4 ? "" : "lg:row-span-2",
+            )}
+          >
             {isUserAgent ? (
               <EditAgentField
                 useTextarea
@@ -224,16 +234,21 @@ export default function AgentProfile({
                 Proven Skills
               </span>
             </EditSkillsField>
-            <div className="text-secondary-foreground mt-3 flex flex-wrap gap-3 break-all">
+            <div
+              className={cn(
+                "text-secondary-foreground mt-3 gap-3 break-all",
+                skills.length > 0 ? "grid grid-cols-2" : "flex flex-wrap",
+              )}
+            >
               {skills.length > 0
                 ? skills.map((skill, index) => (
-                    <span
-                      key={index}
-                      className="text-primary-foreground rounded border px-2 py-1"
-                    >
-                      {skill}
-                    </span>
-                  ))
+                  <span
+                    key={index}
+                    className="text-primary-foreground truncate rounded border px-2 py-1"
+                  >
+                    {skill}
+                  </span>
+                ))
                 : "This agent hasnt showcased skills yet."}
             </div>
           </div>

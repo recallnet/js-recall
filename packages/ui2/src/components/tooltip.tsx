@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useRef, useState} from "react";
 
 interface TooltipProps {
   children: React.ReactNode;
@@ -15,6 +15,22 @@ export const Tooltip: React.FC<TooltipProps> = ({
   className = "",
   tooltipClassName = "",
 }) => {
+  const [visible, setVisible] = useState(false);
+  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showTooltip = () => {
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+    }
+    setVisible(true);
+  };
+
+  const hideTooltip = () => {
+    hideTimeoutRef.current = setTimeout(() => {
+      setVisible(false);
+    }, 100); // short delay to allow hover transition
+  };
+
   const getPositionClasses = () => {
     switch (position) {
       case "top":
@@ -31,15 +47,25 @@ export const Tooltip: React.FC<TooltipProps> = ({
   };
 
   return (
-    <div className={`group relative inline-block ${className}`}>
+    <div
+      className={`relative inline-block ${className}`}
+      onMouseEnter={showTooltip}
+      onMouseLeave={hideTooltip}
+    >
       <span className="inline-block">{children}</span>
-      <div
-        className={`absolute ${getPositionClasses()} pointer-events-none invisible z-50 min-w-max rounded-xl bg-gray-900 p-2 text-sm text-white opacity-0 shadow-lg transition-all duration-200 group-hover:visible group-hover:opacity-100 ${tooltipClassName} `}
-      >
-        {content}
-      </div>
+
+      {visible && (
+        <div
+          className={`absolute ${getPositionClasses()} z-50 min-w-max rounded-xl bg-gray-900 p-2 text-sm text-white shadow-lg transition-all duration-200 ${tooltipClassName}`}
+          onMouseEnter={showTooltip}
+          onMouseLeave={hideTooltip}
+        >
+          {content}
+        </div>
+      )}
     </div>
   );
 };
 
 export default Tooltip;
+

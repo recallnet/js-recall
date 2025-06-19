@@ -737,6 +737,14 @@ export const UpdateAgentProfileBodySchema = z
       .min(1, { message: "Description must be at least 1 character" })
       .optional(),
     imageUrl: z.url("Invalid image URL format").optional(),
+    metadata: z
+      .object(
+        {
+          skills: z.array(z.string("Invalid skill format")).optional(),
+        },
+        "Metadata is an object",
+      )
+      .optional(),
   })
   .strict();
 
