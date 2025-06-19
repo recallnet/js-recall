@@ -1,7 +1,6 @@
 import { NextFunction, Response } from "express";
 
 import { config } from "@/config/index.js";
-// Removed direct repository import - using service layer instead
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
