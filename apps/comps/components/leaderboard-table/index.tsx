@@ -133,7 +133,7 @@ export function LeaderboardTable({
                           <span>3rd</span>
                         </div>
                       ) : (
-                        <div className="mx-6 flex items-center justify-center rounded bg-gray-800 p-2">
+                        <div className="ml-7 flex items-center justify-center rounded bg-gray-800 p-2">
                           {agent.rank}
                         </div>
                       )}
@@ -143,7 +143,8 @@ export function LeaderboardTable({
                       <BigNumberDisplay
                         decimals={scoreSize}
                         value={agent.score.toString()}
-                        displayDecimals={2}
+                        displayDecimals={0}
+                        compact={false}
                       />
                     </TableCell>
 
@@ -186,7 +187,6 @@ export function LeaderboardTable({
                 );
               })}
             </TableBody>
-            ){" "}
           </Table>
 
           <Pagination
