@@ -1,6 +1,7 @@
-import {SquarePen} from "lucide-react";
-import React, {useEffect, useState} from "react";
-import {Button} from "@recallnet/ui2/components/button";
+import { SquarePen } from "lucide-react";
+import React, { useEffect, useState } from "react";
+
+import { Button } from "@recallnet/ui2/components/button";
 import {
   Dialog,
   DialogClose,
@@ -9,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
-import {Input} from "@recallnet/ui2/components/input";
+import { cn } from "@recallnet/ui2/lib/utils";
 
 interface EditAgentFieldProps {
   title: string;
@@ -18,48 +19,17 @@ interface EditAgentFieldProps {
   children: React.ReactNode;
 }
 
-const OPTIONS = [
-  {
-    value: '',
-    title: 'Crypto Trading',
-  },
-  {
-    value: '',
-    title: 'Trading Investing',
-  },
-  {
-    value: '',
-    title: 'Sports Betting',
-  },
-  {
-    value: '',
-    title: 'Prediction Market',
-  },
-  {
-    value: '',
-    title: 'Other',
-  },
-  {
-    value: '',
-    title: 'Social & Chat',
-  },
-  {
-    value: '',
-    title: 'Art & Video Creation',
-  },
-  {
-    value: '',
-    title: 'Art & Video Creation',
-  },
-  {
-    value: '',
-    title: 'Programming / Coding',
-  },
-  {
-    value: '',
-    title: 'Deep Research',
-  },
-]
+const SKILLS = [
+  "Crypto Trading",
+  "Social and Chat",
+  "Traditional Investing",
+  "Art & Video Creation",
+  "Sports Betting",
+  "Programming / Coding",
+  "Prediction Markets",
+  "Deep Research",
+  "Other",
+];
 
 export const EditSkillsField: React.FC<EditAgentFieldProps> = ({
   title,
@@ -75,7 +45,7 @@ export const EditSkillsField: React.FC<EditAgentFieldProps> = ({
     setSelectedValues((prev) =>
       prev.includes(option)
         ? prev.filter((v) => v !== option)
-        : [...prev, option]
+        : [...prev, option],
     );
   };
 
@@ -91,7 +61,7 @@ export const EditSkillsField: React.FC<EditAgentFieldProps> = ({
 
   return (
     <>
-      <div className="flex w-full items-center gap-3">
+      <div className="flex w-full items-center justify-start gap-3">
         {children}
         <div
           className="bg-card/70 right-2 top-2 cursor-pointer rounded-full p-1"
@@ -104,23 +74,37 @@ export const EditSkillsField: React.FC<EditAgentFieldProps> = ({
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{title}</DialogTitle>
+            <DialogTitle className="text-lg font-normal text-gray-400">
+              {title}
+            </DialogTitle>
+            <div className="text-secondary-foreground text-sm font-normal">
+              Choose all that apply.
+            </div>
           </DialogHeader>
-          <div className="min-w-70 mt-2 flex flex-col gap-3">
-            {OPTIONS.map(({value, title}) => (
-              <label
-                key={value}
-                className="flex items-center gap-2 text-sm text-gray-300"
-              >
-                <Input
-                  type="checkbox"
-                  checked={selectedValues.includes(value)}
-                  onChange={() => toggleOption(value)}
-                  className="accent-white"
-                />
-                {title}
-              </label>
-            ))}
+          <div className="min-w-70 mt-2 grid grid-cols-2 gap-x-10 gap-y-5">
+            {SKILLS.map((skill, i) => {
+              const selected = selectedValues.includes(skill);
+              return (
+                <label
+                  key={i}
+                  className={cn(
+                    "text-md flex items-center gap-2",
+                    selected ? "text-white" : "text-slate-500",
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    onChange={() => toggleOption(skill)}
+                    className={cn(
+                      "h-5 w-5",
+                      selected ? "accent-white" : "accent-transparent",
+                    )}
+                  />
+                  {skill}
+                </label>
+              );
+            })}
           </div>
           <DialogFooter className="mt-4">
             <DialogClose asChild>
@@ -145,4 +129,3 @@ export const EditSkillsField: React.FC<EditAgentFieldProps> = ({
     </>
   );
 };
-
