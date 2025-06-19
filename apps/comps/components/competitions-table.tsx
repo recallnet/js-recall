@@ -69,11 +69,12 @@ export const CompetitionsTable: React.FC<CompetitionsTableProps> = ({
       },
       {
         id: "status",
+        accessorKey: "status",
         header: () => "Status",
         cell: ({ row }) => (
           <CompetitionStatusBadge status={row.original.status} />
         ),
-        enableSorting: false,
+        enableSorting: true,
         size: 120,
         meta: {
           className: "content-center",
@@ -111,7 +112,8 @@ export const CompetitionsTable: React.FC<CompetitionsTableProps> = ({
         },
       },
       {
-        id: "date",
+        id: "startDate",
+        accessorKey: "startDate",
         header: () => "Date",
         cell: ({ row }) => (
           <span>
@@ -120,7 +122,7 @@ export const CompetitionsTable: React.FC<CompetitionsTableProps> = ({
               : "TBA"}
           </span>
         ),
-        enableSorting: false,
+        enableSorting: true,
         meta: {
           className: "hidden lg:flex items-center",
         },
@@ -182,9 +184,7 @@ export const CompetitionsTable: React.FC<CompetitionsTableProps> = ({
       const newSorting =
         typeof updater === "function" ? updater(sorting) : updater;
       setSorting(newSorting);
-      // Only the first column is sortable
       const sortString = newSorting
-        .filter((sort) => sort.id === "name")
         .map((sort) => `${sort.desc ? "-" : ""}${sort.id}`)
         .join(",");
       onSortChange(sortString);
