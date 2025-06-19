@@ -7,7 +7,6 @@ import {SortState} from "@recallnet/ui2/components/table";
 import {Tabs, TabsList, TabsTrigger} from "@recallnet/ui2/components/tabs";
 import {cn} from "@recallnet/ui2/lib/utils";
 
-import {Hexagon} from "@/components/hexagon";
 import MirrorImage from "@/components/mirror-image";
 import {useUpdateAgent, useUserAgents} from "@/hooks";
 import {useAgentCompetitions} from "@/hooks/useAgentCompetitions";
@@ -21,6 +20,7 @@ import {EditAgentField} from "./edit-field";
 import {EditSkillsField} from "./edit-skills-field";
 import {ShareAgent} from "./share-agent";
 import {AgentVerifiedBadge} from "./verify-badge";
+import {TrophyBadge} from "@/components/trophy-badge";
 
 const limit = 10;
 
@@ -42,7 +42,13 @@ export default function AgentProfile({
 }) {
   const [offset, setOffset] = React.useState(0);
   const skills = agent?.skills || [];
-  const trophies = (agent?.trophies || []) as string[];
+  const trophies = [
+    {
+      competitionId: "bf168924-9c1e-4125-b57f-dd990967d59a",
+      rank: 1,
+      imageUrl: 'https://thumbs.dreamstime.com/b/futuristic-robot-head-profile-artificial-intelligence-concept-high-resolution-image-showcasing-view-intricate-designs-314618022.jpg',
+    }
+  ]
   const {data: userAgents} = useUserAgents();
   const isUserAgent = userAgents?.agents.some((a) => a.id === id) || false;
   const updateAgent = useUpdateAgent();
@@ -152,11 +158,8 @@ export default function AgentProfile({
             )}
             <div className="mt-8 flex w-full justify-start gap-3">
               {trophies.length > 0 ? (
-                trophies.map((_: unknown, i: number) => (
-                  <Hexagon
-                    key={i}
-                    className={`h-10 w-10 bg-${["blue-500", "red-500", "yellow-500"][i % 3]}`}
-                  />
+                trophies.map((trophy, i: number) => (
+                  <TrophyBadge trophy={trophy} />
                 ))
               ) : (
                 <span className="text-secondary-foreground">
