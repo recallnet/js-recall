@@ -104,7 +104,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   const columns = useMemo<ColumnDef<AgentCompetition>[]>(
     () => [
       {
-        id: "rank",
+        id: "position",
         accessorKey: "position",
         header: () => "Rank",
         cell: ({ row }) => <RankBadge position={row.original.position} />,
@@ -139,7 +139,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         },
       },
       {
-        id: "portfolio",
+        id: "portfolioValue",
         accessorKey: "portfolioValue",
         header: () => "Portfolio",
         cell: ({ row }) => (
