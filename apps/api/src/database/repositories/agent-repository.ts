@@ -55,6 +55,7 @@ const agentCompetitionsOrderByFields: Record<string, AnyColumn> = {
   endDate: competitions.endDate,
   createdAt: competitions.createdAt,
   updatedAt: competitions.updatedAt,
+  status: competitions.status,
 };
 
 // Computed fields that need to be sorted at the service layer
