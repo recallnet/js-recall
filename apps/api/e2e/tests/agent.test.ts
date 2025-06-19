@@ -1821,6 +1821,78 @@ Purpose: WALLET_VERIFICATION`;
   });
 
   describe("Per-Competition Agent Status", () => {
+    test("agent can access all APIs without ever participating in competitions", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      // Register agent but DON'T join any competitions
+      const { client: agentClient, agent } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Never Competed Agent",
+          agentDescription: "Agent that never participates in competitions",
+        });
+
+      // Test all basic agent APIs work without competition participation
+
+      // 1. Profile access
+      const profileResponse = await agentClient.getAgentProfile();
+      expect(profileResponse.success).toBe(true);
+      expect((profileResponse as AgentProfileResponse).agent.id).toBe(agent.id);
+
+      // 2. Profile updates
+      const updateResponse = await agentClient.updateAgentProfile({
+        description: "Updated without ever competing",
+      });
+      expect(updateResponse.success).toBe(true);
+      expect((updateResponse as AgentProfileResponse).agent.description).toBe(
+        "Updated without ever competing",
+      );
+
+      // 3. Balance check
+      const balanceResponse = await agentClient.getBalance();
+      expect(balanceResponse.success).toBe(true);
+
+      // 4. Price data access
+      const priceResponse = await agentClient.getPrice(
+        "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+      ); // WETH
+      expect(priceResponse.success).toBe(true);
+      expect((priceResponse as PriceResponse).price).toBeGreaterThan(0);
+
+      // 5. API key reset
+      const resetResponse = await agentClient.resetApiKey();
+      expect(resetResponse.success).toBe(true);
+      expect((resetResponse as ResetApiKeyResponse).apiKey).toBeDefined();
+
+      // Create new client with reset API key to verify it works
+      const newApiKey = (resetResponse as ResetApiKeyResponse).apiKey;
+      const newClient = adminClient.createAgentClient(newApiKey);
+
+      // 6. Verify new API key works for profile access
+      const newProfileResponse = await newClient.getAgentProfile();
+      expect(newProfileResponse.success).toBe(true);
+
+      // 7. Competitions list (should be empty)
+      const competitionsResponse = await newClient.getAgentCompetitions(
+        agent.id,
+        {},
+      );
+      expect(competitionsResponse.success).toBe(true);
+      expect(
+        (competitionsResponse as AgentCompetitionsResponse).competitions.length,
+      ).toBe(0);
+
+      // 8. Public agent profile access
+      const publicProfileResponse = await newClient.getPublicAgent(agent.id);
+      expect(publicProfileResponse.success).toBe(true);
+      expect((publicProfileResponse as PublicAgentResponse).agent.id).toBe(
+        agent.id,
+      );
+    });
+
     test("agent can access API after leaving active competition", async () => {
       // Setup admin client
       const adminClient = createTestClient();
