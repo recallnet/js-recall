@@ -7,7 +7,7 @@ export function middleware(request: NextRequest) {
     const backendUrl =
       process.env.BACKEND_API_URL ||
       process.env.DEFAULT_API_URL ||
-      "https://api.competitions.recall.network/api";
+      "https://api.competitions.recall.network/staging/api";
 
     // Build the proxied URL
     const apiPath = request.nextUrl.pathname.replace("/api", "");
