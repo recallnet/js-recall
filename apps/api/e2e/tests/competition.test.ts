@@ -1804,6 +1804,16 @@ describe("Competition API", () => {
     const services = new ServiceRegistry();
     await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
 
+    // Test sorting by default (position)
+    const positionDefaultResponse = (await client.getCompetitionAgents(
+      competitionId,
+    )) as CompetitionAgentsResponse;
+
+    expect(positionDefaultResponse.success).toBe(true);
+    expect(positionDefaultResponse.agents[0]!.position).toBe(1);
+    expect(positionDefaultResponse.agents[1]!.position).toBe(2);
+    expect(positionDefaultResponse.agents[2]!.position).toBe(3);
+
     // Test sorting by name (ascending)
     const nameAscResponse = (await client.getCompetitionAgents(competitionId, {
       sort: "name",
@@ -1830,7 +1840,7 @@ describe("Competition API", () => {
     expect(nameDescOrder[1]).toBe("Beta Sort Agent");
     expect(nameDescOrder[2]).toBe("Alpha Sort Agent");
 
-    // Test sorting by position (default)
+    // Test sorting by position
     const positionAscResponse = (await client.getCompetitionAgents(
       competitionId,
       {
@@ -1880,6 +1890,40 @@ describe("Competition API", () => {
     );
     expect(scoreDescResponse.agents[1]!.score).toBeGreaterThanOrEqual(
       scoreDescResponse.agents[2]!.score,
+    );
+
+    // Test sorting by portfolioValue (ascending)
+    const portfolioValueAscResponse = (await client.getCompetitionAgents(
+      competitionId,
+      {
+        sort: "portfolioValue",
+      },
+    )) as CompetitionAgentsResponse;
+    expect(portfolioValueAscResponse.success).toBe(true);
+    expect(
+      portfolioValueAscResponse.agents[0]!.portfolioValue,
+    ).toBeLessThanOrEqual(portfolioValueAscResponse.agents[1]!.portfolioValue);
+    expect(
+      portfolioValueAscResponse.agents[1]!.portfolioValue,
+    ).toBeLessThanOrEqual(portfolioValueAscResponse.agents[2]!.portfolioValue);
+
+    // Test sorting by portfolioValue (descending)
+    const portfolioValueDescResponse = (await client.getCompetitionAgents(
+      competitionId,
+      {
+        sort: "-portfolioValue",
+      },
+    )) as CompetitionAgentsResponse;
+    expect(portfolioValueDescResponse.success).toBe(true);
+    expect(
+      portfolioValueDescResponse.agents[0]!.portfolioValue,
+    ).toBeGreaterThanOrEqual(
+      portfolioValueDescResponse.agents[1]!.portfolioValue,
+    );
+    expect(
+      portfolioValueDescResponse.agents[1]!.portfolioValue,
+    ).toBeGreaterThanOrEqual(
+      portfolioValueDescResponse.agents[2]!.portfolioValue,
     );
 
     // Check PnL (ascending)

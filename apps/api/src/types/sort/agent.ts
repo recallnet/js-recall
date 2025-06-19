@@ -33,6 +33,7 @@ export type TAgentDbSortFields = z.infer<typeof AgentDbSortFields>;
 export const AGENT_COMPUTED_FIELDS = [
   "position",
   "score",
+  "portfolioValue",
   "pnl",
   "pnlPercent",
   "change24h",
@@ -55,10 +56,10 @@ export type TAgentComputedSortFields = z.infer<typeof AgentComputedSortFields>;
 /**
  * Agent sort field schema (database fields and computed fields)
  */
-const AgentSortField = makeSortFieldSchema([
+export const AgentSortField = makeSortFieldSchema([
   ...AGENT_DB_FIELDS,
   ...AGENT_COMPUTED_FIELDS,
-]);
+]).default("position");
 
 /**
  * Agent query schema (database fields and computed fields)
