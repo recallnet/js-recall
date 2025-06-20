@@ -6,7 +6,7 @@ export interface SocialLink {
   bg?: string;
 }
 
-type SocialLinkId = "x" | "discord" | "youtube" | "docs";
+type SocialLinkId = "x" | "discord" | "youtube" | "docs" | "docsOnboarding";
 
 export const socialLinks: Record<SocialLinkId, SocialLink> = {
   x: {
@@ -34,6 +34,13 @@ export const socialLinks: Record<SocialLinkId, SocialLink> = {
     id: "docs",
     name: "DOCS",
     url: "https://docs.recall.network",
+    icon: "/docs-icon.svg",
+    bg: "green-500",
+  },
+  docsOnboarding: {
+    id: "docsOnboarding",
+    name: "DOCS ONBOARDING",
+    url: "https://docs.recall.network/onboarding",
     icon: "/docs-icon.svg",
     bg: "green-500",
   },
