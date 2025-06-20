@@ -59,9 +59,18 @@ function getRateLimiter(
 }
 
 /**
+ * Get the client IP address from the request
+ * Uses Express's req.ip which respects the 'trust proxy' setting
+ */
+function getClientIp(req: Request): string {
+  return req.ip || req.socket.remoteAddress || "unknown";
+}
+
+/**
  * Rate limiting middleware
  * Enforces API rate limits based on endpoint and agent
  * Each agent now has their own set of rate limiters to ensure proper isolation
+ * Uses IP address for unauthenticated requests instead of "anonymous"
  */
 export const rateLimiterMiddleware = async (
   req: Request,
@@ -77,12 +86,38 @@ export const rateLimiterMiddleware = async (
       return next();
     }
 
-    // Get agent ID from request (set by auth middleware)
-    const agentId = req.agentId || "anonymous";
+    // Get agent ID from request (set by auth middleware) or use IP address as fallback
+    let agentId = req.agentId || `ip:${getClientIp(req)}`;
+
+    // If no agentId from auth middleware, try to extract from Authorization header
+    if (agentId.startsWith("ip:") && req.headers.authorization) {
+      const authHeader = req.headers.authorization;
+      if (authHeader.startsWith("Bearer ")) {
+        const token = authHeader.substring(7);
+        // Validate and extract agent ID from token (expected format: agentId_apiKey)
+        const underscoreIndex = token.indexOf("_");
+        if (
+          underscoreIndex > 0 &&
+          underscoreIndex < token.length - 1 &&
+          token.indexOf("_", underscoreIndex + 1) === -1
+        ) {
+          agentId = token.substring(0, underscoreIndex);
+        } else {
+          // Log a warning in development mode if the token format is invalid
+          const isDev = ["development", "test"].includes(
+            process.env.NODE_ENV || "",
+          );
+          if (isDev) {
+            console.warn(
+              `[RateLimiter] Invalid token format: "${token}". Expected format: agentId_apiKey.`,
+            );
+          }
+        }
+      }
+    }
 
     // For debugging in development and testing
-    const isDev =
-      process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test";
+    const isDev = ["development", "test"].includes(process.env.NODE_ENV || "");
     if (isDev) {
       console.log(
         `[RateLimiter] Processing request for agent ${agentId} to ${req.originalUrl}`,
