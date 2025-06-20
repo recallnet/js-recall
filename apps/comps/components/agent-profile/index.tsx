@@ -3,24 +3,33 @@
 import React from "react";
 
 import Card from "@recallnet/ui2/components/card";
-import {SortState} from "@recallnet/ui2/components/table";
-import {Tabs, TabsList, TabsTrigger} from "@recallnet/ui2/components/tabs";
-import {cn} from "@recallnet/ui2/lib/utils";
+import { SortState } from "@recallnet/ui2/components/table";
+import { Tabs, TabsList, TabsTrigger } from "@recallnet/ui2/components/tabs";
+import { cn } from "@recallnet/ui2/lib/utils";
 
 import MirrorImage from "@/components/mirror-image";
-import {useUpdateAgent, useUserAgents} from "@/hooks";
-import {useAgentCompetitions} from "@/hooks/useAgentCompetitions";
-import {Agent, AgentWithOwnerResponse} from "@/types";
+import { Trophy, TrophyBadge } from "@/components/trophy-badge";
+import { useUpdateAgent, useUserAgents } from "@/hooks";
+import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
+import { Agent, AgentWithOwnerResponse } from "@/types";
 
-import {BreadcrumbNav} from "../breadcrumb-nav";
-import {AgentImage} from "./agent-image";
+import { BreadcrumbNav } from "../breadcrumb-nav";
+import { AgentImage } from "./agent-image";
 import AgentInfo from "./agent-info";
 import CompetitionTable from "./comps-table";
-import {EditAgentField} from "./edit-field";
-import {EditSkillsField} from "./edit-skills-field";
-import {ShareAgent} from "./share-agent";
-import {AgentVerifiedBadge} from "./verify-badge";
-import {TrophyBadge} from "@/components/trophy-badge";
+import { EditAgentField } from "./edit-field";
+import { EditSkillsField } from "./edit-skills-field";
+import { ShareAgent } from "./share-agent";
+import { AgentVerifiedBadge } from "./verify-badge";
+
+function sortTrophies(items: Trophy[]): Trophy[] {
+  return items.sort((a, b) => {
+    if (a.rank !== b.rank) {
+      return a.rank - b.rank;
+    }
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+}
 
 const limit = 10;
 
@@ -42,14 +51,9 @@ export default function AgentProfile({
 }) {
   const [offset, setOffset] = React.useState(0);
   const skills = agent?.skills || [];
-  const trophies = [
-    {
-      competitionId: "bf168924-9c1e-4125-b57f-dd990967d59a",
-      rank: 3,
-      imageUrl: 'https://thumbs.dreamstime.com/b/futuristic-robot-head-profile-artificial-intelligence-concept-high-resolution-image-showcasing-view-intricate-designs-314618022.jpg',
-    }
-  ]
-  const {data: userAgents} = useUserAgents();
+  const trophies = sortTrophies((agent.trophies || []) as Trophy[]);
+
+  const { data: userAgents } = useUserAgents();
   const isUserAgent = userAgents?.agents.some((a) => a.id === id) || false;
   const updateAgent = useUpdateAgent();
 
@@ -62,47 +66,48 @@ export default function AgentProfile({
 
   const handleSaveChange =
     (field: "imageUrl" | "description" | "name" | "skills") =>
-      async (value: unknown) => {
-        if (!agent) return;
+    async (value: unknown) => {
+      if (!agent) return;
 
-        try {
-          await updateAgent.mutateAsync({
-            agentId: agent.id,
-            params:
-              field === "skills"
-                ? {metadata: {skills: value as string[]}}
-                : {
+      try {
+        await updateAgent.mutateAsync({
+          agentId: agent.id,
+          params:
+            field === "skills"
+              ? { metadata: { skills: value as string[] } }
+              : {
                   [field]: value,
                 },
-          });
-        } catch (error) {
-          console.error("Failed to update agent:", error);
-        }
-      };
+        });
+      } catch (error) {
+        console.error("Failed to update agent:", error);
+      }
+    };
 
-  const {data: compsData} = useAgentCompetitions(id, {
+  const { data: compsData } = useAgentCompetitions(id, {
     sort: sortString,
     status,
     limit,
     offset,
   });
   const competitions = compsData?.competitions || [];
-  const {total} = compsData?.pagination || {total: 0};
+  const { total } = compsData?.pagination || { total: 0 };
+  console.log({ isUserAgent });
 
   return (
     <>
       <BreadcrumbNav
         items={[
-          {label: "RECALL"},
-          {label: "AGENTS", href: "/competitions"},
-          {label: agent.name},
+          { label: "RECALL" },
+          { label: "AGENTS", href: "/competitions" },
+          { label: agent.name },
         ]}
         className="mb-10"
       />
 
-      <div className="xs:grid-rows-[500px_1fr] my-6 grid grid-cols-[300px_1fr_1fr] rounded-xl md:grid-cols-[400px_1fr_1fr]">
+      <div className="xs:grid-rows-[550px_1fr] my-6 grid grid-cols-[300px_1fr_1fr] rounded-xl md:grid-cols-[400px_1fr_1fr]">
         <Card
-          className="xs:col-span-1 xs:mr-8 col-span-3 flex h-[500px] flex-col items-center justify-between bg-gray-900 p-8"
+          className="xs:col-span-1 xs:mr-8 col-span-3 flex h-[550px] flex-col items-center justify-between bg-gray-900 p-8"
           corner="top-left"
           cropSize={45}
         >
@@ -126,7 +131,7 @@ export default function AgentProfile({
           </span>
         </Card>
         <div className="flex-2 xs:col-span-2 xs:col-start-2 xs:row-start-1 xs:mt-0 col-span-3 row-start-2 mt-5 flex shrink flex-col border lg:col-span-1 lg:col-start-2">
-          <div className="relative w-full grow border-b p-8">
+          <div className="relative flex w-full grow flex-col border-b p-8">
             {isUserAgent ? (
               <EditAgentField
                 title="Agent Name"
@@ -157,19 +162,28 @@ export default function AgentProfile({
               </div>
             )}
 
-            <div className="mt-8 flex w-full justify-start gap-3">
-              {trophies.length > 0 ? (
-                trophies.map((trophy, i: number) => (
-                  <TrophyBadge trophy={trophy} />
-                ))
-              ) : (
-                <span className="text-secondary-foreground">
-                  This agent hasn’t earned trophies yet.
-                </span>
+            <div
+              className={cn(
+                "mt-3 w-full overflow-x-hidden",
+                isUserAgent
+                  ? "max-h-[70px] overflow-y-auto"
+                  : "h-[150px] max-h-[136px]",
               )}
+            >
+              <div className="flex flex-wrap justify-start gap-x-5 gap-y-2">
+                {trophies.length > 0 ? (
+                  trophies.map((trophy, i: number) => (
+                    <TrophyBadge key={i} trophy={trophy} />
+                  ))
+                ) : (
+                  <span className="text-secondary-foreground">
+                    This agent hasn’t earned trophies yet.
+                  </span>
+                )}
+              </div>
             </div>
             {isUserAgent && (
-              <AgentInfo className="mt-15 w-full" agent={agent} />
+              <AgentInfo className="mt-auto w-full" agent={agent} />
             )}
           </div>
           <div className="flex flex-col items-start gap-2 border-b px-6 py-6 text-sm">
@@ -246,13 +260,13 @@ export default function AgentProfile({
             >
               {skills.length > 0
                 ? skills.map((skill, index) => (
-                  <span
-                    key={index}
-                    className="text-primary-foreground truncate rounded border px-2 py-1"
-                  >
-                    {skill}
-                  </span>
-                ))
+                    <span
+                      key={index}
+                      className="text-primary-foreground truncate rounded border px-2 py-1"
+                    >
+                      {skill}
+                    </span>
+                  ))
                 : "This agent hasnt showcased skills yet."}
             </div>
           </div>

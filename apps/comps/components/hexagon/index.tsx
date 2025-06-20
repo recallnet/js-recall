@@ -1,5 +1,4 @@
-
-import {cn} from "@recallnet/ui2/lib/utils";
+import { cn } from "@recallnet/ui2/lib/utils";
 
 export const Hexagon: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   className,
@@ -10,7 +9,7 @@ export const Hexagon: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
     <div
       className={cn(
         "h-13 w-13 flex items-center justify-center text-white",
-        className
+        className,
       )}
       style={{
         clipPath:

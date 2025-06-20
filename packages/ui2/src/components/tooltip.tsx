@@ -1,4 +1,4 @@
-import React, {useRef, useState} from "react";
+import React, { useRef, useState } from "react";
 
 interface TooltipProps {
   children: React.ReactNode;
@@ -68,4 +68,3 @@ export const Tooltip: React.FC<TooltipProps> = ({
 };
 
 export default Tooltip;
-

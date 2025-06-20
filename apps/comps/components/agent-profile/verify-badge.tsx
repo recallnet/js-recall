@@ -1,8 +1,8 @@
-import React from 'react';
-import {BadgeCheckIcon} from 'lucide-react';
-import Link from 'next/link';
+import { BadgeCheckIcon } from "lucide-react";
+import Link from "next/link";
+import React from "react";
 
-import {Tooltip} from "@recallnet/ui2/components/tooltip";
+import { Tooltip } from "@recallnet/ui2/components/tooltip";
 
 interface VerifiedBadgeProps {
   verified: boolean;
@@ -20,7 +20,7 @@ export const AgentVerifiedBadge: React.FC<VerifiedBadgeProps> = ({
   ) : (
     <Link
       href={learnMoreLink}
-      className="text-blue-300 hover:underline cursor-pointer"
+      className="cursor-pointer text-blue-300 hover:underline"
     >
       Learn how to verify
     </Link>

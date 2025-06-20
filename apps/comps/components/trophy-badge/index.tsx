@@ -1,30 +1,35 @@
-import React from "react";
+import { ArrowUpRight, AwardIcon, Trophy } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import {Trophy, AwardIcon, ArrowUpRight} from "lucide-react";
+import { useRouter } from "next/navigation";
+import React from "react";
 
-import {cn} from "@recallnet/ui2/lib/utils";
-import {Tooltip} from "@recallnet/ui2/components/tooltip";
-import {useCompetition} from "@/hooks/useCompetition";
-import {Hexagon} from "@/components/hexagon";
+import { Tooltip } from "@recallnet/ui2/components/tooltip";
+import { cn } from "@recallnet/ui2/lib/utils";
+
+import { Hexagon } from "@/components/hexagon";
+
+export type Trophy = {
+  competitionId: string;
+  rank: number;
+  imageUrl: string;
+  name: string;
+  createdAt: string;
+};
 
 interface TrophyBadgeProps {
-  trophy: {
-    competitionId: string;
-    rank: number;
-    imageUrl: string;
-  };
+  trophy: Trophy;
 }
 
 const rankColors: Record<number, string> = {
-  1: "bg-yellow-300",
-  2: "bg-gray-400",
-  3: "bg-amber-600",
+  1: "bg-[#FBD362]",
+  2: "bg-[#93A5BA]",
+  3: "bg-[#C76E29]",
 };
 
-export const TrophyBadge: React.FC<TrophyBadgeProps> = ({trophy}) => {
-  const {competitionId, rank, imageUrl} = trophy;
-  const {data} = useCompetition(competitionId);
+export const TrophyBadge: React.FC<TrophyBadgeProps> = ({ trophy }) => {
+  const { competitionId, rank, imageUrl, name } = trophy;
+  const router = useRouter();
 
   const isTop3 = rank >= 1 && rank <= 3;
   const colorClass = rankColors[rank] || "bg-gray-700";
@@ -34,7 +39,6 @@ export const TrophyBadge: React.FC<TrophyBadgeProps> = ({trophy}) => {
 
   return (
     <>
-
       <Tooltip
         content={
           <div className="flex items-center gap-2">
@@ -54,24 +58,29 @@ export const TrophyBadge: React.FC<TrophyBadgeProps> = ({trophy}) => {
           </div>
         }
       >
-
-        <div className="relative">
+        <div
+          className="group relative cursor-pointer"
+          onClick={() => router.push(`/competitions/${competitionId}`)}
+        >
           <Hexagon
             className={cn(
-              "absolute left-0 top-0 -z-10 h-15 w-15",
-              colorClass
+              "absolute left-0 top-0 -z-10 h-[64px] w-[64px]",
+              "duration-330 transition-transform group-hover:scale-110",
+              colorClass,
             )}
           />
-
-
-          <Hexagon className="relative left-1 top-1 h-13 w-13 ">
-
+          <Hexagon
+            className={cn(
+              "relative left-[4px] top-[4px] h-[55px] w-[55px]",
+              "duration-330 transition-transform ease-in-out group-hover:scale-110",
+            )}
+          >
             {isTop3 && (
               <>
-                <div className="absolute inset-0 pointer-events-none bg-gradient-to-r bg-[linear-gradient(63deg,rgba(250,250,250,.8)_10%,transparent_40%,transparent_100%)] z-10" />
-                <div className="absolute inset-0 pointer-events-none bg-gradient-to-r bg-[linear-gradient(113deg,rgba(250,250,250,.8)_10%,transparent_40%,transparent_100%)] z-10" />
+                <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(63deg,rgba(250,250,250,.8)_10%,transparent_40%,transparent_100%)] bg-gradient-to-r" />
+                <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(113deg,rgba(250,250,250,.8)_10%,transparent_40%,transparent_100%)] bg-gradient-to-r" />
                 <div
-                  className="absolute z-10 w-15 h-15 rotate-[150deg] pointer-events-none bg-[linear-gradient(90deg,transparent_30%,rgba(250,250,250)_50%,transparent_60%,transparent_100%)] bg-[length:250%_250%,100%_100%] bg-[-100%_0] bg-no-repeat"
+                  className="w-15 h-15 pointer-events-none absolute z-10 rotate-[150deg] bg-[linear-gradient(90deg,transparent_30%,rgba(250,250,250)_50%,transparent_60%,transparent_100%)] bg-[length:250%_250%,100%_100%] bg-[-100%_0] bg-no-repeat"
                   style={{
                     animation: "shine 2s ease-in-out infinite",
                   }}
@@ -83,13 +92,11 @@ export const TrophyBadge: React.FC<TrophyBadgeProps> = ({trophy}) => {
               src={imageUrl}
               alt="competition"
               fill
-              className="object-cover w-full top-0 left-0 rotate-270"
+              className="rotate-270 left-0 top-0 w-full object-cover"
             />
-
           </Hexagon>
         </div>
       </Tooltip>
     </>
   );
 };
-

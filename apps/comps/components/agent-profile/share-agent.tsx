@@ -1,12 +1,12 @@
-import {Share2Icon} from "lucide-react";
-import {useState} from "react";
+import { Share2Icon } from "lucide-react";
+import { useState } from "react";
+import { FaXTwitter } from "react-icons/fa6";
 import {
   LiaDiscord,
   LiaReddit,
   LiaTelegram,
   LiaWhatsapp,
 } from "react-icons/lia";
-import {FaXTwitter} from "react-icons/fa6";
 
 import {
   Dialog,
@@ -15,12 +15,11 @@ import {
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
 
-import {Clipboard} from "../clipboard";
+import { Clipboard } from "../clipboard";
 
-export const ShareAgent = ({agentId}: {agentId: string}) => {
+export const ShareAgent = ({ agentId }: { agentId: string }) => {
   const [open, setOpen] = useState(false);
   const shareUrl = `https://recall.network/agents/${agentId}`;
-
 
   const shareLinks = [
     {
@@ -77,14 +76,14 @@ export const ShareAgent = ({agentId}: {agentId: string}) => {
             <p className="text-muted-foreground text-sm">Share this agent on</p>
           </DialogHeader>
 
-          <div className="mt-4 flex flex-wrap justify-between h-15">
+          <div className="h-15 mt-4 flex flex-wrap justify-between">
             {shareLinks.map((link) => (
               <a
                 key={link.name}
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`text-secondary-foreground flex flex-col items-center text-md`}
+                className={`text-secondary-foreground text-md flex flex-col items-center`}
               >
                 {link.icon}
                 <span className="mt-1 font-thin">{link.name}</span>

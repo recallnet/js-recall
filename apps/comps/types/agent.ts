@@ -38,7 +38,7 @@ export interface Agent {
 
   skills?: string[];
   metadata?: AgentCompetitionMetadata;
-  trophies?: string[];
+  trophies?: unknown[];
   deactivationReason?: string;
   deactivationDate?: string;
 }
