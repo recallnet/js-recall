@@ -45,7 +45,7 @@ export default function AgentProfile({
   const trophies = [
     {
       competitionId: "bf168924-9c1e-4125-b57f-dd990967d59a",
-      rank: 1,
+      rank: 3,
       imageUrl: 'https://thumbs.dreamstime.com/b/futuristic-robot-head-profile-artificial-intelligence-concept-high-resolution-image-showcasing-view-intricate-designs-314618022.jpg',
     }
   ]
@@ -156,6 +156,7 @@ export default function AgentProfile({
                 </span>
               </div>
             )}
+
             <div className="mt-8 flex w-full justify-start gap-3">
               {trophies.length > 0 ? (
                 trophies.map((trophy, i: number) => (

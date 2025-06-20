@@ -17,26 +17,10 @@ interface TrophyBadgeProps {
 }
 
 const rankColors: Record<number, string> = {
-  1: "bg-yellow-500",
+  1: "bg-yellow-300",
   2: "bg-gray-400",
-  3: "bg-amber-800",
+  3: "bg-amber-600",
 };
-
-const shineStyles = `
-  @keyframes shine {
-    0% {
-      transform: translateX(-100%) rotate(25deg);
-      opacity: 0;
-    }
-    50% {
-      opacity: 1;
-    }
-    100% {
-      transform: translateX(200%) rotate(25deg);
-      opacity: 0;
-    }
-  }
-`;
 
 export const TrophyBadge: React.FC<TrophyBadgeProps> = ({trophy}) => {
   const {competitionId, rank, imageUrl} = trophy;
@@ -49,61 +33,63 @@ export const TrophyBadge: React.FC<TrophyBadgeProps> = ({trophy}) => {
     rank === 1 ? Trophy : rank <= 3 ? AwardIcon : () => <div className="w-4" />;
 
   return (
-    <Tooltip
-      content={
-        <div className="flex items-center gap-2">
-          <Icon size={16} />
-          <span className="whitespace-nowrap text-sm text-white">
-            {rank === 1
-              ? `1st Place at ${name}`
-              : rank === 2
-                ? `2nd Place at ${name}`
-                : rank === 3
-                  ? `3rd Place at ${name}`
-                  : `Participant at ${name}`}
-          </span>
-          <Link href={`/competitions/${competitionId}`} target="_blank">
-            <ArrowUpRight size={14} />
-          </Link>
-        </div>
-      }
-    >
-      <div className="relative">
-        {/* Shine animation style tag */}
-        <style>{shineStyles}</style>
+    <>
 
-        {/* Outer border hexagon */}
-        <Hexagon
-          className={cn(
-            "absolute left-0 top-0 -z-10 h-14 w-14",
-            colorClass
-          )}
-        />
+      <Tooltip
+        content={
+          <div className="flex items-center gap-2">
+            <Icon size={16} />
+            <span className="whitespace-nowrap text-sm text-white">
+              {rank === 1
+                ? `1st Place at ${name}`
+                : rank === 2
+                  ? `2nd Place at ${name}`
+                  : rank === 3
+                    ? `3rd Place at ${name}`
+                    : `Participant at ${name}`}
+            </span>
+            <Link href={`/competitions/${competitionId}`} target="_blank">
+              <ArrowUpRight size={14} />
+            </Link>
+          </div>
+        }
+      >
 
-        {/* Inner image hexagon */}
-        <Hexagon className="relative h-13 w-13 overflow-hidden border border-gray-800 shadow-md">
-          <Image
-            src={imageUrl}
-            alt="competition"
-            fill
-            className="object-cover h-10 w-full top-0 left-0"
+        <div className="relative">
+          <Hexagon
+            className={cn(
+              "absolute left-0 top-0 -z-10 h-15 w-15",
+              colorClass
+            )}
           />
 
-          {isTop3 && (
-            <>
-              <div className="absolute inset-0 bg-white/10 pointer-events-none" />
 
-              <div
-                className="pointer-events-none absolute -inset-y-2 -left-full w-1/2 bg-white/20 blur-sm"
-                style={{
-                  animation: "shine 2s ease-in-out infinite",
-                }}
-              />
-            </>
-          )}
-        </Hexagon>
-      </div>
-    </Tooltip>
+          <Hexagon className="relative left-1 top-1 h-13 w-13 ">
+
+            {isTop3 && (
+              <>
+                <div className="absolute inset-0 pointer-events-none bg-gradient-to-r bg-[linear-gradient(63deg,rgba(250,250,250,.8)_10%,transparent_40%,transparent_100%)] z-10" />
+                <div className="absolute inset-0 pointer-events-none bg-gradient-to-r bg-[linear-gradient(113deg,rgba(250,250,250,.8)_10%,transparent_40%,transparent_100%)] z-10" />
+                <div
+                  className="absolute z-10 w-15 h-15 rotate-[150deg] pointer-events-none bg-[linear-gradient(90deg,transparent_30%,rgba(250,250,250)_50%,transparent_60%,transparent_100%)] bg-[length:250%_250%,100%_100%] bg-[-100%_0] bg-no-repeat"
+                  style={{
+                    animation: "shine 2s ease-in-out infinite",
+                  }}
+                />
+              </>
+            )}
+
+            <Image
+              src={imageUrl}
+              alt="competition"
+              fill
+              className="object-cover w-full top-0 left-0 rotate-270"
+            />
+
+          </Hexagon>
+        </div>
+      </Tooltip>
+    </>
   );
 };
 
