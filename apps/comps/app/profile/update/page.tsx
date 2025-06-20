@@ -13,14 +13,18 @@ import { UpdateProfileRequest } from "@/types/profile";
 
 function UpdateProfileView() {
   const updateProfile = useUpdateProfile();
-  const { isProfileUpdated } = useUserSession();
+  const session = useUserSession();
   const { redirect } = useRedirectTo("/profile");
 
   useEffect(() => {
-    if (isProfileUpdated) {
+    if (session.isInitialized && session.isProfileUpdated) {
       redirect();
     }
-  }, [isProfileUpdated, redirect]);
+  }, [session, redirect]);
+
+  if (!session.isInitialized) {
+    return <ProfileSkeleton />;
+  }
 
   const handleUpdateProfile = async (data: UpdateProfileRequest) => {
     try {

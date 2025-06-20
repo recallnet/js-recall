@@ -26,7 +26,7 @@ export function JoinCompetitionButton({
   children = "Join Competition",
   ...props
 }: JoinCompetitionButtonProps) {
-  const { isAuthenticated, isProfileUpdated } = useUserSession();
+  const session = useUserSession();
   const { data: userAgents } = useUserAgents();
   const [activeModal, setActiveModal] = useState<
     "connectWallet" | "chooseAgent" | "setupAgent" | "createAccount" | null
@@ -36,12 +36,16 @@ export function JoinCompetitionButton({
     useJoinCompetition();
 
   const handleClick = () => {
-    if (!isAuthenticated) {
+    if (!session.isInitialized) {
+      return;
+    }
+
+    if (!session.isAuthenticated) {
       setActiveModal("connectWallet");
       return;
     }
 
-    if (!isProfileUpdated) {
+    if (!session.isProfileUpdated) {
       setActiveModal("createAccount");
       return;
     }

@@ -1518,27 +1518,57 @@ describe("User API", () => {
       const agent = (agentResponse as AgentProfileResponse).agent;
 
       // Create competitions with predictable names for sorting
-      const competitionNames = [
-        "Alpha Competition",
-        "Beta Competition",
-        "Charlie Competition",
-      ];
+      const firstComp = "Alpha Competition";
+      const secondComp = "Beta Competition";
+      const thirdComp = "Charlie Competition";
 
-      for (const name of competitionNames) {
-        const createResponse = await adminClient.createCompetition(
-          name,
-          `Description for ${name}`,
-        );
-        expect(createResponse.success).toBe(true);
-        const createCompResponse = createResponse as CreateCompetitionResponse;
-        await userClient.joinCompetition(
-          createCompResponse.competition.id,
-          agent.id,
-        );
+      const create1Response = await adminClient.createCompetition(
+        firstComp,
+        `Description for ${firstComp}`,
+      );
+      expect(create1Response.success).toBe(true);
+      const competitionIdForFirstComp = (
+        create1Response as CreateCompetitionResponse
+      ).competition.id;
+      await userClient.joinCompetition(competitionIdForFirstComp, agent.id);
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
-        // Small delay to ensure different timestamps
-        await new Promise((resolve) => setTimeout(resolve, 50));
-      }
+      const create2Response = await adminClient.createCompetition(
+        secondComp,
+        `Description for ${secondComp}`,
+      );
+      expect(create2Response.success).toBe(true);
+      const createCompResponse2 = create2Response as CreateCompetitionResponse;
+      const competitionIdForSecondComp = createCompResponse2.competition.id;
+      await userClient.joinCompetition(competitionIdForSecondComp, agent.id);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      const create3Response = await adminClient.createCompetition(
+        thirdComp,
+        `Description for ${thirdComp}`,
+      );
+      expect(create3Response.success).toBe(true);
+      const competitionIdForThirdComp = (
+        create3Response as CreateCompetitionResponse
+      ).competition.id;
+      await userClient.joinCompetition(competitionIdForThirdComp, agent.id);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // Start/end the first competition, start/end the second competition, and keep the third pending
+      const startCompResponse = await adminClient.startExistingCompetition(
+        competitionIdForFirstComp,
+        [agent.id],
+      );
+      expect(startCompResponse.success).toBe(true);
+      const endCompResponse = await adminClient.endCompetition(
+        competitionIdForFirstComp,
+      );
+      expect(endCompResponse.success).toBe(true);
+      const startCompResponse2 = await adminClient.startExistingCompetition(
+        competitionIdForSecondComp,
+        [agent.id],
+      );
+      expect(startCompResponse2.success).toBe(true);
 
       // Test name ascending sort (should work)
       const nameAscResponse = await userClient.getUserCompetitions({
@@ -1562,6 +1592,32 @@ describe("User API", () => {
       expect(createdDescComps.length).toBe(3);
       // Newest first should be "Charlie Competition" (created last)
       expect(createdDescComps[0]?.name).toBe("Charlie Competition");
+
+      // Sort by status ascending
+      const statusResponse = await userClient.getUserCompetitions({
+        sort: "status",
+      });
+      expect(statusResponse.success).toBe(true);
+      const statusAgents = (statusResponse as UserCompetitionsResponse)
+        .competitions;
+      expect(statusAgents).toHaveLength(3);
+      // The `competition` status should be in order
+      expect(statusAgents[0]?.status).toBe("pending");
+      expect(statusAgents[1]?.status).toBe("active");
+      expect(statusAgents[2]?.status).toBe("ended");
+
+      // Sort by status descending
+      const statusDescResponse = await userClient.getUserCompetitions({
+        sort: "-status",
+      });
+      expect(statusDescResponse.success).toBe(true);
+      const statusDescAgents = (statusDescResponse as UserCompetitionsResponse)
+        .competitions;
+      expect(statusDescAgents).toHaveLength(3);
+      // The `competition` status should be in order
+      expect(statusDescAgents[0]?.status).toBe("ended");
+      expect(statusDescAgents[1]?.status).toBe("active");
+      expect(statusDescAgents[2]?.status).toBe("pending");
     });
 
     test("user competitions correct sort format works", async () => {

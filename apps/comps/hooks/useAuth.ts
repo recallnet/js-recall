@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useIsClient } from "@uidotdev/usehooks";
 import { useAtom } from "jotai";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 import { DEFAULT_REDIRECT_URL } from "@/constants";
 import { useProfile } from "@/hooks/useProfile";
@@ -96,15 +97,36 @@ export const useLogout = () => {
   });
 };
 
-interface UserSessionState {
-  user: ProfileResponse["user"] | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  isProfileUpdated: boolean;
-}
+/**
+ * Represents the state of the user session as returned by useUserSession.
+ *
+ * This is a discriminated union:
+ * - When `isInitialized` is false, only `isInitialized` is available.
+ * - When `isInitialized` is true, all session fields are available.
+ *
+ * Consumers **must** check `isInitialized` before using other fields.
+ */
+export type UserSessionState =
+  | {
+      /** Indicates if the session state has been initialized on the client. */
+      isInitialized: false;
+    }
+  | {
+      /** Indicates if the session state has been initialized on the client. */
+      isInitialized: true;
+      /** The user profile, or null if not authenticated. */
+      user: ProfileResponse["user"] | null;
+      /** True if the user is authenticated. */
+      isAuthenticated: boolean;
+      /** True if the user's profile is updated (e.g., has a name). */
+      isProfileUpdated: boolean;
+      /** Indicates if the profile is loading. */
+      isLoading: boolean;
+    };
 
 export const useUserSession = (): UserSessionState => {
   const [authState, setAuthState] = useAtom(userAtom);
+  const isClient = useIsClient();
 
   const {
     data: profileData,
@@ -121,10 +143,25 @@ export const useUserSession = (): UserSessionState => {
     }
   }, [profileIsSuccess, profileData, setAuthState]);
 
-  return {
-    user: authState.user,
+  const sessionState = useMemo<UserSessionState>(() => {
+    if (!isClient) {
+      return { isInitialized: false };
+    }
+
+    return {
+      isInitialized: true,
+      user: authState.user,
+      isAuthenticated,
+      isProfileUpdated,
+      isLoading: profileIsLoading,
+    };
+  }, [
+    isClient,
+    authState.user,
     isAuthenticated,
     isProfileUpdated,
-    isLoading: profileIsLoading,
-  };
+    profileIsLoading,
+  ]);
+
+  return sessionState;
 };
