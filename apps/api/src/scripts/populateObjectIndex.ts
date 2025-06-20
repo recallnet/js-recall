@@ -1,0 +1,91 @@
+import { ServiceRegistry } from "@/services/index.js";
+
+interface PopulateOptions {
+  dataTypes?: string[];
+  competitionId?: string;
+  batchSize?: number;
+}
+
+async function populateObjectIndex(options: PopulateOptions) {
+  const { dataTypes = ['trade'], competitionId, batchSize = 1000 } = options;
+  const services = ServiceRegistry.getInstance();
+
+  console.log('Starting object_index population...');
+  console.log('Options:', { dataTypes, competitionId, batchSize });
+
+  for (const dataType of dataTypes) {
+    console.log(`\nPopulating ${dataType} data...`);
+    
+    try {
+      switch (dataType) {
+        case 'trade':
+          await services.objectIndexService.populateTrades(competitionId);
+          break;
+        case 'agent_rank_history':
+          await services.objectIndexService.populateAgentRankHistory(competitionId);
+          break;
+        case 'competitions_leaderboard':
+          await services.objectIndexService.populateCompetitionsLeaderboard(competitionId);
+          break;
+        case 'portfolio_snapshot':
+          await services.objectIndexService.populatePortfolioSnapshots(competitionId);
+          break;
+        case 'agent_rank':
+          await services.objectIndexService.populateAgentRank(); // No competitionId
+          break;
+        default:
+          console.warn(`Unknown data type: ${dataType}`);
+      }
+    } catch (error) {
+      console.error(`Error populating ${dataType}:`, error);
+      throw error;
+    }
+  }
+
+  console.log('\nPopulation complete!');
+}
+
+// Parse command line arguments
+function parseArgs() {
+  const args = process.argv.slice(2);
+  const options: PopulateOptions = {};
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    
+    if (arg === '--data-types' && args[i + 1]) {
+      options.dataTypes = args[i + 1]!.split(',');
+      i++;
+    } else if (arg === '--competition-id' && args[i + 1]) {
+      options.competitionId = args[i + 1];
+      i++;
+    } else if (arg === '--batch-size' && args[i + 1]) {
+      options.batchSize = parseInt(args[i + 1]!, 10);
+      i++;
+    }
+  }
+
+  return options;
+}
+
+// Execute the script if run directly
+const envOptions: PopulateOptions = {
+  dataTypes: process.env.DATA_TYPES?.split(',') || ['trade', 'agent_rank_history', 'competitions_leaderboard'],
+  competitionId: process.env.COMPETITION_ID,
+  batchSize: process.env.BATCH_SIZE ? parseInt(process.env.BATCH_SIZE, 10) : 1000
+};
+
+const cliOptions = parseArgs();
+const options = { ...envOptions, ...cliOptions };
+
+populateObjectIndex(options)
+  .then(() => {
+    console.log('✅ Population complete');
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('❌ Population failed:', error);
+    process.exit(1);
+  });
+
+export { populateObjectIndex };

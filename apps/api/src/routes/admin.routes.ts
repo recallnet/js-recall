@@ -1373,5 +1373,60 @@ export function configureAdminRoutes(
    */
   router.get("/search", controller.searchUsersAndAgents);
 
+  /**
+   * @openapi
+   * /api/admin/object-index/sync:
+   *   post:
+   *     tags:
+   *       - Admin
+   *     summary: Sync object index
+   *     description: Manually trigger population of object_index table with competition data
+   *     security:
+   *       - BearerAuth: []
+   *     requestBody:
+   *       required: false
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               competitionId:
+   *                 type: string
+   *                 description: ID of specific competition to sync (optional, syncs all if not provided)
+   *               dataTypes:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                   enum: [trade, agent_rank_history, competitions_leaderboard, portfolio_snapshot, agent_rank]
+   *                 description: Types of data to sync (defaults to trade, agent_rank_history, competitions_leaderboard)
+   *     responses:
+   *       200:
+   *         description: Sync initiated successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 message:
+   *                   type: string
+   *                   description: Success message
+   *                 dataTypes:
+   *                   type: array
+   *                   items:
+   *                     type: string
+   *                   description: Data types that were synced
+   *                 competitionId:
+   *                   type: string
+   *                   description: Competition ID that was synced (or 'all')
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       500:
+   *         description: Server error
+   */
+  router.post("/object-index/sync", controller.syncObjectIndex);
+
   return router;
 }
