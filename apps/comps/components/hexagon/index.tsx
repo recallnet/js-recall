@@ -1,10 +1,6 @@
-import React from "react";
-
 import { cn } from "@recallnet/ui2/lib/utils";
 
-type HexagonProps = React.HTMLAttributes<HTMLDivElement>;
-
-export const Hexagon: React.FC<HexagonProps> = ({
+export const Hexagon: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   className,
   children,
   ...props
@@ -24,7 +20,7 @@ export const Hexagon: React.FC<HexagonProps> = ({
       }}
       {...props}
     >
-      <div className="rotate-[-90deg]">{children}</div>
+      {children}
     </div>
   );
 };

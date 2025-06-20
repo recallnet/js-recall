@@ -7,8 +7,8 @@ import { SortState } from "@recallnet/ui2/components/table";
 import { Tabs, TabsList, TabsTrigger } from "@recallnet/ui2/components/tabs";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { Hexagon } from "@/components/hexagon";
 import MirrorImage from "@/components/mirror-image";
+import { Trophy, TrophyBadge } from "@/components/trophy-badge";
 import { useUpdateAgent, useUserAgents } from "@/hooks";
 import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
 import { Agent, AgentWithOwnerResponse } from "@/types";
@@ -18,7 +18,18 @@ import { AgentImage } from "./agent-image";
 import AgentInfo from "./agent-info";
 import CompetitionTable from "./comps-table";
 import { EditAgentField } from "./edit-field";
+import { EditSkillsField } from "./edit-skills-field";
 import { ShareAgent } from "./share-agent";
+import { AgentVerifiedBadge } from "./verify-badge";
+
+function sortTrophies(items: Trophy[]): Trophy[] {
+  return items.sort((a, b) => {
+    if (a.rank !== b.rank) {
+      return a.rank - b.rank;
+    }
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+}
 
 const limit = 10;
 
@@ -40,7 +51,8 @@ export default function AgentProfile({
 }) {
   const [offset, setOffset] = React.useState(0);
   const skills = agent?.skills || [];
-  const trophies = (agent?.trophies || []) as string[];
+  const trophies = sortTrophies((agent.trophies || []) as Trophy[]);
+
   const { data: userAgents } = useUserAgents();
   const isUserAgent = userAgents?.agents.some((a) => a.id === id) || false;
   const updateAgent = useUpdateAgent();
@@ -53,15 +65,19 @@ export default function AgentProfile({
   }, [sortState]);
 
   const handleSaveChange =
-    (field: "imageUrl" | "description" | "name") => async (value: unknown) => {
+    (field: "imageUrl" | "description" | "name" | "skills") =>
+    async (value: unknown) => {
       if (!agent) return;
 
       try {
         await updateAgent.mutateAsync({
           agentId: agent.id,
-          params: {
-            [field]: value,
-          },
+          params:
+            field === "skills"
+              ? { metadata: { skills: value as string[] } }
+              : {
+                  [field]: value,
+                },
         });
       } catch (error) {
         console.error("Failed to update agent:", error);
@@ -76,6 +92,7 @@ export default function AgentProfile({
   });
   const competitions = compsData?.competitions || [];
   const { total } = compsData?.pagination || { total: 0 };
+  console.log({ isUserAgent });
 
   return (
     <>
@@ -88,9 +105,9 @@ export default function AgentProfile({
         className="mb-10"
       />
 
-      <div className="xs:grid-rows-[500px_1fr] my-6 grid grid-cols-[300px_1fr_1fr] rounded-xl md:grid-cols-[400px_1fr_1fr]">
+      <div className="xs:grid-rows-[550px_1fr] my-6 grid grid-cols-[300px_1fr_1fr] rounded-xl md:grid-cols-[400px_1fr_1fr]">
         <Card
-          className="xs:col-span-1 xs:mr-8 col-span-3 flex h-[500px] flex-col items-center justify-between bg-gray-900 p-8"
+          className="xs:col-span-1 xs:mr-8 col-span-3 flex h-[550px] flex-col items-center justify-between bg-gray-900 p-8"
           corner="top-left"
           cropSize={45}
         >
@@ -114,20 +131,24 @@ export default function AgentProfile({
           </span>
         </Card>
         <div className="flex-2 xs:col-span-2 xs:col-start-2 xs:row-start-1 xs:mt-0 col-span-3 row-start-2 mt-5 flex shrink flex-col border lg:col-span-1 lg:col-start-2">
-          <div className="relative w-full grow border-b p-8">
+          <div className="relative flex w-full grow flex-col border-b p-8">
             {isUserAgent ? (
               <EditAgentField
                 title="Agent Name"
                 value={agent.name || ""}
                 onSave={handleSaveChange("name")}
               >
-                <h1 className="text-primary-foreground max-w-[90%] truncate text-4xl font-bold">
-                  {agent.name}
-                </h1>
+                <>
+                  <h1 className="text-primary-foreground max-w-[90%] truncate text-4xl font-bold">
+                    {agent.name}
+                  </h1>
+                  <AgentVerifiedBadge verified={Boolean(agent.walletAddress)} />
+                </>
               </EditAgentField>
             ) : (
               <h1 className="text-primary-foreground truncate text-4xl font-bold">
                 {agent.name}
+                <AgentVerifiedBadge verified={Boolean(agent.walletAddress)} />
               </h1>
             )}
             {!isUserAgent && (
@@ -140,22 +161,29 @@ export default function AgentProfile({
                 </span>
               </div>
             )}
-            <div className="mt-8 flex w-full justify-start gap-3">
-              {trophies.length > 0 ? (
-                trophies.map((_: unknown, i: number) => (
-                  <Hexagon
-                    key={i}
-                    className={`h-10 w-10 bg-${["blue-500", "red-500", "yellow-500"][i % 3]}`}
-                  />
-                ))
-              ) : (
-                <span className="text-secondary-foreground">
-                  This agent hasn’t earned trophies yet.
-                </span>
+
+            <div
+              className={cn(
+                "mt-3 w-full overflow-x-hidden",
+                isUserAgent
+                  ? "max-h-[70px] overflow-y-auto"
+                  : "h-[150px] max-h-[136px]",
               )}
+            >
+              <div className="flex flex-wrap justify-start gap-x-5 gap-y-2">
+                {trophies.length > 0 ? (
+                  trophies.map((trophy, i: number) => (
+                    <TrophyBadge key={i} trophy={trophy} />
+                  ))
+                ) : (
+                  <span className="text-secondary-foreground">
+                    This agent hasn’t earned trophies yet.
+                  </span>
+                )}
+              </div>
             </div>
             {isUserAgent && (
-              <AgentInfo className="mt-15 w-full" agent={agent} />
+              <AgentInfo className="mt-auto w-full" agent={agent} />
             )}
           </div>
           <div className="flex flex-col items-start gap-2 border-b px-6 py-6 text-sm">
@@ -188,7 +216,12 @@ export default function AgentProfile({
           </div>
         </div>
         <div className="xs:grid col-span-3 row-start-2 mt-8 hidden grid-rows-2 border-b border-l border-r border-t text-sm lg:col-start-3 lg:row-start-1 lg:mt-0 lg:grid-rows-3 lg:border-l-0">
-          <div className="flex flex-col items-start gap-2 border-b p-6 lg:row-span-2">
+          <div
+            className={cn(
+              "flex flex-col items-start gap-2 border-b p-6",
+              agent.skills && agent.skills?.length > 4 ? "" : "lg:row-span-2",
+            )}
+          >
             {isUserAgent ? (
               <EditAgentField
                 useTextarea
@@ -210,15 +243,26 @@ export default function AgentProfile({
             </span>
           </div>
           <div className="flex flex-col items-start p-6">
-            <span className="text-secondary-foreground w-full text-left font-semibold uppercase">
-              Proven Skills
-            </span>
-            <div className="text-secondary-foreground mt-3 flex flex-wrap gap-3 break-all">
+            <EditSkillsField
+              title="Agent Skills"
+              value={agent.skills || []}
+              onSave={handleSaveChange("skills")}
+            >
+              <span className="text-secondary-foreground text-left font-semibold uppercase">
+                Proven Skills
+              </span>
+            </EditSkillsField>
+            <div
+              className={cn(
+                "text-secondary-foreground mt-3 gap-3 break-all",
+                skills.length > 0 ? "grid grid-cols-2" : "flex flex-wrap",
+              )}
+            >
               {skills.length > 0
                 ? skills.map((skill, index) => (
                     <span
                       key={index}
-                      className="text-primary-foreground rounded border px-2 py-1"
+                      className="text-primary-foreground truncate rounded border px-2 py-1"
                     >
                       {skill}
                     </span>
