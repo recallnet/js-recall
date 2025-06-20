@@ -22,11 +22,17 @@ import { Identicon } from "../identicon/index";
 export const SIWEButton: React.FunctionComponent = () => {
   const router = useRouter();
   const logout = useLogout();
-  const { user } = useUserSession();
+  const session = useUserSession();
 
   const handleLogout = async () => {
     logout.mutate();
   };
+
+  if (!session.isInitialized) {
+    return null;
+  }
+
+  const { user } = session;
 
   if (user) {
     return (

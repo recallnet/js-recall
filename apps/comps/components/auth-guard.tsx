@@ -15,20 +15,24 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   skeleton = null,
   redirectTo = DEFAULT_REDIRECT_URL,
 }) => {
-  const { isAuthenticated, isLoading } = useUserSession();
+  const session = useUserSession();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (!session.isInitialized) {
+      return;
+    }
+
+    if (!session.isLoading && !session.isAuthenticated) {
       router.push(redirectTo);
     }
-  }, [isAuthenticated, isLoading, router, redirectTo]);
+  }, [session, router, redirectTo]);
 
-  if (isLoading) {
+  if (!session.isInitialized || session.isLoading) {
     return skeleton;
   }
 
-  if (isAuthenticated) {
+  if (session.isAuthenticated) {
     return <>{children}</>;
   }
 

@@ -14,15 +14,20 @@ import { useUpdateProfile } from "@/hooks/useProfile";
 import { UpdateProfileRequest } from "@/types/profile";
 
 export default function ProfilePage() {
-  const { user, isProfileUpdated, isLoading } = useUserSession();
+  const session = useUserSession();
   const router = useRouter();
   const updateProfile = useUpdateProfile();
 
   useEffect(() => {
-    if (!isLoading && !isProfileUpdated) {
+    if (!session.isInitialized) return;
+    if (!session.isLoading && !session.isProfileUpdated) {
       router.push("/profile/update");
     }
-  }, [isLoading, isProfileUpdated, router]);
+  }, [session, router]);
+
+  if (!session.isInitialized) {
+    return <ProfileSkeleton />;
+  }
 
   const handleUpdateProfile = async (data: UpdateProfileRequest) => {
     try {
@@ -40,7 +45,7 @@ export default function ProfilePage() {
           { label: "USER PROFILE" },
         ]}
       />
-      <UserInfoSection user={user!} onSave={handleUpdateProfile} />
+      <UserInfoSection user={session.user!} onSave={handleUpdateProfile} />
       <UserCompetitionsSection />
       <UserAgentsSection />
     </AuthGuard>

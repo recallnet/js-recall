@@ -62,11 +62,11 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   pagination,
   ref,
 }) => {
-  const { isAuthenticated } = useUserSession();
+  const session = useUserSession();
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-    vote: isAuthenticated,
+    vote: session.isInitialized && session.isAuthenticated,
   });
   const [selectedAgent, setSelectedAgent] = useState<AgentCompetition | null>(
     null,
@@ -76,9 +76,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
   useEffect(() => {
     setColumnVisibility({
-      vote: isAuthenticated,
+      vote: session.isInitialized && session.isAuthenticated,
     });
-  }, [isAuthenticated]);
+  }, [session]);
 
   const handleVote = async () => {
     if (!selectedAgent) return;
