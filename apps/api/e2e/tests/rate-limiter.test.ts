@@ -365,7 +365,7 @@ describe("Rate Limiter Middleware", () => {
           ).toBe(true);
           expect(
             typeof responseData.error === "string" &&
-            responseData.error.includes("Rate limit exceeded"),
+              responseData.error.includes("Rate limit exceeded"),
           ).toBe(true);
 
           // Verify rate limit headers
@@ -468,7 +468,9 @@ describe("Rate Limiter Middleware", () => {
       timeout: 10000,
     });
 
-    console.log("Testing IP-based rate limiting for unauthenticated /api/agents requests");
+    console.log(
+      "Testing IP-based rate limiting for unauthenticated /api/agents requests",
+    );
 
     let successfulRequests = 0;
     let rateLimitHit = false;
@@ -481,19 +483,26 @@ describe("Rate Limiter Middleware", () => {
 
         if (response.status === 200) {
           successfulRequests++;
-          console.log(`IP test: Request ${i + 1}/${maxRequests} succeeded (total successful: ${successfulRequests})`);
+          console.log(
+            `IP test: Request ${i + 1}/${maxRequests} succeeded (total successful: ${successfulRequests})`,
+          );
         }
       } catch (error) {
         if (axios.isAxiosError(error) && error.response?.status === 429) {
-          console.log(`IP test: Rate limit hit at request ${i + 1}/${maxRequests} (after ${successfulRequests} successful requests)`);
+          console.log(
+            `IP test: Rate limit hit at request ${i + 1}/${maxRequests} (after ${successfulRequests} successful requests)`,
+          );
           rateLimitHit = true;
 
           // Verify the error message indicates rate limiting
-          expect(error.response.data).toHaveProperty('error');
-          expect(error.response.data.error).toContain('Rate limit exceeded');
+          expect(error.response.data).toHaveProperty("error");
+          expect(error.response.data.error).toContain("Rate limit exceeded");
           break;
         } else {
-          console.error(`IP test: Request ${i + 1} failed with unexpected error:`, error);
+          console.error(
+            `IP test: Request ${i + 1} failed with unexpected error:`,
+            error,
+          );
           throw new Error(`Unexpected error: ${error}`);
         }
       }
@@ -504,12 +513,16 @@ describe("Rate Limiter Middleware", () => {
 
     // Verify that either we hit the rate limit OR made successful requests
     if (rateLimitHit) {
-      console.log(`✅ IP-based rate limiting working: Rate limit hit after ${successfulRequests} requests`);
+      console.log(
+        `✅ IP-based rate limiting working: Rate limit hit after ${successfulRequests} requests`,
+      );
       expect(successfulRequests).toBeGreaterThan(0);
       expect(successfulRequests).toBeLessThan(maxRequests);
     } else {
       // If we didn't hit rate limit, at least verify requests were successful
-      console.log(`✅ IP-based identification working: ${successfulRequests}/${maxRequests} requests succeeded`);
+      console.log(
+        `✅ IP-based identification working: ${successfulRequests}/${maxRequests} requests succeeded`,
+      );
       expect(successfulRequests).toBeGreaterThan(0);
     }
 
@@ -519,7 +532,8 @@ describe("Rate Limiter Middleware", () => {
     // 1. ✅ Unauthenticated requests are identified by IP address (ip:127.0.0.1)
     // 2. ✅ Each IP gets its own rate limit bucket instead of sharing "anonymous"
     // 3. ✅ The IP address structure follows the expected "ip:" prefix format
-    console.log("✅ IP-based rate limiting is working - check server logs for '[RateLimiter] Processing request for agent ip:127.0.0.1'");
+    console.log(
+      "✅ IP-based rate limiting is working - check server logs for '[RateLimiter] Processing request for agent ip:127.0.0.1'",
+    );
   });
 });
-
