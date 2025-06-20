@@ -176,18 +176,20 @@ export class VoteManager {
         };
       }
 
+      // Check if user has already voted
+      const userVote = await getUserVoteForCompetition(userId, competitionId);
+      const hasVoted = !!userVote;
+
       // Check if voting is allowed based on competition status
       if (!this.checkCompetitionVotingStatus(competition)) {
         return {
           canVote: false,
           reason: `Competition status does not allow voting (${competition.status})`,
-          info: { hasVoted: false },
+          // TODO: why is this hardcoded to false?  what if they voted and then the comp finished?
+          //      It seems like the value should be true in that case?
+          info: { hasVoted },
         };
       }
-
-      // Check if user has already voted
-      const userVote = await getUserVoteForCompetition(userId, competitionId);
-      const hasVoted = !!userVote;
 
       const userVoteInfo: UserVoteInfo = {
         hasVoted,
@@ -314,7 +316,7 @@ export class VoteManager {
 
   /**
    * Check if competition status allows voting
-   * Based on issue #408: voting allowed for "pending" OR "active" status
+   * If competition is "ended" then voting is not allowed
    * Note: Voting date checks are handled separately in validation methods
    * @param competition The competition record
    * @returns True if competition status allows voting
@@ -323,8 +325,8 @@ export class VoteManager {
     competition: SelectCompetition,
   ): boolean {
     const votingEnabledStatuses: Array<SelectCompetition["status"]> = [
-      COMPETITION_STATUS.PENDING, // "almost ready to start" - can vote
-      COMPETITION_STATUS.ACTIVE, // "has started" - can vote
+      COMPETITION_STATUS.PENDING,
+      COMPETITION_STATUS.ACTIVE,
     ];
 
     return votingEnabledStatuses.includes(competition.status);
