@@ -549,5 +549,23 @@ describe("Leaderboard API", () => {
     expect(emptySort.success).toBe(true);
     const emptySortRanks = emptySort.agents.map((a) => a.rank);
     expect(emptySortRanks).toEqual([1, 2, 3]); // Should use default rank ascending
+
+    // Test 11: Sort by score ascending
+    const scoreAsc = (await agentClient1.getGlobalLeaderboard({
+      sort: "score",
+    })) as GlobalLeaderboardResponse;
+    expect(scoreAsc.success).toBe(true);
+    const scoreAscScores = scoreAsc.agents.map((a) => a.score);
+    expect(scoreAscScores[0]).toBeLessThan(scoreAscScores[1]!);
+    expect(scoreAscScores[1]).toBeLessThan(scoreAscScores[2]!);
+
+    // Test 12: Sort by score descending
+    const scoreDesc = (await agentClient1.getGlobalLeaderboard({
+      sort: "-score",
+    })) as GlobalLeaderboardResponse;
+    expect(scoreDesc.success).toBe(true);
+    const scoreDescScores = scoreDesc.agents.map((a) => a.score);
+    expect(scoreDescScores[0]).toBeGreaterThan(scoreDescScores[1]!);
+    expect(scoreDescScores[1]).toBeGreaterThan(scoreDescScores[2]!);
   });
 });
