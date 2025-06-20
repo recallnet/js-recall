@@ -48,6 +48,8 @@ export function configureLeaderboardRoutes(
    *           enum:
    *             - rank
    *             - -rank
+   *             - score
+   *             - -score
    *             - name
    *             - -name
    *             - competitions
