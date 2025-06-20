@@ -682,11 +682,74 @@ export function makeAdminController(services: ServiceRegistry) {
         const leaderboard =
           await services.competitionManager.getLeaderboard(competitionId);
 
+        // Populate object_index with competition data
+        try {
+          await services.objectIndexService.populateTrades(competitionId);
+          await services.objectIndexService.populateAgentRankHistory(competitionId);
+          await services.objectIndexService.populateCompetitionsLeaderboard(competitionId);
+          console.log(`Successfully populated object_index for competition ${competitionId}`);
+        } catch (error) {
+          console.error(`Failed to populate object_index for competition ${competitionId}:`, error);
+          // Don't fail the request if object_index population fails
+        }
+
         // Return the ended competition with leaderboard
         res.status(200).json({
           success: true,
           competition: endedCompetition,
           leaderboard,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Manually trigger object index population
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async syncObjectIndex(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { competitionId, dataTypes } = req.body;
+
+        const typesToSync = dataTypes || ['trade', 'agent_rank_history', 'competitions_leaderboard'];
+        
+        console.log(`Starting object index sync for types: ${typesToSync.join(', ')}`);
+        
+        for (const dataType of typesToSync) {
+          try {
+            switch (dataType) {
+              case 'trade':
+                await services.objectIndexService.populateTrades(competitionId);
+                break;
+              case 'agent_rank_history':
+                await services.objectIndexService.populateAgentRankHistory(competitionId);
+                break;
+              case 'competitions_leaderboard':
+                await services.objectIndexService.populateCompetitionsLeaderboard(competitionId);
+                break;
+              case 'portfolio_snapshot':
+                await services.objectIndexService.populatePortfolioSnapshots(competitionId);
+                break;
+              case 'agent_rank':
+                await services.objectIndexService.populateAgentRank();
+                break;
+              default:
+                console.warn(`Unknown data type: ${dataType}`);
+            }
+          } catch (error) {
+            console.error(`Error syncing ${dataType}:`, error);
+            throw error;
+          }
+        }
+
+        res.status(200).json({
+          success: true,
+          message: 'Object index sync initiated',
+          dataTypes: typesToSync,
+          competitionId: competitionId || 'all'
         });
       } catch (error) {
         next(error);

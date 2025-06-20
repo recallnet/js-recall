@@ -6,6 +6,7 @@ import { BalanceManager } from "@/services/balance-manager.service.js";
 import { CompetitionManager } from "@/services/competition-manager.service.js";
 import { ConfigurationService } from "@/services/configuration.service.js";
 import { LeaderboardService } from "@/services/leaderboard.service.js";
+import { ObjectIndexService } from "@/services/objectIndex.service.js";
 import { PortfolioSnapshotter } from "@/services/portfolio-snapshotter.service.js";
 import { PriceTracker } from "@/services/price-tracker.service.js";
 import { SchedulerService } from "@/services/scheduler.service.js";
@@ -35,6 +36,7 @@ class ServiceRegistry {
   private _leaderboardService: LeaderboardService;
   private _voteManager: VoteManager;
   private _agentRankService: AgentRankService;
+  private _objectIndexService: ObjectIndexService;
 
   constructor() {
     // Initialize services in dependency order
@@ -66,6 +68,9 @@ class ServiceRegistry {
 
     // Initialize vote manager (no dependencies)
     this._voteManager = new VoteManager();
+
+    // Initialize object index service (no dependencies)
+    this._objectIndexService = new ObjectIndexService();
 
     this._competitionManager = new CompetitionManager(
       this._balanceManager,
@@ -152,6 +157,10 @@ class ServiceRegistry {
   get agentRankService(): AgentRankService {
     return this._agentRankService;
   }
+
+  get objectIndexService(): ObjectIndexService {
+    return this._objectIndexService;
+  }
 }
 
 // Export service types for convenience
@@ -164,6 +173,7 @@ export {
   CompetitionManager,
   ConfigurationService,
   LeaderboardService,
+  ObjectIndexService,
   PortfolioSnapshotter,
   PriceTracker,
   ServiceRegistry,
