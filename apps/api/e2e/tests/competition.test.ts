@@ -448,7 +448,6 @@ describe("Competition API", () => {
     // Wait a moment for status update to process
     await wait(100);
 
-    // NEW BEHAVIOR: Agent should still be able to access endpoints (globally active)
     const postEndProfileResponse =
       (await agentClient.getAgentProfile()) as AgentProfileResponse;
     expect(postEndProfileResponse.success).toBe(true);
@@ -476,11 +475,11 @@ describe("Competition API", () => {
       .limit(1);
 
     expect(competitionAgentRecord.length).toBe(1);
-    expect(competitionAgentRecord[0]?.status).toBe("inactive");
-    expect(competitionAgentRecord[0]?.deactivationReason).toMatch(
-      /Competition .+ completed/,
-    );
-    expect(competitionAgentRecord[0]?.deactivatedAt).toBeDefined();
+    // With refined status model, agents remain 'active' in completed competitions
+    expect(competitionAgentRecord[0]?.status).toBe("active");
+    // No deactivation data since agents aren't deactivated when competitions end
+    expect(competitionAgentRecord[0]?.deactivationReason).toBeNull();
+    expect(competitionAgentRecord[0]?.deactivatedAt).toBeNull();
   });
 
   test("agents can get list of upcoming competitions", async () => {
@@ -2423,8 +2422,6 @@ describe("Competition API", () => {
       expect(leaveResponse.message).toBe("Successfully left competition");
     }
 
-    // NEW BEHAVIOR: Agent should still exist in competition_agents table with "left" status
-    // but should NOT appear in the active competition agents API response
     // Check per-competition status in database
     const competitionAgentRecord = await db
       .select()
@@ -2438,9 +2435,9 @@ describe("Competition API", () => {
       .limit(1);
 
     expect(competitionAgentRecord.length).toBe(1);
-    expect(competitionAgentRecord[0]?.status).toBe("left");
+    expect(competitionAgentRecord[0]?.status).toBe("withdrawn");
     expect(competitionAgentRecord[0]?.deactivationReason).toContain(
-      "Left competition",
+      "Withdrew from competition",
     );
 
     // Agent should NOT appear in competition agents API response (only active agents shown)
@@ -2695,7 +2692,7 @@ describe("Competition API", () => {
     );
     expect("success" in leaveResponse && leaveResponse.success).toBe(true);
 
-    // NEW BEHAVIOR: Agent should remain globally active
+    // agent should remain globally active
     const agentProfileResponse = await userClient.getUserAgent(agent.id);
     expect(agentProfileResponse.success).toBe(true);
     if ("agent" in agentProfileResponse) {
@@ -2703,7 +2700,7 @@ describe("Competition API", () => {
       expect(agentProfileResponse.agent.status).toBe("active");
     }
 
-    // Verify agent is marked as "left" in the specific competition
+    // Verify agent is marked as "withdrawn" in the specific competition
     const competitionAgentRecord = await db
       .select()
       .from(competitionAgents)
@@ -2716,9 +2713,9 @@ describe("Competition API", () => {
       .limit(1);
 
     expect(competitionAgentRecord.length).toBe(1);
-    expect(competitionAgentRecord[0]?.status).toBe("left");
+    expect(competitionAgentRecord[0]?.status).toBe("withdrawn");
     expect(competitionAgentRecord[0]?.deactivationReason).toContain(
-      "Left competition",
+      "Withdrew from competition",
     );
     expect(competitionAgentRecord[0]?.deactivatedAt).toBeDefined();
   });

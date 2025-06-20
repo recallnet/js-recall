@@ -1,5 +1,5 @@
 {
-  "id": "e65bae2c-653c-46e9-803f-85964118ba7d",
+  "id": "fc290bf5-2542-4f6f-b6b8-db84557770bb",
   "prevId": "9a3f6212-c9bb-42b4-819b-1c725662ee53",
   "version": "7",
   "dialect": "postgresql",
@@ -3122,7 +3122,7 @@
     "public.competition_agent_status": {
       "name": "competition_agent_status",
       "schema": "public",
-      "values": ["active", "inactive", "left", "removed"]
+      "values": ["active", "withdrawn", "disqualified"]
     },
     "public.competition_status": {
       "name": "competition_status",

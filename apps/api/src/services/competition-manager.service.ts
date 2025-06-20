@@ -203,12 +203,7 @@ export class CompetitionManager {
         throw new Error(`Agent not found: ${agentId}`);
       }
 
-      if (agent.status === ACTOR_STATUS.INACTIVE) {
-        await this.agentManager.reactivateAgent(agentId);
-        console.log(
-          `[CompetitionManager] Reactivated globally inactive agent: ${agentId}`,
-        );
-      } else if (agent.status !== ACTOR_STATUS.ACTIVE) {
+      if (agent.status !== ACTOR_STATUS.ACTIVE) {
         throw new Error(
           `Cannot start competition with agent ${agentId}: agent status is ${agent.status}`,
         );
@@ -272,25 +267,9 @@ export class CompetitionManager {
     // Get agents in the competition
     const competitionAgents = await getCompetitionAgents(competitionId);
 
-    // Mark all agents as inactive in this competition (but keep them globally active)
     console.log(
-      `[CompetitionManager] Marking ${competitionAgents.length} agents as inactive for ended competition`,
+      `[CompetitionManager] Competition ended. ${competitionAgents.length} agents remain 'active' in completed competition`,
     );
-    for (const agentId of competitionAgents) {
-      try {
-        await updateAgentCompetitionStatus(
-          competitionId,
-          agentId,
-          COMPETITION_AGENT_STATUS.INACTIVE,
-          `Competition ${competition.name} completed`,
-        );
-      } catch (error) {
-        console.error(
-          `[CompetitionManager] Error updating agent ${agentId} competition status:`,
-          error,
-        );
-      }
-    }
 
     // Update competition status
     competition.status = CompetitionStatusSchema.parse("ended");
@@ -778,23 +757,23 @@ export class CompetitionManager {
     if (competition.status === COMPETITION_STATUS.ENDED) {
       throw new Error("Cannot leave competition that has already ended");
     } else if (competition.status === COMPETITION_STATUS.ACTIVE) {
-      // During active competition: mark agent as left in this competition
+      // During active competition: mark agent as withdrawn from this competition
       await updateAgentCompetitionStatus(
         competitionId,
         agentId,
-        COMPETITION_AGENT_STATUS.LEFT,
-        `Left competition ${competition.name}`,
+        COMPETITION_AGENT_STATUS.WITHDRAWN,
+        `Withdrew from competition ${competition.name}`,
       );
       console.log(
-        `[CompetitionManager] Marked agent ${agentId} as left from active competition ${competitionId}`,
+        `[CompetitionManager] Marked agent ${agentId} as withdrawn from active competition ${competitionId}`,
       );
     } else if (competition.status === COMPETITION_STATUS.PENDING) {
-      // During pending competition: mark as left (preserving history)
+      // During pending competition: mark as withdrawn (preserving history)
       await updateAgentCompetitionStatus(
         competitionId,
         agentId,
-        COMPETITION_AGENT_STATUS.LEFT,
-        `Left competition ${competition.name} before it started`,
+        COMPETITION_AGENT_STATUS.WITHDRAWN,
+        `Withdrew from competition ${competition.name} before it started`,
       );
       console.log(
         `[CompetitionManager] Marked agent ${agentId} as left from pending competition ${competitionId}`,
@@ -847,12 +826,12 @@ export class CompetitionManager {
       throw new Error("Competition not found");
     }
 
-    // Update agent status in competition to 'removed'
+    // Update agent status in competition to 'disqualified'
     await updateAgentCompetitionStatus(
       competitionId,
       agentId,
-      COMPETITION_AGENT_STATUS.REMOVED,
-      reason || "Removed by admin",
+      COMPETITION_AGENT_STATUS.DISQUALIFIED,
+      reason || "Disqualified by admin",
     );
 
     console.log(

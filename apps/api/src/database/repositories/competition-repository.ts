@@ -238,8 +238,8 @@ export async function removeAgentFromCompetition(
     const result = await db
       .update(competitionAgents)
       .set({
-        status: COMPETITION_AGENT_STATUS.REMOVED,
-        deactivationReason: reason || "Removed from competition",
+        status: COMPETITION_AGENT_STATUS.DISQUALIFIED,
+        deactivationReason: reason || "Disqualified from competition",
         deactivatedAt: new Date(),
         updatedAt: new Date(),
       })
@@ -514,7 +514,7 @@ export async function updateAgentCompetitionStatus(
  * @param reason Optional reason for leaving
  * @returns boolean indicating if the update was successful
  */
-export async function markAgentAsLeft(
+export async function markAgentAsWithdrawn(
   competitionId: string,
   agentId: string,
   reason?: string,
@@ -522,8 +522,8 @@ export async function markAgentAsLeft(
   return updateAgentCompetitionStatus(
     competitionId,
     agentId,
-    COMPETITION_AGENT_STATUS.LEFT,
-    reason || "Agent left competition voluntarily",
+    COMPETITION_AGENT_STATUS.WITHDRAWN,
+    reason || "Agent withdrew from competition voluntarily",
   );
 }
 

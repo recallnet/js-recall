@@ -82,10 +82,8 @@ export async function getGlobalStats(type: CompetitionType): Promise<{
     .from(votes)
     .where(inArray(votes.competitionId, relevantCompetitionIds));
 
-  // Count all distinct agents who have participated in these competitions
-  // Fixed: For global stats, "activeAgents" means agents who have participated in competitions,
-  // but exclude those who left voluntarily or were removed
-  // See: https://github.com/recallnet/js-recall/issues/458
+  // agents remain 'active' in completed competitions
+  // count distinct active agents in these competitions.
   const totalActiveAgents = await db
     .select({
       totalActiveAgents: countDistinct(competitionAgents.agentId),
@@ -94,10 +92,7 @@ export async function getGlobalStats(type: CompetitionType): Promise<{
     .where(
       and(
         inArray(competitionAgents.competitionId, relevantCompetitionIds),
-        inArray(competitionAgents.status, [
-          COMPETITION_AGENT_STATUS.ACTIVE,
-          COMPETITION_AGENT_STATUS.INACTIVE,
-        ]),
+        eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
       ),
     );
 

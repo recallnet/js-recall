@@ -549,9 +549,8 @@ export type CompetitionStatus = z.infer<typeof CompetitionStatusSchema>;
  */
 export const COMPETITION_AGENT_STATUS_VALUES = [
   "active",
-  "inactive",
-  "left",
-  "removed",
+  "withdrawn",
+  "disqualified",
 ] as const;
 
 /**
@@ -559,9 +558,8 @@ export const COMPETITION_AGENT_STATUS_VALUES = [
  */
 export const COMPETITION_AGENT_STATUS = {
   ACTIVE: "active",
-  INACTIVE: "inactive",
-  LEFT: "left",
-  REMOVED: "removed",
+  WITHDRAWN: "withdrawn",
+  DISQUALIFIED: "disqualified",
 } as const;
 
 /**

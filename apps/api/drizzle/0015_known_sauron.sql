@@ -1,4 +1,4 @@
-CREATE TYPE "public"."competition_agent_status" AS ENUM('active', 'inactive', 'left', 'removed');--> statement-breakpoint
+CREATE TYPE "public"."competition_agent_status" AS ENUM('active', 'withdrawn', 'disqualified');--> statement-breakpoint
 ALTER TABLE "competition_agents" ALTER COLUMN "created_at" SET NOT NULL;--> statement-breakpoint
 ALTER TABLE "competition_agents" ADD COLUMN "status" "competition_agent_status" DEFAULT 'active' NOT NULL;--> statement-breakpoint
 ALTER TABLE "competition_agents" ADD COLUMN "deactivation_reason" text;--> statement-breakpoint
