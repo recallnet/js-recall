@@ -59,9 +59,58 @@ function getRateLimiter(
 }
 
 /**
+ * Get the client IP address from the request
+ * Handles Cloudflare + Load Balancer setup properly
+ *
+ * Priority order:
+ * 1. CF-Connecting-IP (if request is from Cloudflare)
+ * 2. First IP in X-Forwarded-For chain (excluding private IPs)
+ * 3. Express req.ip (fallback)
+ *
+ * @param req - Express request object
+ * @returns Client IP address or "unknown" if unable to determine
+ */
+function getClientIp(req: Request): string {
+  // Priority 1: Cloudflare connecting IP (if from CF)
+  // CF-Ray header indicates the request came through Cloudflare
+  if (req.headers["cf-ray"] && req.headers["cf-connecting-ip"]) {
+    const cfIp = req.headers["cf-connecting-ip"] as string;
+    if (cfIp && cfIp !== "unknown") {
+      return cfIp;
+    }
+  }
+
+  // Priority 2: First IP in X-Forwarded-For (excluding private ranges)
+  const xForwardedFor = req.headers["x-forwarded-for"] as string;
+  if (xForwardedFor) {
+    const firstIp = xForwardedFor.split(",")[0]?.trim();
+    // Exclude private IP ranges that might be from internal infrastructure
+    if (
+      firstIp &&
+      !firstIp.startsWith("10.") &&
+      !firstIp.startsWith("192.168.") &&
+      !firstIp.startsWith("172.16.") &&
+      !firstIp.startsWith("127.") &&
+      firstIp !== "unknown"
+    ) {
+      return firstIp;
+    }
+  }
+
+  // Priority 3: Express req.ip (respects trust proxy setting)
+  if (req.ip && req.ip !== "unknown" && !req.ip.startsWith("127.")) {
+    return req.ip;
+  }
+
+  // Final fallback
+  return req.socket?.remoteAddress || "unknown";
+}
+
+/**
  * Rate limiting middleware
  * Enforces API rate limits based on endpoint and agent
  * Each agent now has their own set of rate limiters to ensure proper isolation
+ * Uses IP address for unauthenticated requests instead of "anonymous"
  */
 export const rateLimiterMiddleware = async (
   req: Request,
@@ -77,12 +126,38 @@ export const rateLimiterMiddleware = async (
       return next();
     }
 
-    // Get agent ID from request (set by auth middleware)
-    const agentId = req.agentId || "anonymous";
+    // Get agent ID from request (set by auth middleware) or use IP address as fallback
+    let agentId = req.agentId || `ip:${getClientIp(req)}`;
+
+    // If no agentId from auth middleware, try to extract from Authorization header
+    if (agentId.startsWith("ip:") && req.headers.authorization) {
+      const authHeader = req.headers.authorization;
+      if (authHeader.startsWith("Bearer ")) {
+        const token = authHeader.substring(7);
+        // Validate and extract agent ID from token (expected format: agentId_apiKey)
+        const underscoreIndex = token.indexOf("_");
+        if (
+          underscoreIndex > 0 &&
+          underscoreIndex < token.length - 1 &&
+          token.indexOf("_", underscoreIndex + 1) === -1
+        ) {
+          agentId = token.substring(0, underscoreIndex);
+        } else {
+          // Log a warning in development mode if the token format is invalid
+          const isDev = ["development", "test"].includes(
+            process.env.NODE_ENV || "",
+          );
+          if (isDev) {
+            console.warn(
+              `[RateLimiter] Invalid token format: "${token}". Expected format: agentId_apiKey.`,
+            );
+          }
+        }
+      }
+    }
 
     // For debugging in development and testing
-    const isDev =
-      process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test";
+    const isDev = ["development", "test"].includes(process.env.NODE_ENV || "");
     if (isDev) {
       console.log(
         `[RateLimiter] Processing request for agent ${agentId} to ${req.originalUrl}`,
