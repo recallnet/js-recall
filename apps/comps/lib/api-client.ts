@@ -31,7 +31,7 @@ import {
   VotingStateResponse,
 } from "@/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+const API_BASE_URL = "/api";
 
 /**
  * Custom error class for unauthorized (401) responses
