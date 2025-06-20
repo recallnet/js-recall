@@ -2,6 +2,8 @@
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
   "globalEnv": [
+    "NODE_ENV",
+    "NEXT_PUBLIC_GA_ID",
     "NEXT_PUBLIC_TS_SITE_KEY",
     "NEXT_PUBLIC_CHAIN_NAME",
     "NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID",
