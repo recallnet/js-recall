@@ -847,4 +847,37 @@ export interface AgentCompetitionsResponse extends ApiResponse {
   };
 }
 
+/**
+ * Admin per-competition agent management response types
+ */
+
+// Remove agent from competition response
+export interface AdminRemoveAgentFromCompetitionResponse extends ApiResponse {
+  success: true;
+  message: string;
+  agent: {
+    id: string;
+    name: string;
+  };
+  competition: {
+    id: string;
+    name: string;
+  };
+  reason: string;
+}
+
+// Reactivate agent in competition response
+export interface AdminReactivateAgentInCompetitionResponse extends ApiResponse {
+  success: true;
+  message: string;
+  agent: {
+    id: string;
+    name: string;
+  };
+  competition: {
+    id: string;
+    name: string;
+  };
+}
+
 // ===========================

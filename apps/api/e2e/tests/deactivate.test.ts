@@ -269,11 +269,11 @@ describe("Agent Deactivation API", () => {
 
     // Create competition with all three agents
     const competitionName = `Leaderboard Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [
-      agent1.id,
-      agent2.id,
-      agent3.id,
-    ]);
+    const competition = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent1.id, agent2.id, agent3.id],
+    );
 
     // Make some trades to differentiate portfolio values
     // We'll have Agent 3 (to be deactivated) make some trades to put them on the leaderboard
@@ -332,7 +332,8 @@ describe("Agent Deactivation API", () => {
 
     // Now deactivate agent3
     const reason = "Deactivated for leaderboard test";
-    const deactivateResponse = await adminClient.deactivateAgent(
+    const deactivateResponse = await adminClient.removeAgentFromCompetition(
+      competition.competition.id,
       agent3.id,
       reason,
     );
@@ -359,8 +360,8 @@ describe("Agent Deactivation API", () => {
     const inactiveAgent = leaderboardAfter.inactiveAgents[0];
     expect(inactiveAgent?.agentId).toBe(agent3.id);
     expect(inactiveAgent?.active).toBe(false);
-    // TODO: fix reason
-    expect(inactiveAgent?.deactivationReason).toBe(reason);
+
+    expect(inactiveAgent?.deactivationReason).includes(reason);
 
     // Active agents should have ranks 1 and 2
     const ranks = leaderboardAfter.leaderboard.map((entry) => entry.rank);
@@ -371,7 +372,10 @@ describe("Agent Deactivation API", () => {
     expect(leaderboardAfter.hasInactiveAgents).toBe(true);
 
     // Reactivate the agent and verify they show up again
-    await adminClient.reactivateAgent(agent3.id);
+    await adminClient.reactivateAgentInCompetition(
+      competition.competition.id,
+      agent3.id,
+    );
 
     // Wait a moment for any cache to update
     await wait(100);

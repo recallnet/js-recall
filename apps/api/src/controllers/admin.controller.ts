@@ -4,8 +4,6 @@ import * as fs from "fs";
 import * as path from "path";
 
 import { reloadSecurityConfig } from "@/config/index.js";
-import { isAgentInCompetition } from "@/database/repositories/agent-repository.js";
-import { getCompetitionAgents } from "@/database/repositories/competition-repository.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
@@ -583,7 +581,18 @@ export function makeAdminController(services: ServiceRegistry) {
 
         // Get pre-registered agents from the database if we have a competitionId
         if (competitionId) {
-          const registeredAgents = await getCompetitionAgents(competitionId);
+          const competitionAgents =
+            await services.competitionManager.getCompetitionAgentsWithMetrics(
+              competitionId,
+              {
+                sort: "",
+                limit: 1000,
+                offset: 0,
+              },
+            );
+          const registeredAgents = competitionAgents.agents.map(
+            (agent) => agent.id,
+          );
           // Combine with provided agentIds, removing duplicates
           const combinedAgents = [
             ...new Set([...finalAgentIds, ...registeredAgents]),
@@ -868,10 +877,11 @@ export function makeAdminController(services: ServiceRegistry) {
           }
 
           // Check if the agent is in the competition
-          const agentInCompetition = await isAgentInCompetition(
-            agentId,
-            competitionId,
-          );
+          const agentInCompetition =
+            await services.competitionManager.isAgentInCompetition(
+              competitionId,
+              agentId,
+            );
 
           if (!agentInCompetition) {
             throw new ApiError(
@@ -887,8 +897,11 @@ export function makeAdminController(services: ServiceRegistry) {
               agentId,
             );
         } else {
-          // Get snapshots for all agents in the competition
-          const agents = await getCompetitionAgents(competitionId);
+          // Get snapshots for all agents in the competition (including inactive ones)
+          const agents =
+            await services.competitionManager.getAllCompetitionAgents(
+              competitionId,
+            );
           snapshots = [];
 
           for (const agentId of agents) {
@@ -1278,6 +1291,194 @@ export function makeAdminController(services: ServiceRegistry) {
         res.status(200).json({
           success: true,
           agent: formattedAgent,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Remove an agent from a specific competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async removeAgentFromCompetition(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId, agentId } = req.params;
+        const { reason } = req.body;
+
+        // Validate required parameters
+        if (!competitionId) {
+          return res.status(400).json({
+            success: false,
+            error: "Competition ID is required",
+          });
+        }
+
+        if (!agentId) {
+          return res.status(400).json({
+            success: false,
+            error: "Agent ID is required",
+          });
+        }
+
+        if (!reason) {
+          return res.status(400).json({
+            success: false,
+            error: "Reason for removal is required",
+          });
+        }
+
+        // Check if competition exists
+        const competition =
+          await services.competitionManager.getCompetition(competitionId);
+        if (!competition) {
+          return res.status(404).json({
+            success: false,
+            error: "Competition not found",
+          });
+        }
+
+        // Check if agent exists
+        const agent = await services.agentManager.getAgent(agentId);
+        if (!agent) {
+          return res.status(404).json({
+            success: false,
+            error: "Agent not found",
+          });
+        }
+
+        // Check if agent is in the competition
+        const isInCompetition =
+          await services.competitionManager.isAgentInCompetition(
+            competitionId,
+            agentId,
+          );
+        if (!isInCompetition) {
+          return res.status(400).json({
+            success: false,
+            error: "Agent is not participating in this competition",
+          });
+        }
+
+        // Remove agent from competition using service method
+        await services.competitionManager.removeAgentFromCompetition(
+          competitionId,
+          agentId,
+          `Admin removal: ${reason}`,
+        );
+
+        // Return success response
+        res.status(200).json({
+          success: true,
+          message: `Agent ${agent.name} removed from competition ${competition.name}`,
+          agent: {
+            id: agent.id,
+            name: agent.name,
+          },
+          competition: {
+            id: competition.id,
+            name: competition.name,
+          },
+          reason,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Reactivate an agent in a specific competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async reactivateAgentInCompetition(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId, agentId } = req.params;
+
+        // Validate required parameters
+        if (!competitionId) {
+          return res.status(400).json({
+            success: false,
+            error: "Competition ID is required",
+          });
+        }
+
+        if (!agentId) {
+          return res.status(400).json({
+            success: false,
+            error: "Agent ID is required",
+          });
+        }
+
+        // Check if competition exists
+        const competition =
+          await services.competitionManager.getCompetition(competitionId);
+        if (!competition) {
+          return res.status(404).json({
+            success: false,
+            error: "Competition not found",
+          });
+        }
+
+        // Check if agent exists
+        const agent = await services.agentManager.getAgent(agentId);
+        if (!agent) {
+          return res.status(404).json({
+            success: false,
+            error: "Agent not found",
+          });
+        }
+
+        // Check if competition is still active
+        if (competition.status === COMPETITION_STATUS.ENDED) {
+          return res.status(400).json({
+            success: false,
+            error: "Cannot reactivate agent in ended competition",
+          });
+        }
+
+        // Check if agent is in the competition
+        const isInCompetition =
+          await services.competitionManager.isAgentInCompetition(
+            competitionId,
+            agentId,
+          );
+        if (!isInCompetition) {
+          return res.status(400).json({
+            success: false,
+            error: "Agent is not in this competition",
+          });
+        }
+
+        // Reactivate agent in competition using service method
+        await services.competitionManager.reactivateAgentInCompetition(
+          competitionId,
+          agentId,
+        );
+
+        // Return success response
+        res.status(200).json({
+          success: true,
+          message: `Agent ${agent.name} reactivated in competition ${competition.name}`,
+          agent: {
+            id: agent.id,
+            name: agent.name,
+          },
+          competition: {
+            id: competition.id,
+            name: competition.name,
+          },
         });
       } catch (error) {
         next(error);
