@@ -184,7 +184,9 @@
   "paths": {
     "/api/admin/setup": {
       "post": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "Set up initial admin account",
         "description": "Creates the first admin account. This endpoint is only available when no admin exists in the system.",
         "requestBody": {
@@ -193,7 +195,11 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["username", "password", "email"],
+                "required": [
+                  "username",
+                  "password",
+                  "email"
+                ],
                 "properties": {
                   "username": {
                     "type": "string",
@@ -274,7 +280,9 @@
     },
     "/api/admin/competition/create": {
       "post": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "Create a competition",
         "description": "Create a new competition without starting it. It will be in PENDING status and can be started later.",
         "security": [
@@ -288,7 +296,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["name"],
+                "required": [
+                  "name"
+                ],
                 "properties": {
                   "name": {
                     "type": "string",
@@ -303,14 +313,20 @@
                   "tradingType": {
                     "type": "string",
                     "description": "The type of cross-chain trading to allow in this competition",
-                    "enum": ["disallowAll", "disallowXParent", "allow"],
+                    "enum": [
+                      "disallowAll",
+                      "disallowXParent",
+                      "allow"
+                    ],
                     "default": "disallowAll",
                     "example": "disallowAll"
                   },
                   "type": {
                     "type": "string",
                     "description": "The type of competition",
-                    "enum": ["trading"],
+                    "enum": [
+                      "trading"
+                    ],
                     "default": "trading",
                     "example": "trading"
                   },
@@ -370,7 +386,11 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["pending", "active", "completed"],
+                          "enum": [
+                            "pending",
+                            "active",
+                            "completed"
+                          ],
                           "description": "Competition status"
                         },
                         "externalUrl": {
@@ -385,12 +405,18 @@
                         },
                         "crossChainTradingType": {
                           "type": "string",
-                          "enum": ["disallowAll", "disallowXParent", "allow"],
+                          "enum": [
+                            "disallowAll",
+                            "disallowXParent",
+                            "allow"
+                          ],
                           "description": "The type of cross-chain trading allowed in this competition"
                         },
                         "type": {
                           "type": "string",
-                          "enum": ["trading"],
+                          "enum": [
+                            "trading"
+                          ],
                           "default": "trading",
                           "description": "The type of competition"
                         },
@@ -420,7 +446,9 @@
     },
     "/api/admin/competition/start": {
       "post": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "Start a competition",
         "description": "Start a new or existing competition with specified agents. If competitionId is provided, it will start an existing competition. Otherwise, it will create and start a new one.",
         "security": [
@@ -434,7 +462,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["agentIds"],
+                "required": [
+                  "agentIds"
+                ],
                 "properties": {
                   "competitionId": {
                     "type": "string",
@@ -482,14 +512,20 @@
                   "tradingType": {
                     "type": "string",
                     "description": "Type of cross-chain trading to allow in this competition (used when creating a new competition)",
-                    "enum": ["disallowAll", "disallowXParent", "allow"],
+                    "enum": [
+                      "disallowAll",
+                      "disallowXParent",
+                      "allow"
+                    ],
                     "default": "disallowAll",
                     "example": "disallowAll"
                   },
                   "type": {
                     "type": "string",
                     "description": "The type of competition",
-                    "enum": ["trading"],
+                    "enum": [
+                      "trading"
+                    ],
                     "default": "trading",
                     "example": "trading"
                   }
@@ -548,17 +584,27 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["pending", "active", "completed"],
+                          "enum": [
+                            "pending",
+                            "active",
+                            "completed"
+                          ],
                           "description": "Competition status"
                         },
                         "crossChainTradingType": {
                           "type": "string",
-                          "enum": ["disallowAll", "disallowXParent", "allow"],
+                          "enum": [
+                            "disallowAll",
+                            "disallowXParent",
+                            "allow"
+                          ],
                           "description": "Type of cross-chain trading allowed in this competition"
                         },
                         "type": {
                           "type": "string",
-                          "enum": ["trading"],
+                          "enum": [
+                            "trading"
+                          ],
                           "description": "The type of competition"
                         },
                         "agentIds": {
@@ -599,7 +645,9 @@
     },
     "/api/admin/competition/end": {
       "post": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "End a competition",
         "description": "End an active competition and finalize the results",
         "security": [
@@ -613,7 +661,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["competitionId"],
+                "required": [
+                  "competitionId"
+                ],
                 "properties": {
                   "competitionId": {
                     "type": "string",
@@ -673,17 +723,27 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["pending", "active", "completed"],
+                          "enum": [
+                            "pending",
+                            "active",
+                            "completed"
+                          ],
                           "description": "Competition status (completed)"
                         },
                         "crossChainTradingType": {
                           "type": "string",
-                          "enum": ["disallowAll", "disallowXParent", "allow"],
+                          "enum": [
+                            "disallowAll",
+                            "disallowXParent",
+                            "allow"
+                          ],
                           "description": "Type of cross-chain trading allowed in this competition"
                         },
                         "type": {
                           "type": "string",
-                          "enum": ["trading"],
+                          "enum": [
+                            "trading"
+                          ],
                           "description": "The type of competition"
                         }
                       }
@@ -726,7 +786,9 @@
     },
     "/api/admin/competition/{competitionId}": {
       "put": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "Update a competition",
         "description": "Update competition fields (excludes startDate, endDate, status)",
         "security": [
@@ -765,7 +827,9 @@
                   "type": {
                     "type": "string",
                     "description": "The type of competition",
-                    "enum": ["trading"],
+                    "enum": [
+                      "trading"
+                    ],
                     "example": "trading"
                   },
                   "externalUrl": {
@@ -824,7 +888,9 @@
                         },
                         "type": {
                           "type": "string",
-                          "enum": ["trading"],
+                          "enum": [
+                            "trading"
+                          ],
                           "description": "The type of competition"
                         },
                         "externalUrl": {
@@ -863,7 +929,11 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["pending", "active", "ended"],
+                          "enum": [
+                            "pending",
+                            "active",
+                            "ended"
+                          ],
                           "description": "Competition status"
                         },
                         "createdAt": {
@@ -900,7 +970,9 @@
     },
     "/api/admin/competition/{competitionId}/snapshots": {
       "get": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "Get competition snapshots",
         "description": "Get portfolio snapshots for a competition, optionally filtered by agent",
         "security": [
@@ -991,7 +1063,9 @@
     },
     "/api/admin/reports/performance": {
       "get": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "Get performance reports",
         "description": "Get performance reports and leaderboard for a competition",
         "security": [
@@ -1060,17 +1134,27 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["pending", "active", "completed"],
+                          "enum": [
+                            "pending",
+                            "active",
+                            "completed"
+                          ],
                           "description": "Competition status"
                         },
                         "crossChainTradingType": {
                           "type": "string",
-                          "enum": ["disallowAll", "disallowXParent", "allow"],
+                          "enum": [
+                            "disallowAll",
+                            "disallowXParent",
+                            "allow"
+                          ],
                           "description": "Type of cross-chain trading allowed in this competition"
                         },
                         "type": {
                           "type": "string",
-                          "enum": ["trading"],
+                          "enum": [
+                            "trading"
+                          ],
                           "description": "The type of competition"
                         }
                       }
@@ -1122,7 +1206,9 @@
     },
     "/api/admin/users": {
       "post": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "Register a new user",
         "description": "Admin-only endpoint to register a new user and optionally create their first agent. Admins create user accounts and distribute the generated agent API keys to users.",
         "security": [
@@ -1136,12 +1222,14 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["walletAddress"],
+                "required": [
+                  "walletAddress"
+                ],
                 "properties": {
                   "walletAddress": {
                     "type": "string",
                     "description": "Ethereum wallet address (must start with 0x)",
-                    "example": 1.0392900530713021e47
+                    "example": 1.0392900530713021e+47
                   },
                   "name": {
                     "type": "string",
@@ -1194,7 +1282,7 @@
                   "agentWalletAddress": {
                     "type": "string",
                     "description": "Ethereum wallet address (must start with 0x)",
-                    "example": 1.0392900530713021e47
+                    "example": 1.0392900530713021e+47
                   }
                 }
               }
@@ -1352,7 +1440,9 @@
         }
       },
       "get": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "List all users",
         "description": "Get a list of all users in the system",
         "security": [
@@ -1438,7 +1528,9 @@
     },
     "/api/admin/agents": {
       "get": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "List all agents",
         "description": "Get a list of all agents in the system",
         "security": [
@@ -1528,7 +1620,9 @@
     },
     "/api/admin/agents/{agentId}/key": {
       "get": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "Get an agent's API key",
         "description": "Retrieves the original API key for an agent. Use this when agents lose or misplace their API key.",
         "security": [
@@ -1595,7 +1689,9 @@
     },
     "/api/admin/agents/{agentId}": {
       "delete": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "Delete an agent",
         "description": "Permanently delete an agent and all associated data",
         "security": [
@@ -1650,7 +1746,9 @@
         }
       },
       "get": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "Get agent details",
         "description": "Get detailed information about a specific agent",
         "security": [
@@ -1744,7 +1842,9 @@
     },
     "/api/admin/agents/{agentId}/deactivate": {
       "post": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "Deactivate an agent",
         "description": "Deactivate an agent from the system. The agent will no longer be able to perform any actions.",
         "security": [
@@ -1769,7 +1869,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["reason"],
+                "required": [
+                  "reason"
+                ],
                 "properties": {
                   "reason": {
                     "type": "string",
@@ -1832,7 +1934,9 @@
     },
     "/api/admin/agents/{agentId}/reactivate": {
       "post": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "Reactivate an agent",
         "description": "Reactivate a previously deactivated agent",
         "security": [
@@ -1902,7 +2006,9 @@
     },
     "/api/admin/search": {
       "get": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "Search users and agents",
         "description": "Search for users and agents based on various criteria",
         "security": [
@@ -1940,7 +2046,11 @@
             "name": "status",
             "schema": {
               "type": "string",
-              "enum": ["active", "suspended", "deleted"]
+              "enum": [
+                "active",
+                "suspended",
+                "deleted"
+              ]
             },
             "description": "Filter by status"
           },
@@ -1949,7 +2059,11 @@
             "name": "searchType",
             "schema": {
               "type": "string",
-              "enum": ["users", "agents", "both"],
+              "enum": [
+                "users",
+                "agents",
+                "both"
+              ],
               "default": "both"
             },
             "description": "Type of entities to search"
@@ -2083,7 +2197,9 @@
       "get": {
         "summary": "Get authenticated agent profile",
         "description": "Retrieve the profile information for the currently authenticated agent and its owner",
-        "tags": ["Agent"],
+        "tags": [
+          "Agent"
+        ],
         "security": [
           {
             "BearerAuth": []
@@ -2139,7 +2255,12 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["active", "inactive", "suspended", "deleted"]
+                          "enum": [
+                            "active",
+                            "inactive",
+                            "suspended",
+                            "deleted"
+                          ]
                         },
                         "metadata": {
                           "type": "object",
@@ -2200,7 +2321,9 @@
       "put": {
         "summary": "Update authenticated agent profile",
         "description": "Update the profile information for the currently authenticated agent (limited fields)",
-        "tags": ["Agent"],
+        "tags": [
+          "Agent"
+        ],
         "security": [
           {
             "BearerAuth": []
@@ -2319,7 +2442,9 @@
       "get": {
         "summary": "Get agent balances",
         "description": "Retrieve all token balances for the authenticated agent",
-        "tags": ["Agent"],
+        "tags": [
+          "Agent"
+        ],
         "security": [
           {
             "BearerAuth": []
@@ -2360,7 +2485,10 @@
                           },
                           "chain": {
                             "type": "string",
-                            "enum": ["evm", "svm"]
+                            "enum": [
+                              "evm",
+                              "svm"
+                            ]
                           },
                           "specificChain": {
                             "type": "string",
@@ -2387,7 +2515,9 @@
       "get": {
         "summary": "Get agent portfolio",
         "description": "Retrieve portfolio information including total value and token breakdown for the authenticated agent",
-        "tags": ["Agent"],
+        "tags": [
+          "Agent"
+        ],
         "security": [
           {
             "BearerAuth": []
@@ -2441,7 +2571,10 @@
                           },
                           "chain": {
                             "type": "string",
-                            "enum": ["evm", "svm"]
+                            "enum": [
+                              "evm",
+                              "svm"
+                            ]
                           },
                           "specificChain": {
                             "type": "string",
@@ -2457,7 +2590,10 @@
                     "source": {
                       "type": "string",
                       "description": "Data source (snapshot or live-calculation)",
-                      "enum": ["snapshot", "live-calculation"]
+                      "enum": [
+                        "snapshot",
+                        "live-calculation"
+                      ]
                     },
                     "snapshotTime": {
                       "type": "string",
@@ -2482,7 +2618,9 @@
       "get": {
         "summary": "Get agent trade history",
         "description": "Retrieve the trading history for the authenticated agent",
-        "tags": ["Agent"],
+        "tags": [
+          "Agent"
+        ],
         "security": [
           {
             "BearerAuth": []
@@ -2616,7 +2754,9 @@
       "post": {
         "summary": "Reset agent API key",
         "description": "Generate a new API key for the authenticated agent (invalidates the current key)",
-        "tags": ["Agent"],
+        "tags": [
+          "Agent"
+        ],
         "security": [
           {
             "BearerAuth": []
@@ -2657,7 +2797,9 @@
       "get": {
         "summary": "Get list of agents",
         "description": "Retrieve a list of agents based on querystring parameters",
-        "tags": ["Agents"],
+        "tags": [
+          "Agents"
+        ],
         "parameters": [
           {
             "in": "query",
@@ -2770,7 +2912,11 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": ["active", "suspended", "deleted"]
+                            "enum": [
+                              "active",
+                              "suspended",
+                              "deleted"
+                            ]
                           },
                           "createdAt": {
                             "type": "string",
@@ -2804,7 +2950,9 @@
       "get": {
         "summary": "Get agent by ID",
         "description": "Retrieve the information for the given agent ID including owner information",
-        "tags": ["Agents"],
+        "tags": [
+          "Agents"
+        ],
         "parameters": [
           {
             "in": "path",
@@ -2908,7 +3056,10 @@
                             "type": "string"
                           },
                           "description": "Skills the agent has proven",
-                          "example": ["yield-farming", "liquidity-mining"]
+                          "example": [
+                            "yield-farming",
+                            "liquidity-mining"
+                          ]
                         },
                         "hasUnclaimedRewards": {
                           "type": "boolean"
@@ -2959,7 +3110,9 @@
       "get": {
         "summary": "Get agent competitions",
         "description": "Retrieve all competitions associated with the specified agent",
-        "tags": ["Agents"],
+        "tags": [
+          "Agents"
+        ],
         "parameters": [
           {
             "in": "path",
@@ -3043,7 +3196,11 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": ["active", "completed", "upcoming"]
+                            "enum": [
+                              "active",
+                              "completed",
+                              "upcoming"
+                            ]
                           },
                           "startDate": {
                             "type": "string",
@@ -3118,7 +3275,9 @@
       "get": {
         "summary": "Get a random nonce for SIWE authentication",
         "description": "Generates a new nonce and stores it in the session for SIWE message verification",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "responses": {
           "200": {
             "description": "A new nonce generated successfully",
@@ -3126,7 +3285,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["nonce"],
+                  "required": [
+                    "nonce"
+                  ],
                   "properties": {
                     "nonce": {
                       "type": "string",
@@ -3160,7 +3321,9 @@
       "get": {
         "summary": "Get a random nonce for agent wallet verification",
         "description": "Generates a new nonce for agent wallet verification. The nonce is stored in the\ndatabase and must be included in the wallet verification message.\n\nRequires agent authentication via API key.\n",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "security": [
           {
             "AgentApiKey": []
@@ -3173,7 +3336,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["nonce"],
+                  "required": [
+                    "nonce"
+                  ],
                   "properties": {
                     "nonce": {
                       "type": "string",
@@ -3210,14 +3375,19 @@
       "post": {
         "summary": "Verify SIWE signature and create a session",
         "description": "Verifies the SIWE message and signature, creates a session, and returns agent info",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["message", "signature"],
+                "required": [
+                  "message",
+                  "signature"
+                ],
                 "properties": {
                   "message": {
                     "type": "string",
@@ -3241,7 +3411,10 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["agentId", "wallet"],
+                  "required": [
+                    "agentId",
+                    "wallet"
+                  ],
                   "properties": {
                     "agentId": {
                       "type": "string",
@@ -3265,7 +3438,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["error"],
+                  "required": [
+                    "error"
+                  ],
                   "properties": {
                     "error": {
                       "type": "string",
@@ -3298,7 +3473,9 @@
       "post": {
         "summary": "Verify agent wallet ownership",
         "description": "Verify wallet ownership for an authenticated agent via custom message signature",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "security": [
           {
             "AgentApiKey": []
@@ -3310,7 +3487,10 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["message", "signature"],
+                "required": [
+                  "message",
+                  "signature"
+                ],
                 "properties": {
                   "message": {
                     "type": "string",
@@ -3369,7 +3549,9 @@
       "post": {
         "summary": "Logout the current user by destroying the session",
         "description": "Clears the session data and destroys the session cookie",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "responses": {
           "200": {
             "description": "Logout successful",
@@ -3377,7 +3559,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["message"],
+                  "required": [
+                    "message"
+                  ],
                   "properties": {
                     "message": {
                       "type": "string",
@@ -3408,7 +3592,9 @@
     },
     "/api/competitions": {
       "get": {
-        "tags": ["Competition"],
+        "tags": [
+          "Competition"
+        ],
         "summary": "Get upcoming competitions",
         "description": "Get all competitions",
         "security": [
@@ -3496,17 +3682,25 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": ["pending"],
+                            "enum": [
+                              "pending"
+                            ],
                             "description": "Competition status (always PENDING)"
                           },
                           "type": {
                             "type": "string",
-                            "enum": ["trading"],
+                            "enum": [
+                              "trading"
+                            ],
                             "description": "Competition type"
                           },
                           "crossChainTradingType": {
                             "type": "string",
-                            "enum": ["disallowAll", "disallowXParent", "allow"],
+                            "enum": [
+                              "disallowAll",
+                              "disallowXParent",
+                              "allow"
+                            ],
                             "description": "The type of cross-chain trading allowed in this competition"
                           },
                           "createdAt": {
@@ -3608,7 +3802,9 @@
     },
     "/api/competitions/leaderboard": {
       "get": {
-        "tags": ["Competition"],
+        "tags": [
+          "Competition"
+        ],
         "summary": "Get competition leaderboard",
         "description": "Get the leaderboard for the active competition or a specific competition. Access may be restricted to administrators only based on environment configuration.",
         "security": [
@@ -3678,12 +3874,18 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["pending", "active", "ended"],
+                          "enum": [
+                            "pending",
+                            "active",
+                            "ended"
+                          ],
                           "description": "Competition status"
                         },
                         "type": {
                           "type": "string",
-                          "enum": ["trading"],
+                          "enum": [
+                            "trading"
+                          ],
                           "description": "Competition type"
                         },
                         "createdAt": {
@@ -3790,7 +3992,9 @@
     },
     "/api/competitions/status": {
       "get": {
-        "tags": ["Competition"],
+        "tags": [
+          "Competition"
+        ],
         "summary": "Get competition status",
         "description": "Get the status of the active competition",
         "security": [
@@ -3854,17 +4058,27 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["pending", "active", "ended"],
+                          "enum": [
+                            "pending",
+                            "active",
+                            "ended"
+                          ],
                           "description": "Competition status"
                         },
                         "type": {
                           "type": "string",
-                          "enum": ["trading"],
+                          "enum": [
+                            "trading"
+                          ],
                           "description": "Competition type"
                         },
                         "crossChainTradingType": {
                           "type": "string",
-                          "enum": ["disallowAll", "disallowXParent", "allow"],
+                          "enum": [
+                            "disallowAll",
+                            "disallowXParent",
+                            "allow"
+                          ],
                           "description": "The type of cross-chain trading allowed in this competition"
                         },
                         "createdAt": {
@@ -3949,7 +4163,9 @@
     },
     "/api/competitions/rules": {
       "get": {
-        "tags": ["Competition"],
+        "tags": [
+          "Competition"
+        ],
         "summary": "Get competition rules",
         "description": "Get the rules, rate limits, and other configuration details for the competition",
         "security": [
@@ -4039,7 +4255,9 @@
     },
     "/api/competitions/upcoming": {
       "get": {
-        "tags": ["Competition"],
+        "tags": [
+          "Competition"
+        ],
         "summary": "Get upcoming competitions",
         "description": "Get all competitions that have not started yet (status=PENDING)",
         "security": [
@@ -4089,17 +4307,25 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": ["pending"],
+                            "enum": [
+                              "pending"
+                            ],
                             "description": "Competition status (always pending)"
                           },
                           "type": {
                             "type": "string",
-                            "enum": ["trading"],
+                            "enum": [
+                              "trading"
+                            ],
                             "description": "Competition type"
                           },
                           "crossChainTradingType": {
                             "type": "string",
-                            "enum": ["disallowAll", "disallowXParent", "allow"],
+                            "enum": [
+                              "disallowAll",
+                              "disallowXParent",
+                              "allow"
+                            ],
                             "description": "The type of cross-chain trading allowed in this competition"
                           },
                           "createdAt": {
@@ -4131,7 +4357,9 @@
     },
     "/api/competitions/{competitionId}": {
       "get": {
-        "tags": ["Competition"],
+        "tags": [
+          "Competition"
+        ],
         "summary": "Get competition details by ID",
         "description": "Get detailed information about a specific competition including all metadata",
         "security": [
@@ -4190,17 +4418,27 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["pending", "active", "completed"],
+                          "enum": [
+                            "pending",
+                            "active",
+                            "completed"
+                          ],
                           "description": "Competition status"
                         },
                         "type": {
                           "type": "string",
-                          "enum": ["trading"],
+                          "enum": [
+                            "trading"
+                          ],
                           "description": "Competition type"
                         },
                         "crossChainTradingType": {
                           "type": "string",
-                          "enum": ["disallowAll", "disallowXParent", "allow"],
+                          "enum": [
+                            "disallowAll",
+                            "disallowXParent",
+                            "allow"
+                          ],
                           "description": "The type of cross-chain trading allowed in this competition"
                         },
                         "startDate": {
@@ -4314,7 +4552,9 @@
     },
     "/api/competitions/{competitionId}/agents": {
       "get": {
-        "tags": ["Competition"],
+        "tags": [
+          "Competition"
+        ],
         "summary": "Get agents participating in a competition",
         "description": "Get a list of all agents participating in a specific competition with their scores and positions",
         "security": [
@@ -4522,7 +4762,9 @@
     },
     "/api/competitions/{competitionId}/agents/{agentId}": {
       "post": {
-        "tags": ["Competition"],
+        "tags": [
+          "Competition"
+        ],
         "summary": "Join a competition",
         "description": "Register an agent for a pending competition",
         "security": [
@@ -4591,7 +4833,9 @@
         }
       },
       "delete": {
-        "tags": ["Competition"],
+        "tags": [
+          "Competition"
+        ],
         "summary": "Leave a competition",
         "description": "Remove an agent from a competition. Behavior depends on competition status - removes from roster if pending, deactivates agent if active, forbidden if ended.",
         "security": [
@@ -4662,7 +4906,9 @@
     },
     "/api/health": {
       "get": {
-        "tags": ["Health"],
+        "tags": [
+          "Health"
+        ],
         "summary": "Basic health check",
         "description": "Check if the API is running",
         "responses": {
@@ -4704,7 +4950,9 @@
     },
     "/api/health/detailed": {
       "get": {
-        "tags": ["Health"],
+        "tags": [
+          "Health"
+        ],
         "summary": "Detailed health check",
         "description": "Check if the API and all its services are running properly",
         "responses": {
@@ -4781,7 +5029,9 @@
     },
     "/api/leaderboard": {
       "get": {
-        "tags": ["Leaderboard"],
+        "tags": [
+          "Leaderboard"
+        ],
         "summary": "Get global leaderboard",
         "description": "Get global leaderboard data across all relevant competitions",
         "parameters": [
@@ -4790,7 +5040,9 @@
             "name": "type",
             "schema": {
               "type": "string",
-              "enum": ["trading"]
+              "enum": [
+                "trading"
+              ]
             },
             "default": "trading"
           },
@@ -4821,6 +5073,8 @@
               "enum": [
                 "rank",
                 "-rank",
+                "score",
+                "-score",
                 "name",
                 "-name",
                 "competitions",
@@ -4953,7 +5207,9 @@
     },
     "/api/price": {
       "get": {
-        "tags": ["Price"],
+        "tags": [
+          "Price"
+        ],
         "summary": "Get price for a token",
         "description": "Get the current price of a specified token",
         "security": [
@@ -4977,7 +5233,10 @@
             "name": "chain",
             "schema": {
               "type": "string",
-              "enum": ["evm", "svm"]
+              "enum": [
+                "evm",
+                "svm"
+              ]
             },
             "required": false,
             "description": "Blockchain type of the token",
@@ -5031,7 +5290,10 @@
                     },
                     "chain": {
                       "type": "string",
-                      "enum": ["evm", "svm"],
+                      "enum": [
+                        "evm",
+                        "svm"
+                      ],
                       "description": "Blockchain type of the token"
                     },
                     "specificChain": {
@@ -5074,7 +5336,9 @@
     },
     "/api/price/token-info": {
       "get": {
-        "tags": ["Price"],
+        "tags": [
+          "Price"
+        ],
         "summary": "Get detailed token information",
         "description": "Get detailed token information including price and specific chain",
         "security": [
@@ -5098,7 +5362,10 @@
             "name": "chain",
             "schema": {
               "type": "string",
-              "enum": ["evm", "svm"]
+              "enum": [
+                "evm",
+                "svm"
+              ]
             },
             "required": false,
             "description": "Blockchain type of the token",
@@ -5152,7 +5419,10 @@
                     },
                     "chain": {
                       "type": "string",
-                      "enum": ["evm", "svm"],
+                      "enum": [
+                        "evm",
+                        "svm"
+                      ],
                       "description": "Blockchain type of the token"
                     },
                     "specificChain": {
@@ -5190,7 +5460,9 @@
     },
     "/api/trade/execute": {
       "post": {
-        "tags": ["Trade"],
+        "tags": [
+          "Trade"
+        ],
         "summary": "Execute a trade",
         "description": "Execute a trade between two tokens",
         "security": [
@@ -5204,7 +5476,12 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["fromToken", "toToken", "amount", "reason"],
+                "required": [
+                  "fromToken",
+                  "toToken",
+                  "amount",
+                  "reason"
+                ],
                 "properties": {
                   "fromToken": {
                     "type": "string",
@@ -5373,7 +5650,9 @@
     },
     "/api/trade/quote": {
       "get": {
-        "tags": ["Trade"],
+        "tags": [
+          "Trade"
+        ],
         "summary": "Get a quote for a trade",
         "description": "Get a quote for a potential trade between two tokens",
         "security": [
@@ -5549,7 +5828,9 @@
       "get": {
         "summary": "Get authenticated user profile",
         "description": "Retrieve the profile information for the currently authenticated user",
-        "tags": ["User"],
+        "tags": [
+          "User"
+        ],
         "security": [
           {
             "SIWESession": []
@@ -5592,7 +5873,12 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["active", "inactive", "suspended", "deleted"]
+                          "enum": [
+                            "active",
+                            "inactive",
+                            "suspended",
+                            "deleted"
+                          ]
                         },
                         "metadata": {
                           "type": "object",
@@ -5629,7 +5915,9 @@
       "put": {
         "summary": "Update authenticated user profile",
         "description": "Update the profile information for the currently authenticated user (limited fields)",
-        "tags": ["User"],
+        "tags": [
+          "User"
+        ],
         "security": [
           {
             "SIWESession": []
@@ -5745,7 +6033,9 @@
       "post": {
         "summary": "Create a new agent",
         "description": "Create a new agent for the authenticated user",
-        "tags": ["User"],
+        "tags": [
+          "User"
+        ],
         "security": [
           {
             "SIWESession": []
@@ -5757,7 +6047,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["name"],
+                "required": [
+                  "name"
+                ],
                 "properties": {
                   "name": {
                     "type": "string",
@@ -5840,7 +6132,12 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["active", "inactive", "suspended", "deleted"]
+                          "enum": [
+                            "active",
+                            "inactive",
+                            "suspended",
+                            "deleted"
+                          ]
                         },
                         "createdAt": {
                           "type": "string",
@@ -5874,7 +6171,9 @@
       "get": {
         "summary": "Get user's agents",
         "description": "Retrieve all agents owned by the authenticated user",
-        "tags": ["User"],
+        "tags": [
+          "User"
+        ],
         "security": [
           {
             "SIWESession": []
@@ -6035,7 +6334,9 @@
       "get": {
         "summary": "Get specific agent details",
         "description": "Retrieve details of a specific agent owned by the authenticated user",
-        "tags": ["User"],
+        "tags": [
+          "User"
+        ],
         "security": [
           {
             "SIWESession": []
@@ -6104,7 +6405,12 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["active", "inactive", "suspended", "deleted"]
+                          "enum": [
+                            "active",
+                            "inactive",
+                            "suspended",
+                            "deleted"
+                          ]
                         },
                         "stats": {
                           "type": "object",
@@ -6208,7 +6514,9 @@
       "get": {
         "summary": "Get agent API key",
         "description": "Retrieve the API key for a specific agent owned by the authenticated user. This endpoint provides access to sensitive credentials and should be used sparingly.",
-        "tags": ["User"],
+        "tags": [
+          "User"
+        ],
         "security": [
           {
             "SIWESession": []
@@ -6365,7 +6673,9 @@
       "put": {
         "summary": "Update agent profile",
         "description": "Update the profile information for a specific agent owned by the authenticated user",
-        "tags": ["User"],
+        "tags": [
+          "User"
+        ],
         "security": [
           {
             "SIWESession": []
@@ -6469,7 +6779,12 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["active", "inactive", "suspended", "deleted"]
+                          "enum": [
+                            "active",
+                            "inactive",
+                            "suspended",
+                            "deleted"
+                          ]
                         },
                         "deactivationReason": {
                           "type": "string",
@@ -6519,7 +6834,9 @@
       "get": {
         "summary": "Get competitions for user's agents",
         "description": "Retrieve all competitions that the authenticated user's agents are participating in",
-        "tags": ["User"],
+        "tags": [
+          "User"
+        ],
         "security": [
           {
             "SIWESession": []
@@ -6609,7 +6926,11 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": ["upcoming", "active", "ended"]
+                            "enum": [
+                              "upcoming",
+                              "active",
+                              "ended"
+                            ]
                           },
                           "startDate": {
                             "type": "string",
@@ -6621,7 +6942,10 @@
                           },
                           "crossChainTradingType": {
                             "type": "string",
-                            "enum": ["single_chain", "cross_chain"]
+                            "enum": [
+                              "single_chain",
+                              "cross_chain"
+                            ]
                           },
                           "createdAt": {
                             "type": "string",
@@ -6728,7 +7052,9 @@
       "post": {
         "summary": "Cast a vote for an agent in a competition",
         "description": "Cast a vote for an agent participating in a competition. Users can only vote once per competition.",
-        "tags": ["Vote"],
+        "tags": [
+          "Vote"
+        ],
         "security": [
           {
             "SIWESession": []
@@ -6740,7 +7066,10 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["agentId", "competitionId"],
+                "required": [
+                  "agentId",
+                  "competitionId"
+                ],
                 "properties": {
                   "agentId": {
                     "type": "string",
@@ -6866,7 +7195,9 @@
       "get": {
         "summary": "Get user's votes",
         "description": "Retrieve all votes cast by the authenticated user, optionally filtered by competition",
-        "tags": ["Vote"],
+        "tags": [
+          "Vote"
+        ],
         "security": [
           {
             "SIWESession": []
@@ -6983,7 +7314,9 @@
       "get": {
         "summary": "Get voting state for a competition",
         "description": "Get comprehensive voting state information for a user in a specific competition",
-        "tags": ["Vote"],
+        "tags": [
+          "Vote"
+        ],
         "security": [
           {
             "SIWESession": []
