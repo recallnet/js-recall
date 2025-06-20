@@ -1,5 +1,13 @@
 # @recallnet/agent-toolkit
 
+## 0.0.8
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @recallnet/chains@0.0.12
+  - @recallnet/sdk@0.0.14
+
 ## 0.0.7
 
 ### Patch Changes
