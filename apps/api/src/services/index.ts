@@ -6,7 +6,7 @@ import { BalanceManager } from "@/services/balance-manager.service.js";
 import { CompetitionManager } from "@/services/competition-manager.service.js";
 import { ConfigurationService } from "@/services/configuration.service.js";
 import { LeaderboardService } from "@/services/leaderboard.service.js";
-import { ObjectIndexService } from "@/services/objectIndex.service.js";
+import { ObjectIndexService } from "@/services/object-index.service.js";
 import { PortfolioSnapshotter } from "@/services/portfolio-snapshotter.service.js";
 import { PriceTracker } from "@/services/price-tracker.service.js";
 import { SchedulerService } from "@/services/scheduler.service.js";

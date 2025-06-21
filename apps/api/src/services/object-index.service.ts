@@ -1,10 +1,7 @@
-import { eq } from "drizzle-orm";
-import { db } from "@/database/db.js";
-import { objectIndex } from "@/database/schema/syncing/defs.js";
-import { trades } from "@/database/schema/trading/defs.js";
-import { agentRankHistory } from "@/database/schema/ranking/defs.js";
-import { competitionsLeaderboard } from "@/database/schema/core/defs.js";
-import { portfolioSnapshots } from "@/database/schema/trading/defs.js";
+import { objectIndexRepository } from "@/database/repositories/object-index.repository.js";
+import * as tradeRepository from "@/database/repositories/trade-repository.js";
+import * as agentRankRepository from "@/database/repositories/agentrank-repository.js";
+import * as competitionRepository from "@/database/repositories/competition-repository.js";
 
 export class ObjectIndexService {
   /**
@@ -13,16 +10,8 @@ export class ObjectIndexService {
   async populateTrades(competitionId?: string) {
     console.log(`Populating trades${competitionId ? ` for competition ${competitionId}` : ''}`);
     
-    const query = competitionId 
-      ? db.query.trades.findMany({ 
-          where: eq(trades.competitionId, competitionId),
-          orderBy: (trades, { desc }) => [desc(trades.timestamp)]
-        })
-      : db.query.trades.findMany({
-          orderBy: (trades, { desc }) => [desc(trades.timestamp)]
-        });
-
-    const tradesToSync = await query;
+    // Use trade repository to fetch trades
+    const tradesToSync = await tradeRepository.getAllTrades(competitionId);
     
     if (tradesToSync.length === 0) {
       console.log('No trades to sync');
@@ -45,11 +34,11 @@ export class ObjectIndexService {
           to: trade.toChain
         }
       },
-      eventTimestamp: trade.timestamp,
+      eventTimestamp: trade.timestamp || new Date(),
       createdAt: new Date()
     }));
 
-    await db.insert(objectIndex).values(entries);
+    await objectIndexRepository.insertObjectIndexEntries(entries);
     console.log(`Inserted ${entries.length} trade entries`);
   }
 
@@ -59,16 +48,8 @@ export class ObjectIndexService {
   async populateAgentRankHistory(competitionId?: string) {
     console.log(`Populating agent rank history${competitionId ? ` for competition ${competitionId}` : ''}`);
     
-    const query = competitionId
-      ? db.query.agentRankHistory.findMany({
-          where: eq(agentRankHistory.competitionId, competitionId),
-          orderBy: (agentRankHistory, { desc }) => [desc(agentRankHistory.createdAt)]
-        })
-      : db.query.agentRankHistory.findMany({
-          orderBy: (agentRankHistory, { desc }) => [desc(agentRankHistory.createdAt)]
-        });
-
-    const rankHistory = await query;
+    // Use agent rank repository to fetch history
+    const rankHistory = await agentRankRepository.getAllAgentRankHistory(competitionId);
     
     if (rankHistory.length === 0) {
       console.log('No agent rank history to sync');
@@ -91,7 +72,7 @@ export class ObjectIndexService {
       createdAt: new Date()
     }));
 
-    await db.insert(objectIndex).values(entries);
+    await objectIndexRepository.insertObjectIndexEntries(entries);
     console.log(`Inserted ${entries.length} agent rank history entries`);
   }
 
@@ -101,16 +82,8 @@ export class ObjectIndexService {
   async populateCompetitionsLeaderboard(competitionId?: string) {
     console.log(`Populating competitions leaderboard${competitionId ? ` for competition ${competitionId}` : ''}`);
     
-    const query = competitionId
-      ? db.query.competitionsLeaderboard.findMany({
-          where: eq(competitionsLeaderboard.competitionId, competitionId),
-          orderBy: (competitionsLeaderboard, { asc }) => [asc(competitionsLeaderboard.rank)]
-        })
-      : db.query.competitionsLeaderboard.findMany({
-          orderBy: (competitionsLeaderboard, { desc }) => [desc(competitionsLeaderboard.createdAt)]
-        });
-
-    const leaderboard = await query;
+    // Use competition repository to fetch leaderboard
+    const leaderboard = await competitionRepository.getAllCompetitionsLeaderboard(competitionId);
     
     if (leaderboard.length === 0) {
       console.log('No leaderboard entries to sync');
@@ -132,7 +105,7 @@ export class ObjectIndexService {
       createdAt: new Date()
     }));
 
-    await db.insert(objectIndex).values(entries);
+    await objectIndexRepository.insertObjectIndexEntries(entries);
     console.log(`Inserted ${entries.length} leaderboard entries`);
   }
 
@@ -142,34 +115,33 @@ export class ObjectIndexService {
   async populatePortfolioSnapshots(competitionId?: string) {
     console.log(`Populating portfolio snapshots${competitionId ? ` for competition ${competitionId}` : ''}`);
     
-    const query = competitionId
-      ? db.query.portfolioSnapshots.findMany({
-          where: eq(portfolioSnapshots.competitionId, competitionId),
-          with: {
-            portfolioTokenValues: true
-          },
-          orderBy: (portfolioSnapshots, { desc }) => [desc(portfolioSnapshots.timestamp)]
-        })
-      : db.query.portfolioSnapshots.findMany({
-          with: {
-            portfolioTokenValues: true
-          },
-          orderBy: (portfolioSnapshots, { desc }) => [desc(portfolioSnapshots.timestamp)]
-        });
-
-    const snapshots = await query;
+    // Use competition repository to fetch snapshots
+    const snapshots = await competitionRepository.getAllPortfolioSnapshots(competitionId);
     
     if (snapshots.length === 0) {
       console.log('No portfolio snapshots to sync');
       return;
     }
 
+    // Fetch token values for all snapshots using the new batch method
+    const snapshotIds = snapshots.map(s => s.id);
+    const allTokenValues = await competitionRepository.getPortfolioTokenValuesByIds(snapshotIds);
+    
+    // Group token values by snapshot ID
+    const tokenValuesBySnapshot = allTokenValues.reduce((acc, tv) => {
+      if (!acc[tv.portfolioSnapshotId]) {
+        acc[tv.portfolioSnapshotId] = [];
+      }
+      acc[tv.portfolioSnapshotId]!.push(tv);
+      return acc;
+    }, {} as Record<number, typeof allTokenValues>);
+
     const entries = snapshots.map(snapshot => {
+      const tokenValues = tokenValuesBySnapshot[snapshot.id] || [];
       const snapshotData = {
         ...snapshot,
-        tokenValues: snapshot.portfolioTokenValues
+        tokenValues
       };
-      delete (snapshotData as Record<string, unknown>).portfolioTokenValues;
 
       return {
         id: crypto.randomUUID(),
@@ -180,15 +152,15 @@ export class ObjectIndexService {
         sizeBytes: Buffer.byteLength(JSON.stringify(snapshotData)),
         metadata: {
           totalValue: snapshot.totalValue,
-          tokenCount: snapshot.portfolioTokenValues.length,
+          tokenCount: tokenValues.length,
           snapshotId: snapshot.id
         },
-        eventTimestamp: snapshot.timestamp,
+        eventTimestamp: snapshot.timestamp || new Date(),
         createdAt: new Date()
       };
     });
 
-    await db.insert(objectIndex).values(entries);
+    await objectIndexRepository.insertObjectIndexEntries(entries);
     console.log(`Inserted ${entries.length} portfolio snapshot entries`);
   }
 
@@ -198,9 +170,8 @@ export class ObjectIndexService {
   async populateAgentRank() {
     console.log('Populating current agent ranks');
     
-    const ranks = await db.query.agentRank.findMany({
-      orderBy: (agentRank, { desc }) => [desc(agentRank.ordinal)]
-    });
+    // Use agent rank repository to fetch raw ranks
+    const ranks = await agentRankRepository.getAllRawAgentRanks();
     
     if (ranks.length === 0) {
       console.log('No agent ranks to sync');
@@ -223,7 +194,7 @@ export class ObjectIndexService {
       createdAt: new Date()
     }));
 
-    await db.insert(objectIndex).values(entries);
+    await objectIndexRepository.insertObjectIndexEntries(entries);
     console.log(`Inserted ${entries.length} agent rank entries`);
   }
 
@@ -264,7 +235,7 @@ export class ObjectIndexService {
       createdAt: new Date()
     };
 
-    await db.insert(objectIndex).values(entry);
+    await objectIndexRepository.insertObjectIndexEntry(entry);
   }
 
   /**
@@ -294,7 +265,7 @@ export class ObjectIndexService {
       createdAt: new Date()
     };
 
-    await db.insert(objectIndex).values(entry);
+    await objectIndexRepository.insertObjectIndexEntry(entry);
   }
 }
 
