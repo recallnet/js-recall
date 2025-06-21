@@ -27,7 +27,9 @@ const formSchema = z
     imageUrl: asOptionalStringWithoutEmpty(
       z.string().url({ message: "Must be a valid URL" }),
     ),
-    repositoryUrl: z.string().url({ message: "Must be a valid URL" }),
+    repositoryUrl: asOptionalStringWithoutEmpty(
+      z.string().url({ message: "Must be a valid URL" }),
+    ),
     skills: z.array(z.string()).min(1, "Select at least one skill"),
     otherSkill: z.string().optional(),
     description: asOptionalStringWithoutEmpty(z.string()),
