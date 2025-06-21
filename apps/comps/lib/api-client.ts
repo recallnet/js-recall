@@ -34,12 +34,67 @@ import {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
 /**
+ * Base HTTP error class with status code support
+ */
+export class HttpError extends Error {
+  public readonly statusCode: number;
+  public readonly statusText: string;
+
+  constructor(statusCode: number, statusText: string, message?: string) {
+    super(message || statusText);
+    this.name = "HttpError";
+    this.statusCode = statusCode;
+    this.statusText = statusText;
+  }
+}
+
+/**
  * Custom error class for unauthorized (401) responses
  */
-export class UnauthorizedError extends Error {
-  constructor(message: string = "Unauthorized access") {
-    super(message);
+export class UnauthorizedError extends HttpError {
+  constructor(message?: string) {
+    super(401, "Unauthorized", message || "Unauthorized access");
     this.name = "UnauthorizedError";
+  }
+}
+
+/**
+ * Custom error class for not found (404) responses
+ */
+export class NotFoundError extends HttpError {
+  constructor(message?: string) {
+    super(404, "Not Found", message || "Resource not found");
+    this.name = "NotFoundError";
+  }
+}
+
+/**
+ * Custom error class for conflict (409) responses
+ */
+export class ConflictError extends HttpError {
+  constructor(message?: string) {
+    super(409, "Conflict", message || "Conflict");
+    this.name = "ConflictError";
+  }
+}
+
+/**
+ * Custom error class for bad request (400) responses
+ */
+export class BadRequestError extends HttpError {
+  constructor(message?: string) {
+    super(400, "Bad Request", message || "Bad request");
+    this.name = "BadRequestError";
+  }
+}
+
+/**
+ * Custom error class for server errors (5xx) responses
+ */
+export class ServerError extends HttpError {
+  constructor(statusCode: number, message?: string) {
+    super(statusCode, "Server Error", message || "Internal server error");
+    this.name = "ServerError";
   }
 }
 
@@ -76,15 +131,32 @@ export class ApiClient {
     });
 
     if (!response.ok) {
-      if (response.status === 401) {
-        throw new UnauthorizedError();
-      }
       const data = await response.json().catch(() => ({
         error: "An unknown error occurred",
       }));
-      throw new Error(
-        data.error || `Request failed with status ${response.status}`,
-      );
+
+      const errorMessage =
+        data.error || `Request failed with status ${response.status}`;
+
+      // Create appropriate error based on status code
+      switch (response.status) {
+        case 400:
+          throw new BadRequestError(errorMessage);
+        case 401:
+          throw new UnauthorizedError(errorMessage);
+        case 404:
+          throw new NotFoundError(errorMessage);
+        case 409:
+          throw new ConflictError(errorMessage);
+        case 500:
+          throw new ServerError(response.status, errorMessage);
+        default:
+          throw new HttpError(
+            response.status,
+            response.statusText,
+            errorMessage,
+          );
+      }
     }
 
     return response.json() as Promise<T>;

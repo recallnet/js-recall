@@ -2,11 +2,14 @@
 
 import React, { Suspense, useState } from "react";
 
+import { toast } from "@recallnet/ui2/components/toast";
+
 import { AuthGuard } from "@/components/auth-guard";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { CreateAgent, FormData } from "@/components/create-agent";
 import { useUserAgent } from "@/hooks/useAgent";
 import { useCreateAgent } from "@/hooks/useCreateAgent";
+import { ConflictError } from "@/lib/api-client";
 
 function CreateAgentView() {
   const createAgent = useCreateAgent();
@@ -34,8 +37,14 @@ function CreateAgentView() {
 
       setCreatedAgentId(result.agent.id);
       setApiKey(result.agent.apiKey);
-    } catch {
-      // Error handled by react-query or can show toast here
+    } catch (error) {
+      if (error instanceof ConflictError) {
+        toast.error(
+          "An agent with this name already exists. Please choose a different name.",
+        );
+      } else {
+        toast.error("There was an error creating your agent.");
+      }
     }
   };
 
