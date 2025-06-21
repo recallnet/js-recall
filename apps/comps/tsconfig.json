@@ -23,9 +23,7 @@
     "next.config.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts",
-    "components/create-agent.tsx",
-    "../../packages/ui2/src/components/badge.tsx"
+    ".next/types/**/*.ts"
   ],
   "exclude": ["node_modules"]
 }
