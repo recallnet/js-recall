@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from "uuid";
 import { objectIndexRepository } from "@/database/repositories/object-index.repository.js";
 import * as tradeRepository from "@/database/repositories/trade-repository.js";
 import * as agentRankRepository from "@/database/repositories/agentrank-repository.js";
@@ -19,7 +20,7 @@ export class ObjectIndexService {
     }
 
     const entries = tradesToSync.map(trade => ({
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       competitionId: trade.competitionId,
       agentId: trade.agentId,
       dataType: 'trade',
@@ -57,7 +58,7 @@ export class ObjectIndexService {
     }
 
     const entries = rankHistory.map(rank => ({
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       competitionId: rank.competitionId,
       agentId: rank.agentId,
       dataType: 'agent_rank_history',
@@ -91,7 +92,7 @@ export class ObjectIndexService {
     }
 
     const entries = leaderboard.map(entry => ({
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       competitionId: entry.competitionId,
       agentId: entry.agentId,
       dataType: 'competitions_leaderboard',
@@ -144,7 +145,7 @@ export class ObjectIndexService {
       };
 
       return {
-        id: crypto.randomUUID(),
+        id: uuidv4(),
         competitionId: snapshot.competitionId,
         agentId: snapshot.agentId,
         dataType: 'portfolio_snapshot',
@@ -179,7 +180,7 @@ export class ObjectIndexService {
     }
 
     const entries = ranks.map(rank => ({
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       competitionId: null, // No competition association
       agentId: rank.agentId,
       dataType: 'agent_rank',
@@ -216,7 +217,7 @@ export class ObjectIndexService {
     [key: string]: unknown;
   }) {
     const entry = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       competitionId: trade.competitionId as string | null,
       agentId: trade.agentId as string,
       dataType: 'trade',
@@ -250,7 +251,7 @@ export class ObjectIndexService {
     [key: string]: unknown;
   }) {
     const entry = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       competitionId: null,
       agentId: rank.agentId as string,
       dataType: 'agent_rank',
