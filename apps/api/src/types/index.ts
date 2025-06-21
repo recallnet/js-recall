@@ -598,6 +598,38 @@ export const CompetitionTypeSchema = z.enum(COMPETITION_TYPE_VALUES);
  */
 export type CompetitionType = z.infer<typeof CompetitionTypeSchema>;
 
+/**
+ * Sync data type values for zod or database enum.
+ */
+export const SYNC_DATA_TYPE_VALUES = [
+  "trade",
+  "agent_rank_history",
+  "agent_rank",
+  "competitions_leaderboard",
+  "portfolio_snapshot"
+] as const;
+
+/**
+ * Sync data types.
+ */
+export const SYNC_DATA_TYPE = {
+  TRADE: "trade",
+  AGENT_RANK_HISTORY: "agent_rank_history",
+  AGENT_RANK: "agent_rank",
+  COMPETITIONS_LEADERBOARD: "competitions_leaderboard",
+  PORTFOLIO_SNAPSHOT: "portfolio_snapshot"
+} as const;
+
+/**
+ * Zod schema for sync data types.
+ */
+export const SyncDataTypeSchema = z.enum(SYNC_DATA_TYPE_VALUES);
+
+/**
+ * Sync data type.
+ */
+export type SyncDataType = z.infer<typeof SyncDataTypeSchema>;
+
 export const CompetitionAllowedUpdateSchema = z.strictObject({
   name: z.string().optional(),
   description: z.string().optional(),

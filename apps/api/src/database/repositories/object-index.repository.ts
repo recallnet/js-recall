@@ -1,5 +1,6 @@
 import { db } from "@/database/db.js";
 import { objectIndex } from "@/database/schema/syncing/defs.js";
+import { SyncDataType } from "@/types/index.js";
 
 export class ObjectIndexRepository {
   /**
@@ -9,7 +10,7 @@ export class ObjectIndexRepository {
     id: string;
     competitionId: string | null;
     agentId: string;
-    dataType: string;
+    dataType: SyncDataType;
     data: string;
     sizeBytes: number;
     metadata: unknown;
@@ -27,7 +28,7 @@ export class ObjectIndexRepository {
     id: string;
     competitionId: string | null;
     agentId: string;
-    dataType: string;
+    dataType: SyncDataType;
     data: string;
     sizeBytes: number;
     metadata: unknown;

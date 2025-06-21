@@ -11,6 +11,8 @@ import {
   AgentSearchParams,
   COMPETITION_STATUS,
   CROSS_CHAIN_TRADING_TYPE,
+  SYNC_DATA_TYPE,
+  SyncDataTypeSchema,
   UserSearchParams,
 } from "@/types/index.js";
 
@@ -723,26 +725,43 @@ export function makeAdminController(services: ServiceRegistry) {
       try {
         const { competitionId, dataTypes } = req.body;
 
-        const typesToSync = dataTypes || ['trade', 'agent_rank_history', 'competitions_leaderboard'];
+        let validatedCompetitionId: string | undefined;
+        if (competitionId) {
+          validatedCompetitionId = ensureUuid(competitionId);
+        }
+
+        const defaultDataTypes = [SYNC_DATA_TYPE.TRADE, SYNC_DATA_TYPE.AGENT_RANK_HISTORY, SYNC_DATA_TYPE.COMPETITIONS_LEADERBOARD];
+        let typesToSync: string[] = defaultDataTypes;
+
+        if (dataTypes) {
+          const validationResults = dataTypes.map((dt: unknown) => SyncDataTypeSchema.safeParse(dt));
+          const hasErrors = validationResults.some((result: { success: boolean }) => !result.success);
+          
+          if (hasErrors) {
+            throw new ApiError(400, "Invalid data type(s) provided");
+          }
+          
+          typesToSync = validationResults.map((result: { data?: any }) => result.data!).filter(Boolean);
+        }
         
         console.log(`Starting object index sync for types: ${typesToSync.join(', ')}`);
         
         for (const dataType of typesToSync) {
           try {
             switch (dataType) {
-              case 'trade':
-                await services.objectIndexService.populateTrades(competitionId);
+              case SYNC_DATA_TYPE.TRADE:
+                await services.objectIndexService.populateTrades(validatedCompetitionId);
                 break;
-              case 'agent_rank_history':
-                await services.objectIndexService.populateAgentRankHistory(competitionId);
+              case SYNC_DATA_TYPE.AGENT_RANK_HISTORY:
+                await services.objectIndexService.populateAgentRankHistory(validatedCompetitionId);
                 break;
-              case 'competitions_leaderboard':
-                await services.objectIndexService.populateCompetitionsLeaderboard(competitionId);
+              case SYNC_DATA_TYPE.COMPETITIONS_LEADERBOARD:
+                await services.objectIndexService.populateCompetitionsLeaderboard(validatedCompetitionId);
                 break;
-              case 'portfolio_snapshot':
-                await services.objectIndexService.populatePortfolioSnapshots(competitionId);
+              case SYNC_DATA_TYPE.PORTFOLIO_SNAPSHOT:
+                await services.objectIndexService.populatePortfolioSnapshots(validatedCompetitionId);
                 break;
-              case 'agent_rank':
+              case SYNC_DATA_TYPE.AGENT_RANK:
                 await services.objectIndexService.populateAgentRank();
                 break;
               default:
@@ -758,7 +777,7 @@ export function makeAdminController(services: ServiceRegistry) {
           success: true,
           message: 'Object index sync initiated',
           dataTypes: typesToSync,
-          competitionId: competitionId || 'all'
+          competitionId: validatedCompetitionId || 'all'
         });
       } catch (error) {
         next(error);

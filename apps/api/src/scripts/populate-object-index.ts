@@ -1,13 +1,14 @@
 import { ServiceRegistry } from "@/services/index.js";
+import { SYNC_DATA_TYPE, SyncDataType } from "@/types/index.js";
 
 interface PopulateOptions {
-  dataTypes?: string[];
+  dataTypes?: SyncDataType[];
   competitionId?: string;
   batchSize?: number;
 }
 
 async function populateObjectIndex(options: PopulateOptions) {
-  const { dataTypes = ['trade'], competitionId, batchSize = 1000 } = options;
+  const { dataTypes = [SYNC_DATA_TYPE.TRADE], competitionId, batchSize = 1000 } = options;
   const services = ServiceRegistry.getInstance();
 
   console.log('Starting object_index population...');
@@ -18,19 +19,19 @@ async function populateObjectIndex(options: PopulateOptions) {
     
     try {
       switch (dataType) {
-        case 'trade':
+        case SYNC_DATA_TYPE.TRADE:
           await services.objectIndexService.populateTrades(competitionId);
           break;
-        case 'agent_rank_history':
+        case SYNC_DATA_TYPE.AGENT_RANK_HISTORY:
           await services.objectIndexService.populateAgentRankHistory(competitionId);
           break;
-        case 'competitions_leaderboard':
+        case SYNC_DATA_TYPE.COMPETITIONS_LEADERBOARD:
           await services.objectIndexService.populateCompetitionsLeaderboard(competitionId);
           break;
-        case 'portfolio_snapshot':
+        case SYNC_DATA_TYPE.PORTFOLIO_SNAPSHOT:
           await services.objectIndexService.populatePortfolioSnapshots(competitionId);
           break;
-        case 'agent_rank':
+        case SYNC_DATA_TYPE.AGENT_RANK:
           await services.objectIndexService.populateAgentRank(); // No competitionId
           break;
         default:
@@ -54,7 +55,7 @@ function parseArgs() {
     const arg = args[i];
     
     if (arg === '--data-types' && args[i + 1]) {
-      options.dataTypes = args[i + 1]!.split(',');
+      options.dataTypes = args[i + 1]!.split(',') as SyncDataType[];
       i++;
     } else if (arg === '--competition-id' && args[i + 1]) {
       options.competitionId = args[i + 1];
@@ -70,7 +71,7 @@ function parseArgs() {
 
 // Execute the script if run directly
 const defaultOptions: PopulateOptions = {
-  dataTypes: ['trade', 'agent_rank_history', 'competitions_leaderboard'],
+  dataTypes: [SYNC_DATA_TYPE.TRADE, SYNC_DATA_TYPE.AGENT_RANK_HISTORY, SYNC_DATA_TYPE.COMPETITIONS_LEADERBOARD],
   batchSize: 1000
 };
 

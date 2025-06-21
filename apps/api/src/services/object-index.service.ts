@@ -23,7 +23,7 @@ export class ObjectIndexService {
       id: uuidv4(),
       competitionId: trade.competitionId,
       agentId: trade.agentId,
-      dataType: 'trade',
+      dataType: 'trade' as const,
       data: JSON.stringify(trade),
       sizeBytes: Buffer.byteLength(JSON.stringify(trade)),
       metadata: {
@@ -61,7 +61,7 @@ export class ObjectIndexService {
       id: uuidv4(),
       competitionId: rank.competitionId,
       agentId: rank.agentId,
-      dataType: 'agent_rank_history',
+      dataType: 'agent_rank_history' as const,
       data: JSON.stringify(rank),
       sizeBytes: Buffer.byteLength(JSON.stringify(rank)),
       metadata: {
@@ -95,7 +95,7 @@ export class ObjectIndexService {
       id: uuidv4(),
       competitionId: entry.competitionId,
       agentId: entry.agentId,
-      dataType: 'competitions_leaderboard',
+      dataType: 'competitions_leaderboard' as const,
       data: JSON.stringify(entry),
       sizeBytes: Buffer.byteLength(JSON.stringify(entry)),
       metadata: {
@@ -148,7 +148,7 @@ export class ObjectIndexService {
         id: uuidv4(),
         competitionId: snapshot.competitionId,
         agentId: snapshot.agentId,
-        dataType: 'portfolio_snapshot',
+        dataType: 'portfolio_snapshot' as const,
         data: JSON.stringify(snapshotData),
         sizeBytes: Buffer.byteLength(JSON.stringify(snapshotData)),
         metadata: {
@@ -183,7 +183,7 @@ export class ObjectIndexService {
       id: uuidv4(),
       competitionId: null, // No competition association
       agentId: rank.agentId,
-      dataType: 'agent_rank',
+      dataType: 'agent_rank' as const,
       data: JSON.stringify(rank),
       sizeBytes: Buffer.byteLength(JSON.stringify(rank)),
       metadata: {
@@ -220,7 +220,7 @@ export class ObjectIndexService {
       id: uuidv4(),
       competitionId: trade.competitionId as string | null,
       agentId: trade.agentId as string,
-      dataType: 'trade',
+      dataType: 'trade' as const,
       data: JSON.stringify(trade),
       sizeBytes: Buffer.byteLength(JSON.stringify(trade)),
       metadata: {
@@ -254,7 +254,7 @@ export class ObjectIndexService {
       id: uuidv4(),
       competitionId: null,
       agentId: rank.agentId as string,
-      dataType: 'agent_rank',
+      dataType: 'agent_rank' as const,
       data: JSON.stringify(rank),
       sizeBytes: Buffer.byteLength(JSON.stringify(rank)),
       metadata: {
