@@ -115,6 +115,7 @@ export class LeaderboardService {
     // Validate and sanitize sort field
     const VALID_SORT_FIELDS = [
       "rank",
+      "score",
       "name",
       "competitions",
       "votes",
@@ -159,6 +160,9 @@ export class LeaderboardService {
       switch (field) {
         case "name":
           comparison = a.name.localeCompare(b.name);
+          break;
+        case "score":
+          comparison = a.score - b.score;
           break;
         case "competitions":
           comparison = a.numCompetitions - b.numCompetitions;

@@ -33,7 +33,9 @@ import {
   InsertPortfolioTokenValue,
 } from "@/database/schema/trading/types.js";
 import {
+  COMPETITION_AGENT_STATUS,
   COMPETITION_STATUS,
+  CompetitionAgentStatus,
   CompetitionStatus,
   PagingParams,
 } from "@/types/index.js";
@@ -207,7 +209,9 @@ export async function addAgentToCompetition(
       .values({
         competitionId,
         agentId,
+        status: COMPETITION_AGENT_STATUS.ACTIVE,
         createdAt: new Date(),
+        updatedAt: new Date(),
       })
       .onConflictDoNothing();
   } catch (error) {
@@ -228,31 +232,39 @@ export async function addAgentToCompetition(
 export async function removeAgentFromCompetition(
   competitionId: string,
   agentId: string,
+  reason?: string,
 ): Promise<boolean> {
   try {
     const result = await db
-      .delete(competitionAgents)
+      .update(competitionAgents)
+      .set({
+        status: COMPETITION_AGENT_STATUS.DISQUALIFIED,
+        deactivationReason: reason || "Disqualified from competition",
+        deactivatedAt: new Date(),
+        updatedAt: new Date(),
+      })
       .where(
         and(
           eq(competitionAgents.competitionId, competitionId),
           eq(competitionAgents.agentId, agentId),
+          eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
         ),
       )
       .returning();
 
-    const wasDeleted = result.length > 0;
+    const wasUpdated = result.length > 0;
 
-    if (wasDeleted) {
+    if (wasUpdated) {
       console.log(
         `[CompetitionRepository] Removed agent ${agentId} from competition ${competitionId}`,
       );
     } else {
       console.log(
-        `[CompetitionRepository] No agent ${agentId} found in competition ${competitionId} to remove`,
+        `[CompetitionRepository] No active agent ${agentId} found in competition ${competitionId} to remove`,
       );
     }
 
-    return wasDeleted;
+    return wasUpdated;
   } catch (error) {
     console.error(
       `[CompetitionRepository] Error removing agent ${agentId} from competition ${competitionId}:`,
@@ -268,11 +280,13 @@ export async function removeAgentFromCompetition(
  * @param agentIds Array of agent IDs
  */
 export async function addAgents(competitionId: string, agentIds: string[]) {
-  const createdAt = new Date();
+  const now = new Date();
   const values = agentIds.map((agentId) => ({
     competitionId,
     agentId,
-    createdAt,
+    status: COMPETITION_AGENT_STATUS.ACTIVE,
+    createdAt: now,
+    updatedAt: now,
   }));
   try {
     await db.insert(competitionAgents).values(values).onConflictDoNothing();
@@ -285,13 +299,22 @@ export async function addAgents(competitionId: string, agentIds: string[]) {
 /**
  * Get agents in a competition
  * @param competitionId Competition ID
+ * @param status Optional status filter - defaults to active only
  */
-export async function getAgents(competitionId: string) {
+export async function getAgents(
+  competitionId: string,
+  status: CompetitionAgentStatus = COMPETITION_AGENT_STATUS.ACTIVE,
+) {
   try {
     const result = await db
       .select({ agentId: competitionAgents.agentId })
       .from(competitionAgents)
-      .where(eq(competitionAgents.competitionId, competitionId));
+      .where(
+        and(
+          eq(competitionAgents.competitionId, competitionId),
+          eq(competitionAgents.status, status),
+        ),
+      );
 
     return result.map((row) => row.agentId);
   } catch (error) {
@@ -303,9 +326,205 @@ export async function getAgents(competitionId: string) {
 /**
  * Alias for getAgents for better semantic naming
  * @param competitionId Competition ID
+ * @param status Optional status filter - defaults to active only
  */
-export async function getCompetitionAgents(competitionId: string) {
-  return getAgents(competitionId);
+export async function getCompetitionAgents(
+  competitionId: string,
+  status?: CompetitionAgentStatus,
+) {
+  return getAgents(competitionId, status);
+}
+
+/**
+ * Check if an agent is actively participating in a competition
+ * @param competitionId Competition ID
+ * @param agentId Agent ID
+ * @returns boolean indicating if agent is active in the competition
+ */
+export async function isAgentActiveInCompetition(
+  competitionId: string,
+  agentId: string,
+): Promise<boolean> {
+  try {
+    const result = await db
+      .select({ agentId: competitionAgents.agentId })
+      .from(competitionAgents)
+      .where(
+        and(
+          eq(competitionAgents.competitionId, competitionId),
+          eq(competitionAgents.agentId, agentId),
+          eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
+        ),
+      )
+      .limit(1);
+
+    return result.length > 0;
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in isAgentActiveInCompetition:",
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
+ * Get the status of an agent in a competition
+ * @param competitionId Competition ID
+ * @param agentId Agent ID
+ * @returns The agent's status in the competition, or null if not found
+ */
+export async function getAgentCompetitionStatus(
+  competitionId: string,
+  agentId: string,
+): Promise<CompetitionAgentStatus | null> {
+  try {
+    const result = await db
+      .select({ status: competitionAgents.status })
+      .from(competitionAgents)
+      .where(
+        and(
+          eq(competitionAgents.competitionId, competitionId),
+          eq(competitionAgents.agentId, agentId),
+        ),
+      )
+      .limit(1);
+
+    return result.length > 0 ? result[0]!.status : null;
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in getAgentCompetitionStatus:",
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
+ * Get an agent's competition record with full details
+ * @param competitionId Competition ID
+ * @param agentId Agent ID
+ * @returns The agent's competition record or null if not found
+ */
+export async function getAgentCompetitionRecord(
+  competitionId: string,
+  agentId: string,
+): Promise<{
+  status: CompetitionAgentStatus;
+  deactivationReason: string | null;
+  deactivatedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+} | null> {
+  try {
+    const result = await db
+      .select({
+        status: competitionAgents.status,
+        deactivationReason: competitionAgents.deactivationReason,
+        deactivatedAt: competitionAgents.deactivatedAt,
+        createdAt: competitionAgents.createdAt,
+        updatedAt: competitionAgents.updatedAt,
+      })
+      .from(competitionAgents)
+      .where(
+        and(
+          eq(competitionAgents.competitionId, competitionId),
+          eq(competitionAgents.agentId, agentId),
+        ),
+      )
+      .limit(1);
+
+    return result.length > 0 ? result[0]! : null;
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in getAgentCompetitionRecord:",
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
+ * Update an agent's status in a competition
+ * @param competitionId Competition ID
+ * @param agentId Agent ID
+ * @param status New status
+ * @param reason Optional reason for the status change
+ * @returns boolean indicating if the update was successful
+ */
+export async function updateAgentCompetitionStatus(
+  competitionId: string,
+  agentId: string,
+  status: CompetitionAgentStatus,
+  reason?: string,
+): Promise<boolean> {
+  try {
+    const baseUpdateData = {
+      status,
+      updatedAt: new Date(),
+    };
+
+    // Add deactivation fields when moving to inactive status, clear them when reactivating
+    const updateData =
+      status !== COMPETITION_AGENT_STATUS.ACTIVE
+        ? {
+            ...baseUpdateData,
+            deactivationReason: reason || `Status changed to ${status}`,
+            deactivatedAt: new Date(),
+          }
+        : {
+            ...baseUpdateData,
+            deactivationReason: null,
+            deactivatedAt: null,
+          };
+
+    const result = await db
+      .update(competitionAgents)
+      .set(updateData)
+      .where(
+        and(
+          eq(competitionAgents.competitionId, competitionId),
+          eq(competitionAgents.agentId, agentId),
+        ),
+      )
+      .returning();
+
+    const wasUpdated = result.length > 0;
+
+    if (wasUpdated) {
+      console.log(
+        `[CompetitionRepository] Updated agent ${agentId} status to ${status} in competition ${competitionId}`,
+      );
+    }
+
+    return wasUpdated;
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in updateAgentCompetitionStatus:",
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
+ * Mark an agent as having left a competition voluntarily
+ * @param competitionId Competition ID
+ * @param agentId Agent ID
+ * @param reason Optional reason for leaving
+ * @returns boolean indicating if the update was successful
+ */
+export async function markAgentAsWithdrawn(
+  competitionId: string,
+  agentId: string,
+  reason?: string,
+): Promise<boolean> {
+  return updateAgentCompetitionStatus(
+    competitionId,
+    agentId,
+    COMPETITION_AGENT_STATUS.WITHDRAWN,
+    reason || "Agent withdrew from competition voluntarily",
+  );
 }
 
 /**
@@ -732,6 +951,31 @@ export async function findLeaderboardByCompetition(competitionId: string) {
   } catch (error) {
     console.error(
       `[CompetitionRepository] Error finding leaderboard for competition ${competitionId}:`,
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
+ * Get all agents that have ever participated in a competition, regardless of status
+ * This is useful for retrieving portfolio snapshots for all agents including inactive ones
+ * @param competitionId Competition ID
+ * @returns Array of agent IDs
+ */
+export async function getAllCompetitionAgents(
+  competitionId: string,
+): Promise<string[]> {
+  try {
+    const result = await db
+      .select({ agentId: competitionAgents.agentId })
+      .from(competitionAgents)
+      .where(eq(competitionAgents.competitionId, competitionId));
+
+    return result.map((row) => row.agentId);
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in getAllCompetitionAgents:",
       error,
     );
     throw error;

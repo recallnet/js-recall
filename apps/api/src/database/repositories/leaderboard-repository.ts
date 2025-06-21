@@ -8,10 +8,17 @@ import {
 } from "drizzle-orm";
 
 import { db } from "@/database/db.js";
-import { competitions, votes } from "@/database/schema/core/defs.js";
-import { agentRank } from "@/database/schema/ranking/defs.js";
+import {
+  competitionAgents,
+  competitions,
+  votes,
+} from "@/database/schema/core/defs.js";
 import { trades } from "@/database/schema/trading/defs.js";
-import { COMPETITION_STATUS, CompetitionType } from "@/types/index.js";
+import {
+  COMPETITION_AGENT_STATUS,
+  COMPETITION_STATUS,
+  CompetitionType,
+} from "@/types/index.js";
 
 /**
  * Leaderboard Repository
@@ -75,14 +82,19 @@ export async function getGlobalStats(type: CompetitionType): Promise<{
     .from(votes)
     .where(inArray(votes.competitionId, relevantCompetitionIds));
 
-  // TODO: we want to join with the `agents` table and also check the global status == "active",
-  // but our existing "global" agent status in `agents` prevents us from doing this.
-  // See: https://github.com/recallnet/js-recall/issues/458
+  // agents remain 'active' in completed competitions
+  // count distinct active agents in these competitions.
   const totalActiveAgents = await db
     .select({
-      totalActiveAgents: countDistinct(agentRank.agentId),
+      totalActiveAgents: countDistinct(competitionAgents.agentId),
     })
-    .from(agentRank);
+    .from(competitionAgents)
+    .where(
+      and(
+        inArray(competitionAgents.competitionId, relevantCompetitionIds),
+        eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
+      ),
+    );
 
   return {
     activeAgents: totalActiveAgents[0]?.totalActiveAgents ?? 0,
