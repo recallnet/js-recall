@@ -9,6 +9,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { Form } from "@recallnet/ui2/components/form";
+import { toast } from "@recallnet/ui2/components/toast";
 
 import { useRedirectTo } from "@/hooks/useRedirectTo";
 import { Agent } from "@/types/agent";
@@ -18,6 +19,7 @@ import { UnsavedChangesModal } from "../modals/unsaved-changes-modal";
 import { AgentCard } from "../user-agents";
 import { AgentCreated } from "./agent-created";
 import { BasicsStep } from "./basics-step";
+import { HttpErrorMapping, mapHttpError } from "./http-error-mapping";
 import { SocialsStep } from "./socials-step";
 import { Steps } from "./steps";
 
@@ -72,8 +74,10 @@ export function CreateAgent({
   agent,
   apiKey,
 }: CreateAgentProps) {
-  const [currentStep, setCurrentStep] = useState(1);
   const { redirectToUrl } = useRedirectTo("/profile");
+  const [currentStep, setCurrentStep] = useState(1);
+  const [httpErrorMapping, setHttpErrorMapping] =
+    useState<HttpErrorMapping | null>(null);
   const router = useRouter();
 
   const form = useForm<FormData>({
@@ -94,6 +98,8 @@ export function CreateAgent({
 
   const {
     formState: { isDirty },
+    setError,
+    setFocus,
   } = form;
   const navGuard = useNavigationGuard({ enabled: isDirty });
 
@@ -103,8 +109,29 @@ export function CreateAgent({
     }
   }, [agent, apiKey]);
 
+  // Handle http errors (like ConflictError)
+  useEffect(() => {
+    if (httpErrorMapping) {
+      // Navigate to the correct step
+      setCurrentStep(httpErrorMapping.step);
+
+      // Set the form error on the specific field
+      setError(httpErrorMapping.field, {
+        message: httpErrorMapping.message,
+      });
+
+      // Wait until the step is set to focus on the field
+      setTimeout(() => {
+        setFocus(httpErrorMapping.field);
+      }, 100);
+    }
+  }, [httpErrorMapping, setError, setCurrentStep, setFocus]);
+
   const handleSubmit = async (data: FormData) => {
     try {
+      // Clear any previous external errors
+      setHttpErrorMapping(null);
+
       // If "Other" is selected and has a value, add it to the skills array
       const finalSkills =
         data.skills.includes("Other") && data.otherSkill
@@ -120,8 +147,20 @@ export function CreateAgent({
       };
 
       await onSubmit(finalData);
+
+      toast.success("Agent created successfully");
+
+      form.reset();
     } catch (error) {
-      console.error("Form submission error:", error);
+      // Try to map the error to a form location
+      const errorMapping = mapHttpError(error as Error);
+
+      if (errorMapping) {
+        setHttpErrorMapping(errorMapping);
+      } else {
+        // Fallback to toast for unmapped errors
+        toast.error("There was an error creating your agent.");
+      }
     }
   };
 

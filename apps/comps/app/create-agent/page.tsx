@@ -2,14 +2,11 @@
 
 import React, { Suspense, useState } from "react";
 
-import { toast } from "@recallnet/ui2/components/toast";
-
 import { AuthGuard } from "@/components/auth-guard";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { CreateAgent, FormData } from "@/components/create-agent";
 import { useUserAgent } from "@/hooks/useAgent";
 import { useCreateAgent } from "@/hooks/useCreateAgent";
-import { ConflictError } from "@/lib/api-client";
 
 function CreateAgentView() {
   const createAgent = useCreateAgent();
@@ -19,33 +16,23 @@ function CreateAgentView() {
   const { data: agent } = useUserAgent(createdAgentId || undefined);
 
   const handleSubmit = async (data: FormData) => {
-    try {
-      const result = await createAgent.mutateAsync({
-        name: data.name,
-        imageUrl: data.imageUrl,
-        email: data.email,
-        description: data.description,
-        metadata: {
-          skills: data.skills,
-          repositoryUrl: data.repositoryUrl,
-          x: data.x,
-          telegram: data.telegram,
-        },
-      });
+    const result = await createAgent.mutateAsync({
+      name: data.name,
+      imageUrl: data.imageUrl,
+      email: data.email,
+      description: data.description,
+      metadata: {
+        skills: data.skills,
+        repositoryUrl: data.repositoryUrl,
+        x: data.x,
+        telegram: data.telegram,
+      },
+    });
 
-      if (!result.success) throw new Error("Error when creating agent");
+    if (!result.success) throw new Error("Error when creating agent");
 
-      setCreatedAgentId(result.agent.id);
-      setApiKey(result.agent.apiKey);
-    } catch (error) {
-      if (error instanceof ConflictError) {
-        toast.error(
-          "An agent with this name already exists. Please choose a different name.",
-        );
-      } else {
-        toast.error("There was an error creating your agent.");
-      }
-    }
+    setCreatedAgentId(result.agent.id);
+    setApiKey(result.agent.apiKey);
   };
 
   return (
