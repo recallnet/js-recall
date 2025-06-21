@@ -27,7 +27,7 @@ import { formatCompactNumber, toOrdinal } from "@/utils/format";
 import { VerificationBadge } from "../verification-badge";
 
 export default function UserAgentsSection() {
-  const { data: agentsData, isLoading } = useUserAgents();
+  const { data: agentsData, isLoading } = useUserAgents({ limit: 100 });
   let agentList = <NoAgents />;
 
   const agents = useMemo(
