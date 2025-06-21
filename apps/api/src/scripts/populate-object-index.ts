@@ -69,14 +69,13 @@ function parseArgs() {
 }
 
 // Execute the script if run directly
-const envOptions: PopulateOptions = {
-  dataTypes: process.env.DATA_TYPES?.split(',') || ['trade', 'agent_rank_history', 'competitions_leaderboard'],
-  competitionId: process.env.COMPETITION_ID,
-  batchSize: process.env.BATCH_SIZE ? parseInt(process.env.BATCH_SIZE, 10) : 1000
+const defaultOptions: PopulateOptions = {
+  dataTypes: ['trade', 'agent_rank_history', 'competitions_leaderboard'],
+  batchSize: 1000
 };
 
 const cliOptions = parseArgs();
-const options = { ...envOptions, ...cliOptions };
+const options = { ...defaultOptions, ...cliOptions };
 
 populateObjectIndex(options)
   .then(() => {
