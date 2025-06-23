@@ -171,7 +171,8 @@ export class AgentManager {
           (errorMessage.includes("owner_id") && errorMessage.includes("name"));
 
         if (isUniqueConstraintViolation && isAgentNameConstraint) {
-          throw new Error(
+          throw new ApiError(
+            409,
             `An agent with the name "${name}" already exists for this user`,
           );
         }

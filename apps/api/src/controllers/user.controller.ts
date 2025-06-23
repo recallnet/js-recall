@@ -150,13 +150,6 @@ export function makeUserController(services: ServiceRegistry) {
           agent,
         });
       } catch (error) {
-        // Check if this is a duplicate agent name error
-        if (
-          error instanceof Error &&
-          error.message.includes("already exists for this user")
-        ) {
-          return next(new ApiError(409, error.message));
-        }
         next(error);
       }
     },
