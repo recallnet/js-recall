@@ -185,8 +185,6 @@ export class VoteManager {
         return {
           canVote: false,
           reason: `Competition status does not allow voting (${competition.status})`,
-          // TODO: why is this hardcoded to false?  what if they voted and then the comp finished?
-          //      It seems like the value should be true in that case?
           info: { hasVoted },
         };
       }
