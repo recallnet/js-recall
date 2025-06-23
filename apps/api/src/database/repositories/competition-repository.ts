@@ -1027,3 +1027,71 @@ export async function getAllCompetitionAgents(
     throw error;
   }
 }
+
+/**
+ * Get agent rankings for multiple agents in a competition efficiently
+ * This replaces N calls to getAgentCompetitionRanking with a single bulk operation
+ * @param competitionId Competition ID
+ * @param agentIds Array of agent IDs to get rankings for
+ * @returns Map of agent ID to ranking data
+ */
+export async function getBulkAgentCompetitionRankings(
+  competitionId: string,
+  agentIds: string[],
+): Promise<Map<string, { rank: number; totalAgents: number }>> {
+  if (agentIds.length === 0) {
+    return new Map();
+  }
+
+  try {
+    console.log(
+      `[CompetitionRepository] getBulkAgentCompetitionRankings called for ${agentIds.length} agents in competition ${competitionId}`,
+    );
+
+    // Get ALL latest portfolio snapshots for the competition ONCE
+    const snapshots = await getLatestPortfolioSnapshots(competitionId);
+
+    if (snapshots.length === 0) {
+      return new Map(); // No snapshots = no ranking data
+    }
+
+    // Sort by totalValue descending to determine rankings ONCE
+    const sortedSnapshots = snapshots.sort(
+      (a, b) => Number(b.totalValue) - Number(a.totalValue),
+    );
+
+    const totalAgents = sortedSnapshots.length;
+    const rankingsMap = new Map<
+      string,
+      { rank: number; totalAgents: number }
+    >();
+
+    // Calculate ranks for all requested agents in one pass
+    for (const agentId of agentIds) {
+      const agentIndex = sortedSnapshots.findIndex(
+        (snapshot) => snapshot.agentId === agentId,
+      );
+
+      if (agentIndex !== -1) {
+        rankingsMap.set(agentId, {
+          rank: agentIndex + 1, // Convert to 1-based ranking
+          totalAgents,
+        });
+      }
+      // If agent not found in snapshots, don't add to map (undefined ranking)
+    }
+
+    console.log(
+      `[CompetitionRepository] Calculated rankings for ${rankingsMap.size}/${agentIds.length} agents`,
+    );
+
+    return rankingsMap;
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in getBulkAgentCompetitionRankings:",
+      error,
+    );
+    // Return empty map on error - no reliable ranking data
+    return new Map();
+  }
+}
