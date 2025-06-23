@@ -259,7 +259,7 @@ export function configureCompetitionsRoutes(
    *                         description: Always null for active agents
    *                 inactiveAgents:
    *                   type: array
-   *                   description: List of deactivated agents (excluded from ranking)
+   *                   description: List of agents not actively participating in this competition (excluded from ranking)
    *                   items:
    *                     type: object
    *                     properties:
@@ -277,10 +277,10 @@ export function configureCompetitionsRoutes(
    *                         description: Always false for this array
    *                       deactivationReason:
    *                         type: string
-   *                         description: Reason for agent deactivation
+   *                         description: Reason for removal from this specific competition
    *                 hasInactiveAgents:
    *                   type: boolean
-   *                   description: Indicates if any agents are inactive
+   *                   description: Indicates if any agents are not actively participating in this competition
    *       400:
    *         description: Bad request - No active competition and no competitionId provided
    *       401:
@@ -796,11 +796,11 @@ export function configureCompetitionsRoutes(
    *                         description: Current portfolio value in USD
    *                       active:
    *                         type: boolean
-   *                         description: Whether the agent is currently active
+   *                         description: Whether the agent is actively participating in this specific competition
    *                       deactivationReason:
    *                         type: string
    *                         nullable: true
-   *                         description: Reason for deactivation if agent is inactive
+   *                         description: Reason for deactivation from this specific competition (if status is inactive)
    *                       pnl:
    *                         type: number
    *                         description: Total profit/loss from competition start (USD)
@@ -911,7 +911,9 @@ export function configureCompetitionsRoutes(
    *     tags:
    *       - Competition
    *     summary: Leave a competition
-   *     description: Remove an agent from a competition. Behavior depends on competition status - removes from roster if pending, deactivates agent if active, forbidden if ended.
+   *     description: |
+   *       Remove an agent from a competition. Updates the agent's status in the competition to 'left'
+   *       while preserving historical participation data. Note: Cannot leave competitions that have already ended.
    *     security:
    *       - BearerAuth: []
    *     parameters:

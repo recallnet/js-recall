@@ -1,9 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 
-import {
-  findById as findAgentById,
-  isAgentInCompetition,
-} from "@/database/repositories/agent-repository.js";
+import { findById as findAgentById } from "@/database/repositories/agent-repository.js";
+import { isAgentActiveInCompetition } from "@/database/repositories/competition-repository.js";
 import { findById as findCompetitionById } from "@/database/repositories/competition-repository.js";
 import {
   countVotesByAgent,
@@ -267,14 +265,14 @@ export class VoteManager {
       throw error;
     }
 
-    // Check if agent participates in the competition
-    const agentInCompetition = await isAgentInCompetition(
-      agentId,
+    // Check if agent is actively participating in the competition
+    const agentActiveInCompetition = await isAgentActiveInCompetition(
       competitionId,
+      agentId,
     );
-    if (!agentInCompetition) {
+    if (!agentActiveInCompetition) {
       const error = new Error(
-        "Agent does not participate in this competition",
+        "Agent is not actively participating in this competition",
       ) as VoteError;
       error.type = VOTE_ERROR_TYPES.AGENT_NOT_IN_COMPETITION;
       error.code = 400;

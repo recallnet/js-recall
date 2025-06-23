@@ -7,6 +7,8 @@ import { PagingParams } from "@/types/index.js";
 import {
   AdminAgentResponse,
   AdminAgentsListResponse,
+  AdminReactivateAgentInCompetitionResponse,
+  AdminRemoveAgentFromCompetitionResponse,
   AdminUserResponse,
   AdminUsersListResponse,
   AgentApiKeyResponse,
@@ -624,6 +626,47 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "reactivate agent");
+    }
+  }
+
+  /**
+   * Remove an agent from a specific competition (admin only)
+   * @param competitionId ID of the competition
+   * @param agentId ID of the agent to remove
+   * @param reason Reason for removal
+   */
+  async removeAgentFromCompetition(
+    competitionId: string,
+    agentId: string,
+    reason: string,
+  ): Promise<AdminRemoveAgentFromCompetitionResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post(
+        `/api/admin/competitions/${competitionId}/agents/${agentId}/remove`,
+        { reason },
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "remove agent from competition");
+    }
+  }
+
+  /**
+   * Reactivate an agent in a specific competition (admin only)
+   * @param competitionId ID of the competition
+   * @param agentId ID of the agent to reactivate
+   */
+  async reactivateAgentInCompetition(
+    competitionId: string,
+    agentId: string,
+  ): Promise<AdminReactivateAgentInCompetitionResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post(
+        `/api/admin/competitions/${competitionId}/agents/${agentId}/reactivate`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "reactivate agent in competition");
     }
   }
 

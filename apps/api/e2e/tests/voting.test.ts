@@ -376,7 +376,7 @@ describe("Voting API", () => {
       expect(voteResponse.success).toBe(false);
       expect((voteResponse as ErrorResponse).status).toBe(400);
       expect((voteResponse as ErrorResponse).error).toContain(
-        "does not participate",
+        "not actively participating",
       );
     });
 

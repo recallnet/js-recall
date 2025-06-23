@@ -1069,7 +1069,7 @@ export function configureAdminRoutes(
    *     tags:
    *       - Admin
    *     summary: Deactivate an agent
-   *     description: Deactivate an agent from the system. The agent will no longer be able to perform any actions.
+   *     description: Globally deactivate an agent. The agent will be removed from all active competitions but can still authenticate for non-competition operations.
    *     security:
    *       - BearerAuth: []
    *     parameters:
@@ -1372,6 +1372,152 @@ export function configureAdminRoutes(
    *         description: Server error
    */
   router.get("/search", controller.searchUsersAndAgents);
+
+  /**
+   * @openapi
+   * /api/admin/competitions/{competitionId}/agents/{agentId}/remove:
+   *   post:
+   *     tags:
+   *       - Admin
+   *     summary: Remove agent from competition
+   *     description: Remove an agent from a specific competition (admin operation)
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: ID of the competition
+   *       - in: path
+   *         name: agentId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: ID of the agent to remove
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - reason
+   *             properties:
+   *               reason:
+   *                 type: string
+   *                 description: Reason for removing the agent
+   *                 example: Violated competition rules
+   *     responses:
+   *       200:
+   *         description: Agent removed from competition successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 message:
+   *                   type: string
+   *                   description: Success message
+   *                 agent:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                     name:
+   *                       type: string
+   *                 competition:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                     name:
+   *                       type: string
+   *                 reason:
+   *                   type: string
+   *                   description: Reason for removal
+   *       400:
+   *         description: Bad request - missing parameters or agent not in competition
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       404:
+   *         description: Competition or agent not found
+   *       500:
+   *         description: Server error
+   */
+  router.post(
+    "/competitions/:competitionId/agents/:agentId/remove",
+    controller.removeAgentFromCompetition,
+  );
+
+  /**
+   * @openapi
+   * /api/admin/competitions/{competitionId}/agents/{agentId}/reactivate:
+   *   post:
+   *     tags:
+   *       - Admin
+   *     summary: Reactivate agent in competition
+   *     description: Reactivate an agent in a specific competition (admin operation)
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: ID of the competition
+   *       - in: path
+   *         name: agentId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: ID of the agent to reactivate
+   *     responses:
+   *       200:
+   *         description: Agent reactivated in competition successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 message:
+   *                   type: string
+   *                   description: Success message
+   *                 agent:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                     name:
+   *                       type: string
+   *                 competition:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                     name:
+   *                       type: string
+   *       400:
+   *         description: Bad request - agent not in competition or competition ended
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       404:
+   *         description: Competition or agent not found
+   *       500:
+   *         description: Server error
+   */
+  router.post(
+    "/competitions/:competitionId/agents/:agentId/reactivate",
+    controller.reactivateAgentInCompetition,
+  );
 
   return router;
 }

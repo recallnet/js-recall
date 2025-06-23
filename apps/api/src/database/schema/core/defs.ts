@@ -16,6 +16,7 @@ import {
 
 import {
   ACTOR_STATUS_VALUES,
+  COMPETITION_AGENT_STATUS_VALUES,
   COMPETITION_STATUS_VALUES,
   COMPETITION_TYPE_VALUES,
 } from "@/types/index.js";
@@ -39,6 +40,14 @@ export const competitionStatus = pgEnum(
 export const competitionType = pgEnum(
   "competition_type",
   COMPETITION_TYPE_VALUES,
+);
+
+/**
+ * Defines the possible statuses for agents within competitions.
+ */
+export const competitionAgentStatus = pgEnum(
+  "competition_agent_status",
+  COMPETITION_AGENT_STATUS_VALUES,
 );
 
 /**
@@ -183,15 +192,26 @@ export const competitions = pgTable(
 
 /**
  * Junction table for agent participation in competitions
+ * Now includes per-competition agent status tracking
  */
 export const competitionAgents = pgTable(
   "competition_agents",
   {
     competitionId: uuid("competition_id").notNull(),
     agentId: uuid("agent_id").notNull(),
+    status: competitionAgentStatus("status").default("active").notNull(),
+    deactivationReason: text("deactivation_reason"),
+    deactivatedAt: timestamp("deactivated_at", { withTimezone: true }),
     createdAt: timestamp("created_at", {
       withTimezone: true,
-    }).defaultNow(),
+    })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     foreignKey({
@@ -208,6 +228,11 @@ export const competitionAgents = pgTable(
       columns: [table.competitionId, table.agentId],
       name: "competition_agents_pkey",
     }),
+    // Add indexes for performance
+    index("idx_competition_agents_status").on(table.status),
+    index("idx_competition_agents_competition_id").on(table.competitionId),
+    index("idx_competition_agents_agent_id").on(table.agentId),
+    index("idx_competition_agents_deactivated_at").on(table.deactivatedAt),
   ],
 );
 

@@ -7,10 +7,13 @@ import { db } from "@/database/db.js";
 import { admins } from "@/database/schema/core/defs.js";
 import {
   AdminAgentsListResponse,
+  AdminReactivateAgentInCompetitionResponse,
+  AdminRemoveAgentFromCompetitionResponse,
   AdminUsersListResponse,
   AgentProfileResponse,
   ApiResponse,
   ErrorResponse,
+  LeaderboardResponse,
   UserRegistrationResponse,
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
@@ -21,6 +24,9 @@ import {
   cleanupTestState,
   createTestClient,
   generateRandomEthAddress,
+  registerUserAndAgentAndGetClient,
+  startTestCompetition,
+  wait,
 } from "@/e2e/utils/test-helpers.js";
 
 describe("Admin API", () => {
@@ -858,5 +864,389 @@ describe("Admin API", () => {
         throw error;
       }
     }
+  });
+
+  // ===== Per-Competition Agent Management Tests =====
+
+  test("admin can remove agent from specific competition", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agents for testing
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent 1 - To Remove",
+    });
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent 2 - To Stay",
+    });
+
+    // Start competition with both agents
+    const competitionName = `Per-Competition Remove Test ${Date.now()}`;
+    const startResponse = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent1.id, agent2.id],
+    );
+    const competition = startResponse.competition;
+
+    // Verify both agents are initially in the competition
+    const initialLeaderboard =
+      (await adminClient.getCompetitionLeaderboard()) as LeaderboardResponse;
+    expect(initialLeaderboard.success).toBe(true);
+    const initialAgentIds = initialLeaderboard.leaderboard.map(
+      (entry) => entry.agentId,
+    );
+    expect(initialAgentIds).toContain(agent1.id);
+    expect(initialAgentIds).toContain(agent2.id);
+
+    // Remove agent1 from the competition
+    const removeReason = "Violated competition-specific rules";
+    const removeResponse = (await adminClient.removeAgentFromCompetition(
+      competition.id,
+      agent1.id,
+      removeReason,
+    )) as AdminRemoveAgentFromCompetitionResponse;
+
+    // Verify removal response
+    expect(removeResponse.success).toBe(true);
+    expect(removeResponse.message).toContain("removed from competition");
+    expect(removeResponse.competition.id).toBe(competition.id);
+    expect(removeResponse.agent.id).toBe(agent1.id);
+
+    // Verify agent1 is no longer in active leaderboard
+    const updatedLeaderboard =
+      (await adminClient.getCompetitionLeaderboard()) as LeaderboardResponse;
+    expect(updatedLeaderboard.success).toBe(true);
+    const activeAgentIds = updatedLeaderboard.leaderboard.map(
+      (entry) => entry.agentId,
+    );
+    expect(activeAgentIds).not.toContain(agent1.id);
+    expect(activeAgentIds).toContain(agent2.id); // agent2 should still be there
+
+    // Verify agent1 appears in inactive agents list
+    expect(updatedLeaderboard.inactiveAgents).toBeDefined();
+    const inactiveAgent = updatedLeaderboard.inactiveAgents.find(
+      (agent) => agent.agentId === agent1.id,
+    );
+    expect(inactiveAgent).toBeDefined();
+    expect(inactiveAgent?.active).toBe(false);
+    expect(inactiveAgent?.deactivationReason).toBe(
+      `Admin removal: ${removeReason}`,
+    );
+  });
+
+  test("admin can reactivate agent in specific competition", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent for testing
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent - To Reactivate",
+    });
+
+    // Start competition with the agent
+    const competitionName = `Per-Competition Reactivate Test ${Date.now()}`;
+    const startResponse = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent.id],
+    );
+    const competition = startResponse.competition;
+
+    // Remove agent from the competition first
+    const removeReason = "Temporary removal for testing";
+    const removeResponse = await adminClient.removeAgentFromCompetition(
+      competition.id,
+      agent.id,
+      removeReason,
+    );
+    expect(removeResponse.success).toBe(true);
+
+    // Verify agent is not in active leaderboard
+    const leaderboardAfterRemoval =
+      (await adminClient.getCompetitionLeaderboard()) as LeaderboardResponse;
+    const activeAgentIds = leaderboardAfterRemoval.leaderboard.map(
+      (entry) => entry.agentId,
+    );
+    expect(activeAgentIds).not.toContain(agent.id);
+
+    // Reactivate agent in the competition
+    const reactivateResponse = (await adminClient.reactivateAgentInCompetition(
+      competition.id,
+      agent.id,
+    )) as AdminReactivateAgentInCompetitionResponse;
+
+    // Verify reactivation response
+    expect(reactivateResponse.success).toBe(true);
+    expect(reactivateResponse.message).toContain("reactivated in competition");
+    expect(reactivateResponse.competition.id).toBe(competition.id);
+    expect(reactivateResponse.agent.id).toBe(agent.id);
+
+    // Verify agent is back in active leaderboard
+    const leaderboardAfterReactivation =
+      (await adminClient.getCompetitionLeaderboard()) as LeaderboardResponse;
+    const reactivatedAgentIds = leaderboardAfterReactivation.leaderboard.map(
+      (entry) => entry.agentId,
+    );
+    expect(reactivatedAgentIds).toContain(agent.id);
+
+    // Verify agent is no longer in inactive agents list
+    const inactiveAgent = leaderboardAfterReactivation.inactiveAgents.find(
+      (inactiveAgentEntry) => inactiveAgentEntry.agentId === agent.id,
+    );
+    expect(inactiveAgent).toBeUndefined();
+  });
+
+  test("cannot remove agent from non-existent competition", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent for testing
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent - Non-existent Competition",
+    });
+
+    // Try to remove agent from non-existent competition
+    const nonExistentCompetitionId = "00000000-0000-4000-a000-000000000000";
+    const removeResponse = (await adminClient.removeAgentFromCompetition(
+      nonExistentCompetitionId,
+      agent.id,
+      "Testing non-existent competition",
+    )) as ErrorResponse;
+
+    // Verify operation fails
+    expect(removeResponse.success).toBe(false);
+    expect(removeResponse.error).toContain("not found");
+  });
+
+  test("cannot remove non-existent agent from competition", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent and start competition
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent - For Valid Competition",
+    });
+
+    const competitionName = `Valid Competition Test ${Date.now()}`;
+    const startResponse = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent.id],
+    );
+    const competition = startResponse.competition;
+
+    // Try to remove non-existent agent
+    const nonExistentAgentId = "00000000-0000-4000-a000-000000000000";
+    const removeResponse = (await adminClient.removeAgentFromCompetition(
+      competition.id,
+      nonExistentAgentId,
+      "Testing non-existent agent",
+    )) as ErrorResponse;
+
+    // Verify operation fails
+    expect(removeResponse.success).toBe(false);
+    expect(removeResponse.error).toContain("not found");
+  });
+
+  test("cannot remove agent not participating in competition", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register two agents
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent 1 - In Competition",
+    });
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent 2 - Not In Competition",
+    });
+
+    // Start competition with only agent1
+    const competitionName = `Single Agent Competition Test ${Date.now()}`;
+    const startResponse = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent1.id],
+    );
+    const competition = startResponse.competition;
+
+    // Try to remove agent2 (who is not in the competition)
+    const removeResponse = (await adminClient.removeAgentFromCompetition(
+      competition.id,
+      agent2.id,
+      "Testing agent not in competition",
+    )) as ErrorResponse;
+
+    // Verify operation fails
+    expect(removeResponse.success).toBe(false);
+    expect(removeResponse.error).toContain(
+      "not participating in this competition",
+    );
+  });
+
+  test("cannot reactivate agent not in competition", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register two agents
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent 1 - In Competition",
+    });
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent 2 - Not In Competition",
+    });
+
+    // Start competition with only agent1
+    const competitionName = `Reactivate Not In Competition Test ${Date.now()}`;
+    const startResponse = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent1.id],
+    );
+    const competition = startResponse.competition;
+
+    // Try to reactivate agent2 (who is not in the competition)
+    const reactivateResponse = (await adminClient.reactivateAgentInCompetition(
+      competition.id,
+      agent2.id,
+    )) as ErrorResponse;
+
+    // Verify operation fails
+    expect(reactivateResponse.success).toBe(false);
+    expect(reactivateResponse.error).toContain("not in this competition");
+  });
+
+  test("per-competition operations require admin authentication", async () => {
+    // Setup admin client to create competition and agents
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent and start competition
+    const { client: userClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent - Auth Test",
+      });
+
+    const competitionName = `Auth Test Competition ${Date.now()}`;
+    const startResponse = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent.id],
+    );
+    const competition = startResponse.competition;
+
+    // Try per-competition operations with non-admin client
+    const removeResponse = (await userClient.removeAgentFromCompetition(
+      competition.id,
+      agent.id,
+      "Unauthorized removal attempt",
+    )) as ErrorResponse;
+
+    const reactivateResponse = (await userClient.reactivateAgentInCompetition(
+      competition.id,
+      agent.id,
+    )) as ErrorResponse;
+
+    // Verify both operations fail due to lack of admin rights
+    expect(removeResponse.success).toBe(false);
+    expect(removeResponse.error).toBeDefined();
+
+    expect(reactivateResponse.success).toBe(false);
+    expect(reactivateResponse.error).toBeDefined();
+  });
+
+  test("per-competition status is independent of global status", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent for testing
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent - Status Independence Test",
+      });
+
+    // Start competition with the agent
+    const competitionName = `Status Independence Test ${Date.now()}`;
+    const startResponse = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent.id],
+    );
+    const competition = startResponse.competition;
+
+    // Verify agent can access API initially
+    const initialProfile = await agentClient.getAgentProfile();
+    expect(initialProfile.success).toBe(true);
+
+    // Remove agent from competition (per-competition deactivation)
+    const removeResponse = await adminClient.removeAgentFromCompetition(
+      competition.id,
+      agent.id,
+      "Testing per-competition status independence",
+    );
+    expect(removeResponse.success).toBe(true);
+
+    // Agent should still be able to access API (global status unchanged)
+    const profileAfterRemoval = await agentClient.getAgentProfile();
+    expect(profileAfterRemoval.success).toBe(true);
+
+    // Now globally deactivate the agent
+    const globalDeactivateResponse = await adminClient.deactivateAgent(
+      agent.id,
+      "Testing global deactivation",
+    );
+    expect(globalDeactivateResponse.success).toBe(true);
+
+    // Agent should now be blocked from API access
+    try {
+      await agentClient.getAgentProfile();
+      expect(false).toBe(true); // Should not reach here
+    } catch (error) {
+      expect(error).toBeDefined();
+    }
+
+    // Reactivate agent in competition (should not affect global status)
+    const reactivateInCompetitionResponse =
+      await adminClient.reactivateAgentInCompetition(competition.id, agent.id);
+    expect(reactivateInCompetitionResponse.success).toBe(true);
+
+    // Agent should still be blocked from API access (global status still inactive)
+    try {
+      await agentClient.getAgentProfile();
+      expect(false).toBe(true); // Should not reach here
+    } catch (error) {
+      expect(error).toBeDefined();
+    }
+
+    // Globally reactivate the agent
+    const globalReactivateResponse = await adminClient.reactivateAgent(
+      agent.id,
+    );
+    expect(globalReactivateResponse.success).toBe(true);
+
+    // Wait for cache to update
+    await wait(100);
+
+    // Agent should now be able to access API again
+    const finalProfile = await agentClient.getAgentProfile();
+    expect(finalProfile.success).toBe(true);
   });
 });

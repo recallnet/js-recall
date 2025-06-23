@@ -6,7 +6,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 // This is just an example of a component that uses the cva utility and Tailwind CSS classes.
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center text-sm font-medium transition-all duration-300 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center text-sm font-medium transition-all duration-300 ease-in-out focus-visible:outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
@@ -20,7 +20,7 @@ const buttonVariants = cva(
           "bg-secondary hover:bg-secondary/90 font-semibold uppercase text-[#e9edf1]",
         ghost: "bg-white text-black hover:bg-blue-700 hover:text-white",
         link: "text-primary underline-offset-4 hover:underline",
-        modal: "border border-gray-200 bg-white text-black hover:bg-gray-100",
+        modal: "border bg-white text-black hover:bg-gray-300",
       },
       size: {
         default: "h-10 px-4 py-2 text-sm",
