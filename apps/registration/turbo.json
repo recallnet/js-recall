@@ -3,16 +3,7 @@
   "extends": ["//"],
   "tasks": {
     "build": {
-      "env": [
-        "API_URL",
-        "ADMIN_API_KEY",
-        "JWT_SECRET",
-        "NEXTAUTH_URL",
-        "NEXTAUTH_SECRET",
-        "VERCEL_URL",
-        "LOOPS_API_KEY",
-        "NODE_ENV"
-      ]
+      "env": ["ADMIN_API_KEY", "VERCEL_URL", "LOOPS_API_KEY", "NODE_ENV"]
     }
   }
 }
