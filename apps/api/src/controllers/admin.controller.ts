@@ -741,7 +741,7 @@ export function makeAdminController(services: ServiceRegistry) {
             throw new ApiError(400, "Invalid data type(s) provided");
           }
           
-          typesToSync = validationResults.map((result: { data?: any }) => result.data!).filter(Boolean);
+          typesToSync = validationResults.map((result: { data?: string }) => result.data!).filter(Boolean);
         }
         
         console.log(`Starting object index sync for types: ${typesToSync.join(', ')}`);

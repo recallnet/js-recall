@@ -8,7 +8,6 @@ import {
   text,
   timestamp,
   uuid,
-  varchar,
 } from "drizzle-orm/pg-core";
 
 import { agents, competitions } from "@/database/schema/core/defs.js";
