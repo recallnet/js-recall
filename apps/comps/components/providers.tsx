@@ -8,6 +8,7 @@ import {
   darkTheme,
 } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { NavigationGuardProvider } from "next-navigation-guard";
 import React from "react";
 import { type ReactNode, useState } from "react";
 import { createSiweMessage, parseSiweMessage } from "viem/siwe";
@@ -88,7 +89,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       enableColorScheme
     >
       <QueryClientProvider client={queryClient}>
-        <WalletProvider>{children}</WalletProvider>
+        <WalletProvider>
+          <NavigationGuardProvider>{children}</NavigationGuardProvider>
+        </WalletProvider>
       </QueryClientProvider>
     </ThemeProvider>
   );

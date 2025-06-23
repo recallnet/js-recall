@@ -243,6 +243,9 @@ importers:
       next:
         specifier: ^15.1.0
         version: 15.3.2(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      next-navigation-guard:
+        specifier: ^0.1.2
+        version: 0.1.2(next@15.3.2(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
       react:
         specifier: ^19.0.0
         version: 19.1.0
@@ -6900,6 +6903,12 @@ packages:
         optional: true
       nodemailer:
         optional: true
+
+  next-navigation-guard@0.1.2:
+    resolution: {integrity: sha512-gh+hUMqnI9a/iQ3sxCd7aagQB0NTioe7kj7UJagVfWh+GWfyr4mErlBy2yNZk0VyXebtW86I3cP6lcwraIFhYA==}
+    peerDependencies:
+      next: ^14 || ^15
+      react: ^18.3.1
 
   next-themes@0.4.6:
     resolution: {integrity: sha512-pZvgD5L0IEvX5/9GWyHMf3m8BKiVQwsCMHfoFosXtXBMnaS0ZnIJ9ST4b4NqLVKDEm8QBxoNNGNaBv2JNF6XNA==}
@@ -16196,6 +16205,11 @@ snapshots:
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
       uuid: 8.3.2
+
+  next-navigation-guard@0.1.2(next@15.3.2(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0):
+    dependencies:
+      next: 15.3.2(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      react: 19.1.0
 
   next-themes@0.4.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:

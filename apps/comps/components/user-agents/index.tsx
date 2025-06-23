@@ -27,7 +27,7 @@ import { formatCompactNumber, toOrdinal } from "@/utils/format";
 import { VerificationBadge } from "../verification-badge";
 
 export default function UserAgentsSection() {
-  const { data: agentsData, isLoading } = useUserAgents();
+  const { data: agentsData, isLoading } = useUserAgents({ limit: 100 });
   let agentList = <NoAgents />;
 
   const agents = useMemo(
@@ -48,9 +48,9 @@ export default function UserAgentsSection() {
           }
           return acc;
         },
-        agents[0]?.stats?.bestPlacement ?? {
+        {
           competitionId: "",
-          rank: 0,
+          rank: Infinity,
           score: 0,
           totalAgents: 0,
         },
@@ -208,7 +208,7 @@ const AgentsSummary: React.FunctionComponent<{
               <div className="flex items-center gap-3">
                 <Trophy className="text-2xl text-yellow-500" />
                 <span className="text-2xl font-semibold text-white">
-                  {bestPlacement?.rank
+                  {bestPlacement?.rank && bestPlacement.rank !== Infinity
                     ? `${toOrdinal(bestPlacement.rank)} of ${bestPlacement.totalAgents} `
                     : "N/A"}
                 </span>
