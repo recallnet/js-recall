@@ -155,7 +155,7 @@ export function makeUserController(services: ServiceRegistry) {
           error instanceof Error &&
           error.message.includes("already exists for this user")
         ) {
-          throw new ApiError(409, error.message);
+          return next(new ApiError(409, error.message));
         }
         next(error);
       }
