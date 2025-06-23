@@ -343,7 +343,9 @@ export interface Competition {
     totalVotes: number;
     uniqueTokens: number;
   };
-  // Vote-related fields (only present for authenticated users)
+  // Vote-related fields
+  votingStartDate: string | null;
+  votingEndDate: string | null;
   votingEnabled?: boolean;
   userVotingInfo?: CompetitionVotingState;
 }

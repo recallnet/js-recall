@@ -299,6 +299,8 @@ export class ApiClient {
           tradingType?: CrossChainTradingType;
           externalUrl?: string;
           imageUrl?: string;
+          votingStartDate?: string;
+          votingEndDate?: string;
         }
       | string,
     description?: string,
@@ -306,13 +308,19 @@ export class ApiClient {
     tradingType?: CrossChainTradingType,
     externalUrl?: string,
     imageUrl?: string,
+    votingStartDate?: string,
+    votingEndDate?: string,
   ): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
       let requestData;
 
+      // Ensure voting is allowed by default for this competition, and the
+      // caller can set specific dates if they desire.
+      const now = new Date().toISOString();
+
       // Handle both object-based and individual parameter calls
       if (typeof params === "object") {
-        requestData = params;
+        requestData = { votingStartDate: now, ...params };
       } else {
         requestData = {
           name: params,
@@ -321,6 +329,8 @@ export class ApiClient {
           tradingType,
           externalUrl,
           imageUrl,
+          votingStartDate: votingStartDate || now,
+          votingEndDate,
         };
       }
 

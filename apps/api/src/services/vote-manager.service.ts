@@ -340,6 +340,14 @@ export class VoteManager {
   private checkCompetitionVotingDates(competition: SelectCompetition) {
     const now = new Date();
 
+    // If at least one voting date is not set, voting for the comp is disabled
+    if (!competition.votingStartDate && !competition.votingEndDate) {
+      return {
+        canVote: false,
+        reason: "voting is not enabled for this competition",
+      };
+    }
+
     // If voting start date is set and we haven't reached it, voting is not allowed
     if (competition.votingStartDate && now < competition.votingStartDate) {
       return {
