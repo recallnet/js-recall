@@ -64,7 +64,7 @@ export const CompetitionVotingBanner: React.FC<
       }}
     >
       <div
-        className="sticky top-0 flex w-full transform-gpu items-center justify-start gap-3 px-4 text-white transition-all duration-200 ease-out will-change-transform md:px-24"
+        className="sticky top-0 flex w-full transform-gpu items-center justify-start gap-3 px-4 text-white transition-all duration-200 ease-out will-change-transform sm:px-24"
         style={{
           height: "8px", // Shrunk height - this is the final collapsed state
           top: "0", // Sticks to top of viewport when outer container slides up
@@ -95,7 +95,7 @@ export const CompetitionVotingBanner: React.FC<
         </div>
 
         {/* Phase indicator - hidden on small screens */}
-        <div className="absolute right-4 top-1/2 hidden -translate-y-1/2 whitespace-nowrap font-medium opacity-90 sm:block md:right-24">
+        <div className="absolute right-4 top-1/2 hidden -translate-y-1/2 whitespace-nowrap font-medium opacity-90 sm:right-24 sm:block">
           <span className="text-md">
             Phase:{" "}
             <span
