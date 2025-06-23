@@ -11,12 +11,12 @@ import { z } from "zod";
 import { Form } from "@recallnet/ui2/components/form";
 import { toast } from "@recallnet/ui2/components/toast";
 
+import { AgentCard } from "@/components/user-agents/agent-card";
 import { useRedirectTo } from "@/hooks/useRedirectTo";
 import { Agent } from "@/types/agent";
 import { asOptionalStringWithoutEmpty } from "@/utils";
 
 import { UnsavedChangesModal } from "../modals/unsaved-changes-modal";
-import { AgentCard } from "../user-agents";
 import { AgentCreated } from "./agent-created";
 import { BasicsStep } from "./basics-step";
 import { HttpErrorMapping, mapHttpError } from "./http-error-mapping";
@@ -229,7 +229,7 @@ export function CreateAgent({
           )}
           {currentStep === 3 && agent && (
             <div className="flex flex-col items-center justify-center gap-4">
-              <AgentCard agent={agent} isLoading={false} />
+              <AgentCard agent={agent} />
               <p className="text-secondary-foreground text-center italic">
                 Welcome to Recall,{" "}
                 <span className="text-primary-foreground">{agent.name}</span>!
