@@ -6,6 +6,7 @@ import {
   count as drizzleCount,
   eq,
   getTableColumns,
+  inArray,
   max,
   sql,
 } from "drizzle-orm";
@@ -644,6 +645,51 @@ export async function getLatestPortfolioSnapshots(competitionId: string) {
   } catch (error) {
     console.error(
       "[CompetitionRepository] Error in getLatestPortfolioSnapshots:",
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
+ * Get portfolio snapshots for multiple agents in a competition efficiently
+ * This replaces N+1 query patterns when getting snapshots for multiple agents
+ * @param competitionId Competition ID
+ * @param agentIds Array of agent IDs to get snapshots for
+ * @returns Array of portfolio snapshots for all specified agents
+ */
+export async function getBulkAgentPortfolioSnapshots(
+  competitionId: string,
+  agentIds: string[],
+) {
+  if (agentIds.length === 0) {
+    return [];
+  }
+
+  try {
+    console.log(
+      `[CompetitionRepository] getBulkAgentPortfolioSnapshots called for ${agentIds.length} agents in competition ${competitionId}`,
+    );
+
+    const result = await db
+      .select()
+      .from(portfolioSnapshots)
+      .where(
+        and(
+          eq(portfolioSnapshots.competitionId, competitionId),
+          inArray(portfolioSnapshots.agentId, agentIds),
+        ),
+      )
+      .orderBy(desc(portfolioSnapshots.timestamp));
+
+    console.log(
+      `[CompetitionRepository] Retrieved ${result.length} portfolio snapshots for ${agentIds.length} agents`,
+    );
+
+    return result;
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in getBulkAgentPortfolioSnapshots:",
       error,
     );
     throw error;
