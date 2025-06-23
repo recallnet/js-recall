@@ -64,7 +64,7 @@ function getRateLimiter(
  *
  * Priority order:
  * 1. CF-Connecting-IP (if request is from Cloudflare)
- * 2. First IP in X-Forwarded-For chain (excluding private IPs)
+ * 2. X-Real-IP (set by load balancer, more trustworthy than x-forwarded-for)
  * 3. Express req.ip (fallback)
  *
  * @param req - Express request object
@@ -80,21 +80,12 @@ function getClientIp(req: Request): string {
     }
   }
 
-  // Priority 2: First IP in X-Forwarded-For (excluding private ranges)
-  const xForwardedFor = req.headers["x-forwarded-for"] as string;
-  if (xForwardedFor) {
-    const firstIp = xForwardedFor.split(",")[0]?.trim();
-    // Exclude private IP ranges that might be from internal infrastructure
-    if (
-      firstIp &&
-      !firstIp.startsWith("10.") &&
-      !firstIp.startsWith("192.168.") &&
-      !firstIp.startsWith("172.16.") &&
-      !firstIp.startsWith("127.") &&
-      firstIp !== "unknown"
-    ) {
-      return firstIp;
-    }
+  // Priority 2: X-Real-IP (set by load balancer)
+  // More trustworthy than x-forwarded-for as it's typically overwritten by the load balancer
+  // and contains a single IP address rather than a comma-separated chain
+  const xRealIp = req.headers["x-real-ip"] as string;
+  if (xRealIp && xRealIp !== "unknown" && !xRealIp.startsWith("127.")) {
+    return xRealIp;
   }
 
   // Priority 3: Express req.ip (respects trust proxy setting)
