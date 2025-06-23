@@ -32,6 +32,7 @@ import {
   getAgentCompetitionRanking,
   getAgentPortfolioSnapshots,
 } from "@/database/repositories/competition-repository.js";
+import { getBulkAgentMetrics } from "@/database/repositories/leaderboard-repository.js";
 import {
   countAgentTrades,
   countAgentTradesInCompetition,
@@ -1250,6 +1251,67 @@ export class AgentManager {
       skills: metadata?.skills || [],
       hasUnclaimedRewards: metadata?.hasUnclaimedRewards || false,
     };
+  }
+
+  /**
+   * Attach agent metrics to multiple agents efficiently using bulk queries
+   * This replaces the N+1 query pattern of calling attachAgentMetrics in a loop
+   *
+   * @param sanitizedAgents Array of sanitized agents to attach metrics to
+   * @returns Array of agents with attached metrics
+   */
+  async attachBulkAgentMetrics(
+    sanitizedAgents: ReturnType<AgentManager["sanitizeAgent"]>[],
+  ) {
+    if (sanitizedAgents.length === 0) {
+      return [];
+    }
+
+    console.log(
+      `[AgentManager] Attaching bulk metrics for ${sanitizedAgents.length} agents`,
+    );
+
+    try {
+      // Get all metrics in bulk using optimized queries
+      const agentIds = sanitizedAgents.map((agent) => agent.id);
+      const bulkMetrics = await getBulkAgentMetrics(agentIds);
+
+      // Create a lookup map for efficient access
+      const metricsMap = new Map(
+        bulkMetrics.map((metrics) => [metrics.agentId, metrics]),
+      );
+
+      // Attach metrics to each agent
+      return sanitizedAgents.map((sanitizedAgent) => {
+        const metadata = sanitizedAgent.metadata as AgentMetadata;
+        const metrics = metricsMap.get(sanitizedAgent.id);
+
+        const stats = {
+          completedCompetitions: metrics?.completedCompetitions ?? 0,
+          totalVotes: metrics?.totalVotes ?? 0,
+          totalTrades: metrics?.totalTrades ?? 0,
+          bestPlacement: metrics?.bestPlacement ?? undefined,
+          rank: metrics?.globalRank ?? undefined,
+          score: metrics?.globalScore ?? undefined,
+        } as AgentStats;
+
+        return {
+          ...sanitizedAgent,
+          stats,
+          trophies: metadata?.trophies || [],
+          skills: metadata?.skills || [],
+          hasUnclaimedRewards: metadata?.hasUnclaimedRewards || false,
+        };
+      });
+    } catch (error) {
+      console.error("[AgentManager] Error in attachBulkAgentMetrics:", error);
+
+      // Fallback to individual queries if bulk fails
+      console.warn("[AgentManager] Falling back to individual metric queries");
+      return Promise.all(
+        sanitizedAgents.map((agent) => this.attachAgentMetrics(agent)),
+      );
+    }
   }
 
   /**

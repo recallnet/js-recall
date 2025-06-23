@@ -171,22 +171,28 @@ export function makeUserController(services: ServiceRegistry) {
           paging,
         );
 
-        // Remove sensitive fields, but add back the email and deactivation since the user should see them
-        const sanitizedAgents = await Promise.all(
-          agents.map(async (agent) => ({
-            ...(await services.agentManager.attachAgentMetrics(
-              services.agentManager.sanitizeAgent(agent),
-            )),
-            email: agent.email,
-            deactivationReason: agent.deactivationReason,
-            deactivationDate: agent.deactivationDate,
-          })),
+        // Remove sensitive fields and attach metrics efficiently using bulk queries
+        const sanitizedAgents = agents.map((agent) =>
+          services.agentManager.sanitizeAgent(agent),
+        );
+
+        const agentsWithMetrics =
+          await services.agentManager.attachBulkAgentMetrics(sanitizedAgents);
+
+        // Add back email and deactivation fields since the user should see them
+        const finalAgents = agentsWithMetrics.map(
+          (agentWithMetrics, index) => ({
+            ...agentWithMetrics,
+            email: agents[index]?.email,
+            deactivationReason: agents[index]?.deactivationReason,
+            deactivationDate: agents[index]?.deactivationDate,
+          }),
         );
 
         res.status(200).json({
           success: true,
           userId,
-          agents: sanitizedAgents,
+          agents: finalAgents,
         });
       } catch (error) {
         next(error);
