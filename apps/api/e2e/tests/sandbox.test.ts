@@ -176,6 +176,109 @@ describe("Sandbox Mode", () => {
       const agent = (agentResponse as AdminAgentResponse).agent;
       expect(agent.id).toBeDefined();
     });
+
+    test("should skip auto-join if agent is already in the competition", async () => {
+      // First create a dummy user+agent to start the competition with
+      const dummyUserResponse = await adminClient.registerUser({
+        walletAddress: generateRandomEthAddress(),
+        name: "Dummy User Duplicate",
+        email: "dummy-duplicate@example.com",
+        agentName: "Dummy Agent Duplicate",
+        agentDescription: "Dummy agent for duplicate test",
+        agentWalletAddress: generateRandomEthAddress(),
+      });
+      expect(dummyUserResponse.success).toBe(true);
+      const dummyAgent = (dummyUserResponse as UserRegistrationResponse).agent;
+      expect(dummyAgent).toBeDefined();
+
+      // Create and start a competition with the dummy agent
+      const competitionResponse = await adminClient.createCompetition(
+        "Test Competition Duplicate",
+        "A test competition for duplicate checking",
+      );
+      expect(competitionResponse.success).toBe(true);
+      const competition = (competitionResponse as CreateCompetitionResponse)
+        .competition;
+
+      const startResponse = await adminClient.startExistingCompetition(
+        competition.id,
+        [dummyAgent!.id],
+      );
+      expect(startResponse).toHaveProperty("success", true);
+
+      // Register a user first
+      const userResponse = await adminClient.registerUser({
+        walletAddress: generateRandomEthAddress(),
+        name: "Test User Duplicate",
+        email: "testuser-duplicate@example.com",
+      });
+      expect(userResponse.success).toBe(true);
+      const user = (userResponse as UserRegistrationResponse).user;
+
+      // Register an agent - this should auto-join to the competition
+      const agentResponse = await adminClient.registerAgent({
+        user: {
+          id: user.id,
+        },
+        agent: {
+          name: "Test Agent Duplicate",
+          email: "test-duplicate@example.com",
+          description: "A test agent for duplicate checking",
+          walletAddress: generateRandomEthAddress(),
+        },
+      });
+
+      expect(agentResponse.success).toBe(true);
+      const agent = (agentResponse as AdminAgentResponse).agent;
+
+      // Verify the agent was joined to the competition
+      const competitionAgentsResponse = await adminClient.getCompetitionAgents(
+        competition.id,
+      );
+      expect(competitionAgentsResponse.success).toBe(true);
+
+      const competitionAgents = (
+        competitionAgentsResponse as CompetitionAgentsResponse
+      ).agents;
+      const joinedAgent = competitionAgents.find((a) => a.id === agent.id);
+      expect(joinedAgent).toBeDefined();
+
+      // Now try to register the same agent again (simulating duplicate auto-join attempt)
+      // This should succeed without errors and not create duplicate entries
+      const duplicateAgentResponse = await adminClient.registerAgent({
+        user: {
+          id: user.id,
+        },
+        agent: {
+          name: "Test Agent Duplicate 2",
+          email: "test-duplicate-2@example.com",
+          description: "Another agent for the same user",
+          walletAddress: generateRandomEthAddress(),
+        },
+      });
+
+      expect(duplicateAgentResponse.success).toBe(true);
+      const duplicateAgent = (duplicateAgentResponse as AdminAgentResponse)
+        .agent;
+
+      // Verify both agents are in the competition (no duplicates, no errors)
+      const finalCompetitionAgentsResponse =
+        await adminClient.getCompetitionAgents(competition.id);
+      expect(finalCompetitionAgentsResponse.success).toBe(true);
+
+      const finalCompetitionAgents = (
+        finalCompetitionAgentsResponse as CompetitionAgentsResponse
+      ).agents;
+      const originalAgent = finalCompetitionAgents.find(
+        (a) => a.id === agent.id,
+      );
+      const newAgent = finalCompetitionAgents.find(
+        (a) => a.id === duplicateAgent.id,
+      );
+
+      expect(originalAgent).toBeDefined();
+      expect(newAgent).toBeDefined();
+    });
   });
 
   describe("configuration", () => {

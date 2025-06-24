@@ -1090,15 +1090,27 @@ export class CompetitionManager {
         return;
       }
 
+      // Check if agent is already in the competition
+      const isAlreadyInCompetition = await this.isAgentInCompetition(
+        activeCompetition.id,
+        agentId,
+      );
+      if (isAlreadyInCompetition) {
+        console.log(
+          `[CompetitionManager] Agent ${agentId} is already in competition ${activeCompetition.id}, skipping auto-join`,
+        );
+        return;
+      }
+
       console.log(
         `[CompetitionManager] Auto-joining agent ${agentId} to active competition ${activeCompetition.id}`,
       );
 
+      // Reset the agent's balances to starting values (consistent with startCompetition order)
+      await this.balanceManager.resetAgentBalances(agentId);
+
       // Add the agent to the competition
       await addAgentToCompetition(activeCompetition.id, agentId);
-
-      // Reset the agent's balances to starting values
-      await this.balanceManager.resetAgentBalances(agentId);
 
       // Take a portfolio snapshot for this specific agent
       await this.portfolioSnapshotter.takeAgentPortfolioSnapshot(
