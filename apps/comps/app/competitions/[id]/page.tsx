@@ -1,6 +1,6 @@
 "use client";
 
-import { useDebounce, useWindowScroll } from "@uidotdev/usehooks";
+import { useWindowScroll } from "@uidotdev/usehooks";
 import { isFuture } from "date-fns";
 import { ArrowUpRight, ChevronRight } from "lucide-react";
 import Link from "next/link";
@@ -21,8 +21,6 @@ import { JoinSwarmSection } from "@/components/join-swarm-section";
 import { UserVote } from "@/components/user-vote";
 import { getSocialLinksArray } from "@/data/social";
 import { useCompetition } from "@/hooks/useCompetition";
-import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
-import { AgentCompetition } from "@/types";
 
 export default function CompetitionPage({
   params,
@@ -32,45 +30,14 @@ export default function CompetitionPage({
   const { id } = React.use(params);
   const agentsTableRef = React.useRef<HTMLDivElement>(null);
   const [, scrollTo] = useWindowScroll();
-  const [agentsFilter, setAgentsFilter] = React.useState("");
-  const [agentsSort, setAgentsSort] = React.useState("");
-  const [agentsLimit] = React.useState(10);
-  const [agentsOffset, setAgentsOffset] = React.useState(0);
-  const [allAgents, setAllAgents] = React.useState<AgentCompetition[]>([]);
-  const debouncedFilterTerm = useDebounce(agentsFilter, 300);
 
   const {
     data: competition,
     isLoading: isLoadingCompetition,
     error: competitionError,
   } = useCompetition(id);
-  const {
-    data: agentsData,
-    isLoading: isLoadingAgents,
-    error: agentsError,
-    isFetching: isFetchingAgents,
-  } = useCompetitionAgents(id, {
-    filter: debouncedFilterTerm,
-    sort: agentsSort,
-    limit: agentsLimit,
-    offset: agentsOffset,
-  });
 
-  React.useEffect(() => {
-    setAgentsOffset(0);
-  }, [debouncedFilterTerm, agentsSort]);
-
-  React.useEffect(() => {
-    if (!agentsData?.agents || isFetchingAgents) return;
-
-    if (agentsOffset === 0) {
-      setAllAgents(agentsData.agents);
-    } else {
-      setAllAgents((prev) => [...prev, ...agentsData.agents]);
-    }
-  }, [agentsData?.agents, isFetchingAgents, agentsOffset]);
-
-  const isLoading = isLoadingCompetition || isLoadingAgents;
+  const isLoading = isLoadingCompetition;
   const error = competitionError;
 
   if (isLoading) {
@@ -180,31 +147,7 @@ export default function CompetitionPage({
         />
       ) : null}
 
-      {agentsError || !agentsData ? (
-        <div className="my-12 rounded border border-red-400 bg-red-100 bg-opacity-10 p-6 text-center">
-          <h2 className="text-xl font-semibold text-red-400">
-            Failed to load agents
-          </h2>
-          <p className="mt-2 text-slate-300">
-            {agentsError?.message ||
-              "An error occurred while loading agents data"}
-          </p>
-        </div>
-      ) : (
-        <AgentsTable
-          ref={agentsTableRef}
-          competition={competition}
-          agents={allAgents}
-          onFilterChange={setAgentsFilter}
-          onSortChange={setAgentsSort}
-          onLoadMore={() => {
-            setAgentsOffset((prev) => prev + agentsLimit);
-          }}
-          hasMore={agentsData.pagination.hasMore}
-          pagination={agentsData.pagination}
-          totalVotes={competition.stats.totalVotes}
-        />
-      )}
+      <AgentsTable ref={agentsTableRef} competition={competition} />
       <JoinSwarmSection socialLinks={getSocialLinksArray()} className="mt-12" />
       <FooterSection />
     </div>

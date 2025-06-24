@@ -10,6 +10,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { useDebounce } from "@uidotdev/usehooks";
 import { ArrowUp, Search } from "lucide-react";
 import Link from "next/link";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -30,6 +31,7 @@ import { toast } from "@recallnet/ui2/components/toast";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useUserSession } from "@/hooks";
+import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
 import { useVote } from "@/hooks/useVote";
 import { AgentCompetition, Competition, PaginationResponse } from "@/types";
 import { formatPercentage } from "@/utils/format";
@@ -40,28 +42,47 @@ import ConfirmVoteModal from "../modals/confirm-vote";
 import { RankBadge } from "./rank-badge";
 
 export interface AgentsTableProps {
-  agents: AgentCompetition[];
-  totalVotes?: number;
   competition: Competition;
-  onFilterChange: (filter: string) => void;
-  onSortChange: (sort: string) => void;
-  onLoadMore: () => void;
-  hasMore: boolean;
-  pagination: PaginationResponse;
   ref: React.RefObject<HTMLDivElement | null>;
 }
 
 export const AgentsTable: React.FC<AgentsTableProps> = ({
-  agents,
-  totalVotes,
   competition,
-  onFilterChange,
-  onSortChange,
-  onLoadMore,
-  hasMore,
-  pagination,
   ref,
 }) => {
+  const agentsTableRef = ref;
+  const [agentsFilter, setAgentsFilter] = useState("");
+  const [agentsSort, setAgentsSort] = useState("");
+  const [agentsLimit] = useState(10);
+  const [agentsOffset, setAgentsOffset] = useState(0);
+  const [allAgents, setAllAgents] = useState<AgentCompetition[]>([]);
+  const debouncedFilterTerm = useDebounce(agentsFilter, 300);
+
+  const {
+    data: agentsData,
+    isLoading: isLoadingAgents,
+    error: agentsError,
+    isFetching: isFetchingAgents,
+  } = useCompetitionAgents(competition.id, {
+    filter: debouncedFilterTerm,
+    sort: agentsSort,
+    limit: agentsLimit,
+    offset: agentsOffset,
+  });
+
+  useEffect(() => {
+    setAgentsOffset(0);
+  }, [debouncedFilterTerm, agentsSort]);
+
+  useEffect(() => {
+    if (!agentsData?.agents || isFetchingAgents) return;
+    if (agentsOffset === 0) {
+      setAllAgents(agentsData.agents);
+    } else {
+      setAllAgents((prev) => [...prev, ...agentsData.agents]);
+    }
+  }, [agentsData?.agents, isFetchingAgents, agentsOffset]);
+
   const session = useUserSession();
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -212,7 +233,12 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               {row.original.voteCount}
             </span>
             <span className="text-xs text-slate-400">
-              ({formatPercentage(row.original.voteCount, totalVotes ?? 0)})
+              (
+              {formatPercentage(
+                row.original.voteCount,
+                competition.stats.totalVotes ?? 0,
+              )}
+              )
             </span>
           </div>
         ),
@@ -244,14 +270,14 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       },
     ],
     [
-      totalVotes,
+      competition.stats.totalVotes,
       competition.userVotingInfo?.canVote,
       competition.userVotingInfo?.info.agentId,
     ],
   );
 
   const table = useReactTable({
-    data: agents,
+    data: allAgents,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -274,7 +300,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         .map((sort) => `${sort.desc ? "-" : ""}${sort.id}`)
         .join(",");
 
-      onSortChange(sortString);
+      setAgentsSort(sortString);
     },
   });
 
@@ -286,17 +312,38 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     overscan: 5,
   });
 
+  if (isLoadingAgents) {
+    return (
+      <div className="my-12">
+        <span>Loading agents...</span>
+      </div>
+    );
+  }
+  if (agentsError || !agentsData) {
+    return (
+      <div className="my-12 rounded border border-red-400 bg-opacity-10 p-6 text-center">
+        <h2 className="text-xl font-semibold text-red-400">
+          Failed to load agents
+        </h2>
+        <p className="mt-2 text-slate-300">
+          {agentsError?.message ||
+            "An error occurred while loading agents data"}
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="mt-12 w-full" ref={ref}>
+    <div className="mt-12 w-full" ref={agentsTableRef}>
       <h2 className="mb-5 text-2xl font-bold">
-        Competition Leaderboard ({pagination.total})
+        Competition Leaderboard ({agentsData.pagination.total})
       </h2>
       <div className="mb-5 flex w-full items-center gap-2 rounded-2xl border px-3 py-2 md:w-1/2">
         <Search className="text-secondary-foreground mr-1 h-5" />
         <Input
           className="border-none bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
           placeholder="Search for an agent..."
-          onChange={(e) => onFilterChange(e.target.value)}
+          onChange={(e) => setAgentsFilter(e.target.value)}
           aria-label="Search for an agent"
         />
       </div>
@@ -392,9 +439,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           </TableBody>
         </Table>
       </div>
-      {hasMore && (
+      {agentsData.pagination.hasMore && (
         <div className="mt-4 flex justify-center">
-          <Button variant="outline" size="sm" onClick={onLoadMore}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setAgentsOffset((prev) => prev + agentsLimit)}
+          >
             Show More
           </Button>
         </div>
