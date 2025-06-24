@@ -147,6 +147,9 @@ export async function setup() {
   if (isSandboxTest) {
     process.env.SANDBOX = "true";
     console.log(`SANDBOX set to: ${process.env.SANDBOX}`);
+  } else {
+    process.env.SANDBOX = "false";
+    console.log(`SANDBOX set to: ${process.env.SANDBOX}`);
   }
 
   // Ensure TEST_MODE is set
