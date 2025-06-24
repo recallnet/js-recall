@@ -29,7 +29,7 @@ describe("Object Index Tests", () => {
       password: ADMIN_PASSWORD,
       email: ADMIN_EMAIL,
     });
-    adminApiKey = adminResponse.data.apiKey;
+    adminApiKey = adminResponse.data.admin.apiKey;
     adminClient = new ApiClient(adminApiKey);
     
     // Set up user and agent
@@ -328,11 +328,22 @@ describe("Object Index Tests", () => {
       const agent2Client = setup2.client;
       const agent2Id = setup2.agent.id;
       
-      // Join competition with second agent
-      const joinResponse = await agent2Client.joinCompetition(competitionId, agent2Id);
-      if ("error" in joinResponse) {
-        throw new Error(`Failed to join competition with agent 2: ${joinResponse.error}`);
+      // End the existing competition first
+      const endResponse = await adminClient.endCompetition(competitionId);
+      if ("error" in endResponse) {
+        console.error("Failed to end existing competition:", endResponse.error);
       }
+      
+      // Wait a bit for the competition to be fully ended
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Create a new competition with both agents
+      const newCompetition = await startTestCompetition(
+        adminClient,
+        "Test Competition for Multiple Agents",
+        [agentId, agent2Id]
+      );
+      const newCompetitionId = newCompetition.competition.id;
       
       // Make trades with both agents
       const usdcTokenAddress = config.specificChainTokens.svm.usdc;
@@ -361,7 +372,7 @@ describe("Object Index Tests", () => {
       
       // Sync trades
       const syncResp = await adminClient.syncObjectIndex({
-        competitionId,
+        competitionId: newCompetitionId,
         dataTypes: ["trade"]
       });
       
@@ -374,7 +385,7 @@ describe("Object Index Tests", () => {
       
       // Filter by first agent
       const agent1Entries = await adminClient.getObjectIndex({
-        competitionId,
+        competitionId: newCompetitionId,
         agentId,
         dataType: "trade"
       });
@@ -385,7 +396,7 @@ describe("Object Index Tests", () => {
       
       // Filter by second agent
       const agent2Entries = await adminClient.getObjectIndex({
-        competitionId,
+        competitionId: newCompetitionId,
         agentId: agent2Id,
         dataType: "trade"
       });
