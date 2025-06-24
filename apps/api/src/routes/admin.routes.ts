@@ -1430,6 +1430,106 @@ export function configureAdminRoutes(
 
   /**
    * @openapi
+   * /api/admin/object-index:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: Get object index entries
+   *     description: Retrieve object index entries with optional filters
+   *     security:
+   *       - ApiKeyAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: competitionId
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Filter by competition ID
+   *       - in: query
+   *         name: agentId
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Filter by agent ID
+   *       - in: query
+   *         name: dataType
+   *         schema:
+   *           type: string
+   *           enum: [trade, agent_rank_history, agent_rank, competitions_leaderboard, portfolio_snapshot]
+   *         description: Filter by data type
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: integer
+   *           minimum: 1
+   *           maximum: 1000
+   *           default: 100
+   *         description: Maximum number of entries to return
+   *       - in: query
+   *         name: offset
+   *         schema:
+   *           type: integer
+   *           minimum: 0
+   *           default: 0
+   *         description: Number of entries to skip
+   *     responses:
+   *       200:
+   *         description: Object index entries retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     entries:
+   *                       type: array
+   *                       items:
+   *                         type: object
+   *                         properties:
+   *                           id:
+   *                             type: string
+   *                           competitionId:
+   *                             type: string
+   *                           agentId:
+   *                             type: string
+   *                           dataType:
+   *                             type: string
+   *                           data:
+   *                             type: string
+   *                           sizeBytes:
+   *                             type: integer
+   *                           metadata:
+   *                             type: object
+   *                           eventTimestamp:
+   *                             type: string
+   *                             format: date-time
+   *                           createdAt:
+   *                             type: string
+   *                             format: date-time
+   *                     pagination:
+   *                       type: object
+   *                       properties:
+   *                         total:
+   *                           type: integer
+   *                         limit:
+   *                           type: integer
+   *                         offset:
+   *                           type: integer
+   *       400:
+   *         description: Bad request - Invalid parameters
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       500:
+   *         description: Server error
+   */
+  router.get("/object-index", controller.getObjectIndex);
+
+  /**
+   * @openapi
    * /api/admin/competitions/{competitionId}/agents/{agentId}/remove:
    *   post:
    *     tags:
