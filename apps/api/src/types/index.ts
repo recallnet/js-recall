@@ -969,3 +969,30 @@ export const UserVotesParamsSchema = z.object({
 });
 
 export type UserVotesParams = z.infer<typeof UserVotesParamsSchema>;
+
+/**
+ * Admin create agent schema
+ */
+export const AdminCreateAgentSchema = z.object({
+  user: z
+    .object({
+      id: z.uuid().optional(),
+      walletAddress: z
+        .string()
+        .regex(/^0x[0-9a-fA-F]{40}$/)
+        .optional(),
+    })
+    .refine((d) => (d.id ? !d.walletAddress : !!d.walletAddress), {
+      message: "Must provide either user ID or user wallet address",
+    }),
+  agent: z.object({
+    name: z.string(),
+    email: z.string().optional(),
+    walletAddress: z.string().optional(),
+    description: z.string().optional(),
+    imageUrl: z.string().optional(),
+    metadata: z.nullish(AgentMetadataSchema),
+  }),
+});
+
+export type AdminCreateAgent = z.infer<typeof AdminCreateAgentSchema>;
