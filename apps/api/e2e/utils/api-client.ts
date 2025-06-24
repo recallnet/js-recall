@@ -1548,7 +1548,7 @@ export class ApiClient {
         dataType: string;
         data: string;
         sizeBytes: number;
-        metadata: any;
+        metadata: Record<string, unknown>;
         eventTimestamp: string;
         createdAt: string;
       }>;
