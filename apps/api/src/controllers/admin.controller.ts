@@ -714,11 +714,20 @@ export function makeAdminController(services: ServiceRegistry) {
         // Populate object_index with competition data
         try {
           await services.objectIndexService.populateTrades(competitionId);
-          await services.objectIndexService.populateAgentRankHistory(competitionId);
-          await services.objectIndexService.populateCompetitionsLeaderboard(competitionId);
-          console.log(`Successfully populated object_index for competition ${competitionId}`);
+          await services.objectIndexService.populateAgentRankHistory(
+            competitionId,
+          );
+          await services.objectIndexService.populateCompetitionsLeaderboard(
+            competitionId,
+          );
+          console.log(
+            `Successfully populated object_index for competition ${competitionId}`,
+          );
         } catch (error) {
-          console.error(`Failed to populate object_index for competition ${competitionId}:`, error);
+          console.error(
+            `Failed to populate object_index for competition ${competitionId}:`,
+            error,
+          );
           // Don't fail the request if object_index population fails
         }
 
@@ -748,36 +757,56 @@ export function makeAdminController(services: ServiceRegistry) {
           validatedCompetitionId = ensureUuid(competitionId);
         }
 
-        const defaultDataTypes = [SYNC_DATA_TYPE.TRADE, SYNC_DATA_TYPE.AGENT_RANK_HISTORY, SYNC_DATA_TYPE.COMPETITIONS_LEADERBOARD];
+        const defaultDataTypes = [
+          SYNC_DATA_TYPE.TRADE,
+          SYNC_DATA_TYPE.AGENT_RANK_HISTORY,
+          SYNC_DATA_TYPE.COMPETITIONS_LEADERBOARD,
+        ];
         let typesToSync: string[] = defaultDataTypes;
 
         if (dataTypes) {
-          const validationResults = dataTypes.map((dt: unknown) => SyncDataTypeSchema.safeParse(dt));
-          const hasErrors = validationResults.some((result: { success: boolean }) => !result.success);
+          const validationResults = dataTypes.map((dt: unknown) =>
+            SyncDataTypeSchema.safeParse(dt),
+          );
+          const hasErrors = validationResults.some(
+            (result: { success: boolean }) => !result.success,
+          );
 
           if (hasErrors) {
             throw new ApiError(400, "Invalid data type(s) provided");
           }
 
-          typesToSync = validationResults.map((result: { data?: string }) => result.data!).filter(Boolean);
+          typesToSync = validationResults
+            .map((result: { data?: string }) => result.data!)
+            .filter(Boolean);
         }
 
-        console.log(`Starting object index sync for types: ${typesToSync.join(', ')}`);
+        console.log(
+          `Starting object index sync for types: ${typesToSync.join(", ")}`,
+        );
 
         for (const dataType of typesToSync) {
           try {
             switch (dataType) {
               case SYNC_DATA_TYPE.TRADE:
-                await services.objectIndexService.populateTrades(validatedCompetitionId);
+                await services.objectIndexService.populateTrades(
+                  validatedCompetitionId,
+                );
                 break;
               case SYNC_DATA_TYPE.AGENT_RANK_HISTORY:
-                await services.objectIndexService.populateAgentRankHistory(validatedCompetitionId);
+                await services.objectIndexService.populateAgentRankHistory(
+                  validatedCompetitionId,
+                );
                 break;
               case SYNC_DATA_TYPE.COMPETITIONS_LEADERBOARD:
-                await services.objectIndexService.populateCompetitionsLeaderboard(validatedCompetitionId);
+                await services.objectIndexService.populateCompetitionsLeaderboard(
+                  validatedCompetitionId,
+                );
                 break;
               case SYNC_DATA_TYPE.PORTFOLIO_SNAPSHOT:
-                await services.objectIndexService.populatePortfolioSnapshots(validatedCompetitionId);
+                await services.objectIndexService.populatePortfolioSnapshots(
+                  validatedCompetitionId,
+                );
                 break;
               case SYNC_DATA_TYPE.AGENT_RANK:
                 await services.objectIndexService.populateAgentRank();
@@ -793,9 +822,9 @@ export function makeAdminController(services: ServiceRegistry) {
 
         res.status(200).json({
           success: true,
-          message: 'Object index sync initiated',
+          message: "Object index sync initiated",
           dataTypes: typesToSync,
-          competitionId: validatedCompetitionId || 'all'
+          competitionId: validatedCompetitionId || "all",
         });
       } catch (error) {
         next(error);
@@ -814,8 +843,8 @@ export function makeAdminController(services: ServiceRegistry) {
           competitionId,
           agentId,
           dataType,
-          limit = '100',
-          offset = '0'
+          limit = "100",
+          offset = "0",
         } = req.query;
 
         let validatedCompetitionId: string | undefined;
@@ -845,16 +874,16 @@ export function makeAdminController(services: ServiceRegistry) {
             {
               competitionId: validatedCompetitionId,
               agentId: validatedAgentId,
-              dataType: validatedDataType
+              dataType: validatedDataType,
             },
             limitNum,
-            offsetNum
+            offsetNum,
           ),
           objectIndexRepository.count({
             competitionId: validatedCompetitionId,
             agentId: validatedAgentId,
-            dataType: validatedDataType
-          })
+            dataType: validatedDataType,
+          }),
         ]);
 
         res.status(200).json({
@@ -864,9 +893,9 @@ export function makeAdminController(services: ServiceRegistry) {
             pagination: {
               total: totalCount,
               limit: limitNum,
-              offset: offsetNum
-            }
-          }
+              offset: offsetNum,
+            },
+          },
         });
       } catch (error) {
         next(error);

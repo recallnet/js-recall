@@ -68,7 +68,6 @@ class TestContextManager {
       return;
     }
 
-    this.log("Initializing Test Context Manager");
     this.initialized = true;
   }
 
@@ -77,7 +76,6 @@ class TestContextManager {
    */
   setTestContext(context: TestContext): void {
     this.currentContext = { ...context };
-    this.log(`Test context updated: ${JSON.stringify(context)}`);
 
     // Apply environment overrides if provided
     if (context.environmentOverrides) {
@@ -165,8 +163,6 @@ class TestContextManager {
    * Clear test context and restore original environment variables
    */
   clearTestContext(): void {
-    this.log("Clearing test context and restoring environment variables");
-
     // Restore original environment variables
     for (const [key, originalValue] of Object.entries(this.originalEnvValues)) {
       if (originalValue === undefined) {

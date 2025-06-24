@@ -825,7 +825,7 @@ export async function getPortfolioTokenValuesByIds(snapshotIds: number[]) {
     if (snapshotIds.length === 0) {
       return [];
     }
-    
+
     return await db
       .select()
       .from(portfolioTokenValues)
