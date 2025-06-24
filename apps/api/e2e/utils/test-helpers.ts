@@ -168,6 +168,9 @@ export async function createTestCompetition(
   description?: string,
   externalUrl?: string,
   imageUrl?: string,
+  type?: string,
+  votingStartDate?: string,
+  votingEndDate?: string,
 ): Promise<CreateCompetitionResponse> {
   // Ensure database is initialized
   await ensureDatabaseInitialized();
@@ -178,6 +181,9 @@ export async function createTestCompetition(
     undefined, // tradingType
     externalUrl,
     imageUrl,
+    type,
+    votingStartDate,
+    votingEndDate,
   );
 
   if (!result.success) {

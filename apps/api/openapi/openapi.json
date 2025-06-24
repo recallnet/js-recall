@@ -6066,6 +6066,26 @@
           "404": {
             "description": "User not found"
           },
+          "409": {
+            "description": "Agent with this name already exists for this user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "An agent with the name \"Trading Bot Alpha\" already exists for this user"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error"
           }

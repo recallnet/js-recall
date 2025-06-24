@@ -80,6 +80,9 @@ services.scheduler.startSnapshotScheduler();
 console.log("Portfolio snapshot scheduler started");
 
 // Configure middleware
+// Trust proxy to get real IP addresses (important for rate limiting)
+app.set("trust proxy", true);
+
 app.use(
   cors({
     origin: config.app.url,
