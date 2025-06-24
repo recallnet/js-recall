@@ -45,6 +45,7 @@
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:*",
     "@recallnet/typescript-config": "workspace:*",
+    "eslint": "^9.19.0",
     "tsup": "^8.3.6",
     "typedoc": "^0.28.1",
     "typedoc-plugin-coverage": "^3.4.1",

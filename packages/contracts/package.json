@@ -33,6 +33,7 @@
     "@recallnet/network-constants": "workspace:*",
     "@recallnet/typescript-config": "workspace:*",
     "@wagmi/cli": "^2.1.22",
+    "eslint": "^9.19.0",
     "tsup": "^8.3.6",
     "typescript": "^5.7.3"
   },

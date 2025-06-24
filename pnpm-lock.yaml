@@ -116,7 +116,7 @@ importers:
     devDependencies:
       '@elizaos/core':
         specifier: ^0.25.9
-        version: 0.25.9(@types/debug@4.1.12)(@types/node@18.19.101)(bufferutil@4.0.9)(jiti@2.4.2)(lightningcss@1.30.1)(react@19.1.0)(tsx@4.19.4)(typescript@5.8.3)(utf-8-validate@5.0.10)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(yaml@2.8.0)
+        version: 0.25.9(@types/debug@4.1.12)(@types/node@18.19.101)(bufferutil@4.0.9)(jiti@2.4.2)(lightningcss@1.30.1)(react@19.1.0)(tsx@4.19.4)(typescript@5.8.3)(utf-8-validate@5.0.10)(ws@8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))(yaml@2.8.0)
       '@recallnet/eslint-config':
         specifier: workspace:^
         version: link:../../packages/eslint-config
@@ -571,6 +571,9 @@ importers:
       '@recallnet/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
+      eslint:
+        specifier: ^9.19.0
+        version: 9.27.0(jiti@2.4.2)
       tsup:
         specifier: ^8.3.6
         version: 8.5.0(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.8.0)
@@ -632,6 +635,9 @@ importers:
       dotenv:
         specifier: ^16.4.7
         version: 16.5.0
+      eslint:
+        specifier: ^9.19.0
+        version: 9.27.0(jiti@2.4.2)
       langchain:
         specifier: ^0.3.21
         version: 0.3.26(@langchain/core@0.3.56(openai@4.100.0(ws@8.18.2(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.25.23)))(axios@1.9.0)(handlebars@4.7.8)(openai@4.100.0(ws@8.18.2(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.25.23))(ws@8.18.2(bufferutil@4.0.9)(utf-8-validate@5.0.10))
@@ -675,6 +681,9 @@ importers:
       '@types/node':
         specifier: ^22.13.13
         version: 22.15.19
+      eslint:
+        specifier: ^9.19.0
+        version: 9.27.0(jiti@2.4.2)
       shx:
         specifier: ^0.4.0
         version: 0.4.0
@@ -742,6 +751,9 @@ importers:
       '@recallnet/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
+      eslint:
+        specifier: ^9.19.0
+        version: 9.27.0(jiti@2.4.2)
       tsup:
         specifier: ^8.3.6
         version: 8.5.0(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.8.0)
@@ -776,6 +788,9 @@ importers:
       '@wagmi/cli':
         specifier: ^2.1.22
         version: 2.3.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
+      eslint:
+        specifier: ^9.19.0
+        version: 9.27.0(jiti@2.4.2)
       tsup:
         specifier: ^8.3.6
         version: 8.5.0(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.8.0)
@@ -868,6 +883,9 @@ importers:
       '@recallnet/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
+      eslint:
+        specifier: ^9.19.0
+        version: 9.27.0(jiti@2.4.2)
       typescript:
         specifier: ^5.7.3
         version: 5.8.3
@@ -908,6 +926,9 @@ importers:
       chai-as-promised:
         specifier: ^8.0.1
         version: 8.0.1(chai@5.2.0)
+      eslint:
+        specifier: ^9.19.0
+        version: 9.27.0(jiti@2.4.2)
       mocha:
         specifier: ^11.0.1
         version: 11.4.0
@@ -951,6 +972,9 @@ importers:
       '@types/node':
         specifier: ^22.13.13
         version: 22.15.19
+      eslint:
+        specifier: ^9.19.0
+        version: 9.27.0(jiti@2.4.2)
       shx:
         specifier: ^0.4.0
         version: 0.4.0
@@ -969,6 +993,9 @@ importers:
       '@recallnet/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
+      eslint:
+        specifier: ^9.19.0
+        version: 9.27.0(jiti@2.4.2)
       tsup:
         specifier: ^8.3.6
         version: 8.5.0(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.8.0)
@@ -1076,6 +1103,9 @@ importers:
       chai:
         specifier: ^5.1.2
         version: 5.2.0
+      eslint:
+        specifier: ^9.19.0
+        version: 9.27.0(jiti@2.4.2)
       mocha:
         specifier: ^11.0.1
         version: 11.4.0
@@ -1208,6 +1238,9 @@ importers:
       '@types/react-dom':
         specifier: ^19
         version: 19.1.5(@types/react@19.1.4)
+      eslint:
+        specifier: ^9.19.0
+        version: 9.27.0(jiti@2.4.2)
       tailwindcss:
         specifier: ^4.0.8
         version: 4.1.7
@@ -1247,6 +1280,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      eslint:
+        specifier: ^9.19.0
+        version: 9.27.0(jiti@2.4.2)
       lucide-react:
         specifier: ^0.475.0
         version: 0.475.0(react@19.1.0)
@@ -1296,9 +1332,6 @@ importers:
       '@types/react-dom':
         specifier: ^19
         version: 19.1.5(@types/react@19.1.4)
-      eslint:
-        specifier: ^9.19.0
-        version: 9.27.0(jiti@2.4.2)
       tailwindcss:
         specifier: ^4.0.8
         version: 4.1.7
@@ -4641,7 +4674,6 @@ packages:
 
   bun@1.2.13:
     resolution: {integrity: sha512-EhP1MhFbicqtaRSFCbEZdkcFco8Ov47cNJcB9QmKS8U4cojKHfLU+dQR14lCvLYmtBvGgwv/Lp+9SSver2OPzQ==}
-    cpu: [arm64, x64, aarch64]
     os: [darwin, linux, win32]
     hasBin: true
 
@@ -10037,7 +10069,7 @@ snapshots:
 
   '@electric-sql/pglite@0.2.17': {}
 
-  '@elizaos/core@0.25.9(@types/debug@4.1.12)(@types/node@18.19.101)(bufferutil@4.0.9)(jiti@2.4.2)(lightningcss@1.30.1)(react@19.1.0)(tsx@4.19.4)(typescript@5.8.3)(utf-8-validate@5.0.10)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(yaml@2.8.0)':
+  '@elizaos/core@0.25.9(@types/debug@4.1.12)(@types/node@18.19.101)(bufferutil@4.0.9)(jiti@2.4.2)(lightningcss@1.30.1)(react@19.1.0)(tsx@4.19.4)(typescript@5.8.3)(utf-8-validate@5.0.10)(ws@8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))(yaml@2.8.0)':
     dependencies:
       '@ai-sdk/amazon-bedrock': 1.1.6(zod@3.25.23)
       '@ai-sdk/anthropic': 1.1.6(zod@3.25.23)
@@ -10059,7 +10091,7 @@ snapshots:
       js-sha1: 0.7.0
       js-tiktoken: 1.0.15
       ollama-ai-provider: 0.16.1(zod@3.25.23)
-      openai: 4.82.0(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.25.23)
+      openai: 4.82.0(ws@8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.25.23)
       pino: 9.7.0
       pino-pretty: 13.0.0
       sql.js: 1.13.0
@@ -16409,7 +16441,7 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  openai@4.82.0(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.25.23):
+  openai@4.82.0(ws@8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.25.23):
     dependencies:
       '@types/node': 18.19.101
       '@types/node-fetch': 2.6.12
@@ -16419,7 +16451,7 @@ snapshots:
       formdata-node: 4.4.1
       node-fetch: 2.7.0
     optionalDependencies:
-      ws: 8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      ws: 8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       zod: 3.25.23
     transitivePeerDependencies:
       - encoding
