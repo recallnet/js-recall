@@ -70,6 +70,37 @@ beforeEach(async () => {
   // Reset caches to ensure a clean state for each test
   log("[Global Setup] Resetting service caches...");
 
+  // Reset AdminManager caches
+  if (services.adminManager) {
+    // Reset apiKeyCache if it exists
+    // @ts-expect-error known private class property
+    if (services.adminManager.apiKeyCache instanceof Map) {
+      // @ts-expect-error known private class property
+      const count = services.adminManager.apiKeyCache.size;
+      if (count > 0) {
+        log(
+          `[Global Setup] Clearing ${count} entries from AdminManager.apiKeyCache`,
+        );
+        // @ts-expect-error known private class property
+        services.adminManager.apiKeyCache.clear();
+      }
+    }
+
+    // Reset adminProfileCache if it exists
+    // @ts-expect-error known private class property
+    if (services.adminManager.adminProfileCache instanceof Map) {
+      // @ts-expect-error known private class property
+      const count = services.adminManager.adminProfileCache.size;
+      if (count > 0) {
+        log(
+          `[Global Setup] Clearing ${count} entries from AdminManager.adminProfileCache`,
+        );
+        // @ts-expect-error known private class property
+        services.adminManager.adminProfileCache.clear();
+      }
+    }
+  }
+
   // Reset UserManager caches
   if (services.userManager) {
     // Reset userWalletCache if it exists
