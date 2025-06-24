@@ -148,6 +148,10 @@ export const config = {
     nodeEnv: process.env.NODE_ENV || "development",
     apiPrefix: process.env.API_PREFIX || "",
   },
+  email: {
+    apiKey: process.env.LOOPS_API_KEY || "",
+    transactionalId: process.env.LOOPS_TRANSACTIONAL_ID || "",
+  },
   // Frontend app configuration for interfacing with the server
   app: {
     url: process.env.FRONTEND_URL || "http://localhost:3001", // TODO: resolve frontend/backend default ports
