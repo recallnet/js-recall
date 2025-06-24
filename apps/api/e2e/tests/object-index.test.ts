@@ -11,14 +11,12 @@ import {
   startTestCompetition
 } from "../utils/test-helpers.js";
 import { BlockchainType } from "../utils/api-types.js";
-import { ServiceRegistry } from "@/services/index.js";
+import config from "@/config/index.js";
 
 describe("Object Index Tests", () => {
-  const services = new ServiceRegistry();
   let adminClient: ApiClient;
   let agentClient: ApiClient;
   let adminApiKey: string;
-  let userId: string;
   let agentId: string;
   let competitionId: string;
 
@@ -37,7 +35,6 @@ describe("Object Index Tests", () => {
     // Set up user and agent
     const setup = await registerUserAndAgentAndGetClient({ adminApiKey });
     agentClient = setup.client;
-    userId = setup.user.id;
     agentId = setup.agent.id;
     
     // Create and start a test competition
@@ -53,15 +50,18 @@ describe("Object Index Tests", () => {
     await cleanupTestState();
   });
 
-  describe("Object Index after endCompetition", () => {
-    it("should populate object_index entries when competition ends", async () => {
+  describe("Object Index sync", () => {
+    it("should populate object_index entries when manually synced after competition ends", async () => {
       // Make some trades
+      const usdcTokenAddress = config.specificChainTokens.svm.usdc;
+      const solTokenAddress = config.specificChainTokens.svm.sol;
+      
       const tradeResponse1 = await agentClient.executeTrade({
-        fromToken: "0xf08A50178dfcDe18524640EA6618a1f965821715", // USDC
-        toToken: "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73", // WETH
+        fromToken: usdcTokenAddress,
+        toToken: solTokenAddress,
         amount: "100",
-        fromChain: BlockchainType.EVM,
-        toChain: BlockchainType.EVM,
+        fromChain: BlockchainType.SVM,
+        toChain: BlockchainType.SVM,
         reason: "Test trade 1"
       });
       
@@ -70,11 +70,11 @@ describe("Object Index Tests", () => {
       }
       
       const tradeResponse2 = await agentClient.executeTrade({
-        fromToken: "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73", // WETH
-        toToken: "0xf08A50178dfcDe18524640EA6618a1f965821715", // USDC
+        fromToken: solTokenAddress,
+        toToken: usdcTokenAddress,
         amount: "0.1",
-        fromChain: BlockchainType.EVM,
-        toChain: BlockchainType.EVM,
+        fromChain: BlockchainType.SVM,
+        toChain: BlockchainType.SVM,
         reason: "Test trade 2"
       });
       
@@ -90,6 +90,15 @@ describe("Object Index Tests", () => {
       
       // Wait a bit for async processing
       await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Manually sync object index after competition ends
+      const syncResponse = await adminClient.syncObjectIndex({
+        competitionId
+      });
+      
+      if ("error" in syncResponse) {
+        throw new Error(`Failed to sync object index: ${syncResponse.error}`);
+      }
       
       // Check object_index entries
       const objectIndexResponse = await adminClient.getObjectIndex({
@@ -137,12 +146,15 @@ describe("Object Index Tests", () => {
   describe("Manual sync route", () => {
     it("should sync object_index entries via manual sync endpoint", async () => {
       // Make a trade
+      const usdcTokenAddress = config.specificChainTokens.svm.usdc;
+      const solTokenAddress = config.specificChainTokens.svm.sol;
+      
       const tradeResponse = await agentClient.executeTrade({
-        fromToken: "0xf08A50178dfcDe18524640EA6618a1f965821715", // USDC
-        toToken: "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73", // WETH
+        fromToken: usdcTokenAddress,
+        toToken: solTokenAddress,
         amount: "50",
-        fromChain: BlockchainType.EVM,
-        toChain: BlockchainType.EVM,
+        fromChain: BlockchainType.SVM,
+        toChain: BlockchainType.SVM,
         reason: "Test trade for sync"
       });
       
@@ -165,6 +177,9 @@ describe("Object Index Tests", () => {
       
       expect(syncResponse.success).toBe(true);
       expect(syncResponse.dataTypes).toContain("trade");
+      
+      // Wait for sync to complete
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Verify the data was synced
       const objectIndexResponse = await adminClient.getObjectIndex({
@@ -190,12 +205,15 @@ describe("Object Index Tests", () => {
 
     it("should sync all data types when no specific types provided", async () => {
       // Make some activity
+      const usdcTokenAddress = config.specificChainTokens.svm.usdc;
+      const solTokenAddress = config.specificChainTokens.svm.sol;
+      
       const tradeResponse = await agentClient.executeTrade({
-        fromToken: "0xf08A50178dfcDe18524640EA6618a1f965821715", // USDC
-        toToken: "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73", // WETH
+        fromToken: usdcTokenAddress,
+        toToken: solTokenAddress,
         amount: "25",
-        fromChain: BlockchainType.EVM,
-        toChain: BlockchainType.EVM,
+        fromChain: BlockchainType.SVM,
+        toChain: BlockchainType.SVM,
         reason: "Test trade for full sync"
       });
       
@@ -218,6 +236,9 @@ describe("Object Index Tests", () => {
       expect(syncResponse.success).toBe(true);
       expect(syncResponse.dataTypes.length).toBeGreaterThan(0);
       
+      // Wait for sync to complete
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       // Check what was synced
       const objectIndexResponse = await adminClient.getObjectIndex({
         competitionId
@@ -233,13 +254,16 @@ describe("Object Index Tests", () => {
 
     it("should handle pagination correctly", async () => {
       // Create multiple trades
+      const usdcTokenAddress = config.specificChainTokens.svm.usdc;
+      const solTokenAddress = config.specificChainTokens.svm.sol;
+      
       for (let i = 0; i < 5; i++) {
         const tradeResponse = await agentClient.executeTrade({
-          fromToken: "0xf08A50178dfcDe18524640EA6618a1f965821715", // USDC
-          toToken: "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73", // WETH
+          fromToken: usdcTokenAddress,
+          toToken: solTokenAddress,
           amount: String(10 + i),
-          fromChain: BlockchainType.EVM,
-          toChain: BlockchainType.EVM,
+          fromChain: BlockchainType.SVM,
+          toChain: BlockchainType.SVM,
           reason: `Test trade ${i}`
         });
         
@@ -260,6 +284,9 @@ describe("Object Index Tests", () => {
       if ("error" in syncResponse) {
         throw new Error(`Sync failed: ${syncResponse.error}`);
       }
+      
+      // Wait for sync to complete
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Test pagination
       const page1 = await adminClient.getObjectIndex({
@@ -308,21 +335,24 @@ describe("Object Index Tests", () => {
       }
       
       // Make trades with both agents
+      const usdcTokenAddress = config.specificChainTokens.svm.usdc;
+      const solTokenAddress = config.specificChainTokens.svm.sol;
+      
       await agentClient.executeTrade({
-        fromToken: "0xf08A50178dfcDe18524640EA6618a1f965821715", // USDC
-        toToken: "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73", // WETH
+        fromToken: usdcTokenAddress,
+        toToken: solTokenAddress,
         amount: "100",
-        fromChain: BlockchainType.EVM,
-        toChain: BlockchainType.EVM,
+        fromChain: BlockchainType.SVM,
+        toChain: BlockchainType.SVM,
         reason: "Agent 1 trade"
       });
       
       await agent2Client.executeTrade({
-        fromToken: "0xf08A50178dfcDe18524640EA6618a1f965821715", // USDC
-        toToken: "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73", // WETH
+        fromToken: usdcTokenAddress,
+        toToken: solTokenAddress,
         amount: "200",
-        fromChain: BlockchainType.EVM,
-        toChain: BlockchainType.EVM,
+        fromChain: BlockchainType.SVM,
+        toChain: BlockchainType.SVM,
         reason: "Agent 2 trade"
       });
       
@@ -330,10 +360,17 @@ describe("Object Index Tests", () => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Sync trades
-      await adminClient.syncObjectIndex({
+      const syncResp = await adminClient.syncObjectIndex({
         competitionId,
         dataTypes: ["trade"]
       });
+      
+      if ("error" in syncResp) {
+        throw new Error(`Sync failed: ${syncResp.error}`);
+      }
+      
+      // Wait for sync to complete
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Filter by first agent
       const agent1Entries = await adminClient.getObjectIndex({
