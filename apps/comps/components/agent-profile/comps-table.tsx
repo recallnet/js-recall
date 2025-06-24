@@ -123,18 +123,24 @@ export function CompetitionTable({
                       {/* Future skills mapping */}
                     </TableCell>
                     <TableCell className="text-md text-secondary-foreground flex items-center font-medium">
-                      $0<span className="ml-2 text-xs">USDC</span>
+                      {typeof comp.portfolioValue === "number"
+                        ? `$${comp.portfolioValue.toFixed(2)}`
+                        : "n/a"}
+                      <span className="ml-2 text-xs">USDC</span>
                     </TableCell>
                     <TableCell className="w-30 flex items-center justify-center font-medium">
                       <span className="text-secondary-foreground flex flex-col">
-                        0$
+                        {comp.pnlPercent
+                          ? `${Math.round(comp.pnlPercent)}%`
+                          : "n/a"}
                       </span>
                     </TableCell>
                     <TableCell className="w-30 text-md fond-semibold text-secondary-foreground flex items-center text-center">
-                      0
+                      {comp.totalTrades}
                     </TableCell>
                     <TableCell className="w-30 text-secondary-foreground flex items-center text-center">
-                      0/0
+                      {comp.bestPlacement &&
+                        `${comp.bestPlacement.rank}/${comp.bestPlacement.totalAgents}`}
                     </TableCell>
                     <TableCell className="align-center h-25 flex items-center gap-2">
                       <Hexagon className="h-8 w-8 bg-blue-500" />
