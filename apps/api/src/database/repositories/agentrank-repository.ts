@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
 import { db } from "@/database/db.js";
@@ -214,6 +214,43 @@ export async function batchUpdateAgentRanks(
       "[AgentRankRepository] Error in batchUpdateAgentRanks:",
       error,
     );
+    throw error;
+  }
+}
+
+/**
+ * Get all agent rank history records
+ * @param competitionId Optional competition ID to filter by
+ */
+export async function getAllAgentRankHistory(competitionId?: string) {
+  try {
+    const query = db
+      .select()
+      .from(agentRankHistory)
+      .orderBy(desc(agentRankHistory.createdAt));
+
+    if (competitionId) {
+      query.where(eq(agentRankHistory.competitionId, competitionId));
+    }
+
+    return await query;
+  } catch (error) {
+    console.error("[AgentRankRepository] Error in getAllAgentRankHistory:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get all raw agent ranks (without joins)
+ */
+export async function getAllRawAgentRanks() {
+  try {
+    return await db
+      .select()
+      .from(agentRank)
+      .orderBy(desc(agentRank.ordinal));
+  } catch (error) {
+    console.error("[AgentRankRepository] Error in getAllRawAgentRanks:", error);
     throw error;
   }
 }

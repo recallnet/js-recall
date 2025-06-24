@@ -4,6 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 import { reloadSecurityConfig } from "@/config/index.js";
+import { objectIndexRepository } from "@/database/repositories/object-index.repository.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
@@ -12,6 +13,9 @@ import {
   AgentSearchParams,
   COMPETITION_STATUS,
   CROSS_CHAIN_TRADING_TYPE,
+  SYNC_DATA_TYPE,
+  SyncDataType,
+  SyncDataTypeSchema,
   UserSearchParams,
 } from "@/types/index.js";
 
@@ -688,11 +692,162 @@ export function makeAdminController(services: ServiceRegistry) {
         const leaderboard =
           await services.competitionManager.getLeaderboard(competitionId);
 
+        // Populate object_index with competition data
+        try {
+          await services.objectIndexService.populateTrades(competitionId);
+          await services.objectIndexService.populateAgentRankHistory(competitionId);
+          await services.objectIndexService.populateCompetitionsLeaderboard(competitionId);
+          console.log(`Successfully populated object_index for competition ${competitionId}`);
+        } catch (error) {
+          console.error(`Failed to populate object_index for competition ${competitionId}:`, error);
+          // Don't fail the request if object_index population fails
+        }
+
         // Return the ended competition with leaderboard
         res.status(200).json({
           success: true,
           competition: endedCompetition,
           leaderboard,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Manually trigger object index population
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async syncObjectIndex(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { competitionId, dataTypes } = req.body;
+
+        let validatedCompetitionId: string | undefined;
+        if (competitionId) {
+          validatedCompetitionId = ensureUuid(competitionId);
+        }
+
+        const defaultDataTypes = [SYNC_DATA_TYPE.TRADE, SYNC_DATA_TYPE.AGENT_RANK_HISTORY, SYNC_DATA_TYPE.COMPETITIONS_LEADERBOARD];
+        let typesToSync: string[] = defaultDataTypes;
+
+        if (dataTypes) {
+          const validationResults = dataTypes.map((dt: unknown) => SyncDataTypeSchema.safeParse(dt));
+          const hasErrors = validationResults.some((result: { success: boolean }) => !result.success);
+          
+          if (hasErrors) {
+            throw new ApiError(400, "Invalid data type(s) provided");
+          }
+          
+          typesToSync = validationResults.map((result: { data?: string }) => result.data!).filter(Boolean);
+        }
+        
+        console.log(`Starting object index sync for types: ${typesToSync.join(', ')}`);
+        
+        for (const dataType of typesToSync) {
+          try {
+            switch (dataType) {
+              case SYNC_DATA_TYPE.TRADE:
+                await services.objectIndexService.populateTrades(validatedCompetitionId);
+                break;
+              case SYNC_DATA_TYPE.AGENT_RANK_HISTORY:
+                await services.objectIndexService.populateAgentRankHistory(validatedCompetitionId);
+                break;
+              case SYNC_DATA_TYPE.COMPETITIONS_LEADERBOARD:
+                await services.objectIndexService.populateCompetitionsLeaderboard(validatedCompetitionId);
+                break;
+              case SYNC_DATA_TYPE.PORTFOLIO_SNAPSHOT:
+                await services.objectIndexService.populatePortfolioSnapshots(validatedCompetitionId);
+                break;
+              case SYNC_DATA_TYPE.AGENT_RANK:
+                await services.objectIndexService.populateAgentRank();
+                break;
+              default:
+                console.warn(`Unknown data type: ${dataType}`);
+            }
+          } catch (error) {
+            console.error(`Error syncing ${dataType}:`, error);
+            throw error;
+          }
+        }
+
+        res.status(200).json({
+          success: true,
+          message: 'Object index sync initiated',
+          dataTypes: typesToSync,
+          competitionId: validatedCompetitionId || 'all'
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get object index entries with filters
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getObjectIndex(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { 
+          competitionId, 
+          agentId, 
+          dataType, 
+          limit = '100', 
+          offset = '0' 
+        } = req.query;
+
+        let validatedCompetitionId: string | undefined;
+        let validatedAgentId: string | undefined;
+        let validatedDataType: SyncDataType | undefined;
+
+        if (competitionId) {
+          validatedCompetitionId = ensureUuid(competitionId as string);
+        }
+        if (agentId) {
+          validatedAgentId = ensureUuid(agentId as string);
+        }
+        if (dataType) {
+          const parseResult = SyncDataTypeSchema.safeParse(dataType);
+          if (!parseResult.success) {
+            throw new ApiError(400, "Invalid data type");
+          }
+          validatedDataType = parseResult.data;
+        }
+
+        const limitNum = Math.min(parseInt(limit as string, 10) || 100, 1000);
+        const offsetNum = parseInt(offset as string, 10) || 0;
+
+        // Get entries and count
+        const [entries, totalCount] = await Promise.all([
+          objectIndexRepository.getAll(
+            {
+              competitionId: validatedCompetitionId,
+              agentId: validatedAgentId,
+              dataType: validatedDataType
+            },
+            limitNum,
+            offsetNum
+          ),
+          objectIndexRepository.count({
+            competitionId: validatedCompetitionId,
+            agentId: validatedAgentId,
+            dataType: validatedDataType
+          })
+        ]);
+
+        res.status(200).json({
+          success: true,
+          data: {
+            entries,
+            pagination: {
+              total: totalCount,
+              limit: limitNum,
+              offset: offsetNum
+            }
+          }
         });
       } catch (error) {
         next(error);
