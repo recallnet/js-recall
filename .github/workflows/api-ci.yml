@@ -272,7 +272,7 @@ jobs:
           PORTFOLIO_PRICE_FRESHNESS_MS=10000
 
           # Optional: Sandbox
-          SANDBOX_MODE=false
+          SANDBOX=false
 
           # Optional: Disable ability for participants to view leaderboard activity
           DISABLE_PARTICIPANT_LEADERBOARD_ACCESS=false
