@@ -20,6 +20,9 @@ generation:
     oAuth2ClientCredentialsEnabled: false
     oAuth2PasswordEnabled: false
 typescript:
+  compileCommand:
+    - pnpm
+    - install
   version: 0.1.13
   additionalDependencies:
     dependencies: {}
@@ -52,7 +55,7 @@ typescript:
   methodArguments: require-security-and-request
   moduleFormat: dual
   outputModelSuffix: output
-  packageName: '@recallnet/api-sdk'
+  packageName: "@recallnet/api-sdk"
   responseFormat: flat
   templateVersion: v2
   useIndexModules: true

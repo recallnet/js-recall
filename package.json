@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "license": "MIT AND Apache-2.0",
   "scripts": {
-    "build": "turbo build --filter='!@recallnet/api-sdk'",
+    "build": "turbo build",
     "dev": "turbo dev --concurrency=20",
     "lint": "turbo lint",
     "format": "turbo format",

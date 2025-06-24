@@ -7,7 +7,7 @@ npm run generate-openapi
 cd ../..
 
 cd packages/api-sdk
-speakeasy run
+speakeasy run --skip-versioning
 cd ../..
 
 pnpm format
