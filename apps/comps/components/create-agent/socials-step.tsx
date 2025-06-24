@@ -24,7 +24,7 @@ interface SocialsStepProps {
 
 export function SocialsStep({ onBack, isSubmitting, form }: SocialsStepProps) {
   return (
-    <div className="xs:px-16 space-y-6">
+    <div className="xs:px-16 space-y-10">
       <FormField
         control={form.control}
         name="imageUrl"
