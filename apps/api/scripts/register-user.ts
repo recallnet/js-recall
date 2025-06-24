@@ -8,14 +8,15 @@
  *   pnpm register:agent
  *
  * Or with command line arguments:
- *   pnpm register:user -- "0xWalletAddress" "User Name" "Agent Name"
+ *   pnpm register:user -- "0xWalletAddress" "User Name" "Agent Name" "user@email.com"
  *
  * The script will:
  * 1. Connect to the database
- * 2. Create a new agent with API credentials using the AgentManager service
- * 3. Update the agent with the wallet address using database connection
- * 4. Display the API key (only shown once)
- * 5. Close the database connection
+ * 2. Register a new user with the provided details
+ * 3. Send a verification email if an email address is provided
+ * 4. Create a new agent with API credentials using the AgentManager service
+ * 5. Display the API key (only shown once)
+ * 6. Close the database connection
  */
 import * as dotenv from "dotenv";
 import * as path from "path";
@@ -100,6 +101,7 @@ async function registerAgent() {
     let walletAddress = process.argv[2];
     let userName = process.argv[3];
     let agentName = process.argv[4];
+    let userEmail = process.argv[5];
 
     // Temporarily restore console.log for input
     console.log = originalConsoleLog;
@@ -133,11 +135,16 @@ async function registerAgent() {
       userName = await prompt("Enter user name (optional): ");
     }
 
+    if (!userEmail) {
+      userEmail = await prompt("Enter user email (optional): ");
+    }
+
     safeLog(
       `\n${colors.yellow}Registering user and agent with the following details:${colors.reset}`,
     );
     safeLog(`- User Name: ${userName}`);
     safeLog(`- User's Wallet Address: ${walletAddress}`);
+    safeLog(`- User's Email: ${userEmail || "Not provided"}`);
     safeLog(`- Agent Name: ${agentName}`);
 
     const confirmRegistration = await prompt(
@@ -163,6 +170,7 @@ async function registerAgent() {
     const user = await services.userManager.registerUser(
       walletAddress,
       userName,
+      userEmail,
     );
     const agent = await services.agentManager.createAgent({
       ownerId: user.id,
@@ -178,6 +186,12 @@ async function registerAgent() {
     safeLog(`Agent Name: ${agent.name}`);
     safeLog(`User ID: ${user.id}`);
     safeLog(`User Wallet Address: ${user.walletAddress}`);
+    if (user.email) {
+      safeLog(`User Email: ${user.email}`);
+      safeLog(
+        `${colors.green}A verification email has been sent to ${user.email}${colors.reset}`,
+      );
+    }
     safeLog(
       `${colors.cyan}----------------------------------------${colors.reset}`,
     );
