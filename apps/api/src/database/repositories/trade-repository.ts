@@ -169,10 +169,7 @@ export async function count() {
  */
 export async function getAllTrades(competitionId?: string) {
   try {
-    const query = db
-      .select()
-      .from(trades)
-      .orderBy(desc(trades.timestamp));
+    const query = db.select().from(trades).orderBy(desc(trades.timestamp));
 
     if (competitionId) {
       query.where(eq(trades.competitionId, competitionId));

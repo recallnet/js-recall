@@ -1572,9 +1572,20 @@ export class ApiClient {
   async syncObjectIndex(params?: {
     competitionId?: string;
     dataTypes?: string[];
-  }): Promise<{ success: boolean; message: string; dataTypes: string[]; competitionId: string } | ErrorResponse> {
+  }): Promise<
+    | {
+        success: boolean;
+        message: string;
+        dataTypes: string[];
+        competitionId: string;
+      }
+    | ErrorResponse
+  > {
     try {
-      const response = await this.axiosInstance.post("/api/admin/object-index/sync", params || {});
+      const response = await this.axiosInstance.post(
+        "/api/admin/object-index/sync",
+        params || {},
+      );
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "sync object index");
@@ -1591,30 +1602,34 @@ export class ApiClient {
     dataType?: string;
     limit?: number;
     offset?: number;
-  }): Promise<{
-    success: boolean;
-    data: {
-      entries: Array<{
-        id: string;
-        competitionId: string | null;
-        agentId: string;
-        dataType: string;
-        data: string;
-        sizeBytes: number;
-        metadata: Record<string, unknown>;
-        eventTimestamp: string;
-        createdAt: string;
-      }>;
-      pagination: {
-        total: number;
-        limit: number;
-        offset: number;
-      };
-    };
-  } | ErrorResponse> {
+  }): Promise<
+    | {
+        success: boolean;
+        data: {
+          entries: Array<{
+            id: string;
+            competitionId: string | null;
+            agentId: string;
+            dataType: string;
+            data: string;
+            sizeBytes: number;
+            metadata: Record<string, unknown>;
+            eventTimestamp: string;
+            createdAt: string;
+          }>;
+          pagination: {
+            total: number;
+            limit: number;
+            offset: number;
+          };
+        };
+      }
+    | ErrorResponse
+  > {
     try {
       const queryParams = new URLSearchParams();
-      if (params?.competitionId) queryParams.append("competitionId", params.competitionId);
+      if (params?.competitionId)
+        queryParams.append("competitionId", params.competitionId);
       if (params?.agentId) queryParams.append("agentId", params.agentId);
       if (params?.dataType) queryParams.append("dataType", params.dataType);
       if (params?.limit) queryParams.append("limit", String(params.limit));

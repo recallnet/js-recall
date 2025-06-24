@@ -3,7 +3,7 @@
 set -eu
 
 cd apps/api
-npm run generate-openapi
+pnpm run generate
 cd ../..
 
 cd packages/api-sdk
