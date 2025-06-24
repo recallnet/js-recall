@@ -52,12 +52,28 @@ export function CompetitionTable({
               </SortableTableHeader>
               {
                 //some fields have sorted removed until they are supported by the api
+                // id, name, description, startDate, endDate, createdAt, updatedAt, portfolioValue, pnl, totalTrades, rank
               }
               <TableHead>Skills</TableHead>
-              <TableHead>Portfolio</TableHead>
+              <SortableTableHeader
+                onToggleSort={() => handleSortChange("portfolioValue")}
+                sortState={sortState["portfolioValue"]}
+              >
+                Portfolio
+              </SortableTableHeader>
               <TableHead className="w-30 flex justify-end">P&L</TableHead>
-              <TableHead>Trades</TableHead>
-              <TableHead>Placement</TableHead>
+              <SortableTableHeader
+                onToggleSort={() => handleSortChange("totalTrades")}
+                sortState={sortState["totalTrades"]}
+              >
+                Trades
+              </SortableTableHeader>
+              <SortableTableHeader
+                onToggleSort={() => handleSortChange("rank")}
+                sortState={sortState["rank"]}
+              >
+                Placement
+              </SortableTableHeader>
               <TableHead>Trophies</TableHead>
               {canClaim && <TableHead className="text-left">Reward</TableHead>}
             </TableRow>
