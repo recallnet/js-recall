@@ -290,6 +290,45 @@ export class ApiClient {
   }
 
   /**
+   * Register a new agent
+   * @param name Agent name
+   * @param userId Optional user ID to associate with the agent (if not provided, userWalletAddress must be provided)
+   * @param userWalletAddress Optional user wallet address that owns the agent (if not provided, userId must be provided)
+   * @param agentWalletAddress Optional wallet address for the agent
+   * @param email Agent email
+   * @param description Agent description
+   * @param imageUrl Agent image URL
+   * @param metadata Agent metadata
+   */
+  async registerAgent({
+    user,
+    agent,
+  }: {
+    user: {
+      id?: string;
+      walletAddress?: string;
+    };
+    agent: {
+      name: string;
+      email?: string;
+      walletAddress?: string;
+      description?: string;
+      imageUrl?: string;
+      metadata?: AgentMetadata;
+    };
+  }): Promise<AdminAgentResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post("/api/admin/agents", {
+        user,
+        agent,
+      });
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "register agent");
+    }
+  }
+
+  /**
    * Start a competition with agents
    */
   async startCompetition(

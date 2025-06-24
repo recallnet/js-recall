@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 import { db } from "@/database/db.js";
 import { admins } from "@/database/schema/core/defs.js";
 import {
+  AdminAgentResponse,
   AdminAgentsListResponse,
   AdminReactivateAgentInCompetitionResponse,
   AdminRemoveAgentFromCompetitionResponse,
@@ -166,6 +167,145 @@ describe("Admin API", () => {
     const agentProfile = profileResponse as AgentProfileResponse;
     expect(agentProfile.success).toBe(true);
     expect(agentProfile.agent.metadata).toEqual(metadata);
+  });
+
+  test.only("should register an agent separately from a user", async () => {
+    // Register a new user with no agent
+    const userName = `Test User ${Date.now()}`;
+    const agentName = `Test Agent ${Date.now()}`;
+
+    // Setup admin client with the API key
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register the user
+    const userWalletAddress = generateRandomEthAddress();
+    const userResult = (await adminClient.registerUser(
+      userWalletAddress,
+      userName,
+    )) as UserRegistrationResponse;
+    expect(userResult.success).toBe(true);
+    expect(userResult.user).toBeDefined();
+    const userId = userResult.user.id;
+    expect(userId).toBeDefined();
+
+    // Register the agent with bare minimum fields
+    const agentResult = (await adminClient.registerAgent({
+      user: {
+        walletAddress: userWalletAddress,
+      },
+      agent: {
+        name: agentName,
+      },
+    })) as AdminAgentResponse;
+
+    // Assert registration success
+    expect(agentResult.success).toBe(true);
+    expect(agentResult.agent).toBeDefined();
+    expect(agentResult.agent.ownerId).toBe(userId);
+    expect(agentResult.agent.name).toBe(agentName);
+
+    const agentName2 = `Test Agent ${Date.now()}`;
+    const agentDescription = "A test trading agent";
+    const agentWalletAddress = generateRandomEthAddress();
+    const agentEmail = `test-agent-${Date.now()}@test.com`;
+    const agentImageUrl = "https://example.com/agent.png";
+    const agentMetadata = {
+      skills: ["trading"],
+    };
+
+    // Register the agent with all fields
+    const agentResult2 = (await adminClient.registerAgent({
+      user: {
+        walletAddress: userWalletAddress,
+      },
+      agent: {
+        name: agentName2,
+        description: agentDescription,
+        walletAddress: agentWalletAddress,
+        email: agentEmail,
+        imageUrl: agentImageUrl,
+        metadata: agentMetadata,
+      },
+    })) as AdminAgentResponse;
+
+    expect(agentResult2.success).toBe(true);
+    expect(agentResult2.agent).toBeDefined();
+    expect(agentResult2.agent.ownerId).toBe(userId);
+    expect(agentResult2.agent.name).toBe(agentName2);
+    expect(agentResult2.agent.description).toBe(agentDescription);
+    expect(agentResult2.agent.apiKey).toBeDefined();
+    expect(agentResult2.agent.walletAddress).toBe(
+      agentWalletAddress.toLowerCase(),
+    );
+    expect(agentResult2.agent.email).toBe(agentEmail);
+    expect(agentResult2.agent.imageUrl).toBe(agentImageUrl);
+    expect(agentResult2.agent.metadata).toEqual(agentMetadata);
+  });
+
+  test.only("should fail to register an agent with an invalid user ID or user wallet address", async () => {
+    // Setup admin client with the API key
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register a new user with no agent
+    const userName = `Test User ${Date.now()}`;
+    const userWalletAddress = generateRandomEthAddress();
+    const userResult = (await adminClient.registerUser(
+      userWalletAddress,
+      userName,
+    )) as UserRegistrationResponse;
+    expect(userResult.success).toBe(true);
+    expect(userResult.user).toBeDefined();
+    const userId = userResult.user.id;
+    expect(userId).toBeDefined();
+
+    // Register the agent with an invalid user ID
+    const randomUuid = "ca00c26a-f610-477a-a472-bdaca866d789";
+    const agentResult = (await adminClient.registerAgent({
+      user: {
+        id: randomUuid,
+      },
+      agent: {
+        name: "Test Agent",
+        description: "A test trading agent",
+        walletAddress: generateRandomEthAddress(),
+      },
+    })) as ErrorResponse;
+    expect(agentResult.success).toBe(false);
+    expect(agentResult.error).toContain("does not exist");
+
+    // Register the agent with an invalid user ID and wallet address
+    const randomWalletAddress = generateRandomEthAddress();
+    const agentResult2 = (await adminClient.registerAgent({
+      user: {
+        walletAddress: randomWalletAddress,
+      },
+      agent: {
+        name: "Test Agent",
+        description: "A test trading agent",
+        walletAddress: generateRandomEthAddress(),
+      },
+    })) as ErrorResponse;
+    expect(agentResult2.success).toBe(false);
+    expect(agentResult2.error).toContain("does not exist");
+
+    // Register the agent with both a user ID and a user wallet address
+    const agentResult3 = (await adminClient.registerAgent({
+      user: {
+        id: randomUuid,
+        walletAddress: userWalletAddress,
+      },
+      agent: {
+        name: "Test Agent",
+        description: "A test trading agent",
+        walletAddress: generateRandomEthAddress(),
+      },
+    })) as ErrorResponse;
+    expect(agentResult3.success).toBe(false);
+    expect(agentResult3.error).toContain(
+      "Must provide either user ID or user wallet address",
+    );
   });
 
   test("should not allow user registration without admin auth", async () => {
