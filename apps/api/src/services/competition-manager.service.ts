@@ -15,6 +15,7 @@ import {
   findLeaderboardByCompetition,
   getAgentCompetitionRecord,
   getAllCompetitionAgents,
+  getBulkAgentPortfolioSnapshots,
   getCompetitionAgents,
   getLatestPortfolioSnapshots,
   isAgentActiveInCompetition,
@@ -379,40 +380,54 @@ export class CompetitionManager {
     const voteCountsMap =
       await this.voteManager.getVoteCountsByCompetition(competitionId);
 
-    // Build the response with agent details and competition data
-    const competitionAgents = await Promise.all(
-      agents.map(async (agent) => {
-        const isActive = agent.status === "active";
+    // Build the response with agent details and competition data using bulk metrics
+    const agentIds = agents.map((agent) => agent.id);
+    const currentValues = new Map(
+      agents.map((agent) => {
         const leaderboardData = leaderboardMap.get(agent.id);
         const score = leaderboardData?.score ?? 0;
-        const position = leaderboardData?.position ?? 0;
-        const voteCount = voteCountsMap.get(agent.id) ?? 0;
-
-        // Calculate PnL and 24h change metrics using the service
-        const metrics = await this.calculateAgentMetrics(
-          competitionId,
-          agent.id,
-          score,
-        );
-
-        return {
-          id: agent.id,
-          name: agent.name,
-          description: agent.description,
-          imageUrl: agent.imageUrl,
-          score: score,
-          active: isActive,
-          deactivationReason: !isActive ? agent.deactivationReason : null,
-          position: position,
-          portfolioValue: score,
-          pnl: metrics.pnl,
-          pnlPercent: metrics.pnlPercent,
-          change24h: metrics.change24h,
-          change24hPercent: metrics.change24hPercent,
-          voteCount: voteCount,
-        };
+        return [agent.id, score];
       }),
     );
+
+    // Calculate metrics for all agents efficiently using bulk method
+    const bulkMetrics = await this.calculateBulkAgentMetrics(
+      competitionId,
+      agentIds,
+      currentValues,
+    );
+
+    // Build the response with agent details and competition data
+    const competitionAgents = agents.map((agent) => {
+      const isActive = agent.status === "active";
+      const leaderboardData = leaderboardMap.get(agent.id);
+      const score = leaderboardData?.score ?? 0;
+      const position = leaderboardData?.position ?? 0;
+      const voteCount = voteCountsMap.get(agent.id) ?? 0;
+      const metrics = bulkMetrics.get(agent.id) || {
+        pnl: 0,
+        pnlPercent: 0,
+        change24h: 0,
+        change24hPercent: 0,
+      };
+
+      return {
+        id: agent.id,
+        name: agent.name,
+        description: agent.description,
+        imageUrl: agent.imageUrl,
+        score: score,
+        active: isActive,
+        deactivationReason: !isActive ? agent.deactivationReason : null,
+        position: position,
+        portfolioValue: score,
+        pnl: metrics.pnl,
+        pnlPercent: metrics.pnlPercent,
+        change24h: metrics.change24h,
+        change24hPercent: metrics.change24hPercent,
+        voteCount: voteCount,
+      };
+    });
 
     // Apply post-processing sorting and pagination, if needed
     const finalCompetitionAgents = isComputedSort
@@ -487,6 +502,147 @@ export class CompetitionManager {
         error,
       );
       return [];
+    }
+  }
+
+  /**
+   * Calculate PnL and 24h change metrics for multiple agents in a competition efficiently
+   * This replaces the N+1 query pattern of calling calculateAgentMetrics in a loop
+   *
+   * @param competitionId The competition ID
+   * @param agentIds Array of agent IDs to calculate metrics for
+   * @param currentValues Map of agent ID to current portfolio value
+   * @returns Map of agent ID to metrics object
+   */
+  async calculateBulkAgentMetrics(
+    competitionId: string,
+    agentIds: string[],
+    currentValues: Map<string, number>,
+  ): Promise<
+    Map<
+      string,
+      {
+        pnl: number;
+        pnlPercent: number;
+        change24h: number;
+        change24hPercent: number;
+      }
+    >
+  > {
+    if (agentIds.length === 0) {
+      return new Map();
+    }
+
+    console.log(
+      `[CompetitionManager] Calculating bulk metrics for ${agentIds.length} agents in competition ${competitionId}`,
+    );
+
+    try {
+      // Get all portfolio snapshots for all agents in one query using repository
+      const allSnapshots = await getBulkAgentPortfolioSnapshots(
+        competitionId,
+        agentIds,
+      );
+
+      // Group snapshots by agent ID with proper typing
+      const snapshotsByAgent = new Map<string, typeof allSnapshots>();
+      for (const snapshot of allSnapshots) {
+        const agentSnapshots = snapshotsByAgent.get(snapshot.agentId) || [];
+        agentSnapshots.push(snapshot);
+        snapshotsByAgent.set(snapshot.agentId, agentSnapshots);
+      }
+
+      // Calculate metrics for each agent
+      const metricsMap = new Map();
+      const now = new Date();
+      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+      for (const agentId of agentIds) {
+        const currentValue = currentValues.get(agentId) || 0;
+        const snapshots = snapshotsByAgent.get(agentId) || [];
+
+        // Default values
+        let pnl = 0;
+        let pnlPercent = 0;
+        let change24h = 0;
+        let change24hPercent = 0;
+
+        if (snapshots.length > 0) {
+          // Sort snapshots by timestamp (oldest first) with proper typing
+          const sortedSnapshots = snapshots.sort(
+            (a: (typeof snapshots)[0], b: (typeof snapshots)[0]) =>
+              (a.timestamp?.getTime() ?? 0) - (b.timestamp?.getTime() ?? 0),
+          );
+
+          // Get starting value (earliest snapshot)
+          const startingSnapshot = sortedSnapshots[0];
+          const startingValue = startingSnapshot?.totalValue ?? 0;
+
+          // Calculate PnL
+          if (startingValue > 0) {
+            pnl = currentValue - startingValue;
+            pnlPercent = (pnl / startingValue) * 100;
+          }
+
+          // Find the snapshot closest to 24h ago
+          let closestSnapshot = null;
+          let smallestTimeDiff = Infinity;
+
+          for (const snapshot of snapshots) {
+            if (snapshot.timestamp) {
+              const timeDiff = Math.abs(
+                snapshot.timestamp.getTime() - twentyFourHoursAgo.getTime(),
+              );
+              if (timeDiff < smallestTimeDiff) {
+                smallestTimeDiff = timeDiff;
+                closestSnapshot = snapshot;
+              }
+            }
+          }
+
+          // Calculate 24h change
+          if (closestSnapshot) {
+            const value24hAgo = closestSnapshot.totalValue;
+            if (value24hAgo > 0) {
+              change24h = currentValue - value24hAgo;
+              change24hPercent = (change24h / value24hAgo) * 100;
+            }
+          }
+        }
+
+        metricsMap.set(agentId, {
+          pnl,
+          pnlPercent,
+          change24h,
+          change24hPercent,
+        });
+      }
+
+      console.log(
+        `[CompetitionManager] Successfully calculated bulk metrics for ${agentIds.length} agents`,
+      );
+      return metricsMap;
+    } catch (error) {
+      console.error(
+        `[CompetitionManager] Error in calculateBulkAgentMetrics:`,
+        error,
+      );
+
+      // Fallback to individual calculations
+      console.warn(
+        `[CompetitionManager] Falling back to individual metric calculations`,
+      );
+      const metricsMap = new Map();
+      for (const agentId of agentIds) {
+        const currentValue = currentValues.get(agentId) || 0;
+        const metrics = await this.calculateAgentMetrics(
+          competitionId,
+          agentId,
+          currentValue,
+        );
+        metricsMap.set(agentId, metrics);
+      }
+      return metricsMap;
     }
   }
 

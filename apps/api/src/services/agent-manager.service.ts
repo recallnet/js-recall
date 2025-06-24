@@ -31,7 +31,9 @@ import {
   findBestPlacementForAgent,
   getAgentCompetitionRanking,
   getAgentPortfolioSnapshots,
+  getBulkAgentCompetitionRankings,
 } from "@/database/repositories/competition-repository.js";
+import { getBulkAgentMetrics } from "@/database/repositories/leaderboard-repository.js";
 import {
   countAgentTrades,
   countAgentTradesInCompetition,
@@ -155,6 +157,26 @@ export class AgentManager {
     } catch (error) {
       if (error instanceof Error) {
         console.error("[AgentManager] Error creating agent:", error);
+
+        // Check if this is a unique constraint violation for agent name
+        // PostgreSQL throws various error formats depending on the driver and ORM
+        const errorMessage = error.message.toLowerCase();
+        const isUniqueConstraintViolation =
+          errorMessage.includes("duplicate key value") ||
+          errorMessage.includes("violates unique constraint") ||
+          ("code" in error && error.code === "23505");
+
+        const isAgentNameConstraint =
+          errorMessage.includes("agents_owner_id_name_key") ||
+          (errorMessage.includes("owner_id") && errorMessage.includes("name"));
+
+        if (isUniqueConstraintViolation && isAgentNameConstraint) {
+          throw new ApiError(
+            409,
+            `An agent with the name "${name}" already exists for this user`,
+          );
+        }
+
         throw error;
       }
 
@@ -995,49 +1017,66 @@ export class AgentManager {
         // Get all unique competitions for sorting
         const allCompetitions = Array.from(agentCompetitions.values());
 
-        // Add rankings to competitions for sorting - optimized version includes leaderboard data
-        await Promise.all(
-          allCompetitions.map(async (comp) => {
-            for (const agent of comp.agents) {
-              // Try to get rank from leaderboard data first (already joined in optimized query)
-              const leaderboardData = results.competitions.find(
-                (data) =>
-                  data.competitions?.id === comp.id &&
-                  data.agents?.id === agent.id,
-              )?.competitions_leaderboard;
+        // Add rankings to competitions for sorting - optimized version with bulk ranking fallback
+        for (const comp of allCompetitions) {
+          // First pass: try to get ranks from leaderboard data (already joined in optimized query)
+          const agentsNeedingRankFallback: Array<{
+            agent: AgentPublic & { rank?: number };
+            index: number;
+          }> = [];
 
-              if (leaderboardData?.rank) {
-                agent.rank = leaderboardData.rank;
-              } else {
-                // Fallback to existing function if not in leaderboard
-                const rankResult = await getAgentCompetitionRanking(
-                  agent.id,
-                  comp.id,
-                );
-                agent.rank = rankResult?.rank;
-              }
+          for (let i = 0; i < comp.agents.length; i++) {
+            const agent = comp.agents[i];
+            const leaderboardData = results.competitions.find(
+              (data) =>
+                data.competitions?.id === comp.id &&
+                data.agents?.id === agent.id,
+            )?.competitions_leaderboard;
+
+            if (leaderboardData?.rank) {
+              agent.rank = leaderboardData.rank;
+            } else {
+              // Mark agent as needing rank fallback
+              agentsNeedingRankFallback.push({ agent, index: i });
             }
+          }
 
-            // Sort agents within the competition by rank (best rank first)
-            comp.agents.sort(
-              (
-                a: AgentPublic & { rank?: number },
-                b: AgentPublic & { rank?: number },
-              ) => {
-                const aRank = a.rank;
-                const bRank = b.rank;
-
-                // Handle undefined ranks - put them at the end
-                if (aRank === undefined && bRank === undefined) return 0;
-                if (aRank === undefined) return 1;
-                if (bRank === undefined) return -1;
-
-                // Lower rank number = better performance
-                return aRank - bRank;
-              },
+          // Bulk fallback ranking for agents missing leaderboard data
+          if (agentsNeedingRankFallback.length > 0) {
+            const agentIds = agentsNeedingRankFallback.map(
+              ({ agent }) => agent.id,
             );
-          }),
-        );
+            const bulkRankings = await getBulkAgentCompetitionRankings(
+              comp.id,
+              agentIds,
+            );
+
+            // Apply bulk ranking results
+            for (const { agent } of agentsNeedingRankFallback) {
+              const rankResult = bulkRankings.get(agent.id);
+              agent.rank = rankResult?.rank;
+            }
+          }
+
+          // Sort agents within the competition by rank (best rank first)
+          comp.agents.sort(
+            (
+              a: AgentPublic & { rank?: number },
+              b: AgentPublic & { rank?: number },
+            ) => {
+              const aRank = a.rank;
+              const bRank = b.rank;
+
+              // Handle undefined ranks - put them at the end
+              if (aRank === undefined && bRank === undefined) return 0;
+              if (aRank === undefined) return 1;
+              if (bRank === undefined) return -1;
+
+              // Lower rank number = better performance
+              return aRank - bRank;
+            },
+          );
+        }
 
         // Sort competitions using computed fields
         const sortedCompetitions = this.sortCompetitionsByComputedField(
@@ -1091,51 +1130,67 @@ export class AgentManager {
         agentCompetitions.set(competitionId, comp);
       });
 
-      // Add rankings using leaderboard data from optimized query (with fallback)
-      await Promise.all(
-        Array.from(agentCompetitions.keys()).map(async (compId: string) => {
-          const agentComp = agentCompetitions.get(compId);
+      // Add rankings using leaderboard data from optimized query (with bulk fallback)
+      for (const compId of Array.from(agentCompetitions.keys())) {
+        const agentComp = agentCompetitions.get(compId);
 
-          for (const agent of agentComp.agents) {
-            // Try to get rank from leaderboard data first (already joined in optimized query)
-            const leaderboardData = results.competitions.find(
-              (data) =>
-                data.competitions?.id === compId &&
-                data.agents?.id === agent.id,
-            )?.competitions_leaderboard;
+        // First pass: try to get ranks from leaderboard data (already joined in optimized query)
+        const agentsNeedingRankFallback: Array<{
+          agent: AgentPublic & { rank?: number };
+          index: number;
+        }> = [];
 
-            if (leaderboardData?.rank) {
-              agent.rank = leaderboardData.rank;
-            } else {
-              // Fallback to existing function if not in leaderboard
-              const rankResult = await getAgentCompetitionRanking(
-                agent.id,
-                compId,
-              );
-              agent.rank = rankResult?.rank;
-            }
+        for (let i = 0; i < agentComp.agents.length; i++) {
+          const agent = agentComp.agents[i];
+          const leaderboardData = results.competitions.find(
+            (data) =>
+              data.competitions?.id === compId && data.agents?.id === agent.id,
+          )?.competitions_leaderboard;
+
+          if (leaderboardData?.rank) {
+            agent.rank = leaderboardData.rank;
+          } else {
+            // Mark agent as needing rank fallback
+            agentsNeedingRankFallback.push({ agent, index: i });
           }
+        }
 
-          // Sort agents within the competition by rank (best rank first)
-          agentComp.agents.sort(
-            (
-              a: AgentPublic & { rank?: number },
-              b: AgentPublic & { rank?: number },
-            ) => {
-              const aRank = a.rank;
-              const bRank = b.rank;
-
-              // Handle undefined ranks - put them at the end
-              if (aRank === undefined && bRank === undefined) return 0;
-              if (aRank === undefined) return 1;
-              if (bRank === undefined) return -1;
-
-              // Lower rank number = better performance
-              return aRank - bRank;
-            },
+        // Bulk fallback ranking for agents missing leaderboard data
+        if (agentsNeedingRankFallback.length > 0) {
+          const agentIds = agentsNeedingRankFallback.map(
+            ({ agent }) => agent.id,
           );
-        }),
-      );
+          const bulkRankings = await getBulkAgentCompetitionRankings(
+            compId,
+            agentIds,
+          );
+
+          // Apply bulk ranking results
+          for (const { agent } of agentsNeedingRankFallback) {
+            const rankResult = bulkRankings.get(agent.id);
+            agent.rank = rankResult?.rank;
+          }
+        }
+
+        // Sort agents within the competition by rank (best rank first)
+        agentComp.agents.sort(
+          (
+            a: AgentPublic & { rank?: number },
+            b: AgentPublic & { rank?: number },
+          ) => {
+            const aRank = a.rank;
+            const bRank = b.rank;
+
+            // Handle undefined ranks - put them at the end
+            if (aRank === undefined && bRank === undefined) return 0;
+            if (aRank === undefined) return 1;
+            if (bRank === undefined) return -1;
+
+            // Lower rank number = better performance
+            return aRank - bRank;
+          },
+        );
+      }
 
       console.log(
         `[AgentManager] Found ${results.total} competitions containing agents owned by user ${userId}`,
@@ -1250,6 +1305,67 @@ export class AgentManager {
       skills: metadata?.skills || [],
       hasUnclaimedRewards: metadata?.hasUnclaimedRewards || false,
     };
+  }
+
+  /**
+   * Attach agent metrics to multiple agents efficiently using bulk queries
+   * This replaces the N+1 query pattern of calling attachAgentMetrics in a loop
+   *
+   * @param sanitizedAgents Array of sanitized agents to attach metrics to
+   * @returns Array of agents with attached metrics
+   */
+  async attachBulkAgentMetrics(
+    sanitizedAgents: ReturnType<AgentManager["sanitizeAgent"]>[],
+  ) {
+    if (sanitizedAgents.length === 0) {
+      return [];
+    }
+
+    console.log(
+      `[AgentManager] Attaching bulk metrics for ${sanitizedAgents.length} agents`,
+    );
+
+    try {
+      // Get all metrics in bulk using optimized queries
+      const agentIds = sanitizedAgents.map((agent) => agent.id);
+      const bulkMetrics = await getBulkAgentMetrics(agentIds);
+
+      // Create a lookup map for efficient access
+      const metricsMap = new Map(
+        bulkMetrics.map((metrics) => [metrics.agentId, metrics]),
+      );
+
+      // Attach metrics to each agent
+      return sanitizedAgents.map((sanitizedAgent) => {
+        const metadata = sanitizedAgent.metadata as AgentMetadata;
+        const metrics = metricsMap.get(sanitizedAgent.id);
+
+        const stats = {
+          completedCompetitions: metrics?.completedCompetitions ?? 0,
+          totalVotes: metrics?.totalVotes ?? 0,
+          totalTrades: metrics?.totalTrades ?? 0,
+          bestPlacement: metrics?.bestPlacement ?? undefined,
+          rank: metrics?.globalRank ?? undefined,
+          score: metrics?.globalScore ?? undefined,
+        } as AgentStats;
+
+        return {
+          ...sanitizedAgent,
+          stats,
+          trophies: metadata?.trophies || [],
+          skills: metadata?.skills || [],
+          hasUnclaimedRewards: metadata?.hasUnclaimedRewards || false,
+        };
+      });
+    } catch (error) {
+      console.error("[AgentManager] Error in attachBulkAgentMetrics:", error);
+
+      // Fallback to individual queries if bulk fails
+      console.warn("[AgentManager] Falling back to individual metric queries");
+      return Promise.all(
+        sanitizedAgents.map((agent) => this.attachAgentMetrics(agent)),
+      );
+    }
   }
 
   /**

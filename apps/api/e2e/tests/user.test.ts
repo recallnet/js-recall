@@ -940,6 +940,36 @@ describe("User API", () => {
     expect(emptySortAgents).toHaveLength(3);
   });
 
+  test("user cannot create agents with duplicate names", async () => {
+    // Create a SIWE-authenticated client
+    const { client: siweClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Duplicate Agent Name Test User",
+      userEmail: "duplicate-agent-name-test@example.com",
+    });
+
+    const agentName = "Duplicate Agent Name";
+    const agentDescription = "Test agent for duplicate name testing";
+
+    // Create the first agent successfully
+    const firstAgentResponse = await siweClient.createAgent(
+      agentName,
+      agentDescription,
+    );
+    expect(firstAgentResponse.success).toBe(true);
+
+    // Try to create a second agent with the same name - should fail with 409
+    const secondAgentResponse = await siweClient.createAgent(
+      agentName,
+      agentDescription,
+    );
+    expect(secondAgentResponse.success).toBe(false);
+    expect((secondAgentResponse as ErrorResponse).status).toBe(409);
+    expect((secondAgentResponse as ErrorResponse).error).toContain(
+      "already exists for this user",
+    );
+  });
+
   describe("User Agent API Key Access", () => {
     test("user can retrieve their own agent's API key", async () => {
       // Create a SIWE authenticated user client

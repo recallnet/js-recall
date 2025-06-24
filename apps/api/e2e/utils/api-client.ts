@@ -52,6 +52,7 @@ import {
   UpcomingCompetitionsResponse,
   UserAgentApiKeyResponse,
   UserCompetitionsResponse,
+  UserMetadata,
   UserProfileResponse,
   UserRegistrationResponse,
   UserVotesResponse,
@@ -259,23 +260,36 @@ export class ApiClient {
    * @param agentMetadata Optional metadata for the agent
    * @param agentWalletAddress Optional wallet address for the agent
    */
-  async registerUser(
-    walletAddress: string,
-    name?: string,
-    email?: string,
-    userImageUrl?: string,
-    agentName?: string,
-    agentDescription?: string,
-    agentImageUrl?: string,
-    agentMetadata?: AgentMetadata,
-    agentWalletAddress?: string,
-  ): Promise<UserRegistrationResponse | ErrorResponse> {
+  async registerUser({
+    walletAddress,
+    name,
+    email,
+    userImageUrl,
+    userMetadata,
+    agentName,
+    agentDescription,
+    agentImageUrl,
+    agentMetadata,
+    agentWalletAddress,
+  }: {
+    walletAddress: string;
+    name?: string;
+    email?: string;
+    userImageUrl?: string;
+    userMetadata?: UserMetadata;
+    agentName?: string;
+    agentDescription?: string;
+    agentImageUrl?: string;
+    agentMetadata?: AgentMetadata;
+    agentWalletAddress?: string;
+  }): Promise<UserRegistrationResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post("/api/admin/users", {
         walletAddress,
         name,
         email,
         userImageUrl,
+        userMetadata,
         agentName,
         agentDescription,
         agentImageUrl,
@@ -286,6 +300,45 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "register user");
+    }
+  }
+
+  /**
+   * Register a new agent
+   * @param name Agent name
+   * @param userId Optional user ID to associate with the agent (if not provided, userWalletAddress must be provided)
+   * @param userWalletAddress Optional user wallet address that owns the agent (if not provided, userId must be provided)
+   * @param agentWalletAddress Optional wallet address for the agent
+   * @param email Agent email
+   * @param description Agent description
+   * @param imageUrl Agent image URL
+   * @param metadata Agent metadata
+   */
+  async registerAgent({
+    user,
+    agent,
+  }: {
+    user: {
+      id?: string;
+      walletAddress?: string;
+    };
+    agent: {
+      name: string;
+      email?: string;
+      walletAddress?: string;
+      description?: string;
+      imageUrl?: string;
+      metadata?: AgentMetadata;
+    };
+  }): Promise<AdminAgentResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post("/api/admin/agents", {
+        user,
+        agent,
+      });
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "register agent");
     }
   }
 
@@ -301,6 +354,8 @@ export class ApiClient {
           tradingType?: CrossChainTradingType;
           externalUrl?: string;
           imageUrl?: string;
+          votingStartDate?: string;
+          votingEndDate?: string;
         }
       | string,
     description?: string,
@@ -308,13 +363,19 @@ export class ApiClient {
     tradingType?: CrossChainTradingType,
     externalUrl?: string,
     imageUrl?: string,
+    votingStartDate?: string,
+    votingEndDate?: string,
   ): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
       let requestData;
 
+      // Ensure voting is allowed by default for this competition, and the
+      // caller can set specific dates if they desire.
+      const now = new Date().toISOString();
+
       // Handle both object-based and individual parameter calls
       if (typeof params === "object") {
-        requestData = params;
+        requestData = { votingStartDate: now, ...params };
       } else {
         requestData = {
           name: params,
@@ -323,6 +384,8 @@ export class ApiClient {
           tradingType,
           externalUrl,
           imageUrl,
+          votingStartDate: votingStartDate || now,
+          votingEndDate,
         };
       }
 

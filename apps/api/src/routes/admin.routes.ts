@@ -695,6 +695,10 @@ export function configureAdminRoutes(
    *                 type: string
    *                 description: URL to the user's profile image
    *                 example: "https://example.com/user-image.jpg"
+   *               userMetadata:
+   *                 type: object
+   *                 description: Optional metadata about the user
+   *                 example: {"website": "https://example.com"}
    *               agentName:
    *                 type: string
    *                 description: Name for the user's first agent (optional)
@@ -970,6 +974,139 @@ export function configureAdminRoutes(
    *         description: Server error
    */
   router.get("/agents", controller.listAllAgents);
+
+  /**
+   * @openapi
+   * /api/admin/agents:
+   *   post:
+   *     tags:
+   *       - Admin
+   *     summary: Register a new agent
+   *     description: Admin-only endpoint to register a new agent. Admins create agent accounts and distribute the generated API keys to agents.
+   *     security:
+   *       - BearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - user
+   *               - agent
+   *             properties:
+   *               user:
+   *                 type: object
+   *                 properties:
+   *                   id:
+   *                     type: string
+   *                     description: The user ID (owner) of the agent. Must be provided if userWalletAddress is not provided.
+   *                     example: 12345678-1234-1234-1234-123456789012
+   *                     nullable: true
+   *                   walletAddress:
+   *                     type: string
+   *                     description: The user (owner) wallet address. Must be provided if userId is not provided.
+   *                     example: 0x1234567890123456789012345678901234567890
+   *                     nullable: true
+   *               agent:
+   *                 type: object
+   *                 required:
+   *                   - name
+   *                 properties:
+   *                   name:
+   *                     type: string
+   *                     description: Agent name
+   *                     example: My Agent
+   *                   walletAddress:
+   *                     type: string
+   *                     description: The agent wallet address. Must be provided if userWalletAddress is not provided.
+   *                     example: 0x1234567890123456789012345678901234567890
+   *                     nullable: true
+   *                   email:
+   *                     type: string
+   *                     description: Agent email
+   *                     nullable: true
+   *                   description:
+   *                     type: string
+   *                     description: Agent description
+   *                     nullable: true
+   *                   imageUrl:
+   *                     type: string
+   *                     description: URL to agent's image
+   *                     nullable: true
+   *                   metadata:
+   *                     type: object
+   *                     description: Optional metadata for the agent
+   *                     example: { "strategy": "yield-farming", "risk": "medium" }
+   *                     nullable: true
+   *     responses:
+   *       201:
+   *         description: Agent registered successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 agent:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                       description: Agent ID
+   *                     ownerId:
+   *                       type: string
+   *                       description: Agent owner ID
+   *                     name:
+   *                       type: string
+   *                       description: Agent name
+   *                     walletAddress:
+   *                       type: string
+   *                       description: Agent wallet address
+   *                       nullable: true
+   *                     email:
+   *                       type: string
+   *                       description: Agent email
+   *                       nullable: true
+   *                     description:
+   *                       type: string
+   *                       description: Agent description
+   *                       nullable: true
+   *                     imageUrl:
+   *                       type: string
+   *                       description: URL to agent's image
+   *                       nullable: true
+   *                     metadata:
+   *                       type: object
+   *                       description: Optional metadata for the agent
+   *                       example: { "strategy": "yield-farming", "risk": "medium" }
+   *                       nullable: true
+   *                     apiKey:
+   *                       type: string
+   *                       description: API key for the agent to use with Bearer authentication. Admin should securely provide this to the agent.
+   *                     status:
+   *                       type: string
+   *                       description: Agent status
+   *                     createdAt:
+   *                       type: string
+   *                       format: date-time
+   *                       description: Agent creation timestamp
+   *                     updatedAt:
+   *                       type: string
+   *                       format: date-time
+   *                       description: Agent update timestamp
+   *       400:
+   *         description: Missing required parameters or invalid wallet address
+   *       404:
+   *         description: User not found
+   *       409:
+   *         description: User with this wallet address already exists
+   *       500:
+   *         description: Server error
+   */
+  router.post("/agents", controller.registerAgent);
 
   /**
    * @openapi

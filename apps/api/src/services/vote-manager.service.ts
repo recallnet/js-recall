@@ -174,18 +174,18 @@ export class VoteManager {
         };
       }
 
+      // Check if user has already voted
+      const userVote = await getUserVoteForCompetition(userId, competitionId);
+      const hasVoted = !!userVote;
+
       // Check if voting is allowed based on competition status
       if (!this.checkCompetitionVotingStatus(competition)) {
         return {
           canVote: false,
           reason: `Competition status does not allow voting (${competition.status})`,
-          info: { hasVoted: false },
+          info: { hasVoted },
         };
       }
-
-      // Check if user has already voted
-      const userVote = await getUserVoteForCompetition(userId, competitionId);
-      const hasVoted = !!userVote;
 
       const userVoteInfo: UserVoteInfo = {
         hasVoted,
@@ -312,7 +312,7 @@ export class VoteManager {
 
   /**
    * Check if competition status allows voting
-   * Based on issue #408: voting allowed for "pending" OR "active" status
+   * If competition is "ended" then voting is not allowed
    * Note: Voting date checks are handled separately in validation methods
    * @param competition The competition record
    * @returns True if competition status allows voting
@@ -321,8 +321,8 @@ export class VoteManager {
     competition: SelectCompetition,
   ): boolean {
     const votingEnabledStatuses: Array<SelectCompetition["status"]> = [
-      COMPETITION_STATUS.PENDING, // "almost ready to start" - can vote
-      COMPETITION_STATUS.ACTIVE, // "has started" - can vote
+      COMPETITION_STATUS.PENDING,
+      COMPETITION_STATUS.ACTIVE,
     ];
 
     return votingEnabledStatuses.includes(competition.status);
@@ -335,6 +335,14 @@ export class VoteManager {
    */
   private checkCompetitionVotingDates(competition: SelectCompetition) {
     const now = new Date();
+
+    // If at least one voting date is not set, voting for the comp is disabled
+    if (!competition.votingStartDate && !competition.votingEndDate) {
+      return {
+        canVote: false,
+        reason: "voting is not enabled for this competition",
+      };
+    }
 
     // If voting start date is set and we haven't reached it, voting is not allowed
     if (competition.votingStartDate && now < competition.votingStartDate) {

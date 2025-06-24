@@ -8,6 +8,7 @@ import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
   ActorStatus,
+  AdminCreateAgentSchema,
   AgentSearchParams,
   COMPETITION_STATUS,
   CROSS_CHAIN_TRADING_TYPE,
@@ -239,6 +240,7 @@ export function makeAdminController(services: ServiceRegistry) {
           name,
           email,
           userImageUrl,
+          userMetadata,
           agentName,
           agentDescription,
           agentImageUrl,
@@ -277,6 +279,7 @@ export function makeAdminController(services: ServiceRegistry) {
             name,
             email,
             userImageUrl,
+            userMetadata,
           );
 
           let agent = null;
@@ -405,38 +408,34 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async registerAgent(req: Request, res: Response, next: NextFunction) {
       try {
+        const { success, data, error } = AdminCreateAgentSchema.safeParse(
+          req.body,
+        );
+        if (!success) {
+          throw new ApiError(400, `Invalid request format: ${error.message}`);
+        }
+        const { user, agent } = data;
+        const { id: userId, walletAddress: userWalletAddress } = user;
         const {
-          userId,
-          walletAddress,
           name,
           email,
+          walletAddress: agentWalletAddress,
           description,
           imageUrl,
           metadata,
-        } = req.body;
-
-        // Validate required parameters
-        if (!walletAddress || !userId) {
-          return res.status(400).json({
-            success: false,
-            error: "Missing required parameter: walletAddress or userId",
-          });
-        }
+        } = agent;
 
         // Check if a user with this wallet address already exists
-        const existingUser = userId
-          ? await services.userManager.getUser(userId)
-          : await services.userManager.getUserByWalletAddress(walletAddress);
+        const existingUser = userWalletAddress
+          ? await services.userManager.getUserByWalletAddress(userWalletAddress)
+          : userId
+            ? await services.userManager.getUser(userId)
+            : undefined;
 
-        if (existingUser) {
-          const errorMessage = `A user with wallet address ${
-            userId ? userId : walletAddress
-          } already exists`;
-          console.log(
-            "[AdminController] Duplicate wallet address error:",
-            errorMessage,
-          );
-          return res.status(409).json({
+        if (!existingUser) {
+          const errorMessage = `User '${userWalletAddress ? userWalletAddress : userId}' does not exist`;
+          console.log("[AdminController] User not found error:", errorMessage);
+          return res.status(404).json({
             success: false,
             error: errorMessage,
           });
@@ -445,19 +444,17 @@ export function makeAdminController(services: ServiceRegistry) {
         try {
           // Create the agent
           const agent = await services.agentManager.createAgent({
-            ownerId: userId,
+            ownerId: existingUser.id,
             name,
             description,
             email,
             imageUrl,
-            metadata,
+            metadata: metadata ?? undefined,
+            walletAddress: agentWalletAddress,
           });
           const response: AdminAgentRegistrationResponse = {
             success: true,
-            agent: {
-              ...agent,
-              status: agent.status as ActorStatus,
-            },
+            agent,
           };
 
           return res.status(201).json(response);
