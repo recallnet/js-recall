@@ -17,8 +17,6 @@
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:^",
     "@recallnet/typescript-config": "workspace:*",
-    "eslint": "^9.19.0",
-    "prettier": "^3.5.3",
     "typescript": "^5.7.3"
   },
   "exports": {

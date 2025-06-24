@@ -35,8 +35,6 @@
     "@recallnet/typescript-config": "workspace:*",
     "@types/minimist": "^1.2.5",
     "@types/node": "^22.13.13",
-    "eslint": "^9.19.0",
-    "prettier": "^3.5.3",
     "shx": "^0.4.0",
     "tsup": "^8.3.6",
     "typescript": "^5.7.3"

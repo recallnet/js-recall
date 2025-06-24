@@ -55,7 +55,6 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@types/uuid": "^9.0.1",
-    "prettier": "^3.5.3",
     "typedoc": "^0.28.1",
     "typedoc-plugin-coverage": "^3.4.1",
     "typedoc-plugin-markdown": "^4.6.0",

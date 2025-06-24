@@ -110,10 +110,8 @@
     "@recallnet/eslint-config": "workspace:*",
     "@recallnet/typescript-config": "workspace:*",
     "ai": "^4.3.4",
-    "eslint": "^9.19.0",
     "dotenv": "^16.4.7",
     "langchain": "^0.3.21",
-    "prettier": "^3.5.3",
     "tsup": "^8.3.6",
     "typescript": "^5.7.3"
   }
