@@ -59,6 +59,10 @@ export async function setup() {
     (arg) => arg.includes("base-trades.test") || arg.includes("base-trades"),
   );
 
+  const isSandboxTest = args.some(
+    (arg) => arg.includes("sandbox.test") || arg.includes("sandbox"),
+  );
+
   if (envTestExists) {
     // Save original values for debugging
     const originalBaseUsdcBalance = process.env.INITIAL_BASE_USDC_BALANCE;
@@ -79,6 +83,10 @@ export async function setup() {
         ignoreProcessEnv: false,
       }),
       ...(isBaseTradingTest && {
+        //
+        ignoreProcessEnv: false,
+      }),
+      ...(isSandboxTest && {
         //
         ignoreProcessEnv: false,
       }),
@@ -135,6 +143,10 @@ export async function setup() {
     console.log(
       `MAX_TRADE_PERCENTAGE set to: ${process.env.MAX_TRADE_PERCENTAGE}`,
     );
+  }
+  if (isSandboxTest) {
+    process.env.SANDBOX = "true";
+    console.log(`SANDBOX set to: ${process.env.SANDBOX}`);
   }
 
   // Ensure TEST_MODE is set

@@ -3,7 +3,7 @@ import { NextFunction, Request, Response } from "express";
 import * as fs from "fs";
 import * as path from "path";
 
-import { reloadSecurityConfig } from "@/config/index.js";
+import { config, reloadSecurityConfig } from "@/config/index.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
@@ -452,6 +452,25 @@ export function makeAdminController(services: ServiceRegistry) {
             metadata: metadata ?? undefined,
             walletAddress: agentWalletAddress,
           });
+
+          // Check if sandbox mode is enabled and auto-join agent to active competition
+          if (config.sandbox) {
+            console.log(
+              `[AdminController] Sandbox mode enabled - attempting to auto-join agent ${agent.id} to active competition`,
+            );
+            try {
+              await services.competitionManager.autoJoinAgentToActiveCompetition(
+                agent.id,
+              );
+            } catch (autoJoinError) {
+              // Log the error but don't fail the agent registration
+              console.error(
+                `[AdminController] Auto-join failed for agent ${agent.id}:`,
+                autoJoinError,
+              );
+            }
+          }
+
           const response: AdminAgentRegistrationResponse = {
             success: true,
             agent,

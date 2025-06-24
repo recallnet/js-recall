@@ -35,6 +35,7 @@
         "INITIAL_SVM_USDT_BALANCE",
         "MAX_TRADE_PERCENTAGE",
         "NODE_ENV",
+        "SANDBOX",
         "NOVES_API_KEY",
         "API_PREFIX",
         "PORTFOLIO_PRICE_FRESHNESS_MS",

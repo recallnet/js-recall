@@ -245,6 +245,9 @@ export const config = {
   // Maximum trade size as percentage of portfolio value
   // Defaults to 25% if not specified
   maxTradePercentage: parseInt(process.env.MAX_TRADE_PERCENTAGE || "25", 10),
+  // Sandbox mode - automatically join newly registered agents to active competitions
+  // Defaults to false for security, must be explicitly enabled
+  sandbox: process.env.SANDBOX === "true",
 };
 
 /**

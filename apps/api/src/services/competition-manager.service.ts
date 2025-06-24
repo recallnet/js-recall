@@ -1073,4 +1073,48 @@ export class CompetitionManager {
   async getAllCompetitionAgents(competitionId: string): Promise<string[]> {
     return await getAllCompetitionAgents(competitionId);
   }
+
+  /**
+   * Automatically join an agent to the active competition if one exists
+   * Used in sandbox mode to auto-join newly registered agents
+   * @param agentId The agent ID to join to the active competition
+   */
+  async autoJoinAgentToActiveCompetition(agentId: string): Promise<void> {
+    try {
+      // Check if there's an active competition
+      const activeCompetition = await this.getActiveCompetition();
+      if (!activeCompetition) {
+        console.log(
+          `[CompetitionManager] No active competition found for auto-join of agent ${agentId}`,
+        );
+        return;
+      }
+
+      console.log(
+        `[CompetitionManager] Auto-joining agent ${agentId} to active competition ${activeCompetition.id}`,
+      );
+
+      // Add the agent to the competition
+      await addAgentToCompetition(activeCompetition.id, agentId);
+
+      // Reset the agent's balances to starting values
+      await this.balanceManager.resetAgentBalances(agentId);
+
+      // Take a portfolio snapshot for this specific agent
+      await this.portfolioSnapshotter.takeAgentPortfolioSnapshot(
+        activeCompetition.id,
+        agentId,
+      );
+
+      console.log(
+        `[CompetitionManager] Successfully auto-joined agent ${agentId} to competition ${activeCompetition.id}`,
+      );
+    } catch (error) {
+      // Log the error but don't throw - we don't want auto-join failures to break agent registration
+      console.error(
+        `[CompetitionManager] Error auto-joining agent ${agentId} to active competition:`,
+        error,
+      );
+    }
+  }
 }
