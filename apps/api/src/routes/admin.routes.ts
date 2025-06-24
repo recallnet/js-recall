@@ -695,6 +695,10 @@ export function configureAdminRoutes(
    *                 type: string
    *                 description: URL to the user's profile image
    *                 example: "https://example.com/user-image.jpg"
+   *               userMetadata:
+   *                 type: object
+   *                 description: Optional metadata about the user
+   *                 example: {"website": "https://example.com"}
    *               agentName:
    *                 type: string
    *                 description: Name for the user's first agent (optional)

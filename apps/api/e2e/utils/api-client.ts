@@ -52,6 +52,7 @@ import {
   UpcomingCompetitionsResponse,
   UserAgentApiKeyResponse,
   UserCompetitionsResponse,
+  UserMetadata,
   UserProfileResponse,
   UserRegistrationResponse,
   UserVotesResponse,
@@ -259,23 +260,36 @@ export class ApiClient {
    * @param agentMetadata Optional metadata for the agent
    * @param agentWalletAddress Optional wallet address for the agent
    */
-  async registerUser(
-    walletAddress: string,
-    name?: string,
-    email?: string,
-    userImageUrl?: string,
-    agentName?: string,
-    agentDescription?: string,
-    agentImageUrl?: string,
-    agentMetadata?: AgentMetadata,
-    agentWalletAddress?: string,
-  ): Promise<UserRegistrationResponse | ErrorResponse> {
+  async registerUser({
+    walletAddress,
+    name,
+    email,
+    userImageUrl,
+    userMetadata,
+    agentName,
+    agentDescription,
+    agentImageUrl,
+    agentMetadata,
+    agentWalletAddress,
+  }: {
+    walletAddress: string;
+    name?: string;
+    email?: string;
+    userImageUrl?: string;
+    userMetadata?: UserMetadata;
+    agentName?: string;
+    agentDescription?: string;
+    agentImageUrl?: string;
+    agentMetadata?: AgentMetadata;
+    agentWalletAddress?: string;
+  }): Promise<UserRegistrationResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post("/api/admin/users", {
         walletAddress,
         name,
         email,
         userImageUrl,
+        userMetadata,
         agentName,
         agentDescription,
         agentImageUrl,

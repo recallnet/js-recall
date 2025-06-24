@@ -85,14 +85,13 @@ describe("Admin API", () => {
     const agentName = `Test Agent ${Date.now()}`;
     const agentDescription = "A test trading agent";
 
-    const result = (await adminClient.registerUser(
-      generateRandomEthAddress(), // Generate random wallet address
-      userName,
-      userEmail,
-      undefined, // userImageUrl
+    const result = (await adminClient.registerUser({
+      walletAddress: generateRandomEthAddress(), // Generate random wallet address
+      name: userName,
+      email: userEmail,
       agentName,
       agentDescription,
-    )) as UserRegistrationResponse;
+    })) as UserRegistrationResponse;
 
     // Assert registration success
     expect(result.success).toBe(true);
@@ -117,38 +116,29 @@ describe("Admin API", () => {
     const agentDescription = "A trading agent with metadata";
 
     // Define the metadata for the agent
-    const metadata = {
-      ref: {
-        name: "AdminBot",
-        version: "2.0.0",
-        url: "https://github.com/example/admin-bot",
-      },
-      description: "A trading bot created by the admin",
-      social: {
-        name: "Admin Trading Agent",
-        email: "admin@tradingagent.com",
-        twitter: "@adminbot",
-      },
+    const agentMetadata = {
+      skills: ["trading"],
+    };
+    const userMetadata = {
+      website: "https://example.com",
     };
 
     // Register the user and agent with metadata
-    const result = (await adminClient.registerUser(
-      generateRandomEthAddress(),
-      userName,
-      userEmail,
-      undefined, // imageUrl
-      agentName,
-      agentDescription,
-      undefined, // imageUrl
-      metadata,
-    )) as UserRegistrationResponse;
+    const result = (await adminClient.registerUser({
+      walletAddress: generateRandomEthAddress(),
+      name: userName,
+      email: userEmail,
+      userMetadata: userMetadata,
+      agentName: agentName,
+      agentDescription: agentDescription,
+      agentMetadata: agentMetadata,
+    })) as UserRegistrationResponse;
 
     // Assert registration success using type assertion
     expect(result.success).toBe(true);
 
     // Safely check user and agent properties with type assertion
     const registrationResponse = result as UserRegistrationResponse;
-    console.log(registrationResponse);
     expect(registrationResponse.user).toBeDefined();
     expect(registrationResponse.user.name).toBe(userName);
     expect(registrationResponse.user.email).toBe(userEmail);
@@ -156,6 +146,7 @@ describe("Admin API", () => {
     expect(registrationResponse.agent!.name).toBe(agentName);
     expect(registrationResponse.agent!.description).toBe(agentDescription);
     expect(registrationResponse.agent!.apiKey).toBeDefined();
+    expect(registrationResponse.user.metadata).toEqual(userMetadata);
 
     // Now get the agent's profile to verify the metadata was saved
     const agentClient = adminClient.createAgentClient(
@@ -166,10 +157,10 @@ describe("Admin API", () => {
     // Safely check profile properties with type assertion
     const agentProfile = profileResponse as AgentProfileResponse;
     expect(agentProfile.success).toBe(true);
-    expect(agentProfile.agent.metadata).toEqual(metadata);
+    expect(agentProfile.agent.metadata).toEqual(agentMetadata);
   });
 
-  test.only("should register an agent separately from a user", async () => {
+  test("should register an agent separately from a user", async () => {
     // Register a new user with no agent
     const userName = `Test User ${Date.now()}`;
     const agentName = `Test Agent ${Date.now()}`;
@@ -180,10 +171,10 @@ describe("Admin API", () => {
 
     // Register the user
     const userWalletAddress = generateRandomEthAddress();
-    const userResult = (await adminClient.registerUser(
-      userWalletAddress,
-      userName,
-    )) as UserRegistrationResponse;
+    const userResult = (await adminClient.registerUser({
+      walletAddress: userWalletAddress,
+      name: userName,
+    })) as UserRegistrationResponse;
     expect(userResult.success).toBe(true);
     expect(userResult.user).toBeDefined();
     const userId = userResult.user.id;
@@ -243,7 +234,7 @@ describe("Admin API", () => {
     expect(agentResult2.agent.metadata).toEqual(agentMetadata);
   });
 
-  test.only("should fail to register an agent with an invalid user ID or user wallet address", async () => {
+  test("should fail to register an agent with an invalid user ID or user wallet address", async () => {
     // Setup admin client with the API key
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -251,10 +242,10 @@ describe("Admin API", () => {
     // Register a new user with no agent
     const userName = `Test User ${Date.now()}`;
     const userWalletAddress = generateRandomEthAddress();
-    const userResult = (await adminClient.registerUser(
-      userWalletAddress,
-      userName,
-    )) as UserRegistrationResponse;
+    const userResult = (await adminClient.registerUser({
+      walletAddress: userWalletAddress,
+      name: userName,
+    })) as UserRegistrationResponse;
     expect(userResult.success).toBe(true);
     expect(userResult.user).toBeDefined();
     const userId = userResult.user.id;
@@ -313,13 +304,12 @@ describe("Admin API", () => {
     const client = createTestClient();
 
     // Attempt to register a user without admin auth
-    const result = await client.registerUser(
-      generateRandomEthAddress(),
-      "Unauthorized User",
-      "unauthorized@test.com",
-      undefined,
-      "Unauthorized Agent",
-    );
+    const result = await client.registerUser({
+      walletAddress: generateRandomEthAddress(),
+      name: "Unauthorized User",
+      email: "unauthorized@test.com",
+      agentName: "Unauthorized Agent",
+    });
 
     // Assert failure
     expect(result.success).toBe(false);
@@ -332,25 +322,23 @@ describe("Admin API", () => {
 
     // Register first user
     const userEmail = `same-email-${Date.now()}@test.com`;
-    const firstResult = await adminClient.registerUser(
-      generateRandomEthAddress(),
-      `First User ${Date.now()}`,
-      userEmail,
-      undefined,
-      `First Agent ${Date.now()}`,
-    );
+    const firstResult = await adminClient.registerUser({
+      walletAddress: generateRandomEthAddress(),
+      name: `First User ${Date.now()}`,
+      email: userEmail,
+      agentName: `First Agent ${Date.now()}`,
+    });
 
     // Assert first registration success
     expect(firstResult.success).toBe(true);
 
     // Try to register second user with the same email
-    const secondResult = (await adminClient.registerUser(
-      generateRandomEthAddress(),
-      `Second User ${Date.now()}`,
-      userEmail, // Same email as first user
-      undefined,
-      `Second Agent ${Date.now()}`,
-    )) as ErrorResponse;
+    const secondResult = (await adminClient.registerUser({
+      walletAddress: generateRandomEthAddress(),
+      name: `Second User ${Date.now()}`,
+      email: userEmail,
+      agentName: `Second Agent ${Date.now()}`,
+    })) as ErrorResponse;
 
     // Assert second registration failure due to duplicate email
     expect(secondResult.success).toBe(false);
@@ -367,13 +355,12 @@ describe("Admin API", () => {
     const userEmail = `list-${Date.now()}@test.com`;
     const agentName = `Agent To List ${Date.now()}`;
 
-    const registerResult = (await adminClient.registerUser(
-      generateRandomEthAddress(),
-      userName,
-      userEmail,
-      undefined,
-      agentName,
-    )) as UserRegistrationResponse;
+    const registerResult = (await adminClient.registerUser({
+      walletAddress: generateRandomEthAddress(),
+      name: userName,
+      email: userEmail,
+      agentName: agentName,
+    })) as UserRegistrationResponse;
     expect(registerResult.success).toBe(true);
     expect(registerResult.agent).toBeDefined();
 
@@ -404,13 +391,12 @@ describe("Admin API", () => {
     const userEmail = `delete-${Date.now()}@test.com`;
     const agentName = `Agent To Delete ${Date.now()}`;
 
-    const registerResult = (await adminClient.registerUser(
-      generateRandomEthAddress(),
-      userName,
-      userEmail,
-      undefined,
+    const registerResult = (await adminClient.registerUser({
+      walletAddress: generateRandomEthAddress(),
+      name: userName,
+      email: userEmail,
       agentName,
-    )) as UserRegistrationResponse;
+    })) as UserRegistrationResponse;
     expect(registerResult.success).toBe(true);
     expect(registerResult.agent).toBeDefined();
 
@@ -447,13 +433,12 @@ describe("Admin API", () => {
     const userEmail = `nodelete-${Date.now()}@test.com`;
     const agentName = `Agent No Delete ${Date.now()}`;
 
-    const registerResult = (await adminClient.registerUser(
-      generateRandomEthAddress(),
-      userName,
-      userEmail,
-      undefined,
+    const registerResult = (await adminClient.registerUser({
+      walletAddress: generateRandomEthAddress(),
+      name: userName,
+      email: userEmail,
       agentName,
-    )) as UserRegistrationResponse;
+    })) as UserRegistrationResponse;
     expect(registerResult.success).toBe(true);
     expect(registerResult.agent).toBeDefined();
 
@@ -507,13 +492,12 @@ describe("Admin API", () => {
     const userEmail = `admin-test-${Date.now()}@test.com`;
     const agentName = `Agent For Admin Test ${Date.now()}`;
 
-    const registerResult = (await adminClient.registerUser(
-      generateRandomEthAddress(),
-      userName,
-      userEmail,
-      undefined,
+    const registerResult = (await adminClient.registerUser({
+      walletAddress: generateRandomEthAddress(),
+      name: userName,
+      email: userEmail,
       agentName,
-    )) as UserRegistrationResponse;
+    })) as UserRegistrationResponse;
     expect(registerResult.success).toBe(true);
     expect(registerResult.agent).toBeDefined();
 
@@ -536,39 +520,36 @@ describe("Admin API", () => {
     const user1Name = `Search User Alpha ${timestamp}`;
     const user1Email = `search-alpha-${timestamp}@test.com`;
     const agent1Name = `Search Agent Alpha ${timestamp}`;
-    const user1Result = (await adminClient.registerUser(
-      generateRandomEthAddress(),
-      user1Name,
-      user1Email,
-      undefined,
-      agent1Name,
-    )) as UserRegistrationResponse;
+    const user1Result = (await adminClient.registerUser({
+      walletAddress: generateRandomEthAddress(),
+      name: user1Name,
+      email: user1Email,
+      agentName: agent1Name,
+    })) as UserRegistrationResponse;
     expect(user1Result.success).toBe(true);
 
     // User 2: Standard active user with different name pattern
     const user2Name = `Testing User Beta ${timestamp}`;
     const user2Email = `beta-${timestamp}@example.com`;
     const agent2Name = `Testing Agent Beta ${timestamp}`;
-    const user2Result = (await adminClient.registerUser(
-      generateRandomEthAddress(),
-      user2Name,
-      user2Email,
-      undefined,
-      agent2Name,
-    )) as UserRegistrationResponse;
+    const user2Result = (await adminClient.registerUser({
+      walletAddress: generateRandomEthAddress(),
+      name: user2Name,
+      email: user2Email,
+      agentName: agent2Name,
+    })) as UserRegistrationResponse;
     expect(user2Result.success).toBe(true);
 
     // User 3: Standard active user to test searches
     const user3Name = `Search User Inactive ${timestamp}`;
     const user3Email = `inactive-${timestamp}@test.com`;
     const agent3Name = `Search Agent Inactive ${timestamp}`;
-    const user3Result = (await adminClient.registerUser(
-      generateRandomEthAddress(),
-      user3Name,
-      user3Email,
-      undefined,
-      agent3Name,
-    )) as UserRegistrationResponse;
+    const user3Result = (await adminClient.registerUser({
+      walletAddress: generateRandomEthAddress(),
+      name: user3Name,
+      email: user3Email,
+      agentName: agent3Name,
+    })) as UserRegistrationResponse;
     expect(user3Result.success).toBe(true);
 
     // TEST CASE 1: Search by user name substring (should find user 1 and user 3)

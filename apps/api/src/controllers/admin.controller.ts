@@ -240,6 +240,7 @@ export function makeAdminController(services: ServiceRegistry) {
           name,
           email,
           userImageUrl,
+          userMetadata,
           agentName,
           agentDescription,
           agentImageUrl,
@@ -278,6 +279,7 @@ export function makeAdminController(services: ServiceRegistry) {
             name,
             email,
             userImageUrl,
+            userMetadata,
           );
 
           let agent = null;
