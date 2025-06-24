@@ -42,7 +42,7 @@ describe("Sandbox Mode", () => {
     expect(loginSuccess).toBe(true);
   });
 
-  describe("when SANDBOX=true", () => {
+  describe("when SANDBOX=true, trigger automatic adding agents to active sandbox competition", () => {
     // Note: SANDBOX=true is set automatically by the test setup when running sandbox tests
 
     test("should automatically join newly registered agent to active competition", async () => {
@@ -145,7 +145,7 @@ describe("Sandbox Mode", () => {
       expect(agent.id).toBeDefined();
     });
 
-    test("should gracefully handle auto-join failures", async () => {
+    test("sandbox should gracefully handle auto-join failures", async () => {
       // Create a competition but don't start it (PENDING state)
       const competitionResponse = await adminClient.createCompetition(
         "Pending Competition",
@@ -181,7 +181,7 @@ describe("Sandbox Mode", () => {
       expect(agent.id).toBeDefined();
     });
 
-    test("should skip auto-join if agent is already in the competition", async () => {
+    test("sandbox should skip auto-join if agent is already in the competition", async () => {
       // First create a dummy user+agent to start the competition with
       const dummyUserResponse = await adminClient.registerUser({
         walletAddress: generateRandomEthAddress(),
@@ -291,7 +291,7 @@ describe("Sandbox Mode", () => {
     });
   });
 
-  describe("configuration", () => {
+  describe("sandbox configuration", () => {
     test("should have sandbox mode enabled when running sandbox tests", async () => {
       // This test verifies that the environment variable is properly set by the test setup
       // The actual sandbox behavior is tested in the other test cases

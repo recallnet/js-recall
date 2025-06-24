@@ -9,6 +9,8 @@ import type {
 } from "vitest/node";
 import type { TestCase } from "vitest/node";
 
+import { testContextManager } from "./test-context-manager.js";
+
 /**
  * Custom Vitest reporter that logs test results to e2e-server.log file
  * and tracks test failures through Vitest's proper reporter API.
@@ -36,6 +38,20 @@ class LogReporter implements Reporter {
    */
   onTestCaseReady(testCase: TestCase): void {
     this.log(`[Test] Starting test: ${testCase.fullName}`);
+
+    // Update test context manager with current test name
+    const testName = testCase.fullName || testCase.name || "";
+    if (testName.includes("sandbox")) {
+      testContextManager.setCurrentTestFile("sandbox.test");
+    } else if (testName.includes("leaderboard")) {
+      testContextManager.setCurrentTestFile("leaderboard-access.test");
+    } else if (testName.includes("trading")) {
+      testContextManager.setCurrentTestFile("trading.test");
+    } else if (testName.includes("base-trades")) {
+      testContextManager.setCurrentTestFile("base-trades.test");
+    } else {
+      testContextManager.setCurrentTestFile("other.test");
+    }
   }
 
   /**

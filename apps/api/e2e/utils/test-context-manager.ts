@@ -47,6 +47,7 @@ class TestContextManager {
   private currentContext: TestContext = {};
   private originalEnvValues: Record<string, string | undefined> = {};
   private initialized = false;
+  private currentTestFile: string | undefined = undefined;
 
   private constructor() {}
 
@@ -125,8 +126,13 @@ class TestContextManager {
    * Auto-detect and apply environment overrides based on test file patterns
    */
   private autoApplyEnvironmentOverrides(): void {
-    const testFile = this.currentContext.testFile;
+    const testFile = this.currentTestFile;
+    this.log(
+      `Auto-applying environment overrides for test file: ${testFile || "undefined"}`,
+    );
+
     if (!testFile) {
+      this.log("No test file detected, skipping environment overrides");
       return;
     }
 
@@ -135,8 +141,12 @@ class TestContextManager {
     // Pattern-based environment configuration
     if (testFile.includes("sandbox.test")) {
       overrides.SANDBOX = "true";
+      this.log(
+        `Detected sandbox test file: ${testFile} - setting SANDBOX=true`,
+      );
     } else {
       overrides.SANDBOX = "false";
+      this.log(`Non-sandbox test file: ${testFile} - setting SANDBOX=false`);
     }
 
     if (testFile.includes("leaderboard-access.test")) {
@@ -208,6 +218,21 @@ class TestContextManager {
   }
 
   /**
+   * Set the current test file (called by the reporter)
+   */
+  setCurrentTestFile(testFile: string): void {
+    this.currentTestFile = testFile;
+    this.log(`Current test file updated to: ${this.currentTestFile}`);
+  }
+
+  /**
+   * Get the current test file
+   */
+  getCurrentTestFile(): string | undefined {
+    return this.currentTestFile;
+  }
+
+  /**
    * Get debug information about the current state
    */
   getDebugInfo(): TestContextDebugInfo {
@@ -230,27 +255,10 @@ class TestContextManager {
 export const testContextManager = TestContextManager.getInstance();
 
 /**
- * Helper function to extract test file name from the call stack
- */
-export function getCurrentTestFile(): string | undefined {
-  const stack = new Error().stack;
-  if (!stack) return undefined;
-
-  const lines = stack.split("\n");
-  for (const line of lines) {
-    if (line.includes(".test.") && line.includes("e2e/tests/")) {
-      const match = line.match(/\/e2e\/tests\/([^)]+\.test\.[jt]s)/);
-      return match ? match[1] : undefined;
-    }
-  }
-  return undefined;
-}
-
-/**
  * Helper function to set up test context with automatic file detection
  */
 export function setupTestContext(options: Partial<TestContext> = {}): void {
-  const testFile = options.testFile || getCurrentTestFile();
+  const testFile = options.testFile || testContextManager.getCurrentTestFile();
 
   testContextManager.setTestContext({
     testFile,
