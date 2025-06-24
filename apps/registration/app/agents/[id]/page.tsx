@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, Eye, EyeOff, Key, Wallet } from "lucide-react";
+import { Copy, Edit3, Eye, EyeOff, Key, Save, Wallet, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
@@ -9,8 +9,30 @@ import { toast } from "@recallnet/ui/components/toast";
 
 import RecallLogo from "@/components/recall-logo";
 import { useUserAgent } from "@/hooks/useAgent";
-import { useAgentApiKey } from "@/hooks/useAgents";
+import { useAgentApiKey, useUpdateAgent } from "@/hooks/useAgents";
 import { useUserSession } from "@/hooks/useAuth";
+
+// Type for agent metadata that matches actual usage
+interface AgentMetadata {
+  skills?: string[];
+  repositoryUrl?: string;
+  x?: string;
+  telegram?: string;
+  [key: string]: string | string[] | undefined;
+}
+
+// Available skills for agents
+const AGENT_SKILLS = [
+  "Crypto Trading",
+  "Traditional Investing",
+  "Sports Betting",
+  "Prediction Markets",
+  "Social and Chat",
+  "Art & Video Creation",
+  "Programming / Coding",
+  "Deep Research",
+  "Other",
+];
 
 /**
  * Individual agent page component
@@ -29,9 +51,24 @@ export default function AgentPage({
   const session = useUserSession();
   const router = useRouter();
   const [showApiKey, setShowApiKey] = useState(false);
+  const [isEditingImage, setIsEditingImage] = useState(false);
+  const [newImageUrl, setNewImageUrl] = useState("");
+  const [isImageValid, setIsImageValid] = useState(true);
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [newDescription, setNewDescription] = useState("");
+  const [isEditingSkills, setIsEditingSkills] = useState(false);
+  const [newSkills, setNewSkills] = useState<string[]>([]);
+  const [customSkill, setCustomSkill] = useState("");
+  const [isEditingSocials, setIsEditingSocials] = useState(false);
+  const [newSocials, setNewSocials] = useState({
+    repositoryUrl: "",
+    x: "",
+    telegram: "",
+  });
 
   const { data: agentData, isLoading: agentLoading } = useUserAgent(id);
   const { data: apiKeyData, isLoading: apiKeyLoading } = useAgentApiKey(id);
+  const updateAgentMutation = useUpdateAgent();
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -47,6 +84,195 @@ export default function AgentPage({
     } catch {
       toast("Failed to copy to clipboard");
     }
+  };
+
+  const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const url = e.target.value;
+    setNewImageUrl(url);
+
+    // Basic URL validation
+    if (url && !isValidUrl(url)) {
+      setIsImageValid(false);
+    } else {
+      setIsImageValid(true);
+    }
+  };
+
+  const isValidUrl = (string: string) => {
+    try {
+      new URL(string);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleSaveImage = async () => {
+    if (!agentData || !newImageUrl.trim() || !isImageValid) return;
+
+    try {
+      await updateAgentMutation.mutateAsync({
+        agentId: id,
+        params: {
+          imageUrl: newImageUrl.trim(),
+        },
+      });
+
+      toast("Agent image updated successfully");
+      setIsEditingImage(false);
+      setNewImageUrl("");
+    } catch (error) {
+      console.error("Failed to update agent image:", error);
+      toast("Failed to update agent image");
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingImage(false);
+    setNewImageUrl("");
+    setIsImageValid(true);
+  };
+
+  const handleStartEdit = () => {
+    setIsEditingImage(true);
+    setNewImageUrl(agentData?.imageUrl || "");
+  };
+
+  // Description edit handlers
+  const handleStartEditDescription = () => {
+    setIsEditingDescription(true);
+    setNewDescription(agentData?.description || "");
+  };
+
+  const handleSaveDescription = async () => {
+    if (!agentData) return;
+
+    try {
+      await updateAgentMutation.mutateAsync({
+        agentId: id,
+        params: {
+          description: newDescription.trim() || undefined,
+        },
+      });
+
+      toast("Agent description updated successfully");
+      setIsEditingDescription(false);
+    } catch (error) {
+      console.error("Failed to update agent description:", error);
+      toast("Failed to update agent description");
+    }
+  };
+
+  const handleCancelEditDescription = () => {
+    setIsEditingDescription(false);
+    setNewDescription("");
+  };
+
+  // Skills edit handlers
+  const handleStartEditSkills = () => {
+    setIsEditingSkills(true);
+    setNewSkills(agentData?.skills || []);
+    setCustomSkill("");
+  };
+
+  const handleSkillToggle = (skill: string) => {
+    setNewSkills((prev) =>
+      prev.includes(skill) ? prev.filter((s) => s !== skill) : [...prev, skill],
+    );
+  };
+
+  const handleAddCustomSkill = () => {
+    if (customSkill.trim() && !newSkills.includes(customSkill.trim())) {
+      setNewSkills((prev) => [
+        ...prev.filter((s) => s !== "Other"),
+        customSkill.trim(),
+      ]);
+      setCustomSkill("");
+    }
+  };
+
+  const handleRemoveSkill = (skill: string) => {
+    setNewSkills((prev) => prev.filter((s) => s !== skill));
+  };
+
+  const handleSaveSkills = async () => {
+    if (!agentData) return;
+
+    try {
+      const currentMetadata = (agentData.metadata as AgentMetadata) || {};
+      await updateAgentMutation.mutateAsync({
+        agentId: id,
+        params: {
+          metadata: {
+            ...currentMetadata,
+            skills: newSkills.join(","), // Convert array to comma-separated string
+          },
+        },
+      });
+
+      toast("Agent skills updated successfully");
+      setIsEditingSkills(false);
+    } catch (error) {
+      console.error("Failed to update agent skills:", error);
+      toast("Failed to update agent skills");
+    }
+  };
+
+  const handleCancelEditSkills = () => {
+    setIsEditingSkills(false);
+    setNewSkills([]);
+    setCustomSkill("");
+  };
+
+  // Socials edit handlers
+  const handleStartEditSocials = () => {
+    setIsEditingSocials(true);
+    const metadata = (agentData?.metadata as AgentMetadata) || {};
+    setNewSocials({
+      repositoryUrl: metadata.repositoryUrl || "",
+      x: metadata.x || "",
+      telegram: metadata.telegram || "",
+    });
+  };
+
+  const handleSaveSocials = async () => {
+    if (!agentData) return;
+
+    try {
+      const currentMetadata = (agentData.metadata as AgentMetadata) || {};
+      await updateAgentMutation.mutateAsync({
+        agentId: id,
+        params: {
+          metadata: {
+            // Preserve existing metadata, converting arrays to strings for API compatibility
+            ...Object.fromEntries(
+              Object.entries(currentMetadata).map(([key, value]) => [
+                key,
+                Array.isArray(value) ? value.join(",") : value,
+              ]),
+            ),
+            repositoryUrl: newSocials.repositoryUrl.trim() || undefined,
+            x: newSocials.x.trim() || undefined,
+            telegram: newSocials.telegram.trim() || undefined,
+          },
+        },
+      });
+
+      toast("Agent social links updated successfully");
+      setIsEditingSocials(false);
+    } catch (error) {
+      console.error("Failed to update agent social links:", error);
+      toast("Failed to update agent social links");
+    }
+  };
+
+  const handleCancelEditSocials = () => {
+    setIsEditingSocials(false);
+    setNewSocials({
+      repositoryUrl: "",
+      x: "",
+      telegram: "",
+    });
   };
 
   // Show loading state
@@ -133,20 +359,78 @@ export default function AgentPage({
               <div className="rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] p-8">
                 {/* Agent Avatar */}
                 <div className="mb-6 flex justify-center">
-                  <div className="relative h-32 w-32 overflow-hidden rounded-full border-4 border-[#1a1a1a]">
-                    {agent.imageUrl ? (
-                      <img
-                        src={agent.imageUrl}
-                        alt={agent.name}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-[#1a1a1a] text-4xl font-bold text-[#596E89]">
-                        {agent.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
+                  <div className="relative">
+                    <div className="relative h-32 w-32 overflow-hidden rounded-full border-4 border-[#1a1a1a]">
+                      {agent.imageUrl ? (
+                        <img
+                          src={agent.imageUrl}
+                          alt={agent.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-[#1a1a1a] text-4xl font-bold text-[#596E89]">
+                          {agent.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    {/* Edit Button */}
+                    <button
+                      onClick={handleStartEdit}
+                      className="absolute -bottom-2 -right-2 rounded-full bg-[#0057AD] p-2 text-white transition-colors hover:bg-[#0066cc]"
+                      title="Edit agent image"
+                    >
+                      <Edit3 className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
+
+                {/* Image Edit Form */}
+                {isEditingImage && (
+                  <div className="mb-6 space-y-4 rounded border border-[#2a2a2a] bg-[#1a1a1a] p-4">
+                    <h3 className="text-sm font-medium text-[#E9EDF1]">
+                      Update Agent Image
+                    </h3>
+                    <div className="space-y-2">
+                      <input
+                        type="url"
+                        value={newImageUrl}
+                        onChange={handleImageUrlChange}
+                        placeholder="Enter image URL (e.g., https://example.com/image.jpg)"
+                        className={`w-full rounded border px-3 py-2 text-sm text-white placeholder-[#6D85A4] focus:outline-none ${
+                          !isImageValid
+                            ? "border-red-500 bg-red-500/10 focus:border-red-400"
+                            : "border-[#2a2a2a] bg-[#0a0a0a] focus:border-[#0057AD]"
+                        }`}
+                      />
+                      {!isImageValid && (
+                        <p className="text-xs text-red-400">
+                          Please enter a valid URL
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSaveImage}
+                        disabled={
+                          !newImageUrl.trim() ||
+                          !isImageValid ||
+                          updateAgentMutation.isPending
+                        }
+                        className="flex items-center gap-1 rounded bg-[#0057AD] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#0066cc] disabled:opacity-50"
+                      >
+                        <Save className="h-3 w-3" />
+                        {updateAgentMutation.isPending ? "Saving..." : "Save"}
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        className="flex items-center gap-1 rounded border border-[#2a2a2a] px-3 py-1.5 text-xs font-medium text-[#D2D9E1] transition-colors hover:bg-[#1a1a1a]"
+                      >
+                        <X className="h-3 w-3" />
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Agent Name */}
                 <h1 className="mb-2 text-center font-['Replica_LL',sans-serif] text-3xl font-bold text-[#E9EDF1]">
@@ -190,33 +474,181 @@ export default function AgentPage({
             <div className="space-y-6 lg:col-span-2">
               {/* Description */}
               <div className="rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] p-6">
-                <h2 className="mb-4 font-['Replica_LL',sans-serif] text-xl font-bold text-[#E9EDF1]">
-                  Description
-                </h2>
-                <p className="leading-relaxed text-[#D2D9E1]">
-                  {agent.description ||
-                    "No description provided for this agent."}
-                </p>
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="font-['Replica_LL',sans-serif] text-xl font-bold text-[#E9EDF1]">
+                    Description
+                  </h2>
+                  <button
+                    onClick={handleStartEditDescription}
+                    className="rounded bg-[#0057AD] p-1.5 text-white transition-colors hover:bg-[#0066cc]"
+                    title="Edit description"
+                  >
+                    <Edit3 className="h-3 w-3" />
+                  </button>
+                </div>
+
+                {isEditingDescription ? (
+                  <div className="space-y-4">
+                    <textarea
+                      value={newDescription}
+                      onChange={(e) => setNewDescription(e.target.value)}
+                      placeholder="Enter agent description..."
+                      rows={4}
+                      className="w-full rounded border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-sm text-white placeholder-[#6D85A4] focus:border-[#0057AD] focus:outline-none"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSaveDescription}
+                        disabled={updateAgentMutation.isPending}
+                        className="flex items-center gap-1 rounded bg-[#0057AD] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#0066cc] disabled:opacity-50"
+                      >
+                        <Save className="h-3 w-3" />
+                        {updateAgentMutation.isPending ? "Saving..." : "Save"}
+                      </button>
+                      <button
+                        onClick={handleCancelEditDescription}
+                        className="flex items-center gap-1 rounded border border-[#2a2a2a] px-3 py-1.5 text-xs font-medium text-[#D2D9E1] transition-colors hover:bg-[#1a1a1a]"
+                      >
+                        <X className="h-3 w-3" />
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="leading-relaxed text-[#D2D9E1]">
+                    {agent.description ||
+                      "No description provided for this agent."}
+                  </p>
+                )}
               </div>
 
               {/* Skills */}
-              {agent.skills && agent.skills.length > 0 && (
-                <div className="rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] p-6">
-                  <h2 className="mb-4 font-['Replica_LL',sans-serif] text-xl font-bold text-[#E9EDF1]">
+              <div className="rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] p-6">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="font-['Replica_LL',sans-serif] text-xl font-bold text-[#E9EDF1]">
                     Skills
                   </h2>
-                  <div className="flex flex-wrap gap-2">
-                    {agent.skills.map((skill: string) => (
-                      <span
-                        key={skill}
-                        className="rounded border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-1 text-sm text-[#D2D9E1]"
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
+                  <button
+                    onClick={handleStartEditSkills}
+                    className="rounded bg-[#0057AD] p-1.5 text-white transition-colors hover:bg-[#0066cc]"
+                    title="Edit skills"
+                  >
+                    <Edit3 className="h-3 w-3" />
+                  </button>
                 </div>
-              )}
+
+                {isEditingSkills ? (
+                  <div className="space-y-4">
+                    {/* Predefined Skills */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-[#D2D9E1]">
+                        Select Skills
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {AGENT_SKILLS.filter((skill) => skill !== "Other").map(
+                          (skill) => (
+                            <button
+                              key={skill}
+                              onClick={() => handleSkillToggle(skill)}
+                              className={`rounded border px-3 py-1 text-sm transition-colors ${
+                                newSkills.includes(skill)
+                                  ? "border-[#0057AD] bg-[#0057AD] text-white"
+                                  : "border-[#2a2a2a] bg-[#1a1a1a] text-[#D2D9E1] hover:border-[#0057AD]"
+                              }`}
+                            >
+                              {skill}
+                            </button>
+                          ),
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Custom Skills */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-[#D2D9E1]">
+                        Add Custom Skill
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={customSkill}
+                          onChange={(e) => setCustomSkill(e.target.value)}
+                          placeholder="Enter custom skill..."
+                          className="flex-1 rounded border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-sm text-white placeholder-[#6D85A4] focus:border-[#0057AD] focus:outline-none"
+                          onKeyPress={(e) =>
+                            e.key === "Enter" && handleAddCustomSkill()
+                          }
+                        />
+                        <button
+                          onClick={handleAddCustomSkill}
+                          disabled={!customSkill.trim()}
+                          className="rounded bg-[#0057AD] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#0066cc] disabled:opacity-50"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Selected Skills */}
+                    {newSkills.length > 0 && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-[#D2D9E1]">
+                          Selected Skills
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          {newSkills.map((skill) => (
+                            <span
+                              key={skill}
+                              className="flex items-center gap-1 rounded border border-[#0057AD] bg-[#0057AD] px-3 py-1 text-sm text-white"
+                            >
+                              {skill}
+                              <button
+                                onClick={() => handleRemoveSkill(skill)}
+                                className="ml-1 text-white hover:text-red-300"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSaveSkills}
+                        disabled={updateAgentMutation.isPending}
+                        className="flex items-center gap-1 rounded bg-[#0057AD] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#0066cc] disabled:opacity-50"
+                      >
+                        <Save className="h-3 w-3" />
+                        {updateAgentMutation.isPending ? "Saving..." : "Save"}
+                      </button>
+                      <button
+                        onClick={handleCancelEditSkills}
+                        className="flex items-center gap-1 rounded border border-[#2a2a2a] px-3 py-1.5 text-xs font-medium text-[#D2D9E1] transition-colors hover:bg-[#1a1a1a]"
+                      >
+                        <X className="h-3 w-3" />
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {agent.skills && agent.skills.length > 0 ? (
+                      agent.skills.map((skill: string) => (
+                        <span
+                          key={skill}
+                          className="rounded border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-1 text-sm text-[#D2D9E1]"
+                        >
+                          {skill}
+                        </span>
+                      ))
+                    ) : (
+                      <p className="text-[#6D85A4]">No skills specified</p>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {/* API Key Section */}
               <div className="rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] p-6">
@@ -298,74 +730,163 @@ export default function AgentPage({
                 </div>
               </div>
 
-              {/* Metadata/Additional Info */}
-              {agent.metadata &&
-                typeof agent.metadata === "object" &&
-                ("repositoryUrl" in agent.metadata ||
-                  "x" in agent.metadata ||
-                  "telegram" in agent.metadata) && (
-                  <div className="rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] p-6">
-                    <h2 className="mb-4 font-['Replica_LL',sans-serif] text-xl font-bold text-[#E9EDF1]">
-                      Links & Social
-                    </h2>
+              {/* Links & Social */}
+              <div className="rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] p-6">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="font-['Replica_LL',sans-serif] text-xl font-bold text-[#E9EDF1]">
+                    Links & Social
+                  </h2>
+                  <button
+                    onClick={handleStartEditSocials}
+                    className="rounded bg-[#0057AD] p-1.5 text-white transition-colors hover:bg-[#0066cc]"
+                    title="Edit social links"
+                  >
+                    <Edit3 className="h-3 w-3" />
+                  </button>
+                </div>
+
+                {isEditingSocials ? (
+                  <div className="space-y-4">
                     <div className="space-y-3">
-                      {agent.metadata &&
-                        typeof agent.metadata === "object" &&
-                        "repositoryUrl" in agent.metadata &&
-                        typeof agent.metadata.repositoryUrl === "string" && (
-                          <div>
-                            <label className="mb-1 block text-sm font-medium text-[#D2D9E1]">
-                              Repository
-                            </label>
-                            <a
-                              href={agent.metadata.repositoryUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="break-all text-[#0057AD] hover:underline"
-                            >
-                              {agent.metadata.repositoryUrl}
-                            </a>
-                          </div>
-                        )}
-                      {agent.metadata &&
-                        typeof agent.metadata === "object" &&
-                        "x" in agent.metadata &&
-                        typeof agent.metadata.x === "string" && (
-                          <div>
-                            <label className="mb-1 block text-sm font-medium text-[#D2D9E1]">
-                              X (Twitter)
-                            </label>
-                            <a
-                              href={`https://x.com/${agent.metadata.x}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-[#0057AD] hover:underline"
-                            >
-                              @{agent.metadata.x}
-                            </a>
-                          </div>
-                        )}
-                      {agent.metadata &&
-                        typeof agent.metadata === "object" &&
-                        "telegram" in agent.metadata &&
-                        typeof agent.metadata.telegram === "string" && (
-                          <div>
-                            <label className="mb-1 block text-sm font-medium text-[#D2D9E1]">
-                              Telegram
-                            </label>
-                            <a
-                              href={`https://t.me/${agent.metadata.telegram}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-[#0057AD] hover:underline"
-                            >
-                              @{agent.metadata.telegram}
-                            </a>
-                          </div>
-                        )}
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#D2D9E1]">
+                          Repository URL
+                        </label>
+                        <input
+                          type="url"
+                          value={newSocials.repositoryUrl}
+                          onChange={(e) =>
+                            setNewSocials((prev) => ({
+                              ...prev,
+                              repositoryUrl: e.target.value,
+                            }))
+                          }
+                          placeholder="https://github.com/username/repo"
+                          className="w-full rounded border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-sm text-white placeholder-[#6D85A4] focus:border-[#0057AD] focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#D2D9E1]">
+                          X (Twitter) Username
+                        </label>
+                        <input
+                          type="text"
+                          value={newSocials.x}
+                          onChange={(e) =>
+                            setNewSocials((prev) => ({
+                              ...prev,
+                              x: e.target.value,
+                            }))
+                          }
+                          placeholder="username (without @)"
+                          className="w-full rounded border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-sm text-white placeholder-[#6D85A4] focus:border-[#0057AD] focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#D2D9E1]">
+                          Telegram Username
+                        </label>
+                        <input
+                          type="text"
+                          value={newSocials.telegram}
+                          onChange={(e) =>
+                            setNewSocials((prev) => ({
+                              ...prev,
+                              telegram: e.target.value,
+                            }))
+                          }
+                          placeholder="username (without @)"
+                          className="w-full rounded border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-sm text-white placeholder-[#6D85A4] focus:border-[#0057AD] focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSaveSocials}
+                        disabled={updateAgentMutation.isPending}
+                        className="flex items-center gap-1 rounded bg-[#0057AD] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#0066cc] disabled:opacity-50"
+                      >
+                        <Save className="h-3 w-3" />
+                        {updateAgentMutation.isPending ? "Saving..." : "Save"}
+                      </button>
+                      <button
+                        onClick={handleCancelEditSocials}
+                        className="flex items-center gap-1 rounded border border-[#2a2a2a] px-3 py-1.5 text-xs font-medium text-[#D2D9E1] transition-colors hover:bg-[#1a1a1a]"
+                      >
+                        <X className="h-3 w-3" />
+                        Cancel
+                      </button>
                     </div>
                   </div>
+                ) : (
+                  <div className="space-y-3">
+                    {agent.metadata &&
+                    typeof agent.metadata === "object" &&
+                    "repositoryUrl" in agent.metadata &&
+                    typeof agent.metadata.repositoryUrl === "string" ? (
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#D2D9E1]">
+                          Repository
+                        </label>
+                        <a
+                          href={agent.metadata.repositoryUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="break-all text-[#0057AD] hover:underline"
+                        >
+                          {agent.metadata.repositoryUrl}
+                        </a>
+                      </div>
+                    ) : null}
+                    {agent.metadata &&
+                    typeof agent.metadata === "object" &&
+                    "x" in agent.metadata &&
+                    typeof agent.metadata.x === "string" ? (
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#D2D9E1]">
+                          X (Twitter)
+                        </label>
+                        <a
+                          href={`https://x.com/${agent.metadata.x}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#0057AD] hover:underline"
+                        >
+                          @{agent.metadata.x}
+                        </a>
+                      </div>
+                    ) : null}
+                    {agent.metadata &&
+                    typeof agent.metadata === "object" &&
+                    "telegram" in agent.metadata &&
+                    typeof agent.metadata.telegram === "string" ? (
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#D2D9E1]">
+                          Telegram
+                        </label>
+                        <a
+                          href={`https://t.me/${agent.metadata.telegram}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#0057AD] hover:underline"
+                        >
+                          @{agent.metadata.telegram}
+                        </a>
+                      </div>
+                    ) : null}
+                    {(!agent.metadata ||
+                      (typeof agent.metadata === "object" &&
+                        !("repositoryUrl" in agent.metadata) &&
+                        !("x" in agent.metadata) &&
+                        !("telegram" in agent.metadata))) && (
+                      <p className="text-[#6D85A4]">
+                        No social links specified
+                      </p>
+                    )}
+                  </div>
                 )}
+              </div>
             </div>
           </div>
 

@@ -1,16 +1,19 @@
 "use client";
 
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Edit3, Plus, Save, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { displayAddress } from "@recallnet/address-utils/display";
+import { toast } from "@recallnet/ui/components/toast";
 
 import RecallLogo from "@/components/recall-logo";
 import { useUserAgents } from "@/hooks/useAgents";
 import { useUserSession } from "@/hooks/useAuth";
-import { useUserCompetitions } from "@/hooks/useCompetitions";
+import { useCompetitions } from "@/hooks/useCompetitions";
+import { useUpdateProfile } from "@/hooks/useProfile";
+import { Competition } from "@/types/competition";
 
 /**
  * Account page component
@@ -24,21 +27,75 @@ export default function AccountPage() {
   const router = useRouter();
   const { data: agentsData, isLoading: agentsLoading } = useUserAgents();
   const { data: competitionsData, isLoading: competitionsLoading } =
-    useUserCompetitions();
+    useCompetitions();
+  const updateProfileMutation = useUpdateProfile();
 
-  // Redirect to home if not authenticated or no profile
+  // Profile editing state
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    name: "",
+    email: "",
+    imageUrl: "",
+    website: "",
+  });
+
+  // Redirect to home if not authenticated
   useEffect(() => {
     if (session.isInitialized && !session.isAuthenticated) {
       router.push("/");
     }
-    if (
-      session.isInitialized &&
-      session.isAuthenticated &&
-      !session.isProfileUpdated
-    ) {
-      router.push("/profile/update");
-    }
   }, [session, router]);
+
+  // Profile edit handlers
+  const handleStartEditProfile = () => {
+    if (session.isInitialized && session.user) {
+      setIsEditingProfile(true);
+      const metadata = session.user.metadata;
+      setProfileForm({
+        name: session.user.name || "",
+        email: session.user.email || "",
+        imageUrl: session.user.imageUrl || "",
+        website:
+          metadata &&
+          typeof metadata === "object" &&
+          "website" in metadata &&
+          typeof metadata.website === "string"
+            ? metadata.website
+            : "",
+      });
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!session.isInitialized || !session.user) return;
+
+    try {
+      await updateProfileMutation.mutateAsync({
+        name: profileForm.name.trim() || undefined,
+        email: profileForm.email.trim() || undefined,
+        imageUrl: profileForm.imageUrl.trim() || undefined,
+        metadata: {
+          website: profileForm.website.trim() || undefined,
+        },
+      });
+
+      toast("Profile updated successfully");
+      setIsEditingProfile(false);
+    } catch (error) {
+      console.error("Failed to update profile:", error);
+      toast("Failed to update profile");
+    }
+  };
+
+  const handleCancelEditProfile = () => {
+    setIsEditingProfile(false);
+    setProfileForm({
+      name: "",
+      email: "",
+      imageUrl: "",
+      website: "",
+    });
+  };
 
   // Show loading state
   if (!session.isInitialized || session.isLoading) {
@@ -59,28 +116,6 @@ export default function AccountPage() {
           <div className="mb-4 text-2xl font-bold text-white">
             Please connect your wallet to view your account
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Redirect if profile not updated
-  if (!session.isProfileUpdated) {
-    return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-[#050507] py-8">
-        <div className="text-center">
-          <div className="mb-4 text-2xl font-bold text-white">
-            Complete Your Profile
-          </div>
-          <div className="mb-8 text-[#596E89]">
-            You need to complete your profile to continue.
-          </div>
-          <Link
-            href="/profile/update"
-            className="bg-[#0057AD] px-8 py-3 font-['Trim_Mono',monospace] text-sm font-semibold uppercase tracking-wider text-white"
-          >
-            Complete Profile
-          </Link>
         </div>
       </div>
     );
@@ -111,17 +146,152 @@ export default function AccountPage() {
 
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
               <div className="flex flex-1 flex-col gap-3">
-                <h1 className="font-['Replica_LL',sans-serif] text-3xl font-bold text-[#E9EDF1] md:text-4xl lg:text-5xl">
-                  Developer Profile
-                </h1>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-                  <span className="font-['Replica_LL',sans-serif] text-lg text-[#D2D9E1]">
-                    {user?.name || "User"}
-                  </span>
-                  <span className="font-['Replica_LL',sans-serif] text-sm text-[#6D85A4]">
-                    {user?.email || "No email"}
-                  </span>
+                <div>
+                  <div className="flex items-center gap-4">
+                    {user?.imageUrl && (
+                      <div className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-[#1a1a1a] md:h-20 md:w-20">
+                        <img
+                          src={user.imageUrl}
+                          alt={user.name || "Profile"}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <h1 className="font-['Replica_LL',sans-serif] text-3xl font-bold text-[#E9EDF1] md:text-4xl lg:text-5xl">
+                      {user?.name || "Developer Profile"}
+                    </h1>
+                  </div>
+                  {!isEditingProfile && (
+                    <button
+                      onClick={handleStartEditProfile}
+                      className="mt-2 inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-[#6D85A4] transition-colors hover:bg-[#1a1a1a] hover:text-[#0057AD]"
+                      title="Edit profile"
+                    >
+                      <Edit3 className="h-3 w-3" />
+                      Edit Profile
+                    </button>
+                  )}
                 </div>
+
+                {isEditingProfile ? (
+                  <div className="space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#D2D9E1]">
+                          Name
+                        </label>
+                        <input
+                          type="text"
+                          value={profileForm.name}
+                          onChange={(e) =>
+                            setProfileForm((prev) => ({
+                              ...prev,
+                              name: e.target.value,
+                            }))
+                          }
+                          placeholder="Enter your name..."
+                          className="w-full rounded border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-sm text-white placeholder-[#6D85A4] focus:border-[#0057AD] focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#D2D9E1]">
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          value={profileForm.email}
+                          onChange={(e) =>
+                            setProfileForm((prev) => ({
+                              ...prev,
+                              email: e.target.value,
+                            }))
+                          }
+                          placeholder="Enter your email..."
+                          className="w-full rounded border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-sm text-white placeholder-[#6D85A4] focus:border-[#0057AD] focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#D2D9E1]">
+                          Profile Image URL
+                        </label>
+                        <input
+                          type="url"
+                          value={profileForm.imageUrl}
+                          onChange={(e) =>
+                            setProfileForm((prev) => ({
+                              ...prev,
+                              imageUrl: e.target.value,
+                            }))
+                          }
+                          placeholder="https://example.com/image.jpg"
+                          className="w-full rounded border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-sm text-white placeholder-[#6D85A4] focus:border-[#0057AD] focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#D2D9E1]">
+                          Website
+                        </label>
+                        <input
+                          type="url"
+                          value={profileForm.website}
+                          onChange={(e) =>
+                            setProfileForm((prev) => ({
+                              ...prev,
+                              website: e.target.value,
+                            }))
+                          }
+                          placeholder="https://your-website.com"
+                          className="w-full rounded border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-sm text-white placeholder-[#6D85A4] focus:border-[#0057AD] focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSaveProfile}
+                        disabled={updateProfileMutation.isPending}
+                        className="flex items-center gap-1 rounded bg-[#0057AD] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#0066cc] disabled:opacity-50"
+                      >
+                        <Save className="h-3 w-3" />
+                        {updateProfileMutation.isPending ? "Saving..." : "Save"}
+                      </button>
+                      <button
+                        onClick={handleCancelEditProfile}
+                        className="flex items-center gap-1 rounded border border-[#2a2a2a] px-3 py-1.5 text-xs font-medium text-[#D2D9E1] transition-colors hover:bg-[#1a1a1a]"
+                      >
+                        <X className="h-3 w-3" />
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex flex-col gap-1">
+                      <span className="font-['Replica_LL',sans-serif] text-sm text-[#6D85A4]">
+                        {user?.email || "No email set"}
+                      </span>
+                    </div>
+                    {user?.metadata &&
+                      typeof user.metadata === "object" &&
+                      "website" in user.metadata &&
+                      typeof user.metadata.website === "string" && (
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-[#6D85A4]">
+                            Website
+                          </label>
+                          <a
+                            href={user.metadata.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-[#0057AD] hover:underline"
+                          >
+                            {user.metadata.website}
+                          </a>
+                        </div>
+                      )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -151,10 +321,10 @@ export default function AccountPage() {
                     href={`/agents/${agent.id}`}
                     className="group cursor-pointer"
                   >
-                    <div className="h-full rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] p-6 transition-all duration-200 hover:border-[#0057AD] hover:bg-[#0f0f0f]">
-                      {/* Agent Avatar and Basic Info */}
-                      <div className="flex flex-col items-center gap-4">
-                        <div className="relative h-20 w-20 overflow-hidden rounded-full border-2 border-[#1a1a1a] group-hover:border-[#0057AD]">
+                    <div className="flex h-full flex-col rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] p-6 transition-all duration-200 hover:border-[#0057AD] hover:bg-[#0f0f0f]">
+                      {/* Agent Avatar and Basic Info - Fixed height section */}
+                      <div className="flex h-32 flex-col items-center justify-center gap-2">
+                        <div className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-[#1a1a1a] group-hover:border-[#0057AD]">
                           {agent.imageUrl ? (
                             <img
                               src={agent.imageUrl}
@@ -169,46 +339,54 @@ export default function AccountPage() {
                         </div>
 
                         {/* Agent Name */}
-                        <h3 className="text-center font-['Replica_LL',sans-serif] text-lg font-semibold text-[#E9EDF1] group-hover:text-[#0057AD]">
+                        <h3 className="line-clamp-2 text-center font-['Replica_LL',sans-serif] text-base font-semibold text-[#E9EDF1] group-hover:text-[#0057AD]">
                           {agent.name}
                         </h3>
 
                         {/* Wallet Address */}
-                        {agent.walletAddress && (
-                          <div className="font-['Trim_Mono',monospace] text-xs text-[#6D85A4]">
-                            {displayAddress(agent.walletAddress)}
-                          </div>
+                        <div className="min-h-[1rem] font-['Trim_Mono',monospace] text-xs text-[#6D85A4]">
+                          {agent.walletAddress
+                            ? displayAddress(agent.walletAddress)
+                            : ""}
+                        </div>
+                      </div>
+
+                      {/* Agent Description - Fixed height section */}
+                      <div className="mt-2 h-16">
+                        {agent.description ? (
+                          <p className="line-clamp-3 text-sm text-[#596E89]">
+                            {agent.description}
+                          </p>
+                        ) : (
+                          <div className="h-full"></div>
                         )}
                       </div>
 
-                      {/* Agent Description */}
-                      {agent.description && (
-                        <p className="mt-4 line-clamp-3 text-sm text-[#596E89]">
-                          {agent.description}
-                        </p>
-                      )}
+                      {/* Agent Skills - Fixed height section */}
+                      <div className="mt-2 h-16">
+                        {agent.skills && agent.skills.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {agent.skills.slice(0, 3).map((skill) => (
+                              <span
+                                key={skill}
+                                className="rounded bg-[#1a1a1a] px-2 py-1 text-xs text-[#D2D9E1]"
+                              >
+                                {skill}
+                              </span>
+                            ))}
+                            {agent.skills.length > 3 && (
+                              <span className="rounded bg-[#1a1a1a] px-2 py-1 text-xs text-[#6D85A4]">
+                                +{agent.skills.length - 3} more
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="h-full"></div>
+                        )}
+                      </div>
 
-                      {/* Agent Skills */}
-                      {agent.skills && agent.skills.length > 0 && (
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          {agent.skills.slice(0, 3).map((skill) => (
-                            <span
-                              key={skill}
-                              className="rounded bg-[#1a1a1a] px-2 py-1 text-xs text-[#D2D9E1]"
-                            >
-                              {skill}
-                            </span>
-                          ))}
-                          {agent.skills.length > 3 && (
-                            <span className="rounded bg-[#1a1a1a] px-2 py-1 text-xs text-[#6D85A4]">
-                              +{agent.skills.length - 3} more
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Agent Stats */}
-                      <div className="mt-6 flex justify-between text-xs">
+                      {/* Agent Stats - Fixed position */}
+                      <div className="mt-4 flex justify-between text-xs">
                         <div className="text-center">
                           <div className="font-semibold text-[#E9EDF1]">
                             {agent.stats?.completedCompetitions || 0}
@@ -229,7 +407,7 @@ export default function AccountPage() {
                         </div>
                       </div>
 
-                      {/* View Details Link */}
+                      {/* View Details Link - Fixed position */}
                       <div className="mt-4 text-center">
                         <span className="text-xs text-[#0057AD] group-hover:underline">
                           View Details & API Key →
@@ -257,36 +435,109 @@ export default function AccountPage() {
           {/* Competitions Section */}
           <div className="flex flex-col gap-6">
             <h2 className="font-['Replica_LL',sans-serif] text-2xl font-bold text-[#E9EDF1]">
-              Available Competitions
+              Upcoming Competitions
             </h2>
 
             {competitionsLoading ? (
               <div className="text-[#596E89]">Loading competitions...</div>
             ) : competitionsData && competitionsData.competitions.length > 0 ? (
-              <div className="grid gap-4 md:grid-cols-2">
-                {competitionsData.competitions.map((competition) => (
-                  <div
-                    key={competition.id}
-                    className="rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] p-4"
-                  >
-                    <h3 className="font-['Replica_LL',sans-serif] text-lg font-semibold text-[#E9EDF1]">
-                      {competition.name}
-                    </h3>
-                    {competition.description && (
-                      <p className="mt-2 text-sm text-[#596E89]">
-                        {competition.description}
-                      </p>
-                    )}
-                    <div className="mt-4 flex items-center gap-4">
-                      <span className="text-xs text-[#6D85A4]">
-                        Status: {competition.status}
-                      </span>
-                      <span className="text-xs text-[#6D85A4]">
-                        Participants: {competition.currentParticipants}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {competitionsData.competitions.map(
+                  (competition: Competition) => {
+                    const CompetitionCard = () => (
+                      <div className="group flex h-full flex-col rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] p-6 transition-all duration-200 hover:border-[#0057AD] hover:bg-[#0f0f0f]">
+                        {/* Competition Image and Name - Fixed height section */}
+                        <div className="flex h-32 flex-col items-center justify-center gap-2">
+                          <div className="relative h-16 w-16 overflow-hidden rounded-lg border-2 border-[#1a1a1a] group-hover:border-[#0057AD]">
+                            {competition.imageUrl ? (
+                              <img
+                                src={competition.imageUrl}
+                                alt={competition.name}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center bg-[#1a1a1a] text-[#596E89]">
+                                {competition.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Competition Name */}
+                          <h3 className="line-clamp-2 text-center font-['Replica_LL',sans-serif] text-base font-semibold text-[#E9EDF1] group-hover:text-[#0057AD]">
+                            {competition.name}
+                          </h3>
+                        </div>
+
+                        {/* Competition Description - Fixed height section */}
+                        <div className="mt-2 h-16">
+                          {competition.description ? (
+                            <p className="line-clamp-3 text-sm text-[#596E89]">
+                              {competition.description}
+                            </p>
+                          ) : (
+                            <div className="h-full"></div>
+                          )}
+                        </div>
+
+                        {/* Spacer to push dates to bottom */}
+                        <div className="flex-1"></div>
+
+                        {/* Competition Dates - Fixed position */}
+                        <div className="mt-4 flex justify-between text-xs">
+                          <div className="text-center">
+                            <div className="font-semibold text-[#E9EDF1]">
+                              {competition.startDate
+                                ? new Date(
+                                    competition.startDate,
+                                  ).toLocaleDateString()
+                                : "TBD"}
+                            </div>
+                            <div className="text-[#6D85A4]">Start Date</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-semibold text-[#E9EDF1]">
+                              {competition.endDate
+                                ? new Date(
+                                    competition.endDate,
+                                  ).toLocaleDateString()
+                                : "TBD"}
+                            </div>
+                            <div className="text-[#6D85A4]">End Date</div>
+                          </div>
+                        </div>
+
+                        {/* View Details Link - Fixed position */}
+                        <div className="mt-4 text-center">
+                          <span className="text-xs text-[#0057AD] group-hover:underline">
+                            {competition.metadata?.website
+                              ? "View Competition →"
+                              : "Learn More →"}
+                          </span>
+                        </div>
+                      </div>
+                    );
+
+                    // Wrap with external link if available
+                    return competition.metadata?.website ? (
+                      <a
+                        key={competition.id}
+                        href={competition.metadata.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group cursor-pointer"
+                      >
+                        <CompetitionCard />
+                      </a>
+                    ) : (
+                      <div
+                        key={competition.id}
+                        className="group cursor-default"
+                      >
+                        <CompetitionCard />
+                      </div>
+                    );
+                  },
+                )}
               </div>
             ) : (
               <div className="py-8 text-center">

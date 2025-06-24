@@ -1,7 +1,5 @@
 "use client";
 
-import "@rainbow-me/rainbowkit/styles.css";
-
 import {
   AuthenticationStatus,
   RainbowKitAuthenticationProvider,
@@ -18,20 +16,26 @@ import { WagmiProvider } from "wagmi";
 
 import { ThemeProvider } from "@recallnet/ui/components/theme-provider";
 
-import { useLogin, useLogout, useNonce } from "../hooks/useAuth";
-import { config } from "../lib/wagmi-config";
+import { useLogin, useLogout, useNonce } from "@/hooks/useAuth";
+import { clientConfig } from "@/wagmi-config";
 
 const AUTHENTICATION_STATUS: AuthenticationStatus = "unauthenticated";
+const CONFIG = clientConfig();
 
 function WalletProvider(props: { children: ReactNode }) {
-  const { data: nonceData } = useNonce();
+  const { data: nonceData, refetch: refetchNonce } = useNonce();
   const { mutateAsync: login } = useLogin();
   const { mutateAsync: logout } = useLogout();
 
   const authAdapter = React.useMemo(() => {
     return createAuthenticationAdapter({
       getNonce: async () => {
-        return nonceData?.nonce ?? "";
+        // If we don't have nonce data, refetch it
+        if (!nonceData?.nonce) {
+          const result = await refetchNonce();
+          return result.data?.nonce ?? "";
+        }
+        return nonceData.nonce;
       },
       createMessage: ({ nonce, address, chainId }) => {
         return createSiweMessage({
@@ -62,20 +66,15 @@ function WalletProvider(props: { children: ReactNode }) {
         await logout();
       },
     });
-  }, [nonceData, login, logout]);
+  }, [nonceData, refetchNonce, login, logout]);
 
   return (
-    <WagmiProvider config={config}>
+    <WagmiProvider config={CONFIG}>
       <RainbowKitAuthenticationProvider
         adapter={authAdapter}
         status={AUTHENTICATION_STATUS}
       >
-        <RainbowKitProvider
-          theme={darkTheme({
-            borderRadius: "none",
-            fontStack: "system",
-          })}
-        >
+        <RainbowKitProvider theme={darkTheme()}>
           {props.children}
         </RainbowKitProvider>
       </RainbowKitAuthenticationProvider>

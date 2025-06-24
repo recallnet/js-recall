@@ -120,16 +120,17 @@ export default function AgentAddForm({
             ]
           : formData.selectedSkills;
 
-      // Create the agent
+      // Create the agent - match comps app structure exactly
       const agentData = {
         name: formData.name,
-        ...(formData.description && { description: formData.description }),
-        ...(formData.avatar && { imageUrl: formData.avatar }),
+        imageUrl: formData.avatar || undefined,
+        email: undefined, // Add form doesn't collect agent email
+        description: formData.description || undefined,
         metadata: {
           skills: finalSkills,
-          ...(formData.repoUrl && { repositoryUrl: formData.repoUrl }),
-          ...(formData.twitter && { twitter: formData.twitter }),
-          ...(formData.telegram && { telegram: formData.telegram }),
+          repositoryUrl: formData.repoUrl || undefined,
+          x: formData.twitter || undefined,
+          telegram: formData.telegram || undefined,
         },
       };
 
