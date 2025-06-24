@@ -43,6 +43,8 @@
     "dev": "tsc --watch",
     "build": "tsup",
     "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write . --ignore-path=../../.prettierignore",
+    "format:check": "prettier --check . --ignore-path=../../.prettierignore",
     "clean": "rm -rf .turbo node_modules dist"
   },
   "devDependencies": {
@@ -60,6 +62,7 @@
     "@tanstack/react-query": "^5.64.2",
     "axios": "^1.7.9",
     "react": "^19.0.0",
+    "prettier": "^3.5.3",
     "viem": "^2.28.1",
     "wagmi": "^2.15.2"
   }

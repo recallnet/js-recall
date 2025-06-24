@@ -6,6 +6,8 @@
   "description": "Trading Simulator Server for hosting trading competitions",
   "main": "dist/src/index.js",
   "scripts": {
+    "format": "prettier --write . --ignore-path=../../.prettierignore",
+    "format:check": "prettier --check . --ignore-path=../../.prettierignore",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "start": "node dist/src/index.js",
@@ -101,6 +103,7 @@
     "drizzle-kit": "^0.31.1",
     "drizzle-seed": "^0.3.1",
     "eslint": "^9.19.0",
+    "prettier": "^3.5.3",
     "openapi-markdown": "^1.2.3",
     "siwe": "^3.0.0",
     "tough-cookie": "^5.1.2",

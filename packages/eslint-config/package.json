@@ -26,10 +26,13 @@
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-turbo": "^2.3.7",
     "globals": "^15.12.0",
+    "prettier": "^3.5.3",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.15.0"
   },
   "scripts": {
-    "clean": "rm -rf .turbo node_modules"
+    "clean": "rm -rf .turbo node_modules",
+    "format": "prettier --write . --ignore-path=../../.prettierignore",
+    "format:check": "prettier --check . --ignore-path=../../.prettierignore"
   }
 }
