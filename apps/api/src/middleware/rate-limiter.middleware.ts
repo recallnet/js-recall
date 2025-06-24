@@ -59,9 +59,49 @@ function getRateLimiter(
 }
 
 /**
+ * Get the client IP address from the request
+ * Handles Cloudflare + Load Balancer setup properly
+ *
+ * Priority order:
+ * 1. CF-Connecting-IP (if request is from Cloudflare)
+ * 2. X-Real-IP (set by load balancer, more trustworthy than x-forwarded-for)
+ * 3. Express req.ip (fallback)
+ *
+ * @param req - Express request object
+ * @returns Client IP address or "unknown" if unable to determine
+ */
+function getClientIp(req: Request): string {
+  // Priority 1: Cloudflare connecting IP (if from CF)
+  // CF-Ray header indicates the request came through Cloudflare
+  if (req.headers["cf-ray"] && req.headers["cf-connecting-ip"]) {
+    const cfIp = req.headers["cf-connecting-ip"] as string;
+    if (cfIp && cfIp !== "unknown") {
+      return cfIp;
+    }
+  }
+
+  // Priority 2: X-Real-IP (set by load balancer)
+  // More trustworthy than x-forwarded-for as it's typically overwritten by the load balancer
+  // and contains a single IP address rather than a comma-separated chain
+  const xRealIp = req.headers["x-real-ip"] as string;
+  if (xRealIp && xRealIp !== "unknown" && !xRealIp.startsWith("127.")) {
+    return xRealIp;
+  }
+
+  // Priority 3: Express req.ip (respects trust proxy setting)
+  if (req.ip && req.ip !== "unknown" && !req.ip.startsWith("127.")) {
+    return req.ip;
+  }
+
+  // Final fallback
+  return req.socket?.remoteAddress || "unknown";
+}
+
+/**
  * Rate limiting middleware
  * Enforces API rate limits based on endpoint and agent
  * Each agent now has their own set of rate limiters to ensure proper isolation
+ * Uses IP address for unauthenticated requests instead of "anonymous"
  */
 export const rateLimiterMiddleware = async (
   req: Request,
@@ -77,11 +117,11 @@ export const rateLimiterMiddleware = async (
       return next();
     }
 
-    // Get agent ID from request (set by auth middleware) or Authorization header
-    let agentId = req.agentId || "anonymous";
+    // Get agent ID from request (set by auth middleware) or use IP address as fallback
+    let agentId = req.agentId || `ip:${getClientIp(req)}`;
 
     // If no agentId from auth middleware, try to extract from Authorization header
-    if (agentId === "anonymous" && req.headers.authorization) {
+    if (agentId.startsWith("ip:") && req.headers.authorization) {
       const authHeader = req.headers.authorization;
       if (authHeader.startsWith("Bearer ")) {
         const token = authHeader.substring(7);
