@@ -1,4 +1,9 @@
-import React, { useRef, useState } from "react";
+"use client";
+
+import * as RadixTooltip from "@radix-ui/react-tooltip";
+import React from "react";
+
+import { cn } from "@recallnet/ui2/lib/utils";
 
 interface TooltipProps {
   children: React.ReactNode;
@@ -15,55 +20,28 @@ export const Tooltip: React.FC<TooltipProps> = ({
   className = "",
   tooltipClassName = "",
 }) => {
-  const [visible, setVisible] = useState(false);
-  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const showTooltip = () => {
-    if (hideTimeoutRef.current) {
-      clearTimeout(hideTimeoutRef.current);
-    }
-    setVisible(true);
-  };
-
-  const hideTooltip = () => {
-    hideTimeoutRef.current = setTimeout(() => {
-      setVisible(false);
-    }, 100); // short delay to allow hover transition
-  };
-
-  const getPositionClasses = () => {
-    switch (position) {
-      case "top":
-        return "bottom-full left-1/2 -translate-x-1/2 mb-2";
-      case "bottom":
-        return "top-full left-1/2 -translate-x-1/2 mt-2";
-      case "left":
-        return "right-full top-1/2 -translate-y-1/2 mr-2";
-      case "right":
-        return "left-full top-1/2 -translate-y-1/2 ml-2";
-      default:
-        return "bottom-full left-1/2 -translate-x-1/2 mb-2";
-    }
-  };
-
   return (
-    <div
-      className={`relative inline-block ${className}`}
-      onMouseEnter={showTooltip}
-      onMouseLeave={hideTooltip}
-    >
-      <span className="inline-block">{children}</span>
+    <RadixTooltip.Provider delayDuration={100}>
+      <RadixTooltip.Root>
+        <RadixTooltip.Trigger asChild>
+          <span className={className}>{children}</span>
+        </RadixTooltip.Trigger>
 
-      {visible && (
-        <div
-          className={`absolute ${getPositionClasses()} z-50 min-w-max rounded-xl bg-gray-900 p-2 text-sm text-white shadow-lg transition-all duration-200 ${tooltipClassName}`}
-          onMouseEnter={showTooltip}
-          onMouseLeave={hideTooltip}
-        >
-          {content}
-        </div>
-      )}
-    </div>
+        <RadixTooltip.Portal>
+          <RadixTooltip.Content
+            side={position}
+            sideOffset={8}
+            className={cn(
+              "z-50 rounded-xl bg-gray-900 px-3 py-2 text-sm text-white shadow-lg",
+              tooltipClassName,
+            )}
+          >
+            {content}
+            <RadixTooltip.Arrow className="fill-gray-900" />
+          </RadixTooltip.Content>
+        </RadixTooltip.Portal>
+      </RadixTooltip.Root>
+    </RadixTooltip.Provider>
   );
 };
 

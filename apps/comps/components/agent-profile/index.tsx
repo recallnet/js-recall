@@ -11,7 +11,7 @@ import MirrorImage from "@/components/mirror-image";
 import { Trophy, TrophyBadge } from "@/components/trophy-badge";
 import { useUpdateAgent, useUserAgents } from "@/hooks";
 import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
-import { Agent, AgentWithOwnerResponse } from "@/types";
+import { Agent, AgentWithOwnerResponse, Competition } from "@/types";
 
 import { BreadcrumbNav } from "../breadcrumb-nav";
 import { AgentImage } from "./agent-image";
@@ -90,9 +90,17 @@ export default function AgentProfile({
     limit,
     offset,
   });
-  const competitions = compsData?.competitions || [];
   const { total } = compsData?.pagination || { total: 0 };
-  console.log({ isUserAgent });
+
+  const competitions: (Competition & { trophies: Trophy[] })[] =
+    React.useMemo(() => {
+      return (
+        compsData?.competitions.map((comp) => ({
+          ...comp,
+          trophies: trophies.filter((t) => t.competitionId === comp.id),
+        })) || []
+      );
+    }, [compsData?.competitions, trophies]);
 
   return (
     <>
@@ -146,31 +154,29 @@ export default function AgentProfile({
                 </>
               </EditAgentField>
             ) : (
-              <h1 className="text-primary-foreground truncate text-4xl font-bold">
-                {agent.name}
+              <h1 className="text-primary-foreground flex w-full items-center gap-2 text-4xl font-bold">
+                <span className="truncate">{agent.name}</span>
                 <AgentVerifiedBadge verified={Boolean(agent.walletAddress)} />
               </h1>
             )}
             {!isUserAgent && (
-              <div className="mt-5 flex w-full gap-3">
+              <div className="mt-5 flex w-full gap-1">
                 <span className="text-secondary-foreground text-xl font-semibold">
                   Developed by
                 </span>
                 <span className="text-secondary-foreground text-primary-foreground truncate text-xl font-semibold">
-                  {owner?.name}
+                  [{owner?.name}]
                 </span>
               </div>
             )}
 
             <div
               className={cn(
-                "mt-3 w-full overflow-x-hidden",
-                isUserAgent
-                  ? "max-h-[70px] overflow-y-auto"
-                  : "h-[150px] max-h-[136px]",
+                "mt-3 min-h-40 w-full overflow-y-auto overflow-x-visible px-2 py-2",
+                isUserAgent ? "max-h-[70px]" : "h-[150px] max-h-[136px]",
               )}
             >
-              <div className="flex flex-wrap justify-start gap-x-5 gap-y-2">
+              <div className="flex flex-wrap justify-start gap-x-5 gap-y-4">
                 {trophies.length > 0 ? (
                   trophies.map((trophy, i: number) => (
                     <TrophyBadge key={i} trophy={trophy} />
@@ -207,7 +213,7 @@ export default function AgentProfile({
             </div>
             <div className="flex w-1/2 flex-col items-start border-l p-5">
               <span className="text-secondary-foreground w-full text-left text-xs font-semibold uppercase">
-                ELO
+                Agent Rank
               </span>
               <span className="text-secondary-foreground w-full text-left">
                 Not rated yet
@@ -243,15 +249,21 @@ export default function AgentProfile({
             </span>
           </div>
           <div className="flex flex-col items-start p-6">
-            <EditSkillsField
-              title="Agent Skills"
-              value={agent.skills || []}
-              onSave={handleSaveChange("skills")}
-            >
+            {isUserAgent ? (
+              <EditSkillsField
+                title="Agent Skills"
+                value={agent.skills || []}
+                onSave={handleSaveChange("skills")}
+              >
+                <span className="text-secondary-foreground text-left font-semibold uppercase">
+                  Agent Skills
+                </span>
+              </EditSkillsField>
+            ) : (
               <span className="text-secondary-foreground text-left font-semibold uppercase">
-                Proven Skills
+                Agent Skills
               </span>
-            </EditSkillsField>
+            )}
             <div
               className={cn(
                 "text-secondary-foreground mt-3 gap-3 break-all",

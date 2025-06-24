@@ -71,19 +71,21 @@ export const AgentInfo = ({
         )}
       </div>
 
-      <div className="flex w-full max-w-[470px] items-center gap-3">
-        <Tooltip content="Agent Wallet Address">
-          <WalletIcon />
-        </Tooltip>
-        <Clipboard
-          text={agent.walletAddress || ""}
-          className="w-full flex-grow px-2 py-1"
-        />
-        {
-          // just to align components
-        }
-        <EyeIcon className="opacity-0" />
-      </div>
+      {agent.walletAddress && (
+        <div className="flex w-full max-w-[470px] items-center gap-3">
+          <Tooltip content="Agent Wallet Address">
+            <WalletIcon />
+          </Tooltip>
+          <Clipboard
+            text={agent.walletAddress || ""}
+            className="w-full flex-grow px-2 py-1"
+          />
+          {
+            // just to align components
+          }
+          <EyeIcon className="opacity-0" />
+        </div>
+      )}
     </div>
   );
 };

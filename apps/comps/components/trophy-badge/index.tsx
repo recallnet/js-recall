@@ -19,6 +19,7 @@ export type Trophy = {
 
 interface TrophyBadgeProps {
   trophy: Trophy;
+  size?: number;
 }
 
 const rankColors: Record<number, string> = {
@@ -27,7 +28,7 @@ const rankColors: Record<number, string> = {
   3: "bg-[#C76E29]",
 };
 
-export const TrophyBadge: React.FC<TrophyBadgeProps> = ({ trophy }) => {
+export const TrophyBadge: React.FC<TrophyBadgeProps> = ({ trophy, size }) => {
   const { competitionId, rank, imageUrl, name } = trophy;
   const router = useRouter();
 
@@ -63,15 +64,23 @@ export const TrophyBadge: React.FC<TrophyBadgeProps> = ({ trophy }) => {
           onClick={() => router.push(`/competitions/${competitionId}`)}
         >
           <Hexagon
+            style={{
+              height: size || 64,
+              width: size || 64,
+            }}
             className={cn(
-              "absolute left-0 top-0 -z-10 h-[64px] w-[64px]",
+              "absolute left-0 top-0 -z-10",
               "duration-330 transition-transform group-hover:scale-110",
               colorClass,
             )}
           />
           <Hexagon
+            style={{
+              height: size ? size - 9 : 55,
+              width: size ? size - 9 : 55,
+            }}
             className={cn(
-              "relative left-[4px] top-[4px] h-[55px] w-[55px]",
+              "relative left-[4px] top-[4px]",
               "duration-330 transition-transform ease-in-out group-hover:scale-110",
             )}
           >
