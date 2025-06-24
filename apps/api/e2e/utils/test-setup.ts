@@ -10,6 +10,11 @@ import { afterAll, afterEach, beforeAll, beforeEach, vi } from "vitest";
 import { ServiceRegistry } from "@/services/index.js";
 
 import { dbManager } from "./db-manager.js";
+import {
+  clearTestContext,
+  setupTestContext,
+  testContextManager,
+} from "./test-context-manager.js";
 
 const services = new ServiceRegistry();
 
@@ -34,6 +39,9 @@ process.env.TEST_MODE = "true";
 beforeAll(async () => {
   log("[Global Setup] Initializing test environment...");
 
+  // Initialize test context manager
+  testContextManager.initialize();
+
   // Ensure database is initialized
   await dbManager.initialize();
 
@@ -46,6 +54,13 @@ beforeAll(async () => {
 
 // Before each test
 beforeEach(async () => {
+  // Set up test context for dynamic environment configuration
+  setupTestContext();
+  const debugInfo = testContextManager.getDebugInfo();
+  log(
+    `[Test Setup] Test context set up with environment: ${JSON.stringify(debugInfo.relevantEnvVars)}`,
+  );
+
   // Reset scheduler to ensure a clean state for each test
   if (services.scheduler) {
     log("[Global Setup] Resetting scheduler service for new test...");
@@ -238,5 +253,8 @@ afterAll(async () => {
 // Log test lifecycle events are now handled by LogReporter
 
 afterEach(() => {
+  // Clear test context after each test to restore environment variables
+  clearTestContext();
+
   vi.resetAllMocks();
 });

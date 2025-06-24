@@ -16,6 +16,7 @@ import {
   cleanupTestState,
   createTestClient,
   generateRandomEthAddress,
+  wait,
 } from "@/e2e/utils/test-helpers.js";
 
 describe("Sandbox Mode", () => {
@@ -98,6 +99,9 @@ describe("Sandbox Mode", () => {
 
       expect(agentResponse.success).toBe(true);
       const agent = (agentResponse as AdminAgentResponse).agent;
+
+      // Wait for sandbox auto-join logic to complete
+      await wait(1500);
 
       // Verify the agent was automatically joined to the competition
       const competitionAgentsResponse = await adminClient.getCompetitionAgents(
@@ -231,6 +235,9 @@ describe("Sandbox Mode", () => {
       expect(agentResponse.success).toBe(true);
       const agent = (agentResponse as AdminAgentResponse).agent;
 
+      // Wait for sandbox auto-join logic to complete
+      await wait(1500);
+
       // Verify the agent was joined to the competition
       const competitionAgentsResponse = await adminClient.getCompetitionAgents(
         competition.id,
@@ -260,6 +267,9 @@ describe("Sandbox Mode", () => {
       expect(duplicateAgentResponse.success).toBe(true);
       const duplicateAgent = (duplicateAgentResponse as AdminAgentResponse)
         .agent;
+
+      // Wait for sandbox auto-join logic to complete for the second agent
+      await wait(1500);
 
       // Verify both agents are in the competition (no duplicates, no errors)
       const finalCompetitionAgentsResponse =
