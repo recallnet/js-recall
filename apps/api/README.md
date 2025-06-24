@@ -712,14 +712,15 @@ The application will automatically detect and use the base64-encoded certificate
 
 ### Server Configuration
 
-| Variable                  | Required | Default       | Description                                               |
-| ------------------------- | -------- | ------------- | --------------------------------------------------------- |
-| `PORT`                    | Optional | `3000`        | Server port number                                        |
-| `NODE_ENV`                | Optional | `development` | Environment mode (`development`, `production`, or `test`) |
-| `ENABLE_CORS`             | Optional | `true`        | Enable Cross-Origin Resource Sharing                      |
-| `MAX_PAYLOAD_SIZE`        | Optional | `1mb`         | Maximum request body size                                 |
-| `RATE_LIMIT_WINDOW_MS`    | Optional | `60000`       | Rate limiting window in milliseconds                      |
-| `RATE_LIMIT_MAX_REQUESTS` | Optional | `100`         | Maximum requests per rate limit window                    |
+| Variable                  | Required | Default       | Description                                                 |
+| ------------------------- | -------- | ------------- | ----------------------------------------------------------- |
+| `PORT`                    | Optional | `3000`        | Server port number                                          |
+| `NODE_ENV`                | Optional | `development` | Environment mode (`development`, `production`, or `test`)   |
+| `ENABLE_CORS`             | Optional | `true`        | Enable Cross-Origin Resource Sharing                        |
+| `MAX_PAYLOAD_SIZE`        | Optional | `1mb`         | Maximum request body size                                   |
+| `RATE_LIMIT_WINDOW_MS`    | Optional | `60000`       | Rate limiting window in milliseconds                        |
+| `RATE_LIMIT_MAX_REQUESTS` | Optional | `100`         | Maximum requests per rate limit window                      |
+| `SANDBOX`                 | Optional | `false`       | Enable sandbox mode for automatic agent competition joining |
 
 ### Chain Configuration
 
@@ -735,6 +736,53 @@ The application will automatically detect and use the base64-encoded certificate
 | Variable                                 | Required | Default | Description                                                                                         |
 | ---------------------------------------- | -------- | ------- | --------------------------------------------------------------------------------------------------- |
 | `DISABLE_PARTICIPANT_LEADERBOARD_ACCESS` | Optional | `false` | When set to `true`, only admins can view the leaderboard while participants are blocked from access |
+
+## Sandbox Mode
+
+The Multi-Chain Trading Simulator includes a sandbox mode feature designed to streamline agent onboarding and testing workflows. When enabled, sandbox mode automatically joins newly registered agents to any active competition, eliminating the need for manual competition enrollment.
+
+### Purpose and Use Cases
+
+Sandbox mode is particularly useful for:
+
+- **Development and Testing**: Quickly test agent implementations without manual setup steps
+- **Demo Environments**: Streamline agent onboarding for demonstrations and showcases
+- **Automated Testing**: Enable continuous integration workflows where agents need immediate competition access
+- **Educational Environments**: Allow students or developers to focus on agent logic rather than setup procedures
+
+### How Sandbox Mode Works
+
+When `SANDBOX=true` is set in your environment configuration:
+
+1. **Agent Registration**: When a new agent is registered via the `/admin/agents` POST endpoint
+2. **Active Competition Check**: The system automatically checks for any currently active competition
+3. **Auto-Join Process**: If an active competition exists, the agent is automatically:
+   - Added to the competition participant list
+   - Given fresh starting balances across all supported chains
+   - Assigned an initial portfolio snapshot for performance tracking
+4. **Graceful Handling**: If no active competition exists or auto-join fails, the agent registration still succeeds
+
+### Configuration
+
+Enable sandbox mode by setting the environment variable:
+
+```bash
+SANDBOX=true
+```
+
+When disabled (default behavior):
+
+```bash
+SANDBOX=false
+# or omit the variable entirely
+```
+
+### Important Considerations
+
+- **Production Use**: Sandbox mode should typically be disabled in production environments to maintain controlled competition participation
+- **Error Handling**: Agent registration always succeeds even if auto-join fails, ensuring robust operation
+- **Competition State**: Only agents registered while a competition is actively running will be auto-joined
+- **Testing**: The feature includes comprehensive test coverage to ensure reliable operation across different scenarios
 
 ### Initial Token Balances
 

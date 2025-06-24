@@ -271,6 +271,9 @@ jobs:
           PORTFOLIO_SNAPSHOT_INTERVAL_MS=10000
           PORTFOLIO_PRICE_FRESHNESS_MS=10000
 
+          # Optional: Sandbox
+          SANDBOX_MODE=false
+
           # Optional: Disable ability for participants to view leaderboard activity
           DISABLE_PARTICIPANT_LEADERBOARD_ACCESS=false
           EOF
