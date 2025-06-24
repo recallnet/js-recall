@@ -1,7 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 
 import { ApiClient } from "@/lib/api-client";
-import { useUser } from "@/state/atoms";
 import {
   CompetitionsResponse,
   GetCompetitionsParams,
@@ -16,12 +15,11 @@ const apiClient = new ApiClient();
  * @returns Query result with competitions data
  */
 export const useCompetitions = (params: GetCompetitionsParams = {}) =>
-  useQuery({
+  useSuspenseQuery({
     queryKey: ["competitions", params],
     queryFn: async (): Promise<CompetitionsResponse> => {
       return apiClient.getCompetitions(params);
     },
-    placeholderData: (prev) => prev,
   });
 
 /**
@@ -30,14 +28,10 @@ export const useCompetitions = (params: GetCompetitionsParams = {}) =>
  * @returns Query result with user's competitions data
  */
 export const useUserCompetitions = (params: GetCompetitionsParams = {}) => {
-  const { status } = useUser();
-
-  return useQuery({
+  return useSuspenseQuery({
     queryKey: ["user-competitions", params],
     queryFn: async (): Promise<UserCompetitionsResponse> => {
       return apiClient.getUserCompetitions(params);
     },
-    enabled: status === "authenticated",
-    placeholderData: (prev) => prev,
   });
 };
