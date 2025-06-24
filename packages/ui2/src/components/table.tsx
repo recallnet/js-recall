@@ -3,7 +3,9 @@ import * as React from "react";
 
 import { cn } from "@recallnet/ui2/lib/utils";
 
-export type TableProps = React.JSX.IntrinsicElements["table"];
+export type TableProps = React.JSX.IntrinsicElements["table"] & {
+  isLoading?: boolean;
+};
 export type TableHeaderProps = React.JSX.IntrinsicElements["thead"];
 export type TableBodyProps = React.JSX.IntrinsicElements["tbody"];
 export type TableFooterProps = React.JSX.IntrinsicElements["tfoot"];
@@ -12,16 +14,21 @@ export type TableHeadProps = React.JSX.IntrinsicElements["th"];
 export type TableCellProps = React.JSX.IntrinsicElements["td"];
 export type TableCaptionProps = React.JSX.IntrinsicElements["caption"];
 
-function Table({ className, ref, ...props }: TableProps) {
+function Table({ className, ref, isLoading = false, ...props }: TableProps) {
   return (
-    <table
-      ref={ref}
-      className={cn(
-        "w-full caption-bottom border-separate border-spacing-0 overflow-hidden rounded-xl border text-sm",
-        className,
+    <div className="relative">
+      <table
+        ref={ref}
+        className={cn(
+          "w-full caption-bottom border-separate border-spacing-0 overflow-hidden rounded-xl border text-sm",
+          className,
+        )}
+        {...props}
+      />
+      {isLoading && (
+        <div className="bg-background/10 absolute inset-0 rounded-xl opacity-50 backdrop-blur-sm" />
       )}
-      {...props}
-    />
+    </div>
   );
 }
 

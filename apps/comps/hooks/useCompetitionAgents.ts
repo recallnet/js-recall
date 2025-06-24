@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 
 import { ApiClient } from "@/lib/api-client";
 import { AgentCompetitionResponse, GetCompetitionAgentsParams } from "@/types";
@@ -15,12 +15,10 @@ export const useCompetitionAgents = (
   competitionId?: string,
   params: GetCompetitionAgentsParams = {},
 ) =>
-  useQuery({
+  useSuspenseQuery({
     queryKey: ["competition-agents", competitionId, params],
     queryFn: async (): Promise<AgentCompetitionResponse> => {
       if (!competitionId) throw new Error("Competition ID is required");
       return apiClient.getCompetitionAgents(competitionId, params);
     },
-    enabled: !!competitionId,
-    placeholderData: (prev) => prev,
   });

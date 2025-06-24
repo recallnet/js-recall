@@ -4,17 +4,20 @@ import { useWindowScroll } from "@uidotdev/usehooks";
 import { isFuture } from "date-fns";
 import { ArrowUpRight, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import React from "react";
+import React, { Suspense } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 
 import { Button } from "@recallnet/ui2/components/button";
 
 import { AgentsTable } from "@/components/agents-table";
+import AgentsTableSkeleton from "@/components/agents-table/skeleton";
 import { BasicCompetitionCard } from "@/components/basic-competition-card";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { CountdownClock } from "@/components/clock";
 import { CompetitionInfo } from "@/components/competition-info";
 import CompetitionSkeleton from "@/components/competition-skeleton";
 import { CompetitionVotingBanner } from "@/components/competition-voting-banner";
+import { ErrorMessage } from "@/components/error-message";
 import { FooterSection } from "@/components/footer-section";
 import { JoinCompetitionButton } from "@/components/join-competition-button";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
@@ -47,8 +50,11 @@ export default function CompetitionPage({
   if (error || !competition) {
     return (
       <div className="container mx-auto px-12 py-20 text-center">
-        <h2 className="text-2xl font-bold text-red-500">Error</h2>
-        <p className="mt-4">{error?.message || "Competition not found"}</p>
+        <ErrorMessage
+          error={error}
+          title="Error"
+          description="Competition not found"
+        />
         <Link href="/competitions" className="mt-8 inline-block underline">
           Back to competitions
         </Link>
@@ -140,14 +146,37 @@ export default function CompetitionPage({
         )}
 
       {competition.userVotingInfo?.info.agentId ? (
-        <UserVote
-          agentId={competition.userVotingInfo.info.agentId}
-          competitionId={id}
-          totalVotes={competition.stats.totalVotes}
-        />
+        <ErrorBoundary
+          FallbackComponent={({ error, resetErrorBoundary }) => (
+            <ErrorMessage
+              error={error}
+              title="Failed to load agents"
+              description="An error occurred while loading the agents"
+              onRetry={() => resetErrorBoundary()}
+            />
+          )}
+        >
+          <UserVote
+            agentId={competition.userVotingInfo.info.agentId}
+            competitionId={id}
+            totalVotes={competition.stats.totalVotes}
+          />
+        </ErrorBoundary>
       ) : null}
-
-      <AgentsTable ref={agentsTableRef} competition={competition} />
+      <ErrorBoundary
+        FallbackComponent={({ error, resetErrorBoundary }) => (
+          <ErrorMessage
+            error={error}
+            title="Failed to load agents"
+            description="An error occurred while loading the agents"
+            onRetry={() => resetErrorBoundary()}
+          />
+        )}
+      >
+        <Suspense fallback={<AgentsTableSkeleton />}>
+          <AgentsTable ref={agentsTableRef} competition={competition} />
+        </Suspense>
+      </ErrorBoundary>
       <JoinSwarmSection socialLinks={getSocialLinksArray()} className="mt-12" />
       <FooterSection />
     </div>

@@ -13,7 +13,14 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useDebounce } from "@uidotdev/usehooks";
 import { ArrowUp, Search } from "lucide-react";
 import Link from "next/link";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 import { IconButton } from "@recallnet/ui2/components/icon-button";
@@ -57,21 +64,21 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   const [agentsOffset, setAgentsOffset] = useState(0);
   const [allAgents, setAllAgents] = useState<AgentCompetition[]>([]);
   const debouncedFilterTerm = useDebounce(agentsFilter, 300);
+  const deferredFilterTerm = useDeferredValue(debouncedFilterTerm);
+  const [, startTransition] = useTransition();
 
-  const {
-    data: agentsData,
-    isLoading: isLoadingAgents,
-    error: agentsError,
-    isFetching: isFetchingAgents,
-  } = useCompetitionAgents(competition.id, {
-    filter: debouncedFilterTerm,
-    sort: agentsSort,
-    limit: agentsLimit,
-    offset: agentsOffset,
-  });
+  const { data: agentsData, isFetching: isFetchingAgents } =
+    useCompetitionAgents(competition.id, {
+      filter: deferredFilterTerm,
+      sort: agentsSort,
+      limit: agentsLimit,
+      offset: agentsOffset,
+    });
 
   useEffect(() => {
-    setAgentsOffset(0);
+    startTransition(() => {
+      setAgentsOffset(0);
+    });
   }, [debouncedFilterTerm, agentsSort]);
 
   useEffect(() => {
@@ -300,7 +307,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         .map((sort) => `${sort.desc ? "-" : ""}${sort.id}`)
         .join(",");
 
-      setAgentsSort(sortString);
+      startTransition(() => {
+        setAgentsSort(sortString);
+      });
     },
   });
 
@@ -312,27 +321,6 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     overscan: 5,
   });
 
-  if (isLoadingAgents) {
-    return (
-      <div className="my-12">
-        <span>Loading agents...</span>
-      </div>
-    );
-  }
-  if (agentsError || !agentsData) {
-    return (
-      <div className="my-12 rounded border border-red-400 bg-opacity-10 p-6 text-center">
-        <h2 className="text-xl font-semibold text-red-400">
-          Failed to load agents
-        </h2>
-        <p className="mt-2 text-slate-300">
-          {agentsError?.message ||
-            "An error occurred while loading agents data"}
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="mt-12 w-full" ref={agentsTableRef}>
       <h2 className="mb-5 text-2xl font-bold">
@@ -343,7 +331,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         <Input
           className="border-none bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
           placeholder="Search for an agent..."
-          onChange={(e) => setAgentsFilter(e.target.value)}
+          onChange={(e) => {
+            setAgentsFilter(e.target.value);
+          }}
           aria-label="Search for an agent"
         />
       </div>
@@ -355,7 +345,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           position: "relative",
         }}
       >
-        <Table>
+        <Table isLoading={isFetchingAgents}>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow
@@ -444,7 +434,11 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setAgentsOffset((prev) => prev + agentsLimit)}
+            onClick={() =>
+              startTransition(() => {
+                setAgentsOffset((prev) => prev + agentsLimit);
+              })
+            }
           >
             Show More
           </Button>
