@@ -40,7 +40,7 @@ class LogReporter implements Reporter {
     this.log(`[Test] Starting test: ${testCase.fullName}`);
 
     // Update test context manager with current test name
-    const testName = testCase.fullName || testCase.name || "";
+    const testName = (testCase.fullName || testCase.name || "").toLowerCase();
     if (testName.includes("sandbox")) {
       testContextManager.setCurrentTestFile("sandbox.test");
     } else if (testName.includes("leaderboard")) {
