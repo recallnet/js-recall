@@ -157,6 +157,26 @@ export class AgentManager {
     } catch (error) {
       if (error instanceof Error) {
         console.error("[AgentManager] Error creating agent:", error);
+
+        // Check if this is a unique constraint violation for agent name
+        // PostgreSQL throws various error formats depending on the driver and ORM
+        const errorMessage = error.message.toLowerCase();
+        const isUniqueConstraintViolation =
+          errorMessage.includes("duplicate key value") ||
+          errorMessage.includes("violates unique constraint") ||
+          ("code" in error && error.code === "23505");
+
+        const isAgentNameConstraint =
+          errorMessage.includes("agents_owner_id_name_key") ||
+          (errorMessage.includes("owner_id") && errorMessage.includes("name"));
+
+        if (isUniqueConstraintViolation && isAgentNameConstraint) {
+          throw new ApiError(
+            409,
+            `An agent with the name "${name}" already exists for this user`,
+          );
+        }
+
         throw error;
       }
 
