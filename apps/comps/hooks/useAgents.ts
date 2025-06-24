@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { ApiClient } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 import { useUser } from "@/state/atoms";
 import {
   AgentApiKeyResponse,
@@ -8,8 +8,6 @@ import {
   GetAgentsParams,
   UpdateAgentRequest,
 } from "@/types";
-
-const apiClient = new ApiClient();
 
 /**
  * Hook to fetch agents with pagination and filtering

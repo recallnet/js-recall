@@ -6,11 +6,9 @@ import { useEffect, useMemo } from "react";
 
 import { DEFAULT_REDIRECT_URL } from "@/constants";
 import { useProfile } from "@/hooks/useProfile";
-import { ApiClient } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 import { userAtom } from "@/state/atoms";
 import { LoginRequest, ProfileResponse } from "@/types";
-
-const apiClient = new ApiClient();
 
 /**
  * Hook to get a nonce for signature

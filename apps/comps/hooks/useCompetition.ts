@@ -1,9 +1,7 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 
-import { ApiClient } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 import { CompetitionResponse } from "@/types";
-
-const apiClient = new ApiClient();
 
 /**
  * Hook to fetch a single competition by ID
@@ -11,10 +9,10 @@ const apiClient = new ApiClient();
  * @returns Query result with competition data
  */
 export const useCompetition = (id?: string) =>
-  useSuspenseQuery({
+  useQuery({
     queryKey: ["competition", id],
     queryFn: async (): Promise<CompetitionResponse["competition"]> => {
-      if (!id) throw new Error("Competition ID is required");
-      return (await apiClient.getCompetition(id)).competition;
+      return (await apiClient.getCompetition(id!)).competition;
     },
+    enabled: !!id,
   });

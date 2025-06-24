@@ -1,9 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { ApiClient } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 import { Agent, AgentWithOwnerResponse } from "@/types";
-
-const apiClient = new ApiClient();
 
 /**
  * Hook to fetch a single agent by ID owned by the authenticated user
