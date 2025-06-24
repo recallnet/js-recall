@@ -25,42 +25,16 @@ import { UserVote } from "@/components/user-vote";
 import { getSocialLinksArray } from "@/data/social";
 import { useCompetition } from "@/hooks/useCompetition";
 
-export default function CompetitionPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = React.use(params);
+/**
+ * Component that handles the competition data and renders the content
+ * This component will throw promises when loading, enabling Suspense
+ */
+function CompetitionContent({ id }: { id: string }) {
   const agentsTableRef = React.useRef<HTMLDivElement>(null);
   const [, scrollTo] = useWindowScroll();
 
-  const {
-    data: competition,
-    isLoading: isLoadingCompetition,
-    error: competitionError,
-  } = useCompetition(id);
-
-  const isLoading = isLoadingCompetition;
-  const error = competitionError;
-
-  if (isLoading) {
-    return <CompetitionSkeleton />;
-  }
-
-  if (error || !competition) {
-    return (
-      <div className="container mx-auto px-12 py-20 text-center">
-        <ErrorMessage
-          error={error}
-          title="Error"
-          description="Competition not found"
-        />
-        <Link href="/competitions" className="mt-8 inline-block underline">
-          Back to competitions
-        </Link>
-      </div>
-    );
-  }
+  // The hook now returns data directly and throws promises/errors for Suspense
+  const { data: competition } = useCompetition(id);
 
   return (
     <div style={{ marginTop: "-40px" }}>
@@ -156,11 +130,13 @@ export default function CompetitionPage({
             />
           )}
         >
-          <UserVote
-            agentId={competition.userVotingInfo.info.agentId}
-            competitionId={id}
-            totalVotes={competition.stats.totalVotes}
-          />
+          <Suspense fallback={<div>Loading...</div>}>
+            <UserVote
+              agentId={competition.userVotingInfo.info.agentId}
+              competitionId={id}
+              totalVotes={competition.stats.totalVotes}
+            />
+          </Suspense>
         </ErrorBoundary>
       ) : null}
       <ErrorBoundary
@@ -180,5 +156,30 @@ export default function CompetitionPage({
       <JoinSwarmSection socialLinks={getSocialLinksArray()} className="mt-12" />
       <FooterSection />
     </div>
+  );
+}
+
+export default function CompetitionPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = React.use(params);
+
+  return (
+    <ErrorBoundary
+      FallbackComponent={({ error }) => (
+        <div className="container mx-auto px-12 py-20 text-center">
+          <ErrorMessage error={error} title="Error" />
+          <Link href="/competitions" className="mt-8 inline-block underline">
+            Back to competitions
+          </Link>
+        </div>
+      )}
+    >
+      <Suspense fallback={<CompetitionSkeleton />}>
+        <CompetitionContent id={id} />
+      </Suspense>
+    </ErrorBoundary>
   );
 }
