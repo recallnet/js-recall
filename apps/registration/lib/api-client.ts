@@ -301,18 +301,6 @@ export class ApiClient {
   }
 
   /**
-   * Create a new agent
-   * @param data - Agent creation data
-   * @returns Created agent response
-   */
-  async createAgent(data: CreateAgentRequest): Promise<CreateAgentResponse> {
-    return this.request<CreateAgentResponse>("/user/agents", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
-
-  /**
    * Create a new agent using admin API (via server-side route)
    * @param data - Agent creation data
    * @param userWalletAddress - User wallet address
