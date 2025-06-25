@@ -201,6 +201,7 @@ export const competitionAgents = pgTable(
   {
     competitionId: uuid("competition_id").notNull(),
     agentId: uuid("agent_id").notNull(),
+    // note: this is the agent status in regard to the competition
     status: competitionAgentStatus("status").default("active").notNull(),
     deactivationReason: text("deactivation_reason"),
     deactivatedAt: timestamp("deactivated_at", { withTimezone: true }),
@@ -319,6 +320,20 @@ export const competitionsLeaderboard = pgTable(
     agentId: uuid("agent_id").notNull(),
     competitionId: uuid("competition_id").notNull(),
     rank: integer("rank").notNull(),
+    pnl: numeric("pnl", {
+      precision: 30,
+      scale: 15,
+      mode: "number",
+    })
+      .notNull()
+      .default(0),
+    totalAgents: numeric("total_agents", {
+      precision: 30,
+      scale: 15,
+      mode: "number",
+    })
+      .notNull()
+      .default(0),
     score: numeric("score", {
       precision: 30,
       scale: 15,

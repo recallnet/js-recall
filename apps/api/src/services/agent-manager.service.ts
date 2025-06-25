@@ -30,7 +30,7 @@ import { getAgentRankById } from "@/database/repositories/agentrank-repository.j
 import {
   findBestPlacementForAgent,
   getAgentCompetitionRanking,
-  getAgentPortfolioSnapshots,
+  getBoundedSnapshots,
   getBulkAgentCompetitionRankings,
 } from "@/database/repositories/competition-repository.js";
 import { getBulkAgentMetrics } from "@/database/repositories/leaderboard-repository.js";
@@ -1379,12 +1379,9 @@ export class AgentManager {
     agentId: string,
   ): Promise<EnhancedCompetition> {
     try {
-      // Get portfolio value (latest snapshot for agent in competition)
-      const agentSnapshots = await getAgentPortfolioSnapshots(
-        competition.id,
-        agentId,
-      );
-      const latestSnapshot = agentSnapshots?.[0]; // Already ordered by timestamp desc
+      // Get oldest and newest snapshots for agent in competition
+      const agentSnapshots = await getBoundedSnapshots(competition.id, agentId);
+      const latestSnapshot = agentSnapshots?.newest; // Already ordered by timestamp desc
       const portfolioValue = latestSnapshot
         ? Number(latestSnapshot.totalValue)
         : 0;
@@ -1392,14 +1389,16 @@ export class AgentManager {
       // Calculate PnL (similar to calculateAgentMetrics pattern)
       let pnl = 0;
       let pnlPercent = 0;
-      if (agentSnapshots && agentSnapshots.length > 1) {
-        const startingValue = Number(
-          agentSnapshots[agentSnapshots.length - 1]?.totalValue || 0,
-        );
-        const currentValue = Number(agentSnapshots[0]?.totalValue || 0);
+      if (agentSnapshots) {
+        const startingValue = Number(agentSnapshots.oldest?.totalValue || 0);
+        const currentValue = Number(agentSnapshots.newest?.totalValue || 0);
         pnl = currentValue - startingValue;
         pnlPercent = startingValue > 0 ? (pnl / startingValue) * 100 : 0;
       }
+
+      // TODO: We have some calculated values here.  How do we attach these to
+      //  the competitions_leaderboard row for this agent + comp combo so we
+      //  don't have to keep calculating these on every request?
 
       // Get total trades for agent in this competition
       const totalTrades = await countAgentTradesInCompetition(

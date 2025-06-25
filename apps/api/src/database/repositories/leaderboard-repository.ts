@@ -4,7 +4,6 @@ import {
   count as drizzleCount,
   eq,
   inArray,
-  min,
   sum,
 } from "drizzle-orm";
 
@@ -130,7 +129,13 @@ export async function getBulkAgentMetrics(agentIds: string[]): Promise<
     completedCompetitions: number;
     totalVotes: number;
     totalTrades: number;
-    bestPlacement: number | null;
+    bestPlacement: {
+      competitionId: string;
+      rank: number;
+      score: number;
+      pnl: number;
+      totalAgents: number;
+    } | null;
   }>
 > {
   if (agentIds.length === 0) {
@@ -197,10 +202,7 @@ export async function getBulkAgentMetrics(agentIds: string[]): Promise<
 
     // Query 5: Best placements
     const bestPlacementsQuery = db
-      .select({
-        agentId: competitionsLeaderboard.agentId,
-        bestPlacement: min(competitionsLeaderboard.rank),
-      })
+      .select()
       .from(competitionsLeaderboard)
       .where(inArray(competitionsLeaderboard.agentId, agentIds))
       .groupBy(competitionsLeaderboard.agentId);
@@ -258,7 +260,16 @@ export async function getBulkAgentMetrics(agentIds: string[]): Promise<
       tradeCountsResult.map((row) => [row.agentId, row.totalTrades]),
     );
     const bestPlacementsMap = new Map(
-      bestPlacementsResult.map((row) => [row.agentId, row.bestPlacement]),
+      bestPlacementsResult.map((row) => [
+        row.agentId,
+        {
+          competitionId: row.competitionId,
+          rank: row.rank,
+          score: row.score,
+          totalAgents: row.totalAgents,
+          pnl: row.pnl,
+        },
+      ]),
     );
 
     // Combine all data

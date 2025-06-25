@@ -279,6 +279,7 @@ export class CompetitionManager {
     competition.status = CompetitionStatusSchema.parse("ended");
     competition.endDate = new Date();
     competition.updatedAt = new Date();
+
     await updateCompetition(competition);
 
     // Update cache
@@ -297,7 +298,10 @@ export class CompetitionManager {
       agentId: entry.agentId,
       competitionId,
       rank: index + 1, // 1-based ranking
-      score: entry.value, // Use the portfolio value as the score
+      // TODO: we need to know the profit/loss for the agent in this comp in usd value even when comp is active
+      pnl: entry.pnl,
+      totalAgents: competitionAgents.length,
+      score: entry.value, // Use the the total portfolio value in usd is saved as `score`
     }));
 
     if (leaderboardEntries.length > 0) {
@@ -462,6 +466,7 @@ export class CompetitionManager {
         return leaderboardEntries.map((entry) => ({
           agentId: entry.agentId,
           value: entry.score,
+          pnl: entry.pnl,
         }));
       }
 
@@ -478,6 +483,7 @@ export class CompetitionManager {
           .map((snapshot) => ({
             agentId: snapshot.agentId,
             value: snapshot.totalValue,
+            pnl: 0, // TODO: if there's no competitions_leaderboard row we don't have a pnl
           }))
           .sort(
             (a: { value: number }, b: { value: number }) => b.value - a.value,
@@ -486,7 +492,7 @@ export class CompetitionManager {
 
       // Fallback to calculating current values
       const agents = await getCompetitionAgents(competitionId);
-      const leaderboard: { agentId: string; value: number }[] = [];
+      const leaderboard: { agentId: string; value: number; pnl: number }[] = [];
 
       for (const agentId of agents) {
         const portfolioValue =
@@ -494,6 +500,7 @@ export class CompetitionManager {
         leaderboard.push({
           agentId,
           value: portfolioValue,
+          pnl: 0, // TODO: if there's no competitions_leaderboard row we don't have a pnl
         });
       }
 

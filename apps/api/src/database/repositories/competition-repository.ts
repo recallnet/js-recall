@@ -10,6 +10,7 @@ import {
   max,
   sql,
 } from "drizzle-orm";
+import { unionAll } from "drizzle-orm/pg-core";
 import { v4 as uuidv4 } from "uuid";
 
 import { db } from "@/database/db.js";
@@ -716,9 +717,73 @@ export async function getAgentPortfolioSnapshots(
         ),
       )
       .orderBy(desc(portfolioSnapshots.timestamp));
+    // TODO: there's no limit here, this is a weakness in perf
   } catch (error) {
     console.error(
       "[CompetitionRepository] Error in getAgentPortfolioSnapshots:",
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
+ * Get the newest and oldest portfolio snapshots for an agent in a competition
+ * @param competitionId Competition ID
+ * @param agentId Agent ID
+ * @returns Object with newest and oldest snapshots, or null if no snapshots found
+ */
+export async function getBoundedSnapshots(
+  competitionId: string,
+  agentId: string,
+) {
+  try {
+    // Create subqueries for newest and oldest snapshots
+    const newestQuery = db
+      .select()
+      .from(portfolioSnapshots)
+      .where(
+        and(
+          eq(portfolioSnapshots.competitionId, competitionId),
+          eq(portfolioSnapshots.agentId, agentId),
+        ),
+      )
+      .orderBy(desc(portfolioSnapshots.timestamp))
+      .limit(1);
+
+    const oldestQuery = db
+      .select()
+      .from(portfolioSnapshots)
+      .where(
+        and(
+          eq(portfolioSnapshots.competitionId, competitionId),
+          eq(portfolioSnapshots.agentId, agentId),
+        ),
+      )
+      .orderBy(asc(portfolioSnapshots.timestamp))
+      .limit(1);
+
+    // Union the queries and execute
+    const results = await unionAll(newestQuery, oldestQuery);
+
+    if (results.length === 0) {
+      return null;
+    }
+
+    // Sort results by timestamp desc to identify newest vs oldest
+    const sortedResults = results.sort(
+      // timestamp has default value of now() + is not nullable, so safe to use `!`
+      (a, b) =>
+        new Date(b.timestamp!).getTime() - new Date(a.timestamp!).getTime(),
+    );
+
+    return {
+      newest: sortedResults[0],
+      oldest: sortedResults[sortedResults.length - 1],
+    };
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in getAgentPortfolioSnapshotBounds:",
       error,
     );
     throw error;
@@ -963,25 +1028,32 @@ export async function findByStatus({
  */
 export async function findBestPlacementForAgent(agentId: string) {
   try {
-    const [result] = await db
+    const [rankResult] = await db
       .select()
       .from(competitionsLeaderboard)
       .where(eq(competitionsLeaderboard.agentId, agentId))
       .orderBy(asc(competitionsLeaderboard.rank))
       .limit(1);
-    if (!result) {
-      return result;
+    if (!rankResult) {
+      return rankResult;
     }
+    const [pnlResult] = await db
+      .select()
+      .from(competitionsLeaderboard)
+      .where(eq(competitionsLeaderboard.agentId, agentId))
+      .orderBy(asc(competitionsLeaderboard.pnl))
+      .limit(1);
     const agents = await db
       .select({
         count: drizzleCount(),
       })
       .from(competitionAgents)
-      .where(eq(competitionAgents.competitionId, result.competitionId));
+      .where(eq(competitionAgents.competitionId, rankResult.competitionId));
     return {
-      competitionId: result.competitionId,
-      rank: result.rank,
-      score: result.score,
+      competitionId: rankResult.competitionId,
+      rank: rankResult.rank,
+      score: rankResult.score,
+      pnl: pnlResult?.pnl,
       totalAgents: agents[0]?.count ?? 0,
     };
   } catch (error) {
