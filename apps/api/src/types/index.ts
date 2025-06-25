@@ -356,6 +356,7 @@ export interface Competition {
   votingEndDate: Date | null;
   status: CompetitionStatus;
   crossChainTradingType: CrossChainTradingType; // Controls cross-chain trading behavior
+  sandboxMode: boolean; // Controls automatic agent joining behavior
   type: CompetitionType;
   createdAt: Date;
   updatedAt: Date;

@@ -1,4 +1,5 @@
 import {
+  boolean,
   foreignKey,
   index,
   integer,
@@ -180,6 +181,7 @@ export const competitions = pgTable(
     votingStartDate: timestamp("voting_start_date", { withTimezone: true }),
     votingEndDate: timestamp("voting_end_date", { withTimezone: true }),
     status: competitionStatus("status").notNull(),
+    sandboxMode: boolean("sandbox_mode").notNull().default(false),
     createdAt: timestamp("created_at", {
       withTimezone: true,
     }).defaultNow(),

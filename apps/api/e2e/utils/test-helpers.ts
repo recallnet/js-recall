@@ -137,6 +137,7 @@ export async function startTestCompetition(
   adminClient: ApiClient,
   name: string,
   agentIds: string[],
+  sandboxMode?: boolean,
   externalUrl?: string,
   imageUrl?: string,
 ): Promise<StartCompetitionResponse> {
@@ -148,6 +149,7 @@ export async function startTestCompetition(
     `Test competition description for ${name}`,
     agentIds,
     undefined, // tradingType
+    sandboxMode,
     externalUrl,
     imageUrl,
   );
@@ -166,6 +168,7 @@ export async function createTestCompetition(
   adminClient: ApiClient,
   name: string,
   description?: string,
+  sandboxMode?: boolean,
   externalUrl?: string,
   imageUrl?: string,
   type?: string,
@@ -179,6 +182,7 @@ export async function createTestCompetition(
     name,
     description || `Test competition description for ${name}`,
     undefined, // tradingType
+    sandboxMode,
     externalUrl,
     imageUrl,
     type,
@@ -200,6 +204,7 @@ export async function startExistingTestCompetition(
   adminClient: ApiClient,
   competitionId: string,
   agentIds: string[],
+  sandboxMode?: boolean,
   externalUrl?: string,
   imageUrl?: string,
 ): Promise<StartCompetitionResponse> {
@@ -210,6 +215,7 @@ export async function startExistingTestCompetition(
     competitionId,
     agentIds,
     undefined, // crossChainTradingType
+    sandboxMode,
     externalUrl,
     imageUrl,
   );
