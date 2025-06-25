@@ -113,7 +113,7 @@ export default function UserAgentsSection({ agents }: { agents: Agent[] }) {
           </Button>
         </div>
       </CollapsibleTrigger>
-      <CollapsibleContent className="w-none w-full">
+      <CollapsibleContent className="w-full">
         {agentList}
       </CollapsibleContent>
     </Collapsible>
