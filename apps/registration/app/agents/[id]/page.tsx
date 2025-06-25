@@ -1,6 +1,16 @@
 "use client";
 
-import { Copy, Edit3, Eye, EyeOff, Key, Save, Wallet, X } from "lucide-react";
+import {
+  Check,
+  Copy,
+  Edit3,
+  Eye,
+  EyeOff,
+  Key,
+  Save,
+  Wallet,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
@@ -11,6 +21,7 @@ import RecallLogo from "@/components/recall-logo";
 import { useUserAgent } from "@/hooks/useAgent";
 import { useAgentApiKey, useUpdateAgent } from "@/hooks/useAgents";
 import { useUserSession } from "@/hooks/useAuth";
+import { internalApi } from "@/lib/internal-api";
 
 // Type for agent metadata that matches actual usage
 interface AgentMetadata {
@@ -65,6 +76,8 @@ export default function AgentPage({
     x: "",
     telegram: "",
   });
+  const [tradingVerified, setTradingVerified] = useState<boolean | null>(null);
+  const [isCheckingTrading, setIsCheckingTrading] = useState(false);
 
   const { data: agentData, isLoading: agentLoading } = useUserAgent(id);
   const { data: apiKeyData, isLoading: apiKeyLoading } = useAgentApiKey(id);
@@ -76,6 +89,41 @@ export default function AgentPage({
       router.push("/");
     }
   }, [session, router]);
+
+  // Check trading verification status
+  const checkTradingVerification = async () => {
+    if (!session.isInitialized) return;
+    if (!session.isAuthenticated || !session.user?.walletAddress) return;
+
+    setIsCheckingTrading(true);
+    try {
+      const data = await internalApi.checkTradingVerification(
+        session.user.walletAddress,
+      );
+      console.log("Trading verification data:", data);
+
+      if (data.success) {
+        setTradingVerified(data.hasTraded || false);
+      } else {
+        console.error("Failed to check trading verification:", data.error);
+        setTradingVerified(false);
+      }
+    } catch (error) {
+      console.error("Error checking trading verification:", error);
+      setTradingVerified(false);
+    } finally {
+      setIsCheckingTrading(false);
+    }
+  };
+
+  // Check trading verification when user is authenticated
+  useEffect(() => {
+    if (session.isInitialized) {
+      if (session.isAuthenticated && session.user?.walletAddress) {
+        checkTradingVerification();
+      }
+    }
+  }, [session]);
 
   const handleCopyToClipboard = async (text: string, label: string) => {
     try {
@@ -438,13 +486,44 @@ export default function AgentPage({
                 </h1>
 
                 {/* Verification Status */}
-                {agent.isVerified && (
-                  <div className="mb-4 flex justify-center">
-                    <span className="rounded-full bg-green-500/20 px-3 py-1 text-sm font-medium text-green-400">
-                      ✓ Verified
-                    </span>
+                <div className="mb-4 space-y-2">
+                  {agent.isVerified && (
+                    <div className="flex justify-center">
+                      <span className="rounded-full bg-green-500/20 px-3 py-1 text-sm font-medium text-green-400">
+                        ✓ Verified
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Trading Verification Status */}
+                  <div className="flex justify-center">
+                    {isCheckingTrading ? (
+                      <span className="rounded-full bg-gray-500/20 px-3 py-1 text-sm font-medium text-gray-400">
+                        Checking trading status...
+                      </span>
+                    ) : tradingVerified !== null ? (
+                      <span
+                        className={`flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium ${
+                          tradingVerified
+                            ? "bg-blue-500/20 text-blue-400"
+                            : "bg-red-500/20 text-red-400"
+                        }`}
+                      >
+                        {tradingVerified ? (
+                          <>
+                            <Check className="h-3 w-3" />
+                            Trading Verified
+                          </>
+                        ) : (
+                          <>
+                            <X className="h-3 w-3" />
+                            No Trading History
+                          </>
+                        )}
+                      </span>
+                    ) : null}
                   </div>
-                )}
+                </div>
 
                 {/* Agent Stats */}
                 <div className="mt-6 grid grid-cols-3 gap-4 border-t border-[#1a1a1a] pt-6">
