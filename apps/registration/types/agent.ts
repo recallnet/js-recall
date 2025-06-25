@@ -173,4 +173,14 @@ interface Competition {
   name: string;
   description?: string;
   status: string;
+  startDate?: string | null;
+  endDate?: string | null;
+  portfolioValue?: number;
+  pnl?: number;
+  pnlPercent?: number;
+  totalTrades?: number;
+  bestPlacement?: {
+    rank?: number;
+    totalAgents?: number;
+  } | null;
 }

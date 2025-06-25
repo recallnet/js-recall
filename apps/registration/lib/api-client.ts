@@ -1,12 +1,14 @@
 import {
   Agent,
   AgentApiKeyResponse,
+  AgentCompetitionsResponse,
   AgentWithOwnerResponse,
   AgentsResponse,
   CompetitionResponse,
   CompetitionsResponse,
   CreateAgentRequest,
   CreateAgentResponse,
+  GetAgentCompetitionsParams,
   GetAgentsParams,
   GetCompetitionsParams,
   LoginRequest,
@@ -332,5 +334,31 @@ export class ApiClient {
    */
   async getAgentApiKey(agentId: string): Promise<AgentApiKeyResponse> {
     return this.request<AgentApiKeyResponse>(`/user/agents/${agentId}/api-key`);
+  }
+
+  /**
+   * Get competitions for a specific agent
+   * @param agentId - Agent ID
+   * @param params - Query parameters
+   * @param apiKey - Optional agent API key for authentication
+   * @returns Agent competitions response
+   */
+  async getAgentCompetitions(
+    agentId: string,
+    params: GetAgentCompetitionsParams = {},
+    apiKey?: string,
+  ): Promise<AgentCompetitionsResponse> {
+    const queryParams = this.formatQueryParams(params);
+    const headers: HeadersInit = {};
+
+    // Add Authorization header if API key is provided
+    if (apiKey) {
+      headers.Authorization = `Bearer ${apiKey}`;
+    }
+
+    return this.request<AgentCompetitionsResponse>(
+      `/agents/${agentId}/competitions${queryParams}`,
+      { headers },
+    );
   }
 }

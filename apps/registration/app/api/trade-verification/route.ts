@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       const result = await client.query(query, [normalizedWalletAddress]);
 
       console.log(
-        `Updated trading status for wallet: ${normalizedWalletAddress}`,
+        `Updated trading status for wallet: ${normalizedWalletAddress} result: ${result.rowCount}`,
       );
 
       return NextResponse.json({

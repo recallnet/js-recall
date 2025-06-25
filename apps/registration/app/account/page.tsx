@@ -508,11 +508,11 @@ export default function AccountPage() {
 
                         {/* View Details Link - Fixed position */}
                         <div className="mt-4 text-center">
-                          <span className="text-xs text-[#0057AD] group-hover:underline">
-                            {competition.metadata?.website
-                              ? "View Competition →"
-                              : "Learn More →"}
-                          </span>
+                          {competition.metadata?.website && (
+                            <span className="text-xs text-[#0057AD] group-hover:underline">
+                              View Competition →
+                            </span>
+                          )}
                         </div>
                       </div>
                     );

@@ -18,6 +18,7 @@ import { use, useEffect, useState } from "react";
 import { toast } from "@recallnet/ui/components/toast";
 
 import RecallLogo from "@/components/recall-logo";
+import { useAgentCompetitions, useSyncLoopsVerification } from "@/hooks";
 import { useUserAgent } from "@/hooks/useAgent";
 import { useAgentApiKey, useUpdateAgent } from "@/hooks/useAgents";
 import { useUserSession } from "@/hooks/useAuth";
@@ -82,6 +83,14 @@ export default function AgentPage({
   const { data: agentData, isLoading: agentLoading } = useUserAgent(id);
   const { data: apiKeyData, isLoading: apiKeyLoading } = useAgentApiKey(id);
   const updateAgentMutation = useUpdateAgent();
+  const syncVerificationMutation = useSyncLoopsVerification();
+
+  // Get agent competitions using the agent's API key
+  const { data: agentCompetitionsData } = useAgentCompetitions(
+    id,
+    apiKeyData?.apiKey,
+    { status: "active" },
+  );
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -97,16 +106,61 @@ export default function AgentPage({
 
     setIsCheckingTrading(true);
     try {
-      const data = await internalApi.checkTradingVerification(
-        session.user.walletAddress,
-      );
-      console.log("Trading verification data:", data);
+      // First, check if agent has made trades in any active competitions
+      let hasActiveCompetitionTrades = false;
 
-      if (data.success) {
-        setTradingVerified(data.hasTraded || false);
+      if (
+        agentCompetitionsData?.competitions &&
+        agentCompetitionsData.competitions.length > 0
+      ) {
+        // Check if agent has made any trades in active competitions
+        const activeCompetitionsWithTrades =
+          agentCompetitionsData.competitions.filter(
+            (competition) =>
+              competition.status === "active" &&
+              competition.totalTrades &&
+              competition.totalTrades > 0,
+          );
+
+        hasActiveCompetitionTrades = activeCompetitionsWithTrades.length > 0;
+      }
+
+      if (hasActiveCompetitionTrades) {
+        setTradingVerified(true);
+
+        // Update the trading verification status in the database
+        try {
+          const updateResult = await internalApi.updateTradingVerification(
+            session.user.walletAddress,
+          );
+          console.log("Trading verification updated:", updateResult);
+
+          // Also sync with Loops if user has email
+          if (session.user.email && session.user.name) {
+            try {
+              const syncResult = await syncVerificationMutation.mutateAsync({
+                email: session.user.email,
+                userName: session.user.name,
+                hasTraded: true,
+              });
+              console.log("Loops verification sync result:", syncResult);
+            } catch (syncError) {
+              console.error(
+                "Failed to sync with Loops (non-blocking):",
+                syncError,
+              );
+            }
+          }
+        } catch (updateError) {
+          console.error("Failed to update trading verification:", updateError);
+          // Don't fail the whole process if database update fails
+        }
       } else {
-        console.error("Failed to check trading verification:", data.error);
-        setTradingVerified(false);
+        // Fall back to wallet-based trading verification
+        const result = await internalApi.checkTradingVerification(
+          session.user.walletAddress,
+        );
+        setTradingVerified(result.hasTraded ?? false);
       }
     } catch (error) {
       console.error("Error checking trading verification:", error);
@@ -123,7 +177,7 @@ export default function AgentPage({
         checkTradingVerification();
       }
     }
-  }, [session]);
+  }, [session, agentCompetitionsData]);
 
   const handleCopyToClipboard = async (text: string, label: string) => {
     try {
@@ -529,13 +583,20 @@ export default function AgentPage({
                 <div className="mt-6 grid grid-cols-3 gap-4 border-t border-[#1a1a1a] pt-6">
                   <div className="text-center">
                     <div className="text-xl font-bold text-[#E9EDF1]">
-                      {agent.stats?.completedCompetitions || 0}
+                      {agentCompetitionsData?.competitions?.filter(
+                        (comp) => comp.status === "active",
+                      ).length || 0}
                     </div>
                     <div className="text-xs text-[#6D85A4]">Competitions</div>
                   </div>
                   <div className="text-center">
                     <div className="text-xl font-bold text-[#E9EDF1]">
-                      {agent.stats?.totalTrades || 0}
+                      {agentCompetitionsData?.competitions?.reduce(
+                        (total, comp) => total + (comp.totalTrades || 0),
+                        0,
+                      ) ||
+                        agent.stats?.totalTrades ||
+                        0}
                     </div>
                     <div className="text-xs text-[#6D85A4]">Trades</div>
                   </div>
