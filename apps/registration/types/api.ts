@@ -10,7 +10,7 @@ export interface GetCompetitionsParams {
   page?: number;
   limit?: number;
   search?: string;
-  status?: "upcoming" | "active" | "completed" | "cancelled";
+  status?: "pending" | "active" | "ended";
 }
 
 // GET /competitions/{competitionId}/agents query parameters

@@ -26,8 +26,10 @@ export default function AccountPage() {
   const session = useUserSession();
   const router = useRouter();
   const { data: agentsData, isLoading: agentsLoading } = useUserAgents();
-  const { data: competitionsData, isLoading: competitionsLoading } =
-    useCompetitions();
+  const {
+    data: upcomingCompetitionsData,
+    isLoading: upcomingCompetitionsLoading,
+  } = useCompetitions({ status: "pending" });
   const updateProfileMutation = useUpdateProfile();
 
   // Profile editing state
@@ -438,26 +440,39 @@ export default function AccountPage() {
               Upcoming Competitions
             </h2>
 
-            {competitionsLoading ? (
+            {upcomingCompetitionsLoading ? (
               <div className="text-[#596E89]">Loading competitions...</div>
-            ) : competitionsData && competitionsData.competitions.length > 0 ? (
+            ) : upcomingCompetitionsData &&
+              upcomingCompetitionsData.competitions.length > 0 ? (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {competitionsData.competitions.map(
+                {upcomingCompetitionsData.competitions.map(
                   (competition: Competition) => {
                     const CompetitionCard = () => (
                       <div className="group flex h-full flex-col rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] p-6 transition-all duration-200 hover:border-[#0057AD] hover:bg-[#0f0f0f]">
                         {/* Competition Image and Name - Fixed height section */}
                         <div className="flex h-32 flex-col items-center justify-center gap-2">
                           <div className="relative h-16 w-16 overflow-hidden rounded-lg border-2 border-[#1a1a1a] group-hover:border-[#0057AD]">
-                            {competition.imageUrl ? (
+                            {competition.imageUrl &&
+                            competition.imageUrl.trim() !== "" ? (
                               <img
                                 src={competition.imageUrl}
                                 alt={competition.name}
                                 className="h-full w-full object-cover"
                               />
                             ) : (
-                              <div className="flex h-full w-full items-center justify-center bg-[#1a1a1a] text-[#596E89]">
-                                {competition.name.charAt(0).toUpperCase()}
+                              <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-gradient-to-br from-[#0057AD] to-[#003d7a] text-white">
+                                {/* Background pattern */}
+                                <div className="absolute inset-0 opacity-10">
+                                  <div className="absolute left-0 top-0 h-8 w-8 border-l-2 border-t-2 border-white/20"></div>
+                                  <div className="absolute bottom-0 right-0 h-8 w-8 border-b-2 border-r-2 border-white/20"></div>
+                                  <div className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rotate-45 transform border border-white/10"></div>
+                                </div>
+                                {/* Competition initial */}
+                                <div className="z-10 flex flex-col items-center justify-center">
+                                  <div className="text-2xl font-bold">
+                                    {competition.name.charAt(0).toUpperCase()}
+                                  </div>
+                                </div>
                               </div>
                             )}
                           </div>
@@ -542,7 +557,7 @@ export default function AccountPage() {
             ) : (
               <div className="py-8 text-center">
                 <div className="text-[#596E89]">
-                  No competitions available at the moment.
+                  No upcoming competitions available at the moment.
                 </div>
               </div>
             )}
