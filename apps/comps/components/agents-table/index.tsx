@@ -40,7 +40,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 import { useUserSession } from "@/hooks";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
 import { useVote } from "@/hooks/useVote";
-import { AgentCompetition, Competition, PaginationResponse } from "@/types";
+import { AgentCompetition, Competition } from "@/types";
 import { formatPercentage } from "@/utils/format";
 import { getSortState } from "@/utils/table";
 
