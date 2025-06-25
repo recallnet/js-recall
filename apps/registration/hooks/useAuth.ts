@@ -7,7 +7,7 @@ import { useEffect, useMemo } from "react";
 import { DEFAULT_REDIRECT_URL } from "@/constants";
 import { ApiClient } from "@/lib/api-client";
 import { userAtom } from "@/state/atoms";
-import { LoginRequest, ProfileResponse, User } from "@/types/auth";
+import { LoginRequest, User } from "@/types/auth";
 
 import { useProfile } from "./useProfile";
 

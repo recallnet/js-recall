@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { ApiClient } from "@/lib/api-client";
 
-import { Agent as AgentType, AgentWithOwnerResponse } from "../types";
+import { AgentWithOwnerResponse } from "../types";
 
 const apiClient = new ApiClient();
 
