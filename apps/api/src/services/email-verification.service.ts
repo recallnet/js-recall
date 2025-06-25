@@ -21,8 +21,6 @@ type VerifyEmailError =
   | { type: "InvalidToken"; token: string }
   | { type: "TokenHasBeenUsed"; token: string }
   | { type: "TokenHasExpired"; token: string }
-  | { type: "UserNotFound"; userId: string }
-  | { type: "AgentNotFound"; agentId: string }
   | { type: "NoAssociation"; token: string }
   | { type: "SystemError"; message: string; originalError?: unknown };
 

@@ -41,12 +41,6 @@ export function makeEmailVerificationController(services: ServiceRegistry) {
             case "TokenHasExpired":
               message = "Token has expired";
               break;
-            case "UserNotFound":
-              message = "User not found";
-              break;
-            case "AgentNotFound":
-              message = "Agent not found";
-              break;
             case "NoAssociation":
               message = "Token is not associated with a user or agent";
               break;
