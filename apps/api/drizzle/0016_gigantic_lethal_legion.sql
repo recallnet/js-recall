@@ -1,0 +1,3 @@
+CREATE TYPE "public"."sync_data_type" AS ENUM('trade', 'agent_rank_history', 'agent_rank', 'competitions_leaderboard', 'portfolio_snapshot');--> statement-breakpoint
+ALTER TABLE "object_index" ALTER COLUMN "data_type" SET DATA TYPE "public"."sync_data_type" USING "data_type"::"public"."sync_data_type";--> statement-breakpoint
+ALTER TABLE "competitions" ADD COLUMN "sandbox_mode" boolean DEFAULT false NOT NULL;

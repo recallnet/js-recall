@@ -45,6 +45,11 @@ export function configureAdminRoutes(
    *                 enum: [disallowAll, disallowXParent, allow]
    *                 default: disallowAll
    *                 example: disallowAll
+   *               sandboxMode:
+   *                 type: boolean
+   *                 description: Enable sandbox mode to automatically join newly registered agents to this competition
+   *                 default: false
+   *                 example: false
    *               type:
    *                 type: string
    *                 description: The type of competition
@@ -108,6 +113,9 @@ export function configureAdminRoutes(
    *                       type: string
    *                       enum: [disallowAll, disallowXParent, allow]
    *                       description: The type of cross-chain trading allowed in this competition
+   *                     sandboxMode:
+   *                       type: boolean
+   *                       description: Whether sandbox mode is enabled for this competition
    *                     type:
    *                       type: string
    *                       enum: [trading]
@@ -185,6 +193,11 @@ export function configureAdminRoutes(
    *                 enum: [disallowAll, disallowXParent, allow]
    *                 default: disallowAll
    *                 example: disallowAll
+   *               sandboxMode:
+   *                 type: boolean
+   *                 description: Enable sandbox mode to automatically join newly registered agents to this competition (used when creating a new competition)
+   *                 default: false
+   *                 example: false
    *               type:
    *                 type: string
    *                 description: The type of competition
@@ -239,6 +252,9 @@ export function configureAdminRoutes(
    *                       type: string
    *                       enum: [disallowAll, disallowXParent, allow]
    *                       description: Type of cross-chain trading allowed in this competition
+   *                     sandboxMode:
+   *                       type: boolean
+   *                       description: Whether sandbox mode is enabled for this competition
    *                     type:
    *                       type: string
    *                       enum: [trading]
