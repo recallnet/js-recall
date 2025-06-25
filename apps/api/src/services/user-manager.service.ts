@@ -202,12 +202,17 @@ export class UserManager {
 
       // Check if email was updated to a new value
       const emailChanged = user.email && currentUser.email !== user.email;
+      if (emailChanged) {
+        user = {
+          ...user,
+          isEmailVerified: false,
+        };
+      }
 
       const now = new Date();
       const updatedUser = await update({
         ...user,
         updatedAt: now,
-        isEmailVerified: !emailChanged, // we must set IsEmailVerified to false if emailChanged is true
       });
 
       // Update cache
