@@ -157,6 +157,11 @@ const NoAgents = () => {
   );
 };
 
+const CompetitionName: React.FunctionComponent<{ id: string }> = ({ id }) => {
+  const { data: competition } = useCompetition(id);
+  return <>{competition?.name}</>;
+};
+
 const AgentsSummary: React.FunctionComponent<{
   className?: string;
   nAgents?: number;
@@ -172,7 +177,6 @@ const AgentsSummary: React.FunctionComponent<{
   highest,
   className,
 }) => {
-  const { data: competition } = useCompetition(bestPlacement?.competitionId);
   const borderRules = "xs:border-l-1";
 
   return (
@@ -214,7 +218,9 @@ const AgentsSummary: React.FunctionComponent<{
                 </span>
               </div>
               <span className="text-secondary-foreground">
-                {competition?.name}
+                {bestPlacement?.competitionId ? (
+                  <CompetitionName id={bestPlacement.competitionId} />
+                ) : null}
               </span>
             </>
           )}
