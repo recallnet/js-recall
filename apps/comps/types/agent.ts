@@ -38,7 +38,7 @@ export interface Agent {
 
   skills?: string[];
   metadata?: AgentCompetitionMetadata;
-  trophies?: string[];
+  trophies?: unknown[];
   deactivationReason?: string;
   deactivationDate?: string;
 }
@@ -147,7 +147,7 @@ export interface UpdateAgentRequest {
     imageUrl?: string;
     email?: string;
     metadata?: {
-      [key: string]: string | undefined;
+      [key: string]: string | string[] | undefined;
     };
   };
 }

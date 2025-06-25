@@ -792,6 +792,54 @@ export async function getPortfolioTokenValues(snapshotId: number) {
 }
 
 /**
+ * Get all portfolio snapshots
+ * @param competitionId Optional competition ID to filter by
+ */
+export async function getAllPortfolioSnapshots(competitionId?: string) {
+  try {
+    const query = db
+      .select()
+      .from(portfolioSnapshots)
+      .orderBy(desc(portfolioSnapshots.timestamp));
+
+    if (competitionId) {
+      query.where(eq(portfolioSnapshots.competitionId, competitionId));
+    }
+
+    return await query;
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in getAllPortfolioSnapshots:",
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
+ * Get portfolio token values for multiple snapshots
+ * @param snapshotIds Array of snapshot IDs
+ */
+export async function getPortfolioTokenValuesByIds(snapshotIds: number[]) {
+  try {
+    if (snapshotIds.length === 0) {
+      return [];
+    }
+    
+    return await db
+      .select()
+      .from(portfolioTokenValues)
+      .where(inArray(portfolioTokenValues.portfolioSnapshotId, snapshotIds));
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in getPortfolioTokenValuesByIds:",
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
  * Count total number of competitions
  */
 export async function count() {
@@ -997,6 +1045,31 @@ export async function findLeaderboardByCompetition(competitionId: string) {
   } catch (error) {
     console.error(
       `[CompetitionRepository] Error finding leaderboard for competition ${competitionId}:`,
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
+ * Get all competitions leaderboard entries
+ * @param competitionId Optional competition ID to filter by
+ */
+export async function getAllCompetitionsLeaderboard(competitionId?: string) {
+  try {
+    const query = db
+      .select()
+      .from(competitionsLeaderboard)
+      .orderBy(desc(competitionsLeaderboard.createdAt));
+
+    if (competitionId) {
+      query.where(eq(competitionsLeaderboard.competitionId, competitionId));
+    }
+
+    return await query;
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in getAllCompetitionsLeaderboard:",
       error,
     );
     throw error;
