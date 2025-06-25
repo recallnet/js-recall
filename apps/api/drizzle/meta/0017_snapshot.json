@@ -1,6 +1,6 @@
 {
-  "id": "a6100504-98ed-4f34-b8e8-f3bb7b155447",
-  "prevId": "fc290bf5-2542-4f6f-b6b8-db84557770bb",
+  "id": "fbdbfd5e-a44b-44e9-a87e-ea32a35d42be",
+  "prevId": "a6100504-98ed-4f34-b8e8-f3bb7b155447",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -711,6 +711,13 @@
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
+        },
+        "sandbox_mode": {
+          "name": "sandbox_mode",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
         "created_at": {
           "name": "created_at",
