@@ -39,6 +39,7 @@ export default function AgentProfile({
   owner,
   handleSortChange,
   sortState,
+  status,
   setStatus,
 }: {
   id: string;
@@ -106,8 +107,8 @@ export default function AgentProfile({
     <>
       <BreadcrumbNav
         items={[
-          { label: "RECALL" },
-          { label: "AGENTS", href: "/competitions" },
+          { label: "RECALL", href: "/" },
+          { label: "AGENTS", href: "/" },
           { label: agent.name },
         ]}
         className="mb-10"
@@ -139,7 +140,7 @@ export default function AgentProfile({
           </span>
         </Card>
         <div className="flex-2 xs:col-span-2 xs:col-start-2 xs:row-start-1 xs:mt-0 col-span-3 row-start-2 mt-5 flex shrink flex-col border lg:col-span-1 lg:col-start-2">
-          <div className="relative flex w-full grow flex-col border-b p-8">
+          <div className="relative flex w-full grow flex-col border-b p-6">
             {isUserAgent ? (
               <EditAgentField
                 title="Agent Name"
@@ -192,7 +193,7 @@ export default function AgentProfile({
               <AgentInfo className="mt-auto w-full" agent={agent} />
             )}
           </div>
-          <div className="flex flex-col items-start gap-2 border-b px-6 py-6 text-sm">
+          <div className="flex h-[99px] flex-col items-start gap-2 border-b px-6 py-6 text-sm">
             <span className="text-secondary-foreground w-full text-left font-semibold uppercase">
               Best Placement
             </span>

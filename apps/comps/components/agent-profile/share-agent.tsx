@@ -11,6 +11,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
@@ -68,7 +69,8 @@ export const ShareAgent = ({ agentId }: { agentId: string }) => {
       />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="w-150">
+        <DialogContent aria-describedby="share-agent" className="w-150">
+          <DialogDescription className="hidden"></DialogDescription>
           <DialogHeader>
             <DialogTitle className="text-lg text-white">
               Share Agent
