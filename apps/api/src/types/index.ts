@@ -606,7 +606,7 @@ export const SYNC_DATA_TYPE_VALUES = [
   "agent_rank_history",
   "agent_rank",
   "competitions_leaderboard",
-  "portfolio_snapshot"
+  "portfolio_snapshot",
 ] as const;
 
 /**
@@ -617,7 +617,7 @@ export const SYNC_DATA_TYPE = {
   AGENT_RANK_HISTORY: "agent_rank_history",
   AGENT_RANK: "agent_rank",
   COMPETITIONS_LEADERBOARD: "competitions_leaderboard",
-  PORTFOLIO_SNAPSHOT: "portfolio_snapshot"
+  PORTFOLIO_SNAPSHOT: "portfolio_snapshot",
 } as const;
 
 /**

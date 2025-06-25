@@ -235,7 +235,10 @@ export async function getAllAgentRankHistory(competitionId?: string) {
 
     return await query;
   } catch (error) {
-    console.error("[AgentRankRepository] Error in getAllAgentRankHistory:", error);
+    console.error(
+      "[AgentRankRepository] Error in getAllAgentRankHistory:",
+      error,
+    );
     throw error;
   }
 }
@@ -245,10 +248,7 @@ export async function getAllAgentRankHistory(competitionId?: string) {
  */
 export async function getAllRawAgentRanks() {
   try {
-    return await db
-      .select()
-      .from(agentRank)
-      .orderBy(desc(agentRank.ordinal));
+    return await db.select().from(agentRank).orderBy(desc(agentRank.ordinal));
   } catch (error) {
     console.error("[AgentRankRepository] Error in getAllRawAgentRanks:", error);
     throw error;

@@ -3,11 +3,11 @@
 set -eu
 
 cd apps/api
-npm run generate-openapi
+pnpm run generate
 cd ../..
 
 cd packages/api-sdk
-speakeasy run
+speakeasy run --skip-versioning
 cd ../..
 
 pnpm format
