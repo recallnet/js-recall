@@ -78,7 +78,7 @@ export const useEnrichedVotes = (params: GetVotesParams = {}) => {
   const cleanup = useClientCleanup();
 
   return useQuery({
-    queryKey: ["votes", params],
+    queryKey: ["enriched-votes", params],
     queryFn: async (): Promise<EnrichedVotesResponse> => {
       try {
         const res = await apiClient.getEnrichedVotes(params);

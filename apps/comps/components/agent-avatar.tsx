@@ -45,7 +45,7 @@ export function AgentAvatar({
         }}
       >
         <Image
-          src={agent.imageUrl || "default_agent.png"}
+          src={agent.imageUrl || "/default_agent.png"}
           alt={agent.name}
           fill
           sizes={`${size}px`}

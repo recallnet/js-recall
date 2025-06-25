@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react";
+import { useEffect, useState } from "react";
 
 import {
   Collapsible,
@@ -6,15 +6,15 @@ import {
   CollapsibleTrigger,
 } from "@recallnet/ui2/components/collapsible";
 
-import {VotesTable} from "@/components/user-votes/votes-table";
-import {useEnrichedVotes} from "@/hooks/useVote";
-import {EnrichedVote, PaginationResponse} from "@/types";
+import { VotesTable } from "@/components/user-votes/votes-table";
+import { useEnrichedVotes } from "@/hooks/useVote";
+import { EnrichedVote, PaginationResponse } from "@/types";
 
 export default function UserVotesSection() {
   const [, setSort] = useState("");
   const [offset, setOffset] = useState(0);
   const limit = 10;
-  const {data, isLoading, isFetching} = useEnrichedVotes({
+  const { data, isLoading, isFetching } = useEnrichedVotes({
     offset,
     limit,
     //sort,
@@ -56,7 +56,7 @@ export default function UserVotesSection() {
           </div>
         ) : votes.length === 0 ? (
           <div className="text-secondary-foreground py-8 text-center">
-            You have no competitions
+            You have no votes
           </div>
         ) : (
           <VotesTable

@@ -121,8 +121,12 @@ export const VotesTable: React.FC<VotesTableProps> = ({
       {
         id: "rank",
         header: () => "Rank",
-        //TODO
-        cell: () => <RankBadge position={0} />,
+        cell: ({ row }) =>
+          row.original.agent.stats.rank ? (
+            <RankBadge position={row.original.agent.stats.rank} />
+          ) : (
+            <span className="text-xs text-slate-400">-</span>
+          ),
         enableSorting: false,
         size: 120,
         meta: {
@@ -135,7 +139,7 @@ export const VotesTable: React.FC<VotesTableProps> = ({
         cell: ({ row }) => (
           <div className="flex w-full justify-center">
             <Link
-              href={`/votes/${row.original.id}`}
+              href={`/competitions/${row.original.competition.id}`}
               target="_blank"
               rel="noopener noreferrer"
             >
