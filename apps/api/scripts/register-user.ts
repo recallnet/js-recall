@@ -110,10 +110,6 @@ async function registerAgent() {
         throw new Error("Wallet address is required");
       }
 
-      safeLog(
-        `\n${colors.yellow}random CI non-formatted test${colors.reset}`,
-      );
-
       if (!isValidEthereumAddress(walletAddress)) {
         throw new Error(
           "Invalid Ethereum address format. Must be 0x followed by 40 hex characters.",
