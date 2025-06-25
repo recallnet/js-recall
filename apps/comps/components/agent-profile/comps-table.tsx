@@ -143,7 +143,8 @@ export function CompetitionTable({
                       {comp.totalTrades}
                     </TableCell>
                     <TableCell className="w-30 text-secondary-foreground flex items-center text-center">
-                      {comp.bestPlacement &&
+                      {comp.bestPlacement?.rank &&
+                        comp.bestPlacement?.totalAgents &&
                         `${comp.bestPlacement.rank}/${comp.bestPlacement.totalAgents}`}
                     </TableCell>
                     <TableCell className="align-center h-25 flex items-center gap-2">
