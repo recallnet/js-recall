@@ -113,13 +113,6 @@
       "when": 1750446490329,
       "tag": "0015_known_sauron",
       "breakpoints": true
-    },
-    {
-      "idx": 16,
-      "version": "7",
-      "when": 1750530000000,
-      "tag": "0016_sync_data_type_enum",
-      "breakpoints": true
     }
   ]
 }
