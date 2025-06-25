@@ -17,17 +17,27 @@ export class ConfigurationService {
       const activeCompetition = await findActive();
 
       if (activeCompetition) {
-        // Override the environment-based setting with competition-specific settings
+        // Override the environment-based settings with competition-specific settings
         features.CROSS_CHAIN_TRADING_TYPE =
           activeCompetition.crossChainTradingType as CrossChainTradingType;
+        features.SANDBOX_MODE = activeCompetition.sandboxMode;
 
         console.log(
-          `[ConfigurationService] Updated cross-chain trading setting from competition ${activeCompetition.id}: ${features.CROSS_CHAIN_TRADING_TYPE}`,
+          `[ConfigurationService] Updated competition settings from competition ${activeCompetition.id}:`,
+          {
+            crossChainTradingType: features.CROSS_CHAIN_TRADING_TYPE,
+            sandboxMode: features.SANDBOX_MODE,
+          },
         );
       } else {
-        // No active competition, keep the environment variable setting
+        // No active competition, keep the environment variable settings
+        features.SANDBOX_MODE = false; // Default to false when no active competition
         console.log(
-          `[ConfigurationService] No active competition, using environment setting for cross-chain trading: ${features.CROSS_CHAIN_TRADING_TYPE}`,
+          `[ConfigurationService] No active competition, using environment settings:`,
+          {
+            crossChainTradingType: features.CROSS_CHAIN_TRADING_TYPE,
+            sandboxMode: features.SANDBOX_MODE,
+          },
         );
       }
     } catch (error) {

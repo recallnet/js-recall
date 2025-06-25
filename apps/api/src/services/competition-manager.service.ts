@@ -110,6 +110,7 @@ export class CompetitionManager {
    * @param name Competition name
    * @param description Optional description
    * @param tradingType Type of cross-chain trading to allow (defaults to disallowAll)
+   * @param sandboxMode Whether to enable sandbox mode for auto-joining agents (defaults to false)
    * @param externalUrl Optional URL for external competition details
    * @param imageUrl Optional URL to the competition image
    * @returns The created competition
@@ -118,6 +119,7 @@ export class CompetitionManager {
     name: string,
     description?: string,
     tradingType: CrossChainTradingType = CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+    sandboxMode: boolean = false,
     externalUrl?: string,
     imageUrl?: string,
     type: CompetitionType = COMPETITION_TYPE.TRADING,
@@ -137,6 +139,7 @@ export class CompetitionManager {
       votingEndDate: votingEndDate || null,
       status: COMPETITION_STATUS.PENDING,
       crossChainTradingType: tradingType,
+      sandboxMode,
       type,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -1072,5 +1075,76 @@ export class CompetitionManager {
    */
   async getAllCompetitionAgents(competitionId: string): Promise<string[]> {
     return await getAllCompetitionAgents(competitionId);
+  }
+
+  /**
+   * Automatically join an agent to the active competition if one exists
+   * Used in sandbox mode to auto-join newly registered agents
+   * @param agentId The agent ID to join to the active competition
+   */
+  async autoJoinAgentToActiveCompetition(agentId: string): Promise<void> {
+    try {
+      // Check if there's an active competition
+      const activeCompetition = await this.getActiveCompetition();
+      if (!activeCompetition) {
+        console.log(
+          `[CompetitionManager] No active competition found for auto-join of agent ${agentId}`,
+        );
+        return;
+      }
+
+      // Check if agent exists and is active
+      const agent = await findAgentById(agentId);
+      if (!agent) {
+        console.log(
+          `[CompetitionManager] Agent ${agentId} not found, skipping auto-join`,
+        );
+        return;
+      }
+
+      if (agent.status !== ACTOR_STATUS.ACTIVE) {
+        console.log(
+          `[CompetitionManager] Agent ${agentId} is not active (status: ${agent.status}), skipping auto-join`,
+        );
+        return;
+      }
+
+      // Check if agent is already in the competition
+      const isAlreadyInCompetition = await this.isAgentInCompetition(
+        activeCompetition.id,
+        agentId,
+      );
+      if (isAlreadyInCompetition) {
+        console.log(
+          `[CompetitionManager] Agent ${agentId} is already in competition ${activeCompetition.id}, skipping auto-join`,
+        );
+        return;
+      }
+
+      console.log(
+        `[CompetitionManager] Auto-joining agent ${agentId} to active competition ${activeCompetition.id}`,
+      );
+
+      // Reset the agent's balances to starting values (consistent with startCompetition order)
+      await this.balanceManager.resetAgentBalances(agentId);
+
+      // Add the agent to the competition
+      await addAgentToCompetition(activeCompetition.id, agentId);
+
+      // Take a portfolio snapshot for all agents in the competition (includes the newly joined agent)
+      await this.portfolioSnapshotter.takePortfolioSnapshots(
+        activeCompetition.id,
+      );
+
+      console.log(
+        `[CompetitionManager] Successfully auto-joined agent ${agentId} to competition ${activeCompetition.id}`,
+      );
+    } catch (error) {
+      // Log the error but don't throw - we don't want auto-join failures to break agent registration
+      console.error(
+        `[CompetitionManager] Error auto-joining agent ${agentId} to active competition:`,
+        error,
+      );
+    }
   }
 }

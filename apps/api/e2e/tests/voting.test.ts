@@ -67,6 +67,7 @@ describe("Voting API", () => {
         adminClient,
         competitionName,
         undefined, // description
+        undefined, // sandboxMode
         undefined, // externalUrl
         undefined, // imageUrl
         undefined, // competition type
@@ -425,6 +426,7 @@ describe("Voting API", () => {
         adminClient,
         competitionName,
         undefined, // description
+        undefined, // sandboxMode
         undefined, // externalUrl
         undefined, // imageUrl
         undefined, // competition type
@@ -855,6 +857,7 @@ describe("Voting API", () => {
         competitionName,
         "Test competition with future voting date",
         "disallowAll",
+        undefined, // sandboxMode
         undefined, // externalUrl
         undefined, // imageUrl
         "trading", // type
@@ -904,6 +907,7 @@ describe("Voting API", () => {
         competitionName,
         "Test competition with past voting date",
         "disallowAll",
+        undefined, // sandboxMode
         undefined, // externalUrl
         undefined, // imageUrl
         "trading", // type
@@ -954,6 +958,7 @@ describe("Voting API", () => {
         competitionName,
         "Test competition with valid voting date range",
         "disallowAll",
+        undefined, // sandboxMode
         undefined, // externalUrl
         undefined, // imageUrl
         "trading", // type
@@ -1003,6 +1008,7 @@ describe("Voting API", () => {
         competitionName,
         "Test competition without voting dates",
         "disallowAll",
+        undefined, // sandboxMode
         undefined, // externalUrl
         undefined, // imageUrl
         "trading", // type
@@ -1055,6 +1061,7 @@ describe("Voting API", () => {
         competitionName,
         "Test competition with only start date",
         "disallowAll",
+        undefined, // sandboxMode
         undefined, // externalUrl
         undefined, // imageUrl
         "trading", // type
@@ -1107,6 +1114,7 @@ describe("Voting API", () => {
         competitionName,
         "Test competition with only end date",
         "disallowAll",
+        undefined, // sandboxMode
         undefined, // externalUrl
         undefined, // imageUrl
         "trading", // type

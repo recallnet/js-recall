@@ -6,6 +6,8 @@
   "private": true,
   "scripts": {
     "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write . --ignore-path=../../.prettierignore",
+    "format:check": "prettier --check . --ignore-path=../../.prettierignore",
     "clean": "rm -rf .turbo node_modules dist"
   },
   "dependencies": {
@@ -38,7 +40,6 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "eslint": "^9.19.0",
     "tailwindcss": "^4.0.8",
     "typescript": "^5.7.3"
   },

@@ -30,6 +30,8 @@
     "typescript-eslint": "^8.15.0"
   },
   "scripts": {
-    "clean": "rm -rf .turbo node_modules"
+    "clean": "rm -rf .turbo node_modules",
+    "format": "prettier --write . --ignore-path=../../.prettierignore",
+    "format:check": "prettier --check . --ignore-path=../../.prettierignore"
   }
 }
