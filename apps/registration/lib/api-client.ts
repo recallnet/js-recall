@@ -313,6 +313,38 @@ export class ApiClient {
   }
 
   /**
+   * Create a new agent using admin API (via server-side route)
+   * @param data - Agent creation data
+   * @param userWalletAddress - User wallet address
+   * @returns Created agent response
+   */
+  async createAgentAdmin(
+    data: CreateAgentRequest,
+    userWalletAddress: string,
+  ): Promise<CreateAgentResponse> {
+    const payload = {
+      userWalletAddress,
+      agent: data,
+    };
+
+    // Call the Next.js API route directly (relative URL will use current origin)
+    const response = await fetch("/api/admin/agents", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to create agent: ${errorText}`);
+    }
+
+    return response.json();
+  }
+
+  /**
    * Update user agent
    * @param data - Agent data
    * @returns Updated agent
