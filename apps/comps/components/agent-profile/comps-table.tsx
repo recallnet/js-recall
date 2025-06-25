@@ -51,8 +51,7 @@ export function CompetitionTable({
                 Competition
               </SortableTableHeader>
               {
-                //some fields have sorted removed until they are supported by the api
-                // id, name, description, startDate, endDate, createdAt, updatedAt, portfolioValue, pnl, totalTrades, rank
+                // some fields have sorted removed until they are supported by the api, specifically Trophies and Skills
               }
               <TableHead>Skills</TableHead>
               <SortableTableHeader
@@ -61,7 +60,12 @@ export function CompetitionTable({
               >
                 Portfolio
               </SortableTableHeader>
-              <TableHead className="w-30 flex justify-end">P&L</TableHead>
+              <SortableTableHeader
+                onToggleSort={() => handleSortChange("pnl")}
+                sortState={sortState["pnl"]}
+              >
+                P&L
+              </SortableTableHeader>
               <SortableTableHeader
                 onToggleSort={() => handleSortChange("totalTrades")}
                 sortState={sortState["totalTrades"]}
@@ -130,7 +134,7 @@ export function CompetitionTable({
                     </TableCell>
                     <TableCell className="w-30 flex items-center justify-center font-medium">
                       <span className="text-secondary-foreground flex flex-col">
-                        {comp.pnlPercent
+                        {typeof comp.pnlPercent === "number"
                           ? `${Math.round(comp.pnlPercent)}%`
                           : "n/a"}
                       </span>
