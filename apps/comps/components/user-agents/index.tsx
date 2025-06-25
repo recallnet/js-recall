@@ -1,40 +1,23 @@
 "use client";
 
-import { Award, Trophy } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 
-import { displayAddress } from "@recallnet/address-utils/display";
 import { Button } from "@recallnet/ui2/components/button";
-import Card from "@recallnet/ui2/components/card";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@recallnet/ui2/components/collapsible";
-import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import BigNumberDisplay from "@/components/bignumber";
-import MirrorImage from "@/components/mirror-image";
-import { useCompetition } from "@/hooks";
-import { useUserAgents } from "@/hooks/useAgents";
+import { AgentCard } from "@/components/user-agents/agent-card";
+import AgentsSummary from "@/components/user-agents/agents-summary";
 import { Agent } from "@/types";
-import { formatCompactNumber, toOrdinal } from "@/utils/format";
 
-import { VerificationBadge } from "../verification-badge";
-
-export default function UserAgentsSection() {
-  const { data: agentsData, isLoading } = useUserAgents({ limit: 100 });
+export default function UserAgentsSection({ agents }: { agents: Agent[] }) {
   let agentList = <NoAgents />;
-
-  const agents = useMemo(
-    () => (isLoading || !agentsData?.agents ? [] : agentsData.agents),
-    [agentsData, isLoading],
-  );
-
   const nAgents = agents.length;
 
   const bestPlacement = useMemo(
@@ -64,30 +47,30 @@ export default function UserAgentsSection() {
     }, 0);
   }, [agents]);
 
-  if (isLoading || (nAgents > 0 && nAgents <= 3))
+  if (nAgents > 0 && nAgents <= 3)
     agentList = (
       <div
-        className={cn(`flex w-full flex-col justify-around gap-8`, {
-          "flex-row": nAgents == 1,
-          "xs:flex-row": nAgents == 2,
-          "md:flex-col": nAgents >= 3,
+        className={cn(`flex w-full flex-col justify-around gap-4`, {
+          "xs:flex-row": nAgents == 1,
+          "sm:flex-row": nAgents == 2,
+          "lg:flex-row": nAgents == 3,
         })}
       >
         <div
-          className={cn("flex flex-col gap-8", {
-            "xs:flex-row flex-wrap": nAgents > 1,
+          className={cn("flex gap-6", {
+            "xs:overflow-x-visible overflow-x-auto": nAgents < 3,
+            "overflow-x-auto md:overflow-x-visible": nAgents == 3,
           })}
         >
-          {isLoading
-            ? new Array(nAgents)
-                .fill(0)
-                .map((_, i) => <AgentCard key={i} agent={i} isLoading />)
-            : agents.map((agent, i) => (
-                <AgentCard key={i} agent={agent} isLoading={false} />
-              ))}
+          {agents.map((agent, i) => (
+            <AgentCard
+              key={i}
+              agent={agent}
+              className="h-87 min-w-64 max-w-80 flex-1"
+            />
+          ))}
         </div>
         <AgentsSummary
-          isLoading={isLoading}
           nAgents={nAgents}
           bestPlacement={bestPlacement}
           completedComps={completedComps}
@@ -101,11 +84,14 @@ export default function UserAgentsSection() {
       <div className="flex w-full flex-col gap-10">
         <div className="flex justify-around gap-10 overflow-x-auto">
           {agents.map((agent, i) => (
-            <AgentCard key={i} agent={agent} isLoading={isLoading} />
+            <AgentCard
+              key={i}
+              agent={agent}
+              className="h-87 min-w-64 max-w-80 flex-1"
+            />
           ))}
         </div>
         <AgentsSummary
-          isLoading={isLoading}
           nAgents={nAgents}
           bestPlacement={bestPlacement}
           completedComps={completedComps}
@@ -115,7 +101,7 @@ export default function UserAgentsSection() {
     );
 
   return (
-    <Collapsible defaultOpen className="mt-7">
+    <Collapsible defaultOpen className="my-7">
       <CollapsibleTrigger>
         <div className="flex w-full items-center justify-between">
           <div className="ml-2 flex items-center gap-2">
@@ -127,7 +113,9 @@ export default function UserAgentsSection() {
           </Button>
         </div>
       </CollapsibleTrigger>
-      <CollapsibleContent>{agentList}</CollapsibleContent>
+      <CollapsibleContent className="w-full">
+        {agentList}
+      </CollapsibleContent>
     </Collapsible>
   );
 }
@@ -154,185 +142,5 @@ const NoAgents = () => {
         height={350}
       />
     </div>
-  );
-};
-
-const AgentsSummary: React.FunctionComponent<{
-  className?: string;
-  nAgents?: number;
-  isLoading?: boolean;
-  bestPlacement?: NonNullable<Agent["stats"]>["bestPlacement"];
-  completedComps: number;
-  highest: number | null;
-}> = ({
-  bestPlacement,
-  nAgents = 0,
-  isLoading,
-  completedComps,
-  highest,
-  className,
-}) => {
-  const { data: competition } = useCompetition(bestPlacement?.competitionId);
-  const borderRules = "xs:border-l-1";
-
-  return (
-    <div
-      className={cn(
-        className,
-        "xs:flex-row flex w-full flex-col justify-around border",
-        {
-          "h-95 flex-row": isLoading,
-          "xs:flex-row": nAgents >= 3,
-          "xs:flex-col": nAgents < 3,
-        },
-      )}
-    >
-      <div
-        className={cn(
-          "border-b-1 flex w-full flex-col items-start gap-2 p-8",
-          borderRules,
-        )}
-      >
-        {isLoading ? (
-          <Skeleton className="w-30 h-2" />
-        ) : (
-          <span className="text-secondary-foreground uppercase">
-            BEST PLACEMENT
-          </span>
-        )}
-        <div className="flex flex-col gap-3">
-          {isLoading ? (
-            <Skeleton className="w-30 mt-2 h-5" />
-          ) : (
-            <>
-              <div className="flex items-center gap-3">
-                <Trophy className="text-2xl text-yellow-500" />
-                <span className="text-2xl font-semibold text-white">
-                  {bestPlacement?.rank && bestPlacement.rank !== Infinity
-                    ? `${toOrdinal(bestPlacement.rank)} of ${bestPlacement.totalAgents} `
-                    : "N/A"}
-                </span>
-              </div>
-              <span className="text-secondary-foreground">
-                {competition?.name}
-              </span>
-            </>
-          )}
-        </div>
-      </div>
-      <div
-        className={cn(
-          "border-b-1 flex w-full flex-col items-start gap-2 p-8",
-          borderRules,
-        )}
-      >
-        {isLoading ? (
-          <>
-            <Skeleton className="w-30 h-2" />
-            <Skeleton className="w-30 mt-2 h-5" />
-          </>
-        ) : (
-          <>
-            <span className="text-secondary-foreground uppercase">
-              completed comps
-            </span>
-            <span className="text-2xl font-semibold text-white">
-              {completedComps}
-            </span>
-          </>
-        )}
-      </div>
-      <div
-        className={cn(
-          "flex w-full flex-col items-start gap-2 border p-8",
-          borderRules,
-        )}
-      >
-        {isLoading ? (
-          <>
-            <Skeleton className="w-30 h-2" />
-            <Skeleton className="w-30 mt-2 h-5" />
-          </>
-        ) : (
-          <>
-            <span className="text-secondary-foreground uppercase">
-              highest p&l
-            </span>
-            <span className="text-2xl font-semibold">
-              {highest ? (
-                <BigNumberDisplay value={highest.toString()} decimals={0} />
-              ) : (
-                "N/A"
-              )}
-            </span>
-          </>
-        )}
-      </div>
-    </div>
-  );
-};
-
-type AgentCardProps = {
-  className?: string;
-  agent: Agent | number;
-  isLoading: boolean;
-};
-
-export const AgentCard: React.FunctionComponent<AgentCardProps> = ({
-  className,
-  agent,
-  isLoading,
-}) => {
-  const size = "w-70 h-95";
-  const router = useRouter();
-
-  if (isLoading || typeof agent === "number")
-    return <Skeleton className={size} />;
-
-  return (
-    <Card
-      corner="top-left"
-      cropSize={50}
-      onClick={() => router.push(`/agents/${agent.id}`)}
-      className={cn(
-        className,
-        `${size} flex cursor-pointer flex-col items-center justify-center gap-2 px-5`,
-      )}
-    >
-      <span className="text-secondary-foreground font-mono">
-        {agent.walletAddress ? displayAddress(agent.walletAddress) : " "}
-      </span>
-      {agent.isVerified && (
-        <VerificationBadge className="absolute right-3 top-3" />
-      )}
-      <MirrorImage
-        className="mb-10"
-        width={130}
-        height={130}
-        image={agent.imageUrl || "/default_agent.png"}
-      />
-      <div className="text-secondary-foreground flex w-full items-center justify-center gap-1 text-sm">
-        <Award />
-        <span>
-          {agent.stats?.bestPlacement?.rank
-            ? `${toOrdinal(agent.stats?.bestPlacement?.rank)}`
-            : "N/A"}
-        </span>
-      </div>
-      <span
-        className="text-secondary-foreground w-full truncate text-center text-2xl font-bold"
-        title={agent.name}
-      >
-        <Link href={`/agents/${agent.id}`}>{agent.name}</Link>
-      </span>
-      <div className="flex justify-center gap-3">
-        <div className="text-secondary-foreground text-nowrap rounded border p-2">
-          ROI N/A
-        </div>
-        <div className="text-secondary-foreground text-nowrap rounded border p-2">
-          Trades {formatCompactNumber(agent.stats?.totalTrades ?? 0)}
-        </div>
-      </div>
-    </Card>
   );
 };
