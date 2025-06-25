@@ -71,7 +71,17 @@ jobs:
         run: pnpm lint
 
       - name: Run Format Check
-        run: pnpm format:check
+        run: |
+          pnpm format
+          if ! git diff --exit-code; then
+            echo "❌ Code formatting issues detected!"
+            echo "Please run 'pnpm format' locally and commit the changes."
+            echo ""
+            echo "Files that need formatting:"
+            git diff --name-only
+            exit 1
+          fi
+          echo "✅ All files are properly formatted!"
 
       - name: Run Build
         run: pnpm build
