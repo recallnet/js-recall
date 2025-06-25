@@ -163,7 +163,6 @@ export default function RegistrationSuccess({
                       }}
                     >
                       {competition.imageUrl && (
-                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={competition.imageUrl}
                           alt={competition.name}

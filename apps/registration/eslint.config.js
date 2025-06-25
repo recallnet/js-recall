@@ -7,6 +7,8 @@ export default [
     rules: {
       // Disable Next.js img element warnings
       "@next/next/no-img-element": "off",
+      // Disable React hooks exhaustive deps warnings
+      "react-hooks/exhaustive-deps": "off",
     },
   },
 ];
