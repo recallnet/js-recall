@@ -18,6 +18,24 @@
     "lint": {
       "dependsOn": ["^lint"]
     },
+    "format": {
+      "dependsOn": ["^format"],
+      "inputs": [
+        "**/*.{js,jsx,ts,tsx,json,md,mdx}",
+        ".prettierrc*",
+        ".prettierignore"
+      ],
+      "outputs": []
+    },
+    "format:check": {
+      "dependsOn": ["^format:check"],
+      "inputs": [
+        "**/*.{js,jsx,ts,tsx,json,md,mdx}",
+        ".prettierrc*",
+        ".prettierignore"
+      ],
+      "outputs": []
+    },
     "check-types": {
       "dependsOn": ["^check-types"]
     },

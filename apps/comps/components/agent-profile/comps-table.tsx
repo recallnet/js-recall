@@ -11,7 +11,7 @@ import {
 } from "@recallnet/ui2/components/table";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { Hexagon } from "@/components/hexagon";
+import { Trophy, TrophyBadge } from "@/components/trophy-badge";
 import { Competition, CompetitionStatus } from "@/types";
 
 export function CompetitionTable({
@@ -23,7 +23,7 @@ export function CompetitionTable({
   onLoadMore,
   total = 0,
 }: {
-  competitions: Competition[] | undefined;
+  competitions: (Competition & { trophies: Trophy[] })[];
   handleSortChange: (field: string) => void;
   sortState: Record<string, SortState>;
   canClaim: boolean;
@@ -35,8 +35,8 @@ export function CompetitionTable({
 
   return (
     <>
-      <div className="overflow-hidden rounded border">
-        <Table>
+      <div className="overflow-x-auto rounded border">
+        <Table className="min-w-200">
           <TableHeader className="text-muted-foreground bg-gray-900 text-xs uppercase">
             <TableRow
               className={cn(
@@ -120,10 +120,16 @@ export function CompetitionTable({
                     <TableCell className="w-30 text-secondary-foreground flex items-center text-center">
                       0/0
                     </TableCell>
-                    <TableCell className="align-center h-25 flex items-center gap-2">
-                      <Hexagon className="h-8 w-8 bg-blue-500" />
-                      <Hexagon className="h-8 w-8 bg-green-500" />
-                      <Hexagon className="h-8 w-8 bg-yellow-500" />
+                    <TableCell className="h-25 ml-1 flex items-center gap-2">
+                      {comp.trophies.length > 0 ? (
+                        comp.trophies.map((trophy, i: number) => (
+                          <TrophyBadge size={50} key={i} trophy={trophy} />
+                        ))
+                      ) : (
+                        <span className="text-secondary-foreground">
+                          No trophies
+                        </span>
+                      )}
                     </TableCell>
                     {canClaim && (
                       <TableCell className="align-center h-25 flex items-center gap-2">

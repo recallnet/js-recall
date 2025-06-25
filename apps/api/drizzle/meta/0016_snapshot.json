@@ -1,6 +1,6 @@
 {
-  "id": "fc290bf5-2542-4f6f-b6b8-db84557770bb",
-  "prevId": "9a3f6212-c9bb-42b4-819b-1c725662ee53",
+  "id": "a6100504-98ed-4f34-b8e8-f3bb7b155447",
+  "prevId": "fc290bf5-2542-4f6f-b6b8-db84557770bb",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -3338,15 +3338,6 @@
         "trading"
       ]
     },
-    "trading_comps.cross_chain_trading_type": {
-      "name": "cross_chain_trading_type",
-      "schema": "trading_comps",
-      "values": [
-        "disallowAll",
-        "disallowXParent",
-        "allow"
-      ]
-    },
     "public.sync_data_type": {
       "name": "sync_data_type",
       "schema": "public",
@@ -3356,6 +3347,15 @@
         "agent_rank",
         "competitions_leaderboard",
         "portfolio_snapshot"
+      ]
+    },
+    "trading_comps.cross_chain_trading_type": {
+      "name": "cross_chain_trading_type",
+      "schema": "trading_comps",
+      "values": [
+        "disallowAll",
+        "disallowXParent",
+        "allow"
       ]
     }
   },

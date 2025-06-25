@@ -1,12 +1,9 @@
-import React from "react";
-
 import { cn } from "@recallnet/ui2/lib/utils";
 
-type HexagonProps = React.HTMLAttributes<HTMLDivElement>;
-
-export const Hexagon: React.FC<HexagonProps> = ({
+export const Hexagon: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   className,
   children,
+  style,
   ...props
 }) => {
   return (
@@ -21,10 +18,11 @@ export const Hexagon: React.FC<HexagonProps> = ({
         WebkitClipPath:
           "polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)",
         transform: "rotate(90deg)",
+        ...style,
       }}
       {...props}
     >
-      <div className="rotate-[-90deg]">{children}</div>
+      {children}
     </div>
   );
 };

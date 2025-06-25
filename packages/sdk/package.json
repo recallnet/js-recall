@@ -117,6 +117,8 @@
     "coverage": "c8 --exclude test --exclude dist mocha --exit",
     "docs": "typedoc --entryPoints src/index.ts",
     "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write . --ignore-path=../../.prettierignore",
+    "format:check": "prettier --check . --ignore-path=../../.prettierignore",
     "clean": "rm -rf .turbo node_modules dist coverage docs"
   },
   "dependencies": {

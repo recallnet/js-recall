@@ -6,6 +6,7 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -58,6 +59,7 @@ export const EditAgentField: React.FC<EditAgentFieldProps> = ({
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
+          <DialogDescription className="hidden"></DialogDescription>
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>
