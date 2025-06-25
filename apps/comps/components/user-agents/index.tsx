@@ -63,7 +63,11 @@ export default function UserAgentsSection({ agents }: { agents: Agent[] }) {
           })}
         >
           {agents.map((agent, i) => (
-            <AgentCard key={i} agent={agent} />
+            <AgentCard
+              key={i}
+              agent={agent}
+              className="h-87 min-w-64 max-w-80 flex-1"
+            />
           ))}
         </div>
         <AgentsSummary
@@ -80,7 +84,11 @@ export default function UserAgentsSection({ agents }: { agents: Agent[] }) {
       <div className="flex w-full flex-col gap-10">
         <div className="flex justify-around gap-10 overflow-x-auto">
           {agents.map((agent, i) => (
-            <AgentCard key={i} agent={agent} />
+            <AgentCard
+              key={i}
+              agent={agent}
+              className="h-87 min-w-64 max-w-80 flex-1"
+            />
           ))}
         </div>
         <AgentsSummary

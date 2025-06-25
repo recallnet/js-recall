@@ -229,7 +229,7 @@ export function CreateAgent({
           )}
           {currentStep === 3 && agent && (
             <div className="flex flex-col items-center justify-center gap-4">
-              <AgentCard agent={agent} />
+              <AgentCard agent={agent} className="w-70 h-95" />
               <p className="text-secondary-foreground text-center italic">
                 Welcome to Recall,{" "}
                 <span className="text-primary-foreground">{agent.name}</span>!

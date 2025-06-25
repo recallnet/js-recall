@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { displayAddress } from "@recallnet/address-utils/display";
-import Card from "@recallnet/ui2/components/card";
+import Card, { CardProps } from "@recallnet/ui2/components/card";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import MirrorImage from "@/components/mirror-image";
@@ -15,15 +15,14 @@ import { formatCompactNumber, toOrdinal } from "@/utils/format";
 import { VerificationBadge } from "../verification-badge";
 
 type AgentCardProps = {
-  className?: string;
   agent: Agent;
 };
 
-export const AgentCard: React.FunctionComponent<AgentCardProps> = ({
+export const AgentCard: React.FunctionComponent<AgentCardProps & CardProps> = ({
   className,
   agent,
+  ...props
 }) => {
-  const size = "min-w-64 max-w-80 flex-1 h-87";
   const router = useRouter();
 
   return (
@@ -32,9 +31,10 @@ export const AgentCard: React.FunctionComponent<AgentCardProps> = ({
       cropSize={50}
       onClick={() => router.push(`/agents/${agent.id}`)}
       className={cn(
+        `flex cursor-pointer flex-col items-center justify-center gap-2 px-5`,
         className,
-        `${size} flex cursor-pointer flex-col items-center justify-center gap-2 px-5`,
       )}
+      {...props}
     >
       <span className="text-secondary-foreground font-mono">
         {agent.walletAddress ? displayAddress(agent.walletAddress) : " "}
