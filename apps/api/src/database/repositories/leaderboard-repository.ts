@@ -1,6 +1,7 @@
 import {
   and,
   countDistinct,
+  desc,
   count as drizzleCount,
   eq,
   inArray,
@@ -17,7 +18,10 @@ import {
   votes,
 } from "@/database/schema/core/defs.js";
 import { agentRank } from "@/database/schema/ranking/defs.js";
-import { trades } from "@/database/schema/trading/defs.js";
+import {
+  trades,
+  tradingCompetitionsLeaderboard,
+} from "@/database/schema/trading/defs.js";
 import {
   COMPETITION_AGENT_STATUS,
   COMPETITION_STATUS,
@@ -130,7 +134,13 @@ export async function getBulkAgentMetrics(agentIds: string[]): Promise<
     completedCompetitions: number;
     totalVotes: number;
     totalTrades: number;
-    bestPlacement: number | null;
+    bestPlacement: {
+      competitionId: string;
+      rank: number;
+      score: number;
+      totalAgents: number;
+    } | null;
+    bestPnl: number | null;
   }>
 > {
   if (agentIds.length === 0) {
@@ -195,15 +205,55 @@ export async function getBulkAgentMetrics(agentIds: string[]): Promise<
       .where(inArray(trades.agentId, agentIds))
       .groupBy(trades.agentId);
 
-    // Query 5: Best placements
-    const bestPlacementsQuery = db
+    // Query 5: Best placements - get the best rank for each agent
+    const bestPlacementsSubquery = db
       .select({
         agentId: competitionsLeaderboard.agentId,
-        bestPlacement: min(competitionsLeaderboard.rank),
+        minRank: min(competitionsLeaderboard.rank).as("minRank"),
       })
       .from(competitionsLeaderboard)
       .where(inArray(competitionsLeaderboard.agentId, agentIds))
-      .groupBy(competitionsLeaderboard.agentId);
+      .groupBy(competitionsLeaderboard.agentId)
+      .as("bestRanks");
+
+    const bestPlacementsQuery = db
+      .select({
+        competitionId: competitionsLeaderboard.competitionId,
+        agentId: competitionsLeaderboard.agentId,
+        rank: competitionsLeaderboard.rank,
+        score: competitionsLeaderboard.score,
+        totalAgents: competitionsLeaderboard.totalAgents,
+      })
+      .from(competitionsLeaderboard)
+      .innerJoin(
+        bestPlacementsSubquery,
+        and(
+          eq(competitionsLeaderboard.agentId, bestPlacementsSubquery.agentId),
+          eq(competitionsLeaderboard.rank, bestPlacementsSubquery.minRank),
+        ),
+      )
+      .where(inArray(competitionsLeaderboard.agentId, agentIds));
+
+    // Query 6: Best Profit/Loss
+    const bestPnlQuery = db
+      .selectDistinctOn([competitionsLeaderboard.agentId], {
+        competitionId: competitionsLeaderboard.competitionId,
+        agentId: competitionsLeaderboard.agentId,
+        pnl: tradingCompetitionsLeaderboard.pnl,
+      })
+      .from(competitionsLeaderboard)
+      .innerJoin(
+        tradingCompetitionsLeaderboard,
+        eq(
+          tradingCompetitionsLeaderboard.competitionsLeaderboardId,
+          competitionsLeaderboard.id,
+        ),
+      )
+      .where(inArray(competitionsLeaderboard.agentId, agentIds))
+      .orderBy(
+        competitionsLeaderboard.agentId,
+        desc(tradingCompetitionsLeaderboard.pnl),
+      );
 
     // Execute all queries in parallel
     const [
@@ -211,14 +261,20 @@ export async function getBulkAgentMetrics(agentIds: string[]): Promise<
       competitionCountsResult,
       voteCountsResult,
       tradeCountsResult,
-      bestPlacementsResult,
+      bestPlacementResult,
+      bestPnlResult,
     ] = await Promise.all([
       agentRanksQuery,
       competitionCountsQuery,
       voteCountsQuery,
       tradeCountsQuery,
       bestPlacementsQuery,
+      bestPnlQuery,
     ]);
+
+    console.log("\n\n\n\n");
+    console.log("bestPnlResult:", JSON.stringify(bestPnlResult, null, 2));
+    console.log("\n\n\n\n");
 
     // Query 6: Get actual rank positions - need to get all ranks first then calculate positions
     const allRanksQuery = db
@@ -257,8 +313,26 @@ export async function getBulkAgentMetrics(agentIds: string[]): Promise<
     const tradeCountsMap = new Map(
       tradeCountsResult.map((row) => [row.agentId, row.totalTrades]),
     );
-    const bestPlacementsMap = new Map(
-      bestPlacementsResult.map((row) => [row.agentId, row.bestPlacement]),
+    const bestPlacementMap = new Map(
+      bestPlacementResult.map((row) => [
+        row.agentId,
+        {
+          competitionId: row.competitionId,
+          rank: row.rank,
+          score: row.score,
+          totalAgents: row.totalAgents,
+        },
+      ]),
+    );
+
+    const bestPnlMap = new Map(
+      bestPnlResult.map((row) => [
+        row.agentId,
+        {
+          competitionId: row.competitionId,
+          pnl: row.pnl,
+        },
+      ]),
     );
 
     // Combine all data
@@ -267,7 +341,8 @@ export async function getBulkAgentMetrics(agentIds: string[]): Promise<
       const completedCompetitions = competitionCountsMap.get(agentId) ?? 0;
       const totalVotes = voteCountsMap.get(agentId) ?? 0;
       const totalTrades = tradeCountsMap.get(agentId) ?? 0;
-      const bestPlacement = bestPlacementsMap.get(agentId) ?? null;
+      const bestPlacement = bestPlacementMap.get(agentId) ?? null;
+      const bestPnl = bestPnlMap.get(agentId)?.pnl ?? null;
       const globalRank = rankPositionsMap.get(agentId) ?? null;
 
       return {
@@ -282,6 +357,7 @@ export async function getBulkAgentMetrics(agentIds: string[]): Promise<
         totalVotes,
         totalTrades,
         bestPlacement,
+        bestPnl,
       };
     });
 
