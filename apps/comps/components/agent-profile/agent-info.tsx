@@ -24,7 +24,7 @@ export const AgentInfo = ({
   className?: string;
 }) => {
   const [copiedText, copyToClipboard] = useCopyToClipboard();
-  const [showWalletAddress, setShowWalletAddress] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
   const { data: apiKey, isLoading } = useAgentApiKey(agent.id);
 
   const handleCopy = async (text: string) => {
@@ -40,11 +40,11 @@ export const AgentInfo = ({
       )}
     >
       <div className="flex w-full max-w-[470px] items-center gap-3">
-        <Tooltip content="Agent Key">
+        <Tooltip content="Agent API Key">
           <KeyIcon />
         </Tooltip>
         <div className="flex h-[40px] w-full items-center gap-2 overflow-hidden rounded border p-2">
-          {showWalletAddress || isLoading ? (
+          {showApiKey || isLoading ? (
             <span className="flex-grow truncate">{apiKey?.apiKey}</span>
           ) : (
             <span className="flex-grow truncate">
@@ -58,32 +58,34 @@ export const AgentInfo = ({
             />
           </Tooltip>
         </div>
-        {showWalletAddress ? (
+        {showApiKey ? (
           <EyeIcon
             className="flex-shrink-0 cursor-pointer"
-            onClick={() => setShowWalletAddress(false)}
+            onClick={() => setShowApiKey(false)}
           />
         ) : (
           <EyeOffIcon
             className="flex-shrink-0 cursor-pointer"
-            onClick={() => setShowWalletAddress(true)}
+            onClick={() => setShowApiKey(true)}
           />
         )}
       </div>
 
-      <div className="flex w-full max-w-[470px] items-center gap-3">
-        <Tooltip content="Agent Wallet">
-          <WalletIcon />
-        </Tooltip>
-        <Clipboard
-          text={agent.walletAddress || ""}
-          className="w-full flex-grow px-2 py-1"
-        />
-        {
-          // just to align components
-        }
-        <EyeIcon className="opacity-0" />
-      </div>
+      {agent.walletAddress && (
+        <div className="flex w-full max-w-[470px] items-center gap-3">
+          <Tooltip content="Agent Wallet Address">
+            <WalletIcon />
+          </Tooltip>
+          <Clipboard
+            text={agent.walletAddress || ""}
+            className="w-full flex-grow px-2 py-1"
+          />
+          {
+            // just to align components
+          }
+          <EyeIcon className="opacity-0" />
+        </div>
+      )}
     </div>
   );
 };
