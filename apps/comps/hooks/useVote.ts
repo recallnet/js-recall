@@ -4,8 +4,8 @@ import { ApiClient, UnauthorizedError } from "@/lib/api-client";
 import { useUser } from "@/state/atoms";
 import {
   CreateVoteRequest,
+  EnrichedVotesResponse,
   GetVotesParams,
-  VoteResponse,
   VotesResponse,
   VotingStateResponse,
 } from "@/types/vote";
@@ -55,6 +55,33 @@ export const useVotes = (params: GetVotesParams = {}) => {
     queryFn: async (): Promise<VotesResponse> => {
       try {
         const res = await apiClient.getVotes(params);
+        if (!res.success) throw new Error("Error when fetching votes");
+        return res;
+      } catch (error) {
+        if (error instanceof UnauthorizedError) {
+          cleanup();
+        }
+        throw error;
+      }
+    },
+    enabled: status === "authenticated",
+  });
+};
+
+/**
+ * Hook to fetch user votes with agent and competition data
+ * @param params - Query parameters
+ * @returns Query result with votes data
+ */
+export const useEnrichedVotes = (params: GetVotesParams = {}) => {
+  const { status } = useUser();
+  const cleanup = useClientCleanup();
+
+  return useQuery({
+    queryKey: ["votes", params],
+    queryFn: async (): Promise<EnrichedVotesResponse> => {
+      try {
+        const res = await apiClient.getEnrichedVotes(params);
         if (!res.success) throw new Error("Error when fetching votes");
         return res;
       } catch (error) {
