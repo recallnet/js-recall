@@ -25,7 +25,9 @@ export default function RegistrationSuccess({
     ? userName.split(" ")[0] // Use first name only
     : "there"; // Fallback when no name is provided
 
-  const { data: competitions, isLoading } = useCompetitions();
+  const { data: competitions, isLoading } = useCompetitions({
+    status: "pending",
+  });
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-[#050507] py-8">
