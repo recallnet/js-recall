@@ -30,12 +30,10 @@ function WalletProvider(props: { children: ReactNode }) {
   const authAdapter = React.useMemo(() => {
     return createAuthenticationAdapter({
       getNonce: async () => {
-        // If we don't have nonce data, refetch it
-        if (!nonceData?.nonce) {
-          const result = await refetchNonce();
-          return result.data?.nonce ?? "";
-        }
-        return nonceData.nonce;
+        // Always fetch a fresh nonce for each SIWE attempt
+        // This prevents nonce reuse issues that cause first-attempt failures
+        const result = await refetchNonce();
+        return result.data?.nonce ?? "";
       },
       createMessage: ({ nonce, address, chainId }) => {
         return createSiweMessage({

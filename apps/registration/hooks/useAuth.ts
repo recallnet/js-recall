@@ -23,6 +23,9 @@ export const useNonce = () => {
     queryFn: async () => {
       return apiClient.getNonce();
     },
+    // Don't cache nonces for too long - they should be fresh for each auth attempt
+    staleTime: 0, // Always consider stale
+    gcTime: 1000 * 60, // Keep in cache for 1 minute but mark as stale immediately
   });
 };
 
@@ -48,6 +51,13 @@ export const useLogin = () => {
 
       // Trigger competitions refetch
       queryClient.invalidateQueries({ queryKey: ["competitions"] });
+
+      // Invalidate nonce cache after successful login
+      queryClient.invalidateQueries({ queryKey: ["nonce"] });
+    },
+    onError: () => {
+      // Invalidate nonce cache after failed login to ensure fresh nonce on retry
+      queryClient.invalidateQueries({ queryKey: ["nonce"] });
     },
   });
 };
