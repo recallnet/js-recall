@@ -23,7 +23,7 @@ const AUTHENTICATION_STATUS: AuthenticationStatus = "unauthenticated";
 const CONFIG = clientConfig();
 
 function WalletProvider(props: { children: ReactNode }) {
-  const { data: nonceData, refetch: refetchNonce } = useNonce();
+  const { refetch: refetchNonce } = useNonce();
   const { mutateAsync: login } = useLogin();
   const { mutateAsync: logout } = useLogout();
 
@@ -64,7 +64,7 @@ function WalletProvider(props: { children: ReactNode }) {
         await logout();
       },
     });
-  }, [nonceData, refetchNonce, login, logout]);
+  }, [refetchNonce, login, logout]);
 
   return (
     <WagmiProvider config={CONFIG}>
