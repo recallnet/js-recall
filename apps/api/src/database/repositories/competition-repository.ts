@@ -1041,7 +1041,7 @@ export async function findBestPlacementForAgent(agentId: string) {
       .select()
       .from(competitionsLeaderboard)
       .where(eq(competitionsLeaderboard.agentId, agentId))
-      .orderBy(asc(competitionsLeaderboard.pnl))
+      .orderBy(desc(competitionsLeaderboard.pnl))
       .limit(1);
     const agents = await db
       .select({

@@ -6,6 +6,7 @@ import {
   count as drizzleCount,
   eq,
   inArray,
+  min,
   sum,
 } from "drizzle-orm";
 
@@ -202,9 +203,19 @@ export async function getBulkAgentMetrics(agentIds: string[]): Promise<
       .where(inArray(trades.agentId, agentIds))
       .groupBy(trades.agentId);
 
-    // Query 5: Best placements
+    // Query 5: Best placements - get the best rank for each agent
+    const bestPlacementsSubquery = db
+      .select({
+        agentId: competitionsLeaderboard.agentId,
+        minRank: min(competitionsLeaderboard.rank).as("minRank"),
+      })
+      .from(competitionsLeaderboard)
+      .where(inArray(competitionsLeaderboard.agentId, agentIds))
+      .groupBy(competitionsLeaderboard.agentId)
+      .as("bestRanks");
+
     const bestPlacementsQuery = db
-      .selectDistinctOn([competitionsLeaderboard.agentId], {
+      .select({
         competitionId: competitionsLeaderboard.competitionId,
         agentId: competitionsLeaderboard.agentId,
         rank: competitionsLeaderboard.rank,
@@ -212,12 +223,14 @@ export async function getBulkAgentMetrics(agentIds: string[]): Promise<
         totalAgents: competitionsLeaderboard.totalAgents,
       })
       .from(competitionsLeaderboard)
-      .where(inArray(competitionsLeaderboard.agentId, agentIds))
-      .orderBy(
-        competitionsLeaderboard.agentId,
-        asc(competitionsLeaderboard.rank),
+      .innerJoin(
+        bestPlacementsSubquery,
+        and(
+          eq(competitionsLeaderboard.agentId, bestPlacementsSubquery.agentId),
+          eq(competitionsLeaderboard.rank, bestPlacementsSubquery.minRank),
+        ),
       )
-      .limit(1);
+      .where(inArray(competitionsLeaderboard.agentId, agentIds));
 
     // Query 6: Best Profit/Loss
     const bestPnlQuery = db
@@ -231,8 +244,7 @@ export async function getBulkAgentMetrics(agentIds: string[]): Promise<
       .orderBy(
         competitionsLeaderboard.agentId,
         desc(competitionsLeaderboard.pnl),
-      )
-      .limit(1);
+      );
 
     // Execute all queries in parallel
     const [
