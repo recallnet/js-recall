@@ -3,7 +3,7 @@
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@recallnet/ui/components/shadcn/button";
 
@@ -16,6 +16,7 @@ import DeveloperProfileForm, {
 import RegistrationSuccess from "@/components/registration-success";
 import { SignInButton } from "@/components/sign-in-button";
 import { useUserSession } from "@/hooks/useAuth";
+import { removeLegacyWalletConnectLocalStorage } from "@/lib/utils";
 
 /**
  * Homepage component for the registration application
@@ -44,6 +45,13 @@ export default function Home() {
     twitter: "",
     telegram: "",
   });
+
+  // Clean up legacy WalletConnect `localStorage` and old Recall testnet chain ID on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      removeLegacyWalletConnectLocalStorage(window.localStorage);
+    }
+  }, []);
 
   // Handle next button from profile form
   const handleProfileNext = (data: ProfileFormData) => {
