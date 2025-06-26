@@ -78,16 +78,44 @@ function WalletProvider(props: { children: ReactNode }) {
             wallet: siweMessage.address,
           });
 
-          // On mobile, try to focus back to the app after successful sign-in
+          // Enhanced mobile focus management based on research
           if (isMobile() && typeof window !== "undefined") {
+            // Add visibility change listener for better mobile app switching
+            const handleVisibilityChange = () => {
+              if (document.visibilityState === "visible") {
+                // App came back to foreground after wallet interaction
+                document.removeEventListener(
+                  "visibilitychange",
+                  handleVisibilityChange,
+                );
+              }
+            };
+
+            document.addEventListener(
+              "visibilitychange",
+              handleVisibilityChange,
+            );
+
+            // Multiple focus strategies for different mobile browsers
             setTimeout(() => {
               window.focus();
+              // Try to trigger a scroll to bring attention back to the app
+              window.scrollTo(0, 0);
             }, 100);
           }
 
           return true;
         } catch (error) {
           console.error("SIWE verification failed:", error);
+          // Enhanced error logging for debugging mobile issues
+          if (isMobile()) {
+            console.error("Mobile SIWE verification error details:", {
+              userAgent: navigator.userAgent,
+              message: error instanceof Error ? error.message : String(error),
+              timestamp: new Date().toISOString(),
+              visibilityState: document.visibilityState,
+            });
+          }
           throw error;
         }
       },
