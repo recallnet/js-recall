@@ -333,6 +333,7 @@ export interface Competition {
   endDate: string | null;
   status: CompetitionStatus;
   crossChainTradingType: CrossChainTradingType;
+  sandboxMode: boolean; // Controls automatic joining of newly registered agents
   createdAt: string;
   updatedAt: string;
   agentIds?: string[];

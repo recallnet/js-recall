@@ -51,13 +51,33 @@ export function CompetitionTable({
                 Competition
               </SortableTableHeader>
               {
-                //some fields have sorted removed until they are supported by the api
+                // some fields have sorted removed until they are supported by the api, specifically Trophies and Skills
               }
               <TableHead>Skills</TableHead>
-              <TableHead>Portfolio</TableHead>
-              <TableHead className="w-30 flex justify-end">P&L</TableHead>
-              <TableHead>Trades</TableHead>
-              <TableHead>Placement</TableHead>
+              <SortableTableHeader
+                onToggleSort={() => handleSortChange("portfolioValue")}
+                sortState={sortState["portfolioValue"]}
+              >
+                Portfolio
+              </SortableTableHeader>
+              <SortableTableHeader
+                onToggleSort={() => handleSortChange("pnl")}
+                sortState={sortState["pnl"]}
+              >
+                P&L
+              </SortableTableHeader>
+              <SortableTableHeader
+                onToggleSort={() => handleSortChange("totalTrades")}
+                sortState={sortState["totalTrades"]}
+              >
+                Trades
+              </SortableTableHeader>
+              <SortableTableHeader
+                onToggleSort={() => handleSortChange("rank")}
+                sortState={sortState["rank"]}
+              >
+                Placement
+              </SortableTableHeader>
               <TableHead>Trophies</TableHead>
               {canClaim && <TableHead className="text-left">Reward</TableHead>}
             </TableRow>
@@ -107,18 +127,25 @@ export function CompetitionTable({
                       {/* Future skills mapping */}
                     </TableCell>
                     <TableCell className="text-md text-secondary-foreground flex items-center font-medium">
-                      $0<span className="ml-2 text-xs">USDC</span>
+                      {typeof comp.portfolioValue === "number"
+                        ? `$${comp.portfolioValue.toFixed(2)}`
+                        : "n/a"}
+                      <span className="ml-2 text-xs">USDC</span>
                     </TableCell>
                     <TableCell className="w-30 flex items-center justify-center font-medium">
                       <span className="text-secondary-foreground flex flex-col">
-                        0$
+                        {typeof comp.pnlPercent === "number"
+                          ? `${Math.round(comp.pnlPercent)}%`
+                          : "n/a"}
                       </span>
                     </TableCell>
                     <TableCell className="w-30 text-md fond-semibold text-secondary-foreground flex items-center text-center">
-                      0
+                      {comp.totalTrades}
                     </TableCell>
                     <TableCell className="w-30 text-secondary-foreground flex items-center text-center">
-                      0/0
+                      {comp.bestPlacement?.rank &&
+                        comp.bestPlacement?.totalAgents &&
+                        `${comp.bestPlacement.rank}/${comp.bestPlacement.totalAgents}`}
                     </TableCell>
                     <TableCell className="h-25 ml-1 flex items-center gap-2">
                       {comp.trophies.length > 0 ? (

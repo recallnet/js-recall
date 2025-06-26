@@ -3,7 +3,7 @@ import { NextFunction, Request, Response } from "express";
 import * as fs from "fs";
 import * as path from "path";
 
-import { reloadSecurityConfig } from "@/config/index.js";
+import { features, reloadSecurityConfig } from "@/config/index.js";
 import { objectIndexRepository } from "@/database/repositories/object-index.repository.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
@@ -456,6 +456,14 @@ export function makeAdminController(services: ServiceRegistry) {
             metadata: metadata ?? undefined,
             walletAddress: agentWalletAddress,
           });
+
+          // Auto-join logic: If sandbox mode is enabled and there's an active competition, auto-join the agent
+          if (features.SANDBOX_MODE) {
+            await services.competitionManager.autoJoinAgentToActiveCompetition(
+              agent.id,
+            );
+          }
+
           const response: AdminAgentRegistrationResponse = {
             success: true,
             agent,
@@ -517,6 +525,7 @@ export function makeAdminController(services: ServiceRegistry) {
           name,
           description,
           tradingType,
+          sandboxMode,
           externalUrl,
           imageUrl,
           type,
@@ -534,6 +543,7 @@ export function makeAdminController(services: ServiceRegistry) {
           name,
           description,
           tradingType || CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+          sandboxMode || false,
           externalUrl,
           imageUrl,
           type,
@@ -564,6 +574,7 @@ export function makeAdminController(services: ServiceRegistry) {
           description,
           agentIds,
           tradingType,
+          sandboxMode,
           externalUrl,
           imageUrl,
           votingStartDate,
@@ -642,6 +653,7 @@ export function makeAdminController(services: ServiceRegistry) {
             name,
             description,
             tradingType || CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+            sandboxMode || false,
             externalUrl,
             imageUrl,
             undefined, // type parameter (will use default)

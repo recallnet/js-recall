@@ -9,6 +9,7 @@ import ProfileSkeleton from "@/components/profile-skeleton";
 import UserAgentsSection from "@/components/user-agents";
 import UserCompetitionsSection from "@/components/user-competitions";
 import UserInfoSection from "@/components/user-info";
+import { useUserAgents } from "@/hooks";
 import { useUserSession } from "@/hooks/useAuth";
 import { useUpdateProfile } from "@/hooks/useProfile";
 import { UpdateProfileRequest } from "@/types/profile";
@@ -17,6 +18,7 @@ export default function ProfilePage() {
   const session = useUserSession();
   const router = useRouter();
   const updateProfile = useUpdateProfile();
+  const { data: agents, isLoading } = useUserAgents({ limit: 100 });
 
   useEffect(() => {
     if (!session.isInitialized) return;
@@ -25,7 +27,7 @@ export default function ProfilePage() {
     }
   }, [session, router]);
 
-  if (!session.isInitialized) {
+  if (!session.isInitialized || isLoading) {
     return <ProfileSkeleton />;
   }
 
@@ -47,7 +49,7 @@ export default function ProfilePage() {
       />
       <UserInfoSection user={session.user!} onSave={handleUpdateProfile} />
       <UserCompetitionsSection />
-      <UserAgentsSection />
+      <UserAgentsSection agents={agents?.agents || []} />
     </AuthGuard>
   );
 }

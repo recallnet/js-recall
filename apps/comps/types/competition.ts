@@ -68,6 +68,14 @@ export interface Competition {
       votedAt?: string;
     };
   };
+  portfolioValue?: number;
+  pnl?: number;
+  pnlPercent?: number;
+  totalTrades?: number;
+  bestPlacement?: {
+    rank?: number;
+    totalAgents?: number;
+  };
 }
 
 export interface CompetitionResponse {

@@ -64,9 +64,6 @@ jobs:
         env:
           SPEAKEASY_API_KEY: "${{ secrets.SPEAKEASY_API_KEY }}"
 
-      - name: Install eslint cli
-        run: pnpm install -w eslint
-
       - name: Run Lint Check
         run: pnpm lint
 

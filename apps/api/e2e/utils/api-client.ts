@@ -254,6 +254,7 @@ export class ApiClient {
    * @param name User's display name
    * @param email User email address
    * @param userImageUrl Optional image URL for the user
+   * @param userMetadata Optional metadata for the user
    * @param agentName Optional name for the user's first agent
    * @param agentDescription Optional description for the agent
    * @param agentImageUrl Optional image URL for the agent
@@ -352,6 +353,7 @@ export class ApiClient {
           description?: string;
           agentIds: string[];
           tradingType?: CrossChainTradingType;
+          sandboxMode?: boolean;
           externalUrl?: string;
           imageUrl?: string;
           votingStartDate?: string;
@@ -361,6 +363,7 @@ export class ApiClient {
     description?: string,
     agentIds?: string[],
     tradingType?: CrossChainTradingType,
+    sandboxMode?: boolean,
     externalUrl?: string,
     imageUrl?: string,
     votingStartDate?: string,
@@ -382,6 +385,7 @@ export class ApiClient {
           description,
           agentIds: agentIds || [],
           tradingType,
+          sandboxMode,
           externalUrl,
           imageUrl,
           votingStartDate: votingStartDate || now,
@@ -407,6 +411,7 @@ export class ApiClient {
     name: string,
     description?: string,
     tradingType?: CrossChainTradingType,
+    sandboxMode?: boolean,
     externalUrl?: string,
     imageUrl?: string,
     type?: string,
@@ -420,6 +425,7 @@ export class ApiClient {
           name,
           description,
           tradingType,
+          sandboxMode,
           externalUrl,
           imageUrl,
           type,
@@ -441,6 +447,7 @@ export class ApiClient {
     competitionId: string,
     agentIds: string[],
     crossChainTradingType?: CrossChainTradingType,
+    sandboxMode?: boolean,
     externalUrl?: string,
     imageUrl?: string,
   ): Promise<StartCompetitionResponse | ErrorResponse> {
@@ -451,6 +458,7 @@ export class ApiClient {
           competitionId,
           agentIds,
           crossChainTradingType,
+          sandboxMode,
           externalUrl,
           imageUrl,
         },
