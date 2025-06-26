@@ -4,14 +4,18 @@ import path from "path";
 import {
   CROSS_CHAIN_TRADING_TYPE,
   CrossChainTradingType,
+
+
   SpecificChain,
+
+
 } from "@/types/index.js";
 
 // Environment file selection logic:
 // - When NODE_ENV=test, load from .env.test
 // - For all other environments (development, production), load from .env
 // This allows separate configurations for testing environments
-const envFile = process.env.NODE_ENV === "test" ? ".env.test" : ".env";
+const envFile = process.env.NODE_ENV === 'test' ? '.env.test' : '.env';
 dotenv.config({ path: path.resolve(process.cwd(), envFile) });
 
 // Log which environment file was loaded (helpful for debugging)
@@ -252,16 +256,11 @@ export const config = {
  */
 export const features: {
   CROSS_CHAIN_TRADING_TYPE: CrossChainTradingType;
-  SANDBOX_MODE: boolean;
 } = {
   // Enable or disable cross-chain trading functionality
   // When set to false, trades can only occur between tokens on the same chain
   // Defaults to false for security, must be explicitly enabled
   CROSS_CHAIN_TRADING_TYPE: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
-  // Enable or disable sandbox mode for auto-joining newly registered agents
-  // When set to true, newly registered agents are automatically joined to active competitions
-  // Defaults to false, overridden by active competition configuration
-  SANDBOX_MODE: false,
 };
 
 /**
