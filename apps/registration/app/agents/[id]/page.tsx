@@ -307,7 +307,7 @@ export default function AgentPage({
         params: {
           metadata: {
             ...currentMetadata,
-            skills: newSkills.join(","), // Convert array to comma-separated string
+            skills: newSkills, // Keep skills as an array
           },
         },
       });
@@ -346,13 +346,8 @@ export default function AgentPage({
         agentId: id,
         params: {
           metadata: {
-            // Preserve existing metadata, converting arrays to strings for API compatibility
-            ...Object.fromEntries(
-              Object.entries(currentMetadata).map(([key, value]) => [
-                key,
-                Array.isArray(value) ? value.join(",") : value,
-              ]),
-            ),
+            // Preserve existing metadata, keeping arrays as arrays (especially skills)
+            ...currentMetadata,
             repositoryUrl: newSocials.repositoryUrl.trim() || undefined,
             x: newSocials.x.trim() || undefined,
             telegram: newSocials.telegram.trim() || undefined,

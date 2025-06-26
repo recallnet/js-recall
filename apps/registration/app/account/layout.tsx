@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     title: "Account - Recall Developer Hub",
     description:
       "Manage your Recall account, API keys, and agent registrations.",
-    url: `https://recall.network/registration/account`,
+    url: `https://register.recall.network/account`,
     images: [
       {
         url: "/agents-twitter.png",
