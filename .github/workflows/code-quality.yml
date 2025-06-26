@@ -68,7 +68,21 @@ jobs:
         run: pnpm lint
 
       - name: Run Format Check
-        run: pnpm format:check
+        run: |
+          echo "=== TESTING PRETTIER PLUGIN FUNCTIONALITY ==="
+          cd apps/api
+          echo "Testing if import-sort plugin works:"
+          echo "Before prettier (showing problematic file):"
+          head -20 src/config/index.ts
+          echo "Running prettier --write on the problematic file:"
+          pnpm exec prettier --write src/config/index.ts || echo "Prettier failed"
+          echo "After prettier (should be different if plugin works):"
+          head -20 src/config/index.ts
+          echo "Git diff (should show changes if plugin worked):"
+          git diff HEAD src/config/index.ts || echo "No changes detected"
+          echo "=== RUNNING FULL FORMAT CHECK ==="
+          cd ../..
+          pnpm format:check
 
       - name: Run Build
         run: pnpm build
