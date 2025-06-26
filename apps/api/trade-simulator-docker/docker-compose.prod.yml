@@ -2,9 +2,6 @@ services:
   trading-simulator-app:
     image: textile/js-recall:latest
     restart: always
-    ports:
-      - "3000"
-    # Load all environment variables from .env file
     env_file:
       - ../.env
     healthcheck:
