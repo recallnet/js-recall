@@ -356,6 +356,7 @@ export interface Competition {
   votingEndDate: Date | null;
   status: CompetitionStatus;
   crossChainTradingType: CrossChainTradingType; // Controls cross-chain trading behavior
+  sandboxMode: boolean; // Controls automatic agent joining behavior
   type: CompetitionType;
   createdAt: Date;
   updatedAt: Date;
@@ -597,6 +598,38 @@ export const CompetitionTypeSchema = z.enum(COMPETITION_TYPE_VALUES);
  * Status of a competition.
  */
 export type CompetitionType = z.infer<typeof CompetitionTypeSchema>;
+
+/**
+ * Sync data type values for zod or database enum.
+ */
+export const SYNC_DATA_TYPE_VALUES = [
+  "trade",
+  "agent_rank_history",
+  "agent_rank",
+  "competitions_leaderboard",
+  "portfolio_snapshot",
+] as const;
+
+/**
+ * Sync data types.
+ */
+export const SYNC_DATA_TYPE = {
+  TRADE: "trade",
+  AGENT_RANK_HISTORY: "agent_rank_history",
+  AGENT_RANK: "agent_rank",
+  COMPETITIONS_LEADERBOARD: "competitions_leaderboard",
+  PORTFOLIO_SNAPSHOT: "portfolio_snapshot",
+} as const;
+
+/**
+ * Zod schema for sync data types.
+ */
+export const SyncDataTypeSchema = z.enum(SYNC_DATA_TYPE_VALUES);
+
+/**
+ * Sync data type.
+ */
+export type SyncDataType = z.infer<typeof SyncDataTypeSchema>;
 
 export const CompetitionAllowedUpdateSchema = z.strictObject({
   name: z.string().optional(),
@@ -969,3 +1002,30 @@ export const UserVotesParamsSchema = z.object({
 });
 
 export type UserVotesParams = z.infer<typeof UserVotesParamsSchema>;
+
+/**
+ * Admin create agent schema
+ */
+export const AdminCreateAgentSchema = z.object({
+  user: z
+    .object({
+      id: z.uuid().optional(),
+      walletAddress: z
+        .string()
+        .regex(/^0x[0-9a-fA-F]{40}$/)
+        .optional(),
+    })
+    .refine((d) => (d.id ? !d.walletAddress : !!d.walletAddress), {
+      message: "Must provide either user ID or user wallet address",
+    }),
+  agent: z.object({
+    name: z.string(),
+    email: z.string().optional(),
+    walletAddress: z.string().optional(),
+    description: z.string().optional(),
+    imageUrl: z.string().optional(),
+    metadata: z.nullish(AgentMetadataSchema),
+  }),
+});
+
+export type AdminCreateAgent = z.infer<typeof AdminCreateAgentSchema>;

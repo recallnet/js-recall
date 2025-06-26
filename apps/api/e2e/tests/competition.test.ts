@@ -760,6 +760,7 @@ describe("Competition API", () => {
       adminClient,
       createCompetitionName,
       "Test description with links",
+      undefined, // sandboxMode
       externalUrl,
       imageUrl,
     );
@@ -775,6 +776,7 @@ describe("Competition API", () => {
       adminClient,
       startCompetitionName,
       [agent.id],
+      undefined, // sandboxMode
       externalUrl,
       imageUrl,
     );

@@ -52,6 +52,7 @@ import {
   UpcomingCompetitionsResponse,
   UserAgentApiKeyResponse,
   UserCompetitionsResponse,
+  UserMetadata,
   UserProfileResponse,
   UserRegistrationResponse,
   UserVotesResponse,
@@ -253,29 +254,43 @@ export class ApiClient {
    * @param name User's display name
    * @param email User email address
    * @param userImageUrl Optional image URL for the user
+   * @param userMetadata Optional metadata for the user
    * @param agentName Optional name for the user's first agent
    * @param agentDescription Optional description for the agent
    * @param agentImageUrl Optional image URL for the agent
    * @param agentMetadata Optional metadata for the agent
    * @param agentWalletAddress Optional wallet address for the agent
    */
-  async registerUser(
-    walletAddress: string,
-    name?: string,
-    email?: string,
-    userImageUrl?: string,
-    agentName?: string,
-    agentDescription?: string,
-    agentImageUrl?: string,
-    agentMetadata?: AgentMetadata,
-    agentWalletAddress?: string,
-  ): Promise<UserRegistrationResponse | ErrorResponse> {
+  async registerUser({
+    walletAddress,
+    name,
+    email,
+    userImageUrl,
+    userMetadata,
+    agentName,
+    agentDescription,
+    agentImageUrl,
+    agentMetadata,
+    agentWalletAddress,
+  }: {
+    walletAddress: string;
+    name?: string;
+    email?: string;
+    userImageUrl?: string;
+    userMetadata?: UserMetadata;
+    agentName?: string;
+    agentDescription?: string;
+    agentImageUrl?: string;
+    agentMetadata?: AgentMetadata;
+    agentWalletAddress?: string;
+  }): Promise<UserRegistrationResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post("/api/admin/users", {
         walletAddress,
         name,
         email,
         userImageUrl,
+        userMetadata,
         agentName,
         agentDescription,
         agentImageUrl,
@@ -290,6 +305,45 @@ export class ApiClient {
   }
 
   /**
+   * Register a new agent
+   * @param name Agent name
+   * @param userId Optional user ID to associate with the agent (if not provided, userWalletAddress must be provided)
+   * @param userWalletAddress Optional user wallet address that owns the agent (if not provided, userId must be provided)
+   * @param agentWalletAddress Optional wallet address for the agent
+   * @param email Agent email
+   * @param description Agent description
+   * @param imageUrl Agent image URL
+   * @param metadata Agent metadata
+   */
+  async registerAgent({
+    user,
+    agent,
+  }: {
+    user: {
+      id?: string;
+      walletAddress?: string;
+    };
+    agent: {
+      name: string;
+      email?: string;
+      walletAddress?: string;
+      description?: string;
+      imageUrl?: string;
+      metadata?: AgentMetadata;
+    };
+  }): Promise<AdminAgentResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post("/api/admin/agents", {
+        user,
+        agent,
+      });
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "register agent");
+    }
+  }
+
+  /**
    * Start a competition with agents
    */
   async startCompetition(
@@ -299,6 +353,7 @@ export class ApiClient {
           description?: string;
           agentIds: string[];
           tradingType?: CrossChainTradingType;
+          sandboxMode?: boolean;
           externalUrl?: string;
           imageUrl?: string;
           votingStartDate?: string;
@@ -308,6 +363,7 @@ export class ApiClient {
     description?: string,
     agentIds?: string[],
     tradingType?: CrossChainTradingType,
+    sandboxMode?: boolean,
     externalUrl?: string,
     imageUrl?: string,
     votingStartDate?: string,
@@ -329,6 +385,7 @@ export class ApiClient {
           description,
           agentIds: agentIds || [],
           tradingType,
+          sandboxMode,
           externalUrl,
           imageUrl,
           votingStartDate: votingStartDate || now,
@@ -354,6 +411,7 @@ export class ApiClient {
     name: string,
     description?: string,
     tradingType?: CrossChainTradingType,
+    sandboxMode?: boolean,
     externalUrl?: string,
     imageUrl?: string,
     type?: string,
@@ -367,6 +425,7 @@ export class ApiClient {
           name,
           description,
           tradingType,
+          sandboxMode,
           externalUrl,
           imageUrl,
           type,
@@ -388,6 +447,7 @@ export class ApiClient {
     competitionId: string,
     agentIds: string[],
     crossChainTradingType?: CrossChainTradingType,
+    sandboxMode?: boolean,
     externalUrl?: string,
     imageUrl?: string,
   ): Promise<StartCompetitionResponse | ErrorResponse> {
@@ -398,6 +458,7 @@ export class ApiClient {
           competitionId,
           agentIds,
           crossChainTradingType,
+          sandboxMode,
           externalUrl,
           imageUrl,
         },
@@ -1509,6 +1570,86 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get user competitions");
+    }
+  }
+
+  /**
+   * Sync object index data (admin only)
+   * @param params Optional parameters for syncing
+   */
+  async syncObjectIndex(params?: {
+    competitionId?: string;
+    dataTypes?: string[];
+  }): Promise<
+    | {
+        success: boolean;
+        message: string;
+        dataTypes: string[];
+        competitionId: string;
+      }
+    | ErrorResponse
+  > {
+    try {
+      const response = await this.axiosInstance.post(
+        "/api/admin/object-index/sync",
+        params || {},
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "sync object index");
+    }
+  }
+
+  /**
+   * Get object index entries (admin only)
+   * @param params Query parameters for filtering
+   */
+  async getObjectIndex(params?: {
+    competitionId?: string;
+    agentId?: string;
+    dataType?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<
+    | {
+        success: boolean;
+        data: {
+          entries: Array<{
+            id: string;
+            competitionId: string | null;
+            agentId: string;
+            dataType: string;
+            data: string;
+            sizeBytes: number;
+            metadata: Record<string, unknown>;
+            eventTimestamp: string;
+            createdAt: string;
+          }>;
+          pagination: {
+            total: number;
+            limit: number;
+            offset: number;
+          };
+        };
+      }
+    | ErrorResponse
+  > {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.competitionId)
+        queryParams.append("competitionId", params.competitionId);
+      if (params?.agentId) queryParams.append("agentId", params.agentId);
+      if (params?.dataType) queryParams.append("dataType", params.dataType);
+      if (params?.limit) queryParams.append("limit", String(params.limit));
+      if (params?.offset) queryParams.append("offset", String(params.offset));
+
+      const queryString = queryParams.toString();
+      const url = `/api/admin/object-index${queryString ? `?${queryString}` : ""}`;
+
+      const response = await this.axiosInstance.get(url);
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get object index");
     }
   }
 }

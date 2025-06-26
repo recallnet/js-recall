@@ -23,7 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${fontSans.variable} ${fontMono.variable} bg-black antialiased`}
+        className={`${fontSans.variable} ${fontMono.variable} overflow-x-hidden bg-black antialiased`}
       >
         <Analytics />
         <Toaster position="top-right" />

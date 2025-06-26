@@ -4,7 +4,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
-interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   corner?: Corner;
   cropSize?: number; // pixels
 }

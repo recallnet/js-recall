@@ -107,11 +107,11 @@ describe("SIWE Authentication", () => {
 
   it("should complete full SIWE auth flow with custom api client", async () => {
     // Register a user/agent with our test wallet address
-    const result = await adminClient.registerUser(
-      testWalletAddress,
-      "SIWE Test User",
-      "siwe_test@example.com",
-    );
+    const result = await adminClient.registerUser({
+      walletAddress: testWalletAddress,
+      name: "SIWE Test User",
+      email: "siwe_test@example.com",
+    });
 
     expect(result).not.toHaveProperty("error");
     expect(result).toHaveProperty("success", true);

@@ -1,0 +1,1 @@
+ALTER TABLE "competitions" ADD COLUMN "sandbox_mode" boolean DEFAULT false NOT NULL;
