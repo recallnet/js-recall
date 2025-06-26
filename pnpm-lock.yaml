@@ -489,12 +489,18 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.64.2
         version: 5.76.1(react@19.1.0)
+      '@uidotdev/usehooks':
+        specifier: ^2.4.1
+        version: 2.4.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@vercel/analytics':
         specifier: ^1.5.0
         version: 1.5.0(next@15.3.2(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
       axios:
         specifier: ^1.9.0
         version: 1.9.0
+      jotai:
+        specifier: ^2.12.3
+        version: 2.12.4(@types/react@19.1.4)(react@19.1.0)
       lucide-react:
         specifier: 0.456.0
         version: 0.456.0(react@19.1.0)
@@ -504,6 +510,12 @@ importers:
       next-auth:
         specifier: ^4.24.11
         version: 4.24.11(next@15.3.2(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      next-navigation-guard:
+        specifier: ^0.1.2
+        version: 0.1.2(next@15.3.2(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
+      pg:
+        specifier: ^8.10.0
+        version: 8.16.0
       react:
         specifier: ^19.0.0
         version: 19.1.0
@@ -538,6 +550,9 @@ importers:
       '@types/node':
         specifier: ^20
         version: 20.17.48
+      '@types/pg':
+        specifier: ^8.6.6
+        version: 8.15.2
       '@types/react':
         specifier: ^19.0.0
         version: 19.1.4
