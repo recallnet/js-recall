@@ -477,9 +477,6 @@ importers:
       '@recallnet/address-utils':
         specifier: workspace:*
         version: link:../../packages/address-utils
-      '@recallnet/chains':
-        specifier: workspace:*
-        version: link:../../packages/chains
       '@recallnet/fonts':
         specifier: workspace:*
         version: link:../../packages/fonts

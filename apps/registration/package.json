@@ -22,7 +22,6 @@
     "@rainbow-me/rainbowkit": "^2.2.4",
     "@rainbow-me/rainbowkit-siwe-next-auth": "^0.5.0",
     "@recallnet/address-utils": "workspace:*",
-    "@recallnet/chains": "workspace:*",
     "@recallnet/fonts": "workspace:*",
     "@recallnet/ui": "workspace:*",
     "@tanstack/react-query": "^5.64.2",

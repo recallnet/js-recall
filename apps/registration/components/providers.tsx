@@ -13,6 +13,8 @@ import React from "react";
 import { type ReactNode, useState } from "react";
 import { createSiweMessage, parseSiweMessage } from "viem/siwe";
 import { WagmiProvider } from "wagmi";
+import { useAccount, useSwitchChain } from "wagmi";
+import { baseSepolia } from "wagmi/chains";
 
 import { ThemeProvider } from "@recallnet/ui/components/theme-provider";
 
@@ -25,6 +27,24 @@ const isMobile = () => {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
     navigator.userAgent,
   );
+};
+
+// Mobile network switcher component
+const MobileNetworkSwitcher = ({ children }: { children: React.ReactNode }) => {
+  const { switchChain } = useSwitchChain();
+  const { isConnected, chainId } = useAccount();
+
+  React.useEffect(() => {
+    // Auto-switch to Base Sepolia on mobile if connected but on wrong network
+    if (isConnected && isMobile() && chainId !== baseSepolia.id) {
+      console.log(
+        `Mobile user on wrong network (${chainId}), switching to Base Sepolia (${baseSepolia.id})`,
+      );
+      switchChain?.({ chainId: baseSepolia.id });
+    }
+  }, [isConnected, chainId, switchChain]);
+
+  return <>{children}</>;
 };
 
 const AUTHENTICATION_STATUS: AuthenticationStatus = "unauthenticated";
@@ -71,6 +91,13 @@ function WalletProvider(props: { children: ReactNode }) {
           throw new Error("No address found in SIWE message");
         }
 
+        // Verify we're on the correct network before signing
+        if (siweMessage.chainId !== baseSepolia.id) {
+          throw new Error(
+            `Wrong network. Expected Base Sepolia (${baseSepolia.id}), got ${siweMessage.chainId}`,
+          );
+        }
+
         try {
           await login({
             message,
@@ -78,31 +105,7 @@ function WalletProvider(props: { children: ReactNode }) {
             wallet: siweMessage.address,
           });
 
-          // Enhanced mobile focus management based on research
-          if (isMobile() && typeof window !== "undefined") {
-            // Add visibility change listener for better mobile app switching
-            const handleVisibilityChange = () => {
-              if (document.visibilityState === "visible") {
-                // App came back to foreground after wallet interaction
-                document.removeEventListener(
-                  "visibilitychange",
-                  handleVisibilityChange,
-                );
-              }
-            };
-
-            document.addEventListener(
-              "visibilitychange",
-              handleVisibilityChange,
-            );
-
-            // Multiple focus strategies for different mobile browsers
-            setTimeout(() => {
-              window.focus();
-              // Try to trigger a scroll to bring attention back to the app
-              window.scrollTo(0, 0);
-            }, 100);
-          }
+          // Note: The real issue is wallets not opening for signing, not focus management
 
           return true;
         } catch (error) {
@@ -132,7 +135,7 @@ function WalletProvider(props: { children: ReactNode }) {
         status={AUTHENTICATION_STATUS}
       >
         <RainbowKitProvider theme={darkTheme()} modalSize="compact" coolMode>
-          {props.children}
+          <MobileNetworkSwitcher>{props.children}</MobileNetworkSwitcher>
         </RainbowKitProvider>
       </RainbowKitAuthenticationProvider>
     </WagmiProvider>
