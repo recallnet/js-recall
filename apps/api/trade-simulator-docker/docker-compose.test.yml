@@ -4,17 +4,17 @@ services:
     image: textile/js-recall:latest
     restart: always
     ports:
-      - "3000:3000"
+      - "${PORT:-3000}:${PORT:-3000}"
     # Load all environment variables from .env file
     env_file:
-      - ../.env
+      - .env
     environment:
       DATABASE_URL: postgresql://recall:recall@db/recall
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          "wget --no-verbose --tries=1 --spider http://127.0.0.1:3000${API_PREFIX:+/${API_PREFIX}}/api/health || exit 1",
+          "wget --no-verbose --tries=1 --spider http://127.0.0.1:${PORT:-3000}${API_PREFIX:+/${API_PREFIX}}/api/health || exit 1",
         ]
       interval: 10s
       timeout: 5s
