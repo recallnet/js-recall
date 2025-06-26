@@ -19,6 +19,14 @@ import { ThemeProvider } from "@recallnet/ui/components/theme-provider";
 import { useLogin, useLogout, useNonce } from "@/hooks/useAuth";
 import { clientConfig } from "@/wagmi-config";
 
+// Mobile detection utility
+const isMobile = () => {
+  if (typeof window === "undefined") return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent,
+  );
+};
+
 const AUTHENTICATION_STATUS: AuthenticationStatus = "unauthenticated";
 const CONFIG = clientConfig();
 
@@ -46,6 +54,15 @@ function WalletProvider(props: { children: ReactNode }) {
           version: "1",
           chainId,
           nonce,
+          // Add mobile-friendly metadata for better deep linking
+          requestId: crypto.randomUUID(),
+          issuedAt: new Date(),
+          expirationTime: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+          // Add resources for mobile wallet compatibility
+          resources: [
+            document.location.origin,
+            "https://register.recall.network",
+          ],
         });
       },
       verify: async ({ message, signature }) => {
@@ -54,13 +71,25 @@ function WalletProvider(props: { children: ReactNode }) {
           throw new Error("No address found in SIWE message");
         }
 
-        await login({
-          message,
-          signature,
-          wallet: siweMessage.address,
-        });
+        try {
+          await login({
+            message,
+            signature,
+            wallet: siweMessage.address,
+          });
 
-        return true;
+          // On mobile, try to focus back to the app after successful sign-in
+          if (isMobile() && typeof window !== "undefined") {
+            setTimeout(() => {
+              window.focus();
+            }, 100);
+          }
+
+          return true;
+        } catch (error) {
+          console.error("SIWE verification failed:", error);
+          throw error;
+        }
       },
       signOut: async () => {
         await logout();
@@ -74,7 +103,7 @@ function WalletProvider(props: { children: ReactNode }) {
         adapter={authAdapter}
         status={AUTHENTICATION_STATUS}
       >
-        <RainbowKitProvider theme={darkTheme()}>
+        <RainbowKitProvider theme={darkTheme()} modalSize="compact" coolMode>
           {props.children}
         </RainbowKitProvider>
       </RainbowKitAuthenticationProvider>
