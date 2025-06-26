@@ -31,7 +31,19 @@ import {
   VotingStateResponse,
 } from "@/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+/**
+ * Get the base URL for the API
+ * @returns The base URL for the API
+ */
+const getApiBaseUrl = () => {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (!baseUrl) {
+    throw new Error("NEXT_PUBLIC_API_BASE_URL is not set");
+  }
+  return baseUrl;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 /**
  * Base HTTP error class with status code support
