@@ -49,7 +49,6 @@ Create a `.env` file in the `apps/registration` directory with the following var
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_walletconnect_project_id
 ADMIN_API_KEY=your_admin_api_key
 LOOPS_API_KEY=your_loops_api_key
-DATABASE_URL=your_db_url
 NEXT_PUBLIC_API_BASE_URL=http://localhost:3000/api
 ```
 
