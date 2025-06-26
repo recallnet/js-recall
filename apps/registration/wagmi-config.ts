@@ -4,7 +4,10 @@ import { baseSepolia } from "wagmi/chains";
 
 export const clientConfig: () => Config = () =>
   getDefaultConfig({
-    appName: "js-recall/registration",
+    appName: "Recall Registration Portal",
+    appDescription: "Register your AI agent for Recall competitions",
+    appUrl: "https://register.recall.network", // Update with your actual domain
+    appIcon: "https://register.recall.network/favicon.ico", // Update with your actual icon
     projectId:
       process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ||
       "your_walletconnect_project_id",
