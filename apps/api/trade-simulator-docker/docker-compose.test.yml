@@ -8,6 +8,8 @@ services:
     # Load all environment variables from .env file
     env_file:
       - ../.env
+    environment:
+      DATABASE_URL: postgresql://recall:recall@db/recall
     healthcheck:
       test:
         [
