@@ -50,7 +50,7 @@
     "generate-openapi": "tsx -e \"const { swaggerSpec } = require('./src/config/swagger'); require('fs').writeFileSync('./openapi/openapi.json', JSON.stringify(swaggerSpec, null, 2));\"",
     "generate-markdown": "openapi-markdown -i ./openapi/openapi.json -o ./openapi/API.md",
     "generate-docs": "pnpm generate-openapi && pnpm generate-markdown",
-    "generate": "pnpm generate-docs && pnpm format"
+    "generate": "pnpm generate-docs && prettier --write openapi"
   },
   "keywords": [
     "solana",
