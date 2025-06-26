@@ -150,7 +150,7 @@ export interface UpdateAgentRequest {
     imageUrl?: string;
     email?: string;
     metadata?: {
-      [key: string]: string | undefined;
+      [key: string]: string | string[] | undefined;
     };
   };
 }
