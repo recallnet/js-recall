@@ -296,8 +296,15 @@ export class ApiClient {
    * @param params - Query parameters
    * @returns Agents response
    */
+
+
+
   async getAgentApiKey(agentId: string): Promise<AgentApiKeyResponse> {
-    return this.request<AgentApiKeyResponse>(`/user/agents/${agentId}/api-key`);
+
+
+
+    return this.request
+    <AgentApiKeyResponse>(`/user/agents/${agentId}/api-key`);
   }
 
   /**
