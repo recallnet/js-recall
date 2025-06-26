@@ -2,6 +2,77 @@ import swaggerJsdoc from "swagger-jsdoc";
 
 import { config } from "./index.js";
 
+/**
+ * Detect current environment and build servers array with current environment first
+ * This ensures the correct server is selected by default in Swagger UI
+ */
+const buildServersArray = () => {
+  const apiPrefix = config.server.apiPrefix
+    ? `/${config.server.apiPrefix}`
+    : "";
+
+  // All available servers
+  const servers = [
+    {
+      url: `https://api.competitions.recall.network${apiPrefix}`,
+      description: "Production server",
+    },
+    {
+      url: `https://sandbox-api-competitions.recall.network${apiPrefix}`,
+      description: "Sandbox server for testing",
+    },
+    {
+      url: `http://localhost:${config.server.port}${apiPrefix}`,
+      description: "Local development server",
+    },
+    {
+      url: `http://localhost:${config.server.testPort}${apiPrefix}`,
+      description: "End to end testing server",
+    },
+  ];
+
+  // Detect current environment based on multiple indicators
+  const apiDomain = config.api.domain;
+  const nodeEnv = config.server.nodeEnv;
+  const databaseUrl = config.database.url;
+
+  let currentServerIndex = 0; // default to production
+
+  // Check for explicit environment variable (most reliable)
+  if (process.env.API_DOMAIN?.includes("sandbox")) {
+    currentServerIndex = 1; // sandbox server
+  }
+  // Check if API domain indicates sandbox
+  else if (apiDomain?.includes("sandbox-api-competitions.recall.network")) {
+    currentServerIndex = 1; // sandbox server
+  }
+  // Check database URL for sandbox indicator
+  else if (databaseUrl?.includes("sandbox")) {
+    currentServerIndex = 1; // sandbox server
+  }
+  // Check if we're in local development/test environment
+  else if (nodeEnv === "development" || nodeEnv === "test") {
+    currentServerIndex = nodeEnv === "test" ? 3 : 2; // test or dev server
+  }
+  // Check if API domain is localhost (local development)
+  else if (
+    apiDomain?.includes("localhost") ||
+    apiDomain?.includes("127.0.0.1")
+  ) {
+    currentServerIndex = 2; // local development server
+  }
+
+  // Move the current environment's server to the front (making it default)
+  if (currentServerIndex > 0) {
+    const currentServer = servers.splice(currentServerIndex, 1)[0];
+    if (currentServer) {
+      servers.unshift(currentServer);
+    }
+  }
+
+  return servers;
+};
+
 // Basic Swagger configuration
 const swaggerOptions: swaggerJsdoc.Options = {
   definition: {
@@ -49,32 +120,14 @@ For convenience, we provide an API client that handles authentication automatica
       `,
       contact: {
         name: "API Support",
-        email: "support@example.com",
+        email: "support@recall.network",
       },
       license: {
         name: "ISC License",
         url: "https://opensource.org/licenses/ISC",
       },
     },
-    servers: [
-      {
-        url: `https://api.competitions.recall.network${config.server.apiPrefix ? `/${config.server.apiPrefix}` : ""}`,
-        description: "Production server",
-      },
-      {
-        url: `https://sandbox-api-competitions.recall.network`,
-        description: "Sandbox server for testing",
-      },
-
-      {
-        url: `http://localhost:${config.server.port}${config.server.apiPrefix ? `/${config.server.apiPrefix}` : ""}`,
-        description: "Local development server",
-      },
-      {
-        url: `http://localhost:${config.server.testPort}${config.server.apiPrefix ? `/${config.server.apiPrefix}` : ""}`,
-        description: "End to end testing server",
-      },
-    ],
+    servers: buildServersArray(),
     components: {
       securitySchemes: {
         BearerAuth: {
