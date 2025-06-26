@@ -23,19 +23,17 @@ const AUTHENTICATION_STATUS: AuthenticationStatus = "unauthenticated";
 const CONFIG = clientConfig();
 
 function WalletProvider(props: { children: ReactNode }) {
-  const { data: nonceData, refetch: refetchNonce } = useNonce();
+  const { refetch: refetchNonce } = useNonce();
   const { mutateAsync: login } = useLogin();
   const { mutateAsync: logout } = useLogout();
 
   const authAdapter = React.useMemo(() => {
     return createAuthenticationAdapter({
       getNonce: async () => {
-        // If we don't have nonce data, refetch it
-        if (!nonceData?.nonce) {
-          const result = await refetchNonce();
-          return result.data?.nonce ?? "";
-        }
-        return nonceData.nonce;
+        // Always fetch a fresh nonce for each SIWE attempt
+        // This prevents nonce reuse issues that cause first-attempt failures
+        const result = await refetchNonce();
+        return result.data?.nonce ?? "";
       },
       createMessage: ({ nonce, address, chainId }) => {
         return createSiweMessage({
@@ -66,7 +64,7 @@ function WalletProvider(props: { children: ReactNode }) {
         await logout();
       },
     });
-  }, [nonceData, refetchNonce, login, logout]);
+  }, [refetchNonce, login, logout]);
 
   return (
     <WagmiProvider config={CONFIG}>
