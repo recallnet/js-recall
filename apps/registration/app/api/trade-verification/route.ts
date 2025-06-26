@@ -1,3 +1,4 @@
+// NOT GOING TO BE USED
 import { NextRequest, NextResponse } from "next/server";
 import { Client } from "pg";
 

@@ -22,7 +22,6 @@ import { useAgentCompetitions, useSyncLoopsVerification } from "@/hooks";
 import { useUserAgent } from "@/hooks/useAgent";
 import { useAgentApiKey, useUpdateAgent } from "@/hooks/useAgents";
 import { useUserSession } from "@/hooks/useAuth";
-import { internalApi } from "@/lib/internal-api";
 
 // Type for agent metadata that matches actual usage
 interface AgentMetadata {
@@ -128,13 +127,8 @@ export default function AgentPage({
       if (hasActiveCompetitionTrades) {
         setTradingVerified(true);
 
-        // Update the trading verification status in the database
+        // Update loops
         try {
-          const updateResult = await internalApi.updateTradingVerification(
-            session.user.walletAddress,
-          );
-          console.log("Trading verification updated:", updateResult);
-
           // Also sync with Loops if user has email
           if (session.user.email && session.user.name) {
             try {
@@ -155,12 +149,6 @@ export default function AgentPage({
           console.error("Failed to update trading verification:", updateError);
           // Don't fail the whole process if database update fails
         }
-      } else {
-        // Fall back to wallet-based trading verification
-        const result = await internalApi.checkTradingVerification(
-          session.user.walletAddress,
-        );
-        setTradingVerified(result.hasTraded ?? false);
       }
     } catch (error) {
       console.error("Error checking trading verification:", error);
