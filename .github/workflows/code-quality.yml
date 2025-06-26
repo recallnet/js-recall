@@ -64,24 +64,11 @@ jobs:
         env:
           SPEAKEASY_API_KEY: "${{ secrets.SPEAKEASY_API_KEY }}"
 
-      - name: Install eslint cli
-        run: pnpm install -w eslint
-
       - name: Run Lint Check
         run: pnpm lint
 
       - name: Run Format Check
-        run: |
-          pnpm format
-          if ! git diff --exit-code; then
-            echo "❌ Code formatting issues detected!"
-            echo "Please run 'pnpm format' locally and commit the changes."
-            echo ""
-            echo "Files that need formatting:"
-            git diff --name-only
-            exit 1
-          fi
-          echo "✅ All files are properly formatted!"
+        run: pnpm format:check
 
       - name: Run Build
         run: pnpm build

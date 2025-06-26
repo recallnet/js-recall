@@ -25,7 +25,8 @@
         ".prettierrc*",
         ".prettierignore"
       ],
-      "outputs": []
+      "outputs": [],
+      "cache": false
     },
     "format:check": {
       "dependsOn": ["^format:check"],
@@ -34,7 +35,8 @@
         ".prettierrc*",
         ".prettierignore"
       ],
-      "outputs": []
+      "outputs": [],
+      "cache": false
     },
     "check-types": {
       "dependsOn": ["^check-types"]
