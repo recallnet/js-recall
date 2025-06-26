@@ -1,93 +1,40 @@
 "use client";
 
-import { useDebounce, useWindowScroll } from "@uidotdev/usehooks";
+import { useWindowScroll } from "@uidotdev/usehooks";
 import { isFuture } from "date-fns";
 import { ArrowUpRight, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import React from "react";
+import React, { Suspense } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 
 import { Button } from "@recallnet/ui2/components/button";
 
 import { AgentsTable } from "@/components/agents-table";
+import AgentsTableSkeleton from "@/components/agents-table/skeleton";
 import { BasicCompetitionCard } from "@/components/basic-competition-card";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { CountdownClock } from "@/components/clock";
 import { CompetitionInfo } from "@/components/competition-info";
 import CompetitionSkeleton from "@/components/competition-skeleton";
 import { CompetitionVotingBanner } from "@/components/competition-voting-banner";
+import { ErrorMessage } from "@/components/error-message";
 import { FooterSection } from "@/components/footer-section";
 import { JoinCompetitionButton } from "@/components/join-competition-button";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
 import { UserVote } from "@/components/user-vote";
 import { getSocialLinksArray } from "@/data/social";
 import { useCompetition } from "@/hooks/useCompetition";
-import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
-import { AgentCompetition } from "@/types";
 
-export default function CompetitionPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = React.use(params);
+/**
+ * Component that handles the competition data and renders the content
+ * This component will throw promises when loading, enabling Suspense
+ */
+function CompetitionContent({ id }: { id: string }) {
   const agentsTableRef = React.useRef<HTMLDivElement>(null);
   const [, scrollTo] = useWindowScroll();
-  const [agentsFilter, setAgentsFilter] = React.useState("");
-  const [agentsSort, setAgentsSort] = React.useState("");
-  const [agentsLimit] = React.useState(10);
-  const [agentsOffset, setAgentsOffset] = React.useState(0);
-  const [allAgents, setAllAgents] = React.useState<AgentCompetition[]>([]);
-  const debouncedFilterTerm = useDebounce(agentsFilter, 300);
 
-  const {
-    data: competition,
-    isLoading: isLoadingCompetition,
-    error: competitionError,
-  } = useCompetition(id);
-  const {
-    data: agentsData,
-    isLoading: isLoadingAgents,
-    error: agentsError,
-    isFetching: isFetchingAgents,
-  } = useCompetitionAgents(id, {
-    filter: debouncedFilterTerm,
-    sort: agentsSort,
-    limit: agentsLimit,
-    offset: agentsOffset,
-  });
-
-  React.useEffect(() => {
-    setAgentsOffset(0);
-  }, [debouncedFilterTerm, agentsSort]);
-
-  React.useEffect(() => {
-    if (!agentsData?.agents || isFetchingAgents) return;
-
-    if (agentsOffset === 0) {
-      setAllAgents(agentsData.agents);
-    } else {
-      setAllAgents((prev) => [...prev, ...agentsData.agents]);
-    }
-  }, [agentsData?.agents, isFetchingAgents, agentsOffset]);
-
-  const isLoading = isLoadingCompetition || isLoadingAgents;
-  const error = competitionError;
-
-  if (isLoading) {
-    return <CompetitionSkeleton />;
-  }
-
-  if (error || !competition) {
-    return (
-      <div className="container mx-auto px-12 py-20 text-center">
-        <h2 className="text-2xl font-bold text-red-500">Error</h2>
-        <p className="mt-4">{error?.message || "Competition not found"}</p>
-        <Link href="/competitions" className="mt-8 inline-block underline">
-          Back to competitions
-        </Link>
-      </div>
-    );
-  }
+  // The hook now returns data directly and throws promises/errors for Suspense
+  const { data: competition } = useCompetition(id);
 
   return (
     <div style={{ marginTop: "-40px" }}>
@@ -173,40 +120,66 @@ export default function CompetitionPage({
         )}
 
       {competition.userVotingInfo?.info.agentId ? (
-        <UserVote
-          agentId={competition.userVotingInfo.info.agentId}
-          competitionId={id}
-          totalVotes={competition.stats.totalVotes}
-        />
+        <ErrorBoundary
+          FallbackComponent={({ error, resetErrorBoundary }) => (
+            <ErrorMessage
+              error={error}
+              title="Failed to load agents"
+              description="An error occurred while loading the agents"
+              onRetry={() => resetErrorBoundary()}
+            />
+          )}
+        >
+          <Suspense fallback={<div>Loading...</div>}>
+            <UserVote
+              agentId={competition.userVotingInfo.info.agentId}
+              competitionId={id}
+              totalVotes={competition.stats.totalVotes}
+            />
+          </Suspense>
+        </ErrorBoundary>
       ) : null}
-
-      {agentsError || !agentsData ? (
-        <div className="my-12 rounded border border-red-400 bg-red-100 bg-opacity-10 p-6 text-center">
-          <h2 className="text-xl font-semibold text-red-400">
-            Failed to load agents
-          </h2>
-          <p className="mt-2 text-slate-300">
-            {agentsError?.message ||
-              "An error occurred while loading agents data"}
-          </p>
-        </div>
-      ) : (
-        <AgentsTable
-          ref={agentsTableRef}
-          competition={competition}
-          agents={allAgents}
-          onFilterChange={setAgentsFilter}
-          onSortChange={setAgentsSort}
-          onLoadMore={() => {
-            setAgentsOffset((prev) => prev + agentsLimit);
-          }}
-          hasMore={agentsData.pagination.hasMore}
-          pagination={agentsData.pagination}
-          totalVotes={competition.stats.totalVotes}
-        />
-      )}
+      <ErrorBoundary
+        FallbackComponent={({ error, resetErrorBoundary }) => (
+          <ErrorMessage
+            error={error}
+            title="Failed to load agents"
+            description="An error occurred while loading the agents"
+            onRetry={() => resetErrorBoundary()}
+          />
+        )}
+      >
+        <Suspense fallback={<AgentsTableSkeleton />}>
+          <AgentsTable ref={agentsTableRef} competition={competition} />
+        </Suspense>
+      </ErrorBoundary>
       <JoinSwarmSection socialLinks={getSocialLinksArray()} className="mt-12" />
       <FooterSection />
     </div>
+  );
+}
+
+export default function CompetitionPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = React.use(params);
+
+  return (
+    <ErrorBoundary
+      FallbackComponent={({ error }) => (
+        <div className="container mx-auto px-12 py-20 text-center">
+          <ErrorMessage error={error} title="Error" />
+          <Link href="/competitions" className="mt-8 inline-block underline">
+            Back to competitions
+          </Link>
+        </div>
+      )}
+    >
+      <Suspense fallback={<CompetitionSkeleton />}>
+        <CompetitionContent id={id} />
+      </Suspense>
+    </ErrorBoundary>
   );
 }

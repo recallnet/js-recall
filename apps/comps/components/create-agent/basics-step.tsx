@@ -50,7 +50,7 @@ export function BasicsStep({ form, onNext, onBack }: BasicsStepProps) {
   };
 
   return (
-    <div className="xs:px-16 space-y-6">
+    <div className="xs:px-16 space-y-10">
       <FormField
         control={form.control}
         name="name"

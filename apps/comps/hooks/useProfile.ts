@@ -1,12 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { ApiClient, UnauthorizedError } from "@/lib/api-client";
+import { UnauthorizedError, apiClient } from "@/lib/api-client";
 import { useUser } from "@/state/atoms";
 import { ProfileResponse, UpdateProfileRequest } from "@/types/profile";
 
 import { useClientCleanup } from "./useAuth";
-
-const apiClient = new ApiClient();
 
 /**
  * Hook to fetch user profile
