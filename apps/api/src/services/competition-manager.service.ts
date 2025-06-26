@@ -294,15 +294,31 @@ export class CompetitionManager {
     console.log(`[CompetitionManager] Reloaded configuration settings`);
 
     const leaderboard = await this.getLeaderboard(competitionId);
-    const leaderboardEntries = leaderboard.map((entry, index) => ({
-      agentId: entry.agentId,
-      competitionId,
-      rank: index + 1, // 1-based ranking
-      // TODO: we need to know the profit/loss for the agent in this comp in usd value even when comp is active
-      pnl: entry.pnl,
-      totalAgents: competitionAgents.length,
-      score: entry.value, // Use the the total portfolio value in usd is saved as `score`
-    }));
+
+    const leaderboardEntries = [];
+    // Note: the leaderboard array could be quite large, avoiding Promise.all
+    //  so that these async calls to get pnl happen in series and don't over
+    //  use system resorces.
+    for (let i = 0; i < leaderboard.length; i++) {
+      const entry = leaderboard[i];
+      if (typeof entry === "undefined") continue;
+      const agentId = entry.agentId;
+      const pnl = await this.agentManager.getAgentPnlForComp(
+        agentId,
+        competitionId,
+      );
+
+      const val = {
+        agentId,
+        competitionId,
+        rank: i + 1, // 1-based ranking
+        pnl: pnl.pnl,
+        totalAgents: competitionAgents.length,
+        score: entry.value, // Use the the total portfolio value in usd is saved as `score`
+      };
+
+      leaderboardEntries.push(val);
+    }
 
     if (leaderboardEntries.length > 0) {
       await batchInsertLeaderboard(leaderboardEntries);

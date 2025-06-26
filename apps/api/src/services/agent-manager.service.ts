@@ -1345,6 +1345,7 @@ export class AgentManager {
           totalVotes: metrics?.totalVotes ?? 0,
           totalTrades: metrics?.totalTrades ?? 0,
           bestPlacement: metrics?.bestPlacement ?? undefined,
+          bestPnl: metrics?.bestPnl ?? undefined,
           rank: metrics?.globalRank ?? undefined,
           score: metrics?.globalScore ?? undefined,
         } as AgentStats;
@@ -1368,6 +1369,31 @@ export class AgentManager {
     }
   }
 
+  async getAgentPnlForComp(agentId: string, competitionId: string) {
+    // Get oldest and newest snapshots for agent in competition
+    const agentSnapshots = await getBoundedSnapshots(competitionId, agentId);
+    const latestSnapshot = agentSnapshots?.newest; // Already ordered by timestamp desc
+    const portfolioValue = latestSnapshot
+      ? Number(latestSnapshot.totalValue)
+      : 0;
+
+    // Calculate PnL (similar to calculateAgentMetrics pattern)
+    let pnl = 0;
+    let pnlPercent = 0;
+    if (agentSnapshots) {
+      const startingValue = Number(agentSnapshots.oldest?.totalValue || 0);
+      const currentValue = Number(agentSnapshots.newest?.totalValue || 0);
+      pnl = currentValue - startingValue;
+      pnlPercent = startingValue > 0 ? (pnl / startingValue) * 100 : 0;
+    }
+
+    return {
+      portfolioValue,
+      pnl,
+      pnlPercent,
+    };
+  }
+
   /**
    * Attach agent-specific metrics to a competition object
    * @param competition The competition object to enhance
@@ -1379,26 +1405,10 @@ export class AgentManager {
     agentId: string,
   ): Promise<EnhancedCompetition> {
     try {
-      // Get oldest and newest snapshots for agent in competition
-      const agentSnapshots = await getBoundedSnapshots(competition.id, agentId);
-      const latestSnapshot = agentSnapshots?.newest; // Already ordered by timestamp desc
-      const portfolioValue = latestSnapshot
-        ? Number(latestSnapshot.totalValue)
-        : 0;
-
-      // Calculate PnL (similar to calculateAgentMetrics pattern)
-      let pnl = 0;
-      let pnlPercent = 0;
-      if (agentSnapshots) {
-        const startingValue = Number(agentSnapshots.oldest?.totalValue || 0);
-        const currentValue = Number(agentSnapshots.newest?.totalValue || 0);
-        pnl = currentValue - startingValue;
-        pnlPercent = startingValue > 0 ? (pnl / startingValue) * 100 : 0;
-      }
-
-      // TODO: We have some calculated values here.  How do we attach these to
-      //  the competitions_leaderboard row for this agent + comp combo so we
-      //  don't have to keep calculating these on every request?
+      const { pnl, pnlPercent, portfolioValue } = await this.getAgentPnlForComp(
+        agentId,
+        competition.id,
+      );
 
       // Get total trades for agent in this competition
       const totalTrades = await countAgentTradesInCompetition(
