@@ -506,19 +506,18 @@ export class CompetitionManager {
           );
       }
 
-      // Fallback to calculating current values
+      // Fallback to calculating current values using bulk operations
       const agents = await getCompetitionAgents(competitionId);
-      const leaderboard: { agentId: string; value: number; pnl: number }[] = [];
 
-      for (const agentId of agents) {
-        const portfolioValue =
-          await this.tradeSimulator.calculatePortfolioValue(agentId);
-        leaderboard.push({
-          agentId,
-          value: portfolioValue,
-          pnl: 0, // TODO: if there's no competitions_leaderboard row we don't have a pnl
-        });
-      }
+      // Use bulk portfolio value calculation to avoid N+1 queries
+      const portfolioValues =
+        await this.tradeSimulator.calculateBulkPortfolioValues(agents);
+
+      const leaderboard = agents.map((agentId) => ({
+        agentId,
+        value: portfolioValues.get(agentId) || 0,
+        pnl: 0, // TODO: if there's no competitions_leaderboard row we don't have a pnl
+      }));
 
       // Sort by value descending
       return leaderboard.sort((a, b) => b.value - a.value);
