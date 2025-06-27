@@ -19,9 +19,6 @@ import { ThemeProvider } from "@recallnet/ui/components/theme-provider";
 import { useLogin, useLogout, useNonce } from "@/hooks/useAuth";
 import { clientConfig } from "@/wagmi-config";
 
-import { MobileSignHelper } from "./mobile-sign-helper";
-import { MobileWalletEnhancer } from "./mobile-wallet-enhancer";
-
 const AUTHENTICATION_STATUS: AuthenticationStatus = "unauthenticated";
 const CONFIG = clientConfig();
 
@@ -76,8 +73,6 @@ function WalletProvider(props: { children: ReactNode }) {
         status={AUTHENTICATION_STATUS}
       >
         <RainbowKitProvider theme={darkTheme()}>
-          <MobileWalletEnhancer />
-          <MobileSignHelper />
           {props.children}
         </RainbowKitProvider>
       </RainbowKitAuthenticationProvider>
