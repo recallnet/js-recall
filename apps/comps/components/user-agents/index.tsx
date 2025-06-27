@@ -13,7 +13,7 @@ import {
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AgentCard } from "@/components/user-agents/agent-card";
-import { AgentsSummary } from "@/components/user-agents/agents-summary";
+import AgentsSummary from "@/components/user-agents/agents-summary";
 import { Agent } from "@/types";
 
 export default function UserAgentsSection({ agents }: { agents: Agent[] }) {

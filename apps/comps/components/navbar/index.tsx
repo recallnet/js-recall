@@ -14,94 +14,105 @@ import { SIWEButton } from "@/components/siwe";
 
 const ACTIVE_BORDER_STYLE = "border-b-2 border-b-yellow-500";
 
-export const Navbar: React.FunctionComponent = () => {
+export const Navbar: React.FunctionComponent<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const pathname = usePathname();
   const navItems = [
     { label: "COMPETITIONS", href: "/competitions" },
     { label: "LEADERBOARDS", href: "/leaderboards" },
   ];
 
+  const isOnboarding = pathname === "/onboarding";
   const [open, setOpen] = useState(false);
 
+  if (isOnboarding) return children;
+
   return (
-    <nav className="flex w-full justify-center border-b bg-black">
-      <div className="mx-auto flex w-full max-w-screen-lg items-center justify-between px-5 sm:px-20">
-        <div className="flex items-center">
-          {/* Logo */}
-          <Link href="/" className="flex items-center border-x p-1">
-            <Avatar className="h-12 w-12">
-              <AvatarImage
-                src="/logo_white.svg"
-                alt="recallnet"
-                className="p-2"
-              />
-            </Avatar>
-          </Link>
+    <>
+      <nav className="flex w-full justify-center border-b bg-black">
+        <div className="mx-auto flex w-full max-w-screen-lg items-center justify-between px-10 sm:px-20">
+          <div className="flex items-center">
+            {/* Logo */}
+            <Link href="/" className="flex items-center border-x p-1">
+              <Avatar className="h-12 w-12">
+                <AvatarImage
+                  src="/logo_white.svg"
+                  alt="recallnet"
+                  className="p-2"
+                />
+              </Avatar>
+            </Link>
 
-          {/* Inline nav items for lg+ */}
-          <div className="xs:flex hidden">
-            {navItems.map((item) => {
-              const isActive = pathname.startsWith(item.href);
-              return (
-                <Link
-                  href={item.href}
-                  key={item.href}
-                  className={cn(
-                    "px-15 flex h-14 items-center justify-center border-r",
-                    isActive ? ACTIVE_BORDER_STYLE : "",
-                  )}
-                >
-                  <span
-                    className={`font-mono text-xs font-medium tracking-widest text-white transition-colors`}
+            {/* Inline nav items for lg+ */}
+            <div className="xs:flex hidden">
+              {navItems.map((item) => {
+                const isActive = pathname.startsWith(item.href);
+                return (
+                  <Link
+                    href={item.href}
+                    key={item.href}
+                    className={cn(
+                      "px-15 flex h-14 items-center justify-center border-r",
+                      isActive ? ACTIVE_BORDER_STYLE : "",
+                    )}
                   >
-                    {item.label}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* Dropdown trigger for <sm */}
-          <div className="xs:hidden">
-            <DropdownMenu.Root open={open} onOpenChange={setOpen}>
-              <DropdownMenu.Trigger asChild>
-                <Button className="bg-transparent text-white hover:bg-transparent">
-                  <Menu />
-                </Button>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Portal>
-                <DropdownMenu.Content
-                  className="z-50 min-w-[180px] rounded-md border bg-black p-1 shadow-xl"
-                  sideOffset={5}
-                >
-                  {navItems.map((item) => (
-                    <DropdownMenu.Item
-                      key={item.href}
-                      asChild
-                      onSelect={() => setOpen(false)}
+                    <span
+                      className={`font-mono text-xs font-medium tracking-widest text-white transition-colors`}
                     >
-                      <Link
-                        href={item.href}
-                        className="block px-4 py-2 text-sm text-gray-300"
+                      {item.label}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Dropdown trigger for <sm */}
+            <div className="xs:hidden">
+              <DropdownMenu.Root open={open} onOpenChange={setOpen}>
+                <DropdownMenu.Trigger asChild>
+                  <Button className="bg-transparent text-white hover:bg-transparent">
+                    <Menu />
+                  </Button>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Portal>
+                  <DropdownMenu.Content
+                    className="z-50 min-w-[180px] rounded-md border bg-black p-1 shadow-xl"
+                    sideOffset={5}
+                  >
+                    {navItems.map((item) => (
+                      <DropdownMenu.Item
+                        key={item.href}
+                        asChild
+                        onSelect={() => setOpen(false)}
                       >
-                        {item.label}
-                      </Link>
-                    </DropdownMenu.Item>
-                  ))}
-                </DropdownMenu.Content>
-              </DropdownMenu.Portal>
-            </DropdownMenu.Root>
+                        <Link
+                          href={item.href}
+                          className="block px-4 py-2 text-sm text-gray-300"
+                        >
+                          {item.label}
+                        </Link>
+                      </DropdownMenu.Item>
+                    ))}
+                  </DropdownMenu.Content>
+                </DropdownMenu.Portal>
+              </DropdownMenu.Root>
+            </div>
+          </div>
+
+          <div
+            className={cn("flex h-full items-center", {
+              [ACTIVE_BORDER_STYLE]: pathname === "/profile",
+            })}
+          >
+            <SIWEButton />
           </div>
         </div>
+      </nav>
 
-        <div
-          className={cn("flex h-full items-center", {
-            [ACTIVE_BORDER_STYLE]: pathname === "/profile",
-          })}
-        >
-          <SIWEButton />
-        </div>
+      <div className="mx-auto flex w-full max-w-screen-lg justify-center px-5 pt-10 sm:px-20">
+        {children}
       </div>
-    </nav>
+    </>
   );
 };
