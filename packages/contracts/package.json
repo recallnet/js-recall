@@ -26,6 +26,8 @@
     "generate": "wagmi generate && tsc",
     "build": "tsup",
     "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write . --ignore-path=../../.prettierignore",
+    "format:check": "prettier --check . --ignore-path=../../.prettierignore",
     "clean": "rm -rf .turbo node_modules dist"
   },
   "devDependencies": {

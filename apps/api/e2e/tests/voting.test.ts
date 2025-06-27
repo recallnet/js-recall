@@ -66,6 +66,12 @@ describe("Voting API", () => {
       const competitionResponse = await createTestCompetition(
         adminClient,
         competitionName,
+        undefined, // description
+        undefined, // sandboxMode
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // competition type
+        new Date().toISOString(), // start date to allow voting
       );
       const competition = competitionResponse.competition;
 
@@ -419,6 +425,12 @@ describe("Voting API", () => {
       const competitionResponse = await createTestCompetition(
         adminClient,
         competitionName,
+        undefined, // description
+        undefined, // sandboxMode
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // competition type
+        new Date().toISOString(), // start date to allow voting
       );
       const competition = competitionResponse.competition;
 
@@ -540,6 +552,59 @@ describe("Voting API", () => {
       );
       expect(
         (stateResponse as VotingStateResponse).votingState.info.hasVoted,
+      ).toBe(true);
+    });
+
+    test("should maintain hasVoted=true after competition closes", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register agents
+      const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent Romeo",
+      });
+      const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent Sierra",
+      });
+
+      // Start a competition
+      const competitionName = `Voting Persistence Test ${Date.now()}`;
+      const competitionResponse = await startTestCompetition(
+        adminClient,
+        competitionName,
+        [agent1.id, agent2.id],
+      );
+      const competition = competitionResponse.competition;
+
+      // Create SIWE authenticated user
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Voting Persistence User",
+        userEmail: "voting-persistence-user@test.com",
+      });
+
+      // Cast a vote first
+      await userClient.castVote(agent1.id, competition.id);
+
+      // Verify user has voted before competition closes
+      const stateBeforeClose = await userClient.getVotingState(competition.id);
+      expect(stateBeforeClose.success).toBe(true);
+      expect(
+        (stateBeforeClose as VotingStateResponse).votingState.info.hasVoted,
+      ).toBe(true);
+
+      // End the competition
+      const endResult = await adminClient.endCompetition(competition.id);
+      expect(endResult.success).toBe(true);
+
+      // Get voting state after competition closes - hasVoted should still be true
+      const stateAfterClose = await userClient.getVotingState(competition.id);
+      expect(stateAfterClose.success).toBe(true);
+      expect(
+        (stateAfterClose as VotingStateResponse).votingState.info.hasVoted,
       ).toBe(true);
     });
   });
@@ -792,6 +857,7 @@ describe("Voting API", () => {
         competitionName,
         "Test competition with future voting date",
         "disallowAll",
+        undefined, // sandboxMode
         undefined, // externalUrl
         undefined, // imageUrl
         "trading", // type
@@ -841,6 +907,7 @@ describe("Voting API", () => {
         competitionName,
         "Test competition with past voting date",
         "disallowAll",
+        undefined, // sandboxMode
         undefined, // externalUrl
         undefined, // imageUrl
         "trading", // type
@@ -891,6 +958,7 @@ describe("Voting API", () => {
         competitionName,
         "Test competition with valid voting date range",
         "disallowAll",
+        undefined, // sandboxMode
         undefined, // externalUrl
         undefined, // imageUrl
         "trading", // type
@@ -921,6 +989,167 @@ describe("Voting API", () => {
       expect((voteResponse as VoteResponse).vote.competitionId).toBe(
         competition.id,
       );
+    });
+
+    test("should have votingEnabled false when voting dates are both not defined", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register agent
+      const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent No Dates",
+      });
+
+      // Create competition without voting dates
+      const competitionName = `No Voting Dates Test ${Date.now()}`;
+      const createResponse = await adminClient.createCompetition(
+        competitionName,
+        "Test competition without voting dates",
+        "disallowAll",
+        undefined, // sandboxMode
+        undefined, // externalUrl
+        undefined, // imageUrl
+        "trading", // type
+        undefined, // votingStartDate - not defined
+        undefined, // votingEndDate - not defined
+      );
+
+      expect(createResponse.success).toBe(true);
+      const competition = (createResponse as CreateCompetitionResponse)
+        .competition;
+
+      // Add agent to competition
+      await adminClient.startExistingCompetition(competition.id, [agent1.id]);
+
+      // Create authenticated user
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Test User",
+        userEmail: "test-user@test.com",
+      });
+
+      // Get competition details as authenticated user
+      const competitionResponse = await userClient.getCompetition(
+        competition.id,
+      );
+      expect(competitionResponse.success).toBe(true);
+      const competitionDetails = (
+        competitionResponse as CompetitionDetailResponse
+      ).competition;
+
+      // Verify votingEnabled is false when voting dates are not both defined
+      expect(competitionDetails.votingEnabled).toBe(false);
+    });
+
+    test("should have votingEnabled true when only votingStartDate is set, and in the past", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register agent
+      const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent Start Date Only",
+      });
+
+      // Create competition with only start date
+      const competitionName = `Start Date Only Test ${Date.now()}`;
+      const startDate = new Date(Date.now() - 60 * 60 * 1000); // 1 hour ago
+      const createResponse = await adminClient.createCompetition(
+        competitionName,
+        "Test competition with only start date",
+        "disallowAll",
+        undefined, // sandboxMode
+        undefined, // externalUrl
+        undefined, // imageUrl
+        "trading", // type
+        startDate.toISOString(), // votingStartDate - defined
+        undefined, // votingEndDate - not defined
+      );
+
+      expect(createResponse.success).toBe(true);
+      const competition = (createResponse as CreateCompetitionResponse)
+        .competition;
+
+      // Add agent to competition
+      await adminClient.startExistingCompetition(competition.id, [agent1.id]);
+
+      // Create authenticated user
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Test User 2",
+        userEmail: "test-user2@test.com",
+      });
+
+      // Get competition details as authenticated user
+      const competitionResponse = await userClient.getCompetition(
+        competition.id,
+      );
+      expect(competitionResponse.success).toBe(true);
+      const competitionDetails = (
+        competitionResponse as CompetitionDetailResponse
+      ).competition;
+
+      // Verify votingEnabled is true when only start date is defined (and start date is in the past)
+      expect(competitionDetails.votingEnabled).toBe(true);
+    });
+
+    test("should have votingEnabled true when only votingEndDate is set, and in the future", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register agent
+      const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent End Date Only",
+      });
+
+      // Create competition with only end date
+      const competitionName = `End Date Only Test ${Date.now()}`;
+      const endDate = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour from now
+      const createResponse = await adminClient.createCompetition(
+        competitionName,
+        "Test competition with only end date",
+        "disallowAll",
+        undefined, // sandboxMode
+        undefined, // externalUrl
+        undefined, // imageUrl
+        "trading", // type
+        undefined, // votingStartDate - not defined
+        endDate, // votingEndDate - defined
+      );
+
+      expect(createResponse.success).toBe(true);
+      const competition = (createResponse as CreateCompetitionResponse)
+        .competition;
+
+      expect(competition.votingStartDate).toBe(null);
+      expect(competition.votingEndDate).toBe(endDate);
+
+      // Add agent to competition
+      await adminClient.startExistingCompetition(competition.id, [agent1.id]);
+
+      // Create authenticated user
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Test User 3",
+        userEmail: "test-user3@test.com",
+      });
+
+      // Get competition details as authenticated user
+      const competitionResponse = await userClient.getCompetition(
+        competition.id,
+      );
+      expect(competitionResponse.success).toBe(true);
+      const competitionDetails = (
+        competitionResponse as CompetitionDetailResponse
+      ).competition;
+
+      // Verify votingEnabled is true when only end date is defined
+      expect(competitionDetails.votingEnabled).toBe(true);
     });
   });
 });

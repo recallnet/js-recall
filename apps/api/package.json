@@ -6,6 +6,8 @@
   "description": "Trading Simulator Server for hosting trading competitions",
   "main": "dist/src/index.js",
   "scripts": {
+    "format": "prettier --write . --ignore-path=../../.prettierignore",
+    "format:check": "prettier --check . --ignore-path=../../.prettierignore",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "start": "node dist/src/index.js",
@@ -44,9 +46,11 @@
     "setup:competition": "tsx scripts/setup-competition.ts",
     "end:competition": "tsx scripts/end-competition.ts",
     "comp:status": "tsx scripts/competition-status.ts",
+    "scripts:populate-object-index": "tsx scripts/populate-object-index.ts",
     "generate-openapi": "tsx -e \"const { swaggerSpec } = require('./src/config/swagger'); require('fs').writeFileSync('./openapi/openapi.json', JSON.stringify(swaggerSpec, null, 2));\"",
     "generate-markdown": "openapi-markdown -i ./openapi/openapi.json -o ./openapi/API.md",
-    "generate-docs": "pnpm generate-openapi && pnpm generate-markdown"
+    "generate-docs": "pnpm generate-openapi && pnpm generate-markdown",
+    "generate": "pnpm generate-docs && prettier --write openapi"
   },
   "keywords": [
     "solana",
@@ -99,7 +103,6 @@
     "copyfiles": "^2.4.1",
     "drizzle-kit": "^0.31.1",
     "drizzle-seed": "^0.3.1",
-    "eslint": "^9.19.0",
     "openapi-markdown": "^1.2.3",
     "siwe": "^3.0.0",
     "tough-cookie": "^5.1.2",

@@ -19,6 +19,10 @@
       "description": "Production server"
     },
     {
+      "url": "https://sandbox-api-competitions.recall.network",
+      "description": "Sandbox server for testing"
+    },
+    {
       "url": "http://localhost:3000",
       "description": "Local development server"
     },
@@ -307,6 +311,12 @@
                     "default": "disallowAll",
                     "example": "disallowAll"
                   },
+                  "sandboxMode": {
+                    "type": "boolean",
+                    "description": "Enable sandbox mode to automatically join newly registered agents to this competition",
+                    "default": false,
+                    "example": false
+                  },
                   "type": {
                     "type": "string",
                     "description": "The type of competition",
@@ -387,6 +397,10 @@
                           "type": "string",
                           "enum": ["disallowAll", "disallowXParent", "allow"],
                           "description": "The type of cross-chain trading allowed in this competition"
+                        },
+                        "sandboxMode": {
+                          "type": "boolean",
+                          "description": "Whether sandbox mode is enabled for this competition"
                         },
                         "type": {
                           "type": "string",
@@ -486,6 +500,12 @@
                     "default": "disallowAll",
                     "example": "disallowAll"
                   },
+                  "sandboxMode": {
+                    "type": "boolean",
+                    "description": "Enable sandbox mode to automatically join newly registered agents to this competition (used when creating a new competition)",
+                    "default": false,
+                    "example": false
+                  },
                   "type": {
                     "type": "string",
                     "description": "The type of competition",
@@ -555,6 +575,10 @@
                           "type": "string",
                           "enum": ["disallowAll", "disallowXParent", "allow"],
                           "description": "Type of cross-chain trading allowed in this competition"
+                        },
+                        "sandboxMode": {
+                          "type": "boolean",
+                          "description": "Whether sandbox mode is enabled for this competition"
                         },
                         "type": {
                           "type": "string",
@@ -1159,6 +1183,13 @@
                     "description": "URL to the user's profile image",
                     "example": "https://example.com/user-image.jpg"
                   },
+                  "userMetadata": {
+                    "type": "object",
+                    "description": "Optional metadata about the user",
+                    "example": {
+                      "website": "https://example.com"
+                    }
+                  },
                   "agentName": {
                     "type": "string",
                     "description": "Name for the user's first agent (optional)",
@@ -1519,6 +1550,181 @@
           },
           "401": {
             "description": "Unauthorized - Admin authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Register a new agent",
+        "description": "Admin-only endpoint to register a new agent. Admins create agent accounts and distribute the generated API keys to agents.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["user", "agent"],
+                "properties": {
+                  "user": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "The user ID (owner) of the agent. Must be provided if userWalletAddress is not provided.",
+                        "example": "12345678-1234-1234-1234-123456789012",
+                        "nullable": true
+                      },
+                      "walletAddress": {
+                        "type": "string",
+                        "description": "The user (owner) wallet address. Must be provided if userId is not provided.",
+                        "example": 1.0392900530713021e47,
+                        "nullable": true
+                      }
+                    }
+                  },
+                  "agent": {
+                    "type": "object",
+                    "required": ["name"],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "description": "Agent name",
+                        "example": "My Agent"
+                      },
+                      "walletAddress": {
+                        "type": "string",
+                        "description": "The agent wallet address. Must be provided if userWalletAddress is not provided.",
+                        "example": 1.0392900530713021e47,
+                        "nullable": true
+                      },
+                      "email": {
+                        "type": "string",
+                        "description": "Agent email",
+                        "nullable": true
+                      },
+                      "description": {
+                        "type": "string",
+                        "description": "Agent description",
+                        "nullable": true
+                      },
+                      "imageUrl": {
+                        "type": "string",
+                        "description": "URL to agent's image",
+                        "nullable": true
+                      },
+                      "metadata": {
+                        "type": "object",
+                        "description": "Optional metadata for the agent",
+                        "example": {
+                          "strategy": "yield-farming",
+                          "risk": "medium"
+                        },
+                        "nullable": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Agent registered successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Operation success status"
+                    },
+                    "agent": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Agent ID"
+                        },
+                        "ownerId": {
+                          "type": "string",
+                          "description": "Agent owner ID"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Agent name"
+                        },
+                        "walletAddress": {
+                          "type": "string",
+                          "description": "Agent wallet address",
+                          "nullable": true
+                        },
+                        "email": {
+                          "type": "string",
+                          "description": "Agent email",
+                          "nullable": true
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "Agent description",
+                          "nullable": true
+                        },
+                        "imageUrl": {
+                          "type": "string",
+                          "description": "URL to agent's image",
+                          "nullable": true
+                        },
+                        "metadata": {
+                          "type": "object",
+                          "description": "Optional metadata for the agent",
+                          "example": {
+                            "strategy": "yield-farming",
+                            "risk": "medium"
+                          },
+                          "nullable": true
+                        },
+                        "apiKey": {
+                          "type": "string",
+                          "description": "API key for the agent to use with Bearer authentication. Admin should securely provide this to the agent."
+                        },
+                        "status": {
+                          "type": "string",
+                          "description": "Agent status"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "Agent creation timestamp"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "Agent update timestamp"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing required parameters or invalid wallet address"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "409": {
+            "description": "User with this wallet address already exists"
           },
           "500": {
             "description": "Server error"
@@ -2069,6 +2275,237 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized - Admin authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/admin/object-index/sync": {
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Sync object index",
+        "description": "Manually trigger population of object_index table with competition data",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "competitionId": {
+                    "type": "string",
+                    "description": "ID of specific competition to sync (optional, syncs all if not provided)"
+                  },
+                  "dataTypes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "trade",
+                        "agent_rank_history",
+                        "competitions_leaderboard",
+                        "portfolio_snapshot",
+                        "agent_rank"
+                      ]
+                    },
+                    "description": "Types of data to sync (defaults to trade, agent_rank_history, competitions_leaderboard)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sync initiated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Operation success status"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Success message"
+                    },
+                    "dataTypes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Data types that were synced"
+                    },
+                    "competitionId": {
+                      "type": "string",
+                      "description": "Competition ID that was synced (or 'all')"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Admin authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/admin/object-index": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Get object index entries",
+        "description": "Retrieve object index entries with optional filters",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "competitionId",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Filter by competition ID"
+          },
+          {
+            "in": "query",
+            "name": "agentId",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Filter by agent ID"
+          },
+          {
+            "in": "query",
+            "name": "dataType",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "trade",
+                "agent_rank_history",
+                "agent_rank",
+                "competitions_leaderboard",
+                "portfolio_snapshot"
+              ]
+            },
+            "description": "Filter by data type"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            },
+            "description": "Maximum number of entries to return"
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Number of entries to skip"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object index entries retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "entries": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "competitionId": {
+                                "type": "string"
+                              },
+                              "agentId": {
+                                "type": "string"
+                              },
+                              "dataType": {
+                                "type": "string"
+                              },
+                              "data": {
+                                "type": "string"
+                              },
+                              "sizeBytes": {
+                                "type": "integer"
+                              },
+                              "metadata": {
+                                "type": "object"
+                              },
+                              "eventTimestamp": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            }
+                          }
+                        },
+                        "pagination": {
+                          "type": "object",
+                          "properties": {
+                            "total": {
+                              "type": "integer"
+                            },
+                            "limit": {
+                              "type": "integer"
+                            },
+                            "offset": {
+                              "type": "integer"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid parameters"
           },
           "401": {
             "description": "Unauthorized - Admin authentication required"
@@ -6065,6 +6502,26 @@
           },
           "404": {
             "description": "User not found"
+          },
+          "409": {
+            "description": "Agent with this name already exists for this user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "An agent with the name \"Trading Bot Alpha\" already exists for this user"
+                    }
+                  }
+                }
+              }
+            }
           },
           "500": {
             "description": "Internal server error"

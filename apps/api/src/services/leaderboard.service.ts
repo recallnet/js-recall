@@ -1,8 +1,9 @@
-import { getAllAgentRanks } from "@/database/repositories/agentrank-repository.js";
-import { countAgentCompetitions } from "@/database/repositories/competition-repository.js";
-import { getGlobalStats } from "@/database/repositories/leaderboard-repository.js";
-import { countTotalVotesByAgent } from "@/database/repositories/vote-repository.js";
 import {
+  getGlobalStats,
+  getOptimizedGlobalAgentMetrics,
+} from "@/database/repositories/leaderboard-repository.js";
+import {
+  AgentMetadata,
   CompetitionType,
   LeaderboardAgent,
   LeaderboardParams,
@@ -30,14 +31,11 @@ export class LeaderboardService {
         return this.emptyLeaderboardResponse(params);
       }
 
-      // Calculate global metrics for all agents across competitions
-      const globalMetrics = await this.calculateGlobalMetrics();
+      // Calculate global metrics for all agents across competitions using optimized query
+      const globalMetrics = await this.getOptimizedGlobalMetrics();
 
       // Sort agents based on requested sort field
-      const sortedAgents = this.sortAgents(
-        Array.from(globalMetrics.values()),
-        params.sort,
-      );
+      const sortedAgents = this.sortAgents(globalMetrics, params.sort);
 
       // Apply pagination
       const total = sortedAgents.length;
@@ -74,32 +72,24 @@ export class LeaderboardService {
   }
 
   /**
-   * Calculate global metrics for all agents across multiple competitions
-   * @returns Map of agent ID to accumulated metrics
+   * Get optimized global metrics for all agents using a single query
+   * This replaces the N+1 query problem from the old calculateGlobalMetrics method
+   * @returns Array of agent metrics with all required data
    */
-  private async calculateGlobalMetrics(): Promise<
-    Map<string, LeaderboardAgent>
-  > {
-    const agentMetricsMap = new Map<string, LeaderboardAgent>();
+  private async getOptimizedGlobalMetrics(): Promise<LeaderboardAgent[]> {
+    const agentMetrics = await getOptimizedGlobalAgentMetrics();
 
-    // TODO: this is not scalable. It should be paginated.
-    const agentRanks = await getAllAgentRanks();
-
-    for (const { id, name, score } of agentRanks) {
-      const voteCount = await countTotalVotesByAgent(id);
-      const numCompetitions = await countAgentCompetitions(id);
-
-      agentMetricsMap.set(id, {
-        rank: 0,
-        id: id,
-        name: name,
-        score: score,
-        numCompetitions: numCompetitions,
-        voteCount: voteCount,
-      });
-    }
-
-    return agentMetricsMap;
+    return agentMetrics.map((agent) => ({
+      rank: 0, // Will be set during sorting
+      id: agent.id,
+      name: agent.name,
+      description: agent.description,
+      imageUrl: agent.imageUrl,
+      metadata: agent.metadata as AgentMetadata,
+      score: agent.score,
+      numCompetitions: agent.numCompetitions,
+      voteCount: agent.voteCount,
+    }));
   }
 
   /**

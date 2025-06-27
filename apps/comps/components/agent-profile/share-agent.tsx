@@ -1,16 +1,17 @@
 import { Share2Icon } from "lucide-react";
 import { useState } from "react";
+import { FaXTwitter } from "react-icons/fa6";
 import {
-  SiDiscord,
-  SiReddit,
-  SiTelegram,
-  SiWhatsapp,
-  SiX,
-} from "react-icons/si";
+  LiaDiscord,
+  LiaReddit,
+  LiaTelegram,
+  LiaWhatsapp,
+} from "react-icons/lia";
 
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
@@ -23,27 +24,38 @@ export const ShareAgent = ({ agentId }: { agentId: string }) => {
 
   const shareLinks = [
     {
-      icon: <SiX size={30} />,
+      // Apply common classes directly to the icon component
+      icon: (
+        <FaXTwitter className="h-8 w-8 transition-all duration-500 ease-in-out hover:h-9 hover:w-9 hover:text-white" />
+      ),
       name: "X.com",
       url: `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}`,
     },
     {
-      icon: <SiTelegram size={30} />,
+      icon: (
+        <LiaTelegram className="h-8 w-8 transition-all duration-500 ease-in-out hover:h-9 hover:w-9 hover:text-sky-300/70" />
+      ),
       name: "Telegram",
       url: `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}`,
     },
     {
-      icon: <SiReddit size={30} />,
+      icon: (
+        <LiaReddit className="h-8 w-8 transition-all duration-500 ease-in-out hover:h-9 hover:w-9 hover:text-red-500/70" />
+      ),
       name: "Reddit",
       url: `https://www.reddit.com/submit?url=${encodeURIComponent(shareUrl)}`,
     },
     {
-      icon: <SiWhatsapp size={30} />,
+      icon: (
+        <LiaWhatsapp className="h-8 w-8 transition-all duration-500 ease-in-out hover:h-9 hover:w-9 hover:text-green-500/80" />
+      ),
       name: "WhatsApp",
       url: `https://api.whatsapp.com/send?text=${encodeURIComponent(shareUrl)}`,
     },
     {
-      icon: <SiDiscord size={30} />,
+      icon: (
+        <LiaDiscord className="h-8 w-8 transition-all duration-500 ease-in-out hover:h-9 hover:w-9 hover:text-sky-300/70" />
+      ),
       name: "Discord",
       url: `https://discord.com/channels/@me`, // No native share link for Discord
     },
@@ -57,7 +69,8 @@ export const ShareAgent = ({ agentId }: { agentId: string }) => {
       />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent aria-describedby="share-agent" className="w-150">
+          <DialogDescription className="hidden"></DialogDescription>
           <DialogHeader>
             <DialogTitle className="text-lg text-white">
               Share Agent
@@ -65,19 +78,17 @@ export const ShareAgent = ({ agentId }: { agentId: string }) => {
             <p className="text-muted-foreground text-sm">Share this agent on</p>
           </DialogHeader>
 
-          <div className="mt-4 flex flex-wrap justify-between gap-5">
+          <div className="h-15 mt-4 flex flex-wrap justify-between">
             {shareLinks.map((link) => (
               <a
                 key={link.name}
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-secondary-foreground flex flex-col items-center text-sm transition hover:text-white"
+                className={`text-secondary-foreground text-md flex flex-col items-center`}
               >
-                <div className="bg-card rounded-full p-2 shadow">
-                  {link.icon}
-                </div>
-                <span className="mt-1">{link.name}</span>
+                {link.icon}
+                <span className="mt-1 font-thin">{link.name}</span>
               </a>
             ))}
           </div>

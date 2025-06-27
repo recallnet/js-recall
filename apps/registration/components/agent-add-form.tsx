@@ -1,37 +1,41 @@
 "use client";
 
-import { Check, Loader2, Trash2, X } from "lucide-react";
+import { Loader2, Trash2, X } from "lucide-react";
 import { useState } from "react";
 
-import {
-  Agent,
-  AgentSkill,
-  AgentSkillType,
-  Team,
-  updateTeamProfile,
-} from "@/lib/api";
+import { useCreateAgent } from "@/hooks/useCreateAgent";
+
+// Agent skills constants like in comps app
+const AGENT_SKILLS = [
+  "Crypto Trading",
+  "Traditional Investing",
+  "Sports Betting",
+  "Prediction Markets",
+  "Social and Chat",
+  "Art & Video Creation",
+  "Programming / Coding",
+  "Deep Research",
+  "Other",
+];
 
 /**
  * AgentAddForm component
  *
- * Form to add a new agent to an existing team profile
+ * Form to add a new agent to an existing user profile
  *
- * @param team - Current team data
  * @param onSuccess - Callback for when an agent is successfully added
  * @param onCancel - Callback for when the form is cancelled
  */
 export default function AgentAddForm({
-  team,
   onSuccess,
   onCancel,
 }: {
-  team: Team;
-  onSuccess: (updatedTeam: Team) => void;
+  onSuccess: (apiKey: string) => void;
   onCancel: () => void;
 }) {
   const [formData, setFormData] = useState<{
     name: string;
-    selectedSkills: AgentSkillType[];
+    selectedSkills: string[];
     customSkill: string;
     repoUrl: string;
     description: string;
@@ -55,6 +59,8 @@ export default function AgentAddForm({
   const [showCustomSkill, setShowCustomSkill] = useState(false);
   const [isValidAvatar, setIsValidAvatar] = useState(true);
 
+  const createAgentMutation = useCreateAgent();
+
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -64,7 +70,7 @@ export default function AgentAddForm({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSkillChange = (skill: AgentSkillType) => {
+  const handleSkillChange = (skill: string) => {
     setFormData((prev) => {
       // Check if skill is already selected
       const isSelected = prev.selectedSkills.includes(skill);
@@ -75,7 +81,7 @@ export default function AgentAddForm({
         : [...prev.selectedSkills, skill];
 
       // Update custom skill visibility
-      if (skill === AgentSkillType.Other) {
+      if (skill === "Other") {
         setShowCustomSkill(!isSelected);
       }
 
@@ -96,16 +102,8 @@ export default function AgentAddForm({
       return;
     }
 
-    if (!formData.avatar.trim()) {
-      setError("Agent avatar is required.");
-      return;
-    }
-
     // Validate custom skill if "Other" is selected
-    if (
-      formData.selectedSkills.includes(AgentSkillType.Other) &&
-      !formData.customSkill
-    ) {
+    if (formData.selectedSkills.includes("Other") && !formData.customSkill) {
       setError("Please specify your custom skill.");
       return;
     }
@@ -113,53 +111,35 @@ export default function AgentAddForm({
     try {
       setIsSubmitting(true);
 
-      // Prepare the agent data from the form
-      const newAgent: Agent = {
+      // Prepare skills array (replace "Other" with custom skill if provided)
+      const finalSkills =
+        formData.selectedSkills.includes("Other") && formData.customSkill
+          ? [
+              ...formData.selectedSkills.filter((skill) => skill !== "Other"),
+              formData.customSkill,
+            ]
+          : formData.selectedSkills;
+
+      // Create the agent - match comps app structure exactly
+      const agentData = {
         name: formData.name,
-        description: formData.description,
-        url: formData.repoUrl,
-        imageUrl: formData.avatar,
-        skills: formData.selectedSkills.map((skillType) => {
-          return {
-            type: skillType,
-            customSkill:
-              skillType === AgentSkillType.Other
-                ? formData.customSkill
-                : undefined,
-          } as AgentSkill;
-        }),
-        social: {
-          twitter: formData.twitter,
-          telegram: formData.telegram,
+        imageUrl: formData.avatar || undefined,
+        email: undefined, // Add form doesn't collect agent email
+        description: formData.description || undefined,
+        metadata: {
+          skills: finalSkills,
+          repositoryUrl: formData.repoUrl || undefined,
+          x: formData.twitter || undefined,
+          telegram: formData.telegram || undefined,
         },
       };
 
-      // Create an updated metadata structure with the new agent
-      const updatedMetadata = {
-        // Preserve existing user telegram if present
-        userTelegram: team.metadata?.userTelegram,
-        // Add the new agent to the existing agents or create a new array
-        agents: team.metadata?.agents
-          ? [...team.metadata.agents, newAgent]
-          : [newAgent],
-      };
+      const response = await createAgentMutation.mutateAsync(agentData);
 
-      // Update the team profile with the new agent
-      const updatedTeam = await updateTeamProfile(
-        {
-          metadata: updatedMetadata,
-        },
-        team.apiKey || "",
-      );
-
-      if (!updatedTeam) {
-        throw new Error("Failed to update team profile");
-      }
-
-      // Call the onSuccess callback with the updated team data
-      onSuccess(updatedTeam);
+      // Call the onSuccess callback with the API key
+      onSuccess(response.agent.apiKey);
     } catch (err) {
-      console.error("Agent addition failed:", err);
+      console.error("Agent creation failed:", err);
       setError(
         err instanceof Error
           ? err.message
@@ -199,226 +179,202 @@ export default function AgentAddForm({
           onClick={onCancel}
           className="rounded-full p-1 text-[#6D85A4] hover:bg-[#303846] hover:text-white"
         >
-          <X size={20} />
+          <X className="h-4 w-4" />
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-        {/* Agent Name Field */}
-        <div className="flex flex-col gap-1.5">
-          <label className="font-['Replica_LL',sans-serif] text-base leading-6 tracking-wider text-[#93A5BA]">
-            Agent Name*
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {error && (
+          <div className="rounded border border-red-600 bg-red-600/10 p-3 text-red-400">
+            {error}
+          </div>
+        )}
+
+        {/* Agent Name - Required */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-white">
+            Agent Name *
           </label>
           <input
             type="text"
             name="name"
             value={formData.name}
             onChange={handleChange}
-            placeholder='E.g. "Acme Chatbot"'
-            className="w-full rounded-md border border-[#43505F] bg-[#1D1F2B] px-3 py-2 font-['Replica_LL',sans-serif] text-lg text-white placeholder:text-[#43505F] focus:border-[#62A0DD] focus:outline-none"
+            placeholder="Enter your agent's name"
+            className="w-full rounded border border-[#303846] bg-[#1A1D26] px-3 py-2 text-white placeholder-[#6D85A4] focus:border-[#4F7396] focus:outline-none"
             required
           />
         </div>
 
-        {/* Skills Field - Multiple Selection */}
-        <div className="flex flex-col gap-1.5">
-          <label className="font-['Replica_LL',sans-serif] text-base leading-6 tracking-wider text-[#93A5BA]">
-            Agent Skills (Select all that apply)
+        {/* Agent Skills */}
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-white">
+            Agent Skills
           </label>
+          <p className="text-sm text-[#6D85A4]">Choose all that apply.</p>
           <div className="grid grid-cols-2 gap-2">
-            {Object.values(AgentSkillType).map((skill) => (
-              <div
-                key={skill}
-                className={`flex cursor-pointer items-center gap-2 rounded-md border p-2 transition-colors duration-200 ${
-                  formData.selectedSkills.includes(skill)
-                    ? "border-[#62A0DD] bg-[#1D2736]"
-                    : "border-[#43505F] bg-[#1D1F2B]"
-                }`}
-                onClick={() => handleSkillChange(skill)}
-              >
-                <div
-                  className={`h-4 w-4 rounded-sm border ${
-                    formData.selectedSkills.includes(skill)
-                      ? "border-[#62A0DD] bg-[#62A0DD]"
-                      : "border-[#43505F]"
-                  }`}
-                >
-                  {formData.selectedSkills.includes(skill) && (
-                    <Check size={16} className="text-[#050507]" />
-                  )}
-                </div>
-                <span className="font-['Replica_LL',sans-serif] text-base text-white">
-                  {skill}
-                </span>
-              </div>
+            {AGENT_SKILLS.map((skill) => (
+              <label key={skill} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={formData.selectedSkills.includes(skill)}
+                  onChange={() => handleSkillChange(skill)}
+                  className="h-4 w-4 rounded border-[#303846] bg-[#1A1D26] text-[#4F7396] focus:ring-[#4F7396]"
+                />
+                <span className="text-sm text-[#6D85A4]">{skill}</span>
+              </label>
             ))}
           </div>
-        </div>
 
-        {/* Custom Skill Field - Only shown when Other is selected */}
-        {showCustomSkill && (
-          <div className="flex flex-col gap-1.5">
-            <label className="font-['Replica_LL',sans-serif] text-base leading-6 tracking-wider text-[#93A5BA]">
-              Custom Skill
-            </label>
-            <input
-              type="text"
-              name="customSkill"
-              value={formData.customSkill}
-              onChange={handleChange}
-              placeholder="Enter your custom skill..."
-              className="w-full rounded-md border border-[#43505F] bg-[#1D1F2B] px-3 py-2 font-['Replica_LL',sans-serif] text-lg text-white placeholder:text-[#43505F] focus:border-[#62A0DD] focus:outline-none"
-            />
-          </div>
-        )}
-
-        {/* Avatar Field */}
-        <div className="flex flex-col gap-1.5">
-          <label className="font-['Replica_LL',sans-serif] text-base leading-6 tracking-wider text-[#93A5BA]">
-            Avatar URL*
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              name="avatar"
-              value={formData.avatar}
-              onChange={handleChange}
-              placeholder="Enter the avatar URL..."
-              className={`flex-1 rounded-md border bg-[#1D1F2B] px-3 py-2 ${
-                !isValidAvatar ? "border-red-500" : "border-[#43505F]"
-              } font-['Replica_LL',sans-serif] text-lg text-white placeholder:text-[#43505F] focus:border-[#62A0DD] focus:outline-none`}
-              required
-            />
-            <button
-              type="button"
-              onClick={handleAvatarSubmit}
-              className="rounded-md bg-[#0057AD] px-4 py-2 font-['Trim_Mono',monospace] text-xs font-semibold uppercase tracking-[1.56px] text-[#E9EDF1]"
-            >
-              Submit
-            </button>
-          </div>
-          {!isValidAvatar && (
-            <p className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-red-500">
-              Please enter a valid image URL
-            </p>
-          )}
-
-          {/* Avatar Preview */}
-          {showAvatarPreview && formData.avatar && (
-            <div className="mt-3 flex items-start gap-2">
-              <div className="relative h-12 w-12 overflow-hidden rounded-md bg-[#1D1F2B]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={formData.avatar}
-                  alt="Avatar preview"
-                  className="h-full w-full object-cover"
-                  onError={handleImageError}
-                />
-              </div>
-              <button
-                type="button"
-                onClick={handleDeleteAvatar}
-                className="p-1 text-[#E9EDF1] transition-colors hover:text-red-400"
-                aria-label="Delete avatar"
-              >
-                <Trash2 size={16} />
-              </button>
+          {/* Custom Skill Input */}
+          {showCustomSkill && (
+            <div className="mt-3">
+              <input
+                type="text"
+                name="customSkill"
+                value={formData.customSkill}
+                onChange={handleChange}
+                placeholder="Please specify your custom skill..."
+                className="w-full rounded border border-[#303846] bg-[#1A1D26] px-3 py-2 text-white placeholder-[#6D85A4] focus:border-[#4F7396] focus:outline-none"
+              />
             </div>
           )}
         </div>
 
-        {/* Repository URL Field */}
-        <div className="flex flex-col gap-1.5">
-          <label className="font-['Replica_LL',sans-serif] text-base leading-6 tracking-wider text-[#93A5BA]">
+        {/* Repository URL */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-white">
             Repository URL
           </label>
           <input
-            type="text"
+            type="url"
             name="repoUrl"
             value={formData.repoUrl}
             onChange={handleChange}
-            placeholder="E.g.: https://github.com/yourusername/agent-repo"
-            className="w-full rounded-md border border-[#43505F] bg-[#1D1F2B] px-3 py-2 font-['Replica_LL',sans-serif] text-lg text-white placeholder:text-[#43505F] focus:border-[#62A0DD] focus:outline-none"
+            placeholder="https://github.com/your-repo"
+            className="w-full rounded border border-[#303846] bg-[#1A1D26] px-3 py-2 text-white placeholder-[#6D85A4] focus:border-[#4F7396] focus:outline-none"
           />
+          <p className="text-sm text-[#6D85A4]">Link to code or docs.</p>
         </div>
 
-        {/* Description Field */}
-        <div className="flex flex-col gap-1.5">
-          <label className="font-['Replica_LL',sans-serif] text-base leading-6 tracking-wider text-[#93A5BA]">
-            Description
+        {/* Description */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-white">
+            Description (Optional)
           </label>
           <textarea
             name="description"
             value={formData.description}
             onChange={handleChange}
-            placeholder="Describe what your agent does..."
+            placeholder="Describe your agent..."
             rows={3}
-            className="w-full resize-none rounded-md border border-[#43505F] bg-[#1D1F2B] px-3 py-2 font-['Replica_LL',sans-serif] text-lg text-white placeholder:text-[#43505F] focus:border-[#62A0DD] focus:outline-none"
+            className="w-full rounded border border-[#303846] bg-[#1A1D26] px-3 py-2 text-white placeholder-[#6D85A4] focus:border-[#4F7396] focus:outline-none"
           />
         </div>
 
+        {/* Avatar URL */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-white">
+            Avatar URL (Optional)
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="url"
+              name="avatar"
+              value={formData.avatar}
+              onChange={handleChange}
+              placeholder="https://example.com/avatar.png"
+              className="flex-1 rounded border border-[#303846] bg-[#1A1D26] px-3 py-2 text-white placeholder-[#6D85A4] focus:border-[#4F7396] focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={handleAvatarSubmit}
+              className="rounded bg-[#4F7396] px-4 py-2 text-white hover:bg-[#6D85A4]"
+            >
+              Preview
+            </button>
+          </div>
+
+          {/* Avatar Preview */}
+          {showAvatarPreview && (
+            <div className="relative mt-2">
+              {isValidAvatar ? (
+                <div className="flex items-center gap-3">
+                  <img
+                    src={formData.avatar}
+                    alt="Avatar preview"
+                    width={64}
+                    height={64}
+                    className="h-16 w-16 rounded-full object-cover"
+                    onError={handleImageError}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleDeleteAvatar}
+                    className="rounded p-1 text-red-400 hover:bg-red-600/10"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <p className="text-sm text-red-400">
+                  Failed to load image. Please check the URL.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Social Links */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {/* Twitter Field */}
-          <div className="flex flex-col gap-1.5">
-            <label className="font-['Replica_LL',sans-serif] text-base leading-6 tracking-wider text-[#93A5BA]">
-              X (Twitter)
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-white">
+              Twitter (Optional)
             </label>
             <input
               type="text"
               name="twitter"
               value={formData.twitter}
               onChange={handleChange}
-              placeholder="E.g.: https://x.com/youragent"
-              className="w-full rounded-md border border-[#43505F] bg-[#1D1F2B] px-3 py-2 font-['Replica_LL',sans-serif] text-lg text-white placeholder:text-[#43505F] focus:border-[#62A0DD] focus:outline-none"
+              placeholder="@username or URL"
+              className="w-full rounded border border-[#303846] bg-[#1A1D26] px-3 py-2 text-white placeholder-[#6D85A4] focus:border-[#4F7396] focus:outline-none"
             />
           </div>
 
-          {/* Telegram Field */}
-          <div className="flex flex-col gap-1.5">
-            <label className="font-['Replica_LL',sans-serif] text-base leading-6 tracking-wider text-[#93A5BA]">
-              Telegram
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-white">
+              Telegram (Optional)
             </label>
             <input
               type="text"
               name="telegram"
               value={formData.telegram}
               onChange={handleChange}
-              placeholder="E.g.: https://t.me/youragent"
-              className="w-full rounded-md border border-[#43505F] bg-[#1D1F2B] px-3 py-2 font-['Replica_LL',sans-serif] text-lg text-white placeholder:text-[#43505F] focus:border-[#62A0DD] focus:outline-none"
+              placeholder="@username or URL"
+              className="w-full rounded border border-[#303846] bg-[#1A1D26] px-3 py-2 text-white placeholder-[#6D85A4] focus:border-[#4F7396] focus:outline-none"
             />
           </div>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="rounded-md bg-red-500/10 px-4 py-3 text-center">
-            <p className="font-['Replica_LL',sans-serif] text-sm text-red-500">
-              {error}
-            </p>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="mt-4 flex gap-4">
+        {/* Submit Buttons */}
+        <div className="flex gap-3">
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 rounded-md border border-[#43505F] py-3 font-['Trim_Mono',monospace] text-xs font-semibold uppercase tracking-wider text-[#6D85A4]"
-            disabled={isSubmitting}
+            className="flex-1 rounded border border-[#303846] py-3 font-medium text-[#6D85A4] hover:bg-[#303846] hover:text-white"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="flex-1 rounded-md bg-[#0057AD] py-3 font-['Trim_Mono',monospace] text-xs font-semibold uppercase tracking-wider text-[#E9EDF1] disabled:opacity-70"
             disabled={isSubmitting}
+            className="flex-1 rounded bg-[#4F7396] py-3 font-medium text-white hover:bg-[#6D85A4] disabled:opacity-50"
           >
             {isSubmitting ? (
-              <span className="flex items-center justify-center">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </span>
+              <div className="flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Creating...
+              </div>
             ) : (
               "Add Agent"
             )}

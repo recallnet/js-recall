@@ -23,14 +23,15 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${fontSans.variable} ${fontMono.variable} bg-black antialiased`}
+        className={`${fontSans.variable} ${fontMono.variable} overflow-x-hidden bg-black antialiased`}
       >
         <Analytics />
         <Toaster position="top-right" />
         <Providers>
-          <Navbar>
-            <main className="min-h-screen w-full">{children}</main>
-          </Navbar>
+          <Navbar />
+          <main className="mx-auto min-h-screen w-full max-w-screen-lg px-5 pt-10 sm:px-20">
+            {children}
+          </main>
         </Providers>
       </body>
     </html>

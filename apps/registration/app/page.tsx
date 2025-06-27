@@ -15,8 +15,8 @@ import DeveloperProfileForm, {
 } from "@/components/developer-profile-form";
 import RegistrationSuccess from "@/components/registration-success";
 import { SignInButton } from "@/components/sign-in-button";
-import { useAuthState } from "@/hooks/auth-state";
-import { getTeamByWalletAddress } from "@/lib/api";
+import { useUserSession } from "@/hooks/useAuth";
+import { removeLegacyWalletConnectLocalStorage } from "@/lib/utils";
 
 /**
  * Homepage component for the registration application
@@ -24,10 +24,8 @@ import { getTeamByWalletAddress } from "@/lib/api";
  * @returns The homepage with registration information and links
  */
 export default function Home() {
-  const { isAuthenticated, isLoading, address } = useAuthState();
+  const session = useUserSession();
   const router = useRouter();
-  const [isCheckingProfile, setIsCheckingProfile] = useState(false);
-  const [hasProfile, setHasProfile] = useState(false);
   const [registrationStep, setRegistrationStep] = useState<
     "welcome" | "profile" | "agent" | "success"
   >("welcome");
@@ -36,7 +34,6 @@ export default function Home() {
     email: "",
     website: "",
     description: "",
-    telegram: "",
   });
   const [agentData, setAgentData] = useState<AgentFormData>({
     name: "",
@@ -49,27 +46,12 @@ export default function Home() {
     telegram: "",
   });
 
-  // Check if the user already has a profile when they connect their wallet
+  // Clean up legacy WalletConnect `localStorage` and old Recall testnet chain ID on mount
   useEffect(() => {
-    const checkExistingProfile = async () => {
-      if (address && isAuthenticated && !isLoading) {
-        try {
-          setIsCheckingProfile(true);
-          const team = await getTeamByWalletAddress(address);
-
-          if (team) {
-            setHasProfile(true);
-          }
-        } catch (error) {
-          console.error("Error checking for existing profile:", error);
-        } finally {
-          setIsCheckingProfile(false);
-        }
-      }
-    };
-
-    checkExistingProfile();
-  }, [address, isAuthenticated, isLoading, router]);
+    if (typeof window !== "undefined") {
+      removeLegacyWalletConnectLocalStorage(window.localStorage);
+    }
+  }, []);
 
   // Handle next button from profile form
   const handleProfileNext = (data: ProfileFormData) => {
@@ -106,29 +88,9 @@ export default function Home() {
     setRegistrationStep("profile");
   };
 
-  // Handle skip button from agent form
-  const handleAgentSkip = () => {
-    console.log("Agent registration skipped");
-
-    // Process just the profile data
-    const registrationData = {
-      profile: profileData,
-      agent: null,
-    };
-
-    console.log("Registration data (without agent):", registrationData);
-
-    // Move to the success screen
-    setRegistrationStep("success");
-  };
-
   // Get the appropriate button based on auth state
   const getAuthButton = () => {
-    if (!address) {
-      return <SignInButton />;
-    }
-
-    if (isLoading || isCheckingProfile) {
+    if (!session.isInitialized) {
       return (
         <Button
           className="w-full rounded-none bg-[#0057AD] py-5 transition-colors hover:bg-[#0066cc]"
@@ -142,13 +104,27 @@ export default function Home() {
       );
     }
 
-    if (!isAuthenticated) {
+    if (!session.isAuthenticated) {
       return <SignInButton />;
+    }
+
+    if (session.isLoading) {
+      return (
+        <Button
+          className="w-full rounded-none bg-[#0057AD] py-5 transition-colors hover:bg-[#0066cc]"
+          disabled
+        >
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          <span className="font-['Trim_Mono',monospace] text-sm font-semibold uppercase tracking-wider text-[#E9EDF1]">
+            Loading Profile...
+          </span>
+        </Button>
+      );
     }
 
     return (
       <>
-        {hasProfile ? (
+        {session.isProfileUpdated ? (
           <Button
             onClick={() => router.push("/account")}
             className="w-full rounded-none bg-[#0057AD] py-5 transition-colors hover:bg-[#0066cc]"
@@ -179,21 +155,26 @@ export default function Home() {
     <div className="flex min-h-screen w-full items-center justify-center bg-[#050507] py-8">
       <div className="container mx-auto flex max-w-6xl flex-col items-center justify-center px-4">
         {/* Conditionally render based on registration step */}
-        {isAuthenticated && registrationStep === "profile" ? (
+        {session.isInitialized &&
+        session.isAuthenticated &&
+        registrationStep === "profile" ? (
           <DeveloperProfileForm
             initialData={profileData}
             onBack={handleProfileBack}
             onNext={handleProfileNext}
           />
-        ) : isAuthenticated && registrationStep === "agent" ? (
+        ) : session.isInitialized &&
+          session.isAuthenticated &&
+          registrationStep === "agent" ? (
           <AgentRegistrationForm
             initialData={agentData}
             profileData={profileData}
             onBack={handleAgentBack}
             onNext={handleAgentNext}
-            onSkip={handleAgentSkip}
           />
-        ) : isAuthenticated && registrationStep === "success" ? (
+        ) : session.isInitialized &&
+          session.isAuthenticated &&
+          registrationStep === "success" ? (
           <RegistrationSuccess
             userName={profileData.name}
             apiKey={agentData.apiKey}

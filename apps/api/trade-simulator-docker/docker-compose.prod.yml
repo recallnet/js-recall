@@ -1,0 +1,16 @@
+services:
+  trading-simulator-app:
+    image: textile/js-recall:latest
+    restart: always
+    env_file:
+      - ../.env
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://127.0.0.1:${PORT:-3000}${API_PREFIX:+/${API_PREFIX}}/api/health || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

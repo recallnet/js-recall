@@ -389,16 +389,14 @@ describe("Agent API", () => {
     const agentDescription = "Agent for testing profile retrieval";
 
     // Register user and agent with metadata
-    const registerResponse = await client.registerUser(
-      generateRandomEthAddress(),
-      userName,
-      userEmail,
-      undefined,
-      agentName,
-      agentDescription,
-      undefined,
-      metadata,
-    );
+    const registerResponse = await client.registerUser({
+      walletAddress: generateRandomEthAddress(),
+      name: userName,
+      email: userEmail,
+      agentName: agentName,
+      agentDescription: agentDescription,
+      agentMetadata: metadata,
+    });
     expect(registerResponse.success).toBe(true);
 
     // Create a client for the new agent

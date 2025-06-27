@@ -18,6 +18,26 @@
     "lint": {
       "dependsOn": ["^lint"]
     },
+    "format": {
+      "dependsOn": ["^format"],
+      "inputs": [
+        "**/*.{js,jsx,ts,tsx,json,md,mdx,yml,yaml}",
+        ".prettierrc*",
+        ".prettierignore"
+      ],
+      "outputs": [],
+      "cache": false
+    },
+    "format:check": {
+      "dependsOn": ["^format:check"],
+      "inputs": [
+        "**/*.{js,jsx,ts,tsx,json,md,mdx,yml,yaml}",
+        ".prettierrc*",
+        ".prettierignore"
+      ],
+      "outputs": [],
+      "cache": false
+    },
     "check-types": {
       "dependsOn": ["^check-types"]
     },

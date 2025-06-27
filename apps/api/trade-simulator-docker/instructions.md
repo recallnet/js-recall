@@ -21,13 +21,13 @@ From the `apps/api/trade-simulator-docker` directory, run:
 
 ```bash
 # Start the application (builds if needed)
-docker-compose -f docker-compose.yml up --build
+docker-compose -f docker-compose.test.yml up
 
 # Or run in detached mode (background)
-docker-compose -f docker-compose.yml up --build -d
+docker-compose -f docker-compose.test.yml up -d
 
 # Stop and remove containers
-docker-compose -f docker-compose.yml down
+docker-compose -f docker-compose.test.yml down --volumes
 ```
 
 #### Option B: Using Docker Build + Run

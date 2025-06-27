@@ -3,14 +3,20 @@ import {
   foreignKey,
   index,
   jsonb,
+  pgEnum,
   pgTable,
   text,
   timestamp,
   uuid,
-  varchar,
 } from "drizzle-orm/pg-core";
 
 import { agents, competitions } from "@/database/schema/core/defs.js";
+import { SYNC_DATA_TYPE_VALUES } from "@/types/index.js";
+
+/**
+ * Sync data type enum for postgres
+ */
+export const syncDataType = pgEnum("sync_data_type", SYNC_DATA_TYPE_VALUES);
 
 /**
  * Stores competition data that needs to be synchronized to the Recall Testnet
@@ -21,7 +27,7 @@ export const objectIndex = pgTable(
     id: uuid().primaryKey().notNull(),
     competitionId: uuid("competition_id"),
     agentId: uuid("agent_id"),
-    dataType: varchar("data_type", { length: 100 }).notNull(),
+    dataType: syncDataType("data_type").notNull(),
     data: text("data").notNull(),
     sizeBytes: bigint("size_bytes", { mode: "number" }),
     metadata: jsonb(),

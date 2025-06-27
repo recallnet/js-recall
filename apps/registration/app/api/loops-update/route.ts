@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 interface LoopsUpdateBody {
   email: string;
   name: string;
+  verified?: boolean;
 }
 
 /**
@@ -41,6 +42,7 @@ export async function POST(request: NextRequest) {
     const loopsPayload = {
       email: body.email,
       firstName: body.name,
+      verified: body.verified || false,
       userGroup: "Registered",
       source: "Mini App",
       mailingLists: {

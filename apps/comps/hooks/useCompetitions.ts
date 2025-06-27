@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 
-import { ApiClient } from "@/lib/api-client";
+import { UnauthorizedError, apiClient } from "@/lib/api-client";
 import { useUser } from "@/state/atoms";
 import {
   CompetitionsResponse,
@@ -8,20 +8,17 @@ import {
   UserCompetitionsResponse,
 } from "@/types";
 
-const apiClient = new ApiClient();
-
 /**
  * Hook to fetch competitions with pagination and filtering
  * @param params Query parameters for competitions endpoint
  * @returns Query result with competitions data
  */
 export const useCompetitions = (params: GetCompetitionsParams = {}) =>
-  useQuery({
+  useSuspenseQuery({
     queryKey: ["competitions", params],
     queryFn: async (): Promise<CompetitionsResponse> => {
       return apiClient.getCompetitions(params);
     },
-    placeholderData: (prev) => prev,
   });
 
 /**
@@ -38,6 +35,5 @@ export const useUserCompetitions = (params: GetCompetitionsParams = {}) => {
       return apiClient.getUserCompetitions(params);
     },
     enabled: status === "authenticated",
-    placeholderData: (prev) => prev,
   });
 };

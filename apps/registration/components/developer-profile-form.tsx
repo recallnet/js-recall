@@ -1,7 +1,43 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { ChevronLeft } from "lucide-react";
-import { useEffect, useState } from "react";
+import React from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@recallnet/ui/components/shadcn/form";
+import { Input } from "@recallnet/ui/components/shadcn/input";
+import { Textarea } from "@recallnet/ui/components/shadcn/textarea";
+
+import { useUpdateProfile } from "../hooks/useProfile";
+
+const formSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email({ message: "Invalid email address" }),
+  website: z
+    .string()
+    .url({ message: "Must be a valid URL" })
+    .optional()
+    .or(z.literal("")),
+  description: z.string().optional(),
+});
+
+export type ProfileFormData = z.infer<typeof formSchema>;
+
+interface DeveloperProfileFormProps {
+  initialData?: ProfileFormData;
+  onBack?: () => void;
+  onNext?: (data: ProfileFormData) => void;
+}
 
 /**
  * DeveloperProfileForm component
@@ -16,67 +52,36 @@ export default function DeveloperProfileForm({
   initialData,
   onBack,
   onNext,
-}: {
-  initialData?: ProfileFormData;
-  onBack?: () => void;
-  onNext?: (data: ProfileFormData) => void;
-}) {
-  const [formData, setFormData] = useState<ProfileFormData>(
-    initialData || {
-      name: "",
-      email: "",
-      website: "",
-      description: "",
-      telegram: "",
+}: DeveloperProfileFormProps) {
+  const updateProfile = useUpdateProfile();
+
+  const form = useForm<ProfileFormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: initialData?.name || "",
+      email: initialData?.email || "",
+      website: initialData?.website || "",
+      description: initialData?.description || "",
     },
-  );
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  });
 
-  // Update formData when initialData changes
-  useEffect(() => {
-    if (initialData) {
-      setFormData(initialData);
-    }
-  }, [initialData]);
+  const handleSubmit = async (data: ProfileFormData) => {
+    try {
+      const transformedData = {
+        name: data.name,
+        email: data.email,
+        metadata: data.website ? { website: data.website } : undefined,
+        // Note: description is not part of the standard profile API
+        // You may need to add it to metadata if needed
+      };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+      await updateProfile.mutateAsync(transformedData);
 
-    // Clear error for the field being edited
-    if (errors[name]) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
-      });
-    }
-  };
-
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required";
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email address";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (validateForm() && onNext) {
-      onNext(formData);
+      if (onNext) {
+        onNext(data);
+      }
+    } catch (error) {
+      console.error("Failed to update profile:", error);
     }
   };
 
@@ -102,146 +107,142 @@ export default function DeveloperProfileForm({
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="flex w-full flex-col gap-7">
-            {/* Name Field */}
-            <div className="flex w-full flex-col gap-1.5">
-              <label className="font-['Replica_LL',sans-serif] text-base leading-6 tracking-wider text-[#93A5BA]">
-                Name *
-              </label>
-              <input
-                type="text"
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(handleSubmit)}
+              className="flex w-full flex-col gap-7"
+            >
+              {/* Name Field */}
+              <FormField
+                control={form.control}
                 name="name"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="E.g.: Walter White"
-                className={`w-full rounded-md border ${errors.name ? "border-red-500" : "border-[#43505F]"} bg-[#1D1F2B] px-3 py-2 font-['Replica_LL',sans-serif] text-lg text-white placeholder:text-[#43505F] focus:border-[#62A0DD] focus:outline-none`}
+                render={({ field, formState: { errors } }) => (
+                  <FormItem>
+                    <FormLabel className="font-['Replica_LL',sans-serif] text-base leading-6 tracking-wider text-[#93A5BA]">
+                      Name *
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="E.g.: Walter White"
+                        {...field}
+                        className="w-full rounded-md border border-[#43505F] bg-[#1D1F2B] px-3 py-2 font-['Replica_LL',sans-serif] text-lg text-white placeholder:text-[#43505F] focus:border-[#62A0DD] focus:outline-none"
+                      />
+                    </FormControl>
+                    {!errors.name && (
+                      <FormDescription className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-[#596E89]">
+                        The name you go by professionally, or how you&apos;d
+                        like to be known.
+                      </FormDescription>
+                    )}
+                    <FormMessage className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-red-500" />
+                  </FormItem>
+                )}
               />
-              {errors.name ? (
-                <p className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-red-500">
-                  {errors.name}
-                </p>
-              ) : (
-                <p className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-[#596E89]">
-                  The name you go by professionally, or how you&apos;d like to
-                  be known.
-                </p>
-              )}
-            </div>
 
-            {/* Email Field */}
-            <div className="flex w-full flex-col gap-1.5">
-              <label className="font-['Replica_LL',sans-serif] text-base leading-6 tracking-wider text-[#93A5BA]">
-                Email *
-              </label>
-              <input
-                type="email"
+              {/* Email Field */}
+              <FormField
+                control={form.control}
                 name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="E.g.: walterwhite@gmail.com"
-                className={`w-full rounded-md border ${errors.email ? "border-red-500" : "border-[#43505F]"} bg-[#1D1F2B] px-3 py-2 font-['Replica_LL',sans-serif] text-lg text-white placeholder:text-[#43505F] focus:border-[#62A0DD] focus:outline-none`}
+                render={({ field, formState: { errors } }) => (
+                  <FormItem>
+                    <FormLabel className="font-['Replica_LL',sans-serif] text-base leading-6 tracking-wider text-[#93A5BA]">
+                      Email *
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="E.g.: walterwhite@gmail.com"
+                        {...field}
+                        className="w-full rounded-md border border-[#43505F] bg-[#1D1F2B] px-3 py-2 font-['Replica_LL',sans-serif] text-lg text-white placeholder:text-[#43505F] focus:border-[#62A0DD] focus:outline-none"
+                      />
+                    </FormControl>
+                    {!errors.email && (
+                      <FormDescription className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-[#596E89]">
+                        We&apos;ll email your API key here - make sure it&apos;s
+                        one you check often.
+                      </FormDescription>
+                    )}
+                    <FormMessage className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-red-500" />
+                  </FormItem>
+                )}
               />
-              {errors.email ? (
-                <p className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-red-500">
-                  {errors.email}
-                </p>
-              ) : (
-                <p className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-[#596E89]">
-                  We&apos;ll email your API key here - make sure it&apos;s one
-                  you check often.
-                </p>
-              )}
-            </div>
 
-            {/* Description Field */}
-            <div className="flex w-full flex-col gap-1.5">
-              <label className="font-['Replica_LL',sans-serif] text-base leading-6 tracking-wider text-[#93A5BA]">
-                Description
-              </label>
-              <textarea
+              {/* Description Field */}
+              <FormField
+                control={form.control}
                 name="description"
-                value={formData.description}
-                onChange={handleChange}
-                placeholder="Tell us about yourself or your project..."
-                rows={4}
-                className="w-full resize-none rounded-md border border-[#43505F] bg-[#1D1F2B] px-3 py-2 font-['Replica_LL',sans-serif] text-lg text-white placeholder:text-[#43505F] focus:border-[#62A0DD] focus:outline-none"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-['Replica_LL',sans-serif] text-base leading-6 tracking-wider text-[#93A5BA]">
+                      Description
+                    </FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Tell us about yourself or your project..."
+                        rows={4}
+                        {...field}
+                        className="w-full resize-none rounded-md border border-[#43505F] bg-[#1D1F2B] px-3 py-2 font-['Replica_LL',sans-serif] text-lg text-white placeholder:text-[#43505F] focus:border-[#62A0DD] focus:outline-none"
+                      />
+                    </FormControl>
+                    <FormDescription className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-[#596E89]">
+                      A brief description about you or your development focus.
+                    </FormDescription>
+                    <FormMessage className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-red-500" />
+                  </FormItem>
+                )}
               />
-              <p className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-[#596E89]">
-                A brief description about you or your development focus.
-              </p>
-            </div>
 
-            {/* Website Field */}
-            <div className="flex w-full flex-col gap-1.5">
-              <label className="font-['Replica_LL',sans-serif] text-base leading-6 tracking-wider text-[#93A5BA]">
-                GitHub or Website (optional)
-              </label>
-              <input
-                type="text"
+              {/* Website Field */}
+              <FormField
+                control={form.control}
                 name="website"
-                value={formData.website}
-                onChange={handleChange}
-                placeholder="E.g.: https://walterwhite.com"
-                className="w-full rounded-md border border-[#43505F] bg-[#1D1F2B] px-3 py-2 font-['Replica_LL',sans-serif] text-lg text-white placeholder:text-[#43505F] focus:border-[#62A0DD] focus:outline-none"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-['Replica_LL',sans-serif] text-base leading-6 tracking-wider text-[#93A5BA]">
+                      GitHub or Website (optional)
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="E.g.: https://walterwhite.com"
+                        {...field}
+                        className="w-full rounded-md border border-[#43505F] bg-[#1D1F2B] px-3 py-2 font-['Replica_LL',sans-serif] text-lg text-white placeholder:text-[#43505F] focus:border-[#62A0DD] focus:outline-none"
+                      />
+                    </FormControl>
+                    <FormDescription className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-[#596E89]">
+                      So others can learn more about you and your work!
+                    </FormDescription>
+                    <FormMessage className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-red-500" />
+                  </FormItem>
+                )}
               />
-              <p className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-[#596E89]">
-                So others can learn more about you and your work!
-              </p>
-            </div>
 
-            {/* Telegram Field */}
-            <div className="flex w-full flex-col gap-1.5">
-              <label className="font-['Replica_LL',sans-serif] text-base leading-6 tracking-wider text-[#93A5BA]">
-                Telegram (optional)
-              </label>
-              <input
-                type="text"
-                name="telegram"
-                value={formData.telegram}
-                onChange={handleChange}
-                placeholder="E.g.: @username"
-                className="w-full rounded-md border border-[#43505F] bg-[#1D1F2B] px-3 py-2 font-['Replica_LL',sans-serif] text-lg text-white placeholder:text-[#43505F] focus:border-[#62A0DD] focus:outline-none"
-              />
-              <p className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-[#596E89]">
-                Your Telegram username for communication about competitions.
-              </p>
-            </div>
+              {/* Action Buttons */}
+              <div className="flex w-full items-center justify-between pt-4">
+                {onBack && (
+                  <button
+                    type="button"
+                    onClick={onBack}
+                    className="flex items-center gap-2 border border-[#303846] px-6 py-4 text-[#303846] hover:bg-[#303846] hover:text-white"
+                  >
+                    <ChevronLeft size={16} />
+                    <span className="font-['Trim_Mono',monospace] text-xs font-semibold uppercase tracking-[1.56px]">
+                      Back
+                    </span>
+                  </button>
+                )}
 
-            {/* Action Buttons */}
-            <div className="mt-4 flex w-full flex-col items-center gap-4">
-              <div className="flex w-full">
-                <button
-                  type="button"
-                  onClick={onBack}
-                  className="flex items-center justify-center gap-2 border border-[#303846] px-6 py-4"
-                >
-                  <ChevronLeft className="h-3 w-3 text-[#303846]" />
-                  <span className="font-['Trim_Mono',monospace] text-xs font-semibold uppercase tracking-[1.56px] text-[#303846]">
-                    back
-                  </span>
-                </button>
                 <button
                   type="submit"
-                  className="flex flex-1 items-center justify-center border-l border-r border-[#212C3A] bg-[#0057AD] py-[17px]"
+                  disabled={updateProfile.isPending}
+                  className="ml-auto bg-[#0057AD] px-8 py-3 font-['Trim_Mono',monospace] text-sm font-semibold uppercase tracking-wider text-white hover:bg-[#0066cc] disabled:bg-gray-400"
                 >
-                  <span className="font-['Trim_Mono',monospace] text-xs font-semibold uppercase tracking-[1.56px] text-[#E9EDF1]">
-                    Next
-                  </span>
+                  {updateProfile.isPending ? "Saving..." : "Continue"}
                 </button>
               </div>
-            </div>
-          </form>
+            </form>
+          </Form>
         </div>
       </div>
     </div>
   );
-}
-
-// Type for form data
-export interface ProfileFormData {
-  name: string;
-  email: string;
-  website: string;
-  description: string;
-  telegram: string;
 }

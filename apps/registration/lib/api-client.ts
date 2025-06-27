@@ -1,258 +1,384 @@
-import axios, { AxiosInstance, InternalAxiosRequestConfig } from "axios";
+import {
+  Agent,
+  AgentApiKeyResponse,
+  AgentCompetitionsResponse,
+  AgentWithOwnerResponse,
+  AgentsResponse,
+  CompetitionResponse,
+  CompetitionsResponse,
+  CreateAgentRequest,
+  CreateAgentResponse,
+  GetAgentCompetitionsParams,
+  GetAgentsParams,
+  GetCompetitionsParams,
+  LoginRequest,
+  LoginResponse,
+  NonceResponse,
+  ProfileResponse,
+  UpdateAgentRequest,
+  UpdateAgentResponse,
+  UpdateProfileRequest,
+  UserCompetitionsResponse,
+} from "@/types";
 
-import { Agent, TeamRegistrationRequest } from "./api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
 /**
- * Team API client for server-side operations
- * This client should only be used within API routes, never in client-side code
+ * Base HTTP error class with status code support
  */
-export class TeamApiClient {
-  private axiosInstance: AxiosInstance;
-  private apiKey: string | undefined;
-  private baseUrl: string;
+export class HttpError extends Error {
+  public readonly statusCode: number;
+  public readonly statusText: string;
+
+  constructor(statusCode: number, statusText: string, message?: string) {
+    super(message || statusText);
+    this.name = "HttpError";
+    this.statusCode = statusCode;
+    this.statusText = statusText;
+  }
+}
+
+/**
+ * Custom error class for unauthorized (401) responses
+ */
+export class UnauthorizedError extends HttpError {
+  constructor(message?: string) {
+    super(401, "Unauthorized", message || "Unauthorized access");
+    this.name = "UnauthorizedError";
+  }
+}
+
+/**
+ * Custom error class for not found (404) responses
+ */
+export class NotFoundError extends HttpError {
+  constructor(message?: string) {
+    super(404, "Not Found", message || "Resource not found");
+    this.name = "NotFoundError";
+  }
+}
+
+/**
+ * Custom error class for conflict (409) responses
+ */
+export class ConflictError extends HttpError {
+  constructor(message?: string) {
+    super(409, "Conflict", message || "Conflict");
+    this.name = "ConflictError";
+  }
+}
+
+/**
+ * Custom error class for bad request (400) responses
+ */
+export class BadRequestError extends HttpError {
+  constructor(message?: string) {
+    super(400, "Bad Request", message || "Bad request");
+    this.name = "BadRequestError";
+  }
+}
+
+/**
+ * Custom error class for server errors (5xx) responses
+ */
+export class ServerError extends HttpError {
+  constructor(statusCode: number, message?: string) {
+    super(statusCode, "Server Error", message || "Internal server error");
+    this.name = "ServerError";
+  }
+}
+
+/**
+ * API client for interactions with the competitions API
+ */
+export class ApiClient {
+  private readonly baseUrl: string;
+
+  constructor(baseUrl: string = API_BASE_URL) {
+    this.baseUrl = baseUrl;
+  }
 
   /**
-   * Create a new API client
-   *
-   * @param baseUrl Base URL for the API
-   * @param apiKey API key for authentication (optional)
+   * Helper method to make API requests
+   * @param endpoint - API endpoint path
+   * @param options - fetch options
+   * @returns Response data
    */
-  constructor(baseUrl: string, apiKey?: string) {
-    this.apiKey = apiKey;
-    // Normalize the base URL to ensure there's no trailing slash
-    this.baseUrl = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {},
+  ): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    const headers = {
+      "Content-Type": "application/json",
+      ...options.headers,
+    };
 
-    // Create axios instance
-    this.axiosInstance = axios.create({
-      baseURL: this.baseUrl,
+    const response = await fetch(url, {
+      ...options,
+      headers,
+      credentials: "include", // Include cookies for auth
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({
+        error: "An unknown error occurred",
+      }));
+
+      const errorMessage =
+        data.error || `Request failed with status ${response.status}`;
+
+      // Create appropriate error based on status code
+      switch (response.status) {
+        case 400:
+          throw new BadRequestError(errorMessage);
+        case 401:
+          throw new UnauthorizedError(errorMessage);
+        case 404:
+          throw new NotFoundError(errorMessage);
+        case 409:
+          throw new ConflictError(errorMessage);
+        case 500:
+          throw new ServerError(response.status, errorMessage);
+        default:
+          throw new HttpError(
+            response.status,
+            response.statusText,
+            errorMessage,
+          );
+      }
+    }
+
+    return response.json() as Promise<T>;
+  }
+
+  /**
+   * Format query parameters for URL
+   * @param params - Object containing query parameters
+   * @returns Formatted query string
+   */
+  private formatQueryParams<T extends object>(params: T): string {
+    const validParams = Object.entries(params as Record<string, unknown>)
+      .filter(
+        ([, value]) => value !== undefined && value !== null && value !== "",
+      )
+      .map(([key, value]) => `${key}=${encodeURIComponent(String(value))}`)
+      .join("&");
+
+    return validParams ? `?${validParams}` : "";
+  }
+
+  // Authentication endpoints
+
+  /**
+   * Get nonce for message signature
+   * @returns Nonce response
+   */
+  async getNonce(): Promise<NonceResponse> {
+    return this.request<NonceResponse>("/auth/nonce");
+  }
+
+  /**
+   * Login with ethereum signature
+   * @param data - Login request data
+   * @returns Login response
+   */
+  async login(data: LoginRequest): Promise<LoginResponse> {
+    return this.request<LoginResponse>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Logout and clear cookies
+   */
+  async logout(): Promise<void> {
+    await this.request("/auth/logout", {
+      method: "POST",
+    });
+  }
+
+  // Profile endpoints
+
+  /**
+   * Get user profile
+   * @returns User profile
+   */
+  async getProfile(): Promise<ProfileResponse> {
+    return this.request<ProfileResponse>("/user/profile");
+  }
+
+  /**
+   * Update user profile
+   * @param data - Profile data
+   * @returns Updated profile
+   */
+  async updateProfile(data: UpdateProfileRequest): Promise<ProfileResponse> {
+    return this.request<ProfileResponse>("/user/profile", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Competition endpoints
+
+  /**
+   * Get list of competitions
+   * @param params - Query parameters
+   * @returns Competitions response
+   */
+  async getCompetitions(
+    params: GetCompetitionsParams = {},
+  ): Promise<CompetitionsResponse> {
+    const queryParams = this.formatQueryParams(params);
+    return this.request<CompetitionsResponse>(`/competitions${queryParams}`);
+  }
+
+  /**
+   * Get competition by ID
+   * @param id - Competition ID
+   * @returns Competition details
+   */
+  async getCompetition(id: string): Promise<CompetitionResponse> {
+    return this.request<CompetitionResponse>(`/competitions/${id}`);
+  }
+
+  /**
+   * Get competitions for the authenticated user
+   * @param params - Query parameters
+   * @returns Competitions response
+   */
+  async getUserCompetitions(
+    params: GetCompetitionsParams = {},
+  ): Promise<UserCompetitionsResponse> {
+    const queryParams = this.formatQueryParams(params);
+    return this.request<UserCompetitionsResponse>(
+      `/user/competitions${queryParams}`,
+    );
+  }
+
+  // Agent endpoints
+
+  /**
+   * Get list of agents
+   * @param params - Query parameters
+   * @returns Agents response
+   */
+  async getAgents(params: GetAgentsParams = {}): Promise<AgentsResponse> {
+    const queryParams = this.formatQueryParams(params);
+    return this.request<AgentsResponse>(`/agents${queryParams}`);
+  }
+
+  /**
+   * Get list of authenticated user agents
+   * @param params - Query parameters
+   * @returns Agents response
+   */
+  async getUserAgents(params: GetAgentsParams = {}): Promise<AgentsResponse> {
+    const queryParams = this.formatQueryParams(params);
+    return this.request<AgentsResponse>(`/user/agents${queryParams}`);
+  }
+
+  /**
+   * Get agent by ID (unauthenticated)
+   * @param id - Agent ID
+   * @returns Agent details
+   */
+  async getAgent(id: string): Promise<AgentWithOwnerResponse> {
+    return this.request<AgentWithOwnerResponse>(`/agents/${id}`);
+  }
+
+  /**
+   * Get agent by ID owned by the authenticated user
+   * @param id - Agent ID
+   * @returns Agent details
+   */
+  async getUserAgent(id: string): Promise<{ success: boolean; agent: Agent }> {
+    return this.request<{ success: boolean; agent: Agent }>(
+      `/user/agents/${id}`,
+    );
+  }
+
+  /**
+   * Create a new agent using admin API (via server-side route)
+   * @param data - Agent creation data
+   * @param userWalletAddress - User wallet address
+   * @returns Created agent response
+   */
+  async createAgentAdmin(
+    data: CreateAgentRequest,
+    userWalletAddress: string,
+  ): Promise<CreateAgentResponse> {
+    const payload = {
+      userWalletAddress,
+      agent: data,
+    };
+
+    // Call the Next.js API route directly (relative URL will use current origin)
+    const response = await fetch("/api/admin/agents", {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
+      body: JSON.stringify(payload),
     });
 
-    // Add interceptor to add authentication header
-    this.axiosInstance.interceptors.request.use(
-      (config: InternalAxiosRequestConfig) => {
-        // Set authentication header if API key is available
-        if (this.apiKey) {
-          config.headers = config.headers || {};
-          config.headers["Authorization"] = `Bearer ${this.apiKey}`;
-        }
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to create agent: ${errorText}`);
+    }
 
-        return config;
+    return response.json();
+  }
+
+  /**
+   * Update user agent
+   * @param data - Agent data
+   * @returns Updated agent
+   **/
+  async updateAgent(data: UpdateAgentRequest): Promise<UpdateAgentResponse> {
+    return this.request<UpdateAgentResponse>(
+      `/user/agents/${data.agentId}/profile`,
+      {
+        method: "PUT",
+        body: JSON.stringify(data.params),
       },
     );
   }
 
   /**
-   * Helper method to handle API errors consistently
+   * Get agent api key
+   * @param agentId - Agent ID
+   * @returns Agents response
    */
-  private handleApiError(
-    error: unknown,
-    operation: string,
-  ): { success: false; error: string; status: number } {
-    console.error(`Failed to ${operation}:`, error);
-
-    // Extract the detailed error message from the axios error response
-    if (axios.isAxiosError(error) && error.response?.data) {
-      return {
-        success: false,
-        error:
-          error.response.data.error ||
-          error.response.data.message ||
-          error.message,
-        status: error.response.status,
-      };
-    }
-
-    // Fallback to the generic error message
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage, status: 500 };
+  async getAgentApiKey(agentId: string): Promise<AgentApiKeyResponse> {
+    return this.request<AgentApiKeyResponse>(`/user/agents/${agentId}/api-key`);
   }
 
   /**
-   * Get all teams (requires admin API key)
+   * Get competitions for a specific agent
+   * @param agentId - Agent ID
+   * @param params - Query parameters
+   * @param apiKey - Optional agent API key for authentication
+   * @returns Agent competitions response
    */
-  async getAllTeams() {
-    try {
-      const response = await this.axiosInstance.get("/api/admin/teams");
-      return response.data.teams;
-    } catch (error) {
-      throw this.handleApiError(error, "get all teams");
+  async getAgentCompetitions(
+    agentId: string,
+    params: GetAgentCompetitionsParams = {},
+    apiKey?: string,
+  ): Promise<AgentCompetitionsResponse> {
+    const queryParams = this.formatQueryParams(params);
+    const headers: HeadersInit = {};
+
+    // Add Authorization header if API key is provided
+    if (apiKey) {
+      headers.Authorization = `Bearer ${apiKey}`;
     }
-  }
 
-  /**
-   * Register a new team (requires admin API key)
-   */
-  async registerTeam(data: TeamRegistrationRequest) {
-    try {
-      // Use the authenticated axiosInstance to call the admin-restricted endpoint
-      const response = await this.axiosInstance.post(
-        `/api/admin/teams/register`,
-        data,
-      );
-      return response.data.team;
-    } catch (error) {
-      throw this.handleApiError(error, "register team");
-    }
-  }
-
-  /**
-   * Search for teams based on various criteria (requires admin API key)
-   *
-   * @param searchParams Search parameters like email, name, walletAddress, etc.
-   * @returns Array of teams matching the criteria
-   */
-  async searchTeams(searchParams: {
-    email?: string;
-    name?: string;
-    walletAddress?: string;
-    contactPerson?: string;
-    active?: boolean;
-    includeAdmins?: boolean;
-  }) {
-    try {
-      // Convert search parameters to query string
-      const queryParams = new URLSearchParams();
-      console.log("searchParams", searchParams);
-      if (searchParams.email) queryParams.append("email", searchParams.email);
-      if (searchParams.name) queryParams.append("name", searchParams.name);
-      if (searchParams.walletAddress)
-        queryParams.append("walletAddress", searchParams.walletAddress);
-      if (searchParams.contactPerson)
-        queryParams.append("contactPerson", searchParams.contactPerson);
-
-      if (searchParams.active !== undefined) {
-        queryParams.append("active", searchParams.active.toString());
-      }
-
-      if (searchParams.includeAdmins !== undefined) {
-        queryParams.append(
-          "includeAdmins",
-          searchParams.includeAdmins.toString(),
-        );
-      }
-
-      // Make the request
-      const response = await this.axiosInstance.get(
-        `/api/admin/teams/search?${queryParams}`,
-      );
-      return response.data.teams;
-    } catch (error) {
-      throw this.handleApiError(error, "search teams");
-    }
-  }
-
-  /**
-   * Get a team's API key (requires admin API key)
-   *
-   * @param teamId The ID of the team whose API key should be retrieved
-   * @returns Object containing team details and API key
-   */
-  async getTeamApiKey(
-    teamId: string,
-  ): Promise<{ id: string; name: string; apiKey: string }> {
-    try {
-      const response = await this.axiosInstance.get(
-        `/api/admin/teams/${teamId}/key`,
-      );
-      return response.data.team;
-    } catch (error) {
-      throw this.handleApiError(error, "get team API key");
-    }
-  }
-
-  /**
-   * Get upcoming competitions (competitions with status=PENDING)
-   *
-   * @returns Array of upcoming competitions
-   */
-  async getUpcomingCompetitions() {
-    try {
-      console.log("getUpcomingCompetitions");
-      const response = await this.axiosInstance.get(
-        "/api/competition/upcoming",
-      );
-      return response.data.competitions;
-    } catch (error) {
-      throw this.handleApiError(error, "get upcoming competitions");
-    }
-  }
-
-  /**
-   * Update team profile including metadata (agents)
-   *
-   * @param profileData The updated profile data
-   * @returns Updated team data
-   */
-  async updateTeamProfile(profileData: {
-    contactPerson?: string;
-    metadata?: {
-      agents?: Agent[];
-      userTelegram?: string;
-    };
-    imageUrl?: string;
-  }) {
-    try {
-      const endpoint = `/api/account/profile`;
-
-      const response = await this.axiosInstance.put(endpoint, profileData);
-      return response.data.team;
-    } catch (error) {
-      throw this.handleApiError(error, "update team profile");
-    }
-  }
-
-  /**
-   * Get team's trade history
-   *
-   * @param filters Optional filters for the trades query
-   * @returns Trade history data
-   */
-  async getTeamTrades(filters?: {
-    fromToken?: string;
-    toToken?: string;
-    fromChain?: string;
-    toChain?: string;
-    fromSpecificChain?: string;
-    toSpecificChain?: string;
-    limit?: number;
-    offset?: number;
-  }) {
-    try {
-      // Convert filters to query parameters if provided
-      let endpoint = "/api/account/trades";
-      if (filters) {
-        const queryParams = new URLSearchParams();
-
-        // Add each filter to query params if defined
-        if (filters.fromToken)
-          queryParams.append("fromToken", filters.fromToken);
-        if (filters.toToken) queryParams.append("toToken", filters.toToken);
-        if (filters.fromChain)
-          queryParams.append("fromChain", filters.fromChain);
-        if (filters.toChain) queryParams.append("toChain", filters.toChain);
-        if (filters.fromSpecificChain)
-          queryParams.append("fromSpecificChain", filters.fromSpecificChain);
-        if (filters.toSpecificChain)
-          queryParams.append("toSpecificChain", filters.toSpecificChain);
-        if (filters.limit !== undefined)
-          queryParams.append("limit", filters.limit.toString());
-        if (filters.offset !== undefined)
-          queryParams.append("offset", filters.offset.toString());
-
-        // Add query string to endpoint if we have parameters
-        const queryString = queryParams.toString();
-        if (queryString) {
-          endpoint += `?${queryString}`;
-        }
-      }
-
-      const response = await this.axiosInstance.get(endpoint);
-      return response.data;
-    } catch (error) {
-      throw this.handleApiError(error, "get team trade history");
-    }
+    return this.request<AgentCompetitionsResponse>(
+      `/agents/${agentId}/competitions${queryParams}`,
+      { headers },
+    );
   }
 }

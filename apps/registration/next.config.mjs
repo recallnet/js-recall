@@ -1,7 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    transpilePackages: ["@recallnet/ui", "@recallnet/fonts"]
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*",
+      },
+    ],
+  },
+  transpilePackages: ["@recallnet/ui", "@recallnet/fonts"],
 };
 
 export default nextConfig;
-  

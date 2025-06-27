@@ -2,9 +2,8 @@
 
 import { ExternalLink } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
-import { Competition, getUpcomingCompetitions } from "@/lib/api";
+import { useCompetitions } from "@/hooks/useCompetitions";
 
 /**
  * RegistrationSuccess component
@@ -26,25 +25,9 @@ export default function RegistrationSuccess({
     ? userName.split(" ")[0] // Use first name only
     : "there"; // Fallback when no name is provided
 
-  const [competitions, setCompetitions] = useState<Competition[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Fetch upcoming competitions
-  useEffect(() => {
-    async function fetchCompetitions() {
-      try {
-        setIsLoading(true);
-        const upcomingCompetitions = await getUpcomingCompetitions();
-        setCompetitions(upcomingCompetitions);
-      } catch (err) {
-        console.error("Error fetching upcoming competitions:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchCompetitions();
-  }, []);
+  const { data: competitions, isLoading } = useCompetitions({
+    status: "pending",
+  });
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-[#050507] py-8">
@@ -134,8 +117,8 @@ export default function RegistrationSuccess({
             <div className="flex w-full items-center justify-center py-4">
               <div className="text-[#596E89]">Loading competitions...</div>
             </div>
-          ) : competitions.length > 0 ? (
-            competitions.map((competition, index) => {
+          ) : competitions && competitions.competitions.length > 0 ? (
+            competitions.competitions.map((competition, index) => {
               // Determine competition color based on index
               const colors = [
                 "#38A430",
@@ -152,10 +135,10 @@ export default function RegistrationSuccess({
               }: {
                 children: React.ReactNode;
               }) => {
-                if (competition.externalLink) {
+                if (competition.metadata?.website) {
                   return (
                     <Link
-                      href={competition.externalLink}
+                      href={competition.metadata.website}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="group relative block w-full transition-colors hover:bg-[#1D202E]"
@@ -182,7 +165,6 @@ export default function RegistrationSuccess({
                       }}
                     >
                       {competition.imageUrl && (
-                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={competition.imageUrl}
                           alt={competition.name}
@@ -198,36 +180,26 @@ export default function RegistrationSuccess({
                         <span className="font-['Trim_Mono',monospace] text-xs font-semibold uppercase tracking-[1.56px] text-[#6D85A4]">
                           {competition.status}
                         </span>
-                        {competition.description && (
-                          <span className="max-w-[250px] truncate font-['Trim_Mono',monospace] text-xs font-semibold tracking-[1.56px] text-[#6D85A4]">
-                            {competition.description}
-                          </span>
-                        )}
+                        <span className="font-['Trim_Mono',monospace] text-xs font-semibold uppercase tracking-[1.56px] text-[#6D85A4]">
+                          Created:{" "}
+                          {new Date(competition.createdAt).toLocaleDateString()}
+                        </span>
                       </div>
+                      <p className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-[#6D85A4]">
+                        {competition.description || "No description available"}
+                      </p>
                     </div>
                   </div>
                 </CompetitionWrapper>
               );
             })
           ) : (
-            <div className="flex w-full items-center justify-center rounded-sm border border-[#43505F] bg-[#11121A] p-6">
+            <div className="flex w-full items-center justify-center py-4">
               <div className="text-[#596E89]">
-                No upcoming competitions available at this time.
+                No competitions available at this time.
               </div>
             </div>
           )}
-
-          {/* Footer */}
-          <p className="w-full font-['Replica_LL',sans-serif] text-lg leading-[27px] tracking-[0.54px] text-[#596E89]">
-            Need help? Reach out on our{" "}
-            <Link
-              href="https://discord.com/invite/recallnet"
-              className="text-[#E9EDF1] underline"
-            >
-              Discord community
-            </Link>
-            .
-          </p>
         </div>
       </div>
     </div>

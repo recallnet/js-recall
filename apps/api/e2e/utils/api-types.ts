@@ -333,6 +333,7 @@ export interface Competition {
   endDate: string | null;
   status: CompetitionStatus;
   crossChainTradingType: CrossChainTradingType;
+  sandboxMode: boolean; // Controls automatic joining of newly registered agents
   createdAt: string;
   updatedAt: string;
   agentIds?: string[];
@@ -343,7 +344,9 @@ export interface Competition {
     totalVotes: number;
     uniqueTokens: number;
   };
-  // Vote-related fields (only present for authenticated users)
+  // Vote-related fields
+  votingStartDate: string | null;
+  votingEndDate: string | null;
   votingEnabled?: boolean;
   userVotingInfo?: CompetitionVotingState;
 }
