@@ -1159,7 +1159,7 @@ export function makeAdminController(services: ServiceRegistry) {
           searchType, // 'users', 'agents', or 'both' (default)
         } = req.query;
 
-        const searchTypeFilter = (searchType as string) || "join";
+        const searchTypeFilter = (searchType as string) || "both";
         const results: AdminSearchResults = {
           users: [],
           agents: [],
@@ -1178,12 +1178,17 @@ export function makeAdminController(services: ServiceRegistry) {
           if (name) userSearchParams.name = name as string;
           if (walletAddress)
             userSearchParams.walletAddress = walletAddress as string;
+          if (status)
+            userSearchParams.status = status as
+              | "active"
+              | "suspended"
+              | "deleted";
 
           if (user?.email) userSearchParams.email = user?.email as string;
           if (user?.name) userSearchParams.name = user?.name as string;
           if (user?.walletAddress)
             userSearchParams.walletAddress = user?.walletAddress as string;
-          if (status)
+          if (user?.status)
             userSearchParams.status = status as
               | "active"
               | "suspended"
