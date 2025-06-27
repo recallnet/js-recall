@@ -14,6 +14,7 @@ import {
   findById,
   findByStatus,
   findLeaderboardByTradingComp,
+  get24hSnapshots,
   getAgentCompetitionRecord,
   getAllCompetitionAgents,
   getBulkAgentCompetitionRecords,
@@ -515,17 +516,16 @@ export class CompetitionManager {
 
       // Fallback to calculating current values
       const agents = await getCompetitionAgents(competitionId);
-      const leaderboard: { agentId: string; value: number; pnl: number }[] = [];
 
-      for (const agentId of agents) {
-        const portfolioValue =
-          await this.tradeSimulator.calculatePortfolioValue(agentId);
-        leaderboard.push({
-          agentId,
-          value: portfolioValue,
-          pnl: 0, // TODO: if there's no competitions_leaderboard row we don't have a pnl
-        });
-      }
+      // Use bulk portfolio value calculation to avoid N+1 queries
+      const portfolioValues =
+        await this.tradeSimulator.calculateBulkPortfolioValues(agents);
+
+      const leaderboard = agents.map((agentId) => ({
+        agentId,
+        value: portfolioValues.get(agentId) || 0,
+        pnl: 0, // TODO: if there's no competitions_leaderboard row we don't have a pnl
+      }));
 
       // Sort by value descending
       return leaderboard.sort((a, b) => b.value - a.value);
@@ -697,28 +697,27 @@ export class CompetitionManager {
     );
 
     try {
-      // Get all portfolio snapshots for all agents in one query using repository
-      const allSnapshots = await getBulkAgentPortfolioSnapshots(
+      // Get only the snapshots we need for metrics calculation
+      const { earliestSnapshots, snapshots24hAgo } = await get24hSnapshots(
         competitionId,
         agentIds,
       );
 
-      // Group snapshots by agent ID with proper typing
-      const snapshotsByAgent = new Map<string, typeof allSnapshots>();
-      for (const snapshot of allSnapshots) {
-        const agentSnapshots = snapshotsByAgent.get(snapshot.agentId) || [];
-        agentSnapshots.push(snapshot);
-        snapshotsByAgent.set(snapshot.agentId, agentSnapshots);
-      }
+      // Create maps for efficient lookup
+      const earliestSnapshotsMap = new Map(
+        earliestSnapshots.map((snapshot) => [snapshot.agentId, snapshot]),
+      );
+      const snapshots24hAgoMap = new Map(
+        snapshots24hAgo.map((snapshot) => [snapshot.agentId, snapshot]),
+      );
 
       // Calculate metrics for each agent
       const metricsMap = new Map();
-      const now = new Date();
-      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
       for (const agentId of agentIds) {
         const currentValue = currentValues.get(agentId) || 0;
-        const snapshots = snapshotsByAgent.get(agentId) || [];
+        const earliestSnapshot = earliestSnapshotsMap.get(agentId);
+        const snapshot24hAgo = snapshots24hAgoMap.get(agentId);
 
         // Default values
         let pnl = 0;
@@ -726,46 +725,21 @@ export class CompetitionManager {
         let change24h = 0;
         let change24hPercent = 0;
 
-        if (snapshots.length > 0) {
-          // Sort snapshots by timestamp (oldest first) with proper typing
-          const sortedSnapshots = snapshots.sort(
-            (a: (typeof snapshots)[0], b: (typeof snapshots)[0]) =>
-              (a.timestamp?.getTime() ?? 0) - (b.timestamp?.getTime() ?? 0),
-          );
-
-          // Get starting value (earliest snapshot)
-          const startingSnapshot = sortedSnapshots[0];
-          const startingValue = startingSnapshot?.totalValue ?? 0;
-
-          // Calculate PnL
+        // Calculate PnL from earliest snapshot
+        if (earliestSnapshot) {
+          const startingValue = earliestSnapshot.totalValue;
           if (startingValue > 0) {
             pnl = currentValue - startingValue;
             pnlPercent = (pnl / startingValue) * 100;
           }
+        }
 
-          // Find the snapshot closest to 24h ago
-          let closestSnapshot = null;
-          let smallestTimeDiff = Infinity;
-
-          for (const snapshot of snapshots) {
-            if (snapshot.timestamp) {
-              const timeDiff = Math.abs(
-                snapshot.timestamp.getTime() - twentyFourHoursAgo.getTime(),
-              );
-              if (timeDiff < smallestTimeDiff) {
-                smallestTimeDiff = timeDiff;
-                closestSnapshot = snapshot;
-              }
-            }
-          }
-
-          // Calculate 24h change
-          if (closestSnapshot) {
-            const value24hAgo = closestSnapshot.totalValue;
-            if (value24hAgo > 0) {
-              change24h = currentValue - value24hAgo;
-              change24hPercent = (change24h / value24hAgo) * 100;
-            }
+        // Calculate 24h change from closest snapshot to 24h ago
+        if (snapshot24hAgo) {
+          const value24hAgo = snapshot24hAgo.totalValue;
+          if (value24hAgo > 0) {
+            change24h = currentValue - value24hAgo;
+            change24hPercent = (change24h / value24hAgo) * 100;
           }
         }
 

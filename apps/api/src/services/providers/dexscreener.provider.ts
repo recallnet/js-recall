@@ -3,6 +3,7 @@ import axios from "axios";
 import config from "@/config/index.js";
 import { PriceReport, PriceSource } from "@/types/index.js";
 import { BlockchainType, SpecificChain } from "@/types/index.js";
+import { DexScreenerResponse } from "@/types/index.js";
 
 /**
  * DexScreener price provider implementation
@@ -514,5 +515,267 @@ export class DexScreenerProvider implements PriceSource {
     // Try to get a price - if successful, we support it
     const price = await this.getPrice(tokenAddress, chain, specificChain);
     return price !== null;
+  }
+
+  /**
+   * Get prices for multiple tokens in batches
+   * @param tokenAddresses Array of token addresses
+   * @param chain Blockchain type
+   * @param specificChain Specific chain identifier
+   * @returns Map of token addresses to their price information
+   */
+  async getBatchPrices(
+    tokenAddresses: string[],
+    chain: BlockchainType,
+    specificChain: SpecificChain,
+  ): Promise<Map<string, { price: number; symbol: string } | null>> {
+    // Ensure we don't exceed the 30 token limit
+    const MAX_BATCH_SIZE = 30;
+    const results = new Map<string, { price: number; symbol: string } | null>();
+
+    // Process tokens in batches of up to 30
+    for (let i = 0; i < tokenAddresses.length; i += MAX_BATCH_SIZE) {
+      const chunk = tokenAddresses.slice(i, i + MAX_BATCH_SIZE);
+      const batchResults = await this.fetchBatchPrices(
+        chunk,
+        chain,
+        specificChain,
+      );
+
+      // Merge results
+      batchResults.forEach((result, address) => {
+        results.set(address, result);
+      });
+    }
+
+    // After batch processing, retry null values individually. This is needed
+    // in case the dexscreener api returns the wrong quote token and
+    // miscalculates priceUsd
+    const nullTokens: string[] = [];
+    results.forEach((result, address) => {
+      if (result === null) {
+        nullTokens.push(address);
+      }
+    });
+
+    if (nullTokens.length > 0) {
+      console.log(
+        `[DexScreenerProvider] Retrying ${nullTokens.length} tokens individually after batch processing`,
+      );
+
+      // Retry each null token individually
+      for (const tokenAddress of nullTokens) {
+        try {
+          const individualResult = await this.getPrice(
+            tokenAddress,
+            chain,
+            specificChain,
+          );
+
+          if (individualResult) {
+            results.set(tokenAddress, {
+              price: individualResult.price,
+              symbol: individualResult.symbol,
+            });
+            console.log(
+              `[DexScreenerProvider] Individual retry successful for ${tokenAddress}: $${individualResult.price} (${individualResult.symbol})`,
+            );
+          } else {
+            console.log(
+              `[DexScreenerProvider] Individual retry failed for ${tokenAddress}`,
+            );
+          }
+        } catch (error) {
+          console.error(
+            `[DexScreenerProvider] Error during individual retry for ${tokenAddress}:`,
+            error instanceof Error ? error.message : "Unknown error",
+          );
+        }
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Fetch prices for a batch of tokens using DexScreener API
+   * @param tokenAddresses Array of token addresses (max 30)
+   * @param chain Blockchain type
+   * @param specificChain Specific chain identifier
+   * @returns Map of token addresses to their price information
+   */
+  private async fetchBatchPrices(
+    tokenAddresses: string[],
+    chain: BlockchainType,
+    specificChain: SpecificChain,
+  ): Promise<Map<string, { price: number; symbol: string } | null>> {
+    const results = new Map<string, { price: number; symbol: string } | null>();
+
+    // Normalize addresses and check cache first
+    const normalizedAddresses = tokenAddresses.map((addr) =>
+      addr.toLowerCase(),
+    );
+    const uncachedAddresses: string[] = [];
+
+    for (const normalizedAddr of normalizedAddresses) {
+      const originalAddr = tokenAddresses.find(
+        (addr) => addr.toLowerCase() === normalizedAddr,
+      );
+      if (!originalAddr) continue;
+
+      // Check for burn addresses
+      if (this.isBurnAddress(normalizedAddr)) {
+        results.set(originalAddr, { price: 0, symbol: "BURN" });
+        continue;
+      }
+
+      // Check cache
+      const cachedPrice = this.getCachedPrice(normalizedAddr, specificChain);
+      if (cachedPrice !== null) {
+        results.set(originalAddr, {
+          price: cachedPrice.price,
+          symbol: cachedPrice.symbol,
+        });
+      } else {
+        uncachedAddresses.push(originalAddr);
+      }
+    }
+
+    // If all tokens were cached or burn addresses, return early
+    if (
+      uncachedAddresses.length === 0 ||
+      typeof uncachedAddresses[0] === "undefined"
+    ) {
+      return results;
+    }
+
+    const firstAddress = uncachedAddresses[0];
+
+    const dexScreenerChain = this.getDexScreenerChain(
+      firstAddress,
+      chain,
+      specificChain,
+    );
+
+    // Join addresses with comma for batch request
+    const addressesParam = uncachedAddresses
+      .map((addr) => addr.toLowerCase())
+      .join(",");
+    const url = `${this.API_BASE}/${dexScreenerChain}/${addressesParam}`;
+
+    console.log(`[DexScreenerProvider] Fetching batch prices from: ${url}`);
+    console.log(
+      `[DexScreenerProvider] Batch size: ${uncachedAddresses.length} tokens`,
+    );
+
+    let retries = 0;
+    while (retries <= this.MAX_RETRIES) {
+      try {
+        // Enforce rate limiting
+        await this.enforceRateLimit();
+
+        // Make the API request
+        const response = await axios.get(url);
+
+        // Check if response has data
+        if (
+          response.data &&
+          Array.isArray(response.data) &&
+          response.data.length > 0
+        ) {
+          // Process each token in the batch
+          for (const originalAddr of uncachedAddresses) {
+            const normalizedAddr = originalAddr.toLowerCase();
+            const tokenPrice = this.extractPriceUsd(
+              normalizedAddr,
+              response.data,
+              specificChain,
+            );
+
+            if (tokenPrice) {
+              // Cache the price
+              this.setCachedPrice(
+                normalizedAddr,
+                chain,
+                specificChain,
+                tokenPrice.price,
+                tokenPrice.symbol,
+              );
+
+              results.set(originalAddr, tokenPrice);
+              console.log(
+                `[DexScreenerProvider] Found batch price for ${originalAddr}: $${tokenPrice.price} (${tokenPrice.symbol})`,
+              );
+            } else {
+              results.set(originalAddr, null);
+              console.log(
+                `[DexScreenerProvider] No price found for ${originalAddr} in batch response`,
+              );
+            }
+          }
+        } else {
+          console.log(
+            `[DexScreenerProvider] No data returned for batch request: ${url}`,
+          );
+          // Set all uncached tokens to null
+          uncachedAddresses.forEach((addr) => {
+            results.set(addr, null);
+          });
+        }
+
+        return results;
+      } catch (error) {
+        console.error(
+          `[DexScreenerProvider] Error fetching batch prices (attempt ${retries + 1}):`,
+          error instanceof Error ? error.message : "Unknown error",
+        );
+
+        retries++;
+        if (retries <= this.MAX_RETRIES) {
+          await this.delay(this.RETRY_DELAY * retries);
+        }
+      }
+    }
+
+    console.error(
+      `[DexScreenerProvider] Failed to fetch batch prices after ${this.MAX_RETRIES} retries`,
+    );
+
+    // Set all uncached tokens to null on failure
+    uncachedAddresses.forEach((addr) => {
+      results.set(addr, null);
+    });
+
+    return results;
+  }
+
+  private extractPriceUsd(
+    addr: string,
+    data: DexScreenerResponse,
+    specificChain: SpecificChain,
+  ): { price: number; symbol: string } | null {
+    // Find the pair where our token is the base token
+    const result = data.find(
+      (pair) => pair.baseToken?.address?.toLowerCase() === addr.toLowerCase(),
+    );
+
+    if (
+      result?.quoteToken &&
+      !this.isStablecoin(result.quoteToken.address, specificChain)
+    ) {
+      // TODO: if the quote token isn't a stable coin then it seems the DexScreener
+      //  api returns an invalid value for the priceUsd...
+
+      return null;
+    }
+
+    if (!result || !result.priceUsd || isNaN(parseFloat(result.priceUsd))) {
+      return null;
+    }
+
+    return {
+      price: parseFloat(result.priceUsd),
+      symbol: result.baseToken.symbol || "",
+    };
   }
 }

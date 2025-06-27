@@ -1,0 +1,1 @@
+CREATE INDEX "idx_portfolio_snapshots_competition_agent_timestamp" ON "trading_comps"."portfolio_snapshots" USING btree ("competition_id","agent_id","timestamp");

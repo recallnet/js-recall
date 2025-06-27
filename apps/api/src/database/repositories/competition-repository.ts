@@ -10,6 +10,7 @@ import {
   isNotNull,
   lte,
   max,
+  min,
   sql,
 } from "drizzle-orm";
 import { unionAll } from "drizzle-orm/pg-core";
@@ -689,6 +690,8 @@ async function batchCreatePortfolioTokenValuesImpl(
  */
 async function getLatestPortfolioSnapshotsImpl(competitionId: string) {
   try {
+    // TODO: this query seems to be averaging almost 2 full seconds.
+    //  We added indexes on Jul 10, need to find out if indexing fixes the issue.
     const subquery = db
       .select({
         agentId: portfolioSnapshots.agentId,
@@ -772,6 +775,103 @@ async function getBulkAgentPortfolioSnapshotsImpl(
   } catch (error) {
     console.error(
       "[CompetitionRepository] Error in getBulkAgentPortfolioSnapshots:",
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
+ * Get earliest and 24h-ago snapshots for each agent
+ * @param competitionId Competition ID
+ * @param agentIds Array of agent IDs to get snapshots for
+ * @returns Object containing earliest and 24h-ago snapshots by agent
+ */
+async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]) {
+  if (agentIds.length === 0) {
+    return { earliestSnapshots: [], snapshots24hAgo: [] };
+  }
+
+  try {
+    console.log(
+      `[CompetitionRepository] getBulkAgentMetricsSnapshots called for ${agentIds.length} agents in competition ${competitionId}`,
+    );
+
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    // Get earliest snapshots for each agent (for PnL calculation)
+    const earliestSubquery = db
+      .select({
+        agentId: portfolioSnapshots.agentId,
+        minTimestamp: min(portfolioSnapshots.timestamp).as("min_timestamp"),
+      })
+      .from(portfolioSnapshots)
+      .where(
+        and(
+          eq(portfolioSnapshots.competitionId, competitionId),
+          inArray(portfolioSnapshots.agentId, agentIds),
+        ),
+      )
+      .groupBy(portfolioSnapshots.agentId)
+      .as("earliest_snapshots");
+
+    const earliestSnapshots = await db
+      .select()
+      .from(portfolioSnapshots)
+      .innerJoin(
+        earliestSubquery,
+        and(
+          eq(portfolioSnapshots.agentId, earliestSubquery.agentId),
+          eq(portfolioSnapshots.timestamp, earliestSubquery.minTimestamp),
+        ),
+      )
+      .where(eq(portfolioSnapshots.competitionId, competitionId));
+
+    // Get snapshots closest to 24h ago using window functions
+    const snapshots24hAgo = await db
+      .select()
+      .from(
+        db
+          .select({
+            ...getTableColumns(portfolioSnapshots),
+            timeDiff:
+              sql<number>`ABS(EXTRACT(EPOCH FROM ${portfolioSnapshots.timestamp} - ${twentyFourHoursAgo}))`.as(
+                "time_diff",
+              ),
+            rn: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${portfolioSnapshots.agentId} ORDER BY ABS(EXTRACT(EPOCH FROM ${portfolioSnapshots.timestamp} - ${twentyFourHoursAgo})))`.as(
+              "rn",
+            ),
+          })
+          .from(portfolioSnapshots)
+          .where(
+            and(
+              eq(portfolioSnapshots.competitionId, competitionId),
+              inArray(portfolioSnapshots.agentId, agentIds),
+            ),
+          )
+          .as("ranked_snapshots"),
+      )
+      .where(eq(sql`rn`, 1));
+
+    console.log(
+      `[CompetitionRepository] Retrieved ${earliestSnapshots.length} earliest snapshots and ${snapshots24hAgo.length} 24h-ago snapshots for ${agentIds.length} agents`,
+    );
+
+    return {
+      earliestSnapshots: earliestSnapshots.map(
+        (row) => row.portfolio_snapshots,
+      ),
+      snapshots24hAgo: snapshots24hAgo.map((row) => ({
+        id: row.id,
+        agentId: row.agentId,
+        competitionId: row.competitionId,
+        timestamp: row.timestamp,
+        totalValue: row.totalValue,
+      })),
+    };
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in getBulkAgentMetricsSnapshots:",
       error,
     );
     throw error;
@@ -1416,9 +1516,9 @@ async function findActiveCompetitionsPastEndDateImpl() {
   }
 }
 
-// =============================================================================
+// ----------------------------------------------------------------------------
 // EXPORTED REPOSITORY FUNCTIONS WITH TIMING
-// =============================================================================
+// ----------------------------------------------------------------------------
 
 /**
  * All repository functions wrapped with timing and metrics
@@ -1645,4 +1745,10 @@ export const findActiveCompetitionsPastEndDate = createTimedRepositoryFunction(
   findActiveCompetitionsPastEndDateImpl,
   "CompetitionRepository",
   "findActiveCompetitionsPastEndDate",
+);
+
+export const get24hSnapshots = createTimedRepositoryFunction(
+  get24hSnapshotsImpl,
+  "CompetitionRepository",
+  "get24hSnapshots",
 );

@@ -2,6 +2,7 @@ import { config } from "@/config/index.js";
 import {
   count as countPrices,
   create as createPrice,
+  createBatch as createPriceBatch,
   getPriceHistory,
 } from "@/database/repositories/price-repository.js";
 import { MultiChainProvider } from "@/services/providers/multi-chain.provider.js";
@@ -14,7 +15,7 @@ import { BlockchainType, PriceSource, SpecificChain } from "@/types/index.js";
 export class PriceTracker {
   providers: PriceSource[];
   // private novesProvider: NovesProvider | null = null;
-  private multiChainProvider: MultiChainProvider | null = null;
+  private multiChainProvider: MultiChainProvider;
 
   constructor() {
     // Initialize only the MultiChainProvider
@@ -247,11 +248,148 @@ export class PriceTracker {
   }
 
   /**
-   * Store price data in the database
+   * Get detailed token information for multiple tokens in bulk
+   * @param tokenAddresses Array of token addresses to get info for
+   * @returns Map of token address to token info (null if not available)
+   */
+  async getBulkTokenInfo(
+    tokenAddresses: string[],
+  ): Promise<Map<string, Awaited<ReturnType<typeof this.getTokenInfo>>>> {
+    console.log(
+      `[PriceTracker] Getting bulk token info for ${tokenAddresses.length} tokens`,
+    );
+
+    const resultMap = new Map<
+      string,
+      Awaited<ReturnType<typeof this.getTokenInfo>>
+    >();
+
+    if (tokenAddresses.length === 0) {
+      return resultMap;
+    }
+
+    // Group tokens by chain type for efficient processing
+    const evmTokens: string[] = [];
+    const svmTokens: string[] = [];
+
+    for (const tokenAddress of tokenAddresses) {
+      const chainType = this.determineChain(tokenAddress);
+      if (chainType === BlockchainType.EVM) {
+        evmTokens.push(tokenAddress);
+      } else {
+        svmTokens.push(tokenAddress);
+      }
+    }
+
+    // Process EVM tokens in bulk if MultiChainProvider supports it
+    if (evmTokens.length > 0 && this.multiChainProvider) {
+      try {
+        // Use batch processing to reduce API calls
+        const batchResults = await this.multiChainProvider.getBatchTokenInfo(
+          evmTokens,
+          BlockchainType.EVM,
+        );
+
+        // Store prices and add to result map
+        const pricesToStore = [];
+
+        for (const [tokenAddress, tokenInfo] of batchResults) {
+          if (tokenInfo && tokenInfo.price !== null) {
+            pricesToStore.push({
+              tokenAddress,
+              price: tokenInfo.price,
+              symbol: tokenInfo.symbol,
+              chain: tokenInfo.chain,
+              specificChain: tokenInfo.specificChain,
+            });
+
+            resultMap.set(tokenAddress, {
+              price: tokenInfo.price,
+              symbol: tokenInfo.symbol,
+              chain: tokenInfo.chain,
+              specificChain: tokenInfo.specificChain as SpecificChain,
+            });
+          } else {
+            resultMap.set(tokenAddress, null);
+          }
+        }
+
+        // Store all prices in a single batch operation
+        await this.storePrices(pricesToStore);
+      } catch (error) {
+        console.error(
+          "[PriceTracker] Error in bulk EVM token processing:",
+          error,
+        );
+        // Fallback to individual processing for EVM tokens
+        for (const tokenAddress of evmTokens) {
+          const tokenInfo = await this.getTokenInfo(tokenAddress);
+          resultMap.set(tokenAddress, tokenInfo);
+        }
+      }
+    }
+
+    // Process SVM tokens in bulk if MultiChainProvider supports it
+    if (svmTokens.length > 0 && this.multiChainProvider) {
+      try {
+        // Use batch processing to reduce API calls
+        const batchResults = await this.multiChainProvider.getBatchTokenInfo(
+          svmTokens,
+          BlockchainType.SVM,
+        );
+
+        // Store prices and add to result map
+        const pricesToStore = [];
+
+        for (const [tokenAddress, tokenInfo] of batchResults) {
+          if (tokenInfo && tokenInfo.price !== null) {
+            pricesToStore.push({
+              tokenAddress,
+              price: tokenInfo.price,
+              symbol: tokenInfo.symbol,
+              chain: tokenInfo.chain,
+              specificChain: tokenInfo.specificChain,
+            });
+
+            resultMap.set(tokenAddress, {
+              price: tokenInfo.price,
+              symbol: tokenInfo.symbol,
+              chain: tokenInfo.chain,
+              specificChain: tokenInfo.specificChain as SpecificChain,
+            });
+          } else {
+            resultMap.set(tokenAddress, null);
+          }
+        }
+
+        // Store all prices in a single batch operation
+        await this.storePrices(pricesToStore);
+      } catch (error) {
+        console.error(
+          "[PriceTracker] Error in bulk SVM token processing:",
+          error,
+        );
+        // Fallback to individual processing for SVM tokens
+        for (const tokenAddress of svmTokens) {
+          const tokenInfo = await this.getTokenInfo(tokenAddress);
+          resultMap.set(tokenAddress, tokenInfo);
+        }
+      }
+    }
+
+    console.log(
+      `[PriceTracker] Successfully retrieved bulk token info for ${Array.from(resultMap.values()).filter((v) => v !== null).length}/${tokenAddresses.length} tokens`,
+    );
+
+    return resultMap;
+  }
+
+  /**
+   * Store a price in the database
    * @param tokenAddress The token address
-   * @param price The price in USD
+   * @param price The price to store
    * @param symbol The token symbol
-   * @param chain The blockchain type (optional)
+   * @param chain The blockchain type
    * @param specificChain The specific chain (optional)
    */
   private async storePrice(
@@ -272,6 +410,39 @@ export class PriceTracker {
       });
     } catch (error) {
       console.error(`[PriceTracker] Error storing price in database:`, error);
+    }
+  }
+
+  /**
+   * Store multiple prices in the database using batch operation
+   * @param pricesData Array of price data to store
+   */
+  private async storePrices(
+    pricesData: Array<{
+      tokenAddress: string;
+      price: number;
+      symbol: string;
+      chain: BlockchainType;
+      specificChain: SpecificChain;
+    }>,
+  ): Promise<void> {
+    if (pricesData.length === 0) {
+      return;
+    }
+
+    try {
+      const insertData = pricesData.map((data) => ({
+        token: data.tokenAddress,
+        price: data.price,
+        symbol: data.symbol,
+        timestamp: new Date(),
+        chain: data.chain,
+        specificChain: data.specificChain,
+      }));
+
+      await createPriceBatch(insertData);
+    } catch (error) {
+      console.error(`[PriceTracker] Error storing prices in database:`, error);
     }
   }
 

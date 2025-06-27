@@ -400,12 +400,19 @@ export function makeAgentController(services: ServiceRegistry) {
         let totalValue = 0;
         const tokenValues = [];
 
-        // Calculate values with minimal API calls
+        // Get unique token addresses
+        const uniqueTokens = [
+          ...new Set(balances.map((balance) => balance.tokenAddress)),
+        ];
+
+        // Get token info in bulk, this chunks dexscreener api requests to
+        // reduce load and rate limiting.
+        const tokenInfoMap =
+          await services.priceTracker.getBulkTokenInfo(uniqueTokens);
+
+        // Calculate values efficiently
         for (const balance of balances) {
-          // Get price and token information using the existing service method
-          const tokenInfo = await services.priceTracker.getTokenInfo(
-            balance.tokenAddress,
-          );
+          const tokenInfo = tokenInfoMap.get(balance.tokenAddress);
           const price = tokenInfo?.price || 0;
           const value = price ? balance.amount * price : 0;
           totalValue += value;
