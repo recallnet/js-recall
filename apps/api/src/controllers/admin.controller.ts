@@ -70,6 +70,26 @@ interface AdminSearchResults {
   agents: Omit<Agent, "apiKey">[];
 }
 
+interface AdminSearchUsersAndAgentsQuery {
+  // backwards-compatibility
+  email?: string;
+  name?: string;
+  walletAddress?: string;
+  status?: "active" | "suspended" | "deleted";
+
+  user?: {
+    email?: string;
+    name?: string;
+    walletAddress?: string;
+    status?: "active" | "suspended" | "deleted";
+  };
+  agent?: {
+    name?: string;
+    status?: "active" | "suspended" | "deleted";
+  };
+  searchType: string;
+}
+
 export interface AdminSearchUsersAndAgentsResponse {
   success: boolean;
   searchType: string;
@@ -1124,7 +1144,7 @@ export function makeAdminController(services: ServiceRegistry) {
      * @param next Express next function
      */
     async searchUsersAndAgents(
-      req: Request,
+      req: Request<object, object, object, AdminSearchUsersAndAgentsQuery>,
       res: Response,
       next: NextFunction,
     ) {
@@ -1134,23 +1154,35 @@ export function makeAdminController(services: ServiceRegistry) {
           name,
           walletAddress,
           status,
+          user,
+          agent,
           searchType, // 'users', 'agents', or 'both' (default)
         } = req.query;
 
-        const searchTypeFilter = (searchType as string) || "both";
+        const searchTypeFilter = (searchType as string) || "join";
         const results: AdminSearchResults = {
           users: [],
           agents: [],
         };
 
         // Search users if requested
-        if (searchTypeFilter === "users" || searchTypeFilter === "both") {
+        if (
+          searchTypeFilter === "users" ||
+          searchTypeFilter === "both" ||
+          searchTypeFilter === "join"
+        ) {
           const userSearchParams: UserSearchParams = {};
 
+          // TODO(bcalza): remove these when front-end changes
           if (email) userSearchParams.email = email as string;
           if (name) userSearchParams.name = name as string;
           if (walletAddress)
             userSearchParams.walletAddress = walletAddress as string;
+
+          if (user?.email) userSearchParams.email = user?.email as string;
+          if (user?.name) userSearchParams.name = user?.name as string;
+          if (user?.walletAddress)
+            userSearchParams.walletAddress = user?.walletAddress as string;
           if (status)
             userSearchParams.status = status as
               | "active"
@@ -1174,12 +1206,24 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // Search agents if requested
-        if (searchTypeFilter === "agents" || searchTypeFilter === "both") {
+        if (
+          searchTypeFilter === "agents" ||
+          searchTypeFilter === "both" ||
+          searchTypeFilter === "join"
+        ) {
           const agentSearchParams: AgentSearchParams = {};
 
+          // TODO(bcalza): remove these when front-end changes
           if (name) agentSearchParams.name = name as string;
           if (status)
             agentSearchParams.status = status as
+              | "active"
+              | "suspended"
+              | "deleted";
+
+          if (agent?.name) agentSearchParams.name = agent?.name as string;
+          if (agent?.status)
+            agentSearchParams.status = agent?.status as
               | "active"
               | "suspended"
               | "deleted";
@@ -1200,6 +1244,20 @@ export function makeAdminController(services: ServiceRegistry) {
             createdAt: agent.createdAt,
             updatedAt: agent.updatedAt,
           }));
+        }
+
+        if (searchTypeFilter === "join") {
+          const userMap = new Map(results.users.map((user) => [user.id, user]));
+
+          results.agents = results.agents
+            .map((agent) => {
+              const user = userMap.get(agent.ownerId);
+              if (!user) return null;
+              return {
+                ...agent,
+              };
+            })
+            .filter((entry) => entry !== null);
         }
 
         // Return the search results

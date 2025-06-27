@@ -1412,31 +1412,42 @@ export function configureAdminRoutes(
    *       - BearerAuth: []
    *     parameters:
    *       - in: query
-   *         name: email
+   *         name: user.email
    *         schema:
    *           type: string
-   *         description: Partial match for email address (users only)
+   *         description: Partial match for user email
    *       - in: query
-   *         name: name
+   *         name: user.name
    *         schema:
    *           type: string
-   *         description: Partial match for name
+   *         description: Partial match for user name
    *       - in: query
-   *         name: walletAddress
+   *         name: user.walletAddress
    *         schema:
    *           type: string
-   *         description: Partial match for wallet address (users only)
+   *         description: Partial match for user wallet address
    *       - in: query
-   *         name: status
+   *         name: user.status
    *         schema:
    *           type: string
    *           enum: [active, suspended, deleted]
-   *         description: Filter by status
+   *         description: Filter by user status
+   *       - in: query
+   *         name: agent.name
+   *         schema:
+   *           type: string
+   *         description: Partial match for agent name
+   *       - in: query
+   *         name: agent.status
+   *         schema:
+   *           type: string
+   *           enum: [active, suspended, deleted]
+   *         description: Filter by agent status
    *       - in: query
    *         name: searchType
    *         schema:
    *           type: string
-   *           enum: [users, agents, both]
+   *           enum: [users, agents, both, join]
    *           default: both
    *         description: Type of entities to search
    *     responses:
