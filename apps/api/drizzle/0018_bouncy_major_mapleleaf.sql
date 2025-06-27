@@ -1,0 +1,2 @@
+ALTER TABLE "competitions_leaderboard" ADD COLUMN "pnl" numeric(30, 15) DEFAULT 0 NOT NULL;--> statement-breakpoint
+ALTER TABLE "competitions_leaderboard" ADD COLUMN "total_agents" numeric(30, 15) DEFAULT 0 NOT NULL;

@@ -30,7 +30,7 @@ export interface Agent {
       score: number;
       totalAgents: number;
     };
-
+    bestPnl: number;
     totalVotes: number;
     totalTrades: number;
     completedCompetitions: number;

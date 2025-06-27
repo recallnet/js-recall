@@ -220,10 +220,12 @@ async function showCompetitionStatus() {
         {
           agentId: string;
           value: number;
+          pnl: number; // TODO: casting here probably isn't right
         },
         ...{
           agentId: string;
           value: number;
+          pnl: number; // TODO: casting here probably isn't right
         }[],
       ];
 
