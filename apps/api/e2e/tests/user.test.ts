@@ -513,7 +513,7 @@ describe("User API", () => {
       );
       expect(response.success).toBe(true);
       // Small delay to ensure different timestamps
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await wait(10);
     }
 
     // Test default pagination (should return all agents)
@@ -549,7 +549,7 @@ describe("User API", () => {
         `Description for Agent ${i}`,
       );
       expect(response.success).toBe(true);
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await wait(10);
     }
 
     // Test limit of 3
@@ -586,7 +586,7 @@ describe("User API", () => {
         `Description for Agent ${i}`,
       );
       expect(response.success).toBe(true);
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await wait(10);
     }
 
     // Get all agents first to establish baseline
@@ -629,7 +629,7 @@ describe("User API", () => {
         `Description for Agent ${i}`,
       );
       expect(response.success).toBe(true);
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await wait(10);
     }
 
     // Test pagination: page 1 (offset 0, limit 3)
@@ -690,7 +690,7 @@ describe("User API", () => {
         agent.description,
       );
       expect(response.success).toBe(true);
-      await new Promise((resolve) => setTimeout(resolve, 50)); // Larger delay for timestamp differentiation
+      await wait(50); // Larger delay for timestamp differentiation
     }
 
     // Test name ascending sort
@@ -754,7 +754,7 @@ describe("User API", () => {
         `Description for ${name}`,
       );
       expect(response.success).toBe(true);
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await wait(10);
     }
 
     // Get first page of 2, sorted by name ascending
@@ -1562,7 +1562,7 @@ describe("User API", () => {
         create1Response as CreateCompetitionResponse
       ).competition.id;
       await userClient.joinCompetition(competitionIdForFirstComp, agent.id);
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await wait(50);
 
       const create2Response = await adminClient.createCompetition(
         secondComp,
@@ -1572,7 +1572,7 @@ describe("User API", () => {
       const createCompResponse2 = create2Response as CreateCompetitionResponse;
       const competitionIdForSecondComp = createCompResponse2.competition.id;
       await userClient.joinCompetition(competitionIdForSecondComp, agent.id);
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await wait(50);
 
       const create3Response = await adminClient.createCompetition(
         thirdComp,
@@ -1583,7 +1583,7 @@ describe("User API", () => {
         create3Response as CreateCompetitionResponse
       ).competition.id;
       await userClient.joinCompetition(competitionIdForThirdComp, agent.id);
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await wait(50);
 
       // Start/end the first competition, start/end the second competition, and keep the third pending
       const startCompResponse = await adminClient.startExistingCompetition(
@@ -1689,7 +1689,7 @@ describe("User API", () => {
         );
 
         // Small delay to ensure different timestamps
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await wait(50);
       }
 
       // Test correct format: name ascending (no prefix)
@@ -1777,7 +1777,7 @@ describe("User API", () => {
         );
 
         // Controlled delay to ensure different timestamps
-        await new Promise((resolve) => setTimeout(resolve, comp.delay));
+        await wait(comp.delay);
       }
 
       // Test multiple sort fields: name ascending, then createdAt descending
@@ -1848,7 +1848,7 @@ describe("User API", () => {
         await userClient.joinCompetition(competition.id, agents[i]!.id);
 
         // Small delay to ensure different timestamps
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await wait(50);
       }
 
       // Test agentName ascending sort (should work now!)
@@ -2237,7 +2237,7 @@ describe("User API", () => {
         await userClient.joinCompetition(competition.id, agent.id);
 
         // Controlled delay for predictable timestamps
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await wait(100);
       }
 
       // Test combined sort: agentName ascending, then createdAt descending
@@ -2297,7 +2297,7 @@ describe("User API", () => {
           .competition;
         await userClient.joinCompetition(competition.id, agents[i]!.id);
 
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await wait(50);
       }
 
       // Test first page (limit 2, offset 0) with agentName sorting
@@ -2655,7 +2655,7 @@ describe("User API", () => {
         await userClient.joinCompetition(competition.id, agents[i]!.id);
 
         // Controlled delay for predictable timestamps
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await wait(100);
       }
 
       // Test pagination with mixed sort: agentName (computed) + createdAt descending (database)
@@ -2731,7 +2731,7 @@ describe("User API", () => {
       const agentResponse = response as { success: true; agent: Agent };
       createdAgents.push(agentResponse.agent);
       // Small delay to ensure different timestamps
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await wait(10);
     }
 
     // Create and start a competition
@@ -2768,7 +2768,7 @@ describe("User API", () => {
         amount: "1000",
         reason: `Alpha Agent smart trade ${i + 1} - buying ETH`,
       });
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await wait(50);
     }
 
     // Bravo Agent: (2 small stable trades)
@@ -2779,7 +2779,7 @@ describe("User API", () => {
         amount: "100",
         reason: `Bravo Agent good trade ${i + 1}`,
       });
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await wait(50);
     }
 
     // Charlie Agent: (1 large volitile trade)
@@ -2789,7 +2789,7 @@ describe("User API", () => {
       amount: "2000",
       reason: "Charlie Agent trade",
     });
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await wait(50);
 
     // Delta Agent: (1 large bad trade)
     await agentClients[3]?.executeTrade({
@@ -2798,7 +2798,7 @@ describe("User API", () => {
       amount: "2000",
       reason: "Delta Agent bad trade - burning tokens",
     });
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await wait(50);
 
     // Echo Agent: Worst performer (2 bad trades)
     for (let i = 0; i < 2; i++) {
@@ -2808,15 +2808,18 @@ describe("User API", () => {
         amount: "2000",
         reason: `Echo Agent terrible trade ${i + 1} - burning tokens`,
       });
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await wait(50);
     }
+
+    // Wait for 10 seconds to give values a chance to deviate
+    await wait(10000);
 
     // End the competition to calculate final rankings
     const endResult = await adminClient.endCompetition(competitionId);
     expect(endResult.success).toBe(true);
 
     // Wait a bit for rankings to be calculated
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await wait(1000);
 
     // Get all user agents and verify bestPlacement stats
     const agentsResponse = await siweClient.getUserAgents();
@@ -2958,14 +2961,14 @@ describe("User API", () => {
     });
 
     // Allow time for token values to deviate
-    await new Promise((resolve) => setTimeout(resolve, 10000));
+    await wait(10000);
 
     // End first competition
     const endComp1Result = await adminClient.endCompetition(competition1Id);
     expect(endComp1Result.success).toBe(true);
 
     // Wait for rankings to be calculated
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await wait(500);
 
     // SECOND COMPETITION
     const competition2Name = `Multi Competition Test 2 ${Date.now()}`;
@@ -3002,14 +3005,14 @@ describe("User API", () => {
     });
 
     // Allow time for token values to deviate
-    await new Promise((resolve) => setTimeout(resolve, 10000));
+    await wait(10000);
 
     // End second competition
     const endComp2Result = await adminClient.endCompetition(competition2Id);
     expect(endComp2Result.success).toBe(true);
 
     // Wait for rankings to be calculated
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await wait(500);
 
     // Get all user agents and verify stats
     const agentsResponse = await siweClient.getUserAgents();
