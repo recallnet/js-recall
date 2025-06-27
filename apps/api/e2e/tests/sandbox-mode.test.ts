@@ -6,6 +6,7 @@ import {
   AdminAgentResponse,
   CompetitionAgentsResponse,
   CompetitionStatusResponse,
+  SnapshotResponse,
   StartCompetitionResponse,
   UserRegistrationResponse,
 } from "@/e2e/utils/api-types.js";
@@ -540,5 +541,113 @@ describe("Sandbox Mode", () => {
     expect(status.competition?.id).toBe(competition1.id);
     expect(status.competition?.status).toBe("active");
     expect(status.competition?.sandboxMode).toBe(true);
+  });
+
+  test("should verify that only the auto-joined agent gets a portfolio snapshot", async () => {
+    // First create a dummy user+agent to start the competition with (to avoid "no agents provided" error)
+    const dummyUserResponse = await adminClient.registerUser({
+      walletAddress: generateRandomEthAddress(),
+      name: "Dummy User",
+      email: "dummy@example.com",
+      agentName: "Dummy Agent",
+      agentDescription: "Dummy agent for competition startup",
+      agentWalletAddress: generateRandomEthAddress(),
+    });
+    expect(dummyUserResponse.success).toBe(true);
+    const dummyAgent = (dummyUserResponse as UserRegistrationResponse).agent;
+    expect(dummyAgent).toBeDefined();
+
+    // Create and start a sandbox competition with the dummy agent
+    const competitionName = `Sandbox Test Competition ${Date.now()}`;
+    const competitionResponse = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [dummyAgent!.id],
+      true, // sandboxMode = true
+    );
+    expect(competitionResponse.success).toBe(true);
+    const competition = competitionResponse.competition;
+    expect(competition.sandboxMode).toBe(true);
+
+    // Verify competition is active and in sandbox mode
+    const statusResponse = await adminClient.getCompetitionStatus();
+    expect(statusResponse.success).toBe(true);
+    const status = statusResponse as CompetitionStatusResponse;
+    expect(status.competition?.id).toBe(competition.id);
+    expect(status.competition?.status).toBe("active");
+    expect(status.competition?.sandboxMode).toBe(true);
+
+    // First register a user without an agent
+    const newUserResponse = await adminClient.registerUser({
+      walletAddress: generateRandomEthAddress(),
+      name: "New Sandbox User",
+      email: "new-sandbox@example.com",
+    });
+    expect(newUserResponse.success).toBe(true);
+    const newUser = (newUserResponse as UserRegistrationResponse).user;
+
+    // Now register an agent for this user using the registerAgent route (which has auto-join logic)
+    const newAgentResponse = await adminClient.registerAgent({
+      user: {
+        walletAddress: newUser.walletAddress,
+      },
+      agent: {
+        name: "New Sandbox Agent",
+        description: "Agent that should auto-join sandbox competition",
+        walletAddress: generateRandomEthAddress(),
+      },
+    });
+    expect(newAgentResponse.success).toBe(true);
+    const newAgent = (newAgentResponse as AdminAgentResponse).agent;
+
+    // Wait a moment for auto-join processing
+    await wait(100);
+
+    // Check that the new agent was automatically added to the competition
+    const competitionAgentsResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(competitionAgentsResponse.success).toBe(true);
+    const competitionAgents =
+      competitionAgentsResponse as CompetitionAgentsResponse;
+
+    // Should have both the dummy agent and the newly registered agent
+    expect(competitionAgents.agents.length).toBe(2);
+    const agentIds = competitionAgents.agents.map((agent) => agent.id);
+    expect(agentIds).toContain(dummyAgent!.id);
+    expect(agentIds).toContain(newAgent!.id);
+
+    // Verify the new agent has active status in the competition
+    const newAgentInCompetition = competitionAgents.agents.find(
+      (agent) => agent.id === newAgent!.id,
+    );
+    expect(newAgentInCompetition?.active).toBe(true);
+
+    // Verify that a portfolio snapshot was created for the newly auto-joined agent
+    // Get snapshots for this specific agent
+    const snapshotsResponse = await adminClient.request(
+      "get",
+      `/api/admin/competition/${competition.id}/snapshots?agentId=${newAgent!.id}`,
+    );
+    const typedResponse = snapshotsResponse as SnapshotResponse;
+    expect(typedResponse.success).toBe(true);
+    expect(typedResponse.snapshots).toBeDefined();
+    expect(typedResponse.snapshots.length).toBeGreaterThan(0);
+
+    // Verify the snapshot has the correct agent ID and competition ID
+    const latestSnapshot =
+      typedResponse.snapshots[typedResponse.snapshots.length - 1];
+    expect(latestSnapshot?.agentId).toBe(newAgent!.id);
+    expect(latestSnapshot?.competitionId).toBe(competition.id);
+
+    // Verify the snapshot has token values (confirming it's a complete snapshot)
+    expect(latestSnapshot?.valuesByToken).toBeDefined();
+    expect(Object.keys(latestSnapshot!.valuesByToken).length).toBeGreaterThan(
+      0,
+    );
+
+    console.log(
+      `[Test] Auto-joined agent ${newAgent!.id} successfully got portfolio snapshot with total value: $${latestSnapshot?.totalValue}`,
+    );
   });
 });
