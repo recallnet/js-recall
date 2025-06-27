@@ -28,10 +28,9 @@ export default function RootLayout({
         <Analytics />
         <Toaster position="top-right" />
         <Providers>
-          <Navbar />
-          <main className="mx-auto min-h-screen w-full max-w-screen-lg px-5 pt-10 sm:px-20">
-            {children}
-          </main>
+          <Navbar>
+            <main className="min-h-screen w-full">{children}</main>
+          </Navbar>
         </Providers>
       </body>
     </html>

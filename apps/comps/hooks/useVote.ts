@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { UnauthorizedError, apiClient } from "@/lib/api-client";
+import { ApiClient, UnauthorizedError } from "@/lib/api-client";
 import { useUser } from "@/state/atoms";
 import {
   CreateVoteRequest,
@@ -11,6 +11,8 @@ import {
 } from "@/types/vote";
 
 import { useClientCleanup } from "./useAuth";
+
+const apiClient = new ApiClient();
 
 /**
  * Hook to create a vote

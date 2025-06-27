@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { apiClient } from "@/lib/api-client";
+import { ApiClient } from "@/lib/api-client";
+
+const apiClient = new ApiClient();
 
 interface JoinCompetitionArgs {
   agentId: string;
