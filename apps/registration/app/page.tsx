@@ -33,7 +33,6 @@ export default function Home() {
     name: "",
     email: "",
     website: "",
-    description: "",
   });
   const [agentData, setAgentData] = useState<AgentFormData>({
     name: "",
