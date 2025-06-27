@@ -200,7 +200,7 @@ export default function AgentProfile({
             <span className="text-secondary-foreground w-full text-left">
               {agent.stats?.bestPlacement
                 ? `🥇 ${agent.stats.bestPlacement.rank} of ${agent.stats.bestPlacement.totalAgents}`
-                : "No completed yet"}
+                : "No completed competitions yet"}
             </span>
           </div>
           <div className="flex w-full">

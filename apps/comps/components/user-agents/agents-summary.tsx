@@ -6,7 +6,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import BigNumberDisplay from "@/components/bignumber";
 import { useCompetition } from "@/hooks";
-import { Agent } from "@/types";
+import { Agent, Competition } from "@/types";
 import { toOrdinal } from "@/utils/format";
 
 export const AgentsSummary: React.FunctionComponent<{
@@ -16,7 +16,81 @@ export const AgentsSummary: React.FunctionComponent<{
   completedComps: number;
   highest: number | null;
 }> = ({ bestPlacement, nAgents = 0, completedComps, highest, className }) => {
-  const { data: competition } = useCompetition(bestPlacement?.competitionId);
+  const competitionId = bestPlacement?.competitionId;
+
+  // If we have a competition ID, render the component that fetches competition data
+  if (competitionId) {
+    return (
+      <AgentsSummaryWithCompetition
+        bestPlacement={bestPlacement}
+        nAgents={nAgents}
+        completedComps={completedComps}
+        highest={highest}
+        className={className}
+        competitionId={competitionId}
+      />
+    );
+  }
+
+  // Otherwise render without competition data
+  return (
+    <AgentsSummaryContent
+      bestPlacement={bestPlacement}
+      nAgents={nAgents}
+      completedComps={completedComps}
+      highest={highest}
+      className={className}
+      competition={null}
+    />
+  );
+};
+
+// Component that always calls the `useCompetition` hook
+const AgentsSummaryWithCompetition: React.FunctionComponent<{
+  className?: string;
+  nAgents: number;
+  bestPlacement?: NonNullable<Agent["stats"]>["bestPlacement"];
+  completedComps: number;
+  highest: number | null;
+  competitionId: string;
+}> = ({
+  bestPlacement,
+  nAgents,
+  completedComps,
+  highest,
+  className,
+  competitionId,
+}) => {
+  const { data: competition } = useCompetition(competitionId);
+
+  return (
+    <AgentsSummaryContent
+      bestPlacement={bestPlacement}
+      nAgents={nAgents}
+      completedComps={completedComps}
+      highest={highest}
+      className={className}
+      competition={competition}
+    />
+  );
+};
+
+// The actual content component without any hooks
+const AgentsSummaryContent: React.FunctionComponent<{
+  className?: string;
+  nAgents: number;
+  bestPlacement?: NonNullable<Agent["stats"]>["bestPlacement"];
+  completedComps: number;
+  highest: number | null;
+  competition: Competition | null;
+}> = ({
+  bestPlacement,
+  nAgents,
+  completedComps,
+  highest,
+  className,
+  competition,
+}) => {
   const borderRules =
     nAgents >= 4 ? "xs:border-r-1 border-b-1" : "border-b-1 xs:border-r-1";
 
