@@ -10,6 +10,7 @@ import {
   CreateAgentRequest,
   CreateAgentResponse,
   CreateVoteRequest,
+  EnrichedVotesResponse,
   GetAgentCompetitionsParams,
   GetAgentsParams,
   GetCompetitionAgentsParams,
@@ -443,6 +444,42 @@ export class ApiClient {
   async getVotes(params: GetVotesParams = {}): Promise<VotesResponse> {
     const queryParams = this.formatQueryParams(params);
     return this.request<VotesResponse>(`/user/votes${queryParams}`);
+  }
+
+  /**
+   * Get user votes with agent and competition data
+   * @param params - Query parameters
+   * @returns Votes response
+   */
+  async getEnrichedVotes(
+    params: GetVotesParams = {},
+  ): Promise<EnrichedVotesResponse> {
+    const queryParams = this.formatQueryParams(params);
+    const votes = await this.request<VotesResponse>(
+      `/user/votes${queryParams}`,
+    );
+
+    const enrichedVotes = await Promise.all(
+      votes.votes.map(async (vote) => {
+        const [competition, agent] = await Promise.all([
+          this.getCompetition(vote.competitionId),
+          this.getAgent(vote.agentId),
+        ]);
+
+        return {
+          id: vote.id,
+          createdAt: vote.createdAt,
+          agent: agent.agent,
+          competition: competition.competition,
+        };
+      }),
+    );
+
+    return {
+      success: votes.success,
+      pagination: votes.pagination,
+      votes: enrichedVotes,
+    };
   }
 
   /**

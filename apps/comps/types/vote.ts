@@ -1,11 +1,19 @@
+import { Agent } from "./agent";
 import { PaginationResponse } from "./api";
+import { Competition } from "./competition";
 
 export interface Vote {
   id: string;
-  userId: string;
   agentId: string;
   competitionId: string;
   createdAt: string;
+}
+
+export interface EnrichedVote {
+  id: string;
+  createdAt: string;
+  agent: Agent;
+  competition: Competition;
 }
 
 export interface VoteResponse {
@@ -17,6 +25,12 @@ export interface VoteResponse {
 export interface VotesResponse {
   success: boolean;
   votes: Vote[];
+  pagination: PaginationResponse;
+}
+
+export interface EnrichedVotesResponse {
+  success: boolean;
+  votes: EnrichedVote[];
   pagination: PaginationResponse;
 }
 

@@ -9,6 +9,7 @@ import ProfileSkeleton from "@/components/profile-skeleton";
 import UserAgentsSection from "@/components/user-agents";
 import UserCompetitionsSection from "@/components/user-competitions";
 import UserInfoSection from "@/components/user-info";
+import UserVotesSection from "@/components/user-votes";
 import { useUserAgents } from "@/hooks";
 import { useUserSession } from "@/hooks/useAuth";
 import { useUpdateProfile } from "@/hooks/useProfile";
@@ -50,6 +51,7 @@ export default function ProfilePage() {
       <UserInfoSection user={session.user!} onSave={handleUpdateProfile} />
       <UserCompetitionsSection />
       <UserAgentsSection agents={agents?.agents || []} />
+      <UserVotesSection />
     </AuthGuard>
   );
 }

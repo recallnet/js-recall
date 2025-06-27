@@ -16,7 +16,6 @@ export const AgentsSummary: React.FunctionComponent<{
   completedComps: number;
   highest: number | null;
 }> = ({ bestPlacement, nAgents = 0, completedComps, highest, className }) => {
-  const { data: competition } = useCompetition(bestPlacement?.competitionId);
   const borderRules =
     nAgents >= 4 ? "xs:border-r-1 border-b-1" : "border-b-1 xs:border-r-1";
 
@@ -54,7 +53,9 @@ export const AgentsSummary: React.FunctionComponent<{
             </span>
           </div>
           <span className="text-secondary-foreground truncate">
-            {competition?.name}
+            {bestPlacement?.competitionId && (
+              <CompetitionName id={bestPlacement.competitionId} />
+            )}
           </span>
         </div>
       </div>
@@ -88,6 +89,11 @@ export const AgentsSummary: React.FunctionComponent<{
       </div>
     </div>
   );
+};
+
+const CompetitionName: React.FunctionComponent<{ id: string }> = ({ id }) => {
+  const { data: competition } = useCompetition(id);
+  return <>{competition?.name}</>;
 };
 
 export default AgentsSummary;
