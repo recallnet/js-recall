@@ -1,15 +1,30 @@
 "use client";
 
-import { ChevronLeft, Loader2, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ChevronLeft, Loader2 } from "lucide-react";
+import { useForm } from "react-hook-form";
 import { useAccount } from "wagmi";
+import { z } from "zod";
+
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@recallnet/ui/components/shadcn/form";
+import { Input } from "@recallnet/ui/components/shadcn/input";
+import { Textarea } from "@recallnet/ui/components/shadcn/textarea";
 
 import { useCreateAgent } from "@/hooks/useCreateAgent";
 import { useUpdateProfile } from "@/hooks/useProfile";
+import { asOptionalStringWithoutEmpty } from "@/utils";
 
 import { ProfileFormData } from "./developer-profile-form";
 
-// Agent skills constants like in comps app
+// Agent skills constants
 const AGENT_SKILLS = [
   "Crypto Trading",
   "Traditional Investing",
@@ -22,122 +37,113 @@ const AGENT_SKILLS = [
   "Other",
 ];
 
+// Form schema - same pattern as /create-agent
+const formSchema = z
+  .object({
+    name: z.string().min(1, "Agent name is required"),
+    imageUrl: asOptionalStringWithoutEmpty(
+      z.string().url({ message: "Must be a valid URL" }),
+    ),
+    repositoryUrl: asOptionalStringWithoutEmpty(
+      z.string().url({ message: "Must be a valid URL" }),
+    ),
+    skills: z.array(z.string()).min(1, "Select at least one skill"),
+    otherSkill: z.string().optional(),
+    description: asOptionalStringWithoutEmpty(z.string()),
+    x: asOptionalStringWithoutEmpty(z.string()),
+    telegram: asOptionalStringWithoutEmpty(z.string()),
+  })
+  .refine(
+    (data) => {
+      // If "Other" is selected, otherSkill must be provided
+      if (data.skills.includes("Other")) {
+        return data.otherSkill && data.otherSkill.trim().length > 0;
+      }
+      return true;
+    },
+    {
+      message: "Please specify your custom skill",
+      path: ["otherSkill"],
+    },
+  );
+
+export type FormData = z.infer<typeof formSchema>;
+
+export interface AgentFormData {
+  name: string;
+  selectedSkills: string[];
+  customSkill: string;
+  repoUrl: string;
+  description: string;
+  avatar: string;
+  twitter: string;
+  telegram: string;
+  apiKey?: string;
+}
+
+interface AgentRegistrationFormProps {
+  initialData?: AgentFormData;
+  profileData: ProfileFormData;
+  onBack?: () => void;
+  onNext?: (data: AgentFormData) => void;
+}
+
 /**
- * AgentRegistrationForm component
+ * AgentRegistrationForm component using React Hook Form + Zod validation
  *
- * Form to collect agent information (step 2)
- *
- * @param initialData - Initial data to populate the form with
- * @param profileData - Profile data from the previous step
- * @param onBack - Function to call when back button is clicked
- * @param onNext - Function to call when next button is clicked
+ * Standardized to match the /create-agent page approach
  */
 export default function AgentRegistrationForm({
   initialData,
   profileData,
   onBack,
   onNext,
-}: {
-  initialData?: AgentFormData;
-  profileData: ProfileFormData;
-  onBack?: () => void;
-  onNext?: (data: AgentFormData) => void;
-}) {
+}: AgentRegistrationFormProps) {
   const { address } = useAccount();
-  const [formData, setFormData] = useState<AgentFormData>(
-    initialData || {
-      name: "",
-      selectedSkills: [],
-      customSkill: "",
-      repoUrl: "",
-      description: "",
-      avatar: "",
-      twitter: "",
-      telegram: "",
-      apiKey: "",
-    },
-  );
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showAvatarPreview, setShowAvatarPreview] = useState(false);
-  const [showCustomSkill, setShowCustomSkill] = useState(
-    formData.selectedSkills.includes("Other"),
-  );
-  const [isValidAvatar, setIsValidAvatar] = useState(true);
-
   const updateProfileMutation = useUpdateProfile();
   const createAgentMutation = useCreateAgent();
 
-  // Update formData when initialData changes
-  useEffect(() => {
-    if (initialData) {
-      setFormData(initialData);
-      setShowCustomSkill(initialData.selectedSkills.includes("Other"));
-      setShowAvatarPreview(!!initialData.avatar);
-    }
-  }, [initialData]);
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: initialData?.name || "",
+      imageUrl: initialData?.avatar || "",
+      repositoryUrl: initialData?.repoUrl || "",
+      skills: initialData?.selectedSkills || [],
+      otherSkill: initialData?.customSkill || "",
+      description: initialData?.description || "",
+      x: initialData?.twitter || "",
+      telegram: initialData?.telegram || "",
+    },
+    mode: "onChange",
+  });
 
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  const {
+    formState: { isSubmitting },
+    setError,
+    watch,
+  } = form;
 
-  const handleSkillChange = (skill: string) => {
-    setFormData((prev) => {
-      // Check if skill is already selected
-      const isSelected = prev.selectedSkills.includes(skill);
+  const selectedSkills = watch("skills");
+  const showCustomSkill = selectedSkills.includes("Other");
 
-      // Toggle the selection
-      const updatedSkills = isSelected
-        ? prev.selectedSkills.filter((s) => s !== skill)
-        : [...prev.selectedSkills, skill];
-
-      // Update custom skill visibility
-      setShowCustomSkill(updatedSkills.includes("Other"));
-
-      return {
-        ...prev,
-        selectedSkills: updatedSkills,
-      };
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    // Validation
-    if (!address) {
-      setError("Wallet connection required.");
-      return;
-    }
-
-    // Agent name is now required
-    if (!formData.name.trim()) {
-      setError("Agent name is required.");
-      return;
-    }
-
-    // Validate custom skill if "Other" is selected
-    if (formData.selectedSkills.includes("Other") && !formData.customSkill) {
-      setError("Please specify your custom skill.");
-      return;
-    }
+  const handleSubmit = async (data: FormData) => {
+    console.log("=== FORM SUBMISSION STARTED ===");
+    console.log("Form data received:", data);
+    console.log("Address:", address);
 
     try {
-      setIsSubmitting(true);
+      // Validation
+      if (!address) {
+        console.log("❌ No wallet address - stopping submission");
+        setError("root", { message: "Wallet connection required." });
+        return;
+      }
 
-      // First, update the profile with any additional metadata
+      // First, update the profile (NO agent description here!)
       const profileUpdateData = {
         name: profileData.name,
         email: profileData.email,
-        ...(profileData.description && {
-          description: profileData.description,
-        }),
         ...(profileData.website && {
           metadata: { website: profileData.website },
         }),
@@ -147,32 +153,39 @@ export default function AgentRegistrationForm({
 
       // Prepare skills array (replace "Other" with custom skill if provided)
       const finalSkills =
-        formData.selectedSkills.includes("Other") && formData.customSkill
+        data.skills.includes("Other") && data.otherSkill
           ? [
-              ...formData.selectedSkills.filter((skill) => skill !== "Other"),
-              formData.customSkill,
+              ...data.skills.filter((skill) => skill !== "Other"),
+              data.otherSkill,
             ]
-          : formData.selectedSkills;
+          : data.skills;
 
-      // Create the agent - match comps app structure exactly
+      // Create the agent - exact same structure as /create-agent page
       const agentData = {
-        name: formData.name,
-        imageUrl: formData.avatar || undefined,
+        name: data.name,
+        imageUrl: data.imageUrl,
         email: undefined, // Registration form doesn't collect agent email
-        description: formData.description || undefined,
+        description: data.description,
         metadata: {
           skills: finalSkills,
-          repositoryUrl: formData.repoUrl || undefined,
-          x: formData.twitter || undefined,
-          telegram: formData.telegram || undefined,
+          repositoryUrl: data.repositoryUrl,
+          x: data.x,
+          telegram: data.telegram,
         },
       };
 
       const response = await createAgentMutation.mutateAsync(agentData);
 
-      // Store the API key for the next step
-      const updatedFormData = {
-        ...formData,
+      // Convert back to AgentFormData format for compatibility
+      const updatedFormData: AgentFormData = {
+        name: data.name,
+        selectedSkills: finalSkills,
+        customSkill: data.otherSkill || "",
+        repoUrl: data.repositoryUrl || "",
+        description: data.description || "",
+        avatar: data.imageUrl || "",
+        twitter: data.x || "",
+        telegram: data.telegram || "",
         apiKey: response.agent.apiKey,
       };
 
@@ -182,32 +195,13 @@ export default function AgentRegistrationForm({
       }
     } catch (err) {
       console.error("Registration failed:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to register. Please try again.",
-      );
-    } finally {
-      setIsSubmitting(false);
+      setError("root", {
+        message:
+          err instanceof Error
+            ? err.message
+            : "Failed to register. Please try again.",
+      });
     }
-  };
-
-  const handleAvatarSubmit = () => {
-    if (formData.avatar.trim()) {
-      setIsValidAvatar(true);
-      setShowAvatarPreview(true);
-    } else {
-      setIsValidAvatar(false);
-    }
-  };
-
-  const handleDeleteAvatar = () => {
-    setFormData((prev) => ({ ...prev, avatar: "" }));
-    setShowAvatarPreview(false);
-  };
-
-  const handleImageError = () => {
-    setIsValidAvatar(false);
   };
 
   return (
@@ -228,207 +222,213 @@ export default function AgentRegistrationForm({
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {error && (
-          <div className="rounded border border-red-600 bg-red-600/10 p-3 text-red-400">
-            {error}
-          </div>
-        )}
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+          {form.formState.errors.root && (
+            <div className="rounded border border-red-600 bg-red-600/10 p-3 text-red-400">
+              {form.formState.errors.root.message}
+            </div>
+          )}
 
-        {/* Agent Name - Required */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-white">
-            Agent Name *
-          </label>
-          <input
-            type="text"
+          {/* Agent Name - Required */}
+          <FormField
+            control={form.control}
             name="name"
-            value={formData.name}
-            onChange={handleChange}
-            placeholder="Enter your agent's name"
-            className="w-full rounded border border-[#303846] bg-[#1A1D26] px-3 py-2 text-white placeholder-[#6D85A4] focus:border-[#4F7396] focus:outline-none"
-            required
-          />
-        </div>
-
-        {/* Agent Skills */}
-        <div className="space-y-3">
-          <label className="block text-sm font-medium text-white">
-            Agent Skills
-          </label>
-          <p className="text-sm text-[#6D85A4]">Choose all that apply.</p>
-          <div className="grid grid-cols-2 gap-2">
-            {AGENT_SKILLS.map((skill) => (
-              <label key={skill} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={formData.selectedSkills.includes(skill)}
-                  onChange={() => handleSkillChange(skill)}
-                  className="h-4 w-4 rounded border-[#303846] bg-[#1A1D26] text-[#4F7396] focus:ring-[#4F7396]"
-                />
-                <span className="text-sm text-[#6D85A4]">{skill}</span>
-              </label>
-            ))}
-          </div>
-
-          {/* Custom Skill Input */}
-          {showCustomSkill && (
-            <div className="mt-3">
-              <input
-                type="text"
-                name="customSkill"
-                value={formData.customSkill}
-                onChange={handleChange}
-                placeholder="Please specify your custom skill..."
-                className="w-full rounded border border-[#303846] bg-[#1A1D26] px-3 py-2 text-white placeholder-[#6D85A4] focus:border-[#4F7396] focus:outline-none"
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Repository URL */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-white">
-            Repository URL
-          </label>
-          <input
-            type="url"
-            name="repoUrl"
-            value={formData.repoUrl}
-            onChange={handleChange}
-            placeholder="https://github.com/your-repo"
-            className="w-full rounded border border-[#303846] bg-[#1A1D26] px-3 py-2 text-white placeholder-[#6D85A4] focus:border-[#4F7396] focus:outline-none"
-          />
-          <p className="text-sm text-[#6D85A4]">Link to code or docs.</p>
-        </div>
-
-        {/* Description */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-white">
-            Description (Optional)
-          </label>
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            placeholder="Describe your agent..."
-            rows={3}
-            className="w-full rounded border border-[#303846] bg-[#1A1D26] px-3 py-2 text-white placeholder-[#6D85A4] focus:border-[#4F7396] focus:outline-none"
-          />
-        </div>
-
-        {/* Avatar URL */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-white">
-            Avatar URL (Optional)
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="url"
-              name="avatar"
-              value={formData.avatar}
-              onChange={handleChange}
-              placeholder="https://example.com/avatar.png"
-              className="flex-1 rounded border border-[#303846] bg-[#1A1D26] px-3 py-2 text-white placeholder-[#6D85A4] focus:border-[#4F7396] focus:outline-none"
-            />
-            <button
-              type="button"
-              onClick={handleAvatarSubmit}
-              className="rounded bg-[#4F7396] px-4 py-2 text-white hover:bg-[#6D85A4]"
-            >
-              Preview
-            </button>
-          </div>
-
-          {/* Avatar Preview */}
-          {showAvatarPreview && (
-            <div className="relative mt-2">
-              {isValidAvatar ? (
-                <div className="flex items-center gap-3">
-                  <img
-                    src={formData.avatar}
-                    alt="Avatar preview"
-                    width={64}
-                    height={64}
-                    className="h-16 w-16 rounded-full object-cover"
-                    onError={handleImageError}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-white">Agent Name *</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Enter your agent's name"
+                    className="border-[#303846] bg-[#1A1D26] text-white placeholder-[#6D85A4] focus:border-[#4F7396]"
+                    {...field}
                   />
-                  <button
-                    type="button"
-                    onClick={handleDeleteAvatar}
-                    className="rounded p-1 text-red-400 hover:bg-red-600/10"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Agent Skills */}
+          <FormField
+            control={form.control}
+            name="skills"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-white">Agent Skills</FormLabel>
+                <FormDescription className="text-[#6D85A4]">
+                  Choose all that apply.
+                </FormDescription>
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                  {AGENT_SKILLS.map((skill) => (
+                    <label key={skill} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        value={skill}
+                        className="h-4 w-4 rounded border-[#303846] bg-[#1A1D26] text-[#4F7396] focus:ring-[#4F7396]"
+                        checked={field.value.includes(skill)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            field.onChange([...field.value, skill]);
+                          } else {
+                            field.onChange(
+                              field.value.filter((s: string) => s !== skill),
+                            );
+                          }
+                        }}
+                      />
+                      <span className="text-sm text-[#6D85A4]">{skill}</span>
+                    </label>
+                  ))}
                 </div>
-              ) : (
-                <p className="text-sm text-red-400">
-                  Failed to load image. Please check the URL.
-                </p>
+                {showCustomSkill && (
+                  <FormField
+                    control={form.control}
+                    name="otherSkill"
+                    render={({ field: otherField }) => (
+                      <FormItem className="mt-3">
+                        <FormControl>
+                          <Input
+                            placeholder="Please specify your custom skill..."
+                            className="border-[#303846] bg-[#1A1D26] text-white placeholder-[#6D85A4] focus:border-[#4F7396]"
+                            {...otherField}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Repository URL */}
+          <FormField
+            control={form.control}
+            name="repositoryUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-white">Repository URL</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="https://github.com/your-repo"
+                    className="border-[#303846] bg-[#1A1D26] text-white placeholder-[#6D85A4] focus:border-[#4F7396]"
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription className="text-[#6D85A4]">
+                  Link to code or docs.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Description */}
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-white">
+                  Description (Optional)
+                </FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Describe your agent..."
+                    rows={3}
+                    className="border-[#303846] bg-[#1A1D26] text-white placeholder-[#6D85A4] focus:border-[#4F7396]"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Avatar URL */}
+          <FormField
+            control={form.control}
+            name="imageUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-white">
+                  Avatar URL (Optional)
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="https://example.com/avatar.png"
+                    className="border-[#303846] bg-[#1A1D26] text-white placeholder-[#6D85A4] focus:border-[#4F7396]"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Social Links */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="x"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-white">
+                    Twitter (Optional)
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="@username or URL"
+                      className="border-[#303846] bg-[#1A1D26] text-white placeholder-[#6D85A4] focus:border-[#4F7396]"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </div>
-          )}
-        </div>
-
-        {/* Social Links */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-white">
-              Twitter (Optional)
-            </label>
-            <input
-              type="text"
-              name="twitter"
-              value={formData.twitter}
-              onChange={handleChange}
-              placeholder="@username or URL"
-              className="w-full rounded border border-[#303846] bg-[#1A1D26] px-3 py-2 text-white placeholder-[#6D85A4] focus:border-[#4F7396] focus:outline-none"
             />
-          </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-white">
-              Telegram (Optional)
-            </label>
-            <input
-              type="text"
+            <FormField
+              control={form.control}
               name="telegram"
-              value={formData.telegram}
-              onChange={handleChange}
-              placeholder="@username or URL"
-              className="w-full rounded border border-[#303846] bg-[#1A1D26] px-3 py-2 text-white placeholder-[#6D85A4] focus:border-[#4F7396] focus:outline-none"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-white">
+                    Telegram (Optional)
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="@username or URL"
+                      className="border-[#303846] bg-[#1A1D26] text-white placeholder-[#6D85A4] focus:border-[#4F7396]"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
           </div>
-        </div>
 
-        {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full rounded bg-[#4F7396] py-3 font-medium text-white hover:bg-[#6D85A4] disabled:opacity-50"
-        >
-          {isSubmitting ? (
-            <div className="flex items-center justify-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Creating Agent...
-            </div>
-          ) : (
-            "Create Agent"
-          )}
-        </button>
-      </form>
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full rounded bg-[#4F7396] py-3 font-medium text-white hover:bg-[#6D85A4] disabled:opacity-50"
+          >
+            {isSubmitting ? (
+              <div className="flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Creating Agent...
+              </div>
+            ) : (
+              "Create Agent"
+            )}
+          </button>
+        </form>
+      </Form>
     </div>
   );
-}
-
-export interface AgentFormData {
-  name: string;
-  selectedSkills: string[];
-  customSkill: string;
-  repoUrl: string;
-  description: string;
-  avatar: string;
-  twitter: string;
-  telegram: string;
-  apiKey?: string;
 }

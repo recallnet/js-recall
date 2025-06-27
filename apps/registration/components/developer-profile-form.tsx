@@ -16,7 +16,6 @@ import {
   FormMessage,
 } from "@recallnet/ui/components/shadcn/form";
 import { Input } from "@recallnet/ui/components/shadcn/input";
-import { Textarea } from "@recallnet/ui/components/shadcn/textarea";
 
 import { useUpdateProfile } from "../hooks/useProfile";
 
@@ -28,7 +27,6 @@ const formSchema = z.object({
     .url({ message: "Must be a valid URL" })
     .optional()
     .or(z.literal("")),
-  description: z.string().optional(),
 });
 
 export type ProfileFormData = z.infer<typeof formSchema>;
@@ -61,7 +59,6 @@ export default function DeveloperProfileForm({
       name: initialData?.name || "",
       email: initialData?.email || "",
       website: initialData?.website || "",
-      description: initialData?.description || "",
     },
   });
 
@@ -162,31 +159,6 @@ export default function DeveloperProfileForm({
                         one you check often.
                       </FormDescription>
                     )}
-                    <FormMessage className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-red-500" />
-                  </FormItem>
-                )}
-              />
-
-              {/* Description Field */}
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-['Replica_LL',sans-serif] text-base leading-6 tracking-wider text-[#93A5BA]">
-                      Description
-                    </FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Tell us about yourself or your project..."
-                        rows={4}
-                        {...field}
-                        className="w-full resize-none rounded-md border border-[#43505F] bg-[#1D1F2B] px-3 py-2 font-['Replica_LL',sans-serif] text-lg text-white placeholder:text-[#43505F] focus:border-[#62A0DD] focus:outline-none"
-                      />
-                    </FormControl>
-                    <FormDescription className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-[#596E89]">
-                      A brief description about you or your development focus.
-                    </FormDescription>
                     <FormMessage className="font-['Replica_LL',sans-serif] text-sm leading-[21px] tracking-[0.42px] text-red-500" />
                   </FormItem>
                 )}
