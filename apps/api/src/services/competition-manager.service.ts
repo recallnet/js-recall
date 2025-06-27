@@ -1131,9 +1131,10 @@ export class CompetitionManager {
       // Add the agent to the competition
       await addAgentToCompetition(activeCompetition.id, agentId);
 
-      // Take a portfolio snapshot for all agents in the competition (includes the newly joined agent)
-      await this.portfolioSnapshotter.takePortfolioSnapshots(
+      // Take a portfolio snapshot for the newly joined agent
+      await this.portfolioSnapshotter.takePortfolioSnapshotForAgent(
         activeCompetition.id,
+        agentId,
       );
 
       console.log(
