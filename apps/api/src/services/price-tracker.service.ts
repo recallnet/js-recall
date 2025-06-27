@@ -247,6 +247,163 @@ export class PriceTracker {
   }
 
   /**
+   * Get detailed token information for multiple tokens in bulk
+   * This reduces N+1 query problems by fetching all token info in fewer requests
+   * @param tokenAddresses Array of token addresses to get info for
+   * @returns Map of token address to token info (null if not available)
+   */
+  async getBulkTokenInfo(
+    tokenAddresses: string[],
+  ): Promise<Map<string, Awaited<ReturnType<typeof this.getTokenInfo>>>> {
+    console.log(
+      `[PriceTracker] Getting bulk token info for ${tokenAddresses.length} tokens`,
+    );
+
+    const resultMap = new Map<
+      string,
+      Awaited<ReturnType<typeof this.getTokenInfo>>
+    >();
+
+    if (tokenAddresses.length === 0) {
+      return resultMap;
+    }
+
+    // Group tokens by chain type for efficient processing
+    const evmTokens: string[] = [];
+    const svmTokens: string[] = [];
+
+    for (const tokenAddress of tokenAddresses) {
+      const chainType = this.determineChain(tokenAddress);
+      if (chainType === BlockchainType.EVM) {
+        evmTokens.push(tokenAddress);
+      } else {
+        svmTokens.push(tokenAddress);
+      }
+    }
+
+    // Process EVM tokens in bulk if MultiChainProvider supports it
+    if (evmTokens.length > 0 && this.multiChainProvider) {
+      try {
+        // For now, we'll batch them in smaller chunks to avoid overwhelming the API
+        const chunkSize = 10;
+        for (let i = 0; i < evmTokens.length; i += chunkSize) {
+          const chunk = evmTokens.slice(i, i + chunkSize);
+
+          // Process chunk in parallel
+          const chunkPromises = chunk.map(async (tokenAddress) => {
+            try {
+              const tokenInfo = await this.multiChainProvider!.getTokenInfo(
+                tokenAddress,
+                BlockchainType.EVM,
+              );
+              if (tokenInfo && tokenInfo.price !== null) {
+                await this.storePrice(
+                  tokenAddress,
+                  tokenInfo.price,
+                  tokenInfo.symbol,
+                  tokenInfo.chain,
+                  tokenInfo.specificChain,
+                );
+                return [
+                  tokenAddress,
+                  {
+                    price: tokenInfo.price,
+                    symbol: tokenInfo.symbol,
+                    chain: tokenInfo.chain,
+                    specificChain: tokenInfo.specificChain as SpecificChain,
+                  },
+                ] as const;
+              }
+              return [tokenAddress, null] as const;
+            } catch (error) {
+              console.error(
+                `[PriceTracker] Error getting token info for ${tokenAddress}:`,
+                error,
+              );
+              return [tokenAddress, null] as const;
+            }
+          });
+
+          const chunkResults = await Promise.all(chunkPromises);
+          chunkResults.forEach(([tokenAddress, result]) => {
+            resultMap.set(tokenAddress, result);
+          });
+        }
+      } catch (error) {
+        console.error(
+          "[PriceTracker] Error in bulk EVM token processing:",
+          error,
+        );
+        // Fallback to individual processing for EVM tokens
+        for (const tokenAddress of evmTokens) {
+          const tokenInfo = await this.getTokenInfo(tokenAddress);
+          resultMap.set(tokenAddress, tokenInfo);
+        }
+      }
+    }
+
+    // Process SVM tokens in bulk
+    if (svmTokens.length > 0) {
+      try {
+        // Process SVM tokens in parallel chunks
+        const chunkSize = 10;
+        for (let i = 0; i < svmTokens.length; i += chunkSize) {
+          const chunk = svmTokens.slice(i, i + chunkSize);
+
+          const chunkPromises = chunk.map(async (tokenAddress) => {
+            try {
+              const price = await this.getPrice(
+                tokenAddress,
+                BlockchainType.SVM,
+                "svm",
+              );
+              if (price) {
+                return [
+                  tokenAddress,
+                  {
+                    price: price.price,
+                    symbol: price.symbol,
+                    chain: BlockchainType.SVM,
+                    specificChain: "svm",
+                  },
+                ] as const;
+              }
+              return [tokenAddress, null] as const;
+            } catch (error) {
+              console.error(
+                `[PriceTracker] Error getting SVM token info for ${tokenAddress}:`,
+                error,
+              );
+              return [tokenAddress, null] as const;
+            }
+          });
+
+          const chunkResults = await Promise.all(chunkPromises);
+          chunkResults.forEach(([tokenAddress, result]) => {
+            resultMap.set(tokenAddress, result);
+          });
+        }
+      } catch (error) {
+        console.error(
+          "[PriceTracker] Error in bulk SVM token processing:",
+          error,
+        );
+        // Fallback to individual processing for SVM tokens
+        for (const tokenAddress of svmTokens) {
+          const tokenInfo = await this.getTokenInfo(tokenAddress);
+          resultMap.set(tokenAddress, tokenInfo);
+        }
+      }
+    }
+
+    console.log(
+      `[PriceTracker] Successfully retrieved bulk token info for ${Array.from(resultMap.values()).filter((v) => v !== null).length}/${tokenAddresses.length} tokens`,
+    );
+
+    return resultMap;
+  }
+
+  /**
    * Store price data in the database
    * @param tokenAddress The token address
    * @param price The price in USD
