@@ -21,20 +21,22 @@
     "format": {
       "dependsOn": ["^format"],
       "inputs": [
-        "**/*.{js,jsx,ts,tsx,json,md,mdx}",
+        "**/*.{js,jsx,ts,tsx,json,md,mdx,yml,yaml}",
         ".prettierrc*",
         ".prettierignore"
       ],
-      "outputs": []
+      "outputs": [],
+      "cache": false
     },
     "format:check": {
       "dependsOn": ["^format:check"],
       "inputs": [
-        "**/*.{js,jsx,ts,tsx,json,md,mdx}",
+        "**/*.{js,jsx,ts,tsx,json,md,mdx,yml,yaml}",
         ".prettierrc*",
         ".prettierignore"
       ],
-      "outputs": []
+      "outputs": [],
+      "cache": false
     },
     "check-types": {
       "dependsOn": ["^check-types"]

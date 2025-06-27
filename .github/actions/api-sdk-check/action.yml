@@ -20,10 +20,7 @@ runs:
     - name: Generate API SDK
       shell: bash
       run: |
-        set -ex
-        (cd apps/api && npm run generate-openapi)
-        (cd packages/api-sdk && speakeasy run --skip-versioning)
-        pnpm format
+        sh scripts/build-api-sdk.sh
 
     # TODO: figure out correct flow to not make this problematic
     # - name: Check if API SDK is up to date
@@ -35,7 +32,7 @@ runs:
       run: |
         set +e
         if git status -s | grep -v .speakeasy | grep -v src/hooks/hooks.ts > /tmp/sdk-diff; then
-          echo "::warning file=packages/api-sdk::Generated SDK is out of date. Please run \`sh build-api-sdk.sh\` from root."
+          echo "::warning file=packages/api-sdk::Generated SDK is out of date. Please run \`sh scripts/build-api-sdk.sh\` from root."
           echo "--- Diff output ---"
           cat /tmp/sdk-diff
         else

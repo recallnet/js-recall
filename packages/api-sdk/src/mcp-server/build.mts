@@ -1,5 +1,4 @@
 /// <reference types="bun-types" />
-
 import { build } from "bun";
 
 const entrypoint = "./src/mcp-server/mcp-server.ts";
