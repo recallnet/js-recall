@@ -2700,7 +2700,7 @@ describe("User API", () => {
     });
   });
 
-  test("user agents have correct bestPlacement stats after competition", async () => {
+  test("user agents have correct stats after one competition", async () => {
     // Create a SIWE-authenticated client
     const { client: siweClient } = await createSiweAuthenticatedClient({
       adminApiKey,
@@ -2854,8 +2854,6 @@ describe("User API", () => {
     expect(deltaAgent).toBeDefined();
     expect(echoAgent).toBeDefined();
 
-    // Verify that all agents have valid rankings
-
     // Verify trade counts match what we executed
     expect(alphaAgent?.stats?.totalTrades).toBe(3);
     expect(bravoAgent?.stats?.totalTrades).toBe(2);
@@ -2894,7 +2892,7 @@ describe("User API", () => {
     }
   });
 
-  test("two agents in multiple competitions with stable vs volatile trading patterns", async () => {
+  test("two agents in multiple competitions have correct stats", async () => {
     // Create a SIWE-authenticated client
     const { client: siweClient } = await createSiweAuthenticatedClient({
       adminApiKey,
@@ -2908,16 +2906,14 @@ describe("User API", () => {
 
     // Create 2 agents
     const agent1Response = await siweClient.createAgent(
-      "Stable Agent",
-      "Agent that makes stable trades",
+      "Agent Foxtrot",
+      "The first Agent for this user",
     );
     expect(agent1Response.success).toBe(true);
     const agent1 = (agent1Response as { success: true; agent: Agent }).agent;
 
-    // Reduced delay for faster test execution
-
     const agent2Response = await siweClient.createAgent(
-      "Volatile Agent",
+      "Agent Hotel",
       "Agent that makes volatile trades",
     );
     expect(agent2Response.success).toBe(true);
@@ -2949,7 +2945,7 @@ describe("User API", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: config.specificChainTokens.eth.eth,
       amount: "1000",
-      reason: `Stable Agent trade - stable USDC to ETH`,
+      reason: `Agent Foxtrot trade - stable USDC to ETH`,
     });
 
     // Agent 2: Make bad trade
@@ -2957,11 +2953,8 @@ describe("User API", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "1000",
-      reason: `Volatile Agent trade - volatile USDC to Vision`,
+      reason: `Agent Hotel trade - volatile USDC to Vision`,
     });
-
-    // Allow time for token values to deviate
-    await wait(10000);
 
     // End first competition
     const endComp1Result = await adminClient.endCompetition(competition1Id);
@@ -2993,7 +2986,7 @@ describe("User API", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "1200",
-      reason: `Stable Agent volatile trade - USDC to Vision`,
+      reason: `Agent Foxtrot volatile trade - USDC to Vision`,
     });
 
     // Agent 2: Now make stable trade (USDC to ETH)
@@ -3001,11 +2994,8 @@ describe("User API", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: config.specificChainTokens.eth.eth,
       amount: "1200",
-      reason: `Volatile Agent stable trade - stable USDC to ETH`,
+      reason: `Agent Hotel stable trade - stable USDC to ETH`,
     });
-
-    // Allow time for token values to deviate
-    await wait(10000);
 
     // End second competition
     const endComp2Result = await adminClient.endCompetition(competition2Id);
@@ -3021,64 +3011,52 @@ describe("User API", () => {
     expect(agents).toHaveLength(2);
 
     // Find the specific agents
-    const stableAgent = agents.find((a) => a.name === "Stable Agent");
-    const volatileAgent = agents.find((a) => a.name === "Volatile Agent");
+    const agentFoxtrot = agents.find((a) => a.name === "Agent Foxtrot");
+    const agentHotel = agents.find((a) => a.name === "Agent Hotel");
 
-    expect(stableAgent).toBeDefined();
-    expect(volatileAgent).toBeDefined();
+    expect(agentFoxtrot).toBeDefined();
+    expect(agentHotel).toBeDefined();
 
     // Verify both agents have completed 2 competitions
-    expect(stableAgent?.stats?.completedCompetitions).toBe(2);
-    expect(volatileAgent?.stats?.completedCompetitions).toBe(2);
+    expect(agentFoxtrot?.stats?.completedCompetitions).toBe(2);
+    expect(agentHotel?.stats?.completedCompetitions).toBe(2);
 
     // Verify trade counts
-    expect(stableAgent?.stats?.totalTrades).toBe(2); // 1 from comp1 + 1 from comp2
-    expect(volatileAgent?.stats?.totalTrades).toBe(2); // 1 from comp1 + 1 from comp2
+    expect(agentFoxtrot?.stats?.totalTrades).toBe(2); // 1 from comp1 + 1 from comp2
+    expect(agentHotel?.stats?.totalTrades).toBe(2); // 1 from comp1 + 1 from comp2
 
     // Verify both agents have bestPlacement stats
-    expect(stableAgent?.stats?.bestPlacement).toBeDefined();
-    expect(volatileAgent?.stats?.bestPlacement).toBeDefined();
+    expect(agentFoxtrot?.stats?.bestPlacement).toBeDefined();
+    expect(agentHotel?.stats?.bestPlacement).toBeDefined();
 
     // Verify bestPlacement structure
-    expect(stableAgent?.stats?.bestPlacement?.rank).toBeGreaterThanOrEqual(1);
-    expect(stableAgent?.stats?.bestPlacement?.rank).toBeLessThanOrEqual(2);
-    expect(stableAgent?.stats?.bestPlacement?.totalAgents).toBe(2);
+    expect(agentFoxtrot?.stats?.bestPlacement?.rank).toBeGreaterThanOrEqual(1);
+    expect(agentFoxtrot?.stats?.bestPlacement?.rank).toBeLessThanOrEqual(2);
+    expect(agentFoxtrot?.stats?.bestPlacement?.totalAgents).toBe(2);
     expect([competition1Id, competition2Id]).toContain(
-      stableAgent?.stats?.bestPlacement?.competitionId,
+      agentFoxtrot?.stats?.bestPlacement?.competitionId,
     );
 
-    expect(volatileAgent?.stats?.bestPlacement?.rank).toBeGreaterThanOrEqual(1);
-    expect(volatileAgent?.stats?.bestPlacement?.rank).toBeLessThanOrEqual(2);
-    expect(volatileAgent?.stats?.bestPlacement?.totalAgents).toBe(2);
+    expect(agentHotel?.stats?.bestPlacement?.rank).toBeGreaterThanOrEqual(1);
+    expect(agentHotel?.stats?.bestPlacement?.rank).toBeLessThanOrEqual(2);
+    expect(agentHotel?.stats?.bestPlacement?.totalAgents).toBe(2);
     expect([competition1Id, competition2Id]).toContain(
-      volatileAgent?.stats?.bestPlacement?.competitionId,
+      agentHotel?.stats?.bestPlacement?.competitionId,
     );
 
     // Verify both agents have valid bestPnl values
-    expect(stableAgent?.stats?.bestPnl).toBeDefined();
-    expect(volatileAgent?.stats?.bestPnl).toBeDefined();
-    expect(typeof stableAgent?.stats?.bestPnl).toBe("number");
-    expect(typeof volatileAgent?.stats?.bestPnl).toBe("number");
+    expect(agentFoxtrot?.stats?.bestPnl).toBeDefined();
+    expect(agentHotel?.stats?.bestPnl).toBeDefined();
+    expect(typeof agentFoxtrot?.stats?.bestPnl).toBe("number");
+    expect(typeof agentHotel?.stats?.bestPnl).toBe("number");
 
     // Verify that bestPlacement reflects the better performance from either competition
     // The agent with rank 1 should have the better placement
-    const stableAgentRank = stableAgent?.stats?.bestPlacement?.rank;
-    const volatileAgentRank = volatileAgent?.stats?.bestPlacement?.rank;
+    const agentFoxtrotRank = agentFoxtrot?.stats?.bestPlacement?.rank;
+    const agentHotelRank = agentHotel?.stats?.bestPlacement?.rank;
 
     // Ensure ranks are the same since each agent has won one comp
-    expect(stableAgentRank).toBe(volatileAgentRank);
-    expect(stableAgentRank).toBe(1);
-
-    // Log results for debugging
-    console.log("\n=== Multi-Competition Test Results ===");
-    console.log(
-      "Stable Agent Stats:",
-      JSON.stringify(stableAgent?.stats, null, 2),
-    );
-    console.log(
-      "Volatile Agent Stats:",
-      JSON.stringify(volatileAgent?.stats, null, 2),
-    );
-    console.log("=========================================\n");
+    expect(agentFoxtrotRank).toBe(agentHotelRank);
+    expect(agentFoxtrotRank).toBe(1);
   });
 });
