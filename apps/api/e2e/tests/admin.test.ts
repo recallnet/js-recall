@@ -554,7 +554,9 @@ describe("Admin API", () => {
 
     // TEST CASE 1: Search by user name substring (should find user 1 and user 3)
     const nameSearchResult = await adminClient.searchUsersAndAgents({
-      name: "Search User",
+      user: {
+        name: "Search User",
+      },
       searchType: "users",
     });
 
@@ -574,7 +576,9 @@ describe("Admin API", () => {
 
     // TEST CASE 2: Search by agent name
     const agentNameSearchResult = await adminClient.searchUsersAndAgents({
-      name: "Search Agent",
+      agent: {
+        name: "Search Agent",
+      },
       searchType: "agents",
     });
 
@@ -594,7 +598,9 @@ describe("Admin API", () => {
 
     // TEST CASE 3: Search by email domain
     const emailSearchResult = await adminClient.searchUsersAndAgents({
-      email: "example.com",
+      user: {
+        email: "example.com",
+      },
       searchType: "both",
     });
 
@@ -606,7 +612,12 @@ describe("Admin API", () => {
 
     // TEST CASE 4: Search by status - all users should be active by default
     const activeSearchResult = await adminClient.searchUsersAndAgents({
-      status: "active",
+      user: {
+        status: "active",
+      },
+      agent: {
+        status: "active",
+      },
       searchType: "both",
     });
 
@@ -662,7 +673,9 @@ describe("Admin API", () => {
     );
 
     const walletSearchResult = await adminClient.searchUsersAndAgents({
-      walletAddress: partialWalletAddress,
+      user: {
+        walletAddress: partialWalletAddress,
+      },
       searchType: "users",
     });
 
@@ -673,6 +686,67 @@ describe("Admin API", () => {
       expect(walletSearchResult.results.users[0]?.walletAddress).toBe(
         walletAddress,
       );
+    }
+
+    // TEST CASE 6: Join query - find agents by name that are owned by a user with specific wallet address
+    console.log(
+      "Running TEST CASE 6: Join query - agents by name owned by specific user",
+    );
+
+    // Add one more agent to user 1 called "search alpha 2"
+    const agent1_2Name = `Search Agent Alpha 2 ${timestamp}`;
+    const agent1_2Result = (await adminClient.registerAgent({
+      user: {
+        walletAddress: user1Result.user.walletAddress,
+      },
+      agent: {
+        name: agent1_2Name,
+        description: "Second agent for user 1",
+      },
+    })) as AdminAgentResponse;
+    expect(agent1_2Result.success).toBe(true);
+    expect(agent1_2Result.agent.ownerId).toBe(user1Result.user.id);
+
+    // Use the wallet address from user1
+    const user1WalletAddress = user1Result.user.walletAddress;
+
+    // Perform the join query - search for agents with "Search Agent" in name owned by user1
+    const joinQueryResult = await adminClient.searchUsersAndAgents({
+      user: {
+        walletAddress: user1WalletAddress.substring(0, 12), // Use partial wallet address
+      },
+      agent: {
+        name: "Search Agent",
+      },
+      searchType: "join",
+    });
+
+    // Verify search results
+    expect(joinQueryResult.success).toBe(true);
+    if (joinQueryResult.success) {
+      console.log(
+        `Found ${joinQueryResult.results.agents.length} agents in join query`,
+      );
+
+      // Should find only the agent from user1
+      expect(joinQueryResult.results.agents.length).toBe(2);
+
+      // Verify the correct agents was found (user1's agent)
+      expect(joinQueryResult.results.agents[0]?.name).toBe(agent1Name);
+      expect(joinQueryResult.results.agents[1]?.name).toBe(agent1_2Name);
+
+      // Verify the agents belongs to user1
+      expect(joinQueryResult.results.agents[0]?.ownerId).toBe(
+        user1Result.user.id,
+      );
+      expect(joinQueryResult.results.agents[1]?.ownerId).toBe(
+        user1Result.user.id,
+      );
+
+      // Verify user3's agent (which also has "Search Agent" in name) was not found
+      // because we filtered by user1's wallet address
+      const foundAgentIds = joinQueryResult.results.agents.map((a) => a.id);
+      expect(foundAgentIds).not.toContain(user3Result.agent!.id);
     }
 
     // Clean up - delete the agents we created

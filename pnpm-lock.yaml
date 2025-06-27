@@ -95,6 +95,9 @@ importers:
       pg:
         specifier: ^8.10.0
         version: 8.16.0
+      qs:
+        specifier: ^6.14.0
+        version: 6.14.0
       rate-limiter-flexible:
         specifier: ^2.4.1
         version: 2.4.2
@@ -135,6 +138,9 @@ importers:
       '@types/pg':
         specifier: ^8.6.6
         version: 8.15.2
+      '@types/qs':
+        specifier: ^6.14.0
+        version: 6.14.0
       '@types/swagger-jsdoc':
         specifier: ^6.0.4
         version: 6.0.4
@@ -4656,6 +4662,7 @@ packages:
 
   bun@1.2.13:
     resolution: {integrity: sha512-EhP1MhFbicqtaRSFCbEZdkcFco8Ov47cNJcB9QmKS8U4cojKHfLU+dQR14lCvLYmtBvGgwv/Lp+9SSver2OPzQ==}
+    cpu: [arm64, x64, aarch64]
     os: [darwin, linux, win32]
     hasBin: true
 
