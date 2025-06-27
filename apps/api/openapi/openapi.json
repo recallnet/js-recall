@@ -5295,6 +5295,60 @@
         }
       }
     },
+    "/api/verify-email": {
+      "get": {
+        "summary": "Verify an email verification token",
+        "description": "Verifies an email verification token sent to a user or agent's email address.\nThis endpoint is typically accessed via a link in the verification email.\n",
+        "tags": ["Email Verification"],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The verification token from the email"
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirects to frontend user profile page",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "URL to the frontend user profile page with query parameters",
+                "example": "http://localhost:3001/profile?success=true&message=Email%20verified%20successfully%20for%20user"
+              }
+            },
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health": {
       "get": {
         "tags": ["Health"],

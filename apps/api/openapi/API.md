@@ -1345,6 +1345,32 @@ while preserving historical participation data. Note: Cannot leave competitions 
 | --------------- | ------ |
 | BearerAuth      |        |
 
+### /api/verify-email
+
+#### GET
+
+##### Summary:
+
+Verify an email verification token
+
+##### Description:
+
+Verifies an email verification token sent to a user or agent's email address.
+This endpoint is typically accessed via a link in the verification email.
+
+##### Parameters
+
+| Name  | Located in | Description                           | Required | Schema |
+| ----- | ---------- | ------------------------------------- | -------- | ------ |
+| token | query      | The verification token from the email | Yes      | string |
+
+##### Responses
+
+| Code | Description                             |
+| ---- | --------------------------------------- |
+| 302  | Redirects to frontend user profile page |
+| 500  | Internal server error                   |
+
 ### /api/health
 
 #### GET

@@ -7,6 +7,7 @@ import { makeAgentController } from "@/controllers/agent.controller.js";
 import { makeAuthController } from "@/controllers/auth.controller.js";
 import { makeCompetitionController } from "@/controllers/competition.controller.js";
 import { makeDocsController } from "@/controllers/docs.controller.js";
+import { makeEmailVerificationController } from "@/controllers/email-verification.controller.js";
 import { makeHealthController } from "@/controllers/health.controller.js";
 import { makeLeaderboardController } from "@/controllers/leaderboard.controller.js";
 import { makePriceController } from "@/controllers/price.controller.js";
@@ -27,6 +28,7 @@ import { configureAgentsRoutes } from "@/routes/agents.routes.js";
 import { configureAuthRoutes } from "@/routes/auth.routes.js";
 import { configureCompetitionsRoutes } from "@/routes/competitions.routes.js";
 import { configureDocsRoutes } from "@/routes/docs.routes.js";
+import { configureEmailVerificationRoutes } from "@/routes/email-verification.routes.js";
 import { configureHealthRoutes } from "@/routes/health.routes.js";
 import { configurePriceRoutes } from "@/routes/price.routes.js";
 import { configureTradeRoutes } from "@/routes/trade.routes.js";
@@ -140,6 +142,7 @@ const adminController = makeAdminController(services);
 const authController = makeAuthController(services);
 const competitionController = makeCompetitionController(services);
 const docsController = makeDocsController();
+const emailVerificationController = makeEmailVerificationController(services);
 const healthController = makeHealthController();
 const priceController = makePriceController(services);
 const tradeController = makeTradeController(services);
@@ -173,6 +176,9 @@ const competitionsRoutes = configureCompetitionsRoutes(
 );
 const docsRoutes = configureDocsRoutes(docsController);
 const healthRoutes = configureHealthRoutes(healthController);
+const emailVerificationRoutes = configureEmailVerificationRoutes(
+  emailVerificationController,
+);
 const priceRoutes = configurePriceRoutes(priceController);
 const tradeRoutes = configureTradeRoutes(tradeController);
 const userRoutes = configureUserRoutes(userController, voteController);
@@ -182,6 +188,7 @@ const leaderboardRoutes = configureLeaderboardRoutes(leaderboardController);
 
 // Apply routes to the API router
 apiRouter.use("/auth", authRoutes);
+apiRouter.use("/verify-email", emailVerificationRoutes);
 apiRouter.use("/trade", tradeRoutes);
 apiRouter.use("/price", priceRoutes);
 apiRouter.use("/competitions", competitionsRoutes);
