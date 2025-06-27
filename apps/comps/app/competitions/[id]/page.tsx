@@ -181,11 +181,11 @@ export default function CompetitionPage({
       ) : null}
 
       {agentsError || !agentsData ? (
-        <div className="my-12 rounded border border-red-400 bg-red-100 bg-opacity-10 p-6 text-center">
-          <h2 className="text-xl font-semibold text-red-400">
+        <div className="my-12 rounded border border-red-500 bg-opacity-10 p-6 text-center">
+          <h2 className="text-xl font-semibold text-red-500">
             Failed to load agents
           </h2>
-          <p className="mt-2 text-slate-300">
+          <p className="mt-2">
             {agentsError?.message ||
               "An error occurred while loading agents data"}
           </p>
