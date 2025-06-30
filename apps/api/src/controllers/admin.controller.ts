@@ -74,7 +74,7 @@ interface AdminSearchResults {
 
 export interface AdminSearchUsersAndAgentsResponse {
   success: boolean;
-  searchType: string;
+  join: boolean;
   results: AdminSearchResults;
 }
 
@@ -1132,7 +1132,7 @@ export function makeAdminController(services: ServiceRegistry) {
     ) {
       try {
         // Note: special parsing is required to support nested query params
-        const { user, agent, searchType } = parseAdminSearchQuery(req.url);
+        const { user, agent, join } = parseAdminSearchQuery(req.url);
         const results: AdminSearchResults = {
           users: [],
           agents: [],
@@ -1174,7 +1174,7 @@ export function makeAdminController(services: ServiceRegistry) {
           }));
         }
 
-        if (searchType === "join") {
+        if (join) {
           const userMap = new Map(results.users.map((user) => [user.id, user]));
 
           results.agents = results.agents
@@ -1191,7 +1191,7 @@ export function makeAdminController(services: ServiceRegistry) {
         // Return the search results
         res.status(200).json({
           success: true,
-          searchType,
+          join,
           results,
         });
       } catch (error) {

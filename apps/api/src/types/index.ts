@@ -1040,7 +1040,14 @@ export type AgentSearchParams = z.infer<typeof AgentSearchParamsSchema>;
 export const AdminSearchUsersAndAgentsQuerySchema = z.strictObject({
   user: UserSearchParamsSchema.strict().optional(),
   agent: AgentSearchParamsSchema.strict().optional(),
-  searchType: z.enum(["both", "join"]).default("both"),
+  join: z.preprocess((val) => {
+    if (val === "") return true; // Note: allows for bare `join` instead of only `join=true`
+    if (typeof val === "string") {
+      if (val.toLowerCase() === "true") return true;
+      if (val.toLowerCase() === "false") return false;
+    }
+    return val;
+  }, z.boolean().default(false)),
 });
 
 export type AdminSearchUsersAndAgentsQuery = z.infer<

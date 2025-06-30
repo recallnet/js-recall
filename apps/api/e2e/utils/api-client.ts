@@ -1277,7 +1277,7 @@ export class ApiClient {
 
   /**
    * Search users and agents (admin only)
-   * @param searchParams Search parameters (email, name, walletAddress, status, searchType)
+   * @param searchParams Search parameters (user.<field>, agent.<field>, join)
    */
   async searchUsersAndAgents(
     searchParams: AdminSearchParams,
@@ -1307,8 +1307,8 @@ export class ApiClient {
         );
       if (searchParams.agent?.status)
         queryParams.append("agent.status", searchParams.agent?.status);
-      if (searchParams.searchType)
-        queryParams.append("searchType", searchParams.searchType);
+      if (searchParams?.join)
+        queryParams.append("join", searchParams.join.toString());
 
       const url = `/api/admin/search?${queryParams.toString()}`;
 

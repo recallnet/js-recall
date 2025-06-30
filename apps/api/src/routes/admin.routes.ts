@@ -1454,12 +1454,11 @@ export function configureAdminRoutes(
    *           enum: [active, suspended, inactive, deleted]
    *         description: Filter by agent status
    *       - in: query
-   *         name: searchType
+   *         name: join
    *         schema:
-   *           type: string
-   *           enum: [users, agents, both, join]
-   *           default: both
-   *         description: Type of entities to search
+   *           type: boolean
+   *           default: false
+   *         description: Whether to "join" the results with a left join on the users table, or return all independent results
    *     responses:
    *       200:
    *         description: Search results
@@ -1471,9 +1470,9 @@ export function configureAdminRoutes(
    *                 success:
    *                   type: boolean
    *                   description: Operation success status
-   *                 searchType:
-   *                   type: string
-   *                   description: Type of search performed
+   *                 join:
+   *                   type: boolean
+   *                   description: Whether to "join" the results with a left join on the users table
    *                 results:
    *                   type: object
    *                   properties:

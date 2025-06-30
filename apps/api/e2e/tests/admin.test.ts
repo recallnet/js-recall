@@ -612,7 +612,7 @@ describe("Admin API", () => {
       agent: {
         status: "active",
       },
-      searchType: "both",
+      join: false, // default is false (no join)
     })) as AdminSearchUsersAndAgentsResponse;
 
     expect(activeSearchResult.success).toBe(true);
@@ -701,7 +701,7 @@ describe("Admin API", () => {
       agent: {
         name: "Search Agent",
       },
-      searchType: "join",
+      join: true,
     })) as AdminSearchUsersAndAgentsResponse;
 
     // Verify search results
@@ -741,7 +741,7 @@ describe("Admin API", () => {
         status: "active",
         walletAddress: user1Result.user.walletAddress,
       },
-      searchType: "both",
+      join: false,
     })) as AdminSearchUsersAndAgentsResponse;
     // Expect no errors (we don't care about the response here; just the zod parsing)
     expect(allFiltersResult.success).toBe(true);
@@ -753,6 +753,74 @@ describe("Admin API", () => {
     await adminClient.deleteAgent(user1Result.agent!.id);
     await adminClient.deleteAgent(user2Result.agent!.id);
     await adminClient.deleteAgent(user3Result.agent!.id);
+  });
+
+  test("should use 'join' with different query param formats", async () => {
+    // Setup admin client with the API key
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Standard user with agent
+    const agentName = `Search Agent Join`;
+    const walletAddress = generateRandomEthAddress();
+    const userResult = (await adminClient.registerUser({
+      walletAddress: walletAddress,
+      agentName: agentName,
+    })) as UserRegistrationResponse;
+    expect(userResult.success).toBe(true);
+
+    // Random agent (used for testing `join` param)
+    const randomUserWalletAddress = generateRandomEthAddress();
+    const randomAgentName = `Random Name ${Date.now()}`;
+    const randomUserResult = (await adminClient.registerUser({
+      walletAddress: randomUserWalletAddress,
+      agentName: randomAgentName,
+    })) as UserRegistrationResponse;
+    expect(randomUserResult.success).toBe(true);
+
+    // Set up axios client with the admin API key
+    const headers = {
+      Authorization: `Bearer ${adminApiKey}`,
+    };
+    // We'll check with: first user's wallet, but also the random agent name not owned by the user
+    const searchParams = new URLSearchParams();
+    searchParams.set("user.walletAddress", walletAddress);
+    searchParams.set("agent.name", randomAgentName);
+    const baseUrl = `${getBaseUrl()}/api/admin/search?${searchParams.toString()}`;
+
+    // Case 1: no `join` param => returns all users and agents w/o `join`
+    let url = `${baseUrl}`;
+    let response = await axios.get(url, { headers });
+    expect(response.data.success).toBe(true);
+    expect(response.data.join).toBe(false);
+    expect(response.data.results.users.length).toBe(1);
+    expect(response.data.results.agents.length).toBe(1);
+
+    // Case 2: Explicit join=false => returns all users and agents w/o `join`
+    url = `${baseUrl}&join=false`;
+    response = await axios.get(url, { headers });
+    expect(response.data.success).toBe(true);
+    expect(response.data.join).toBe(false);
+    expect(response.data.results.users.length).toBe(1);
+    expect(response.data.results.agents.length).toBe(1);
+
+    // Case 3: Explicit join=true => returns all users and agents w/ `join` (no agents found)
+    url = `${baseUrl}&join=true`;
+    searchParams.set("agent.name", "foo");
+    response = await axios.get(url, { headers });
+    expect(response.data.success).toBe(true);
+    expect(response.data.join).toBe(true);
+    expect(response.data.results.users.length).toBe(1);
+    expect(response.data.results.agents.length).toBe(0);
+
+    // Case 4: `join` as standalone param (aka `join=true`) => returns all users and agents w/ `join` (no agents found)
+    url = `${baseUrl}&join`;
+    searchParams.set("agent.name", "foo");
+    response = await axios.get(url, { headers });
+    expect(response.data.success).toBe(true);
+    expect(response.data.join).toBe(true);
+    expect(response.data.results.users.length).toBe(1);
+    expect(response.data.results.agents.length).toBe(0);
   });
 
   test("should fail to search for users and agents with invalid query params", async () => {
@@ -796,8 +864,8 @@ describe("Admin API", () => {
     url = `${baseUrl}?${query}`;
     await expect(axios.get(url, { headers })).rejects.toThrow();
 
-    // Case 8: invalid search type
-    query = "searchType=invalid_search_type";
+    // Case 8: invalid join param
+    query = "join=invalid_join";
     url = `${baseUrl}?${query}`;
     await expect(axios.get(url, { headers })).rejects.toThrow();
 
