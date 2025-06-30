@@ -525,7 +525,7 @@ export default function AccountPage() {
 
                         {/* View Details Link - Fixed position */}
                         <div className="mt-4 text-center">
-                          {competition.metadata?.website && (
+                          {competition.externalUrl && (
                             <span className="text-xs text-[#0057AD] group-hover:underline">
                               View Competition →
                             </span>
@@ -535,10 +535,10 @@ export default function AccountPage() {
                     );
 
                     // Wrap with external link if available
-                    return competition.metadata?.website ? (
+                    return competition.externalUrl ? (
                       <a
                         key={competition.id}
-                        href={competition.metadata.website}
+                        href={competition.externalUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="group cursor-pointer"

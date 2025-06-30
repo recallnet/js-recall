@@ -36,19 +36,16 @@ export interface Competition {
   name: string;
   description?: string;
   imageUrl?: string;
-  startDate: string;
-  endDate: string;
-  status: "upcoming" | "active" | "completed" | "cancelled";
-  maxParticipants?: number;
-  currentParticipants: number;
-  prizePool?: string;
-  rules?: string;
-  metadata?: {
-    website?: string;
-    twitter?: string;
-  };
+  externalUrl?: string;
+  status: "pending" | "active" | "ended";
+  startDate?: string;
+  endDate?: string;
+  type: "trading";
+  votingStartDate?: string;
+  votingEndDate?: string;
   createdAt: string;
   updatedAt: string;
+  sandboxMode: boolean;
 }
 
 export interface CompetitionResponse {
