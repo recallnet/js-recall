@@ -7,13 +7,9 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@recallnet/ui/components/shadcn/button";
 
-import AgentRegistrationForm, {
-  AgentFormData,
-} from "@/components/agent-registration-form";
 import DeveloperProfileForm, {
   ProfileFormData,
 } from "@/components/developer-profile-form";
-import RegistrationSuccess from "@/components/registration-success";
 import { SignInButton } from "@/components/sign-in-button";
 import { useUserSession } from "@/hooks/useAuth";
 import { removeLegacyWalletConnectLocalStorage } from "@/lib/utils";
@@ -27,22 +23,12 @@ export default function Home() {
   const session = useUserSession();
   const router = useRouter();
   const [registrationStep, setRegistrationStep] = useState<
-    "welcome" | "profile" | "agent" | "success"
+    "welcome" | "profile"
   >("welcome");
   const [profileData, setProfileData] = useState<ProfileFormData>({
     name: "",
     email: "",
     website: "",
-  });
-  const [agentData, setAgentData] = useState<AgentFormData>({
-    name: "",
-    selectedSkills: [],
-    customSkill: "",
-    repoUrl: "",
-    description: "",
-    avatar: "",
-    twitter: "",
-    telegram: "",
   });
 
   // Clean up legacy WalletConnect `localStorage` and old Recall testnet chain ID on mount
@@ -56,35 +42,14 @@ export default function Home() {
   const handleProfileNext = (data: ProfileFormData) => {
     console.log("Profile data:", data);
     setProfileData(data);
-    setRegistrationStep("agent");
+
+    // Redirect directly to account page after profile completion
+    router.push("/account");
   };
 
   // Handle back button from profile form
   const handleProfileBack = () => {
     setRegistrationStep("welcome");
-  };
-
-  // Handle next button from agent form
-  const handleAgentNext = (data: AgentFormData) => {
-    console.log("Agent data:", data);
-    setAgentData(data);
-
-    // Process the complete registration data
-    const registrationData = {
-      profile: profileData,
-      agent: data,
-    };
-
-    console.log("Complete registration data:", registrationData);
-
-    // The API call is now handled in the AgentRegistrationForm component
-    // Here we just move to the success screen
-    setRegistrationStep("success");
-  };
-
-  // Handle back button from agent form
-  const handleAgentBack = () => {
-    setRegistrationStep("profile");
   };
 
   // Get the appropriate button based on auth state
@@ -161,22 +126,6 @@ export default function Home() {
             initialData={profileData}
             onBack={handleProfileBack}
             onNext={handleProfileNext}
-          />
-        ) : session.isInitialized &&
-          session.isAuthenticated &&
-          registrationStep === "agent" ? (
-          <AgentRegistrationForm
-            initialData={agentData}
-            profileData={profileData}
-            onBack={handleAgentBack}
-            onNext={handleAgentNext}
-          />
-        ) : session.isInitialized &&
-          session.isAuthenticated &&
-          registrationStep === "success" ? (
-          <RegistrationSuccess
-            userName={profileData.name}
-            apiKey={agentData.apiKey}
           />
         ) : (
           <>
