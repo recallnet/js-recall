@@ -32,9 +32,9 @@ export class EmailVerificationService {
   private userManager: UserManager;
   private agentManager: AgentManager;
 
-  constructor() {
-    this.userManager = new UserManager();
-    this.agentManager = new AgentManager();
+  constructor(userManager: UserManager, agentManager: AgentManager) {
+    this.userManager = userManager;
+    this.agentManager = agentManager;
   }
 
   /**

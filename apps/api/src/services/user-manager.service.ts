@@ -28,10 +28,10 @@ export class UserManager {
   // Email service for sending verification emails
   private emailService: EmailService;
 
-  constructor() {
+  constructor(emailService: EmailService) {
     this.userWalletCache = new Map();
     this.userProfileCache = new Map();
-    this.emailService = new EmailService();
+    this.emailService = emailService;
   }
 
   /**

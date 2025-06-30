@@ -75,10 +75,10 @@ export class AgentManager {
   // Email service for sending verification emails
   private emailService: EmailService;
 
-  constructor() {
+  constructor(emailService: EmailService) {
     this.apiKeyCache = new Map();
     this.inactiveAgentsCache = new Map();
-    this.emailService = new EmailService();
+    this.emailService = emailService;
   }
 
   /**

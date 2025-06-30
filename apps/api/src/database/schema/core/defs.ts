@@ -1,5 +1,6 @@
 import {
   boolean,
+  char,
   foreignKey,
   index,
   integer,
@@ -361,7 +362,7 @@ export const emailVerificationTokens = pgTable(
     id: uuid().primaryKey().notNull(),
     userId: uuid("user_id"),
     agentId: uuid("agent_id"),
-    token: varchar("token", { length: 255 }).notNull().unique(),
+    token: char("token", { length: 36 }).notNull().unique(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     used: boolean("used").default(false),
     createdAt: timestamp("created_at", { withTimezone: true })

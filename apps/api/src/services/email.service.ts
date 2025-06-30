@@ -11,7 +11,7 @@ interface Payload {
   transactionalId: string;
   email: string;
   dataVariables: {
-    verification_link: string;
+    verificationLink: string;
   };
 }
 
@@ -71,7 +71,7 @@ export class EmailService {
       email: to,
       transactionalId: this.transactionalId,
       dataVariables: {
-        verification_link: verificationLink,
+        verificationLink: verificationLink,
       },
     };
     return this.sendEmail(payload);

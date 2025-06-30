@@ -2,19 +2,19 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/database/db.js";
 import { emailVerificationTokens } from "@/database/schema/core/defs.js";
+import {
+  InsertEmailVerificationToken,
+  SelectEmailVerificationToken,
+} from "@/database/schema/core/types.js";
 
 /**
  * Creates a new email verification token
  * @param token The token data to insert
  * @returns The inserted token
  */
-export async function createEmailVerificationToken(token: {
-  id: string;
-  userId?: string;
-  agentId?: string;
-  token: string;
-  expiresAt: Date;
-}): Promise<typeof emailVerificationTokens.$inferSelect> {
+export async function createEmailVerificationToken(
+  token: InsertEmailVerificationToken,
+): Promise<SelectEmailVerificationToken> {
   const [insertedToken] = await db
     .insert(emailVerificationTokens)
     .values(token)
@@ -34,7 +34,7 @@ export async function createEmailVerificationToken(token: {
  */
 export async function findEmailVerificationTokenByToken(
   tokenString: string,
-): Promise<typeof emailVerificationTokens.$inferSelect | undefined> {
+): Promise<SelectEmailVerificationToken | undefined> {
   const tokens = await db
     .select()
     .from(emailVerificationTokens)
@@ -51,7 +51,7 @@ export async function findEmailVerificationTokenByToken(
  */
 export async function markTokenAsUsed(
   tokenId: string,
-): Promise<typeof emailVerificationTokens.$inferSelect | undefined> {
+): Promise<SelectEmailVerificationToken | undefined> {
   const [updatedToken] = await db
     .update(emailVerificationTokens)
     .set({ used: true })

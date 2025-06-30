@@ -56,11 +56,6 @@ class ServiceRegistry {
       this._portfolioSnapshotter,
     );
 
-    // Initialize user and agent managers (new architecture)
-    this._userManager = new UserManager();
-    this._agentManager = new AgentManager();
-    this._adminManager = new AdminManager();
-
     // Initialize auth service (no dependencies needed)
     this._authService = new AuthService();
 
@@ -79,8 +74,16 @@ class ServiceRegistry {
     // Initialize email service (no dependencies)
     this._emailService = new EmailService();
 
-    // Initialize email verification service (no dependencies)
-    this._emailVerificationService = new EmailVerificationService();
+    // Initialize user and agent managers (require email service)
+    this._userManager = new UserManager(this._emailService);
+    this._agentManager = new AgentManager(this._emailService);
+    this._adminManager = new AdminManager();
+
+    // Initialize email verification service (requires user and agent managers)
+    this._emailVerificationService = new EmailVerificationService(
+      this._userManager,
+      this._agentManager,
+    );
 
     this._competitionManager = new CompetitionManager(
       this._balanceManager,

@@ -2,7 +2,7 @@ CREATE TABLE "email_verification_tokens" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"user_id" uuid,
 	"agent_id" uuid,
-	"token" varchar(255) NOT NULL,
+	"token" char(36) NOT NULL,
 	"expires_at" timestamp with time zone NOT NULL,
 	"used" boolean DEFAULT false,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
