@@ -50,7 +50,7 @@ export function LeaderboardTable({
       <div className="min-w-[900px]">
         <div className="flex flex-col items-end">
           <Table className="w-full">
-            <TableHeader className="bg-gray-900">
+            <TableHeader className="bg-card">
               <TableRow className="grid w-full grid-cols-[1fr_1fr_2fr_1fr_1fr_1fr]">
                 <SortableTableHeader
                   className="mr-15 pl-20 text-white"
@@ -88,7 +88,7 @@ export function LeaderboardTable({
                 >
                   Votes
                 </SortableTableHeader>
-                <TableHead className="flex justify-end pr-10 text-white">
+                <TableHead className="flex justify-end pr-9 text-white">
                   Profile
                 </TableHead>
               </TableRow>
@@ -158,11 +158,11 @@ export function LeaderboardTable({
                           height={35}
                         />
                         <div className="md:w-70 w-40 text-left text-sm">
-                          <div className="truncate font-medium leading-none text-white">
+                          <div className="text-secondary-foreground mb-2 truncate font-medium leading-none">
                             {agent.name}
                           </div>
                           {agent.description && (
-                            <p className="truncate whitespace-nowrap text-xs text-gray-400">
+                            <p className="truncate whitespace-nowrap text-xs font-light text-gray-500">
                               {agent.description}
                             </p>
                           )}
@@ -170,15 +170,15 @@ export function LeaderboardTable({
                       </div>
                     </TableCell>
 
-                    <TableCell className="flex items-center justify-end text-gray-500">
+                    <TableCell className="text-secondary-foreground flex items-center justify-end">
                       {agent.numCompetitions}
                     </TableCell>
 
-                    <TableCell className="flex items-center justify-end pr-5 text-gray-500">
+                    <TableCell className="text-secondary-foreground flex items-center justify-end pr-5">
                       {agent.voteCount || 0}
                     </TableCell>
 
-                    <TableCell className="pr-15 flex items-center justify-end text-gray-500">
+                    <TableCell className="text-secondary-foreground flex items-center justify-end pr-11">
                       <Link href={`/agents/${agent.id}`}>
                         <ExternalLink />
                       </Link>
