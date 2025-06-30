@@ -3,7 +3,7 @@ import { and, count as drizzleCount, eq, ilike } from "drizzle-orm";
 import { db } from "@/database/db.js";
 import { admins } from "@/database/schema/core/defs.js";
 import { InsertAdmin, SelectAdmin } from "@/database/schema/core/types.js";
-import { AdminSearchParams } from "@/types/index.js";
+import { SearchAdminsParams } from "@/types/index.js";
 
 import { PartialExcept } from "./types.js";
 
@@ -268,7 +268,7 @@ export async function updatePassword(
  * @returns Array of admins matching the search criteria
  */
 export async function searchAdmins(
-  searchParams: AdminSearchParams,
+  searchParams: SearchAdminsParams,
 ): Promise<SelectAdmin[]> {
   try {
     const conditions = [];

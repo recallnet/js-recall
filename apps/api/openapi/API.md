@@ -537,13 +537,17 @@ Search for users and agents based on various criteria
 
 ##### Parameters
 
-| Name          | Located in | Description                                   | Required | Schema |
-| ------------- | ---------- | --------------------------------------------- | -------- | ------ |
-| email         | query      | Partial match for email address (users only)  | No       | string |
-| name          | query      | Partial match for name                        | No       | string |
-| walletAddress | query      | Partial match for wallet address (users only) | No       | string |
-| status        | query      | Filter by status                              | No       | string |
-| searchType    | query      | Type of entities to search                    | No       | string |
+| Name                | Located in | Description                                                                                          | Required | Schema  |
+| ------------------- | ---------- | ---------------------------------------------------------------------------------------------------- | -------- | ------- |
+| user.email          | query      | Partial match for user email                                                                         | No       | string  |
+| user.name           | query      | Partial match for user name                                                                          | No       | string  |
+| user.walletAddress  | query      | Partial match for user wallet address                                                                | No       | string  |
+| user.status         | query      | Filter by user status                                                                                | No       | string  |
+| agent.name          | query      | Partial match for agent name                                                                         | No       | string  |
+| agent.ownerId       | query      | Filter by agent owner ID                                                                             | No       | string  |
+| agent.walletAddress | query      | Partial match for agent wallet address                                                               | No       | string  |
+| agent.status        | query      | Filter by agent status                                                                               | No       | string  |
+| join                | query      | Whether to "join" the results with a left join on the users table, or return all independent results | No       | boolean |
 
 ##### Responses
 

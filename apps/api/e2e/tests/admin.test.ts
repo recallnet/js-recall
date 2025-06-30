@@ -10,6 +10,7 @@ import {
   AdminAgentsListResponse,
   AdminReactivateAgentInCompetitionResponse,
   AdminRemoveAgentFromCompetitionResponse,
+  AdminSearchUsersAndAgentsResponse,
   AdminUsersListResponse,
   AgentProfileResponse,
   ApiResponse,
@@ -553,102 +554,104 @@ describe("Admin API", () => {
     expect(user3Result.success).toBe(true);
 
     // TEST CASE 1: Search by user name substring (should find user 1 and user 3)
-    const nameSearchResult = await adminClient.searchUsersAndAgents({
-      name: "Search User",
-      searchType: "users",
-    });
+    const nameSearchResult = (await adminClient.searchUsersAndAgents({
+      user: {
+        name: "Search User",
+      },
+    })) as AdminSearchUsersAndAgentsResponse;
 
     expect(nameSearchResult.success).toBe(true);
-    if (nameSearchResult.success) {
-      expect(nameSearchResult.results.users.length).toBe(2);
-      expect(
-        nameSearchResult.results.users.some((u) => u.name === user1Name),
-      ).toBe(true);
-      expect(
-        nameSearchResult.results.users.some((u) => u.name === user3Name),
-      ).toBe(true);
-      expect(
-        nameSearchResult.results.users.some((u) => u.name === user2Name),
-      ).toBe(false);
-    }
+    expect(nameSearchResult.results.users.length).toBe(2);
+    expect(
+      nameSearchResult.results.users.some((u) => u.name === user1Name),
+    ).toBe(true);
+    expect(
+      nameSearchResult.results.users.some((u) => u.name === user3Name),
+    ).toBe(true);
+    expect(
+      nameSearchResult.results.users.some((u) => u.name === user2Name),
+    ).toBe(false);
+    expect(nameSearchResult.results.agents.length).toBe(0);
 
     // TEST CASE 2: Search by agent name
-    const agentNameSearchResult = await adminClient.searchUsersAndAgents({
-      name: "Search Agent",
-      searchType: "agents",
-    });
+    const agentNameSearchResult = (await adminClient.searchUsersAndAgents({
+      agent: {
+        name: "Search Agent",
+      },
+    })) as AdminSearchUsersAndAgentsResponse;
 
     expect(agentNameSearchResult.success).toBe(true);
-    if (agentNameSearchResult.success) {
-      expect(agentNameSearchResult.results.agents.length).toBe(2);
-      expect(
-        agentNameSearchResult.results.agents.some((a) => a.name === agent1Name),
-      ).toBe(true);
-      expect(
-        agentNameSearchResult.results.agents.some((a) => a.name === agent3Name),
-      ).toBe(true);
-      expect(
-        agentNameSearchResult.results.agents.some((a) => a.name === agent2Name),
-      ).toBe(false);
-    }
+    expect(agentNameSearchResult.results.agents.length).toBe(2);
+    expect(
+      agentNameSearchResult.results.agents.some((a) => a.name === agent1Name),
+    ).toBe(true);
+    expect(
+      agentNameSearchResult.results.agents.some((a) => a.name === agent3Name),
+    ).toBe(true);
+    expect(
+      agentNameSearchResult.results.agents.some((a) => a.name === agent2Name),
+    ).toBe(false);
+    expect(nameSearchResult.results.agents.length).toBe(0);
 
     // TEST CASE 3: Search by email domain
-    const emailSearchResult = await adminClient.searchUsersAndAgents({
-      email: "example.com",
-      searchType: "both",
-    });
+    const emailSearchResult = (await adminClient.searchUsersAndAgents({
+      user: {
+        email: "example.com",
+      },
+    })) as AdminSearchUsersAndAgentsResponse;
 
     expect(emailSearchResult.success).toBe(true);
-    if (emailSearchResult.success) {
-      expect(emailSearchResult.results.users.length).toBe(1);
-      expect(emailSearchResult.results.users[0]?.email).toBe(user2Email);
-    }
+    expect(emailSearchResult.results.users.length).toBe(1);
+    expect(emailSearchResult.results.users[0]?.email).toBe(user2Email);
 
     // TEST CASE 4: Search by status - all users should be active by default
-    const activeSearchResult = await adminClient.searchUsersAndAgents({
-      status: "active",
-      searchType: "both",
-    });
+    const activeSearchResult = (await adminClient.searchUsersAndAgents({
+      user: {
+        status: "active",
+      },
+      agent: {
+        status: "active",
+      },
+      join: false, // default is false (no join)
+    })) as AdminSearchUsersAndAgentsResponse;
 
     expect(activeSearchResult.success).toBe(true);
-    if (activeSearchResult.success) {
-      // All three users we created should be found as active
-      expect(
-        activeSearchResult.results.users.some(
-          (u) => u.id === user1Result.user.id,
-        ),
-      ).toBe(true);
-      expect(
-        activeSearchResult.results.users.some(
-          (u) => u.id === user2Result.user.id,
-        ),
-      ).toBe(true);
-      expect(
-        activeSearchResult.results.users.some(
-          (u) => u.id === user3Result.user.id,
-        ),
-      ).toBe(true);
+    // All three users we created should be found as active
+    expect(
+      activeSearchResult.results.users.some(
+        (u) => u.id === user1Result.user.id,
+      ),
+    ).toBe(true);
+    expect(
+      activeSearchResult.results.users.some(
+        (u) => u.id === user2Result.user.id,
+      ),
+    ).toBe(true);
+    expect(
+      activeSearchResult.results.users.some(
+        (u) => u.id === user3Result.user.id,
+      ),
+    ).toBe(true);
 
-      // All three agents we created should be found as active
-      expect(user1Result.agent).toBeDefined();
-      expect(user2Result.agent).toBeDefined();
-      expect(user3Result.agent).toBeDefined();
-      expect(
-        activeSearchResult.results.agents.some(
-          (a) => a.id === user1Result.agent!.id,
-        ),
-      ).toBe(true);
-      expect(
-        activeSearchResult.results.agents.some(
-          (a) => a.id === user2Result.agent!.id,
-        ),
-      ).toBe(true);
-      expect(
-        activeSearchResult.results.agents.some(
-          (a) => a.id === user3Result.agent!.id,
-        ),
-      ).toBe(true);
-    }
+    // All three agents we created should be found as active
+    expect(user1Result.agent).toBeDefined();
+    expect(user2Result.agent).toBeDefined();
+    expect(user3Result.agent).toBeDefined();
+    expect(
+      activeSearchResult.results.agents.some(
+        (a) => a.id === user1Result.agent!.id,
+      ),
+    ).toBe(true);
+    expect(
+      activeSearchResult.results.agents.some(
+        (a) => a.id === user2Result.agent!.id,
+      ),
+    ).toBe(true);
+    expect(
+      activeSearchResult.results.agents.some(
+        (a) => a.id === user3Result.agent!.id,
+      ),
+    ).toBe(true);
 
     // TEST CASE 5: Search by wallet address
     // Extract wallet address from the first user
@@ -657,23 +660,91 @@ describe("Admin API", () => {
 
     // Search using a portion of the wallet address (e.g., first 10 characters after 0x)
     const partialWalletAddress = walletAddress.substring(0, 12); // 0x + first 10 chars
-    console.log(
-      `Searching for users with partial wallet address: ${partialWalletAddress}`,
-    );
 
-    const walletSearchResult = await adminClient.searchUsersAndAgents({
-      walletAddress: partialWalletAddress,
-      searchType: "users",
-    });
+    const walletSearchResult = (await adminClient.searchUsersAndAgents({
+      user: {
+        walletAddress: partialWalletAddress,
+      },
+    })) as AdminSearchUsersAndAgentsResponse;
 
     expect(walletSearchResult.success).toBe(true);
-    if (walletSearchResult.success) {
-      expect(walletSearchResult.results.users.length).toBe(1);
-      expect(walletSearchResult.results.users[0]?.id).toBe(user1Result.user.id);
-      expect(walletSearchResult.results.users[0]?.walletAddress).toBe(
-        walletAddress,
-      );
-    }
+    expect(walletSearchResult.results.users.length).toBe(1);
+    expect(walletSearchResult.results.users[0]?.id).toBe(user1Result.user.id);
+    expect(walletSearchResult.results.users[0]?.walletAddress).toBe(
+      walletAddress,
+    );
+    expect(walletSearchResult.results.agents.length).toBe(0);
+
+    // TEST CASE 6: Join query - find agents by name that are owned by a user with specific wallet address
+    // Add one more agent to user 1 called "search alpha 2"
+    const agent1_2Name = `Search Agent Alpha 2 ${timestamp}`;
+    const agent1_2Result = (await adminClient.registerAgent({
+      user: {
+        walletAddress: user1Result.user.walletAddress,
+      },
+      agent: {
+        name: agent1_2Name,
+        description: "Second agent for user 1",
+      },
+    })) as AdminAgentResponse;
+    expect(agent1_2Result.success).toBe(true);
+    expect(agent1_2Result.agent.ownerId).toBe(user1Result.user.id);
+
+    // Use the wallet address from user1
+    const user1WalletAddress = user1Result.user.walletAddress;
+
+    // Perform the join query - search for agents with "Search Agent" in name owned by user1
+    const joinQueryResult = (await adminClient.searchUsersAndAgents({
+      user: {
+        walletAddress: user1WalletAddress.substring(0, 12), // Use partial wallet address
+      },
+      agent: {
+        name: "Search Agent",
+      },
+      join: true,
+    })) as AdminSearchUsersAndAgentsResponse;
+
+    // Verify search results
+    expect(joinQueryResult.success).toBe(true);
+
+    // Should find only the agent from user1
+    expect(joinQueryResult.results.agents.length).toBe(2);
+
+    // Verify the correct agents was found (user1's agent)
+    expect(joinQueryResult.results.agents[0]?.name).toBe(agent1Name);
+    expect(joinQueryResult.results.agents[1]?.name).toBe(agent1_2Name);
+
+    // Verify the agents belongs to user1
+    expect(joinQueryResult.results.agents[0]?.ownerId).toBe(
+      user1Result.user.id,
+    );
+    expect(joinQueryResult.results.agents[1]?.ownerId).toBe(
+      user1Result.user.id,
+    );
+
+    // Verify user3's agent (which also has "Search Agent" in name) was not found
+    // because we filtered by user1's wallet address
+    const foundAgentIds = joinQueryResult.results.agents.map((a) => a.id);
+    expect(foundAgentIds).not.toContain(user3Result.agent!.id);
+
+    // TEST CASE 7: search for user and agents with all possible filters
+    const allFiltersResult = (await adminClient.searchUsersAndAgents({
+      user: {
+        name: "Search User",
+        email: "search-alpha-${timestamp}@test.com",
+        status: "active",
+        walletAddress: user1Result.user.walletAddress,
+      },
+      agent: {
+        name: "Search Agent",
+        ownerId: user1Result.user.id,
+        status: "active",
+        walletAddress: user1Result.user.walletAddress,
+      },
+      join: false,
+    })) as AdminSearchUsersAndAgentsResponse;
+    // Expect no errors (we don't care about the response here; just the zod parsing)
+    expect(allFiltersResult.success).toBe(true);
 
     // Clean up - delete the agents we created
     expect(user1Result.agent).toBeDefined();
@@ -682,6 +753,127 @@ describe("Admin API", () => {
     await adminClient.deleteAgent(user1Result.agent!.id);
     await adminClient.deleteAgent(user2Result.agent!.id);
     await adminClient.deleteAgent(user3Result.agent!.id);
+  });
+
+  test("should use 'join' with different query param formats", async () => {
+    // Setup admin client with the API key
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Standard user with agent
+    const agentName = `Search Agent Join`;
+    const walletAddress = generateRandomEthAddress();
+    const userResult = (await adminClient.registerUser({
+      walletAddress: walletAddress,
+      agentName: agentName,
+    })) as UserRegistrationResponse;
+    expect(userResult.success).toBe(true);
+
+    // Random agent (used for testing `join` param)
+    const randomUserWalletAddress = generateRandomEthAddress();
+    const randomAgentName = `Random Name ${Date.now()}`;
+    const randomUserResult = (await adminClient.registerUser({
+      walletAddress: randomUserWalletAddress,
+      agentName: randomAgentName,
+    })) as UserRegistrationResponse;
+    expect(randomUserResult.success).toBe(true);
+
+    // Set up axios client with the admin API key
+    const headers = {
+      Authorization: `Bearer ${adminApiKey}`,
+    };
+    // We'll check with: first user's wallet, but also the random agent name not owned by the user
+    const searchParams = new URLSearchParams();
+    searchParams.set("user.walletAddress", walletAddress);
+    searchParams.set("agent.name", randomAgentName);
+    const baseUrl = `${getBaseUrl()}/api/admin/search?${searchParams.toString()}`;
+
+    // Case 1: no `join` param => returns all users and agents w/o `join`
+    let url = `${baseUrl}`;
+    let response = await axios.get(url, { headers });
+    expect(response.data.success).toBe(true);
+    expect(response.data.join).toBe(false);
+    expect(response.data.results.users.length).toBe(1);
+    expect(response.data.results.agents.length).toBe(1);
+
+    // Case 2: Explicit join=false => returns all users and agents w/o `join`
+    url = `${baseUrl}&join=false`;
+    response = await axios.get(url, { headers });
+    expect(response.data.success).toBe(true);
+    expect(response.data.join).toBe(false);
+    expect(response.data.results.users.length).toBe(1);
+    expect(response.data.results.agents.length).toBe(1);
+
+    // Case 3: Explicit join=true => returns all users and agents w/ `join` (no agents found)
+    url = `${baseUrl}&join=true`;
+    searchParams.set("agent.name", "foo");
+    response = await axios.get(url, { headers });
+    expect(response.data.success).toBe(true);
+    expect(response.data.join).toBe(true);
+    expect(response.data.results.users.length).toBe(1);
+    expect(response.data.results.agents.length).toBe(0);
+
+    // Case 4: `join` as standalone param (aka `join=true`) => returns all users and agents w/ `join` (no agents found)
+    url = `${baseUrl}&join`;
+    searchParams.set("agent.name", "foo");
+    response = await axios.get(url, { headers });
+    expect(response.data.success).toBe(true);
+    expect(response.data.join).toBe(true);
+    expect(response.data.results.users.length).toBe(1);
+    expect(response.data.results.agents.length).toBe(0);
+  });
+
+  test("should fail to search for users and agents with invalid query params", async () => {
+    // Setup admin client with the API key
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+    const headers = {
+      Authorization: `Bearer ${adminApiKey}`,
+    };
+    const baseUrl = `${getBaseUrl()}/api/admin/search`;
+
+    // Case 1: invalid `user` filter value
+    let query = "user.status=invalid_status";
+    let url = `${baseUrl}?${query}`;
+    await expect(axios.get(url, { headers })).rejects.toThrow();
+
+    // Case 2: invalid `user` filter param
+    url = `${baseUrl}?user.foo=invalid_foo`;
+    await expect(axios.get(url, { headers })).rejects.toThrow();
+
+    // Case 3: invalid `agent` filter value
+    query = "agent.status=invalid_status";
+    url = `${baseUrl}?${query}`;
+    await expect(axios.get(url, { headers })).rejects.toThrow();
+
+    // Case 4: invalid `agent` filter param
+    url = `${baseUrl}?agent.foo=invalid_foo`;
+    await expect(axios.get(url, { headers })).rejects.toThrow();
+
+    // Case 5: both `agent` and `user` filter params with invalid values
+    query = "agent.name=invalid_name&user.status=invalid_status";
+    url = `${baseUrl}?${query}`;
+    await expect(axios.get(url, { headers })).rejects.toThrow();
+
+    // Case 6: both `agent` and `user` filter params with invalid params
+    url = `${baseUrl}?agent.foo=invalid_foo&user.foo=active`;
+    await expect(axios.get(url, { headers })).rejects.toThrow();
+
+    // Case 7: invalid field name
+    query = "foo=bar";
+    url = `${baseUrl}?${query}`;
+    await expect(axios.get(url, { headers })).rejects.toThrow();
+
+    // Case 8: invalid join param
+    query = "join=invalid_join";
+    url = `${baseUrl}?${query}`;
+    await expect(axios.get(url, { headers })).rejects.toThrow();
+
+    // Case 9: empty search params
+    url = `${baseUrl}`;
+    await expect(axios.get(url, { headers })).rejects.toThrow();
+    url = `${baseUrl}?`;
+    await expect(axios.get(url, { headers })).rejects.toThrow();
   });
 
   test("should generate and use new encryption key after admin setup", async () => {

@@ -219,7 +219,9 @@ describe("User API", () => {
 
     // Verify admin can see both updated fields
     const searchResponse = await adminClient.searchUsersAndAgents({
-      email: userEmail,
+      user: {
+        email: userEmail,
+      },
     });
 
     expect(searchResponse.success).toBe(true);
