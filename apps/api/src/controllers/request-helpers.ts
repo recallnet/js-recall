@@ -149,7 +149,7 @@ export function parseAdminSearchQuery(
   if (!result.user && !result.agent) {
     throw new ApiError(
       400,
-      "Invalid request format: missing user or agent query params",
+      "Invalid request format: must provide user or agent search parameters",
     );
   }
 
