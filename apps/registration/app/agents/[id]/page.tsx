@@ -18,7 +18,11 @@ import { use, useEffect, useState } from "react";
 import { toast } from "@recallnet/ui/components/toast";
 
 import RecallLogo from "@/components/recall-logo";
-import { useAgentCompetitions, useSyncLoopsVerification } from "@/hooks";
+import {
+  useAgentCompetitions,
+  useSandboxAgentApiKey,
+  useSyncLoopsVerification,
+} from "@/hooks";
 import { useUserAgent } from "@/hooks/useAgent";
 import { useAgentApiKey, useUpdateAgent } from "@/hooks/useAgents";
 import { useUserSession } from "@/hooks/useAuth";
@@ -62,6 +66,7 @@ export default function AgentPage({
   const session = useUserSession();
   const router = useRouter();
   const [showApiKey, setShowApiKey] = useState(false);
+  const [showSandboxApiKey, setShowSandboxApiKey] = useState(false);
   const [isEditingImage, setIsEditingImage] = useState(false);
   const [newImageUrl, setNewImageUrl] = useState("");
   const [isImageValid, setIsImageValid] = useState(true);
@@ -81,6 +86,11 @@ export default function AgentPage({
 
   const { data: agentData, isLoading: agentLoading } = useUserAgent(id);
   const { data: apiKeyData, isLoading: apiKeyLoading } = useAgentApiKey(id);
+  const {
+    data: sandboxApiKeyData,
+    loading: sandboxApiKeyLoading,
+    error: sandboxApiKeyError,
+  } = useSandboxAgentApiKey(agentData?.name);
   const updateAgentMutation = useUpdateAgent();
   const syncVerificationMutation = useSyncLoopsVerification();
 
@@ -779,12 +789,12 @@ export default function AgentPage({
                   API Access
                 </h2>
 
-                {/* API Key */}
+                {/* Production API Key */}
                 <div className="space-y-4">
                   <div>
                     <label className="mb-2 block text-sm font-medium text-[#D2D9E1]">
                       <Key className="mr-2 inline h-4 w-4" />
-                      Agent API Key
+                      Production API Key
                     </label>
                     <div className="flex items-center gap-2">
                       <div className="flex flex-1 items-center gap-2 rounded border border-[#2a2a2a] bg-[#1a1a1a] p-3">
@@ -798,7 +808,10 @@ export default function AgentPage({
                         <button
                           onClick={() =>
                             apiKeyData?.apiKey &&
-                            handleCopyToClipboard(apiKeyData.apiKey, "API Key")
+                            handleCopyToClipboard(
+                              apiKeyData.apiKey,
+                              "Production API Key",
+                            )
                           }
                           className="text-[#6D85A4] transition-colors hover:text-[#0057AD]"
                           disabled={!apiKeyData?.apiKey}
@@ -818,8 +831,56 @@ export default function AgentPage({
                       </button>
                     </div>
                     <p className="mt-2 text-xs text-[#6D85A4]">
-                      Keep this key private! Anyone with this key can call your
-                      agent.
+                      Use this key for production trading and live competitions.
+                    </p>
+                  </div>
+
+                  {/* Sandbox API Key */}
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-[#D2D9E1]">
+                      <Key className="mr-2 inline h-4 w-4" />
+                      Sandbox API Key
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <div className="flex flex-1 items-center gap-2 rounded border border-[#2a2a2a] bg-[#1a1a1a] p-3">
+                        <span className="flex-grow font-mono text-sm text-[#D2D9E1]">
+                          {sandboxApiKeyLoading
+                            ? "Loading..."
+                            : sandboxApiKeyError
+                              ? `Error: ${sandboxApiKeyError}`
+                              : showSandboxApiKey
+                                ? sandboxApiKeyData?.agent?.apiKey ||
+                                  "No sandbox API key available"
+                                : "••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••"}
+                        </span>
+                        <button
+                          onClick={() =>
+                            sandboxApiKeyData?.agent?.apiKey &&
+                            handleCopyToClipboard(
+                              sandboxApiKeyData.agent.apiKey,
+                              "Sandbox API Key",
+                            )
+                          }
+                          className="text-[#6D85A4] transition-colors hover:text-[#0057AD]"
+                          disabled={!sandboxApiKeyData?.agent?.apiKey}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => setShowSandboxApiKey(!showSandboxApiKey)}
+                        className="p-2 text-[#6D85A4] transition-colors hover:text-[#0057AD]"
+                      >
+                        {showSandboxApiKey ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                    <p className="mt-2 text-xs text-[#6D85A4]">
+                      Use this key for testing and development. Safe for
+                      experimentation.
                     </p>
                   </div>
 
