@@ -149,6 +149,10 @@ export const config = {
     apiPrefix: process.env.API_PREFIX || "",
     sandboxUrl: "https://api.sandbox.competitions.recall.network",
   },
+  email: {
+    apiKey: process.env.LOOPS_API_KEY || "",
+    transactionalId: process.env.LOOPS_TRANSACTIONAL_ID || "",
+  },
   // Frontend app configuration for interfacing with the server
   app: {
     url: process.env.FRONTEND_URL || "http://localhost:3001", // TODO: resolve frontend/backend default ports

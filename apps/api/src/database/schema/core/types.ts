@@ -27,3 +27,8 @@ export type SelectCompetitionsLeaderboard =
   typeof defs.competitionsLeaderboard.$inferSelect;
 export type InsertCompetitionsLeaderboard =
   typeof defs.competitionsLeaderboard.$inferInsert;
+
+export type SelectEmailVerificationToken =
+  typeof defs.emailVerificationTokens.$inferSelect;
+export type InsertEmailVerificationToken =
+  typeof defs.emailVerificationTokens.$inferInsert;

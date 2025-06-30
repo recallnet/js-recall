@@ -5,6 +5,8 @@ import { AuthService } from "@/services/auth.service.js";
 import { BalanceManager } from "@/services/balance-manager.service.js";
 import { CompetitionManager } from "@/services/competition-manager.service.js";
 import { ConfigurationService } from "@/services/configuration.service.js";
+import { EmailVerificationService } from "@/services/email-verification.service.js";
+import { EmailService } from "@/services/email.service.js";
 import { LeaderboardService } from "@/services/leaderboard.service.js";
 import { ObjectIndexService } from "@/services/object-index.service.js";
 import { PortfolioSnapshotter } from "@/services/portfolio-snapshotter.service.js";
@@ -37,6 +39,8 @@ class ServiceRegistry {
   private _voteManager: VoteManager;
   private _agentRankService: AgentRankService;
   private _objectIndexService: ObjectIndexService;
+  private _emailService: EmailService;
+  private _emailVerificationService: EmailVerificationService;
 
   constructor() {
     // Initialize services in dependency order
@@ -52,11 +56,6 @@ class ServiceRegistry {
       this._portfolioSnapshotter,
     );
 
-    // Initialize user and agent managers (new architecture)
-    this._userManager = new UserManager();
-    this._agentManager = new AgentManager();
-    this._adminManager = new AdminManager();
-
     // Initialize auth service (no dependencies needed)
     this._authService = new AuthService();
 
@@ -71,6 +70,20 @@ class ServiceRegistry {
 
     // Initialize object index service (no dependencies)
     this._objectIndexService = new ObjectIndexService();
+
+    // Initialize email service (no dependencies)
+    this._emailService = new EmailService();
+
+    // Initialize user and agent managers (require email service)
+    this._userManager = new UserManager(this._emailService);
+    this._agentManager = new AgentManager(this._emailService);
+    this._adminManager = new AdminManager();
+
+    // Initialize email verification service (requires user and agent managers)
+    this._emailVerificationService = new EmailVerificationService(
+      this._userManager,
+      this._agentManager,
+    );
 
     this._competitionManager = new CompetitionManager(
       this._balanceManager,
@@ -161,6 +174,14 @@ class ServiceRegistry {
   get objectIndexService(): ObjectIndexService {
     return this._objectIndexService;
   }
+
+  get emailService(): EmailService {
+    return this._emailService;
+  }
+
+  get emailVerificationService(): EmailVerificationService {
+    return this._emailVerificationService;
+  }
 }
 
 // Export service types for convenience
@@ -172,6 +193,8 @@ export {
   BalanceManager,
   CompetitionManager,
   ConfigurationService,
+  EmailService,
+  EmailVerificationService,
   LeaderboardService,
   ObjectIndexService,
   PortfolioSnapshotter,
