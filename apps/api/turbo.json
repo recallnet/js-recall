@@ -51,7 +51,8 @@
         "TEST_PORT",
         "TEST_SOL_TOKEN_ADDRESS",
         "npm_package_version",
-        "API_DOMAIN"
+        "API_DOMAIN",
+        "SANDBOX_URL"
       ]
     }
   }

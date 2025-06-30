@@ -147,6 +147,9 @@ export const config = {
     testPort: 3001,
     nodeEnv: process.env.NODE_ENV || "development",
     apiPrefix: process.env.API_PREFIX || "",
+    sandboxUrl:
+      process.env.SANDBOX_URL ||
+      "https://api.sandbox.competitions.recall.network",
   },
   // Frontend app configuration for interfacing with the server
   app: {

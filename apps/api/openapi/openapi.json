@@ -19,7 +19,7 @@
       "description": "Production server"
     },
     {
-      "url": "https://sandbox-api-competitions.recall.network",
+      "url": "https://api.sandbox.competitions.recall.network",
       "description": "Sandbox server for testing"
     },
     {
