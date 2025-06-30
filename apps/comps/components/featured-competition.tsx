@@ -24,9 +24,9 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
 }) => {
   const { data: topLeaders, isLoading } = useCompetitionAgents(competition.id, {
     // TODO: we have to make sure all agents are included in the results
-    //  because position is calculated "on-the-fly".
+    //  because rank is calculated "on-the-fly".
     limit: 50,
-    sort: "position",
+    sort: "rank",
   });
 
   const duration = formatCompetitionDates(

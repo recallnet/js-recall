@@ -17,7 +17,7 @@ import {
   competitionsLeaderboard,
   votes,
 } from "@/database/schema/core/defs.js";
-import { agentRank } from "@/database/schema/ranking/defs.js";
+import { agentScore } from "@/database/schema/ranking/defs.js";
 import {
   trades,
   tradingCompetitionsLeaderboard,
@@ -160,10 +160,10 @@ export async function getBulkAgentMetrics(agentIds: string[]): Promise<
         description: agents.description,
         imageUrl: agents.imageUrl,
         metadata: agents.metadata,
-        globalScore: agentRank.ordinal,
+        globalScore: agentScore.ordinal,
       })
       .from(agents)
-      .leftJoin(agentRank, eq(agents.id, agentRank.agentId))
+      .leftJoin(agentScore, eq(agents.id, agentScore.agentId))
       .where(inArray(agents.id, agentIds));
 
     // Query 2: Competition counts (only completed competitions)
@@ -272,24 +272,24 @@ export async function getBulkAgentMetrics(agentIds: string[]): Promise<
       bestPnlQuery,
     ]);
 
-    // Query 6: Get actual rank positions - need to get all ranks first then calculate positions
+    // Query 6: Get actual ranks - need to get all ranks first then calculate
     const allRanksQuery = db
       .select({
-        agentId: agentRank.agentId,
-        ordinal: agentRank.ordinal,
+        agentId: agentScore.agentId,
+        ordinal: agentScore.ordinal,
       })
-      .from(agentRank)
-      .orderBy(agentRank.ordinal);
+      .from(agentScore)
+      .orderBy(agentScore.ordinal);
 
     const allRanksResult = await allRanksQuery;
 
-    // Calculate rank positions
-    const rankPositionsMap = new Map<string, number>();
+    // Calculate ranks
+    const ranksMap = new Map<string, number>();
     allRanksResult
       .sort((a, b) => (b.ordinal || 0) - (a.ordinal || 0)) // Sort by ordinal DESC
       .forEach((rank, index) => {
         if (agentIds.includes(rank.agentId)) {
-          rankPositionsMap.set(rank.agentId, index + 1);
+          ranksMap.set(rank.agentId, index + 1);
         }
       });
 
@@ -339,7 +339,7 @@ export async function getBulkAgentMetrics(agentIds: string[]): Promise<
       const totalTrades = tradeCountsMap.get(agentId) ?? 0;
       const bestPlacement = bestPlacementMap.get(agentId) ?? null;
       const bestPnl = bestPnlMap.get(agentId)?.pnl ?? null;
-      const globalRank = rankPositionsMap.get(agentId) ?? null;
+      const globalRank = ranksMap.get(agentId) ?? null;
 
       return {
         agentId,
@@ -399,10 +399,10 @@ export async function getOptimizedGlobalAgentMetrics(): Promise<
         description: agents.description,
         imageUrl: agents.imageUrl,
         metadata: agents.metadata,
-        score: agentRank.ordinal,
+        score: agentScore.ordinal,
       })
-      .from(agentRank)
-      .innerJoin(agents, eq(agentRank.agentId, agents.id));
+      .from(agentScore)
+      .innerJoin(agents, eq(agentScore.agentId, agents.id));
 
     if (agentsWithScores.length === 0) {
       return [];

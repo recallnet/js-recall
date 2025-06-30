@@ -256,24 +256,24 @@ async function showCompetitionStatus() {
       const lowestValue =
         sortedLeaderboard[sortedLeaderboard.length - 1]!.value;
 
-      // Display each agent's position
+      // Display each agent's rank
       sortedLeaderboard.forEach((entry, index) => {
         const agent = agentMap.get(entry.agentId);
         const agentName = agent ? agent.name : "Unknown agent";
 
-        // Format the ranking with colors based on position
-        let positionPrefix = `${(index + 1).toString().padStart(2, " ")}. `;
-        let positionColor = colors.reset;
+        // Format the ranking with colors based on rank
+        let rankPrefix = `${(index + 1).toString().padStart(2, " ")}. `;
+        let rankColor = colors.reset;
 
         if (index === 0) {
-          positionPrefix = ` 🥇 `;
-          positionColor = colors.yellow;
+          rankPrefix = ` 🥇 `;
+          rankColor = colors.yellow;
         } else if (index === 1) {
-          positionPrefix = ` 🥈 `;
-          positionColor = colors.blue;
+          rankPrefix = ` 🥈 `;
+          rankColor = colors.blue;
         } else if (index === 2) {
-          positionPrefix = ` 🥉 `;
-          positionColor = colors.green;
+          rankPrefix = ` 🥉 `;
+          rankColor = colors.green;
         }
 
         // Get initial value for this agent, or fall back to current value if no initial snapshot
@@ -290,7 +290,7 @@ async function showCompetitionStatus() {
 
         // Display agent ranking with portfolio value and performance
         console.log(
-          `${positionColor}${positionPrefix}${colors.reset}` +
+          `${rankColor}${rankPrefix}${colors.reset}` +
             `${agentName.padEnd(25).substring(0, 25)} ` +
             `${colors.cyan}$${formatCurrency(entry.value).padStart(10)}${colors.reset} ` +
             `${performanceColor}(${performanceText})${colors.reset}`,
