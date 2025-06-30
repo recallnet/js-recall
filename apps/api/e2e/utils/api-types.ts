@@ -466,7 +466,7 @@ export interface CompetitionAgent {
   description?: string | null;
   imageUrl?: string | null;
   score: number;
-  position: number;
+  rank: number;
   portfolioValue: number;
   active: boolean;
   deactivationReason?: string | null;

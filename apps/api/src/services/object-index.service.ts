@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 
-import * as agentRankRepository from "@/database/repositories/agentrank-repository.js";
+import * as agentScoreRepository from "@/database/repositories/agentscore-repository.js";
 import * as competitionRepository from "@/database/repositories/competition-repository.js";
 import { objectIndexRepository } from "@/database/repositories/object-index.repository.js";
 import * as tradeRepository from "@/database/repositories/trade-repository.js";
@@ -49,14 +49,14 @@ export class ObjectIndexService {
   /**
    * Populate object_index with agent rank history
    */
-  async populateAgentRankHistory(competitionId?: string) {
+  async populateAgentScoreHistory(competitionId?: string) {
     console.log(
       `Populating agent rank history${competitionId ? ` for competition ${competitionId}` : ""}`,
     );
 
     // Use agent rank repository to fetch history
     const rankHistory =
-      await agentRankRepository.getAllAgentRankHistory(competitionId);
+      await agentScoreRepository.getAllAgentRankHistory(competitionId);
 
     if (rankHistory.length === 0) {
       console.log("No agent rank history to sync");
@@ -67,7 +67,7 @@ export class ObjectIndexService {
       id: uuidv4(),
       competitionId: rank.competitionId,
       agentId: rank.agentId,
-      dataType: "agent_rank_history" as const,
+      dataType: "agent_score_history" as const,
       data: JSON.stringify(rank),
       sizeBytes: Buffer.byteLength(JSON.stringify(rank)),
       metadata: {
@@ -182,13 +182,13 @@ export class ObjectIndexService {
   }
 
   /**
-   * Populate object_index with current agent ranks
+   * Populate object_index with current agent scores
    */
-  async populateAgentRank() {
-    console.log("Populating current agent ranks");
+  async populateAgentScore() {
+    console.log("Populating current agent scores");
 
     // Use agent rank repository to fetch raw ranks
-    const ranks = await agentRankRepository.getAllRawAgentRanks();
+    const ranks = await agentScoreRepository.getAllRawAgentRanks();
 
     if (ranks.length === 0) {
       console.log("No agent ranks to sync");
@@ -199,7 +199,7 @@ export class ObjectIndexService {
       id: uuidv4(),
       competitionId: null, // No competition association
       agentId: rank.agentId,
-      dataType: "agent_rank" as const,
+      dataType: "agent_score" as const,
       data: JSON.stringify(rank),
       sizeBytes: Buffer.byteLength(JSON.stringify(rank)),
       metadata: {
@@ -258,7 +258,7 @@ export class ObjectIndexService {
   /**
    * Add agent rank to index
    */
-  async addAgentRankToIndex(rank: {
+  async addAgentScoreToIndex(rank: {
     agentId: string;
     mu: number;
     sigma: number;
@@ -270,7 +270,7 @@ export class ObjectIndexService {
       id: uuidv4(),
       competitionId: null,
       agentId: rank.agentId as string,
-      dataType: "agent_rank" as const,
+      dataType: "agent_score" as const,
       data: JSON.stringify(rank),
       sizeBytes: Buffer.byteLength(JSON.stringify(rank)),
       metadata: {

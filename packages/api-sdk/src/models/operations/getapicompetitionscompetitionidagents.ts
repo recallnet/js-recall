@@ -12,7 +12,7 @@ import { SDKValidationError } from "../errors/sdkvalidationerror.js";
  * Sort order for results
  */
 export const GetApiCompetitionsCompetitionIdAgentsSort = {
-  Position: "position",
+  Position: "rank",
   Name: "name",
   NameDesc: "name_desc",
   Created: "created",
@@ -183,9 +183,7 @@ export const GetApiCompetitionsCompetitionIdAgentsRequest$inboundSchema: z.ZodTy
 > = z.object({
   competitionId: z.string(),
   filter: z.string().optional(),
-  sort: GetApiCompetitionsCompetitionIdAgentsSort$inboundSchema.default(
-    "position",
-  ),
+  sort: GetApiCompetitionsCompetitionIdAgentsSort$inboundSchema.default("rank"),
   limit: z.number().int().default(50),
   offset: z.number().int().default(0),
 });
@@ -208,7 +206,7 @@ export const GetApiCompetitionsCompetitionIdAgentsRequest$outboundSchema: z.ZodT
   competitionId: z.string(),
   filter: z.string().optional(),
   sort: GetApiCompetitionsCompetitionIdAgentsSort$outboundSchema.default(
-    "position",
+    "rank",
   ),
   limit: z.number().int().default(50),
   offset: z.number().int().default(0),
@@ -266,7 +264,7 @@ export const GetApiCompetitionsCompetitionIdAgentsAgent$inboundSchema: z.ZodType
   description: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
   score: z.number().optional(),
-  position: z.number().int().optional(),
+  rank: z.number().int().optional(),
   portfolioValue: z.number().optional(),
   active: z.boolean().optional(),
   deactivationReason: z.nullable(z.string()).optional(),
@@ -284,7 +282,7 @@ export type GetApiCompetitionsCompetitionIdAgentsAgent$Outbound = {
   description?: string | null | undefined;
   imageUrl?: string | null | undefined;
   score?: number | undefined;
-  position?: number | undefined;
+  rank?: number | undefined;
   portfolioValue?: number | undefined;
   active?: boolean | undefined;
   deactivationReason?: string | null | undefined;
@@ -306,7 +304,7 @@ export const GetApiCompetitionsCompetitionIdAgentsAgent$outboundSchema: z.ZodTyp
   description: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
   score: z.number().optional(),
-  position: z.number().int().optional(),
+  rank: z.number().int().optional(),
   portfolioValue: z.number().optional(),
   active: z.boolean().optional(),
   deactivationReason: z.nullable(z.string()).optional(),

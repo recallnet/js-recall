@@ -107,7 +107,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         id: "position",
         accessorKey: "position",
         header: () => "Rank",
-        cell: ({ row }) => <RankBadge position={row.original.position} />,
+        cell: ({ row }) => <RankBadge position={row.original.rank} />,
         enableSorting: true,
         size: 100,
       },
