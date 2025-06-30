@@ -91,7 +91,7 @@ export const CompetitionsTable: React.FC<CompetitionsTableProps> = ({
               <div className="flex min-w-0 items-center gap-3">
                 <ParticipantsAvatars agents={[agent]} maxDisplay={1} />
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <Link href={`/agents/${agent.id}`}>
+                  <Link href={`/agents/${agent.id}`} className="truncate">
                     <span className="text-secondary-foreground font-semibold leading-tight">
                       {agent.name}
                     </span>
