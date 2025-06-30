@@ -221,29 +221,9 @@ export const AgentMetadataSchema = z.looseObject({
 export type AgentMetadata = z.infer<typeof AgentMetadataSchema>;
 
 /**
- * User search parameters interface
- */
-export interface UserSearchParams {
-  email?: string;
-  name?: string;
-  walletAddress?: string;
-  status?: ActorStatus;
-}
-
-/**
- * Agent search parameters interface
- */
-export interface AgentSearchParams {
-  name?: string;
-  ownerId?: string;
-  walletAddress?: string;
-  status?: ActorStatus;
-}
-
-/**
  * Admin search parameters interface
  */
-export interface AdminSearchParams {
+export interface SearchAdminsParams {
   username?: string;
   email?: string;
   name?: string;
@@ -1029,3 +1009,47 @@ export const AdminCreateAgentSchema = z.object({
 });
 
 export type AdminCreateAgent = z.infer<typeof AdminCreateAgentSchema>;
+
+/**
+ * User search parameters schema
+ */
+export const UserSearchParamsSchema = z.object({
+  email: z.string().optional(),
+  name: z.string().optional(),
+  walletAddress: z.string().optional(),
+  status: ActorStatusSchema.optional(),
+});
+
+export type UserSearchParams = z.infer<typeof UserSearchParamsSchema>;
+
+/**
+ * Agent search parameters schema
+ */
+export const AgentSearchParamsSchema = z.object({
+  name: z.string().optional(),
+  ownerId: z.string().optional(),
+  walletAddress: z.string().optional(),
+  status: ActorStatusSchema.optional(),
+});
+
+export type AgentSearchParams = z.infer<typeof AgentSearchParamsSchema>;
+
+/**
+ * Admin search users and agents query parameters schema
+ */
+export const AdminSearchUsersAndAgentsQuerySchema = z.strictObject({
+  user: UserSearchParamsSchema.strict().optional(),
+  agent: AgentSearchParamsSchema.strict().optional(),
+  join: z.preprocess((val) => {
+    if (val === "") return true; // Note: allows for bare `join` instead of only `join=true`
+    if (typeof val === "string") {
+      if (val.toLowerCase() === "true") return true;
+      if (val.toLowerCase() === "false") return false;
+    }
+    return val;
+  }, z.boolean().default(false)),
+});
+
+export type AdminSearchUsersAndAgentsQuery = z.infer<
+  typeof AdminSearchUsersAndAgentsQuerySchema
+>;

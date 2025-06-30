@@ -18,7 +18,6 @@ import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
 import { authMiddleware } from "@/middleware/auth.middleware.js";
 import errorHandler from "@/middleware/errorHandler.js";
 import { optionalAuthMiddleware } from "@/middleware/optional-auth.middleware.js";
-import { queryParserMiddleware } from "@/middleware/query-parser.middleware.js";
 import { rateLimiterMiddleware } from "@/middleware/rate-limiter.middleware.js";
 import { siweSessionMiddleware } from "@/middleware/siwe.middleware.js";
 import { configureAdminSetupRoutes } from "@/routes/admin-setup.routes.js";
@@ -132,7 +131,6 @@ app.use(
 app.use(rateLimiterMiddleware);
 
 const adminMiddleware = adminAuthMiddleware(services.adminManager);
-const customQueryParserMiddleware = queryParserMiddleware();
 const optionalAuth = optionalAuthMiddleware(
   services.agentManager,
   services.adminManager,
@@ -150,11 +148,7 @@ const agentController = makeAgentController(services);
 const leaderboardController = makeLeaderboardController(services);
 const voteController = makeVoteController(services);
 
-const adminRoutes = configureAdminRoutes(
-  adminController,
-  adminMiddleware,
-  customQueryParserMiddleware,
-);
+const adminRoutes = configureAdminRoutes(adminController, adminMiddleware);
 const adminSetupRoutes = configureAdminSetupRoutes(adminController);
 const authRoutes = configureAuthRoutes(
   authController,

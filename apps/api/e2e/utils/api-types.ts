@@ -686,7 +686,7 @@ export interface AgentWalletVerificationResponse extends ApiResponse {
 // TODO: figure out types wrt duplication in admin controller
 export interface AdminSearchUsersAndAgentsResponse {
   success: boolean;
-  searchType: string;
+  join: boolean;
   results: {
     users: {
       id: string;
@@ -713,6 +713,27 @@ export interface AdminSearchUsersAndAgentsResponse {
       updatedAt: Date;
     }[];
   };
+}
+
+export interface AdminSearchResults {
+  users: User[];
+  agents: Agent[];
+}
+
+export interface AdminSearchParams {
+  user?: {
+    email?: string;
+    name?: string;
+    walletAddress?: string;
+    status?: ActorStatus;
+  };
+  agent?: {
+    name?: string;
+    ownerId?: string;
+    walletAddress?: string;
+    status?: ActorStatus;
+  };
+  join?: boolean;
 }
 
 /**
