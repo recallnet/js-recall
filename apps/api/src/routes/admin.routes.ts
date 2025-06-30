@@ -1430,7 +1430,7 @@ export function configureAdminRoutes(
    *         name: user.status
    *         schema:
    *           type: string
-   *           enum: [active, suspended, deleted]
+   *           enum: [active, suspended, inactive, deleted]
    *         description: Filter by user status
    *       - in: query
    *         name: agent.name
@@ -1438,10 +1438,20 @@ export function configureAdminRoutes(
    *           type: string
    *         description: Partial match for agent name
    *       - in: query
+   *         name: agent.ownerId
+   *         schema:
+   *           type: string
+   *         description: Filter by agent owner ID
+   *       - in: query
+   *         name: agent.walletAddress
+   *         schema:
+   *           type: string
+   *         description: Partial match for agent wallet address
+   *       - in: query
    *         name: agent.status
    *         schema:
    *           type: string
-   *           enum: [active, suspended, deleted]
+   *           enum: [active, suspended, inactive, deleted]
    *         description: Filter by agent status
    *       - in: query
    *         name: searchType

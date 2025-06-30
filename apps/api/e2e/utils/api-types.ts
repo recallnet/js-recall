@@ -715,6 +715,27 @@ export interface AdminSearchUsersAndAgentsResponse {
   };
 }
 
+export interface AdminSearchResults {
+  users: User[];
+  agents: Agent[];
+}
+
+export interface AdminSearchParams {
+  user?: {
+    email?: string;
+    name?: string;
+    walletAddress?: string;
+    status?: ActorStatus;
+  };
+  agent?: {
+    name?: string;
+    ownerId?: string;
+    walletAddress?: string;
+    status?: ActorStatus;
+  };
+  searchType?: "both" | "join";
+}
+
 /**
  * Competition Join/Leave Response Types
  */

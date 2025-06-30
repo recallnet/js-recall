@@ -10,16 +10,18 @@ import { ServiceRegistry } from "@/services/index.js";
 import {
   ActorStatus,
   AdminCreateAgentSchema,
-  AgentSearchParams,
   COMPETITION_STATUS,
   CROSS_CHAIN_TRADING_TYPE,
   SYNC_DATA_TYPE,
   SyncDataType,
   SyncDataTypeSchema,
-  UserSearchParams,
 } from "@/types/index.js";
 
-import { ensureCompetitionUpdate, ensureUuid } from "./request-helpers.js";
+import {
+  ensureCompetitionUpdate,
+  ensureUuid,
+  parseAdminSearchQuery,
+} from "./request-helpers.js";
 
 // TODO: need user deactivation logic
 
@@ -68,26 +70,6 @@ interface AdminAgentRegistrationResponse {
 interface AdminSearchResults {
   users: User[];
   agents: Omit<Agent, "apiKey">[];
-}
-
-interface AdminSearchUsersAndAgentsQuery {
-  // backwards-compatibility
-  email?: string;
-  name?: string;
-  walletAddress?: string;
-  status?: "active" | "suspended" | "deleted";
-
-  user?: {
-    email?: string;
-    name?: string;
-    walletAddress?: string;
-    status?: "active" | "suspended" | "deleted";
-  };
-  agent?: {
-    name?: string;
-    status?: "active" | "suspended" | "deleted";
-  };
-  searchType: string;
 }
 
 export interface AdminSearchUsersAndAgentsResponse {
@@ -1144,65 +1126,28 @@ export function makeAdminController(services: ServiceRegistry) {
      * @param next Express next function
      */
     async searchUsersAndAgents(
-      req: Request<object, object, object, AdminSearchUsersAndAgentsQuery>,
+      req: Request,
       res: Response,
       next: NextFunction,
     ) {
       try {
-        const {
-          email,
-          name,
-          walletAddress,
-          status,
-          user,
-          agent,
-          searchType, // 'users', 'agents', or 'both' (default)
-        } = req.query;
-
-        const searchTypeFilter = (searchType as string) || "both";
+        // Note: special parsing is required to support nested query params
+        const { user, agent, searchType } = parseAdminSearchQuery(req.url);
         const results: AdminSearchResults = {
           users: [],
           agents: [],
         };
 
         // Search users if requested
-        if (
-          searchTypeFilter === "users" ||
-          searchTypeFilter === "both" ||
-          searchTypeFilter === "join"
-        ) {
-          const userSearchParams: UserSearchParams = {};
-
-          // TODO(bcalza): remove these when front-end changes
-          if (email) userSearchParams.email = email as string;
-          if (name) userSearchParams.name = name as string;
-          if (walletAddress)
-            userSearchParams.walletAddress = walletAddress as string;
-          if (status)
-            userSearchParams.status = status as
-              | "active"
-              | "suspended"
-              | "deleted";
-
-          if (user?.email) userSearchParams.email = user?.email as string;
-          if (user?.name) userSearchParams.name = user?.name as string;
-          if (user?.walletAddress)
-            userSearchParams.walletAddress = user?.walletAddress as string;
-          if (user?.status)
-            userSearchParams.status = status as
-              | "active"
-              | "suspended"
-              | "deleted";
-
-          const users =
-            await services.userManager.searchUsers(userSearchParams);
+        if (user) {
+          const users = await services.userManager.searchUsers(user);
 
           results.users = users.map((user) => ({
             id: user.id,
             walletAddress: user.walletAddress,
             name: user.name,
             email: user.email,
-            status: user.status as ActorStatus,
+            status: user.status,
             imageUrl: user.imageUrl,
             metadata: user.metadata,
             createdAt: user.createdAt,
@@ -1211,30 +1156,8 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // Search agents if requested
-        if (
-          searchTypeFilter === "agents" ||
-          searchTypeFilter === "both" ||
-          searchTypeFilter === "join"
-        ) {
-          const agentSearchParams: AgentSearchParams = {};
-
-          // TODO(bcalza): remove these when front-end changes
-          if (name) agentSearchParams.name = name as string;
-          if (status)
-            agentSearchParams.status = status as
-              | "active"
-              | "suspended"
-              | "deleted";
-
-          if (agent?.name) agentSearchParams.name = agent?.name as string;
-          if (agent?.status)
-            agentSearchParams.status = agent?.status as
-              | "active"
-              | "suspended"
-              | "deleted";
-
-          const agents =
-            await services.agentManager.searchAgents(agentSearchParams);
+        if (agent) {
+          const agents = await services.agentManager.searchAgents(agent);
 
           results.agents = agents.map((agent) => ({
             id: agent.id,
@@ -1242,7 +1165,7 @@ export function makeAdminController(services: ServiceRegistry) {
             walletAddress: agent.walletAddress,
             name: agent.name,
             description: agent.description,
-            status: agent.status as ActorStatus,
+            status: agent.status,
             imageUrl: agent.imageUrl,
             metadata: agent.metadata,
             email: agent.email,
@@ -1251,7 +1174,7 @@ export function makeAdminController(services: ServiceRegistry) {
           }));
         }
 
-        if (searchTypeFilter === "join") {
+        if (searchType === "join") {
           const userMap = new Map(results.users.map((user) => [user.id, user]));
 
           results.agents = results.agents
@@ -1268,7 +1191,7 @@ export function makeAdminController(services: ServiceRegistry) {
         // Return the search results
         res.status(200).json({
           success: true,
-          searchType: searchTypeFilter,
+          searchType,
           results,
         });
       } catch (error) {

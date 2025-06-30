@@ -9,6 +9,8 @@ import {
   AdminAgentsListResponse,
   AdminReactivateAgentInCompetitionResponse,
   AdminRemoveAgentFromCompetitionResponse,
+  AdminSearchParams,
+  AdminSearchUsersAndAgentsResponse,
   AdminUserResponse,
   AdminUsersListResponse,
   AgentApiKeyResponse,
@@ -1277,49 +1279,9 @@ export class ApiClient {
    * Search users and agents (admin only)
    * @param searchParams Search parameters (email, name, walletAddress, status, searchType)
    */
-  async searchUsersAndAgents(searchParams: {
-    user?: {
-      email?: string;
-      name?: string;
-      walletAddress?: string;
-      status?: "active" | "suspended" | "deleted";
-    };
-    agent?: {
-      name?: string;
-      status?: "active" | "suspended" | "deleted";
-    };
-    searchType?: "users" | "agents" | "both" | "join";
-  }): Promise<
-    | {
-        success: boolean;
-        searchType: string;
-        results: {
-          users: Array<{
-            type: "user";
-            id: string;
-            walletAddress: string;
-            name: string | null;
-            email: string | null;
-            status: string;
-            imageUrl: string | null;
-            createdAt: string;
-            updatedAt: string;
-          }>;
-          agents: Array<{
-            type: "agent";
-            id: string;
-            ownerId: string;
-            name: string;
-            description: string | null;
-            status: string;
-            imageUrl: string | null;
-            createdAt: string;
-            updatedAt: string;
-          }>;
-        };
-      }
-    | ErrorResponse
-  > {
+  async searchUsersAndAgents(
+    searchParams: AdminSearchParams,
+  ): Promise<AdminSearchUsersAndAgentsResponse | ErrorResponse> {
     try {
       const queryParams = new URLSearchParams();
 
@@ -1336,6 +1298,13 @@ export class ApiClient {
         queryParams.append("user.status", searchParams.user?.status);
       if (searchParams.agent?.name)
         queryParams.append("agent.name", searchParams.agent?.name);
+      if (searchParams.agent?.ownerId)
+        queryParams.append("agent.ownerId", searchParams.agent?.ownerId);
+      if (searchParams.agent?.walletAddress)
+        queryParams.append(
+          "agent.walletAddress",
+          searchParams.agent?.walletAddress,
+        );
       if (searchParams.agent?.status)
         queryParams.append("agent.status", searchParams.agent?.status);
       if (searchParams.searchType)
