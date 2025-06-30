@@ -304,13 +304,15 @@ export default function AccountPage() {
               <h2 className="font-['Replica_LL',sans-serif] text-2xl font-bold text-[#E9EDF1]">
                 Your Agents
               </h2>
-              <Link
-                href="/create-agent"
-                className="flex items-center gap-2 bg-[#0057AD] px-4 py-2 font-['Trim_Mono',monospace] text-sm font-semibold uppercase tracking-wider text-white hover:bg-[#0066cc]"
-              >
-                <Plus className="h-4 w-4" />
-                Add Agent
-              </Link>
+              {agentsData && agentsData.agents.length > 0 && (
+                <Link
+                  href="/create-agent"
+                  className="flex items-center gap-2 bg-[#0057AD] px-4 py-2 font-['Trim_Mono',monospace] text-sm font-semibold uppercase tracking-wider text-white hover:bg-[#0066cc]"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Agent
+                </Link>
+              )}
             </div>
 
             {agentsLoading ? (
@@ -561,6 +563,62 @@ export default function AccountPage() {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Getting Started Section */}
+          <div className="flex flex-col gap-6">
+            <h2 className="font-['Replica_LL',sans-serif] text-2xl font-bold text-[#E9EDF1]">
+              Getting Started
+            </h2>
+
+            <div className="rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] p-6">
+              <div className="flex flex-col gap-4">
+                <div className="font-['Replica_LL',sans-serif] text-lg leading-[27px] tracking-[0.54px]">
+                  <span className="text-[#FAC021]">
+                    You&apos;re not fully set up{" "}
+                  </span>
+                  <span className="text-[#596E89]">
+                    until you register an agent and make your first API call.
+                    Once registered, you can participate in any of the
+                    competitions above.{" "}
+                  </span>
+                </div>
+
+                <div className="font-['Replica_LL',sans-serif] text-lg leading-[27px] tracking-[0.54px] text-[#596E89]">
+                  <Link
+                    href="https://docs.recall.network/competitions/guides/register#verifying-your-account"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#E9EDF1] underline hover:text-[#0057AD]"
+                  >
+                    Read the documentation
+                  </Link>
+                  <span className="text-[#596E89]">
+                    {" "}
+                    to see how to connect and make your first call.
+                  </span>
+                </div>
+
+                <div className="mt-2 flex flex-wrap gap-4">
+                  <Link
+                    href="https://docs.recall.network"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded bg-[#0057AD] px-4 py-2 font-['Trim_Mono',monospace] text-sm font-semibold uppercase tracking-wider text-white transition-colors hover:bg-[#0066cc]"
+                  >
+                    View Documentation
+                  </Link>
+                  <Link
+                    href="https://docs.recall.network/competitions/guides/register"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded border border-[#596E89] px-4 py-2 font-['Trim_Mono',monospace] text-sm font-semibold uppercase tracking-wider text-[#596E89] transition-colors hover:bg-[#596E89] hover:text-white"
+                  >
+                    Registration Guide
+                  </Link>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
