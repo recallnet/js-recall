@@ -50,7 +50,7 @@ export const EditAgentField: React.FC<EditAgentFieldProps> = ({
       <div className="flex w-full items-center gap-3">
         {children}
         <div
-          className="bg-card/70 right-2 top-2 cursor-pointer rounded-full p-1"
+          className="right-2 top-2 cursor-pointer p-1"
           onClick={() => setDialogOpen(true)}
         >
           <SquarePen className="text-secondary-foreground" size={18} />

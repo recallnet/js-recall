@@ -11,7 +11,12 @@ import {
 // - When NODE_ENV=test, load from .env.test
 // - For all other environments (development, production), load from .env
 // This allows separate configurations for testing environments
-const envFile = process.env.NODE_ENV === "test" ? ".env.test" : ".env";
+const envFile =
+  process.env.NODE_ENV === "test"
+    ? ".env.test"
+    : process.env.NODE_ENV === "sandbox"
+      ? ".env.sandbox"
+      : ".env";
 dotenv.config({ path: path.resolve(process.cwd(), envFile) });
 
 // Log which environment file was loaded (helpful for debugging)
