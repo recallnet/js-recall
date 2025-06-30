@@ -62,7 +62,7 @@ For convenience, we provide an API client that handles authentication automatica
         description: "Production server",
       },
       {
-        url: `https://sandbox-api-competitions.recall.network`,
+        url: config.server.sandboxUrl,
         description: "Sandbox server for testing",
       },
 
