@@ -50,75 +50,55 @@ export function configureAgentsRoutes(
    *       - in: query
    *         name: limit
    *         schema:
-   *           type: string
+   *           type: integer
+   *           minimum: 1
+   *           maximum: 100
+   *           default: 50
    *         required: false
-   *         description: Optional field to choose max size of result set (default value is `10`)
+   *         description: Maximum number of results to return
    *       - in: query
    *         name: offset
    *         schema:
-   *           type: string
+   *           type: integer
+   *           minimum: 0
+   *           default: 0
    *         required: false
-   *         description: Optional field to choose offset of result set (default value is `0`)
+   *         description: Number of results to skip for pagination
    *     responses:
    *       200:
-   *         description: Agent profile retrieved successfully
+   *         description: Agents retrieved successfully
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 pagination:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [agents, pagination]
    *                   properties:
-   *                     total:
-   *                       type: integer
-   *                     limit:
-   *                       type: integer
-   *                     offset:
-   *                       type: integer
-   *                 agents:
-   *                   type: array
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       id:
-   *                         type: string
-   *                         format: uuid
-   *                       ownerId:
-   *                         type: string
-   *                         format: uuid
-   *                       walletAddress:
-   *                         type: string
-   *                         example: "0x1234567890abcdef1234567890abcdef12345678"
-   *                       isVerified:
-   *                         type: boolean
-   *                       name:
-   *                         type: string
-   *                         example: "Trading Bot Alpha"
-   *                       description:
-   *                         type: string
-   *                         example: "AI agent focusing on DeFi yield farming"
-   *                       imageUrl:
-   *                         type: string
-   *                         example: "https://example.com/bot-avatar.jpg"
-   *                       status:
-   *                         type: string
-   *                         enum: [active, suspended, deleted]
-   *                       createdAt:
-   *                         type: string
-   *                         format: date-time
-   *                       updatedAt:
-   *                         type: string
-   *                         format: date-time
+   *                     agents:
+   *                       type: array
+   *                       items:
+   *                         $ref: '#/components/schemas/AgentPublic'
+   *                     pagination:
+   *                       $ref: '#/components/schemas/PaginationMeta'
+   *       400:
+   *         description: Invalid request parameters
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
-   *         description: Not authenticated
-   *       404:
-   *         description: Agents not found
+   *         description: Unauthorized - Missing or invalid authentication
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
-   *         description: Internal server error
+   *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/", agentController.getAgents);
 
@@ -135,6 +115,7 @@ export function configureAgentsRoutes(
    *         name: agentId
    *         schema:
    *           type: string
+   *           format: uuid
    *         required: true
    *         description: The UUID of the agent being requested
    *     responses:
@@ -143,94 +124,31 @@ export function configureAgentsRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 agent:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [agent]
    *                   properties:
-   *                     id:
-   *                       type: string
-   *                       format: uuid
-   *                     name:
-   *                       type: string
-   *                       example: "Trading Bot Alpha"
-   *                     isVerified:
-   *                       type: boolean
-   *                     imageUrl:
-   *                       type: string
-   *                       example: "https://example.com/bot-avatar.jpg"
-   *                       nullable: true
-   *                     metadata:
-   *                       type: object
-   *                       description: Optional metadata for the agent
-   *                       example: { "strategy": "yield-farming", "risk": "medium" }
-   *                       nullable: true
-   *                     stats:
-   *                       type: object
-   *                       description: stats on this agent's past performance
-   *                       properties:
-   *                         completedCompetitions:
-   *                           type: integer
-   *                         totalTrades:
-   *                           type: integer
-   *                         totalVotes:
-   *                           type: integer
-   *                         bestPlacement:
-   *                           type: object
-   *                           nullable: true
-   *                           description: "Best placement across all competitions (null if no ranking data available)"
-   *                           properties:
-   *                             competitionId:
-   *                               type: string
-   *                             rank:
-   *                               type: integer
-   *                             score:
-   *                               type: integer
-   *                             totalAgents:
-   *                               type: integer
-   *                         rank:
-   *                           type: integer
-   *                         score:
-   *                           type: number
-   *                     trophies:
-   *                       type: array
-   *                       items:
-   *                         type: string
-   *                     skills:
-   *                       type: array
-   *                       items:
-   *                         type: string
-   *                       description: Skills the agent has proven
-   *                       example: ["yield-farming", "liquidity-mining"]
-   *                     hasUnclaimedRewards:
-   *                       type: boolean
-   *                 owner:
-   *                   type: object
-   *                   description: Owner information for the agent (for "Developed by" section)
-   *                   nullable: true
-   *                   properties:
-   *                     id:
-   *                       type: string
-   *                       format: uuid
-   *                       description: Owner user ID
-   *                     name:
-   *                       type: string
-   *                       nullable: true
-   *                       description: Owner display name
-   *                       example: "Alice Smith"
-   *                     walletAddress:
-   *                       type: string
-   *                       description: Owner wallet address
-   *                       example: "0x1234567890abcdef1234567890abcdef12345678"
+   *                     agent:
+   *                       $ref: '#/components/schemas/AgentWithOwner'
    *       400:
-   *         description: Invalid agent ID
+   *         description: Invalid agent ID format
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
-   *         description: Agent or owner not found
+   *         description: Agent not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
-   *         description: Internal server error
+   *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/:agentId", agentController.getAgent);
 
@@ -247,6 +165,7 @@ export function configureAgentsRoutes(
    *         name: agentId
    *         schema:
    *           type: string
+   *           format: uuid
    *         required: true
    *         description: The UUID of the agent
    *       - in: query
@@ -261,96 +180,97 @@ export function configureAgentsRoutes(
    *       - in: query
    *         name: limit
    *         schema:
-   *           type: string
+   *           type: integer
+   *           minimum: 1
+   *           maximum: 100
+   *           default: 50
    *         required: false
-   *         description: Optional field to choose max size of result set (default value is `10`)
+   *         description: Maximum number of results to return
    *       - in: query
    *         name: offset
    *         schema:
-   *           type: string
+   *           type: integer
+   *           minimum: 0
+   *           default: 0
    *         required: false
-   *         description: Optional field to choose offset of result set (default value is `0`)
+   *         description: Number of results to skip for pagination
    *       - in: query
    *         name: status
    *         schema:
-   *           type: string
+   *           $ref: '#/components/schemas/CompetitionStatus'
    *         required: false
-   *         description: Optional field to filter results to only include competitions with given status.
+   *         description: Filter results to only include competitions with given status
    *       - in: query
    *         name: claimed
    *         schema:
    *           type: boolean
    *         required: false
-   *         description: Optional field to filter results to only include competitions with rewards that have been claimed if value is true, or unclaimed if value is false.
+   *         description: Filter results to only include competitions with claimed (true) or unclaimed (false) rewards
    *     responses:
    *       200:
    *         description: Competitions retrieved successfully
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 competitions:
-   *                   type: array
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       id:
-   *                         type: string
-   *                         format: uuid
-   *                       name:
-   *                         type: string
-   *                         example: "DeFi Trading Championship"
-   *                       status:
-   *                         type: string
-   *                         enum: [active, completed, upcoming]
-   *                       startDate:
-   *                         type: string
-   *                         format: date-time
-   *                       endDate:
-   *                         type: string
-   *                         format: date-time
-   *                       description:
-   *                         type: string
-   *                         example: "A competition focused on yield farming strategies."
-   *                       portfolioValue:
-   *                         type: number
-   *                         description: "Agent's current portfolio value in this competition"
-   *                         example: 10500.75
-   *                       pnl:
-   *                         type: number
-   *                         description: "Agent's profit/loss amount in this competition"
-   *                         example: 500.75
-   *                       pnlPercent:
-   *                         type: number
-   *                         description: "Agent's profit/loss percentage in this competition"
-   *                         example: 5.01
-   *                       totalTrades:
-   *                         type: integer
-   *                         description: "Total number of trades made by agent in this competition"
-   *                         example: 15
-   *                       bestPlacement:
-   *                         type: object
-   *                         nullable: true
-   *                         description: "Agent's ranking in this competition (null if no ranking data available)"
-   *                         properties:
-   *                           rank:
-   *                             type: integer
-   *                             description: "Agent's rank in the competition (1-based)"
-   *                             example: 3
-   *                           totalAgents:
-   *                             type: integer
-   *                             description: "Total number of agents in the competition"
-   *                             example: 25
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [competitions]
+   *                   properties:
+   *                     competitions:
+   *                       type: array
+   *                       items:
+   *                         allOf:
+   *                           - $ref: '#/components/schemas/Competition'
+   *                           - type: object
+   *                             properties:
+   *                               portfolioValue:
+   *                                 type: number
+   *                                 description: "Agent's current portfolio value in this competition"
+   *                                 example: 10500.75
+   *                               pnl:
+   *                                 type: number
+   *                                 description: "Agent's profit/loss amount in this competition"
+   *                                 example: 500.75
+   *                               pnlPercent:
+   *                                 type: number
+   *                                 description: "Agent's profit/loss percentage in this competition"
+   *                                 example: 5.01
+   *                               totalTrades:
+   *                                 type: integer
+   *                                 description: "Total number of trades made by agent in this competition"
+   *                                 example: 15
+   *                               bestPlacement:
+   *                                 type: object
+   *                                 nullable: true
+   *                                 description: "Agent's ranking in this competition (null if no ranking data available)"
+   *                                 properties:
+   *                                   rank:
+   *                                     type: integer
+   *                                     description: "Agent's rank in the competition (1-based)"
+   *                                     example: 3
+   *                                   totalAgents:
+   *                                     type: integer
+   *                                     description: "Total number of agents in the competition"
+   *                                     example: 25
    *       400:
-   *         description: Invalid agent ID or query params
+   *         description: Invalid agent ID or query parameters
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
-   *         description: Agent or competitions not found
+   *         description: Agent not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
-   *         description: Internal server error
+   *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/:agentId/competitions", agentController.getCompetitions);
 
