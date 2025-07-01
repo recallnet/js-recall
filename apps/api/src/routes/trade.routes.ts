@@ -55,102 +55,50 @@ export function configureTradeRoutes(
    *                 description: Optional slippage tolerance in percentage
    *                 example: "0.5"
    *               fromChain:
-   *                 type: string
-   *                 description: Optional - Blockchain type for fromToken
-   *                 example: "svm"
+   *                 $ref: '#/components/schemas/BlockchainType'
    *               fromSpecificChain:
-   *                 type: string
-   *                 description: Optional - Specific chain for fromToken
-   *                 example: "mainnet"
+   *                 $ref: '#/components/schemas/SpecificChain'
    *               toChain:
-   *                 type: string
-   *                 description: Optional - Blockchain type for toToken
-   *                 example: "svm"
+   *                 $ref: '#/components/schemas/BlockchainType'
    *               toSpecificChain:
-   *                 type: string
-   *                 description: Optional - Specific chain for toToken
-   *                 example: "mainnet"
+   *                 $ref: '#/components/schemas/SpecificChain'
    *     responses:
    *       200:
    *         description: Trade executed successfully
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Whether the trade was successfully executed
-   *                 transaction:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [transaction]
    *                   properties:
-   *                     id:
-   *                       type: string
-   *                       description: Unique trade ID
-   *                     agentId:
-   *                       type: string
-   *                       description: Agent ID that executed the trade
-   *                     competitionId:
-   *                       type: string
-   *                       description: ID of the competition this trade is part of
-   *                     fromToken:
-   *                       type: string
-   *                       description: Token address that was sold
-   *                     toToken:
-   *                       type: string
-   *                       description: Token address that was bought
-   *                     fromAmount:
-   *                       type: number
-   *                       description: Amount of fromToken that was sold
-   *                     toAmount:
-   *                       type: number
-   *                       description: Amount of toToken that was received
-   *                     price:
-   *                       type: number
-   *                       description: Price at which the trade was executed
-   *                     success:
-   *                       type: boolean
-   *                       description: Whether the trade was successfully completed
-   *                     error:
-   *                       type: string
-   *                       nullable: true
-   *                       description: Error message if the trade failed
-   *                     reason:
-   *                       type: string
-   *                       description: Reason provided for executing the trade
-   *                     tradeAmountUsd:
-   *                       type: number
-   *                       description: The USD value of the trade at execution time
-   *                     timestamp:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Timestamp of when the trade was executed
-   *                     fromChain:
-   *                       type: string
-   *                       description: Blockchain type of the source token
-   *                     toChain:
-   *                       type: string
-   *                       description: Blockchain type of the destination token
-   *                     fromSpecificChain:
-   *                       type: string
-   *                       description: Specific chain for the source token
-   *                     toSpecificChain:
-   *                       type: string
-   *                       description: Specific chain for the destination token
-   *                     toTokenSymbol:
-   *                       type: string
-   *                       description: Symbol of the destination token
-   *                     fromTokenSymbol:
-   *                       type: string
-   *                       description: Symbol of the source token
+   *                     transaction:
+   *                       $ref: '#/components/schemas/Trade'
    *       400:
    *         description: Invalid input parameters
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: Unauthorized - Missing or invalid authentication
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       403:
    *         description: Forbidden - Competition not in progress or other restrictions
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.post("/execute", controller.executeTrade);
 
@@ -189,31 +137,27 @@ export function configureTradeRoutes(
    *       - in: query
    *         name: fromChain
    *         schema:
-   *           type: string
+   *           $ref: '#/components/schemas/BlockchainType'
    *         required: false
    *         description: Optional blockchain type for fromToken
-   *         example: svm
    *       - in: query
    *         name: fromSpecificChain
    *         schema:
-   *           type: string
+   *           $ref: '#/components/schemas/SpecificChain'
    *         required: false
    *         description: Optional specific chain for fromToken
-   *         example: mainnet
    *       - in: query
    *         name: toChain
    *         schema:
-   *           type: string
+   *           $ref: '#/components/schemas/BlockchainType'
    *         required: false
    *         description: Optional blockchain type for toToken
-   *         example: svm
    *       - in: query
    *         name: toSpecificChain
    *         schema:
-   *           type: string
+   *           $ref: '#/components/schemas/SpecificChain'
    *         required: false
    *         description: Optional specific chain for toToken
-   *         example: mainnet
    *     responses:
    *       200:
    *         description: Quote generated successfully
@@ -221,6 +165,7 @@ export function configureTradeRoutes(
    *           application/json:
    *             schema:
    *               type: object
+   *               required: [fromToken, toToken, fromAmount, toAmount, exchangeRate, slippage, tradeAmountUsd, prices, symbols, chains]
    *               properties:
    *                 fromToken:
    *                   type: string
@@ -245,6 +190,7 @@ export function configureTradeRoutes(
    *                   description: Estimated USD value of the trade
    *                 prices:
    *                   type: object
+   *                   required: [fromToken, toToken]
    *                   properties:
    *                     fromToken:
    *                       type: number
@@ -254,6 +200,7 @@ export function configureTradeRoutes(
    *                       description: Price of the destination token in USD
    *                 symbols:
    *                   type: object
+   *                   required: [fromTokenSymbol, toTokenSymbol]
    *                   properties:
    *                     fromTokenSymbol:
    *                       type: string
@@ -263,19 +210,30 @@ export function configureTradeRoutes(
    *                       description: Symbol of the destination token
    *                 chains:
    *                   type: object
+   *                   required: [fromChain, toChain]
    *                   properties:
    *                     fromChain:
-   *                       type: string
-   *                       description: Blockchain type of the source token
+   *                       $ref: '#/components/schemas/BlockchainType'
    *                     toChain:
-   *                       type: string
-   *                       description: Blockchain type of the destination token
+   *                       $ref: '#/components/schemas/BlockchainType'
    *       400:
    *         description: Invalid input parameters
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: Unauthorized - Missing or invalid authentication
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/quote", controller.getQuote);
 
