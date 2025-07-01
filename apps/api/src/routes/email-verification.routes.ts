@@ -41,10 +41,7 @@ export function configureEmailVerificationRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 error:
-   *                   type: string
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/", controller.verifyEmail);
 
