@@ -81,9 +81,9 @@ export const useUpdateAgent = () => {
 
       // Background: Sync agent profile update to sandbox
       try {
-        // First, find the agent in sandbox to get its ID
+        // First, find the agent in sandbox to get its ID using new structured search API
         const searchResponse = await fetch(
-          `/api/sandbox/search?searchType=agents&name=${encodeURIComponent(response.agent.name)}`,
+          `/api/sandbox/search?agent.name=${encodeURIComponent(response.agent.name)}`,
         );
         if (!searchResponse.ok) {
           throw new Error("Failed to search for agent in sandbox");

@@ -32,9 +32,9 @@ export const useProfile = () => {
         // Background: Ensure user exists in sandbox
         if (user?.walletAddress) {
           try {
-            // Check if user exists in sandbox
+            // Check if user exists in sandbox using new structured search API
             const searchResponse = await fetch(
-              `/api/sandbox/search?walletAddress=${encodeURIComponent(user.walletAddress)}&searchType=users`,
+              `/api/sandbox/search?user.walletAddress=${encodeURIComponent(user.walletAddress)}`,
             );
 
             if (searchResponse.ok) {

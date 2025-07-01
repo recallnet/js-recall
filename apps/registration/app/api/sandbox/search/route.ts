@@ -7,6 +7,11 @@ const SANDBOX_API_URL =
 /**
  * Search users and agents in the sandbox environment (server-side only)
  * GET /api/sandbox/search
+ *
+ * Supports new search pattern from PR #770:
+ * - user.walletAddress=0x1234
+ * - agent.name=foo
+ * - join (boolean to perform left join and get user's agents)
  */
 export async function GET(request: NextRequest) {
   try {
@@ -18,24 +23,19 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const params = {
-      email: searchParams.get("email") || undefined,
-      name: searchParams.get("name") || undefined,
-      walletAddress: searchParams.get("walletAddress") || undefined,
-      status: searchParams.get("status") || undefined,
-      searchType: searchParams.get("searchType") || undefined,
-    };
 
-    // Filter out undefined values and ensure type safety
-    const cleanParams: Record<string, string> = {};
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined) {
-        cleanParams[key] = value;
+    // Extract all search parameters and pass them through
+    // The new API supports structured queries like user.walletAddress, agent.name, etc.
+    const params: Record<string, string> = {};
+
+    searchParams.forEach((value, key) => {
+      if (value !== null && value !== "") {
+        params[key] = value;
       }
     });
 
     // Build query string for external API
-    const queryString = new URLSearchParams(cleanParams).toString();
+    const queryString = new URLSearchParams(params).toString();
     const searchUrl = `${SANDBOX_API_URL}/admin/search${queryString ? `?${queryString}` : ""}`;
 
     // Call external sandbox API directly

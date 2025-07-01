@@ -72,6 +72,21 @@ export class SandboxServerError extends SandboxHttpError {
 
 // Types for admin API operations
 export interface SandboxSearchParams {
+  // New structured search parameters
+  "user.walletAddress"?: string;
+  "user.email"?: string;
+  "user.name"?: string;
+  "user.status"?: "active" | "suspended" | "deleted";
+  "agent.name"?: string;
+  "agent.email"?: string;
+  "agent.walletAddress"?: string;
+  "agent.status"?: "active" | "suspended" | "deleted";
+  "agent.description"?: string;
+
+  // Control parameters
+  join?: boolean | string; // When present, performs left join to get user's agents
+
+  // Legacy parameters (kept for backward compatibility)
   email?: string;
   name?: string;
   walletAddress?: string;

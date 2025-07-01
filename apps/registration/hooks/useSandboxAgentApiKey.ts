@@ -42,9 +42,9 @@ export function useSandboxAgentApiKey(
     setState({ data: null, loading: true, error: null });
 
     try {
-      // First, search for the agent in sandbox to get its ID
+      // First, search for the agent in sandbox to get its ID using new structured search API
       const searchResponse = await fetch(
-        `/api/sandbox/search?searchType=agents&name=${encodeURIComponent(agentName)}`,
+        `/api/sandbox/search?agent.name=${encodeURIComponent(agentName)}`,
       );
       if (!searchResponse.ok) {
         throw new Error("Failed to search for agent in sandbox");
