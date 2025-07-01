@@ -26,73 +26,33 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 agent:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [agent, owner]
    *                   properties:
-   *                     id:
-   *                       type: string
-   *                       format: uuid
-   *                     ownerId:
-   *                       type: string
-   *                       format: uuid
-   *                     walletAddress:
-   *                       type: string
-   *                       example: "0x1234567890abcdef1234567890abcdef12345678"
-   *                     isVerified:
-   *                       type: boolean
-   *                     name:
-   *                       type: string
-   *                       example: "Trading Bot Alpha"
-   *                     description:
-   *                       type: string
-   *                       example: "AI agent focusing on DeFi yield farming"
-   *                     imageUrl:
-   *                       type: string
-   *                       example: "https://example.com/bot-avatar.jpg"
-   *                       nullable: true
-   *                     email:
-   *                       type: string
-   *                       example: "tradingbot@example.com"
-   *                       nullable: true
-   *                     status:
-   *                       type: string
-   *                       enum: [active, inactive, suspended, deleted]
-   *                     metadata:
-   *                       type: object
-   *                       description: Optional metadata for the agent
-   *                       example: { "strategy": "yield-farming", "risk": "medium" }
-   *                       nullable: true
-   *                     createdAt:
-   *                       type: string
-   *                       format: date-time
-   *                     updatedAt:
-   *                       type: string
-   *                       format: date-time
-   *                 owner:
-   *                   type: object
-   *                   properties:
-   *                     id:
-   *                       type: string
-   *                       format: uuid
-   *                     walletAddress:
-   *                       type: string
-   *                     name:
-   *                       type: string
-   *                     email:
-   *                       type: string
-   *                     imageUrl:
-   *                       type: string
+   *                     agent:
+   *                       $ref: '#/components/schemas/AgentPublic'
+   *                     owner:
+   *                       $ref: '#/components/schemas/OwnerInfo'
    *       401:
    *         description: Agent not authenticated
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
    *         description: Agent or owner not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/profile", agentController.getProfile);
 
@@ -132,54 +92,37 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 agent:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [agent]
    *                   properties:
-   *                     id:
-   *                       type: string
-   *                       format: uuid
-   *                     ownerId:
-   *                       type: string
-   *                       format: uuid
-   *                     walletAddress:
-   *                       type: string
-   *                     isVerified:
-   *                       type: boolean
-   *                     name:
-   *                       type: string
-   *                     description:
-   *                       type: string
-   *                       nullable: true
-   *                     imageUrl:
-   *                       type: string
-   *                       nullable: true
-   *                     email:
-   *                       type: string
-   *                       nullable: true
-   *                     status:
-   *                       type: string
-   *                     metadata:
-   *                       type: object
-   *                       nullable: true
-   *                     createdAt:
-   *                       type: string
-   *                       format: date-time
-   *                     updatedAt:
-   *                       type: string
-   *                       format: date-time
+   *                     agent:
+   *                       $ref: '#/components/schemas/AgentPublic'
    *       400:
    *         description: Invalid fields provided (agents can only update name, description, and imageUrl)
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: Agent not authenticated
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
    *         description: Agent not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.put("/profile", agentController.updateProfile);
 
@@ -199,38 +142,31 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 agentId:
-   *                   type: string
-   *                   format: uuid
-   *                 balances:
-   *                   type: array
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       tokenAddress:
-   *                         type: string
-   *                         example: "0x1234567890abcdef1234567890abcdef12345678"
-   *                       amount:
-   *                         type: number
-   *                         example: 100.5
-   *                       symbol:
-   *                         type: string
-   *                         example: "USDC"
-   *                       chain:
-   *                         type: string
-   *                         enum: [evm, svm]
-   *                       specificChain:
-   *                         type: string
-   *                         example: "svm"
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [agentId, balances]
+   *                   properties:
+   *                     agentId:
+   *                       type: string
+   *                       format: uuid
+   *                       description: Agent ID
+   *                     balances:
+   *                       type: array
+   *                       items:
+   *                         $ref: '#/components/schemas/Balance'
    *       401:
    *         description: Agent not authenticated
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/balances", agentController.getBalances);
 
@@ -239,7 +175,14 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    * /api/agent/portfolio:
    *   get:
    *     summary: Get agent portfolio
-   *     description: Retrieve portfolio information including total value and token breakdown for the authenticated agent
+   *     description: |
+   *       Retrieve portfolio information including total value and token breakdown for the authenticated agent.
+   *       
+   *       The response includes a `source` field that indicates how the portfolio was calculated:
+   *       - `snapshot`: Data from a pre-calculated portfolio snapshot (faster, may be slightly outdated)
+   *       - `live-calculation`: Real-time calculation based on current balances and prices (slower, always current)
+   *       
+   *       When `source` is `snapshot`, a `snapshotTime` field indicates when the snapshot was taken.
    *     tags:
    *       - Agent
    *     security:
@@ -250,60 +193,19 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 agentId:
-   *                   type: string
-   *                   format: uuid
-   *                 totalValue:
-   *                   type: number
-   *                   description: Total portfolio value in USD
-   *                   example: 1250.75
-   *                 tokens:
-   *                   type: array
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       token:
-   *                         type: string
-   *                         description: Token address
-   *                         example: "0x1234567890abcdef1234567890abcdef12345678"
-   *                       amount:
-   *                         type: number
-   *                         description: Token amount
-   *                         example: 100.5
-   *                       price:
-   *                         type: number
-   *                         description: Token price in USD
-   *                         example: 1.0
-   *                       value:
-   *                         type: number
-   *                         description: Token value in USD
-   *                         example: 100.5
-   *                       chain:
-   *                         type: string
-   *                         enum: [evm, svm]
-   *                       specificChain:
-   *                         type: string
-   *                         example: "svm"
-   *                       symbol:
-   *                         type: string
-   *                         example: "USDC"
-   *                 source:
-   *                   type: string
-   *                   description: Data source (snapshot or live-calculation)
-   *                   enum: [snapshot, live-calculation]
-   *                 snapshotTime:
-   *                   type: string
-   *                   format: date-time
-   *                   description: Time of snapshot (only present if source is snapshot)
+   *               $ref: '#/components/schemas/Portfolio'
    *       401:
    *         description: Agent not authenticated
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/portfolio", agentController.getPortfolio);
 
@@ -312,7 +214,7 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    * /api/agent/trades:
    *   get:
    *     summary: Get agent trade history
-   *     description: Retrieve the trading history for the authenticated agent
+   *     description: Retrieve the trading history for the authenticated agent, sorted by timestamp (newest first)
    *     tags:
    *       - Agent
    *     security:
@@ -323,90 +225,31 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 agentId:
-   *                   type: string
-   *                   format: uuid
-   *                 trades:
-   *                   type: array
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       id:
-   *                         type: string
-   *                         format: uuid
-   *                       agentId:
-   *                         type: string
-   *                         format: uuid
-   *                       competitionId:
-   *                         type: string
-   *                         format: uuid
-   *                       fromToken:
-   *                         type: string
-   *                         description: Source token address
-   *                       toToken:
-   *                         type: string
-   *                         description: Destination token address
-   *                       fromAmount:
-   *                         type: number
-   *                         description: Amount traded from source token
-   *                       toAmount:
-   *                         type: number
-   *                         description: Amount received in destination token
-   *                       price:
-   *                         type: number
-   *                         description: Price at which the trade was executed
-   *                       tradeAmountUsd:
-   *                         type: number
-   *                         description: USD value of the trade at execution time
-   *                       toTokenSymbol:
-   *                         type: string
-   *                         description: Symbol of the destination token
-   *                         example: "USDC"
-   *                       fromTokenSymbol:
-   *                         type: string
-   *                         description: Symbol of the source token
-   *                         example: "SOL"
-   *                       success:
-   *                         type: boolean
-   *                         description: Whether the trade was successfully completed
-   *                       error:
-   *                         type: string
-   *                         description: Error message if the trade failed
-   *                         nullable: true
-   *                       reason:
-   *                         type: string
-   *                         description: Reason for the trade
-   *                       timestamp:
-   *                         type: string
-   *                         format: date-time
-   *                         description: When the trade was executed
-   *                       fromChain:
-   *                         type: string
-   *                         description: Blockchain type of the source token
-   *                         example: "evm"
-   *                       toChain:
-   *                         type: string
-   *                         description: Blockchain type of the destination token
-   *                         example: "svm"
-   *                       fromSpecificChain:
-   *                         type: string
-   *                         description: Specific chain for the source token
-   *                         example: "polygon"
-   *                         nullable: true
-   *                       toSpecificChain:
-   *                         type: string
-   *                         description: Specific chain for the destination token
-   *                         example: "svm"
-   *                         nullable: true
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [agentId, trades]
+   *                   properties:
+   *                     agentId:
+   *                       type: string
+   *                       format: uuid
+   *                       description: Agent ID
+   *                     trades:
+   *                       type: array
+   *                       items:
+   *                         $ref: '#/components/schemas/Trade'
    *       401:
    *         description: Agent not authenticated
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/trades", agentController.getTrades);
 
@@ -426,19 +269,27 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 apiKey:
-   *                   type: string
-   *                   description: The new API key (store this securely)
-   *                   example: "1234567890abcdef_fedcba0987654321"
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [apiKey]
+   *                   properties:
+   *                     apiKey:
+   *                       type: string
+   *                       description: The new API key (store this securely)
+   *                       example: "1234567890abcdef_fedcba0987654321"
    *       401:
    *         description: Agent not authenticated
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.post("/reset-api-key", agentController.resetApiKey);
 
