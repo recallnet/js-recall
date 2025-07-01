@@ -1,5 +1,3 @@
-
-
 export interface Reward {
   name: string;
   amount: string;
