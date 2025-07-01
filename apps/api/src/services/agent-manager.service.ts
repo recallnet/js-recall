@@ -1314,20 +1314,9 @@ export class AgentManager {
     // Get trophies by reusing existing competition logic, filtered for ended competitions
     const endedCompetitions = await this.getCompetitionsForAgent(
       sanitizedAgent.id,
-      { status: "ended", sort: "-endDate", limit: 100, offset: 0 }, // Only ended competitions award trophies
-      { limit: 100, offset: 0, sort: "-endDate" }, // Get all ended competitions, most recent first
+      { status: "ended", sort: "", limit: 10, offset: 0 }, // Filter + minimal paging defaults
+      { sort: "-endDate", limit: 100, offset: 0 }, // Actual paging to override defaults
     );
-
-    console.log(`[AgentManager] Trophy debug for agent ${sanitizedAgent.id}:`, {
-      endedCompetitionsFound: endedCompetitions.competitions.length,
-      totalCount: endedCompetitions.total,
-      competitions: endedCompetitions.competitions.map((c) => ({
-        id: c.id,
-        name: c.name,
-        status: c.status,
-        endDate: c.endDate,
-      })),
-    });
 
     // Transform competition data to trophy format
     const trophies: AgentTrophy[] = endedCompetitions.competitions.map(
