@@ -47,6 +47,7 @@ import {
   SelectAgent,
   SelectCompetition,
 } from "@/database/schema/core/types.js";
+import { transformToTrophy } from "@/lib/trophy-utils.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { EmailService } from "@/services/email.service.js";
 import {
@@ -1319,16 +1320,14 @@ export class AgentManager {
     );
 
     // Transform competition data to trophy format
-    const trophies: AgentTrophy[] = endedCompetitions.competitions.map(
-      (comp) => ({
+    const trophies: AgentTrophy[] = endedCompetitions.competitions.map((comp) =>
+      transformToTrophy({
         competitionId: comp.id,
         name: comp.name,
-        rank: comp.bestPlacement?.rank || 0,
-        imageUrl: comp.imageUrl || "",
-        createdAt:
-          comp.endDate?.toISOString() ||
-          comp.createdAt?.toISOString() ||
-          new Date().toISOString(),
+        rank: comp.bestPlacement?.rank,
+        imageUrl: comp.imageUrl,
+        endDate: comp.endDate,
+        createdAt: comp.createdAt,
       }),
     );
 

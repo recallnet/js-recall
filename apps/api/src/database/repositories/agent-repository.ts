@@ -17,6 +17,7 @@ import {
   competitionsLeaderboard,
 } from "@/database/schema/core/defs.js";
 import { InsertAgent, SelectAgent } from "@/database/schema/core/types.js";
+import { transformToTrophy } from "@/lib/trophy-utils.js";
 import {
   AgentCompetitionsParams,
   AgentSearchParams,
@@ -894,16 +895,16 @@ export async function getBulkAgentTrophies(agentIds: string[]): Promise<
         trophiesByAgent.set(result.agentId, []);
       }
 
-      trophiesByAgent.get(result.agentId)!.push({
-        competitionId: result.competitionId,
-        name: result.name,
-        rank: result.rank || 0, // Default rank if no leaderboard entry
-        imageUrl: result.imageUrl || "",
-        createdAt:
-          result.endDate?.toISOString() ||
-          result.createdAt?.toISOString() ||
-          new Date().toISOString(),
-      });
+      trophiesByAgent.get(result.agentId)!.push(
+        transformToTrophy({
+          competitionId: result.competitionId,
+          name: result.name,
+          rank: result.rank,
+          imageUrl: result.imageUrl,
+          endDate: result.endDate,
+          createdAt: result.createdAt,
+        }),
+      );
     }
 
     // Convert to array format and ensure all agents are represented
