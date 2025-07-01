@@ -12,7 +12,7 @@ import {
 import {
   AdminAgentKeyResponse,
   AdminSearchResult,
-  UserAgentsResponse,
+  ProfileResponse,
 } from "@/types";
 
 /**
@@ -33,23 +33,17 @@ async function handleGetAgentApiKey(request: NextRequest) {
     throw new Error("Agent name is required");
   }
 
-  // Get user's agents from the base API to validate ownership
-  const userAgentsData = await mainApiRequest<UserAgentsResponse>(
-    "/user/agents?limit=100",
+  // Fetch user profile from the base API
+  const profileData = await mainApiRequest<ProfileResponse>(
+    "/user/profile",
     sessionCookie,
   );
-
-  // Validate that the agent name belongs to the logged-in user
-  const userAgent = userAgentsData.agents.find(
-    (agent) => agent.name === agentName,
-  );
-  if (!userAgent) {
-    throw new Error("Agent not found or does not belong to user");
-  }
+  const { user } = profileData;
+  const { walletAddress } = user;
 
   // Find the agent's ID in the sandbox using its name
   const searchData = await sandboxAdminRequest<AdminSearchResult>(
-    `/admin/search?name=${encodeURIComponent(agentName)}&searchType=agents`,
+    `/admin/search?user.walletAddress=${walletAddress}&agent.name=${encodeURIComponent(agentName)}&join=true`,
   );
 
   // Check if agent exists in sandbox
