@@ -1,6 +1,7 @@
 import {
   AnyColumn,
   and,
+  desc,
   count as drizzleCount,
   eq,
   ilike,
@@ -814,6 +815,110 @@ export async function findUserAgentCompetitions(
       "[AgentRepository] Error in findUserAgentCompetitionsOptimized:",
       error,
     );
+    throw error;
+  }
+}
+
+/**
+ * Get trophies for multiple agents in a single optimized query
+ * @param agentIds Array of agent IDs to get trophies for
+ * @returns Array of trophies grouped by agentId
+ */
+export async function getBulkAgentTrophies(agentIds: string[]): Promise<
+  {
+    agentId: string;
+    trophies: Array<{
+      competitionId: string;
+      name: string;
+      rank: number;
+      imageUrl: string;
+      createdAt: string;
+    }>;
+  }[]
+> {
+  try {
+    if (agentIds.length === 0) {
+      return [];
+    }
+
+    console.log(
+      `[AgentRepository] Getting bulk trophies for ${agentIds.length} agents`,
+    );
+
+    // Single optimized query to get trophy data for all agents
+    const results = await db
+      .select({
+        agentId: competitionAgents.agentId,
+        competitionId: competitions.id,
+        name: competitions.name,
+        imageUrl: competitions.imageUrl,
+        endDate: competitions.endDate,
+        createdAt: competitions.createdAt,
+        rank: competitionsLeaderboard.rank,
+      })
+      .from(competitions)
+      .innerJoin(
+        competitionAgents,
+        eq(competitions.id, competitionAgents.competitionId),
+      )
+      .leftJoin(
+        competitionsLeaderboard,
+        and(
+          eq(competitions.id, competitionsLeaderboard.competitionId),
+          eq(competitionAgents.agentId, competitionsLeaderboard.agentId),
+        ),
+      )
+      .where(
+        and(
+          inArray(competitionAgents.agentId, agentIds),
+          eq(competitions.status, "ended"), // Only ended competitions award trophies
+          eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE), // Only active participations
+        ),
+      )
+      .orderBy(desc(competitions.endDate)); // Most recent competitions first
+
+    // Group results by agentId and transform to trophy format
+    const trophiesByAgent = new Map<
+      string,
+      Array<{
+        competitionId: string;
+        name: string;
+        rank: number;
+        imageUrl: string;
+        createdAt: string;
+      }>
+    >();
+
+    for (const result of results) {
+      if (!trophiesByAgent.has(result.agentId)) {
+        trophiesByAgent.set(result.agentId, []);
+      }
+
+      trophiesByAgent.get(result.agentId)!.push({
+        competitionId: result.competitionId,
+        name: result.name,
+        rank: result.rank || 0, // Default rank if no leaderboard entry
+        imageUrl: result.imageUrl || "",
+        createdAt:
+          result.endDate?.toISOString() ||
+          result.createdAt?.toISOString() ||
+          new Date().toISOString(),
+      });
+    }
+
+    // Convert to array format and ensure all agents are represented
+    const bulkTrophies = agentIds.map((agentId) => ({
+      agentId,
+      trophies: trophiesByAgent.get(agentId) || [],
+    }));
+
+    console.log(
+      `[AgentRepository] Bulk trophy query retrieved ${results.length} total trophy records for ${agentIds.length} agents`,
+    );
+
+    return bulkTrophies;
+  } catch (error) {
+    console.error("[AgentRepository] Error in getBulkAgentTrophies:", error);
     throw error;
   }
 }

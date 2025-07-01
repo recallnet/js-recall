@@ -22,6 +22,7 @@ import {
   findByWallet,
   findInactiveAgents,
   findUserAgentCompetitions,
+  getBulkAgentTrophies,
   reactivateAgent,
   searchAgents,
   update,
@@ -56,6 +57,7 @@ import {
   AgentPublicSchema,
   AgentSearchParams,
   AgentStats,
+  AgentTrophy,
   ApiAuth,
   EnhancedCompetition,
   PagingParams,
@@ -1309,6 +1311,43 @@ export class AgentManager {
     const rank = agentRank?.rank;
     const score = agentRank?.score;
 
+    // Get trophies by reusing existing competition logic, filtered for ended competitions
+    const endedCompetitions = await this.getCompetitionsForAgent(
+      sanitizedAgent.id,
+      { status: "ended", sort: "-endDate", limit: 100, offset: 0 }, // Only ended competitions award trophies
+      { limit: 100, offset: 0, sort: "-endDate" }, // Get all ended competitions, most recent first
+    );
+
+    console.log(`[AgentManager] Trophy debug for agent ${sanitizedAgent.id}:`, {
+      endedCompetitionsFound: endedCompetitions.competitions.length,
+      totalCount: endedCompetitions.total,
+      competitions: endedCompetitions.competitions.map((c) => ({
+        id: c.id,
+        name: c.name,
+        status: c.status,
+        endDate: c.endDate,
+      })),
+    });
+
+    // Transform competition data to trophy format
+    const trophies: AgentTrophy[] = endedCompetitions.competitions.map(
+      (comp) => ({
+        competitionId: comp.id,
+        name: comp.name,
+        rank: comp.bestPlacement?.rank || 0,
+        imageUrl: comp.imageUrl || "",
+        createdAt:
+          comp.endDate?.toISOString() ||
+          comp.createdAt?.toISOString() ||
+          new Date().toISOString(),
+      }),
+    );
+
+    console.log(
+      `[AgentManager] Generated ${trophies.length} trophies for agent ${sanitizedAgent.id}:`,
+      trophies,
+    );
+
     const stats = {
       completedCompetitions,
       totalVotes,
@@ -1321,7 +1360,7 @@ export class AgentManager {
     return {
       ...sanitizedAgent,
       stats,
-      trophies: metadata?.trophies || [],
+      trophies, // Now returns AgentTrophy[] instead of string[]
       skills: metadata?.skills || [],
       hasUnclaimedRewards: metadata?.hasUnclaimedRewards || false,
     };
@@ -1350,15 +1389,26 @@ export class AgentManager {
       const agentIds = sanitizedAgents.map((agent) => agent.id);
       const bulkMetrics = await getBulkAgentMetrics(agentIds);
 
-      // Create a lookup map for efficient access
+      // Create lookup maps for efficient access
       const metricsMap = new Map(
         bulkMetrics.map((metrics) => [metrics.agentId, metrics]),
       );
 
-      // Attach metrics to each agent
+      // Get bulk trophies using optimized single query approach
+      const bulkTrophies = await getBulkAgentTrophies(agentIds);
+      const trophiesMap = new Map(
+        bulkTrophies.map((trophy) => [trophy.agentId, trophy.trophies]),
+      );
+
+      // Process agents synchronously with O(1) trophy lookups
       return sanitizedAgents.map((sanitizedAgent) => {
         const metadata = sanitizedAgent.metadata as AgentMetadata;
         const metrics = metricsMap.get(sanitizedAgent.id);
+        const trophies = trophiesMap.get(sanitizedAgent.id) || [];
+
+        console.log(
+          `[AgentManager] Using bulk trophies: ${trophies.length} trophies for agent ${sanitizedAgent.id}`,
+        );
 
         const stats = {
           completedCompetitions: metrics?.completedCompetitions ?? 0,
@@ -1372,7 +1422,7 @@ export class AgentManager {
         return {
           ...sanitizedAgent,
           stats,
-          trophies: metadata?.trophies || [],
+          trophies, // Use bulk-fetched database trophies
           skills: metadata?.skills || [],
           hasUnclaimedRewards: metadata?.hasUnclaimedRewards || false,
         };
