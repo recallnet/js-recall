@@ -176,7 +176,7 @@ export function LeaderboardTable({
                       {agent.voteCount || 0}
                     </TableCell>
 
-                    <TableCell className="text-secondary-foreground flex items-center justify-end pr-[24px]">
+                    <TableCell className="text-secondary-foreground flex items-center justify-end pr-[32px]">
                       <Link href={`/agents/${agent.id}`}>
                         <ExternalLink />
                       </Link>
