@@ -1,12 +1,12 @@
 #!/usr/bin/env tsx
+import { Ajv, JSONSchemaType } from "ajv";
+import formatsPlugin from "ajv-formats";
 
-import Ajv from "ajv";
-import addFormats from "ajv-formats";
 import { swaggerSpec } from "../src/config/swagger.js";
 
 /**
  * OpenAPI Schema Validation Script
- * 
+ *
  * This script validates that the OpenAPI schemas match the actual data structures
  * returned by the API endpoints. It helps ensure consistency between documentation
  * and implementation.
@@ -18,7 +18,7 @@ const ajv = new Ajv({
   verbose: true,
   strict: false, // Allow additional properties not in schema
 });
-addFormats(ajv);
+formatsPlugin.default(ajv);
 
 // Type assertion for the swagger spec
 const spec = swaggerSpec as {
@@ -40,7 +40,10 @@ for (const [name, schema] of Object.entries(schemas)) {
 /**
  * Validate a response against an OpenAPI schema
  */
-function validateResponse(data: any, schemaRef: string): { valid: boolean; errors?: any[] } {
+function validateResponse(
+  data: any,
+  schemaRef: string,
+): { valid: boolean; errors?: any[] } {
   try {
     const validate = ajv.compile({ $ref: schemaRef });
     const valid = validate(data);
@@ -50,7 +53,10 @@ function validateResponse(data: any, schemaRef: string): { valid: boolean; error
     };
   } catch (error) {
     console.error(`Failed to compile schema ${schemaRef}:`, error);
-    return { valid: false, errors: [{ message: `Schema compilation failed: ${error}` }] };
+    return {
+      valid: false,
+      errors: [{ message: `Schema compilation failed: ${error}` }],
+    };
   }
 }
 
@@ -211,9 +217,9 @@ function runValidation() {
   for (const testCase of testCases) {
     console.log(`Testing: ${testCase.name}`);
     console.log(`Schema: ${testCase.schema}`);
-    
+
     const result = validateResponse(testCase.data, testCase.schema);
-    
+
     if (result.valid) {
       console.log("✅ PASS\n");
       passedTests++;
@@ -222,7 +228,9 @@ function runValidation() {
       console.log("Validation errors:");
       if (result.errors) {
         result.errors.forEach((error, index) => {
-          console.log(`  ${index + 1}. ${error.instancePath || 'root'}: ${error.message}`);
+          console.log(
+            `  ${index + 1}. ${error.instancePath || "root"}: ${error.message}`,
+          );
           if (error.params) {
             console.log(`     Params: ${JSON.stringify(error.params)}`);
           }
@@ -236,10 +244,14 @@ function runValidation() {
   console.log("📊 Validation Summary:");
   console.log(`✅ Passed: ${passedTests}`);
   console.log(`❌ Failed: ${failedTests}`);
-  console.log(`📈 Success Rate: ${((passedTests / testCases.length) * 100).toFixed(1)}%`);
+  console.log(
+    `📈 Success Rate: ${((passedTests / testCases.length) * 100).toFixed(1)}%`,
+  );
 
   if (failedTests > 0) {
-    console.log("\n⚠️  Some schemas failed validation. Please review and fix the issues above.");
+    console.log(
+      "\n⚠️  Some schemas failed validation. Please review and fix the issues above.",
+    );
     process.exit(1);
   } else {
     console.log("\n🎉 All schemas passed validation!");
@@ -252,18 +264,22 @@ function runValidation() {
 function analyzeSchemas() {
   console.log("\n📈 Schema Analysis:");
   console.log("Available schemas:");
-  
+
   const schemaNames = Object.keys(schemas).sort();
-  const testedSchemas = new Set(testCases.map(tc => tc.schema.split('/').pop()));
-  
-  schemaNames.forEach(name => {
+  const testedSchemas = new Set(
+    testCases.map((tc) => tc.schema.split("/").pop()),
+  );
+
+  schemaNames.forEach((name) => {
     const tested = testedSchemas.has(name);
     const icon = tested ? "✅" : "⚠️ ";
     console.log(`  ${icon} ${name}${tested ? "" : " (not tested)"}`);
   });
-  
+
   const coverage = (testedSchemas.size / schemaNames.length) * 100;
-  console.log(`\n📊 Test Coverage: ${coverage.toFixed(1)}% (${testedSchemas.size}/${schemaNames.length} schemas tested)`);
+  console.log(
+    `\n📊 Test Coverage: ${coverage.toFixed(1)}% (${testedSchemas.size}/${schemaNames.length} schemas tested)`,
+  );
 }
 
 // Run the validation
