@@ -26,10 +26,7 @@ export function configureAdminSetupRoutes(
    *         application/json:
    *           schema:
    *             type: object
-   *             required:
-   *               - username
-   *               - password
-   *               - email
+   *             required: [username, password, email]
    *             properties:
    *               username:
    *                 type: string
@@ -37,6 +34,7 @@ export function configureAdminSetupRoutes(
    *                 example: admin
    *               password:
    *                 type: string
+   *                 minLength: 8
    *                 description: Admin password (minimum 8 characters)
    *                 format: password
    *                 example: password123
@@ -51,36 +49,51 @@ export function configureAdminSetupRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 message:
-   *                   type: string
-   *                   description: Success message
-   *                 admin:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [message, admin]
    *                   properties:
-   *                     id:
+   *                     message:
    *                       type: string
-   *                       description: Admin ID
-   *                     username:
-   *                       type: string
-   *                       description: Admin username
-   *                     email:
-   *                       type: string
-   *                       description: Admin email
-   *                     createdAt:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Account creation timestamp
+   *                       description: Success message
+   *                     admin:
+   *                       type: object
+   *                       required: [id, username, email, createdAt]
+   *                       properties:
+   *                         id:
+   *                           type: string
+   *                           format: uuid
+   *                           description: Admin ID
+   *                         username:
+   *                           type: string
+   *                           description: Admin username
+   *                         email:
+   *                           type: string
+   *                           format: email
+   *                           description: Admin email
+   *                         createdAt:
+   *                           type: string
+   *                           format: date-time
+   *                           description: Account creation timestamp
    *       400:
    *         description: Missing required parameters or password too short
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       403:
    *         description: Admin setup not allowed - an admin account already exists
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.post("/", controller.setupAdmin);
 
