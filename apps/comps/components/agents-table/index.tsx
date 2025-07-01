@@ -104,8 +104,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   const columns = useMemo<ColumnDef<AgentCompetition>[]>(
     () => [
       {
-        id: "position",
-        accessorKey: "position",
+        id: "rank",
+        accessorKey: "rank",
         header: () => "Rank",
         cell: ({ row }) => <RankBadge position={row.original.rank} />,
         enableSorting: true,
