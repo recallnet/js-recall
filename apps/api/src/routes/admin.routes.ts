@@ -28,8 +28,7 @@ export function configureAdminRoutes(
    *         application/json:
    *           schema:
    *             type: object
-   *             required:
-   *               - name
+   *             required: [name]
    *             properties:
    *               name:
    *                 type: string
@@ -40,9 +39,8 @@ export function configureAdminRoutes(
    *                 description: Competition description
    *                 example: A trading competition for the spring semester
    *               tradingType:
-   *                 type: string
+   *                 $ref: '#/components/schemas/CrossChainTradingType'
    *                 description: The type of cross-chain trading to allow in this competition
-   *                 enum: [disallowAll, disallowXParent, allow]
    *                 default: disallowAll
    *                 example: disallowAll
    *               sandboxMode:
@@ -51,9 +49,8 @@ export function configureAdminRoutes(
    *                 default: false
    *                 example: false
    *               type:
-   *                 type: string
+   *                 $ref: '#/components/schemas/CompetitionType'
    *                 description: The type of competition
-   *                 enum: [trading]
    *                 default: trading
    *                 example: trading
    *               externalUrl:
@@ -80,57 +77,31 @@ export function configureAdminRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 competition:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [competition]
    *                   properties:
-   *                     id:
-   *                       type: string
-   *                       description: Competition ID
-   *                     name:
-   *                       type: string
-   *                       description: Competition name
-   *                     description:
-   *                       type: string
-   *                       description: Competition description
-   *                     status:
-   *                       type: string
-   *                       enum: [pending, active, completed]
-   *                       description: Competition status
-   *                     externalUrl:
-   *                       type: string
-   *                       description: External URL for competition details
-   *                       nullable: true
-   *                     imageUrl:
-   *                       type: string
-   *                       description: URL to competition image
-   *                       nullable: true
-   *                     crossChainTradingType:
-   *                       type: string
-   *                       enum: [disallowAll, disallowXParent, allow]
-   *                       description: The type of cross-chain trading allowed in this competition
-   *                     sandboxMode:
-   *                       type: boolean
-   *                       description: Whether sandbox mode is enabled for this competition
-   *                     type:
-   *                       type: string
-   *                       enum: [trading]
-   *                       default: trading
-   *                       description: The type of competition
-   *                     createdAt:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Competition creation date
+   *                     competition:
+   *                       $ref: '#/components/schemas/Competition'
    *       400:
    *         description: Missing required parameters
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: Unauthorized - Admin authentication required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.post("/competition/create", controller.createCompetition);
 
@@ -150,11 +121,11 @@ export function configureAdminRoutes(
    *         application/json:
    *           schema:
    *             type: object
-   *             required:
-   *               - agentIds
+   *             required: [agentIds]
    *             properties:
    *               competitionId:
    *                 type: string
+   *                 format: uuid
    *                 description: ID of an existing competition to start. If not provided, a new competition will be created.
    *               name:
    *                 type: string
@@ -186,11 +157,11 @@ export function configureAdminRoutes(
    *                 type: array
    *                 items:
    *                   type: string
+   *                   format: uuid
    *                 description: Array of agent IDs to include in the competition
    *               tradingType:
-   *                 type: string
+   *                 $ref: '#/components/schemas/CrossChainTradingType'
    *                 description: Type of cross-chain trading to allow in this competition (used when creating a new competition)
-   *                 enum: [disallowAll, disallowXParent, allow]
    *                 default: disallowAll
    *                 example: disallowAll
    *               sandboxMode:
@@ -199,9 +170,8 @@ export function configureAdminRoutes(
    *                 default: false
    *                 example: false
    *               type:
-   *                 type: string
+   *                 $ref: '#/components/schemas/CompetitionType'
    *                 description: The type of competition
-   *                 enum: [trading]
    *                 default: trading
    *                 example: trading
    *     responses:
@@ -210,73 +180,52 @@ export function configureAdminRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 competition:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [competition, initializedAgents]
    *                   properties:
-   *                     id:
-   *                       type: string
-   *                       description: Competition ID
-   *                     name:
-   *                       type: string
-   *                       description: Competition name
-   *                     description:
-   *                       type: string
-   *                       description: Competition description
-   *                     startDate:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Competition start date
-   *                     endDate:
-   *                       type: string
-   *                       format: date-time
-   *                       nullable: true
-   *                       description: Competition end date (null if not ended)
-   *                     externalUrl:
-   *                       type: string
-   *                       description: External URL for competition details
-   *                       nullable: true
-   *                     imageUrl:
-   *                       type: string
-   *                       description: URL to competition image
-   *                       nullable: true
-   *                     status:
-   *                       type: string
-   *                       enum: [pending, active, completed]
-   *                       description: Competition status
-   *                     crossChainTradingType:
-   *                       type: string
-   *                       enum: [disallowAll, disallowXParent, allow]
-   *                       description: Type of cross-chain trading allowed in this competition
-   *                     sandboxMode:
-   *                       type: boolean
-   *                       description: Whether sandbox mode is enabled for this competition
-   *                     type:
-   *                       type: string
-   *                       enum: [trading]
-   *                       description: The type of competition
-   *                     agentIds:
+   *                     competition:
+   *                       allOf:
+   *                         - $ref: '#/components/schemas/Competition'
+   *                         - type: object
+   *                           properties:
+   *                             agentIds:
+   *                               type: array
+   *                               items:
+   *                                 type: string
+   *                                 format: uuid
+   *                               description: Agent IDs participating in the competition
+   *                     initializedAgents:
    *                       type: array
    *                       items:
    *                         type: string
-   *                       description: Agent IDs participating in the competition
-   *                 initializedAgents:
-   *                   type: array
-   *                   items:
-   *                     type: string
-   *                   description: Agent IDs that were successfully initialized for the competition
+   *                         format: uuid
+   *                       description: Agent IDs that were successfully initialized for the competition
    *       400:
    *         description: Missing required parameters
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: Unauthorized - Admin authentication required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
    *         description: Competition not found when using competitionId
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.post("/competition/start", controller.startCompetition);
 
@@ -296,11 +245,11 @@ export function configureAdminRoutes(
    *         application/json:
    *           schema:
    *             type: object
-   *             required:
-   *               - competitionId
+   *             required: [competitionId]
    *             properties:
    *               competitionId:
    *                 type: string
+   *                 format: uuid
    *                 description: ID of the competition to end
    *     responses:
    *       200:
@@ -308,70 +257,50 @@ export function configureAdminRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 competition:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [competition, leaderboard]
    *                   properties:
-   *                     id:
-   *                       type: string
-   *                       description: Competition ID
-   *                     name:
-   *                       type: string
-   *                       description: Competition name
-   *                     description:
-   *                       type: string
-   *                       description: Competition description
-   *                     startDate:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Competition start date
-   *                     endDate:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Competition end date
-   *                     externalUrl:
-   *                       type: string
-   *                       description: External URL for competition details
-   *                       nullable: true
-   *                     imageUrl:
-   *                       type: string
-   *                       description: URL to competition image
-   *                       nullable: true
-   *                     status:
-   *                       type: string
-   *                       enum: [pending, active, completed]
-   *                       description: Competition status (completed)
-   *                     crossChainTradingType:
-   *                       type: string
-   *                       enum: [disallowAll, disallowXParent, allow]
-   *                       description: Type of cross-chain trading allowed in this competition
-   *                     type:
-   *                       type: string
-   *                       enum: [trading]
-   *                       description: The type of competition
-   *                 leaderboard:
-   *                   type: array
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       agentId:
-   *                         type: string
-   *                         description: Agent ID
-   *                       value:
-   *                         type: number
-   *                         description: Final portfolio value
+   *                     competition:
+   *                       $ref: '#/components/schemas/Competition'
+   *                     leaderboard:
+   *                       type: array
+   *                       items:
+   *                         type: object
+   *                         required: [agentId, value]
+   *                         properties:
+   *                           agentId:
+   *                             type: string
+   *                             format: uuid
+   *                             description: Agent ID
+   *                           value:
+   *                             type: number
+   *                             description: Final portfolio value
    *       400:
    *         description: Missing competitionId parameter
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: Unauthorized - Admin authentication required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
    *         description: Competition not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.post("/competition/end", controller.endCompetition);
 
@@ -390,6 +319,7 @@ export function configureAdminRoutes(
    *         name: competitionId
    *         schema:
    *           type: string
+   *           format: uuid
    *         required: true
    *         description: ID of the competition to update
    *     requestBody:
@@ -408,9 +338,8 @@ export function configureAdminRoutes(
    *                 description: Competition description
    *                 example: An updated trading competition for the spring semester
    *               type:
-   *                 type: string
+   *                 $ref: '#/components/schemas/CompetitionType'
    *                 description: The type of competition
-   *                 enum: [trading]
    *                 example: trading
    *               externalUrl:
    *                 type: string
@@ -436,75 +365,37 @@ export function configureAdminRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 competition:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [competition]
    *                   properties:
-   *                     id:
-   *                       type: string
-   *                       description: Competition ID
-   *                     name:
-   *                       type: string
-   *                       description: Competition name
-   *                     description:
-   *                       type: string
-   *                       description: Competition description
-   *                     type:
-   *                       type: string
-   *                       enum: [trading]
-   *                       description: The type of competition
-   *                     externalUrl:
-   *                       type: string
-   *                       description: External URL for competition details
-   *                       nullable: true
-   *                     imageUrl:
-   *                       type: string
-   *                       description: URL to competition image
-   *                       nullable: true
-   *                     startDate:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Competition start date
-   *                       nullable: true
-   *                     endDate:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Competition end date
-   *                       nullable: true
-   *                     votingStartDate:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Voting start date
-   *                       nullable: true
-   *                     votingEndDate:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Voting end date
-   *                       nullable: true
-   *                     status:
-   *                       type: string
-   *                       enum: [pending, active, ended]
-   *                       description: Competition status
-   *                     createdAt:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Competition creation date
-   *                     updatedAt:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Competition last update date
+   *                     competition:
+   *                       $ref: '#/components/schemas/Competition'
    *       400:
-   *         description: Bad request - Missing competitionId, no valid fields provided, or attempting to update restricted fields (startDate, endDate, status)
+   *         description: Invalid input data
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: Unauthorized - Admin authentication required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
    *         description: Competition not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.put("/competition/:competitionId", controller.updateCompetition);
 
@@ -523,17 +414,72 @@ export function configureAdminRoutes(
    *         name: competitionId
    *         schema:
    *           type: string
+   *           format: uuid
    *         required: true
    *         description: ID of the competition
    *       - in: query
    *         name: agentId
    *         schema:
    *           type: string
+   *           format: uuid
    *         required: false
    *         description: Optional agent ID to filter snapshots
    *     responses:
    *       200:
    *         description: Competition snapshots
+   *         content:
+   *           application/json:
+   *             schema:
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [snapshots]
+   *                   properties:
+   *                     snapshots:
+   *                       type: array
+   *                       items:
+   *                         type: object
+   *                         required: [id, competitionId, agentId, totalValue, timestamp]
+   *                         properties:
+   *                           id:
+   *                             type: string
+   *                             format: uuid
+   *                             description: Snapshot ID
+   *                           competitionId:
+   *                             type: string
+   *                             format: uuid
+   *                             description: Competition ID
+   *                           agentId:
+   *                             type: string
+   *                             format: uuid
+   *                             description: Agent ID
+   *                           totalValue:
+   *                             type: number
+   *                             description: Total portfolio value at snapshot time
+   *                           timestamp:
+   *                             type: string
+   *                             format: date-time
+   *                             description: Snapshot timestamp
+   *       400:
+   *         description: Missing competitionId or agent not in competition
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       404:
+   *         description: Competition or agent not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       500:
+   *         description: Server error
    *         content:
    *           application/json:
    *             schema:
@@ -592,6 +538,7 @@ export function configureAdminRoutes(
    *         name: competitionId
    *         schema:
    *           type: string
+   *           format: uuid
    *         required: true
    *         description: ID of the competition
    *     responses:
@@ -600,78 +547,57 @@ export function configureAdminRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 competition:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [competition, leaderboard]
    *                   properties:
-   *                     id:
-   *                       type: string
-   *                       description: Competition ID
-   *                     name:
-   *                       type: string
-   *                       description: Competition name
-   *                     description:
-   *                       type: string
-   *                       description: Competition description
-   *                     startDate:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Competition start date
-   *                     endDate:
-   *                       type: string
-   *                       format: date-time
-   *                       nullable: true
-   *                       description: Competition end date
-   *                     externalUrl:
-   *                       type: string
-   *                       description: External URL for competition details
-   *                       nullable: true
-   *                     imageUrl:
-   *                       type: string
-   *                       description: URL to competition image
-   *                       nullable: true
-   *                     status:
-   *                       type: string
-   *                       enum: [pending, active, completed]
-   *                       description: Competition status
-   *                     crossChainTradingType:
-   *                       type: string
-   *                       enum: [disallowAll, disallowXParent, allow]
-   *                       description: Type of cross-chain trading allowed in this competition
-   *                     type:
-   *                       type: string
-   *                       enum: [trading]
-   *                       description: The type of competition
-   *                 leaderboard:
-   *                   type: array
-   *                   description: Ranked list of active agents
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       rank:
-   *                         type: integer
-   *                         description: Agent rank on the leaderboard
-   *                       agentId:
-   *                         type: string
-   *                         description: Agent ID
-   *                       agentName:
-   *                         type: string
-   *                         description: Agent name
-   *                       portfolioValue:
-   *                         type: number
-   *                         description: Portfolio value
+   *                     competition:
+   *                       $ref: '#/components/schemas/Competition'
+   *                     leaderboard:
+   *                       type: array
+   *                       description: Ranked list of active agents
+   *                       items:
+   *                         type: object
+   *                         required: [rank, agentId, agentName, portfolioValue]
+   *                         properties:
+   *                           rank:
+   *                             type: integer
+   *                             description: Agent rank on the leaderboard
+   *                           agentId:
+   *                             type: string
+   *                             format: uuid
+   *                             description: Agent ID
+   *                           agentName:
+   *                             type: string
+   *                             description: Agent name
+   *                           portfolioValue:
+   *                             type: number
+   *                             description: Portfolio value
    *       400:
    *         description: Missing competitionId parameter
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: Unauthorized - Admin authentication required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
    *         description: Competition not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/reports/performance", controller.getPerformanceReports);
 
@@ -691,11 +617,11 @@ export function configureAdminRoutes(
    *         application/json:
    *           schema:
    *             type: object
-   *             required:
-   *               - walletAddress
+   *             required: [walletAddress]
    *             properties:
    *               walletAddress:
    *                 type: string
+   *                 pattern: '^0x[a-fA-F0-9]{40}$'
    *                 description: Ethereum wallet address (must start with 0x)
    *                 example: 0x1234567890123456789012345678901234567890
    *               name:
@@ -745,6 +671,7 @@ export function configureAdminRoutes(
    *                   }
    *               agentWalletAddress:
    *                 type: string
+   *                 pattern: '^0x[a-fA-F0-9]{40}$'
    *                 description: Ethereum wallet address (must start with 0x)
    *                 example: 0x1234567890123456789012345678901234567890
    *     responses:
@@ -753,106 +680,47 @@ export function configureAdminRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 user:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [user]
    *                   properties:
-   *                     id:
+   *                     user:
+   *                       $ref: '#/components/schemas/OwnerInfo'
+   *                     agent:
+   *                       oneOf:
+   *                         - allOf:
+   *                             - $ref: '#/components/schemas/AgentPublic'
+   *                             - type: object
+   *                               properties:
+   *                                 apiKey:
+   *                                   type: string
+   *                                   description: API key for the agent to use with Bearer authentication. Admin should securely provide this to the user.
+   *                                   example: abc123def456_ghi789jkl012
+   *                         - type: "null"
+   *                       description: Created agent (if agentName was provided)
+   *                     agentError:
    *                       type: string
-   *                       description: User ID
-   *                     walletAddress:
-   *                       type: string
-   *                       description: User wallet address
-   *                     name:
-   *                       type: string
-   *                       description: User name
-   *                     email:
-   *                       type: string
-   *                       description: User email
-   *                     imageUrl:
-   *                       type: string
-   *                       description: URL to user's image
    *                       nullable: true
-   *                     metadata:
-   *                       type: object
-   *                       description: Optional metadata for the user
-   *                       example: { "custom": {"value": "here"} }
-   *                       nullable: true
-   *                     status:
-   *                       type: string
-   *                       description: User status
-   *                     createdAt:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Account creation timestamp
-   *                     updatedAt:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Account updated timestamp
-   *                 agent:
-   *                   type: object
-   *                   nullable: true
-   *                   description: Created agent (if agentName was provided)
-   *                   properties:
-   *                     id:
-   *                       type: string
-   *                       description: Agent ID
-   *                     ownerId:
-   *                       type: string
-   *                       description: Agent owner ID
-   *                     walletAddress:
-   *                       type: string
-   *                       description: Agent wallet address
-   *                       nullable: true
-   *                     name:
-   *                       type: string
-   *                       description: Agent name
-   *                     email:
-   *                       type: string
-   *                       description: Agent email
-   *                       nullable: true
-   *                     description:
-   *                       type: string
-   *                       description: Agent description
-   *                       nullable: true
-   *                     imageUrl:
-   *                       type: string
-   *                       description: URL to agent's image
-   *                       nullable: true
-   *                     metadata:
-   *                       type: object
-   *                       description: Optional metadata for the agent
-   *                       example: { "strategy": "yield-farming", "risk": "medium" }
-   *                       nullable: true
-   *                     apiKey:
-   *                       type: string
-   *                       description: API key for the agent to use with Bearer authentication. Admin should securely provide this to the user.
-   *                       example: abc123def456_ghi789jkl012
-   *                     status:
-   *                       type: string
-   *                       description: Agent status
-   *                     createdAt:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Agent creation timestamp
-   *                     updatedAt:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Agent updated timestamp
-   *                 agentError:
-   *                   type: string
-   *                   nullable: true
-   *                   description: Error message if agent creation failed
+   *                       description: Error message if agent creation failed
    *       400:
    *         description: Missing required parameters or invalid wallet address
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       409:
    *         description: User with this wallet address already exists
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.post("/users", controller.registerUser);
 
@@ -872,53 +740,27 @@ export function configureAdminRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 users:
-   *                   type: array
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       id:
-   *                         type: string
-   *                         description: User ID
-   *                       walletAddress:
-   *                         type: string
-   *                         description: User wallet address
-   *                       name:
-   *                         type: string
-   *                         description: User name
-   *                         nullable: true
-   *                       email:
-   *                         type: string
-   *                         description: User email
-   *                         nullable: true
-   *                       status:
-   *                         type: string
-   *                         description: User status
-   *                       imageUrl:
-   *                         type: string
-   *                         description: URL to the user's image
-   *                         nullable: true
-   *                       metadata:
-   *                         type: object
-   *                         description: User metadata
-   *                         nullable: true
-   *                       createdAt:
-   *                         type: string
-   *                         format: date-time
-   *                         description: Account creation timestamp
-   *                       updatedAt:
-   *                         type: string
-   *                         format: date-time
-   *                         description: Account update timestamp
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [users]
+   *                   properties:
+   *                     users:
+   *                       type: array
+   *                       items:
+   *                         $ref: '#/components/schemas/OwnerInfo'
    *       401:
    *         description: Unauthorized - Admin authentication required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/users", controller.listAllUsers);
 
@@ -938,56 +780,27 @@ export function configureAdminRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 agents:
-   *                   type: array
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       id:
-   *                         type: string
-   *                         description: Agent ID
-   *                       ownerId:
-   *                         type: string
-   *                         description: Agent owner ID
-   *                       name:
-   *                         type: string
-   *                         description: Agent name
-   *                       email:
-   *                         type: string
-   *                         description: Agent email
-   *                         nullable: true
-   *                       description:
-   *                         type: string
-   *                         description: Agent description
-   *                         nullable: true
-   *                       status:
-   *                         type: string
-   *                         description: Agent status
-   *                       imageUrl:
-   *                         type: string
-   *                         description: URL to the agent's image
-   *                         nullable: true
-   *                       metadata:
-   *                         type: object
-   *                         description: Optional metadata for the agent
-   *                         nullable: true
-   *                       createdAt:
-   *                         type: string
-   *                         format: date-time
-   *                         description: Agent creation timestamp
-   *                       updatedAt:
-   *                         type: string
-   *                         format: date-time
-   *                         description: Agent update timestamp
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [agents]
+   *                   properties:
+   *                     agents:
+   *                       type: array
+   *                       items:
+   *                         $ref: '#/components/schemas/AgentPublic'
    *       401:
    *         description: Unauthorized - Admin authentication required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/agents", controller.listAllAgents);
 
@@ -1007,27 +820,26 @@ export function configureAdminRoutes(
    *         application/json:
    *           schema:
    *             type: object
-   *             required:
-   *               - user
-   *               - agent
+   *             required: [user, agent]
    *             properties:
    *               user:
    *                 type: object
    *                 properties:
    *                   id:
    *                     type: string
+   *                     format: uuid
    *                     description: The user ID (owner) of the agent. Must be provided if userWalletAddress is not provided.
    *                     example: 12345678-1234-1234-1234-123456789012
    *                     nullable: true
    *                   walletAddress:
    *                     type: string
+   *                     pattern: '^0x[a-fA-F0-9]{40}$'
    *                     description: The user (owner) wallet address. Must be provided if userId is not provided.
    *                     example: 0x1234567890123456789012345678901234567890
    *                     nullable: true
    *               agent:
    *                 type: object
-   *                 required:
-   *                   - name
+   *                 required: [name]
    *                 properties:
    *                   name:
    *                     type: string
@@ -1035,11 +847,13 @@ export function configureAdminRoutes(
    *                     example: My Agent
    *                   walletAddress:
    *                     type: string
+   *                     pattern: '^0x[a-fA-F0-9]{40}$'
    *                     description: The agent wallet address. Must be provided if userWalletAddress is not provided.
    *                     example: 0x1234567890123456789012345678901234567890
    *                     nullable: true
    *                   email:
    *                     type: string
+   *                     format: email
    *                     description: Agent email
    *                     nullable: true
    *                   description:
@@ -1061,66 +875,43 @@ export function configureAdminRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 agent:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [agent]
    *                   properties:
-   *                     id:
-   *                       type: string
-   *                       description: Agent ID
-   *                     ownerId:
-   *                       type: string
-   *                       description: Agent owner ID
-   *                     name:
-   *                       type: string
-   *                       description: Agent name
-   *                     walletAddress:
-   *                       type: string
-   *                       description: Agent wallet address
-   *                       nullable: true
-   *                     email:
-   *                       type: string
-   *                       description: Agent email
-   *                       nullable: true
-   *                     description:
-   *                       type: string
-   *                       description: Agent description
-   *                       nullable: true
-   *                     imageUrl:
-   *                       type: string
-   *                       description: URL to agent's image
-   *                       nullable: true
-   *                     metadata:
-   *                       type: object
-   *                       description: Optional metadata for the agent
-   *                       example: { "strategy": "yield-farming", "risk": "medium" }
-   *                       nullable: true
-   *                     apiKey:
-   *                       type: string
-   *                       description: API key for the agent to use with Bearer authentication. Admin should securely provide this to the agent.
-   *                     status:
-   *                       type: string
-   *                       description: Agent status
-   *                     createdAt:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Agent creation timestamp
-   *                     updatedAt:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Agent update timestamp
+   *                     agent:
+   *                       allOf:
+   *                         - $ref: '#/components/schemas/AgentPublic'
+   *                         - type: object
+   *                           properties:
+   *                             apiKey:
+   *                               type: string
+   *                               description: API key for the agent to use with Bearer authentication. Admin should securely provide this to the agent.
    *       400:
    *         description: Missing required parameters or invalid wallet address
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
    *         description: User not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       409:
    *         description: User with this wallet address already exists
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.post("/agents", controller.registerAgent);
 
@@ -1139,6 +930,7 @@ export function configureAdminRoutes(
    *         name: agentId
    *         schema:
    *           type: string
+   *           format: uuid
    *         required: true
    *         description: ID of the agent
    *     responses:
@@ -1147,29 +939,43 @@ export function configureAdminRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 agent:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [agent]
    *                   properties:
-   *                     id:
-   *                       type: string
-   *                       description: Agent ID
-   *                     name:
-   *                       type: string
-   *                       description: Agent name
-   *                     apiKey:
-   *                       type: string
-   *                       description: The agent's API key
+   *                     agent:
+   *                       type: object
+   *                       required: [id, name, apiKey]
+   *                       properties:
+   *                         id:
+   *                           type: string
+   *                           format: uuid
+   *                           description: Agent ID
+   *                         name:
+   *                           type: string
+   *                           description: Agent name
+   *                         apiKey:
+   *                           type: string
+   *                           description: The agent's API key
    *       401:
    *         description: Unauthorized - Admin authentication required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
    *         description: Agent not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/agents/:agentId/key", controller.getAgentApiKey);
 
@@ -1188,6 +994,7 @@ export function configureAdminRoutes(
    *         name: agentId
    *         schema:
    *           type: string
+   *           format: uuid
    *         required: true
    *         description: ID of the agent to delete
    *     responses:
@@ -1196,22 +1003,38 @@ export function configureAdminRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 message:
-   *                   type: string
-   *                   description: Success message
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [message]
+   *                   properties:
+   *                     message:
+   *                       type: string
+   *                       description: Success message
    *       400:
    *         description: Agent ID is required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: Unauthorized - Admin authentication required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
    *         description: Agent not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.delete("/agents/:agentId", controller.deleteAgent);
 
@@ -1230,6 +1053,7 @@ export function configureAdminRoutes(
    *         name: agentId
    *         schema:
    *           type: string
+   *           format: uuid
    *         required: true
    *         description: ID of the agent to deactivate
    *     requestBody:
@@ -1238,8 +1062,7 @@ export function configureAdminRoutes(
    *         application/json:
    *           schema:
    *             type: object
-   *             required:
-   *               - reason
+   *             required: [reason]
    *             properties:
    *               reason:
    *                 type: string
@@ -1251,31 +1074,49 @@ export function configureAdminRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 agent:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [agent]
    *                   properties:
-   *                     id:
-   *                       type: string
-   *                       description: Agent ID
-   *                     name:
-   *                       type: string
-   *                       description: Agent name
-   *                     status:
-   *                       type: string
-   *                       description: Agent status (will be inactive)
+   *                     agent:
+   *                       type: object
+   *                       required: [id, name, status]
+   *                       properties:
+   *                         id:
+   *                           type: string
+   *                           format: uuid
+   *                           description: Agent ID
+   *                         name:
+   *                           type: string
+   *                           description: Agent name
+   *                         status:
+   *                           type: string
+   *                           description: Agent status (will be inactive)
    *       400:
    *         description: Missing required parameters
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: Unauthorized - Admin authentication required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
    *         description: Agent not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.post("/agents/:agentId/deactivate", controller.deactivateAgent);
 
@@ -1294,6 +1135,7 @@ export function configureAdminRoutes(
    *         name: agentId
    *         schema:
    *           type: string
+   *           format: uuid
    *         required: true
    *         description: ID of the agent to reactivate
    *     responses:
@@ -1302,31 +1144,49 @@ export function configureAdminRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 agent:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [agent]
    *                   properties:
-   *                     id:
-   *                       type: string
-   *                       description: Agent ID
-   *                     name:
-   *                       type: string
-   *                       description: Agent name
-   *                     status:
-   *                       type: string
-   *                       description: Agent status (will be active)
+   *                     agent:
+   *                       type: object
+   *                       required: [id, name, status]
+   *                       properties:
+   *                         id:
+   *                           type: string
+   *                           format: uuid
+   *                           description: Agent ID
+   *                         name:
+   *                           type: string
+   *                           description: Agent name
+   *                         status:
+   *                           type: string
+   *                           description: Agent status (will be active)
    *       400:
    *         description: Agent ID is required or agent is already active
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: Unauthorized - Admin authentication required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
    *         description: Agent not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.post("/agents/:agentId/reactivate", controller.reactivateAgent);
 
@@ -1345,6 +1205,7 @@ export function configureAdminRoutes(
    *         name: agentId
    *         schema:
    *           type: string
+   *           format: uuid
    *         required: true
    *         description: ID of the agent
    *     responses:
@@ -1353,50 +1214,37 @@ export function configureAdminRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 agent:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [agent]
    *                   properties:
-   *                     id:
-   *                       type: string
-   *                       description: Agent ID
-   *                     ownerId:
-   *                       type: string
-   *                       description: Agent owner ID
-   *                     name:
-   *                       type: string
-   *                       description: Agent name
-   *                     description:
-   *                       type: string
-   *                       description: Agent description
-   *                       nullable: true
-   *                     status:
-   *                       type: string
-   *                       description: Agent status
-   *                     imageUrl:
-   *                       type: string
-   *                       description: URL to the agent's image
-   *                       nullable: true
-   *                     createdAt:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Agent creation timestamp
-   *                     updatedAt:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Agent update timestamp
+   *                     agent:
+   *                       $ref: '#/components/schemas/AgentPublic'
    *       400:
    *         description: Agent ID is required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: Unauthorized - Admin authentication required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
    *         description: Agent not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/agents/:agentId", controller.getAgent);
 
@@ -1441,6 +1289,7 @@ export function configureAdminRoutes(
    *         name: agent.ownerId
    *         schema:
    *           type: string
+   *           format: uuid
    *         description: Filter by agent owner ID
    *       - in: query
    *         name: agent.walletAddress
@@ -1465,84 +1314,46 @@ export function configureAdminRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 join:
-   *                   type: boolean
-   *                   description: Whether to "join" the results with a left join on the users table
-   *                 results:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [join, results]
    *                   properties:
-   *                     users:
-   *                       type: array
-   *                       items:
-   *                         type: object
-   *                         properties:
-   *                           type:
-   *                             type: string
-   *                             example: user
-   *                           id:
-   *                             type: string
-   *                           walletAddress:
-   *                             type: string
-   *                           name:
-   *                             type: string
-   *                             nullable: true
-   *                           email:
-   *                             type: string
-   *                             nullable: true
-   *                           status:
-   *                             type: string
-   *                           imageUrl:
-   *                             type: string
-   *                             nullable: true
-   *                           createdAt:
-   *                             type: string
-   *                             format: date-time
-   *                           updatedAt:
-   *                             type: string
-   *                             format: date-time
-   *                     agents:
-   *                       type: array
-   *                       items:
-   *                         type: object
-   *                         properties:
-   *                           type:
-   *                             type: string
-   *                             example: agent
-   *                           id:
-   *                             type: string
-   *                           ownerId:
-   *                             type: string
-   *                           name:
-   *                             type: string
-   *                           description:
-   *                             type: string
-   *                             nullable: true
-   *                           email:
-   *                             type: string
-   *                             nullable: true
-   *                           metadata:
-   *                             type: object
-   *                             nullable: true
-   *                           status:
-   *                             type: string
-   *                           imageUrl:
-   *                             type: string
-   *                             nullable: true
-   *                           createdAt:
-   *                             type: string
-   *                             format: date-time
-   *                           updatedAt:
-   *                             type: string
-   *                             format: date-time
+   *                     join:
+   *                       type: boolean
+   *                       description: Whether to "join" the results with a left join on the users table
+   *                     results:
+   *                       type: object
+   *                       required: [users, agents]
+   *                       properties:
+   *                         users:
+   *                           type: array
+   *                           items:
+   *                             allOf:
+   *                               - $ref: '#/components/schemas/OwnerInfo'
+   *                               - type: object
+   *                                 properties:
+   *                                   type:
+   *                                     type: string
+   *                                     example: user
+   *                         agents:
+   *                           type: array
+   *                           items:
+   *                             allOf:
+   *                               - $ref: '#/components/schemas/AgentPublic'
+   *                               - type: object
+   *                                 properties:
+   *                                   type:
+   *                                     type: string
+   *                                     example: agent
    *       401:
    *         description: Unauthorized - Admin authentication required
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/search", controller.searchUsersAndAgents);
 
@@ -1565,6 +1376,7 @@ export function configureAdminRoutes(
    *             properties:
    *               competitionId:
    *                 type: string
+   *                 format: uuid
    *                 description: ID of specific competition to sync (optional, syncs all if not provided)
    *               dataTypes:
    *                 type: array
@@ -1578,26 +1390,34 @@ export function configureAdminRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 message:
-   *                   type: string
-   *                   description: Success message
-   *                 dataTypes:
-   *                   type: array
-   *                   items:
-   *                     type: string
-   *                   description: Data types that were synced
-   *                 competitionId:
-   *                   type: string
-   *                   description: Competition ID that was synced (or 'all')
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [message, dataTypes, competitionId]
+   *                   properties:
+   *                     message:
+   *                       type: string
+   *                       description: Success message
+   *                     dataTypes:
+   *                       type: array
+   *                       items:
+   *                         type: string
+   *                       description: Data types that were synced
+   *                     competitionId:
+   *                       type: string
+   *                       description: Competition ID that was synced (or 'all')
    *       401:
    *         description: Unauthorized - Admin authentication required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.post("/object-index/sync", controller.syncObjectIndex);
 
@@ -1651,53 +1471,57 @@ export function configureAdminRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                 data:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [data]
    *                   properties:
-   *                     entries:
-   *                       type: array
-   *                       items:
-   *                         type: object
-   *                         properties:
-   *                           id:
-   *                             type: string
-   *                           competitionId:
-   *                             type: string
-   *                           agentId:
-   *                             type: string
-   *                           dataType:
-   *                             type: string
-   *                           data:
-   *                             type: string
-   *                           sizeBytes:
-   *                             type: integer
-   *                           metadata:
-   *                             type: object
-   *                           eventTimestamp:
-   *                             type: string
-   *                             format: date-time
-   *                           createdAt:
-   *                             type: string
-   *                             format: date-time
-   *                     pagination:
+   *                     data:
    *                       type: object
+   *                       required: [entries, pagination]
    *                       properties:
-   *                         total:
-   *                           type: integer
-   *                         limit:
-   *                           type: integer
-   *                         offset:
-   *                           type: integer
+   *                         entries:
+   *                           type: array
+   *                           items:
+   *                             type: object
+   *                             required: [id, competitionId, agentId, dataType, data, sizeBytes, eventTimestamp, createdAt]
+   *                             properties:
+   *                               id:
+   *                                 type: string
+   *                                 format: uuid
+   *                               competitionId:
+   *                                 type: string
+   *                                 format: uuid
+   *                               agentId:
+   *                                 type: string
+   *                                 format: uuid
+   *                               dataType:
+   *                                 type: string
+   *                               data:
+   *                                 type: string
+   *                               sizeBytes:
+   *                                 type: integer
+   *                               metadata:
+   *                                 type: object
+   *                                 nullable: true
+   *                               eventTimestamp:
+   *                                 type: string
+   *                                 format: date-time
+   *                               createdAt:
+   *                                 type: string
+   *                                 format: date-time
+   *                         pagination:
+   *                           $ref: '#/components/schemas/PaginationMeta'
    *       400:
    *         description: Bad request - Invalid parameters
    *       401:
    *         description: Unauthorized - Admin authentication required
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/object-index", controller.getObjectIndex);
 
@@ -1716,12 +1540,14 @@ export function configureAdminRoutes(
    *         name: competitionId
    *         schema:
    *           type: string
+   *           format: uuid
    *         required: true
    *         description: ID of the competition
    *       - in: path
    *         name: agentId
    *         schema:
    *           type: string
+   *           format: uuid
    *         required: true
    *         description: ID of the agent to remove
    *     requestBody:
@@ -1730,8 +1556,7 @@ export function configureAdminRoutes(
    *         application/json:
    *           schema:
    *             type: object
-   *             required:
-   *               - reason
+   *             required: [reason]
    *             properties:
    *               reason:
    *                 type: string
@@ -1743,39 +1568,59 @@ export function configureAdminRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 message:
-   *                   type: string
-   *                   description: Success message
-   *                 agent:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [message, agent, competition, reason]
    *                   properties:
-   *                     id:
+   *                     message:
    *                       type: string
-   *                     name:
+   *                       description: Success message
+   *                     agent:
+   *                       type: object
+   *                       required: [id, name]
+   *                       properties:
+   *                         id:
+   *                           type: string
+   *                           format: uuid
+   *                         name:
+   *                           type: string
+   *                     competition:
+   *                       type: object
+   *                       required: [id, name]
+   *                       properties:
+   *                         id:
+   *                           type: string
+   *                           format: uuid
+   *                         name:
+   *                           type: string
+   *                     reason:
    *                       type: string
-   *                 competition:
-   *                   type: object
-   *                   properties:
-   *                     id:
-   *                       type: string
-   *                     name:
-   *                       type: string
-   *                 reason:
-   *                   type: string
-   *                   description: Reason for removal
+   *                       description: Reason for removal
    *       400:
    *         description: Bad request - missing parameters or agent not in competition
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: Unauthorized - Admin authentication required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
    *         description: Competition or agent not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.post(
     "/competitions/:competitionId/agents/:agentId/remove",
@@ -1797,12 +1642,14 @@ export function configureAdminRoutes(
    *         name: competitionId
    *         schema:
    *           type: string
+   *           format: uuid
    *         required: true
    *         description: ID of the competition
    *       - in: path
    *         name: agentId
    *         schema:
    *           type: string
+   *           format: uuid
    *         required: true
    *         description: ID of the agent to reactivate
    *     responses:
@@ -1811,28 +1658,32 @@ export function configureAdminRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 message:
-   *                   type: string
-   *                   description: Success message
-   *                 agent:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [message, agent, competition]
    *                   properties:
-   *                     id:
+   *                     message:
    *                       type: string
-   *                     name:
-   *                       type: string
-   *                 competition:
-   *                   type: object
-   *                   properties:
-   *                     id:
-   *                       type: string
-   *                     name:
-   *                       type: string
+   *                       description: Success message
+   *                     agent:
+   *                       type: object
+   *                       required: [id, name]
+   *                       properties:
+   *                         id:
+   *                           type: string
+   *                           format: uuid
+   *                         name:
+   *                           type: string
+   *                     competition:
+   *                       type: object
+   *                       required: [id, name]
+   *                       properties:
+   *                         id:
+   *                           type: string
+   *                           format: uuid
+   *                         name:
+   *                           type: string
    *       400:
    *         description: Bad request - agent not in competition or competition ended
    *       401:
