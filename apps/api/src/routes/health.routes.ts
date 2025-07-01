@@ -26,24 +26,31 @@ export function configureHealthRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 status:
-   *                   type: string
-   *                   description: Health status of the API
-   *                   example: ok
-   *                 timestamp:
-   *                   type: string
-   *                   format: date-time
-   *                   description: Current server time
-   *                 uptime:
-   *                   type: number
-   *                   description: Server uptime in seconds
-   *                 version:
-   *                   type: string
-   *                   description: API version
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [status, timestamp, uptime, version]
+   *                   properties:
+   *                     status:
+   *                       type: string
+   *                       description: Health status of the API
+   *                       example: ok
+   *                     timestamp:
+   *                       type: string
+   *                       format: date-time
+   *                       description: Current server time
+   *                     uptime:
+   *                       type: number
+   *                       description: Server uptime in seconds
+   *                     version:
+   *                       type: string
+   *                       description: API version
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/", controller.check);
 
@@ -61,51 +68,59 @@ export function configureHealthRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 status:
-   *                   type: string
-   *                   description: Overall health status of the API
-   *                   example: ok
-   *                 timestamp:
-   *                   type: string
-   *                   format: date-time
-   *                   description: Current server time
-   *                 uptime:
-   *                   type: number
-   *                   description: Server uptime in seconds
-   *                 version:
-   *                   type: string
-   *                   description: API version
-   *                 services:
-   *                   type: object
-   *                   description: Status of individual services
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [status, timestamp, uptime, version, services]
    *                   properties:
-   *                     priceTracker:
+   *                     status:
    *                       type: string
-   *                       description: Status of the price tracker service
+   *                       description: Overall health status of the API
    *                       example: ok
-   *                     balanceManager:
+   *                     timestamp:
    *                       type: string
-   *                       description: Status of the balance manager service
-   *                       example: ok
-   *                     tradeSimulator:
+   *                       format: date-time
+   *                       description: Current server time
+   *                     uptime:
+   *                       type: number
+   *                       description: Server uptime in seconds
+   *                     version:
    *                       type: string
-   *                       description: Status of the trade simulator service
-   *                       example: ok
-   *                     competitionManager:
-   *                       type: string
-   *                       description: Status of the competition manager service
-   *                       example: ok
-   *                     userManager:
-   *                       type: string
-   *                       description: Status of the user manager service
-   *                       example: ok
-   *                     agentManager:
-   *                       type: string
-   *                       description: Status of the agent manager service
+   *                       description: API version
+   *                     services:
+   *                       type: object
+   *                       description: Status of individual services
+   *                       properties:
+   *                         priceTracker:
+   *                           type: string
+   *                           description: Status of the price tracker service
+   *                           example: ok
+   *                         balanceManager:
+   *                           type: string
+   *                           description: Status of the balance manager service
+   *                           example: ok
+   *                         tradeSimulator:
+   *                           type: string
+   *                           description: Status of the trade simulator service
+   *                           example: ok
+   *                         competitionManager:
+   *                           type: string
+   *                           description: Status of the competition manager service
+   *                           example: ok
+   *                         userManager:
+   *                           type: string
+   *                           description: Status of the user manager service
+   *                           example: ok
+   *                         agentManager:
+   *                           type: string
+   *                           description: Status of the agent manager service
+   *                           example: ok
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/detailed", controller.detailed);
 
