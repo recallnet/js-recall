@@ -25,23 +25,21 @@ export function configureAuthRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               required:
-   *                 - nonce
-   *               properties:
-   *                 nonce:
-   *                   type: string
-   *                   description: The nonce to be used in the SIWE message
-   *                   example: "8J0eXAiOiJ..."
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [nonce]
+   *                   properties:
+   *                     nonce:
+   *                       type: string
+   *                       description: The nonce to be used in the SIWE message
+   *                       example: "8J0eXAiOiJ..."
    *       500:
    *         description: Internal server error
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 error:
-   *                   type: string
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/nonce", controller.getNonce);
 
@@ -64,25 +62,27 @@ export function configureAuthRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               required:
-   *                 - nonce
-   *               properties:
-   *                 nonce:
-   *                   type: string
-   *                   description: The nonce to be used in agent wallet verification
-   *                   example: "8J0eXAiOiJ..."
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [nonce]
+   *                   properties:
+   *                     nonce:
+   *                       type: string
+   *                       description: The nonce to be used in agent wallet verification
+   *                       example: "8J0eXAiOiJ..."
    *       401:
    *         description: Agent authentication required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Internal server error
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 error:
-   *                   type: string
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/agent/nonce", agentAuthMiddleware, controller.getAgentNonce);
 
@@ -99,9 +99,7 @@ export function configureAuthRoutes(
    *         application/json:
    *           schema:
    *             type: object
-   *             required:
-   *               - message
-   *               - signature
+   *             required: [message, signature]
    *             properties:
    *               message:
    *                 type: string
@@ -117,41 +115,32 @@ export function configureAuthRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               required:
-   *                 - agentId
-   *                 - wallet
-   *               properties:
-   *                 agentId:
-   *                   type: string
-   *                   nullable: true
-   *                   description: The ID of the authenticated agent
-   *                   example: "agent_123abc"
-   *                 wallet:
-   *                   type: string
-   *                   description: The wallet address of the authenticated agent
-   *                   example: "0x123..."
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [agentId, wallet]
+   *                   properties:
+   *                     agentId:
+   *                       type: string
+   *                       nullable: true
+   *                       description: The ID of the authenticated agent
+   *                       example: "agent_123abc"
+   *                     wallet:
+   *                       type: string
+   *                       description: The wallet address of the authenticated agent
+   *                       example: "0x123..."
    *       401:
    *         description: Authentication failed
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               required:
-   *                 - error
-   *               properties:
-   *                 error:
-   *                   type: string
-   *                   example: "Unauthorized: signature validation issues"
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Internal server error
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 error:
-   *                   type: string
+   *               $ref: '#/components/schemas/Error'
    */
   router.post("/login", controller.login);
 
@@ -170,9 +159,7 @@ export function configureAuthRoutes(
    *         application/json:
    *           schema:
    *             type: object
-   *             required:
-   *               - message
-   *               - signature
+   *             required: [message, signature]
    *             properties:
    *               message:
    *                 type: string
@@ -192,24 +179,36 @@ export function configureAuthRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 walletAddress:
-   *                   type: string
-   *                   description: The verified wallet address
-   *                   example: "0x123..."
-   *                 message:
-   *                   type: string
-   *                   example: "Wallet verified successfully"
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [walletAddress, message]
+   *                   properties:
+   *                     walletAddress:
+   *                       type: string
+   *                       description: The verified wallet address
+   *                       example: "0x123..."
+   *                     message:
+   *                       type: string
+   *                       example: "Wallet verified successfully"
    *       400:
    *         description: Invalid message format or signature verification failed
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: Agent authentication required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       409:
    *         description: Wallet address already in use
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.post("/verify", agentAuthMiddleware, controller.verifyAgentWallet);
 
@@ -226,22 +225,20 @@ export function configureAuthRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               required:
-   *                 - message
-   *               properties:
-   *                 message:
-   *                   type: string
-   *                   example: "Logged out successfully"
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [message]
+   *                   properties:
+   *                     message:
+   *                       type: string
+   *                       example: "Logged out successfully"
    *       500:
    *         description: Internal server error
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 error:
-   *                   type: string
+   *               $ref: '#/components/schemas/Error'
    */
   router.post("/logout", controller.logout);
 
