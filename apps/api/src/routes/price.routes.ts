@@ -33,16 +33,14 @@ export function configurePriceRoutes(
    *       - in: query
    *         name: chain
    *         schema:
-   *           type: string
-   *           enum: [evm, svm]
+   *           $ref: '#/components/schemas/BlockchainType'
    *         required: false
    *         description: Blockchain type of the token
    *         example: svm
    *       - in: query
    *         name: specificChain
    *         schema:
-   *           type: string
-   *           enum: [eth, polygon, bsc, arbitrum, optimism, avalanche, base, linea, zksync, scroll, mantle, svm]
+   *           $ref: '#/components/schemas/SpecificChain'
    *         required: false
    *         description: Specific chain for EVM tokens
    *         example: eth
@@ -52,33 +50,33 @@ export function configurePriceRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Whether the price was successfully retrieved
-   *                 price:
-   *                   type: number
-   *                   nullable: true
-   *                   description: Current price of the token in USD
-   *                 token:
-   *                   type: string
-   *                   description: Token address
-   *                 chain:
-   *                   type: string
-   *                   enum: [evm, svm]
-   *                   description: Blockchain type of the token
-   *                 specificChain:
-   *                   type: string
-   *                   nullable: true
-   *                   description: Specific chain for EVM tokens
-   *                 symbol:
-   *                   type: string
-   *                   description: Token symbol
-   *                 timestamp:
-   *                   type: string
-   *                   format: date-time
-   *                   description: Timestamp when the price was fetched
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [price, token, chain, symbol, timestamp]
+   *                   properties:
+   *                     price:
+   *                       type: number
+   *                       nullable: true
+   *                       description: Current price of the token in USD
+   *                     token:
+   *                       type: string
+   *                       description: Token address
+   *                     chain:
+   *                       $ref: '#/components/schemas/BlockchainType'
+   *                       description: Blockchain type of the token
+   *                     specificChain:
+   *                       allOf:
+   *                         - $ref: '#/components/schemas/SpecificChain'
+   *                         - nullable: true
+   *                       description: Specific chain for EVM tokens
+   *                     symbol:
+   *                       type: string
+   *                       description: Token symbol
+   *                     timestamp:
+   *                       type: string
+   *                       format: date-time
+   *                       description: Timestamp when the price was fetched
    *       400:
    *         description: Invalid request parameters
    *         content:
@@ -87,8 +85,16 @@ export function configurePriceRoutes(
    *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: Unauthorized - Missing or invalid authentication
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/", controller.getPrice);
 
@@ -113,16 +119,14 @@ export function configurePriceRoutes(
    *       - in: query
    *         name: chain
    *         schema:
-   *           type: string
-   *           enum: [evm, svm]
+   *           $ref: '#/components/schemas/BlockchainType'
    *         required: false
    *         description: Blockchain type of the token
    *         example: svm
    *       - in: query
    *         name: specificChain
    *         schema:
-   *           type: string
-   *           enum: [eth, polygon, bsc, arbitrum, optimism, avalanche, base, linea, zksync, scroll, mantle, svm]
+   *           $ref: '#/components/schemas/SpecificChain'
    *         required: false
    *         description: Specific chain for EVM tokens
    *         example: eth
@@ -132,29 +136,29 @@ export function configurePriceRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Whether the token information was successfully retrieved
-   *                 price:
-   *                   type: number
-   *                   nullable: true
-   *                   description: Current price of the token in USD
-   *                 token:
-   *                   type: string
-   *                   description: Token address
-   *                 chain:
-   *                   type: string
-   *                   enum: [evm, svm]
-   *                   description: Blockchain type of the token
-   *                 specificChain:
-   *                   type: string
-   *                   nullable: true
-   *                   description: Specific chain for EVM tokens
-   *                 symbol:
-   *                   type: string
-   *                   description: Token symbol
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [price, token, chain, symbol]
+   *                   properties:
+   *                     price:
+   *                       type: number
+   *                       nullable: true
+   *                       description: Current price of the token in USD
+   *                     token:
+   *                       type: string
+   *                       description: Token address
+   *                     chain:
+   *                       $ref: '#/components/schemas/BlockchainType'
+   *                       description: Blockchain type of the token
+   *                     specificChain:
+   *                       allOf:
+   *                         - $ref: '#/components/schemas/SpecificChain'
+   *                         - nullable: true
+   *                       description: Specific chain for EVM tokens
+   *                     symbol:
+   *                       type: string
+   *                       description: Token symbol
    *       400:
    *         description: Invalid request parameters
    *         content:
@@ -163,8 +167,16 @@ export function configurePriceRoutes(
    *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: Unauthorized - Missing or invalid authentication
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/token-info", controller.getTokenInfo);
 
