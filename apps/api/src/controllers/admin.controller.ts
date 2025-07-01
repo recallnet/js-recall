@@ -10,16 +10,18 @@ import { ServiceRegistry } from "@/services/index.js";
 import {
   ActorStatus,
   AdminCreateAgentSchema,
-  AgentSearchParams,
   COMPETITION_STATUS,
   CROSS_CHAIN_TRADING_TYPE,
   SYNC_DATA_TYPE,
   SyncDataType,
   SyncDataTypeSchema,
-  UserSearchParams,
 } from "@/types/index.js";
 
-import { ensureCompetitionUpdate, ensureUuid } from "./request-helpers.js";
+import {
+  ensureCompetitionUpdate,
+  ensureUuid,
+  parseAdminSearchQuery,
+} from "./request-helpers.js";
 
 // TODO: need user deactivation logic
 
@@ -72,7 +74,7 @@ interface AdminSearchResults {
 
 export interface AdminSearchUsersAndAgentsResponse {
   success: boolean;
-  searchType: string;
+  join: boolean;
   results: AdminSearchResults;
 }
 
@@ -1129,43 +1131,23 @@ export function makeAdminController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        const {
-          email,
-          name,
-          walletAddress,
-          status,
-          searchType, // 'users', 'agents', or 'both' (default)
-        } = req.query;
-
-        const searchTypeFilter = (searchType as string) || "both";
+        // Note: special parsing is required to support nested query params
+        const { user, agent, join } = parseAdminSearchQuery(req.url);
         const results: AdminSearchResults = {
           users: [],
           agents: [],
         };
 
         // Search users if requested
-        if (searchTypeFilter === "users" || searchTypeFilter === "both") {
-          const userSearchParams: UserSearchParams = {};
-
-          if (email) userSearchParams.email = email as string;
-          if (name) userSearchParams.name = name as string;
-          if (walletAddress)
-            userSearchParams.walletAddress = walletAddress as string;
-          if (status)
-            userSearchParams.status = status as
-              | "active"
-              | "suspended"
-              | "deleted";
-
-          const users =
-            await services.userManager.searchUsers(userSearchParams);
+        if (user) {
+          const users = await services.userManager.searchUsers(user);
 
           results.users = users.map((user) => ({
             id: user.id,
             walletAddress: user.walletAddress,
             name: user.name,
             email: user.email,
-            status: user.status as ActorStatus,
+            status: user.status,
             imageUrl: user.imageUrl,
             metadata: user.metadata,
             createdAt: user.createdAt,
@@ -1174,18 +1156,8 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // Search agents if requested
-        if (searchTypeFilter === "agents" || searchTypeFilter === "both") {
-          const agentSearchParams: AgentSearchParams = {};
-
-          if (name) agentSearchParams.name = name as string;
-          if (status)
-            agentSearchParams.status = status as
-              | "active"
-              | "suspended"
-              | "deleted";
-
-          const agents =
-            await services.agentManager.searchAgents(agentSearchParams);
+        if (agent) {
+          const agents = await services.agentManager.searchAgents(agent);
 
           results.agents = agents.map((agent) => ({
             id: agent.id,
@@ -1193,7 +1165,7 @@ export function makeAdminController(services: ServiceRegistry) {
             walletAddress: agent.walletAddress,
             name: agent.name,
             description: agent.description,
-            status: agent.status as ActorStatus,
+            status: agent.status,
             imageUrl: agent.imageUrl,
             metadata: agent.metadata,
             email: agent.email,
@@ -1202,10 +1174,24 @@ export function makeAdminController(services: ServiceRegistry) {
           }));
         }
 
+        if (join) {
+          const userMap = new Map(results.users.map((user) => [user.id, user]));
+
+          results.agents = results.agents
+            .map((agent) => {
+              const user = userMap.get(agent.ownerId);
+              if (!user) return null;
+              return {
+                ...agent,
+              };
+            })
+            .filter((entry) => entry !== null);
+        }
+
         // Return the search results
         res.status(200).json({
           success: true,
-          searchType: searchTypeFilter,
+          join,
           results,
         });
       } catch (error) {

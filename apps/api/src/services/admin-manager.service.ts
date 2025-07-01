@@ -17,7 +17,7 @@ import {
   updatePassword,
 } from "@/database/repositories/admin-repository.js";
 import { InsertAdmin, SelectAdmin } from "@/database/schema/core/types.js";
-import { AdminMetadata, AdminSearchParams } from "@/types/index.js";
+import { AdminMetadata, SearchAdminsParams } from "@/types/index.js";
 
 /**
  * Admin Manager Service
@@ -623,7 +623,7 @@ export class AdminManager {
    * @param searchParams Object containing search parameters
    * @returns Array of admins matching the search criteria
    */
-  async searchAdmins(searchParams: AdminSearchParams) {
+  async searchAdmins(searchParams: SearchAdminsParams) {
     try {
       return await searchAdmins(searchParams);
     } catch (error) {

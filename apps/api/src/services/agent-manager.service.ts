@@ -33,6 +33,7 @@ import {
   getAgentPortfolioSnapshots,
   getBulkAgentCompetitionRankings,
 } from "@/database/repositories/competition-repository.js";
+import { createEmailVerificationToken } from "@/database/repositories/email-verification-repository.js";
 import { getBulkAgentMetrics } from "@/database/repositories/leaderboard-repository.js";
 import {
   countAgentTrades,
@@ -46,6 +47,7 @@ import {
   SelectCompetition,
 } from "@/database/schema/core/types.js";
 import { ApiError } from "@/middleware/errorHandler.js";
+import { EmailService } from "@/services/email.service.js";
 import {
   ACTOR_STATUS,
   AgentCompetitionsParams,
@@ -70,10 +72,13 @@ export class AgentManager {
   private apiKeyCache: Map<string, ApiAuth>;
   // Cache for inactive agents to avoid repeated database lookups
   private inactiveAgentsCache: Map<string, { reason: string; date: Date }>;
+  // Email service for sending verification emails
+  private emailService: EmailService;
 
-  constructor() {
+  constructor(emailService: EmailService) {
     this.apiKeyCache = new Map();
     this.inactiveAgentsCache = new Map();
+    this.emailService = emailService;
   }
 
   /**
@@ -144,6 +149,10 @@ export class AgentManager {
         agentId: id,
         key: apiKey,
       });
+
+      if (email) {
+        await this.sendEmailVerification(savedAgent);
+      }
 
       console.log(
         `[AgentManager] Created agent: ${name} (${id}) for owner ${ownerId}`,
@@ -637,6 +646,12 @@ export class AgentManager {
         return undefined;
       }
 
+      // Check if email has changed and needs verification
+      const emailChanged = agent.email && agent.email !== existingAgent.email;
+      if (emailChanged) {
+        agent.isEmailVerified = false;
+      }
+
       // Always set updated timestamp
       agent.updatedAt = new Date();
 
@@ -645,6 +660,11 @@ export class AgentManager {
       if (!updatedAgent) {
         console.log(`[AgentManager] Failed to update agent: ${agent.id}`);
         return undefined;
+      }
+
+      // Send verification email if email has changed
+      if (emailChanged && updatedAgent.email) {
+        await this.sendEmailVerification(updatedAgent);
       }
 
       console.log(
@@ -1863,6 +1883,112 @@ export class AgentManager {
     } catch (error) {
       console.error("[AgentManager] Error cleaning up expired nonces:", error);
       return 0;
+    }
+  }
+
+  /**
+   * Create a new email verification token for an agent
+   * @param agentId The ID of the agent to create a token for
+   * @param expiresInHours How many hours until the token expires (default: 24)
+   * @returns The created token string
+   */
+  private async createEmailVerificationToken(
+    agentId: string,
+    expiresInHours: number = 24,
+  ): Promise<string> {
+    try {
+      const token = uuidv4();
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + expiresInHours);
+
+      await createEmailVerificationToken({
+        id: uuidv4(),
+        agentId,
+        token,
+        expiresAt,
+      });
+
+      console.log(
+        `[AgentManager] Created email verification token for agent ${agentId}`,
+      );
+      return token;
+    } catch (error) {
+      console.error(
+        `[AgentManager] Error creating email verification token for agent ${agentId}:`,
+        error,
+      );
+      throw new Error(
+        `Failed to create email verification token: ${error instanceof Error ? error.message : error}`,
+      );
+    }
+  }
+
+  /**
+   * Send an email verification link to an agent
+   * @param agent The agent to send the verification email to
+   * @returns The created email verification token
+   */
+  private async sendEmailVerification(agent: SelectAgent): Promise<void> {
+    try {
+      if (!agent.email) {
+        console.warn(
+          `[AgentManager] Cannot send verification email: Agent ${agent.id} has no email address`,
+        );
+        return;
+      }
+
+      const tokenString = await this.createEmailVerificationToken(agent.id, 24);
+
+      await this.emailService.sendTransactionalEmail(agent.email, tokenString);
+
+      console.log(
+        `[AgentManager] Sent verification email to ${agent.email} for agent ${agent.id}`,
+      );
+    } catch (error) {
+      console.error(
+        `[AgentManager] Error sending verification email to agent ${agent.id}:`,
+        error,
+      );
+      // We don't throw here to prevent registration failure if email sending fails
+    }
+  }
+
+  /**
+   * Mark an agent's email as verified
+   * @param agentId The ID of the agent to update
+   * @returns The updated agent or undefined if not found
+   */
+  async markEmailAsVerified(agentId: string): Promise<SelectAgent | undefined> {
+    try {
+      console.log(
+        `[AgentManager] Marking email as verified for agent ${agentId}`,
+      );
+
+      // Update the agent with email verified flag
+      const updatedAgent = await update({
+        id: agentId,
+        isEmailVerified: true,
+      });
+
+      if (!updatedAgent) {
+        console.log(
+          `[AgentManager] Failed to update email verification status for agent: ${agentId}`,
+        );
+        return undefined;
+      }
+
+      console.log(
+        `[AgentManager] Successfully marked email as verified for agent: ${agentId}`,
+      );
+      return updatedAgent;
+    } catch (error) {
+      console.error(
+        `[AgentManager] Error marking email as verified for agent ${agentId}:`,
+        error,
+      );
+      throw new Error(
+        `Failed to mark email as verified: ${error instanceof Error ? error.message : error}`,
+      );
     }
   }
 }

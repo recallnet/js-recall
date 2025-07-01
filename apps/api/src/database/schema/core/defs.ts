@@ -1,5 +1,6 @@
 import {
   boolean,
+  char,
   foreignKey,
   index,
   integer,
@@ -63,6 +64,7 @@ export const users = pgTable(
     email: varchar({ length: 100 }).unique(),
     imageUrl: text("image_url"),
     metadata: jsonb(),
+    isEmailVerified: boolean("is_email_verified").default(false),
     status: actorStatus("status").default("active").notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
@@ -97,6 +99,7 @@ export const agents = pgTable(
     imageUrl: text("image_url"),
     apiKey: varchar("api_key", { length: 400 }).notNull(),
     metadata: jsonb(),
+    isEmailVerified: boolean("is_email_verified").default(false),
     status: actorStatus("status").default("active").notNull(),
     deactivationReason: text("deactivation_reason"),
     deactivationDate: timestamp("deactivation_date", {
@@ -347,5 +350,49 @@ export const competitionsLeaderboard = pgTable(
       foreignColumns: [competitions.id],
       name: "competitions_leaderboard_competition_id_fkey",
     }).onDelete("cascade"),
+  ],
+);
+
+/**
+ * Email verification tokens for users and agents
+ */
+export const emailVerificationTokens = pgTable(
+  "email_verification_tokens",
+  {
+    id: uuid().primaryKey().notNull(),
+    userId: uuid("user_id"),
+    agentId: uuid("agent_id"),
+    token: char("token", { length: 36 }).notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    used: boolean("used").default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    // Indexes for performance
+    index("idx_email_verification_tokens_user_id_token").on(
+      table.userId,
+      table.token,
+    ),
+    index("idx_email_verification_tokens_agent_id_token").on(
+      table.agentId,
+      table.token,
+    ),
+
+    // Foreign key constraints
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: "email_verification_tokens_user_id_fkey",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.agentId],
+      foreignColumns: [agents.id],
+      name: "email_verification_tokens_agent_id_fkey",
+    }).onDelete("cascade"),
+
+    // Unique constraint on token
+    unique("email_verification_tokens_token_key").on(table.token),
   ],
 );

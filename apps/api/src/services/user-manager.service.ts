@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 
+import { createEmailVerificationToken } from "@/database/repositories/email-verification-repository.js";
 import {
   count,
   create,
@@ -12,6 +13,7 @@ import {
   update,
 } from "@/database/repositories/user-repository.js";
 import { InsertUser, SelectUser } from "@/database/schema/core/types.js";
+import { EmailService } from "@/services/email.service.js";
 import { UserMetadata, UserSearchParams } from "@/types/index.js";
 
 /**
@@ -23,10 +25,13 @@ export class UserManager {
   private userWalletCache: Map<string, string>; // walletAddress -> userId
   // Cache for user profiles by ID
   private userProfileCache: Map<string, SelectUser>; // userId -> user profile
+  // Email service for sending verification emails
+  private emailService: EmailService;
 
-  constructor() {
+  constructor(emailService: EmailService) {
     this.userWalletCache = new Map();
     this.userProfileCache = new Map();
+    this.emailService = emailService;
   }
 
   /**
@@ -108,6 +113,11 @@ export class UserManager {
       this.userWalletCache.set(normalizedWalletAddress, id);
       this.userProfileCache.set(id, savedUser);
 
+      // Send email verification if email is provided
+      if (email) {
+        await this.sendEmailVerification(savedUser);
+      }
+
       console.log(
         `[UserManager] Registered user: ${name || "Unknown"} (${id}) with wallet ${normalizedWalletAddress}`,
       );
@@ -184,6 +194,21 @@ export class UserManager {
     user: Partial<InsertUser> & { id: string },
   ): Promise<SelectUser> {
     try {
+      // Get the current user data to check if email is being changed
+      const currentUser = await this.getUser(user.id);
+      if (!currentUser) {
+        throw new Error(`User with ID ${user.id} not found`);
+      }
+
+      // Check if email was updated to a new value
+      const emailChanged = user.email && currentUser.email !== user.email;
+      if (emailChanged) {
+        user = {
+          ...user,
+          isEmailVerified: false,
+        };
+      }
+
       const now = new Date();
       const updatedUser = await update({
         ...user,
@@ -194,6 +219,11 @@ export class UserManager {
       this.userProfileCache.set(user.id, updatedUser);
       if (updatedUser.walletAddress) {
         this.userWalletCache.set(updatedUser.walletAddress, user.id);
+      }
+
+      // Send verification email if email has changed
+      if (emailChanged && updatedUser.email) {
+        await this.sendEmailVerification(updatedUser);
       }
 
       console.log(`[UserManager] Updated user: ${user.id}`);
@@ -360,5 +390,95 @@ export class UserManager {
       walletCacheSize: this.userWalletCache.size,
       profileCacheSize: this.userProfileCache.size,
     };
+  }
+
+  /**
+   * Create a new email verification token for a user
+   * @param userId The ID of the user to create a token for
+   * @param expiresInHours How many hours until the token expires (default: 24)
+   * @returns The created token string
+   */
+  private async createEmailVerificationToken(
+    userId: string,
+    expiresInHours: number = 24,
+  ): Promise<string> {
+    try {
+      const token = uuidv4();
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + expiresInHours);
+
+      await createEmailVerificationToken({
+        id: uuidv4(),
+        userId,
+        token,
+        expiresAt,
+      });
+
+      console.log(
+        `[UserManager] Created email verification token for user ${userId}`,
+      );
+      return token;
+    } catch (error) {
+      console.error(
+        `[UserManager] Error creating email verification token for user ${userId}:`,
+        error,
+      );
+      throw new Error(
+        `Failed to create email verification token: ${error instanceof Error ? error.message : error}`,
+      );
+    }
+  }
+
+  /**
+   * Send an email verification link to a user
+   * @param user The user to send the verification email to
+   * @returns The created email verification token
+   */
+  private async sendEmailVerification(user: SelectUser): Promise<void> {
+    try {
+      if (!user.email) {
+        console.warn(
+          `[UserManager] Cannot send verification email: User ${user.id} has no email address`,
+        );
+        return;
+      }
+
+      const tokenString = await this.createEmailVerificationToken(user.id, 24);
+
+      await this.emailService.sendTransactionalEmail(user.email, tokenString);
+
+      console.log(
+        `[UserManager] Sent verification email to ${user.email} for user ${user.id}`,
+      );
+    } catch (error) {
+      console.error(
+        `[UserManager] Error sending verification email to user ${user.id}:`,
+        error,
+      );
+      // We don't throw here to prevent registration failure if email sending fails
+    }
+  }
+
+  /**
+   * Mark a user's email as verified
+   * @param userId The ID of the user whose email should be marked as verified
+   * @returns The updated user or null if the user was not found
+   */
+  async markEmailAsVerified(userId: string): Promise<SelectUser | null> {
+    try {
+      const updatedUser = await this.updateUser({
+        id: userId,
+        isEmailVerified: true,
+      });
+
+      console.log(`[UserManager] Marked email as verified for user ${userId}`);
+      return updatedUser;
+    } catch (error) {
+      console.error(
+        `[UserManager] Error marking email as verified for user ${userId}:`,
+        error,
+      );
+      return null;
+    }
   }
 }
