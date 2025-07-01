@@ -7,13 +7,13 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { useVirtualizer } from "@tanstack/react-virtual";
-import { format } from "date-fns";
-import { SquareArrowOutUpRight } from "lucide-react";
+import {useVirtualizer} from "@tanstack/react-virtual";
+import {format} from "date-fns";
+import {SquareArrowOutUpRight} from "lucide-react";
 import Link from "next/link";
-import React, { useMemo, useRef, useState } from "react";
+import React, {useMemo, useRef, useState} from "react";
 
-import { Button } from "@recallnet/ui2/components/button";
+import {Button} from "@recallnet/ui2/components/button";
 import {
   SortableTableHeader,
   Table,
@@ -24,11 +24,11 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import { RankBadge } from "@/components/agents-table/rank-badge";
-import { CompetitionStatusBadge } from "@/components/competition-status-badge";
-import { ParticipantsAvatars } from "@/components/participants-avatars";
-import { EnrichedVote, PaginationResponse } from "@/types";
-import { getSortState } from "@/utils/table";
+import {RankBadge} from "@/components/agents-table/rank-badge";
+import {CompetitionStatusBadge} from "@/components/competition-status-badge";
+import {ParticipantsAvatars} from "@/components/participants-avatars";
+import {EnrichedVote, PaginationResponse} from "@/types";
+import {getSortState} from "@/utils/table";
 
 export interface VotesTableProps {
   votes: EnrichedVote[];
@@ -53,7 +53,7 @@ export const VotesTable: React.FC<VotesTableProps> = ({
         id: "name",
         accessorKey: "name",
         header: () => "Competition",
-        cell: ({ row }) => (
+        cell: ({row}) => (
           <div className="flex flex-col">
             <span className="text-secondary-foreground font-semibold leading-tight">
               {row.original.competition.name}
@@ -70,7 +70,7 @@ export const VotesTable: React.FC<VotesTableProps> = ({
         id: "status",
         accessorKey: "status",
         header: () => "Status",
-        cell: ({ row }) => (
+        cell: ({row}) => (
           <CompetitionStatusBadge status={row.original.competition.status} />
         ),
         enableSorting: false,
@@ -82,7 +82,7 @@ export const VotesTable: React.FC<VotesTableProps> = ({
       {
         id: "agent",
         header: () => "Agent",
-        cell: ({ row }) => (
+        cell: ({row}) => (
           <div className="flex min-w-0 items-center gap-3">
             <ParticipantsAvatars agents={[row.original.agent]} maxDisplay={1} />
             <div className="flex min-w-0 flex-1 flex-col">
@@ -106,7 +106,7 @@ export const VotesTable: React.FC<VotesTableProps> = ({
         id: "startDate",
         accessorKey: "startDate",
         header: () => "Date",
-        cell: ({ row }) => (
+        cell: ({row}) => (
           <span>
             {row.original.createdAt
               ? format(new Date(row.original.createdAt), "MM/dd")
@@ -121,9 +121,9 @@ export const VotesTable: React.FC<VotesTableProps> = ({
       {
         id: "rank",
         header: () => "Rank",
-        cell: ({ row }) =>
+        cell: ({row}) =>
           row.original.agent.stats.rank ? (
-            <RankBadge position={row.original.agent.stats.rank} />
+            <RankBadge rank={row.original.agent.stats.rank} />
           ) : (
             <span className="text-xs text-slate-400">-</span>
           ),
@@ -136,7 +136,7 @@ export const VotesTable: React.FC<VotesTableProps> = ({
       {
         id: "view",
         header: () => "View",
-        cell: ({ row }) => (
+        cell: ({row}) => (
           <div className="flex w-full justify-center">
             <Link
               href={`/competitions/${row.original.competition.id}`}
@@ -203,14 +203,14 @@ export const VotesTable: React.FC<VotesTableProps> = ({
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow
                 key={headerGroup.id}
-                style={{ display: "flex", width: "100%" }}
+                style={{display: "flex", width: "100%"}}
               >
                 {headerGroup.headers.map((header) =>
                   header.column.getCanSort() ? (
                     <SortableTableHeader
                       key={header.id}
                       colSpan={header.colSpan}
-                      style={{ width: header.getSize() }}
+                      style={{width: header.getSize()}}
                       onClick={header.column.getToggleSortingHandler()}
                       sortState={getSortState(header.column.getIsSorted())}
                       className={header.column.columnDef.meta?.className}
@@ -218,23 +218,23 @@ export const VotesTable: React.FC<VotesTableProps> = ({
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
                     </SortableTableHeader>
                   ) : (
                     <TableHead
                       key={header.id}
                       colSpan={header.colSpan}
-                      style={{ width: header.getSize() }}
+                      style={{width: header.getSize()}}
                       className={header.column.columnDef.meta?.className}
                     >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
                     </TableHead>
                   ),
                 )}
@@ -267,7 +267,7 @@ export const VotesTable: React.FC<VotesTableProps> = ({
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
-                      style={{ width: cell.column.getSize() }}
+                      style={{width: cell.column.getSize()}}
                       className={cell.column.columnDef.meta?.className}
                     >
                       {flexRender(

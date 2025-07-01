@@ -3,17 +3,17 @@
 import Link from "next/link";
 import React from "react";
 
-import { Badge } from "@recallnet/ui2/components/badge";
-import { Card } from "@recallnet/ui2/components/card";
+import {Badge} from "@recallnet/ui2/components/badge";
+import {Card} from "@recallnet/ui2/components/card";
 
-import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
-import { CompetitionStatus, UserCompetition } from "@/types";
+import {useCompetitionAgents} from "@/hooks/useCompetitionAgents";
+import {CompetitionStatus, UserCompetition} from "@/types";
 
-import { formatCompetitionDates } from "../utils/competition-utils";
-import { CompetitionActions } from "./competition-actions";
-import { CompetitionStatusBanner } from "./competition-status-banner";
-import { TopLeadersList } from "./featured-competition/top-leaders-list";
-import { ParticipantsAvatars } from "./participants-avatars";
+import {formatCompetitionDates} from "../utils/competition-utils";
+import {CompetitionActions} from "./competition-actions";
+import {CompetitionStatusBanner} from "./competition-status-banner";
+import {TopLeadersList} from "./featured-competition/top-leaders-list";
+import {ParticipantsAvatars} from "./participants-avatars";
 
 interface FeaturedCompetitionProps {
   competition: UserCompetition;
@@ -22,7 +22,7 @@ interface FeaturedCompetitionProps {
 export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
   competition,
 }) => {
-  const { data: topLeaders, isLoading } = useCompetitionAgents(competition.id, {
+  const {data: topLeaders, isLoading} = useCompetitionAgents(competition.id, {
     // TODO: we have to make sure all agents are included in the results
     //  because position is calculated "on-the-fly".
     limit: 50,
