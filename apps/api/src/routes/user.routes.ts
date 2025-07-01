@@ -31,47 +31,31 @@ export function configureUserRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 user:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [user]
    *                   properties:
-   *                     id:
-   *                       type: string
-   *                       format: uuid
-   *                     walletAddress:
-   *                       type: string
-   *                       example: "0x1234567890abcdef1234567890abcdef12345678"
-   *                     name:
-   *                       type: string
-   *                       example: "John Doe"
-   *                     email:
-   *                       type: string
-   *                       example: "john@example.com"
-   *                     imageUrl:
-   *                       type: string
-   *                       example: "https://example.com/avatar.jpg"
-   *                     status:
-   *                       type: string
-   *                       enum: [active, inactive, suspended, deleted]
-   *                     metadata:
-   *                       type: object
-   *                       example: { "foo": "bar" }
-   *                     createdAt:
-   *                       type: string
-   *                       format: date-time
-   *                     updatedAt:
-   *                       type: string
-   *                       format: date-time
+   *                     user:
+   *                       $ref: '#/components/schemas/OwnerInfo'
    *       401:
    *         description: User not authenticated
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
    *         description: User not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/profile", userController.getProfile);
 
@@ -102,6 +86,7 @@ export function configureUserRoutes(
    *                 example: "https://example.com/avatar.jpg"
    *               email:
    *                 type: string
+   *                 format: email
    *                 description: User's email
    *                 example: "john@example.com"
    *               metadata:
@@ -115,47 +100,37 @@ export function configureUserRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 user:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [user]
    *                   properties:
-   *                     id:
-   *                       type: string
-   *                       format: uuid
-   *                     walletAddress:
-   *                       type: string
-   *                       nullable: true
-   *                     name:
-   *                       type: string
-   *                     email:
-   *                       type: string
-   *                       nullable: true
-   *                     imageUrl:
-   *                       type: string
-   *                       nullable: true
-   *                     metadata:
-   *                       type: object
-   *                       nullable: true
-   *                     status:
-   *                       type: string
-   *                     createdAt:
-   *                       type: string
-   *                       format: date-time
-   *                     updatedAt:
-   *                       type: string
-   *                       format: date-time
+   *                     user:
+   *                       $ref: '#/components/schemas/OwnerInfo'
    *       400:
    *         description: Invalid fields provided (users can only update name and imageUrl)
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: User not authenticated
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
    *         description: User not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.put("/profile", userController.updateProfile);
 
@@ -175,8 +150,7 @@ export function configureUserRoutes(
    *         application/json:
    *           schema:
    *             type: object
-   *             required:
-   *               - name
+   *             required: [name]
    *             properties:
    *               name:
    *                 type: string
@@ -200,71 +174,50 @@ export function configureUserRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 agent:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [agent]
    *                   properties:
-   *                     id:
-   *                       type: string
-   *                       format: uuid
-   *                     ownerId:
-   *                       type: string
-   *                       format: uuid
-   *                     walletAddress:
-   *                       type: string
-   *                       nullable: true
-   *                     name:
-   *                       type: string
-   *                     email:
-   *                       type: string
-   *                       nullable: true
-   *                     description:
-   *                       type: string
-   *                       nullable: true
-   *                     imageUrl:
-   *                       type: string
-   *                       nullable: true
-   *                     apiKey:
-   *                       type: string
-   *                       description: The API key for this agent (store this securely)
-   *                       example: "1234567890abcdef_fedcba0987654321"
-   *                     metadata:
-   *                       type: object
-   *                       nullable: true
-   *                     status:
-   *                       type: string
-   *                       enum: [active, inactive, suspended, deleted]
-   *                     createdAt:
-   *                       type: string
-   *                       format: date-time
-   *                     updatedAt:
-   *                       type: string
-   *                       format: date-time
+   *                     agent:
+   *                       allOf:
+   *                         - $ref: '#/components/schemas/AgentPublic'
+   *                         - type: object
+   *                           properties:
+   *                             apiKey:
+   *                               type: string
+   *                               description: The API key for this agent (store this securely)
+   *                               example: "1234567890abcdef_fedcba0987654321"
    *       400:
    *         description: Invalid input (name is required)
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: User not authenticated
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
    *         description: User not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       409:
    *         description: Agent with this name already exists for this user
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: false
-   *                 error:
-   *                   type: string
-   *                   example: "An agent with the name \"Trading Bot Alpha\" already exists for this user"
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.post("/agents", userController.createAgent);
 
@@ -284,99 +237,30 @@ export function configureUserRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 userId:
-   *                   type: string
-   *                   format: uuid
-   *                 agents:
-   *                   type: array
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       id:
-   *                         type: string
-   *                         format: uuid
-   *                       ownerId:
-   *                         type: string
-   *                         format: uuid
-   *                       walletAddress:
-   *                         type: string
-   *                         nullable: true
-   *                       isVerified:
-   *                         type: boolean
-   *                       name:
-   *                         type: string
-   *                       description:
-   *                         type: string
-   *                         nullable: true
-   *                       email:
-   *                         type: string
-   *                       imageUrl:
-   *                         type: string
-   *                       metadata:
-   *                         type: object
-   *                       status:
-   *                         type: string
-   *                         enum: [active, inactive, suspended, deleted]
-   *                       stats:
-   *                         type: object
-   *                         properties:
-   *                           completedCompetitions:
-   *                             type: integer
-   *                           totalTrades:
-   *                             type: integer
-   *                           totalVotes:
-   *                             type: integer
-   *                           bestPlacement:
-   *                             type: object
-   *                             nullable: true
-   *                             description: "Best placement across all competitions (null if no ranking data available)"
-   *                             properties:
-   *                               competitionId:
-   *                                 type: string
-   *                               rank:
-   *                                 type: integer
-   *                               score:
-   *                                 type: number
-   *                               totalAgents:
-   *                                 type: integer
-   *                           rank:
-   *                             type: integer
-   *                           score:
-   *                             type: number
-   *                       trophies:
-   *                         type: array
-   *                         items:
-   *                           type: string
-   *                       skills:
-   *                         type: array
-   *                         items:
-   *                           type: string
-   *                       hasUnclaimedRewards:
-   *                         type: boolean
-   *                       deactivationReason:
-   *                         type: string
-   *                         nullable: true
-   *                         description: Reason for deactivation (if status is inactive)
-   *                       deactivationDate:
-   *                         type: string
-   *                         format: date-time
-   *                         nullable: true
-   *                         description: Date when agent was deactivated (if status is inactive)
-   *                       createdAt:
-   *                         type: string
-   *                         format: date-time
-   *                       updatedAt:
-   *                         type: string
-   *                         format: date-time
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [userId, agents]
+   *                   properties:
+   *                     userId:
+   *                       type: string
+   *                       format: uuid
+   *                     agents:
+   *                       type: array
+   *                       items:
+   *                         $ref: '#/components/schemas/AgentWithMetrics'
    *       401:
    *         description: User not authenticated
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/agents", userController.getAgents);
 
@@ -404,103 +288,43 @@ export function configureUserRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 agent:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [agent]
    *                   properties:
-   *                     id:
-   *                       type: string
-   *                       format: uuid
-   *                     ownerId:
-   *                       type: string
-   *                       format: uuid
-   *                     walletAddress:
-   *                       type: string
-   *                       nullable: true
-   *                     isVerified:
-   *                       type: boolean
-   *                     name:
-   *                       type: string
-   *                     email:
-   *                       type: string
-   *                       nullable: true
-   *                     description:
-   *                       type: string
-   *                       nullable: true
-   *                     imageUrl:
-   *                       type: string
-   *                       nullable: true
-   *                     metadata:
-   *                       type: object
-   *                       nullable: true
-   *                     status:
-   *                       type: string
-   *                       enum: [active, inactive, suspended, deleted]
-   *                     stats:
-   *                       type: object
-   *                       properties:
-   *                         completedCompetitions:
-   *                           type: integer
-   *                         totalTrades:
-   *                           type: integer
-   *                         totalVotes:
-   *                           type: integer
-   *                         bestPlacement:
-   *                           type: object
-   *                           nullable: true
-   *                           description: "Best placement across all competitions (null if no ranking data available)"
-   *                           properties:
-   *                             competitionId:
-   *                               type: string
-   *                             rank:
-   *                               type: integer
-   *                             score:
-   *                               type: integer
-   *                             totalAgents:
-   *                               type: integer
-   *                         rank:
-   *                           type: integer
-   *                         score:
-   *                           type: number
-   *                     trophies:
-   *                       type: array
-   *                       items:
-   *                         type: string
-   *                     skills:
-   *                       type: array
-   *                       items:
-   *                         type: string
-   *                     hasUnclaimedRewards:
-   *                       type: boolean
-   *                     deactivationReason:
-   *                       type: string
-   *                       nullable: true
-   *                       description: Reason for deactivation (if status is inactive)
-   *                     deactivationDate:
-   *                       type: string
-   *                       format: date-time
-   *                       nullable: true
-   *                       description: Date when agent was deactivated (if status is inactive)
-   *                     createdAt:
-   *                       type: string
-   *                       format: date-time
-   *                     updatedAt:
-   *                       type: string
-   *                       format: date-time
+   *                     agent:
+   *                       $ref: '#/components/schemas/AgentWithMetrics'
    *       400:
    *         description: Agent ID is required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: User not authenticated
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       403:
    *         description: Access denied (user doesn't own this agent)
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
    *         description: Agent not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/agents/:agentId", userController.getAgent);
 
@@ -528,88 +352,53 @@ export function configureUserRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 agentId:
-   *                   type: string
-   *                   format: uuid
-   *                   description: The ID of the agent
-   *                 agentName:
-   *                   type: string
-   *                   description: The name of the agent
-   *                   example: "Trading Bot Alpha"
-   *                 apiKey:
-   *                   type: string
-   *                   description: The decrypted API key for the agent (store this securely)
-   *                   example: "1234567890abcdef_fedcba0987654321"
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [agentId, agentName, apiKey]
+   *                   properties:
+   *                     agentId:
+   *                       type: string
+   *                       format: uuid
+   *                       description: The ID of the agent
+   *                     agentName:
+   *                       type: string
+   *                       description: The name of the agent
+   *                       example: "Trading Bot Alpha"
+   *                     apiKey:
+   *                       type: string
+   *                       description: The decrypted API key for the agent (store this securely)
+   *                       example: "1234567890abcdef_fedcba0987654321"
    *       400:
    *         description: Invalid agent ID format
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: false
-   *                 message:
-   *                   type: string
-   *                   example: "Invalid request format: Agent ID is required"
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: User not authenticated
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: false
-   *                 message:
-   *                   type: string
-   *                   example: "Authentication required"
+   *               $ref: '#/components/schemas/Error'
    *       403:
    *         description: Access denied (user doesn't own this agent)
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: false
-   *                 message:
-   *                   type: string
-   *                   example: "Access denied: You don't own this agent"
+   *               $ref: '#/components/schemas/Error'
    *       404:
    *         description: Agent not found
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: false
-   *                 message:
-   *                   type: string
-   *                   example: "Agent not found"
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Internal server error (e.g., decryption failure)
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: false
-   *                 message:
-   *                   type: string
-   *                   example: "Failed to decrypt API key"
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/agents/:agentId/api-key", userController.getAgentApiKey);
 
@@ -652,6 +441,7 @@ export function configureUserRoutes(
    *                 example: "https://example.com/new-bot-avatar.jpg"
    *               email:
    *                 type: string
+   *                 format: email
    *                 description: Agent email
    *                 example: "tradingbot@example.com"
    *               metadata:
@@ -664,65 +454,43 @@ export function configureUserRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 agent:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [agent]
    *                   properties:
-   *                     id:
-   *                       type: string
-   *                       format: uuid
-   *                     ownerId:
-   *                       type: string
-   *                       format: uuid
-   *                     walletAddress:
-   *                       type: string
-   *                       nullable: true
-   *                     isVerified:
-   *                       type: boolean
-   *                     name:
-   *                       type: string
-   *                     email:
-   *                       type: string
-   *                       nullable: true
-   *                     description:
-   *                       type: string
-   *                     imageUrl:
-   *                       type: string
-   *                     metadata:
-   *                       type: object
-   *                       nullable: true
-   *                     status:
-   *                       type: string
-   *                       enum: [active, inactive, suspended, deleted]
-   *                     deactivationReason:
-   *                       type: string
-   *                       nullable: true
-   *                       description: Reason for deactivation (if status is inactive)
-   *                     deactivationDate:
-   *                       type: string
-   *                       format: date-time
-   *                       nullable: true
-   *                       description: Date when agent was deactivated (if status is inactive)
-   *                     createdAt:
-   *                       type: string
-   *                       format: date-time
-   *                     updatedAt:
-   *                       type: string
-   *                       format: date-time
+   *                     agent:
+   *                       $ref: '#/components/schemas/AgentPublic'
    *       400:
    *         description: Invalid fields provided or missing agentId
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: User not authenticated
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       403:
    *         description: Access denied (user doesn't own this agent)
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
    *         description: Agent not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.put("/agents/:agentId/profile", userController.updateAgentProfile);
 
@@ -764,7 +532,8 @@ export function configureUserRoutes(
    *         name: status
    *         schema:
    *           type: string
-   *         description: Optional filter for the competition status. Possible values ("ended", "active", "pending")
+   *           enum: [upcoming, active, ended]
+   *         description: Optional filter for the competition status
    *       - in: query
    *         name: claimed
    *         schema:
@@ -776,102 +545,45 @@ export function configureUserRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 competitions:
-   *                   type: array
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       id:
-   *                         type: string
-   *                         format: uuid
-   *                       name:
-   *                         type: string
-   *                       description:
-   *                         type: string
-   *                       externalUrl:
-   *                         type: string
-   *                         nullable: true
-   *                       imageUrl:
-   *                         type: string
-   *                         nullable: true
-   *                       status:
-   *                         type: string
-   *                         enum: [upcoming, active, ended]
-   *                       startDate:
-   *                         type: string
-   *                         format: date-time
-   *                       endDate:
-   *                         type: string
-   *                         format: date-time
-   *                       crossChainTradingType:
-   *                         type: string
-   *                         enum: [single_chain, cross_chain]
-   *                       createdAt:
-   *                         type: string
-   *                         format: date-time
-   *                       updatedAt:
-   *                         type: string
-   *                         format: date-time
-   *                       agents:
-   *                         type: array
-   *                         items:
-   *                           type: object
-   *                           properties:
-   *                             id:
-   *                               type: string
-   *                               format: uuid
-   *                             ownerId:
-   *                               type: string
-   *                               format: uuid
-   *                             name:
-   *                               type: string
-   *                             walletAddress:
-   *                               type: string
-   *                             email:
-   *                               type: string
-   *                               format: email
-   *                             description:
-   *                               type: string
-   *                             imageUrl:
-   *                               type: string
-   *                             apiKey:
-   *                               type: string
-   *                             metadata:
-   *                               type: object
-   *                               description: Optional metadata for the agent
-   *                               example: { "strategy": "yield-farming", "risk": "medium" }
-   *                               nullable: true
-   *                             status:
-   *                               type: string
-   *                             createdAt:
-   *                               type: string
-   *                               format: date-time
-   *                             updatedAt:
-   *                               type: string
-   *                               format: date-time
-   *                 total:
-   *                   type: integer
-   *                   description: Total number of competitions
-   *                 pagination:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [competitions, total, pagination]
    *                   properties:
-   *                     limit:
-   *                       type: integer
-   *                     offset:
-   *                       type: integer
+   *                     competitions:
+   *                       type: array
+   *                       items:
+   *                         allOf:
+   *                           - $ref: '#/components/schemas/Competition'
+   *                           - type: object
+   *                             properties:
+   *                               agents:
+   *                                 type: array
+   *                                 items:
+   *                                   $ref: '#/components/schemas/AgentPublic'
    *                     total:
    *                       type: integer
+   *                       description: Total number of competitions
+   *                     pagination:
+   *                       $ref: '#/components/schemas/PaginationMeta'
    *       400:
    *         description: Invalid query parameters
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: User not authenticated
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/competitions", userController.getCompetitions);
 
