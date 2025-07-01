@@ -511,7 +511,7 @@ export function configureUserRoutes(
    *           type: integer
    *           minimum: 1
    *           maximum: 100
-   *           default: 10
+   *           default: 50
    *         description: Number of competitions to return
    *       - in: query
    *         name: offset

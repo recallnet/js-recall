@@ -38,7 +38,7 @@ export function configureCompetitionsRoutes(
    *           type: integer
    *           minimum: 1
    *           maximum: 100
-   *           default: 10
+   *           default: 50
    *         required: false
    *         description: Optional field to choose max size of result set (default value is `10`)
    *       - in: query

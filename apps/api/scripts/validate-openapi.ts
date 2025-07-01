@@ -1,5 +1,5 @@
 #!/usr/bin/env tsx
-import { Ajv, JSONSchemaType } from "ajv";
+import { Ajv } from "ajv";
 import formatsPlugin from "ajv-formats";
 
 import { swaggerSpec } from "../src/config/swagger.js";
@@ -23,6 +23,7 @@ formatsPlugin.default(ajv);
 // Type assertion for the swagger spec
 const spec = swaggerSpec as {
   components?: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     schemas?: Record<string, any>;
   };
 };
@@ -41,8 +42,10 @@ for (const [name, schema] of Object.entries(schemas)) {
  * Validate a response against an OpenAPI schema
  */
 function validateResponse(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any,
   schemaRef: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): { valid: boolean; errors?: any[] } {
   try {
     const validate = ajv.compile({ $ref: schemaRef });

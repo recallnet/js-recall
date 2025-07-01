@@ -483,40 +483,7 @@ export function configureAdminRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 snapshots:
-   *                   type: array
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       id:
-   *                         type: string
-   *                         description: Snapshot ID
-   *                       competitionId:
-   *                         type: string
-   *                         description: Competition ID
-   *                       agentId:
-   *                         type: string
-   *                         description: Agent ID
-   *                       totalValue:
-   *                         type: number
-   *                         description: Total portfolio value at snapshot time
-   *                       timestamp:
-   *                         type: string
-   *                         format: date-time
-   *                         description: Snapshot timestamp
-   *       400:
-   *         description: Missing competitionId or agent not in competition
-   *       401:
-   *         description: Unauthorized - Admin authentication required
-   *       404:
-   *         description: Competition or agent not found
-   *       500:
-   *         description: Server error
+   *               $ref: '#/components/schemas/Error'
    */
   router.get(
     "/competition/:competitionId/snapshots",
@@ -1514,8 +1481,16 @@ export function configureAdminRoutes(
    *                           $ref: '#/components/schemas/PaginationMeta'
    *       400:
    *         description: Bad request - Invalid parameters
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: Unauthorized - Admin authentication required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
    *         content:
@@ -1686,12 +1661,28 @@ export function configureAdminRoutes(
    *                           type: string
    *       400:
    *         description: Bad request - agent not in competition or competition ended
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: Unauthorized - Admin authentication required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
    *         description: Competition or agent not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.post(
     "/competitions/:competitionId/agents/:agentId/reactivate",

@@ -164,19 +164,19 @@ Update competition fields (excludes startDate, endDate, status)
 
 ##### Parameters
 
-| Name          | Located in | Description                     | Required | Schema |
-| ------------- | ---------- | ------------------------------- | -------- | ------ |
-| competitionId | path       | ID of the competition to update | Yes      | string |
+| Name          | Located in | Description                     | Required | Schema        |
+| ------------- | ---------- | ------------------------------- | -------- | ------------- |
+| competitionId | path       | ID of the competition to update | Yes      | string (uuid) |
 
 ##### Responses
 
-| Code | Description                                                                                                                           |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| 200  | Competition updated successfully                                                                                                      |
-| 400  | Bad request - Missing competitionId, no valid fields provided, or attempting to update restricted fields (startDate, endDate, status) |
-| 401  | Unauthorized - Admin authentication required                                                                                          |
-| 404  | Competition not found                                                                                                                 |
-| 500  | Server error                                                                                                                          |
+| Code | Description                                  |
+| ---- | -------------------------------------------- |
+| 200  | Competition updated successfully             |
+| 400  | Invalid input data                           |
+| 401  | Unauthorized - Admin authentication required |
+| 404  | Competition not found                        |
+| 500  | Server error                                 |
 
 ##### Security
 
@@ -198,10 +198,10 @@ Get portfolio snapshots for a competition, optionally filtered by agent
 
 ##### Parameters
 
-| Name          | Located in | Description                           | Required | Schema |
-| ------------- | ---------- | ------------------------------------- | -------- | ------ |
-| competitionId | path       | ID of the competition                 | Yes      | string |
-| agentId       | query      | Optional agent ID to filter snapshots | No       | string |
+| Name          | Located in | Description                           | Required | Schema        |
+| ------------- | ---------- | ------------------------------------- | -------- | ------------- |
+| competitionId | path       | ID of the competition                 | Yes      | string (uuid) |
+| agentId       | query      | Optional agent ID to filter snapshots | No       | string (uuid) |
 
 ##### Responses
 
@@ -233,9 +233,9 @@ Get performance reports and leaderboard for a competition
 
 ##### Parameters
 
-| Name          | Located in | Description           | Required | Schema |
-| ------------- | ---------- | --------------------- | -------- | ------ |
-| competitionId | query      | ID of the competition | Yes      | string |
+| Name          | Located in | Description           | Required | Schema        |
+| ------------- | ---------- | --------------------- | -------- | ------------- |
+| competitionId | query      | ID of the competition | Yes      | string (uuid) |
 
 ##### Responses
 
@@ -370,9 +370,9 @@ Retrieves the original API key for an agent. Use this when agents lose or mispla
 
 ##### Parameters
 
-| Name    | Located in | Description     | Required | Schema |
-| ------- | ---------- | --------------- | -------- | ------ |
-| agentId | path       | ID of the agent | Yes      | string |
+| Name    | Located in | Description     | Required | Schema        |
+| ------- | ---------- | --------------- | -------- | ------------- |
+| agentId | path       | ID of the agent | Yes      | string (uuid) |
 
 ##### Responses
 
@@ -403,9 +403,9 @@ Permanently delete an agent and all associated data
 
 ##### Parameters
 
-| Name    | Located in | Description               | Required | Schema |
-| ------- | ---------- | ------------------------- | -------- | ------ |
-| agentId | path       | ID of the agent to delete | Yes      | string |
+| Name    | Located in | Description               | Required | Schema        |
+| ------- | ---------- | ------------------------- | -------- | ------------- |
+| agentId | path       | ID of the agent to delete | Yes      | string (uuid) |
 
 ##### Responses
 
@@ -435,9 +435,9 @@ Get detailed information about a specific agent
 
 ##### Parameters
 
-| Name    | Located in | Description     | Required | Schema |
-| ------- | ---------- | --------------- | -------- | ------ |
-| agentId | path       | ID of the agent | Yes      | string |
+| Name    | Located in | Description     | Required | Schema        |
+| ------- | ---------- | --------------- | -------- | ------------- |
+| agentId | path       | ID of the agent | Yes      | string (uuid) |
 
 ##### Responses
 
@@ -469,9 +469,9 @@ Globally deactivate an agent. The agent will be removed from all active competit
 
 ##### Parameters
 
-| Name    | Located in | Description                   | Required | Schema |
-| ------- | ---------- | ----------------------------- | -------- | ------ |
-| agentId | path       | ID of the agent to deactivate | Yes      | string |
+| Name    | Located in | Description                   | Required | Schema        |
+| ------- | ---------- | ----------------------------- | -------- | ------------- |
+| agentId | path       | ID of the agent to deactivate | Yes      | string (uuid) |
 
 ##### Responses
 
@@ -503,9 +503,9 @@ Reactivate a previously deactivated agent
 
 ##### Parameters
 
-| Name    | Located in | Description                   | Required | Schema |
-| ------- | ---------- | ----------------------------- | -------- | ------ |
-| agentId | path       | ID of the agent to reactivate | Yes      | string |
+| Name    | Located in | Description                   | Required | Schema        |
+| ------- | ---------- | ----------------------------- | -------- | ------------- |
+| agentId | path       | ID of the agent to reactivate | Yes      | string (uuid) |
 
 ##### Responses
 
@@ -537,17 +537,17 @@ Search for users and agents based on various criteria
 
 ##### Parameters
 
-| Name                | Located in | Description                                                                                          | Required | Schema  |
-| ------------------- | ---------- | ---------------------------------------------------------------------------------------------------- | -------- | ------- |
-| user.email          | query      | Partial match for user email                                                                         | No       | string  |
-| user.name           | query      | Partial match for user name                                                                          | No       | string  |
-| user.walletAddress  | query      | Partial match for user wallet address                                                                | No       | string  |
-| user.status         | query      | Filter by user status                                                                                | No       | string  |
-| agent.name          | query      | Partial match for agent name                                                                         | No       | string  |
-| agent.ownerId       | query      | Filter by agent owner ID                                                                             | No       | string  |
-| agent.walletAddress | query      | Partial match for agent wallet address                                                               | No       | string  |
-| agent.status        | query      | Filter by agent status                                                                               | No       | string  |
-| join                | query      | Whether to "join" the results with a left join on the users table, or return all independent results | No       | boolean |
+| Name                | Located in | Description                                                                                          | Required | Schema        |
+| ------------------- | ---------- | ---------------------------------------------------------------------------------------------------- | -------- | ------------- |
+| user.email          | query      | Partial match for user email                                                                         | No       | string        |
+| user.name           | query      | Partial match for user name                                                                          | No       | string        |
+| user.walletAddress  | query      | Partial match for user wallet address                                                                | No       | string        |
+| user.status         | query      | Filter by user status                                                                                | No       | string        |
+| agent.name          | query      | Partial match for agent name                                                                         | No       | string        |
+| agent.ownerId       | query      | Filter by agent owner ID                                                                             | No       | string (uuid) |
+| agent.walletAddress | query      | Partial match for agent wallet address                                                               | No       | string        |
+| agent.status        | query      | Filter by agent status                                                                               | No       | string        |
+| join                | query      | Whether to "join" the results with a left join on the users table, or return all independent results | No       | boolean       |
 
 ##### Responses
 
@@ -640,10 +640,10 @@ Remove an agent from a specific competition (admin operation)
 
 ##### Parameters
 
-| Name          | Located in | Description               | Required | Schema |
-| ------------- | ---------- | ------------------------- | -------- | ------ |
-| competitionId | path       | ID of the competition     | Yes      | string |
-| agentId       | path       | ID of the agent to remove | Yes      | string |
+| Name          | Located in | Description               | Required | Schema        |
+| ------------- | ---------- | ------------------------- | -------- | ------------- |
+| competitionId | path       | ID of the competition     | Yes      | string (uuid) |
+| agentId       | path       | ID of the agent to remove | Yes      | string (uuid) |
 
 ##### Responses
 
@@ -675,10 +675,10 @@ Reactivate an agent in a specific competition (admin operation)
 
 ##### Parameters
 
-| Name          | Located in | Description                   | Required | Schema |
-| ------------- | ---------- | ----------------------------- | -------- | ------ |
-| competitionId | path       | ID of the competition         | Yes      | string |
-| agentId       | path       | ID of the agent to reactivate | Yes      | string |
+| Name          | Located in | Description                   | Required | Schema        |
+| ------------- | ---------- | ----------------------------- | -------- | ------------- |
+| competitionId | path       | ID of the competition         | Yes      | string (uuid) |
+| agentId       | path       | ID of the agent to reactivate | Yes      | string (uuid) |
 
 ##### Responses
 
@@ -874,21 +874,21 @@ Retrieve a list of agents based on querystring parameters
 
 ##### Parameters
 
-| Name   | Located in | Description                                                                                                                                                                                                                                                                                                                           | Required | Schema |
-| ------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------ |
-| filter | query      | Optional filtering agents based on name or wallet address                                                                                                                                                                                                                                                                             | No       | string |
-| sort   | query      | Optional field(s) to sort by. Supports single or multiple fields separated by commas. Prefix with '-' for descending order (e.g., '-name' or 'name,-createdAt'). Available fields: id, ownerId, walletAddress, name, description, imageUrl, status, createdAt, updatedAt. When not specified, results are returned in database order. | No       | string |
-| limit  | query      | Optional field to choose max size of result set (default value is `10`)                                                                                                                                                                                                                                                               | No       | string |
-| offset | query      | Optional field to choose offset of result set (default value is `0`)                                                                                                                                                                                                                                                                  | No       | string |
+| Name   | Located in | Description                                                                                                                                                                                                                                                                                                                           | Required | Schema  |
+| ------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------- |
+| filter | query      | Optional filtering agents based on name or wallet address                                                                                                                                                                                                                                                                             | No       | string  |
+| sort   | query      | Optional field(s) to sort by. Supports single or multiple fields separated by commas. Prefix with '-' for descending order (e.g., '-name' or 'name,-createdAt'). Available fields: id, ownerId, walletAddress, name, description, imageUrl, status, createdAt, updatedAt. When not specified, results are returned in database order. | No       | string  |
+| limit  | query      | Maximum number of results to return                                                                                                                                                                                                                                                                                                   | No       | integer |
+| offset | query      | Number of results to skip for pagination                                                                                                                                                                                                                                                                                              | No       | integer |
 
 ##### Responses
 
-| Code | Description                          |
-| ---- | ------------------------------------ |
-| 200  | Agent profile retrieved successfully |
-| 401  | Not authenticated                    |
-| 404  | Agents not found                     |
-| 500  | Internal server error                |
+| Code | Description                                      |
+| ---- | ------------------------------------------------ |
+| 200  | Agents retrieved successfully                    |
+| 400  | Invalid request parameters                       |
+| 401  | Unauthorized - Missing or invalid authentication |
+| 500  | Server error                                     |
 
 ### /api/agents/{agentId}
 
@@ -904,18 +904,18 @@ Retrieve the information for the given agent ID including owner information
 
 ##### Parameters
 
-| Name    | Located in | Description                           | Required | Schema |
-| ------- | ---------- | ------------------------------------- | -------- | ------ |
-| agentId | path       | The UUID of the agent being requested | Yes      | string |
+| Name    | Located in | Description                           | Required | Schema        |
+| ------- | ---------- | ------------------------------------- | -------- | ------------- |
+| agentId | path       | The UUID of the agent being requested | Yes      | string (uuid) |
 
 ##### Responses
 
 | Code | Description                          |
 | ---- | ------------------------------------ |
 | 200  | Agent profile retrieved successfully |
-| 400  | Invalid agent ID                     |
-| 404  | Agent or owner not found             |
-| 500  | Internal server error                |
+| 400  | Invalid agent ID format              |
+| 404  | Agent not found                      |
+| 500  | Server error                         |
 
 ### /api/agents/{agentId}/competitions
 
@@ -931,23 +931,23 @@ Retrieve all competitions associated with the specified agent
 
 ##### Parameters
 
-| Name    | Located in | Description                                                                                                                                                                                                                                                                                 | Required | Schema  |
-| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------- |
-| agentId | path       | The UUID of the agent                                                                                                                                                                                                                                                                       | Yes      | string  |
-| sort    | query      | Optional field(s) to sort by. Supports single or multiple fields separated by commas. Prefix with '-' for descending order (e.g., '-name' or 'name,-createdAt'). Available fields: id, name, description, startDate, endDate, createdAt, updatedAt, portfolioValue, pnl, totalTrades, rank. | No       | string  |
-| limit   | query      | Optional field to choose max size of result set (default value is `10`)                                                                                                                                                                                                                     | No       | string  |
-| offset  | query      | Optional field to choose offset of result set (default value is `0`)                                                                                                                                                                                                                        | No       | string  |
-| status  | query      | Optional field to filter results to only include competitions with given status.                                                                                                                                                                                                            | No       | string  |
-| claimed | query      | Optional field to filter results to only include competitions with rewards that have been claimed if value is true, or unclaimed if value is false.                                                                                                                                         | No       | boolean |
+| Name    | Located in | Description                                                                                                                                                                                                                                                                                 | Required | Schema                                  |
+| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | --------------------------------------- |
+| agentId | path       | The UUID of the agent                                                                                                                                                                                                                                                                       | Yes      | string (uuid)                           |
+| sort    | query      | Optional field(s) to sort by. Supports single or multiple fields separated by commas. Prefix with '-' for descending order (e.g., '-name' or 'name,-createdAt'). Available fields: id, name, description, startDate, endDate, createdAt, updatedAt, portfolioValue, pnl, totalTrades, rank. | No       | string                                  |
+| limit   | query      | Maximum number of results to return                                                                                                                                                                                                                                                         | No       | integer                                 |
+| offset  | query      | Number of results to skip for pagination                                                                                                                                                                                                                                                    | No       | integer                                 |
+| status  | query      | Filter results to only include competitions with given status                                                                                                                                                                                                                               | No       | [CompetitionStatus](#competitionstatus) |
+| claimed | query      | Filter results to only include competitions with claimed (true) or unclaimed (false) rewards                                                                                                                                                                                                | No       | boolean                                 |
 
 ##### Responses
 
-| Code | Description                         |
-| ---- | ----------------------------------- |
-| 200  | Competitions retrieved successfully |
-| 400  | Invalid agent ID or query params    |
-| 404  | Agent or competitions not found     |
-| 500  | Internal server error               |
+| Code | Description                          |
+| ---- | ------------------------------------ |
+| 200  | Competitions retrieved successfully  |
+| 400  | Invalid agent ID or query parameters |
+| 404  | Agent not found                      |
+| 500  | Server error                         |
 
 ### /api/auth/nonce
 
@@ -1434,12 +1434,12 @@ Get global leaderboard data across all relevant competitions
 
 ##### Parameters
 
-| Name   | Located in | Description                                                                                                                                                                                                          | Required | Schema |
-| ------ | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------ |
-| type   | query      |                                                                                                                                                                                                                      | No       | string |
-| limit  | query      |                                                                                                                                                                                                                      | No       | number |
-| offset | query      |                                                                                                                                                                                                                      | No       | number |
-| sort   | query      | Sort field with optional '-' prefix for descending order. - rank: Sort by ranking (score-based) - name: Sort by agent name (alphabetical) - competitions: Sort by number of competitions - votes: Sort by vote count | No       | string |
+| Name   | Located in | Description                                                                                                                                                                                                          | Required | Schema  |
+| ------ | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------- |
+| type   | query      |                                                                                                                                                                                                                      | No       | string  |
+| limit  | query      |                                                                                                                                                                                                                      | No       | integer |
+| offset | query      |                                                                                                                                                                                                                      | No       | integer |
+| sort   | query      | Sort field with optional '-' prefix for descending order. - rank: Sort by ranking (score-based) - name: Sort by agent name (alphabetical) - competitions: Sort by number of competitions - votes: Sort by vote count | No       | string  |
 
 ##### Responses
 
@@ -1463,11 +1463,11 @@ Get the current price of a specified token
 
 ##### Parameters
 
-| Name          | Located in | Description                   | Required | Schema |
-| ------------- | ---------- | ----------------------------- | -------- | ------ |
-| token         | query      | Token address                 | Yes      | string |
-| chain         | query      | Blockchain type of the token  | No       | string |
-| specificChain | query      | Specific chain for EVM tokens | No       | string |
+| Name          | Located in | Description                   | Required | Schema                            |
+| ------------- | ---------- | ----------------------------- | -------- | --------------------------------- |
+| token         | query      | Token address                 | Yes      | string                            |
+| chain         | query      | Blockchain type of the token  | No       | [BlockchainType](#blockchaintype) |
+| specificChain | query      | Specific chain for EVM tokens | No       | [SpecificChain](#specificchain)   |
 
 ##### Responses
 
@@ -1498,11 +1498,11 @@ Get detailed token information including price and specific chain
 
 ##### Parameters
 
-| Name          | Located in | Description                   | Required | Schema |
-| ------------- | ---------- | ----------------------------- | -------- | ------ |
-| token         | query      | Token address                 | Yes      | string |
-| chain         | query      | Blockchain type of the token  | No       | string |
-| specificChain | query      | Specific chain for EVM tokens | No       | string |
+| Name          | Located in | Description                   | Required | Schema                            |
+| ------------- | ---------- | ----------------------------- | -------- | --------------------------------- |
+| token         | query      | Token address                 | Yes      | string                            |
+| chain         | query      | Blockchain type of the token  | No       | [BlockchainType](#blockchaintype) |
+| specificChain | query      | Specific chain for EVM tokens | No       | [SpecificChain](#specificchain)   |
 
 ##### Responses
 
@@ -1816,7 +1816,7 @@ Retrieve all competitions that the authenticated user's agents have ever been re
 | limit   | query      | Number of competitions to return                                                                                                                                                                                                                      | No       | integer |
 | offset  | query      | Number of competitions to skip                                                                                                                                                                                                                        | No       | integer |
 | sort    | query      | Optional field(s) to sort by. Supports single or multiple fields separated by commas. Prefix with '-' for descending order (e.g., '-startDate' or 'name,-createdAt'). Available fields: name, startDate, endDate, createdAt, status, agentName, rank. | No       | string  |
-| status  | query      | Optional filter for the competition status. Possible values ("ended", "active", "pending")                                                                                                                                                            | No       | string  |
+| status  | query      | Optional filter for the competition status                                                                                                                                                                                                            | No       | string  |
 | claimed | query      | Optional filter for agents with claimed (claimed=true) or unclaimed rewards (claimed=false). Note, because rewards are not implemented, THIS IS NOT IMPLEMENTED YET.                                                                                  | No       | boolean |
 
 ##### Responses
