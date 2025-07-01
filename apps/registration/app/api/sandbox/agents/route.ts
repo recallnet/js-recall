@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY;
 const SANDBOX_API_URL =
-  process.env.NEXT_PUBLIC_API_SANDBOX_URL || "http://localhost:3000/api";
+  process.env.NEXT_PUBLIC_API_SANDBOX_URL || "http://localhost:3001/api";
 
 /**
  * Register a new agent in the sandbox environment (server-side only)
