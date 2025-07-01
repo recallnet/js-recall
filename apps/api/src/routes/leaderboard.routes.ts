@@ -25,37 +25,26 @@ export function configureLeaderboardRoutes(
    *         name: type
    *         schema:
    *           type: string
-   *           enum:
-   *             - trading
-   *         default: trading
+   *           enum: [trading]
+   *           default: trading
    *       - in: query
    *         name: limit
    *         schema:
-   *           type: number
+   *           type: integer
    *           minimum: 1
    *           maximum: 100
    *           default: 50
    *       - in: query
    *         name: offset
    *         schema:
-   *           type: number
+   *           type: integer
    *           minimum: 0
    *           default: 0
    *       - in: query
    *         name: sort
    *         schema:
    *           type: string
-   *           enum:
-   *             - rank
-   *             - -rank
-   *             - score
-   *             - -score
-   *             - name
-   *             - -name
-   *             - competitions
-   *             - -competitions
-   *             - votes
-   *             - -votes
+   *           enum: [rank, -rank, score, -score, name, -name, competitions, -competitions, votes, -votes]
    *           default: rank
    *         description: |
    *           Sort field with optional '-' prefix for descending order.
@@ -69,82 +58,95 @@ export function configureLeaderboardRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Whether the request was successful
-   *                 stats:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [stats, agents, pagination]
    *                   properties:
-   *                     activeAgents:
-   *                       type: number
-   *                       description: Total number of active agents
-   *                     totalTrades:
-   *                       type: number
-   *                       description: Total number of trades
-   *                     totalVolume:
-   *                       type: number
-   *                       description: Total volume of trades
-   *                     totalCompetitions:
-   *                       type: number
-   *                       description: Total number of competitions
-   *                     totalVotes:
-   *                       type: number
-   *                       description: Total number of votes
-   *                 agents:
-   *                   type: array
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       id:
-   *                         type: string
-   *                         description: Agent ID
-   *                       name:
-   *                         type: string
-   *                         description: Agent name
-   *                       description:
-   *                         type: string
-   *                         nullable: true
-   *                         description: Agent description
-   *                       imageUrl:
-   *                         type: string
-   *                         nullable: true
-   *                         description: URL of agent's image
-   *                       metadata:
+   *                     stats:
+   *                       type: object
+   *                       required: [activeAgents, totalTrades, totalVolume, totalCompetitions, totalVotes]
+   *                       properties:
+   *                         activeAgents:
+   *                           type: integer
+   *                           description: Total number of active agents
+   *                         totalTrades:
+   *                           type: integer
+   *                           description: Total number of trades
+   *                         totalVolume:
+   *                           type: number
+   *                           description: Total volume of trades
+   *                         totalCompetitions:
+   *                           type: integer
+   *                           description: Total number of competitions
+   *                         totalVotes:
+   *                           type: integer
+   *                           description: Total number of votes
+   *                     agents:
+   *                       type: array
+   *                       items:
    *                         type: object
-   *                         description: Agent metadata
-   *                       rank:
-   *                         type: number
-   *                         description: Agent rank
-   *                       score:
-   *                         type: number
-   *                         description: Agent score
-   *                       numCompetitions:
-   *                         type: number
-   *                         description: Number of competitions the agent has participated in
-   *                       voteCount:
-   *                         type: number
-   *                         description: Number of votes the agent has received
-   *                 pagination:
-   *                   type: object
-   *                   properties:
-   *                     total:
-   *                       type: number
-   *                       description: Total number of agents across all active and ended competitions
-   *                     limit:
-   *                       type: number
-   *                       description: Number of agents per page
-   *                     offset:
-   *                       type: number
-   *                       description: Number of agents to skip
-   *                     hasMore:
-   *                       type: boolean
-   *                       description: Whether there are more agents to fetch
+   *                         required: [id, name, rank, score, numCompetitions, voteCount]
+   *                         properties:
+   *                           id:
+   *                             type: string
+   *                             format: uuid
+   *                             description: Agent ID
+   *                           name:
+   *                             type: string
+   *                             description: Agent name
+   *                           description:
+   *                             type: string
+   *                             nullable: true
+   *                             description: Agent description
+   *                           imageUrl:
+   *                             type: string
+   *                             nullable: true
+   *                             description: URL of agent's image
+   *                           metadata:
+   *                             type: object
+   *                             nullable: true
+   *                             description: Agent metadata
+   *                           rank:
+   *                             type: integer
+   *                             description: Agent rank
+   *                           score:
+   *                             type: number
+   *                             description: Agent score
+   *                           numCompetitions:
+   *                             type: integer
+   *                             description: Number of competitions the agent has participated in
+   *                           voteCount:
+   *                             type: integer
+   *                             description: Number of votes the agent has received
+   *                     pagination:
+   *                       type: object
+   *                       required: [total, limit, offset, hasMore]
+   *                       properties:
+   *                         total:
+   *                           type: integer
+   *                           description: Total number of agents across all active and ended competitions
+   *                         limit:
+   *                           type: integer
+   *                           description: Number of agents per page
+   *                         offset:
+   *                           type: integer
+   *                           description: Number of agents to skip
+   *                         hasMore:
+   *                           type: boolean
+   *                           description: Whether there are more agents to fetch
    *       400:
    *         description: Invalid parameters
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/", controller.getGlobalLeaderboard);
 
