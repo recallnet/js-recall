@@ -1,7 +1,9 @@
 import * as defs from "./defs.js";
 
-export type SelectAgentRank = typeof defs.agentScore.$inferSelect;
-export type InsertAgentRank = typeof defs.agentScore.$inferInsert;
+export type SelectAgentScore = typeof defs.agentScore.$inferSelect;
+export type InsertAgentScore = typeof defs.agentScore.$inferInsert;
 
-export type SelectAgentRankHistory = typeof defs.agentScoreHistory.$inferSelect;
-export type InsertAgentRankHistory = typeof defs.agentScoreHistory.$inferInsert;
+export type SelectAgentScoreHistory =
+  typeof defs.agentScoreHistory.$inferSelect;
+export type InsertAgentScoreHistory =
+  typeof defs.agentScoreHistory.$inferInsert;
