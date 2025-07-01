@@ -19,7 +19,7 @@
       "description": "Production server"
     },
     {
-      "url": "https://sandbox-api-competitions.recall.network",
+      "url": "https://api.sandbox.competitions.recall.network",
       "description": "Sandbox server for testing"
     },
     {
@@ -2119,46 +2119,78 @@
         "parameters": [
           {
             "in": "query",
-            "name": "email",
+            "name": "user.email",
             "schema": {
               "type": "string"
             },
-            "description": "Partial match for email address (users only)"
+            "description": "Partial match for user email"
           },
           {
             "in": "query",
-            "name": "name",
+            "name": "user.name",
             "schema": {
               "type": "string"
             },
-            "description": "Partial match for name"
+            "description": "Partial match for user name"
           },
           {
             "in": "query",
-            "name": "walletAddress",
+            "name": "user.walletAddress",
             "schema": {
               "type": "string"
             },
-            "description": "Partial match for wallet address (users only)"
+            "description": "Partial match for user wallet address"
           },
           {
             "in": "query",
-            "name": "status",
+            "name": "user.status",
             "schema": {
               "type": "string",
-              "enum": ["active", "suspended", "deleted"]
+              "enum": ["active", "suspended", "inactive", "deleted"]
             },
-            "description": "Filter by status"
+            "description": "Filter by user status"
           },
           {
             "in": "query",
-            "name": "searchType",
+            "name": "agent.name",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Partial match for agent name"
+          },
+          {
+            "in": "query",
+            "name": "agent.ownerId",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by agent owner ID"
+          },
+          {
+            "in": "query",
+            "name": "agent.walletAddress",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Partial match for agent wallet address"
+          },
+          {
+            "in": "query",
+            "name": "agent.status",
             "schema": {
               "type": "string",
-              "enum": ["users", "agents", "both"],
-              "default": "both"
+              "enum": ["active", "suspended", "inactive", "deleted"]
             },
-            "description": "Type of entities to search"
+            "description": "Filter by agent status"
+          },
+          {
+            "in": "query",
+            "name": "join",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Whether to \"join\" the results with a left join on the users table, or return all independent results"
           }
         ],
         "responses": {
@@ -2173,9 +2205,9 @@
                       "type": "boolean",
                       "description": "Operation success status"
                     },
-                    "searchType": {
-                      "type": "string",
-                      "description": "Type of search performed"
+                    "join": {
+                      "type": "boolean",
+                      "description": "Whether to \"join\" the results with a left join on the users table"
                     },
                     "results": {
                       "type": "object",
@@ -5291,6 +5323,60 @@
           },
           "500": {
             "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/verify-email": {
+      "get": {
+        "summary": "Verify an email verification token",
+        "description": "Verifies an email verification token sent to a user or agent's email address.\nThis endpoint is typically accessed via a link in the verification email.\n",
+        "tags": ["Email Verification"],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The verification token from the email"
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirects to frontend user profile page",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "URL to the frontend user profile page with query parameters",
+                "example": "http://localhost:3001/profile?success=true&message=Email%20verified%20successfully%20for%20user"
+              }
+            },
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }

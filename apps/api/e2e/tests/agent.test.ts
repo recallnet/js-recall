@@ -777,13 +777,17 @@ describe("Agent API", () => {
 
     // Verify admin can see both updated fields
     const searchResponse = await adminClient.searchUsersAndAgents({
-      email: userEmail,
+      user: {
+        email: userEmail,
+      },
+      agent: {
+        name: newName,
+      },
     });
 
     expect(searchResponse.success).toBe(true);
     // Note: searchUsersAndAgents returns both users and agents, so we need to find the agent
-    const searchResults =
-      searchResponse as unknown as AdminSearchUsersAndAgentsResponse;
+    const searchResults = searchResponse as AdminSearchUsersAndAgentsResponse;
     expect(searchResults.success).toBe(true);
     expect(searchResults.results.users).toBeDefined();
     expect(searchResults.results.agents).toBeDefined();

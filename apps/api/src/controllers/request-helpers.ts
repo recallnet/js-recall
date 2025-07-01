@@ -1,8 +1,11 @@
 import { Request } from "express";
+import qs from "qs";
 
 import { UpdateCompetitionSchema } from "@/database/schema/core/types.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import {
+  AdminSearchUsersAndAgentsQuery,
+  AdminSearchUsersAndAgentsQuerySchema,
   AgentCompetitionsParamsSchema,
   CompetitionAllowedUpdateSchema,
   PagingParamsSchema,
@@ -124,4 +127,36 @@ export function buildPaginationResponse(
     offset,
     hasMore: offset + limit < total,
   };
+}
+
+/**
+ * Helper function to parse nested query parameters like `user.email`, `agent.name`
+ * Converts flat query strings to nested objects for Zod validation, and "special" URL
+ * parsing is required to support this nested structure.
+ * @param url The URL to parse
+ * @returns The parsed query parameters
+ */
+export function parseAdminSearchQuery(
+  url: string,
+): AdminSearchUsersAndAgentsQuery {
+  let result: Record<string, unknown> = {};
+  if (url.includes("?")) {
+    const queryString = url.split("?")[1];
+    if (queryString) {
+      result = qs.parse(queryString, { allowDots: true });
+    }
+  }
+  if (!result.user && !result.agent) {
+    throw new ApiError(
+      400,
+      "Invalid request format: must provide user or agent search parameters",
+    );
+  }
+
+  const { success, data, error } =
+    AdminSearchUsersAndAgentsQuerySchema.safeParse(result);
+  if (!success) {
+    throw new ApiError(400, `Invalid request format: ${error.message}`);
+  }
+  return data;
 }

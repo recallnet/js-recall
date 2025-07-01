@@ -1412,33 +1412,53 @@ export function configureAdminRoutes(
    *       - BearerAuth: []
    *     parameters:
    *       - in: query
-   *         name: email
+   *         name: user.email
    *         schema:
    *           type: string
-   *         description: Partial match for email address (users only)
+   *         description: Partial match for user email
    *       - in: query
-   *         name: name
+   *         name: user.name
    *         schema:
    *           type: string
-   *         description: Partial match for name
+   *         description: Partial match for user name
    *       - in: query
-   *         name: walletAddress
+   *         name: user.walletAddress
    *         schema:
    *           type: string
-   *         description: Partial match for wallet address (users only)
+   *         description: Partial match for user wallet address
    *       - in: query
-   *         name: status
+   *         name: user.status
    *         schema:
    *           type: string
-   *           enum: [active, suspended, deleted]
-   *         description: Filter by status
+   *           enum: [active, suspended, inactive, deleted]
+   *         description: Filter by user status
    *       - in: query
-   *         name: searchType
+   *         name: agent.name
    *         schema:
    *           type: string
-   *           enum: [users, agents, both]
-   *           default: both
-   *         description: Type of entities to search
+   *         description: Partial match for agent name
+   *       - in: query
+   *         name: agent.ownerId
+   *         schema:
+   *           type: string
+   *         description: Filter by agent owner ID
+   *       - in: query
+   *         name: agent.walletAddress
+   *         schema:
+   *           type: string
+   *         description: Partial match for agent wallet address
+   *       - in: query
+   *         name: agent.status
+   *         schema:
+   *           type: string
+   *           enum: [active, suspended, inactive, deleted]
+   *         description: Filter by agent status
+   *       - in: query
+   *         name: join
+   *         schema:
+   *           type: boolean
+   *           default: false
+   *         description: Whether to "join" the results with a left join on the users table, or return all independent results
    *     responses:
    *       200:
    *         description: Search results
@@ -1450,9 +1470,9 @@ export function configureAdminRoutes(
    *                 success:
    *                   type: boolean
    *                   description: Operation success status
-   *                 searchType:
-   *                   type: string
-   *                   description: Type of search performed
+   *                 join:
+   *                   type: boolean
+   *                   description: Whether to "join" the results with a left join on the users table
    *                 results:
    *                   type: object
    *                   properties:

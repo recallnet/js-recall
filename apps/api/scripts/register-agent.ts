@@ -8,14 +8,15 @@
  *   pnpm register:agent
  *
  * Or with command line arguments:
- *   pnpm register:agent -- "Agent Name" "0xOwnersWalletAddress"
+ *   pnpm register:agent -- "Agent Name" "0xOwnersWalletAddress" "agent@email.com"
  *
  * The script will:
  * 1. Connect to the database
  * 2. Create a new agent with API credentials using the AgentManager service
- * 3. Update the agent with the wallet address using database connection
- * 4. Display the API key (only shown once)
- * 5. Close the database connection
+ * 3. Send a verification email if an email address is provided
+ * 4. Update the agent with the wallet address using database connection
+ * 5. Display the API key (only shown once)
+ * 6. Close the database connection
  */
 import * as dotenv from "dotenv";
 import * as path from "path";
@@ -99,6 +100,7 @@ async function registerAgent() {
     // Get agent details from command line arguments or prompt for them
     let agentName = process.argv[2];
     let walletAddress = process.argv[3];
+    let agentEmail = process.argv[4];
 
     // Temporarily restore console.log for input
     console.log = originalConsoleLog;
@@ -128,11 +130,16 @@ async function registerAgent() {
       );
     }
 
+    if (!agentEmail) {
+      agentEmail = await prompt("Enter agent email (optional): ");
+    }
+
     safeLog(
       `\n${colors.yellow}Registering agent with the following details:${colors.reset}`,
     );
     safeLog(`- Agent Name: ${agentName}`);
     safeLog(`- Owner's Wallet Address: ${walletAddress}`);
+    safeLog(`- Agent Email: ${agentEmail || "Not provided"}`);
 
     const confirmRegistration = await prompt(
       `${colors.yellow}Proceed with registration? (y/n): ${colors.reset}`,
@@ -163,6 +170,7 @@ async function registerAgent() {
     const agent = await services.agentManager.createAgent({
       ownerId: owner.id,
       name: agentName,
+      email: agentEmail || undefined,
     });
 
     safeLog(`\n${colors.green}✓ Agent registered successfully!${colors.reset}`);
@@ -174,6 +182,12 @@ async function registerAgent() {
     safeLog(`Agent Name: ${agent.name}`);
     safeLog(`Owner ID: ${owner.id}`);
     safeLog(`Owner Wallet Address: ${owner.walletAddress}`);
+    if (agent.email) {
+      safeLog(`Agent Email: ${agent.email}`);
+      safeLog(
+        `${colors.green}A verification email has been sent to ${agent.email}${colors.reset}`,
+      );
+    }
     safeLog(
       `${colors.cyan}----------------------------------------${colors.reset}`,
     );

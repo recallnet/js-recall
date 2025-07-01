@@ -9,6 +9,8 @@ import {
   AdminAgentsListResponse,
   AdminReactivateAgentInCompetitionResponse,
   AdminRemoveAgentFromCompetitionResponse,
+  AdminSearchParams,
+  AdminSearchUsersAndAgentsResponse,
   AdminUserResponse,
   AdminUsersListResponse,
   AgentApiKeyResponse,
@@ -1275,56 +1277,38 @@ export class ApiClient {
 
   /**
    * Search users and agents (admin only)
-   * @param searchParams Search parameters (email, name, walletAddress, status, searchType)
+   * @param searchParams Search parameters (user.<field>, agent.<field>, join)
    */
-  async searchUsersAndAgents(searchParams: {
-    email?: string;
-    name?: string;
-    walletAddress?: string;
-    status?: "active" | "suspended" | "deleted";
-    searchType?: "users" | "agents" | "both";
-  }): Promise<
-    | {
-        success: boolean;
-        searchType: string;
-        results: {
-          users: Array<{
-            type: "user";
-            id: string;
-            walletAddress: string;
-            name: string | null;
-            email: string | null;
-            status: string;
-            imageUrl: string | null;
-            createdAt: string;
-            updatedAt: string;
-          }>;
-          agents: Array<{
-            type: "agent";
-            id: string;
-            ownerId: string;
-            name: string;
-            description: string | null;
-            status: string;
-            imageUrl: string | null;
-            createdAt: string;
-            updatedAt: string;
-          }>;
-        };
-      }
-    | ErrorResponse
-  > {
+  async searchUsersAndAgents(
+    searchParams: AdminSearchParams,
+  ): Promise<AdminSearchUsersAndAgentsResponse | ErrorResponse> {
     try {
       const queryParams = new URLSearchParams();
 
-      if (searchParams.email) queryParams.append("email", searchParams.email);
-      if (searchParams.name) queryParams.append("name", searchParams.name);
-      if (searchParams.walletAddress)
-        queryParams.append("walletAddress", searchParams.walletAddress);
-      if (searchParams.status)
-        queryParams.append("status", searchParams.status);
-      if (searchParams.searchType)
-        queryParams.append("searchType", searchParams.searchType);
+      if (searchParams.user?.email)
+        queryParams.append("user.email", searchParams.user?.email);
+      if (searchParams.user?.name)
+        queryParams.append("user.name", searchParams.user?.name);
+      if (searchParams.user?.walletAddress)
+        queryParams.append(
+          "user.walletAddress",
+          searchParams.user?.walletAddress,
+        );
+      if (searchParams.user?.status)
+        queryParams.append("user.status", searchParams.user?.status);
+      if (searchParams.agent?.name)
+        queryParams.append("agent.name", searchParams.agent?.name);
+      if (searchParams.agent?.ownerId)
+        queryParams.append("agent.ownerId", searchParams.agent?.ownerId);
+      if (searchParams.agent?.walletAddress)
+        queryParams.append(
+          "agent.walletAddress",
+          searchParams.agent?.walletAddress,
+        );
+      if (searchParams.agent?.status)
+        queryParams.append("agent.status", searchParams.agent?.status);
+      if (searchParams?.join)
+        queryParams.append("join", searchParams.join.toString());
 
       const url = `/api/admin/search?${queryParams.toString()}`;
 
