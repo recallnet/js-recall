@@ -1383,11 +1383,17 @@ export class AgentManager {
         bulkMetrics.map((metrics) => [metrics.agentId, metrics]),
       );
 
-      // Get bulk trophies using optimized single query approach
-      const bulkTrophies = await getBulkAgentTrophies(agentIds);
-      const trophiesMap = new Map(
-        bulkTrophies.map((trophy) => [trophy.agentId, trophy.trophies]),
-      );
+      // Get bulk trophies using optimized single query approach with error handling
+      let trophiesMap = new Map();
+      try {
+        const bulkTrophies = await getBulkAgentTrophies(agentIds);
+        trophiesMap = new Map(
+          bulkTrophies.map((trophy) => [trophy.agentId, trophy.trophies]),
+        );
+      } catch (error) {
+        console.error("[AgentManager] Error fetching bulk trophies:", error);
+        console.warn("[AgentManager] Proceeding with empty trophies map");
+      }
 
       // Process agents synchronously with O(1) trophy lookups
       return sanitizedAgents.map((sanitizedAgent) => {
