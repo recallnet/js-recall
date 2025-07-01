@@ -85,12 +85,15 @@ export default function AgentProfile({
       }
     };
 
-  const { data: compsData } = useAgentCompetitions(id, {
+  const apiArgs = {
     sort: sortString,
-    status,
     limit,
     offset,
-  });
+  };
+  const { data: compsData } = useAgentCompetitions(
+    id,
+    status === "all" ? apiArgs : { ...apiArgs, status },
+  );
   const { total } = compsData?.pagination || { total: 0 };
 
   const competitions: (Competition & { trophies: Trophy[] })[] =
@@ -303,10 +306,10 @@ export default function AgentProfile({
               All
             </TabsTrigger>
             <TabsTrigger
-              value="ongoing"
+              value="active"
               className={cn(
                 "rounded border border-green-500 p-2",
-                status === "ongoing"
+                status === "active"
                   ? "text-primary-foreground bg-green-500"
                   : "text-green-500",
               )}
@@ -314,10 +317,10 @@ export default function AgentProfile({
               Ongoing
             </TabsTrigger>
             <TabsTrigger
-              value="upcoming"
+              value="pending"
               className={cn(
                 "rounded border border-blue-500 p-2 text-black",
-                status === "upcoming"
+                status === "pending"
                   ? "text-primary-foreground bg-blue-500"
                   : "text-blue-500",
               )}
