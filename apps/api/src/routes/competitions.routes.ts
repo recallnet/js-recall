@@ -15,15 +15,15 @@ export function configureCompetitionsRoutes(
    *   get:
    *     tags:
    *       - Competition
-   *     summary: Get upcoming competitions
-   *     description: Get all competitions
+   *     summary: Get competitions
+   *     description: Get all competitions with optional filtering by status, sorting, and pagination
    *     security:
    *       - BearerAuth: []
    *     parameters:
    *       - in: query
    *         name: status
    *         schema:
-   *           type: string
+   *           $ref: '#/components/schemas/CompetitionStatus'
    *         required: false
    *         description: Optional filtering by competition status (default value is `active`)
    *       - in: query
@@ -35,13 +35,18 @@ export function configureCompetitionsRoutes(
    *       - in: query
    *         name: limit
    *         schema:
-   *           type: string
+   *           type: integer
+   *           minimum: 1
+   *           maximum: 100
+   *           default: 10
    *         required: false
    *         description: Optional field to choose max size of result set (default value is `10`)
    *       - in: query
    *         name: offset
    *         schema:
-   *           type: string
+   *           type: integer
+   *           minimum: 0
+   *           default: 0
    *         required: false
    *         description: Optional field to choose offset of result set (default value is `0`)
    *     responses:
@@ -50,111 +55,29 @@ export function configureCompetitionsRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 competitions:
-   *                   type: array
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       id:
-   *                         type: string
-   *                         description: Competition ID
-   *                       name:
-   *                         type: string
-   *                         description: Competition name
-   *                       description:
-   *                         type: string
-   *                         nullable: true
-   *                         description: Competition description
-   *                       externalUrl:
-   *                         type: string
-   *                         nullable: true
-   *                         description: External URL for competition details
-   *                       imageUrl:
-   *                         type: string
-   *                         nullable: true
-   *                         description: URL to competition image
-   *                       status:
-   *                         type: string
-   *                         enum: [pending]
-   *                         description: Competition status (always PENDING)
-   *                       type:
-   *                         type: string
-   *                         enum: [trading]
-   *                         description: Competition type
-   *                       crossChainTradingType:
-   *                         type: string
-   *                         enum: [disallowAll, disallowXParent, allow]
-   *                         description: The type of cross-chain trading allowed in this competition
-   *                       createdAt:
-   *                         type: string
-   *                         format: date-time
-   *                         description: When the competition was created
-   *                       updatedAt:
-   *                         type: string
-   *                         format: date-time
-   *                         description: When the competition was last updated
-   *                       votingEnabled:
-   *                         type: boolean
-   *                         description: Whether voting is enabled for this competition (only present for authenticated users)
-   *                       totalVotes:
-   *                         type: integer
-   *                         description: Total number of votes cast in this competition (only present for authenticated users)
-   *                       userVotingInfo:
-   *                         type: object
-   *                         nullable: true
-   *                         description: User's voting state for this competition (only present for authenticated users)
-   *                         properties:
-   *                           canVote:
-   *                             type: boolean
-   *                             description: Whether the user can vote in this competition
-   *                           reason:
-   *                             type: string
-   *                             nullable: true
-   *                             description: Reason why voting is not allowed (if canVote is false)
-   *                           info:
-   *                             type: object
-   *                             properties:
-   *                               hasVoted:
-   *                                 type: boolean
-   *                                 description: Whether the user has already voted in this competition
-   *                               agentId:
-   *                                 type: string
-   *                                 nullable: true
-   *                                 description: ID of the agent the user voted for (if hasVoted is true)
-   *                               votedAt:
-   *                                 type: string
-   *                                 format: date-time
-   *                                 nullable: true
-   *                                 description: When the user cast their vote (if hasVoted is true)
-   *                 pagination:
-   *                   type: object
-   *                   description: Pagination metadata
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [competitions, pagination]
    *                   properties:
-   *                     total:
-   *                       type: integer
-   *                       description: Total number of competitions matching the filter
-   *                       example: 25
-   *                     limit:
-   *                       type: integer
-   *                       description: Maximum number of results returned
-   *                       example: 10
-   *                     offset:
-   *                       type: integer
-   *                       description: Number of results skipped
-   *                       example: 0
-   *                     hasMore:
-   *                       type: boolean
-   *                       description: Whether there are more results available
-   *                       example: true
+   *                     competitions:
+   *                       type: array
+   *                       items:
+   *                         $ref: '#/components/schemas/Competition'
+   *                     pagination:
+   *                       $ref: '#/components/schemas/PaginationMeta'
    *       401:
    *         description: Unauthorized - Missing or invalid authentication
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/", optionalAuthMiddleware, controller.getCompetitions);
 
@@ -173,124 +96,105 @@ export function configureCompetitionsRoutes(
    *         name: competitionId
    *         schema:
    *           type: string
+   *           format: uuid
    *         required: false
    *         description: Optional competition ID (if not provided, the active competition is used)
    *     responses:
    *       200:
-   *         description: Competition leaderboard
+   *         description: Competition leaderboard retrieved successfully
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 competition:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [competition, leaderboard, inactiveAgents, hasInactiveAgents]
    *                   properties:
-   *                     id:
-   *                       type: string
-   *                       description: Competition ID
-   *                     name:
-   *                       type: string
-   *                       description: Competition name
-   *                     description:
-   *                       type: string
-   *                       nullable: true
-   *                       description: Competition description
-   *                     externalUrl:
-   *                       type: string
-   *                       nullable: true
-   *                       description: External URL for competition details
-   *                     imageUrl:
-   *                       type: string
-   *                       nullable: true
-   *                       description: URL to competition image
-   *                     startDate:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Competition start date
-   *                     endDate:
-   *                       type: string
-   *                       format: date-time
-   *                       nullable: true
-   *                       description: Competition end date
-   *                     status:
-   *                       type: string
-   *                       enum: [pending, active, ended]
-   *                       description: Competition status
-   *                     type:
-   *                       type: string
-   *                       enum: [trading]
-   *                       description: Competition type
-   *                     createdAt:
-   *                       type: string
-   *                       format: date-time
-   *                       description: When the competition was created
-   *                     updatedAt:
-   *                       type: string
-   *                       format: date-time
-   *                       description: When the competition was last updated
-   *                 leaderboard:
-   *                   type: array
-   *                   description: Ranked list of active agents
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       rank:
-   *                         type: integer
-   *                         description: Agent rank on the leaderboard
-   *                       agentId:
-   *                         type: string
-   *                         description: Agent ID
-   *                       agentName:
-   *                         type: string
-   *                         description: Agent name
-   *                       portfolioValue:
-   *                         type: number
-   *                         description: Current portfolio value in USD
-   *                       active:
-   *                         type: boolean
-   *                         description: Always true for this array
-   *                       deactivationReason:
-   *                         type: string
-   *                         nullable: true
-   *                         description: Always null for active agents
-   *                 inactiveAgents:
-   *                   type: array
-   *                   description: List of agents not actively participating in this competition (excluded from ranking)
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       agentId:
-   *                         type: string
-   *                         description: Agent ID
-   *                       agentName:
-   *                         type: string
-   *                         description: Agent name
-   *                       portfolioValue:
-   *                         type: number
-   *                         description: Current portfolio value in USD
-   *                       active:
-   *                         type: boolean
-   *                         description: Always false for this array
-   *                       deactivationReason:
-   *                         type: string
-   *                         description: Reason for removal from this specific competition
-   *                 hasInactiveAgents:
-   *                   type: boolean
-   *                   description: Indicates if any agents are not actively participating in this competition
+   *                     competition:
+   *                       $ref: '#/components/schemas/Competition'
+   *                     leaderboard:
+   *                       type: array
+   *                       description: Ranked list of active agents
+   *                       items:
+   *                         type: object
+   *                         required: [rank, agentId, agentName, portfolioValue, active, deactivationReason]
+   *                         properties:
+   *                           rank:
+   *                             type: integer
+   *                             description: Agent rank on the leaderboard
+   *                           agentId:
+   *                             type: string
+   *                             format: uuid
+   *                             description: Agent ID
+   *                           agentName:
+   *                             type: string
+   *                             description: Agent name
+   *                           portfolioValue:
+   *                             type: number
+   *                             description: Current portfolio value in USD
+   *                           active:
+   *                             type: boolean
+   *                             description: Always true for this array
+   *                           deactivationReason:
+   *                             type: string
+   *                             nullable: true
+   *                             description: Always null for active agents
+   *                     inactiveAgents:
+   *                       type: array
+   *                       description: List of agents not actively participating in this competition (excluded from ranking)
+   *                       items:
+   *                         type: object
+   *                         required: [agentId, agentName, portfolioValue, active, deactivationReason]
+   *                         properties:
+   *                           agentId:
+   *                             type: string
+   *                             format: uuid
+   *                             description: Agent ID
+   *                           agentName:
+   *                             type: string
+   *                             description: Agent name
+   *                           portfolioValue:
+   *                             type: number
+   *                             description: Current portfolio value in USD
+   *                           active:
+   *                             type: boolean
+   *                             description: Always false for this array
+   *                           deactivationReason:
+   *                             type: string
+   *                             description: Reason for removal from this specific competition
+   *                     hasInactiveAgents:
+   *                       type: boolean
+   *                       description: Indicates if any agents are not actively participating in this competition
    *       400:
    *         description: Bad request - No active competition and no competitionId provided
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: Unauthorized - Missing or invalid authentication
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       403:
    *         description: Forbidden - Agent not participating in the competition
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
    *         description: Competition not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/leaderboard", ...authMiddlewares, controller.getLeaderboard);
 
@@ -306,114 +210,43 @@ export function configureCompetitionsRoutes(
    *       - BearerAuth: []
    *     responses:
    *       200:
-   *         description: Competition status
+   *         description: Competition status retrieved successfully
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 active:
-   *                   type: boolean
-   *                   description: Whether there is an active competition
-   *                 competition:
-   *                   type: object
-   *                   nullable: true
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [active]
    *                   properties:
-   *                     id:
-   *                       type: string
-   *                       description: Competition ID
-   *                     name:
-   *                       type: string
-   *                       description: Competition name
-   *                     description:
-   *                       type: string
-   *                       nullable: true
-   *                       description: Competition description
-   *                     externalUrl:
-   *                       type: string
-   *                       nullable: true
-   *                       description: External URL for competition details
-   *                     imageUrl:
-   *                       type: string
-   *                       nullable: true
-   *                       description: URL to competition image
-   *                     startDate:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Competition start date
-   *                     endDate:
-   *                       type: string
-   *                       format: date-time
-   *                       nullable: true
-   *                       description: Competition end date
-   *                     status:
-   *                       type: string
-   *                       enum: [pending, active, ended]
-   *                       description: Competition status
-   *                     type:
-   *                       type: string
-   *                       enum: [trading]
-   *                       description: Competition type
-   *                     crossChainTradingType:
-   *                       type: string
-   *                       enum: [disallowAll, disallowXParent, allow]
-   *                       description: The type of cross-chain trading allowed in this competition
-   *                     createdAt:
-   *                       type: string
-   *                       format: date-time
-   *                       description: When the competition was created
-   *                     updatedAt:
-   *                       type: string
-   *                       format: date-time
-   *                       description: When the competition was last updated
-   *                     totalVotes:
-   *                       type: integer
-   *                       description: Total number of votes cast in this competition
-   *                     votingEnabled:
+   *                     active:
    *                       type: boolean
-   *                       description: Whether voting is enabled for this competition (only present for authenticated users)
-   *                     userVotingInfo:
-   *                       type: object
+   *                       description: Whether there is an active competition
+   *                     competition:
+   *                       oneOf:
+   *                         - $ref: '#/components/schemas/Competition'
+   *                         - type: "null"
+   *                       description: Competition details (null if no active competition)
+   *                     message:
+   *                       type: string
    *                       nullable: true
-   *                       description: User's voting state for this competition (only present for authenticated users)
-   *                       properties:
-   *                         canVote:
-   *                           type: boolean
-   *                           description: Whether the user can vote in this competition
-   *                         reason:
-   *                           type: string
-   *                           nullable: true
-   *                           description: Reason why voting is not allowed (if canVote is false)
-   *                         info:
-   *                           type: object
-   *                           properties:
-   *                             hasVoted:
-   *                               type: boolean
-   *                               description: Whether the user has already voted in this competition
-   *                             agentId:
-   *                               type: string
-   *                               nullable: true
-   *                               description: ID of the agent the user voted for (if hasVoted is true)
-   *                             votedAt:
-   *                               type: string
-   *                               format: date-time
-   *                               nullable: true
-   *                               description: When the user cast their vote (if hasVoted is true)
-   *                 message:
-   *                   type: string
-   *                   description: Additional information about the competition status
-   *                   nullable: true
-   *                 participating:
-   *                   type: boolean
-   *                   description: Whether the authenticated agent is participating in the competition
-   *                   nullable: true
+   *                       description: Additional information about the competition status
+   *                     participating:
+   *                       type: boolean
+   *                       nullable: true
+   *                       description: Whether the authenticated agent is participating in the competition
    *       401:
    *         description: Unauthorized - Missing or invalid authentication
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/status", ...authMiddlewares, controller.getStatus);
 
@@ -433,52 +266,71 @@ export function configureCompetitionsRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 rules:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [rules]
    *                   properties:
-   *                     tradingRules:
-   *                       type: array
-   *                       items:
-   *                         type: string
-   *                       description: List of trading rules for the competition
-   *                     rateLimits:
-   *                       type: array
-   *                       items:
-   *                         type: string
-   *                       description: Rate limits for API endpoints
-   *                     availableChains:
+   *                     rules:
    *                       type: object
+   *                       required: [tradingRules, rateLimits, availableChains, slippageFormula, portfolioSnapshots]
    *                       properties:
-   *                         svm:
-   *                           type: boolean
-   *                           description: Whether Solana (SVM) is available
-   *                         evm:
+   *                         tradingRules:
    *                           type: array
    *                           items:
    *                             type: string
-   *                           description: List of available EVM chains
-   *                     slippageFormula:
-   *                       type: string
-   *                       description: Formula used for calculating slippage
-   *                     portfolioSnapshots:
-   *                       type: object
-   *                       properties:
-   *                         interval:
+   *                           description: List of trading rules for the competition
+   *                         rateLimits:
+   *                           type: array
+   *                           items:
+   *                             type: string
+   *                           description: Rate limits for API endpoints
+   *                         availableChains:
+   *                           type: object
+   *                           required: [svm, evm]
+   *                           properties:
+   *                             svm:
+   *                               type: boolean
+   *                               description: Whether Solana (SVM) is available
+   *                             evm:
+   *                               type: array
+   *                               items:
+   *                                 $ref: '#/components/schemas/SpecificChain'
+   *                               description: List of available EVM chains
+   *                         slippageFormula:
    *                           type: string
-   *                           description: Interval between portfolio snapshots
+   *                           description: Formula used for calculating slippage
+   *                         portfolioSnapshots:
+   *                           type: object
+   *                           required: [interval]
+   *                           properties:
+   *                             interval:
+   *                               type: string
+   *                               description: Interval between portfolio snapshots
    *       400:
    *         description: Bad request - No active competition
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: Unauthorized - Missing or invalid authentication
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       403:
    *         description: Forbidden - Agent not participating in the competition
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/rules", ...authMiddlewares, controller.getRules);
 
@@ -498,58 +350,27 @@ export function configureCompetitionsRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 competitions:
-   *                   type: array
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       id:
-   *                         type: string
-   *                         description: Competition ID
-   *                       name:
-   *                         type: string
-   *                         description: Competition name
-   *                       description:
-   *                         type: string
-   *                         nullable: true
-   *                         description: Competition description
-   *                       externalUrl:
-   *                         type: string
-   *                         nullable: true
-   *                         description: External URL for competition details
-   *                       imageUrl:
-   *                         type: string
-   *                         nullable: true
-   *                         description: URL to competition image
-   *                       status:
-   *                         type: string
-   *                         enum: [pending]
-   *                         description: Competition status (always pending)
-   *                       type:
-   *                         type: string
-   *                         enum: [trading]
-   *                         description: Competition type
-   *                       crossChainTradingType:
-   *                         type: string
-   *                         enum: [disallowAll, disallowXParent, allow]
-   *                         description: The type of cross-chain trading allowed in this competition
-   *                       createdAt:
-   *                         type: string
-   *                         format: date-time
-   *                         description: When the competition was created
-   *                       updatedAt:
-   *                         type: string
-   *                         format: date-time
-   *                         description: When the competition was last updated
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [competitions]
+   *                   properties:
+   *                     competitions:
+   *                       type: array
+   *                       items:
+   *                         $ref: '#/components/schemas/Competition'
    *       401:
    *         description: Unauthorized - Missing or invalid authentication
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get(
     "/upcoming",
@@ -564,7 +385,7 @@ export function configureCompetitionsRoutes(
    *     tags:
    *       - Competition
    *     summary: Get competition details by ID
-   *     description: Get detailed information about a specific competition including all metadata
+   *     description: Get detailed information about a specific competition including all metadata and statistics
    *     security:
    *       - BearerAuth: []
    *     parameters:
@@ -572,6 +393,7 @@ export function configureCompetitionsRoutes(
    *         name: competitionId
    *         schema:
    *           type: string
+   *           format: uuid
    *         required: true
    *         description: The ID of the competition to retrieve
    *     responses:
@@ -580,118 +402,89 @@ export function configureCompetitionsRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 competition:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [competition]
    *                   properties:
-   *                     id:
-   *                       type: string
-   *                       description: Competition ID
-   *                     name:
-   *                       type: string
-   *                       description: Competition name
-   *                     description:
-   *                       type: string
-   *                       nullable: true
-   *                       description: Competition description
-   *                     externalUrl:
-   *                       type: string
-   *                       nullable: true
-   *                       description: External URL for competition details
-   *                     imageUrl:
-   *                       type: string
-   *                       nullable: true
-   *                       description: URL to competition image
-   *                     status:
-   *                       type: string
-   *                       enum: [pending, active, completed]
-   *                       description: Competition status
-   *                     type:
-   *                       type: string
-   *                       enum: [trading]
-   *                       description: Competition type
-   *                     crossChainTradingType:
-   *                       type: string
-   *                       enum: [disallowAll, disallowXParent, allow]
-   *                       description: The type of cross-chain trading allowed in this competition
-   *                     startDate:
-   *                       type: string
-   *                       format: date-time
-   *                       nullable: true
-   *                       description: Competition start date (null for pending competitions)
-   *                     endDate:
-   *                       type: string
-   *                       format: date-time
-   *                       nullable: true
-   *                       description: Competition end date (null for pending/active competitions)
-   *                     stats:
-   *                       type: object
-   *                       properties:
-   *                         totalTrades:
-   *                           type: number
-   *                           description: Total number of trades
-   *                         totalAgents:
-   *                           type: number
-   *                           description: Total number of agents
-   *                         totalVolume:
-   *                           type: number
-   *                           description: Total volume of trades in USD
-   *                         totalVotes:
-   *                           type: integer
-   *                           description: Total number of votes cast in this competition
-   *                         uniqueTokens:
-   *                           type: number
-   *                           description: Total number of unique tokens traded
-   *                     createdAt:
-   *                       type: string
-   *                       format: date-time
-   *                       description: When the competition was created
-   *                     updatedAt:
-   *                       type: string
-   *                       format: date-time
-   *                       description: When the competition was last updated
-   *                     votingEnabled:
-   *                       type: boolean
-   *                       description: Whether voting is enabled for this competition (only present for authenticated users)
-   *                     userVotingInfo:
-   *                       type: object
-   *                       nullable: true
-   *                       description: User's voting state for this competition (only present for authenticated users)
-   *                       properties:
-   *                         canVote:
-   *                           type: boolean
-   *                           description: Whether the user can vote in this competition
-   *                         reason:
-   *                           type: string
-   *                           nullable: true
-   *                           description: Reason why voting is not allowed (if canVote is false)
-   *                         info:
-   *                           type: object
+   *                     competition:
+   *                       allOf:
+   *                         - $ref: '#/components/schemas/Competition'
+   *                         - type: object
    *                           properties:
-   *                             hasVoted:
+   *                             stats:
+   *                               type: object
+   *                               required: [totalTrades, totalAgents, totalVolume, totalVotes, uniqueTokens]
+   *                               properties:
+   *                                 totalTrades:
+   *                                   type: number
+   *                                   description: Total number of trades
+   *                                 totalAgents:
+   *                                   type: number
+   *                                   description: Total number of agents
+   *                                 totalVolume:
+   *                                   type: number
+   *                                   description: Total volume of trades in USD
+   *                                 totalVotes:
+   *                                   type: integer
+   *                                   description: Total number of votes cast in this competition
+   *                                 uniqueTokens:
+   *                                   type: number
+   *                                   description: Total number of unique tokens traded
+   *                             votingEnabled:
    *                               type: boolean
-   *                               description: Whether the user has already voted in this competition
-   *                             agentId:
-   *                               type: string
+   *                               description: Whether voting is enabled for this competition (only present for authenticated users)
+   *                             userVotingInfo:
+   *                               type: object
    *                               nullable: true
-   *                               description: ID of the agent the user voted for (if hasVoted is true)
-   *                             votedAt:
-   *                               type: string
-   *                               format: date-time
-   *                               nullable: true
-   *                               description: When the user cast their vote (if hasVoted is true)
+   *                               description: User's voting state for this competition (only present for authenticated users)
+   *                               properties:
+   *                                 canVote:
+   *                                   type: boolean
+   *                                   description: Whether the user can vote in this competition
+   *                                 reason:
+   *                                   type: string
+   *                                   nullable: true
+   *                                   description: Reason why voting is not allowed (if canVote is false)
+   *                                 info:
+   *                                   type: object
+   *                                   properties:
+   *                                     hasVoted:
+   *                                       type: boolean
+   *                                       description: Whether the user has already voted in this competition
+   *                                     agentId:
+   *                                       type: string
+   *                                       nullable: true
+   *                                       description: ID of the agent the user voted for (if hasVoted is true)
+   *                                     votedAt:
+   *                                       type: string
+   *                                       format: date-time
+   *                                       nullable: true
+   *                                       description: When the user cast their vote (if hasVoted is true)
    *       400:
    *         description: Bad request - Invalid competition ID format
-   *       404:
-   *         description: Competition not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: Unauthorized - Missing or invalid authentication
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       404:
+   *         description: Competition not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get(
     "/:competitionId",
@@ -714,6 +507,7 @@ export function configureCompetitionsRoutes(
    *         name: competitionId
    *         schema:
    *           type: string
+   *           format: uuid
    *         required: true
    *         description: The ID of the competition to get agents for
    *       - in: query
@@ -757,89 +551,94 @@ export function configureCompetitionsRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 competitionId:
-   *                   type: string
-   *                   description: The ID of the competition
-   *                 agents:
-   *                   type: array
-   *                   description: List of agents participating in the competition
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       id:
-   *                         type: string
-   *                         description: Agent ID
-   *                       name:
-   *                         type: string
-   *                         description: Agent name
-   *                       description:
-   *                         type: string
-   *                         nullable: true
-   *                         description: Agent description
-   *                       imageUrl:
-   *                         type: string
-   *                         nullable: true
-   *                         description: Agent image URL
-   *                       score:
-   *                         type: number
-   *                         description: Agent's current score/portfolio value
-   *                       position:
-   *                         type: integer
-   *                         description: Agent's current position in the competition
-   *                       portfolioValue:
-   *                         type: number
-   *                         description: Current portfolio value in USD
-   *                       active:
-   *                         type: boolean
-   *                         description: Whether the agent is actively participating in this specific competition
-   *                       deactivationReason:
-   *                         type: string
-   *                         nullable: true
-   *                         description: Reason for deactivation from this specific competition (if status is inactive)
-   *                       pnl:
-   *                         type: number
-   *                         description: Total profit/loss from competition start (USD)
-   *                       pnlPercent:
-   *                         type: number
-   *                         description: PnL as percentage of starting value
-   *                       change24h:
-   *                         type: number
-   *                         description: Portfolio value change in last 24 hours (USD)
-   *                       change24hPercent:
-   *                         type: number
-   *                         description: 24h change as percentage
-   *                       voteCount:
-   *                         type: integer
-   *                         description: Number of votes this agent has received in the competition
-   *                 pagination:
-   *                   type: object
-   *                   description: Pagination metadata
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [competitionId, agents, pagination]
    *                   properties:
-   *                     total:
-   *                       type: integer
-   *                       description: Total number of agents in the competition
-   *                     limit:
-   *                       type: integer
-   *                       description: Maximum number of results returned
-   *                     offset:
-   *                       type: integer
-   *                       description: Number of results skipped
-   *                     hasMore:
-   *                       type: boolean
-   *                       description: Whether there are more results available
+   *                     competitionId:
+   *                       type: string
+   *                       format: uuid
+   *                       description: The ID of the competition
+   *                     agents:
+   *                       type: array
+   *                       description: List of agents participating in the competition
+   *                       items:
+   *                         type: object
+   *                         required: [id, name, score, position, portfolioValue, active, pnl, pnlPercent, change24h, change24hPercent, voteCount]
+   *                         properties:
+   *                           id:
+   *                             type: string
+   *                             format: uuid
+   *                             description: Agent ID
+   *                           name:
+   *                             type: string
+   *                             description: Agent name
+   *                           description:
+   *                             type: string
+   *                             nullable: true
+   *                             description: Agent description
+   *                           imageUrl:
+   *                             type: string
+   *                             nullable: true
+   *                             description: Agent image URL
+   *                           score:
+   *                             type: number
+   *                             description: Agent's current score/portfolio value
+   *                           position:
+   *                             type: integer
+   *                             description: Agent's current position in the competition
+   *                           portfolioValue:
+   *                             type: number
+   *                             description: Current portfolio value in USD
+   *                           active:
+   *                             type: boolean
+   *                             description: Whether the agent is actively participating in this specific competition
+   *                           deactivationReason:
+   *                             type: string
+   *                             nullable: true
+   *                             description: Reason for deactivation from this specific competition (if status is inactive)
+   *                           pnl:
+   *                             type: number
+   *                             description: Total profit/loss from competition start (USD)
+   *                           pnlPercent:
+   *                             type: number
+   *                             description: PnL as percentage of starting value
+   *                           change24h:
+   *                             type: number
+   *                             description: Portfolio value change in last 24 hours (USD)
+   *                           change24hPercent:
+   *                             type: number
+   *                             description: 24h change as percentage
+   *                           voteCount:
+   *                             type: integer
+   *                             description: Number of votes this agent has received in the competition
+   *                     pagination:
+   *                       $ref: '#/components/schemas/PaginationMeta'
    *       400:
    *         description: Bad request - Invalid competition ID format or query parameters
-   *       404:
-   *         description: Competition not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: Unauthorized - Missing or invalid authentication
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       404:
+   *         description: Competition not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/:competitionId/agents", controller.getCompetitionAgents);
 
@@ -874,18 +673,26 @@ export function configureCompetitionsRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 message:
-   *                   type: string
-   *                   description: Success message
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [message]
+   *                   properties:
+   *                     message:
+   *                       type: string
+   *                       description: Success message
    *       400:
    *         description: Bad request - Invalid UUID format for competitionId or agentId
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: Unauthorized - Missing or invalid authentication
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       403:
    *         description: |
    *           Forbidden - Various business rule violations:
@@ -893,10 +700,22 @@ export function configureCompetitionsRoutes(
    *           - Agent does not belong to requesting user
    *           - Agent is already registered for this competition
    *           - Agent is not eligible to join competitions
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
    *         description: Competition or agent not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.post(
     "/:competitionId/agents/:agentId",
@@ -937,28 +756,48 @@ export function configureCompetitionsRoutes(
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 message:
-   *                   type: string
-   *                   description: Success message
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [message]
+   *                   properties:
+   *                     message:
+   *                       type: string
+   *                       description: Success message
    *       400:
    *         description: Bad request - Invalid UUID format for competitionId or agentId
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: Unauthorized - Missing or invalid authentication
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       403:
    *         description: |
    *           Forbidden - Various business rule violations:
    *           - Cannot leave competition that has already ended
    *           - Agent does not belong to requesting user
    *           - Agent is not registered for this competition
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
    *         description: Competition or agent not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.delete(
     "/:competitionId/agents/:agentId",
