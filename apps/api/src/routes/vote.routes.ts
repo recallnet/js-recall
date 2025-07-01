@@ -47,67 +47,63 @@ export function configureVoteRoutes(voteController: VoteController): Router {
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 message:
-   *                   type: string
-   *                   example: "Vote cast successfully"
-   *                 vote:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [message, vote]
    *                   properties:
-   *                     id:
+   *                     message:
    *                       type: string
-   *                       format: uuid
-   *                     userId:
-   *                       type: string
-   *                       format: uuid
-   *                     agentId:
-   *                       type: string
-   *                       format: uuid
-   *                     competitionId:
-   *                       type: string
-   *                       format: uuid
-   *                     createdAt:
-   *                       type: string
-   *                       format: date-time
+   *                       example: "Vote cast successfully"
+   *                     vote:
+   *                       type: object
+   *                       required: [id, userId, agentId, competitionId, createdAt]
+   *                       properties:
+   *                         id:
+   *                           type: string
+   *                           format: uuid
+   *                         userId:
+   *                           type: string
+   *                           format: uuid
+   *                         agentId:
+   *                           type: string
+   *                           format: uuid
+   *                         competitionId:
+   *                           type: string
+   *                           format: uuid
+   *                         createdAt:
+   *                           type: string
+   *                           format: date-time
    *       400:
    *         description: Invalid request or voting not allowed
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: false
-   *                 error:
-   *                   type: string
-   *                   examples:
-   *                     competition_disabled: "Competition status does not allow voting"
-   *                     agent_not_in_competition: "Agent does not participate in this competition"
-   *                     voting_cutoff: "Voting period has ended for this competition"
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: User not authenticated
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       404:
    *         description: Competition or agent not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       409:
    *         description: User has already voted in this competition
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: false
-   *                 error:
-   *                   type: string
-   *                   example: "You have already voted in this competition"
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.post("/vote", voteController.castVote);
 
@@ -150,49 +146,63 @@ export function configureVoteRoutes(voteController: VoteController): Router {
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 votes:
-   *                   type: array
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       id:
-   *                         type: string
-   *                         format: uuid
-   *                       agentId:
-   *                         type: string
-   *                         format: uuid
-   *                       competitionId:
-   *                         type: string
-   *                         format: uuid
-   *                       createdAt:
-   *                         type: string
-   *                         format: date-time
-   *                 pagination:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [votes, pagination]
    *                   properties:
-   *                     total:
-   *                       type: integer
-   *                       description: Total number of votes
-   *                     limit:
-   *                       type: integer
-   *                       description: Number of votes per page
-   *                     offset:
-   *                       type: integer
-   *                       description: Number of votes skipped
-   *                     hasMore:
-   *                       type: boolean
-   *                       description: Whether there are more votes available
+   *                     votes:
+   *                       type: array
+   *                       items:
+   *                         type: object
+   *                         required: [id, agentId, competitionId, createdAt]
+   *                         properties:
+   *                           id:
+   *                             type: string
+   *                             format: uuid
+   *                           agentId:
+   *                             type: string
+   *                             format: uuid
+   *                           competitionId:
+   *                             type: string
+   *                             format: uuid
+   *                           createdAt:
+   *                             type: string
+   *                             format: date-time
+   *                     pagination:
+   *                       type: object
+   *                       required: [total, limit, offset, hasMore]
+   *                       properties:
+   *                         total:
+   *                           type: integer
+   *                           description: Total number of votes
+   *                         limit:
+   *                           type: integer
+   *                           description: Number of votes per page
+   *                         offset:
+   *                           type: integer
+   *                           description: Number of votes skipped
+   *                         hasMore:
+   *                           type: boolean
+   *                           description: Whether there are more votes available
    *       400:
    *         description: Invalid query parameters
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: User not authenticated
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/votes", voteController.getUserVotes);
 
@@ -221,46 +231,60 @@ export function configureVoteRoutes(voteController: VoteController): Router {
    *         content:
    *           application/json:
    *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 votingState:
-   *                   type: object
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   required: [votingState]
    *                   properties:
-   *                     canVote:
-   *                       type: boolean
-   *                       description: Whether the user can vote in this competition
-   *                       example: true
-   *                     reason:
-   *                       type: string
-   *                       description: Reason why voting is disabled (if canVote is false)
-   *                       example: "Competition status does not allow voting"
-   *                       nullable: true
-   *                     info:
+   *                     votingState:
    *                       type: object
+   *                       required: [canVote, info]
    *                       properties:
-   *                         hasVoted:
+   *                         canVote:
    *                           type: boolean
-   *                           description: Whether the user has voted in this competition
-   *                           example: false
-   *                         agentId:
+   *                           description: Whether the user can vote in this competition
+   *                           example: true
+   *                         reason:
    *                           type: string
-   *                           format: uuid
-   *                           description: ID of the agent the user voted for (if hasVoted is true)
+   *                           description: Reason why voting is disabled (if canVote is false)
+   *                           example: "Competition status does not allow voting"
    *                           nullable: true
-   *                         votedAt:
-   *                           type: string
-   *                           format: date-time
-   *                           description: When the user voted (if hasVoted is true)
-   *                           nullable: true
+   *                         info:
+   *                           type: object
+   *                           required: [hasVoted]
+   *                           properties:
+   *                             hasVoted:
+   *                               type: boolean
+   *                               description: Whether the user has voted in this competition
+   *                               example: false
+   *                             agentId:
+   *                               type: string
+   *                               format: uuid
+   *                               description: ID of the agent the user voted for (if hasVoted is true)
+   *                               nullable: true
+   *                             votedAt:
+   *                               type: string
+   *                               format: date-time
+   *                               description: When the user voted (if hasVoted is true)
+   *                               nullable: true
    *       400:
    *         description: Invalid competition ID
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       401:
    *         description: User not authenticated
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    *       500:
    *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   router.get("/votes/:competitionId/state", voteController.getVotingState);
 
