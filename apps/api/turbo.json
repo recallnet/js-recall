@@ -53,7 +53,8 @@
         "npm_package_version",
         "API_DOMAIN",
         "LOOPS_API_KEY",
-        "LOOPS_TRANSACTIONAL_ID"
+        "LOOPS_TRANSACTIONAL_ID",
+        "CORS_ORIGINS"
       ]
     }
   }
