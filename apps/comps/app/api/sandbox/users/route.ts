@@ -33,7 +33,7 @@ async function handleCreateUser(request: NextRequest) {
 
   // Check if user already exists in sandbox
   const searchData = await sandboxAdminRequest<AdminSearchResult>(
-    `/admin/search?walletAddress=${encodeURIComponent(walletAddress)}&searchType=users`,
+    `/admin/search?user.walletAddress=${walletAddress}`,
   );
 
   // If user already exists, return the existing user
