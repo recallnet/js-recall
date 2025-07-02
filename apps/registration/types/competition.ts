@@ -1,6 +1,3 @@
-import { Agent } from "./agent";
-import { PaginationResponse } from "./api";
-
 export interface Reward {
   name: string;
   amount: string;
