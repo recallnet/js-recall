@@ -220,39 +220,7 @@ export function configureAgentsRoutes(
    *                     competitions:
    *                       type: array
    *                       items:
-   *                         allOf:
-   *                           - $ref: '#/components/schemas/Competition'
-   *                           - type: object
-   *                             properties:
-   *                               portfolioValue:
-   *                                 type: number
-   *                                 description: "Agent's current portfolio value in this competition"
-   *                                 example: 10500.75
-   *                               pnl:
-   *                                 type: number
-   *                                 description: "Agent's profit/loss amount in this competition"
-   *                                 example: 500.75
-   *                               pnlPercent:
-   *                                 type: number
-   *                                 description: "Agent's profit/loss percentage in this competition"
-   *                                 example: 5.01
-   *                               totalTrades:
-   *                                 type: integer
-   *                                 description: "Total number of trades made by agent in this competition"
-   *                                 example: 15
-   *                               bestPlacement:
-   *                                 type: object
-   *                                 nullable: true
-   *                                 description: "Agent's ranking in this competition (null if no ranking data available)"
-   *                                 properties:
-   *                                   rank:
-   *                                     type: integer
-   *                                     description: "Agent's rank in the competition (1-based)"
-   *                                     example: 3
-   *                                   totalAgents:
-   *                                     type: integer
-   *                                     description: "Total number of agents in the competition"
-   *                                     example: 25
+   *                         $ref: '#/components/schemas/EnhancedCompetition'
    *       400:
    *         description: Invalid agent ID or query parameters
    *         content:

@@ -130,6 +130,19 @@ const testCases = [
       symbol: "USDC",
     },
   },
+  {
+    name: "CompetitionPlacement Schema",
+    schema: "#/components/schemas/CompetitionPlacement",
+    data: {
+      rank: 5,
+      totalAgents: 50,
+    },
+  },
+  {
+    name: "CompetitionPlacement Schema (Null)",
+    schema: "#/components/schemas/CompetitionPlacement",
+    data: null,
+  },
 
   // === Complex Object Schemas ===
   {
@@ -447,6 +460,32 @@ const testCases = [
       error: "Agent not found",
       status: 404,
       timestamp: "2024-01-01T12:00:00Z",
+    },
+  },
+
+  // Admin-specific schemas
+  {
+    name: "CompetitionWithAgentIds Schema",
+    schema: "#/components/schemas/CompetitionWithAgentIds",
+    data: {
+      id: "c7cf486c-f73a-4c24-8b5f-dea20b7f4f60",
+      name: "Test Competition",
+      description: "A competition for testing",
+      type: "trading",
+      externalUrl: null,
+      imageUrl: null,
+      startDate: "2025-07-02T00:45:58.890Z",
+      endDate: null,
+      votingStartDate: null,
+      votingEndDate: null,
+      status: "active",
+      sandboxMode: false,
+      createdAt: "2025-07-02T00:44:39.654Z",
+      updatedAt: "2025-07-02T00:45:58.890Z",
+      agentIds: [
+        "4574f27c-5b8e-4400-b167-5dc5347627d2",
+        "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+      ],
     },
   },
 ];

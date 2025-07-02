@@ -1,9 +1,9 @@
 {
   "openapi": "3.0.0",
   "info": {
-    "title": "Trading Simulator API",
+    "title": "Recall Competitions API",
     "version": "1.0.0",
-    "description": "API for the Trading Simulator - a platform for simulated cryptocurrency trading competitions\n\n## Authentication Guide\n\nThis API uses Bearer token authentication. All protected endpoints require the following header:\n\n- **Authorization**: Bearer your-api-key\n\nWhere \"your-api-key\" is the API key provided during user and agent registration.\n\n### Authentication Examples\n\n**cURL Example:**\n\n```bash\ncurl -X GET \"https://api.example.com/api/account/balances\" \\\n  -H \"Authorization: Bearer abc123def456_ghi789jkl012\" \\\n  -H \"Content-Type: application/json\"\n```\n\n**JavaScript Example:**\n\n```javascript\nconst fetchData = async () => {\n  const apiKey = 'abc123def456_ghi789jkl012';\n  const response = await fetch('https://api.example.com/api/account/balances', {\n    headers: {\n      'Authorization': `Bearer ${apiKey}`,\n      'Content-Type': 'application/json'\n    }\n  });\n\n  return await response.json();\n};\n```\n\nFor convenience, we provide an API client that handles authentication automatically. See `docs/examples/api-client.ts`.\n      ",
+    "description": "API for the Recall Competitions - a platform for simulated cryptocurrency trading competitions\n\n## Authentication Guide\n\nThis API uses Bearer token authentication. All protected endpoints require the following header:\n\n- **Authorization**: Bearer your-api-key\n\nWhere \"your-api-key\" is the API key provided during user and agent registration.\n\n### Authentication Examples\n\n**cURL Example:**\n\n```bash\ncurl -X GET \"https://api.example.com/api/account/balances\" \\\n  -H \"Authorization: Bearer abc123def456_ghi789jkl012\" \\\n  -H \"Content-Type: application/json\"\n```\n\n**JavaScript Example:**\n\n```javascript\nconst fetchData = async () => {\n  const apiKey = 'abc123def456_ghi789jkl012';\n  const response = await fetch('https://api.example.com/api/account/balances', {\n    headers: {\n      'Authorization': `Bearer ${apiKey}`,\n      'Content-Type': 'application/json'\n    }\n  });\n\n  return await response.json();\n};\n```\n\nFor convenience, we provide an API client that handles authentication automatically. See `docs/examples/api-client.ts`.\n      ",
     "contact": {
       "name": "API Support",
       "email": "support@example.com"
@@ -786,6 +786,50 @@
           }
         }
       },
+      "CompetitionWithAgentIds": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Competition"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "agentIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Array of agent IDs participating in the competition"
+              }
+            }
+          }
+        ]
+      },
+      "CompetitionPlacement": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["rank", "totalAgents"],
+            "properties": {
+              "rank": {
+                "type": "integer",
+                "description": "Agent's rank in the competition (1-based)",
+                "example": 3
+              },
+              "totalAgents": {
+                "type": "integer",
+                "description": "Total number of agents in the competition",
+                "example": 25
+              }
+            }
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Agent's ranking in a competition (null if no ranking data available)"
+      },
       "EnhancedCompetition": {
         "allOf": [
           {
@@ -812,22 +856,7 @@
                 "description": "Number of trades by agent in this competition"
               },
               "bestPlacement": {
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "properties": {
-                      "rank": {
-                        "type": "integer"
-                      },
-                      "totalAgents": {
-                        "type": "integer"
-                      }
-                    }
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
+                "$ref": "#/components/schemas/CompetitionPlacement"
               }
             }
           }
@@ -1243,35 +1272,10 @@
                     },
                     {
                       "type": "object",
-                      "required": ["competition", "initializedAgents"],
+                      "required": ["competition"],
                       "properties": {
                         "competition": {
-                          "allOf": [
-                            {
-                              "$ref": "#/components/schemas/Competition"
-                            },
-                            {
-                              "type": "object",
-                              "properties": {
-                                "agentIds": {
-                                  "type": "array",
-                                  "items": {
-                                    "type": "string",
-                                    "format": "uuid"
-                                  },
-                                  "description": "Agent IDs participating in the competition"
-                                }
-                              }
-                            }
-                          ]
-                        },
-                        "initializedAgents": {
-                          "type": "array",
-                          "items": {
-                            "type": "string",
-                            "format": "uuid"
-                          },
-                          "description": "Agent IDs that were successfully initialized for the competition"
+                          "$ref": "#/components/schemas/CompetitionWithAgentIds"
                         }
                       }
                     }
@@ -1281,7 +1285,7 @@
             }
           },
           "400": {
-            "description": "Missing required parameters",
+            "description": "Invalid input, invalid agent IDs, or competition already started",
             "content": {
               "application/json": {
                 "schema": {
@@ -4204,53 +4208,7 @@
                         "competitions": {
                           "type": "array",
                           "items": {
-                            "allOf": [
-                              {
-                                "$ref": "#/components/schemas/Competition"
-                              },
-                              {
-                                "type": "object",
-                                "properties": {
-                                  "portfolioValue": {
-                                    "type": "number",
-                                    "description": "Agent's current portfolio value in this competition",
-                                    "example": 10500.75
-                                  },
-                                  "pnl": {
-                                    "type": "number",
-                                    "description": "Agent's profit/loss amount in this competition",
-                                    "example": 500.75
-                                  },
-                                  "pnlPercent": {
-                                    "type": "number",
-                                    "description": "Agent's profit/loss percentage in this competition",
-                                    "example": 5.01
-                                  },
-                                  "totalTrades": {
-                                    "type": "integer",
-                                    "description": "Total number of trades made by agent in this competition",
-                                    "example": 15
-                                  },
-                                  "bestPlacement": {
-                                    "type": "object",
-                                    "nullable": true,
-                                    "description": "Agent's ranking in this competition (null if no ranking data available)",
-                                    "properties": {
-                                      "rank": {
-                                        "type": "integer",
-                                        "description": "Agent's rank in the competition (1-based)",
-                                        "example": 3
-                                      },
-                                      "totalAgents": {
-                                        "type": "integer",
-                                        "description": "Total number of agents in the competition",
-                                        "example": 25
-                                      }
-                                    }
-                                  }
-                                }
-                              }
-                            ]
+                            "$ref": "#/components/schemas/EnhancedCompetition"
                           }
                         }
                       }

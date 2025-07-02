@@ -7,9 +7,9 @@ const swaggerOptions: swaggerJsdoc.Options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Trading Simulator API",
+      title: "Recall Competitions API",
       version: "1.0.0",
-      description: `API for the Trading Simulator - a platform for simulated cryptocurrency trading competitions
+      description: `API for the Recall Competitions - a platform for simulated cryptocurrency trading competitions
 
 ## Authentication Guide
 
@@ -158,8 +158,18 @@ For convenience, we provide an API client that handles authentication automatica
         SpecificChain: {
           type: "string",
           enum: [
-            "eth", "polygon", "bsc", "arbitrum", "optimism", "avalanche", 
-            "base", "linea", "zksync", "scroll", "mantle", "svm"
+            "eth",
+            "polygon",
+            "bsc",
+            "arbitrum",
+            "optimism",
+            "avalanche",
+            "base",
+            "linea",
+            "zksync",
+            "scroll",
+            "mantle",
+            "svm",
           ],
           description: "Specific blockchain identifier",
         },
@@ -207,17 +217,11 @@ For convenience, we provide an API client that handles authentication automatica
               ],
             },
             rank: {
-              oneOf: [
-                { type: "integer" },
-                { type: "null" }
-              ],
+              oneOf: [{ type: "integer" }, { type: "null" }],
               description: "Global rank among all agents",
             },
             score: {
-              oneOf: [
-                { type: "number" },
-                { type: "null" }
-              ],
+              oneOf: [{ type: "number" }, { type: "null" }],
               description: "Global score",
             },
           },
@@ -259,7 +263,15 @@ For convenience, we provide an API client that handles authentication automatica
         // Public agent schema (sanitized, no apiKey)
         AgentPublic: {
           type: "object",
-          required: ["id", "ownerId", "name", "status", "isVerified", "createdAt", "updatedAt"],
+          required: [
+            "id",
+            "ownerId",
+            "name",
+            "status",
+            "isVerified",
+            "createdAt",
+            "updatedAt",
+          ],
           properties: {
             id: {
               type: "string",
@@ -276,31 +288,19 @@ For convenience, we provide an API client that handles authentication automatica
               description: "Agent display name",
             },
             description: {
-              oneOf: [
-                { type: "string" },
-                { type: "null" }
-              ],
+              oneOf: [{ type: "string" }, { type: "null" }],
               description: "Agent description",
             },
             imageUrl: {
-              oneOf: [
-                { type: "string" },
-                { type: "null" }
-              ],
+              oneOf: [{ type: "string" }, { type: "null" }],
               description: "URL to agent's profile image",
             },
             email: {
-              oneOf: [
-                { type: "string", format: "email" },
-                { type: "null" }
-              ],
+              oneOf: [{ type: "string", format: "email" }, { type: "null" }],
               description: "Agent contact email",
             },
             walletAddress: {
-              oneOf: [
-                { type: "string" },
-                { type: "null" }
-              ],
+              oneOf: [{ type: "string" }, { type: "null" }],
               description: "Verified wallet address",
             },
             isVerified: {
@@ -372,38 +372,26 @@ For convenience, we provide an API client that handles authentication automatica
               format: "uuid",
               description: "Owner user ID",
             },
-                      name: {
-            oneOf: [
-              { type: "string" },
-              { type: "null" }
-            ],
-            description: "Owner display name",
-          },
+            name: {
+              oneOf: [{ type: "string" }, { type: "null" }],
+              description: "Owner display name",
+            },
             walletAddress: {
               type: "string",
               description: "Owner wallet address",
             },
-                      email: {
-            oneOf: [
-              { type: "string", format: "email" },
-              { type: "null" }
-            ],
-            description: "Owner email",
-          },
-          imageUrl: {
-            oneOf: [
-              { type: "string" },
-              { type: "null" }
-            ],
-            description: "Owner profile image URL",
-          },
-          metadata: {
-            oneOf: [
-              { type: "object" },
-              { type: "null" }
-            ],
-            description: "Owner metadata",
-          },
+            email: {
+              oneOf: [{ type: "string", format: "email" }, { type: "null" }],
+              description: "Owner email",
+            },
+            imageUrl: {
+              oneOf: [{ type: "string" }, { type: "null" }],
+              description: "Owner profile image URL",
+            },
+            metadata: {
+              oneOf: [{ type: "object" }, { type: "null" }],
+              description: "Owner metadata",
+            },
             status: {
               $ref: "#/components/schemas/ActorStatus",
             },
@@ -476,9 +464,20 @@ For convenience, we provide an API client that handles authentication automatica
         Trade: {
           type: "object",
           required: [
-            "id", "agentId", "competitionId", "fromToken", "toToken",
-            "fromAmount", "toAmount", "price", "tradeAmountUsd",
-            "toTokenSymbol", "fromTokenSymbol", "success", "reason", "timestamp"
+            "id",
+            "agentId",
+            "competitionId",
+            "fromToken",
+            "toToken",
+            "fromAmount",
+            "toAmount",
+            "price",
+            "tradeAmountUsd",
+            "toTokenSymbol",
+            "fromTokenSymbol",
+            "success",
+            "reason",
+            "timestamp",
           ],
           properties: {
             id: {
@@ -533,10 +532,7 @@ For convenience, we provide an API client that handles authentication automatica
               description: "Whether the trade was successfully completed",
             },
             error: {
-              oneOf: [
-                { type: "string" },
-                { type: "null" }
-              ],
+              oneOf: [{ type: "string" }, { type: "null" }],
               description: "Error message if the trade failed",
             },
             reason: {
@@ -557,14 +553,14 @@ For convenience, we provide an API client that handles authentication automatica
             fromSpecificChain: {
               oneOf: [
                 { $ref: "#/components/schemas/SpecificChain" },
-                { type: "null" }
+                { type: "null" },
               ],
               description: "Specific chain for the source token",
             },
             toSpecificChain: {
               oneOf: [
                 { $ref: "#/components/schemas/SpecificChain" },
-                { type: "null" }
+                { type: "null" },
               ],
               description: "Specific chain for the destination token",
             },
@@ -598,7 +594,7 @@ For convenience, we provide an API client that handles authentication automatica
             specificChain: {
               oneOf: [
                 { $ref: "#/components/schemas/SpecificChain" },
-                { type: "null" }
+                { type: "null" },
               ],
               description: "Specific chain identifier",
             },
@@ -642,7 +638,8 @@ For convenience, we provide an API client that handles authentication automatica
             snapshotTime: {
               type: "string",
               format: "date-time",
-              description: "Time of snapshot (only present if source is snapshot)",
+              description:
+                "Time of snapshot (only present if source is snapshot)",
             },
           },
         },
@@ -650,7 +647,14 @@ For convenience, we provide an API client that handles authentication automatica
         // Basic competition schema
         Competition: {
           type: "object",
-          required: ["id", "name", "status", "type", "sandboxMode", "createdAt"],
+          required: [
+            "id",
+            "name",
+            "status",
+            "type",
+            "sandboxMode",
+            "createdAt",
+          ],
           properties: {
             id: {
               type: "string",
@@ -662,54 +666,45 @@ For convenience, we provide an API client that handles authentication automatica
               description: "Competition name",
             },
             description: {
-              oneOf: [
-                { type: "string" },
-                { type: "null" }
-              ],
+              oneOf: [{ type: "string" }, { type: "null" }],
               description: "Competition description",
             },
             type: {
               $ref: "#/components/schemas/CompetitionType",
             },
             externalUrl: {
-              oneOf: [
-                { type: "string" },
-                { type: "null" }
-              ],
+              oneOf: [{ type: "string" }, { type: "null" }],
               description: "External URL for competition details",
             },
             imageUrl: {
-              oneOf: [
-                { type: "string" },
-                { type: "null" }
-              ],
+              oneOf: [{ type: "string" }, { type: "null" }],
               description: "URL to competition image",
             },
             startDate: {
               oneOf: [
                 { type: "string", format: "date-time" },
-                { type: "null" }
+                { type: "null" },
               ],
               description: "Competition start date",
             },
             endDate: {
               oneOf: [
                 { type: "string", format: "date-time" },
-                { type: "null" }
+                { type: "null" },
               ],
               description: "Competition end date",
             },
             votingStartDate: {
               oneOf: [
                 { type: "string", format: "date-time" },
-                { type: "null" }
+                { type: "null" },
               ],
               description: "Voting start date",
             },
             votingEndDate: {
               oneOf: [
                 { type: "string", format: "date-time" },
-                { type: "null" }
+                { type: "null" },
               ],
               description: "Voting end date",
             },
@@ -731,11 +726,61 @@ For convenience, we provide an API client that handles authentication automatica
             updatedAt: {
               oneOf: [
                 { type: "string", format: "date-time" },
-                { type: "null" }
+                { type: "null" },
               ],
               description: "Last update timestamp",
             },
           },
+        },
+
+        // Competition with agent IDs
+        CompetitionWithAgentIds: {
+          allOf: [
+            {
+              $ref: "#/components/schemas/Competition",
+            },
+            {
+              type: "object",
+              properties: {
+                agentIds: {
+                  type: "array",
+                  items: {
+                    type: "string",
+                    format: "uuid",
+                  },
+                  description:
+                    "Array of agent IDs participating in the competition",
+                },
+              },
+            },
+          ],
+        },
+
+        // Competition-specific agent placement
+        CompetitionPlacement: {
+          oneOf: [
+            {
+              type: "object",
+              required: ["rank", "totalAgents"],
+              properties: {
+                rank: {
+                  type: "integer",
+                  description: "Agent's rank in the competition (1-based)",
+                  example: 3,
+                },
+                totalAgents: {
+                  type: "integer",
+                  description: "Total number of agents in the competition",
+                  example: 25,
+                },
+              },
+            },
+            {
+              type: "null",
+            },
+          ],
+          description:
+            "Agent's ranking in a competition (null if no ranking data available)",
         },
 
         // Enhanced competition with agent-specific metrics
@@ -765,22 +810,7 @@ For convenience, we provide an API client that handles authentication automatica
                   description: "Number of trades by agent in this competition",
                 },
                 bestPlacement: {
-                  oneOf: [
-                    {
-                      type: "object",
-                      properties: {
-                        rank: {
-                          type: "integer",
-                        },
-                        totalAgents: {
-                          type: "integer",
-                        },
-                      },
-                    },
-                    {
-                      type: "null",
-                    },
-                  ],
+                  $ref: "#/components/schemas/CompetitionPlacement",
                 },
               },
             },

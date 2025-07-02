@@ -183,27 +183,12 @@ export function configureAdminRoutes(
    *               allOf:
    *                 - $ref: '#/components/schemas/SuccessResponse'
    *                 - type: object
-   *                   required: [competition, initializedAgents]
+   *                   required: [competition]
    *                   properties:
    *                     competition:
-   *                       allOf:
-   *                         - $ref: '#/components/schemas/Competition'
-   *                         - type: object
-   *                           properties:
-   *                             agentIds:
-   *                               type: array
-   *                               items:
-   *                                 type: string
-   *                                 format: uuid
-   *                               description: Agent IDs participating in the competition
-   *                     initializedAgents:
-   *                       type: array
-   *                       items:
-   *                         type: string
-   *                         format: uuid
-   *                       description: Agent IDs that were successfully initialized for the competition
+   *                       $ref: '#/components/schemas/CompetitionWithAgentIds'
    *       400:
-   *         description: Missing required parameters
+   *         description: Invalid input, invalid agent IDs, or competition already started
    *         content:
    *           application/json:
    *             schema:

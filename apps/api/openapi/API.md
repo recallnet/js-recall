@@ -1,6 +1,6 @@
-# Trading Simulator API
+# Recall Competitions API
 
-API for the Trading Simulator - a platform for simulated cryptocurrency trading competitions
+API for the Recall Competitions - a platform for simulated cryptocurrency trading competitions
 
 ## Authentication Guide
 
@@ -108,13 +108,13 @@ Start a new or existing competition with specified agents. If competitionId is p
 
 ##### Responses
 
-| Code | Description                                    |
-| ---- | ---------------------------------------------- |
-| 200  | Competition started successfully               |
-| 400  | Missing required parameters                    |
-| 401  | Unauthorized - Admin authentication required   |
-| 404  | Competition not found when using competitionId |
-| 500  | Server error                                   |
+| Code | Description                                                      |
+| ---- | ---------------------------------------------------------------- |
+| 200  | Competition started successfully                                 |
+| 400  | Invalid input, invalid agent IDs, or competition already started |
+| 401  | Unauthorized - Admin authentication required                     |
+| 404  | Competition not found when using competitionId                   |
+| 500  | Server error                                                     |
 
 ##### Security
 
@@ -2131,6 +2131,20 @@ Specific blockchain identifier
 | sandboxMode           | boolean                                         | Whether sandbox mode is enabled      | Yes      |
 | createdAt             | dateTime                                        | Competition creation timestamp       | Yes      |
 | updatedAt             |                                                 | Last update timestamp                | No       |
+
+#### CompetitionWithAgentIds
+
+| Name                    | Type | Description | Required |
+| ----------------------- | ---- | ----------- | -------- |
+| CompetitionWithAgentIds |      |             |          |
+
+#### CompetitionPlacement
+
+Agent's ranking in a competition (null if no ranking data available)
+
+| Name                 | Type | Description                                                          | Required |
+| -------------------- | ---- | -------------------------------------------------------------------- | -------- |
+| CompetitionPlacement |      | Agent's ranking in a competition (null if no ranking data available) |          |
 
 #### EnhancedCompetition
 
