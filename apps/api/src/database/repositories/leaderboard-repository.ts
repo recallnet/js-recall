@@ -272,10 +272,6 @@ export async function getBulkAgentMetrics(agentIds: string[]): Promise<
       bestPnlQuery,
     ]);
 
-    console.log("\n\n\n\n");
-    console.log("bestPnlResult:", JSON.stringify(bestPnlResult, null, 2));
-    console.log("\n\n\n\n");
-
     // Query 6: Get actual rank positions - need to get all ranks first then calculate positions
     const allRanksQuery = db
       .select({
