@@ -961,7 +961,7 @@ describe("Competition API", () => {
   });
 
   // test cases for GET /competitions/{competitionId}/agents
-  test("should get competition agents with scores and positions", async () => {
+  test("should get competition agents with scores and ranks", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -1004,7 +1004,7 @@ describe("Competition API", () => {
       expect(agent.id).toBeDefined();
       expect(agent.name).toBeDefined();
       expect(typeof agent.score).toBe("number");
-      expect(typeof agent.position).toBe("number");
+      expect(typeof agent.rank).toBe("number");
       expect(typeof agent.portfolioValue).toBe("number");
       expect(typeof agent.active).toBe("boolean");
       expect(agent.deactivationReason).toBeNull();
@@ -1022,9 +1022,9 @@ describe("Competition API", () => {
       expect(Number.isFinite(agent.change24hPercent)).toBe(true);
     }
 
-    // Verify agents are ordered by position
-    const positions = agentsData.agents.map((a) => a.position);
-    expect(positions).toEqual([...positions].sort((a, b) => a - b));
+    // Verify agents are ordered by rank
+    const ranks = agentsData.agents.map((a) => a.rank);
+    expect(ranks).toEqual([...ranks].sort((a, b) => a - b));
   });
 
   test("should return 404 for agents of non-existent competition", async () => {
@@ -1116,15 +1116,15 @@ describe("Competition API", () => {
     expect(agentsResponse.success).toBe(true);
     expect(agentsResponse.agents.length).toBe(3);
 
-    // Verify positions are sequential
+    // Verify ranks are sequential
     agentsResponse.agents.forEach((agent, index) => {
-      expect(agent.position).toBe(index + 1);
+      expect(agent.rank).toBe(index + 1);
 
       // Verify all required fields are present and have correct types
       expect(typeof agent.id).toBe("string");
       expect(typeof agent.name).toBe("string");
       expect(typeof agent.score).toBe("number");
-      expect(typeof agent.position).toBe("number");
+      expect(typeof agent.rank).toBe("number");
       expect(typeof agent.portfolioValue).toBe("number");
       expect(typeof agent.active).toBe("boolean");
 
@@ -1245,7 +1245,7 @@ describe("Competition API", () => {
       expect(agent.id).toBeDefined();
       expect(agent.name).toBeDefined();
       expect(typeof agent.score).toBe("number");
-      expect(typeof agent.position).toBe("number");
+      expect(typeof agent.rank).toBe("number");
       expect(typeof agent.portfolioValue).toBe("number");
       expect(typeof agent.active).toBe("boolean");
       expect(agent.deactivationReason).toBeNull();
@@ -1447,7 +1447,7 @@ describe("Competition API", () => {
     expect(agentData.id).toBe(agent.id);
     expect(agentData.name).toBe(agent.name);
     expect(typeof agentData.score).toBe("number");
-    expect(typeof agentData.position).toBe("number");
+    expect(typeof agentData.rank).toBe("number");
     expect(typeof agentData.portfolioValue).toBe("number");
     expect(typeof agentData.active).toBe("boolean");
 
@@ -1818,15 +1818,15 @@ describe("Competition API", () => {
     const services = new ServiceRegistry();
     await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
 
-    // Test sorting by default (position)
-    const positionDefaultResponse = (await client.getCompetitionAgents(
+    // Test sorting by default (rank)
+    const rankDefaultResponse = (await client.getCompetitionAgents(
       competitionId,
     )) as CompetitionAgentsResponse;
 
-    expect(positionDefaultResponse.success).toBe(true);
-    expect(positionDefaultResponse.agents[0]!.position).toBe(1);
-    expect(positionDefaultResponse.agents[1]!.position).toBe(2);
-    expect(positionDefaultResponse.agents[2]!.position).toBe(3);
+    expect(rankDefaultResponse.success).toBe(true);
+    expect(rankDefaultResponse.agents[0]!.rank).toBe(1);
+    expect(rankDefaultResponse.agents[1]!.rank).toBe(2);
+    expect(rankDefaultResponse.agents[2]!.rank).toBe(3);
 
     // Test sorting by name (ascending)
     const nameAscResponse = (await client.getCompetitionAgents(competitionId, {
@@ -1854,30 +1854,24 @@ describe("Competition API", () => {
     expect(nameDescOrder[1]).toBe("Beta Sort Agent");
     expect(nameDescOrder[2]).toBe("Alpha Sort Agent");
 
-    // Test sorting by position
-    const positionAscResponse = (await client.getCompetitionAgents(
-      competitionId,
-      {
-        sort: "position",
-      },
-    )) as CompetitionAgentsResponse;
+    // Test sorting by rank
+    const rankAscResponse = (await client.getCompetitionAgents(competitionId, {
+      sort: "rank",
+    })) as CompetitionAgentsResponse;
 
-    expect(positionAscResponse.success).toBe(true);
-    expect(positionAscResponse.agents[0]!.position).toBe(1);
-    expect(positionAscResponse.agents[1]!.position).toBe(2);
-    expect(positionAscResponse.agents[2]!.position).toBe(3);
+    expect(rankAscResponse.success).toBe(true);
+    expect(rankAscResponse.agents[0]!.rank).toBe(1);
+    expect(rankAscResponse.agents[1]!.rank).toBe(2);
+    expect(rankAscResponse.agents[2]!.rank).toBe(3);
 
-    // Test sorting by position (descending)
-    const positionDescResponse = (await client.getCompetitionAgents(
-      competitionId,
-      {
-        sort: "-position",
-      },
-    )) as CompetitionAgentsResponse;
-    expect(positionDescResponse.success).toBe(true);
-    expect(positionDescResponse.agents[0]!.position).toBe(3);
-    expect(positionDescResponse.agents[1]!.position).toBe(2);
-    expect(positionDescResponse.agents[2]!.position).toBe(1);
+    // Test sorting by rank (descending)
+    const rankDescResponse = (await client.getCompetitionAgents(competitionId, {
+      sort: "-rank",
+    })) as CompetitionAgentsResponse;
+    expect(rankDescResponse.success).toBe(true);
+    expect(rankDescResponse.agents[0]!.rank).toBe(3);
+    expect(rankDescResponse.agents[1]!.rank).toBe(2);
+    expect(rankDescResponse.agents[2]!.rank).toBe(1);
 
     // Test sorting by score (ascending)
     const scoreAscResponse = (await client.getCompetitionAgents(competitionId, {
@@ -2135,7 +2129,7 @@ describe("Competition API", () => {
     const computedSortResponse = (await client.getCompetitionAgents(
       competitionId,
       {
-        sort: "position", // Computed field
+        sort: "rank", // Computed field
         limit: 3,
         offset: 0,
       },
@@ -2173,7 +2167,7 @@ describe("Competition API", () => {
 
     // Test 4: Demonstrate that offset is also ignored
     const offsetResponse = (await client.getCompetitionAgents(competitionId, {
-      sort: "position",
+      sort: "rank",
       limit: 2,
       offset: 3, // Should skip first 3 agents
     })) as CompetitionAgentsResponse;

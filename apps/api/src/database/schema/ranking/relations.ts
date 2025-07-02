@@ -2,14 +2,14 @@ import { relations } from "drizzle-orm/relations";
 
 import { agents, competitions } from "@/database/schema/core/defs.js";
 
-import { agentRank, agentRankHistory } from "./defs.js";
+import { agentScore, agentScoreHistory } from "./defs.js";
 
 /**
  * Relations for the agentRank table
  */
-export const agentRankRelations = relations(agentRank, ({ one }) => ({
+export const agentRankRelations = relations(agentScore, ({ one }) => ({
   agent: one(agents, {
-    fields: [agentRank.agentId],
+    fields: [agentScore.agentId],
     references: [agents.id],
   }),
 }));
@@ -18,14 +18,14 @@ export const agentRankRelations = relations(agentRank, ({ one }) => ({
  * Relations for the agentRankHistory table
  */
 export const agentRankHistoryRelations = relations(
-  agentRankHistory,
+  agentScoreHistory,
   ({ one }) => ({
     agent: one(agents, {
-      fields: [agentRankHistory.agentId],
+      fields: [agentScoreHistory.agentId],
       references: [agents.id],
     }),
     competition: one(competitions, {
-      fields: [agentRankHistory.competitionId],
+      fields: [agentScoreHistory.competitionId],
       references: [competitions.id],
     }),
   }),

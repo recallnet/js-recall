@@ -27,7 +27,7 @@ import {
   searchAgents,
   update,
 } from "@/database/repositories/agent-repository.js";
-import { getAgentRankById } from "@/database/repositories/agentrank-repository.js";
+import { getAgentRankById } from "@/database/repositories/agentscore-repository.js";
 import {
   findBestPlacementForAgent,
   getAgentCompetitionRanking,

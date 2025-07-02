@@ -654,7 +654,7 @@ export function configureAdminRoutes(
    *                     properties:
    *                       rank:
    *                         type: integer
-   *                         description: Agent rank on the leaderboard
+   *                         description: Agent rank on the leaderboard, e.g. 1st, 2nd, etc..
    *                       agentId:
    *                         type: string
    *                         description: Agent ID
@@ -1570,8 +1570,8 @@ export function configureAdminRoutes(
    *                 type: array
    *                 items:
    *                   type: string
-   *                   enum: [trade, agent_rank_history, competitions_leaderboard, portfolio_snapshot, agent_rank]
-   *                 description: Types of data to sync (defaults to trade, agent_rank_history, competitions_leaderboard)
+   *                   enum: [trade, agent_score_history, competitions_leaderboard, portfolio_snapshot, agent_score]
+   *                 description: Types of data to sync (defaults to trade, agent_score_history, competitions_leaderboard)
    *     responses:
    *       200:
    *         description: Sync initiated successfully
@@ -1628,7 +1628,7 @@ export function configureAdminRoutes(
    *         name: dataType
    *         schema:
    *           type: string
-   *           enum: [trade, agent_rank_history, agent_rank, competitions_leaderboard, portfolio_snapshot]
+   *           enum: [trade, agent_score_history, agent_score, competitions_leaderboard, portfolio_snapshot]
    *         description: Filter by data type
    *       - in: query
    *         name: limit
