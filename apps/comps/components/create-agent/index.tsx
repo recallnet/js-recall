@@ -66,6 +66,7 @@ interface CreateAgentProps {
   isSubmitting?: boolean;
   agent?: Agent | null;
   apiKey?: string | null;
+  sandboxApiKey?: string | null;
 }
 
 export function CreateAgent({
@@ -73,6 +74,7 @@ export function CreateAgent({
   isSubmitting,
   agent,
   apiKey,
+  sandboxApiKey,
 }: CreateAgentProps) {
   const { redirectToUrl } = useRedirectTo("/profile");
   const [currentStep, setCurrentStep] = useState(1);
@@ -185,6 +187,7 @@ export function CreateAgent({
             <AgentCreated
               agent={agent}
               apiKey={apiKey}
+              sandboxApiKey={sandboxApiKey}
               redirectToUrl={redirectToUrl}
             />
           ) : (

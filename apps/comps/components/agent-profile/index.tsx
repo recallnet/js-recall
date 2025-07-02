@@ -1,5 +1,7 @@
 "use client";
 
+import { ExternalLink } from "lucide-react";
+import Link from "next/link";
 import React from "react";
 
 import Card from "@recallnet/ui2/components/card";
@@ -17,6 +19,7 @@ import { BreadcrumbNav } from "../breadcrumb-nav";
 import { AgentImage } from "./agent-image";
 import AgentInfo from "./agent-info";
 import CompetitionTable from "./comps-table";
+import Credentials from "./credentials";
 import { EditAgentField } from "./edit-field";
 import { EditSkillsField } from "./edit-skills-field";
 import { ShareAgent } from "./share-agent";
@@ -54,7 +57,7 @@ export default function AgentProfile({
   const skills = agent?.skills || [];
   const trophies = sortTrophies((agent.trophies || []) as Trophy[]);
 
-  const { data: userAgents } = useUserAgents();
+  const { data: userAgents } = useUserAgents({ limit: 100 });
   const isUserAgent = userAgents?.agents.some((a) => a.id === id) || false;
   const updateAgent = useUpdateAgent();
 
@@ -165,7 +168,7 @@ export default function AgentProfile({
                 <span className="text-secondary-foreground text-xl font-semibold">
                   Developed by
                 </span>
-                <span className="text-secondary-foreground text-primary-foreground truncate text-xl font-semibold">
+                <span className="text-primary-foreground truncate text-xl font-semibold">
                   [{owner?.name}]
                 </span>
               </div>
@@ -184,7 +187,7 @@ export default function AgentProfile({
                   ))
                 ) : (
                   <span className="text-secondary-foreground">
-                    This agent hasn’t earned trophies yet.
+                    This agent hasn&apos;t earned trophies yet.
                   </span>
                 )}
               </div>
@@ -280,11 +283,29 @@ export default function AgentProfile({
                       {skill}
                     </span>
                   ))
-                : "This agent hasnt showcased skills yet."}
+                : "This agent hasn't showcased skills yet."}
             </div>
           </div>
         </div>
       </div>
+
+      {isUserAgent && (
+        <div className="mb-8 flex flex-col border p-6">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-secondary-foreground text-left font-semibold uppercase">
+              Credentials
+            </span>
+            <Link
+              href="https://docs.recall.network/competitions/guides/register#verifying-your-account"
+              target="_blank"
+              className="text-primary-foreground flex items-center gap-1 underline"
+            >
+              Docs <ExternalLink className="h-4 w-4" />
+            </Link>
+          </div>
+          <Credentials agent={agent} className="mt-6" />
+        </div>
+      )}
 
       {/* Competitions */}
       <div className="mb-8">
