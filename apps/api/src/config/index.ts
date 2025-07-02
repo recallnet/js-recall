@@ -160,6 +160,7 @@ export const config = {
   },
   // Frontend app configuration for interfacing with the server
   app: {
+    // Session management and email verification settings for the frontend competitions app
     url: process.env.FRONTEND_URL || "http://localhost:3001", // TODO: resolve frontend/backend default ports
     domain: process.env.DOMAIN,
     cookieName: process.env.COOKIE_NAME || "session",
@@ -167,6 +168,10 @@ export const config = {
       process.env.ROOT_ENCRYPTION_KEY ||
       "default_encryption_key_do_not_use_in_production",
     sessionTtl: parseInt(process.env.SESSION_TTL || "7200", 10),
+    // CORS origins for API calls (e.g., frontend app, docs site + OpenAPI UI, etc.)
+    corsOrigins: process.env.CORS_ORIGINS?.split(",") || [
+      process.env.FRONTEND_URL || "http://localhost:3001",
+    ],
   },
   database: {
     ssl: process.env.DB_SSL === "true",
