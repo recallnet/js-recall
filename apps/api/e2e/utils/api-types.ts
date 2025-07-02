@@ -135,6 +135,7 @@ export interface Agent {
       rank: number;
       totalAgents: number;
     };
+    bestPnl: number;
     rank?: number;
     score?: number;
   };

@@ -12,7 +12,7 @@ import {
   findAll,
   findById,
   findByStatus,
-  findLeaderboardByCompetition,
+  findLeaderboardByTradingComp,
   getAgentCompetitionRecord,
   getAllCompetitionAgents,
   getBulkAgentPortfolioSnapshots,
@@ -279,6 +279,7 @@ export class CompetitionManager {
     competition.status = CompetitionStatusSchema.parse("ended");
     competition.endDate = new Date();
     competition.updatedAt = new Date();
+
     await updateCompetition(competition);
 
     // Update cache
@@ -293,12 +294,31 @@ export class CompetitionManager {
     console.log(`[CompetitionManager] Reloaded configuration settings`);
 
     const leaderboard = await this.getLeaderboard(competitionId);
-    const leaderboardEntries = leaderboard.map((entry, index) => ({
-      agentId: entry.agentId,
-      competitionId,
-      rank: index + 1, // 1-based ranking
-      score: entry.value, // Use the portfolio value as the score
-    }));
+
+    const leaderboardEntries = [];
+    // Note: the leaderboard array could be quite large, avoiding Promise.all
+    //  so that these async calls to get pnl happen in series and don't over
+    //  use system resorces.
+    for (let i = 0; i < leaderboard.length; i++) {
+      const entry = leaderboard[i];
+      if (entry === undefined) continue;
+      const agentId = entry.agentId;
+      const pnl = await this.agentManager.getAgentPnlForComp(
+        agentId,
+        competitionId,
+      );
+
+      const val = {
+        agentId,
+        competitionId,
+        rank: i + 1, // 1-based ranking
+        pnl: pnl.pnl,
+        totalAgents: competitionAgents.length,
+        score: entry.value, // Use the the total portfolio value in usd is saved as `score`
+      };
+
+      leaderboardEntries.push(val);
+    }
 
     if (leaderboardEntries.length > 0) {
       await batchInsertLeaderboard(leaderboardEntries);
@@ -457,11 +477,12 @@ export class CompetitionManager {
     try {
       // First try to get from the competitions_leaderboard table
       const leaderboardEntries =
-        await findLeaderboardByCompetition(competitionId);
+        await findLeaderboardByTradingComp(competitionId);
       if (leaderboardEntries.length > 0) {
         return leaderboardEntries.map((entry) => ({
           agentId: entry.agentId,
           value: entry.score,
+          pnl: entry.pnl,
         }));
       }
 
@@ -478,6 +499,7 @@ export class CompetitionManager {
           .map((snapshot) => ({
             agentId: snapshot.agentId,
             value: snapshot.totalValue,
+            pnl: 0, // TODO: if there's no competitions_leaderboard row we don't have a pnl
           }))
           .sort(
             (a: { value: number }, b: { value: number }) => b.value - a.value,
@@ -486,7 +508,7 @@ export class CompetitionManager {
 
       // Fallback to calculating current values
       const agents = await getCompetitionAgents(competitionId);
-      const leaderboard: { agentId: string; value: number }[] = [];
+      const leaderboard: { agentId: string; value: number; pnl: number }[] = [];
 
       for (const agentId of agents) {
         const portfolioValue =
@@ -494,6 +516,7 @@ export class CompetitionManager {
         leaderboard.push({
           agentId,
           value: portfolioValue,
+          pnl: 0, // TODO: if there's no competitions_leaderboard row we don't have a pnl
         });
       }
 
