@@ -105,6 +105,15 @@ export interface AgentMetadata {
   [key: string]: unknown;
 }
 
+// Agent trophy structure (from ended competitions)
+export interface AgentTrophy {
+  competitionId: string;
+  name: string;
+  rank: number;
+  imageUrl: string;
+  createdAt: string;
+}
+
 // Agent interface
 export interface Agent {
   id: string;
@@ -131,7 +140,7 @@ export interface Agent {
   };
   skills?: string[];
   hasUnclaimedRewards?: boolean;
-  trophies?: string[];
+  trophies?: AgentTrophy[];
   status: ActorStatus;
   deactivationReason?: string;
   deactivationDate?: string;
