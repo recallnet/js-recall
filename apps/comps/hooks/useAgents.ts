@@ -1,12 +1,8 @@
-import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import {ApiClient} from "@/lib/api-client";
-import {useUser} from "@/state/atoms";
-import {
-  AgentsResponse,
-  GetAgentsParams,
-  UpdateAgentRequest,
-} from "@/types";
+import { ApiClient } from "@/lib/api-client";
+import { useUser } from "@/state/atoms";
+import { AgentsResponse, GetAgentsParams, UpdateAgentRequest } from "@/types";
 
 const apiClient = new ApiClient();
 
@@ -30,7 +26,7 @@ export const useAgents = (params: GetAgentsParams = {}) =>
  * @returns Query result with agents data
  */
 export const useUserAgents = (params: GetAgentsParams = {}) => {
-  const {status} = useUser();
+  const { status } = useUser();
 
   return useQuery({
     queryKey: ["agents", params],
@@ -55,7 +51,7 @@ export const useUpdateAgent = () => {
     },
     onSuccess: () => {
       // Invalidate profile query to get updated data
-      queryClient.invalidateQueries({queryKey: ["agent"]});
+      queryClient.invalidateQueries({ queryKey: ["agent"] });
     },
   });
 };

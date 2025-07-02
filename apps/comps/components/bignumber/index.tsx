@@ -13,7 +13,7 @@ export const BigNumberDisplay: React.FC<BigNumberDisplayProps> = ({
   decimals,
   displayDecimals = 1,
   compact = true,
-  className
+  className,
 }) => {
   try {
     let numberToFormat: number;

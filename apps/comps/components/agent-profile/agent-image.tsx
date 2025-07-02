@@ -1,8 +1,8 @@
-import {SquarePen} from "lucide-react";
+import { SquarePen } from "lucide-react";
 import Image from "next/image";
 import React from "react";
 
-import {Button} from "@recallnet/ui2/components/button";
+import { Button } from "@recallnet/ui2/components/button";
 import {
   Dialog,
   DialogClose,
@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
-import {Input} from "@recallnet/ui2/components/input";
+import { Input } from "@recallnet/ui2/components/input";
 
 import MirrorImage from "@/components/mirror-image";
 
@@ -79,7 +79,7 @@ export const AgentImage = ({
               <Image
                 src={inputImage}
                 alt="Avatar Preview"
-                style={{display: "none"}}
+                style={{ display: "none" }}
                 onError={handleImageError}
                 onLoad={handleImageLoad}
               />

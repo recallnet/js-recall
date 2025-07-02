@@ -3,27 +3,27 @@
 import React from "react";
 
 import Card from "@recallnet/ui2/components/card";
-import {SortState} from "@recallnet/ui2/components/table";
-import {Tabs, TabsList, TabsTrigger} from "@recallnet/ui2/components/tabs";
-import {cn} from "@recallnet/ui2/lib/utils";
+import { SortState } from "@recallnet/ui2/components/table";
+import { Tabs, TabsList, TabsTrigger } from "@recallnet/ui2/components/tabs";
+import { cn } from "@recallnet/ui2/lib/utils";
 
 import MirrorImage from "@/components/mirror-image";
-import {Trophy, TrophyBadge} from "@/components/trophy-badge";
-import {useUpdateAgent, useUserAgents} from "@/hooks";
-import {useAgentCompetitions} from "@/hooks/useAgentCompetitions";
-import {Agent, AgentWithOwnerResponse, Competition} from "@/types";
+import { Trophy, TrophyBadge } from "@/components/trophy-badge";
+import { useUpdateAgent, useUserAgents } from "@/hooks";
+import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
+import { Agent, AgentWithOwnerResponse, Competition } from "@/types";
 
-import {BreadcrumbNav} from "../breadcrumb-nav";
-import {AgentImage} from "./agent-image";
-import AgentCredentials from "./agent-credentials";
-import CompetitionTable from "./comps-table";
-import {EditAgentField} from "./edit-field";
-import {EditSkillsField} from "./edit-skills-field";
-import {ShareAgent} from "./share-agent";
-import {AgentVerifiedBadge} from "./verify-badge";
-import AgentBestPlacement from "./best-placement";
 import BigNumberDisplay from "../bignumber";
-import {Clipboard} from "../clipboard";
+import { BreadcrumbNav } from "../breadcrumb-nav";
+import { Clipboard } from "../clipboard";
+import AgentCredentials from "./agent-credentials";
+import { AgentImage } from "./agent-image";
+import AgentBestPlacement from "./best-placement";
+import CompetitionTable from "./comps-table";
+import { EditAgentField } from "./edit-field";
+import { EditSkillsField } from "./edit-skills-field";
+import { ShareAgent } from "./share-agent";
+import { AgentVerifiedBadge } from "./verify-badge";
 
 function sortTrophies(items: Trophy[]): Trophy[] {
   return items.sort((a, b) => {
@@ -57,7 +57,7 @@ export default function AgentProfile({
   const skills = agent?.skills || [];
   const trophies = sortTrophies((agent.trophies || []) as Trophy[]);
 
-  const {data: userAgents} = useUserAgents();
+  const { data: userAgents } = useUserAgents();
   const isUserAgent = userAgents?.agents.some((a) => a.id === id) || false;
   const updateAgent = useUpdateAgent();
 
@@ -70,33 +70,36 @@ export default function AgentProfile({
 
   const handleSaveChange =
     (field: "imageUrl" | "description" | "name" | "skills") =>
-      async (value: unknown) => {
-        if (!agent) return;
+    async (value: unknown) => {
+      if (!agent) return;
 
-        try {
-          await updateAgent.mutateAsync({
-            agentId: agent.id,
-            params:
-              field === "skills"
-                ? {metadata: {skills: value as string[]}}
-                : {
+      try {
+        await updateAgent.mutateAsync({
+          agentId: agent.id,
+          params:
+            field === "skills"
+              ? { metadata: { skills: value as string[] } }
+              : {
                   [field]: value,
                 },
-          });
-        } catch (error) {
-          console.error("Failed to update agent:", error);
-        }
-      };
+        });
+      } catch (error) {
+        console.error("Failed to update agent:", error);
+      }
+    };
 
   const options = {
     sort: sortString,
     limit,
     offset,
-  }
-  const {data: compsData} = useAgentCompetitions(id, status === 'all' ? options : {...options, status});
-  const {total} = compsData?.pagination || {total: 0};
+  };
+  const { data: compsData } = useAgentCompetitions(
+    id,
+    status === "all" ? options : { ...options, status },
+  );
+  const { total } = compsData?.pagination || { total: 0 };
 
-  const competitions: (Competition & {trophies: Trophy[]})[] =
+  const competitions: (Competition & { trophies: Trophy[] })[] =
     React.useMemo(() => {
       return (
         compsData?.competitions.map((comp) => ({
@@ -110,23 +113,23 @@ export default function AgentProfile({
     <>
       <BreadcrumbNav
         items={[
-          {label: "RECALL", href: "/"},
-          {label: "AGENTS", href: "/"},
-          {label: agent.name},
+          { label: "RECALL", href: "/" },
+          { label: "AGENTS", href: "/" },
+          { label: agent.name },
         ]}
         className="mb-10"
       />
 
       <div className="xs:grid-rows-[550px_1fr] my-6 grid grid-cols-[300px_1fr_1fr] rounded-xl md:grid-cols-[400px_1fr_1fr]">
         <Card
-          className="xs:col-span-1 xs:mr-8 col-span-3 h-[550px] between bg-[#11121A] relative"
+          className="xs:col-span-1 xs:mr-8 between relative col-span-3 h-[550px] bg-[#11121A]"
           corner="top-left"
           cropSize={45}
         >
-          <div className="flex w-full justify-end absolute top-10 right-10">
+          <div className="absolute right-10 top-10 flex w-full justify-end">
             <ShareAgent agentId={agent.id} />
           </div>
-          <div className="absolute top-30 right-[50%] translate-x-[50%]">
+          <div className="top-30 absolute right-[50%] translate-x-[50%]">
             {isUserAgent ? (
               <AgentImage
                 agentImage={agent?.imageUrl || "/agent-placeholder.png"}
@@ -140,15 +143,14 @@ export default function AgentProfile({
               />
             )}
           </div>
-          {
-            agent.walletAddress &&
-            <div className="w-full px-20 pb-15 absolute bottom-0 right-[50%] translate-x-[50%]">
+          {agent.walletAddress && (
+            <div className="px-15 xs:px-10 pb-15 absolute bottom-0 right-[50%] w-full translate-x-[50%] md:px-20">
               <Clipboard
                 text={agent.walletAddress || ""}
-                className="w-full px-4 py-2 rder-gray-600 rounded-[10px] text-lg text-primary-foreground border-gray-700"
+                className="rder-gray-600 text-secondary-foreground w-full rounded-[10px] border-gray-700 px-4 py-2 text-lg hover:text-gray-300"
               />
             </div>
-          }
+          )}
         </Card>
         <div className="flex-2 xs:col-span-2 xs:col-start-2 xs:row-start-1 xs:mt-0 col-span-3 row-start-2 mt-5 flex shrink flex-col border lg:col-span-1 lg:col-start-2">
           <div className="relative flex w-full grow flex-col border-b p-6">
@@ -186,7 +188,7 @@ export default function AgentProfile({
               className={cn(
                 "mt-3 min-h-40 w-full overflow-y-auto overflow-x-visible py-2",
                 isUserAgent ? "max-h-[70px]" : "h-[150px] max-h-[136px]",
-                trophies.length > 0 && "px-2"
+                trophies.length > 0 && "px-2",
               )}
             >
               <div className="flex flex-wrap justify-start gap-x-5 gap-y-4">
@@ -202,9 +204,9 @@ export default function AgentProfile({
               </div>
             </div>
           </div>
-          <div className="flex w-full h-[99px] border-b">
-            <div className="flex flex-col items-start gap-2 px-6 py-6 text-xs border-r flex-1">
-              <span className="text-secondary-foreground w-full text-left font-semibold uppercase text-nowrap">
+          <div className="flex h-[99px] w-full border-b">
+            <div className="flex flex-1 flex-col items-start gap-2 border-r px-6 py-6 text-xs">
+              <span className="text-secondary-foreground w-full text-nowrap text-left font-semibold uppercase">
                 Best Placement
               </span>
               <AgentBestPlacement
@@ -212,12 +214,12 @@ export default function AgentProfile({
                 places={agent.stats.bestPlacement?.totalAgents}
               />
             </div>
-            <div className="flex flex-col flex px-6 py-6 flex-1">
-              <span className="text-secondary-foreground w-full text-left font-semibold text-xs uppercase text-nowrap">
+            <div className="flex flex-1 flex-col px-6 py-6">
+              <span className="text-secondary-foreground w-full text-nowrap text-left text-xs font-semibold uppercase">
                 TOTAL VOTES
               </span>
               <BigNumberDisplay
-                className="font-semibold mt-1"
+                className="mt-1 font-semibold"
                 value={agent.stats.totalVotes.toString()}
                 decimals={0}
               />
@@ -225,7 +227,7 @@ export default function AgentProfile({
           </div>
           <div className="flex w-full">
             <div className="flex w-1/2 flex-col items-start p-5">
-              <span className="text-secondary-foreground w-full text-left font-semibold text-xs uppercase truncate">
+              <span className="text-secondary-foreground w-full truncate text-left text-xs font-semibold uppercase">
                 Completed Comps
               </span>
               <span className="text-primary-foreground w-full text-left text-lg font-bold">
@@ -233,10 +235,10 @@ export default function AgentProfile({
               </span>
             </div>
             <div className="flex w-1/2 flex-col items-start border-l p-5">
-              <span className="text-secondary-foreground w-full text-left font-semibold text-xs uppercase text-nowrap">
+              <span className="text-secondary-foreground w-full text-nowrap text-left text-xs font-semibold uppercase">
                 Agent Rank
               </span>
-              <span className="text-secondary-foreground w-full text-left text-sm mt-1">
+              <span className="text-secondary-foreground mt-1 w-full text-left text-sm">
                 Not rated yet
               </span>
             </div>
@@ -291,8 +293,8 @@ export default function AgentProfile({
                 skills.length > 0 ? "grid grid-cols-2" : "flex flex-wrap",
               )}
             >
-              {skills.length > 0
-                ? skills.map((skill, index) => (
+              {skills.length > 0 ? (
+                skills.map((skill, index) => (
                   <span
                     key={index}
                     className="text-primary-foreground truncate rounded border px-2 py-1"
@@ -300,14 +302,19 @@ export default function AgentProfile({
                     {skill}
                   </span>
                 ))
-                : <span className="text-primary-foreground"> This agent hasnt showcased skills yet.</span>}
+              ) : (
+                <span className="text-primary-foreground">
+                  {" "}
+                  This agent hasnt showcased skills yet.
+                </span>
+              )}
             </div>
           </div>
         </div>
       </div>
 
       {isUserAgent && (
-        <AgentCredentials className="mt-auto mb-10 w-full" agent={agent} />
+        <AgentCredentials className="mb-10 mt-auto w-full" agent={agent} />
       )}
 
       {/* Competitions */}

@@ -1,10 +1,10 @@
-import {BadgeCheckIcon} from "lucide-react";
+import { BadgeCheckIcon } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
-import {Tooltip} from "@recallnet/ui2/components/tooltip";
+import { Tooltip } from "@recallnet/ui2/components/tooltip";
 
-import {socialLinks} from "@/data/social";
+import { socialLinks } from "@/data/social";
 
 interface VerifiedBadgeProps {
   verified: boolean;
