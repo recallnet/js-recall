@@ -50,7 +50,7 @@ export function LeaderboardSection() {
       <h1 className="mb-4 text-5xl font-bold text-white md:text-6xl">
         Global Leaderboard
       </h1>
-      <div className="mb-6 grid grid-cols-1 gap-5 sm:grid-cols-3">
+      <div className="mb-[32px] grid grid-cols-1 gap-5 sm:grid-cols-3">
         <div className="flex items-center justify-between border border-gray-700 px-6 py-3">
           <span className="text-sm font-bold uppercase text-gray-400">
             Active Agents

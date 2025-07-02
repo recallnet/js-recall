@@ -50,10 +50,10 @@ export function LeaderboardTable({
       <div className="min-w-[900px]">
         <div className="flex flex-col items-end">
           <Table className="w-full">
-            <TableHeader className="bg-gray-900">
-              <TableRow className="grid w-full grid-cols-[1fr_1fr_2fr_1fr_1fr_1fr]">
+            <TableHeader className="bg-card">
+              <TableRow className="grid w-full grid-cols-[1fr_1fr_2fr_150px_1fr_1fr]">
                 <SortableTableHeader
-                  className="mr-15 pl-20 text-white"
+                  className="mr-15 pl-[24px] text-white"
                   onToggleSort={() => handleSortChange("rank")}
                   sortState={sortState["rank"]}
                 >
@@ -73,13 +73,11 @@ export function LeaderboardTable({
                   Agent
                 </SortableTableHeader>
                 <SortableTableHeader
-                  className="flex justify-end text-white"
+                  className="flex w-full justify-end truncate text-white"
                   onToggleSort={() => handleSortChange("competitions")}
                   sortState={sortState["competitions"]}
                 >
-                  <div className="w-10 sm:w-full">
-                    <p className="truncate">Competitions</p>
-                  </div>
+                  Competitions
                 </SortableTableHeader>
                 <SortableTableHeader
                   className="flex justify-end text-white"
@@ -88,7 +86,7 @@ export function LeaderboardTable({
                 >
                   Votes
                 </SortableTableHeader>
-                <TableHead className="flex justify-end pr-10 text-white">
+                <TableHead className="flex justify-end pr-[24px] text-white">
                   Profile
                 </TableHead>
               </TableRow>
@@ -102,9 +100,9 @@ export function LeaderboardTable({
                 return (
                   <TableRow
                     key={agent.id}
-                    className="grid grid-cols-[1fr_1fr_2fr_1fr_1fr_1fr]"
+                    className="grid grid-cols-[1fr_1fr_2fr_150px_1fr_1fr]"
                   >
-                    <TableCell className="xs:flex-row mr-10 flex flex-col items-center gap-2 py-6 pl-20">
+                    <TableCell className="xs:flex-row mr-10 flex flex-col items-center gap-2 pl-[24px]">
                       {agent.rank === 1 ? (
                         <div
                           className={cn(
@@ -158,11 +156,11 @@ export function LeaderboardTable({
                           height={35}
                         />
                         <div className="md:w-70 w-40 text-left text-sm">
-                          <div className="truncate font-medium leading-none text-white">
+                          <div className="text-secondary-foreground mb-2 truncate font-medium leading-none">
                             {agent.name}
                           </div>
                           {agent.description && (
-                            <p className="truncate whitespace-nowrap text-xs text-gray-400">
+                            <p className="truncate whitespace-nowrap text-xs font-light text-gray-500">
                               {agent.description}
                             </p>
                           )}
@@ -170,15 +168,15 @@ export function LeaderboardTable({
                       </div>
                     </TableCell>
 
-                    <TableCell className="flex items-center justify-end text-gray-500">
+                    <TableCell className="text-secondary-foreground flex items-center justify-end">
                       {agent.numCompetitions}
                     </TableCell>
 
-                    <TableCell className="flex items-center justify-end pr-5 text-gray-500">
+                    <TableCell className="text-secondary-foreground flex items-center justify-end">
                       {agent.voteCount || 0}
                     </TableCell>
 
-                    <TableCell className="pr-15 flex items-center justify-end text-gray-500">
+                    <TableCell className="text-secondary-foreground flex items-center justify-end pr-[32px]">
                       <Link href={`/agents/${agent.id}`}>
                         <ExternalLink />
                       </Link>
