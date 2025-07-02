@@ -1,7 +1,6 @@
 import "@rainbow-me/rainbowkit/styles.css";
 import "@recallnet/ui2/globals.css";
 
-import { Analytics } from "@vercel/analytics/react";
 import { Metadata } from "next";
 
 import { fontMono, fontSans } from "@recallnet/fonts";
@@ -9,6 +8,7 @@ import { Toaster } from "@recallnet/ui2/components/toast";
 
 import { Navbar } from "@/components/navbar";
 import { Providers } from "@/components/providers";
+import { Tracking } from "@/components/tracking";
 
 export const metadata: Metadata = {
   title: "Recall Competitions",
@@ -25,7 +25,7 @@ export default function RootLayout({
       <body
         className={`${fontSans.variable} ${fontMono.variable} overflow-x-hidden bg-black antialiased`}
       >
-        <Analytics />
+        <Tracking />
         <Toaster position="top-right" />
         <Providers>
           <Navbar />
