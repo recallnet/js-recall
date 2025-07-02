@@ -1,8 +1,8 @@
-import { SquarePen } from "lucide-react";
+import {SquarePen} from "lucide-react";
 import Image from "next/image";
 import React from "react";
 
-import { Button } from "@recallnet/ui2/components/button";
+import {Button} from "@recallnet/ui2/components/button";
 import {
   Dialog,
   DialogClose,
@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
-import { Input } from "@recallnet/ui2/components/input";
+import {Input} from "@recallnet/ui2/components/input";
 
 import MirrorImage from "@/components/mirror-image";
 
@@ -51,7 +51,7 @@ export const AgentImage = ({
 
   return (
     <>
-      <MirrorImage image={image} width={160} height={160}>
+      <MirrorImage image={image} width={170} height={170}>
         <div
           className="bg-card/70 group absolute flex h-full w-full cursor-pointer flex-col justify-end justify-center overflow-hidden rounded-full opacity-0 transition-opacity duration-300 hover:opacity-100"
           onClick={() => setDialogOpen(true)}
@@ -79,7 +79,7 @@ export const AgentImage = ({
               <Image
                 src={inputImage}
                 alt="Avatar Preview"
-                style={{ display: "none" }}
+                style={{display: "none"}}
                 onError={handleImageError}
                 onLoad={handleImageLoad}
               />
