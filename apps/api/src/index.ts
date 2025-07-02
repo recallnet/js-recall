@@ -17,7 +17,7 @@ import { makeVoteController } from "@/controllers/vote.controller.js";
 import { migrateDb } from "@/database/db.js";
 import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
 import { authMiddleware } from "@/middleware/auth.middleware.js";
-import errorHandler from "@/middleware/errorHandler.js";
+import errorHandler, { ApiError } from "@/middleware/errorHandler.js";
 import { optionalAuthMiddleware } from "@/middleware/optional-auth.middleware.js";
 import { rateLimiterMiddleware } from "@/middleware/rate-limiter.middleware.js";
 import { siweSessionMiddleware } from "@/middleware/siwe.middleware.js";
@@ -87,7 +87,18 @@ app.set("trust proxy", true);
 
 app.use(
   cors({
-    origin: config.app.corsOrigins,
+    origin: function (origin, fn) {
+      if (
+        !origin ||
+        config.app.url === origin ||
+        // Note: the frontend app URL above should already be included in the `corsOrigins` config
+        config.app.corsOrigins.includes(origin)
+      ) {
+        fn(null, true);
+      } else {
+        fn(new ApiError(403, "Forbidden"));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
