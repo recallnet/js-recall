@@ -1,10 +1,13 @@
 import * as crypto from "crypto";
+import { and, asc, eq } from "drizzle-orm";
 import { getAddress } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { expect } from "vitest";
 
 import { ApiSDK } from "@recallnet/api-sdk";
 
+import { db } from "@/database/db.js";
+import { portfolioSnapshots } from "@/database/schema/trading/defs.js";
 import { resetRateLimiters } from "@/middleware/rate-limiter.middleware.js";
 
 import { ApiClient } from "./api-client.js";
@@ -487,4 +490,26 @@ export async function generateTestCompetitions(adminApiKey: string) {
     user2,
     user3,
   };
+}
+
+export async function getStartingValue(agentId: string, competitionId: string) {
+  // Direct database lookup for oldest portfolio snapshot
+  const oldestSnapshot = await db
+    .select()
+    .from(portfolioSnapshots)
+    .where(
+      and(
+        eq(portfolioSnapshots.agentId, agentId),
+        eq(portfolioSnapshots.competitionId, competitionId),
+      ),
+    )
+    .orderBy(asc(portfolioSnapshots.timestamp))
+    .limit(1);
+
+  const val = oldestSnapshot[0]?.totalValue;
+  if (typeof val !== "number" || val <= 0) {
+    throw new Error("no starting value found");
+  }
+
+  return val;
 }

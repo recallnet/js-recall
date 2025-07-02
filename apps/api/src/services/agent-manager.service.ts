@@ -35,7 +35,10 @@ import {
   getBulkAgentCompetitionRankings,
 } from "@/database/repositories/competition-repository.js";
 import { createEmailVerificationToken } from "@/database/repositories/email-verification-repository.js";
-import { getBulkAgentMetrics } from "@/database/repositories/leaderboard-repository.js";
+import {
+  getAgentTotalRoi,
+  getBulkAgentMetrics,
+} from "@/database/repositories/leaderboard-repository.js";
 import {
   countAgentTrades,
   countAgentTradesInCompetition,
@@ -1307,6 +1310,7 @@ export class AgentManager {
     const totalTrades = await countAgentTrades(sanitizedAgent.id);
     const bestPlacement =
       (await this.getAgentBestPlacement(sanitizedAgent.id)) || undefined;
+    const totalRoi = await getAgentTotalRoi(sanitizedAgent.id);
 
     const agentRank = await getAgentRankById(sanitizedAgent.id);
     const rank = agentRank?.rank;
@@ -1343,6 +1347,7 @@ export class AgentManager {
       bestPlacement,
       rank,
       score,
+      totalRoi,
     } as AgentStats;
 
     return {
@@ -1412,6 +1417,7 @@ export class AgentManager {
           bestPnl: metrics?.bestPnl ?? undefined,
           rank: metrics?.globalRank ?? undefined,
           score: metrics?.globalScore ?? undefined,
+          totalRoi: metrics?.totalRoi ?? undefined,
         } as AgentStats;
 
         return {
@@ -1433,7 +1439,7 @@ export class AgentManager {
     }
   }
 
-  async getAgentPnlForComp(agentId: string, competitionId: string) {
+  async getAgentPerformanceForComp(agentId: string, competitionId: string) {
     // Get oldest and newest snapshots for agent in competition
     const agentSnapshots = await getBoundedSnapshots(competitionId, agentId);
     const latestSnapshot = agentSnapshots?.newest; // Already ordered by timestamp desc
@@ -1444,8 +1450,9 @@ export class AgentManager {
     // Calculate PnL (similar to calculateAgentMetrics pattern)
     let pnl = 0;
     let pnlPercent = 0;
+    let startingValue = 0;
     if (agentSnapshots) {
-      const startingValue = Number(agentSnapshots.oldest?.totalValue || 0);
+      startingValue = Number(agentSnapshots.oldest?.totalValue || 0);
       const currentValue = Number(agentSnapshots.newest?.totalValue || 0);
       pnl = currentValue - startingValue;
       pnlPercent = startingValue > 0 ? (pnl / startingValue) * 100 : 0;
@@ -1455,6 +1462,7 @@ export class AgentManager {
       portfolioValue,
       pnl,
       pnlPercent,
+      startingValue,
     };
   }
 
@@ -1469,10 +1477,8 @@ export class AgentManager {
     agentId: string,
   ): Promise<EnhancedCompetition> {
     try {
-      const { pnl, pnlPercent, portfolioValue } = await this.getAgentPnlForComp(
-        agentId,
-        competition.id,
-      );
+      const { pnl, pnlPercent, portfolioValue } =
+        await this.getAgentPerformanceForComp(agentId, competition.id);
 
       // Get total trades for agent in this competition
       const totalTrades = await countAgentTradesInCompetition(

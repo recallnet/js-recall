@@ -72,6 +72,13 @@ export const tradingCompetitionsLeaderboard = tradingComps.table(
     })
       .notNull()
       .default(0),
+    startingValue: numeric("starting_value", {
+      precision: 30,
+      scale: 15,
+      mode: "number",
+    })
+      .notNull()
+      .default(0),
   },
   (table) => [index("idx_trading_competitions_leaderboard_pnl").on(table.pnl)],
 );
