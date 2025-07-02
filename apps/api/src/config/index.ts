@@ -161,6 +161,9 @@ export const config = {
   // Frontend app configuration for interfacing with the server
   app: {
     url: process.env.FRONTEND_URL || "http://localhost:3001", // TODO: resolve frontend/backend default ports
+    corsOrigins: process.env.CORS_ORIGINS
+      ? process.env.CORS_ORIGINS.split(",").map(origin => origin.trim())
+      : [process.env.FRONTEND_URL || "http://localhost:3001"],
     domain: process.env.DOMAIN,
     cookieName: process.env.COOKIE_NAME || "session",
     sessionPassword:
