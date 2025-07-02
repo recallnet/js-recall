@@ -87,7 +87,7 @@ app.set("trust proxy", true);
 
 app.use(
   cors({
-    origin: config.app.url,
+    origin: config.app.corsOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
