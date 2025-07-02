@@ -15,7 +15,7 @@ import {Agent, AgentWithOwnerResponse, Competition} from "@/types";
 
 import {BreadcrumbNav} from "../breadcrumb-nav";
 import {AgentImage} from "./agent-image";
-import AgentInfo from "./agent-info";
+import AgentCredentials from "./agent-credentials";
 import CompetitionTable from "./comps-table";
 import {EditAgentField} from "./edit-field";
 import {EditSkillsField} from "./edit-skills-field";
@@ -201,9 +201,6 @@ export default function AgentProfile({
                 )}
               </div>
             </div>
-            {isUserAgent && (
-              <AgentInfo className="mt-auto w-full" agent={agent} />
-            )}
           </div>
           <div className="flex w-full h-[99px] border-b">
             <div className="flex flex-col items-start gap-2 px-6 py-6 text-xs border-r flex-1">
@@ -308,6 +305,10 @@ export default function AgentProfile({
           </div>
         </div>
       </div>
+
+      {isUserAgent && (
+        <AgentCredentials className="mt-auto mb-10 w-full" agent={agent} />
+      )}
 
       {/* Competitions */}
       <div className="mb-8">

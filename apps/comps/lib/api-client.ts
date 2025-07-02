@@ -301,13 +301,22 @@ export class ApiClient {
     return this.request<AgentApiKeyResponse>(`/user/agents/${agentId}/api-key`);
   }
 
+  /** TODO: once added sandbox api key, change endpoint
+   * Get agent sandbox api key
+   * @param params - Query parameters
+   * @returns Agents response
+   */
+  async getAgentSandboxApiKey(agentId: string): Promise<AgentApiKeyResponse> {
+    return this.request<AgentApiKeyResponse>(`/user/agents/${agentId}/api-key`);
+  }
+
   /**
    * Get agent by ID owned by the authenticated user
    * @param id - Agent ID
    * @returns Agent details
    */
-  async getUserAgent(id: string): Promise<{ success: boolean; agent: Agent }> {
-    return this.request<{ success: boolean; agent: Agent }>(
+  async getUserAgent(id: string): Promise<{success: boolean; agent: Agent}> {
+    return this.request<{success: boolean; agent: Agent}>(
       `/user/agents/${id}`,
     );
   }
