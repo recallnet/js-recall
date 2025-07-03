@@ -23,6 +23,7 @@ export const useProfile = () => {
     queryFn: async (): Promise<ProfileResponse["user"]> => {
       try {
         const res = await apiClient.getProfile();
+
         if (!res.success) throw new Error("Error when fetching profile");
         return res.user;
       } catch (error) {

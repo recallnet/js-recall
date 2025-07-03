@@ -7,3 +7,4 @@ export * from "./useCompetitions";
 export * from "./useCreateAgent";
 export * from "./useLoopsVerification";
 export * from "./useProfile";
+export * from "./useSiweAuth";
