@@ -1,4 +1,9 @@
 import { getDefaultConfig } from "@rainbow-me/rainbowkit";
+import {
+  coinbaseWallet,
+  okxWallet,
+  walletConnectWallet,
+} from "@rainbow-me/rainbowkit/wallets";
 import { Config, createConfig, http } from "wagmi";
 import { baseSepolia } from "wagmi/chains";
 
@@ -10,6 +15,24 @@ export const clientConfig: () => Config = () =>
       "your_walletconnect_project_id",
     chains: [baseSepolia],
     ssr: true,
+    wallets: [
+      {
+        groupName: "Popular",
+        wallets: [
+          okxWallet,
+          coinbaseWallet,
+          (options) => {
+            return walletConnectWallet({
+              ...options,
+              options: {
+                ...options.options,
+                logger: "disabled",
+              },
+            });
+          },
+        ],
+      },
+    ],
   });
 
 export const serverConfig = () =>
