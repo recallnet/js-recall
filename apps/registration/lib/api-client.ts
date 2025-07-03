@@ -23,7 +23,9 @@ import {
 
 // Use proxy endpoint when we have a separate API base URL to leverage Next.js rewrites
 // This eliminates cross-origin cookie issues on mobile by making all API calls same-origin
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ? '/backend-api' : '/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
+  ? "/backend-api"
+  : "/api";
 
 /**
  * Base HTTP error class with status code support
@@ -116,7 +118,6 @@ export class ApiClient {
       ...options.headers,
     };
 
-
     const response = await fetch(url, {
       ...options,
       headers,
@@ -151,7 +152,7 @@ export class ApiClient {
       }
     }
 
-    const responseData = await response.json() as T;
+    const responseData = (await response.json()) as T;
 
     return responseData;
   }
@@ -192,7 +193,6 @@ export class ApiClient {
       method: "POST",
       body: JSON.stringify(data),
     });
-
 
     return result;
   }

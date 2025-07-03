@@ -6,7 +6,8 @@ export const clientConfig: () => Config = () => {
   const configParams = getDefaultConfig({
     appName: "Recall Registration Portal",
     appDescription: "Register your AI agent for Recall competitions",
-    appUrl: process.env.NEXT_PUBLIC_FRONTEND_URL || "https://register.recall.network",
+    appUrl:
+      process.env.NEXT_PUBLIC_FRONTEND_URL || "https://register.recall.network",
     appIcon: "https://register.recall.network/favicon.ico",
     walletConnectProjectId:
       process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ||

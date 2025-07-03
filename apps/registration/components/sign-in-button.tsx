@@ -1,7 +1,8 @@
 "use client";
 
 import { ConnectKitButton } from "connectkit";
-import { LogOut } from "lucide-react";
+import { LogOut, Smartphone } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useAccount, useDisconnect } from "wagmi";
 
 import { Button } from "@recallnet/ui/components/shadcn/button";
@@ -19,6 +20,26 @@ export function SignInButton() {
   const { isConnected } = useAccount();
   const { disconnect } = useDisconnect();
   const { authenticate, isAuthenticating, authError } = useSiweAuth();
+
+  // Mobile detection
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      const userAgent = navigator.userAgent;
+      const isMobileDevice =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          userAgent,
+        );
+      const isSmallScreen = window.innerWidth <= 768;
+      setIsMobile(isMobileDevice || isSmallScreen);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -85,10 +106,23 @@ export function SignInButton() {
                   {isAuthenticating ? "Signing Message..." : "Sign Message"}
                 </span>
               </Button>
+
+              {/* Mobile help text when signing */}
+              {isAuthenticating && isMobile && (
+                <div className="rounded border border-blue-200 bg-blue-50 p-3">
+                  <div className="flex items-start space-x-2">
+                    <Smartphone className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-600" />
+                    <p className="text-sm text-blue-800">
+                      <span className="font-medium">Mobile tip:</span> You may
+                      need to manually return to your wallet app to sign the
+                      message, then come back to this page.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {authError && (
-                <p className="text-center text-sm text-red-400">
-                  {authError}
-                </p>
+                <p className="text-center text-sm text-red-400">{authError}</p>
               )}
             </div>
           );

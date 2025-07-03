@@ -41,29 +41,18 @@ export default function Home() {
   // Debug: Track browser visibility changes (app switching)
   useEffect(() => {
     const handleVisibilityChange = () => {
-      console.log(`👁️ [VISIBILITY] Document visibility changed:`, {
-        hidden: document.hidden,
-        visibilityState: document.visibilityState,
-        timestamp: new Date().toISOString(),
-        cookies: document.cookie,
-      });
+      // Do nothing
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    console.log(`👁️ [VISIBILITY] Initial state:`, {
-      hidden: document.hidden,
-      visibilityState: document.visibilityState,
-      cookies: document.cookie,
-    });
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
 
   // Handle next button from profile form
   const handleProfileNext = (data: ProfileFormData) => {
-    console.log("Profile data:", data);
     setProfileData(data);
 
     // Redirect directly to account page after profile completion

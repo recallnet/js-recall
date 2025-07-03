@@ -27,9 +27,7 @@ export const useProfile = () => {
         if (!res.success) throw new Error("Error when fetching profile");
         return res.user;
       } catch (error) {
-
         if (error instanceof UnauthorizedError) {
-
           cleanup();
         }
         throw error;

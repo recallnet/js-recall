@@ -122,21 +122,21 @@ export const useLogout = () => {
  */
 export type UserSessionState =
   | {
-    /** Indicates if the session state has been initialized on the client. */
-    isInitialized: false;
-  }
+      /** Indicates if the session state has been initialized on the client. */
+      isInitialized: false;
+    }
   | {
-    /** Indicates if the session state has been initialized on the client. */
-    isInitialized: true;
-    /** The user profile, or null if not authenticated. */
-    user: User | null;
-    /** True if the user is authenticated. */
-    isAuthenticated: boolean;
-    /** True if the user's profile is updated (e.g., has a name). */
-    isProfileUpdated: boolean;
-    /** Indicates if the profile is loading. */
-    isLoading: boolean;
-  };
+      /** Indicates if the session state has been initialized on the client. */
+      isInitialized: true;
+      /** The user profile, or null if not authenticated. */
+      user: User | null;
+      /** True if the user is authenticated. */
+      isAuthenticated: boolean;
+      /** True if the user's profile is updated (e.g., has a name). */
+      isProfileUpdated: boolean;
+      /** Indicates if the profile is loading. */
+      isLoading: boolean;
+    };
 
 /**
  * Main auth hook that provides unified authentication state
