@@ -14,6 +14,8 @@ import { cn } from "@recallnet/ui2/lib/utils";
 import { Trophy, TrophyBadge } from "@/components/trophy-badge";
 import { Competition, CompetitionStatus } from "@/types";
 
+import RainbowText from "../animations/rainbow-text";
+
 export function CompetitionTable({
   competitions,
   handleSortChange,
@@ -160,9 +162,10 @@ export function CompetitionTable({
                     </TableCell>
                     {canClaim && (
                       <TableCell className="align-center h-25 flex items-center gap-2">
-                        <Button className="rounded bg-sky-700 px-7">
-                          Claim
-                        </Button>
+                        <RainbowText
+                          text="0 USDC"
+                          className="cursor-pointer font-bold"
+                        />
                       </TableCell>
                     )}
                   </TableRow>
