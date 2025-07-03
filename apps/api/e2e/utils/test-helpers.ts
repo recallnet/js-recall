@@ -186,6 +186,7 @@ export async function createTestCompetition(
     externalUrl,
     imageUrl,
     type,
+    undefined, // endDate
     votingStartDate,
     votingEndDate,
   );

@@ -41,6 +41,8 @@ beforeAll(async () => {
   if (services.scheduler) {
     log("[Global Setup] Resetting scheduler service...");
     services.scheduler.reset();
+    // Start the scheduler after resetting it
+    services.startSchedulers();
   }
 });
 
@@ -50,6 +52,8 @@ beforeEach(async () => {
   if (services.scheduler) {
     log("[Global Setup] Resetting scheduler service for new test...");
     services.scheduler.reset();
+    // Start the scheduler after resetting it
+    services.startSchedulers();
   }
 
   // Reset caches to ensure a clean state for each test
