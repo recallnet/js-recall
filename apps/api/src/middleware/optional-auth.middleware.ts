@@ -29,14 +29,17 @@ export function optionalAuthMiddleware(
     try {
       // First, try to get SIWE session using same config as siweSessionMiddleware
       try {
+        // Detect if we're using Cloudflare tunnels for testing
+        const isCloudflareTestMode = config.app.url?.includes('trycloudflare.com');
+
         const session = await getIronSession<SessionData>(req, res, {
           cookieName: config.app.cookieName,
           password: config.security.rootEncryptionKey,
           ttl: config.app.sessionTtl,
           cookieOptions: {
-            secure: config.server.nodeEnv === "production",
+            secure: config.server.nodeEnv === "production" || isCloudflareTestMode,
             httpOnly: true,
-            sameSite: "lax",
+            sameSite: isCloudflareTestMode ? "none" : "lax", // Allow cross-origin cookies for Cloudflare tunnels
             path: "/",
             maxAge: config.app.sessionTtl,
             domain:

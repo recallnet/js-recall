@@ -1,4 +1,3 @@
-import "@rainbow-me/rainbowkit/styles.css";
 import "@recallnet/ui/globals.css";
 
 import { Analytics } from "@vercel/analytics/react";

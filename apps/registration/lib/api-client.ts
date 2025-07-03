@@ -114,11 +114,18 @@ export class ApiClient {
       ...options.headers,
     };
 
+    console.log(`🌐 [API] ${options.method || 'GET'} ${url}`);
+    console.log(`🍪 [API] Document cookies before request:`, document.cookie);
+
     const response = await fetch(url, {
       ...options,
       headers,
       credentials: "include", // Include cookies for auth
     });
+
+    console.log(`📡 [API] Response status: ${response.status}`);
+    console.log(`🍪 [API] Response headers:`, Object.fromEntries(response.headers.entries()));
+    console.log(`🍪 [API] Document cookies after request:`, document.cookie);
 
     if (!response.ok) {
       const data = await response.json().catch(() => ({
@@ -127,6 +134,8 @@ export class ApiClient {
 
       const errorMessage =
         data.error || `Request failed with status ${response.status}`;
+
+      console.error(`❌ [API] Request failed:`, errorMessage);
 
       // Create appropriate error based on status code
       switch (response.status) {
@@ -149,7 +158,10 @@ export class ApiClient {
       }
     }
 
-    return response.json() as Promise<T>;
+    const responseData = await response.json() as T;
+    console.log(`✅ [API] Response data:`, responseData);
+
+    return responseData;
   }
 
   /**
@@ -184,10 +196,15 @@ export class ApiClient {
    * @returns Login response
    */
   async login(data: LoginRequest): Promise<LoginResponse> {
-    return this.request<LoginResponse>("/auth/login", {
+    const result = await this.request<LoginResponse>("/auth/login", {
       method: "POST",
       body: JSON.stringify(data),
     });
+
+    // Special debug for login to check cookies immediately after
+    console.log(`🔐 [LOGIN-API] Login completed, checking cookies immediately:`, document.cookie);
+
+    return result;
   }
 
   /**

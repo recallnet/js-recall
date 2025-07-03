@@ -38,6 +38,29 @@ export default function Home() {
     }
   }, []);
 
+  // Debug: Track browser visibility changes (app switching)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      console.log(`👁️ [VISIBILITY] Document visibility changed:`, {
+        hidden: document.hidden,
+        visibilityState: document.visibilityState,
+        timestamp: new Date().toISOString(),
+        cookies: document.cookie,
+      });
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    console.log(`👁️ [VISIBILITY] Initial state:`, {
+      hidden: document.hidden,
+      visibilityState: document.visibilityState,
+      cookies: document.cookie,
+    });
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   // Handle next button from profile form
   const handleProfileNext = (data: ProfileFormData) => {
     console.log("Profile data:", data);

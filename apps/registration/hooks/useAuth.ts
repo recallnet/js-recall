@@ -41,12 +41,17 @@ export const useLogin = () => {
 
   return useMutation({
     mutationFn: async (data: LoginRequest) => {
-      return apiClient.login(data);
+      console.log(`🔐 [LOGIN] Starting login for wallet:`, data.wallet);
+      const result = await apiClient.login(data);
+      console.log(`✅ [LOGIN] Login API successful:`, result);
+      return result;
     },
     onSuccess: () => {
+      console.log(`🎉 [LOGIN] Login mutation onSuccess - setting authenticated state`);
       setUserAtom({ user: null, status: "authenticated" });
 
       // Trigger profile refetch
+      console.log(`🔄 [LOGIN] Invalidating profile query`);
       queryClient.invalidateQueries({ queryKey: ["profile"] });
 
       // Trigger competitions refetch
@@ -55,7 +60,8 @@ export const useLogin = () => {
       // Invalidate nonce cache after successful login
       queryClient.invalidateQueries({ queryKey: ["nonce"] });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error(`❌ [LOGIN] Login mutation failed:`, error);
       // Invalidate nonce cache after failed login to ensure fresh nonce on retry
       queryClient.invalidateQueries({ queryKey: ["nonce"] });
     },
@@ -121,21 +127,21 @@ export const useLogout = () => {
  */
 export type UserSessionState =
   | {
-      /** Indicates if the session state has been initialized on the client. */
-      isInitialized: false;
-    }
+    /** Indicates if the session state has been initialized on the client. */
+    isInitialized: false;
+  }
   | {
-      /** Indicates if the session state has been initialized on the client. */
-      isInitialized: true;
-      /** The user profile, or null if not authenticated. */
-      user: User | null;
-      /** True if the user is authenticated. */
-      isAuthenticated: boolean;
-      /** True if the user's profile is updated (e.g., has a name). */
-      isProfileUpdated: boolean;
-      /** Indicates if the profile is loading. */
-      isLoading: boolean;
-    };
+    /** Indicates if the session state has been initialized on the client. */
+    isInitialized: true;
+    /** The user profile, or null if not authenticated. */
+    user: User | null;
+    /** True if the user is authenticated. */
+    isAuthenticated: boolean;
+    /** True if the user's profile is updated (e.g., has a name). */
+    isProfileUpdated: boolean;
+    /** Indicates if the profile is loading. */
+    isLoading: boolean;
+  };
 
 /**
  * Main auth hook that provides unified authentication state
@@ -149,13 +155,26 @@ export const useUserSession = (): UserSessionState => {
     data: profileData,
     isSuccess: profileIsSuccess,
     isLoading: profileIsLoading,
+    error: profileError,
   } = useProfile();
 
   const isAuthenticated = authState.status === "authenticated";
   const isProfileUpdated = isAuthenticated && !!profileData?.name;
 
+  console.log(`👤 [SESSION] Auth state:`, {
+    authState,
+    isClient,
+    isAuthenticated,
+    profileIsSuccess,
+    profileIsLoading,
+    profileError: profileError?.message,
+    profileData: profileData ? { ...profileData, apiKey: '[REDACTED]' } : null,
+    isProfileUpdated,
+  });
+
   useEffect(() => {
     if (profileIsSuccess && profileData) {
+      console.log(`✅ [SESSION] Profile loaded successfully, updating auth state`);
       setAuthState({ user: profileData, status: "authenticated" });
     }
   }, [profileIsSuccess, profileData, setAuthState]);
@@ -165,13 +184,16 @@ export const useUserSession = (): UserSessionState => {
       return { isInitialized: false };
     }
 
-    return {
+    const state = {
       isInitialized: true,
       user: authState.user,
       isAuthenticated,
       isProfileUpdated,
       isLoading: profileIsLoading,
     };
+
+    console.log(`🔄 [SESSION] Session state computed:`, state);
+    return state;
   }, [
     isClient,
     authState.user,

@@ -16,15 +16,18 @@ export const siweSessionMiddleware = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
+    // Detect if we're using Cloudflare tunnels for testing
+    const isCloudflareTestMode = config.app.url?.includes('trycloudflare.com');
+
     const session = await getIronSession<SessionData>(req, res, {
       cookieName: config.app.cookieName,
       password: config.security.rootEncryptionKey,
       ttl: config.app.sessionTtl,
       // See here for available options: https://github.com/jshttp/cookie#options-1
       cookieOptions: {
-        secure: config.server.nodeEnv === "production",
+        secure: config.server.nodeEnv === "production" || isCloudflareTestMode,
         httpOnly: true,
-        sameSite: "lax",
+        sameSite: isCloudflareTestMode ? "none" : "lax", // Allow cross-origin cookies for Cloudflare tunnels
         path: "/",
         maxAge: config.app.sessionTtl,
         domain:
