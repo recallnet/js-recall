@@ -1,5 +1,7 @@
 "use client";
 
+import { ExternalLink } from "lucide-react";
+import Link from "next/link";
 import React from "react";
 
 import Card from "@recallnet/ui2/components/card";
@@ -16,10 +18,10 @@ import { Agent, AgentWithOwnerResponse, Competition } from "@/types";
 import BigNumberDisplay from "../bignumber";
 import { BreadcrumbNav } from "../breadcrumb-nav";
 import { Clipboard } from "../clipboard";
-import AgentCredentials from "./agent-credentials";
 import { AgentImage } from "./agent-image";
 import AgentBestPlacement from "./best-placement";
 import CompetitionTable from "./comps-table";
+import Credentials from "./credentials";
 import { EditAgentField } from "./edit-field";
 import { EditSkillsField } from "./edit-skills-field";
 import { ShareAgent } from "./share-agent";
@@ -309,7 +311,21 @@ export default function AgentProfile({
       </div>
 
       {isUserAgent && (
-        <AgentCredentials className="mb-10 mt-auto w-full" agent={agent} />
+        <div className="mb-8 flex flex-col border p-6">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-secondary-foreground text-left font-semibold uppercase">
+              Credentials
+            </span>
+            <Link
+              href="https://docs.recall.network/competitions/guides/register#verifying-your-account"
+              target="_blank"
+              className="text-primary-foreground flex items-center gap-1 underline"
+            >
+              Docs <ExternalLink className="h-4 w-4" />
+            </Link>
+          </div>
+          <Credentials agent={agent} className="mt-6" />
+        </div>
       )}
 
       {/* Competitions */}
