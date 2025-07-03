@@ -212,37 +212,42 @@ export class DexScreenerProvider implements PriceSource {
               ];
 
             // Find the best pair for stablecoin pricing
-            const stablecoinPair = response.data.find((pair) => {
-              // First, ensure our token appears in the pair
-              const ourTokenIsBase =
-                pair.baseToken?.address?.toLowerCase() === normalizedAddress;
-              const ourTokenIsQuote =
-                pair.quoteToken?.address?.toLowerCase() === normalizedAddress;
+            const stablecoinPairs = response.data
+              .filter((pair) => {
+                // First, ensure our token appears in the pair
+                const ourTokenIsBase =
+                  pair.baseToken?.address?.toLowerCase() === normalizedAddress;
+                const ourTokenIsQuote =
+                  pair.quoteToken?.address?.toLowerCase() === normalizedAddress;
 
-              // If our token doesn't appear in this pair, skip it
-              if (!ourTokenIsBase && !ourTokenIsQuote) return false;
+                // If our token doesn't appear in this pair, skip it
+                if (!ourTokenIsBase && !ourTokenIsQuote) return false;
 
-              // Check if it has a valid price
-              if (!pair.priceUsd || isNaN(parseFloat(pair.priceUsd)))
+                // Check if it has a valid price
+                if (!pair.priceUsd || isNaN(parseFloat(pair.priceUsd)))
+                  return false;
+
+                // Our token is the base token - this is ideal
+                if (ourTokenIsBase) return true;
+
+                // If our token is the quote token, it should be paired with a known stablecoin
+                // to ensure accurate pricing
+                if (ourTokenIsQuote) {
+                  const pairedWithUsdc =
+                    pair.baseToken?.address?.toLowerCase() ===
+                    chainTokens.usdc?.toLowerCase();
+                  const pairedWithUsdt =
+                    pair.baseToken?.address?.toLowerCase() ===
+                    chainTokens.usdt?.toLowerCase();
+                  return pairedWithUsdc || pairedWithUsdt;
+                }
+
                 return false;
+              })
+              // And get max price
+              .sort((a, b) => Number(b.priceNative) - Number(a.priceNative));
 
-              // Our token is the base token - this is ideal
-              if (ourTokenIsBase) return true;
-
-              // If our token is the quote token, it should be paired with a known stablecoin
-              // to ensure accurate pricing
-              if (ourTokenIsQuote) {
-                const pairedWithUsdc =
-                  pair.baseToken?.address?.toLowerCase() ===
-                  chainTokens.usdc?.toLowerCase();
-                const pairedWithUsdt =
-                  pair.baseToken?.address?.toLowerCase() ===
-                  chainTokens.usdt?.toLowerCase();
-                return pairedWithUsdc || pairedWithUsdt;
-              }
-
-              return false;
-            });
+            const stablecoinPair = stablecoinPairs[0];
 
             if (stablecoinPair) {
               // Determine the correct price based on whether our token is base or quote

@@ -1,5 +1,6 @@
 "use client";
 
+import { KeyRound } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
@@ -13,7 +14,41 @@ import { Agent } from "@/types";
 interface AgentCreatedProps {
   agent: Agent;
   apiKey: string;
+  sandboxApiKey?: string | null;
   redirectToUrl: string;
+}
+
+interface ApiKeySectionProps {
+  title: string;
+  apiKey: string;
+  description: string;
+}
+
+/**
+ * Reusable component for displaying an API key section with copy functionality.
+ *
+ * @param title The title for the API key section
+ * @param apiKey The API key to display
+ * @param description The description text below the API key
+ * @returns React component
+ */
+function ApiKeySection({ title, apiKey, description }: ApiKeySectionProps) {
+  return (
+    <div className="mt-15 w-full">
+      <h3 className="text-secondary-foreground mb-2 flex items-center justify-center gap-2 text-lg">
+        <KeyRound /> {title}
+      </h3>
+      <div className="mt-2 flex items-center justify-center rounded-md p-2">
+        <span className="text-primary-foreground truncate font-mono text-xl font-semibold">
+          {apiKey}
+        </span>
+        <CopyButton textToCopy={apiKey} />
+      </div>
+      <p className="text-secondary-foreground mt-2 text-center italic">
+        {description}
+      </p>
+    </div>
+  );
 }
 
 /**
@@ -21,12 +56,17 @@ interface AgentCreatedProps {
  *
  * @param agent The created agent's data
  * @param apiKey The agent's API key
+ * @param sandboxApiKey The agent's sandbox API key (optional)
  * @returns React component
  *
  * @example
- * <AgentCreated agent={agent} apiKey={apiKey} />
+ * <AgentCreated agent={agent} apiKey={apiKey} sandboxApiKey={sandboxApiKey} />
  */
-export function AgentCreated({ apiKey, redirectToUrl }: AgentCreatedProps) {
+export function AgentCreated({
+  apiKey,
+  sandboxApiKey,
+  redirectToUrl,
+}: AgentCreatedProps) {
   const session = useUserSession();
   if (!session.isInitialized) return null;
 
@@ -42,26 +82,31 @@ export function AgentCreated({ apiKey, redirectToUrl }: AgentCreatedProps) {
       </p>
       <hr className="my-5" />
       <h2 className="text-primary-foreground mt-4 text-2xl font-bold">
-        You&apos;re almost done! First, grab your API key.
+        You&apos;re almost done! First, grab your API keys.
       </h2>
       <p className="text-secondary-foreground mt-2">
-        Here&apos;s your Agent&apos;s unique key. Make sure to copy and store it
-        somewhere safe, but it will always be available on your Agent&apos;s
+        Here are your Agent&apos;s unique keys. Make sure to copy and store them
+        somewhere safe, but they will always be available on your Agent&apos;s
         profile.
       </p>
-      <div className="mt-8 w-full">
-        <div className="mt-2 flex items-center justify-center rounded-md p-2">
-          <span className="text-primary-foreground truncate font-mono text-xl font-semibold">
-            {apiKey}
-          </span>
-          <CopyButton textToCopy={apiKey} />
-        </div>
-        <p className="text-secondary-foreground mt-2 text-center italic">
-          Anyone with this key can call your agent. Keep it private!
-        </p>
-      </div>
 
-      <h2 className="text-primary-foreground mt-14 text-2xl font-bold">
+      {/* Sandbox API Key */}
+      {sandboxApiKey && (
+        <ApiKeySection
+          title="Sandbox API Key"
+          apiKey={sandboxApiKey}
+          description="Use this to test the API."
+        />
+      )}
+
+      {/* Production API Key */}
+      <ApiKeySection
+        title="Production API Key"
+        apiKey={apiKey}
+        description="Anyone with these keys can call your agent. Keep them private!"
+      />
+
+      <h2 className="text-primary-foreground mt-16 text-2xl font-bold">
         Then, connect to Recall
       </h2>
       <p className="text-secondary-foreground mt-2">

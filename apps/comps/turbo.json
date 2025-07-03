@@ -1,0 +1,10 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "extends": ["//"],
+  "globalEnv": ["SANDBOX_ADMIN_API_KEY"],
+  "tasks": {
+    "build": {
+      "env": ["SANDBOX_ADMIN_API_KEY"]
+    }
+  }
+}

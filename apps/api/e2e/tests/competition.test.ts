@@ -7,6 +7,7 @@ import { db } from "@/database/db.js";
 import { agents, competitionAgents } from "@/database/schema/core/defs.js";
 import {
   AgentProfileResponse,
+  AgentTrophy,
   CROSS_CHAIN_TRADING_TYPE,
   CompetitionAgentsResponse,
   CompetitionDetailResponse,
@@ -3105,6 +3106,444 @@ describe("Competition API", () => {
       ).rejects.toMatchObject({
         response: { status: 401 },
       });
+    });
+  });
+
+  describe("Trophy Logic", () => {
+    test("should populate trophies with correct ranking based on predictable trading outcomes", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register 4 users and agents for different ranking scenarios
+      const { client: agent1Client, agent: agent1 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Gold Trophy Agent",
+          agentDescription: "Agent designed to win 1st place",
+        });
+
+      const { client: agent2Client, agent: agent2 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Silver Trophy Agent",
+          agentDescription: "Agent designed to get 2nd place",
+        });
+
+      const { client: agent3Client, agent: agent3 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Bronze Trophy Agent",
+          agentDescription: "Agent designed to get 3rd place",
+        });
+
+      const { client: agent4Client, agent: agent4 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Participation Trophy Agent",
+          agentDescription: "Agent designed to get last place",
+        });
+
+      // Create and start competition
+      const competitionName = `Trophy Ranking Test ${Date.now()}`;
+      const createCompResult = await adminClient.createCompetition(
+        competitionName,
+        "Competition for testing trophy ranking logic",
+      );
+      expect(createCompResult.success).toBe(true);
+      const competitionId = (createCompResult as CreateCompetitionResponse)
+        .competition.id;
+
+      await adminClient.startExistingCompetition(competitionId, [
+        agent1.id,
+        agent2.id,
+        agent3.id,
+        agent4.id,
+      ]);
+
+      // Execute predictable trading strategies to force rankings
+
+      // Agent 1: Best performer - buy valuable ETH
+      for (let i = 0; i < 3; i++) {
+        await agent1Client.executeTrade({
+          fromToken: config.specificChainTokens.eth.usdc,
+          toToken: config.specificChainTokens.eth.eth, // ETH - valuable asset
+          amount: "100",
+          reason: `Agent 1 winning trade ${i + 1} - buying ETH`,
+        });
+      }
+
+      // Agent 2: Second best - mixed strategy (some good, some bad)
+      await agent2Client.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: config.specificChainTokens.eth.eth, // Good trade
+        amount: "100",
+        reason: "Agent 2 good trade - buying ETH",
+      });
+      await agent2Client.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead", // Bad trade - burn tokens
+        amount: "50",
+        reason: "Agent 2 mediocre trade - burning some tokens",
+      });
+
+      // Agent 3: Third place - burn moderate amount
+      await agent3Client.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead", // Burn address
+        amount: "200",
+        reason: "Agent 3 poor trade - burning tokens for 3rd place",
+      });
+
+      // Agent 4: Last place - burn most tokens
+      await agent4Client.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead", // Burn address
+        amount: "500",
+        reason: "Agent 4 terrible trade - burning most tokens for last place",
+      });
+
+      // Wait for portfolio snapshots to process
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // End the competition to trigger trophy creation
+      const endResponse = await adminClient.endCompetition(competitionId);
+      expect(endResponse.success).toBe(true);
+
+      // Wait for leaderboard processing and trophy creation
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Verify each agent gets the correct trophy using /api/agents/{agentId} endpoint
+
+      // Agent 1: Should get 1st place trophy (rank 1)
+      const agent1Response = await adminClient.getPublicAgent(agent1.id);
+      expect(agent1Response.success).toBe(true);
+      if (!agent1Response.success)
+        throw new Error("Failed to get agent1 profile");
+
+      const agent1Trophies = agent1Response.agent.trophies;
+      expect(Array.isArray(agent1Trophies)).toBe(true);
+      expect(agent1Trophies?.length).toBeGreaterThan(0);
+
+      const agent1Trophy = agent1Trophies?.find(
+        (t: AgentTrophy) => t.competitionId === competitionId,
+      );
+      expect(agent1Trophy).toBeDefined();
+      expect(agent1Trophy?.name).toBe(competitionName);
+      expect(agent1Trophy?.rank).toBe(1); // Gold trophy
+      expect(agent1Trophy?.createdAt).toBeDefined();
+      expect(typeof agent1Trophy?.imageUrl === "string").toBe(true);
+
+      // Agent 2: Should get 2nd place trophy (rank 2)
+      const agent2Response = await adminClient.getPublicAgent(agent2.id);
+      expect(agent2Response.success).toBe(true);
+      if (!agent2Response.success)
+        throw new Error("Failed to get agent2 profile");
+
+      const agent2Trophies = agent2Response.agent.trophies;
+      expect(Array.isArray(agent2Trophies)).toBe(true);
+      expect(agent2Trophies?.length).toBeGreaterThan(0);
+
+      const agent2Trophy = agent2Trophies?.find(
+        (t: AgentTrophy) => t.competitionId === competitionId,
+      );
+      expect(agent2Trophy).toBeDefined();
+      expect(agent2Trophy?.name).toBe(competitionName);
+      expect(agent2Trophy?.rank).toBe(2); // Silver trophy
+      expect(agent2Trophy?.createdAt).toBeDefined();
+      expect(typeof agent2Trophy?.imageUrl === "string").toBe(true);
+
+      // Agent 3: Should get 3rd place trophy (rank 3)
+      const agent3Response = await adminClient.getPublicAgent(agent3.id);
+      expect(agent3Response.success).toBe(true);
+      if (!agent3Response.success)
+        throw new Error("Failed to get agent3 profile");
+
+      const agent3Trophies = agent3Response.agent.trophies;
+      expect(Array.isArray(agent3Trophies)).toBe(true);
+      expect(agent3Trophies?.length).toBeGreaterThan(0);
+
+      const agent3Trophy = agent3Trophies?.find(
+        (t: AgentTrophy) => t.competitionId === competitionId,
+      );
+      expect(agent3Trophy).toBeDefined();
+      expect(agent3Trophy?.name).toBe(competitionName);
+      expect(agent3Trophy?.rank).toBe(3); // Bronze trophy
+      expect(agent3Trophy?.createdAt).toBeDefined();
+      expect(typeof agent3Trophy?.imageUrl === "string").toBe(true);
+
+      // Agent 4: Should get 4th place trophy (rank 4 - participation)
+      const agent4Response = await adminClient.getPublicAgent(agent4.id);
+      expect(agent4Response.success).toBe(true);
+      if (!agent4Response.success)
+        throw new Error("Failed to get agent4 profile");
+
+      const agent4Trophies = agent4Response.agent.trophies;
+      expect(Array.isArray(agent4Trophies)).toBe(true);
+      expect(agent4Trophies?.length).toBeGreaterThan(0);
+
+      const agent4Trophy = agent4Trophies?.find(
+        (t: AgentTrophy) => t.competitionId === competitionId,
+      );
+      expect(agent4Trophy).toBeDefined();
+      expect(agent4Trophy?.name).toBe(competitionName);
+      expect(agent4Trophy?.rank).toBe(4); // Participation trophy
+      expect(agent4Trophy?.createdAt).toBeDefined();
+      expect(typeof agent4Trophy?.imageUrl === "string").toBe(true);
+
+      console.log("Trophy test results:", {
+        agent1: { rank: agent1Trophy?.rank, name: agent1Trophy?.name },
+        agent2: { rank: agent2Trophy?.rank, name: agent2Trophy?.name },
+        agent3: { rank: agent3Trophy?.rank, name: agent3Trophy?.name },
+        agent4: { rank: agent4Trophy?.rank, name: agent4Trophy?.name },
+      });
+    });
+
+    test("should populate trophies correctly via user-specific endpoints (SIWE)", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create SIWE authenticated user with agents
+      const { client: user1Client } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Trophy User 1",
+        userEmail: "trophy-user-1@example.com",
+      });
+
+      const { client: user2Client } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Trophy User 2",
+        userEmail: "trophy-user-2@example.com",
+      });
+
+      // Create agents for each user
+      const agent1Response = await user1Client.createAgent(
+        "User 1 Gold Agent",
+        "Agent designed to win 1st place for User 1",
+      );
+      expect(agent1Response.success).toBe(true);
+      const agent1 = (agent1Response as AgentProfileResponse).agent;
+
+      const agent2Response = await user2Client.createAgent(
+        "User 2 Silver Agent",
+        "Agent designed to get 2nd place for User 2",
+      );
+      expect(agent2Response.success).toBe(true);
+      const agent2 = (agent2Response as AgentProfileResponse).agent;
+
+      // Create and start competition
+      const competitionName = `User Trophy Test ${Date.now()}`;
+      const createCompResult = await adminClient.createCompetition(
+        competitionName,
+        "Competition for testing user trophy endpoints",
+      );
+      expect(createCompResult.success).toBe(true);
+      const competitionId = (createCompResult as CreateCompetitionResponse)
+        .competition.id;
+
+      await adminClient.startExistingCompetition(competitionId, [
+        agent1.id,
+        agent2.id,
+      ]);
+
+      // Execute predictable trading strategies
+      // User 1 Agent: Best performer - buy valuable ETH
+      const agent1Client = adminClient.createAgentClient(agent1.apiKey!);
+      await agent1Client.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: config.specificChainTokens.eth.eth, // ETH - valuable asset
+        amount: "200",
+        reason: "User 1 winning trade - buying ETH",
+      });
+
+      // User 2 Agent: Poor performer - burn tokens
+      const agent2Client = adminClient.createAgentClient(agent2.apiKey!);
+      await agent2Client.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead", // Burn address
+        amount: "300",
+        reason: "User 2 poor trade - burning tokens for 2nd place",
+      });
+
+      // Wait for portfolio snapshots to process
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // End the competition to trigger trophy creation
+      const endResponse = await adminClient.endCompetition(competitionId);
+      expect(endResponse.success).toBe(true);
+
+      // Wait for leaderboard processing and trophy creation
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Test 1: getUserAgents() should return trophies
+      const user1AgentsResponse = await user1Client.getUserAgents();
+      expect(user1AgentsResponse.success).toBe(true);
+      if (!user1AgentsResponse.success)
+        throw new Error("Failed to get user1 agents");
+
+      const user1Agents = user1AgentsResponse.agents;
+      expect(user1Agents.length).toBeGreaterThan(0);
+
+      const user1Agent = user1Agents.find((a) => a.id === agent1.id);
+      expect(user1Agent).toBeDefined();
+      expect(Array.isArray(user1Agent?.trophies)).toBe(true);
+      expect(user1Agent?.trophies?.length).toBeGreaterThan(0);
+
+      const user1Trophy = user1Agent?.trophies?.find(
+        (t) => t.competitionId === competitionId,
+      );
+      expect(user1Trophy).toBeDefined();
+      expect(user1Trophy?.name).toBe(competitionName);
+      expect(user1Trophy?.rank).toBe(1); // Gold trophy
+      expect(user1Trophy?.createdAt).toBeDefined();
+      expect(typeof user1Trophy?.imageUrl === "string").toBe(true);
+
+      const user2AgentsResponse = await user2Client.getUserAgents();
+      expect(user2AgentsResponse.success).toBe(true);
+      if (!user2AgentsResponse.success)
+        throw new Error("Failed to get user2 agents");
+
+      const user2Agents = user2AgentsResponse.agents;
+      const user2Agent = user2Agents.find((a) => a.id === agent2.id);
+      expect(user2Agent).toBeDefined();
+      expect(Array.isArray(user2Agent?.trophies)).toBe(true);
+      expect(user2Agent?.trophies?.length).toBeGreaterThan(0);
+
+      const user2Trophy = user2Agent?.trophies?.find(
+        (t) => t.competitionId === competitionId,
+      );
+      expect(user2Trophy).toBeDefined();
+      expect(user2Trophy?.name).toBe(competitionName);
+      expect(user2Trophy?.rank).toBe(2); // Silver trophy
+      expect(user2Trophy?.createdAt).toBeDefined();
+      expect(typeof user2Trophy?.imageUrl === "string").toBe(true);
+
+      // Test 2: getUserAgent(agentId) should return trophies
+      const user1SpecificAgentResponse = await user1Client.getUserAgent(
+        agent1.id,
+      );
+      expect(user1SpecificAgentResponse.success).toBe(true);
+      if (!user1SpecificAgentResponse.success)
+        throw new Error("Failed to get user1 specific agent");
+
+      const user1SpecificAgent = user1SpecificAgentResponse.agent;
+      expect(Array.isArray(user1SpecificAgent.trophies)).toBe(true);
+      expect(user1SpecificAgent.trophies?.length).toBeGreaterThan(0);
+
+      const user1SpecificTrophy = user1SpecificAgent.trophies?.find(
+        (t) => t.competitionId === competitionId,
+      );
+      expect(user1SpecificTrophy).toBeDefined();
+      expect(user1SpecificTrophy?.name).toBe(competitionName);
+      expect(user1SpecificTrophy?.rank).toBe(1); // Gold trophy
+      expect(user1SpecificTrophy?.createdAt).toBeDefined();
+      expect(typeof user1SpecificTrophy?.imageUrl === "string").toBe(true);
+
+      console.log("User endpoint trophy test results:", {
+        user1AgentTrophy: { rank: user1Trophy?.rank, name: user1Trophy?.name },
+        user2AgentTrophy: { rank: user2Trophy?.rank, name: user2Trophy?.name },
+        user1SpecificTrophy: {
+          rank: user1SpecificTrophy?.rank,
+          name: user1SpecificTrophy?.name,
+        },
+      });
+    });
+
+    test("should handle user with no competitions via user endpoints", async () => {
+      // Create SIWE authenticated user
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "No Trophies User",
+        userEmail: "no-trophies-user@example.com",
+      });
+
+      // Create agent but don't put them in any competitions
+      const agentResponse = await userClient.createAgent(
+        "No Competitions Agent",
+        "Agent that won't participate in any competitions",
+      );
+      expect(agentResponse.success).toBe(true);
+      const agent = (agentResponse as AgentProfileResponse).agent;
+
+      // Test getUserAgents() - should return empty trophies
+      const agentsResponse = await userClient.getUserAgents();
+      expect(agentsResponse.success).toBe(true);
+      if (!agentsResponse.success) throw new Error("Failed to get user agents");
+
+      const agents = agentsResponse.agents;
+      const userAgent = agents.find((a) => a.id === agent.id);
+      expect(userAgent).toBeDefined();
+      expect(userAgent?.trophies).toEqual([]);
+
+      // Test getUserAgent(agentId) - should return empty trophies
+      const specificAgentResponse = await userClient.getUserAgent(agent.id);
+      expect(specificAgentResponse.success).toBe(true);
+      if (!specificAgentResponse.success)
+        throw new Error("Failed to get specific agent");
+
+      const specificAgent = specificAgentResponse.agent;
+      expect(specificAgent.trophies).toEqual([]);
+    });
+
+    test("should handle agent with no competitions - empty trophies array", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create agent but don't put them in any competitions
+      const { agent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "No Competitions Agent",
+      });
+
+      const response = await adminClient.getPublicAgent(agent.id);
+      expect(response.success).toBe(true);
+      if (!response.success) throw new Error("Failed to get agent profile");
+      expect(response.agent.trophies).toEqual([]);
+    });
+
+    test("should not create trophies for active competitions", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const { client: agentClient, agent } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Active Competition Agent",
+        });
+
+      // Create and start competition but don't end it
+      const competitionName = `Active Competition ${Date.now()}`;
+      const createResult = await adminClient.createCompetition(
+        competitionName,
+        "Test active competition",
+      );
+      expect(createResult.success).toBe(true);
+      if (!createResult.success)
+        throw new Error("Failed to create competition");
+      const competitionId = createResult.competition.id;
+
+      await adminClient.startExistingCompetition(competitionId, [agent.id]);
+
+      // Execute a trade
+      await agentClient.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: config.specificChainTokens.eth.eth,
+        amount: "100",
+        reason: "Trade in active competition",
+      });
+
+      // Wait for processing
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Check trophies - should not include the active competition
+      const response = await adminClient.getPublicAgent(agent.id);
+      expect(response.success).toBe(true);
+      if (!response.success) throw new Error("Failed to get agent profile");
+      const activeTrophy = response.agent.trophies?.find(
+        (t: AgentTrophy) => t.competitionId === competitionId,
+      );
+      expect(activeTrophy).toBeUndefined(); // No trophy for active competition
     });
   });
 });

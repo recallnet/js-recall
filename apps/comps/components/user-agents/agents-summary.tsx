@@ -79,13 +79,13 @@ export const AgentsSummary: React.FunctionComponent<{
         )}
       >
         <span className="text-secondary-foreground uppercase">highest p&l</span>
-        <span className="text-2xl font-semibold">
-          {highest ? (
-            <BigNumberDisplay value={highest.toString()} decimals={0} />
-          ) : (
-            "N/A"
-          )}
-        </span>
+        {highest && highest !== Number.MIN_SAFE_INTEGER ? (
+          <span className="text-2xl font-semibold">
+            <BigNumberDisplay value={highest.toString()} decimals={0} /> USD
+          </span>
+        ) : (
+          <span>N/A</span>
+        )}
       </div>
     </div>
   );

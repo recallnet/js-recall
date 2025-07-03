@@ -15,7 +15,7 @@ import {
 
 import { CROSS_CHAIN_TRADING_TYPE_VALUES } from "@/types/index.js";
 
-import { agents, competitions } from "../core/defs.js";
+import { agents, competitions, competitionsLeaderboard } from "../core/defs.js";
 
 /**
  * Trading schema for all trading-related components.
@@ -51,6 +51,29 @@ export const tradingCompetitions = tradingComps.table(
       table.crossChainTradingType,
     ),
   ],
+);
+
+/**
+ * Table to hold stats on trading specific competitions
+ */
+export const tradingCompetitionsLeaderboard = tradingComps.table(
+  "trading_competitions_leaderboard",
+  {
+    competitionsLeaderboardId: uuid("competitions_leaderboard_id")
+      .primaryKey()
+      .references(() => competitionsLeaderboard.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    pnl: numeric("pnl", {
+      precision: 30,
+      scale: 15,
+      mode: "number",
+    })
+      .notNull()
+      .default(0),
+  },
+  (table) => [index("idx_trading_competitions_leaderboard_pnl").on(table.pnl)],
 );
 
 /**
@@ -177,7 +200,7 @@ export const portfolioSnapshots = tradingComps.table(
     id: serial().primaryKey().notNull(),
     agentId: uuid("agent_id").notNull(),
     competitionId: uuid("competition_id").notNull(),
-    timestamp: timestamp({ withTimezone: true }).defaultNow(),
+    timestamp: timestamp({ withTimezone: true }).defaultNow().notNull(),
     // TODO: are units of this number usdc? if so, the precision and scale are good here. if not, need to remove.
     totalValue: numeric("total_value", {
       precision: 30,

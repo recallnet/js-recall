@@ -7,7 +7,8 @@
     "NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID",
     "PRIVATE_FONTS",
     "FONTS_REPO_ACCESS_TOKEN",
-    "DATABASE_URL"
+    "DATABASE_URL",
+    "NODE_ENV"
   ],
   "tasks": {
     "build": {

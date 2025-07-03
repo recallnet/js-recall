@@ -22,6 +22,7 @@ import {
   findByWallet,
   findInactiveAgents,
   findUserAgentCompetitions,
+  getBulkAgentTrophies,
   reactivateAgent,
   searchAgents,
   update,
@@ -30,7 +31,7 @@ import { getAgentRankById } from "@/database/repositories/agentrank-repository.j
 import {
   findBestPlacementForAgent,
   getAgentCompetitionRanking,
-  getAgentPortfolioSnapshots,
+  getBoundedSnapshots,
   getBulkAgentCompetitionRankings,
 } from "@/database/repositories/competition-repository.js";
 import { createEmailVerificationToken } from "@/database/repositories/email-verification-repository.js";
@@ -46,6 +47,7 @@ import {
   SelectAgent,
   SelectCompetition,
 } from "@/database/schema/core/types.js";
+import { transformToTrophy } from "@/lib/trophy-utils.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { EmailService } from "@/services/email.service.js";
 import {
@@ -56,6 +58,7 @@ import {
   AgentPublicSchema,
   AgentSearchParams,
   AgentStats,
+  AgentTrophy,
   ApiAuth,
   EnhancedCompetition,
   PagingParams,
@@ -1309,6 +1312,30 @@ export class AgentManager {
     const rank = agentRank?.rank;
     const score = agentRank?.score;
 
+    // Get trophies by reusing existing competition logic, filtered for ended competitions
+    const endedCompetitions = await this.getCompetitionsForAgent(
+      sanitizedAgent.id,
+      { status: "ended", sort: "", limit: 10, offset: 0 }, // Filter + minimal paging defaults
+      { sort: "-endDate", limit: 100, offset: 0 }, // Actual paging to override defaults
+    );
+
+    // Transform competition data to trophy format
+    const trophies: AgentTrophy[] = endedCompetitions.competitions.map((comp) =>
+      transformToTrophy({
+        competitionId: comp.id,
+        name: comp.name,
+        rank: comp.bestPlacement?.rank,
+        imageUrl: comp.imageUrl,
+        endDate: comp.endDate,
+        createdAt: comp.createdAt,
+      }),
+    );
+
+    console.log(
+      `[AgentManager] Generated ${trophies.length} trophies for agent ${sanitizedAgent.id}:`,
+      trophies,
+    );
+
     const stats = {
       completedCompetitions,
       totalVotes,
@@ -1321,7 +1348,7 @@ export class AgentManager {
     return {
       ...sanitizedAgent,
       stats,
-      trophies: metadata?.trophies || [],
+      trophies, // Now returns AgentTrophy[] instead of string[]
       skills: metadata?.skills || [],
       hasUnclaimedRewards: metadata?.hasUnclaimedRewards || false,
     };
@@ -1350,21 +1377,39 @@ export class AgentManager {
       const agentIds = sanitizedAgents.map((agent) => agent.id);
       const bulkMetrics = await getBulkAgentMetrics(agentIds);
 
-      // Create a lookup map for efficient access
+      // Create lookup maps for efficient access
       const metricsMap = new Map(
         bulkMetrics.map((metrics) => [metrics.agentId, metrics]),
       );
 
-      // Attach metrics to each agent
+      // Get bulk trophies using optimized single query approach with error handling
+      let trophiesMap = new Map();
+      try {
+        const bulkTrophies = await getBulkAgentTrophies(agentIds);
+        trophiesMap = new Map(
+          bulkTrophies.map((trophy) => [trophy.agentId, trophy.trophies]),
+        );
+      } catch (error) {
+        console.error("[AgentManager] Error fetching bulk trophies:", error);
+        console.warn("[AgentManager] Proceeding with empty trophies map");
+      }
+
+      // Process agents synchronously with O(1) trophy lookups
       return sanitizedAgents.map((sanitizedAgent) => {
         const metadata = sanitizedAgent.metadata as AgentMetadata;
         const metrics = metricsMap.get(sanitizedAgent.id);
+        const trophies = trophiesMap.get(sanitizedAgent.id) || [];
+
+        console.log(
+          `[AgentManager] Using bulk trophies: ${trophies.length} trophies for agent ${sanitizedAgent.id}`,
+        );
 
         const stats = {
           completedCompetitions: metrics?.completedCompetitions ?? 0,
           totalVotes: metrics?.totalVotes ?? 0,
           totalTrades: metrics?.totalTrades ?? 0,
           bestPlacement: metrics?.bestPlacement ?? undefined,
+          bestPnl: metrics?.bestPnl ?? undefined,
           rank: metrics?.globalRank ?? undefined,
           score: metrics?.globalScore ?? undefined,
         } as AgentStats;
@@ -1372,7 +1417,7 @@ export class AgentManager {
         return {
           ...sanitizedAgent,
           stats,
-          trophies: metadata?.trophies || [],
+          trophies, // Use bulk-fetched database trophies
           skills: metadata?.skills || [],
           hasUnclaimedRewards: metadata?.hasUnclaimedRewards || false,
         };
@@ -1388,6 +1433,31 @@ export class AgentManager {
     }
   }
 
+  async getAgentPnlForComp(agentId: string, competitionId: string) {
+    // Get oldest and newest snapshots for agent in competition
+    const agentSnapshots = await getBoundedSnapshots(competitionId, agentId);
+    const latestSnapshot = agentSnapshots?.newest; // Already ordered by timestamp desc
+    const portfolioValue = latestSnapshot
+      ? Number(latestSnapshot.totalValue)
+      : 0;
+
+    // Calculate PnL (similar to calculateAgentMetrics pattern)
+    let pnl = 0;
+    let pnlPercent = 0;
+    if (agentSnapshots) {
+      const startingValue = Number(agentSnapshots.oldest?.totalValue || 0);
+      const currentValue = Number(agentSnapshots.newest?.totalValue || 0);
+      pnl = currentValue - startingValue;
+      pnlPercent = startingValue > 0 ? (pnl / startingValue) * 100 : 0;
+    }
+
+    return {
+      portfolioValue,
+      pnl,
+      pnlPercent,
+    };
+  }
+
   /**
    * Attach agent-specific metrics to a competition object
    * @param competition The competition object to enhance
@@ -1399,27 +1469,10 @@ export class AgentManager {
     agentId: string,
   ): Promise<EnhancedCompetition> {
     try {
-      // Get portfolio value (latest snapshot for agent in competition)
-      const agentSnapshots = await getAgentPortfolioSnapshots(
-        competition.id,
+      const { pnl, pnlPercent, portfolioValue } = await this.getAgentPnlForComp(
         agentId,
+        competition.id,
       );
-      const latestSnapshot = agentSnapshots?.[0]; // Already ordered by timestamp desc
-      const portfolioValue = latestSnapshot
-        ? Number(latestSnapshot.totalValue)
-        : 0;
-
-      // Calculate PnL (similar to calculateAgentMetrics pattern)
-      let pnl = 0;
-      let pnlPercent = 0;
-      if (agentSnapshots && agentSnapshots.length > 1) {
-        const startingValue = Number(
-          agentSnapshots[agentSnapshots.length - 1]?.totalValue || 0,
-        );
-        const currentValue = Number(agentSnapshots[0]?.totalValue || 0);
-        pnl = currentValue - startingValue;
-        pnlPercent = startingValue > 0 ? (pnl / startingValue) * 100 : 0;
-      }
 
       // Get total trades for agent in this competition
       const totalTrades = await countAgentTradesInCompetition(

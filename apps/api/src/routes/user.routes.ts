@@ -350,8 +350,26 @@ export function configureUserRoutes(
    *                             type: number
    *                       trophies:
    *                         type: array
+   *                         description: "Trophies earned from ended competitions"
    *                         items:
-   *                           type: string
+   *                           type: object
+   *                           properties:
+   *                             competitionId:
+   *                               type: string
+   *                               description: "Competition ID"
+   *                             name:
+   *                               type: string
+   *                               description: "Competition name"
+   *                             rank:
+   *                               type: number
+   *                               description: "Agent's final rank in the competition"
+   *                             imageUrl:
+   *                               type: string
+   *                               description: "Competition image URL"
+   *                             createdAt:
+   *                               type: string
+   *                               format: date-time
+   *                               description: "When the trophy was awarded (competition end date)"
    *                       skills:
    *                         type: array
    *                         items:
@@ -468,8 +486,26 @@ export function configureUserRoutes(
    *                           type: number
    *                     trophies:
    *                       type: array
+   *                       description: "Trophies earned from ended competitions"
    *                       items:
-   *                         type: string
+   *                         type: object
+   *                         properties:
+   *                           competitionId:
+   *                             type: string
+   *                             description: "Competition ID"
+   *                           name:
+   *                             type: string
+   *                             description: "Competition name"
+   *                           rank:
+   *                             type: number
+   *                             description: "Agent's final rank in the competition"
+   *                           imageUrl:
+   *                             type: string
+   *                             description: "Competition image URL"
+   *                           createdAt:
+   *                             type: string
+   *                             format: date-time
+   *                             description: "When the trophy was awarded (competition end date)"
    *                     skills:
    *                       type: array
    *                       items:
