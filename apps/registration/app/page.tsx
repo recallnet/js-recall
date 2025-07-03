@@ -38,19 +38,6 @@ export default function Home() {
     }
   }, []);
 
-  // Debug: Track browser visibility changes (app switching)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      // Do nothing
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, []);
-
   // Handle next button from profile form
   const handleProfileNext = (data: ProfileFormData) => {
     setProfileData(data);
