@@ -41,6 +41,17 @@ export default function UserAgentsSection({ agents }: { agents: Agent[] }) {
     [agents],
   );
 
+  const highest = useMemo(
+    () =>
+      agents.reduce((acc, agent) => {
+        if (agent.stats?.bestPnl) {
+          return agent.stats.bestPnl > acc ? agent.stats.bestPnl : acc;
+        }
+        return acc;
+      }, Number.MIN_SAFE_INTEGER),
+    [agents],
+  );
+
   const completedComps = useMemo(() => {
     return agents.reduce((acc, agent) => {
       return acc + (agent.stats?.completedCompetitions ?? 0);
@@ -74,7 +85,7 @@ export default function UserAgentsSection({ agents }: { agents: Agent[] }) {
           nAgents={nAgents}
           bestPlacement={bestPlacement}
           completedComps={completedComps}
-          highest={null}
+          highest={highest}
         />
       </div>
     );
@@ -95,7 +106,7 @@ export default function UserAgentsSection({ agents }: { agents: Agent[] }) {
           nAgents={nAgents}
           bestPlacement={bestPlacement}
           completedComps={completedComps}
-          highest={null}
+          highest={highest}
         />
       </div>
     );

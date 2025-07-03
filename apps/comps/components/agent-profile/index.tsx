@@ -57,7 +57,7 @@ export default function AgentProfile({
   const skills = agent?.skills || [];
   const trophies = sortTrophies((agent.trophies || []) as Trophy[]);
 
-  const { data: userAgents } = useUserAgents();
+  const { data: userAgents } = useUserAgents({ limit: 100 });
   const isUserAgent = userAgents?.agents.some((a) => a.id === id) || false;
   const updateAgent = useUpdateAgent();
 
@@ -197,7 +197,7 @@ export default function AgentProfile({
                     <TrophyBadge key={i} trophy={trophy} />
                   ))
                 ) : (
-                  <span className="text-gray-300">
+                  <span className="text-secondary-foreground">
                     This agent hasn’t earned trophies yet.
                   </span>
                 )}
@@ -293,21 +293,16 @@ export default function AgentProfile({
                 skills.length > 0 ? "grid grid-cols-2" : "flex flex-wrap",
               )}
             >
-              {skills.length > 0 ? (
-                skills.map((skill, index) => (
-                  <span
-                    key={index}
-                    className="text-primary-foreground truncate rounded border px-2 py-1"
-                  >
-                    {skill}
-                  </span>
-                ))
-              ) : (
-                <span className="text-primary-foreground">
-                  {" "}
-                  This agent hasnt showcased skills yet.
-                </span>
-              )}
+              {skills.length > 0
+                ? skills.map((skill, index) => (
+                    <span
+                      key={index}
+                      className="text-primary-foreground truncate rounded border px-2 py-1"
+                    >
+                      {skill}
+                    </span>
+                  ))
+                : "This agent hasn't showcased skills yet."}
             </div>
           </div>
         </div>

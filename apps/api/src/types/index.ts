@@ -209,12 +209,35 @@ export const AgentStatsSchema = z.object({
 export type AgentStats = z.infer<typeof AgentStatsSchema>;
 
 /**
+ * Agent trophy interface for ended competitions
+ * Contains competition details and agent's final rank
+ */
+export interface AgentTrophy {
+  competitionId: string;
+  name: string;
+  rank: number;
+  imageUrl: string;
+  createdAt: string;
+}
+
+/**
+ * Zod schema for agent trophy validation
+ */
+export const AgentTrophySchema = z.object({
+  competitionId: z.string(),
+  name: z.string(),
+  rank: z.number(),
+  imageUrl: z.string(),
+  createdAt: z.string(),
+});
+
+/**
  * Agent's metadata
  */
 export const AgentMetadataSchema = z.looseObject({
   stats: AgentStatsSchema.optional(),
   skills: z.array(z.string()).optional(),
-  trophies: z.array(z.string()).optional(),
+  trophies: z.array(AgentTrophySchema).optional(),
   hasUnclaimedRewards: z.boolean().optional(),
 });
 

@@ -86,7 +86,10 @@ export const VotesTable: React.FC<VotesTableProps> = ({
           <div className="flex min-w-0 items-center gap-3">
             <ParticipantsAvatars agents={[row.original.agent]} maxDisplay={1} />
             <div className="flex min-w-0 flex-1 flex-col">
-              <Link href={`/agents/${row.original.agent.id}`}>
+              <Link
+                href={`/agents/${row.original.agent.id}`}
+                className="truncate"
+              >
                 <span className="text-secondary-foreground font-semibold leading-tight">
                   {row.original.agent.name}
                 </span>

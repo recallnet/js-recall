@@ -2,6 +2,7 @@ import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { config } from "@/config/index.js";
+import { ApiClient } from "@/e2e/utils/api-client.js";
 import {
   AdminSearchUsersAndAgentsResponse,
   AdminUsersListResponse,
@@ -514,7 +515,7 @@ describe("User API", () => {
       );
       expect(response.success).toBe(true);
       // Small delay to ensure different timestamps
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await wait(10);
     }
 
     // Test default pagination (should return all agents)
@@ -550,7 +551,7 @@ describe("User API", () => {
         `Description for Agent ${i}`,
       );
       expect(response.success).toBe(true);
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await wait(10);
     }
 
     // Test limit of 3
@@ -587,7 +588,7 @@ describe("User API", () => {
         `Description for Agent ${i}`,
       );
       expect(response.success).toBe(true);
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await wait(10);
     }
 
     // Get all agents first to establish baseline
@@ -630,7 +631,7 @@ describe("User API", () => {
         `Description for Agent ${i}`,
       );
       expect(response.success).toBe(true);
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await wait(10);
     }
 
     // Test pagination: page 1 (offset 0, limit 3)
@@ -691,7 +692,7 @@ describe("User API", () => {
         agent.description,
       );
       expect(response.success).toBe(true);
-      await new Promise((resolve) => setTimeout(resolve, 50)); // Larger delay for timestamp differentiation
+      await wait(50); // Larger delay for timestamp differentiation
     }
 
     // Test name ascending sort
@@ -755,7 +756,7 @@ describe("User API", () => {
         `Description for ${name}`,
       );
       expect(response.success).toBe(true);
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await wait(10);
     }
 
     // Get first page of 2, sorted by name ascending
@@ -1563,7 +1564,7 @@ describe("User API", () => {
         create1Response as CreateCompetitionResponse
       ).competition.id;
       await userClient.joinCompetition(competitionIdForFirstComp, agent.id);
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await wait(50);
 
       const create2Response = await adminClient.createCompetition(
         secondComp,
@@ -1573,7 +1574,7 @@ describe("User API", () => {
       const createCompResponse2 = create2Response as CreateCompetitionResponse;
       const competitionIdForSecondComp = createCompResponse2.competition.id;
       await userClient.joinCompetition(competitionIdForSecondComp, agent.id);
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await wait(50);
 
       const create3Response = await adminClient.createCompetition(
         thirdComp,
@@ -1584,7 +1585,7 @@ describe("User API", () => {
         create3Response as CreateCompetitionResponse
       ).competition.id;
       await userClient.joinCompetition(competitionIdForThirdComp, agent.id);
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await wait(50);
 
       // Start/end the first competition, start/end the second competition, and keep the third pending
       const startCompResponse = await adminClient.startExistingCompetition(
@@ -1690,7 +1691,7 @@ describe("User API", () => {
         );
 
         // Small delay to ensure different timestamps
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await wait(50);
       }
 
       // Test correct format: name ascending (no prefix)
@@ -1778,7 +1779,7 @@ describe("User API", () => {
         );
 
         // Controlled delay to ensure different timestamps
-        await new Promise((resolve) => setTimeout(resolve, comp.delay));
+        await wait(comp.delay);
       }
 
       // Test multiple sort fields: name ascending, then createdAt descending
@@ -1849,7 +1850,7 @@ describe("User API", () => {
         await userClient.joinCompetition(competition.id, agents[i]!.id);
 
         // Small delay to ensure different timestamps
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await wait(50);
       }
 
       // Test agentName ascending sort (should work now!)
@@ -2238,7 +2239,7 @@ describe("User API", () => {
         await userClient.joinCompetition(competition.id, agent.id);
 
         // Controlled delay for predictable timestamps
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await wait(100);
       }
 
       // Test combined sort: agentName ascending, then createdAt descending
@@ -2298,7 +2299,7 @@ describe("User API", () => {
           .competition;
         await userClient.joinCompetition(competition.id, agents[i]!.id);
 
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await wait(50);
       }
 
       // Test first page (limit 2, offset 0) with agentName sorting
@@ -2656,7 +2657,7 @@ describe("User API", () => {
         await userClient.joinCompetition(competition.id, agents[i]!.id);
 
         // Controlled delay for predictable timestamps
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await wait(100);
       }
 
       // Test pagination with mixed sort: agentName (computed) + createdAt descending (database)
@@ -2699,5 +2700,365 @@ describe("User API", () => {
       expect(page2Comps[0]?.name).toBe("Competition D"); // Beta Agent B
       expect(page2Comps[1]?.name).toBe("Competition E"); // Gamma Agent
     });
+  });
+
+  test("user agents have correct stats after one competition", async () => {
+    // Create a SIWE-authenticated client
+    const { client: siweClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Best Placement Test User",
+      userEmail: "bestplacement-test@example.com",
+    });
+
+    // Create an admin client for competition management
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create 5 agents
+    const agentNames = [
+      "Alpha Agent",
+      "Bravo Agent",
+      "Charlie Agent",
+      "Delta Agent",
+      "Echo Agent",
+    ];
+
+    const createdAgents: Agent[] = [];
+    for (const name of agentNames) {
+      const response = await siweClient.createAgent(
+        name,
+        `Description for ${name}`,
+      );
+      expect(response.success).toBe(true);
+      const agentResponse = response as { success: true; agent: Agent };
+      createdAgents.push(agentResponse.agent);
+      // Small delay to ensure different timestamps
+      await wait(10);
+    }
+
+    // Create and start a competition
+    const competitionName = `Best Placement Test Competition ${Date.now()}`;
+    const createCompResult = await adminClient.createCompetition(
+      competitionName,
+      "Test competition for bestPlacement verification",
+    );
+    expect(createCompResult.success).toBe(true);
+    const createCompResponse = createCompResult as CreateCompetitionResponse;
+    const competitionId = createCompResponse.competition.id;
+
+    // Enter all 5 agents in the competition
+    const agentIds = createdAgents.map((agent) => agent.id);
+    const startResult = await adminClient.startExistingCompetition(
+      competitionId,
+      agentIds,
+    );
+    expect(startResult.success).toBe(true);
+
+    // Create different performance levels by executing different trades
+    // Get agent clients for trading
+    const agentClients = [];
+    for (const agent of createdAgents) {
+      const agentClient = new ApiClient(agent.apiKey);
+      agentClients.push(agentClient);
+    }
+
+    // Alpha Agent: (3 big stable trades)
+    for (let i = 0; i < 3; i++) {
+      await agentClients[0]?.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: config.specificChainTokens.eth.eth,
+        amount: "1000",
+        reason: `Alpha Agent smart trade ${i + 1} - buying ETH`,
+      });
+      await wait(50);
+    }
+
+    // Bravo Agent: (2 small stable trades)
+    for (let i = 0; i < 2; i++) {
+      await agentClients[1]?.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: config.specificChainTokens.eth.eth,
+        amount: "100",
+        reason: `Bravo Agent good trade ${i + 1}`,
+      });
+      await wait(50);
+    }
+
+    // Charlie Agent: (1 large volitile trade)
+    await agentClients[2]?.executeTrade({
+      fromToken: config.specificChainTokens.eth.usdc,
+      toToken: config.specificChainTokens.eth.vision,
+      amount: "2000",
+      reason: "Charlie Agent trade",
+    });
+    await wait(50);
+
+    // Delta Agent: (1 large bad trade)
+    await agentClients[3]?.executeTrade({
+      fromToken: config.specificChainTokens.eth.usdc,
+      toToken: "0x000000000000000000000000000000000000dead", // Burn address
+      amount: "2000",
+      reason: "Delta Agent bad trade - burning tokens",
+    });
+    await wait(50);
+
+    // Echo Agent: Worst performer (2 bad trades)
+    for (let i = 0; i < 2; i++) {
+      await agentClients[4]?.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "2000",
+        reason: `Echo Agent terrible trade ${i + 1} - burning tokens`,
+      });
+      await wait(50);
+    }
+
+    // Wait for 10 seconds to give values a chance to deviate
+    await wait(10000);
+
+    // End the competition to calculate final rankings
+    const endResult = await adminClient.endCompetition(competitionId);
+    expect(endResult.success).toBe(true);
+
+    // Wait a bit for rankings to be calculated
+    await wait(1000);
+
+    // Get all user agents and verify bestPlacement stats
+    const agentsResponse = await siweClient.getUserAgents();
+    expect(agentsResponse.success).toBe(true);
+    const agents = (agentsResponse as GetUserAgentsResponse).agents;
+    expect(agents).toHaveLength(5);
+
+    // Verify each agent has bestPlacement data
+    for (const agent of agents) {
+      expect(agent.stats).toBeDefined();
+      expect(agent.stats?.bestPlacement).toBeDefined();
+      expect(agent.stats?.bestPlacement?.competitionId).toBe(competitionId);
+      expect(agent.stats?.bestPlacement?.rank).toBeGreaterThanOrEqual(1);
+      expect(agent.stats?.bestPlacement?.rank).toBeLessThanOrEqual(5);
+      expect(agent.stats?.bestPlacement?.totalAgents).toBe(5);
+      expect(agent.stats?.completedCompetitions).toBe(1);
+      expect(agent.stats?.totalTrades).toBeGreaterThanOrEqual(1);
+      expect(agent.stats?.bestPnl).toBeDefined();
+      expect(agent.stats?.bestPnl).not.toBe(0);
+    }
+
+    // Find specific agents and verify their expected rankings
+    const alphaAgent = agents.find((a) => a.name === "Alpha Agent");
+    const bravoAgent = agents.find((a) => a.name === "Bravo Agent");
+    const charlieAgent = agents.find((a) => a.name === "Charlie Agent");
+    const deltaAgent = agents.find((a) => a.name === "Delta Agent");
+    const echoAgent = agents.find((a) => a.name === "Echo Agent");
+
+    expect(alphaAgent).toBeDefined();
+    expect(bravoAgent).toBeDefined();
+    expect(charlieAgent).toBeDefined();
+    expect(deltaAgent).toBeDefined();
+    expect(echoAgent).toBeDefined();
+
+    // Verify trade counts match what we executed
+    expect(alphaAgent?.stats?.totalTrades).toBe(3);
+    expect(bravoAgent?.stats?.totalTrades).toBe(2);
+    expect(charlieAgent?.stats?.totalTrades).toBe(1);
+    expect(deltaAgent?.stats?.totalTrades).toBe(1);
+    expect(echoAgent?.stats?.totalTrades).toBe(2);
+
+    // Verify all agents have valid rankings
+    expect(alphaAgent?.stats?.bestPlacement?.rank).toBeGreaterThanOrEqual(1);
+    expect(alphaAgent?.stats?.bestPlacement?.rank).toBeLessThanOrEqual(5);
+    expect(bravoAgent?.stats?.bestPlacement?.rank).toBeGreaterThanOrEqual(1);
+    expect(bravoAgent?.stats?.bestPlacement?.rank).toBeLessThanOrEqual(3);
+    expect(charlieAgent?.stats?.bestPlacement?.rank).toBeGreaterThanOrEqual(1);
+    expect(charlieAgent?.stats?.bestPlacement?.rank).toBeLessThanOrEqual(5);
+    expect(deltaAgent?.stats?.bestPlacement?.rank).toBeGreaterThanOrEqual(3);
+    expect(deltaAgent?.stats?.bestPlacement?.rank).toBeLessThanOrEqual(5);
+    expect(echoAgent?.stats?.bestPlacement?.rank).toBeGreaterThanOrEqual(3);
+    expect(echoAgent?.stats?.bestPlacement?.rank).toBeLessThanOrEqual(5);
+
+    // Verify that all ranks are unique (no ties)
+    const ranks = [
+      alphaAgent?.stats?.bestPlacement?.rank,
+      bravoAgent?.stats?.bestPlacement?.rank,
+      charlieAgent?.stats?.bestPlacement?.rank,
+      deltaAgent?.stats?.bestPlacement?.rank,
+      echoAgent?.stats?.bestPlacement?.rank,
+    ].filter((rank) => rank !== undefined);
+
+    const uniqueRanks = new Set(ranks);
+    expect(uniqueRanks.size).toBe(5); // All ranks should be unique
+
+    // All agents should have the same competition data in bestPlacement
+    for (const agent of agents) {
+      expect(agent.stats?.bestPlacement?.competitionId).toBe(competitionId);
+      expect(agent.stats?.bestPlacement?.totalAgents).toBe(5);
+    }
+  });
+
+  test("two agents in multiple competitions have correct stats", async () => {
+    // Create a SIWE-authenticated client
+    const { client: siweClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Multi Competition Test User",
+      userEmail: "multicomp-test@example.com",
+    });
+
+    // Create an admin client for competition management
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create 2 agents
+    const agent1Response = await siweClient.createAgent(
+      "Agent Foxtrot",
+      "The first Agent for this user",
+    );
+    expect(agent1Response.success).toBe(true);
+    const agent1 = (agent1Response as { success: true; agent: Agent }).agent;
+
+    const agent2Response = await siweClient.createAgent(
+      "Agent Hotel",
+      "Agent that makes volatile trades",
+    );
+    expect(agent2Response.success).toBe(true);
+    const agent2 = (agent2Response as { success: true; agent: Agent }).agent;
+
+    // Create agent clients for trading
+    const agent1Client = new ApiClient(agent1.apiKey);
+    const agent2Client = new ApiClient(agent2.apiKey);
+
+    // FIRST COMPETITION
+    const competition1Name = `Multi Competition Test 1 ${Date.now()}`;
+    const createComp1Result = await adminClient.createCompetition(
+      competition1Name,
+      "First test competition for multi-comp verification",
+    );
+    expect(createComp1Result.success).toBe(true);
+    const createComp1Response = createComp1Result as CreateCompetitionResponse;
+    const competition1Id = createComp1Response.competition.id;
+
+    // Start first competition with both agents
+    const startComp1Result = await adminClient.startExistingCompetition(
+      competition1Id,
+      [agent1.id, agent2.id],
+    );
+    expect(startComp1Result.success).toBe(true);
+
+    // Agent 1: Make stable trade (USDC to ETH)
+    await agent1Client.executeTrade({
+      fromToken: config.specificChainTokens.eth.usdc,
+      toToken: config.specificChainTokens.eth.eth,
+      amount: "1000",
+      reason: `Agent Foxtrot trade - stable USDC to ETH`,
+    });
+
+    // Agent 2: Make bad trade
+    await agent2Client.executeTrade({
+      fromToken: config.specificChainTokens.eth.usdc,
+      toToken: "0x000000000000000000000000000000000000dead",
+      amount: "1000",
+      reason: `Agent Hotel trade - volatile USDC to Vision`,
+    });
+
+    // End first competition
+    const endComp1Result = await adminClient.endCompetition(competition1Id);
+    expect(endComp1Result.success).toBe(true);
+
+    // Wait for rankings to be calculated
+    await wait(500);
+
+    // SECOND COMPETITION
+    const competition2Name = `Multi Competition Test 2 ${Date.now()}`;
+    const createComp2Result = await adminClient.createCompetition(
+      competition2Name,
+      "Second test competition for multi-comp verification",
+    );
+    expect(createComp2Result.success).toBe(true);
+    const createComp2Response = createComp2Result as CreateCompetitionResponse;
+    const competition2Id = createComp2Response.competition.id;
+
+    // Start second competition with both agents
+    const startComp2Result = await adminClient.startExistingCompetition(
+      competition2Id,
+      [agent1.id, agent2.id],
+    );
+    expect(startComp2Result.success).toBe(true);
+
+    // REVERSE THE TRADING PATTERNS
+    // Agent 1: make bad trade
+    await agent1Client.executeTrade({
+      fromToken: config.specificChainTokens.eth.usdc,
+      toToken: "0x000000000000000000000000000000000000dead",
+      amount: "1200",
+      reason: `Agent Foxtrot volatile trade - USDC to Vision`,
+    });
+
+    // Agent 2: Now make stable trade (USDC to ETH)
+    await agent2Client.executeTrade({
+      fromToken: config.specificChainTokens.eth.usdc,
+      toToken: config.specificChainTokens.eth.eth,
+      amount: "1200",
+      reason: `Agent Hotel stable trade - stable USDC to ETH`,
+    });
+
+    // End second competition
+    const endComp2Result = await adminClient.endCompetition(competition2Id);
+    expect(endComp2Result.success).toBe(true);
+
+    // Wait for rankings to be calculated
+    await wait(500);
+
+    // Get all user agents and verify stats
+    const agentsResponse = await siweClient.getUserAgents();
+    expect(agentsResponse.success).toBe(true);
+    const agents = (agentsResponse as GetUserAgentsResponse).agents;
+    expect(agents).toHaveLength(2);
+
+    // Find the specific agents
+    const agentFoxtrot = agents.find((a) => a.name === "Agent Foxtrot");
+    const agentHotel = agents.find((a) => a.name === "Agent Hotel");
+
+    expect(agentFoxtrot).toBeDefined();
+    expect(agentHotel).toBeDefined();
+
+    // Verify both agents have completed 2 competitions
+    expect(agentFoxtrot?.stats?.completedCompetitions).toBe(2);
+    expect(agentHotel?.stats?.completedCompetitions).toBe(2);
+
+    // Verify trade counts
+    expect(agentFoxtrot?.stats?.totalTrades).toBe(2); // 1 from comp1 + 1 from comp2
+    expect(agentHotel?.stats?.totalTrades).toBe(2); // 1 from comp1 + 1 from comp2
+
+    // Verify both agents have bestPlacement stats
+    expect(agentFoxtrot?.stats?.bestPlacement).toBeDefined();
+    expect(agentHotel?.stats?.bestPlacement).toBeDefined();
+
+    // Verify bestPlacement structure
+    expect(agentFoxtrot?.stats?.bestPlacement?.rank).toBeGreaterThanOrEqual(1);
+    expect(agentFoxtrot?.stats?.bestPlacement?.rank).toBeLessThanOrEqual(2);
+    expect(agentFoxtrot?.stats?.bestPlacement?.totalAgents).toBe(2);
+    expect([competition1Id, competition2Id]).toContain(
+      agentFoxtrot?.stats?.bestPlacement?.competitionId,
+    );
+
+    expect(agentHotel?.stats?.bestPlacement?.rank).toBeGreaterThanOrEqual(1);
+    expect(agentHotel?.stats?.bestPlacement?.rank).toBeLessThanOrEqual(2);
+    expect(agentHotel?.stats?.bestPlacement?.totalAgents).toBe(2);
+    expect([competition1Id, competition2Id]).toContain(
+      agentHotel?.stats?.bestPlacement?.competitionId,
+    );
+
+    // Verify both agents have valid bestPnl values
+    expect(agentFoxtrot?.stats?.bestPnl).toBeDefined();
+    expect(agentHotel?.stats?.bestPnl).toBeDefined();
+    expect(typeof agentFoxtrot?.stats?.bestPnl).toBe("number");
+    expect(typeof agentHotel?.stats?.bestPnl).toBe("number");
+
+    // Verify that bestPlacement reflects the better performance from either competition
+    // The agent with rank 1 should have the better placement
+    const agentFoxtrotRank = agentFoxtrot?.stats?.bestPlacement?.rank;
+    const agentHotelRank = agentHotel?.stats?.bestPlacement?.rank;
+
+    // Ensure ranks are the same since each agent has won one comp
+    expect(agentFoxtrotRank).toBe(agentHotelRank);
+    expect(agentFoxtrotRank).toBe(1);
   });
 });

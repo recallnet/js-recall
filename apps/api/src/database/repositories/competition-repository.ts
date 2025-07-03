@@ -10,6 +10,7 @@ import {
   max,
   sql,
 } from "drizzle-orm";
+import { unionAll } from "drizzle-orm/pg-core";
 import { v4 as uuidv4 } from "uuid";
 
 import { db } from "@/database/db.js";
@@ -27,6 +28,7 @@ import {
   portfolioSnapshots,
   portfolioTokenValues,
   tradingCompetitions,
+  tradingCompetitionsLeaderboard,
 } from "@/database/schema/trading/defs.js";
 import { InsertTradingCompetition } from "@/database/schema/trading/types.js";
 import {
@@ -716,9 +718,72 @@ export async function getAgentPortfolioSnapshots(
         ),
       )
       .orderBy(desc(portfolioSnapshots.timestamp));
+    // TODO: there's no limit here, this is a weakness in perf
   } catch (error) {
     console.error(
       "[CompetitionRepository] Error in getAgentPortfolioSnapshots:",
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
+ * Get the newest and oldest portfolio snapshots for an agent in a competition
+ * @param competitionId Competition ID
+ * @param agentId Agent ID
+ * @returns Object with newest and oldest snapshots, or null if no snapshots found
+ */
+export async function getBoundedSnapshots(
+  competitionId: string,
+  agentId: string,
+) {
+  try {
+    // Create subqueries for newest and oldest snapshots
+    const newestQuery = db
+      .select()
+      .from(portfolioSnapshots)
+      .where(
+        and(
+          eq(portfolioSnapshots.competitionId, competitionId),
+          eq(portfolioSnapshots.agentId, agentId),
+        ),
+      )
+      .orderBy(desc(portfolioSnapshots.timestamp))
+      .limit(1);
+
+    const oldestQuery = db
+      .select()
+      .from(portfolioSnapshots)
+      .where(
+        and(
+          eq(portfolioSnapshots.competitionId, competitionId),
+          eq(portfolioSnapshots.agentId, agentId),
+        ),
+      )
+      .orderBy(asc(portfolioSnapshots.timestamp))
+      .limit(1);
+
+    // Union the queries and execute
+    const results = await unionAll(newestQuery, oldestQuery);
+
+    if (results.length === 0) {
+      return null;
+    }
+
+    // Sort results by timestamp desc to identify newest vs oldest
+    const sortedResults = results.sort(
+      (a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+    );
+
+    return {
+      newest: sortedResults[0],
+      oldest: sortedResults[sortedResults.length - 1],
+    };
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in getAgentPortfolioSnapshotBounds:",
       error,
     );
     throw error;
@@ -963,25 +1028,42 @@ export async function findByStatus({
  */
 export async function findBestPlacementForAgent(agentId: string) {
   try {
-    const [result] = await db
+    const [rankResult] = await db
       .select()
       .from(competitionsLeaderboard)
       .where(eq(competitionsLeaderboard.agentId, agentId))
       .orderBy(asc(competitionsLeaderboard.rank))
       .limit(1);
-    if (!result) {
-      return result;
+    if (!rankResult) {
+      return rankResult;
     }
+    const [pnlResult] = await db
+      .select({
+        ...getTableColumns(competitionsLeaderboard),
+        ...getTableColumns(tradingCompetitionsLeaderboard),
+      })
+      .from(competitionsLeaderboard)
+      .innerJoin(
+        tradingCompetitionsLeaderboard,
+        eq(
+          competitionsLeaderboard.id,
+          tradingCompetitionsLeaderboard.competitionsLeaderboardId,
+        ),
+      )
+      .where(eq(competitionsLeaderboard.agentId, agentId))
+      .orderBy(desc(tradingCompetitionsLeaderboard.pnl))
+      .limit(1);
     const agents = await db
       .select({
         count: drizzleCount(),
       })
       .from(competitionAgents)
-      .where(eq(competitionAgents.competitionId, result.competitionId));
+      .where(eq(competitionAgents.competitionId, rankResult.competitionId));
     return {
-      competitionId: result.competitionId,
-      rank: result.rank,
-      score: result.score,
+      competitionId: rankResult.competitionId,
+      rank: rankResult.rank,
+      score: rankResult.score,
+      pnl: pnlResult?.pnl,
       totalAgents: agents[0]?.count ?? 0,
     };
   } catch (error) {
@@ -999,7 +1081,7 @@ export async function findBestPlacementForAgent(agentId: string) {
  * @returns Array of inserted leaderboard entries
  */
 export async function batchInsertLeaderboard(
-  entries: Omit<InsertCompetitionsLeaderboard, "id">[],
+  entries: (Omit<InsertCompetitionsLeaderboard, "id"> & { pnl?: number })[],
 ) {
   if (!entries.length) {
     return [];
@@ -1015,10 +1097,32 @@ export async function batchInsertLeaderboard(
       id: uuidv4(),
     }));
 
-    const results = await db
+    let results: (InsertCompetitionsLeaderboard & { pnl?: number })[] = await db
       .insert(competitionsLeaderboard)
       .values(valuesToInsert)
       .returning();
+
+    const pnlsToInsert = valuesToInsert.filter((e) => e.pnl);
+    if (pnlsToInsert.length) {
+      const pnlResults = await db
+        .insert(tradingCompetitionsLeaderboard)
+        .values(
+          pnlsToInsert.map((entry) => {
+            return {
+              pnl: entry.pnl,
+              competitionsLeaderboardId: entry.id,
+            };
+          }),
+        )
+        .returning();
+
+      results = results.map((r) => {
+        const pnl = pnlResults.find(
+          (p) => p.competitionsLeaderboardId === r.id,
+        );
+        return { ...r, pnl: pnl?.pnl };
+      });
+    }
 
     return results;
   } catch (error) {
@@ -1040,6 +1144,37 @@ export async function findLeaderboardByCompetition(competitionId: string) {
     return await db
       .select()
       .from(competitionsLeaderboard)
+      .where(eq(competitionsLeaderboard.competitionId, competitionId))
+      .orderBy(competitionsLeaderboard.rank);
+  } catch (error) {
+    console.error(
+      `[CompetitionRepository] Error finding leaderboard for competition ${competitionId}:`,
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
+ * Find leaderboard entries for a specific trading competition
+ * @param competitionId The competition ID
+ * @returns Array of leaderboard entries sorted by rank
+ */
+export async function findLeaderboardByTradingComp(competitionId: string) {
+  try {
+    return await db
+      .select({
+        ...getTableColumns(competitionsLeaderboard),
+        ...getTableColumns(tradingCompetitionsLeaderboard),
+      })
+      .from(competitionsLeaderboard)
+      .innerJoin(
+        tradingCompetitionsLeaderboard,
+        eq(
+          competitionsLeaderboard.id,
+          tradingCompetitionsLeaderboard.competitionsLeaderboardId,
+        ),
+      )
       .where(eq(competitionsLeaderboard.competitionId, competitionId))
       .orderBy(competitionsLeaderboard.rank);
   } catch (error) {
