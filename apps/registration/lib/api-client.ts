@@ -21,7 +21,9 @@ import {
   UserCompetitionsResponse,
 } from "@/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+// Use proxy endpoint when we have a separate API base URL to leverage Next.js rewrites
+// This eliminates cross-origin cookie issues on mobile by making all API calls same-origin
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ? '/backend-api' : '/api';
 
 /**
  * Base HTTP error class with status code support
@@ -114,18 +116,12 @@ export class ApiClient {
       ...options.headers,
     };
 
-    console.log(`🌐 [API] ${options.method || 'GET'} ${url}`);
-    console.log(`🍪 [API] Document cookies before request:`, document.cookie);
 
     const response = await fetch(url, {
       ...options,
       headers,
       credentials: "include", // Include cookies for auth
     });
-
-    console.log(`📡 [API] Response status: ${response.status}`);
-    console.log(`🍪 [API] Response headers:`, Object.fromEntries(response.headers.entries()));
-    console.log(`🍪 [API] Document cookies after request:`, document.cookie);
 
     if (!response.ok) {
       const data = await response.json().catch(() => ({
@@ -134,9 +130,6 @@ export class ApiClient {
 
       const errorMessage =
         data.error || `Request failed with status ${response.status}`;
-
-      console.error(`❌ [API] Request failed:`, errorMessage);
-
       // Create appropriate error based on status code
       switch (response.status) {
         case 400:
@@ -159,7 +152,6 @@ export class ApiClient {
     }
 
     const responseData = await response.json() as T;
-    console.log(`✅ [API] Response data:`, responseData);
 
     return responseData;
   }
@@ -201,8 +193,6 @@ export class ApiClient {
       body: JSON.stringify(data),
     });
 
-    // Special debug for login to check cookies immediately after
-    console.log(`🔐 [LOGIN-API] Login completed, checking cookies immediately:`, document.cookie);
 
     return result;
   }

@@ -41,17 +41,12 @@ export const useLogin = () => {
 
   return useMutation({
     mutationFn: async (data: LoginRequest) => {
-      console.log(`🔐 [LOGIN] Starting login for wallet:`, data.wallet);
       const result = await apiClient.login(data);
-      console.log(`✅ [LOGIN] Login API successful:`, result);
       return result;
     },
     onSuccess: () => {
-      console.log(`🎉 [LOGIN] Login mutation onSuccess - setting authenticated state`);
       setUserAtom({ user: null, status: "authenticated" });
 
-      // Trigger profile refetch
-      console.log(`🔄 [LOGIN] Invalidating profile query`);
       queryClient.invalidateQueries({ queryKey: ["profile"] });
 
       // Trigger competitions refetch
@@ -155,26 +150,13 @@ export const useUserSession = (): UserSessionState => {
     data: profileData,
     isSuccess: profileIsSuccess,
     isLoading: profileIsLoading,
-    error: profileError,
   } = useProfile();
 
   const isAuthenticated = authState.status === "authenticated";
   const isProfileUpdated = isAuthenticated && !!profileData?.name;
 
-  console.log(`👤 [SESSION] Auth state:`, {
-    authState,
-    isClient,
-    isAuthenticated,
-    profileIsSuccess,
-    profileIsLoading,
-    profileError: profileError?.message,
-    profileData: profileData ? { ...profileData, apiKey: '[REDACTED]' } : null,
-    isProfileUpdated,
-  });
-
   useEffect(() => {
     if (profileIsSuccess && profileData) {
-      console.log(`✅ [SESSION] Profile loaded successfully, updating auth state`);
       setAuthState({ user: profileData, status: "authenticated" });
     }
   }, [profileIsSuccess, profileData, setAuthState]);
@@ -192,7 +174,6 @@ export const useUserSession = (): UserSessionState => {
       isLoading: profileIsLoading,
     };
 
-    console.log(`🔄 [SESSION] Session state computed:`, state);
     return state;
   }, [
     isClient,

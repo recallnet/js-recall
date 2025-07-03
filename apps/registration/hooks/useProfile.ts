@@ -17,25 +17,19 @@ export const useProfile = () => {
   const { status } = useUser();
   const cleanup = useClientCleanup();
 
-  console.log(`📋 [PROFILE] Hook called with status:`, status);
-
   return useQuery({
     queryKey: ["profile"],
     staleTime: 1000,
     queryFn: async (): Promise<ProfileResponse["user"]> => {
-      console.log(`📋 [PROFILE] Starting profile fetch...`);
       try {
         const res = await apiClient.getProfile();
-        console.log(`✅ [PROFILE] Profile fetch successful:`, {
-          success: res.success,
-          user: res.user ? { ...res.user, apiKey: '[REDACTED]' } : null
-        });
+
         if (!res.success) throw new Error("Error when fetching profile");
         return res.user;
       } catch (error) {
-        console.error(`❌ [PROFILE] Profile fetch failed:`, error);
+
         if (error instanceof UnauthorizedError) {
-          console.log(`🧹 [PROFILE] Unauthorized error - cleaning up session`);
+
           cleanup();
         }
         throw error;
