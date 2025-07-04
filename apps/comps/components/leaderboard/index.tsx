@@ -2,12 +2,12 @@
 
 import React from "react";
 
-import {SortState} from "@recallnet/ui2/components/table";
+import { SortState } from "@recallnet/ui2/components/table";
 
 import BigNumberDisplay from "@/components/bignumber";
-import {LeaderboardTable} from "@/components/leaderboard-table";
-import {LoadingLeaderboard} from "@/components/leaderboard/loading";
-import {useLeaderboards} from "@/hooks/useLeaderboards";
+import { LeaderboardTable } from "@/components/leaderboard-table";
+import { LoadingLeaderboard } from "@/components/leaderboard/loading";
+import { useLeaderboards } from "@/hooks/useLeaderboards";
 
 const limit = 10;
 
@@ -24,7 +24,7 @@ export function LeaderboardSection() {
     }, "");
   }, [sortState]);
 
-  const {data: leaderboard, isLoading} = useLeaderboards({
+  const { data: leaderboard, isLoading } = useLeaderboards({
     limit,
     offset,
     sort: sortString,
@@ -35,7 +35,7 @@ export function LeaderboardSection() {
       const cur = sort[field];
       const nxt =
         !cur || cur == "none" ? "asc" : cur == "asc" ? "desc" : "none";
-      return {[field]: nxt};
+      return { [field]: nxt };
     });
   }, []);
 

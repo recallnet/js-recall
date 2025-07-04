@@ -1,4 +1,4 @@
-import {AwardIcon, ExternalLink, Trophy} from "lucide-react";
+import { AwardIcon, ExternalLink, Trophy } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -12,10 +12,10 @@ import {
   TableHeader,
   TableRow,
 } from "@recallnet/ui2/components/table";
-import {cn} from "@recallnet/ui2/lib/utils";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import {Pagination} from "@/components/pagination/index";
-import {LeaderboardAgent} from "@/types/agent";
+import { Pagination } from "@/components/pagination/index";
+import { LeaderboardAgent } from "@/types/agent";
 
 import BigNumberDisplay from "../bignumber/index";
 

@@ -9,14 +9,14 @@ import {
   getFilteredRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import {useVirtualizer} from "@tanstack/react-virtual";
-import {ArrowUp, Search} from "lucide-react";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { ArrowUp, Search } from "lucide-react";
 import Link from "next/link";
-import React, {useEffect, useMemo, useRef, useState} from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
-import {Button} from "@recallnet/ui2/components/button";
-import {IconButton} from "@recallnet/ui2/components/icon-button";
-import {Input} from "@recallnet/ui2/components/input";
+import { Button } from "@recallnet/ui2/components/button";
+import { IconButton } from "@recallnet/ui2/components/icon-button";
+import { Input } from "@recallnet/ui2/components/input";
 import {
   SortableTableHeader,
   Table,
@@ -26,18 +26,23 @@ import {
   TableHeader,
   TableRow,
 } from "@recallnet/ui2/components/table";
-import {toast} from "@recallnet/ui2/components/toast";
-import {cn} from "@recallnet/ui2/lib/utils";
+import { toast } from "@recallnet/ui2/components/toast";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import {useUserSession} from "@/hooks";
-import {useVote} from "@/hooks/useVote";
-import {AgentCompetition, Competition, CompetitionStatus, PaginationResponse} from "@/types";
-import {formatPercentage} from "@/utils/format";
-import {getSortState} from "@/utils/table";
+import { useUserSession } from "@/hooks";
+import { useVote } from "@/hooks/useVote";
+import {
+  AgentCompetition,
+  Competition,
+  CompetitionStatus,
+  PaginationResponse,
+} from "@/types";
+import { formatPercentage } from "@/utils/format";
+import { getSortState } from "@/utils/table";
 
-import {AgentAvatar} from "../agent-avatar";
+import { AgentAvatar } from "../agent-avatar";
 import ConfirmVoteModal from "../modals/confirm-vote";
-import {RankBadge} from "./rank-badge";
+import { RankBadge } from "./rank-badge";
 
 export interface AgentsTableProps {
   agents: AgentCompetition[];
@@ -72,7 +77,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     null,
   );
   const [isVoteModalOpen, setIsVoteModalOpen] = useState(false);
-  const {mutate: vote, isPending: isPendingVote} = useVote();
+  const { mutate: vote, isPending: isPendingVote } = useVote();
 
   useEffect(() => {
     setColumnVisibility({
@@ -107,7 +112,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         id: "rank",
         accessorKey: "rank",
         header: () => "Rank",
-        cell: ({row}) => <RankBadge rank={row.original.rank} />,
+        cell: ({ row }) => <RankBadge rank={row.original.rank} />,
         enableSorting: true,
         size: 100,
       },
@@ -115,7 +120,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         id: "name",
         accessorKey: "name",
         header: () => "Agent",
-        cell: ({row}) => (
+        cell: ({ row }) => (
           <div className="flex min-w-0 items-center gap-3">
             <AgentAvatar agent={row.original} size={32} />
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -142,7 +147,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         id: "portfolioValue",
         accessorKey: "portfolioValue",
         header: () => "Portfolio",
-        cell: ({row}) => (
+        cell: ({ row }) => (
           <span className="text-secondary-foreground font-semibold">
             {row.original.portfolioValue.toLocaleString("en-US", {
               style: "currency",
@@ -158,7 +163,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         id: "pnl",
         accessorKey: "pnl",
         header: () => "P&L",
-        cell: ({row}) => {
+        cell: ({ row }) => {
           const pnlColor =
             row.original.pnlPercent >= 0 ? "text-green-400" : "text-red-400";
           return (
@@ -185,7 +190,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         id: "change24h",
         accessorKey: "change24h",
         header: () => "24h",
-        cell: ({row}) => {
+        cell: ({ row }) => {
           const percentColor =
             row.original.change24hPercent >= 0
               ? "text-green-500"
@@ -206,7 +211,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         id: "voteCount",
         accessorKey: "voteCount",
         header: () => "Votes",
-        cell: ({row}) => (
+        cell: ({ row }) => (
           <div className="flex flex-col items-end">
             <span className="text-secondary-foreground font-semibold">
               {row.original.voteCount}
@@ -225,7 +230,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       {
         id: "vote",
         header: () => "Vote",
-        cell: ({row}) => (
+        cell: ({ row }) => (
           <IconButton
             className={cn(
               competition.userVotingInfo?.info.agentId === row.original.id
@@ -287,10 +292,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   });
 
   const competitionTitles = {
-    [CompetitionStatus.Active]: 'Standings',
-    [CompetitionStatus.Ended]: 'Results',
-    [CompetitionStatus.Pending]: 'Signups',
-  }
+    [CompetitionStatus.Active]: "Standings",
+    [CompetitionStatus.Ended]: "Results",
+    [CompetitionStatus.Pending]: "Signups",
+  };
 
   return (
     <div className="mt-12 w-full" ref={ref}>
@@ -319,7 +324,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow
                 key={headerGroup.id}
-                style={{display: "flex", width: "100%"}}
+                style={{ display: "flex", width: "100%" }}
               >
                 {headerGroup.headers.map((header) =>
                   header.column.getCanSort() ? (
@@ -327,30 +332,30 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                       key={header.id}
                       colSpan={header.colSpan}
                       sortState={getSortState(header.column.getIsSorted())}
-                      style={{width: header.getSize()}}
+                      style={{ width: header.getSize() }}
                       className={header.column.columnDef.meta?.className}
                       onClick={header.column.getToggleSortingHandler()}
                     >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
                     </SortableTableHeader>
                   ) : (
                     <TableHead
                       key={header.id}
                       colSpan={header.colSpan}
-                      style={{width: header.getSize()}}
+                      style={{ width: header.getSize() }}
                       className={header.column.columnDef.meta?.className}
                     >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
                     </TableHead>
                   ),
                 )}
@@ -384,7 +389,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                     <TableCell
                       key={cell.id}
                       className={`flex items-center ${cell.column.columnDef.meta?.className ?? ""}`}
-                      style={{width: cell.column.getSize()}}
+                      style={{ width: cell.column.getSize() }}
                     >
                       {flexRender(
                         cell.column.columnDef.cell,

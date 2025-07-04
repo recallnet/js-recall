@@ -1,14 +1,14 @@
 import React from "react";
 
-import {cn} from "@recallnet/ui2/lib/utils";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import {AwardIcon} from "./award-icon";
+import { AwardIcon } from "./award-icon";
 
 interface RankBadgeProps {
   rank: number;
 }
 
-export const RankBadge: React.FC<RankBadgeProps> = ({rank}) => {
+export const RankBadge: React.FC<RankBadgeProps> = ({ rank }) => {
   return (
     <div
       className={cn(
@@ -24,9 +24,9 @@ export const RankBadge: React.FC<RankBadgeProps> = ({rank}) => {
         <AwardIcon
           place={
             ["first", "second", "third"][rank - 1] as
-            | "first"
-            | "second"
-            | "third"
+              | "first"
+              | "second"
+              | "third"
           }
         />
       ) : (
