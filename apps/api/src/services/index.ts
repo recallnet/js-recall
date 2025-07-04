@@ -182,6 +182,18 @@ class ServiceRegistry {
   get emailVerificationService(): EmailVerificationService {
     return this._emailVerificationService;
   }
+
+  // Add method to start schedulers
+  startSchedulers(): void {
+    this._scheduler.start();
+    console.log("[ServiceRegistry] Schedulers started");
+  }
+
+  // Add method to stop schedulers
+  stopSchedulers(): void {
+    this._scheduler.stop();
+    console.log("[ServiceRegistry] Schedulers stopped");
+  }
 }
 
 // Export service types for convenience

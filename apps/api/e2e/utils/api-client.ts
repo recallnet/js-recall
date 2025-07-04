@@ -417,6 +417,7 @@ export class ApiClient {
     externalUrl?: string,
     imageUrl?: string,
     type?: string,
+    endDate?: string,
     votingStartDate?: string,
     votingEndDate?: string,
   ): Promise<CreateCompetitionResponse | ErrorResponse> {
@@ -431,6 +432,7 @@ export class ApiClient {
           externalUrl,
           imageUrl,
           type,
+          endDate,
           votingStartDate,
           votingEndDate,
         },

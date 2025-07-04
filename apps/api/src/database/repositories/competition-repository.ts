@@ -7,6 +7,8 @@ import {
   eq,
   getTableColumns,
   inArray,
+  isNotNull,
+  lte,
   max,
   sql,
 } from "drizzle-orm";
@@ -1301,5 +1303,40 @@ export async function getBulkAgentCompetitionRankings(
     );
     // Return empty map on error - no reliable ranking data
     return new Map();
+  }
+}
+
+/**
+ * Find active competitions that have reached their end date
+ * @returns Array of active competitions that should be ended
+ */
+export async function findActiveCompetitionsPastEndDate() {
+  try {
+    const now = new Date();
+
+    const result = await db
+      .select({
+        crossChainTradingType: tradingCompetitions.crossChainTradingType,
+        ...getTableColumns(competitions),
+      })
+      .from(tradingCompetitions)
+      .innerJoin(
+        competitions,
+        eq(tradingCompetitions.competitionId, competitions.id),
+      )
+      .where(
+        and(
+          eq(competitions.status, COMPETITION_STATUS.ACTIVE),
+          isNotNull(competitions.endDate),
+          lte(competitions.endDate, now),
+        ),
+      );
+    return result;
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in findActiveCompetitionsPastEndDate:",
+      error,
+    );
+    throw error;
   }
 }
