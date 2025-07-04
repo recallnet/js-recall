@@ -50,7 +50,7 @@ export const TopLeadersList: React.FC<TopLeadersListProps> = ({
       <div className="grid grid-cols-[75px_1fr_auto_auto] gap-4">
         {topThreeAgents.map((agent) => (
           <div key={agent.id} className="hover:bg-card contents">
-            <RankBadge position={agent.position} />
+            <RankBadge rank={agent.rank} />
             <Link
               href={`/agents/${agent.id}`}
               className="flex min-w-0 items-center gap-3"

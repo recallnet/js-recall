@@ -47,7 +47,7 @@ export const UserVote: React.FC<UserVoteProps> = ({
           <TableBody>
             <TableRow className="flex w-full">
               <TableCell className="flex items-center">
-                <RankBadge position={agent.position} />
+                <RankBadge rank={agent.rank} />
               </TableCell>
               <TableCell className="flex flex-1 items-center">
                 <div className="flex min-w-0 items-center gap-3">

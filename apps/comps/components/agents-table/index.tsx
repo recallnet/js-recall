@@ -31,7 +31,12 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useUserSession } from "@/hooks";
 import { useVote } from "@/hooks/useVote";
-import { AgentCompetition, Competition, PaginationResponse } from "@/types";
+import {
+  AgentCompetition,
+  Competition,
+  CompetitionStatus,
+  PaginationResponse,
+} from "@/types";
 import { formatPercentage } from "@/utils/format";
 import { getSortState } from "@/utils/table";
 
@@ -104,10 +109,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   const columns = useMemo<ColumnDef<AgentCompetition>[]>(
     () => [
       {
-        id: "position",
-        accessorKey: "position",
+        id: "rank",
+        accessorKey: "rank",
         header: () => "Rank",
-        cell: ({ row }) => <RankBadge position={row.original.position} />,
+        cell: ({ row }) => <RankBadge rank={row.original.rank} />,
         enableSorting: true,
         size: 100,
       },
@@ -286,10 +291,16 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     overscan: 5,
   });
 
+  const competitionTitles = {
+    [CompetitionStatus.Active]: "Standings",
+    [CompetitionStatus.Ended]: "Results",
+    [CompetitionStatus.Pending]: "Signups",
+  };
+
   return (
     <div className="mt-12 w-full" ref={ref}>
       <h2 className="mb-5 text-2xl font-bold">
-        Competition Leaderboard ({pagination.total})
+        Competition {competitionTitles[competition.status]} ({pagination.total})
       </h2>
       <div className="mb-5 flex w-full items-center gap-2 rounded-2xl border px-3 py-2 md:w-1/2">
         <Search className="text-secondary-foreground mr-1 h-5" />

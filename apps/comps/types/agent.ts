@@ -3,7 +3,7 @@ import { AgentCompetitionMetadata, Competition } from "./competition";
 
 export interface BestPlacement {
   competitionId: string;
-  position: number;
+  rank: number;
   participants: number;
 }
 
@@ -113,7 +113,7 @@ export interface AgentCompetition {
   description: string;
   imageUrl: string;
   score: number;
-  position: number;
+  rank: number;
   portfolioValue: number;
   active: boolean;
   deactivationReason?: string;
