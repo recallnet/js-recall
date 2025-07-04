@@ -1,6 +1,6 @@
-import { Agent } from "./agent";
-import { PaginationResponse } from "./api";
-import { CompetitionStatus, CrossChainTradingType } from "./enums";
+import {Agent} from "./agent";
+import {PaginationResponse} from "./api";
+import {CompetitionStatus, CrossChainTradingType} from "./enums";
 
 export interface Reward {
   name: string;
@@ -26,7 +26,7 @@ export interface AgentStatus {
   agentId: string;
   name: string;
   score: number;
-  position: number;
+  rank: number;
   joinedDate: string;
   rewards: Reward[];
   metadata: {

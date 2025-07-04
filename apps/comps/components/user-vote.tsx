@@ -1,10 +1,10 @@
 "use client";
 
-import { ArrowUp } from "lucide-react";
+import {ArrowUp} from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
-import { IconButton } from "@recallnet/ui2/components/icon-button";
+import {IconButton} from "@recallnet/ui2/components/icon-button";
 import {
   Table,
   TableBody,
@@ -12,12 +12,12 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import { useAgent } from "@/hooks/useAgent";
-import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
-import { formatPercentage } from "@/utils/format";
+import {useAgent} from "@/hooks/useAgent";
+import {useCompetitionAgents} from "@/hooks/useCompetitionAgents";
+import {formatPercentage} from "@/utils/format";
 
-import { AgentAvatar } from "./agent-avatar";
-import { RankBadge } from "./agents-table/rank-badge";
+import {AgentAvatar} from "./agent-avatar";
+import {RankBadge} from "./agents-table/rank-badge";
 
 interface UserVoteProps {
   agentId: string;
@@ -30,8 +30,8 @@ export const UserVote: React.FC<UserVoteProps> = ({
   competitionId,
   totalVotes,
 }) => {
-  const { data: agentData } = useAgent(agentId);
-  const { data: competitionAgentsData } = useCompetitionAgents(competitionId, {
+  const {data: agentData} = useAgent(agentId);
+  const {data: competitionAgentsData} = useCompetitionAgents(competitionId, {
     filter: agentData?.agent.name,
   });
 
@@ -47,7 +47,7 @@ export const UserVote: React.FC<UserVoteProps> = ({
           <TableBody>
             <TableRow className="flex w-full">
               <TableCell className="flex items-center">
-                <RankBadge position={agent.position} />
+                <RankBadge rank={agent.rank} />
               </TableCell>
               <TableCell className="flex flex-1 items-center">
                 <div className="flex min-w-0 items-center gap-3">
@@ -87,9 +87,8 @@ export const UserVote: React.FC<UserVoteProps> = ({
                     })}
                   </span>
                   <span
-                    className={`text-xs ${
-                      agent.pnlPercent >= 0 ? "text-green-400" : "text-red-400"
-                    }`}
+                    className={`text-xs ${agent.pnlPercent >= 0 ? "text-green-400" : "text-red-400"
+                      }`}
                   >
                     ({agent.pnlPercent >= 0 ? "+" : ""}
                     {agent.pnlPercent.toFixed(2)}%)
@@ -99,11 +98,10 @@ export const UserVote: React.FC<UserVoteProps> = ({
               <TableCell className="flex w-[100px] items-center">
                 <div className="flex flex-col">
                   <span
-                    className={`text-xs ${
-                      agent.change24hPercent >= 0
+                    className={`text-xs ${agent.change24hPercent >= 0
                         ? "text-green-500"
                         : "text-red-500"
-                    }`}
+                      }`}
                   >
                     {agent.change24hPercent >= 0 ? "+" : ""}
                     {agent.change24hPercent.toFixed(2)}%
