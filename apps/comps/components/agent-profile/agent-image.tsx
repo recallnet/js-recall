@@ -51,7 +51,7 @@ export const AgentImage = ({
 
   return (
     <>
-      <MirrorImage image={image} width={160} height={160}>
+      <MirrorImage image={image} width={170} height={170}>
         <div
           className="bg-card/70 group absolute flex h-full w-full cursor-pointer flex-col justify-end justify-center overflow-hidden rounded-full opacity-0 transition-opacity duration-300 hover:opacity-100"
           onClick={() => setDialogOpen(true)}
