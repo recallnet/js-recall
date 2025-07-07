@@ -975,7 +975,7 @@ examples:
         path:
           competitionId: "<id>"
         query:
-          sort: "position"
+          sort: "rank"
           limit: 50
           offset: 0
       responses:
