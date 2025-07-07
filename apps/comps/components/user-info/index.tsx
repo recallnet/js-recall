@@ -1,29 +1,30 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { SquarePen } from "lucide-react";
-import React, { useState } from "react";
-import { SubmitHandler, useForm } from "react-hook-form";
-import { z } from "zod";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {CircleAlertIcon, SquarePen} from "lucide-react";
+import React, {useState} from "react";
+import {SubmitHandler, useForm} from "react-hook-form";
+import {z} from "zod";
 
-import { Button } from "@recallnet/ui2/components/button";
+import {Button} from "@recallnet/ui2/components/button";
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
 } from "@recallnet/ui2/components/form";
-import { Input } from "@recallnet/ui2/components/input";
+import {Input} from "@recallnet/ui2/components/input";
 
-import { ProfileResponse, UpdateProfileRequest } from "@/types/profile";
-import { asOptionalStringWithoutEmpty } from "@/utils";
+import {ProfileResponse, UpdateProfileRequest} from "@/types/profile";
+import {asOptionalStringWithoutEmpty} from "@/utils";
 
-import { ProfilePicture } from "./ProfilePicture";
+import {ProfilePicture} from "./ProfilePicture";
+import {toast} from "@/../../packages/ui2/src/components/toast";
 
 const formSchema = z.object({
-  email: z.string().email({ message: "Invalid email address" }),
+  email: z.string().email({message: "Invalid email address"}),
   website: asOptionalStringWithoutEmpty(
-    z.string().url({ message: "Must be a valid URL" }),
+    z.string().url({message: "Must be a valid URL"}),
   ),
 });
 
@@ -39,6 +40,7 @@ export default function UserInfoSection({
   onSave,
 }: UserInfoSectionProps) {
   const [editField, setEditField] = useState<"email" | "website" | null>(null);
+  const [emailVerifyClicked, setEmailVerifyClicked] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -60,7 +62,7 @@ export default function UserInfoSection({
     try {
       const transformedData: UpdateProfileRequest = {
         email: data.email,
-        metadata: data.website ? { website: data.website } : undefined,
+        metadata: data.website ? {website: data.website} : undefined,
       };
 
       await onSave(transformedData);
@@ -70,12 +72,25 @@ export default function UserInfoSection({
     }
   };
 
+  const sendEmailVerify = () => {
+    //setEmailVerifyClicked(true)
+
+    toast.success(
+      <div className="flex flex-col">
+        <span>Verification Email Sent</span>
+        <span className="text-primary-foreground font-normal">An email has been sent to your inbox.</span>
+      </div>
+    )
+    //setTimeout(setEmailVerifyClicked, 60 * 1000, false) //wait 60 seconds
+  }
+  console.log(emailVerifyClicked)
+
   return (
     <div className="flex w-full border">
       <ProfilePicture
         image={user?.imageUrl}
         onSave={async (newUrl) => {
-          await onSave({ imageUrl: newUrl });
+          await onSave({imageUrl: newUrl});
         }}
         className="w-90"
       />
@@ -97,7 +112,7 @@ export default function UserInfoSection({
                   <FormField
                     control={form.control}
                     name="email"
-                    render={({ field }) => (
+                    render={({field}) => (
                       <FormItem className="w-full">
                         <FormControl>
                           <Input
@@ -119,6 +134,15 @@ export default function UserInfoSection({
                     onClick={() => setEditField("email")}
                   />
                   <span>{user?.email}</span>
+                  {
+                    //TODO still need "verified" field to put this conditionally
+                  }
+                  <div className="flex items-center gap-2">
+                    <CircleAlertIcon className="text-yellow-400" />
+                    <Button variant='link' className="underline p-0" onClick={sendEmailVerify} disabled={emailVerifyClicked}>
+                      Verify
+                    </Button>
+                  </div>
                 </>
               )}
             </div>
@@ -133,7 +157,7 @@ export default function UserInfoSection({
                   <FormField
                     control={form.control}
                     name="website"
-                    render={({ field }) => (
+                    render={({field}) => (
                       <FormItem className="w-full">
                         <FormControl>
                           <Input
