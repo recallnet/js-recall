@@ -616,10 +616,11 @@ export class CompetitionManager {
         `[CompetitionManager] Error getting leaderboard with inactive agents for competition ${competitionId}:`,
         error,
       );
-      return {
-        activeAgents: [],
-        inactiveAgents: [],
-      };
+      // Re-throw the error so callers can handle it appropriately
+      // This prevents silent failures that could mislead users
+      throw new Error(
+        `Failed to retrieve leaderboard data for competition ${competitionId}: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
