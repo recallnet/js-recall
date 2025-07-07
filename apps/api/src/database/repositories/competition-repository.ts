@@ -616,7 +616,7 @@ export async function createPortfolioTokenValue(
 }
 
 /**
- * Get latest portfolio snapshots for all agents in a competition
+ * Get latest portfolio snapshots for all active agents in a competition
  * @param competitionId Competition ID
  */
 export async function getLatestPortfolioSnapshots(competitionId: string) {
@@ -627,7 +627,19 @@ export async function getLatestPortfolioSnapshots(competitionId: string) {
         maxTimestamp: max(portfolioSnapshots.timestamp).as("max_timestamp"),
       })
       .from(portfolioSnapshots)
-      .where(eq(portfolioSnapshots.competitionId, competitionId))
+      .innerJoin(
+        competitionAgents,
+        and(
+          eq(portfolioSnapshots.agentId, competitionAgents.agentId),
+          eq(portfolioSnapshots.competitionId, competitionAgents.competitionId),
+        ),
+      )
+      .where(
+        and(
+          eq(portfolioSnapshots.competitionId, competitionId),
+          eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
+        ),
+      )
       .groupBy(portfolioSnapshots.agentId)
       .as("latest_snapshots");
 
@@ -641,7 +653,19 @@ export async function getLatestPortfolioSnapshots(competitionId: string) {
           eq(portfolioSnapshots.timestamp, subquery.maxTimestamp),
         ),
       )
-      .where(eq(portfolioSnapshots.competitionId, competitionId));
+      .innerJoin(
+        competitionAgents,
+        and(
+          eq(portfolioSnapshots.agentId, competitionAgents.agentId),
+          eq(portfolioSnapshots.competitionId, competitionAgents.competitionId),
+        ),
+      )
+      .where(
+        and(
+          eq(portfolioSnapshots.competitionId, competitionId),
+          eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
+        ),
+      );
 
     return result.map((row) => row.portfolio_snapshots);
   } catch (error) {

@@ -532,6 +532,95 @@ export class CompetitionManager {
   }
 
   /**
+   * Get leaderboard data including both active and inactive agents
+   * @param competitionId The competition ID
+   * @returns Object containing active agents (with rankings) and inactive agents (with deactivation reasons)
+   */
+  async getLeaderboardWithInactiveAgents(competitionId: string): Promise<{
+    activeAgents: Array<{ agentId: string; value: number }>;
+    inactiveAgents: Array<{
+      agentId: string;
+      value: number;
+      deactivationReason: string;
+    }>;
+  }> {
+    try {
+      // Get active leaderboard (already filtered to active agents only)
+      const activeLeaderboard = await this.getLeaderboard(competitionId);
+
+      // Get all agents who have ever participated in this competition
+      const allCompetitionAgentIds =
+        await this.getAllCompetitionAgents(competitionId);
+
+      // Create set of active agent IDs for efficient lookup
+      const activeAgentIds = new Set(
+        activeLeaderboard.map((entry) => entry.agentId),
+      );
+
+      // Find inactive agents
+      const inactiveAgents = [];
+      for (const agentId of allCompetitionAgentIds) {
+        if (!activeAgentIds.has(agentId)) {
+          // Get deactivation reason from the competition record
+          const competitionRecord = await this.getAgentCompetitionRecord(
+            competitionId,
+            agentId,
+          );
+          const deactivationReason =
+            competitionRecord?.deactivationReason ||
+            "Not actively participating in this competition";
+
+          // Get the latest portfolio value for this inactive agent
+          let portfolioValue = 0;
+          try {
+            const snapshots =
+              await this.portfolioSnapshotter.getAgentPortfolioSnapshots(
+                competitionId,
+                agentId,
+              );
+            if (snapshots.length > 0) {
+              // Get the most recent snapshot
+              const latestSnapshot = snapshots.sort(
+                (a, b) =>
+                  (b.timestamp?.getTime() ?? 0) - (a.timestamp?.getTime() ?? 0),
+              )[0];
+              portfolioValue = latestSnapshot?.totalValue ?? 0;
+            }
+          } catch (error) {
+            console.warn(
+              `Failed to get portfolio value for inactive agent ${agentId}:`,
+              error,
+            );
+          }
+
+          inactiveAgents.push({
+            agentId,
+            value: portfolioValue,
+            deactivationReason,
+          });
+        }
+      }
+
+      return {
+        activeAgents: activeLeaderboard.map((entry) => ({
+          agentId: entry.agentId,
+          value: entry.value,
+        })),
+        inactiveAgents,
+      };
+    } catch (error) {
+      console.error(
+        `[CompetitionManager] Error getting leaderboard with inactive agents for competition ${competitionId}:`,
+        error,
+      );
+      return {
+        activeAgents: [],
+        inactiveAgents: [],
+      };
+    }
+  }
+
+  /**
    * Calculate PnL and 24h change metrics for multiple agents in a competition efficiently
    * This replaces the N+1 query pattern of calling calculateAgentMetrics in a loop
    *
