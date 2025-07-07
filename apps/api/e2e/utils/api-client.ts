@@ -1636,4 +1636,18 @@ export class ApiClient {
       return this.handleApiError(error, "get object index");
     }
   }
+
+  /**
+   * Verify user email with token
+   * Requires SIWE session authentication
+   * @param token Email verification token
+   */
+  async verifyEmail(): Promise<ApiResponse> {
+    try {
+      const response = await this.axiosInstance.post("/api/user/verify-email");
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "verify email");
+    }
+  }
 }

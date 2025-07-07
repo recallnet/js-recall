@@ -419,6 +419,27 @@ export function makeUserController(services: ServiceRegistry) {
         next(error);
       }
     },
+
+    /**
+     * Verify email for the authenticated user
+     * @param req Express request with userId from session
+     * @param res Express response
+     * @param next Express next function
+     */
+    async verifyEmail(req: Request, res: Response, next: NextFunction) {
+      try {
+        const userId = req.userId as string;
+
+        await services.userManager.verifyEmail(userId);
+
+        res.status(200).json({
+          success: true,
+          message: "Email verification initiated successfully",
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
   };
 }
 
