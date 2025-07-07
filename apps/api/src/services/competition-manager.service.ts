@@ -15,6 +15,7 @@ import {
   findLeaderboardByTradingComp,
   getAgentCompetitionRecord,
   getAllCompetitionAgents,
+  getBulkAgentCompetitionRecords,
   getBulkAgentPortfolioSnapshots,
   getCompetitionAgents,
   getLatestPortfolioSnapshots,
@@ -557,48 +558,50 @@ export class CompetitionManager {
         activeLeaderboard.map((entry) => entry.agentId),
       );
 
-      // Find inactive agents
-      const inactiveAgents = [];
-      for (const agentId of allCompetitionAgentIds) {
-        if (!activeAgentIds.has(agentId)) {
-          // Get deactivation reason from the competition record
-          const competitionRecord = await this.getAgentCompetitionRecord(
-            competitionId,
-            agentId,
-          );
+      // Find inactive agent IDs
+      const inactiveAgentIds = allCompetitionAgentIds.filter(
+        (agentId) => !activeAgentIds.has(agentId),
+      );
+
+      let inactiveAgents: Array<{
+        agentId: string;
+        value: number;
+        deactivationReason: string;
+      }> = [];
+      if (inactiveAgentIds.length > 0) {
+        // 🚀 BULK OPERATIONS: Fetch all inactive agent data efficiently
+        const [competitionRecords, portfolioSnapshots] = await Promise.all([
+          getBulkAgentCompetitionRecords(competitionId, inactiveAgentIds),
+          getBulkAgentPortfolioSnapshots(competitionId, inactiveAgentIds),
+        ]);
+
+        // Create lookup maps for efficient data joining
+        const competitionRecordsMap = new Map(
+          competitionRecords.map((record) => [record.agentId, record]),
+        );
+
+        // Group snapshots by agent and get latest value for each
+        const latestPortfolioValues =
+          this.getLatestPortfolioValuesFromSnapshots(portfolioSnapshots);
+
+        // Build inactive agents array efficiently
+        inactiveAgents = inactiveAgentIds.map((agentId) => {
+          const competitionRecord = competitionRecordsMap.get(agentId);
           const deactivationReason =
             competitionRecord?.deactivationReason ||
             "Not actively participating in this competition";
+          const portfolioValue = latestPortfolioValues.get(agentId) || 0;
 
-          // Get the latest portfolio value for this inactive agent
-          let portfolioValue = 0;
-          try {
-            const snapshots =
-              await this.portfolioSnapshotter.getAgentPortfolioSnapshots(
-                competitionId,
-                agentId,
-              );
-            if (snapshots.length > 0) {
-              // Get the most recent snapshot
-              const latestSnapshot = snapshots.sort(
-                (a, b) =>
-                  (b.timestamp?.getTime() ?? 0) - (a.timestamp?.getTime() ?? 0),
-              )[0];
-              portfolioValue = latestSnapshot?.totalValue ?? 0;
-            }
-          } catch (error) {
-            console.warn(
-              `Failed to get portfolio value for inactive agent ${agentId}:`,
-              error,
-            );
-          }
-
-          inactiveAgents.push({
+          return {
             agentId,
             value: portfolioValue,
             deactivationReason,
-          });
-        }
+          };
+        });
+
+        console.log(
+          `[CompetitionManager] Successfully retrieved ${inactiveAgents.length} inactive agents using bulk operations`,
+        );
       }
 
       return {
@@ -618,6 +621,39 @@ export class CompetitionManager {
         inactiveAgents: [],
       };
     }
+  }
+
+  /**
+   * Helper method to extract latest portfolio values from bulk snapshots
+   * @param snapshots Array of portfolio snapshots from getBulkAgentPortfolioSnapshots
+   * @returns Map of agentId to latest portfolio value
+   */
+  private getLatestPortfolioValuesFromSnapshots(
+    snapshots: Awaited<ReturnType<typeof getBulkAgentPortfolioSnapshots>>,
+  ): Map<string, number> {
+    const latestValuesByAgent = new Map<string, number>();
+
+    // Group snapshots by agent ID and find latest for each
+    const snapshotsByAgent = new Map<string, typeof snapshots>();
+    for (const snapshot of snapshots) {
+      const agentSnapshots = snapshotsByAgent.get(snapshot.agentId) || [];
+      agentSnapshots.push(snapshot);
+      snapshotsByAgent.set(snapshot.agentId, agentSnapshots);
+    }
+
+    // Get latest value for each agent
+    for (const [agentId, agentSnapshots] of snapshotsByAgent.entries()) {
+      if (agentSnapshots.length > 0) {
+        // Sort by timestamp descending and get the most recent
+        const latestSnapshot = agentSnapshots.sort(
+          (a, b) =>
+            (b.timestamp?.getTime() ?? 0) - (a.timestamp?.getTime() ?? 0),
+        )[0];
+        latestValuesByAgent.set(agentId, latestSnapshot?.totalValue ?? 0);
+      }
+    }
+
+    return latestValuesByAgent;
   }
 
   /**
