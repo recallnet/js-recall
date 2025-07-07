@@ -8,6 +8,8 @@ ALTER TABLE "agent_score_history" DROP CONSTRAINT "agent_rank_history_agent_id_f
 ALTER TABLE "agent_score_history" DROP CONSTRAINT "agent_rank_history_competition_id_fkey";
 --> statement-breakpoint
 ALTER TABLE "object_index" ALTER COLUMN "data_type" SET DATA TYPE text;--> statement-breakpoint
+UPDATE "object_index" SET "data_type" = 'agent_score_history' WHERE "data_type" = 'agent_rank_history';--> statement-breakpoint
+UPDATE "object_index" SET "data_type" = 'agent_score' WHERE "data_type" = 'agent_rank';--> statement-breakpoint
 DROP TYPE "public"."sync_data_type";--> statement-breakpoint
 CREATE TYPE "public"."sync_data_type" AS ENUM('trade', 'agent_score_history', 'agent_score', 'competitions_leaderboard', 'portfolio_snapshot');--> statement-breakpoint
 ALTER TABLE "object_index" ALTER COLUMN "data_type" SET DATA TYPE "public"."sync_data_type" USING "data_type"::"public"."sync_data_type";--> statement-breakpoint
