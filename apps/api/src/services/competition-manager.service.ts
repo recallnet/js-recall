@@ -633,24 +633,25 @@ export class CompetitionManager {
   ): Map<string, number> {
     const latestValuesByAgent = new Map<string, number>();
 
-    // Group snapshots by agent ID and find latest for each
-    const snapshotsByAgent = new Map<string, typeof snapshots>();
+    // Get latest value for each agent using a single-pass approach
+    const latestSnapshotsByAgent = new Map<string, (typeof snapshots)[0]>();
+
     for (const snapshot of snapshots) {
-      const agentSnapshots = snapshotsByAgent.get(snapshot.agentId) || [];
-      agentSnapshots.push(snapshot);
-      snapshotsByAgent.set(snapshot.agentId, agentSnapshots);
+      const currentLatestSnapshot = latestSnapshotsByAgent.get(
+        snapshot.agentId,
+      );
+      if (
+        !currentLatestSnapshot ||
+        (snapshot.timestamp?.getTime() ?? 0) >
+          (currentLatestSnapshot.timestamp?.getTime() ?? 0)
+      ) {
+        latestSnapshotsByAgent.set(snapshot.agentId, snapshot);
+      }
     }
 
-    // Get latest value for each agent
-    for (const [agentId, agentSnapshots] of snapshotsByAgent.entries()) {
-      if (agentSnapshots.length > 0) {
-        // Sort by timestamp descending and get the most recent
-        const latestSnapshot = agentSnapshots.sort(
-          (a, b) =>
-            (b.timestamp?.getTime() ?? 0) - (a.timestamp?.getTime() ?? 0),
-        )[0];
-        latestValuesByAgent.set(agentId, latestSnapshot?.totalValue ?? 0);
-      }
+    // Extract total values from latest snapshots
+    for (const [agentId, snapshot] of latestSnapshotsByAgent.entries()) {
+      latestValuesByAgent.set(agentId, snapshot.totalValue ?? 0);
     }
 
     return latestValuesByAgent;
