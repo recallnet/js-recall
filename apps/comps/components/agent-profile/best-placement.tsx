@@ -10,9 +10,9 @@ export const AgentBestPlacement = ({
   places?: number;
 }) => {
   const rankInfo = {
-    1: { color: "text-[#FBD362]", name: "1st" },
-    2: { color: "text-[#93A5BA]", name: "2nd" },
-    3: { color: "text-[#C76E29]", name: "3rd" },
+    1: { color: "text-trophy-first", name: "1st" },
+    2: { color: "text-trophy-second", name: "2nd" },
+    3: { color: "text-trophy-third", name: "3rd" },
   };
 
   return (

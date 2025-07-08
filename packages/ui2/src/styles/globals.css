@@ -25,6 +25,10 @@
   --border: oklch(0.2894 0.03 254.71);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
+
+  --trophy-first: oklch(0.8799 0.1379 89.79);
+  --trophy-second: oklch(0.7149 0.0368 252.35);
+  --trophy-third: oklch(0.628 0.1378 54);
 }
 
 @theme inline {
@@ -46,6 +50,10 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
+  --color-trophy-first: var(--trophy-first);
+  --color-trophy-second: var(--trophy-second);
+  --color-trophy-third: var(--trophy-third);
+
   --breakpoint-*: initial;
   --breakpoint-xs: 42rem;
   --breakpoint-sm: 64rem;

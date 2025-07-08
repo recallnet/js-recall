@@ -1,14 +1,14 @@
-import {useQuery} from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
-import {ApiClient} from "@/lib/api-client";
-import {AgentApiKeyResponse} from "@/types";
+import { ApiClient } from "@/lib/api-client";
+import { AgentApiKeyResponse } from "@/types";
 
 const apiClient = new ApiClient();
 
 /**
  * Hook to fetch an agent api key
  * @param agentId agent id
- * @returns Query result 
+ * @returns Query result
  */
 export const useApiKey = (agentId: string) =>
   useQuery({
@@ -18,4 +18,3 @@ export const useApiKey = (agentId: string) =>
     },
     placeholderData: (prev) => prev,
   });
-

@@ -1,15 +1,15 @@
-import {KeyRound} from "lucide-react";
-import {useState} from "react";
+import { KeyRound } from "lucide-react";
+import { useState } from "react";
 
-import {Tooltip} from "@recallnet/ui2/components/tooltip";
-import {cn} from "@recallnet/ui2/lib/utils";
+import { Tooltip } from "@recallnet/ui2/components/tooltip";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import {useApiKey} from "@/hooks/useApiKey";
-import {useSandboxAgentApiKey} from "@/hooks/useSandbox";
-import {Agent} from "@/types";
+import { useApiKey } from "@/hooks/useApiKey";
+import { useSandboxAgentApiKey } from "@/hooks/useSandbox";
+import { Agent } from "@/types";
 
-import {CopyButton} from "../copy-button";
-import {VisibilityToggle} from "../visibility-toggle";
+import { CopyButton } from "../copy-button";
+import { VisibilityToggle } from "../visibility-toggle";
 
 /**
  * Component for displaying an API key row with visibility toggle and copy functionality
@@ -60,10 +60,9 @@ export const Credentials = ({
   agent: Agent;
   className?: string;
 }) => {
-  const {data: apiKey, isLoading} = useApiKey(agent.id);
-  const {data: sandboxApiKey, isLoading: sandboxLoading} = useSandboxAgentApiKey(
-    agent.name,
-  );
+  const { data: apiKey, isLoading } = useApiKey(agent.id);
+  const { data: sandboxApiKey, isLoading: sandboxLoading } =
+    useSandboxAgentApiKey(agent.name);
 
   return (
     <div
